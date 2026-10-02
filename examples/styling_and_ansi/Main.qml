@@ -21,15 +21,19 @@ Terminal {
         spacing: 1
 
         // Header
-        Text {
+        Rectangle {
             width: parent.width
             height: 3
-            text: "Concept Demo: Text Styling & ANSI Parser"
-            color: "yellow"
-            backgroundColor: "#222222"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#222222"
+
+            Text {
+                anchors.fill: parent
+                text: "Concept Demo: Text Styling & ANSI Parser"
+                color: "yellow"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Section 1: Explicit QML properties

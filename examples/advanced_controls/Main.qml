@@ -22,15 +22,19 @@ Terminal {
         spacing: 1
 
         // Title Header
-        Text {
+        Rectangle {
             width: parent.width
             height: 3
-            text: "Concept Demo: Advanced Controls, ScrollView & Borders"
-            color: "yellow"
-            backgroundColor: "#222222"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#222222"
+
+            Text {
+                anchors.fill: parent
+                text: "Concept Demo: Advanced Controls, ScrollView & Borders"
+                color: "yellow"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Horizontal Row splits form vs scroll list
@@ -40,93 +44,111 @@ Terminal {
             spacing: 2
 
             // Form container on the left with Single Border
-            Column {
+            Rectangle {
                 width: 36
                 height: parent.height
                 border.style: "single"
                 border.color: "cyan"
-                spacing: 1
                 padding: 1
 
-                Text {
-                    width: parent.width - parent.leftPadding - parent.rightPadding
-                    text: "INPUT FORM"
-                    bold: true
-                    color: "cyan"
-                }
+                Column {
+                    anchors.fill: parent
+                    spacing: 1
 
-                Text {
-                    width: parent.width - parent.leftPadding - parent.rightPadding
-                    text: "Enter text below:"
-                    color: "gray"
-                }
-
-                // TextInput component
-                TextInput {
-                    id: inputField
-                    width: parent.width - parent.leftPadding - parent.rightPadding
-                    height: 3
-                    border.style: activeFocus ? "double" : "single"
-                    border.color: activeFocus ? "yellow" : "white"
-                    text: "Type here"
-                    color: "white"
-
-                    onAccepted: {
-                        statusText.text = "Submitted via Enter: " + text
+                    Text {
+                        width: parent.width
+                        text: "INPUT FORM"
+                        bold: true
+                        color: "cyan"
                     }
-                }
 
-                // Button control
-                Button {
-                    label: "Submit Form"
-                    onClicked: {
-                        statusText.text = "Submitted via Click: " + inputField.text
+                    Text {
+                        width: parent.width
+                        text: "Enter text below:"
+                        color: "gray"
+                    }
+
+                    // TextInput component wrapped in styled Rectangle
+                    Rectangle {
+                        width: parent.width
+                        height: 3
+                        border.style: inputField.activeFocus ? "double" : "single"
+                        border.color: inputField.activeFocus ? "yellow" : "white"
+
+                        TextInput {
+                            id: inputField
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "Type here"
+                            color: "white"
+
+                            onAccepted: {
+                                statusText.text = "Submitted via Enter: " + text
+                            }
+                        }
+                    }
+
+                    // Button control
+                    Button {
+                        label: "Submit Form"
+                        onClicked: {
+                            statusText.text = "Submitted via Click: " + inputField.text
+                        }
                     }
                 }
             }
 
             // Scroll list container on the right with Double Border
-            Column {
+            Rectangle {
                 width: 40
                 height: parent.height
                 border.style: "double"
                 border.color: "green"
-                spacing: 1
                 padding: 1
 
-                Text {
-                    width: parent.width - parent.leftPadding - parent.rightPadding
-                    text: "SCROLLABLE LIST (Mouse / Up-Down)"
-                    bold: true
-                    color: "green"
-                }
+                Column {
+                    anchors.fill: parent
+                    spacing: 1
 
-                ScrollView {
-                    width: parent.width - parent.leftPadding - parent.rightPadding
-                    height: parent.height - parent.topPadding - parent.bottomPadding - 2
-                    contentHeight: 20
-                    border.style: "ascii"
-                    border.color: "gray"
+                    Text {
+                        width: parent.width
+                        text: "SCROLLABLE LIST (Mouse / Up-Down)"
+                        bold: true
+                        color: "green"
+                    }
 
-                    Column {
-                        width: parent.width - parent.leftPadding - parent.rightPadding
-                        spacing: 0
+                    Rectangle {
+                        width: parent.width
+                        height: parent.height - 2
+                        border.style: "ascii"
+                        border.color: "gray"
+                        padding: 1
 
-                        Text { width: parent.width; text: "[01] Scroll line one"; color: "white" }
-                        Text { width: parent.width; text: "[02] Scroll line two"; color: "silver" }
-                        Text { width: parent.width; text: "[03] Scroll line three"; color: "gray" }
-                        Text { width: parent.width; text: "[04] Scroll line four"; color: "white" }
-                        Text { width: parent.width; text: "[05] Scroll line five"; color: "silver" }
-                        Text { width: parent.width; text: "[06] Scroll line six"; color: "gray" }
-                        Text { width: parent.width; text: "[07] Scroll line seven"; color: "white" }
-                        Text { width: parent.width; text: "[08] Scroll line eight"; color: "silver" }
-                        Text { width: parent.width; text: "[09] Scroll line nine"; color: "gray" }
-                        Text { width: parent.width; text: "[10] Scroll line ten"; color: "white" }
-                        Text { width: parent.width; text: "[11] Scroll line eleven"; color: "silver" }
-                        Text { width: parent.width; text: "[12] Scroll line twelve"; color: "gray" }
-                        Text { width: parent.width; text: "[13] Scroll line thirteen"; color: "white" }
-                        Text { width: parent.width; text: "[14] Scroll line fourteen"; color: "silver" }
-                        Text { width: parent.width; text: "[15] Scroll line fifteen"; color: "gray" }
+                        ScrollView {
+                            anchors.fill: parent
+                            contentHeight: 20
+
+                            Column {
+                                width: parent.width
+                                spacing: 0
+
+                                Text { width: parent.width; text: "[01] Scroll line one"; color: "white" }
+                                Text { width: parent.width; text: "[02] Scroll line two"; color: "silver" }
+                                Text { width: parent.width; text: "[03] Scroll line three"; color: "gray" }
+                                Text { width: parent.width; text: "[04] Scroll line four"; color: "white" }
+                                Text { width: parent.width; text: "[05] Scroll line five"; color: "silver" }
+                                Text { width: parent.width; text: "[06] Scroll line six"; color: "gray" }
+                                Text { width: parent.width; text: "[07] Scroll line seven"; color: "white" }
+                                Text { width: parent.width; text: "[08] Scroll line eight"; color: "silver" }
+                                Text { width: parent.width; text: "[09] Scroll line nine"; color: "gray" }
+                                Text { width: parent.width; text: "[10] Scroll line ten"; color: "white" }
+                                Text { width: parent.width; text: "[11] Scroll line eleven"; color: "silver" }
+                                Text { width: parent.width; text: "[12] Scroll line twelve"; color: "gray" }
+                                Text { width: parent.width; text: "[13] Scroll line thirteen"; color: "white" }
+                                Text { width: parent.width; text: "[14] Scroll line fourteen"; color: "silver" }
+                                Text { width: parent.width; text: "[15] Scroll line fifteen"; color: "gray" }
+                            }
+                        }
                     }
                 }
             }

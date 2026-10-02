@@ -58,11 +58,8 @@ class Item : public QObject {
   Q_PROPERTY(bool activeFocus READ activeFocus NOTIFY activeFocusChanged)
   Q_PROPERTY(
       bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged)
-  Q_PROPERTY(QString backgroundColor READ backgroundColor WRITE
-                 setBackgroundColor NOTIFY backgroundColorChanged)
   Q_PROPERTY(qtui::Item *parent READ parentItem CONSTANT)
   Q_PROPERTY(qtui::Anchors *anchors READ anchors CONSTANT)
-  Q_PROPERTY(qtui::Border *border READ border CONSTANT)
   Q_PROPERTY(qtui::AnchorLine* left READ left CONSTANT)
   Q_PROPERTY(qtui::AnchorLine* right READ right CONSTANT)
   Q_PROPERTY(qtui::AnchorLine* top READ top CONSTANT)
@@ -130,10 +127,6 @@ public:
   bool focusable() const { return m_focusable; }
   void setFocusable(bool focusable);
 
-  QString backgroundColor() const { return m_backgroundColor; }
-  void setBackgroundColor(const QString &color);
-  uint32_t resolvedBgColor() const { return m_resolvedBgColor; }
-
   Terminal *terminal() const;
   QPoint absolutePosition() const;
   void setGeometryDirect(int x, int y, int w, int h);
@@ -142,7 +135,6 @@ public:
   void setParentItem(Item *parentItem);
   void removeChildItem(Item *child);
   Anchors *anchors() { return &m_anchors; }
-  Border *border() { return &m_border; }
   AnchorLine *left() const { return m_leftLine; }
   AnchorLine *right() const { return m_rightLine; }
   AnchorLine *top() const { return m_topLine; }
@@ -156,16 +148,16 @@ public:
   int padding() const { return m_padding; }
   void setPadding(int p);
 
-  int leftPadding() const;
+  virtual int leftPadding() const;
   void setLeftPadding(int p);
 
-  int rightPadding() const;
+  virtual int rightPadding() const;
   void setRightPadding(int p);
 
-  int topPadding() const;
+  virtual int topPadding() const;
   void setTopPadding(int p);
 
-  int bottomPadding() const;
+  virtual int bottomPadding() const;
   void setBottomPadding(int p);
 
   double flexGrow() const { return m_flexGrow; }
@@ -194,7 +186,6 @@ signals:
   void focusChanged();
   void activeFocusChanged();
   void focusableChanged();
-  void backgroundColorChanged();
   void paddingChanged();
   void leftPaddingChanged();
   void rightPaddingChanged();
@@ -236,10 +227,7 @@ protected:
   bool m_focus = false;
   bool m_activeFocus = false;
   bool m_focusable = false;
-  QString m_backgroundColor = "transparent";
-  uint32_t m_resolvedBgColor = 0x00000000;
   Anchors m_anchors;
-  Border m_border;
   AnchorLine* m_leftLine = nullptr;
   AnchorLine* m_rightLine = nullptr;
   AnchorLine* m_topLine = nullptr;

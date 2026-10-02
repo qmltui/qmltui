@@ -1,7 +1,7 @@
 import QtQml 2.15
 import Tui 1.0
 
-Text {
+Rectangle {
     id: control
     property string label: ""
     property bool pressed: false
@@ -14,9 +14,10 @@ Text {
     border.style: activeFocus ? "double" : "single"
     border.color: activeFocus ? "yellow" : "white"
     
-    text: label
-    horizontalAlignment: Qt.AlignHCenter
-    verticalAlignment: Qt.AlignVCenter
+    Text {
+        anchors.centerIn: parent
+        text: control.label
+    }
 
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {

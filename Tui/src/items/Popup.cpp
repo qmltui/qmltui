@@ -3,7 +3,7 @@
 
 namespace qtui {
 
-Popup::Popup(QObject *parent) : Item(parent) {
+Popup::Popup(QObject *parent) : Rectangle(parent) {
     // Popups are not focusable by default, but modal popups will trap input.
     setVisible(false);
 }

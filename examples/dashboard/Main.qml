@@ -16,12 +16,12 @@ Terminal {
     backgroundColor: "black"
     useAlternateScreen: true
 
-    Item {
+    Rectangle {
         anchors.fill: parent
-        backgroundColor: "#111111"
+        color: "#111111"
 
         // 1. Top Header - Anchored to top, left, and right of the parent
-        Text {
+        Rectangle {
             id: header
             height: 3
             anchors.top: parent.top
@@ -32,16 +32,20 @@ Terminal {
             anchors.rightMargin: 0
             border.style: "single"
             border.color: "cyan"
-            backgroundColor: "#222222"
-            color: "cyan"
-            bold: true
-            text: "SYSTEM CONTROL DASHBOARD"
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#222222"
+
+            Text {
+                anchors.fill: parent
+                color: "cyan"
+                bold: true
+                text: "SYSTEM CONTROL DASHBOARD"
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // 2. Left Sidebar - Anchored top to header, left to parent, bottom to footer
-        Column {
+        Rectangle {
             id: sidebar
             width: 22
             anchors.top: header.bottom
@@ -53,37 +57,41 @@ Terminal {
             border.style: "single"
             border.color: "magenta"
             padding: 1
-            spacing: 1
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "NAVIGATION"
-                color: "magenta"
-                bold: true
-                horizontalAlignment: Qt.AlignHCenter
-            }
+            Column {
+                anchors.fill: parent
+                spacing: 1
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "• Core Engine: OK"
-                color: "green"
-            }
+                Text {
+                    width: parent.width
+                    text: "NAVIGATION"
+                    color: "magenta"
+                    bold: true
+                    horizontalAlignment: Qt.AlignHCenter
+                }
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "• Mem Usage: 42%"
-                color: "yellow"
-            }
+                Text {
+                    width: parent.width
+                    text: qsTr("• Core Engine: OK")
+                    color: "green"
+                }
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "• Tasks: 3 Active"
-                color: "silver"
+                Text {
+                    width: parent.width
+                    text: qsTr("• Mem Usage: 42%")
+                    color: "yellow"
+                }
+
+                Text {
+                    width: parent.width
+                    text: qsTr("• Tasks: 3 Active")
+                    color: "silver"
+                }
             }
         }
 
         // 3. Bottom Footer - Anchored bottom, left, and right
-        Text {
+        Rectangle {
             id: footer
             height: 3
             anchors.bottom: parent.bottom
@@ -94,16 +102,21 @@ Terminal {
             anchors.rightMargin: 0
             border.style: "single"
             border.color: "cyan"
-            backgroundColor: "#151515"
-            color: "gray"
-            text: "Status: System Ready. Use Tab to cycle focus. Press 'q' to exit."
-            horizontalAlignment: Qt.AlignLeft
-            verticalAlignment: Qt.AlignVCenter
-            leftPadding: 2
+            color: "#151515"
+            padding: 1
+
+            Text {
+                anchors.fill: parent
+                color: "gray"
+                text: "Status: System Ready. Use Tab to cycle focus. Press 'q' to exit."
+                horizontalAlignment: Qt.AlignLeft
+                verticalAlignment: Qt.AlignVCenter
+                leftPadding: 1
+            }
         }
 
         // 4. Center Main Panel - Anchored to sidebar right, header bottom, parent right, footer top
-        Column {
+        Rectangle {
             id: mainPanel
             anchors.top: header.bottom
             anchors.left: sidebar.right
@@ -116,71 +129,88 @@ Terminal {
             border.style: "double"
             border.color: "green"
             padding: 1
-            spacing: 1
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "SYSTEM COMMAND INTERACTION CENTER"
-                color: "green"
-                bold: true
-            }
+            Column {
+                anchors.fill: parent
+                spacing: 1
 
-            // Interactive Row (Button + TextInput)
-            Row {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                height: 3
-                spacing: 2
-
-                TextInput {
-                    id: cmdInput
-                    width: 25
-                    height: 3
-                    border.style: activeFocus ? "double" : "single"
-                    border.color: activeFocus ? "yellow" : "white"
-                    text: "ping"
-                    color: "white"
-
-                    onAccepted: {
-                        consoleResult.text = "Result: Command '" + text + "' executed.\nStatus code: 0\n[OK]"
-                    }
-                }
-
-                Button {
-                    label: "Run Task"
-                    onClicked: {
-                        consoleResult.text = "Result: Triggered task via '" + cmdInput.text + "'."
-                    }
-                }
-            }
-
-            // Command output console
-            Text {
-                id: consoleResult
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                height: 4
-                border.style: "single"
-                border.color: "gray"
-                backgroundColor: "#080808"
-                color: "yellow"
-                text: "Result: Waiting for command input..."
-                padding: 1
-            }
-
-            // Interactive Mousearea coordinates display
-            Text {
-                id: mouseAreaInfo
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                height: 3
-                border.style: "single"
-                border.color: "gray"
-                text: "Move mouse inside panel to track coordinates.\nCoordinates: (" + panelMouseArea.mouseX + ", " + panelMouseArea.mouseY + ")"
-                color: "cyan"
-                padding: 1
-
-                MouseArea {
-                    id: panelMouseArea
+                Text {
                     width: parent.width
-                    height: parent.height
+                    text: "SYSTEM COMMAND INTERACTION CENTER"
+                    color: "green"
+                    bold: true
+                }
+
+                // Interactive Row (Button + TextInput)
+                Row {
+                    width: parent.width
+                    height: 3
+                    spacing: 2
+
+                    Rectangle {
+                        width: 25
+                        height: 3
+                        border.style: cmdInput.activeFocus ? "double" : "single"
+                        border.color: cmdInput.activeFocus ? "yellow" : "white"
+
+                        TextInput {
+                            id: cmdInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "ping"
+                            color: "white"
+
+                            onAccepted: {
+                                consoleResultText.text = "Result: Command '" + text + "' executed.\nStatus code: 0\n[OK]"
+                            }
+                        }
+                    }
+
+                    Button {
+                        label: "Run Task"
+                        onClicked: {
+                            consoleResultText.text = "Result: Triggered task via '" + cmdInput.text + "'."
+                        }
+                    }
+                }
+
+                // Command output console
+                Rectangle {
+                    id: consoleResult
+                    width: parent.width
+                    height: 4
+                    border.style: "single"
+                    border.color: "gray"
+                    color: "#080808"
+                    padding: 1
+
+                    Text {
+                        id: consoleResultText
+                        anchors.fill: parent
+                        color: "yellow"
+                        text: "Result: Waiting for command input..."
+                    }
+                }
+
+                // Interactive Mousearea coordinates display
+                Rectangle {
+                    id: mouseAreaInfo
+                    width: parent.width
+                    height: 3
+                    border.style: "single"
+                    border.color: "gray"
+                    padding: 1
+
+                    Text {
+                        anchors.fill: parent
+                        text: "Move mouse inside panel to track coordinates.\nCoordinates: (" + panelMouseArea.mouseX + ", " + panelMouseArea.mouseY + ")"
+                        color: "cyan"
+                    }
+
+                    MouseArea {
+                        id: panelMouseArea
+                        anchors.fill: parent
+                    }
                 }
             }
         }

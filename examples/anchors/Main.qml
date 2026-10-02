@@ -15,14 +15,14 @@ Terminal {
     backgroundColor: "black"
     useAlternateScreen: true
 
-    Item {
+    Rectangle {
         anchors.fill: parent
-        backgroundColor: "#111111"
+        color: "#111111"
         border.style: "double"
         border.color: "gray"
 
         // Header - anchored to top, left, and right of the parent
-        Text {
+        Rectangle {
             id: header
             height: 3
             anchors.top: parent.top
@@ -31,16 +31,20 @@ Terminal {
             anchors.topMargin: 1
             anchors.leftMargin: 2
             anchors.rightMargin: 2
-            backgroundColor: "#222222"
-            color: "yellow"
-            bold: true
-            text: "Robust Anchoring System Demo"
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#222222"
+            
+            Text {
+                anchors.fill: parent
+                color: "yellow"
+                bold: true
+                text: "Robust Anchoring System Demo"
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Left Panel - anchored top to header's bottom, left to parent, bottom to parent
-        Text {
+        Rectangle {
             id: leftPanel
             width: 25
             anchors.top: header.bottom
@@ -49,14 +53,18 @@ Terminal {
             anchors.leftMargin: 2
             anchors.topMargin: 1
             anchors.bottomMargin: 2
-            backgroundColor: "#333333"
-            color: "cyan"
-            text: " Left Panel\n [Sibling A]\n\n width: 25\n left: parent.left\n top: header.bottom"
-            verticalAlignment: Qt.AlignVCenter
+            color: "#333333"
+
+            Text {
+                anchors.fill: parent
+                color: "cyan"
+                text: " Left Panel\n [Sibling A]\n\n width: 25\n left: parent.left\n top: header.bottom"
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Content Area - anchored top to header's bottom, left to leftPanel's right, right and bottom to parent
-        Text {
+        Rectangle {
             id: contentArea
             anchors.left: leftPanel.right
             anchors.right: parent.right
@@ -66,11 +74,15 @@ Terminal {
             anchors.rightMargin: 2
             anchors.topMargin: 1
             anchors.bottomMargin: 2
-            backgroundColor: "#1d2b53"
-            color: "white"
-            text: "Content Area [Sibling B]\n\nanchors.left: leftPanel.right\nanchors.right: parent.right\nanchors.top: header.bottom\nanchors.bottom: parent.bottom\n\nPress 'q' to exit."
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#1d2b53"
+
+            Text {
+                anchors.fill: parent
+                color: "white"
+                text: "Content Area [Sibling B]\n\nanchors.left: leftPanel.right\nanchors.right: parent.right\nanchors.top: header.bottom\nanchors.bottom: parent.bottom\n\nPress 'q' to exit."
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
     }
 }

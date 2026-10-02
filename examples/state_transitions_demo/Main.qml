@@ -17,23 +17,27 @@ Terminal {
 
     property bool sidebarActive: false
 
-    Item {
+    Rectangle {
         anchors.fill: parent
-        backgroundColor: "#151520"
+        color: "#151520"
         border.style: "single"
         border.color: "#444455"
 
         // Header
-        Text {
+        Rectangle {
             id: header
             width: parent.width
             height: 3
-            text: "INTERACTIVE STATES & TRANSITIONS DEMO"
-            color: "cyan"
-            backgroundColor: "#222233"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+            color: "#222233"
+
+            Text {
+                anchors.fill: parent
+                text: "INTERACTIVE STATES & TRANSITIONS DEMO"
+                color: "cyan"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Main content container (clipped to hide off-screen sidebar)
@@ -73,18 +77,22 @@ Terminal {
                 Text { text: ""; height: 1 }
 
                 // Interactive Toggle Button
-                Text {
+                Rectangle {
                     id: toggleButton
                     width: 32
                     height: 3
                     focusable: true
                     focus: true
-                    text: activeFocus ? ">>  TOGGLE SIDEBAR MENU  <<" : "    TOGGLE SIDEBAR MENU    "
-                    color: activeFocus ? "white" : "cyan"
-                    backgroundColor: activeFocus ? "blue" : "#2a2a3e"
-                    bold: activeFocus
-                    horizontalAlignment: Qt.AlignHCenter
-                    verticalAlignment: Qt.AlignVCenter
+                    color: activeFocus ? "blue" : "#2a2a3e"
+
+                    Text {
+                        anchors.fill: parent
+                        text: toggleButton.activeFocus ? ">>  TOGGLE SIDEBAR MENU  <<" : "    TOGGLE SIDEBAR MENU    "
+                        color: toggleButton.activeFocus ? "white" : "cyan"
+                        bold: toggleButton.activeFocus
+                        horizontalAlignment: Qt.AlignHCenter
+                        verticalAlignment: Qt.AlignVCenter
+                    }
 
                     Keys.onPressed: (event) => {
                         if (event.key === Qt.Key_Space) {
@@ -96,13 +104,13 @@ Terminal {
             }
 
             // Collapsible Sidebar Menu
-            Item {
+            Rectangle {
                 id: sidebar
                 x: -24
                 y: 0
                 width: 24
                 height: parent.height
-                backgroundColor: "#222233"
+                color: "#222233"
                 border.style: "double"
                 border.color: "blue"
 
@@ -137,7 +145,7 @@ Terminal {
                             target: sidebar
                             properties: {
                                 "x": 0,
-                                "backgroundColor": "#444466"
+                                "color": "#444466"
                             }
                         }
                     },
@@ -148,7 +156,7 @@ Terminal {
                             target: sidebar
                             properties: {
                                 "x": -24,
-                                "backgroundColor": "#222233"
+                                "color": "#222233"
                             }
                         }
                     }
@@ -191,13 +199,18 @@ Terminal {
         }
 
         // Footer status bar
-        Text {
+        Rectangle {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 1
             width: parent.width
-            text: " Press [SPACE] to toggle | [Esc] to close sidebar | [Ctrl+C] to exit"
-            color: "gray"
-            backgroundColor: "#181822"
+            height: 1
+            color: "#181822"
+
+            Text {
+                anchors.fill: parent
+                text: " Press [SPACE] to toggle | [Esc] to close sidebar | [Ctrl+C] to exit"
+                color: "gray"
+            }
         }
     }
 }

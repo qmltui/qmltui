@@ -26,10 +26,10 @@ Terminal {
         }
     }
 
-    Item {
+    Rectangle {
         id: animationArea
         anchors.fill: parent
-        backgroundColor: "#111111"
+        color: "#111111"
         border.style: "single"
         border.color: "gray"
 
@@ -42,7 +42,7 @@ Terminal {
         }
 
         // Animated visual box
-        Item {
+        Rectangle {
             id: animatedBox
             width: 18
             height: 5
@@ -50,7 +50,7 @@ Terminal {
             anchors.top: animationArea.top
             border.style: "double"
             border.color: "yellow"
-            backgroundColor: "blue"
+            color: "blue"
 
             states: [
                 State {
@@ -65,7 +65,7 @@ Terminal {
                     }
                     PropertyChanges {
                         target: animatedBox
-                        properties: { "backgroundColor": "blue" }
+                        properties: { "color": "blue" }
                     }
                 },
                 State {
@@ -80,7 +80,7 @@ Terminal {
                     }
                     PropertyChanges {
                         target: animatedBox
-                        properties: { "backgroundColor": "green" }
+                        properties: { "color": "green" }
                     }
                 },
                 State {
@@ -95,7 +95,7 @@ Terminal {
                     }
                     PropertyChanges {
                         target: animatedBox
-                        properties: { "backgroundColor": "red" }
+                        properties: { "color": "red" }
                     }
                 },
                 State {
@@ -110,7 +110,7 @@ Terminal {
                     }
                     PropertyChanges {
                         target: animatedBox
-                        properties: { "backgroundColor": "magenta" }
+                        properties: { "color": "magenta" }
                     }
                 }
             ]

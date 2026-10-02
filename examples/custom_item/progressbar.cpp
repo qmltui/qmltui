@@ -4,7 +4,7 @@
 
 namespace qtui {
 
-ProgressBar::ProgressBar(QObject *parent) : Item(parent) {
+ProgressBar::ProgressBar(QObject *parent) : Rectangle(parent) {
     setImplicitWidth(20);
     setImplicitHeight(3);
 }
@@ -29,7 +29,7 @@ void ProgressBar::render(TextGridBuffer &buffer, int absX, int absY, const ClipR
     if (!m_visible) return;
 
     // Render borders and backgrounds first
-    Item::render(buffer, absX, absY, clipRect);
+    Rectangle::render(buffer, absX, absY, clipRect);
 
     int lp = leftPadding();
     int rp = rightPadding();

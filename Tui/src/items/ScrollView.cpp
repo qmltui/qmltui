@@ -77,67 +77,6 @@ void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRe
     int w = width();
     int h = height();
 
-    // 2. Draw background (similar to Item::render)
-    if ((m_resolvedBgColor >> 24) != 0) {
-        for (int dy = 0; dy < h; ++dy) {
-            int cy = absY + dy;
-            for (int dx = 0; dx < w; ++dx) {
-                int cx = absX + dx;
-                if (clipRect.contains(cx, cy)) {
-                    if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                        Cell& cell = buffer.cellAt(cx, cy);
-                        cell.bgColor = m_resolvedBgColor;
-                    }
-                }
-            }
-        }
-    }
-
-    // 3. Draw border if enabled
-    if (m_border.style() != "none") {
-        uint32_t borderColor = ColorMapper::fromString(m_border.color(), 0xFFFFFFFF);
-        const char* tl = "┌"; const char* tr = "┐";
-        const char* bl = "└"; const char* br = "┘";
-        const char* hz = "─"; const char* vt = "│";
-
-        if (m_border.style() == "double") {
-            tl = "╔"; tr = "╗"; bl = "╚"; br = "╝"; hz = "═"; vt = "║";
-        } else if (m_border.style() == "ascii") {
-            tl = "+"; tr = "+"; bl = "+"; br = "+"; hz = "-"; vt = "|";
-        }
-
-        auto setCellChar = [](Cell& cell, const char* utf8Str, uint32_t fg) {
-            int len = 0;
-            while (utf8Str[len] && len < 3) {
-                cell.character[len] = utf8Str[len];
-                len++;
-            }
-            cell.character[len] = '\0';
-            cell.fgColor = fg;
-        };
-
-        for (int dy = 0; dy < h; ++dy) {
-            int cy = absY + dy;
-            for (int dx = 0; dx < w; ++dx) {
-                int cx = absX + dx;
-                if (clipRect.contains(cx, cy)) {
-                    if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                        bool isBorder = (dx == 0 || dx == w - 1 || dy == 0 || dy == h - 1);
-                        if (isBorder) {
-                            Cell& cell = buffer.cellAt(cx, cy);
-                            if (dx == 0 && dy == 0) setCellChar(cell, tl, borderColor);
-                            else if (dx == w - 1 && dy == 0) setCellChar(cell, tr, borderColor);
-                            else if (dx == 0 && dy == h - 1) setCellChar(cell, bl, borderColor);
-                            else if (dx == w - 1 && dy == h - 1) setCellChar(cell, br, borderColor);
-                            else if (dy == 0 || dy == h - 1) setCellChar(cell, hz, borderColor);
-                            else if (dx == 0 || dx == w - 1) setCellChar(cell, vt, borderColor);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     int lp = leftPadding();
     int rp = rightPadding();
     int tp = topPadding();

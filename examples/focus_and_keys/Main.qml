@@ -35,14 +35,19 @@ Terminal {
         spacing: 1
 
         // Header
-        Text {
+        Rectangle {
             width: parent.width
             height: 3
-            text: qsTr("Concept Demo: Focus Management & Keyboard Input")
-            color: "yellow"
-            backgroundColor: "#222222"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            color: "#222222"
+
+            Text {
+                anchors.fill: parent
+                text: qsTr("Concept Demo: Focus Management & Keyboard Input")
+                color: "yellow"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         Text {
@@ -57,15 +62,20 @@ Terminal {
             width: parent.width
 
             // Item 1
-            Text {
+            Rectangle {
                 id: item1
                 width: 20
                 height: 3
                 focusable: true
-                text: activeFocus ? qsTr("[*] Focus Item A") : qsTr("    Focus Item A")
-                backgroundColor: activeFocus ? "blue" : "#111111"
-                color: activeFocus ? "white" : "silver"
-                bold: activeFocus
+                color: activeFocus ? "blue" : "#111111"
+
+                Text {
+                    anchors.fill: parent
+                    text: item1.activeFocus ? qsTr("[*] Focus Item A") : qsTr("    Focus Item A")
+                    color: item1.activeFocus ? "white" : "silver"
+                    bold: item1.activeFocus
+                    verticalAlignment: Qt.AlignVCenter
+                }
 
                 Keys.onPressed: (event) => {
                     rootWindow.handleItemKey(qsTr("Item A"), event)
@@ -73,15 +83,20 @@ Terminal {
             }
 
             // Item 2
-            Text {
+            Rectangle {
                 id: item2
                 width: 20
                 height: 3
                 focusable: true
-                text: activeFocus ? qsTr("[*] Focus Item B") : qsTr("    Focus Item B")
-                backgroundColor: activeFocus ? "green" : "#111111"
-                color: activeFocus ? "white" : "silver"
-                bold: activeFocus
+                color: activeFocus ? "green" : "#111111"
+
+                Text {
+                    anchors.fill: parent
+                    text: item2.activeFocus ? qsTr("[*] Focus Item B") : qsTr("    Focus Item B")
+                    color: item2.activeFocus ? "white" : "silver"
+                    bold: item2.activeFocus
+                    verticalAlignment: Qt.AlignVCenter
+                }
 
                 Keys.onPressed: (event) => {
                     rootWindow.handleItemKey(qsTr("Item B"), event)
@@ -89,15 +104,20 @@ Terminal {
             }
 
             // Item 3
-            Text {
+            Rectangle {
                 id: item3
                 width: 20
                 height: 3
                 focusable: true
-                text: activeFocus ? qsTr("[*] Focus Item C") : qsTr("    Focus Item C")
-                backgroundColor: activeFocus ? "magenta" : "#111111"
-                color: activeFocus ? "white" : "silver"
-                bold: activeFocus
+                color: activeFocus ? "magenta" : "#111111"
+
+                Text {
+                    anchors.fill: parent
+                    text: item3.activeFocus ? qsTr("[*] Focus Item C") : qsTr("    Focus Item C")
+                    color: item3.activeFocus ? "white" : "silver"
+                    bold: item3.activeFocus
+                    verticalAlignment: Qt.AlignVCenter
+                }
 
                 Keys.onPressed: (event) => {
                     rootWindow.handleItemKey(qsTr("Item C"), event)

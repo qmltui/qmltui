@@ -31,6 +31,8 @@ qt_add_qml_module(Qtui
         src/engine/Transition.cpp
         src/items/Item.h
         src/items/Item.cpp
+        src/items/Rectangle.h
+        src/items/Rectangle.cpp
         src/items/Anchors.h
         src/items/Anchors.cpp
         src/items/AnchorLine.h

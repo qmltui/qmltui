@@ -11,7 +11,7 @@ class Item;
 class Border : public QObject {
     Q_OBJECT
     QML_ELEMENT
-    QML_UNCREATABLE("Border is only available as a grouped property of Item")
+    QML_UNCREATABLE("Border is only available as a grouped property of Rectangle")
 
     Q_PROPERTY(QString style READ style WRITE setStyle NOTIFY styleChanged)
     Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)

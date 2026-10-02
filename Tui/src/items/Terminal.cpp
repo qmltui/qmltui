@@ -6,7 +6,7 @@
 
 namespace qtui {
 
-Terminal::Terminal(QObject *parent) : Item(parent) {
+Terminal::Terminal(QObject *parent) : Rectangle(parent) {
     m_engine = new TerminalEngine(this, this);
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
 }
@@ -136,7 +136,7 @@ void Terminal::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect
     if (!m_visible) return;
     
     // Render normal hierarchy
-    Item::render(buffer, absX, absY, clipRect);
+    Rectangle::render(buffer, absX, absY, clipRect);
     
     // Render popups as absolute overlay layers on top of everything
     for (Popup* popup : m_popups) {

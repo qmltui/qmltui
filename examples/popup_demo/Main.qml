@@ -7,79 +7,80 @@ Terminal {
     height: 24
     backgroundColor: "#1E1E1E"
 
-    FocusScope {
-        anchors.fill: parent
-        focus: true
+    focus: true
 
-        Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-                Qt.quit()
-                event.accepted = true
-            } else if (event.key === Qt.Key_O) {
-                myPopup.open()
-                statusText.text = "Status: Dialog Opened"
-                event.accepted = true
-            }
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        } else if (event.key === Qt.Key_O) {
+            myPopup.open()
+            statusText.text = "Status: Dialog Opened"
+            event.accepted = true
         }
+    }
 
-        // Main content
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 4
-            text: "<font color='cyan'>Qtui Popup & Z-Index Demo</font>"
-            textFormat: Text.RichText
-        }
+    // Main content
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 4
+        text: "<font color='cyan'>Qtui Popup & Z-Index Demo</font>"
+        textFormat: Text.RichText
+    }
+
+    Text {
+        id: statusText
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 7
+        text: "Status: Ready. Press [O] to open Dialog."
+        color: "gray"
+    }
+
+    // Button to open popup
+    Rectangle {
+        id: openButton
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 10
+        width: 24
+        height: 1
+        color: "blue"
 
         Text {
-            id: statusText
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 7
-            text: "Status: Ready. Press [O] to open Dialog."
-            color: "gray"
-        }
-
-        // Button to open popup
-        Text {
-            id: openButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 10
+            anchors.fill: parent
             text: " [ Open Modal Dialog ] "
             color: "white"
-            backgroundColor: "blue"
+            horizontalAlignment: Qt.AlignHCenter
+        }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    myPopup.open()
-                    statusText.text = "Status: Dialog Opened"
-                }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                myPopup.open()
+                statusText.text = "Status: Dialog Opened"
             }
         }
+    }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 20
-            text: "Press [Q] or [Esc] to exit."
-            color: "dimgray"
-        }
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 20
+        text: "Press [Q] or [Esc] to exit."
+        color: "dimgray"
     }
 
     // The Popup element. Placed in hierarchy, but drawn on top!
     Popup {
         id: myPopup
-        x: 20
-        y: 6
+        anchors.centerIn: parent
         width: 40
         height: 10
         modal: true
         dimBackground: true
+        color: "#2E2E2E"
 
-        border.style: "double"
-        border.color: "yellow"
-
-        Item {
-            anchors.fill: parent
-            backgroundColor: "#2E2E2E"
+        border {
+            style: "double"
+            color: "yellow"
         }
 
         Text {
@@ -105,13 +106,20 @@ Terminal {
         }
 
         // Confirm button
-        Text {
+        Rectangle {
             id: confirmButton
             x: 5
             y: 7
-            text: " [ Confirm ] "
-            color: "black"
-            backgroundColor: "green"
+            width: 12
+            height: 1
+            color: "green"
+
+            Text {
+                anchors.fill: parent
+                text: " [ Confirm ] "
+                color: "black"
+                horizontalAlignment: Qt.AlignHCenter
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -123,13 +131,20 @@ Terminal {
         }
 
         // Cancel button
-        Text {
+        Rectangle {
             id: cancelButton
             x: 23
             y: 7
-            text: " [ Cancel ] "
-            color: "black"
-            backgroundColor: "red"
+            width: 12
+            height: 1
+            color: "red"
+
+            Text {
+                anchors.fill: parent
+                text: " [ Cancel ] "
+                color: "black"
+                horizontalAlignment: Qt.AlignHCenter
+            }
 
             MouseArea {
                 anchors.fill: parent

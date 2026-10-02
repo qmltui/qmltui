@@ -56,7 +56,7 @@ Terminal {
             spacing: 1
             model: root.directoryModel
 
-            delegate: Item {
+            delegate: Rectangle {
                 width: listView.width
                 height: 3
                 border.style: "single"

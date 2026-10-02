@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Item.h"
+#include "Rectangle.h"
 
 namespace qtui {
 
 class TerminalEngine;
 class Popup;
 
-class Terminal : public Item {
+class Terminal : public Rectangle {
   Q_OBJECT
   QML_ELEMENT
 

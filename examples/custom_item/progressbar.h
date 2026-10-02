@@ -1,10 +1,10 @@
 #pragma once
-#include <Item.h>
+#include <Rectangle.h>
 #include <QString>
 
 namespace qtui {
 
-class ProgressBar : public Item {
+class ProgressBar : public Rectangle {
     Q_OBJECT
     QML_ELEMENT
 

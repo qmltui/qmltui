@@ -189,6 +189,8 @@ int Text::visualLength(const QString &line) const {
 void Text::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
 
+    Item::render(buffer, absX, absY, clipRect);
+
     QStringList lines = m_text.split('\n');
     
     int lp = leftPadding();
@@ -208,7 +210,7 @@ void Text::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
 
     // Base attributes and colors
     uint32_t baseFgColor = m_resolvedColor;
-    uint32_t baseBgColor = m_resolvedBgColor;
+    uint32_t baseBgColor = 0x00000000;
     TextAttribute baseAttrs = TextAttribute::None;
     if (m_bold) baseAttrs = baseAttrs | TextAttribute::Bold;
     if (m_italic) baseAttrs = baseAttrs | TextAttribute::Italic;
@@ -329,8 +331,6 @@ void Text::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         }
         currentY++;
     }
-
-    Item::render(buffer, absX, absY, clipRect);
 }
 
 } // namespace qtui

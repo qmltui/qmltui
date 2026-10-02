@@ -13,7 +13,7 @@
 
 namespace qtui {
 
-Item::Item(QObject *parent) : QObject(parent), m_anchors(this), m_border(this) {
+Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
     m_leftLine = new AnchorLine(AnchorLine::Left, this);
     m_rightLine = new AnchorLine(AnchorLine::Right, this);
     m_topLine = new AnchorLine(AnchorLine::Top, this);
@@ -51,6 +51,12 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
     if (self && obj) {
         obj->setParent(self);
         self->m_dataChildren.append(obj);
+        if (Item* item = qobject_cast<Item*>(obj)) {
+            if (!self->m_visualChildren.contains(item)) {
+                self->m_visualChildren.append(item);
+                self->markDirty();
+            }
+        }
     }
 }
 
@@ -178,13 +184,7 @@ void Item::setFocusable(bool focusable) {
     emit focusableChanged();
 }
 
-void Item::setBackgroundColor(const QString &color) {
-    if (m_backgroundColor == color) return;
-    m_backgroundColor = color;
-    m_resolvedBgColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
-    emit backgroundColorChanged();
-    markDirty();
-}
+
 
 Terminal* Item::terminal() const {
     QObject* p = parent();
@@ -258,67 +258,6 @@ void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     int w = width();
     int h = height();
 
-    // Render background if specified and not transparent
-    if ((m_resolvedBgColor >> 24) != 0) {
-        for (int dy = 0; dy < h; ++dy) {
-            int cy = absY + dy;
-            for (int dx = 0; dx < w; ++dx) {
-                int cx = absX + dx;
-                if (clipRect.contains(cx, cy)) {
-                    if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                        Cell& cell = buffer.cellAt(cx, cy);
-                        cell.bgColor = m_resolvedBgColor;
-                    }
-                }
-            }
-        }
-    }
-
-    // Render border if enabled
-    if (m_border.style() != "none") {
-        uint32_t borderColor = ColorMapper::fromString(m_border.color(), 0xFFFFFFFF);
-        const char* tl = "┌"; const char* tr = "┐";
-        const char* bl = "└"; const char* br = "┘";
-        const char* hz = "─"; const char* vt = "│";
-
-        if (m_border.style() == "double") {
-            tl = "╔"; tr = "╗"; bl = "╚"; br = "╝"; hz = "═"; vt = "║";
-        } else if (m_border.style() == "ascii") {
-            tl = "+"; tr = "+"; bl = "+"; br = "+"; hz = "-"; vt = "|";
-        }
-
-        auto setCellChar = [](Cell& cell, const char* utf8Str, uint32_t fg) {
-            int len = 0;
-            while (utf8Str[len] && len < 3) {
-                cell.character[len] = utf8Str[len];
-                len++;
-            }
-            cell.character[len] = '\0';
-            cell.fgColor = fg;
-        };
-
-        for (int dy = 0; dy < h; ++dy) {
-            int cy = absY + dy;
-            for (int dx = 0; dx < w; ++dx) {
-                int cx = absX + dx;
-                if (clipRect.contains(cx, cy)) {
-                    if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                        bool isBorder = (dx == 0 || dx == w - 1 || dy == 0 || dy == h - 1);
-                        if (isBorder) {
-                            Cell& cell = buffer.cellAt(cx, cy);
-                            if (dx == 0 && dy == 0) setCellChar(cell, tl, borderColor);
-                            else if (dx == w - 1 && dy == 0) setCellChar(cell, tr, borderColor);
-                            else if (dx == 0 && dy == h - 1) setCellChar(cell, bl, borderColor);
-                            else if (dx == w - 1 && dy == h - 1) setCellChar(cell, br, borderColor);
-                            else if (dy == 0 || dy == h - 1) setCellChar(cell, hz, borderColor);
-                            else if (dx == 0 || dx == w - 1) setCellChar(cell, vt, borderColor);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     // Determine the clipping rectangle for children
     ClipRect childrenClip = clipRect;
     if (m_clip) {
@@ -360,9 +299,7 @@ void Item::setClip(bool c) {
 }
 
 int Item::leftPadding() const {
-    int p = m_leftPadding >= 0 ? m_leftPadding : m_padding;
-    if (m_border.style() != "none") p += 1;
-    return p;
+    return m_leftPadding >= 0 ? m_leftPadding : m_padding;
 }
 
 void Item::setLeftPadding(int p) {
@@ -373,9 +310,7 @@ void Item::setLeftPadding(int p) {
 }
 
 int Item::rightPadding() const {
-    int p = m_rightPadding >= 0 ? m_rightPadding : m_padding;
-    if (m_border.style() != "none") p += 1;
-    return p;
+    return m_rightPadding >= 0 ? m_rightPadding : m_padding;
 }
 
 void Item::setRightPadding(int p) {
@@ -386,9 +321,7 @@ void Item::setRightPadding(int p) {
 }
 
 int Item::topPadding() const {
-    int p = m_topPadding >= 0 ? m_topPadding : m_padding;
-    if (m_border.style() != "none") p += 1;
-    return p;
+    return m_topPadding >= 0 ? m_topPadding : m_padding;
 }
 
 void Item::setTopPadding(int p) {
@@ -399,9 +332,7 @@ void Item::setTopPadding(int p) {
 }
 
 int Item::bottomPadding() const {
-    int p = m_bottomPadding >= 0 ? m_bottomPadding : m_padding;
-    if (m_border.style() != "none") p += 1;
-    return p;
+    return m_bottomPadding >= 0 ? m_bottomPadding : m_padding;
 }
 
 void Item::setBottomPadding(int p) {

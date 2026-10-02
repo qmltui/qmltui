@@ -21,14 +21,19 @@ Terminal {
         spacing: 1
 
         // Title Header
-        Text {
+        Rectangle {
             width: parent.width
             height: 3
-            text: "Concept Demo: Layouts, Spacing & Padding"
-            color: "yellow"
-            backgroundColor: "#333333"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            color: "#333333"
+
+            Text {
+                anchors.fill: parent
+                text: "Concept Demo: Layouts, Spacing & Padding"
+                color: "yellow"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Padding Demo Section
@@ -38,25 +43,37 @@ Terminal {
             color: "cyan"
         }
 
-        Column {
+        Rectangle {
             width: parent.width
             height: 7
-            backgroundColor: "#222222"
+            color: "#222222"
             padding: 2
-            spacing: 0
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "Inside padded container - Child Line 1 (x offset is 2)"
-                color: "white"
-                backgroundColor: "red"
-            }
+            Column {
+                anchors.fill: parent
+                spacing: 0
 
-            Text {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                text: "Inside padded container - Child Line 2"
-                color: "white"
-                backgroundColor: "green"
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: "red"
+                    Text {
+                        anchors.fill: parent
+                        text: "Inside padded container - Child Line 1 (x offset is 2)"
+                        color: "white"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: "green"
+                    Text {
+                        anchors.fill: parent
+                        text: "Inside padded container - Child Line 2"
+                        color: "white"
+                    }
+                }
             }
         }
 
@@ -71,31 +88,43 @@ Terminal {
             spacing: 4
             width: parent.width
 
-            Text {
+            Rectangle {
                 width: 20
                 height: 3
-                text: "Row Item 1"
-                backgroundColor: "#444444"
-                color: "white"
-                horizontalAlignment: Qt.AlignHCenter
+                color: "#444444"
+                Text {
+                    anchors.fill: parent
+                    text: "Row Item 1"
+                    color: "white"
+                    horizontalAlignment: Qt.AlignHCenter
+                    verticalAlignment: Qt.AlignVCenter
+                }
             }
 
-            Text {
+            Rectangle {
                 width: 20
                 height: 3
-                text: "Row Item 2"
-                backgroundColor: "#444444"
-                color: "white"
-                horizontalAlignment: Qt.AlignHCenter
+                color: "#444444"
+                Text {
+                    anchors.fill: parent
+                    text: "Row Item 2"
+                    color: "white"
+                    horizontalAlignment: Qt.AlignHCenter
+                    verticalAlignment: Qt.AlignVCenter
+                }
             }
 
-            Text {
+            Rectangle {
                 width: 20
                 height: 3
-                text: "Row Item 3"
-                backgroundColor: "#444444"
-                color: "white"
-                horizontalAlignment: Qt.AlignHCenter
+                color: "#444444"
+                Text {
+                    anchors.fill: parent
+                    text: "Row Item 3"
+                    color: "white"
+                    horizontalAlignment: Qt.AlignHCenter
+                    verticalAlignment: Qt.AlignVCenter
+                }
             }
         }
 

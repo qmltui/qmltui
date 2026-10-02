@@ -21,14 +21,19 @@ Terminal {
         spacing: 1
 
         // Title Header with background color and bold text
-        Text {
+        Rectangle {
             width: parent.width
             height: 3
-            text: "Declarative Terminal UI Framework - Interactive Demo"
-            color: "cyan"
-            backgroundColor: "#222222"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            color: "#222222"
+
+            Text {
+                anchors.fill: parent
+                text: "Declarative Terminal UI Framework - Interactive Demo"
+                color: "cyan"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+            }
         }
 
         // Row of focusable widgets
@@ -36,16 +41,21 @@ Terminal {
             spacing: 4
 
             // Focusable Button 1
-            Text {
+            Rectangle {
                 id: opt1
                 width: 15
                 height: 3
                 focusable: true
-                text: activeFocus ? ">> Option 1 <<" : "   Option 1   "
-                color: activeFocus ? "white" : "silver"
-                backgroundColor: activeFocus ? "blue" : "#111111"
-                bold: activeFocus
-                
+                color: activeFocus ? "blue" : "#111111"
+
+                Text {
+                    anchors.fill: parent
+                    text: opt1.activeFocus ? ">> Option 1 <<" : "   Option 1   "
+                    color: opt1.activeFocus ? "white" : "silver"
+                    bold: opt1.activeFocus
+                    verticalAlignment: Qt.AlignVCenter
+                }
+
                 Keys.onPressed: (event) => {
                     if (event.key === Qt.Key_Return) {
                         statusText.text = "Selected Option 1 via Return Key!"
@@ -54,8 +64,7 @@ Terminal {
                 }
 
                 MouseArea {
-                    width: opt1.width
-                    height: opt1.height
+                    anchors.fill: parent
                     onClicked: (event) => {
                         opt1.focus = true
                         statusText.text = "Clicked Option 1!"
@@ -64,15 +73,20 @@ Terminal {
             }
 
             // Focusable Button 2
-            Text {
+            Rectangle {
                 id: opt2
                 width: 15
                 height: 3
                 focusable: true
-                text: activeFocus ? ">> Option 2 <<" : "   Option 2   "
-                color: activeFocus ? "white" : "silver"
-                backgroundColor: activeFocus ? "green" : "#111111"
-                bold: activeFocus
+                color: activeFocus ? "green" : "#111111"
+
+                Text {
+                    anchors.fill: parent
+                    text: opt2.activeFocus ? ">> Option 2 <<" : "   Option 2   "
+                    color: opt2.activeFocus ? "white" : "silver"
+                    bold: opt2.activeFocus
+                    verticalAlignment: Qt.AlignVCenter
+                }
 
                 Keys.onPressed: (event) => {
                     if (event.key === Qt.Key_Return) {
@@ -82,8 +96,7 @@ Terminal {
                 }
 
                 MouseArea {
-                    width: opt2.width
-                    height: opt2.height
+                    anchors.fill: parent
                     onClicked: (event) => {
                         opt2.focus = true
                         statusText.text = "Clicked Option 2!"
@@ -123,27 +136,31 @@ Terminal {
         Row {
             spacing: 2
 
-            Text {
+            Rectangle {
                 id: mouseDetector
                 width: 40
                 height: 5
-                backgroundColor: "#333333"
-                color: "white"
-                text: "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseArea.mouseX + ", " + mouseArea.mouseY + ")\nLast event: None"
+                color: "#333333"
+
+                Text {
+                    id: mouseDetectorText
+                    anchors.fill: parent
+                    color: "white"
+                    text: "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseArea.mouseX + ", " + mouseArea.mouseY + ")\nLast event: None"
+                }
 
                 MouseArea {
                     id: mouseArea
-                    width: mouseDetector.width
-                    height: mouseDetector.height
+                    anchors.fill: parent
                     
                     onPressed: (event) => {
-                        mouseDetector.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Pressed button " + event.button
+                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Pressed button " + event.button
                     }
                     onReleased: (event) => {
-                        mouseDetector.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Released button " + event.button
+                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Released button " + event.button
                     }
                     onClicked: (event) => {
-                        mouseDetector.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Clicked button " + event.button
+                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Clicked button " + event.button
                     }
                 }
             }

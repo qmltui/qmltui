@@ -292,26 +292,38 @@ Terminal {
                 bold: true
             }
 
-            Text {
-                text: (root.permissionIndex === 0 ? "> " : "  ") + qsTr("Allow once")
-                color: root.permissionIndex === 0 ? "black" : "white"
-                backgroundColor: root.permissionIndex === 0 ? "yellow" : "transparent"
-                bold: root.permissionIndex === 0
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: root.permissionIndex === 0 ? "yellow" : "transparent"
+                Text {
+                    text: (root.permissionIndex === 0 ? "> " : "  ") + qsTr("Allow once")
+                    color: root.permissionIndex === 0 ? "black" : "white"
+                    bold: root.permissionIndex === 0
+                }
             }
 
-            Text {
-                text: (root.permissionIndex === 1 ? "> " : "  ")
-                      + qsTr("Always allow for this session")
-                color: root.permissionIndex === 1 ? "black" : "white"
-                backgroundColor: root.permissionIndex === 1 ? "yellow" : "transparent"
-                bold: root.permissionIndex === 1
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: root.permissionIndex === 1 ? "yellow" : "transparent"
+                Text {
+                    text: (root.permissionIndex === 1 ? "> " : "  ")
+                          + qsTr("Always allow for this session")
+                    color: root.permissionIndex === 1 ? "black" : "white"
+                    bold: root.permissionIndex === 1
+                }
             }
 
-            Text {
-                text: (root.permissionIndex === 2 ? "> " : "  ") + qsTr("Deny")
-                color: root.permissionIndex === 2 ? "black" : "white"
-                backgroundColor: root.permissionIndex === 2 ? "yellow" : "transparent"
-                bold: root.permissionIndex === 2
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: root.permissionIndex === 2 ? "yellow" : "transparent"
+                Text {
+                    text: (root.permissionIndex === 2 ? "> " : "  ") + qsTr("Deny")
+                    color: root.permissionIndex === 2 ? "black" : "white"
+                    bold: root.permissionIndex === 2
+                }
             }
 
             Text {

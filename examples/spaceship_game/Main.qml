@@ -138,7 +138,7 @@ Terminal {
         id: enemiesModel
     }
 
-    Item {
+    Rectangle {
         id: gameArea
         anchors.fill: parent
         anchors.topMargin: 2

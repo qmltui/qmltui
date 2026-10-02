@@ -8,7 +8,7 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
   - *Methods*: `print(string)` (appends text in Stream mode), `append(Item)` (renders and appends a QML item in Stream mode).
 - `StreamAppender`: Observes a `QAbstractItemModel` and appends inserted rows through a QML delegate, including `DelegateChooser`. Role names and values are application-defined. Existing rows are append-only; updates and removals do not rewrite streamed output.
 - `Item`: The base visual element. All other elements inherit from it. Provides positioning and sizing logic.
-  - *Properties*: `x`, `y`, `width`, `height`, `implicitWidth`, `implicitHeight`, `clip`, `visible`, `focusable`.
+  - *Properties*: `x`, `y`, `z`, `width`, `height`, `implicitWidth`, `implicitHeight`, `clip`, `visible`, `focusable`. Siblings render by ascending `z`; equal values retain declaration order.
 - `Text`: Renders colored text. Supports multiline wrapping.
   - *Properties*: `text` (string), `color` (string, e.g. "red", "#FF0000"), `attributes` (bitmask of `Text.Bold`, `Text.Underline`, etc.), `textFormat` (`Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`).
 - `MouseArea`: Invisible component that intercepts mouse clicks and scrolls.
@@ -40,6 +40,12 @@ The `Qtui.Controls` module provides `Button`, `ButtonGroup`, `CheckBox`,
 `RadioButton`, `Switch`, `Slider`, `Spinner`, `Panel`, `Dialog`, and
 `ConfirmationDialog`. Reusable controls expose content-derived implicit sizes;
 applications remain free to assign explicit dimensions.
+
+Any item can declare an attached text tooltip with `ToolTip.text`. Tooltips
+appear after `ToolTip.delay` on pointer hover or keyboard focus, hide after
+`ToolTip.timeout`, and can be controlled explicitly through `ToolTip.visible`.
+Popups support `owner` relationships; closing an owner closes its descendant
+overlays, and nested modal popups retain an isolated focus and input scope.
 
 ## Widgets
 

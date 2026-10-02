@@ -8,14 +8,14 @@ Developers use `ColorMapper` when mapping QML string color properties into inter
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/core/ColorMapper.h`
-- **Implementation**: `Tui/src/core/ColorMapper.cpp`
-- **Dependencies**: Qt Core (`QString`, `QColor`).
+- **Header**: `Terminal/src/core/ColorMapper.h`
+- **Implementation**: `Terminal/src/core/ColorMapper.cpp`
+- **Dependencies**: Qt Core (`QString`, `QHash`).
 
 ## 9. Public Methods
 
 #### static uint32_t fromString(const QString& colorString, uint32_t defaultColor = 0xFFFFFFFF)
-Parses a color string into a 32-bit ARGB integer. Returns `defaultColor` if `colorString` is invalid or unparseable.
+Parses a color string into a 32-bit ARGB integer. Returns `defaultColor` if `colorString` is empty, invalid, or unparseable. Supports `#RRGGBB`, `#AARRGGBB`, `#RGB` hex formats, and standard named colors (e.g., `"transparent"`, `"black"`, `"white"`, `"red"`, `"blue"`, `"green"`).
 
 ## 16. Usage Example
 

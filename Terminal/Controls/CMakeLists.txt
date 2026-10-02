@@ -1,6 +1,9 @@
 qt_add_qml_module(QtuiControls
     URI Qtui.Controls
     PLUGIN_TARGET QtuiControlsPlugin
+    SOURCES
+        ToolTip.h
+        ToolTip.cpp
     QML_FILES
         Button.qml
         ButtonGroup.qml

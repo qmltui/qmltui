@@ -7,17 +7,16 @@ Qtui includes buttons, checkboxes, radio buttons, switches, sliders, dialogs,
 text inputs, and text areas. Remaining gaps include combo boxes, dropdowns,
 menus, and a general progress control.
 
-## 2. Layering & Popups (Z-Index)
-Currently, the rendering pipeline relies entirely on tree traversal order (Painter's algorithm) based on QML declarative ordering.
-- **Z-Index Property**: There is no dynamic `z` property to force an item to render above a sibling defined later in the QML file.
-- **General overlay stacking**: `Popup` and modal dialogs are supported, but
-  arbitrary z-ordering and multiple overlay layers remain limited.
-- **Context Menus**: There is no dedicated context-menu control or reusable
-  menu model yet.
+## 2. Overlay Controls
+Dynamic `z` ordering, owned popup stacks, nested modality, and attached text
+tooltips are supported. Remaining gaps are dedicated context-menu and menu
+controls, reusable menu models, and arbitrary custom-content tooltips.
 
 ## 3. Rich Interactions
 - **Drag & Drop**: No API currently exists for initiating drag operations, visualizing dragged items, or defining drop targets.
-- **Mouse Hover Tracking**: Terminals support `ANY_EVENT_MOUSE` to track mouse movements even without buttons pressed. Currently, Qtui only captures explicit clicks and scrolls. Enabling hover would allow for tooltip popups and button hover-state styling.
+- **Public hover styling**: Hover tracking powers tooltips internally, but a
+  public `hovered` state and enter/leave signals for general control styling
+  are not yet exposed.
 
 ## 4. Advanced Styling
 - **Theming / Stylesheets**: Colors and styling are hardcoded per item (`color: "red"`). A robust styling system (like QSS or CSS) that allows global themes (Dark/Light mode) without repeating properties everywhere would significantly improve developer experience.

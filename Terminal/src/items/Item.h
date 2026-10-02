@@ -50,6 +50,7 @@ class Item : public QObject {
 
   Q_PROPERTY(int x READ x WRITE setX NOTIFY xChanged)
   Q_PROPERTY(int y READ y WRITE setY NOTIFY yChanged)
+  Q_PROPERTY(qreal z READ z WRITE setZ NOTIFY zChanged)
   Q_PROPERTY(int width READ width WRITE setWidth NOTIFY widthChanged)
   Q_PROPERTY(int height READ height WRITE setHeight NOTIFY heightChanged)
   Q_PROPERTY(int implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY
@@ -97,12 +98,15 @@ public:
   void setState(const QString& newState);
   void evaluateStateConditions();
   const QList<qtui::Item *> &childItems() const { return m_visualChildren; }
+  const QList<qtui::Item *> &stackingChildren() const;
 
   int x() const { return m_x; }
   void setX(int x);
 
   int y() const { return m_y; }
   void setY(int y);
+  qreal z() const { return m_z; }
+  void setZ(qreal z);
 
   virtual int width() const;
   virtual void setWidth(int width);
@@ -177,6 +181,7 @@ public:
 signals:
   void xChanged();
   void yChanged();
+  void zChanged();
   void widthChanged();
   void heightChanged();
   void implicitWidthChanged();
@@ -197,6 +202,7 @@ signals:
   void dirty(); // For bubbling up render requests
 
 private:
+  void invalidateStackingOrder();
   void scheduleChildGeometryInvalidation();
   static void appendData(QQmlListProperty<QObject> *list, QObject *item);
   static qsizetype dataCount(QQmlListProperty<QObject> *list);
@@ -218,6 +224,7 @@ protected:
 
   int m_x = 0;
   int m_y = 0;
+  qreal m_z = 0;
   int m_width = -1;
   int m_height = -1;
   int m_implicitWidth = 0;
@@ -242,6 +249,8 @@ protected:
   int m_bottomPadding = -1;
   QList<QObject*> m_dataChildren;
   QList<Item *> m_visualChildren;
+  mutable QList<Item *> m_stackingChildren;
+  mutable bool m_stackingOrderDirty = true;
 
   QString m_stateName;
   QList<qtui::State*> m_statesList;

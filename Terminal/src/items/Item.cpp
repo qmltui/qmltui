@@ -4,6 +4,7 @@
 #include "../engine/KeyEvent.h"
 #include "../engine/MouseEvent.h"
 #include "Terminal.h"
+#include "Popup.h"
 #include "../core/ColorMapper.h"
 #include "../engine/State.h"
 #include "../engine/Transition.h"
@@ -11,6 +12,7 @@
 #include <QSet>
 #include <QChildEvent>
 #include <QPointer>
+#include <algorithm>
 
 namespace qtui {
 
@@ -26,6 +28,7 @@ Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
         if (Item* parentItem = qobject_cast<Item*>(parent)) {
             if (!parentItem->m_visualChildren.contains(this)) {
                 parentItem->m_visualChildren.append(this);
+                parentItem->invalidateStackingOrder();
                 parentItem->markDirty();
             }
         }
@@ -55,6 +58,7 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
         if (Item* item = qobject_cast<Item*>(obj)) {
             if (!self->m_visualChildren.contains(item)) {
                 self->m_visualChildren.append(item);
+                self->invalidateStackingOrder();
                 self->markDirty();
             }
         }
@@ -76,6 +80,7 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
     if (self) {
         self->m_dataChildren.clear();
         self->m_visualChildren.clear();
+        self->invalidateStackingOrder();
         self->markDirty();
     }
 }
@@ -91,6 +96,7 @@ void Item::removeChildItem(Item *child) {
     // QObject parenting change handles this via childEvent, but we keep this method
     // in case external callers explicitly call it.
     if (m_visualChildren.removeOne(child)) {
+        invalidateStackingOrder();
         markDirty();
     }
 }
@@ -107,6 +113,27 @@ void Item::setY(int y) {
     m_y = y;
     emit yChanged();
     markDirty();
+}
+
+void Item::setZ(qreal z) {
+    if (qFuzzyCompare(m_z, z)) return;
+    m_z = z;
+    if (Item *p = parentItem()) p->invalidateStackingOrder();
+    emit zChanged();
+    markDirty();
+}
+
+void Item::invalidateStackingOrder() {
+    m_stackingOrderDirty = true;
+}
+
+const QList<Item *> &Item::stackingChildren() const {
+    if (!m_stackingOrderDirty) return m_stackingChildren;
+    m_stackingChildren = m_visualChildren;
+    std::stable_sort(m_stackingChildren.begin(), m_stackingChildren.end(),
+        [](const Item *a, const Item *b) { return a && b ? a->z() < b->z() : a != nullptr; });
+    m_stackingOrderDirty = false;
+    return m_stackingChildren;
 }
 
 void Item::setWidth(int width) {
@@ -288,6 +315,7 @@ void Item::childEvent(QChildEvent* event) {
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
             if (!m_visualChildren.contains(childItem)) {
                 m_visualChildren.append(childItem);
+                invalidateStackingOrder();
                 auto childGeometryChanged = [this]() {
                     scheduleChildGeometryInvalidation();
                 };
@@ -310,6 +338,7 @@ void Item::childEvent(QChildEvent* event) {
             for (const QMetaObject::Connection &connection : connections)
                 disconnect(connection);
             m_visualChildren.removeOne(childItem);
+            invalidateStackingOrder();
             markDirty();
         }
     }
@@ -343,7 +372,8 @@ void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     }
 
     // Render children back-to-front (Painter's Algorithm)
-    for (Item* childItem : m_visualChildren) {
+    for (Item* childItem : stackingChildren()) {
+        if (qobject_cast<Popup*>(childItem) && childItem->visible()) continue;
         if (childItem) {
             childItem->render(buffer, absX + childItem->x(), absY + childItem->y(), childrenClip);
         }

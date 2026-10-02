@@ -41,10 +41,34 @@ void Popup::setInitialFocusItem(Item *item) {
     emit initialFocusItemChanged();
 }
 
+void Popup::setOwner(Item *owner) {
+    if (m_owner == owner) return;
+    m_owner = owner;
+    emit ownerChanged();
+}
+
+Popup *Popup::parentPopup() const {
+    for (Item *current = m_owner ? m_owner.data() : parentItem(); current;
+         current = current->parentItem()) {
+        if (auto *popup = qobject_cast<Popup*>(current)) return popup;
+    }
+    return nullptr;
+}
+
+bool Popup::isDescendantOfPopup(const Popup *popup) const {
+    for (const Popup *current = parentPopup(); current; current = current->parentPopup())
+        if (current == popup) return true;
+    return false;
+}
+
 void Popup::open() {
     if (Terminal *term = terminal())
         m_previousFocusItem = term->focusedItem();
-    setVisible(true);
+    if (visible()) {
+        if (Terminal *term = terminal()) term->registerPopup(this);
+    } else {
+        setVisible(true);
+    }
     if (Terminal *term = terminal()) {
         Item *target = m_initialFocusItem;
         if (!target || !target->visible() || !target->isEffectivelyEnabled() || !target->focusable()) {
@@ -52,7 +76,8 @@ void Popup::open() {
             term->findFocusableItems(this, focusable);
             target = focusable.isEmpty() ? nullptr : focusable.first();
         }
-        term->setFocusedItem(target);
+        if (target || m_modal)
+            term->setFocusedItem(target);
     }
 }
 

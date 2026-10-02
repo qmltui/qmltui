@@ -3,6 +3,7 @@
 #include "../engine/FrameRenderer.h"
 #include "../engine/StreamRenderer.h"
 #include "Popup.h"
+#include <algorithm>
 
 namespace qtui {
 
@@ -40,15 +41,53 @@ void Terminal::setUseAlternateScreen(bool use) {
 }
 
 void Terminal::registerPopup(Popup* popup) {
-    if (!popup || m_popups.contains(popup)) return;
+    if (!popup) return;
+    m_popups.removeOne(popup);
+    popup->setOpenSerial(++m_popupSerial);
     m_popups.append(popup);
     markDirty();
 }
 
 void Terminal::unregisterPopup(Popup* popup) {
     if (!popup || !m_popups.contains(popup)) return;
+    const QList<Popup*> ordered = orderedPopups();
+    for (auto it = ordered.crbegin(); it != ordered.crend(); ++it)
+        if (*it && (*it)->visible() && (*it)->isDescendantOfPopup(popup)) (*it)->close();
     m_popups.removeOne(popup);
     markDirty();
+}
+
+QList<Popup*> Terminal::orderedPopups() const {
+    QList<Popup*> result = m_popups;
+    std::stable_sort(result.begin(), result.end(), [](const Popup *a, const Popup *b) {
+        if (!a || !b) return a != nullptr;
+        if (!qFuzzyCompare(a->z(), b->z())) return a->z() < b->z();
+        return a->openSerial() < b->openSerial();
+    });
+    Popup *modalBarrier = nullptr;
+    for (auto it = result.crbegin(); it != result.crend(); ++it) {
+        if (*it && (*it)->visible() && (*it)->modal()) { modalBarrier = *it; break; }
+    }
+    if (modalBarrier) {
+        QList<Popup*> below;
+        QList<Popup*> group;
+        for (Popup *popup : result) {
+            if (popup == modalBarrier || (popup && popup->isDescendantOfPopup(modalBarrier)))
+                group.append(popup);
+            else
+                below.append(popup);
+        }
+        below.append(group);
+        result = below;
+    }
+    return result;
+}
+
+Popup *Terminal::topModalPopup() const {
+    const QList<Popup*> ordered = orderedPopups();
+    for (auto it = ordered.crbegin(); it != ordered.crend(); ++it)
+        if (*it && (*it)->visible() && (*it)->modal()) return *it;
+    return nullptr;
 }
 
 void Terminal::setFocusedItem(Item* item) {
@@ -66,6 +105,13 @@ void Terminal::setFocusedItem(Item* item) {
     if (m_focusedItem) {
         m_focusedItem->setActiveFocus(true);
     }
+    emit focusedItemChanged();
+}
+
+void Terminal::setHoveredItem(Item *item) {
+    if (m_hoveredItem == item) return;
+    m_hoveredItem = item;
+    emit hoveredItemChanged();
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
@@ -172,7 +218,7 @@ void Terminal::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect
     Rectangle::render(buffer, absX, absY, clipRect);
     
     // Render popups as absolute overlay layers on top of everything
-    for (Popup* popup : m_popups) {
+    for (Popup* popup : orderedPopups()) {
         if (popup && popup->visible()) {
             if (popup->modal() && popup->dimBackground()) {
                 dimBuffer(buffer, clipRect);

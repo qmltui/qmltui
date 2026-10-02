@@ -8,8 +8,8 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/items/Rectangle.h`
-- **Implementation**: `Tui/src/items/Rectangle.cpp`
+- **Header**: `Terminal/src/items/Rectangle.h`
+- **Implementation**: `Terminal/src/items/Rectangle.cpp`
 - **Dependencies**: `Item.h`, `Border.h`, `ColorMapper.h`.
 
 ## 3. Class Hierarchy and Role
@@ -24,6 +24,11 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 | `color` | `QString` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
 | `border` | `Border*` | `border` | — | — | Attached border configuration (`style`, `color`). |
 
+## 7. Signals
+
+#### void colorChanged()
+Emitted when the background color changes.
+
 ## 9. Public Methods
 
 #### uint32_t resolvedBgColor() const
@@ -31,6 +36,18 @@ Returns the 32-bit ARGB integer value of the background color.
 
 #### Border* border()
 Returns a pointer to the attached `Border` object configuring border style and border color.
+
+#### int leftPadding() const [override]
+Returns the left padding, accounting for the left border width.
+
+#### int rightPadding() const [override]
+Returns the right padding, accounting for the right border width.
+
+#### int topPadding() const [override]
+Returns the top padding, accounting for the top border width.
+
+#### int bottomPadding() const [override]
+Returns the bottom padding, accounting for the bottom border width.
 
 ## 10. Protected Virtual Methods / Event Handlers
 

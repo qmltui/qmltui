@@ -10,8 +10,6 @@ Terminal {
     }
 
     id: rootWindow
-    width: 80
-    height: 24
     color: "black"
     useAlternateScreen: true
 

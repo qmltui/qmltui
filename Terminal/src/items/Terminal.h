@@ -16,6 +16,7 @@ class Terminal : public Rectangle {
   Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
   Q_PROPERTY(RendererMode rendererMode READ rendererMode WRITE setRendererMode NOTIFY rendererModeChanged)
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
+  Q_PROPERTY(qtui::Item* hoveredItem READ hoveredItem NOTIFY hoveredItemChanged)
 
 public:
   enum class RendererMode {
@@ -42,6 +43,8 @@ public:
   void registerPopup(Popup* popup);
   void unregisterPopup(Popup* popup);
   const QList<Popup*>& activePopups() const { return m_popups; }
+  QList<Popup*> orderedPopups() const;
+  Popup *topModalPopup() const;
 
   bool fillTerminal() const { return m_fillTerminal; }
   void setFillTerminal(bool fill);
@@ -53,6 +56,8 @@ public:
 
   Item* focusedItem() const { return m_focusedItem.data(); }
   void setFocusedItem(Item* item);
+  Item* hoveredItem() const { return m_hoveredItem.data(); }
+  void setHoveredItem(Item* item);
 
   void findFocusableItems(Item* root, QList<Item*>& list);
 
@@ -70,11 +75,15 @@ signals:
   void rendererModeChanged();
   void clipboardModeChanged();
   void clipboardCopyRequested(const QString& text);
+  void focusedItemChanged();
+  void hoveredItemChanged();
 
 private:
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;
+  QPointer<Item> m_hoveredItem;
   QList<Popup*> m_popups;
+  quint64 m_popupSerial = 0;
   bool m_useAlternateScreen = true;
   bool m_fillTerminal = true;
   bool m_fillTerminalExplicit = false;

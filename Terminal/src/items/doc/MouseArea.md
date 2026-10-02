@@ -8,8 +8,8 @@ Developers use `MouseArea` to handle mouse clicks and hover tracking in QML layo
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/items/MouseArea.h`
-- **Implementation**: `Tui/src/items/MouseArea.cpp`
+- **Header**: `Terminal/src/items/MouseArea.h`
+- **Implementation**: `Terminal/src/items/MouseArea.cpp`
 - **Dependencies**: `Item.h`, `MouseEvent.h`.
 
 ## 3. Class Hierarchy and Role
@@ -26,14 +26,25 @@ Developers use `MouseArea` to handle mouse clicks and hover tracking in QML layo
 
 ## 7. Signals
 
-#### void pressed(MouseEvent *event)
-Emitted when a mouse button is pressed inside the MouseArea.
+#### void mouseXChanged()
+Emitted when the relative X coordinate of the mouse cursor changes.
 
-#### void released(MouseEvent *event)
-Emitted when a mouse button is released over the MouseArea.
+#### void mouseYChanged()
+Emitted when the relative Y coordinate of the mouse cursor changes.
 
-#### void clicked(MouseEvent *event)
-Emitted when a mouse press and release sequence completes within the MouseArea.
+#### void pressed(qtui::MouseEvent *event)
+Emitted when a mouse button is pressed inside the MouseArea bounds.
+
+#### void released(qtui::MouseEvent *event)
+Emitted when a mouse button is released over the MouseArea bounds.
+
+#### void clicked(qtui::MouseEvent *event)
+Emitted when a mouse press and release sequence completes within the MouseArea bounds.
+
+## 9. Public Methods
+
+#### void setMousePosition(int x, int y)
+Manually updates the recorded cursor coordinates relative to this MouseArea.
 
 ## 13. QML Exposure
 
@@ -41,15 +52,18 @@ Registered as `MouseArea` in the `Tui` module via `QML_ELEMENT`.
 
 ## 16. Usage Example
 
-```qml
-import QtQml 2.15
-import Qtui
+```cpp
+#include "MouseArea.h"
+#include <QDebug>
 
-MouseArea {
-    width: 20
-    height: 3
-    onClicked: (event) => {
-        console.log("Mouse clicked at:", event.x, event.y)
-    }
-}
+using namespace qtui;
+
+// In a parent item initialization:
+MouseArea* area = new MouseArea(parentItem);
+area->setWidth(20);
+area->setHeight(3);
+
+QObject::connect(area, &MouseArea::clicked, [](MouseEvent* event) {
+    qDebug() << "Mouse clicked at:" << event->x() << event->y();
+});
 ```

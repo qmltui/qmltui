@@ -10,6 +10,7 @@
 #include "KeyEvent.h"
 #include "MouseEvent.h"
 #include "Keys.h"
+#include "Shortcut.h"
 #include <QCoreApplication>
 #include <QMetaObject>
 #include <QSet>
@@ -182,7 +183,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_renderer = new FrameRenderer();
 
   // Enable mouse events: press, release, drag, SGR 1006 format
-  m_device.write("\033[?1000h\033[?1002h\033[?1006h\033[?2004h");
+  m_device.write("\033[?1000h\033[?1002h\033[?1003h\033[?1006h\033[?2004h");
 
   handleResize();
 
@@ -208,7 +209,7 @@ TerminalEngine::~TerminalEngine() {
   if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance())
       bridge->unregisterEngine(this);
 #endif
-  m_device.write("\033[?1000l\033[?1002l\033[?1006l\033[?2004l");
+  m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
   }
@@ -278,7 +279,58 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 
   KeyEvent event(key, text, modifiers);
 
-  const QList<Popup*>& popups = m_rootWindow->activePopups();
+  for (Shortcut* sc : activeShortcuts()) {
+      if (sc && sc->enabled() && sc->sequence() == key) {
+          emit sc->activated();
+          return;
+      }
+  }
+
+  auto dispatchToItem = [](Item* item, KeyEvent& ev) {
+      if (!item->isEffectivelyEnabled()) return;
+
+      Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, false));
+      bool beforeItem = attached && (attached->priority() == Keys::BeforeItem);
+
+      auto emitAttachedSignals = [&]() {
+          if (!attached) return;
+          if (ev.key() == Qt::Key_Return || ev.key() == Qt::Key_Enter) emit attached->returnPressed(&ev);
+          else if (ev.key() == Qt::Key_Escape) emit attached->escapePressed(&ev);
+          else if (ev.key() == Qt::Key_Space) emit attached->spacePressed(&ev);
+          else if (ev.key() == Qt::Key_Up) emit attached->upPressed(&ev);
+          else if (ev.key() == Qt::Key_Down) emit attached->downPressed(&ev);
+          else if (ev.key() == Qt::Key_Left) emit attached->leftPressed(&ev);
+          else if (ev.key() == Qt::Key_Right) emit attached->rightPressed(&ev);
+          else if (ev.key() == Qt::Key_Tab) emit attached->tabPressed(&ev);
+          if (!ev.isAccepted()) emit attached->pressed(&ev);
+      };
+
+      if (beforeItem) {
+          emitAttachedSignals();
+          if (ev.isAccepted()) return;
+          item->keyPressEvent(&ev);
+      } else {
+          item->keyPressEvent(&ev);
+          if (ev.isAccepted()) return;
+          emitAttachedSignals();
+      }
+
+      if (!ev.isAccepted() && attached) {
+          for (Item* forwardedItem : attached->forwardToItems()) {
+              if (forwardedItem && forwardedItem->isEffectivelyEnabled()) {
+                  forwardedItem->keyPressEvent(&ev);
+                  if (ev.isAccepted()) return;
+                  Keys* fwdAttached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(forwardedItem, false));
+                  if (fwdAttached) {
+                      emit fwdAttached->pressed(&ev);
+                      if (ev.isAccepted()) return;
+                  }
+              }
+          }
+      }
+  };
+
+  const QList<Popup*> popups = m_rootWindow->orderedPopups();
   Popup* activeModalPopup = nullptr;
   for (int i = popups.size() - 1; i >= 0; --i) {
       Popup* p = popups[i];
@@ -289,8 +341,15 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
   }
 
   if (activeModalPopup) {
-      if (key == Qt::Key_Escape && (activeModalPopup->closePolicy() & Popup::CloseOnEscape)) {
-          activeModalPopup->reject();
+      Popup *topPopup = activeModalPopup;
+      for (auto it = popups.crbegin(); it != popups.crend(); ++it)
+          if (*it && (*it)->visible()
+              && (*it == activeModalPopup || (*it)->isDescendantOfPopup(activeModalPopup))) {
+              topPopup = *it;
+              break;
+          }
+      if (key == Qt::Key_Escape && (topPopup->closePolicy() & Popup::CloseOnEscape)) {
+          topPopup->reject();
           return;
       }
       
@@ -298,15 +357,8 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
       Item* current = (focused && isDescendantOf(focused, activeModalPopup)) ? focused : activeModalPopup;
       
       while (current) {
-          if (current->isEffectivelyEnabled())
-              current->keyPressEvent(&event);
+          dispatchToItem(current, event);
           if (event.isAccepted()) break;
-
-          Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(current, false));
-          if (attached) {
-              emit attached->pressed(&event);
-              if (event.isAccepted()) break;
-          }
           
           if (current == activeModalPopup) break;
           current = qobject_cast<Item*>(current->parent());
@@ -320,21 +372,25 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
       return;
   }
 
+  if (key == Qt::Key_Escape) {
+      for (auto it = popups.crbegin(); it != popups.crend(); ++it) {
+          Popup *popup = *it;
+          if (popup && popup->visible() && (popup->closePolicy() & Popup::CloseOnEscape)) {
+              popup->reject();
+              return;
+          }
+      }
+  }
+
   Item* focused = m_rootWindow->focusedItem();
   if (focused && (!focused->visible() || !focused->isEffectivelyEnabled()))
       m_rootWindow->setFocusedItem(nullptr);
   Item* current = m_rootWindow->focusedItem() ? m_rootWindow->focusedItem() : m_rootWindow;
 
   while (current) {
-    if (current->isEffectivelyEnabled())
-      current->keyPressEvent(&event);
+    dispatchToItem(current, event);
     if (event.isAccepted()) break;
 
-    Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(current, false));
-    if (attached) {
-      emit attached->pressed(&event);
-      if (event.isAccepted()) break;
-    }
     current = qobject_cast<Item*>(current->parent());
   }
 
@@ -349,12 +405,15 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion) {
   if (!m_rootWindow) return;
+  if (motion) m_rootWindow->setHoveredItem(nullptr);
 
-  const QList<Popup*>& popups = m_rootWindow->activePopups();
+  const QList<Popup*> popups = m_rootWindow->orderedPopups();
+  Popup *activeModal = m_rootWindow->topModalPopup();
   
   for (int i = popups.count() - 1; i >= 0; --i) {
       Popup* popup = popups[i];
       if (!popup || !popup->visible()) continue;
+      if (activeModal && popup != activeModal && !popup->isDescendantOfPopup(activeModal)) continue;
       
       QPoint absPos = popup->absolutePosition();
       bool inside = (x >= absPos.x() && x < absPos.x() + popup->width() &&
@@ -365,6 +424,7 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
           int parentAbsY = absPos.y() - popup->y();
           Item* target = hitTestItem(popup, x, y, parentAbsX, parentAbsY);
           if (target) {
+              if (motion) m_rootWindow->setHoveredItem(target);
               int targetAbsX = target->absolutePosition().x();
               int targetAbsY = target->absolutePosition().y();
               int localX = x - targetAbsX;
@@ -410,6 +470,7 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
           if (popup->closePolicy() & Popup::CloseOnOutsideClick) {
               if (release) {
                   popup->reject();
+                  return;
               }
           }
           if (popup->modal()) {
@@ -418,7 +479,10 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
       }
   }
 
+  if (activeModal) return;
+
   Item* target = hitTestItem(m_rootWindow, x, y, 0, 0);
+  if (motion) m_rootWindow->setHoveredItem(target);
   if (target) {
     int targetAbsX = target->absolutePosition().x();
     int targetAbsY = target->absolutePosition().y();
@@ -514,7 +578,7 @@ Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX
     if (scrollY.isValid()) childParentAbsY -= scrollY.toInt();
   }
 
-  const auto& children = item->childItems();
+  const auto& children = item->stackingChildren();
   for (int i = children.size() - 1; i >= 0; --i) {
     Item* child = children[i];
     Item* hit = hitTestItem(child, absX, absY, childParentAbsX, childParentAbsY);

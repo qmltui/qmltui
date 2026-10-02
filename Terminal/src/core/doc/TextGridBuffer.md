@@ -2,19 +2,18 @@
 
 ## 1. Class Overview
 
-`TextGridBuffer` is the core off-screen rendering canvas for Qtui. It represents a 2D grid of terminal cells (`Cell`), where each cell stores UTF-8 character bytes, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
+`TextGridBuffer` is the core off-screen rendering canvas for Qtui. It represents a 2D grid of terminal cells (`Cell`), where each cell stores UTF-8 character bytes, visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
 
 `TextGridBuffer` provides low-level character drawing primitives (`writeText`, `drawLine`, `drawBox`, `fillRect`) and efficient differential ANSI sequence generation (`diff`, `diffRelative`). The rendering engine uses `TextGridBuffer` to compare the previous frame with the current frame and emit minimal ANSI escape codes to the terminal output.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/core/TextGridBuffer.h`
-- **Implementation**: `Tui/src/core/TextGridBuffer.cpp`
+- **Header**: `Terminal/src/core/TextGridBuffer.h`
+- **Implementation**: `Terminal/src/core/TextGridBuffer.cpp`
 - **Dependencies**:
   - `Cell.h` — provides `Cell` struct and `TextAttribute` enum.
   - Standard C++ Library (`<vector>`, `<string>`).
-  - Qt Core (`QString`, `QByteArray`).
-- **Build Requirements**: Links against the `Qtui::Core` library target.
+  - Qt Core (`QString`).
 
 ## 3. Class Hierarchy and Role
 
@@ -23,11 +22,14 @@
 
 ## 9. Public Methods
 
-#### void resize(int width, int height)
-Resizes the 2D cell grid buffer to the specified width and height in terminal character columns and rows, resetting all cells to empty spaces.
+#### bool resize(int width, int height)
+Resizes the 2D cell grid buffer to the specified width and height in terminal character columns and rows. All cells are reset to empty spaces with default formatting. Returns `true` if the size changed, otherwise `false`.
 
 #### void clear()
-Clears the contents of the buffer, filling every cell with space characters and resetting colors to default foreground/background.
+Clears the contents of the buffer, filling every cell with space characters and resetting colors and attributes to defaults.
+
+#### void swap(TextGridBuffer& other) noexcept
+Efficiently swaps the internal state of this buffer with another `TextGridBuffer` instance.
 
 #### int width() const
 Returns the current width of the grid buffer in terminal character columns.
@@ -42,7 +44,7 @@ Returns a mutable reference to the cell at grid coordinates (x, y). If (x, y) is
 Returns a read-only reference to the cell at grid coordinates (x, y).
 
 #### void writeText(int x, int y, const QString& text, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
-Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). Automatically decodes multi-byte UTF-8 sequences (up to 4 bytes per cell) and assigns foreground/background colors and text attributes.
+Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). Automatically decodes multi-byte UTF-8 sequences and assigns foreground/background colors and text attributes.
 
 #### void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000)
 Draws a straight line from (x1, y1) to (x2, y2) using Bresenham's line algorithm with the specified character string and colors.

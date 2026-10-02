@@ -8,10 +8,9 @@ Developers interact with `TerminalEngine` when setting up top-level application 
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/engine/TerminalEngine.h`
-- **Implementation**: `Tui/src/engine/TerminalEngine.cpp`
+- **Header**: `Terminal/src/engine/TerminalEngine.h`
+- **Implementation**: `Terminal/src/engine/TerminalEngine.cpp`
 - **Dependencies**: `TerminalDevice.h`, `InputDecoder.h`, `Renderer.h`, `Terminal.h`, `Item.h`.
-- **Build Requirements**: Links against the `Qtui::Core` library target.
 
 ## 3. Class Hierarchy and Role
 
@@ -43,9 +42,15 @@ Prints raw text to the terminal device.
 #### void append(qtui::Item* item)
 Appends a child item to the root window hierarchy.
 
+#### void copyToClipboard(const QString& text)
+Copies the given text to the system clipboard, utilizing OSC 52 sequences if configured.
+
+#### static std::string osc52Sequence(const QString& text)
+Generates the ANSI escape sequence for copying the given text to the clipboard using the OSC 52 protocol.
+
 ## 11. Ownership and Lifecycle
 
-`TerminalEngine` is owned by `Terminal` or parent `QObject`. On destruction, it restores standard terminal POSIX mode and shows the cursor.
+`TerminalEngine` is owned by `Terminal` or parent `QObject`. On destruction, it restores standard terminal POSIX/Windows mode and shows the cursor.
 
 ## 12. Thread Safety
 
@@ -59,8 +64,8 @@ Single-threaded. Runs on the main Qt GUI event loop thread.
 
 ## 15. External Communication
 
-- **POSIX Signals**: Captures `SIGWINCH` signal to handle terminal window resizing.
-- **Standard I/O**: Reads `stdin` (fd 0) asynchronously via `QSocketNotifier` and writes ANSI buffer sequences to `stdout` (fd 1).
+- **POSIX Signals**: Captures `SIGWINCH` signal on POSIX to handle terminal window resizing.
+- **Standard I/O**: Reads `stdin` asynchronously via `QSocketNotifier` and writes ANSI buffer sequences to `stdout`.
 
 ## 16. Usage Example
 

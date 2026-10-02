@@ -4,30 +4,18 @@ import Qtui
 Terminal {
     id: rootWindow
 
-    function handleItemKey(itemName, event) {
-        const navigationKey = event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab
-        const quitKey = event.key === Qt.Key_Escape || event.key === Qt.Key_Q
-        if (navigationKey || quitKey)
-            return
-
-        logText.text = qsTr("%1 received key: %2 (code: %3)")
-                       .arg(itemName)
-                       .arg(event.text)
-                       .arg(event.key)
-        event.accepted = true
-    }
-
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    width: 80
-    height: 24
     color: "black"
     useAlternateScreen: true
+
+    // 1. Declarative Shortcuts (Feature Showcase)
+    Shortcut {
+        sequence: Qt.Key_Q
+        onActivated: Qt.quit()
+    }
+    Shortcut {
+        sequence: Qt.Key_Escape
+        onActivated: Qt.quit()
+    }
 
     Column {
         anchors.fill: parent
@@ -42,7 +30,7 @@ Terminal {
 
             Text {
                 anchors.fill: parent
-                text: qsTr("Concept Demo: Focus Management & Keyboard Input")
+                text: "Showcase: New Key Handling Features (Shortcuts, Specific Keys, Priority, Forwarding)"
                 color: "yellow"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter
@@ -52,91 +40,177 @@ Terminal {
 
         Text {
             width: parent.width
-            text: qsTr("Press Tab or Shift-Tab to cycle focus between the three items.\nFocused items will highlight. Press any key while focused.")
+            text: "Use Tab/Shift-Tab to cycle focus. Press 'q' or 'Escape' to quit."
             color: "gray"
         }
 
-        // Focusable items
+        // --- Row of Showcase Features ---
         Row {
-            spacing: 3
+            spacing: 2
             width: parent.width
+            height: 11
 
-            // Item 1
+            // Feature A: Specific Key Signals
             Rectangle {
-                id: item1
-                width: 20
-                height: 3
+                id: boxSpecificKeys
+                width: 25
+                height: 10
                 focusable: true
-                color: activeFocus ? "blue" : "#111111"
+                color: activeFocus ? "#1a365d" : "#111111"
+                border.color: activeFocus ? "blue" : "#333333"
 
-                Text {
+                Column {
                     anchors.fill: parent
-                    text: item1.activeFocus ? qsTr("[*] Focus Item A") : qsTr("    Focus Item A")
-                    color: item1.activeFocus ? "white" : "silver"
-                    bold: item1.activeFocus
-                    verticalAlignment: Qt.AlignVCenter
+                    anchors.margins: 1
+                    spacing: 1
+
+                    Text {
+                        text: boxSpecificKeys.activeFocus ? "[*] 1. Specific Keys" : "    1. Specific Keys"
+                        color: "white"
+                        bold: true
+                    }
+                    Text {
+                        text: "Press Return or Space\nto test specific signals."
+                        color: "silver"
+                    }
                 }
 
-                Keys.onPressed: (event) => {
-                    rootWindow.handleItemKey(qsTr("Item A"), event)
+                Keys.onReturnPressed: (event) => {
+                    logText.text = "Keys.onReturnPressed triggered on Item A!"
+                    event.accepted = true
+                }
+                Keys.onSpacePressed: (event) => {
+                    logText.text = "Keys.onSpacePressed triggered on Item A!"
+                    event.accepted = true
                 }
             }
 
-            // Item 2
+            // Feature B: Event Forwarding (Keys.forwardTo)
             Rectangle {
-                id: item2
-                width: 20
-                height: 3
+                id: boxForwardingParent
+                width: 25
+                height: 10
                 focusable: true
-                color: activeFocus ? "green" : "#111111"
+                color: activeFocus ? "#1c3d2f" : "#111111"
+                border.color: activeFocus ? "green" : "#333333"
 
-                Text {
+                // Forward keys to the child item inside
+                Keys.forwardTo: [boxForwardingChild]
+
+                Column {
                     anchors.fill: parent
-                    text: item2.activeFocus ? qsTr("[*] Focus Item B") : qsTr("    Focus Item B")
-                    color: item2.activeFocus ? "white" : "silver"
-                    bold: item2.activeFocus
-                    verticalAlignment: Qt.AlignVCenter
-                }
+                    anchors.margins: 1
+                    spacing: 1
 
-                Keys.onPressed: (event) => {
-                    rootWindow.handleItemKey(qsTr("Item B"), event)
+                    Text {
+                        text: boxForwardingParent.activeFocus ? "[*] 2. Forwarding" : "    2. Forwarding"
+                        color: "white"
+                        bold: true
+                    }
+                    Text {
+                        text: "Type any key. Parent\nforwards to child."
+                        color: "silver"
+                    }
+
+                    // Child status display
+                    Rectangle {
+                        id: boxForwardingChild
+                        width: 23
+                        height: 3
+                        color: "#222222"
+                        border.color: "gray"
+
+                        Text {
+                            anchors.fill: parent
+                            text: "Child status label"
+                            id: childStatusText
+                            color: "green"
+                            horizontalAlignment: Qt.AlignHCenter
+                            verticalAlignment: Qt.AlignVCenter
+                        }
+
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)
+                                return;
+
+                            childStatusText.text = "Fwd: " + event.text
+                            logText.text = "Child received forwarded key: " + event.text
+                            event.accepted = true
+                        }
+                    }
                 }
             }
 
-            // Item 3
+            // Feature C: Priority Interception (Keys.priority)
             Rectangle {
-                id: item3
-                width: 20
-                height: 3
-                focusable: true
-                color: activeFocus ? "magenta" : "#111111"
+                id: boxPriority
+                width: 26
+                height: 10
+                color: "#111111"
+                border.color: "#333333"
 
-                Text {
+                Column {
                     anchors.fill: parent
-                    text: item3.activeFocus ? qsTr("[*] Focus Item C") : qsTr("    Focus Item C")
-                    color: item3.activeFocus ? "white" : "silver"
-                    bold: item3.activeFocus
-                    verticalAlignment: Qt.AlignVCenter
-                }
+                    anchors.margins: 1
+                    spacing: 1
 
-                Keys.onPressed: (event) => {
-                    rootWindow.handleItemKey(qsTr("Item C"), event)
+                    Text {
+                        text: " 3. Priority Routing"
+                        color: "white"
+                        bold: true
+                    }
+
+                    Text {
+                        text: "Intercept Left Arrow:"
+                        color: "silver"
+                    }
+
+                    TextInput {
+                        id: inputPriority
+                        width: 24
+                        height: 1
+                        text: "Press Left Arrow"
+                        color: "yellow"
+                        focusable: true
+
+                        // Intercept Left key before the C++ TextInput handles it
+                        Keys.priority: Keys.BeforeItem
+                        Keys.onLeftPressed: (event) => {
+                            logText.text = "QML intercepted Left Arrow BEFORE C++ TextInput!"
+                            event.accepted = true // blocks cursor movement
+                        }
+                    }
+                    
+                    Text {
+                        text: "(Left is blocked by QML\nBeforeItem priority)"
+                        color: "gray"
+                    }
                 }
             }
         }
 
-        // Logger label
-        Text {
-            id: logText
+        // Status / Log Box
+        Rectangle {
             width: parent.width
-            text: qsTr("No key pressed yet.")
-            color: "cyan"
-        }
+            height: 5
+            color: "#111111"
+            border.color: "#222222"
 
-        Text {
-            width: parent.width
-            text: qsTr("Press 'q' to exit this example.")
-            color: "silver"
+            Column {
+                anchors.fill: parent
+                anchors.margins: 1
+                spacing: 1
+
+                Text {
+                    text: "Interaction Log:"
+                    color: "gray"
+                }
+                Text {
+                    id: logText
+                    text: "Focus an item and press keys to begin."
+                    color: "cyan"
+                }
+            }
         }
     }
 }

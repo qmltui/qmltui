@@ -30,6 +30,8 @@ qt_add_qml_module(QtuiCore
         src/engine/FrameRenderer.cpp
         src/engine/StreamRenderer.h
         src/engine/StreamRenderer.cpp
+        src/engine/Shortcut.h
+        src/engine/Shortcut.cpp
         src/engine/KeyEvent.h
         src/engine/MouseEvent.h
         src/engine/Keys.h

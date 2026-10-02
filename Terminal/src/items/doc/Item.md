@@ -2,15 +2,15 @@
 
 ## 1. Class Overview
 
-`Item` is the base visual class for all QML elements in Qtui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), flexbox layout hints (`flexGrow`, `flexShrink`, `flexBasis`), declarative state machine integration (`states`, `transitions`), anchoring primitives, and virtual rendering/input event handling contracts.
+`Item` is the base visual class for all QML elements in Qtui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
 
 Developers subclass `Item` when creating new C++ terminal components.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/items/Item.h`
-- **Implementation**: `Tui/src/items/Item.cpp`
-- **Dependencies**: `TextGridBuffer.h`, `Anchors.h`, `Border.h`, Qt Core (`QObject`, `QQmlEngine`).
+- **Header**: `Terminal/src/items/Item.h`
+- **Implementation**: `Terminal/src/items/Item.cpp`
+- **Dependencies**: `TextGridBuffer.h`, `Anchors.h`, `Border.h`, Qt Core (`QObject`, `QQmlEngine`, `QPoint`, `QList`).
 
 ## 3. Class Hierarchy and Role
 
@@ -24,23 +24,51 @@ Developers subclass `Item` when creating new C++ terminal components.
 |----------|------|------|-------|--------|-------------|
 | `x` | `int` | `x` | `setX` | `xChanged` | X coordinate relative to parent item. |
 | `y` | `int` | `y` | `setY` | `yChanged` | Y coordinate relative to parent item. |
+| `z` | `qreal` | `z` | `setZ` | `zChanged` | Visual stacking order. Siblings render by ascending `z`. |
 | `width` | `int` | `width` | `setWidth` | `widthChanged` | Width of the item in terminal columns. |
 | `height` | `int` | `height` | `setHeight` | `heightChanged` | Height of the item in terminal rows. |
 | `implicitWidth` | `int` | `implicitWidth` | `setImplicitWidth` | `implicitWidthChanged` | Natural width of the item based on content. |
 | `implicitHeight` | `int` | `implicitHeight` | `setImplicitHeight` | `implicitHeightChanged` | Natural height of the item based on content. |
 | `visible` | `bool` | `visible` | `setVisible` | `visibleChanged` | Controls whether the item is rendered. |
+| `enabled` | `bool` | `enabled` | `setEnabled` | `enabledChanged` | Controls whether the item receives input events. |
 | `focus` | `bool` | `focus` | `setFocus` | `focusChanged` | Requested focus state. |
 | `activeFocus` | `bool` | `activeFocus` | — | `activeFocusChanged` | Read-only property indicating if the item has active input focus. |
 | `focusable` | `bool` | `focusable` | `setFocusable` | `focusableChanged` | Whether the item participates in Tab focus cycling. |
+| `parent` | `qtui::Item*` | `parentItem` | `setParentItem` | `parentChanged` | Parent visual item. |
+| `anchors` | `qtui::Anchors*` | `anchors` | — | — | Attached anchor configuration object. |
+| `left` | `qtui::AnchorLine*` | `left` | — | — | Left anchor line constraint of the item. |
+| `right` | `qtui::AnchorLine*` | `right` | — | — | Right anchor line constraint of the item. |
+| `top` | `qtui::AnchorLine*` | `top` | — | — | Top anchor line constraint of the item. |
+| `bottom` | `qtui::AnchorLine*` | `bottom` | — | — | Bottom anchor line constraint of the item. |
+| `horizontalCenter` | `qtui::AnchorLine*` | `horizontalCenter` | — | — | Horizontal center anchor line constraint of the item. |
+| `verticalCenter` | `qtui::AnchorLine*` | `verticalCenter` | — | — | Vertical center anchor line constraint of the item. |
 | `clip` | `bool` | `clip` | `setClip` | `clipChanged` | Enables clipping of child rendering to item bounds. |
 | `padding` | `int` | `padding` | `setPadding` | `paddingChanged` | Uniform inner padding for all sides. |
 | `leftPadding` | `int` | `leftPadding` | `setLeftPadding` | `leftPaddingChanged` | Inner left padding. |
 | `rightPadding` | `int` | `rightPadding` | `setRightPadding` | `rightPaddingChanged` | Inner right padding. |
 | `topPadding` | `int` | `topPadding` | `setTopPadding` | `topPaddingChanged` | Inner top padding. |
 | `bottomPadding` | `int` | `bottomPadding` | `setBottomPadding` | `bottomPaddingChanged` | Inner bottom padding. |
-| `flexGrow` | `double` | `flexGrow` | `setFlexGrow` | `flexGrowChanged` | Flexbox grow factor. |
-| `flexShrink` | `double` | `flexShrink` | `setFlexShrink` | `flexShrinkChanged` | Flexbox shrink factor. |
-| `flexBasis` | `int` | `flexBasis` | `setFlexBasis` | `flexBasisChanged` | Flexbox initial size. |
+| `data` | `QQmlListProperty<QObject>` | `data` | — | — | List of QML visual/logical child objects. |
+| `states` | `QQmlListProperty<qtui::State>` | `states` | — | — | List of states defined on the item. |
+| `transitions` | `QQmlListProperty<qtui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
+| `state` | `QString` | `state` | `setState` | `stateChanged` | Current active state name. |
+
+## 6. Public Member Variables
+
+### ClipRect Struct
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `x` | `int` | X coordinate of the clipping bounds (default: `0`). |
+| `y` | `int` | Y coordinate of the clipping bounds (default: `0`). |
+| `width` | `int` | Width of the clipping bounds (default: `99999`). |
+| `height` | `int` | Height of the clipping bounds (default: `99999`). |
+
+#### bool contains(int cx, int cy) const
+Returns `true` if coordinates (cx, cy) are inside the clipping rectangle.
+
+#### ClipRect intersected(const ClipRect& other) const
+Returns a new `ClipRect` representing the intersection of this rectangle and the other.
 
 ## 7. Signals
 
@@ -50,14 +78,29 @@ Emitted when `x` coordinate changes.
 #### void yChanged()
 Emitted when `y` coordinate changes.
 
+#### void zChanged()
+Emitted when `z` order changes.
+
 #### void widthChanged()
 Emitted when `width` changes.
 
 #### void heightChanged()
 Emitted when `height` changes.
 
+#### void implicitWidthChanged()
+Emitted when `implicitWidth` changes.
+
+#### void implicitHeightChanged()
+Emitted when `implicitHeight` changes.
+
 #### void visibleChanged()
 Emitted when visibility toggles.
+
+#### void enabledChanged()
+Emitted when enabled state toggles.
+
+#### void parentChanged()
+Emitted when the visual parent changes.
 
 #### void focusChanged()
 Emitted when focus state changes.
@@ -65,10 +108,40 @@ Emitted when focus state changes.
 #### void activeFocusChanged()
 Emitted when active keyboard focus changes.
 
+#### void focusableChanged()
+Emitted when focusable state changes.
+
+#### void paddingChanged()
+Emitted when uniform padding changes.
+
+#### void leftPaddingChanged()
+Emitted when left padding changes.
+
+#### void rightPaddingChanged()
+Emitted when right padding changes.
+
+#### void topPaddingChanged()
+Emitted when top padding changes.
+
+#### void bottomPaddingChanged()
+Emitted when bottom padding changes.
+
+#### void clipChanged()
+Emitted when clipping setting changes.
+
+#### void stateChanged()
+Emitted when active state changes.
+
 #### void dirty()
 Emitted to request a frame re-render when item visual state changes.
 
 ## 9. Public Methods
+
+#### explicit Item(QObject *parent = nullptr)
+Constructs an `Item` with the optional parent visual item.
+
+#### virtual ~Item()
+Destroys the `Item`, cleaning up child items.
 
 #### void markDirty()
 Notifies the parent item and rendering engine that this item needs to be redrawn.
@@ -76,27 +149,48 @@ Notifies the parent item and rendering engine that this item needs to be redrawn
 #### QPoint absolutePosition() const
 Calculates and returns the absolute (x, y) coordinates of the item relative to the root window.
 
+#### void setGeometryDirect(int x, int y, int w, int h)
+Bypasses individual setters to configure geometry coordinates and dimensions in a single step.
+
+#### const QList<Item *> &childItems() const
+Returns the list of visual child items.
+
+#### const QList<Item *> &stackingChildren() const
+Returns the list of visual child items sorted by stacking order (`z`).
+
+#### bool isEffectivelyEnabled() const
+Returns whether this item is enabled, considering the parent's enabled state hierarchy.
+
+#### Terminal *terminal() const
+Returns the root `Terminal` object this item is associated with.
+
+#### void removeChildItem(Item *child)
+Removes the specified child item from visual children list.
+
+#### void evaluateStateConditions()
+Re-evaluates declarative states to update values according to state constraints.
+
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
+#### virtual void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect())
 Renders the visual content of the item and its children into the target grid buffer.
 
-#### void keyPressEvent(KeyEvent* event) [virtual]
+#### virtual void keyPressEvent(KeyEvent* event)
 Called when a key is pressed while the item has focus.
 
-#### void keyReleaseEvent(KeyEvent* event) [virtual]
+#### virtual void keyReleaseEvent(KeyEvent* event)
 Called when a key is released while the item has focus.
 
-#### void mousePressEvent(MouseEvent* event) [virtual]
+#### virtual void mousePressEvent(MouseEvent* event)
 Called when a mouse button is pressed over the item.
 
-#### void mouseReleaseEvent(MouseEvent* event) [virtual]
+#### virtual void mouseReleaseEvent(MouseEvent* event)
 Called when a mouse button is released over the item.
 
-#### void mouseMoveEvent(MouseEvent* event) [virtual]
+#### virtual void mouseMoveEvent(MouseEvent* event)
 Called when the mouse cursor moves over the item.
 
-#### void wheelEvent(MouseEvent* event) [virtual]
+#### virtual void wheelEvent(MouseEvent* event)
 Called when mouse wheel scrolling occurs over the item.
 
 ## 11. Ownership and Lifecycle

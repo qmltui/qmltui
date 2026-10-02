@@ -8,8 +8,8 @@
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/core/InputDecoder.h`
-- **Implementation**: `Tui/src/core/InputDecoder.cpp`
+- **Header**: `Terminal/src/core/InputDecoder.h`
+- **Implementation**: `Terminal/src/core/InputDecoder.cpp`
 - **Dependencies**: `<functional>`, `<string>`, `<QString>`, Qt Core (`Qt::Key`).
 
 ## 3. Class Hierarchy and Role
@@ -20,10 +20,10 @@
 ## 9. Public Methods
 
 #### void setKeyCallback(KeyCallback cb)
-Registers a callback function invoked whenever a valid key sequence is decoded from input buffer. The callback receives `int qtKey`, `const QString& text`, and `int modifiers`.
+Registers a callback function invoked whenever a valid key sequence is decoded from the input buffer. The callback receives `int qtKey`, `const QString& text`, and `int modifiers`.
 
 #### void setMouseCallback(MouseCallback cb)
-Registers a callback function invoked whenever an SGR mouse tracking sequence is decoded. The callback receives `int button`, `int x`, `int y`, and `bool release`.
+Registers a callback function invoked whenever an SGR mouse tracking sequence is decoded. The callback receives `int button`, `int x`, `int y`, `bool release`, and `bool motion`.
 
 #### void decode(const char* buffer, size_t size)
 Appends raw incoming terminal bytes to the internal decoding buffer and triggers sequence parsing.

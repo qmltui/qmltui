@@ -78,6 +78,7 @@ private slots:
     void osc52Encoding();
     void treeDelegateIdentity();
     void destroyedTreeModelIsCleared();
+    void keyHandlingImprovements();
 };
 
 void TestTerminalFramework::unicodeDisplayWidth() {
@@ -362,6 +363,136 @@ void TestTerminalFramework::destroyedTreeModelIsCleared() {
 
     delete model;
     QVERIFY(!tree.model().isValid());
+}
+
+void TestTerminalFramework::keyHandlingImprovements() {
+    QQmlEngine qmlEngine;
+    qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+    qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+    QQmlComponent component(&qmlEngine);
+    component.setData(R"(
+        import Qtui
+        Terminal {
+            id: root
+            width: 40
+            height: 12
+            focus: true
+
+            property bool returnPressedFired: false
+            property bool escapePressedFired: false
+            property bool tabPressedFired: false
+            property bool genericPressedFired: false
+            property int lastGenericKey: 0
+
+            property bool childPressedFired: false
+            property bool shortcutFired: false
+            property bool textInputLeftFired: false
+
+            Keys.priority: Keys.BeforeItem
+            Keys.forwardTo: [childItem]
+
+            Keys.onReturnPressed: (event) => {
+                returnPressedFired = true;
+                event.accepted = true;
+            }
+            Keys.onEscapePressed: (event) => {
+                escapePressedFired = true;
+                event.accepted = true;
+            }
+            Keys.onTabPressed: (event) => {
+                tabPressedFired = true;
+                event.accepted = true;
+            }
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_A) {
+                    genericPressedFired = true;
+                    lastGenericKey = event.key;
+                    event.accepted = true;
+                }
+            }
+
+            Item {
+                id: childItem
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_B) {
+                        root.childPressedFired = true;
+                        event.accepted = true;
+                    }
+                }
+            }
+
+            TextInput {
+                id: textInputBefore
+                objectName: "textInputBefore"
+                Keys.priority: Keys.BeforeItem
+                Keys.onLeftPressed: (event) => {
+                    root.textInputLeftFired = true;
+                    event.accepted = true;
+                }
+            }
+
+            TextInput {
+                id: textInputAfter
+                objectName: "textInputAfter"
+                Keys.priority: Keys.AfterItem
+                Keys.onLeftPressed: (event) => {
+                    root.textInputLeftFired = true; // should NOT fire since C++ TextInput accepts Left
+                    event.accepted = true;
+                }
+            }
+
+            Shortcut {
+                sequence: Qt.Key_Q
+                enabled: true
+                onActivated: {
+                    root.shortcutFired = true;
+                }
+            }
+        }
+    )", QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto *terminal = qobject_cast<Terminal*>(object.get());
+    QVERIFY(terminal);
+    TerminalEngine engine(terminal);
+
+    // 1. Test specific key signals
+    engine.handleKeyInput(Qt::Key_Return, QStringLiteral("\n"), 0);
+    QCOMPARE(terminal->property("returnPressedFired").toBool(), true);
+
+    engine.handleKeyInput(Qt::Key_Escape, {}, 0);
+    QCOMPARE(terminal->property("escapePressedFired").toBool(), true);
+
+    engine.handleKeyInput(Qt::Key_Tab, {}, 0);
+    QCOMPARE(terminal->property("tabPressedFired").toBool(), true);
+
+    // 2. Test generic onPressed
+    engine.handleKeyInput(Qt::Key_A, QStringLiteral("A"), 0);
+    QCOMPARE(terminal->property("genericPressedFired").toBool(), true);
+    QCOMPARE(terminal->property("lastGenericKey").toInt(), (int)Qt::Key_A);
+
+    // 3. Test forwardTo
+    engine.handleKeyInput(Qt::Key_B, QStringLiteral("B"), 0);
+    QCOMPARE(terminal->property("childPressedFired").toBool(), true);
+
+    // 4. Test priority: BeforeItem
+    auto* textInputBefore = terminal->findChild<Item*>(QStringLiteral("textInputBefore"));
+    QVERIFY(textInputBefore);
+    textInputBefore->setFocus(true);
+    engine.handleKeyInput(Qt::Key_Left, {}, 0);
+    QCOMPARE(terminal->property("textInputLeftFired").toBool(), true);
+
+    // Reset and test AfterItem
+    terminal->setProperty("textInputLeftFired", false);
+    auto* textInputAfter = terminal->findChild<Item*>(QStringLiteral("textInputAfter"));
+    QVERIFY(textInputAfter);
+    textInputAfter->setFocus(true);
+    engine.handleKeyInput(Qt::Key_Left, {}, 0);
+    QCOMPARE(terminal->property("textInputLeftFired").toBool(), false); // C++ consumed it first
+
+    // 5. Test Shortcut
+    engine.handleKeyInput(Qt::Key_Q, {}, 0);
+    QCOMPARE(terminal->property("shortcutFired").toBool(), true);
 }
 
 QTEST_MAIN(TestTerminalFramework)

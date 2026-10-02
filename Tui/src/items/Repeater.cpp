@@ -105,6 +105,9 @@ void Repeater::generateItems() {
         if (modelObj && modelObj->inherits("QAbstractItemModel")) {
             QAbstractItemModel* model = qobject_cast<QAbstractItemModel*>(modelObj);
             if (model) {
+                // Disconnect any existing connections from this model to this Repeater to prevent duplicates
+                disconnect(model, nullptr, this, nullptr);
+
                 // Connect to dataChanged to update context properties dynamically
                 connect(model, &QAbstractItemModel::dataChanged, this, [this, model](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
                     const QHash<int, QByteArray> roles = model->roleNames();
@@ -122,12 +125,12 @@ void Repeater::generateItems() {
                         }
                     }
                     markDirty();
-                }, Qt::UniqueConnection);
+                });
 
                 // Connect to dynamic insert/remove/reset to regenerate
-                connect(model, &QAbstractItemModel::rowsInserted, this, [this](){ generateItems(); }, Qt::UniqueConnection);
-                connect(model, &QAbstractItemModel::rowsRemoved, this, [this](){ generateItems(); }, Qt::UniqueConnection);
-                connect(model, &QAbstractItemModel::modelReset, this, [this](){ generateItems(); }, Qt::UniqueConnection);
+                connect(model, &QAbstractItemModel::rowsInserted, this, [this](){ generateItems(); });
+                connect(model, &QAbstractItemModel::rowsRemoved, this, [this](){ generateItems(); });
+                connect(model, &QAbstractItemModel::modelReset, this, [this](){ generateItems(); });
 
                 const QHash<int, QByteArray> roles = model->roleNames();
                 int rowCount = 0;

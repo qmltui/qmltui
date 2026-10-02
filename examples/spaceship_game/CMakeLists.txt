@@ -7,6 +7,9 @@ qt_add_qml_module(qtui_spaceship_game
         Main.qml
         Bullet.qml
         Enemy.qml
+        Explosion.qml
+        PowerUp.qml
+        Star.qml
 
     DEPENDENCIES TARGET Qtui
 )

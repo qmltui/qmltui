@@ -3,6 +3,7 @@
 #include "Item.h"
 #include <QVariant>
 #include <QQmlComponent>
+#include <QQmlContext>
 
 namespace qtui {
 
@@ -33,6 +34,7 @@ private:
     QVariant m_model;
     QQmlComponent* m_delegate = nullptr;
     QList<Item*> m_createdItems;
+    QList<QQmlContext*> m_contexts;
 };
 
 } // namespace qtui

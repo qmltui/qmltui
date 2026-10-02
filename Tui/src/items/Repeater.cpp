@@ -49,26 +49,16 @@ void Repeater::generateItems() {
     if (!parentVis) return;
     
     int count = 0;
-    if (m_model.canConvert<int>()) {
+    bool isCount = false;
+    if (m_model.canConvert<int>() && m_model.userType() != qMetaTypeId<QJSValue>()) {
         count = m_model.toInt();
-        for (int i = 0; i < count; ++i) {
-            QQmlContext* context = new QQmlContext(qmlContext(this), this);
-            context->setContextProperty("index", i);
-            QObject* obj = m_delegate->create(context);
-            if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
-                // Ensure it gets visually parented to Repeater's parent
-                item->setParentItem(parentVis);
-                // But QObject parent is the Repeater to manage lifetime
-                item->setParent(this);
-                m_createdItems.append(item);
-            } else {
-                delete obj;
-                delete context;
-            }
-        }
+        isCount = true;
     } else if (m_model.userType() == qMetaTypeId<QJSValue>()) {
         QJSValue val = m_model.value<QJSValue>();
-        if (val.isArray()) {
+        if (val.isNumber()) {
+            count = val.toInt();
+            isCount = true;
+        } else if (val.isArray()) {
             count = val.property("length").toInt();
             for (int i = 0; i < count; ++i) {
                 QQmlContext* context = new QQmlContext(qmlContext(this), this);
@@ -77,12 +67,26 @@ void Repeater::generateItems() {
                 QObject* obj = m_delegate->create(context);
                 if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                     item->setParentItem(parentVis);
-                    item->setParent(this);
                     m_createdItems.append(item);
                 } else {
                     delete obj;
                     delete context;
                 }
+            }
+        }
+    }
+
+    if (isCount) {
+        for (int i = 0; i < count; ++i) {
+            QQmlContext* context = new QQmlContext(qmlContext(this), this);
+            context->setContextProperty("index", i);
+            QObject* obj = m_delegate->create(context);
+            if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
+                item->setParentItem(parentVis);
+                m_createdItems.append(item);
+            } else {
+                delete obj;
+                delete context;
             }
         }
     } else if (m_model.canConvert<QObject*>()) {
@@ -103,7 +107,6 @@ void Repeater::generateItems() {
                 QObject* obj = m_delegate->create(context);
                 if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                     item->setParentItem(parentVis);
-                    item->setParent(this);
                     m_createdItems.append(item);
                 } else {
                     delete obj;

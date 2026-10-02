@@ -13,7 +13,6 @@ Terminal {
     width: 80
     height: 24
     backgroundColor: "black"
-    useAlternateScreen: true
 
     Rectangle {
         anchors.fill: parent

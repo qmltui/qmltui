@@ -66,6 +66,8 @@ qt_add_qml_module(Qtui
         src/items/ListView.cpp
         src/items/GridView.h
         src/items/GridView.cpp
+        src/items/BrailleCanvas.h
+        src/items/BrailleCanvas.cpp
 )
 
 target_include_directories(Qtui PUBLIC src/items src/core src/engine src)

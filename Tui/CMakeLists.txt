@@ -44,6 +44,10 @@ qt_add_qml_module(Qtui
         src/items/ScrollView.cpp
         src/items/Terminal.h
         src/items/Terminal.cpp
+        src/items/Popup.h
+        src/items/Popup.cpp
+        src/items/FlexLayout.h
+        src/items/FlexLayout.cpp
         src/items/Text.h
         src/items/Text.cpp
         src/items/StreamAppender.h

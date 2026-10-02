@@ -5,6 +5,7 @@
 namespace qtui {
 
 class TerminalEngine;
+class Popup;
 
 class Terminal : public Item {
   Q_OBJECT
@@ -30,6 +31,10 @@ public:
   bool useAlternateScreen() const { return m_useAlternateScreen; }
   void setUseAlternateScreen(bool use);
 
+  void registerPopup(Popup* popup);
+  void unregisterPopup(Popup* popup);
+  const QList<Popup*>& activePopups() const { return m_popups; }
+
   bool fillTerminal() const { return m_fillTerminal; }
   void setFillTerminal(bool fill);
 
@@ -54,6 +59,7 @@ signals:
 private:
   TerminalEngine *m_engine = nullptr;
   Item* m_focusedItem = nullptr;
+  QList<Popup*> m_popups;
   bool m_useAlternateScreen = true;
   bool m_fillTerminal = true;
   RendererMode m_rendererMode = RendererMode::Frame;

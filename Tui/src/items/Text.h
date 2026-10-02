@@ -17,8 +17,17 @@ class Text : public Item {
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
     Q_PROPERTY(int horizontalAlignment READ horizontalAlignment WRITE setHorizontalAlignment NOTIFY horizontalAlignmentChanged)
     Q_PROPERTY(int verticalAlignment READ verticalAlignment WRITE setVerticalAlignment NOTIFY verticalAlignmentChanged)
+    Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
 
 public:
+    enum TextFormat {
+        PlainText,
+        RichText,
+        AnsiText,
+        AutoText
+    };
+    Q_ENUM(TextFormat)
+
     explicit Text(QObject *parent = nullptr);
     ~Text() override;
 
@@ -46,6 +55,9 @@ public:
     int verticalAlignment() const { return m_verticalAlignment; }
     void setVerticalAlignment(int alignment);
 
+    TextFormat textFormat() const { return m_textFormat; }
+    void setTextFormat(TextFormat format);
+
     int visualLength(const QString &line) const;
 
     void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
@@ -59,6 +71,7 @@ signals:
     void reversedChanged();
     void horizontalAlignmentChanged();
     void verticalAlignmentChanged();
+    void textFormatChanged();
 
 private:
     QString m_text;
@@ -70,6 +83,7 @@ private:
     bool m_reversed = false;
     int m_horizontalAlignment = Qt::AlignLeft;
     int m_verticalAlignment = Qt::AlignTop;
+    TextFormat m_textFormat = AutoText;
 };
 
 } // namespace qtui

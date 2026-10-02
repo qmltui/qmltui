@@ -2,6 +2,7 @@
 #include "../engine/TerminalEngine.h"
 #include "../engine/FrameRenderer.h"
 #include "../engine/StreamRenderer.h"
+#include "Popup.h"
 
 namespace qtui {
 
@@ -28,6 +29,18 @@ void Terminal::setUseAlternateScreen(bool use) {
     if (m_useAlternateScreen == use) return;
     m_useAlternateScreen = use;
     emit useAlternateScreenChanged();
+}
+
+void Terminal::registerPopup(Popup* popup) {
+    if (!popup || m_popups.contains(popup)) return;
+    m_popups.append(popup);
+    markDirty();
+}
+
+void Terminal::unregisterPopup(Popup* popup) {
+    if (!popup || !m_popups.contains(popup)) return;
+    m_popups.removeOne(popup);
+    markDirty();
 }
 
 void Terminal::setFocusedItem(Item* item) {
@@ -96,9 +109,47 @@ int Terminal::height() const {
     return Item::height();
 }
 
+static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
+    for (int y = 0; y < buffer.height(); ++y) {
+        for (int x = 0; x < buffer.width(); ++x) {
+            if (clipRect.contains(x, y)) {
+                Cell& cell = buffer.cellAt(x, y);
+                // Dim fg (shift right by 1 to halve, or divide by 2)
+                uint8_t a_fg = (cell.fgColor >> 24) & 0xFF;
+                uint8_t r_fg = (cell.fgColor >> 16) & 0xFF;
+                uint8_t g_fg = (cell.fgColor >> 8) & 0xFF;
+                uint8_t b_fg = cell.fgColor & 0xFF;
+                cell.fgColor = (a_fg << 24) | ((r_fg / 2) << 16) | ((g_fg / 2) << 8) | (b_fg / 2);
+                
+                // Dim bg
+                uint8_t a_bg = (cell.bgColor >> 24) & 0xFF;
+                uint8_t r_bg = (cell.bgColor >> 16) & 0xFF;
+                uint8_t g_bg = (cell.bgColor >> 8) & 0xFF;
+                uint8_t b_bg = cell.bgColor & 0xFF;
+                cell.bgColor = (a_bg << 24) | ((r_bg / 2) << 16) | ((g_bg / 2) << 8) | (b_bg / 2);
+            }
+        }
+    }
+}
+
 void Terminal::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
+    
+    // Render normal hierarchy
     Item::render(buffer, absX, absY, clipRect);
+    
+    // Render popups as absolute overlay layers on top of everything
+    for (Popup* popup : m_popups) {
+        if (popup && popup->visible()) {
+            if (popup->modal() && popup->dimBackground()) {
+                dimBuffer(buffer, clipRect);
+            }
+            
+            QPoint absPos = popup->absolutePosition();
+            // Pass the absolute terminal bounds as clipRect (clipRect is usually full screen)
+            popup->render(buffer, absPos.x(), absPos.y(), clipRect);
+        }
+    }
 }
 
 } // namespace qtui

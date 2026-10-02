@@ -7,6 +7,7 @@
 #include <QMap>
 #include <QPair>
 #include <QPointer>
+#include <QPoint>
 
 #include "Anchors.h"
 #include "Border.h"
@@ -78,6 +79,9 @@ class Item : public QObject {
                  topPaddingChanged)
   Q_PROPERTY(int bottomPadding READ bottomPadding WRITE setBottomPadding NOTIFY
                  bottomPaddingChanged)
+  Q_PROPERTY(double flexGrow READ flexGrow WRITE setFlexGrow NOTIFY flexGrowChanged)
+  Q_PROPERTY(double flexShrink READ flexShrink WRITE setFlexShrink NOTIFY flexShrinkChanged)
+  Q_PROPERTY(int flexBasis READ flexBasis WRITE setFlexBasis NOTIFY flexBasisChanged)
   Q_PROPERTY(QQmlListProperty<QObject> data READ data)
   Q_PROPERTY(QQmlListProperty<qtui::State> states READ states)
   Q_PROPERTY(QQmlListProperty<qtui::Transition> transitions READ transitions)
@@ -131,6 +135,8 @@ public:
   uint32_t resolvedBgColor() const { return m_resolvedBgColor; }
 
   Terminal *terminal() const;
+  QPoint absolutePosition() const;
+  void setGeometryDirect(int x, int y, int w, int h);
 
   Item *parentItem() const { return qobject_cast<Item *>(QObject::parent()); }
   void setParentItem(Item *parentItem);
@@ -162,6 +168,15 @@ public:
   int bottomPadding() const;
   void setBottomPadding(int p);
 
+  double flexGrow() const { return m_flexGrow; }
+  void setFlexGrow(double grow);
+
+  double flexShrink() const { return m_flexShrink; }
+  void setFlexShrink(double shrink);
+
+  int flexBasis() const { return m_flexBasis; }
+  void setFlexBasis(int basis);
+
   virtual void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect());
   virtual void keyPressEvent(class KeyEvent* event);
   virtual void mousePressEvent(class MouseEvent* event);
@@ -185,6 +200,9 @@ signals:
   void rightPaddingChanged();
   void topPaddingChanged();
   void bottomPaddingChanged();
+  void flexGrowChanged();
+  void flexShrinkChanged();
+  void flexBasisChanged();
   void clipChanged();
   void stateChanged();
   void dirty(); // For bubbling up render requests
@@ -206,6 +224,8 @@ private:
   static void clearTransitions(QQmlListProperty<qtui::Transition>* list);
 
 protected:
+  void childEvent(QChildEvent* event) override;
+
   int m_x = 0;
   int m_y = 0;
   int m_width = -1;
@@ -232,6 +252,9 @@ protected:
   int m_rightPadding = -1;
   int m_topPadding = -1;
   int m_bottomPadding = -1;
+  double m_flexGrow = 0.0;
+  double m_flexShrink = 1.0;
+  int m_flexBasis = -1; // -1 represents 'auto'
   QList<QObject*> m_dataChildren;
   QList<Item *> m_visualChildren;
 

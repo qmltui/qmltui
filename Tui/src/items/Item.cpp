@@ -9,6 +9,7 @@
 #include "../engine/Transition.h"
 #include "../engine/Animation.h"
 #include <QSet>
+#include <QChildEvent>
 
 namespace qtui {
 
@@ -19,6 +20,15 @@ Item::Item(QObject *parent) : QObject(parent), m_anchors(this), m_border(this) {
     m_bottomLine = new AnchorLine(AnchorLine::Bottom, this);
     m_horizontalCenterLine = new AnchorLine(AnchorLine::HorizontalCenter, this);
     m_verticalCenterLine = new AnchorLine(AnchorLine::VerticalCenter, this);
+
+    if (parent) {
+        if (Item* parentItem = qobject_cast<Item*>(parent)) {
+            if (!parentItem->m_visualChildren.contains(this)) {
+                parentItem->m_visualChildren.append(this);
+                parentItem->markDirty();
+            }
+        }
+    }
 }
 
 Item::~Item() {
@@ -41,10 +51,6 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
     if (self && obj) {
         obj->setParent(self);
         self->m_dataChildren.append(obj);
-        if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
-            self->m_visualChildren.append(item);
-            self->markDirty();
-        }
     }
 }
 
@@ -69,17 +75,12 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
 
 void Item::setParentItem(Item *parentItem) {
     if (this->parentItem() == parentItem) return;
-    if (Item* oldParent = this->parentItem()) {
-        oldParent->removeChildItem(this);
-    }
     setParent(parentItem);
-    if (parentItem) {
-        parentItem->m_visualChildren.append(this);
-        parentItem->markDirty();
-    }
 }
 
 void Item::removeChildItem(Item *child) {
+    // QObject parenting change handles this via childEvent, but we keep this method
+    // in case external callers explicitly call it.
     if (m_visualChildren.removeOne(child)) {
         markDirty();
     }
@@ -193,6 +194,60 @@ Terminal* Item::terminal() const {
         p = p->parent();
     }
     return nullptr;
+}
+
+QPoint Item::absolutePosition() const {
+    int ax = m_x;
+    int ay = m_y;
+    
+    Item* p = qobject_cast<Item*>(parent());
+    while (p) {
+        // If parent is a Terminal element, we do NOT add its x and y,
+        // because Terminal is the screen root. Its x/y is 0 relative to screen.
+        if (p->inherits("qtui::Terminal")) {
+            break;
+        }
+        
+        ax += p->x();
+        ay += p->y();
+        
+        // Subtract scroll offsets if parent is scrollable
+        QVariant scrollY = p->property("contentY");
+        if (scrollY.isValid()) {
+            ay -= scrollY.toInt();
+        }
+        QVariant scrollX = p->property("contentX");
+        if (scrollX.isValid()) {
+            ax -= scrollX.toInt();
+        }
+        
+        p = qobject_cast<Item*>(p->parent());
+    }
+    return QPoint(ax, ay);
+}
+
+void Item::setGeometryDirect(int x, int y, int w, int h) {
+    m_x = x;
+    m_y = y;
+    m_width = w;
+    m_height = h;
+}
+
+void Item::childEvent(QChildEvent* event) {
+    QObject::childEvent(event);
+    if (event->added()) {
+        if (Item* childItem = qobject_cast<Item*>(event->child())) {
+            if (!m_visualChildren.contains(childItem)) {
+                m_visualChildren.append(childItem);
+                markDirty();
+            }
+        }
+    } else if (event->removed()) {
+        if (Item* childItem = qobject_cast<Item*>(event->child())) {
+            m_visualChildren.removeOne(childItem);
+            markDirty();
+        }
+    }
 }
 void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
@@ -353,6 +408,27 @@ void Item::setBottomPadding(int p) {
     if (m_bottomPadding == p) return;
     m_bottomPadding = p;
     emit bottomPaddingChanged();
+    markDirty();
+}
+
+void Item::setFlexGrow(double grow) {
+    if (qFuzzyCompare(m_flexGrow, grow)) return;
+    m_flexGrow = grow;
+    emit flexGrowChanged();
+    markDirty();
+}
+
+void Item::setFlexShrink(double shrink) {
+    if (qFuzzyCompare(m_flexShrink, shrink)) return;
+    m_flexShrink = shrink;
+    emit flexShrinkChanged();
+    markDirty();
+}
+
+void Item::setFlexBasis(int basis) {
+    if (m_flexBasis == basis) return;
+    m_flexBasis = basis;
+    emit flexBasisChanged();
     markDirty();
 }
 

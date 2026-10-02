@@ -4,6 +4,7 @@
 #include "FrameRenderer.h"
 #include "../items/Item.h"
 #include "../items/Terminal.h"
+#include "../items/Popup.h"
 #include "../items/MouseArea.h"
 #include "KeyEvent.h"
 #include "MouseEvent.h"
@@ -23,6 +24,15 @@
 #endif
 
 namespace qtui {
+
+static bool isDescendantOf(Item* child, Item* ancestor) {
+    QObject* p = child;
+    while (p) {
+        if (p == ancestor) return true;
+        p = p->parent();
+    }
+    return false;
+}
 
 #ifdef Q_OS_UNIX
 class TerminalResizeBridge : public QObject {
@@ -217,7 +227,41 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 
   KeyEvent event(key, text, modifiers);
 
-  // Bubble key pressed event from focused item up to root
+  const QList<Popup*>& popups = m_rootWindow->activePopups();
+  Popup* activeModalPopup = nullptr;
+  for (int i = popups.count() - 1; i >= 0; --i) {
+      Popup* p = popups[i];
+      if (p && p->visible() && p->modal()) {
+          activeModalPopup = p;
+          break;
+      }
+  }
+
+  if (activeModalPopup) {
+      if (key == Qt::Key_Escape && (activeModalPopup->closePolicy() & Popup::CloseOnEscape)) {
+          activeModalPopup->close();
+          return;
+      }
+      
+      Item* focused = m_rootWindow->focusedItem();
+      Item* current = (focused && isDescendantOf(focused, activeModalPopup)) ? focused : activeModalPopup;
+      
+      while (current) {
+          current->keyPressEvent(&event);
+          if (event.isAccepted()) break;
+
+          Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(current, false));
+          if (attached) {
+              emit attached->pressed(&event);
+              if (event.isAccepted()) break;
+          }
+          
+          if (current == activeModalPopup) break;
+          current = qobject_cast<Item*>(current->parent());
+      }
+      return;
+  }
+
   Item* focused = m_rootWindow->focusedItem();
   Item* current = focused ? focused : m_rootWindow;
 
@@ -233,7 +277,6 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
     current = qobject_cast<Item*>(current->parent());
   }
 
-  // Handle default actions if the event was not accepted
   if (!event.isAccepted()) {
     if (key == Qt::Key_Tab) {
       cycleFocus(true);
@@ -246,16 +289,69 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
   if (!m_rootWindow) return;
 
+  const QList<Popup*>& popups = m_rootWindow->activePopups();
+  
+  for (int i = popups.count() - 1; i >= 0; --i) {
+      Popup* popup = popups[i];
+      if (!popup || !popup->visible()) continue;
+      
+      QPoint absPos = popup->absolutePosition();
+      bool inside = (x >= absPos.x() && x < absPos.x() + popup->width() &&
+                     y >= absPos.y() && y < absPos.y() + popup->height());
+                     
+      if (inside) {
+          int parentAbsX = absPos.x() - popup->x();
+          int parentAbsY = absPos.y() - popup->y();
+          MouseArea* ma = hitTestMouseArea(popup, x, y, parentAbsX, parentAbsY);
+          if (ma) {
+              int maAbsX = ma->absolutePosition().x();
+              int maAbsY = ma->absolutePosition().y();
+              int localX = x - maAbsX;
+              int localY = y - maAbsY;
+
+              ma->setMousePosition(localX, localY);
+              MouseEvent event(localX, localY, button);
+
+              Item* current = ma;
+              while (current) {
+                  if (release) {
+                      current->mouseReleaseEvent(&event);
+                  } else {
+                      current->mousePressEvent(&event);
+                  }
+                  if (event.isAccepted()) break;
+
+                  if (current == ma) {
+                      if (release) {
+                          emit ma->released(&event);
+                          emit ma->clicked(&event);
+                      } else {
+                          emit ma->pressed(&event);
+                      }
+                      if (event.isAccepted()) break;
+                  }
+                  
+                  if (current == popup) break;
+                  current = qobject_cast<Item*>(current->parent());
+              }
+              return;
+          }
+      } else {
+          if (popup->closePolicy() & Popup::CloseOnOutsideClick) {
+              if (release) {
+                  popup->close();
+              }
+          }
+          if (popup->modal()) {
+              return;
+          }
+      }
+  }
+
   MouseArea* ma = hitTestMouseArea(m_rootWindow, x, y, 0, 0);
   if (ma) {
-    int maAbsX = ma->x();
-    int maAbsY = ma->y();
-    Item* parent = qobject_cast<Item*>(ma->parent());
-    while (parent) {
-      maAbsX += parent->x();
-      maAbsY += parent->y();
-      parent = qobject_cast<Item*>(parent->parent());
-    }
+    int maAbsX = ma->absolutePosition().x();
+    int maAbsY = ma->absolutePosition().y();
 
     int localX = x - maAbsX;
     int localY = y - maAbsY;

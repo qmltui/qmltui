@@ -96,9 +96,32 @@ Terminal {
             text: "Background SGR: \u001b[48;2;128;0;128;38;2;255;255;255mWhite text on Purple Background\u001b[0m"
         }
 
+        // Section 3: HTML rich text tags
         Text {
             width: parent.width
-            text: "\nPress 'q' to exit this example."
+            text: "\n3. HTML Rich Text Tag Parsing (Option 1):"
+            color: "cyan"
+            underline: true
+        }
+
+        Text {
+            width: parent.width
+            text: "Bold & Italic: <b>Bold text</b>, <i>Italic text</i>, <b><i>Bold Italic</i></b>"
+        }
+
+        Text {
+            width: parent.width
+            text: "Colors (Hex & Names): <font color='orange'>Orange</font>, <font color='#ff00ff'>Magenta Hex</font>, <u><font color='lime'>Underline Lime</font></u>"
+        }
+
+        Text {
+            width: parent.width
+            text: "Reversed Attribute: <reversed><font color='yellow'>Reversed Yellow Text</font></reversed>"
+        }
+
+        Text {
+            width: parent.width
+            text: "\nPress 'q' or 'Escape' to exit this example."
             color: "silver"
         }
     }

@@ -10,7 +10,7 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
 - `Item`: The base visual element. All other elements inherit from it. Provides positioning and sizing logic.
   - *Properties*: `x`, `y`, `width`, `height`, `implicitWidth`, `implicitHeight`, `clip`, `visible`, `focusable`.
 - `Text`: Renders colored text. Supports multiline wrapping.
-  - *Properties*: `text` (string), `color` (string, e.g. "red", "#FF0000"), `attributes` (bitmask of `Text.Bold`, `Text.Underline`, etc.).
+  - *Properties*: `text` (string), `color` (string, e.g. "red", "#FF0000"), `attributes` (bitmask of `Text.Bold`, `Text.Underline`, etc.), `textFormat` (`Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`).
 - `MouseArea`: Invisible component that intercepts mouse clicks and scrolls.
   - *Signals*: `onClicked`, `onWheelUp`, `onWheelDown`.
 

@@ -5,6 +5,8 @@ set(TESTS
     test_focus
     test_text_input
     test_scroll_view
+    test_popup
+    test_flex_layout
 )
 
 include(CTest)

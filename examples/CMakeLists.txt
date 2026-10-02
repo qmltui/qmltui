@@ -15,3 +15,5 @@ add_subdirectory(spinner_demo)
 add_subdirectory(agent_stream_demo)
 add_subdirectory(popup_demo)
 add_subdirectory(flex_layout_demo)
+add_subdirectory(braille_demo)
+

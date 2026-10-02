@@ -14,6 +14,11 @@ private slots:
     void testClear();
     void testCellAccess();
     void testDiff();
+    void testDiffBatchesContiguousCells();
+    void testDiffReusesStyleAcrossRuns();
+    void testDiffEmitsStyleTransitions();
+    void testDiffHandlesWideCharacterTransitions();
+    void testRelativeDiffBatchesContiguousCells();
     void testStyledTextSerialization();
     void testHtmlTagParsing();
     void testTextFormatModes();
@@ -65,6 +70,90 @@ void TestTextGridBuffer::testDiff() {
     
     std::string diff = b1.diff(b2);
     QVERIFY(diff.find("A") != std::string::npos);
+    QVERIFY(b2.diff(b2).empty());
+}
+
+static int occurrenceCount(const std::string& text, const std::string& needle) {
+    int count = 0;
+    size_t position = 0;
+    while ((position = text.find(needle, position)) != std::string::npos) {
+        ++count;
+        position += needle.size();
+    }
+    return count;
+}
+
+void TestTextGridBuffer::testDiffBatchesContiguousCells() {
+    TextGridBuffer before, after;
+    before.resize(80, 1);
+    after.resize(80, 1);
+    after.fillRect(0, 0, 80, 1, "X");
+
+    const std::string diff = before.diff(after);
+    QCOMPARE(occurrenceCount(diff, "\033[1;1H"), 1);
+    QCOMPARE(occurrenceCount(diff, "\033[1;2H"), 0);
+    QCOMPARE(occurrenceCount(diff, "\033[0m"), 1);
+    QVERIFY(diff.size() < 200);
+    QVERIFY(diff.find(std::string(80, 'X')) != std::string::npos);
+}
+
+void TestTextGridBuffer::testDiffReusesStyleAcrossRuns() {
+    TextGridBuffer before, after;
+    before.resize(5, 1);
+    after.resize(5, 1);
+    after.cellAt(0, 0).character = "A";
+    after.cellAt(2, 0).character = "B";
+
+    const std::string diff = before.diff(after);
+    QCOMPARE(occurrenceCount(diff, "\033[0m"), 1);
+    QCOMPARE(occurrenceCount(diff, "38;2;255;255;255"), 1);
+    QCOMPARE(occurrenceCount(diff, "H"), 2);
+}
+
+void TestTextGridBuffer::testDiffEmitsStyleTransitions() {
+    TextGridBuffer before, after;
+    before.resize(2, 1);
+    after.resize(2, 1);
+    after.cellAt(0, 0).character = "A";
+    after.cellAt(0, 0).fgColor = 0xFFFF0000;
+    after.cellAt(0, 0).bgColor = 0xFF0000FF;
+    after.cellAt(0, 0).attributes = TextAttribute::Bold;
+    after.cellAt(1, 0).character = "B";
+
+    const std::string diff = before.diff(after);
+    QVERIFY(diff.find("38;2;255;0;0") != std::string::npos);
+    QVERIFY(diff.find("48;2;0;0;255") != std::string::npos);
+    QVERIFY(diff.find("38;2;255;255;255;49;22m") != std::string::npos);
+    QVERIFY(diff.ends_with("B"));
+}
+
+void TestTextGridBuffer::testDiffHandlesWideCharacterTransitions() {
+    TextGridBuffer before, wide, narrow;
+    before.resize(3, 1);
+    wide.resize(3, 1);
+    narrow.resize(3, 1);
+    wide.writeText(0, 0, QString::fromUtf8("中A"));
+    narrow.writeText(0, 0, QStringLiteral("A"));
+
+    const std::string toWide = before.diff(wide);
+    QCOMPARE(occurrenceCount(toWide, "H"), 1);
+    QVERIFY(toWide.find(QString::fromUtf8("中A").toStdString()) != std::string::npos);
+
+    const std::string toNarrow = wide.diff(narrow);
+    QCOMPARE(occurrenceCount(toNarrow, "H"), 1);
+    QVERIFY(toNarrow.ends_with("A  "));
+}
+
+void TestTextGridBuffer::testRelativeDiffBatchesContiguousCells() {
+    TextGridBuffer before, after;
+    before.resize(8, 2);
+    after.resize(8, 2);
+    after.fillRect(2, 1, 4, 1, "R");
+
+    const std::string diff = before.diffRelative(after);
+    QCOMPARE(occurrenceCount(diff, "\033[1B"), 1);
+    QCOMPARE(occurrenceCount(diff, "\033[2C"), 1);
+    QVERIFY(diff.find("RRRR") != std::string::npos);
 }
 
 void TestTextGridBuffer::testStyledTextSerialization() {

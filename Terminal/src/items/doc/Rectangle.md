@@ -1,0 +1,55 @@
+# Rectangle
+
+## 1. Class Overview
+
+`Rectangle` is a visual QML item that renders a background color fill and optional single or double borders in the terminal grid.
+
+Developers use `Rectangle` for containers, cards, panels, and borders.
+
+## 2. Project Structure and Dependencies
+
+- **Header**: `Tui/src/items/Rectangle.h`
+- **Implementation**: `Tui/src/items/Rectangle.cpp`
+- **Dependencies**: `Item.h`, `Border.h`, `ColorMapper.h`.
+
+## 3. Class Hierarchy and Role
+
+- **Base Class**: `Item`
+  - Inherits spatial positioning, sizing, flexbox layout, and rendering interfaces.
+
+## 4. Q_PROPERTY Declarations
+
+| Property | Type | READ | WRITE | NOTIFY | Description |
+|----------|------|------|-------|--------|-------------|
+| `color` | `QString` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
+| `border` | `Border*` | `border` | — | — | Attached border configuration (`style`, `color`). |
+
+## 9. Public Methods
+
+#### uint32_t resolvedBgColor() const
+Returns the 32-bit ARGB integer value of the background color.
+
+#### Border* border()
+Returns a pointer to the attached `Border` object configuring border style and border color.
+
+## 10. Protected Virtual Methods / Event Handlers
+
+#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
+Renders the background color fill and borders into `buffer`, then calls `Item::render` to render children.
+
+## 13. QML Exposure
+
+Registered as `Rectangle` in the `Tui` module via `QML_ELEMENT`.
+
+## 16. Usage Example
+
+```cpp
+#include "Rectangle.h"
+
+using namespace qtui;
+
+Rectangle* rect = new Rectangle(parentItem);
+rect->setColor("#1e1e1e");
+rect->border()->setStyle("single");
+rect->border()->setColor("yellow");
+```

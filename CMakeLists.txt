@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
+set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL "Suppress warnings about using private Qt modules")
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml QmlPrivate)
 if(QTUI_BUILD_TESTS)
     find_package(Qt6 REQUIRED COMPONENTS Test)
@@ -20,7 +21,8 @@ if(QTUI_BUILD_TESTS)
     enable_testing()
 endif()
 
-add_subdirectory(Tui)   
+add_subdirectory(Terminal)
+add_subdirectory(qtasktree_app)
 
 # Example executable to test the library
 if(QTUI_BUILD_EXAMPLES)

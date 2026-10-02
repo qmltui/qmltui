@@ -1,6 +1,5 @@
 #include <QTest>
-#include <QObject>
-#include "Item.h"
+#include "Terminal.h"
 
 using namespace qtui;
 
@@ -10,6 +9,7 @@ class TestFocus : public QObject {
 private slots:
     void testForceActiveFocus();
     void testFocusChain();
+    void testTerminalFillMode();
 };
 
 void TestFocus::testForceActiveFocus() {
@@ -43,6 +43,22 @@ void TestFocus::testFocusChain() {
     QCOMPARE(root.activeFocus(), false);
     QCOMPARE(level1->activeFocus(), false);
     QCOMPARE(level2->activeFocus(), true);
+}
+
+void TestFocus::testTerminalFillMode() {
+    Terminal term;
+    QVERIFY(term.fillTerminal());
+
+    // Setting explicit width without fillTerminal:true turns off fillTerminal
+    term.setWidth(70);
+    QVERIFY(!term.fillTerminal());
+    QCOMPARE(term.width(), 70);
+
+    // Explicitly setting fillTerminal:true overrides and forces fillTerminal
+    term.setFillTerminal(true);
+    QVERIFY(term.fillTerminal());
+    term.setWidth(50);
+    QVERIFY(term.fillTerminal());
 }
 
 QTEST_MAIN(TestFocus)

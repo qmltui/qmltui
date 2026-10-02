@@ -17,6 +17,7 @@ private slots:
     void testStyledTextSerialization();
     void testHtmlTagParsing();
     void testTextFormatModes();
+    void testDrawingHelpers();
 };
 
 void TestTextGridBuffer::testResize() {
@@ -138,6 +139,37 @@ void TestTextGridBuffer::testTextFormatModes() {
     text.setTextFormat(Text::AnsiText);
     // HTML tags are not parsed: "<b>Bold</b>" (11 chars) + "Ansi" (4 chars) = 15 chars.
     QCOMPARE(text.width(), 15);
+}
+
+void TestTextGridBuffer::testDrawingHelpers() {
+    TextGridBuffer buffer;
+    buffer.resize(10, 5);
+
+    // Test writeText
+    buffer.writeText(1, 1, "Hello", 0xFF0000FF, 0x00000000, TextAttribute::Bold);
+    QCOMPARE(QString(buffer.cellAt(1, 1).character.data()), QString("H"));
+    QCOMPARE(QString(buffer.cellAt(5, 1).character.data()), QString("o"));
+    QCOMPARE(buffer.cellAt(1, 1).fgColor, 0xFF0000FF);
+    QCOMPARE(buffer.cellAt(1, 1).attributes, TextAttribute::Bold);
+
+    // Test fillRect
+    buffer.fillRect(0, 0, 3, 2, "#");
+    QCOMPARE(QString(buffer.cellAt(0, 0).character.data()), QString("#"));
+    QCOMPARE(QString(buffer.cellAt(2, 1).character.data()), QString("#"));
+
+    // Test drawLine
+    buffer.drawLine(0, 3, 4, 3, "-");
+    QCOMPARE(QString(buffer.cellAt(0, 3).character.data()), QString("-"));
+    QCOMPARE(QString(buffer.cellAt(4, 3).character.data()), QString("-"));
+
+    // Test drawBox
+    TextGridBuffer boxBuf;
+    boxBuf.resize(4, 4);
+    boxBuf.drawBox(0, 0, 4, 4);
+    QCOMPARE(boxBuf.cellAt(0, 0).character[0], '\xE2'); // ┌ (UTF-8 3-byte char)
+    QCOMPARE(boxBuf.cellAt(3, 0).character[0], '\xE2'); // ┐
+    QCOMPARE(boxBuf.cellAt(0, 3).character[0], '\xE2'); // └
+    QCOMPARE(boxBuf.cellAt(3, 3).character[0], '\xE2'); // ┘
 }
 
 QTEST_MAIN(TestTextGridBuffer)

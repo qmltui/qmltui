@@ -12,6 +12,29 @@ static QQmlContext *delegateContext(Item *item) {
                 : nullptr;
 }
 
+static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
+    if (!obj) return;
+    if (obj->metaObject()->indexOfProperty(name) != -1) {
+        obj->setProperty(name, value);
+    }
+}
+
+static QObject* createDelegateWithFilteredProps(QQmlComponent* delegate, QQmlContext* context, const QVariantMap& initialProps) {
+    if (!delegate || !context) return nullptr;
+    QVariantMap filteredProps;
+    if (QObject* temp = delegate->beginCreate(context)) {
+        const QMetaObject* meta = temp->metaObject();
+        for (auto it = initialProps.cbegin(); it != initialProps.cend(); ++it) {
+            if (meta->indexOfProperty(it.key().toUtf8().constData()) != -1) {
+                filteredProps[it.key()] = it.value();
+            }
+        }
+        delegate->completeCreate();
+        delete temp;
+    }
+    return delegate->createWithInitialProperties(filteredProps, context);
+}
+
 GridView::GridView(QObject* parent) : ScrollView(parent) {
 }
 
@@ -81,6 +104,7 @@ void GridView::generateItems() {
     if (!m_delegate) return;
     
     QQmlEngine* engine = qmlEngine(this);
+    if (!engine && m_delegate) engine = m_delegate->engine();
     if (!engine) return;
 
     Item* contentItem = this;
@@ -90,8 +114,14 @@ void GridView::generateItems() {
         count = std::clamp(m_model.toInt(), 0, 10000);
         for (int i = 0; i < count; ++i) {
             QQmlContext* context = new QQmlContext(qmlContext(this), this);
+            QVariantMap initialProps;
+            initialProps["index"] = i;
+
             context->setContextProperty("index", i);
-            QObject* obj = m_delegate->create(context);
+            QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
+            if (obj) {
+                setPropertyIfExists(obj, "index", i);
+            }
             if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                 item->setParentItem(contentItem);
                 item->setParent(this);
@@ -103,25 +133,67 @@ void GridView::generateItems() {
                 m_createdItems.append(nullptr);
             }
         }
-    } else if (m_model.userType() == qMetaTypeId<QJSValue>()) {
-        QJSValue val = m_model.value<QJSValue>();
-        if (val.isArray()) {
-            count = std::clamp(val.property("length").toInt(), 0, 10000);
-            for (int i = 0; i < count; ++i) {
-                QQmlContext* context = new QQmlContext(qmlContext(this), this);
-                context->setContextProperty("index", i);
-                context->setContextProperty("modelData", val.property(i).toVariant());
-                QObject* obj = m_delegate->create(context);
-                if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
-                    item->setParentItem(contentItem);
-                    item->setParent(this);
-                    context->setParent(item);
-                    m_createdItems.append(item);
-                } else {
-                    delete obj;
-                    delete context;
-                    m_createdItems.append(nullptr);
+    } else if (m_model.canConvert<QVariantList>() || m_model.userType() == qMetaTypeId<QJSValue>()) {
+        QVariantList list;
+        if (m_model.userType() == qMetaTypeId<QJSValue>()) {
+            QJSValue val = m_model.value<QJSValue>();
+            if (val.isArray()) {
+                int len = val.property("length").toInt();
+                for (int i = 0; i < len; ++i) {
+                    list.append(val.property(i).toVariant());
                 }
+            }
+        } else if (m_model.canConvert<QVariantList>()) {
+            list = m_model.toList();
+        }
+
+        count = std::clamp(static_cast<int>(list.size()), 0, 10000);
+        for (int i = 0; i < count; ++i) {
+            QQmlContext* context = new QQmlContext(qmlContext(this), this);
+            QVariant itemVal = list.at(i);
+
+            QVariantMap initialProps;
+            initialProps["index"] = i;
+            initialProps["modelData"] = itemVal;
+            initialProps["model"] = itemVal;
+
+            context->setContextProperty("index", i);
+            context->setContextProperty("modelData", itemVal);
+            context->setContextProperty("model", itemVal);
+
+            QVariant elem = itemVal;
+            if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
+                elem = elem.value<QJSValue>().toVariant();
+            }
+            if (elem.canConvert<QVariantMap>()) {
+                QVariantMap map = elem.toMap();
+                for (auto it = map.cbegin(); it != map.cend(); ++it) {
+                    initialProps[it.key()] = it.value();
+                    context->setContextProperty(it.key(), it.value());
+                }
+            }
+
+            QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
+            if (obj) {
+                setPropertyIfExists(obj, "index", i);
+                setPropertyIfExists(obj, "modelData", itemVal);
+                setPropertyIfExists(obj, "model", itemVal);
+                if (elem.canConvert<QVariantMap>()) {
+                    QVariantMap map = elem.toMap();
+                    for (auto it = map.cbegin(); it != map.cend(); ++it) {
+                        setPropertyIfExists(obj, it.key().toUtf8().constData(), it.value());
+                    }
+                }
+            }
+            if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
+                item->setParentItem(contentItem);
+                item->setParent(this);
+                context->setParent(item);
+                m_createdItems.append(item);
+            } else {
+                delete obj;
+                delete context;
+                m_createdItems.append(nullptr);
             }
         }
     } else if (m_model.canConvert<QObject*>()) {
@@ -146,11 +218,13 @@ void GridView::generateItems() {
                         QQmlContext *context = delegateContext(item);
                         if (!context) continue;
                         const QVariant value = context->contextProperty("model");
-                        if (QQmlPropertyMap *map =
-                                qobject_cast<QQmlPropertyMap*>(value.value<QObject*>())) {
-                            const QModelIndex index = model->index(row, 0);
-                            for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it)
-                                map->insert(it.value(), model->data(index, it.key()));
+                        QQmlPropertyMap *map = qobject_cast<QQmlPropertyMap*>(value.value<QObject*>());
+                        const QModelIndex index = model->index(row, 0);
+                        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                            QVariant val = model->data(index, it.key());
+                            if (map) map->insert(it.value(), val);
+                            context->setContextProperty(it.value(), val);
+                            setPropertyIfExists(item, it.value().toUtf8().constData(), val);
                         }
                     }
                     markDirty();
@@ -182,16 +256,33 @@ void GridView::generateItems() {
                 for (int i = 0; i < rowCount; ++i) {
                     QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
                     const QModelIndex modelIndex = model->index(i, 0);
+                    QVariantMap initialProps;
+                    initialProps["index"] = i;
                     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                        rowMap->insert(it.value(), model->data(modelIndex, it.key()));
+                        QVariant val = model->data(modelIndex, it.key());
+                        rowMap->insert(it.value(), val);
+                        initialProps[it.value()] = val;
                     }
+                    initialProps["model"] = QVariant::fromValue(rowMap);
+                    initialProps["modelData"] = QVariant::fromValue(rowMap);
 
                     QQmlContext* context = new QQmlContext(qmlContext(this), this);
                     context->setContextProperty("index", i);
                     context->setContextProperty("model", rowMap);
                     context->setContextProperty("modelData", rowMap);
+                    for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                        context->setContextProperty(it.value(), rowMap->value(it.value()));
+                    }
 
-                    QObject* obj = m_delegate->create(context);
+                    QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
+                    if (obj) {
+                        setPropertyIfExists(obj, "index", i);
+                        setPropertyIfExists(obj, "modelData", QVariant::fromValue(rowMap));
+                        setPropertyIfExists(obj, "model", QVariant::fromValue(rowMap));
+                        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                            setPropertyIfExists(obj, it.value().toUtf8().constData(), rowMap->value(it.value()));
+                        }
+                    }
                     if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                         item->setParentItem(contentItem);
                         item->setParent(this);
@@ -217,13 +308,33 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
     for (int row = first; row <= last; ++row) {
         QQmlPropertyMap *rowMap = QQmlPropertyMap::create(this);
         const QModelIndex modelIndex = model->index(row, 0);
-        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it)
-            rowMap->insert(it.value(), model->data(modelIndex, it.key()));
+        QVariantMap initialProps;
+        initialProps["index"] = row;
+        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+            QVariant val = model->data(modelIndex, it.key());
+            rowMap->insert(it.value(), val);
+            initialProps[it.value()] = val;
+        }
+        initialProps["model"] = QVariant::fromValue(rowMap);
+        initialProps["modelData"] = QVariant::fromValue(rowMap);
+
         QQmlContext *context = new QQmlContext(qmlContext(this), this);
         context->setContextProperty("index", row);
         context->setContextProperty("model", rowMap);
         context->setContextProperty("modelData", rowMap);
-        QObject *object = m_delegate->create(context);
+        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+            context->setContextProperty(it.value(), rowMap->value(it.value()));
+        }
+
+        QObject *object = createDelegateWithFilteredProps(m_delegate, context, initialProps);
+        if (object) {
+            setPropertyIfExists(object, "index", row);
+            setPropertyIfExists(object, "modelData", QVariant::fromValue(rowMap));
+            setPropertyIfExists(object, "model", QVariant::fromValue(rowMap));
+            for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                setPropertyIfExists(object, it.value().toUtf8().constData(), rowMap->value(it.value()));
+            }
+        }
         if (Item *item = qobject_cast<Item*>(object)) {
             item->setParentItem(this);
             item->setParent(this);
@@ -240,6 +351,8 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
     for (int row = last + 1; row < m_createdItems.size(); ++row) {
         if (QQmlContext *context = delegateContext(m_createdItems[row]))
             context->setContextProperty("index", row);
+        if (m_createdItems[row])
+            setPropertyIfExists(m_createdItems[row], "index", row);
     }
     markDirty();
 }

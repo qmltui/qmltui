@@ -7,6 +7,29 @@
 
 namespace qtui {
 
+static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
+    if (!obj) return;
+    if (obj->metaObject()->indexOfProperty(name) != -1) {
+        obj->setProperty(name, value);
+    }
+}
+
+static QObject* createDelegateWithFilteredProps(QQmlComponent* delegate, QQmlContext* context, const QVariantMap& initialProps) {
+    if (!delegate || !context) return nullptr;
+    QVariantMap filteredProps;
+    if (QObject* temp = delegate->beginCreate(context)) {
+        const QMetaObject* meta = temp->metaObject();
+        for (auto it = initialProps.cbegin(); it != initialProps.cend(); ++it) {
+            if (meta->indexOfProperty(it.key().toUtf8().constData()) != -1) {
+                filteredProps[it.key()] = it.value();
+            }
+        }
+        delegate->completeCreate();
+        delete temp;
+    }
+    return delegate->createWithInitialProperties(filteredProps, context);
+}
+
 Repeater::Repeater(QObject* parent) : Item(parent) {
     setVisible(false); // Repeater itself is not visible, it just injects children
 }
@@ -59,19 +82,13 @@ void Repeater::clearItems() {
     m_rowMaps.clear();
 }
 
-static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
-    if (!obj) return;
-    if (obj->metaObject()->indexOfProperty(name) != -1) {
-        obj->setProperty(name, value);
-    }
-}
-
 void Repeater::generateItems() {
     clearItems();
     
     if (!m_delegate) return;
     
     QQmlEngine* engine = qmlEngine(this);
+    if (!engine && m_delegate) engine = m_delegate->engine();
     if (!engine) return;
 
     Item* parentVis = parentItem();
@@ -122,15 +139,40 @@ void Repeater::generateItems() {
     if (isList) {
         for (int i = 0; i < list.size(); ++i) {
             QQmlContext* context = new QQmlContext(creationCtx, this);
-            context->setContextProperty("index", i);
-            context->setContextProperty("modelData", list.at(i));
-            context->setContextProperty("model", list.at(i));
+            QVariant itemVal = list.at(i);
 
-            QObject* obj = m_delegate->create(context);
+            QVariantMap initialProps;
+            initialProps["index"] = i;
+            initialProps["modelData"] = itemVal;
+            initialProps["model"] = itemVal;
+
+            context->setContextProperty("index", i);
+            context->setContextProperty("modelData", itemVal);
+            context->setContextProperty("model", itemVal);
+
+            QVariant elem = itemVal;
+            if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
+                elem = elem.value<QJSValue>().toVariant();
+            }
+            if (elem.canConvert<QVariantMap>()) {
+                QVariantMap map = elem.toMap();
+                for (auto it = map.cbegin(); it != map.cend(); ++it) {
+                    initialProps[it.key()] = it.value();
+                    context->setContextProperty(it.key(), it.value());
+                }
+            }
+
+            QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
             if (obj) {
                 setPropertyIfExists(obj, "index", i);
-                setPropertyIfExists(obj, "modelData", list.at(i));
-                setPropertyIfExists(obj, "model", list.at(i));
+                setPropertyIfExists(obj, "modelData", itemVal);
+                setPropertyIfExists(obj, "model", itemVal);
+                if (elem.canConvert<QVariantMap>()) {
+                    QVariantMap map = elem.toMap();
+                    for (auto it = map.cbegin(); it != map.cend(); ++it) {
+                        setPropertyIfExists(obj, it.key().toUtf8().constData(), it.value());
+                    }
+                }
             }
             if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                 item->setParentItem(parentVis);
@@ -147,9 +189,12 @@ void Repeater::generateItems() {
     } else if (isCount) {
         for (int i = 0; i < count; ++i) {
             QQmlContext* context = new QQmlContext(creationCtx, this);
+            QVariantMap initialProps;
+            initialProps["index"] = i;
+
             context->setContextProperty("index", i);
 
-            QObject* obj = m_delegate->create(context);
+            QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
             if (obj) {
                 setPropertyIfExists(obj, "index", i);
             }
@@ -170,10 +215,8 @@ void Repeater::generateItems() {
         if (modelObj && modelObj->inherits("QAbstractItemModel")) {
             QAbstractItemModel* model = qobject_cast<QAbstractItemModel*>(modelObj);
             if (model) {
-                // Disconnect any existing connections from this model to this Repeater to prevent duplicates
                 disconnect(model, nullptr, this, nullptr);
 
-                // Helper to build role names map (cached per model operation)
                 auto buildRoleMap = [](QAbstractItemModel* m) {
                     QHash<int, QString> roleMap;
                     const QHash<int, QByteArray> roles = m->roleNames();
@@ -183,27 +226,28 @@ void Repeater::generateItems() {
                     return roleMap;
                 };
 
-                // Connect to dataChanged to update QQmlPropertyMap properties dynamically
                 connect(model, &QAbstractItemModel::dataChanged, this, [this, model, buildRoleMap](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
-                    if (topLeft.parent().isValid()) return; // Ignore child items in tree models
+                    if (topLeft.parent().isValid()) return; 
                     const QHash<int, QString> roleMap = buildRoleMap(model);
                     int first = topLeft.row();
                     int last = bottomRight.row();
                     for (int row = first; row <= last; ++row) {
                         if (row >= 0 && row < m_rowMaps.size()) {
                             QQmlPropertyMap* rowMap = m_rowMaps.at(row);
-                            if (rowMap) {
-                                const QModelIndex modelIndex = model->index(row, 0);
-                                for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                                    rowMap->insert(it.value(), model->data(modelIndex, it.key()));
-                                }
+                            QQmlContext* ctx = (row < m_contexts.size()) ? m_contexts.at(row) : nullptr;
+                            Item* item = (row < m_createdItems.size()) ? m_createdItems.at(row) : nullptr;
+                            const QModelIndex modelIndex = model->index(row, 0);
+                            for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                                QVariant val = model->data(modelIndex, it.key());
+                                if (rowMap) rowMap->insert(it.value(), val);
+                                if (ctx) ctx->setContextProperty(it.value(), val);
+                                setPropertyIfExists(item, it.value().toUtf8().constData(), val);
                             }
                         }
                     }
                     markDirty();
                 });
 
-                // Connect to dynamic insert/remove/move/reset signals
                 connect(model, &QAbstractItemModel::rowsInserted, this, [this, model](const QModelIndex &parent, int first, int last) {
                     if (parent.isValid()) return;
                     onRowsInserted(model, first, last);
@@ -230,20 +274,32 @@ void Repeater::generateItems() {
                 for (int i = 0; i < rowCount; ++i) {
                     QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
                     const QModelIndex modelIndex = model->index(i, 0);
+                    QVariantMap initialProps;
+                    initialProps["index"] = i;
                     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                        rowMap->insert(it.value(), model->data(modelIndex, it.key()));
+                        QVariant val = model->data(modelIndex, it.key());
+                        rowMap->insert(it.value(), val);
+                        initialProps[it.value()] = val;
                     }
+                    initialProps["model"] = QVariant::fromValue(rowMap);
+                    initialProps["modelData"] = QVariant::fromValue(rowMap);
 
                     QQmlContext* context = new QQmlContext(creationCtx, this);
                     context->setContextProperty("index", i);
                     context->setContextProperty("model", rowMap);
                     context->setContextProperty("modelData", rowMap);
+                    for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                        context->setContextProperty(it.value(), rowMap->value(it.value()));
+                    }
 
-                    QObject* obj = m_delegate->create(context);
+                    QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
                     if (obj) {
                         setPropertyIfExists(obj, "index", i);
                         setPropertyIfExists(obj, "modelData", QVariant::fromValue(rowMap));
                         setPropertyIfExists(obj, "model", QVariant::fromValue(rowMap));
+                        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                            setPropertyIfExists(obj, it.value().toUtf8().constData(), rowMap->value(it.value()));
+                        }
                     }
                     if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                         item->setParentItem(parentVis);
@@ -280,9 +336,15 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
     for (int i = first; i <= last; ++i) {
         QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
         const QModelIndex modelIndex = model->index(i, 0);
+        QVariantMap initialProps;
+        initialProps["index"] = i;
         for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-            rowMap->insert(it.value(), model->data(modelIndex, it.key()));
+            QVariant val = model->data(modelIndex, it.key());
+            rowMap->insert(it.value(), val);
+            initialProps[it.value()] = val;
         }
+        initialProps["model"] = QVariant::fromValue(rowMap);
+        initialProps["modelData"] = QVariant::fromValue(rowMap);
 
         QQmlContext* creationCtx = m_delegate->creationContext();
         if (!creationCtx) creationCtx = qmlContext(this);
@@ -290,12 +352,18 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
         context->setContextProperty("index", i);
         context->setContextProperty("model", rowMap);
         context->setContextProperty("modelData", rowMap);
+        for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+            context->setContextProperty(it.value(), rowMap->value(it.value()));
+        }
 
-        QObject* obj = m_delegate->create(context);
+        QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
         if (obj) {
             setPropertyIfExists(obj, "index", i);
             setPropertyIfExists(obj, "modelData", QVariant::fromValue(rowMap));
             setPropertyIfExists(obj, "model", QVariant::fromValue(rowMap));
+            for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
+                setPropertyIfExists(obj, it.value().toUtf8().constData(), rowMap->value(it.value()));
+            }
         }
         if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
             item->setParentItem(parentVis);
@@ -316,7 +384,8 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
 
     // Update indices for all contexts after the inserted range
     for (int i = last + 1; i < m_contexts.size(); ++i) {
-        m_contexts[i]->setContextProperty("index", i);
+        if (m_contexts[i]) m_contexts[i]->setContextProperty("index", i);
+        if (i < m_createdItems.size() && m_createdItems[i]) setPropertyIfExists(m_createdItems[i], "index", i);
     }
     
     markDirty();
@@ -343,6 +412,7 @@ void Repeater::onRowsRemoved(int first, int last) {
     // Update indices for all contexts after the removed range
     for (int i = first; i < m_contexts.size(); ++i) {
         if (m_contexts[i]) m_contexts[i]->setContextProperty("index", i);
+        if (i < m_createdItems.size() && m_createdItems[i]) setPropertyIfExists(m_createdItems[i], "index", i);
     }
 
     markDirty();
@@ -365,8 +435,10 @@ void Repeater::onRowsMoved(int first, int last, int destination) {
         m_contexts.insert(insertion + index, movedContexts[index]);
         m_rowMaps.insert(insertion + index, movedMaps[index]);
     }
-    for (int row = 0; row < m_contexts.size(); ++row)
+    for (int row = 0; row < m_contexts.size(); ++row) {
         if (m_contexts[row]) m_contexts[row]->setContextProperty("index", row);
+        if (row < m_createdItems.size() && m_createdItems[row]) setPropertyIfExists(m_createdItems[row], "index", row);
+    }
     markDirty();
 }
 

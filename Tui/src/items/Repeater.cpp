@@ -127,10 +127,16 @@ void Repeater::generateItems() {
                     markDirty();
                 });
 
-                // Connect to dynamic insert/remove/reset to regenerate
-                connect(model, &QAbstractItemModel::rowsInserted, this, [this](){ generateItems(); });
-                connect(model, &QAbstractItemModel::rowsRemoved, this, [this](){ generateItems(); });
-                connect(model, &QAbstractItemModel::modelReset, this, [this](){ generateItems(); });
+                // Connect to dynamic insert/remove/reset to regenerate incrementally
+                connect(model, &QAbstractItemModel::rowsInserted, this, [this, model](const QModelIndex &parent, int first, int last) {
+                    onRowsInserted(model, first, last);
+                });
+                connect(model, &QAbstractItemModel::rowsRemoved, this, [this](const QModelIndex &parent, int first, int last) {
+                    onRowsRemoved(first, last);
+                });
+                connect(model, &QAbstractItemModel::modelReset, this, [this](){
+                    generateItems();
+                });
 
                 const QHash<int, QByteArray> roles = model->roleNames();
                 int rowCount = 0;
@@ -159,6 +165,62 @@ void Repeater::generateItems() {
             }
         }
     }
+}
+
+void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
+    Item* parentVis = parentItem();
+    if (!parentVis || !m_delegate) return;
+    const QHash<int, QByteArray> roles = model->roleNames();
+
+    for (int i = first; i <= last; ++i) {
+        QQmlContext* context = new QQmlContext(qmlContext(this), this);
+        context->setContextProperty("index", i);
+        
+        const QModelIndex modelIndex = model->index(i, 0);
+        for (auto role = roles.cbegin(); role != roles.cend(); ++role) {
+            context->setContextProperty(QString::fromUtf8(role.value()), model->data(modelIndex, role.key()));
+        }
+
+        QObject* obj = m_delegate->create(context);
+        if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
+            item->setParentItem(parentVis);
+            m_createdItems.insert(i, item);
+            m_contexts.insert(i, context);
+        } else {
+            delete obj;
+            delete context;
+        }
+    }
+
+    // Update indices for all contexts after the inserted range
+    for (int i = last + 1; i < m_contexts.count(); ++i) {
+        m_contexts[i]->setContextProperty("index", i);
+    }
+    
+    markDirty();
+}
+
+void Repeater::onRowsRemoved(int first, int last) {
+    for (int i = last; i >= first; --i) {
+        if (i >= 0 && i < m_createdItems.count()) {
+            Item* item = m_createdItems.takeAt(i);
+            if (item) {
+                item->setParentItem(nullptr);
+                delete item;
+            }
+        }
+        if (i >= 0 && i < m_contexts.count()) {
+            QQmlContext* context = m_contexts.takeAt(i);
+            delete context;
+        }
+    }
+
+    // Update indices for all contexts after the removed range
+    for (int i = first; i < m_contexts.count(); ++i) {
+        m_contexts[i]->setContextProperty("index", i);
+    }
+
+    markDirty();
 }
 
 } // namespace qtui

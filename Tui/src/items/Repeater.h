@@ -2,6 +2,7 @@
 
 #include "Item.h"
 #include <QVariant>
+#include <QAbstractItemModel>
 #include <QQmlComponent>
 #include <QQmlContext>
 
@@ -30,6 +31,8 @@ signals:
 private:
     void clearItems();
     void generateItems();
+    void onRowsInserted(QAbstractItemModel* model, int first, int last);
+    void onRowsRemoved(int first, int last);
 
     QVariant m_model;
     QQmlComponent* m_delegate = nullptr;

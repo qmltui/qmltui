@@ -112,6 +112,7 @@ private:
     struct VisibleNode {
         QString text;
         QString path;
+        QString key;
         int depth = 0;
         bool hasChildren = false;
         bool expanded = false;
@@ -119,8 +120,8 @@ private:
         QPersistentModelIndex modelIndex;
     };
 
-    void flattenTree(const QVariantMap &map, const QString &parentPath, int depth, QList<VisibleNode> &list);
-    void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, int depth, QList<VisibleNode> &list);
+    void flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
+    void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
     void updateTree();
 
     void clearDelegateItems();
@@ -142,6 +143,7 @@ private:
     int m_delegateCapacity = 0;
 
     QSet<QString> m_expandedPaths;
+    QSet<QString> m_collapsedPaths;
     QList<VisibleNode> m_visibleNodes;
     bool m_treeDirty = true;
     int m_selectedIndex = 0;

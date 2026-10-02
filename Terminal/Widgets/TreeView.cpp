@@ -34,6 +34,8 @@ void TreeView::setModel(const QVariant &model) {
 
     m_modelVariant = model;
     m_rootNodeMap.clear();
+    m_expandedPaths.clear();
+    m_collapsedPaths.clear();
 
     QObject *obj = qvariant_cast<QObject*>(model);
     if (!obj && model.canConvert<QJSValue>()) {
@@ -219,10 +221,12 @@ void TreeView::expand(int index) {
     updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
         const VisibleNode &node = m_visibleNodes[index];
-        if (node.hasChildren && !m_expandedPaths.contains(node.path)) {
-            m_expandedPaths.insert(node.path);
+        if (node.hasChildren) {
+            m_expandedPaths.insert(node.key);
+            m_collapsedPaths.remove(node.key);
             m_treeDirty = true;
             markDirty();
+            updateTree();
         }
     }
 }
@@ -231,10 +235,12 @@ void TreeView::collapse(int index) {
     updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
         const VisibleNode &node = m_visibleNodes[index];
-        if (node.hasChildren && m_expandedPaths.contains(node.path)) {
-            m_expandedPaths.remove(node.path);
+        if (node.hasChildren) {
+            m_collapsedPaths.insert(node.key);
+            m_expandedPaths.remove(node.key);
             m_treeDirty = true;
             markDirty();
+            updateTree();
         }
     }
 }
@@ -244,32 +250,70 @@ void TreeView::toggleExpanded(int index) {
     if (index >= 0 && index < m_visibleNodes.size()) {
         const VisibleNode &node = m_visibleNodes[index];
         if (node.hasChildren) {
-            if (m_expandedPaths.contains(node.path)) {
-                m_expandedPaths.remove(node.path);
+            if (node.expanded) {
+                collapse(index);
             } else {
-                m_expandedPaths.insert(node.path);
+                expand(index);
             }
-            m_treeDirty = true;
-            markDirty();
         }
     }
 }
 
 bool TreeView::isExpanded(int index) const {
+    const_cast<TreeView*>(this)->updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
         return m_visibleNodes[index].expanded;
     }
     return false;
 }
 
+static void collectAllKeys(const QVariantMap &map, const QString &parentKey, QStringList &keys) {
+    QString name = map.value("text", map.value("display", "node")).toString();
+    QString currentKey = parentKey.isEmpty() ? name + "#0" : parentKey;
+    keys.append(currentKey);
+
+    QVariant childrenVar = map.value("children");
+    if (!childrenVar.isValid() || childrenVar.isNull()) childrenVar = map.value("nodes");
+    if (childrenVar.userType() == QMetaType::fromType<QJSValue>().id()) {
+        childrenVar = childrenVar.value<QJSValue>().toVariant();
+    }
+    QVariantList children = childrenVar.toList();
+    int childIdx = 0;
+    for (const QVariant &childVar : children) {
+        QVariant cVar = childVar;
+        if (cVar.userType() == QMetaType::fromType<QJSValue>().id()) {
+            cVar = cVar.value<QJSValue>().toVariant();
+        }
+        QVariantMap childMap = cVar.toMap();
+        QString childName = childMap.value("text", childMap.value("display", "node")).toString();
+        QString childKey = currentKey + "/" + childName + "#" + QString::number(childIdx);
+        collectAllKeys(childMap, childKey, keys);
+        childIdx++;
+    }
+}
+
 void TreeView::expandAll() {
-    // Expand top level and visible sub-nodes
+    m_collapsedPaths.clear();
+    QStringList keys;
+    if (!m_rootNodeMap.isEmpty()) {
+        collectAllKeys(m_rootNodeMap, "", keys);
+        for (const QString &k : keys) {
+            m_expandedPaths.insert(k);
+        }
+    }
     m_treeDirty = true;
     markDirty();
 }
 
 void TreeView::collapseAll() {
     m_expandedPaths.clear();
+    QStringList keys;
+    if (!m_rootNodeMap.isEmpty()) {
+        collectAllKeys(m_rootNodeMap, "", keys);
+        for (const QString &k : keys) {
+            m_collapsedPaths.insert(k);
+        }
+    }
     m_treeDirty = true;
     markDirty();
 }
@@ -288,9 +332,10 @@ void TreeView::clearDelegateItems() {
     m_delegateCapacity = 0;
 }
 
-void TreeView::flattenTree(const QVariantMap &map, const QString &parentPath, int depth, QList<VisibleNode> &list) {
+void TreeView::flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list) {
     QString name = map.value("text", map.value("display", "node")).toString();
     QString currentPath = parentPath.isEmpty() ? name : parentPath + "/" + name;
+    QString currentKey = parentKey;
 
     QVariant childrenVar = map.value("children");
     if (!childrenVar.isValid() || childrenVar.isNull()) childrenVar = map.value("nodes");
@@ -301,18 +346,23 @@ void TreeView::flattenTree(const QVariantMap &map, const QString &parentPath, in
     bool hasChildren = !children.isEmpty();
 
     bool expanded = false;
-    if (m_expandedPaths.contains(currentPath)) {
+    if (m_collapsedPaths.contains(currentKey)) {
+        expanded = false;
+    } else if (m_expandedPaths.contains(currentKey)) {
         expanded = true;
     } else if (map.contains("expanded")) {
         expanded = map.value("expanded").toBool();
         if (expanded) {
-            m_expandedPaths.insert(currentPath);
+            m_expandedPaths.insert(currentKey);
+        } else {
+            m_collapsedPaths.insert(currentKey);
         }
     }
 
     VisibleNode node;
     node.text = name;
     node.path = currentPath;
+    node.key = currentKey;
     node.depth = depth;
     node.hasChildren = hasChildren;
     node.expanded = expanded;
@@ -321,18 +371,22 @@ void TreeView::flattenTree(const QVariantMap &map, const QString &parentPath, in
     list.append(node);
 
     if (hasChildren && expanded) {
+        int childIdx = 0;
         for (const QVariant &childVar : children) {
             QVariant cVar = childVar;
             if (cVar.userType() == QMetaType::fromType<QJSValue>().id()) {
                 cVar = cVar.value<QJSValue>().toVariant();
             }
             QVariantMap childMap = cVar.toMap();
-            flattenTree(childMap, currentPath, depth + 1, list);
+            QString childName = childMap.value("text", childMap.value("display", "node")).toString();
+            QString childKey = currentKey + "/" + childName + "#" + QString::number(childIdx);
+            flattenTree(childMap, currentPath, childKey, depth + 1, list);
+            childIdx++;
         }
     }
 }
 
-void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, int depth, QList<VisibleNode> &list) {
+void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list) {
     if (!model) return;
 
     int rows = model->rowCount(parent);
@@ -346,9 +400,15 @@ void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &par
         if (name.isEmpty()) name = QString("Item %1").arg(r);
 
         QString currentPath = parentPath.isEmpty() ? name : parentPath + "/" + name;
+        QString currentKey = parentKey.isEmpty() ? name + "#" + QString::number(r) : parentKey + "/" + name + "#" + QString::number(r);
         bool hasChildren = model->hasChildren(idx) || (model->rowCount(idx) > 0);
 
-        bool expanded = m_expandedPaths.contains(currentPath);
+        bool expanded = false;
+        if (m_collapsedPaths.contains(currentKey)) {
+            expanded = false;
+        } else if (m_expandedPaths.contains(currentKey)) {
+            expanded = true;
+        }
 
         QVariantMap rawData;
         for (auto it = roles.begin(); it != roles.end(); ++it) {
@@ -360,6 +420,7 @@ void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &par
         VisibleNode node;
         node.text = name;
         node.path = currentPath;
+        node.key = currentKey;
         node.depth = depth;
         node.hasChildren = hasChildren;
         node.expanded = expanded;
@@ -369,7 +430,7 @@ void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &par
         list.append(node);
 
         if (hasChildren && expanded) {
-            flattenCppModel(model, idx, currentPath, depth + 1, list);
+            flattenCppModel(model, idx, currentPath, currentKey, depth + 1, list);
         }
     }
 }
@@ -385,9 +446,11 @@ void TreeView::updateTree() {
     m_delegateModelIndexes.clear();
     m_delegatePaths.clear();
     if (m_cppModel) {
-        flattenCppModel(m_cppModel.data(), QModelIndex(), "", 0, m_visibleNodes);
+        flattenCppModel(m_cppModel.data(), QModelIndex(), "", "", 0, m_visibleNodes);
     } else if (!m_rootNodeMap.isEmpty()) {
-        flattenTree(m_rootNodeMap, "", 0, m_visibleNodes);
+        QString rootName = m_rootNodeMap.value("text", m_rootNodeMap.value("display", "node")).toString();
+        QString rootKey = rootName + "#0";
+        flattenTree(m_rootNodeMap, "", rootKey, 0, m_visibleNodes);
     }
 
     if (m_visibleNodes.isEmpty()) {
@@ -401,6 +464,41 @@ void TreeView::updateTree() {
 
     generateDelegateItems(oldItems, oldIndexes, oldPaths);
     m_treeDirty = false;
+}
+
+static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
+    if (!obj) return;
+    if (obj->metaObject()->indexOfProperty(name) != -1) {
+        obj->setProperty(name, value);
+    }
+}
+
+static QVariant defaultValueForMetaType(QMetaType meta) {
+    if (!meta.isValid()) return QVariant();
+    if (meta.id() == QMetaType::fromType<QJSValue>().id()) {
+        return QVariant::fromValue(QJSValue());
+    }
+    return QVariant(meta, nullptr);
+}
+
+static QObject* createDelegateWithFilteredProps(QQmlComponent* delegate, QQmlContext* context, const QVariantMap& initialProps) {
+    if (!delegate || !context) return nullptr;
+    QVariantMap filteredProps;
+    if (QObject* temp = delegate->beginCreate(context)) {
+        const QMetaObject* meta = temp->metaObject();
+        for (int i = meta->propertyOffset(); i < meta->propertyCount(); ++i) {
+            QMetaProperty prop = meta->property(i);
+            const char* propName = prop.name();
+            if (initialProps.contains(propName)) {
+                filteredProps[propName] = initialProps[propName];
+            } else {
+                filteredProps[propName] = defaultValueForMetaType(prop.metaType());
+            }
+        }
+        delegate->completeCreate();
+        delete temp;
+    }
+    return delegate->createWithInitialProperties(filteredProps, context);
 }
 
 void TreeView::updateDelegateItem(Item *item, int index) {
@@ -417,6 +515,28 @@ void TreeView::updateDelegateItem(Item *item, int index) {
     item->setProperty("display", node.text);
     item->setProperty("text", node.text);
     item->setProperty("modelData", node.rawData);
+
+    const QMetaObject* meta = item->metaObject();
+    for (int i = meta->propertyOffset(); i < meta->propertyCount(); ++i) {
+        QMetaProperty prop = meta->property(i);
+        const char* pName = prop.name();
+        if (node.rawData.contains(pName)) {
+            item->setProperty(pName, node.rawData.value(pName));
+        } else if (std::strcmp(pName, "index") != 0 &&
+                   std::strcmp(pName, "isCurrentItem") != 0 &&
+                   std::strcmp(pName, "isCurrent") != 0 &&
+                   std::strcmp(pName, "depth") != 0 &&
+                   std::strcmp(pName, "expanded") != 0 &&
+                   std::strcmp(pName, "hasChildren") != 0 &&
+                   std::strcmp(pName, "path") != 0 &&
+                   std::strcmp(pName, "display") != 0 &&
+                   std::strcmp(pName, "text") != 0 &&
+                   std::strcmp(pName, "modelData") != 0 &&
+                   std::strcmp(pName, "model") != 0) {
+            item->setProperty(pName, defaultValueForMetaType(prop.metaType()));
+        }
+    }
+
     if (QQmlContext *context = delegateContext(item)) {
         context->setContextProperty("index", index);
         context->setContextProperty("isCurrentItem", isCurrent);
@@ -428,6 +548,10 @@ void TreeView::updateDelegateItem(Item *item, int index) {
         context->setContextProperty("display", node.text);
         context->setContextProperty("text", node.text);
         context->setContextProperty("modelData", node.rawData);
+
+        for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+            context->setContextProperty(it.key(), it.value());
+        }
     }
 }
 
@@ -448,6 +572,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
     }
 
     QQmlEngine *engine = qmlEngine(this);
+    if (!engine && m_delegate) engine = m_delegate->engine();
     if (!engine) {
         deleteOldItems();
         return;
@@ -481,7 +606,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
         Item *reused = nullptr;
         const int oldIndex = node.modelIndex.isValid()
             ? persistentLookup.value(node.modelIndex, -1)
-            : pathLookup.value(node.path, -1);
+            : pathLookup.value(node.key, -1);
         if (oldIndex >= 0 && oldIndex < oldItems.size() && oldItems[oldIndex]) {
             reused = oldItems[oldIndex];
             oldItems[oldIndex] = nullptr;
@@ -490,7 +615,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
             updateDelegateItem(reused, i);
             m_delegateItems.append(reused);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.path);
+            m_delegatePaths.append(node.key);
             continue;
         }
 
@@ -521,35 +646,57 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
         modelMap["modelData"] = node.rawData;
         context->setContextProperty("model", modelMap);
 
+        for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+            context->setContextProperty(it.key(), it.value());
+        }
+
         QVariantMap initialProps;
+        initialProps["index"] = i;
         initialProps["depth"] = node.depth;
         initialProps["hasChildren"] = node.hasChildren;
         initialProps["expanded"] = node.expanded;
         initialProps["isCurrent"] = isCurr;
+        initialProps["isCurrentItem"] = isCurr;
         initialProps["display"] = node.text;
+        initialProps["text"] = node.text;
+        initialProps["path"] = node.path;
         initialProps["modelData"] = node.rawData;
+        initialProps["model"] = modelMap;
 
-        QObject *obj = m_delegate->createWithInitialProperties(initialProps, context);
+        for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+            initialProps[it.key()] = it.value();
+        }
+
+        QObject *obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
         if (Item *item = qobject_cast<Item*>(obj)) {
             item->setParentItem(contentItem);
             item->setParent(this);
             context->setParent(item);
 
+            item->setProperty("index", i);
             item->setProperty("isCurrentItem", isCurr);
             item->setProperty("isCurrent", isCurr);
             item->setProperty("depth", node.depth);
             item->setProperty("expanded", node.expanded);
             item->setProperty("hasChildren", node.hasChildren);
+            item->setProperty("display", node.text);
+            item->setProperty("text", node.text);
+            item->setProperty("path", node.path);
+            item->setProperty("modelData", node.rawData);
+
+            for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+                setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+            }
 
             m_delegateItems.append(item);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.path);
+            m_delegatePaths.append(node.key);
         } else {
             delete obj;
             delete context;
             m_delegateItems.append(nullptr);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.path);
+            m_delegatePaths.append(node.key);
         }
     }
     deleteOldItems();
@@ -662,10 +809,32 @@ void TreeView::keyPressEvent(KeyEvent *event) {
         setCurrentIndex((std::min)(total - 1, m_selectedIndex + 10));
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Right) {
-        expand(m_selectedIndex);
+        if (m_selectedIndex >= 0 && m_selectedIndex < total) {
+            const VisibleNode &node = m_visibleNodes[m_selectedIndex];
+            if (node.hasChildren) {
+                if (!node.expanded) {
+                    expand(m_selectedIndex);
+                } else if (m_selectedIndex + 1 < total) {
+                    setCurrentIndex(m_selectedIndex + 1);
+                }
+            }
+        }
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Left) {
-        collapse(m_selectedIndex);
+        if (m_selectedIndex >= 0 && m_selectedIndex < total) {
+            const VisibleNode &node = m_visibleNodes[m_selectedIndex];
+            if (node.hasChildren && node.expanded) {
+                collapse(m_selectedIndex);
+            } else {
+                int currentDepth = node.depth;
+                for (int i = m_selectedIndex - 1; i >= 0; --i) {
+                    if (m_visibleNodes[i].depth < currentDepth) {
+                        setCurrentIndex(i);
+                        break;
+                    }
+                }
+            }
+        }
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Space) {
         toggleExpanded(m_selectedIndex);

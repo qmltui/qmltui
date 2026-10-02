@@ -27,11 +27,14 @@ Terminal {
             text: "Use UP/DOWN to navigate, RIGHT/LEFT to toggle, Q/ESC to quit"
             color: "gray"
         }
-
+ 
         TreeView {
             focus: true
-            width: 58
-            height: 12
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: statusText.top
+            anchors.topMargin: 1
+            anchors.bottomMargin: 1
             borderStyle: "single"
             borderColor: "gray"
 
@@ -62,8 +65,23 @@ Terminal {
                             { "text": "TreeView.cpp", "icon": "🌲", "status": "Updated", "expanded": false },
                             { "text": "ToastManager.cpp", "icon": "🔔", "status": "Clean", "expanded": false }
                         ]
+                    },
+                    {
+                        "text": "Widgets (Controls & Views)",
+                        "expanded": true,
+                        "children": [
+                            { "text": "TableView.cpp", "icon": "📊", "status": "Clean", "expanded": false },
+                            { "text": "TreeView.cpp", "icon": "🌲", "status": "Updated", "expanded": false },
+                            { "text": "ToastManager.cpp", "icon": "🔔", "status": "Clean", "expanded": false }
+                        ]
                     }
                 ]
+            }
+
+           
+
+            onNodeActivated: (path) => {
+                statusText.text = "Selected Path: " + path
             }
 
             delegate: Item {
@@ -72,7 +90,8 @@ Terminal {
                 required property bool expanded
                 required property bool isCurrent
                 required property string display
-                required property var modelData
+                required property string icon
+                required property string status
 
                 Row {
                     Text {
@@ -80,25 +99,21 @@ Terminal {
                     }
 
                     Text {
-                        text: hasChildren ? (expanded ? "📂 " : "📁 ") : ((modelData && modelData.icon) ? modelData.icon : "📄 ")
+                        text: hasChildren ? (expanded ? "📂 " : "📁 ") : (icon !== "" ? icon+ " " : "📄 ")
                         color: hasChildren ? "yellow" : "cyan"
                     }
 
                     Text {
-                        text: display
+                        text:display
                         color: isCurrent ? "white" : "gray"
                         bold: isCurrent
                     }
 
                     Text {
-                        text: (modelData && modelData.status) ? " [" + modelData.status + "]" : ""
-                        color: (modelData && modelData.status === "Updated") ? "green" : ((modelData && modelData.status === "Modified") ? "magenta" : "gray")
+                        text: status !== "" ? " [" + status + "]" : ""
+                        color: status === "Updated" ? "green" : (status === "Modified" ? "magenta" : "gray")
                     }
                 }
-            }
-
-            onNodeActivated: (path) => {
-                statusText.text = "Selected Path: " + path
             }
         }
 

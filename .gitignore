@@ -1,0 +1,13 @@
+# Build directories
+build/
+build-*/
+
+# Cache and temporary directories
+.cache/
+.codex/
+.agents/
+Testing/
+
+# User settings and logs
+*.log
+.qmlls.ini

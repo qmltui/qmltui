@@ -2,6 +2,7 @@ set(TESTS
     test_input_decoder
     test_text_grid_buffer
     test_layout
+    test_loader
     test_focus
     test_text_input
     test_scroll_view

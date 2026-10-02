@@ -26,6 +26,10 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
 ## Views & Repetition
 - `Repeater`: Dynamically generates children based on a numeric count or data model.
   - *Properties*: `model`, `delegate`.
+- `Loader`: Dynamically creates one QtUI item from an inline component or URL.
+  The created object must derive from `qtui::Item`.
+  - *Properties*: `active`, `source`, `sourceComponent`, `item`, `status`,
+    `progress`, `asynchronous`, `errorString`.
 - `ListView`: A scrolling vertical list for data models. Supports scrolling with arrow keys or mouse wheel. See [ListView Demo](../examples/Core/listview_demo/Main.qml).
   - *Properties*: `model`, `delegate`, `currentIndex`.
 - `ScrollView`: Provides scrollable bounds for content larger than its visual rectangle. See [ScrollView implementation](../Terminal/src/items/ScrollView.h).

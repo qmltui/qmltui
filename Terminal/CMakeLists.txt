@@ -78,6 +78,8 @@ qt_add_qml_module(QtuiCore
         src/items/MouseArea.cpp
         src/items/Repeater.h
         src/items/Repeater.cpp
+        src/items/Loader.h
+        src/items/Loader.cpp
         src/items/ListView.h
         src/items/ListView.cpp
         src/items/GridView.h

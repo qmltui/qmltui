@@ -136,11 +136,10 @@ void Sparkline::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
             Cell& cell = buffer.cellAt(cx, cy);
             cell.fgColor = m_resolvedColor;
             cell.bgColor = m_resolvedBgColor;
-            cell.character.fill('\0');
             const char* glyph = blockGlyphs[level];
-            for (int k = 0; k < 4 && glyph[k] != '\0'; ++k) {
-                cell.character[k] = glyph[k];
-            }
+            cell.character = QByteArray(glyph);
+            cell.displayWidth = 1;
+            cell.continuation = false;
         }
     }
 }

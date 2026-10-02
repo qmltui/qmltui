@@ -11,7 +11,7 @@ Developers interact with `TerminalEngine` when setting up top-level application 
 - **Header**: `Tui/src/engine/TerminalEngine.h`
 - **Implementation**: `Tui/src/engine/TerminalEngine.cpp`
 - **Dependencies**: `TerminalDevice.h`, `InputDecoder.h`, `Renderer.h`, `Terminal.h`, `Item.h`.
-- **Build Requirements**: Links against `Qtui` library target.
+- **Build Requirements**: Links against the `Qtui::Core` library target.
 
 ## 3. Class Hierarchy and Role
 

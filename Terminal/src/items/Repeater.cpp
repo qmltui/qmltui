@@ -16,20 +16,33 @@ Repeater::~Repeater() {
 }
 
 void Repeater::setModel(const QVariant& model) {
-    if (m_model.canConvert<QObject*>()) {
-        QObject* oldModelObj = m_model.value<QObject*>();
-        if (oldModelObj) {
-            oldModelObj->disconnect(this);
-        }
-    }
+    if (m_model == model) return;
+    if (m_objectModel) m_objectModel->disconnect(this);
     m_model = model;
+    m_objectModel = model.canConvert<QObject*>() ? model.value<QObject*>() : nullptr;
+    if (m_objectModel) {
+        connect(m_objectModel, &QObject::destroyed, this, [this]() {
+            m_objectModel.clear();
+            m_model.clear();
+            clearItems();
+            emit modelChanged();
+        });
+    }
     emit modelChanged();
     generateItems();
 }
 
 void Repeater::setDelegate(QQmlComponent* delegate) {
     if (m_delegate == delegate) return;
+    if (m_delegate) disconnect(m_delegate, nullptr, this, nullptr);
     m_delegate = delegate;
+    if (m_delegate) {
+        connect(m_delegate, &QObject::destroyed, this, [this]() {
+            m_delegate.clear();
+            clearItems();
+            emit delegateChanged();
+        });
+    }
     emit delegateChanged();
     generateItems();
 }
@@ -42,9 +55,7 @@ void Repeater::clearItems() {
         }
     }
     m_createdItems.clear();
-    qDeleteAll(m_contexts);
     m_contexts.clear();
-    qDeleteAll(m_rowMaps);
     m_rowMaps.clear();
 }
 
@@ -123,11 +134,14 @@ void Repeater::generateItems() {
             }
             if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                 item->setParentItem(parentVis);
+                context->setParent(item);
                 m_createdItems.append(item);
                 m_contexts.append(context);
             } else {
                 delete obj;
                 delete context;
+                m_createdItems.append(nullptr);
+                m_contexts.append(nullptr);
             }
         }
     } else if (isCount) {
@@ -141,11 +155,14 @@ void Repeater::generateItems() {
             }
             if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                 item->setParentItem(parentVis);
+                context->setParent(item);
                 m_createdItems.append(item);
                 m_contexts.append(context);
             } else {
                 delete obj;
                 delete context;
+                m_createdItems.append(nullptr);
+                m_contexts.append(nullptr);
             }
         }
     } else if (m_model.canConvert<QObject*>()) {
@@ -195,9 +212,11 @@ void Repeater::generateItems() {
                     if (parent.isValid()) return;
                     onRowsRemoved(first, last);
                 });
-                connect(model, &QAbstractItemModel::rowsMoved, this, [this](const QModelIndex &parent, int, int, const QModelIndex &, int) {
-                    if (parent.isValid()) return;
-                    generateItems();
+                connect(model, &QAbstractItemModel::rowsMoved, this,
+                        [this](const QModelIndex &sourceParent, int first, int last,
+                               const QModelIndex &destinationParent, int destination) {
+                    if (sourceParent.isValid() || destinationParent.isValid()) return;
+                    onRowsMoved(first, last, destination);
                 });
                 connect(model, &QAbstractItemModel::layoutChanged, this, [this]() {
                     generateItems();
@@ -209,7 +228,7 @@ void Repeater::generateItems() {
                 const QHash<int, QString> roleMap = buildRoleMap(model);
                 int rowCount = std::max(0, model->rowCount());
                 for (int i = 0; i < rowCount; ++i) {
-                    QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
+                    QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
                     const QModelIndex modelIndex = model->index(i, 0);
                     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
                         rowMap->insert(it.value(), model->data(modelIndex, it.key()));
@@ -228,6 +247,8 @@ void Repeater::generateItems() {
                     }
                     if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
                         item->setParentItem(parentVis);
+                        context->setParent(item);
+                        rowMap->setParent(item);
                         m_createdItems.append(item);
                         m_contexts.append(context);
                         m_rowMaps.append(rowMap);
@@ -235,6 +256,9 @@ void Repeater::generateItems() {
                         delete obj;
                         delete context;
                         delete rowMap;
+                        m_createdItems.append(nullptr);
+                        m_contexts.append(nullptr);
+                        m_rowMaps.append(nullptr);
                     }
                 }
             }
@@ -254,7 +278,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
     }
 
     for (int i = first; i <= last; ++i) {
-        QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
+        QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
         const QModelIndex modelIndex = model->index(i, 0);
         for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
             rowMap->insert(it.value(), model->data(modelIndex, it.key()));
@@ -275,6 +299,8 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
         }
         if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
             item->setParentItem(parentVis);
+            context->setParent(item);
+            rowMap->setParent(item);
             m_createdItems.insert(i, item);
             m_contexts.insert(i, context);
             m_rowMaps.insert(i, rowMap);
@@ -282,6 +308,9 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
             delete obj;
             delete context;
             delete rowMap;
+            m_createdItems.insert(i, nullptr);
+            m_contexts.insert(i, nullptr);
+            m_rowMaps.insert(i, nullptr);
         }
     }
 
@@ -296,28 +325,48 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
 void Repeater::onRowsRemoved(int first, int last) {
     if (first < 0 || first > last) return;
     for (int i = last; i >= first; --i) {
-        if (i >= 0 && i < m_createdItems.size()) {
-            Item* item = m_createdItems.takeAt(i);
-            if (item) {
-                item->setParentItem(nullptr);
-                delete item;
-            }
-        }
-        if (i >= 0 && i < m_contexts.size()) {
-            QQmlContext* context = m_contexts.takeAt(i);
+        Item* item = i >= 0 && i < m_createdItems.size()
+            ? m_createdItems.takeAt(i) : nullptr;
+        QQmlContext* context = i >= 0 && i < m_contexts.size()
+            ? m_contexts.takeAt(i) : nullptr;
+        QQmlPropertyMap* rowMap = i >= 0 && i < m_rowMaps.size()
+            ? m_rowMaps.takeAt(i) : nullptr;
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        } else {
             delete context;
-        }
-        if (i >= 0 && i < m_rowMaps.size()) {
-            QQmlPropertyMap* rowMap = m_rowMaps.takeAt(i);
             delete rowMap;
         }
     }
 
     // Update indices for all contexts after the removed range
     for (int i = first; i < m_contexts.size(); ++i) {
-        m_contexts[i]->setContextProperty("index", i);
+        if (m_contexts[i]) m_contexts[i]->setContextProperty("index", i);
     }
 
+    markDirty();
+}
+
+void Repeater::onRowsMoved(int first, int last, int destination) {
+    if (first < 0 || last < first || last >= m_createdItems.size()) return;
+    QList<Item*> movedItems;
+    QList<QQmlContext*> movedContexts;
+    QList<QQmlPropertyMap*> movedMaps;
+    for (int row = first; row <= last; ++row) {
+        movedItems.append(m_createdItems.takeAt(first));
+        movedContexts.append(m_contexts.takeAt(first));
+        movedMaps.append(m_rowMaps.takeAt(first));
+    }
+    int insertion = destination > first ? destination - movedItems.size() : destination;
+    insertion = std::clamp(insertion, 0, static_cast<int>(m_createdItems.size()));
+    for (int index = 0; index < movedItems.size(); ++index) {
+        m_createdItems.insert(insertion + index, movedItems[index]);
+        m_contexts.insert(insertion + index, movedContexts[index]);
+        m_rowMaps.insert(insertion + index, movedMaps[index]);
+    }
+    for (int row = 0; row < m_contexts.size(); ++row)
+        if (m_contexts[row]) m_contexts[row]->setContextProperty("index", row);
     markDirty();
 }
 

@@ -59,8 +59,9 @@ void Rectangle::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
                     if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
                         Cell& cell = buffer.cellAt(cx, cy);
                         cell.bgColor = m_resolvedBgColor;
-                        cell.character[0] = ' ';
-                        cell.character[1] = '\0';
+                        cell.character = " ";
+                        cell.displayWidth = 1;
+                        cell.continuation = false;
                     }
                 }
             }
@@ -81,12 +82,9 @@ void Rectangle::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
         }
 
         auto setCellChar = [](Cell& cell, const char* utf8Str, uint32_t fg) {
-            int len = 0;
-            while (utf8Str[len] && len < 3) {
-                cell.character[len] = utf8Str[len];
-                len++;
-            }
-            cell.character[len] = '\0';
+            cell.character = QByteArray(utf8Str);
+            cell.displayWidth = 1;
+            cell.continuation = false;
             cell.fgColor = fg;
         };
 

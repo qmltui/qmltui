@@ -8,6 +8,15 @@ Behavior::Behavior(QObject* parent) : QObject(parent) {
 void Behavior::setAnimation(Animation* anim) {
     if (m_animation == anim) return;
     m_animation = anim;
+    if (m_animation) {
+        const QPointer<Animation> observedAnimation = m_animation;
+        connect(m_animation, &QObject::destroyed, this, [this, observedAnimation]() {
+            if (m_animation && m_animation != observedAnimation)
+                return;
+            m_animation.clear();
+            emit animationChanged();
+        });
+    }
     emit animationChanged();
 
     if (m_animation && m_property.isValid()) {

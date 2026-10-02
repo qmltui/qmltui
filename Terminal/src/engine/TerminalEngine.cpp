@@ -14,8 +14,10 @@
 #include <QMetaObject>
 #include <QSet>
 #include <QThread>
+#include <QPointer>
 #include <QtGlobal>
 #include <iostream>
+#include <cstring>
 
 #ifdef Q_OS_UNIX
 #include <signal.h>
@@ -40,10 +42,12 @@ class TerminalResizeBridge : public QObject {
     Q_OBJECT
 public:
     static TerminalResizeBridge* instance() {
-        if (!qApp) return nullptr;
-        // Application-owned static object
-        static TerminalResizeBridge* bridge = new TerminalResizeBridge(qApp);
-        return bridge;
+        if (!qApp || QThread::currentThread() != qApp->thread())
+            return nullptr;
+        static QPointer<TerminalResizeBridge> bridge;
+        if (!bridge)
+            bridge = new TerminalResizeBridge(qApp);
+        return bridge.data();
     }
 
     void registerEngine(TerminalEngine* engine) {
@@ -64,6 +68,8 @@ public:
     void unregisterEngine(TerminalEngine* engine) {
         if (!qApp || QThread::currentThread() != qApp->thread()) return;
         m_engines.remove(engine);
+        if (m_engines.isEmpty())
+            teardown();
     }
 
 signals:
@@ -81,6 +87,7 @@ private slots:
 
 private:
     explicit TerminalResizeBridge(QObject* parent = nullptr) : QObject(parent) {}
+    ~TerminalResizeBridge() override { teardown(); }
     
     void setup() {
         if (m_installed) return; // Retained for process lifetime
@@ -119,6 +126,24 @@ private:
         }
     }
 
+    void teardown() {
+        if (m_notifier) {
+            m_notifier->setEnabled(false);
+            delete m_notifier;
+            m_notifier = nullptr;
+        }
+        if (m_installed) {
+            ::sigaction(SIGWINCH, &m_oldAction, nullptr);
+            m_installed = false;
+        }
+        for (int& fd : sigwinchFd) {
+            if (fd != -1) {
+                ::close(fd);
+                fd = -1;
+            }
+        }
+    }
+
     static void sigwinchHandler(int) {
         int savedErrno = errno;
         if (sigwinchFd[1] != -1) {
@@ -147,8 +172,8 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_inputDecoder.setKeyCallback([this](int key, const QString& text, int modifiers) {
       handleKeyInput(key, text, modifiers);
   });
-  m_inputDecoder.setMouseCallback([this](int button, int x, int y, bool release) {
-      handleMouseInput(button, x, y, release);
+  m_inputDecoder.setMouseCallback([this](int button, int x, int y, bool release, bool motion) {
+      handleMouseInput(button, x, y, release, motion);
   });
 
   m_device.enableRawMode();
@@ -157,7 +182,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_renderer = new FrameRenderer();
 
   // Enable mouse events: press, release, drag, SGR 1006 format
-  m_device.write("\033[?1000h\033[?1002h\033[?1006h");
+  m_device.write("\033[?1000h\033[?1002h\033[?1006h\033[?2004h");
 
   handleResize();
 
@@ -166,9 +191,13 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
           &TerminalEngine::readTerminalData);
 
 #ifdef Q_OS_UNIX
-  connect(TerminalResizeBridge::instance(), &TerminalResizeBridge::sigwinchReceived,
-          this, &TerminalEngine::readResizeSignal);
-  TerminalResizeBridge::instance()->registerEngine(this);
+  if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance()) {
+      connect(bridge, &TerminalResizeBridge::sigwinchReceived,
+              this, &TerminalEngine::readResizeSignal);
+      bridge->registerEngine(this);
+  } else {
+      qWarning("TerminalEngine must be created on the QCoreApplication thread.");
+  }
 #endif
 
   requestRender();
@@ -176,9 +205,10 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
 
 TerminalEngine::~TerminalEngine() {
 #ifdef Q_OS_UNIX
-  TerminalResizeBridge::instance()->unregisterEngine(this);
+  if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance())
+      bridge->unregisterEngine(this);
 #endif
-  m_device.write("\033[?1000l\033[?1002l\033[?1006l"); // Disable mouse tracking
+  m_device.write("\033[?1000l\033[?1002l\033[?1006l\033[?2004l");
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
   }
@@ -194,6 +224,15 @@ void TerminalEngine::requestRender() {
   m_renderPending = true;
   QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame,
                             Qt::QueuedConnection);
+}
+
+void TerminalEngine::copyToClipboard(const QString& text) {
+  m_device.write(osc52Sequence(text));
+}
+
+std::string TerminalEngine::osc52Sequence(const QString& text) {
+  const QByteArray encoded = text.toUtf8().toBase64();
+  return "\033]52;c;" + encoded.toStdString() + "\a";
 }
 
 void TerminalEngine::handleResize() {
@@ -218,8 +257,18 @@ void TerminalEngine::readResizeSignal() {
 
 void TerminalEngine::readTerminalData() {
   char buffer[1024];
-  ssize_t n = read(STDIN_FILENO, buffer, sizeof(buffer));
-  if (n <= 0) return;
+  const ssize_t n = read(STDIN_FILENO, buffer, sizeof(buffer));
+  if (n == 0) {
+      if (m_notifier) m_notifier->setEnabled(false);
+      return;
+  }
+  if (n < 0) {
+      if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+          return;
+      if (m_notifier) m_notifier->setEnabled(false);
+      qWarning("Terminal input failed: %s", std::strerror(errno));
+      return;
+  }
 
   m_inputDecoder.decode(buffer, n);
 }
@@ -241,7 +290,7 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 
   if (activeModalPopup) {
       if (key == Qt::Key_Escape && (activeModalPopup->closePolicy() & Popup::CloseOnEscape)) {
-          activeModalPopup->close();
+          activeModalPopup->reject();
           return;
       }
       
@@ -249,7 +298,8 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
       Item* current = (focused && isDescendantOf(focused, activeModalPopup)) ? focused : activeModalPopup;
       
       while (current) {
-          current->keyPressEvent(&event);
+          if (current->isEffectivelyEnabled())
+              current->keyPressEvent(&event);
           if (event.isAccepted()) break;
 
           Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(current, false));
@@ -261,14 +311,23 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
           if (current == activeModalPopup) break;
           current = qobject_cast<Item*>(current->parent());
       }
+      if (!event.isAccepted()) {
+          if (key == Qt::Key_Tab)
+              cycleFocus(true, activeModalPopup);
+          else if (key == Qt::Key_Backtab)
+              cycleFocus(false, activeModalPopup);
+      }
       return;
   }
 
   Item* focused = m_rootWindow->focusedItem();
-  Item* current = focused ? focused : m_rootWindow;
+  if (focused && (!focused->visible() || !focused->isEffectivelyEnabled()))
+      m_rootWindow->setFocusedItem(nullptr);
+  Item* current = m_rootWindow->focusedItem() ? m_rootWindow->focusedItem() : m_rootWindow;
 
   while (current) {
-    current->keyPressEvent(&event);
+    if (current->isEffectivelyEnabled())
+      current->keyPressEvent(&event);
     if (event.isAccepted()) break;
 
     Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(current, false));
@@ -288,7 +347,7 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
   }
 }
 
-void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
+void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion) {
   if (!m_rootWindow) return;
 
   const QList<Popup*>& popups = m_rootWindow->activePopups();
@@ -323,7 +382,9 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
                   int currentAbsY = current->absolutePosition().y();
                   MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button);
 
-                  if (release) {
+                  if (motion) {
+                      current->mouseMoveEvent(&currentEvent);
+                  } else if (release) {
                       current->mouseReleaseEvent(&currentEvent);
                   } else {
                       current->mousePressEvent(&currentEvent);
@@ -348,7 +409,7 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
       } else {
           if (popup->closePolicy() & Popup::CloseOnOutsideClick) {
               if (release) {
-                  popup->close();
+                  popup->reject();
               }
           }
           if (popup->modal()) {
@@ -378,7 +439,9 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
       int currentAbsY = current->absolutePosition().y();
       MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button);
 
-      if (release) {
+      if (motion) {
+        current->mouseMoveEvent(&currentEvent);
+      } else if (release) {
         current->mouseReleaseEvent(&currentEvent);
       } else {
         current->mousePressEvent(&currentEvent);
@@ -400,11 +463,11 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release) {
   }
 }
 
-void TerminalEngine::cycleFocus(bool forward) {
+void TerminalEngine::cycleFocus(bool forward, Item* scope) {
   if (!m_rootWindow) return;
 
   QList<Item*> focusableList;
-  m_rootWindow->findFocusableItems(m_rootWindow, focusableList);
+  m_rootWindow->findFocusableItems(scope ? scope : m_rootWindow, focusableList);
   if (focusableList.isEmpty()) return;
 
   Item* currentFocus = m_rootWindow->focusedItem();
@@ -427,7 +490,7 @@ void TerminalEngine::cycleFocus(bool forward) {
 }
 
 Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const {
-  if (!item || !item->visible()) return nullptr;
+  if (!item || !item->visible() || !item->isEffectivelyEnabled()) return nullptr;
 
   int itemAbsX = parentAbsX + item->x();
   int itemAbsY = parentAbsY + item->y();

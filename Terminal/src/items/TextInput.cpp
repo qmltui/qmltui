@@ -1,6 +1,7 @@
 #include "TextInput.h"
 #include "../engine/KeyEvent.h"
 #include "../core/ColorMapper.h"
+#include "../core/UnicodeText.h"
 #include <algorithm>
 
 namespace qtui {
@@ -16,7 +17,7 @@ TextInput::~TextInput() = default;
 void TextInput::setText(const QString& text) {
     if (m_text == text) return;
     m_text = text;
-    setImplicitWidth(std::max(10, static_cast<int>(m_text.length()) + 2)); // default width
+    setImplicitWidth(std::max(10, UnicodeText::displayWidth(m_text) + 2));
     if (m_cursorPosition > m_text.length()) {
         m_cursorPosition = m_text.length();
         emit cursorPositionChanged();
@@ -51,22 +52,24 @@ void TextInput::keyPressEvent(KeyEvent* event) {
     }
 
     if (key == Qt::Key_Left) {
-        setCursorPosition(m_cursorPosition - 1);
+        setCursorPosition(UnicodeText::previousBoundary(m_text, m_cursorPosition));
         event->setAccepted(true);
     } else if (key == Qt::Key_Right) {
-        setCursorPosition(m_cursorPosition + 1);
+        setCursorPosition(UnicodeText::nextBoundary(m_text, m_cursorPosition));
         event->setAccepted(true);
     } else if (key == Qt::Key_Backspace) {
         if (m_cursorPosition > 0) {
-            m_text.remove(m_cursorPosition - 1, 1);
-            setCursorPosition(m_cursorPosition - 1);
+            const int previous = UnicodeText::previousBoundary(m_text, m_cursorPosition);
+            m_text.remove(previous, m_cursorPosition - previous);
+            setCursorPosition(previous);
             emit textChanged();
             markDirty();
         }
         event->setAccepted(true);
     } else if (key == Qt::Key_Delete) {
         if (m_cursorPosition < m_text.length()) {
-            m_text.remove(m_cursorPosition, 1);
+            const int next = UnicodeText::nextBoundary(m_text, m_cursorPosition);
+            m_text.remove(m_cursorPosition, next - m_cursorPosition);
             emit textChanged();
             markDirty();
         }
@@ -103,28 +106,19 @@ void TextInput::render(TextGridBuffer& buffer, int absX, int absY, const ClipRec
 
     // Render the text string
     if (renderY >= absY + tp && renderY < absY + height() - bp && renderY >= 0 && renderY < buffer.height()) {
-        for (int i = 0; i < m_text.length(); ++i) {
-            int cx = absX + lp + i;
-            if (cx >= absX + lp && cx < absX + width() - rp) {
-                if (clipRect.contains(cx, renderY)) {
-                    if (cx >= 0 && cx < buffer.width()) {
-                        Cell& cell = buffer.cellAt(cx, renderY);
-                        QByteArray utf8 = QString(m_text[i]).toUtf8();
-                        int len = std::min<int>(utf8.length(), cell.character.size());
-                        cell.character.fill('\0');
-                        for (int k = 0; k < len; ++k) {
-                            cell.character[k] = utf8[k];
-                        }
-                        cell.fgColor = m_resolvedColor;
-                    }
-                }
-            }
+        int cx = absX + lp;
+        for (const Grapheme &cluster : UnicodeText::graphemes(m_text)) {
+            if (cx >= absX + lp && cx + cluster.width <= absX + width() - rp &&
+                clipRect.contains(cx, renderY))
+                buffer.writeText(cx, renderY, QString::fromUtf8(cluster.utf8),
+                                 isEffectivelyEnabled() ? m_resolvedColor : 0xFF808080);
+            cx += cluster.width;
         }
     }
 
     // Render cursor if focused
     if (activeFocus()) {
-        int cx = absX + lp + m_cursorPosition;
+        int cx = absX + lp + UnicodeText::displayWidth(m_text.left(m_cursorPosition));
         int cy = absY + tp;
         if (cx >= absX + lp && cx < absX + width() - rp) {
             if (clipRect.contains(cx, cy)) {
@@ -135,10 +129,8 @@ void TextInput::render(TextGridBuffer& buffer, int absX, int absY, const ClipRec
                     if ((bg >> 24) == 0) bg = 0xFFCCCCCC; // light grey block background
                     cell.fgColor = bg;
                     cell.bgColor = fg != 0 ? fg : 0xFF000000;
-                    if (cell.character[0] == '\0') {
-                        cell.character[0] = ' ';
-                        cell.character[1] = '\0';
-                    }
+                    if (cell.character.isEmpty())
+                        cell.character = " ";
                 }
             }
         }

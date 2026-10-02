@@ -1,11 +1,11 @@
-import QtQml 2.15
-import Terminal 1.0
+import QtQml
+import Qtui
 
 Rectangle {
     id: control
     property string label: ""
     property bool checked: false
-    property var buttonGroup: null
+    property ButtonGroup buttonGroup: null
     property string textColor: "white"
     property string radioColor: activeFocus ? "yellow" : "cyan"
     property string focusColor: "yellow"
@@ -13,7 +13,7 @@ Rectangle {
     signal toggled(bool checked)
 
     function toggle() {
-        if (!control.checked) {
+        if (control.enabled && !control.checked) {
             control.checked = true
             control.toggled(control.checked)
         }
@@ -21,9 +21,9 @@ Rectangle {
 
     function _uncheckGroup() {
         if (control.buttonGroup && control.buttonGroup.buttons) {
-            var groupButtons = control.buttonGroup.buttons
-            for (var i = 0; i < groupButtons.length; ++i) {
-                var b = groupButtons[i]
+            const groupButtons = control.buttonGroup.buttons
+            for (let i = 0; i < groupButtons.length; ++i) {
+                const b = groupButtons[i]
                 if (b !== control && b.checked !== undefined) {
                     b.checked = false
                 }
@@ -32,36 +32,35 @@ Rectangle {
     }
 
     onCheckedChanged: {
-        if (checked) {
-            _uncheckGroup()
+        if (control.checked) {
+            control._uncheckGroup()
         }
     }
 
-    focusable: true
-    width: 4 + (label !== "" ? label.length + 1 : 0)
-    height: 1
-    color: "transparent"
-
+    focusable: enabled
+    implicitWidth: contentRow.implicitWidth
+    implicitHeight: contentRow.implicitHeight
     Row {
+        id: contentRow
         spacing: 1
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
             text: control.checked ? "(*)" : "( )"
-            color: control.radioColor
+            color: control.enabled ? control.radioColor : "gray"
             bold: control.activeFocus
         }
 
         Text {
             visible: control.label !== ""
             text: control.label
-            color: control.activeFocus ? control.focusColor : control.textColor
+            color: !control.enabled ? "gray" : (control.activeFocus ? control.focusColor : control.textColor)
             bold: control.activeFocus
         }
     }
 
     Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return) {
+        if (control.enabled && (event.key === Qt.Key_Space || event.key === Qt.Key_Return)) {
             control.toggle()
             event.accepted = true
         }

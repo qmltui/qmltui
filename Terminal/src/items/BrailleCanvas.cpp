@@ -82,11 +82,9 @@ void BrailleCanvas::render(TextGridBuffer& buffer, int absX, int absY, const Cli
                 QByteArray utf8 = qs.toUtf8();
                 
                 Cell& cell = buffer.cellAt(absX + x, absY + y);
-                int len = std::min<int>(utf8.length(), 3);
-                for (int k = 0; k < len; ++k) {
-                    cell.character[k] = utf8[k];
-                }
-                cell.character[len] = '\0';
+                cell.character = utf8;
+                cell.displayWidth = 1;
+                cell.continuation = false;
                 cell.fgColor = m_resolvedColor;
             }
         }

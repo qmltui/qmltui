@@ -1,6 +1,8 @@
 #include "TerminalDevice.h"
 #include <cerrno>
 #include <iostream>
+#include <algorithm>
+#include <limits>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -32,28 +34,31 @@ TerminalDevice::~TerminalDevice() {
     write("\033[0m"); // Reset text formatting and colors back to terminal defaults
 }
 
-void TerminalDevice::enableRawMode() {
-    if (m_isRawMode) return;
+bool TerminalDevice::enableRawMode() {
+    if (m_isRawMode) return true;
 
 #ifdef _WIN32
     HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+    bool inputConfigured = false;
     if (hInput != INVALID_HANDLE_VALUE) {
         DWORD mode = m_originalConsoleMode;
         // Disable echo, canonical mode, and signals
         mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT);
-        SetConsoleMode(hInput, mode);
+        inputConfigured = SetConsoleMode(hInput, mode);
     }
 
     HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    bool outputConfigured = false;
     if (hOutput != INVALID_HANDLE_VALUE) {
         DWORD mode = m_originalOutputMode;
         // Enable VT100 / ANSI escape processing on Windows console
         mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
-        SetConsoleMode(hOutput, mode);
+        outputConfigured = SetConsoleMode(hOutput, mode);
     }
-    m_isRawMode = true;
+    m_isRawMode = inputConfigured && outputConfigured;
+    return m_isRawMode;
 #else
-    if (!m_termiosValid) return;
+    if (!m_termiosValid) return false;
 
     termios raw = m_originalTermios;
     // Disable echo, canonical mode, extended input processing, and signals
@@ -63,28 +68,29 @@ void TerminalDevice::enableRawMode() {
     // Disable output processing
     raw.c_oflag &= ~(OPOST);
 
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-    m_isRawMode = true;
+    m_isRawMode = tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == 0;
+    return m_isRawMode;
 #endif
 }
 
-void TerminalDevice::disableRawMode() {
-    if (!m_isRawMode) return;
+bool TerminalDevice::disableRawMode() {
+    if (!m_isRawMode) return true;
 
 #ifdef _WIN32
     HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
-    if (hInput != INVALID_HANDLE_VALUE) {
-        SetConsoleMode(hInput, m_originalConsoleMode);
-    }
+    const bool inputRestored = hInput != INVALID_HANDLE_VALUE
+        && SetConsoleMode(hInput, m_originalConsoleMode);
     HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOutput != INVALID_HANDLE_VALUE) {
-        SetConsoleMode(hOutput, m_originalOutputMode);
-    }
-    m_isRawMode = false;
+    const bool outputRestored = hOutput != INVALID_HANDLE_VALUE
+        && SetConsoleMode(hOutput, m_originalOutputMode);
+    m_isRawMode = !(inputRestored && outputRestored);
+    return !m_isRawMode;
 #else
-    if (!m_termiosValid) return;
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_originalTermios);
+    if (!m_termiosValid) return false;
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_originalTermios) != 0)
+        return false;
     m_isRawMode = false;
+    return true;
 #endif
 }
 
@@ -100,12 +106,23 @@ void TerminalDevice::clearScreen() {
     write("\033[2J\033[H");
 }
 
-void TerminalDevice::write(const std::string& data) {
+bool TerminalDevice::write(const std::string& data) {
 #ifdef _WIN32
     HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOutput == INVALID_HANDLE_VALUE) return;
-    DWORD written = 0;
-    WriteFile(hOutput, data.c_str(), static_cast<DWORD>(data.size()), &written, NULL);
+    if (hOutput == INVALID_HANDLE_VALUE) return false;
+    size_t totalWritten = 0;
+    while (totalWritten < data.size()) {
+        const size_t remaining = data.size() - totalWritten;
+        const DWORD chunkSize = static_cast<DWORD>((std::min)(remaining,
+            static_cast<size_t>((std::numeric_limits<DWORD>::max)())));
+        DWORD written = 0;
+        if (!WriteFile(hOutput, data.data() + totalWritten, chunkSize, &written, nullptr)
+            || written == 0) {
+            return false;
+        }
+        totalWritten += written;
+    }
+    return true;
 #else
     size_t totalWritten = 0;
     const char* ptr = data.c_str();
@@ -114,11 +131,13 @@ void TerminalDevice::write(const std::string& data) {
         ssize_t bytesWritten = ::write(STDOUT_FILENO, ptr + totalWritten, remaining);
         if (bytesWritten < 0) {
             if (errno == EINTR) continue;
-            break; // Stop loop on non-retryable error
+            return false;
         }
+        if (bytesWritten == 0) return false;
         totalWritten += bytesWritten;
         remaining -= bytesWritten;
     }
+    return true;
 #endif
 }
 
@@ -157,4 +176,3 @@ int TerminalDevice::getHeight() const {
 }
 
 } // namespace qtui
-

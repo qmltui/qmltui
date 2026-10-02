@@ -8,7 +8,8 @@
 namespace qtui {
 
 struct FormattedChar {
-    QChar ch;
+    QString text;
+    int width = 1;
     uint32_t fg = 0xFFFFFFFF;
     uint32_t bg = 0x00000000;
     TextAttribute attr = TextAttribute::None;
@@ -86,6 +87,7 @@ signals:
     void linkActivated(const QString &link);
 
 private:
+    void invalidateTextCache();
     FormattedLine parseRichLine(const QString &line) const;
     QList<FormattedLine> wordWrapFormatted(const FormattedLine &rawLine, int maxW) const;
     QList<FormattedLine> getRenderedLines(int availW) const;
@@ -106,6 +108,8 @@ private:
     QString m_borderStyle = "none";
     QString m_borderColor = "gray";
     uint32_t m_resolvedBorderColor = 0xFF808080;
+    mutable int m_cachedWidth = -1;
+    mutable QList<FormattedLine> m_cachedLines;
 };
 
 } // namespace qtui

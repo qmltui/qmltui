@@ -11,8 +11,9 @@ class TextGridBuffer {
 public:
     TextGridBuffer();
 
-    void resize(int width, int height);
+    bool resize(int width, int height);
     void clear();
+    void swap(TextGridBuffer& other) noexcept;
 
     int width() const { return m_width; }
     int height() const { return m_height; }

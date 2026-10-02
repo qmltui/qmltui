@@ -31,6 +31,8 @@ public:
 
     void print(const QString& text);
     void append(qtui::Item* item);
+    void copyToClipboard(const QString& text);
+    static std::string osc52Sequence(const QString& text);
 
 private slots:
     void readTerminalData();
@@ -43,8 +45,8 @@ private:
     void startRenderer();
     void handleResize();
     void handleKeyInput(int key, const QString& text, int modifiers);
-    void handleMouseInput(int button, int x, int y, bool release);
-    void cycleFocus(bool forward);
+    void handleMouseInput(int button, int x, int y, bool release, bool motion = false);
+    void cycleFocus(bool forward, Item* scope = nullptr);
     class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 
     TerminalDevice m_device;

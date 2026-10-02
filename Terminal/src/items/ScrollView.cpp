@@ -122,15 +122,9 @@ void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRe
                     Cell& cell = buffer.cellAt(sbX, cy);
                     cell.fgColor = 0xFF888888;
                     if (dy >= sbPos && dy < sbPos + sbH) {
-                        cell.character[0] = '\xE2'; // Solid block thumb: █ (\u2588)
-                        cell.character[1] = '\x96';
-                        cell.character[2] = '\x88';
-                        cell.character[3] = '\0';
+                        cell.character = "\xE2\x96\x88"; // █
                     } else {
-                        cell.character[0] = '\xE2'; // Light shade track: ░ (\u2591)
-                        cell.character[1] = '\x96';
-                        cell.character[2] = '\x91';
-                        cell.character[3] = '\0';
+                        cell.character = "\xE2\x96\x91"; // ░
                     }
                 }
             }

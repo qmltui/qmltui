@@ -22,7 +22,11 @@ void StreamAppender::setModel(QAbstractItemModel* model) {
 
     if (m_model) {
         connect(m_model, &QAbstractItemModel::rowsInserted, this,
-                [this](const QModelIndex&, int first, int last) {
+                [this](const QModelIndex& parent, int first, int last) {
+                    if (parent.isValid()) {
+                        qWarning("StreamAppender ignores rows inserted below the model root.");
+                        return;
+                    }
                     if (!m_delegate || !terminal()) return;
                     appendRows(first, last);
                     m_consumedRowCount = m_model ? m_model->rowCount() : 0;

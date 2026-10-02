@@ -1,7 +1,9 @@
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Text {
+    property int type: 0
+    property string enemyColor: "red"
     text: type === 0 ? "v" : (type === 1 ? "<M>" : "oXo")
     color: enemyColor
     width: type === 0 ? 1 : 3

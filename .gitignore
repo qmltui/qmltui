@@ -6,8 +6,11 @@ build-*/
 .cache/
 .codex/
 .agents/
+.tokensave/
+.vscode/
 Testing/
 
 # User settings and logs
 *.log
 .qmlls.ini
+/Screenshot *.png

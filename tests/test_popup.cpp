@@ -1,6 +1,7 @@
 #include <QTest>
 #include <QObject>
 #include <QSocketNotifier>
+#include <QSignalSpy>
 #include <sstream>
 #include <chrono>
 #include <vector>
@@ -25,6 +26,7 @@ private slots:
     void testPopupRegistration();
     void testModalInputBlocking();
     void testClosePolicies();
+    void testBaseVisibilityDispatchAndParentNotification();
 };
 
 void TestPopup::testPopupRegistration() {
@@ -125,6 +127,25 @@ void TestPopup::testClosePolicies() {
     // Escape should NOT close it now
     engine.handleKeyInput(Qt::Key_Escape, "", 0);
     QVERIFY(popup->visible());
+}
+
+void TestPopup::testBaseVisibilityDispatchAndParentNotification() {
+    Terminal firstTerminal;
+    Terminal secondTerminal;
+    Popup popup(&firstTerminal);
+    QSignalSpy parentSpy(&popup, &Item::parentChanged);
+
+    Item *base = &popup;
+    base->setVisible(true);
+    QCOMPARE(firstTerminal.activePopups().size(), 1);
+
+    base->setParentItem(&secondTerminal);
+    QCOMPARE(parentSpy.size(), 1);
+    QCOMPARE(firstTerminal.activePopups().size(), 0);
+    QCOMPARE(secondTerminal.activePopups().size(), 1);
+
+    base->setVisible(false);
+    QCOMPARE(secondTerminal.activePopups().size(), 0);
 }
 
 QTEST_MAIN(TestPopup)

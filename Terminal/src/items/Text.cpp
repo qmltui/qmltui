@@ -1,4 +1,5 @@
 #include "Text.h"
+#include "../core/UnicodeText.h"
 #include "../core/ColorMapper.h"
 #include <QRegularExpression>
 #include <vector>
@@ -154,7 +155,7 @@ void Text::setTextFormat(TextFormat format) {
 
 int Text::visualLength(const QString &line) const {
     if (m_textFormat == PlainText) {
-        return line.length();
+        return UnicodeText::displayWidth(line);
     }
     int len = 0;
     TextStyle dummyStyle;
@@ -180,8 +181,9 @@ int Text::visualLength(const QString &line) const {
             }
         }
         
-        len++;
-        i++;
+        const int next = UnicodeText::nextBoundary(line, i);
+        len += UnicodeText::displayWidth(line.mid(i, next - i));
+        i = next;
     }
     return len;
 }
@@ -306,34 +308,16 @@ void Text::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                     }
                 }
 
-                // Render character to cell
-                if (cx >= absX + lp && cx < absX + width() - rp) {
-                    if (clipRect.contains(cx, currentY)) {
-                        if (cx >= 0 && cx < buffer.width()) {
-                            Cell& cell = buffer.cellAt(cx, currentY);
-                            const int codeUnits = line[i].isHighSurrogate()
-                                    && i + 1 < line.length() && line[i + 1].isLowSurrogate()
-                                ? 2
-                                : 1;
-                            const QByteArray utf8 = line.mid(i, codeUnits).toUtf8();
-                            const int len = std::min<int>(utf8.length(), cell.character.size());
-                            cell.character.fill('\0');
-                            for (int k = 0; k < len; ++k) {
-                                cell.character[k] = utf8[k];
-                            }
-                            cell.fgColor = currentStyle.fgColor;
-                            cell.attributes = currentStyle.attributes;
-                            if ((currentStyle.bgColor >> 24) != 0) {
-                                cell.bgColor = currentStyle.bgColor;
-                            }
-                        }
-                    }
+                const int next = UnicodeText::nextBoundary(line, i);
+                const QString cluster = line.mid(i, next - i);
+                const int clusterWidth = UnicodeText::displayWidth(cluster);
+                if (cx >= absX + lp && cx + clusterWidth <= absX + width() - rp &&
+                    clipRect.contains(cx, currentY)) {
+                    buffer.writeText(cx, currentY, cluster, currentStyle.fgColor,
+                                     currentStyle.bgColor, currentStyle.attributes);
                 }
-                cx++;
-                i += line[i].isHighSurrogate()
-                        && i + 1 < line.length() && line[i + 1].isLowSurrogate()
-                    ? 2
-                    : 1;
+                cx += clusterWidth;
+                i = next;
             }
         }
         currentY++;

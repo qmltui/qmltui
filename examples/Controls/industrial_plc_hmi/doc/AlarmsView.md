@@ -42,7 +42,7 @@ Developers use `AlarmsView` as the main audit log screen for machine operators.
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 import IndustrialPlcHmi 1.0
 
 AlarmsView {

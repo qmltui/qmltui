@@ -15,15 +15,15 @@ public:
     TerminalDevice();
     ~TerminalDevice();
 
-    void enableRawMode();
-    void disableRawMode();
+    bool enableRawMode();
+    bool disableRawMode();
 
     void hideCursor();
     void showCursor();
     void clearScreen();
 
     // Flushes a string (ANSI sequence) to stdout
-    void write(const std::string& data);
+    bool write(const std::string& data);
 
     // Get terminal dimensions
     int getWidth() const;
@@ -41,4 +41,3 @@ private:
 };
 
 } // namespace qtui
-

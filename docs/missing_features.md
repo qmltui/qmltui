@@ -3,16 +3,17 @@
 This document outlines architectural limitations and feature gaps in Qtui that should be considered for future development.
 
 ## 1. Advanced Controls
-While basic `TextInput` and `TextArea` exist, the library lacks a comprehensive suite of UI controls found in mature GUI frameworks.
-- **Checkboxes & RadioButtons**: Toggling boolean states with standard visual indicators (`[ ]`, `[x]`, `( )`, `(o)`).
-- **ComboBoxes / Dropdowns**: Selecting from a list of options. Requires popup support (see Layering & Popups below).
-- **Sliders & Progress Bars**: Visual numeric representation and manipulation.
+Qtui includes buttons, checkboxes, radio buttons, switches, sliders, dialogs,
+text inputs, and text areas. Remaining gaps include combo boxes, dropdowns,
+menus, and a general progress control.
 
 ## 2. Layering & Popups (Z-Index)
 Currently, the rendering pipeline relies entirely on tree traversal order (Painter's algorithm) based on QML declarative ordering.
 - **Z-Index Property**: There is no dynamic `z` property to force an item to render above a sibling defined later in the QML file.
-- **Modals & Overlays**: Creating a popup dialog that dims the background and traps focus is difficult because focus and rendering are strictly hierarchical.
-- **Context Menus**: Right-click context menus are practically impossible without a dedicated "overlay layer" at the root `Terminal` level.
+- **General overlay stacking**: `Popup` and modal dialogs are supported, but
+  arbitrary z-ordering and multiple overlay layers remain limited.
+- **Context Menus**: There is no dedicated context-menu control or reusable
+  menu model yet.
 
 ## 3. Rich Interactions
 - **Drag & Drop**: No API currently exists for initiating drag operations, visualizing dragged items, or defining drop targets.

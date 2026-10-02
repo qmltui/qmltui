@@ -43,7 +43,7 @@ Developers use `HeaderPanel` at the top of an HMI view hierarchy to give machine
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 import IndustrialPlcHmi 1.0
 
 HeaderPanel {

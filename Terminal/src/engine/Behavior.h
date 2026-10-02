@@ -4,6 +4,7 @@
 #include <QQmlEngine>
 #include <QtQml/private/qqmlpropertyvalueinterceptor_p.h>
 #include <QQmlProperty>
+#include <QPointer>
 #include "Animation.h"
 
 namespace qtui {
@@ -32,7 +33,7 @@ signals:
 
 private:
     QQmlProperty m_property;
-    Animation* m_animation = nullptr;
+    QPointer<Animation> m_animation;
 };
 
 } // namespace qtui

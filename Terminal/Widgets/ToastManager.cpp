@@ -1,5 +1,6 @@
 #include "ToastManager.h"
 #include <ColorMapper.h>
+#include <algorithm>
 
 namespace qtui {
 
@@ -8,11 +9,12 @@ ToastManager::ToastManager(QObject *parent) : Item(parent) {
     setImplicitHeight(10);
 
     connect(&m_timer, &QTimer::timeout, this, &ToastManager::onTick);
-    m_timer.start(100); // 100ms tick resolution
+    m_timer.setInterval(100);
 }
 
 void ToastManager::showToast(const QString &title, const QString &message, const QString &type, int timeoutMs) {
-    m_toasts.append(ToastItem{ title, message, type, timeoutMs });
+    m_toasts.append(ToastItem{ title, message, type, (std::max)(100, timeoutMs) });
+    if (!m_timer.isActive()) m_timer.start();
     markDirty();
 }
 
@@ -63,7 +65,10 @@ void ToastManager::setPosition(const QString &pos) {
 }
 
 void ToastManager::onTick() {
-    if (m_toasts.isEmpty()) return;
+    if (m_toasts.isEmpty()) {
+        m_timer.stop();
+        return;
+    }
 
     bool changed = false;
     for (int i = m_toasts.size() - 1; i >= 0; --i) {
@@ -74,6 +79,7 @@ void ToastManager::onTick() {
         }
     }
     if (changed) markDirty();
+    if (m_toasts.isEmpty()) m_timer.stop();
 }
 
 void ToastManager::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {

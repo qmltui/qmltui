@@ -1,5 +1,5 @@
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Terminal {
     Keys.onPressed: (event) => {

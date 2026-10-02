@@ -41,7 +41,7 @@ Developers use `Bullet` as an entity delegate inside game loops or repeater mode
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Bullet {
     x: 10

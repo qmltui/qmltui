@@ -6,7 +6,7 @@ qt_add_qml_module(qtui_mouse_interactions
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qtui
+    DEPENDENCIES TARGET QtuiCore
 )
 
-target_link_libraries(qtui_mouse_interactions PRIVATE Qt6::Core Qt6::Qml Qtui)
+target_link_libraries(qtui_mouse_interactions PRIVATE Qt6::Core Qt6::Qml QtuiCore)

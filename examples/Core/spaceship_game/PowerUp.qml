@@ -1,7 +1,8 @@
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Text {
+    property string type: "heal"
     text: type === "shield" ? "[S]" : (type === "fire" ? "[F]" : "[H]")
     color: type === "shield" ? "green" : (type === "fire" ? "orange" : "magenta")
     width: 3

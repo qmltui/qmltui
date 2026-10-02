@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rectangle.h"
+#include <QPointer>
 
 namespace qtui {
 
@@ -14,6 +15,7 @@ class Terminal : public Rectangle {
   Q_PROPERTY(bool useAlternateScreen READ useAlternateScreen WRITE setUseAlternateScreen NOTIFY useAlternateScreenChanged)
   Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
   Q_PROPERTY(RendererMode rendererMode READ rendererMode WRITE setRendererMode NOTIFY rendererModeChanged)
+  Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
 
 public:
   enum class RendererMode {
@@ -21,12 +23,18 @@ public:
       Stream
   };
   Q_ENUM(RendererMode)
+  enum class ClipboardMode {
+      Disabled,
+      Osc52
+  };
+  Q_ENUM(ClipboardMode)
 
   explicit Terminal(QObject *parent = nullptr);
   ~Terminal() override;
 
   Q_INVOKABLE void print(const QString& text);
   Q_INVOKABLE void append(qtui::Item* item);
+  Q_INVOKABLE void copyToClipboard(const QString& text);
 
   bool useAlternateScreen() const { return m_useAlternateScreen; }
   void setUseAlternateScreen(bool use);
@@ -40,8 +48,10 @@ public:
 
   RendererMode rendererMode() const { return m_rendererMode; }
   void setRendererMode(RendererMode mode);
+  ClipboardMode clipboardMode() const { return m_clipboardMode; }
+  void setClipboardMode(ClipboardMode mode);
 
-  Item* focusedItem() const { return m_focusedItem; }
+  Item* focusedItem() const { return m_focusedItem.data(); }
   void setFocusedItem(Item* item);
 
   void findFocusableItems(Item* root, QList<Item*>& list);
@@ -58,15 +68,18 @@ signals:
   void useAlternateScreenChanged();
   void fillTerminalChanged();
   void rendererModeChanged();
+  void clipboardModeChanged();
+  void clipboardCopyRequested(const QString& text);
 
 private:
   TerminalEngine *m_engine = nullptr;
-  Item* m_focusedItem = nullptr;
+  QPointer<Item> m_focusedItem;
   QList<Popup*> m_popups;
   bool m_useAlternateScreen = true;
   bool m_fillTerminal = true;
   bool m_fillTerminalExplicit = false;
   RendererMode m_rendererMode = RendererMode::Frame;
+  ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
 };
 
 } // namespace qtui

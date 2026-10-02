@@ -98,7 +98,7 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
     int lastContentColumn = -1;
     for (int column = m_promptBuffer.width() - 1; column >= 0; --column) {
         const Cell& cell = m_promptBuffer.cellAt(column, row);
-        if (cell.character[0] != ' ' && cell.character[0] != '\0') {
+        if (!cell.continuation && !cell.character.isEmpty() && cell.character != " ") {
             lastContentColumn = column;
             break;
         }
@@ -122,13 +122,8 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
             hasPreviousStyle = true;
         }
 
-        if (cell.character[0] == '\0') {
-            output << ' ';
-        } else {
-            for (char byte : cell.character) {
-                if (byte != '\0') output << byte;
-            }
-        }
+        if (!cell.continuation)
+            output << (cell.character.isEmpty() ? std::string(" ") : cell.character.toStdString());
     }
     return output.str();
 }

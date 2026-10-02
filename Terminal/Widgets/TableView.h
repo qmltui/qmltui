@@ -5,6 +5,7 @@
 #include <QVariantMap>
 #include <QAbstractItemModel>
 #include <QPointer>
+#include <QPersistentModelIndex>
 #include <QJSValue>
 #include <QQmlComponent>
 
@@ -183,8 +184,9 @@ private:
 
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;
-    QQmlComponent* m_delegate = nullptr;
+    QPointer<QQmlComponent> m_delegate;
     QList<Item*> m_delegateItems;
+    QList<QPersistentModelIndex> m_delegateIndexes;
 };
 
 } // namespace qtui

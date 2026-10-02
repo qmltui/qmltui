@@ -9,7 +9,7 @@ namespace qtui {
 class InputDecoder {
 public:
     using KeyCallback = std::function<void(int qtKey, const QString& text, int modifiers)>;
-    using MouseCallback = std::function<void(int button, int x, int y, bool release)>;
+    using MouseCallback = std::function<void(int button, int x, int y, bool release, bool motion)>;
 
     InputDecoder();
     ~InputDecoder();
@@ -26,6 +26,7 @@ private:
     MouseCallback m_mouseCallback;
 
     std::string m_buffer;
+    bool m_bracketedPaste = false;
 };
 
 } // namespace qtui

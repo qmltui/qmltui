@@ -40,7 +40,7 @@ Developers use `Explosion` to render temporary impact effects.
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Explosion {
     frame: 1

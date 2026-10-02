@@ -1,7 +1,7 @@
 import QtQml 2.15
-import Terminal 1.0
-import Terminal.Widgets 1.0
-import Terminal.Controls 1.0
+import Qtui
+import Qtui.Widgets
+import Qtui.Controls
 
 Terminal {
 

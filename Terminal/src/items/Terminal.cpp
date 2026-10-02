@@ -27,6 +27,12 @@ void Terminal::append(qtui::Item* item) {
     }
 }
 
+void Terminal::copyToClipboard(const QString& text) {
+    emit clipboardCopyRequested(text);
+    if (m_engine && m_clipboardMode == ClipboardMode::Osc52)
+        m_engine->copyToClipboard(text);
+}
+
 void Terminal::setUseAlternateScreen(bool use) {
     if (m_useAlternateScreen == use) return;
     m_useAlternateScreen = use;
@@ -46,6 +52,8 @@ void Terminal::unregisterPopup(Popup* popup) {
 }
 
 void Terminal::setFocusedItem(Item* item) {
+    if (item && (!item->focusable() || !item->visible() || !item->isEffectivelyEnabled()))
+        item = nullptr;
     if (m_focusedItem == item) return;
     
     Item* oldFocus = m_focusedItem;
@@ -61,7 +69,7 @@ void Terminal::setFocusedItem(Item* item) {
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
-    if (!root || !root->visible()) return;
+    if (!root || !root->visible() || !root->isEffectivelyEnabled()) return;
     
     if (root->focusable()) {
         list.append(root);
@@ -112,6 +120,12 @@ void Terminal::setRendererMode(RendererMode mode) {
     
     emit rendererModeChanged();
     markDirty();
+}
+
+void Terminal::setClipboardMode(ClipboardMode mode) {
+    if (m_clipboardMode == mode) return;
+    m_clipboardMode = mode;
+    emit clipboardModeChanged();
 }
 
 int Terminal::width() const {

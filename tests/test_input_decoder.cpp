@@ -15,7 +15,9 @@ private slots:
     void testShiftTab();
     void testSplitSequence();
     void testMouseSGR();
+    void testBracketedPaste();
     void testUtf8();
+    void testMalformedMouseSGR();
 };
 
 void TestInputDecoder::testAsciiKeys() {
@@ -115,13 +117,15 @@ void TestInputDecoder::testMouseSGR() {
     InputDecoder decoder;
     int recBtn = -1, recX = -1, recY = -1;
     bool recRel = false;
+    bool recMotion = false;
     int callbackCount = 0;
 
-    decoder.setMouseCallback([&](int button, int x, int y, bool release) {
+    decoder.setMouseCallback([&](int button, int x, int y, bool release, bool motion) {
         recBtn = button;
         recX = x;
         recY = y;
         recRel = release;
+        recMotion = motion;
         callbackCount++;
     });
 
@@ -134,6 +138,42 @@ void TestInputDecoder::testMouseSGR() {
     QCOMPARE(recX, 14); // internally cx - 1
     QCOMPARE(recY, 19); // internally cy - 1
     QCOMPARE(recRel, false);
+    QCOMPARE(recMotion, false);
+
+    buf = "\033[<32;16;20M";
+    decoder.decode(buf, strlen(buf));
+    QCOMPARE(callbackCount, 2);
+    QCOMPARE(recBtn, 0);
+    QCOMPARE(recX, 15);
+    QCOMPARE(recMotion, true);
+}
+
+void TestInputDecoder::testBracketedPaste() {
+    InputDecoder decoder;
+    QString receivedText;
+    int callbackCount = 0;
+    decoder.setKeyCallback([&](int key, const QString &text, int modifiers) {
+        Q_UNUSED(key)
+        Q_UNUSED(modifiers)
+        receivedText += text;
+        ++callbackCount;
+    });
+
+    const QByteArray first = QByteArrayLiteral("\033[200~hello\n");
+    decoder.decode(first.constData(), first.size());
+    QCOMPARE(callbackCount, 0);
+    const QByteArray second = QByteArrayLiteral("world\033[201~");
+    decoder.decode(second.constData(), second.size());
+    QCOMPARE(callbackCount, 1);
+    QCOMPARE(receivedText, QStringLiteral("hello\nworld"));
+
+    receivedText.clear();
+    const QByteArray largePayload(8192, 'x');
+    const QByteArray largePaste = QByteArrayLiteral("\033[200~") + largePayload
+        + QByteArrayLiteral("\033[201~");
+    decoder.decode(largePaste.constData(), largePaste.size());
+    QCOMPARE(callbackCount, 2);
+    QCOMPARE(receivedText.toUtf8(), largePayload);
 }
 
 void TestInputDecoder::testUtf8() {
@@ -152,7 +192,7 @@ void TestInputDecoder::testUtf8() {
 
     QString expected = QString::fromUtf8(utf8_buf, 4);
     QCOMPARE(receivedText, expected);
-    QCOMPARE(receivedKey, expected[0].unicode());
+    QCOMPARE(receivedKey, static_cast<int>(expected.toUcs4().first()));
     
     // Test split UTF-8
     receivedText = "";
@@ -167,6 +207,20 @@ void TestInputDecoder::testUtf8() {
     
     decoder.decode("\x9F", 1);
     QCOMPARE(receivedText, expected); // Resolves
+}
+
+void TestInputDecoder::testMalformedMouseSGR() {
+    InputDecoder decoder;
+    int callbackCount = 0;
+    decoder.setMouseCallback([&](int, int, int, bool, bool) {
+        ++callbackCount;
+    });
+
+    const QByteArray overflowing = QByteArrayLiteral("\033[<999999999999999999;1;1M");
+    decoder.decode(overflowing.constData(), overflowing.size());
+    const QByteArray malformed = QByteArrayLiteral("\033[<1;;2M");
+    decoder.decode(malformed.constData(), malformed.size());
+    QCOMPARE(callbackCount, 0);
 }
 
 QTEST_MAIN(TestInputDecoder)

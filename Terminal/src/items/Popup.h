@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rectangle.h"
+#include <QPointer>
 
 namespace qtui {
 
@@ -11,6 +12,7 @@ class Popup : public Rectangle {
     Q_PROPERTY(bool modal READ modal WRITE setModal NOTIFY modalChanged)
     Q_PROPERTY(bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)
     Q_PROPERTY(int closePolicy READ closePolicy WRITE setClosePolicy NOTIFY closePolicyChanged)
+    Q_PROPERTY(qtui::Item* initialFocusItem READ initialFocusItem WRITE setInitialFocusItem NOTIFY initialFocusItemChanged)
 
 public:
     enum ClosePolicy {
@@ -32,24 +34,34 @@ public:
 
     int closePolicy() const { return m_closePolicy; }
     void setClosePolicy(int policy);
+    Item *initialFocusItem() const { return m_initialFocusItem; }
+    void setInitialFocusItem(Item *item);
 
     Q_INVOKABLE void open();
     Q_INVOKABLE void close();
+    Q_INVOKABLE void accept();
+    Q_INVOKABLE void reject();
 
-    void setVisible(bool visible);
-    void setParentItem(Item *parentItem);
+    void setVisible(bool visible) override;
+    void setParentItem(Item *parentItem) override;
 
 signals:
     void opened();
     void closed();
+    void accepted();
+    void rejected();
+    void finished(bool accepted);
     void modalChanged();
     void dimBackgroundChanged();
     void closePolicyChanged();
+    void initialFocusItemChanged();
 
 private:
     bool m_modal = false;
     bool m_dimBackground = true;
     int m_closePolicy = CloseOnEscape | CloseOnOutsideClick;
+    QPointer<Item> m_initialFocusItem;
+    QPointer<Item> m_previousFocusItem;
 };
 
 } // namespace qtui

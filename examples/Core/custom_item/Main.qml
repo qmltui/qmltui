@@ -1,5 +1,5 @@
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 import CustomItemDemo 1.0
 
 Terminal {

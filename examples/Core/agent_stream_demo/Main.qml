@@ -1,6 +1,6 @@
 import QtQuick
 import Qt.labs.qmlmodels
-import Terminal
+import Qtui
 
 Terminal {
     id: root

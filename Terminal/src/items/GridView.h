@@ -3,6 +3,10 @@
 #include "ScrollView.h"
 #include <QVariant>
 #include <QQmlComponent>
+#include <QHash>
+#include <QPointer>
+
+class QAbstractItemModel;
 
 namespace qtui {
 
@@ -44,9 +48,14 @@ signals:
 private:
     void clearItems();
     void generateItems();
+    void insertModelRows(QAbstractItemModel *model, int first, int last,
+                         const QHash<int, QString> &roleMap);
+    void removeModelRows(int first, int last);
+    void moveModelRows(int first, int last, int destination);
 
     QVariant m_model;
-    QQmlComponent* m_delegate = nullptr;
+    QPointer<QObject> m_objectModel;
+    QPointer<QQmlComponent> m_delegate;
     int m_cellWidth = 0;
     int m_cellHeight = 0;
     QList<Item*> m_createdItems;

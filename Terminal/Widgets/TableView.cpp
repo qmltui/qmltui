@@ -5,20 +5,32 @@
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <algorithm>
+#include <UnicodeText.h>
 
 namespace qtui {
 
+static QQmlContext *delegateContext(Item *item) {
+    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly)
+                : nullptr;
+}
+
 static QString alignText(const QString &text, int width, const QString &alignment) {
     if (width <= 0) return QString();
-    QString t = text.left(width);
+    QString t;
+    int usedWidth = 0;
+    for (const Grapheme &cluster : UnicodeText::graphemes(text)) {
+        if (usedWidth + cluster.width > width) break;
+        t += QString::fromUtf8(cluster.utf8);
+        usedWidth += cluster.width;
+    }
+    const int pad = width - usedWidth;
     if (alignment == "right") {
-        return t.rightJustified(width);
+        return QString(pad, ' ') + t;
     } else if (alignment == "center") {
-        int pad = width - t.size();
         int leftPad = pad / 2;
         return QString(leftPad, ' ') + t + QString(pad - leftPad, ' ');
     }
-    return t.leftJustified(width);
+    return t + QString(pad, ' ');
 }
 
 static bool compareVariants(const QVariant &a, const QVariant &b, bool ascending) {
@@ -49,6 +61,7 @@ void TableView::clearDelegateItems() {
         }
     }
     m_delegateItems.clear();
+    m_delegateIndexes.clear();
 }
 
 void TableView::setColumns(const QVariantList &columns) {
@@ -59,6 +72,8 @@ void TableView::setColumns(const QVariantList &columns) {
 }
 
 void TableView::setModel(const QVariant &model) {
+    if (m_cppModel)
+        disconnect(m_cppModel.data(), nullptr, this, nullptr);
     m_modelVariant = model;
     m_listModel.clear();
     m_cppModel = nullptr;
@@ -70,6 +85,40 @@ void TableView::setModel(const QVariant &model) {
         m_listModel = model.toList();
     } else if (QObject *obj = model.value<QObject*>()) {
         m_cppModel = qobject_cast<QAbstractItemModel*>(obj);
+    }
+
+    if (m_cppModel) {
+        connect(m_cppModel.data(), &QObject::destroyed, this, [this]() {
+            m_cppModel.clear();
+            m_modelVariant.clear();
+            clearDelegateItems();
+            emit modelChanged();
+            markDirty();
+        });
+        connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+            for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+                if (row < 0 || row >= m_delegateItems.size()) continue;
+                QVariantMap data;
+                const QHash<int, QByteArray> roles = m_cppModel->roleNames();
+                const QModelIndex index = m_cppModel->index(row, 0);
+                for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+                    data.insert(QString::fromUtf8(it.value()), m_cppModel->data(index, it.key()));
+                if (Item *item = m_delegateItems[row])
+                    item->setProperty("modelData", data);
+            }
+            markDirty();
+        });
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted,
+                this, [this]() { generateDelegateItems(); markDirty(); });
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved,
+                this, [this]() { generateDelegateItems(); markDirty(); });
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsMoved,
+                this, [this]() { generateDelegateItems(); markDirty(); });
+        connect(m_cppModel.data(), &QAbstractItemModel::modelReset,
+                this, [this]() { generateDelegateItems(); markDirty(); });
+        connect(m_cppModel.data(), &QAbstractItemModel::layoutChanged,
+                this, [this]() { generateDelegateItems(); markDirty(); });
     }
 
     if (m_sortColumn >= 0) {
@@ -170,6 +219,8 @@ void TableView::sortModel() {
         });
     }
 
+    if (!m_cppModel && m_delegate)
+        generateDelegateItems();
     markDirty();
 }
 
@@ -265,7 +316,16 @@ void TableView::setCellFormat(const QJSValue &format) {
 
 void TableView::setDelegate(QQmlComponent *delegate) {
     if (m_delegate == delegate) return;
+    if (m_delegate) disconnect(m_delegate, nullptr, this, nullptr);
     m_delegate = delegate;
+    if (m_delegate) {
+        connect(m_delegate, &QObject::destroyed, this, [this]() {
+            m_delegate.clear();
+            clearDelegateItems();
+            emit delegateChanged();
+            markDirty();
+        });
+    }
     emit delegateChanged();
     generateDelegateItems();
     markDirty();
@@ -340,32 +400,103 @@ QString TableView::cellText(int row, int col) const {
 }
 
 void TableView::generateDelegateItems() {
-    clearDelegateItems();
-    if (!m_delegate) return;
+    QList<Item*> oldItems;
+    QList<QPersistentModelIndex> oldIndexes;
+    if (m_cppModel) {
+        oldItems = m_delegateItems;
+        oldIndexes = m_delegateIndexes;
+        m_delegateItems.clear();
+        m_delegateIndexes.clear();
+    } else {
+        clearDelegateItems();
+    }
+    QHash<QPersistentModelIndex, int> oldIndexLookup;
+    oldIndexLookup.reserve(oldIndexes.size());
+    for (int index = 0; index < oldIndexes.size(); ++index) {
+        if (oldIndexes[index].isValid())
+            oldIndexLookup.insert(oldIndexes[index], index);
+    }
+    const auto deleteOldItems = [&oldItems]() {
+        for (Item *item : oldItems) {
+            if (!item) continue;
+            item->setParentItem(nullptr);
+            delete item;
+        }
+        oldItems.clear();
+    };
+    if (!m_delegate) {
+        deleteOldItems();
+        return;
+    }
 
     QQmlEngine* engine = qmlEngine(this);
-    if (!engine) return;
+    if (!engine) {
+        deleteOldItems();
+        return;
+    }
 
     int totalR = rowCount();
+    const QHash<int, QByteArray> roles = m_cppModel
+        ? m_cppModel->roleNames() : QHash<int, QByteArray>();
     for (int r = 0; r < totalR; ++r) {
+        const QPersistentModelIndex persistentIndex =
+            m_cppModel ? QPersistentModelIndex(m_cppModel->index(r, 0))
+                       : QPersistentModelIndex();
+        Item *reused = nullptr;
+        if (persistentIndex.isValid()) {
+            const int oldIndex = oldIndexLookup.value(persistentIndex, -1);
+            if (oldIndex >= 0 && oldIndex < oldItems.size()) {
+                reused = oldItems[oldIndex];
+                oldItems[oldIndex] = nullptr;
+            }
+        }
+
+        QVariantMap cppData;
+        if (m_cppModel) {
+            const QModelIndex index = m_cppModel->index(r, 0);
+            for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+                cppData.insert(QString::fromUtf8(it.value()), m_cppModel->data(index, it.key()));
+        }
+
+        if (reused) {
+            reused->setProperty("index", r);
+            reused->setProperty("row", r);
+            reused->setProperty("modelData", cppData);
+            if (QQmlContext *context = delegateContext(reused)) {
+                context->setContextProperty("index", r);
+                context->setContextProperty("row", r);
+                context->setContextProperty("modelData", cppData);
+            }
+            m_delegateItems.append(reused);
+            m_delegateIndexes.append(persistentIndex);
+            continue;
+        }
+
         QQmlContext* context = new QQmlContext(qmlContext(this), this);
         context->setContextProperty("index", r);
         context->setContextProperty("row", r);
 
         if (r >= 0 && r < m_listModel.size()) {
             context->setContextProperty("modelData", m_listModel[r]);
+        } else if (m_cppModel) {
+            context->setContextProperty("modelData", cppData);
         }
 
         QObject* obj = m_delegate->create(context);
         if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
             item->setParentItem(this);
             item->setParent(this);
+            context->setParent(item);
             m_delegateItems.append(item);
+            m_delegateIndexes.append(persistentIndex);
         } else {
             delete obj;
             delete context;
+            m_delegateItems.append(nullptr);
+            m_delegateIndexes.append(persistentIndex);
         }
     }
+    deleteOldItems();
 }
 
 void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
@@ -417,12 +548,12 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
                 title += (m_sortOrder == Qt::AscendingOrder ? " ▲" : " ▼");
             }
 
-            QString formattedHeader = alignText(title, colW - 1, align).leftJustified(colW);
+            QString formattedHeader = alignText(title, colW, align);
             buffer.writeText(curX, startY, formattedHeader, m_resolvedHeaderColor, m_resolvedHeaderBgColor, TextAttribute::Bold);
             curX += colW;
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
-                buffer.cellAt(curX - 1, startY).character[0] = '|';
+                buffer.cellAt(curX - 1, startY).character = "|";
             }
         }
 
@@ -493,12 +624,12 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
                 }
             }
 
-            QString formattedText = alignText(val, colW - 1, align).leftJustified(colW);
+            QString formattedText = alignText(val, colW, align);
             buffer.writeText(curX, rowY, formattedText, cellFg, cellBg, cellAttr);
             curX += colW;
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
-                buffer.cellAt(curX - 1, rowY).character[0] = '|';
+                buffer.cellAt(curX - 1, rowY).character = "|";
             }
         }
     }

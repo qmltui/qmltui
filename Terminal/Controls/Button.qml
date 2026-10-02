@@ -1,13 +1,10 @@
-import QtQml 2.15
-import Terminal 1.0
+import QtQml
+import Qtui
 
 Rectangle {
     id: control
     property string label: ""
     property bool pressed: false
-    signal clicked()
-
-    // Style configuration
     property string textColor: "white"
     property string normalColor: "transparent"
     property string focusColor: "transparent"
@@ -15,31 +12,34 @@ Rectangle {
     property string focusBorderColor: "yellow"
     property string normalBorderStyle: "single"
     property string focusBorderStyle: "double"
+    property string disabledTextColor: "gray"
+    property string disabledBorderColor: "gray"
+    signal clicked()
 
-    focusable: true
-    width: label.length + 4
-    height: 3
+    focusable: enabled
+    implicitWidth: labelText.implicitWidth + 4
+    implicitHeight: 3
     
     color: activeFocus ? focusColor : normalColor
     border.style: activeFocus ? focusBorderStyle : normalBorderStyle
-    border.color: activeFocus ? focusBorderColor : normalBorderColor
+    border.color: !enabled ? disabledBorderColor : (activeFocus ? focusBorderColor : normalBorderColor)
     
     Text {
+        id: labelText
         anchors.centerIn: parent
         text: control.label
-        color: control.textColor
+        color: control.enabled ? control.textColor : control.disabledTextColor
     }
 
     Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {
+        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Space)) {
             control.clicked()
             event.accepted = true
         }
     }
 
     MouseArea {
-        width: control.width
-        height: control.height
+        anchors.fill: parent
         
         onPressed: (event) => {
             control.focus = true

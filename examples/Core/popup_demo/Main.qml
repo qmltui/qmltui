@@ -1,5 +1,5 @@
 import QtQuick
-import Terminal
+import Qtui
 
 Terminal {
     id: root

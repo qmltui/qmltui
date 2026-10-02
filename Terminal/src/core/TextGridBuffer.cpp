@@ -1,21 +1,42 @@
 #include "TextGridBuffer.h"
+#include "UnicodeText.h"
 #include <sstream>
 #include <algorithm>
+#include <limits>
+#include <utility>
 
 namespace qtui {
 
 TextGridBuffer::TextGridBuffer() = default;
 
-void TextGridBuffer::resize(int width, int height) {
+bool TextGridBuffer::resize(int width, int height) {
+    constexpr size_t MaxCellCount = 10'000'000;
+    if (width < 0 || height < 0) return false;
+    const size_t cellWidth = static_cast<size_t>(width);
+    const size_t cellHeight = static_cast<size_t>(height);
+    if (cellHeight != 0 && cellWidth > MaxCellCount / cellHeight)
+        return false;
+    const size_t cellCount = cellWidth * cellHeight;
+    if (cellCount > MaxCellCount) return false;
+
     m_width = width;
     m_height = height;
-    m_cells.resize(width * height);
+    m_cells.resize(cellCount);
     clear();
+    return true;
+}
+
+void TextGridBuffer::swap(TextGridBuffer& other) noexcept {
+    using std::swap;
+    swap(m_width, other.m_width);
+    swap(m_height, other.m_height);
+    swap(m_cells, other.m_cells);
+    swap(m_emptyCell, other.m_emptyCell);
 }
 
 void TextGridBuffer::clear() {
     Cell emptyCell;
-    emptyCell.character[0] = ' '; // Initialize with spaces
+    emptyCell.character = " ";
     std::fill(m_cells.begin(), m_cells.end(), emptyCell);
 }
 
@@ -63,7 +84,7 @@ std::string TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool 
                     if (dx > 0) ansi << "\033[" << dx << "C";
                     else if (dx < 0) ansi << "\033[" << -dx << "D";
                 }
-                curX = x + 1; // After writing char, cursor moves right
+                curX = x + std::max(1, static_cast<int>(nextCell.displayWidth));
                 curY = y;
                 
                 // Reset attributes
@@ -90,13 +111,8 @@ std::string TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool 
                 if (static_cast<uint8_t>(nextCell.attributes & TextAttribute::Underline)) ansi << "\033[4m";
                 if (static_cast<uint8_t>(nextCell.attributes & TextAttribute::Reversed))  ansi << "\033[7m";
                 
-                // Write character
-                for (char c : nextCell.character) {
-                    if (c != '\0') ansi << c;
-                }
-                if (nextCell.character[0] == '\0') {
-                    ansi << ' ';
-                }
+                if (!nextCell.continuation)
+                    ansi << (nextCell.character.isEmpty() ? std::string(" ") : nextCell.character.toStdString());
             }
         }
     }
@@ -132,13 +148,8 @@ std::string TextGridBuffer::toAnsiString() const {
                 if (lastAttr & static_cast<uint8_t>(TextAttribute::Reversed))  ansi << "\033[7m";
             }
             
-            if (cell.character[0] != '\0') {
-                for (char c : cell.character) {
-                    if (c != '\0') ansi << c;
-                }
-            } else {
-                ansi << ' ';
-            }
+            if (!cell.continuation)
+                ansi << (cell.character.isEmpty() ? std::string(" ") : cell.character.toStdString());
         }
         ansi << "\033[0m\n"; // Reset at end of line and add newline
         lastFg = 0; lastBg = 0; lastAttr = 0;
@@ -157,37 +168,53 @@ std::string TextGridBuffer::toAnsiString() const {
 void TextGridBuffer::writeText(int x, int y, const QString& text, uint32_t fgColor, uint32_t bgColor, TextAttribute attributes) {
     if (y < 0 || y >= m_height || x >= m_width) return;
 
-    QByteArray utf8 = text.toUtf8();
     int curX = x;
-    int i = 0;
-    int len = utf8.size();
-
-    while (i < len && curX < m_width) {
-        unsigned char c = static_cast<unsigned char>(utf8[i]);
-        int charLen = 1;
-        if ((c & 0x80) == 0) {
-            charLen = 1;
-        } else if ((c & 0xE0) == 0xC0) {
-            charLen = 2;
-        } else if ((c & 0xF0) == 0xE0) {
-            charLen = 3;
-        } else if ((c & 0xF8) == 0xF0) {
-            charLen = 4;
+    QString safeText;
+    safeText.reserve(text.size());
+    for (char32_t codepoint : text.toUcs4()) {
+        if (codepoint <= 0x1f) {
+            safeText.append(QChar(static_cast<char16_t>(0x2400 + codepoint)));
+        } else if (codepoint == 0x7f) {
+            safeText.append(QChar(0x2421));
+        } else if (codepoint >= 0x80 && codepoint <= 0x9f) {
+            safeText.append(QChar(0xfffd));
+        } else {
+            safeText.append(QString::fromUcs4(&codepoint, 1));
         }
+    }
 
-        if (curX >= 0) {
+    for (const Grapheme &cluster : UnicodeText::graphemes(safeText)) {
+        const int width = std::max(0, cluster.width);
+        if (width == 0 && curX > 0) {
+            int targetX = curX - 1;
+            while (targetX > 0 && cellAt(targetX, y).continuation)
+                --targetX;
+            cellAt(targetX, y).character += cluster.utf8;
+            continue;
+        }
+        if (width > 0 && curX + width > m_width)
+            break;
+        if (curX >= 0 && curX < m_width) {
             Cell& cell = cellAt(curX, y);
             cell.fgColor = fgColor;
-            cell.bgColor = bgColor;
+            if ((bgColor >> 24) != 0)
+                cell.bgColor = bgColor;
             cell.attributes = attributes;
-            cell.character.fill('\0');
-
-            for (int k = 0; k < charLen && (i + k) < len && k < 4; ++k) {
-                cell.character[k] = utf8[i + k];
+            cell.character = cluster.utf8;
+            cell.displayWidth = static_cast<uint8_t>(width);
+            cell.continuation = false;
+            for (int offset = 1; offset < width; ++offset) {
+                Cell &continuation = cellAt(curX + offset, y);
+                const uint32_t underlyingBg = continuation.bgColor;
+                continuation.fgColor = cell.fgColor;
+                continuation.bgColor = (bgColor >> 24) != 0 ? bgColor : underlyingBg;
+                continuation.attributes = cell.attributes;
+                continuation.character.clear();
+                continuation.displayWidth = 0;
+                continuation.continuation = true;
             }
         }
-        i += charLen;
-        curX++;
+        curX += width;
     }
 }
 
@@ -203,10 +230,9 @@ void TextGridBuffer::drawLine(int x1, int y1, int x2, int y2, const char* charac
             Cell& cell = cellAt(cx, cy);
             cell.fgColor = fgColor;
             cell.bgColor = bgColor;
-            cell.character.fill('\0');
-            for (int k = 0; k < 4 && character[k] != '\0'; ++k) {
-                cell.character[k] = character[k];
-            }
+            cell.character = QByteArray(character);
+            cell.displayWidth = 1;
+            cell.continuation = false;
         }
     };
 
@@ -232,10 +258,9 @@ void TextGridBuffer::fillRect(int x, int y, int width, int height, const char* c
                 Cell& cell = cellAt(cx, cy);
                 cell.fgColor = fgColor;
                 cell.bgColor = bgColor;
-                cell.character.fill('\0');
-                for (int k = 0; k < 4 && character[k] != '\0'; ++k) {
-                    cell.character[k] = character[k];
-                }
+                cell.character = QByteArray(character);
+                cell.displayWidth = 1;
+                cell.continuation = false;
             }
         }
     }
@@ -256,10 +281,9 @@ void TextGridBuffer::drawBox(int x, int y, int width, int height, uint32_t fgCol
             Cell& cell = cellAt(cx, cy);
             cell.fgColor = fgColor;
             cell.bgColor = bgColor;
-            cell.character.fill('\0');
-            for (int k = 0; k < 4 && ch[k] != '\0'; ++k) {
-                cell.character[k] = ch[k];
-            }
+            cell.character = QByteArray(ch);
+            cell.displayWidth = 1;
+            cell.continuation = false;
         }
     };
 

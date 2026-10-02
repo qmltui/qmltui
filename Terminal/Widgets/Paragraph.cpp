@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <QStack>
 #include <QRegularExpression>
+#include <UnicodeText.h>
 
 namespace qtui {
 
@@ -15,6 +16,7 @@ Paragraph::Paragraph(QObject *parent) : Item(parent) {
 void Paragraph::setText(const QString &text) {
     if (m_text == text) return;
     m_text = text;
+    invalidateTextCache();
     emit textChanged();
     markDirty();
 }
@@ -22,6 +24,7 @@ void Paragraph::setText(const QString &text) {
 void Paragraph::setTextFormat(TextFormat format) {
     if (m_textFormat == format) return;
     m_textFormat = format;
+    invalidateTextCache();
     emit textFormatChanged();
     markDirty();
 }
@@ -30,6 +33,7 @@ void Paragraph::setColor(const QString &color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    invalidateTextCache();
     emit colorChanged();
     markDirty();
 }
@@ -38,6 +42,7 @@ void Paragraph::setBgColor(const QString &color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
     m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
+    invalidateTextCache();
     emit bgColorChanged();
     markDirty();
 }
@@ -52,6 +57,7 @@ void Paragraph::setAlignment(const QString &align) {
 void Paragraph::setWrapMode(bool wrap) {
     if (m_wrapMode == wrap) return;
     m_wrapMode = wrap;
+    invalidateTextCache();
     emit wrapModeChanged();
     markDirty();
 }
@@ -85,9 +91,10 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 
     bool isRich = (m_textFormat == RichText) || (m_textFormat == AutoText && (line.contains('<') || line.contains('[') || line.contains("**") || line.contains('`')));
     if (!isRich) {
-        for (QChar c : line) {
-            result.append(FormattedChar{ c, m_resolvedColor, m_resolvedBgColor, TextAttribute::None, "" });
-        }
+        for (const Grapheme &cluster : UnicodeText::graphemes(line))
+            result.append(FormattedChar{QString::fromUtf8(cluster.utf8), cluster.width,
+                                        m_resolvedColor, m_resolvedBgColor,
+                                        TextAttribute::None, ""});
         return result;
     }
 
@@ -157,9 +164,10 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
                     QString linkText = line.mid(i + 1, closeBracket - i - 1);
                     QString linkUrl = line.mid(closeBracket + 2, closeParen - closeBracket - 2);
 
-                    for (QChar c : linkText) {
-                        result.append(FormattedChar{ c, 0xFF61AFEF, m_resolvedBgColor, TextAttribute::Underline, linkUrl });
-                    }
+                    for (const Grapheme &cluster : UnicodeText::graphemes(linkText))
+                        result.append(FormattedChar{QString::fromUtf8(cluster.utf8), cluster.width,
+                                                    0xFF61AFEF, m_resolvedBgColor,
+                                                    TextAttribute::Underline, linkUrl});
                     i = closeParen + 1;
                     continue;
                 }
@@ -188,8 +196,11 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
         if (bold) attr = attr | TextAttribute::Bold;
         if (italic || underline || !activeHref.isEmpty()) attr = attr | TextAttribute::Underline;
 
-        result.append(FormattedChar{ line[i], fgStack.top(), bgStack.top(), attr, activeHref });
-        i++;
+        const int next = UnicodeText::nextBoundary(line, i);
+        const QString cluster = line.mid(i, next - i);
+        result.append(FormattedChar{cluster, UnicodeText::displayWidth(cluster),
+                                    fgStack.top(), bgStack.top(), attr, activeHref});
+        i = next;
     }
 
     return result;
@@ -198,8 +209,14 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 QList<FormattedLine> Paragraph::wordWrapFormatted(const FormattedLine &rawLine, int maxW) const {
     if (maxW <= 0 || rawLine.isEmpty()) return {};
 
+    auto lineWidth = [](const FormattedLine &line) {
+        int width = 0;
+        for (const FormattedChar &character : line) width += character.width;
+        return width;
+    };
+
     QList<FormattedLine> result;
-    if (!m_wrapMode || rawLine.size() <= maxW) {
+    if (!m_wrapMode || lineWidth(rawLine) <= maxW) {
         result.append(rawLine);
         return result;
     }
@@ -209,22 +226,23 @@ QList<FormattedLine> Paragraph::wordWrapFormatted(const FormattedLine &rawLine, 
 
     while (i < rawLine.size()) {
         int wordStart = i;
-        while (i < rawLine.size() && rawLine[i].ch != ' ') i++;
+        while (i < rawLine.size() && rawLine[i].text != " ") i++;
 
         FormattedLine word;
         for (int k = wordStart; k < i; ++k) word.append(rawLine[k]);
 
         if (currentLine.isEmpty()) {
             currentLine = word;
-        } else if (currentLine.size() + 1 + word.size() <= maxW) {
-            currentLine.append(FormattedChar{ ' ', m_resolvedColor, m_resolvedBgColor, TextAttribute::None, "" });
+        } else if (lineWidth(currentLine) + 1 + lineWidth(word) <= maxW) {
+            currentLine.append(FormattedChar{QStringLiteral(" "), 1, m_resolvedColor,
+                                              m_resolvedBgColor, TextAttribute::None, ""});
             currentLine.append(word);
         } else {
             result.append(currentLine);
             currentLine = word;
         }
 
-        if (i < rawLine.size() && rawLine[i].ch == ' ') {
+        if (i < rawLine.size() && rawLine[i].text == " ") {
             i++;
         }
     }
@@ -237,6 +255,8 @@ QList<FormattedLine> Paragraph::wordWrapFormatted(const FormattedLine &rawLine, 
 }
 
 QList<FormattedLine> Paragraph::getRenderedLines(int availW) const {
+    if (m_cachedWidth == availW)
+        return m_cachedLines;
     QStringList rawParagraphs = m_text.split('\n');
     QList<FormattedLine> wrappedLines;
 
@@ -245,7 +265,14 @@ QList<FormattedLine> Paragraph::getRenderedLines(int availW) const {
         QList<FormattedLine> lines = wordWrapFormatted(parsedLine, availW);
         wrappedLines.append(lines);
     }
-    return wrappedLines;
+    m_cachedWidth = availW;
+    m_cachedLines = wrappedLines;
+    return m_cachedLines;
+}
+
+void Paragraph::invalidateTextCache() {
+    m_cachedWidth = -1;
+    m_cachedLines.clear();
 }
 
 void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
@@ -273,7 +300,10 @@ void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
     for (int idx = 0; idx < availH && (m_scrollY + idx) < wrappedLines.size(); ++idx) {
         const FormattedLine &line = wrappedLines[m_scrollY + idx];
         int lineY = startY + idx;
-        int lineLen = std::min(availW, static_cast<int>(line.size()));
+        int lineLen = 0;
+        for (const FormattedChar &character : line)
+            lineLen += character.width;
+        lineLen = std::min(availW, lineLen);
 
         int curX = startX;
         if (m_alignment == "right") {
@@ -282,18 +312,11 @@ void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
             curX = startX + ((availW - lineLen) / 2);
         }
 
-        for (int k = 0; k < lineLen; ++k) {
-            const FormattedChar &fc = line[k];
-            Cell &cell = buffer.cellAt(curX + k, lineY);
-            cell.fgColor = fc.fg;
-            cell.bgColor = fc.bg;
-            cell.attributes = fc.attr;
-            cell.character.fill('\0');
-            QString s(fc.ch);
-            QByteArray utf8 = s.toUtf8();
-            for (int b = 0; b < 4 && b < utf8.size(); ++b) {
-                cell.character[b] = utf8[b];
-            }
+        int usedWidth = 0;
+        for (const FormattedChar &fc : line) {
+            if (usedWidth + fc.width > lineLen) break;
+            buffer.writeText(curX + usedWidth, lineY, fc.text, fc.fg, fc.bg, fc.attr);
+            usedWidth += fc.width;
         }
     }
 }
@@ -311,18 +334,25 @@ void Paragraph::mousePressEvent(MouseEvent *event) {
         const FormattedLine &line = lines[clickY];
         int startX = 0;
         if (m_alignment == "right") {
-            startX = availW - line.size();
+            int lineWidth = 0;
+            for (const FormattedChar &character : line) lineWidth += character.width;
+            startX = availW - lineWidth;
         } else if (m_alignment == "center") {
-            startX = (availW - line.size()) / 2;
+            int lineWidth = 0;
+            for (const FormattedChar &character : line) lineWidth += character.width;
+            startX = (availW - lineWidth) / 2;
         }
 
-        int charIdx = clickX - startX;
-        if (charIdx >= 0 && charIdx < line.size()) {
-            const QString &link = line[charIdx].href;
-            if (!link.isEmpty()) {
-                emit linkActivated(link);
+        const int column = clickX - startX;
+        int offset = 0;
+        for (const FormattedChar &character : line) {
+            if (column >= offset && column < offset + character.width &&
+                !character.href.isEmpty()) {
+                emit linkActivated(character.href);
                 event->setAccepted(true);
+                break;
             }
+            offset += character.width;
         }
     }
 }

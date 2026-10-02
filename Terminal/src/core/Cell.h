@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <array>
+#include <QByteArray>
 
 namespace qtui {
 
@@ -22,13 +22,17 @@ inline TextAttribute operator&(TextAttribute a, TextAttribute b) {
 }
 
 struct Cell {
-    std::array<char, 4> character{'\0', '\0', '\0', '\0'};
+    QByteArray character{" "};
+    uint8_t displayWidth = 1;
+    bool continuation = false;
     uint32_t fgColor = 0xFFFFFFFF; // Default foreground (White)
     uint32_t bgColor = 0x00000000; // Default background (Transparent)
     TextAttribute attributes = TextAttribute::None;
 
     bool operator==(const Cell& other) const {
         return character == other.character &&
+               displayWidth == other.displayWidth &&
+               continuation == other.continuation &&
                fgColor == other.fgColor &&
                bgColor == other.bgColor &&
                attributes == other.attributes;

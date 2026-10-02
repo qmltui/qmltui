@@ -9,6 +9,7 @@
 #include <QQmlComponent>
 #include <QAbstractItemModel>
 #include <QPointer>
+#include <QPersistentModelIndex>
 
 namespace qtui {
 
@@ -115,7 +116,7 @@ private:
         bool hasChildren = false;
         bool expanded = false;
         QVariantMap rawData;
-        QModelIndex modelIndex;
+        QPersistentModelIndex modelIndex;
     };
 
     void flattenTree(const QVariantMap &map, const QString &parentPath, int depth, QList<VisibleNode> &list);
@@ -123,15 +124,22 @@ private:
     void updateTree();
 
     void clearDelegateItems();
-    void generateDelegateItems();
+    void generateDelegateItems(QList<Item*> oldItems = {},
+                               QList<QPersistentModelIndex> oldIndexes = {},
+                               QStringList oldPaths = {});
+    void updateDelegateItem(Item *item, int index);
 
     QVariant m_modelVariant;
     QVariant m_rootNodeVariant;
     QPointer<QAbstractItemModel> m_cppModel;
     QVariantMap m_rootNodeMap;
 
-    QQmlComponent* m_delegate = nullptr;
+    QPointer<QQmlComponent> m_delegate;
     QList<Item*> m_delegateItems;
+    QList<QPersistentModelIndex> m_delegateModelIndexes;
+    QStringList m_delegatePaths;
+    int m_delegateStartIndex = -1;
+    int m_delegateCapacity = 0;
 
     QSet<QString> m_expandedPaths;
     QList<VisibleNode> m_visibleNodes;

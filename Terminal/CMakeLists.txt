@@ -1,14 +1,24 @@
 
 
 # The library backing the QML module
-qt_add_qml_module(Qtui
-    URI Terminal
-    VERSION 1.0
+set(qtui_behavior_sources)
+if(QTUI_ENABLE_BEHAVIOR)
+    list(APPEND qtui_behavior_sources
+        src/engine/Behavior.h
+        src/engine/Behavior.cpp
+    )
+endif()
+
+qt_add_qml_module(QtuiCore
+    URI Qtui
+    PLUGIN_TARGET QtuiCorePlugin
     SOURCES
         src/core/ColorMapper.h
         src/core/ColorMapper.cpp
         src/core/InputDecoder.cpp
         src/core/Cell.h
+        src/core/UnicodeText.h
+        src/core/UnicodeText.cpp
         src/core/TextGridBuffer.h
         src/core/TextGridBuffer.cpp
         src/core/TerminalDevice.h
@@ -25,8 +35,6 @@ qt_add_qml_module(Qtui
         src/engine/Keys.h
         src/engine/Animation.h
         src/engine/Animation.cpp
-        src/engine/Behavior.h
-        src/engine/Behavior.cpp
         src/engine/State.h
         src/engine/State.cpp
         src/engine/Transition.h
@@ -44,6 +52,8 @@ qt_add_qml_module(Qtui
         src/items/TextInput.cpp
         src/items/TextArea.h
         src/items/TextArea.cpp
+        src/items/LogView.h
+        src/items/LogView.cpp
         src/items/ScrollView.h
         src/items/ScrollView.cpp
         src/items/Terminal.h
@@ -58,6 +68,10 @@ qt_add_qml_module(Qtui
         src/items/Row.cpp
         src/items/Column.h
         src/items/Column.cpp
+        src/items/Layout.h
+        src/items/Layout.cpp
+        src/items/LinearLayout.h
+        src/items/LinearLayout.cpp
         src/items/MouseArea.h
         src/items/MouseArea.cpp
         src/items/Repeater.h
@@ -68,16 +82,63 @@ qt_add_qml_module(Qtui
         src/items/GridView.cpp
         src/items/BrailleCanvas.h
         src/items/BrailleCanvas.cpp
+        ${qtui_behavior_sources}
 )
 
-target_include_directories(Qtui PUBLIC src/items src/core src/engine src)
+target_include_directories(QtuiCore PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/items>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/core>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/items>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/core>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/engine>
+)
 
-target_link_libraries(Qtui PUBLIC
+target_link_libraries(QtuiCore PUBLIC
     Qt6::Qml
 )
 
-target_link_libraries(Qtui PRIVATE
-    Qt6::QmlPrivate
+target_link_libraries(QtuiCore PRIVATE
+    utf8proc
+)
+if(QTUI_ENABLE_BEHAVIOR)
+    target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
+endif()
+
+add_library(Qtui::Core ALIAS QtuiCore)
+set_target_properties(QtuiCore PROPERTIES EXPORT_NAME Core)
+set_target_properties(QtuiCorePlugin PROPERTIES
+    EXPORT_NAME CorePlugin
+    INSTALL_RPATH "$ORIGIN/../../.."
+)
+install(TARGETS QtuiCore
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiCorePlugin
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+    RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+)
+install(FILES
+    "${QT_QML_OUTPUT_DIRECTORY}/Qtui/qmldir"
+    "${QT_QML_OUTPUT_DIRECTORY}/Qtui/QtuiCore.qmltypes"
+    DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+)
+install(FILES
+    src/items/Item.h src/items/Anchors.h src/items/AnchorLine.h src/items/Border.h
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
+)
+install(FILES
+    src/core/TextGridBuffer.h src/core/Cell.h src/core/UnicodeText.h
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/core"
+)
+install(FILES
+    src/engine/KeyEvent.h src/engine/MouseEvent.h
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/engine"
 )
 
 add_subdirectory(Controls)

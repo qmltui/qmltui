@@ -15,7 +15,7 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
   - *Signals*: `onClicked`, `onWheelUp`, `onWheelDown`.
 
 ## Layouts & Positioning
-- `Row`: Positions children horizontally. See [Layouts Demo](../examples/layouts_and_padding/Main.qml).
+- `Row`: Positions children horizontally. See [Layouts Demo](../examples/Core/layouts_and_padding/Main.qml).
   - *Properties*: `spacing`.
 - `Column`: Positions children vertically.
   - *Properties*: `spacing`.
@@ -25,9 +25,9 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
 ## Views & Repetition
 - `Repeater`: Dynamically generates children based on a numeric count or data model.
   - *Properties*: `model`, `delegate`.
-- `ListView`: A scrolling vertical list for data models. Supports scrolling with arrow keys or mouse wheel. See [ListView Demo](../examples/listview_demo/Main.qml).
+- `ListView`: A scrolling vertical list for data models. Supports scrolling with arrow keys or mouse wheel. See [ListView Demo](../examples/Core/listview_demo/Main.qml).
   - *Properties*: `model`, `delegate`, `currentIndex`.
-- `ScrollView`: Provides scrollable bounds for content larger than its visual rectangle. See [ScrollView implementation](../Tui/src/items/ScrollView.h).
+- `ScrollView`: Provides scrollable bounds for content larger than its visual rectangle. See [ScrollView implementation](../Terminal/src/items/ScrollView.h).
 
 ## Inputs & Controls
 - `TextInput`: A single-line text input field supporting cursors and backspace editing.
@@ -36,7 +36,17 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
 - `TextArea`: A multi-line text input field supporting vertical navigation and entering newlines.
 - `Border`: Draws a border outline around an item, using ASCII or Unicode box drawing characters.
 
+The `Qtui.Controls` module provides `Button`, `ButtonGroup`, `CheckBox`,
+`RadioButton`, `Switch`, `Slider`, `Spinner`, `Panel`, `Dialog`, and
+`ConfirmationDialog`. Reusable controls expose content-derived implicit sizes;
+applications remain free to assign explicit dimensions.
+
+## Widgets
+
+The `Qtui.Widgets` module provides `BigText`, `Gauge`, `Paragraph`,
+`Sparkline`, `TabHeader`, `TableView`, `ToastManager`, and `TreeView`.
+
 ## Animations & States
 - `State`: Defines a cluster of property overrides based on conditions.
 - `Transition`: Smoothly animates property changes between states.
-- `PropertyAnimation`: Linearly interpolates numeric values (e.g., `x`, `width`) over a duration. See [Animation Demo](../examples/animation_demo/Main.qml).
+- `PropertyAnimation`: Linearly interpolates numeric values (e.g., `x`, `width`) over a duration. See [Animation Demo](../examples/Core/animation_demo/Main.qml).

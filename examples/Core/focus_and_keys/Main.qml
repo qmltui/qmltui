@@ -1,5 +1,5 @@
 import QtQml
-import Terminal
+import Qtui
 
 Terminal {
     id: rootWindow

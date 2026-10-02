@@ -30,10 +30,9 @@ void FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     rootWindow->render(m_nextBuffer, 0, 0);
 
     std::string ansi = m_currentBuffer.diff(m_nextBuffer);
-    if (!ansi.empty()) {
-        device.write(ansi);
-    }
-    m_currentBuffer = m_nextBuffer;
+    if (!ansi.empty() && !device.write(ansi))
+        return;
+    m_currentBuffer.swap(m_nextBuffer);
 }
 
 } // namespace qtui

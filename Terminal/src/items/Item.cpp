@@ -10,6 +10,7 @@
 #include "../engine/Animation.h"
 #include <QSet>
 #include <QChildEvent>
+#include <QPointer>
 
 namespace qtui {
 
@@ -82,6 +83,8 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
 void Item::setParentItem(Item *parentItem) {
     if (this->parentItem() == parentItem) return;
     setParent(parentItem);
+    emit parentChanged();
+    markDirty();
 }
 
 void Item::removeChildItem(Item *child) {
@@ -144,7 +147,44 @@ void Item::setVisible(bool visible) {
     if (m_visible == visible) return;
     m_visible = visible;
     emit visibleChanged();
+    if (!visible) {
+        Terminal *term = terminal();
+        if (term) {
+            for (Item *current = term->focusedItem(); current; current = current->parentItem()) {
+                if (current == this) {
+                    term->setFocusedItem(nullptr);
+                    break;
+                }
+            }
+        }
+    }
     markDirty();
+}
+
+void Item::setEnabled(bool enabled) {
+    if (m_enabled == enabled) return;
+    m_enabled = enabled;
+    emit enabledChanged();
+    if (!enabled) {
+        Terminal *term = terminal();
+        if (term) {
+            for (Item *current = term->focusedItem(); current; current = current->parentItem()) {
+                if (current == this) {
+                    term->setFocusedItem(nullptr);
+                    break;
+                }
+            }
+        }
+    }
+    markDirty();
+}
+
+bool Item::isEffectivelyEnabled() const {
+    for (const Item *current = this; current; current = current->parentItem()) {
+        if (!current->enabled())
+            return false;
+    }
+    return true;
 }
 
 void Item::markDirty() {
@@ -188,6 +228,9 @@ void Item::setFocusable(bool focusable) {
     if (m_focusable == focusable) return;
     m_focusable = focusable;
     emit focusableChanged();
+    Terminal *term = terminal();
+    if (!focusable && term && term->focusedItem() == this)
+        term->setFocusedItem(nullptr);
 }
 
 
@@ -245,6 +288,16 @@ void Item::childEvent(QChildEvent* event) {
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
             if (!m_visualChildren.contains(childItem)) {
                 m_visualChildren.append(childItem);
+                auto childGeometryChanged = [this]() {
+                    scheduleChildGeometryInvalidation();
+                };
+                QList<QMetaObject::Connection> connections;
+                connections.append(connect(childItem, &Item::widthChanged, this, childGeometryChanged));
+                connections.append(connect(childItem, &Item::heightChanged, this, childGeometryChanged));
+                connections.append(connect(childItem, &Item::implicitWidthChanged, this, childGeometryChanged));
+                connections.append(connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
+                connections.append(connect(childItem, &Item::visibleChanged, this, childGeometryChanged));
+                m_childGeometryConnections.insert(childItem, connections);
                 markDirty();
             }
             if (childItem->focus()) {
@@ -253,10 +306,26 @@ void Item::childEvent(QChildEvent* event) {
         }
     } else if (event->removed()) {
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
+            const auto connections = m_childGeometryConnections.take(childItem);
+            for (const QMetaObject::Connection &connection : connections)
+                disconnect(connection);
             m_visualChildren.removeOne(childItem);
             markDirty();
         }
     }
+}
+
+void Item::scheduleChildGeometryInvalidation() {
+    if (m_childGeometryInvalidationPending) return;
+    m_childGeometryInvalidationPending = true;
+    QPointer<Item> self(this);
+    QMetaObject::invokeMethod(this, [self]() {
+        if (!self) return;
+        self->m_childGeometryInvalidationPending = false;
+        emit self->implicitWidthChanged();
+        emit self->implicitHeightChanged();
+        self->markDirty();
+    }, Qt::QueuedConnection);
 }
 void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;

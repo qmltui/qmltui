@@ -1,6 +1,6 @@
 import QtQml 2.15
 import QtQml.Models 2.15
-import Terminal 1.0
+import Qtui
 
 Terminal {
     id: rootWindow
@@ -16,6 +16,9 @@ Terminal {
     property int level: 1
     property bool gameOver: false
     property int tickCounter: 0
+    property int pendingXMove: 0
+    property int pendingYMove: 0
+    property int lastShootTick: 0
 
     // Power-up states
     property string fireMode: "single" // "single", "double", "triple"
@@ -35,6 +38,10 @@ Terminal {
         shieldTicks = 0
         shieldActive = false
         player.x = Math.floor(gameArea.width / 2) - 1
+        player.y = gameArea.height - 2
+        pendingXMove = 0
+        pendingYMove = 0
+        lastShootTick = 0
         bulletsModel.clear()
         enemiesModel.clear()
         explosionsModel.clear()
@@ -53,7 +60,10 @@ Terminal {
     // Shoot bullets
     function shoot() {
         if (gameOver) return;
+        if (tickCounter - lastShootTick < 3) return; // Cooldown of 3 ticks (150ms)
         if (bulletsModel.count > 30) return;
+
+        lastShootTick = tickCounter;
 
         let px = player.x + 1; // Center of player
         let py = player.y - 1;
@@ -95,6 +105,18 @@ Terminal {
         repeat: true
         onTriggered: {
             if (rootWindow.gameOver) return;
+
+            // Apply buffered diagonal movement
+            if (rootWindow.pendingXMove !== 0) {
+                let targetX = player.x + rootWindow.pendingXMove * 2;
+                player.x = Math.max(1, Math.min(gameArea.width - player.width - 1, targetX));
+                rootWindow.pendingXMove = 0;
+            }
+            if (rootWindow.pendingYMove !== 0) {
+                let targetY = player.y + rootWindow.pendingYMove;
+                player.y = Math.max(1, Math.min(gameArea.height - player.height - 1, targetY));
+                rootWindow.pendingYMove = 0;
+            }
 
             rootWindow.tickCounter++;
 
@@ -359,14 +381,36 @@ Terminal {
             return
         }
 
-        if (event.key === Qt.Key_Left) {
-            player.x = Math.max(1, player.x - 2)
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_A || event.key === Qt.Key_a) {
+            rootWindow.pendingXMove = -1
             event.accepted = true
-        } else if (event.key === Qt.Key_Right) {
-            player.x = Math.min(gameArea.width - player.width - 1, player.x + 2)
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_D || event.key === Qt.Key_d) {
+            rootWindow.pendingXMove = 1
+            event.accepted = true
+        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_W || event.key === Qt.Key_w) {
+            rootWindow.pendingYMove = -1
+            event.accepted = true
+        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_S || event.key === Qt.Key_s) {
+            rootWindow.pendingYMove = 1
+            event.accepted = true
+        } else if (event.key === Qt.Key_7 || event.key === Qt.Key_U || event.key === Qt.Key_u) {
+            rootWindow.pendingXMove = -1
+            rootWindow.pendingYMove = -1
+            event.accepted = true
+        } else if (event.key === Qt.Key_9 || event.key === Qt.Key_O || event.key === Qt.Key_o) {
+            rootWindow.pendingXMove = 1
+            rootWindow.pendingYMove = -1
+            event.accepted = true
+        } else if (event.key === Qt.Key_1 || event.key === Qt.Key_M || event.key === Qt.Key_m) {
+            rootWindow.pendingXMove = -1
+            rootWindow.pendingYMove = 1
+            event.accepted = true
+        } else if (event.key === Qt.Key_3 || event.key === Qt.Key_N || event.key === Qt.Key_n) {
+            rootWindow.pendingXMove = 1
+            rootWindow.pendingYMove = 1
             event.accepted = true
         } else if (event.key === Qt.Key_Space) {
-            shoot()
+            rootWindow.shoot()
             event.accepted = true
         }
     }
@@ -436,6 +480,7 @@ Terminal {
             delegate: Star {
                 x: modelData.xPos
                 y: modelData.yPos
+                speed: modelData.speed
             }
         }
 
@@ -445,6 +490,7 @@ Terminal {
             delegate: PowerUp {
                 x: modelData.xPos
                 y: modelData.yPos
+                type: modelData.type
             }
         }
 
@@ -463,6 +509,8 @@ Terminal {
             delegate: Enemy {
                 x: modelData.xPos
                 y: modelData.yPos
+                type: modelData.type
+                enemyColor: modelData.enemyColor
             }
         }
 
@@ -472,6 +520,7 @@ Terminal {
             delegate: Explosion {
                 x: modelData.xPos
                 y: modelData.yPos
+                frame: modelData.frame
             }
         }
 
@@ -482,8 +531,6 @@ Terminal {
             color: rootWindow.shieldActive ? "green" : "white"
             width: 3
             height: 1
-            x: Math.floor(parent.width / 2) - 1
-            y: parent.height - 2
         }
 
         // Game Over Panel overlay

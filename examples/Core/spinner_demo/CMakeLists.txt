@@ -8,7 +8,7 @@ qt_add_qml_module(qtui_spinner_demo
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qtui TerminalControls
+    DEPENDENCIES TARGET QtuiCore QtuiControls
 )
 
-target_link_libraries(qtui_spinner_demo PRIVATE Qt6::Core Qt6::Qml Qtui TerminalControls)
+target_link_libraries(qtui_spinner_demo PRIVATE Qt6::Core Qt6::Qml QtuiCore QtuiControls)

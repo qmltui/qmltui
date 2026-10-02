@@ -43,7 +43,7 @@ Registered as `MouseArea` in the `Tui` module via `QML_ELEMENT`.
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 MouseArea {
     width: 20

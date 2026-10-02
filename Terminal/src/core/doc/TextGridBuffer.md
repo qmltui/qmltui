@@ -14,7 +14,7 @@
   - `Cell.h` — provides `Cell` struct and `TextAttribute` enum.
   - Standard C++ Library (`<vector>`, `<string>`).
   - Qt Core (`QString`, `QByteArray`).
-- **Build Requirements**: Links against `Qtui` library target.
+- **Build Requirements**: Links against the `Qtui::Core` library target.
 
 ## 3. Class Hierarchy and Role
 

@@ -40,7 +40,7 @@ Developers use `Star` for multi-layered parallax terminal background effects.
 
 ```qml
 import QtQml 2.15
-import Terminal 1.0
+import Qtui
 
 Star {
     speed: 2

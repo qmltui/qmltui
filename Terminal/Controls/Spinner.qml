@@ -1,5 +1,5 @@
-import QtQml 2.15
-import Terminal 1.0
+import QtQml
+import Qtui
 
 Text {
     id: control
@@ -18,7 +18,7 @@ Text {
 
     property int _frameIndex: 0
 
-    readonly property var _frames: {
+    readonly property list<string> _frames: {
         if (style === Spinner.Style.Line) {
             return ["|", "/", "-", "\\"]
         } else if (style === Spinner.Style.Pipe) {

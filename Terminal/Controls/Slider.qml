@@ -1,5 +1,5 @@
-import QtQml 2.15
-import Terminal 1.0
+import QtQml
+import Qtui
 
 Rectangle {
     id: control
@@ -11,25 +11,25 @@ Rectangle {
     property string handleColor: activeFocus ? "yellow" : "cyan"
     property string textColor: "white"
     property bool showValue: true
+    readonly property int trackWidth: Math.max(0, control.width
+                                                - (control.showValue ? valueText.implicitWidth + 1 : 0))
 
-    focusable: true
-    width: 25
-    height: 1
-    color: "transparent"
-
-    property int trackWidth: width - (showValue ? 7 : 0)
-
+    focusable: enabled
+    implicitWidth: 25
+    implicitHeight: 1
     Text {
         anchors.verticalCenter: parent.verticalCenter
         x: 0
         text: {
-            var tw = Math.max(1, control.trackWidth)
-            var range = Math.max(0.001, control.to - control.from)
-            var pct = Math.min(1.0, Math.max(0.0, (control.value - control.from) / range))
-            var handlePos = Math.round(pct * (tw - 1))
+            const tw = control.trackWidth
+            if (tw <= 0)
+                return ""
+            const range = Math.max(0.001, control.to - control.from)
+            const pct = Math.min(1.0, Math.max(0.0, (control.value - control.from) / range))
+            const handlePos = Math.round(pct * (tw - 1))
             
-            var str = ""
-            for (var i = 0; i < tw; ++i) {
+            let str = ""
+            for (let i = 0; i < tw; ++i) {
                 if (i === handlePos) {
                     str += "●"
                 } else {
@@ -38,16 +38,17 @@ Rectangle {
             }
             return str
         }
-        color: control.activeFocus ? control.handleColor : control.trackColor
+        color: !control.enabled ? "gray" : (control.activeFocus ? control.handleColor : control.trackColor)
         bold: control.activeFocus
     }
 
     Text {
+        id: valueText
         visible: control.showValue
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         text: "[" + Math.round(control.value) + "]"
-        color: control.textColor
+        color: control.enabled ? control.textColor : "gray"
     }
 
     Keys.onPressed: (event) => {
@@ -64,8 +65,9 @@ Rectangle {
         anchors.fill: parent
         onClicked: (event) => {
             control.focus = true
-            var tw = Math.max(1, control.trackWidth)
-            var pct = Math.min(1.0, Math.max(0.0, event.x / tw))
+            if (control.trackWidth <= 0)
+                return
+            const pct = Math.min(1.0, Math.max(0.0, event.x / control.trackWidth))
             control.value = Math.round(control.from + pct * (control.to - control.from))
         }
     }

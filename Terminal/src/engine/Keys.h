@@ -10,6 +10,7 @@ class Keys : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Keys is only available as an attached property")
+    QML_ATTACHED(Keys)
 
 signals:
     void pressed(qtui::KeyEvent *event);

@@ -8,6 +8,8 @@
 #include <QPair>
 #include <QPointer>
 #include <QPoint>
+#include <QHash>
+#include <QMetaObject>
 
 #include "Anchors.h"
 #include "Border.h"
@@ -55,11 +57,12 @@ class Item : public QObject {
   Q_PROPERTY(int implicitHeight READ implicitHeight WRITE setImplicitHeight
                  NOTIFY implicitHeightChanged)
   Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
+  Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
   Q_PROPERTY(bool focus READ focus WRITE setFocus NOTIFY focusChanged)
   Q_PROPERTY(bool activeFocus READ activeFocus NOTIFY activeFocusChanged)
   Q_PROPERTY(
       bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged)
-  Q_PROPERTY(qtui::Item *parent READ parentItem CONSTANT)
+  Q_PROPERTY(qtui::Item *parent READ parentItem WRITE setParentItem NOTIFY parentChanged)
   Q_PROPERTY(qtui::Anchors *anchors READ anchors CONSTANT)
   Q_PROPERTY(qtui::AnchorLine* left READ left CONSTANT)
   Q_PROPERTY(qtui::AnchorLine* right READ right CONSTANT)
@@ -114,7 +117,11 @@ public:
   void setImplicitHeight(int h);
 
   bool visible() const { return m_visible; }
-  void setVisible(bool visible);
+  virtual void setVisible(bool visible);
+
+  bool enabled() const { return m_enabled; }
+  void setEnabled(bool enabled);
+  bool isEffectivelyEnabled() const;
 
   bool focus() const { return m_focus; }
   void setFocus(bool focus);
@@ -130,7 +137,7 @@ public:
   void setGeometryDirect(int x, int y, int w, int h);
 
   Item *parentItem() const { return qobject_cast<Item *>(QObject::parent()); }
-  void setParentItem(Item *parentItem);
+  virtual void setParentItem(Item *parentItem);
   void removeChildItem(Item *child);
   Anchors *anchors() const { return const_cast<Anchors*>(&m_anchors); }
   AnchorLine *left() const { return m_leftLine; }
@@ -175,6 +182,8 @@ signals:
   void implicitWidthChanged();
   void implicitHeightChanged();
   void visibleChanged();
+  void parentChanged();
+  void enabledChanged();
   void focusChanged();
   void activeFocusChanged();
   void focusableChanged();
@@ -188,6 +197,7 @@ signals:
   void dirty(); // For bubbling up render requests
 
 private:
+  void scheduleChildGeometryInvalidation();
   static void appendData(QQmlListProperty<QObject> *list, QObject *item);
   static qsizetype dataCount(QQmlListProperty<QObject> *list);
   static QObject *dataAt(QQmlListProperty<QObject> *list, qsizetype index);
@@ -213,6 +223,7 @@ protected:
   int m_implicitWidth = 0;
   int m_implicitHeight = 0;
   bool m_visible = true;
+  bool m_enabled = true;
   bool m_focus = false;
   bool m_activeFocus = false;
   bool m_focusable = false;
@@ -237,6 +248,8 @@ protected:
   QList<qtui::Transition*> m_transitionsList;
   QMap<QPair<QPointer<QObject>, QString>, QVariant> m_savedPropertyValues;
   QList<QPointer<Animation>> m_runningTransitionAnimations;
+  QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
+  bool m_childGeometryInvalidationPending = false;
 };
 
 } // namespace qtui

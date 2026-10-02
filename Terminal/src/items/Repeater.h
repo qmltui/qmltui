@@ -5,6 +5,7 @@
 #include <QAbstractItemModel>
 #include <QQmlComponent>
 #include <QQmlContext>
+#include <QPointer>
 
 class QAbstractItemModel;
 class QQmlPropertyMap;
@@ -37,9 +38,11 @@ private:
     void generateItems();
     void onRowsInserted(QAbstractItemModel* model, int first, int last);
     void onRowsRemoved(int first, int last);
+    void onRowsMoved(int first, int last, int destination);
 
     QVariant m_model;
-    QQmlComponent* m_delegate = nullptr;
+    QPointer<QObject> m_objectModel;
+    QPointer<QQmlComponent> m_delegate;
     QList<Item*> m_createdItems;
     QList<QQmlContext*> m_contexts;
     QList<QQmlPropertyMap*> m_rowMaps;

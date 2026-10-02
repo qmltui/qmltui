@@ -18,6 +18,8 @@ private slots:
     void testHtmlTagParsing();
     void testTextFormatModes();
     void testDrawingHelpers();
+    void testInvalidResize();
+    void testControlCharactersAreVisible();
 };
 
 void TestTextGridBuffer::testResize() {
@@ -30,13 +32,13 @@ void TestTextGridBuffer::testResize() {
     QCOMPARE(buffer.height(), 5);
 
     Cell c = buffer.cellAt(100, 100);
-    QCOMPARE(QString(c.character.data()), QString(""));
+    QCOMPARE(c.character, QByteArray(" "));
 }
 
 void TestTextGridBuffer::testClear() {
     TextGridBuffer buffer;
     buffer.resize(5, 5);
-    buffer.cellAt(2, 2).character = {'X', '\0', '\0', '\0'};
+    buffer.cellAt(2, 2).character = "X";
     QCOMPARE(QString(buffer.cellAt(2, 2).character.data()), QString("X"));
 
     buffer.clear();
@@ -46,8 +48,8 @@ void TestTextGridBuffer::testClear() {
 void TestTextGridBuffer::testCellAccess() {
     TextGridBuffer buffer;
     buffer.resize(2, 2);
-    buffer.cellAt(0, 0).character = {'A', '\0', '\0', '\0'};
-    buffer.cellAt(1, 1).character = {'B', '\0', '\0', '\0'};
+    buffer.cellAt(0, 0).character = "A";
+    buffer.cellAt(1, 1).character = "B";
 
     QCOMPARE(QString(buffer.cellAt(0, 0).character.data()), QString("A"));
     QCOMPARE(QString(buffer.cellAt(1, 1).character.data()), QString("B"));
@@ -59,7 +61,7 @@ void TestTextGridBuffer::testDiff() {
     b1.resize(2, 2);
     b2.resize(2, 2);
 
-    b2.cellAt(0, 0).character = {'A', '\0', '\0', '\0'};
+    b2.cellAt(0, 0).character = "A";
     
     std::string diff = b1.diff(b2);
     QVERIFY(diff.find("A") != std::string::npos);
@@ -133,7 +135,7 @@ void TestTextGridBuffer::testTextFormatModes() {
     // Visible text should be: "Bold\033[1mAnsi" -> 4 (Bold) + 4 (\033[1) + 4 (mAns) + 1 (i) = 13 (Wait, \033[1m is 4 chars)
     // Actually: "Bold" is 4 chars. "\033[1mAnsi" is 8 chars (\033, [, 1, m, A, n, s, i).
     // So 4 + 8 = 12 characters.
-    QCOMPARE(text.width(), 12);
+    QCOMPARE(text.width(), 11); // ESC is a zero-width control character.
     
     // AnsiText mode: parses ANSI but ignores HTML tags
     text.setTextFormat(Text::AnsiText);
@@ -170,6 +172,22 @@ void TestTextGridBuffer::testDrawingHelpers() {
     QCOMPARE(boxBuf.cellAt(3, 0).character[0], '\xE2'); // ┐
     QCOMPARE(boxBuf.cellAt(0, 3).character[0], '\xE2'); // └
     QCOMPARE(boxBuf.cellAt(3, 3).character[0], '\xE2'); // ┘
+}
+
+void TestTextGridBuffer::testInvalidResize() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(4, 4));
+    QVERIFY(!buffer.resize(-1, 4));
+    QVERIFY(!buffer.resize(100000, 100000));
+    QCOMPARE(buffer.width(), 4);
+    QCOMPARE(buffer.height(), 4);
+}
+
+void TestTextGridBuffer::testControlCharactersAreVisible() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(4, 1));
+    buffer.writeText(0, 0, QString(QChar(0x1b)));
+    QCOMPARE(QString::fromUtf8(buffer.cellAt(0, 0).character), QString(QChar(0x241b)));
 }
 
 QTEST_MAIN(TestTextGridBuffer)

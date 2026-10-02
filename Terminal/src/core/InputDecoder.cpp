@@ -1,6 +1,9 @@
 #include "InputDecoder.h"
+#include <QList>
 #include <Qt>
+#include <string_view>
 #include <utility>
+#include <limits>
 
 namespace qtui {
 
@@ -17,17 +20,38 @@ void InputDecoder::setMouseCallback(MouseCallback cb) {
 }
 
 void InputDecoder::decode(const char* buffer, size_t size) {
-    m_buffer.append(buffer, size);
-    constexpr size_t MaxBufferSize = 4096;
-    if (m_buffer.size() > MaxBufferSize) {
-        m_buffer.erase(0, m_buffer.size() - MaxBufferSize);
+    constexpr size_t MaxEscapeBufferSize = 4096;
+    constexpr size_t MaxPasteBufferSize = 1024 * 1024;
+    if (!buffer || size == 0) return;
+    if (size > MaxPasteBufferSize) {
+        buffer += size - MaxPasteBufferSize;
+        size = MaxPasteBufferSize;
     }
+    if (m_buffer.size() > MaxPasteBufferSize - size)
+        m_buffer.erase(0, m_buffer.size() - (MaxPasteBufferSize - size));
+    m_buffer.append(buffer, size);
     processBuffer();
+    const size_t retainedLimit = m_bracketedPaste
+        ? MaxPasteBufferSize : MaxEscapeBufferSize;
+    if (m_buffer.size() > retainedLimit)
+        m_buffer.erase(0, m_buffer.size() - retainedLimit);
 }
 
 void InputDecoder::processBuffer() {
     size_t i = 0;
     while (i < m_buffer.size()) {
+        if (m_bracketedPaste) {
+            constexpr std::string_view PasteEnd = "\033[201~";
+            const size_t end = m_buffer.find(PasteEnd, i);
+            if (end == std::string::npos)
+                break;
+            if (m_keyCallback && end > i)
+                m_keyCallback(0, QString::fromUtf8(m_buffer.data() + i, end - i), 0);
+            i = end + PasteEnd.size();
+            m_bracketedPaste = false;
+            continue;
+        }
+
         unsigned char c = m_buffer[i];
 
         if (c >= 1 && c <= 26 && c != 8 && c != 9 && c != 10 && c != 13) {
@@ -43,6 +67,15 @@ void InputDecoder::processBuffer() {
                 break;
             }
             if (m_buffer[i + 1] == '[') {
+                constexpr std::string_view PasteStart = "\033[200~";
+                if (m_buffer.size() - i < PasteStart.size() &&
+                    PasteStart.starts_with(std::string_view(m_buffer).substr(i)))
+                    break;
+                if (std::string_view(m_buffer).substr(i).starts_with(PasteStart)) {
+                    i += PasteStart.size();
+                    m_bracketedPaste = true;
+                    continue;
+                }
                 size_t j = i + 2;
                 if (j == m_buffer.size()) break; // Incomplete
 
@@ -65,31 +98,37 @@ void InputDecoder::processBuffer() {
                     int cy = 0;
                     bool release = false;
 
-                    while (j < m_buffer.size() && m_buffer[j] >= '0' && m_buffer[j] <= '9') {
-                        button = button * 10 + (m_buffer[j] - '0');
-                        j++;
-                    }
-                    if (j < m_buffer.size() && m_buffer[j] == ';') j++;
+                    constexpr int MaxMouseField = 1'000'000;
+                    const auto parseField = [this, &j](int& value) {
+                        const size_t begin = j;
+                        value = 0;
+                        while (j < m_buffer.size() && m_buffer[j] >= '0' && m_buffer[j] <= '9') {
+                            const int digit = m_buffer[j] - '0';
+                            if (value > (MaxMouseField - digit) / 10)
+                                return false;
+                            value = value * 10 + digit;
+                            ++j;
+                        }
+                        return j > begin;
+                    };
 
-                    while (j < m_buffer.size() && m_buffer[j] >= '0' && m_buffer[j] <= '9') {
-                        cx = cx * 10 + (m_buffer[j] - '0');
-                        j++;
+                    const bool valid = parseField(button)
+                        && j < m_buffer.size() && m_buffer[j++] == ';'
+                        && parseField(cx)
+                        && j < m_buffer.size() && m_buffer[j++] == ';'
+                        && parseField(cy)
+                        && j < m_buffer.size() && (m_buffer[j] == 'M' || m_buffer[j] == 'm');
+                    if (!valid) {
+                        i = temp + 1;
+                        continue;
                     }
-                    if (j < m_buffer.size() && m_buffer[j] == ';') j++;
+                    release = m_buffer[j++] == 'm';
 
-                    while (j < m_buffer.size() && m_buffer[j] >= '0' && m_buffer[j] <= '9') {
-                        cy = cy * 10 + (m_buffer[j] - '0');
-                        j++;
-                    }
-
-                    if (j < m_buffer.size() && (m_buffer[j] == 'M' || m_buffer[j] == 'm')) {
-                        release = (m_buffer[j] == 'm');
-                        j++;
-                    }
-
-                    if (m_mouseCallback) {
-                        m_mouseCallback(button, cx - 1, cy - 1, release);
-                    }
+                    const bool motion = (button & 32) != 0;
+                    if (motion)
+                        button &= ~32;
+                    if (m_mouseCallback)
+                        m_mouseCallback(button, cx - 1, cy - 1, release, motion);
                     i = j;
                     continue;
                 }
@@ -185,6 +224,14 @@ void InputDecoder::processBuffer() {
             continue;
         }
 
+        if (c >= 1 && c <= 26) {
+            const int key = Qt::Key_A + (c - 1);
+            if (m_keyCallback)
+                m_keyCallback(key, QString(), Qt::ControlModifier);
+            i++;
+            continue;
+        }
+
         // Decode UTF-8 multi-byte characters
         if ((c & 0x80) != 0) {
             size_t len = 1;
@@ -194,7 +241,8 @@ void InputDecoder::processBuffer() {
             
             if (i + len <= m_buffer.size()) {
                 QString text = QString::fromUtf8(m_buffer.data() + i, len);
-                int unicodeKey = text.isEmpty() ? 0 : text[0].unicode();
+                const auto codepoints = text.toUcs4();
+                int unicodeKey = codepoints.isEmpty() ? 0 : static_cast<int>(codepoints[0]);
                 if (m_keyCallback) m_keyCallback(unicodeKey, text, 0);
                 i += len;
                 continue;

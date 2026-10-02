@@ -1,5 +1,5 @@
 import QtQuick
-import Qtui
+import Tui
 
 Terminal {
     id: root
@@ -74,12 +74,8 @@ Terminal {
         modal: true
         dimBackground: true
 
-        // Draw dialog border & background
-        Border {
-            anchors.fill: parent
-            style: "double"
-            color: "yellow"
-        }
+        border.style: "double"
+        border.color: "yellow"
 
         Item {
             anchors.fill: parent

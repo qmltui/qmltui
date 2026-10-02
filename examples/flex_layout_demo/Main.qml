@@ -63,12 +63,8 @@ Terminal {
             flexWrap: FlexLayout.NoWrap
             alignItems: FlexLayout.AlignStretch
 
-            // Border around the flex container to visualize bounds
-            Border {
-                anchors.fill: parent
-                style: "ascii"
-                color: "dimgray"
-            }
+            border.style: "ascii"
+            border.color: "dimgray"
 
             // Box 1 (Grow 1)
             Text {

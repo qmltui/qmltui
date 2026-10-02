@@ -11,6 +11,7 @@ class MouseArea : public Item {
 
     Q_PROPERTY(int mouseX READ mouseX NOTIFY mouseXChanged)
     Q_PROPERTY(int mouseY READ mouseY NOTIFY mouseYChanged)
+    Q_PROPERTY(bool hoverEnabled READ hoverEnabled WRITE setHoverEnabled NOTIFY hoverEnabledChanged)
 
 public:
     explicit MouseArea(QObject *parent = nullptr);
@@ -18,19 +19,26 @@ public:
 
     int mouseX() const { return m_mouseX; }
     int mouseY() const { return m_mouseY; }
+    bool hoverEnabled() const { return m_hoverEnabled; }
+    void setHoverEnabled(bool enabled);
 
     void setMousePosition(int x, int y);
 
 signals:
     void mouseXChanged();
     void mouseYChanged();
+    void hoverEnabledChanged();
     void pressed(qtui::MouseEvent *event);
     void released(qtui::MouseEvent *event);
     void clicked(qtui::MouseEvent *event);
 
 private:
+    void updateMotionRegistration();
+
     int m_mouseX = 0;
     int m_mouseY = 0;
+    bool m_hoverEnabled = false;
+    QPointer<Terminal> m_motionTerminal;
 };
 
 } // namespace qtui

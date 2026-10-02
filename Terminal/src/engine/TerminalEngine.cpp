@@ -176,14 +176,20 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_inputDecoder.setMouseCallback([this](int button, int x, int y, bool release, bool motion) {
       handleMouseInput(button, x, y, release, motion);
   });
+  if (m_rootWindow) {
+      connect(m_rootWindow, &Terminal::mouseMotionRequestedChanged,
+              this, &TerminalEngine::setMouseMotionReportingEnabled);
+  }
 
   m_device.enableRawMode();
   m_device.hideCursor();
 
   m_renderer = new FrameRenderer();
 
-  // Enable mouse events: press, release, drag, SGR 1006 format
-  m_device.write("\033[?1000h\033[?1002h\033[?1003h\033[?1006h\033[?2004h");
+  // Enable button events, button-held motion, SGR coordinates, and bracketed paste.
+  // All-motion mode (1003) is enabled only while a component requests hover input.
+  m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h\033[?2004h");
+  setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
 
   handleResize();
 
@@ -225,6 +231,19 @@ void TerminalEngine::requestRender() {
   m_renderPending = true;
   QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame,
                             Qt::QueuedConnection);
+}
+
+void TerminalEngine::setMouseMotionReportingEnabled(bool enabled) {
+  if (m_mouseMotionReportingEnabled == enabled)
+    return;
+  m_mouseMotionReportingEnabled = enabled;
+  if (enabled) {
+    m_device.write("\033[?1003h");
+  } else {
+    // Some terminals treat mouse tracking modes as mutually exclusive, so
+    // explicitly restore button-held motion after disabling all-motion mode.
+    m_device.write("\033[?1003l\033[?1002h");
+  }
 }
 
 void TerminalEngine::copyToClipboard(const QString& text) {
@@ -405,7 +424,7 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
 
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion) {
   if (!m_rootWindow) return;
-  if (motion) m_rootWindow->setHoveredItem(nullptr);
+  const bool buttonMotion = motion && ((button & 3) != 3);
 
   const QList<Popup*> popups = m_rootWindow->orderedPopups();
   Popup *activeModal = m_rootWindow->topModalPopup();
@@ -431,9 +450,11 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
               int localY = y - targetAbsY;
 
               MouseArea* ma = qobject_cast<MouseArea*>(target);
-              if (ma) {
+              if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
                   ma->setMousePosition(localX, localY);
               }
+              if (motion && !buttonMotion)
+                  return;
               MouseEvent event(localX, localY, button);
 
               Item* current = target;
@@ -474,12 +495,16 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
               }
           }
           if (popup->modal()) {
+              if (motion) m_rootWindow->setHoveredItem(nullptr);
               return;
           }
       }
   }
 
-  if (activeModal) return;
+  if (activeModal) {
+    if (motion) m_rootWindow->setHoveredItem(nullptr);
+    return;
+  }
 
   Item* target = hitTestItem(m_rootWindow, x, y, 0, 0);
   if (motion) m_rootWindow->setHoveredItem(target);
@@ -491,9 +516,11 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
     int localY = y - targetAbsY;
 
     MouseArea* ma = qobject_cast<MouseArea*>(target);
-    if (ma) {
+    if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
         ma->setMousePosition(localX, localY);
     }
+    if (motion && !buttonMotion)
+        return;
 
     MouseEvent event(localX, localY, button);
 

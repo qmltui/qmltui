@@ -146,6 +146,13 @@ void TestInputDecoder::testMouseSGR() {
     QCOMPARE(recBtn, 0);
     QCOMPARE(recX, 15);
     QCOMPARE(recMotion, true);
+
+    buf = "\033[<35;17;20M";
+    decoder.decode(buf, strlen(buf));
+    QCOMPARE(callbackCount, 3);
+    QCOMPARE(recBtn, 3); // Motion with no button held.
+    QCOMPARE(recX, 16);
+    QCOMPARE(recMotion, true);
 }
 
 void TestInputDecoder::testBracketedPaste() {

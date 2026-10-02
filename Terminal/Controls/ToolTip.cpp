@@ -22,6 +22,8 @@ ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*
 }
 
 ToolTip::~ToolTip() {
+    if (m_terminal && !m_text.isEmpty())
+        m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
         delete m_popup.data();
@@ -31,6 +33,8 @@ ToolTip::~ToolTip() {
 void ToolTip::bindTerminal() {
     Terminal *terminal = m_target ? m_target->terminal() : nullptr;
     if (m_terminal == terminal) return;
+    if (m_terminal && !m_text.isEmpty())
+        m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
         delete m_popup.data();
@@ -42,13 +46,18 @@ void ToolTip::bindTerminal() {
     if (m_terminal) {
         connect(m_terminal, &Terminal::hoveredItemChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_terminal, &Terminal::focusedItemChanged, this, &ToolTip::updateAutomaticVisibility);
+        if (!m_text.isEmpty())
+            m_terminal->setMouseMotionRequested(this, true);
     }
     updateAutomaticVisibility();
 }
 
 void ToolTip::setText(const QString &text) {
     if (m_text == text) return;
+    const bool requestedMotion = !m_text.isEmpty();
     m_text = text;
+    if (m_terminal && requestedMotion != !m_text.isEmpty())
+        m_terminal->setMouseMotionRequested(this, !m_text.isEmpty());
     emit textChanged();
     if (m_text.isEmpty()) hide(); else updateAutomaticVisibility();
 }

@@ -4,6 +4,10 @@
 
 `TerminalEngine` is the central runtime coordinator for Qtui applications. It initializes raw terminal I/O via `TerminalDevice`, hooks into Qt's event loop via `QSocketNotifier` for non-blocking stdin input decoding (`InputDecoder`), manages window resize signals (`SIGWINCH`), dispatches keyboard (`KeyEvent`) and mouse events (`MouseEvent`), and manages off-screen double-buffered frame rendering (`Renderer`).
 
+Button events and button-held motion are enabled for drag interactions. Passive
+mouse motion is enabled only while a component requests hover tracking, such as
+a `MouseArea` with `hoverEnabled` or an attached tooltip with non-empty text.
+
 Developers interact with `TerminalEngine` when setting up top-level application windows or requesting manual frame renders.
 
 ## 2. Project Structure and Dependencies

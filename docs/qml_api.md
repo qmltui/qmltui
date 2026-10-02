@@ -12,6 +12,7 @@ Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Q
 - `Text`: Renders colored text. Supports multiline wrapping.
   - *Properties*: `text` (string), `color` (string, e.g. "red", "#FF0000"), `attributes` (bitmask of `Text.Bold`, `Text.Underline`, etc.), `textFormat` (`Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`).
 - `MouseArea`: Invisible component that intercepts mouse clicks and scrolls.
+  - *Properties*: `mouseX`, `mouseY`, `hoverEnabled`. Passive motion is reported only when `hoverEnabled` is true; drag motion remains enabled.
   - *Signals*: `onClicked`, `onWheelUp`, `onWheelDown`.
 
 ## Layouts & Positioning

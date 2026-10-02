@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Rectangle.h"
+#include <QHash>
+#include <QMetaObject>
 #include <QPointer>
 
 namespace qtui {
@@ -59,6 +61,9 @@ public:
   Item* hoveredItem() const { return m_hoveredItem.data(); }
   void setHoveredItem(Item* item);
 
+  void setMouseMotionRequested(QObject* requester, bool requested);
+  bool hasMouseMotionRequests() const { return !m_mouseMotionRequesters.isEmpty(); }
+
   void findFocusableItems(Item* root, QList<Item*>& list);
 
   int width() const override;
@@ -77,11 +82,13 @@ signals:
   void clipboardCopyRequested(const QString& text);
   void focusedItemChanged();
   void hoveredItemChanged();
+  void mouseMotionRequestedChanged(bool requested);
 
 private:
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;
   QPointer<Item> m_hoveredItem;
+  QHash<QObject*, QMetaObject::Connection> m_mouseMotionRequesters;
   QList<Popup*> m_popups;
   quint64 m_popupSerial = 0;
   bool m_useAlternateScreen = true;

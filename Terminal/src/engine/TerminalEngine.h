@@ -43,6 +43,7 @@ private:
     friend class ::TestScrollView;
 
     void startRenderer();
+    void setMouseMotionReportingEnabled(bool enabled);
     void handleResize();
     void handleKeyInput(int key, const QString& text, int modifiers);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false);
@@ -53,6 +54,7 @@ private:
     InputDecoder m_inputDecoder;
     Renderer* m_renderer = nullptr;
     bool m_rendererStarted = false;
+    bool m_mouseMotionReportingEnabled = false;
     
     QSocketNotifier* m_notifier = nullptr;
     QPointer<Terminal> m_rootWindow;

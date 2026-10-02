@@ -188,7 +188,9 @@ Called when a mouse button is pressed over the item.
 Called when a mouse button is released over the item.
 
 #### virtual void mouseMoveEvent(MouseEvent* event)
-Called when the mouse cursor moves over the item.
+Called when the mouse cursor moves over the item while a button is held. Passive
+hover tracking is requested through `MouseArea.hoverEnabled` or by components
+such as attached tooltips.
 
 #### virtual void wheelEvent(MouseEvent* event)
 Called when mouse wheel scrolling occurs over the item.

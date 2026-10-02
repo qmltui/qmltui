@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`MouseArea` is an invisible item that captures terminal mouse input (presses, releases, clicks, and movement coordinates `mouseX`, `mouseY`).
+`MouseArea` is an invisible item that captures terminal mouse input (presses, releases, clicks, and movement coordinates `mouseX`, `mouseY`). Passive pointer movement is opt-in through `hoverEnabled`; button-held drag motion remains available without it.
 
 Developers use `MouseArea` to handle mouse clicks and hover tracking in QML layouts.
 
@@ -23,6 +23,7 @@ Developers use `MouseArea` to handle mouse clicks and hover tracking in QML layo
 |----------|------|------|-------|--------|-------------|
 | `mouseX` | `int` | `mouseX` | — | `mouseXChanged` | Current X mouse position relative to this MouseArea. |
 | `mouseY` | `int` | `mouseY` | — | `mouseYChanged` | Current Y mouse position relative to this MouseArea. |
+| `hoverEnabled` | `bool` | `hoverEnabled` | `setHoverEnabled` | `hoverEnabledChanged` | Requests passive mouse-motion reporting while true. Defaults to false. |
 
 ## 7. Signals
 
@@ -31,6 +32,9 @@ Emitted when the relative X coordinate of the mouse cursor changes.
 
 #### void mouseYChanged()
 Emitted when the relative Y coordinate of the mouse cursor changes.
+
+#### void hoverEnabledChanged()
+Emitted when passive hover tracking is enabled or disabled.
 
 #### void pressed(qtui::MouseEvent *event)
 Emitted when a mouse button is pressed inside the MouseArea bounds.

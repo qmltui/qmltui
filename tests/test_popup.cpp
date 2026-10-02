@@ -215,6 +215,8 @@ void TestPopup::testAttachedToolTipOnFocus() {
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
     auto *terminal = qobject_cast<Terminal*>(object.get());
+    QVERIFY(terminal);
+    QVERIFY(terminal->hasMouseMotionRequests());
     auto *target = terminal ? terminal->findChild<Item*>(QStringLiteral("target")) : nullptr;
     QVERIFY(target);
     terminal->setFocusedItem(target);
@@ -222,6 +224,7 @@ void TestPopup::testAttachedToolTipOnFocus() {
     QCOMPARE(terminal->activePopups().first()->owner(), target);
     delete target;
     QTRY_COMPARE(terminal->activePopups().size(), 0);
+    QTRY_VERIFY(!terminal->hasMouseMotionRequests());
 }
 
 QTEST_MAIN(TestPopup)

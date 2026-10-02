@@ -4,6 +4,7 @@
 #include "../engine/StreamRenderer.h"
 #include "Popup.h"
 #include <algorithm>
+#include <utility>
 
 namespace qtui {
 
@@ -14,6 +15,9 @@ Terminal::Terminal(QObject *parent) : Rectangle(parent) {
 
 Terminal::~Terminal() {
     delete m_engine;
+    for (const QMetaObject::Connection& connection : std::as_const(m_mouseMotionRequesters))
+        disconnect(connection);
+    m_mouseMotionRequesters.clear();
 }
 
 void Terminal::print(const QString& text) {
@@ -112,6 +116,32 @@ void Terminal::setHoveredItem(Item *item) {
     if (m_hoveredItem == item) return;
     m_hoveredItem = item;
     emit hoveredItemChanged();
+}
+
+void Terminal::setMouseMotionRequested(QObject* requester, bool requested) {
+    if (!requester) return;
+
+    const bool wasRequested = hasMouseMotionRequests();
+    if (requested) {
+        if (m_mouseMotionRequesters.contains(requester)) return;
+        const QMetaObject::Connection connection = connect(
+            requester, &QObject::destroyed, this, [this, requester] {
+                if (m_mouseMotionRequesters.remove(requester) > 0 &&
+                    m_mouseMotionRequesters.isEmpty()) {
+                    emit mouseMotionRequestedChanged(false);
+                }
+            });
+        m_mouseMotionRequesters.insert(requester, connection);
+    } else {
+        const auto it = m_mouseMotionRequesters.find(requester);
+        if (it == m_mouseMotionRequesters.end()) return;
+        disconnect(it.value());
+        m_mouseMotionRequesters.erase(it);
+    }
+
+    const bool isRequested = hasMouseMotionRequests();
+    if (wasRequested != isRequested)
+        emit mouseMotionRequestedChanged(isRequested);
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {

@@ -11,6 +11,7 @@
 #include "TextGridBuffer.h"
 #include "Terminal.h"
 #include "Popup.h"
+#include "MouseArea.h"
 #include "TextArea.h"
 #include "LogView.h"
 #include "LinearLayout.h"
@@ -71,6 +72,7 @@ private slots:
     void nestedModalFocus();
     void dialogDefaultAndCancelActions();
     void graphemeSelection();
+    void mouseMotionIsDemandDriven();
     void mouseDragSelection();
     void responsiveLayout();
     void layoutInvalidation();
@@ -224,9 +226,59 @@ void TestTerminalFramework::mouseDragSelection() {
     area.setText(QStringLiteral("abcdef"));
     TerminalEngine engine(&terminal);
     engine.handleMouseInput(0, 0, 0, false);
+    engine.handleMouseInput(3, 5, 0, false, true);
+    QVERIFY(area.selectedText().isEmpty());
     engine.handleMouseInput(0, 3, 0, false, true);
     engine.handleMouseInput(0, 3, 0, true);
     QCOMPARE(area.selectedText(), QStringLiteral("abc"));
+}
+
+void TestTerminalFramework::mouseMotionIsDemandDriven() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(4);
+    TerminalEngine engine(&terminal);
+    MouseArea first(&terminal);
+    first.setWidth(10);
+    first.setHeight(2);
+    MouseArea second(&terminal);
+
+    QVERIFY(!terminal.hasMouseMotionRequests());
+    QVERIFY(!engine.m_mouseMotionReportingEnabled);
+
+    engine.handleMouseInput(3, 4, 1, false, true);
+    QCOMPARE(first.mouseX(), 0);
+    QCOMPARE(first.mouseY(), 0);
+
+    first.setHoverEnabled(true);
+    QVERIFY(terminal.hasMouseMotionRequests());
+    QVERIFY(engine.m_mouseMotionReportingEnabled);
+    engine.handleMouseInput(3, 4, 1, false, true);
+    QCOMPARE(first.mouseX(), 4);
+    QCOMPARE(first.mouseY(), 1);
+
+    second.setHoverEnabled(true);
+    first.setHoverEnabled(false);
+    QVERIFY(terminal.hasMouseMotionRequests());
+    QVERIFY(engine.m_mouseMotionReportingEnabled);
+    second.setHoverEnabled(false);
+    QVERIFY(!terminal.hasMouseMotionRequests());
+    QVERIFY(!engine.m_mouseMotionReportingEnabled);
+
+    auto* transient = new MouseArea(&terminal);
+    transient->setHoverEnabled(true);
+    QVERIFY(terminal.hasMouseMotionRequests());
+    delete transient;
+    QVERIFY(!terminal.hasMouseMotionRequests());
+
+    Terminal otherTerminal;
+    auto* reparented = new MouseArea(&terminal);
+    reparented->setHoverEnabled(true);
+    reparented->setParentItem(&otherTerminal);
+    QVERIFY(!terminal.hasMouseMotionRequests());
+    QVERIFY(otherTerminal.hasMouseMotionRequests());
+    reparented->setHoverEnabled(false);
+    delete reparented;
 }
 
 void TestTerminalFramework::responsiveLayout() {

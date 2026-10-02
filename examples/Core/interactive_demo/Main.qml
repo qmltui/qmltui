@@ -152,6 +152,7 @@ Terminal {
                 MouseArea {
                     id: mouseArea
                     anchors.fill: parent
+                    hoverEnabled: true
                     
                     onPressed: (event) => {
                         mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Pressed button " + event.button

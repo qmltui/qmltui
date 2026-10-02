@@ -14,6 +14,13 @@ static QQmlContext *delegateContext(Item *item) {
                 : nullptr;
 }
 
+static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
+    if (!obj) return;
+    if (obj->metaObject()->indexOfProperty(name) != -1) {
+        obj->setProperty(name, value);
+    }
+}
+
 static QString alignText(const QString &text, int width, const QString &alignment) {
     if (width <= 0) return QString();
     QString t;
@@ -102,10 +109,25 @@ void TableView::setModel(const QVariant &model) {
                 QVariantMap data;
                 const QHash<int, QByteArray> roles = m_cppModel->roleNames();
                 const QModelIndex index = m_cppModel->index(row, 0);
-                for (auto it = roles.cbegin(); it != roles.cend(); ++it)
-                    data.insert(QString::fromUtf8(it.value()), m_cppModel->data(index, it.key()));
-                if (Item *item = m_delegateItems[row])
+                for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
+                    QString roleName = QString::fromUtf8(it.value());
+                    QVariant val = m_cppModel->data(index, it.key());
+                    data.insert(roleName, val);
+                    if (Item *item = m_delegateItems[row]) {
+                        setPropertyIfExists(item, roleName.toUtf8().constData(), val);
+                        if (QQmlContext *ctx = delegateContext(item)) {
+                            ctx->setContextProperty(roleName, val);
+                        }
+                    }
+                }
+                if (Item *item = m_delegateItems[row]) {
                     item->setProperty("modelData", data);
+                    item->setProperty("model", data);
+                    if (QQmlContext *ctx = delegateContext(item)) {
+                        ctx->setContextProperty("modelData", data);
+                        ctx->setContextProperty("model", data);
+                    }
+                }
             }
             markDirty();
         });
@@ -399,6 +421,22 @@ QString TableView::cellText(int row, int col) const {
     return QString();
 }
 
+static QObject* createDelegateWithFilteredProps(QQmlComponent* delegate, QQmlContext* context, const QVariantMap& initialProps) {
+    if (!delegate || !context) return nullptr;
+    QVariantMap filteredProps;
+    if (QObject* temp = delegate->beginCreate(context)) {
+        const QMetaObject* meta = temp->metaObject();
+        for (auto it = initialProps.cbegin(); it != initialProps.cend(); ++it) {
+            if (meta->indexOfProperty(it.key().toUtf8().constData()) != -1) {
+                filteredProps[it.key()] = it.value();
+            }
+        }
+        delegate->completeCreate();
+        delete temp;
+    }
+    return delegate->createWithInitialProperties(filteredProps, context);
+}
+
 void TableView::generateDelegateItems() {
     QList<Item*> oldItems;
     QList<QPersistentModelIndex> oldIndexes;
@@ -430,6 +468,7 @@ void TableView::generateDelegateItems() {
     }
 
     QQmlEngine* engine = qmlEngine(this);
+    if (!engine && m_delegate) engine = m_delegate->engine();
     if (!engine) {
         deleteOldItems();
         return;
@@ -451,21 +490,40 @@ void TableView::generateDelegateItems() {
             }
         }
 
-        QVariantMap cppData;
+        QVariant rowVal;
+        QVariantMap rowMapData;
         if (m_cppModel) {
             const QModelIndex index = m_cppModel->index(r, 0);
             for (auto it = roles.cbegin(); it != roles.cend(); ++it)
-                cppData.insert(QString::fromUtf8(it.value()), m_cppModel->data(index, it.key()));
+                rowMapData.insert(QString::fromUtf8(it.value()), m_cppModel->data(index, it.key()));
+            rowVal = rowMapData;
+        } else if (r >= 0 && r < m_listModel.size()) {
+            rowVal = m_listModel[r];
+            QVariant elem = rowVal;
+            if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
+                elem = elem.value<QJSValue>().toVariant();
+            }
+            if (elem.canConvert<QVariantMap>()) {
+                rowMapData = elem.toMap();
+            }
         }
 
         if (reused) {
             reused->setProperty("index", r);
             reused->setProperty("row", r);
-            reused->setProperty("modelData", cppData);
+            reused->setProperty("modelData", rowVal);
+            reused->setProperty("model", rowVal);
+            for (auto it = rowMapData.cbegin(); it != rowMapData.cend(); ++it) {
+                setPropertyIfExists(reused, it.key().toUtf8().constData(), it.value());
+            }
             if (QQmlContext *context = delegateContext(reused)) {
                 context->setContextProperty("index", r);
                 context->setContextProperty("row", r);
-                context->setContextProperty("modelData", cppData);
+                context->setContextProperty("modelData", rowVal);
+                context->setContextProperty("model", rowVal);
+                for (auto it = rowMapData.cbegin(); it != rowMapData.cend(); ++it) {
+                    context->setContextProperty(it.key(), it.value());
+                }
             }
             m_delegateItems.append(reused);
             m_delegateIndexes.append(persistentIndex);
@@ -473,16 +531,33 @@ void TableView::generateDelegateItems() {
         }
 
         QQmlContext* context = new QQmlContext(qmlContext(this), this);
+        QVariantMap initialProps;
+        initialProps["index"] = r;
+        initialProps["row"] = r;
+        initialProps["modelData"] = rowVal;
+        initialProps["model"] = rowVal;
+
         context->setContextProperty("index", r);
         context->setContextProperty("row", r);
+        context->setContextProperty("modelData", rowVal);
+        context->setContextProperty("model", rowVal);
 
-        if (r >= 0 && r < m_listModel.size()) {
-            context->setContextProperty("modelData", m_listModel[r]);
-        } else if (m_cppModel) {
-            context->setContextProperty("modelData", cppData);
+        for (auto it = rowMapData.cbegin(); it != rowMapData.cend(); ++it) {
+            initialProps[it.key()] = it.value();
+            context->setContextProperty(it.key(), it.value());
         }
 
-        QObject* obj = m_delegate->create(context);
+        QObject* obj = createDelegateWithFilteredProps(m_delegate, context, initialProps);
+        if (obj) {
+            setPropertyIfExists(obj, "index", r);
+            setPropertyIfExists(obj, "row", r);
+            setPropertyIfExists(obj, "modelData", rowVal);
+            setPropertyIfExists(obj, "model", rowVal);
+            for (auto it = rowMapData.cbegin(); it != rowMapData.cend(); ++it) {
+                setPropertyIfExists(obj, it.key().toUtf8().constData(), it.value());
+            }
+        }
+
         if (qtui::Item* item = qobject_cast<qtui::Item*>(obj)) {
             item->setParentItem(this);
             item->setParent(this);

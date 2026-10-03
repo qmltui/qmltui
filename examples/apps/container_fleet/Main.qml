@@ -1,7 +1,8 @@
 pragma ComponentBehavior: Bound
 
-import QtQml 2.15
+import QtQuick
 import Qtui
+import Qtui.Controls
 import Qtui.Extras
 import ContainerFleetApp
 
@@ -73,73 +74,68 @@ Terminal {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 1
-        spacing: 1
+        anchors.margins: 0
+        spacing: 0
 
-        // --- 1. SLEEK BORDERLESS HEADER BANNER ---
-        Rectangle {
+        // --- 1. SLEEK HEADER BANNER ---
+        Panel {
             width: parent.width
-            height: 2
-            border.style: "none"
+            height: 3
             color: root.colorHeaderBg
+            border.color: "#272738"
+            title: "⚡ DOCKER & CLOUD FLEET MONITOR"
+            titleColor: root.colorAccentCyan
 
             Row {
-                x: 2; y: 0
+                x: 1; y: 1
                 spacing: 3
-                Text { text: "⚡ DOCKER & CLOUD FLEET MONITOR"; bold: true; color: root.colorAccentCyan }
                 Text { 
-                    text: "Total: " + fleetModel.totalNodes + "  |  Running: " + fleetModel.runningNodes + "  |  Critical: " + fleetModel.alertNodes
+                    text: "Total Nodes: " + fleetModel.totalNodes + "  |  Running: " + fleetModel.runningNodes + "  |  Critical: " + fleetModel.alertNodes
                     color: root.colorTextPrimary
+                    bold: true
                 }
             }
         }
 
-        // --- 2. SEARCH BAR & FILTER TABS & CONTROL BAR ---
+        // --- 2. FILTER TABS & CONTROL BAR ---
         Row {
+            width: parent.width
+            height: 3
             spacing: 1
 
             // Filter Tabs
-            Rectangle {
-                color: fleetModel.activeFilter === 0 ? root.colorAccentCyan : "#1e1e2e"
-                border.style: "none"
-                height: 1
-                Text { 
-                    text: " 1: ALL (" + fleetModel.totalNodes + ") "
-                    bold: fleetModel.activeFilter === 0
-                    color: fleetModel.activeFilter === 0 ? "#11111b" : root.colorTextMuted
-                }
-            }
-            Rectangle {
-                color: fleetModel.activeFilter === 1 ? root.colorAccentGreen : "#1e1e2e"
-                border.style: "none"
-                height: 1
-                Text { 
-                    text: " 2: RUNNING (" + fleetModel.runningNodes + ") "
-                    bold: fleetModel.activeFilter === 1
-                    color: fleetModel.activeFilter === 1 ? "#11111b" : root.colorTextMuted
-                }
-            }
-            Rectangle {
-                color: fleetModel.activeFilter === 2 ? root.colorAccentRed : "#1e1e2e"
-                border.style: "none"
-                height: 1
-                Text { 
-                    text: " 3: CRITICAL (" + fleetModel.alertNodes + ") "
-                    bold: fleetModel.activeFilter === 2
-                    color: fleetModel.activeFilter === 2 ? "#11111b" : root.colorTextMuted
+            TabHeader {
+                id: filterTabs
+                currentIndex: fleetModel.activeFilter
+                tabs: [
+                    " 1: ALL (" + fleetModel.totalNodes + ") ",
+                    " 2: RUNNING (" + fleetModel.runningNodes + ") ",
+                    " 3: CRITICAL (" + fleetModel.alertNodes + ") "
+                ]
+                onCurrentIndexChanged: {
+                    if (fleetModel.activeFilter !== filterTabs.currentIndex) {
+                        fleetModel.activeFilter = filterTabs.currentIndex
+                        listView.currentIndex = 0
+                    }
                 }
             }
 
             // Interactive Search Input
-            Rectangle {
+            Panel {
+                width: 24
+                height: 3
                 color: searchInput.focus ? "#2a2b3d" : "#1e1e2e"
-                border.style: "none"
-                height: 1
+                border.color: searchInput.focus ? root.colorAccentYellow : "#272738"
+                title: "SEARCH"
+                titleColor: root.colorAccentYellow
+
                 Row {
+                    x: 1; y: 1
                     spacing: 0
-                    Text { text: " 🔍 Filter: "; color: root.colorAccentYellow; bold: true }
+                    Text { text: "🔍 "; color: root.colorAccentYellow }
                     TextInput {
                         id: searchInput
+                        width: 18
                         text: ""
                         color: root.colorTextPrimary
                         onTextChanged: fleetModel.searchQuery = searchInput.text
@@ -148,21 +144,13 @@ Terminal {
                 }
             }
 
-            // Sort indicator button
-            Rectangle {
-                color: "#1e1e2e"
-                border.style: "none"
-                height: 1
-                Text {
-                    text: " [S] Sort: " + (fleetModel.sortMode === 1 ? "CPU ↓" : fleetModel.sortMode === 2 ? "RAM ↓" : fleetModel.sortMode === 3 ? "Status" : "Name") + " "
-                    color: root.colorAccentPurple
-                    bold: true
-                }
-            }
-
-            Text {
-                text: " [A] Fix All [L] Logs [Q] Quit"
-                color: root.colorTextMuted
+            // Sort Mode Indicator Button
+            Button {
+                label: " [S] SORT: " + (fleetModel.sortMode === 1 ? "CPU ↓" : fleetModel.sortMode === 2 ? "RAM ↓" : fleetModel.sortMode === 3 ? "STATUS" : "NAME") + " "
+                normalColor: "#1e1e2e"
+                textColor: root.colorAccentPurple
+                normalBorderStyle: "single"
+                onClicked: fleetModel.cycleSortMode()
             }
         }
 
@@ -183,7 +171,7 @@ Terminal {
             }
         }
 
-        // --- 4. MAIN BORDERLESS LISTVIEW ---
+        // --- 4. MAIN LISTVIEW ---
         ListView {
             id: listView
             width: parent.width
@@ -213,12 +201,13 @@ Terminal {
                 Item {
                     anchors.fill: parent
 
-                    // Active Item Highlight Pillar
-                    Text {
+                    // Active Item Full 3-Line Selection Bar
+                    Rectangle {
                         x: 0; y: 0
-                        text: ListView.isCurrentItem ? "▌" : " "
-                        color: root.colorAccentYellow
-                        bold: true
+                        width: 1
+                        height: parent.height
+                        color: ListView.isCurrentItem ? root.colorAccentYellow : "transparent"
+                        border.style: "none"
                     }
 
                     // Line 1: Identity, IP Address, Status Badge, Tags
@@ -255,50 +244,51 @@ Terminal {
                         color: root.colorAccentPurple
                     }
 
-                    // Line 2: Soft Pastel CPU & RAM Gauges (Optimized Native TUI Bars)
+                    // Line 2: High-Contrast CPU & RAM Gauge Bars
                     Row {
-                        x: 5; y: 1
+                        x: 3; y: 1
                         spacing: 0
                         Text { text: "CPU: ["; color: root.colorTextMuted }
-                        Text { text: "█".repeat(itemDelegate.cpu); color: itemDelegate.cpu > 7 ? root.colorAccentRed : root.colorAccentCyan }
+                        Text { text: "█".repeat(itemDelegate.cpu); color: itemDelegate.cpu >= 8 ? root.colorAccentRed : root.colorAccentCyan }
                         Text { text: "░".repeat(Math.max(0, 10 - itemDelegate.cpu)); color: "#313244" }
-                        Text { text: "] " + (itemDelegate.cpu * 10) + "%"; color: root.colorTextPrimary }
+                        Text { text: "] " + (itemDelegate.cpu * 10) + "%"; color: itemDelegate.cpu >= 8 ? root.colorAccentRed : root.colorTextPrimary; bold: itemDelegate.cpu >= 8 }
                     }
 
                     Row {
-                        x: 33; y: 1
+                        x: 31; y: 1
                         spacing: 0
                         Text { text: "RAM: ["; color: root.colorTextMuted }
-                        Text { text: "█".repeat(itemDelegate.mem); color: itemDelegate.mem > 7 ? root.colorAccentRed : root.colorAccentGreen }
+                        Text { text: "█".repeat(itemDelegate.mem); color: itemDelegate.mem >= 8 ? root.colorAccentRed : root.colorAccentGreen }
                         Text { text: "░".repeat(Math.max(0, 10 - itemDelegate.mem)); color: "#313244" }
-                        Text { text: "] " + (itemDelegate.mem * 10) + "%"; color: root.colorTextPrimary }
+                        Text { text: "] " + (itemDelegate.mem * 10) + "%"; color: itemDelegate.mem >= 8 ? root.colorAccentRed : root.colorTextPrimary; bold: itemDelegate.mem >= 8 }
                     }
                 }
             }
         }
 
-        // --- 5. BORDERLESS INSPECTOR DRAWER PANEL WITH SPARKLINE ---
-        Rectangle {
+        // --- 5. BORDERED INSPECTOR DRAWER PANEL WITH SPARKLINE ---
+        Panel {
             width: parent.width
             height: 4
-            border.style: "none"
             color: "#181825"
+            border.color: "#272738"
+            title: "🔍 NODE INSPECTOR & REAL-TIME TELEMETRY"
+            titleColor: root.colorAccentCyan
 
             Column {
-                x: 2; y: 0
+                x: 1; y: 1
                 spacing: 0
 
                 Row {
                     spacing: 2
-                    Text { text: "INSPECTOR:"; bold: true; color: root.colorAccentCyan }
                     Text {
                         text: fleetModel.getNodeName(listView.currentIndex) !== "" ? 
-                              fleetModel.getNodeName(listView.currentIndex) + " (" + fleetModel.getNodeId(listView.currentIndex) + ")" : "No Selection"
+                              fleetModel.getNodeName(listView.currentIndex) + " (" + fleetModel.getNodeId(listView.currentIndex) + ")" : "Node Selection Active"
                         color: root.colorTextPrimary
                         bold: true
                     }
                     Text {
-                        text: "  CPU Sparkline: [" + fleetModel.getSparkline(listView.currentIndex) + "]"
+                        text: " | CPU Sparkline: [" + fleetModel.getSparkline(listView.currentIndex) + "]"
                         color: root.colorAccentYellow
                         bold: true
                     }
@@ -311,28 +301,23 @@ Terminal {
                           " | Memory: " + (fleetModel.getNodeMem(listView.currentIndex) * 10) + "%" : ""
                     color: root.colorTextMuted
                 }
-                Text {
-                    text: "Log Stream: [OK] Heartbeat sync active | [METRICS] CPU=" + 
-                          (fleetModel.getNodeCpu(listView.currentIndex) * 10) + "% | RAM=" + 
-                          (fleetModel.getNodeMem(listView.currentIndex) * 10) + "%"
-                    color: root.colorAccentGreen
-                }
             }
         }
 
         // --- 6. OPTIONAL LIVE DOCKER LOG DRAWER ---
-        Rectangle {
+        Panel {
             visible: root.showLogs
             width: parent.width
             height: 4
-            border.style: "none"
             color: "#11111b"
+            border.color: "#272738"
+            title: "📜 LIVE CONTAINER LOG STREAM (" + fleetModel.getNodeName(listView.currentIndex) + ")"
+            titleColor: root.colorAccentPurple
 
             Column {
-                x: 2; y: 0
+                x: 1; y: 1
                 spacing: 0
 
-                Text { text: "📜 LIVE CONTAINER LOG STREAM (" + fleetModel.getNodeName(listView.currentIndex) + ")"; bold: true; color: root.colorAccentPurple }
                 Repeater {
                     model: fleetModel.getLogs(listView.currentIndex)
                     delegate: Text {
@@ -341,6 +326,25 @@ Terminal {
                         color: modelData.indexOf("ALERT") !== -1 ? root.colorAccentRed :
                                modelData.indexOf("WARN") !== -1 ? root.colorAccentYellow : root.colorTextMuted
                     }
+                }
+            }
+        }
+
+        // --- 7. COMPLETE FOOTER SHORTCUT LEGEND ---
+        Panel {
+            width: parent.width
+            height: 3
+            color: "#0d1c2d"
+            border.color: "#273647"
+            title: "SHORTCUTS & COMMANDS"
+            titleColor: root.colorAccentGreen
+
+            Row {
+                x: 1; y: 1; spacing: 2
+                Text {
+                    text: "[1-3] Filter  [/] Search  [S] Sort  [R] Restart Node  [A] Fix All Critical  [L] Toggle Logs  [Q/Esc] Quit"
+                    color: root.colorAccentGreen
+                    bold: true
                 }
             }
         }

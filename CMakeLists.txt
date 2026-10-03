@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Qtui VERSION 0.1 LANGUAGES CXX)
+project(Qtui VERSION 0.2.0 LANGUAGES CXX)
 
 option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
@@ -44,7 +44,7 @@ if(QTUI_BUILD_TESTS)
     enable_testing()
 endif()
 
-add_subdirectory(Terminal)
+add_subdirectory(src)
 
 # Example executable to test the library
 if(QTUI_BUILD_EXAMPLES)

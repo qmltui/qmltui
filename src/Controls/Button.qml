@@ -21,7 +21,7 @@ Rectangle {
     implicitHeight: 3
     
     color: activeFocus ? focusColor : normalColor
-    border.style: activeFocus ? focusBorderStyle : normalBorderStyle
+    border.style: height >= 3 ? (activeFocus ? focusBorderStyle : normalBorderStyle) : "none"
     border.color: !enabled ? disabledBorderColor : (activeFocus ? focusBorderColor : normalBorderColor)
     
     Text {

@@ -117,6 +117,28 @@ Terminal {
         else noiseLevel = 0.0;
     }
 
+    function updatePlots() {
+        if (waveformPlotCanvas.width > 0 && waveformPlotCanvas.height > 0) {
+            waveformPoly.points = rootWindow.generateWaveformPoints(
+                waveformPlotCanvas.width,
+                waveformPlotCanvas.height,
+                rootWindow.waveTime,
+                rootWindow.frequency,
+                rootWindow.noiseLevel,
+                rootWindow.waveType
+            );
+        }
+        if (lissajousPlotCanvas.width > 0 && lissajousPlotCanvas.height > 0) {
+            lissajousPoly.points = rootWindow.generateLissajousPoints(
+                lissajousPlotCanvas.width,
+                lissajousPlotCanvas.height,
+                rootWindow.lissajousPhase,
+                rootWindow.freqA,
+                rootWindow.freqB
+            );
+        }
+    }
+
     // Animation Timer
     Timer {
         id: frameTimer
@@ -131,25 +153,7 @@ Terminal {
                     rootWindow.simulatedCpu = Math.floor(Math.random() * 3) + 3;
                 }
             }
-
-            // Update Waveform Canvas
-            waveformPoly.points = rootWindow.generateWaveformPoints(
-                waveformCanvas.width,
-                waveformCanvas.height,
-                rootWindow.waveTime,
-                rootWindow.frequency,
-                rootWindow.noiseLevel,
-                rootWindow.waveType
-            );
-
-            // Update Lissajous Canvas
-            lissajousPoly.points = rootWindow.generateLissajousPoints(
-                lissajousCanvas.width,
-                lissajousCanvas.height,
-                rootWindow.lissajousPhase,
-                rootWindow.freqA,
-                rootWindow.freqB
-            );
+            rootWindow.updatePlots();
         }
     }
 
@@ -187,14 +191,11 @@ Terminal {
             border.style: "single"
             border.color: "cyan"
             color: "#0d1117"
-            padding: 1
 
             Text {
-                anchors.fill: parent
+                anchors.centerIn: parent
                 text: "Focus: [Tab] / [Shift+Tab] | Quick Pause: [Space] | Quit: [Q] or [Esc]"
                 color: "gray"
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
             }
         }
 
@@ -208,10 +209,10 @@ Terminal {
             border.style: "single"
             border.color: "magenta"
             color: "#1e1e24"
-            padding: 1
 
             Column {
                 anchors.fill: parent
+                anchors.margins: 1
                 spacing: 1
 
                 Text {
@@ -225,6 +226,11 @@ Terminal {
                 // Play / Pause Toggle
                 Button {
                     width: parent.width
+                    height: 3
+                    normalBorderStyle: "none"
+                    focusBorderStyle: "single"
+                    normalColor: "#21252b"
+                    focusColor: "#3a3f4b"
                     label: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
                     onClicked: rootWindow.paused = !rootWindow.paused
                 }
@@ -232,6 +238,11 @@ Terminal {
                 // Waveform type selector
                 Button {
                     width: parent.width
+                    height: 3
+                    normalBorderStyle: "none"
+                    focusBorderStyle: "single"
+                    normalColor: "#21252b"
+                    focusColor: "#3a3f4b"
                     label: "WAVE: " + rootWindow.waveType.toUpperCase()
                     onClicked: rootWindow.cycleWaveType()
                 }
@@ -239,14 +250,25 @@ Terminal {
                 // Waveform frequency adjustments
                 Row {
                     width: parent.width
+                    height: 3
                     spacing: 1
                     Button {
-                        width: 10
+                        width: Math.floor((parent.width - 1) / 2)
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "FREQ -"
                         onClicked: rootWindow.frequency = Math.max(0.5, rootWindow.frequency - 0.5)
                     }
                     Button {
-                        width: 11
+                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "FREQ +"
                         onClicked: rootWindow.frequency = Math.min(10.0, rootWindow.frequency + 0.5)
                     }
@@ -255,6 +277,11 @@ Terminal {
                 // Noise toggles
                 Button {
                     width: parent.width
+                    height: 3
+                    normalBorderStyle: "none"
+                    focusBorderStyle: "single"
+                    normalColor: "#21252b"
+                    focusColor: "#3a3f4b"
                     label: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
                     onClicked: rootWindow.cycleNoise()
                 }
@@ -277,14 +304,25 @@ Terminal {
                 // Lissajous Freq A adjustments
                 Row {
                     width: parent.width
+                    height: 3
                     spacing: 1
                     Button {
-                        width: 10
+                        width: Math.floor((parent.width - 1) / 2)
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "X-FREQ -"
                         onClicked: rootWindow.freqA = Math.max(1, rootWindow.freqA - 1)
                     }
                     Button {
-                        width: 11
+                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "X-FREQ +"
                         onClicked: rootWindow.freqA = Math.min(12, rootWindow.freqA + 1)
                     }
@@ -293,14 +331,25 @@ Terminal {
                 // Lissajous Freq B adjustments
                 Row {
                     width: parent.width
+                    height: 3
                     spacing: 1
                     Button {
-                        width: 10
+                        width: Math.floor((parent.width - 1) / 2)
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "Y-FREQ -"
                         onClicked: rootWindow.freqB = Math.max(1, rootWindow.freqB - 1)
                     }
                     Button {
-                        width: 11
+                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                        height: 3
+                        normalBorderStyle: "none"
+                        focusBorderStyle: "single"
+                        normalColor: "#21252b"
+                        focusColor: "#3a3f4b"
                         label: "Y-FREQ +"
                         onClicked: rootWindow.freqB = Math.min(12, rootWindow.freqB + 1)
                     }
@@ -368,54 +417,77 @@ Terminal {
                     border.style: "double"
                     border.color: "green"
                     color: "#0a140a"
-                    padding: 1
 
                     Text {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        text: " OSCILLOSCOPE WAVEFORM VIEW"
+                        id: upperTitle
+                        x: 2
+                        y: 1
+                        text: "OSCILLOSCOPE WAVEFORM VIEW"
                         color: "green"
                         bold: true
                     }
 
-                    // Green Phosphor Braille Canvas
-                    Canvas {
-                        id: waveformCanvas
-                        anchors.fill: parent
-                        color: "green"
+                    // Chart Drawing Area inset cleanly inside borders below title
+                    Item {
+                        id: upperChartBox
+                        anchors.top: upperTitle.bottom
+                        anchors.topMargin: 1
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 1
+                        anchors.left: parent.left
+                        anchors.leftMargin: 1
+                        anchors.right: parent.right
+                        anchors.rightMargin: 1
 
-                        // Draw Grid lines
-                        Line {
-                            x1: 0
-                            y1: Math.floor(waveformCanvas.height * 2)
-                            x2: Math.floor(waveformCanvas.width * 2)
-                            y2: Math.floor(waveformCanvas.height * 2)
-                        }
+                        // Superposed Canvas 1: High-Performance Background Grid Lines Canvas
+                        Canvas {
+                            id: waveformGridCanvas
+                            anchors.fill: parent
+                            color: "#004400"
 
-                        Repeater {
-                            model: 5
-                            delegate: Line {
-                                x1: Math.floor((index + 1) * (waveformCanvas.width * 2) / 6)
-                                y1: 0
-                                x2: Math.floor((index + 1) * (waveformCanvas.width * 2) / 6)
-                                y2: Math.floor(waveformCanvas.height * 4)
-                            }
-                        }
-
-                        Repeater {
-                            model: 3
-                            delegate: Line {
+                            // Draw C++ native Grid lines
+                            Line {
                                 x1: 0
-                                y1: Math.floor((index + 1) * (waveformCanvas.height * 4) / 4)
-                                x2: Math.floor(waveformCanvas.width * 2)
-                                y2: Math.floor((index + 1) * (waveformCanvas.height * 4) / 4)
+                                y1: Math.floor(waveformGridCanvas.height * 2)
+                                x2: Math.floor(waveformGridCanvas.width * 2)
+                                y2: Math.floor(waveformGridCanvas.height * 2)
+                            }
+
+                            Repeater {
+                                model: 5
+                                delegate: Line {
+                                    x1: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
+                                    y1: 0
+                                    x2: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
+                                    y2: Math.floor(waveformGridCanvas.height * 4)
+                                }
+                            }
+
+                            Repeater {
+                                model: 3
+                                delegate: Line {
+                                    x1: 0
+                                    y1: Math.floor((index + 1) * (waveformGridCanvas.height * 4) / 4)
+                                    x2: Math.floor(waveformGridCanvas.width * 2)
+                                    y2: Math.floor((index + 1) * (waveformGridCanvas.height * 4) / 4)
+                                }
                             }
                         }
 
-                        // Actual function plot
-                        Polygon {
-                            id: waveformPoly
-                            closed: false
+                        // Superposed Canvas 2: High-Performance Foreground Waveform Plot Canvas
+                        Canvas {
+                            id: waveformPlotCanvas
+                            anchors.fill: parent
+                            color: "green"
+
+                            onWidthChanged: rootWindow.updatePlots()
+                            onHeightChanged: rootWindow.updatePlots()
+
+                            // Dynamic vector curve
+                            Polygon {
+                                id: waveformPoly
+                                closed: false
+                            }
                         }
                     }
                 }
@@ -426,42 +498,64 @@ Terminal {
                     height: parent.height - Math.floor(parent.height / 2)
                     border.style: "double"
                     border.color: "cyan"
-                    color: "#0a141a"
-                    padding: 1
+                    color: "#0a14a"
 
                     Text {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        text: " XY PHASE ORBIT PLOT"
+                        id: lowerTitle
+                        x: 2
+                        y: 1
+                        text: "XY PHASE ORBIT PLOT"
                         color: "cyan"
                         bold: true
                     }
 
-                    // Cyan Phosphor Braille Canvas
-                    Canvas {
-                        id: lissajousCanvas
-                        anchors.fill: parent
-                        color: "cyan"
+                    // Chart Drawing Area inset cleanly inside borders below title
+                    Item {
+                        id: lowerChartBox
+                        anchors.top: lowerTitle.bottom
+                        anchors.topMargin: 1
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 1
+                        anchors.left: parent.left
+                        anchors.leftMargin: 1
+                        anchors.right: parent.right
+                        anchors.rightMargin: 1
 
-                        // Cross-hairs axes
-                        Line {
-                            x1: 0
-                            y1: Math.floor(lissajousCanvas.height * 2)
-                            x2: Math.floor(lissajousCanvas.width * 2)
-                            y2: Math.floor(lissajousCanvas.height * 2)
+                        // Superposed Canvas 1: High-Performance Background Cross-hairs Grid Canvas
+                        Canvas {
+                            id: lissajousGridCanvas
+                            anchors.fill: parent
+                            color: "#004444"
+
+                            Line {
+                                x1: 0
+                                y1: Math.floor(lissajousGridCanvas.height * 2)
+                                x2: Math.floor(lissajousGridCanvas.width * 2)
+                                y2: Math.floor(lissajousGridCanvas.height * 2)
+                            }
+
+                            Line {
+                                x1: Math.floor(lissajousGridCanvas.width)
+                                y1: 0
+                                x2: Math.floor(lissajousGridCanvas.width)
+                                y2: Math.floor(lissajousGridCanvas.height * 4)
+                            }
                         }
 
-                        Line {
-                            x1: Math.floor(lissajousCanvas.width)
-                            y1: 0
-                            x2: Math.floor(lissajousCanvas.width)
-                            y2: Math.floor(lissajousCanvas.height * 4)
-                        }
+                        // Superposed Canvas 2: High-Performance Foreground Lissajous Orbit Plot Canvas
+                        Canvas {
+                            id: lissajousPlotCanvas
+                            anchors.fill: parent
+                            color: "cyan"
 
-                        // Phase curve
-                        Polygon {
-                            id: lissajousPoly
-                            closed: true
+                            onWidthChanged: rootWindow.updatePlots()
+                            onHeightChanged: rootWindow.updatePlots()
+
+                            // Dynamic Lissajous curve
+                            Polygon {
+                                id: lissajousPoly
+                                closed: true
+                            }
                         }
                     }
                 }

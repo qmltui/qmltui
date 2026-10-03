@@ -6,6 +6,7 @@ qt_add_qml_module(QtuiControls
     QML_FILES
         Button.qml
         ButtonGroup.qml
+        Calendar.qml
         CheckBox.qml
         Dialog.qml
         Panel.qml
@@ -36,6 +37,7 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Controls/QtuiControls.qmltypes"
     ${CMAKE_CURRENT_SOURCE_DIR}/Button.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/ButtonGroup.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/Calendar.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/CheckBox.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Dialog.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Panel.qml

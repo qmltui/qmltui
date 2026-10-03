@@ -16,6 +16,7 @@ public:
     void renderFrame(Terminal* rootWindow, TerminalDevice& device) override;
 
     void print(TerminalDevice& device, const std::string& text) override;
+    const TextGridBuffer* currentBuffer() const override { return &m_promptBuffer; }
 
 private:
     void clearPromptRegion(TerminalDevice& device);

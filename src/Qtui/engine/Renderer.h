@@ -5,6 +5,7 @@
 namespace qtui {
 
 class Terminal;
+class TextGridBuffer;
 
 class Renderer {
 public:
@@ -15,6 +16,7 @@ public:
     virtual void resize(int width, int height) = 0;
     virtual void renderFrame(Terminal* rootWindow, TerminalDevice& device) = 0;
     virtual void print(TerminalDevice& device, const std::string& text) {}
+    virtual const TextGridBuffer* currentBuffer() const { return nullptr; }
 };
 
 } // namespace qtui

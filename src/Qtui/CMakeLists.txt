@@ -25,6 +25,8 @@ qt_add_qml_module(QtuiCore
         primitives/TerminalDevice.cpp
         engine/TerminalEngine.h
         engine/TerminalEngine.cpp
+        engine/TestDriver.h
+        engine/TestDriver.cpp
         engine/Renderer.h
         engine/FrameRenderer.h
         engine/FrameRenderer.cpp
@@ -117,6 +119,10 @@ target_link_libraries(QtuiCore PUBLIC
 target_link_libraries(QtuiCore PRIVATE
     utf8proc
 )
+if(QTUI_ENABLE_TEST_DRIVER)
+    find_package(Qt6 REQUIRED COMPONENTS Gui)
+    target_link_libraries(QtuiCore PRIVATE Qt6::Gui)
+endif()
 if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
 endif()

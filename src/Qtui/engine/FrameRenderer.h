@@ -15,6 +15,7 @@ public:
     // For exposure to engine if needed
     int terminalWidth() const { return m_currentBuffer.width(); }
     int terminalHeight() const { return m_currentBuffer.height(); }
+    const TextGridBuffer* currentBuffer() const override { return &m_currentBuffer; }
 
 private:
     TextGridBuffer m_currentBuffer;

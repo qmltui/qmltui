@@ -2,15 +2,33 @@
 #include "../engine/TerminalEngine.h"
 #include "../engine/FrameRenderer.h"
 #include "../engine/StreamRenderer.h"
+#include "../engine/TestDriver.h"
 #include "Popup.h"
 #include <algorithm>
 #include <utility>
+#include <QTimer>
+#include <QQmlEngine>
+#include <cstdlib>
+#include <cstring>
 
 namespace qtui {
 
 Terminal::Terminal(QObject *parent) : Rectangle(parent) {
     m_engine = new TerminalEngine(this, this);
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+
+    TestDriver::instance()->attachTerminal(this);
+
+    const char* scriptEnv = std::getenv("QTUI_SCRIPT");
+    if (scriptEnv && std::strlen(scriptEnv) > 0) {
+        QString scriptPath = QString::fromUtf8(scriptEnv);
+        QTimer::singleShot(100, this, [this, scriptPath]() {
+            QQmlEngine* qmlEng = qmlEngine(this);
+            if (qmlEng) {
+                TestDriver::instance()->executeScriptFile(qmlEng, scriptPath);
+            }
+        });
+    }
 }
 
 Terminal::~Terminal() {

@@ -6,6 +6,7 @@ option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_BUILD_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
+option(QTUI_ENABLE_TEST_DRIVER "Enable built-in QML/JS autotest driver and snapshot engine" OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

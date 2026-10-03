@@ -36,6 +36,8 @@ public:
   explicit Terminal(QObject *parent = nullptr);
   ~Terminal() override;
 
+  TerminalEngine* engine() const { return m_engine; }
+
   Q_INVOKABLE void print(const QString& text);
   Q_INVOKABLE void append(qtui::Item* item);
   Q_INVOKABLE void copyToClipboard(const QString& text);

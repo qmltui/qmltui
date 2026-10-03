@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE void requestRender();
 
     void setRenderer(Renderer* renderer);
+    Renderer* renderer() const { return m_renderer; }
     void setMouseReporting(bool enable);
 
     int terminalWidth() const { return m_device.getWidth(); }
@@ -34,6 +35,10 @@ public:
     void append(qtui::Item* item);
     void copyToClipboard(const QString& text);
     static std::string osc52Sequence(const QString& text);
+
+    void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
+    void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
+                          int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
 
 private slots:
     void readTerminalData();
@@ -46,9 +51,6 @@ private:
     void startRenderer();
     void setMouseMotionReportingEnabled(bool enabled);
     void handleResize();
-    void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
-    void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
-                          int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
     void cycleFocus(bool forward, Item* scope = nullptr);
     class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 

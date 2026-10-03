@@ -14,9 +14,11 @@
 #include "MouseArea.h"
 #include "TextArea.h"
 #include "LogView.h"
+#include "StreamAppender.h"
 #include "LinearLayout.h"
 #include "Layout.h"
 #include "KeyEvent.h"
+#include "ListView.h"
 #include "TreeView.h"
 
 #define private public
@@ -46,6 +48,16 @@ public:
         m_values.append(value);
         endInsertRows();
     }
+    void insertAt(int row, const QString &value) {
+        beginInsertRows({}, row, row);
+        m_values.insert(row, value);
+        endInsertRows();
+    }
+    void removeAt(int row) {
+        beginRemoveRows({}, row, row);
+        m_values.removeAt(row);
+        endRemoveRows();
+    }
     void renameFirst(const QString &value) {
         m_values[0] = value;
         emit dataChanged(index(0), index(0), {Qt::DisplayRole, NameRole});
@@ -59,6 +71,26 @@ public:
 
 private:
     QStringList m_values;
+};
+
+class DelegateRecorder : public QObject {
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE void record(int index, const QVariant &model,
+                            const QVariant &modelData, const QString &display)
+    {
+        indexes.append(index);
+        displays.append(display);
+        modelValues.append(model.toMap().value(QStringLiteral("display")).toString());
+        modelDataValues.append(
+            modelData.toMap().value(QStringLiteral("display")).toString());
+    }
+
+    QList<int> indexes;
+    QStringList displays;
+    QStringList modelValues;
+    QStringList modelDataValues;
 };
 
 class TestTerminalFramework : public QObject {
@@ -79,6 +111,8 @@ private slots:
     void boundedLog();
     void osc52Encoding();
     void treeDelegateIdentity();
+    void listModelMutationContract();
+    void streamAppenderDelegateContract();
     void destroyedTreeModelIsCleared();
     void keyHandlingImprovements();
 };
@@ -170,7 +204,6 @@ void TestTerminalFramework::nestedModalFocus() {
 void TestTerminalFramework::dialogDefaultAndCancelActions() {
     QQmlEngine qmlEngine;
     qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
         import Qtui
@@ -178,7 +211,7 @@ void TestTerminalFramework::dialogDefaultAndCancelActions() {
         Terminal {
             width: 40
             height: 12
-            ConfirmationDialog {
+            Dialog {
                 objectName: "dialog"
                 title: "Confirm"
                 message: "Continue?"
@@ -337,7 +370,7 @@ void TestTerminalFramework::osc52Encoding() {
 
 void TestTerminalFramework::treeDelegateIdentity() {
     QQmlEngine engine;
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     MutableListModel model;
     model.append(QStringLiteral("first"));
     model.append(QStringLiteral("second"));
@@ -346,7 +379,7 @@ void TestTerminalFramework::treeDelegateIdentity() {
     QQmlComponent component(&engine);
     component.setData(R"(
         import Qtui
-        import Qtui.Widgets
+        
         TreeView {
             width: 30
             height: 5
@@ -355,7 +388,7 @@ void TestTerminalFramework::treeDelegateIdentity() {
                 required property int depth
                 required property bool hasChildren
                 required property bool expanded
-                required property bool isCurrent
+                required property bool current
                 required property string display
                 required property var modelData
             }
@@ -406,6 +439,112 @@ void TestTerminalFramework::treeDelegateIdentity() {
     QVERIFY(selectedDelegateWasMaterialized);
 }
 
+void TestTerminalFramework::listModelMutationContract() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+
+    QQmlComponent delegate(&engine);
+    delegate.setData(R"(
+        import Qtui
+        Item {
+            required property int index
+            required property string display
+            required property var model
+            required property var modelData
+            property bool attachedCurrent: ListView.isCurrentItem
+        }
+    )", QUrl());
+    QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
+
+    MutableListModel model;
+    model.append(QStringLiteral("first"));
+    model.append(QStringLiteral("second"));
+    model.append(QStringLiteral("third"));
+
+    ListView list;
+    QQmlEngine::setContextForObject(&list, engine.rootContext());
+    list.setWidth(30);
+    list.setHeight(5);
+    list.setDelegate(&delegate);
+    list.setModel(QVariant::fromValue(static_cast<QObject *>(&model)));
+    QCOMPARE(list.currentIndex(), -1);
+
+    list.setCurrentIndex(1);
+    QCOMPARE(list.currentIndex(), 1);
+    model.insertAt(0, QStringLiteral("inserted"));
+    QCOMPARE(list.currentIndex(), 2);
+    model.removeAt(0);
+    QCOMPARE(list.currentIndex(), 1);
+    model.moveFirstToEnd();
+    QCOMPARE(list.currentIndex(), 0);
+
+    Item *currentDelegate = nullptr;
+    for (Item *item : list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly)) {
+        if (item->property("attachedCurrent").toBool()) {
+            currentDelegate = item;
+            break;
+        }
+    }
+    QVERIFY(currentDelegate);
+    QCOMPARE(currentDelegate->property("index").toInt(), 0);
+    QCOMPARE(currentDelegate->property("display").toString(), QStringLiteral("second"));
+
+    model.removeAt(0);
+    QCOMPARE(list.currentIndex(), 0);
+    list.setCurrentIndex(-1);
+    QCOMPARE(list.currentIndex(), -1);
+}
+
+void TestTerminalFramework::streamAppenderDelegateContract() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+    DelegateRecorder recorder;
+    engine.rootContext()->setContextProperty(QStringLiteral("delegateRecorder"), &recorder);
+
+    QQmlComponent invalidDelegate(&engine);
+    invalidDelegate.setData(R"(
+        import QtQml
+        QtObject {}
+    )", QUrl());
+    QVERIFY2(invalidDelegate.isReady(), qPrintable(invalidDelegate.errorString()));
+
+    QQmlComponent validDelegate(&engine);
+    validDelegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            required property int index
+            required property var model
+            required property var modelData
+            required property string display
+            Component.onCompleted: delegateRecorder.record(
+                index, model, modelData, display)
+        }
+    )", QUrl());
+    QVERIFY2(validDelegate.isReady(), qPrintable(validDelegate.errorString()));
+
+    Terminal terminal;
+    StreamAppender appender(&terminal);
+    QQmlEngine::setContextForObject(&appender, engine.rootContext());
+    MutableListModel model;
+    model.append(QStringLiteral("first"));
+    model.append(QStringLiteral("second"));
+
+    QTest::ignoreMessage(
+        QtWarningMsg,
+        QRegularExpression(QStringLiteral(".*Delegate root must derive from Qtui.Item.*")));
+    appender.setDelegate(&invalidDelegate);
+    appender.setModel(&model);
+    QVERIFY(recorder.indexes.isEmpty());
+
+    appender.setDelegate(&validDelegate);
+    QCOMPARE(recorder.indexes, QList<int>({0, 1}));
+    QCOMPARE(recorder.displays,
+             QStringList({QStringLiteral("first"), QStringLiteral("second")}));
+    QCOMPARE(recorder.modelValues, recorder.displays);
+    QCOMPARE(recorder.modelDataValues, recorder.displays);
+}
+
 void TestTerminalFramework::destroyedTreeModelIsCleared() {
     TreeView tree;
     auto *model = new MutableListModel;
@@ -420,7 +559,6 @@ void TestTerminalFramework::destroyedTreeModelIsCleared() {
 void TestTerminalFramework::keyHandlingImprovements() {
     QQmlEngine qmlEngine;
     qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
         import Qtui

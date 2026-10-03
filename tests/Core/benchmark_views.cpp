@@ -37,7 +37,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     QQmlComponent component(&engine);
     component.setData(R"(
         import Qtui
-        import Qtui.Widgets
+        
         TreeView {
             width: 80
             height: 24

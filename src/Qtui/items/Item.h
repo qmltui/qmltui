@@ -82,6 +82,7 @@ class Item : public QObject {
   Q_PROPERTY(int bottomPadding READ bottomPadding WRITE setBottomPadding NOTIFY
                  bottomPaddingChanged)
   Q_PROPERTY(QQmlListProperty<QObject> data READ data)
+  Q_PROPERTY(QQmlListProperty<qtui::Item> children READ childrenProperty CONSTANT)
   Q_PROPERTY(QQmlListProperty<qtui::State> states READ states)
   Q_PROPERTY(QQmlListProperty<qtui::Transition> transitions READ transitions)
   Q_PROPERTY(QString state READ state WRITE setState NOTIFY stateChanged)
@@ -92,6 +93,7 @@ public:
   virtual ~Item();
 
   QQmlListProperty<QObject> data() const;
+  QQmlListProperty<qtui::Item> childrenProperty();
   QQmlListProperty<qtui::State> states() const;
   QQmlListProperty<qtui::Transition> transitions() const;
   QString state() const { return m_stateName; }

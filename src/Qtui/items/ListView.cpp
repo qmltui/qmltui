@@ -340,7 +340,7 @@ Item *ListView::createDelegateItem(int index)
         DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
         DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
-        rowMap = QQmlPropertyMap::create(this);
+        rowMap = new QQmlPropertyMap(this);
         const QModelIndex modelIndex = model->index(index, 0);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
             const QVariant value = model->data(modelIndex, it.key());

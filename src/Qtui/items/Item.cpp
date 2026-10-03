@@ -92,6 +92,20 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
     }
 }
 
+QQmlListProperty<Item> Item::childrenProperty() {
+    return QQmlListProperty<Item>(
+        this, nullptr,
+        [](QQmlListProperty<Item> *list) -> qsizetype {
+            Item *self = qobject_cast<Item*>(list->object);
+            return self ? self->childItems().size() : 0;
+        },
+        [](QQmlListProperty<Item> *list, qsizetype index) -> Item* {
+            Item *self = qobject_cast<Item*>(list->object);
+            return (self && index >= 0 && index < self->childItems().size()) ? self->childItems().at(index) : nullptr;
+        }
+    );
+}
+
 void Item::setParentItem(Item *parentItem) {
     if (this->parentItem() == parentItem) return;
     setParent(parentItem);

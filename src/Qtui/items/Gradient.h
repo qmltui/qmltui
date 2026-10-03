@@ -13,7 +13,7 @@ namespace qtui {
 class Gradient : public QObject {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(QQmlListProperty<qtui::GradientStop> stops READ stops)
+    Q_PROPERTY(QQmlListProperty<qtui::GradientStop> stops READ stops CONSTANT)
     Q_PROPERTY(qreal offset READ offset WRITE setOffset NOTIFY offsetChanged)
     Q_CLASSINFO("DefaultProperty", "stops")
 

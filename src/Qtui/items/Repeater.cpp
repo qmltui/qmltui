@@ -278,7 +278,7 @@ void Repeater::generateItems() {
                 const QHash<int, QString> roleMap = buildRoleMap(model);
                 int rowCount = std::max(0, model->rowCount());
                 for (int i = 0; i < rowCount; ++i) {
-                    QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
+                    QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
                     const QModelIndex modelIndex = model->index(i, 0);
                     QVariantMap initialProps;
                     initialProps["index"] = i;
@@ -340,7 +340,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
     }
 
     for (int i = first; i <= last; ++i) {
-        QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
+        QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
         const QModelIndex modelIndex = model->index(i, 0);
         QVariantMap initialProps;
         initialProps["index"] = i;

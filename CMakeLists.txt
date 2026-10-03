@@ -59,10 +59,8 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
-if(QTUI_BUILD_TERMINAL_HOST)
-    find_package(Qt6 6.8 REQUIRED COMPONENTS Gui)
-endif()
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml Gui)
+
 if(QTUI_ENABLE_BEHAVIOR)
     set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL
         "Suppress warnings about the optional Qt QmlPrivate dependency")

@@ -118,11 +118,8 @@ target_link_libraries(QtuiCore PUBLIC
 
 target_link_libraries(QtuiCore PRIVATE
     utf8proc
+    Qt6::Gui
 )
-if(QTUI_ENABLE_TEST_DRIVER)
-    find_package(Qt6 REQUIRED COMPONENTS Gui)
-    target_link_libraries(QtuiCore PRIVATE Qt6::Gui)
-endif()
 if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
 endif()

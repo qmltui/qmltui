@@ -260,7 +260,7 @@ void GridView::generateItems() {
 
                 int rowCount = std::max(0, model->rowCount());
                 for (int i = 0; i < rowCount; ++i) {
-                    QQmlPropertyMap* rowMap = QQmlPropertyMap::create(this);
+                    QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
                     const QModelIndex modelIndex = model->index(i, 0);
                     QVariantMap initialProps;
                     initialProps["index"] = i;
@@ -309,7 +309,7 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
                                const QHash<int, QString> &roleMap) {
     if (!model || !m_delegate || first < 0 || first > last) return;
     for (int row = first; row <= last; ++row) {
-        QQmlPropertyMap *rowMap = QQmlPropertyMap::create(this);
+        QQmlPropertyMap *rowMap = new QQmlPropertyMap(this);
         const QModelIndex modelIndex = model->index(row, 0);
         QVariantMap initialProps;
         initialProps["index"] = row;

@@ -17,7 +17,7 @@ qt_add_qml_module(qtui_industrial_plc_hmi
         DiagnosticsView.qml
         SettingsView.qml
 
-    DEPENDENCIES TARGET Qtui::Core Qtui::Canvas
+    DEPENDENCIES TARGET Qtui::Core Qtui::Canvas Qtui::Extras
 )
 
-target_link_libraries(qtui_industrial_plc_hmi PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Canvas)
+target_link_libraries(qtui_industrial_plc_hmi PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Canvas Qtui::Extras)

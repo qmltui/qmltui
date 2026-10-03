@@ -1,5 +1,6 @@
 import QtQml 2.15
 import Qtui
+import Qtui.Extras
 import IndustrialPlcHmi 1.0
 
 Rectangle {
@@ -8,15 +9,18 @@ Rectangle {
     color: HmiTheme.cardBg
     border.style: "single"
     border.color: HmiTheme.borderNormal
-    padding: 1
 
     property int cycles: 0
     property bool valveA: false
     property bool valveB: false
     property string machineState: "idle"
 
+    property var busVoltageHistory: [24.1, 24.1, 24.0, 24.2, 24.1, 24.1, 24.0, 24.2, 24.1, 24.1, 24.0, 24.1, 24.2, 24.1, 24.1]
+    property var sensorLoopHistory: [11.4, 11.5, 11.4, 11.3, 11.5, 11.4, 11.6, 11.4, 11.5, 11.4, 11.4, 11.5, 11.4, 11.3, 11.5]
+
     Column {
         anchors.fill: parent
+        anchors.margins: 1
         spacing: 1
 
         Text {
@@ -26,7 +30,7 @@ Rectangle {
         }
 
         Row {
-            width: parent ? parent.width : 78
+            width: parent.width
             spacing: 2
 
             // Digital Inputs / Outputs Column
@@ -51,14 +55,35 @@ Rectangle {
                 width: parent.width - Math.floor((parent.width - 2) * 0.48) - 2
                 spacing: 1
 
-                Text { text: "⚡ POWER & ANALOG BUS HEALTH"; color: HmiTheme.textSecondary; bold: true }
+                Text { text: "⚡ POWER & ANALOG BUS TELEMETRY"; color: HmiTheme.textSecondary; bold: true }
                 Text { text: "24V DC Field Power  : 24.1 VDC [OK]"; color: HmiTheme.textSuccess }
+                Sparkline {
+                    width: parent.width
+                    height: 1
+                    values: root.busVoltageHistory
+                    minVal: 23.0
+                    maxVal: 25.0
+                    color: HmiTheme.statusIdle
+                }
+
                 Text { text: "4-20mA Sensor Loop  : 11.4 mA  [OK]"; color: HmiTheme.textSuccess }
-                Text { text: "Internal CPU Temp   : 38.2 °C  [OK]"; color: HmiTheme.textSuccess }
+                Sparkline {
+                    width: parent.width
+                    height: 1
+                    values: root.sensorLoopHistory
+                    minVal: 4.0
+                    maxVal: 20.0
+                    color: HmiTheme.textHighlight
+                }
 
                 Text { text: "🌐 PROFINET / MODBUS BUS STACK"; color: HmiTheme.textSecondary; bold: true }
                 Text { text: "Packets Transmitted : " + (root.cycles * 12); color: HmiTheme.textPrimary }
-                Text { text: "Packets Received    : " + (root.cycles * 12); color: HmiTheme.textPrimary }
+                Sparkline {
+                    width: parent.width
+                    height: 1
+                    values: [5, 12, 18, 25, 40, 65, 80, 95, 70, 85, 100, 110, 120, 130, 145]
+                    color: HmiTheme.textAccent
+                }
                 Text { text: "CRC Error Counter   : 0 ERRORS"; color: HmiTheme.textSuccess }
             }
         }

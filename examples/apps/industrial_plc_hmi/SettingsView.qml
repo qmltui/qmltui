@@ -8,7 +8,6 @@ Rectangle {
     color: HmiTheme.cardBg
     border.style: "single"
     border.color: HmiTheme.borderNormal
-    padding: 1
 
     property int targetSpeed: 1500
     property double maxTempLimit: 85.0
@@ -17,6 +16,7 @@ Rectangle {
 
     Column {
         anchors.fill: parent
+        anchors.margins: 1
         spacing: 1
 
         Text {
@@ -26,7 +26,7 @@ Rectangle {
         }
 
         Row {
-            width: parent ? parent.width : 78
+            width: parent.width
             spacing: 2
 
             Column {

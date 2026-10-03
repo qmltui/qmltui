@@ -16,16 +16,25 @@ Column {
     property int barWidth: Math.max(8, root.width - 2)
     property int decimals: 1
 
-    Text {
-        width: parent ? parent.width : 20
-        text: root.label + ": " + (root.decimals > 0 ? root.value.toFixed(root.decimals) : root.value.toString()) + " " + root.unit
-        color: root.value >= root.dangerVal ? HmiTheme.textDanger : (root.value >= root.warningVal ? HmiTheme.textWarning : HmiTheme.textPrimary)
-        bold: root.value >= root.warningVal
+    property double animatedValue: root.value
+
+    Behavior on animatedValue {
+        NumberAnimation {
+            duration: 350
+            easing: Easing.OutQuad
+        }
     }
 
     Text {
         width: parent ? parent.width : 20
-        text: HmiTheme.makeProgressBar(root.value, root.minVal, root.maxVal, root.barWidth)
-        color: root.value >= root.dangerVal ? HmiTheme.statusError : (root.value >= root.warningVal ? HmiTheme.textWarning : HmiTheme.textHighlight)
+        text: root.label + ": " + (root.decimals > 0 ? root.animatedValue.toFixed(root.decimals) : Math.round(root.animatedValue).toString()) + " " + root.unit
+        color: root.animatedValue >= root.dangerVal ? HmiTheme.textDanger : (root.animatedValue >= root.warningVal ? HmiTheme.textWarning : HmiTheme.textPrimary)
+        bold: root.animatedValue >= root.warningVal
+    }
+
+    Text {
+        width: parent ? parent.width : 20
+        text: HmiTheme.makeProgressBar(root.animatedValue, root.minVal, root.maxVal, root.barWidth)
+        color: root.animatedValue >= root.dangerVal ? HmiTheme.statusError : (root.animatedValue >= root.warningVal ? HmiTheme.textWarning : HmiTheme.textHighlight)
     }
 }

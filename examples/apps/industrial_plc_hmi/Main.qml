@@ -7,8 +7,7 @@ import IndustrialPlcHmi
 
 Terminal {
     id: rootWindow
-    width: 80
-    height: 24
+    fillTerminal: true
     color: "black"
     useAlternateScreen: true
 
@@ -32,8 +31,10 @@ Terminal {
     // Log/Status History (shows latest events)
     property var logMessages: ["SYSTEM INITIALIZED", "STATE CHANGED TO: IDLE", "READY FOR OPERATOR COMMANDS"]
     
-    // Temperature History (30 points for plotting)
+    // Temperature & Telemetry History (rolling data points for plotting and sparklines)
     property var tempHistory: [28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5]
+    property var speedHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    property var pressureHistory: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
     // Mandatory Quit key handler as per workspace rule + Navigation & Control Shortcuts
     Keys.onPressed: (event) => {
@@ -104,13 +105,21 @@ Terminal {
         logMessages = temp;
     }
 
-    function pushHistory(newVal) {
-        var arr = [];
-        for (var i = 1; i < tempHistory.length; i++) {
-            arr.push(tempHistory[i]);
-        }
-        arr.push(newVal);
-        tempHistory = arr;
+    function pushHistory(newTemp, newSpeed, newPressure) {
+        var tArr = [];
+        for (var i = 1; i < tempHistory.length; i++) tArr.push(tempHistory[i]);
+        tArr.push(newTemp);
+        tempHistory = tArr;
+
+        var sArr = [];
+        for (var j = 1; j < speedHistory.length; j++) sArr.push(speedHistory[j]);
+        sArr.push(newSpeed);
+        speedHistory = sArr;
+
+        var pArr = [];
+        for (var k = 1; k < pressureHistory.length; k++) pArr.push(pressureHistory[k]);
+        pArr.push(newPressure);
+        pressureHistory = pArr;
     }
 
     function getPlotPoints(canvasWidth, canvasHeight) {
@@ -152,7 +161,7 @@ Terminal {
             confirmDlg.title = "CLEAR FAULT ALARM";
             confirmDlg.message = "Acknowledge and reset over-temperature alarm lockout?";
             confirmDlg.visible = true;
-            confirmDlg.forceActiveFocus();
+            confirmDlg.focus = true;
         }
     }
 
@@ -164,7 +173,7 @@ Terminal {
                 ? "Exit maintenance mode and return station to IDLE?"
                 : "Switch PLC station into low-speed MAINTENANCE mode?";
             confirmDlg.visible = true;
-            confirmDlg.forceActiveFocus();
+            confirmDlg.focus = true;
         }
     }
 
@@ -246,11 +255,13 @@ Terminal {
                 rootWindow.log("PROCESS CYCLE " + rootWindow.cycles + " | T: " + rootWindow.temperature.toFixed(1) + "C");
             }
 
-            // Push to temperature history
-            rootWindow.pushHistory(rootWindow.temperature);
+            // Push to telemetry history
+            rootWindow.pushHistory(rootWindow.temperature, rootWindow.speed, rootWindow.pressure);
 
             // Update Braille Plot points
-            tempPoly.points = rootWindow.getPlotPoints(tempCanvas.width, tempCanvas.height);
+            if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+                tempCanvas.updatePlot();
+            }
         }
     }
 
@@ -311,16 +322,16 @@ Terminal {
                 // SIDEBAR TELEMETRY PANEL (LEFT)
                 Rectangle {
                     id: sidebarPanel
-                    width: Math.max(22, Math.floor(parent.width * 0.28))
+                    width: Math.max(24, Math.floor(parent.width * 0.28))
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
                     border.style: "single"
                     border.color: HmiTheme.borderNormal
-                    padding: 1
 
                     Column {
                         anchors.fill: parent
+                        anchors.margins: 1
                         spacing: 1
 
                         Text {
@@ -339,6 +350,14 @@ Terminal {
                             dangerVal: 2800
                             decimals: 0
                         }
+                        Sparkline {
+                            width: parent.width
+                            height: 1
+                            values: rootWindow.speedHistory
+                            minVal: 0
+                            maxVal: 3000
+                            color: HmiTheme.statusProcessing
+                        }
 
                         Gauge {
                             label: "Temp"
@@ -349,6 +368,14 @@ Terminal {
                             warningVal: 75
                             dangerVal: rootWindow.maxTempLimit
                             decimals: 1
+                        }
+                        Sparkline {
+                            width: parent.width
+                            height: 1
+                            values: rootWindow.tempHistory
+                            minVal: 20
+                            maxVal: 100
+                            color: rootWindow.temperature >= rootWindow.maxTempLimit ? HmiTheme.statusError : HmiTheme.textWarning
                         }
 
                         Gauge {
@@ -361,9 +388,17 @@ Terminal {
                             dangerVal: 4.5
                             decimals: 2
                         }
+                        Sparkline {
+                            width: parent.width
+                            height: 1
+                            values: rootWindow.pressureHistory
+                            minVal: 0
+                            maxVal: 5
+                            color: HmiTheme.textHighlight
+                        }
 
                         Text {
-                            text: "⚙ ACTUATORS"
+                            text: "⚙ ACTUATORS & FLOW"
                             color: HmiTheme.textSecondary
                             bold: true
                         }
@@ -373,6 +408,43 @@ Terminal {
                             spacing: 1
                             ActuatorLed { name: "V-A"; active: rootWindow.valveA }
                             ActuatorLed { name: "V-B"; active: rootWindow.valveB }
+                        }
+
+                        // Animated conveyor flow pulse
+                        Rectangle {
+                            id: conveyorPulseRect
+                            width: parent.width
+                            height: 1
+                            color: "transparent"
+
+                            property real pulsePos: 0
+                            NumberAnimation {
+                                target: conveyorPulseRect
+                                property: "pulsePos"
+                                running: rootWindow.machineState === "processing" || rootWindow.machineState === "maintenance"
+                                from: 0
+                                to: 10
+                                duration: rootWindow.machineState === "maintenance" ? 2000 : 800
+                                loops: -1
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: {
+                                    if (rootWindow.machineState === "processing") {
+                                        let chars = [">  ", ">> ", ">>>", " >>", "  >", "   ", ">  ", ">> ", ">>>", " >>"];
+                                        return "[ FLOW: " + chars[parent.pulsePos % chars.length] + " ]";
+                                    } else if (rootWindow.machineState === "maintenance") {
+                                        return "[ MAINT: " + (parent.pulsePos % 2 === 0 ? "◧" : "◨") + " ]";
+                                    } else if (rootWindow.machineState === "error") {
+                                        return "[ 🛑 LOCKED ]";
+                                    } else {
+                                        return "[ ■ IDLE ]";
+                                    }
+                                }
+                                color: rootWindow.machineState === "processing" ? HmiTheme.textSuccess : (rootWindow.machineState === "error" ? HmiTheme.textDanger : HmiTheme.textDim)
+                                bold: true
+                            }
                         }
 
                         Text {
@@ -389,16 +461,16 @@ Terminal {
                 // TELEMETRY GRAPH PANEL (CENTER)
                 Rectangle {
                     id: graphPanel
-                    width: Math.max(30, Math.floor(parent.width * 0.46))
                     anchors.top: parent.top
                     anchors.left: sidebarPanel.right
+                    anchors.right: inputPanel.left
                     anchors.bottom: parent.bottom
                     border.style: "single"
                     border.color: HmiTheme.borderNormal
-                    padding: 1
 
                     Column {
                         anchors.fill: parent
+                        anchors.margins: 1
                         spacing: 1
 
                         Text {
@@ -412,50 +484,72 @@ Terminal {
                             color: rootWindow.temperature >= rootWindow.maxTempLimit ? HmiTheme.textDanger : HmiTheme.textHighlight
                         }
 
-                        Row {
+                        Rectangle {
                             width: parent.width
-                            height: 11
-                            spacing: 1
+                            height: Math.max(5, parent.height - 4)
+                            color: "transparent"
 
-                            Column {
-                                width: 5
-                                height: parent.height
-                                Text { text: "100°"; color: HmiTheme.textDim }
-                                Text { text: ""; height: 3 }
-                                Text { text: " 60°"; color: HmiTheme.textDim }
-                                Text { text: ""; height: 3 }
-                                Text { text: " 20°"; color: HmiTheme.textDim }
-                            }
+                            Row {
+                                anchors.fill: parent
+                                spacing: 1
 
-                            Rectangle {
-                                width: parent.width - 6
-                                height: parent.height
-                                border.style: "ascii"
-                                border.color: "#444444"
+                                Column {
+                                    width: 5
+                                    height: parent.height
 
-                                Canvas {
-                                    id: tempCanvas
-                                    anchors.fill: parent
-                                    color: rootWindow.machineState === "error" ? HmiTheme.statusError : (rootWindow.machineState === "processing" ? HmiTheme.textHighlight : HmiTheme.statusIdle)
+                                    Text { text: "100°"; color: HmiTheme.textDim }
 
-                                    Line {
-                                        x1: 0
-                                        y1: Math.floor(tempCanvas.height * 2)
-                                        x2: Math.floor(tempCanvas.width * 2)
-                                        y2: Math.floor(tempCanvas.height * 2)
+                                    Item {
+                                        width: 5
+                                        height: Math.max(0, parent.height - 2)
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: " 60°"
+                                            color: HmiTheme.textDim
+                                        }
                                     }
 
-                                    Line {
-                                        id: limitLine
-                                        x1: 0
-                                        y1: Math.max(0, Math.min(Math.floor(tempCanvas.height * 4 - 1), Math.floor((tempCanvas.height * 4 - 1) - ((rootWindow.maxTempLimit - 20.0) / 80.0) * (tempCanvas.height * 4 - 1))))
-                                        x2: Math.floor(tempCanvas.width * 2)
-                                        y2: y1
-                                    }
+                                    Text { text: " 20°"; color: HmiTheme.textDim }
+                                }
 
-                                    Polygon {
-                                        id: tempPoly
-                                        closed: false
+                                Rectangle {
+                                    width: parent.width - 6
+                                    height: parent.height
+                                    border.style: "ascii"
+                                    border.color: "#444444"
+
+                                    Canvas {
+                                        id: tempCanvas
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: rootWindow.machineState === "error" ? HmiTheme.statusError : (rootWindow.machineState === "processing" ? HmiTheme.textHighlight : HmiTheme.statusIdle)
+
+                                        onWidthChanged: updatePlot()
+                                        onHeightChanged: updatePlot()
+
+                                        function updatePlot() {
+                                            if (width > 0 && height > 0) {
+                                                tempPoly.points = rootWindow.getPlotPoints(width, height);
+                                                let h4 = height * 4 - 1;
+                                                let ly = Math.max(0, Math.min(Math.floor(h4), Math.floor(h4 - ((rootWindow.maxTempLimit - 20.0) / 80.0) * h4)));
+                                                limitLine.y1 = ly;
+                                                limitLine.y2 = ly;
+                                                limitLine.x2 = Math.floor(width * 2);
+                                            }
+                                        }
+
+                                        Line {
+                                            id: limitLine
+                                            x1: 0
+                                            y1: 0
+                                            x2: 100
+                                            y2: 0
+                                        }
+
+                                        Polygon {
+                                            id: tempPoly
+                                            closed: false
+                                        }
                                     }
                                 }
                             }
@@ -471,16 +565,16 @@ Terminal {
                 // CONTROLS PANEL (RIGHT)
                 Rectangle {
                     id: inputPanel
+                    width: Math.max(24, Math.floor(parent.width * 0.26))
                     anchors.top: parent.top
-                    anchors.left: graphPanel.right
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     border.style: "single"
                     border.color: HmiTheme.borderNormal
-                    padding: 1
 
                     Column {
                         anchors.fill: parent
+                        anchors.margins: 1
                         spacing: 1
 
                         Text {
@@ -491,7 +585,7 @@ Terminal {
 
                         Text { text: "RPM Setpoint:"; color: HmiTheme.textPrimary }
                         Rectangle {
-                            width: parent.width - 2
+                            width: parent.width
                             height: 3
                             border.style: rpmInput.activeFocus ? "double" : "single"
                             border.color: rpmInput.activeFocus ? HmiTheme.borderFocus : HmiTheme.borderNormal
@@ -511,7 +605,7 @@ Terminal {
 
                         Text { text: "Temp Limit:"; color: HmiTheme.textPrimary }
                         Rectangle {
-                            width: parent.width - 2
+                            width: parent.width
                             height: 3
                             border.style: tempLimitInput.activeFocus ? "double" : "single"
                             border.color: tempLimitInput.activeFocus ? HmiTheme.borderFocus : HmiTheme.borderNormal
@@ -530,31 +624,49 @@ Terminal {
                         }
 
                         Row {
-                            width: parent.width - 2
+                            width: parent.width
+                            height: 3
                             spacing: 1
                             Button {
                                 width: Math.floor((parent.width - 1) / 2)
+                                height: 3
                                 label: "[S] START"
+                                normalColor: "#1e3a1e"
+                                focusColor: "#2e5a2e"
+                                textColor: HmiTheme.textSuccess
                                 onClicked: triggerStart()
                             }
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                                height: 3
                                 label: "[X] STOP"
+                                normalColor: "#3a1e1e"
+                                focusColor: "#5a2e2e"
+                                textColor: HmiTheme.textDanger
                                 onClicked: triggerStop()
                             }
                         }
 
                         Row {
-                            width: parent.width - 2
+                            width: parent.width
+                            height: 3
                             spacing: 1
                             Button {
                                 width: Math.floor((parent.width - 1) / 2)
+                                height: 3
                                 label: "[R] RESET"
+                                normalColor: "#3a301e"
+                                focusColor: "#5a482e"
+                                textColor: HmiTheme.textWarning
                                 onClicked: requestReset()
                             }
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                                height: 3
                                 label: "[M] MAINT"
+                                normalColor: "#21252b"
+                                focusColor: "#2c313a"
+                                textColor: HmiTheme.textHighlight
                                 onClicked: requestMaintenance()
                             }
                         }
@@ -597,17 +709,17 @@ Terminal {
         // 4. FOOTER ALARM / LOG TICKER & NAVIGATION KEYMAP
         Rectangle {
             id: footerPanel
-            height: 3
+            height: 4
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             border.style: "single"
             border.color: rootWindow.machineState === "error" ? HmiTheme.borderError : HmiTheme.borderNormal
             color: rootWindow.machineState === "error" ? HmiTheme.footerBgError : HmiTheme.footerBg
-            padding: 1
 
             Column {
                 anchors.fill: parent
+                anchors.margins: 1
                 spacing: 0
 
                 Text {

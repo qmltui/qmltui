@@ -8,17 +8,17 @@ Rectangle {
     color: HmiTheme.cardBg
     border.style: "single"
     border.color: HmiTheme.borderNormal
-    padding: 1
 
     property var logs: []
     property int errorCount: 0
 
     Column {
         anchors.fill: parent
+        anchors.margins: 1
         spacing: 1
 
         Rectangle {
-            width: parent ? parent.width : 78
+            width: parent.width
             height: 1
             color: "#282c34"
             Text {
@@ -31,7 +31,7 @@ Rectangle {
 
         // Table Header
         Rectangle {
-            width: parent ? parent.width : 78
+            width: parent.width
             height: 1
             color: "#21252b"
             Row {
@@ -46,7 +46,7 @@ Rectangle {
         Repeater {
             model: Math.min(10, root.logs.length)
             delegate: Rectangle {
-                width: parent ? parent.width : 78
+                width: parent.width
                 height: 1
                 color: index % 2 === 0 ? "#181a1f" : "#1e222b"
 

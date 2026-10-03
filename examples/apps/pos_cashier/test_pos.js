@@ -5,11 +5,13 @@ TestDriver.snapshot("/tmp/in_tree_pos_1_catalog.png");
 TestDriver.sendKey("F4");
 TestDriver.assertTextContains("ITEM NAME");
 TestDriver.snapshot("/tmp/in_tree_pos_2_cart.png");
+TestDriver.wait(500);
 
 // 2. Switch to Payment View via Key 'F12'
 TestDriver.sendKey("F12");
 TestDriver.assertTextContains("PAYMENT METHOD");
 TestDriver.snapshot("/tmp/in_tree_pos_3_payment.png");
+TestDriver.wait(500);
 
 // 3. Confirm Payment via Enter key
 TestDriver.sendKey("Enter");

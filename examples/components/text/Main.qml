@@ -2,6 +2,8 @@ import QtQml 2.15
 import Qtui
 
 Terminal {
+    id: rootWindow
+
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Escape || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_Q) || event.key === Qt.Key_Q) {
             Qt.quit()
@@ -9,8 +11,6 @@ Terminal {
         }
     }
 
-    id: rootWindow
-   
     color: "green"
     border.style: "single"
     border.color: "yellow"
@@ -74,7 +74,42 @@ Terminal {
                     GradientStop { position: 0.66; color: "yellow" }
                     GradientStop { position: 1.0; color: "magenta" }
                 }
+            }
+
+            // Multiline ASCII Art Section (Auto-calculates width & height)
+            Text {
+                bold: true
+                color: "yellow"
+                text: "Multiline ASCII Art (Auto-sized):"
+            }
+
+            // ASCII Art Card: Column automatically computes size from Text, Rectangle fills parent
+            Column {
+                padding: 1
+
+                Rectangle {
+                    anchors.fill: parent
+                    border.style: "single"
+                    border.color: "magenta"
+                    color: "#1e1e2e"
+                    z: -1
                 }
+
+                Text {
+                    color: "orange"
+                    text: `  /\\_/\\   
+ ( o.o )   Auto-sized ASCII Cat
+  > ^ <    Calculates 3 lines height automatically`
+                }
+            }
+
+            Text {
+                color: "brightGreen"
+                text: ` _____ _   _ _____ 
+|  _  | |_| |_   _|
+| | | |  _  | | |  
+\\_\\_\\_|_| |_| |_|  `
+            }
 
             Text {
                 text: "Press 'q' or 'Escape' to quit."
@@ -83,4 +118,3 @@ Terminal {
         }
     }
 }
-

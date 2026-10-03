@@ -1,0 +1,8 @@
+add_subdirectory(industrial_plc_hmi)
+add_subdirectory(plotting_dashboard)
+add_subdirectory(pos_cashier)
+add_subdirectory(process_monitor)
+add_subdirectory(snake_game)
+add_subdirectory(spaceship_game)
+add_subdirectory(system_dashboard)
+add_subdirectory(twozero48)

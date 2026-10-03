@@ -1,5 +1,0 @@
-add_subdirectory(advanced_controls)
-add_subdirectory(dashboard)
-add_subdirectory(industrial_plc_hmi)
-add_subdirectory(panel_demo)
-add_subdirectory(pos_cashier)

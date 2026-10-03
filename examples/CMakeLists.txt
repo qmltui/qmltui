@@ -1,3 +1,3 @@
-add_subdirectory(Core)
-add_subdirectory(Controls)
-add_subdirectory(Widgets)
+add_subdirectory(components)
+add_subdirectory(concepts)
+add_subdirectory(apps)

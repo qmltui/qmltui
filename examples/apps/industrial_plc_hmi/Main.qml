@@ -1,0 +1,640 @@
+import Qtui.Extras
+import Qtui.Canvas
+import QtQml 2.15
+import Qtui
+import Qtui.Controls
+import IndustrialPlcHmi
+
+Terminal {
+    id: rootWindow
+    width: 80
+    height: 24
+    color: "black"
+    useAlternateScreen: true
+
+    // Active View Tab State
+    property int activeTab: 0 // 0: Dashboard, 1: Alarms, 2: Diagnostics, 3: Settings
+
+    // PLC State Variables
+    property string machineState: "idle" // idle, processing, error, maintenance
+    property int speed: 0
+    property int targetSpeed: 1500
+    property double temperature: 28.5
+    property double maxTempLimit: 85.0
+    property double pressure: 1.0
+    property int cycles: 0
+    property int errorCount: 0
+    property bool valveA: false
+    property bool valveB: false
+    property bool alarmBlinking: false
+    property string pendingAction: ""
+    
+    // Log/Status History (shows latest events)
+    property var logMessages: ["SYSTEM INITIALIZED", "STATE CHANGED TO: IDLE", "READY FOR OPERATOR COMMANDS"]
+    
+    // Temperature History (30 points for plotting)
+    property var tempHistory: [28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5]
+
+    // Mandatory Quit key handler as per workspace rule + Navigation & Control Shortcuts
+    Keys.onPressed: (event) => {
+        if (confirmDlg.visible) {
+            if (event.key === Qt.Key_Y) {
+                executeConfirmedAction();
+                confirmDlg.visible = false;
+                event.accepted = true;
+            } else if (event.key === Qt.Key_N || event.key === Qt.Key_Escape) {
+                pendingAction = "";
+                confirmDlg.visible = false;
+                event.accepted = true;
+            }
+            return; // Modal active, ignore other keys
+        }
+
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+            return;
+        }
+
+        // View Tab Switching Shortcuts
+        if (event.key === Qt.Key_F1 || event.key === Qt.Key_1) {
+            activeTab = 0;
+            event.accepted = true;
+            return;
+        } else if (event.key === Qt.Key_F2 || event.key === Qt.Key_2) {
+            activeTab = 1;
+            event.accepted = true;
+            return;
+        } else if (event.key === Qt.Key_F3 || event.key === Qt.Key_3) {
+            activeTab = 2;
+            event.accepted = true;
+            return;
+        } else if (event.key === Qt.Key_F4 || event.key === Qt.Key_4) {
+            activeTab = 3;
+            event.accepted = true;
+            return;
+        }
+
+        // Functional Shortcut Keys (active when input fields are not focused)
+        let inputsActive = rpmInput.activeFocus || tempLimitInput.activeFocus;
+        if (!inputsActive) {
+            if (event.key === Qt.Key_S) {
+                triggerStart();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_X) {
+                triggerStop();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                requestReset();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_M) {
+                requestMaintenance();
+                event.accepted = true;
+            }
+        }
+    }
+
+    // Helper functions
+    function log(msg) {
+        let temp = logMessages;
+        temp.unshift(msg);
+        if (temp.length > 10) {
+            temp.pop();
+        }
+        logMessages = temp;
+    }
+
+    function pushHistory(newVal) {
+        var arr = [];
+        for (var i = 1; i < tempHistory.length; i++) {
+            arr.push(tempHistory[i]);
+        }
+        arr.push(newVal);
+        tempHistory = arr;
+    }
+
+    function getPlotPoints(canvasWidth, canvasHeight) {
+        if (canvasWidth <= 0 || canvasHeight <= 0) return [];
+        let w = canvasWidth * 2;
+        let h = canvasHeight * 4;
+        let pts = [];
+        let len = tempHistory.length;
+        let minT = 20.0;
+        let maxT = 100.0;
+        let range = maxT - minT;
+
+        for (let i = 0; i < len; i++) {
+            let cx = Math.round((i / (len - 1)) * (w - 1));
+            let cy = Math.round((h - 1) - ((tempHistory[i] - minT) / range) * (h - 1));
+            cy = Math.max(0, Math.min(h - 1, cy));
+            pts.push({ x: cx, y: cy });
+        }
+        return pts;
+    }
+
+    function triggerStart() {
+        if (machineState !== "error") {
+            machineState = "processing";
+            log("STATE: PROCESSING (START CMD)");
+        }
+    }
+
+    function triggerStop() {
+        if (machineState !== "error") {
+            machineState = "idle";
+            log("STATE: IDLE (STOP CMD)");
+        }
+    }
+
+    function requestReset() {
+        if (machineState === "error") {
+            pendingAction = "reset";
+            confirmDlg.title = "CLEAR FAULT ALARM";
+            confirmDlg.message = "Acknowledge and reset over-temperature alarm lockout?";
+            confirmDlg.visible = true;
+            confirmDlg.forceActiveFocus();
+        }
+    }
+
+    function requestMaintenance() {
+        if (machineState !== "error") {
+            pendingAction = "maint";
+            confirmDlg.title = "MAINTENANCE MODE";
+            confirmDlg.message = machineState === "maintenance" 
+                ? "Exit maintenance mode and return station to IDLE?"
+                : "Switch PLC station into low-speed MAINTENANCE mode?";
+            confirmDlg.visible = true;
+            confirmDlg.forceActiveFocus();
+        }
+    }
+
+    function executeConfirmedAction() {
+        if (pendingAction === "reset") {
+            machineState = "idle";
+            temperature = 35.0; // Cool down
+            log("STATE: IDLE (ALARM RESET)");
+        } else if (pendingAction === "maint") {
+            if (machineState === "maintenance") {
+                machineState = "idle";
+                log("STATE: IDLE (MAINT RUN COMPLETED)");
+            } else {
+                machineState = "maintenance";
+                log("STATE: MAINTENANCE ACTIVE");
+            }
+        }
+        pendingAction = "";
+    }
+
+    // Telemetry & States Simulation Timer
+    Timer {
+        id: simTimer
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (rootWindow.machineState === "processing") {
+                rootWindow.cycles += 1;
+                
+                // Ramp speed up towards setpoint
+                if (rootWindow.speed < rootWindow.targetSpeed) {
+                    rootWindow.speed = Math.min(rootWindow.targetSpeed, rootWindow.speed + 200);
+                } else if (rootWindow.speed > rootWindow.targetSpeed) {
+                    rootWindow.speed = Math.max(rootWindow.targetSpeed, rootWindow.speed - 200);
+                }
+                
+                // Temp goes up based on speed
+                let tempFactor = (rootWindow.speed / 1000.0) * 1.8;
+                rootWindow.temperature = Math.min(110.0, rootWindow.temperature + tempFactor + (Math.random() * 1.5 - 0.5));
+                
+                // Pressure fluctuates relative to temp
+                rootWindow.pressure = 1.0 + (rootWindow.temperature - 25.0) * 0.06 + (Math.random() * 0.1 - 0.05);
+                
+                // Valve simulation sequence
+                rootWindow.valveA = (rootWindow.cycles % 8 < 4);
+                rootWindow.valveB = (rootWindow.cycles % 8 >= 4);
+
+                // Check safety limit
+                if (rootWindow.temperature >= rootWindow.maxTempLimit) {
+                    rootWindow.machineState = "error";
+                    rootWindow.errorCount += 1;
+                    rootWindow.log("ALARM: OVER-TEMPERATURE FAULT!");
+                }
+            } else if (rootWindow.machineState === "idle" || rootWindow.machineState === "error") {
+                // Decay/Cool down
+                if (rootWindow.speed > 0) {
+                    rootWindow.speed = Math.max(0, rootWindow.speed - 350);
+                }
+                if (rootWindow.temperature > 28.5) {
+                    rootWindow.temperature = Math.max(28.5, rootWindow.temperature - 2.5);
+                }
+                if (rootWindow.pressure > 1.0) {
+                    rootWindow.pressure = Math.max(1.0, rootWindow.pressure - 0.3);
+                }
+                rootWindow.valveA = false;
+                rootWindow.valveB = false;
+            } else if (rootWindow.machineState === "maintenance") {
+                // Maintenance low speed check
+                rootWindow.speed = 150;
+                rootWindow.temperature = 31.0;
+                rootWindow.pressure = 1.1;
+                rootWindow.valveA = true;
+                rootWindow.valveB = false;
+            }
+
+            // Periodic operational logging
+            if (rootWindow.machineState === "processing" && rootWindow.cycles % 5 === 0) {
+                rootWindow.log("PROCESS CYCLE " + rootWindow.cycles + " | T: " + rootWindow.temperature.toFixed(1) + "C");
+            }
+
+            // Push to temperature history
+            rootWindow.pushHistory(rootWindow.temperature);
+
+            // Update Braille Plot points
+            tempPoly.points = rootWindow.getPlotPoints(tempCanvas.width, tempCanvas.height);
+        }
+    }
+
+    // Alarm screen blinking timer
+    Timer {
+        id: blinkTimer
+        interval: 500
+        running: rootWindow.machineState === "error"
+        repeat: true
+        onTriggered: {
+            rootWindow.alarmBlinking = !rootWindow.alarmBlinking;
+        }
+    }
+
+    // Main layout wrapper
+    Rectangle {
+        id: mainRect
+        anchors.fill: parent
+        color: rootWindow.machineState === "error" 
+               ? (rootWindow.alarmBlinking ? HmiTheme.bgError : HmiTheme.bgErrorAlt) 
+               : (rootWindow.machineState === "maintenance" ? HmiTheme.bgMaintenance : (rootWindow.machineState === "processing" ? HmiTheme.bgProcessing : HmiTheme.bgIdle))
+
+        // 1. HEADER PANEL
+        HeaderPanel {
+            id: headerPanel
+            machineState: rootWindow.machineState
+            stationId: "STN#42"
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+        }
+
+        // 2. NAVIGATION TAB BAR
+        NavTabBar {
+            id: navBar
+            currentTab: rootWindow.activeTab
+            alarmCount: rootWindow.errorCount
+            anchors.top: headerPanel.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+        }
+
+        // 3. MAIN CONTENT VIEW STACK
+        Rectangle {
+            id: viewContainer
+            anchors.top: navBar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: footerPanel.top
+            color: "transparent"
+
+            // VIEW 0: MAIN DASHBOARD VIEW
+            Rectangle {
+                anchors.fill: parent
+                visible: rootWindow.activeTab === 0
+                color: "transparent"
+
+                // SIDEBAR TELEMETRY PANEL (LEFT)
+                Rectangle {
+                    id: sidebarPanel
+                    width: Math.max(22, Math.floor(parent.width * 0.28))
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    border.style: "single"
+                    border.color: HmiTheme.borderNormal
+                    padding: 1
+
+                    Column {
+                        anchors.fill: parent
+                        spacing: 1
+
+                        Text {
+                            text: "📊 TELEMETRY & GAUGES"
+                            color: HmiTheme.textSecondary
+                            bold: true
+                        }
+
+                        Gauge {
+                            label: "Speed"
+                            value: rootWindow.speed
+                            unit: "RPM"
+                            minVal: 0
+                            maxVal: 3000
+                            warningVal: 2500
+                            dangerVal: 2800
+                            decimals: 0
+                        }
+
+                        Gauge {
+                            label: "Temp"
+                            value: rootWindow.temperature
+                            unit: "°C"
+                            minVal: 20
+                            maxVal: 100
+                            warningVal: 75
+                            dangerVal: rootWindow.maxTempLimit
+                            decimals: 1
+                        }
+
+                        Gauge {
+                            label: "Pres"
+                            value: rootWindow.pressure
+                            unit: "bar"
+                            minVal: 0
+                            maxVal: 5
+                            warningVal: 3.5
+                            dangerVal: 4.5
+                            decimals: 2
+                        }
+
+                        Text {
+                            text: "⚙ ACTUATORS"
+                            color: HmiTheme.textSecondary
+                            bold: true
+                        }
+
+                        Row {
+                            width: parent.width
+                            spacing: 1
+                            ActuatorLed { name: "V-A"; active: rootWindow.valveA }
+                            ActuatorLed { name: "V-B"; active: rootWindow.valveB }
+                        }
+
+                        Text {
+                            text: "📈 METRICS"
+                            color: HmiTheme.textSecondary
+                            bold: true
+                        }
+
+                        Text { text: "Cycles: " + rootWindow.cycles; color: HmiTheme.textPrimary }
+                        Text { text: "Alarms: " + rootWindow.errorCount; color: rootWindow.errorCount > 0 ? HmiTheme.textDanger : HmiTheme.textPrimary; bold: rootWindow.errorCount > 0 }
+                    }
+                }
+
+                // TELEMETRY GRAPH PANEL (CENTER)
+                Rectangle {
+                    id: graphPanel
+                    width: Math.max(30, Math.floor(parent.width * 0.46))
+                    anchors.top: parent.top
+                    anchors.left: sidebarPanel.right
+                    anchors.bottom: parent.bottom
+                    border.style: "single"
+                    border.color: HmiTheme.borderNormal
+                    padding: 1
+
+                    Column {
+                        anchors.fill: parent
+                        spacing: 1
+
+                        Text {
+                            text: "📈 TEMP TREND (20-100°C)"
+                            color: HmiTheme.textSecondary
+                            bold: true
+                        }
+
+                        Text {
+                            text: "CUR: " + rootWindow.temperature.toFixed(1) + "°C | MAX: " + rootWindow.maxTempLimit.toFixed(1) + "°C"
+                            color: rootWindow.temperature >= rootWindow.maxTempLimit ? HmiTheme.textDanger : HmiTheme.textHighlight
+                        }
+
+                        Row {
+                            width: parent.width
+                            height: 11
+                            spacing: 1
+
+                            Column {
+                                width: 5
+                                height: parent.height
+                                Text { text: "100°"; color: HmiTheme.textDim }
+                                Text { text: ""; height: 3 }
+                                Text { text: " 60°"; color: HmiTheme.textDim }
+                                Text { text: ""; height: 3 }
+                                Text { text: " 20°"; color: HmiTheme.textDim }
+                            }
+
+                            Rectangle {
+                                width: parent.width - 6
+                                height: parent.height
+                                border.style: "ascii"
+                                border.color: "#444444"
+
+                                Canvas {
+                                    id: tempCanvas
+                                    anchors.fill: parent
+                                    color: rootWindow.machineState === "error" ? HmiTheme.statusError : (rootWindow.machineState === "processing" ? HmiTheme.textHighlight : HmiTheme.statusIdle)
+
+                                    Line {
+                                        x1: 0
+                                        y1: Math.floor(tempCanvas.height * 2)
+                                        x2: Math.floor(tempCanvas.width * 2)
+                                        y2: Math.floor(tempCanvas.height * 2)
+                                    }
+
+                                    Line {
+                                        id: limitLine
+                                        x1: 0
+                                        y1: Math.max(0, Math.min(Math.floor(tempCanvas.height * 4 - 1), Math.floor((tempCanvas.height * 4 - 1) - ((rootWindow.maxTempLimit - 20.0) / 80.0) * (tempCanvas.height * 4 - 1))))
+                                        x2: Math.floor(tempCanvas.width * 2)
+                                        y2: y1
+                                    }
+
+                                    Polygon {
+                                        id: tempPoly
+                                        closed: false
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: "<- 30s history           NOW ->"
+                            color: HmiTheme.textDim
+                        }
+                    }
+                }
+
+                // CONTROLS PANEL (RIGHT)
+                Rectangle {
+                    id: inputPanel
+                    anchors.top: parent.top
+                    anchors.left: graphPanel.right
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    border.style: "single"
+                    border.color: HmiTheme.borderNormal
+                    padding: 1
+
+                    Column {
+                        anchors.fill: parent
+                        spacing: 1
+
+                        Text {
+                            text: "🛠️ CONTROLS"
+                            color: HmiTheme.textSecondary
+                            bold: true
+                        }
+
+                        Text { text: "RPM Setpoint:"; color: HmiTheme.textPrimary }
+                        Rectangle {
+                            width: parent.width - 2
+                            height: 3
+                            border.style: rpmInput.activeFocus ? "double" : "single"
+                            border.color: rpmInput.activeFocus ? HmiTheme.borderFocus : HmiTheme.borderNormal
+
+                            TextInput {
+                                id: rpmInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                text: rootWindow.targetSpeed.toString()
+                                color: HmiTheme.textPrimary
+                                onAccepted: {
+                                    rootWindow.targetSpeed = parseInt(rpmInput.text);
+                                    rootWindow.log("SET RPM -> " + rpmInput.text);
+                                }
+                            }
+                        }
+
+                        Text { text: "Temp Limit:"; color: HmiTheme.textPrimary }
+                        Rectangle {
+                            width: parent.width - 2
+                            height: 3
+                            border.style: tempLimitInput.activeFocus ? "double" : "single"
+                            border.color: tempLimitInput.activeFocus ? HmiTheme.borderFocus : HmiTheme.borderNormal
+
+                            TextInput {
+                                id: tempLimitInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                text: rootWindow.maxTempLimit.toString()
+                                color: HmiTheme.textPrimary
+                                onAccepted: {
+                                    rootWindow.maxTempLimit = parseFloat(tempLimitInput.text);
+                                    rootWindow.log("LIMIT TEMP -> " + tempLimitInput.text + "C");
+                                }
+                            }
+                        }
+
+                        Row {
+                            width: parent.width - 2
+                            spacing: 1
+                            Button {
+                                width: Math.floor((parent.width - 1) / 2)
+                                label: "[S] START"
+                                onClicked: triggerStart()
+                            }
+                            Button {
+                                width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                                label: "[X] STOP"
+                                onClicked: triggerStop()
+                            }
+                        }
+
+                        Row {
+                            width: parent.width - 2
+                            spacing: 1
+                            Button {
+                                width: Math.floor((parent.width - 1) / 2)
+                                label: "[R] RESET"
+                                onClicked: requestReset()
+                            }
+                            Button {
+                                width: parent.width - Math.floor((parent.width - 1) / 2) - 1
+                                label: "[M] MAINT"
+                                onClicked: requestMaintenance()
+                            }
+                        }
+                    }
+                }
+            }
+
+            // VIEW 1: ALARMS & LOGS
+            AlarmsView {
+                visible: rootWindow.activeTab === 1
+                logs: rootWindow.logMessages
+                errorCount: rootWindow.errorCount
+            }
+
+            // VIEW 2: HARDWARE DIAGNOSTICS
+            DiagnosticsView {
+                visible: rootWindow.activeTab === 2
+                cycles: rootWindow.cycles
+                valveA: rootWindow.valveA
+                valveB: rootWindow.valveB
+                machineState: rootWindow.machineState
+            }
+
+            // VIEW 3: SYSTEM PARAMETERS & SETTINGS
+            SettingsView {
+                visible: rootWindow.activeTab === 3
+                targetSpeed: rootWindow.targetSpeed
+                maxTempLimit: rootWindow.maxTempLimit
+                onSpeedChanged: (newSpeed) => {
+                    rootWindow.targetSpeed = newSpeed;
+                    rootWindow.log("SET RPM -> " + newSpeed);
+                }
+                onTempLimitChanged: (newLimit) => {
+                    rootWindow.maxTempLimit = newLimit;
+                    rootWindow.log("LIMIT TEMP -> " + newLimit + "C");
+                }
+            }
+        }
+
+        // 4. FOOTER ALARM / LOG TICKER & NAVIGATION KEYMAP
+        Rectangle {
+            id: footerPanel
+            height: 3
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            border.style: "single"
+            border.color: rootWindow.machineState === "error" ? HmiTheme.borderError : HmiTheme.borderNormal
+            color: rootWindow.machineState === "error" ? HmiTheme.footerBgError : HmiTheme.footerBg
+            padding: 1
+
+            Column {
+                anchors.fill: parent
+                spacing: 0
+
+                Text {
+                    width: parent.width
+                    text: rootWindow.machineState === "error"
+                          ? "🚨 CRITICAL FAULT: OVER-TEMP LIMIT (" + rootWindow.temperature.toFixed(1) + "°C >= " + rootWindow.maxTempLimit.toFixed(1) + "°C)"
+                          : "STATUS: " + rootWindow.logMessages[0]
+                    color: rootWindow.machineState === "error" ? HmiTheme.textWarning : HmiTheme.textPrimary
+                    bold: true
+                }
+
+                Text {
+                    width: parent.width
+                    text: rootWindow.machineState === "error"
+                          ? "ACTION: PRESS [R] / RESET BUTTON TO CLEAR ALARM LOCKOUT"
+                          : "KEYS: [F1-F4] Views  [S]Start  [X]Stop  [R]Reset  [M]Maint  [Q]Quit"
+                    color: rootWindow.machineState === "error" ? HmiTheme.textDanger : HmiTheme.textSecondary
+                    bold: rootWindow.machineState === "error"
+                }
+            }
+        }
+
+        // 5. MODAL SAFETY INTERLOCK DIALOG
+        ConfirmDialog {
+            id: confirmDlg
+            onConfirmed: executeConfirmedAction()
+            onCancelled: rootWindow.pendingAction = ""
+        }
+    }
+}

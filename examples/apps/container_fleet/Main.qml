@@ -12,7 +12,7 @@ Terminal {
     useAlternateScreen: true
     color: "#0d0e15" // Deep dark pastel canvas background
 
-    // Instantiate C++ QAbstractListModel
+    // Instantiate C++ QAbstractListModel with tableData extension
     FleetListModel {
         id: fleetModel
     }
@@ -40,31 +40,28 @@ Terminal {
         } else if (event.key === Qt.Key_Escape) {
             searchInput.text = ""
             fleetModel.searchQuery = ""
-            listView.focus = true
+            tableView.focus = true
             event.accepted = true
         } else if (event.key === Qt.Key_Slash) {
             searchInput.focus = true
             event.accepted = true
         } else if (event.key === Qt.Key_1) {
             fleetModel.activeFilter = 0
-            listView.currentIndex = 0
+            tableView.selectedRow = 0
             event.accepted = true
         } else if (event.key === Qt.Key_2) {
             fleetModel.activeFilter = 1
-            listView.currentIndex = 0
+            tableView.selectedRow = 0
             event.accepted = true
         } else if (event.key === Qt.Key_3) {
             fleetModel.activeFilter = 2
-            listView.currentIndex = 0
+            tableView.selectedRow = 0
             event.accepted = true
         } else if (event.key === Qt.Key_R) {
-            fleetModel.toggleNodeStatus(listView.currentIndex)
+            fleetModel.toggleNodeStatus(tableView.selectedRow)
             event.accepted = true
         } else if (event.key === Qt.Key_A) {
             fleetModel.restartAllCritical()
-            event.accepted = true
-        } else if (event.key === Qt.Key_S) {
-            fleetModel.cycleSortMode()
             event.accepted = true
         } else if (event.key === Qt.Key_L) {
             root.showLogs = !root.showLogs
@@ -97,7 +94,7 @@ Terminal {
             }
         }
 
-        // --- 2. FILTER TABS & CONTROL BAR ---
+        // --- 2. CONTROL BAR (FILTER TABS + INTEGRATED SEARCH) ---
         Row {
             width: parent.width
             height: 3
@@ -115,18 +112,18 @@ Terminal {
                 onCurrentIndexChanged: {
                     if (fleetModel.activeFilter !== filterTabs.currentIndex) {
                         fleetModel.activeFilter = filterTabs.currentIndex
-                        listView.currentIndex = 0
+                        tableView.selectedRow = 0
                     }
                 }
             }
 
-            // Interactive Search Input
+            // Integrated Interactive Search Input Box
             Panel {
-                width: 24
+                width: 32
                 height: 3
                 color: searchInput.focus ? "#2a2b3d" : "#1e1e2e"
                 border.color: searchInput.focus ? root.colorAccentYellow : "#272738"
-                title: "SEARCH"
+                title: "SEARCH FILTER [/]"
                 titleColor: root.colorAccentYellow
 
                 Row {
@@ -135,138 +132,63 @@ Terminal {
                     Text { text: "🔍 "; color: root.colorAccentYellow }
                     TextInput {
                         id: searchInput
-                        width: 18
+                        width: 24
                         text: ""
                         color: root.colorTextPrimary
                         onTextChanged: fleetModel.searchQuery = searchInput.text
-                        onAccepted: listView.focus = true
+                        onAccepted: tableView.focus = true
                     }
                 }
             }
-
-            // Sort Mode Indicator Button
-            Button {
-                label: " [S] SORT: " + (fleetModel.sortMode === 1 ? "CPU ↓" : fleetModel.sortMode === 2 ? "RAM ↓" : fleetModel.sortMode === 3 ? "STATUS" : "NAME") + " "
-                normalColor: "#1e1e2e"
-                textColor: root.colorAccentPurple
-                normalBorderStyle: "single"
-                onClicked: fleetModel.cycleSortMode()
-            }
         }
 
-        // --- 3. CLEAN TABLE COLUMN HEADERS ---
-        Rectangle {
-            width: parent.width
-            height: 1
-            border.style: "none"
-            color: "#181825"
-
-            Item {
-                anchors.fill: parent
-
-                Text { x: 3;  text: "NODE NAME"; bold: true; color: root.colorAccentCyan }
-                Text { x: 24; text: "IP ADDRESS"; bold: true; color: root.colorAccentCyan }
-                Text { x: 40; text: "STATUS"; bold: true; color: root.colorAccentCyan }
-                Text { x: 56; text: "SERVICES / TAGS"; bold: true; color: root.colorAccentCyan }
-            }
-        }
-
-        // --- 4. MAIN LISTVIEW ---
-        ListView {
-            id: listView
-            width: parent.width
-            height: Math.max(5, parent.height - (root.showLogs ? 15 : 11))
-            clip: true
-            spacing: 0
-            model: fleetModel
+        // --- 3. NATIVE TABLEVIEW WITH HEADER SORTING ---
+        TableView {
+            id: tableView
             focus: true
+            width: parent.width
+            height: Math.max(6, parent.height - (root.showLogs ? 14 : 10))
+            showGrid: true
+            borderStyle: "single"
+            borderColor: "#272738"
+            headerColor: root.colorAccentCyan
+            headerBgColor: "#181825"
+            selectionColor: root.colorAccentYellow
+            selectionBgColor: root.colorCardSelBg
+            alternatingRows: true
+            alternatingRowBgColor: root.colorCardAltBg
+            rowBgColor: root.colorCardBg
 
-            delegate: Rectangle {
-                id: itemDelegate
-                required property int index
-                required property string nodeId
-                required property string name
-                required property string status
-                required property int cpu
-                required property int mem
-                required property string ip
-                required property string tags
+            columns: [
+                { title: "NODE NAME", width: 19, align: "left" },
+                { title: "IP ADDRESS", width: 14, align: "left" },
+                { title: "STATUS", width: 12, align: "center" },
+                { title: "CPU LOAD", width: 17, align: "left" },
+                { title: "MEMORY", width: 17, align: "left" },
+                { title: "TAGS & SERVICES", width: 22, align: "left" }
+            ]
 
-                width: listView.width
-                height: 3
-                border.style: "none"
-                color: ListView.isCurrentItem ? root.colorCardSelBg : 
-                       (itemDelegate.index % 2 === 1 ? root.colorCardAltBg : root.colorCardBg)
+            model: fleetModel.tableData
 
-                Item {
-                    anchors.fill: parent
-
-                    // Active Item Full 3-Line Selection Bar
-                    Rectangle {
-                        x: 0; y: 0
-                        width: 1
-                        height: parent.height
-                        color: ListView.isCurrentItem ? root.colorAccentYellow : "transparent"
-                        border.style: "none"
-                    }
-
-                    // Line 1: Identity, IP Address, Status Badge, Tags
-                    Text { 
-                        x: 3; y: 0
-                        text: itemDelegate.name 
-                        bold: ListView.isCurrentItem
-                        color: ListView.isCurrentItem ? root.colorAccentYellow : root.colorTextPrimary
-                    }
-
-                    Text { 
-                        x: 24; y: 0
-                        text: itemDelegate.ip 
-                        color: root.colorTextMuted
-                    }
-
-                    // Borderless Status Pill Badge
-                    Rectangle {
-                        x: 40; y: 0
-                        border.style: "none"
-                        color: itemDelegate.status === "RUNNING" ? root.colorAccentGreen :
-                               itemDelegate.status === "CRITICAL" ? root.colorAccentRed : root.colorAccentYellow
-                        height: 1
-                        Text {
-                            text: " " + itemDelegate.status + " "
-                            bold: true
-                            color: "#11111b"
-                        }
-                    }
-
-                    Text { 
-                        x: 56; y: 0
-                        text: itemDelegate.tags
-                        color: root.colorAccentPurple
-                    }
-
-                    // Line 2: High-Contrast CPU & RAM Gauge Bars
-                    Row {
-                        x: 3; y: 1
-                        spacing: 0
-                        Text { text: "CPU: ["; color: root.colorTextMuted }
-                        Text { text: "█".repeat(itemDelegate.cpu); color: itemDelegate.cpu >= 8 ? root.colorAccentRed : root.colorAccentCyan }
-                        Text { text: "░".repeat(Math.max(0, 10 - itemDelegate.cpu)); color: "#313244" }
-                        Text { text: "] " + (itemDelegate.cpu * 10) + "%"; color: itemDelegate.cpu >= 8 ? root.colorAccentRed : root.colorTextPrimary; bold: itemDelegate.cpu >= 8 }
-                    }
-
-                    Row {
-                        x: 31; y: 1
-                        spacing: 0
-                        Text { text: "RAM: ["; color: root.colorTextMuted }
-                        Text { text: "█".repeat(itemDelegate.mem); color: itemDelegate.mem >= 8 ? root.colorAccentRed : root.colorAccentGreen }
-                        Text { text: "░".repeat(Math.max(0, 10 - itemDelegate.mem)); color: "#313244" }
-                        Text { text: "] " + (itemDelegate.mem * 10) + "%"; color: itemDelegate.mem >= 8 ? root.colorAccentRed : root.colorTextPrimary; bold: itemDelegate.mem >= 8 }
-                    }
+            cellFormat: (row, col, value) => {
+                if (col === 2) {
+                    if (value === "RUNNING") return { text: "✔ RUNNING", color: root.colorAccentGreen, bold: true }
+                    if (value === "CRITICAL") return { text: "✖ CRITICAL", color: root.colorAccentRed, bold: true }
+                    if (value === "STANDBY") return { text: "⏸ STANDBY", color: root.colorAccentYellow, bold: true }
+                } else if (col === 3) {
+                    let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
+                    return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentCyan, bold: isHigh }
+                } else if (col === 4) {
+                    let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
+                    return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentGreen, bold: isHigh }
+                } else if (col === 5) {
+                    return { text: value, color: root.colorAccentPurple }
                 }
+                return { text: value }
             }
         }
 
-        // --- 5. BORDERED INSPECTOR DRAWER PANEL WITH SPARKLINE ---
+        // --- 4. BORDERED INSPECTOR DRAWER PANEL WITH SPARKLINE ---
         Panel {
             width: parent.width
             height: 4
@@ -282,36 +204,36 @@ Terminal {
                 Row {
                     spacing: 2
                     Text {
-                        text: fleetModel.getNodeName(listView.currentIndex) !== "" ? 
-                              fleetModel.getNodeName(listView.currentIndex) + " (" + fleetModel.getNodeId(listView.currentIndex) + ")" : "Node Selection Active"
+                        text: fleetModel.getNodeName(tableView.selectedRow) !== "" ? 
+                              fleetModel.getNodeName(tableView.selectedRow) + " (" + fleetModel.getNodeId(tableView.selectedRow) + ")" : "Node Selection Active"
                         color: root.colorTextPrimary
                         bold: true
                     }
                     Text {
-                        text: " | CPU Sparkline: [" + fleetModel.getSparkline(listView.currentIndex) + "]"
+                        text: " | CPU Sparkline: [" + fleetModel.getSparkline(tableView.selectedRow) + "]"
                         color: root.colorAccentYellow
                         bold: true
                     }
                 }
                 Text {
-                    text: fleetModel.getNodeName(listView.currentIndex) !== "" ?
-                          "Status: " + fleetModel.getNodeStatus(listView.currentIndex) + 
-                          " | IP: " + fleetModel.getNodeIp(listView.currentIndex) + 
-                          " | CPU Load: " + (fleetModel.getNodeCpu(listView.currentIndex) * 10) + "%" +
-                          " | Memory: " + (fleetModel.getNodeMem(listView.currentIndex) * 10) + "%" : ""
+                    text: fleetModel.getNodeName(tableView.selectedRow) !== "" ?
+                          "Status: " + fleetModel.getNodeStatus(tableView.selectedRow) + 
+                          " | IP: " + fleetModel.getNodeIp(tableView.selectedRow) + 
+                          " | CPU Load: " + (fleetModel.getNodeCpu(tableView.selectedRow) * 10) + "%" +
+                          " | Memory: " + (fleetModel.getNodeMem(tableView.selectedRow) * 10) + "%" : ""
                     color: root.colorTextMuted
                 }
             }
         }
 
-        // --- 6. OPTIONAL LIVE DOCKER LOG DRAWER ---
+        // --- 5. OPTIONAL LIVE DOCKER LOG DRAWER ---
         Panel {
             visible: root.showLogs
             width: parent.width
             height: 4
             color: "#11111b"
             border.color: "#272738"
-            title: "📜 LIVE CONTAINER LOG STREAM (" + fleetModel.getNodeName(listView.currentIndex) + ")"
+            title: "📜 LIVE CONTAINER LOG STREAM (" + fleetModel.getNodeName(tableView.selectedRow) + ")"
             titleColor: root.colorAccentPurple
 
             Column {
@@ -319,7 +241,7 @@ Terminal {
                 spacing: 0
 
                 Repeater {
-                    model: fleetModel.getLogs(listView.currentIndex)
+                    model: fleetModel.getLogs(tableView.selectedRow)
                     delegate: Text {
                         required property string modelData
                         text: "  > " + modelData
@@ -330,7 +252,7 @@ Terminal {
             }
         }
 
-        // --- 7. COMPLETE FOOTER SHORTCUT LEGEND ---
+        // --- 6. COMPLETE FOOTER SHORTCUT LEGEND ---
         Panel {
             width: parent.width
             height: 3
@@ -342,7 +264,7 @@ Terminal {
             Row {
                 x: 1; y: 1; spacing: 2
                 Text {
-                    text: "[1-3] Filter  [/] Search  [S] Sort  [R] Restart Node  [A] Fix All Critical  [L] Toggle Logs  [Q/Esc] Quit"
+                    text: "[1-3] Filter  [/] Search  [Click/Nav Headers] Sort  [R] Restart Node  [A] Fix All  [L] Logs  [Q/Esc] Quit"
                     color: root.colorAccentGreen
                     bold: true
                 }

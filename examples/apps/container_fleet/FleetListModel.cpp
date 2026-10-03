@@ -121,6 +121,7 @@ void FleetListModel::rebuildVisibleNodes() {
         m_visibleNodes.append(node);
     }
     applySort();
+    emit modelChanged();
 }
 
 void FleetListModel::applySort() {
@@ -288,4 +289,20 @@ void FleetListModel::onTelemetryTimer() {
         emit dataChanged(modelIdx, modelIdx, { CpuRole, MemRole });
     }
     emit statsChanged();
+    emit modelChanged();
+}
+
+QVariantList FleetListModel::tableData() const {
+    QVariantList list;
+    for (const auto &n : m_visibleNodes) {
+        QVariantList row;
+        row << n.name
+            << n.ip
+            << n.status
+            << QString("[%1] %2%").arg(QString("█").repeated(n.cpu) + QString("░").repeated(10 - n.cpu)).arg(n.cpu * 10)
+            << QString("[%1] %2%").arg(QString("█").repeated(n.mem) + QString("░").repeated(10 - n.mem)).arg(n.mem * 10)
+            << n.tags;
+        list << QVariant(row);
+    }
+    return list;
 }

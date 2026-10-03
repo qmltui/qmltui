@@ -28,6 +28,7 @@ class FleetListModel : public QAbstractListModel {
     Q_PROPERTY(int totalNodes READ totalNodes NOTIFY statsChanged)
     Q_PROPERTY(int runningNodes READ runningNodes NOTIFY statsChanged)
     Q_PROPERTY(int alertNodes READ alertNodes NOTIFY statsChanged)
+    Q_PROPERTY(QVariantList tableData READ tableData NOTIFY modelChanged)
 
 public:
     enum NodeRoles {
@@ -59,6 +60,7 @@ public:
     int totalNodes() const { return m_allNodes.size(); }
     int runningNodes() const;
     int alertNodes() const;
+    QVariantList tableData() const;
 
     Q_INVOKABLE void toggleNodeStatus(int visibleIndex);
     Q_INVOKABLE void restartAllCritical();
@@ -78,6 +80,7 @@ signals:
     void searchQueryChanged();
     void sortModeChanged();
     void statsChanged();
+    void modelChanged();
 
 private slots:
     void onTelemetryTimer();

@@ -74,80 +74,77 @@ Terminal {
         anchors.margins: 0
         spacing: 0
 
-        // --- 1. SLEEK HEADER BANNER ---
+        // --- 1. UNIFIED SLEEK TOP CONTROL HEADER ---
         Panel {
             width: parent.width
             height: 3
             color: root.colorHeaderBg
             border.color: "#272738"
-            title: "⚡ DOCKER & CLOUD FLEET MONITOR"
+            title: "⚡ DOCKER FLEET MONITOR  |  Total: " + fleetModel.totalNodes + "  Running: " + fleetModel.runningNodes + "  Critical: " + fleetModel.alertNodes
             titleColor: root.colorAccentCyan
 
             Row {
                 x: 1; y: 1
-                spacing: 3
-                Text { 
-                    text: "Total Nodes: " + fleetModel.totalNodes + "  |  Running: " + fleetModel.runningNodes + "  |  Critical: " + fleetModel.alertNodes
-                    color: root.colorTextPrimary
-                    bold: true
-                }
-            }
-        }
+                width: parent.width - 2
+                spacing: 4
 
-        // --- 2. CONTROL BAR (FILTER TABS + INTEGRATED SEARCH) ---
-        Row {
-            width: parent.width
-            height: 3
-            spacing: 1
-
-            // Filter Tabs
-            TabHeader {
-                id: filterTabs
-                currentIndex: fleetModel.activeFilter
-                tabs: [
-                    " 1: ALL (" + fleetModel.totalNodes + ") ",
-                    " 2: RUNNING (" + fleetModel.runningNodes + ") ",
-                    " 3: CRITICAL (" + fleetModel.alertNodes + ") "
-                ]
-                onCurrentIndexChanged: {
-                    if (fleetModel.activeFilter !== filterTabs.currentIndex) {
-                        fleetModel.activeFilter = filterTabs.currentIndex
-                        tableView.selectedRow = 0
+                // Left: Borderless Filter Tabs
+                TabHeader {
+                    id: filterTabs
+                    currentIndex: fleetModel.activeFilter
+                    borderStyle: "none"
+                    activeTabBgColor: root.colorAccentCyan
+                    activeTabColor: "#11111b"
+                    inactiveTabBgColor: "transparent"
+                    inactiveTabColor: root.colorTextMuted
+                    tabs: [
+                        " 1: ALL (" + fleetModel.totalNodes + ") ",
+                        " 2: RUNNING (" + fleetModel.runningNodes + ") ",
+                        " 3: CRITICAL (" + fleetModel.alertNodes + ") "
+                    ]
+                    onCurrentIndexChanged: {
+                        if (fleetModel.activeFilter !== filterTabs.currentIndex) {
+                            fleetModel.activeFilter = filterTabs.currentIndex
+                            tableView.selectedRow = 0
+                        }
                     }
                 }
-            }
 
-            // Integrated Interactive Search Input Box
-            Panel {
-                width: 32
-                height: 3
-                color: searchInput.focus ? "#2a2b3d" : "#1e1e2e"
-                border.color: searchInput.focus ? root.colorAccentYellow : "#272738"
-                title: "SEARCH FILTER [/]"
-                titleColor: root.colorAccentYellow
-
+                // Right: Clean Flat Search Input
                 Row {
-                    x: 1; y: 1
-                    spacing: 0
-                    Text { text: "🔍 "; color: root.colorAccentYellow }
-                    TextInput {
-                        id: searchInput
-                        width: 24
-                        text: ""
-                        color: root.colorTextPrimary
-                        onTextChanged: fleetModel.searchQuery = searchInput.text
-                        onAccepted: tableView.focus = true
+                    spacing: 1
+
+                    Text {
+                        text: "🔍 [/] Search: "
+                        color: searchInput.focus ? root.colorAccentYellow : root.colorTextMuted
+                        bold: searchInput.focus
+                    }
+
+                    Rectangle {
+                        width: 20
+                        height: 1
+                        border.style: "none"
+                        color: searchInput.focus ? "#2a2b3d" : "#14141f"
+
+                        TextInput {
+                            id: searchInput
+                            width: 18
+                            text: ""
+                            color: root.colorTextPrimary
+                            onTextChanged: fleetModel.searchQuery = searchInput.text
+                            onAccepted: tableView.focus = true
+                        }
                     }
                 }
             }
         }
 
-        // --- 3. NATIVE TABLEVIEW WITH HEADER SORTING ---
+        // --- 2. NATIVE TABLEVIEW WITH HEADER SORTING ---
         TableView {
             id: tableView
             focus: true
             width: parent.width
-            height: Math.max(6, parent.height - (root.showLogs ? 14 : 10))
+            height: Math.max(6, parent.height - (root.showLogs ? 11 : 7))
             showGrid: true
             borderStyle: "single"
             borderColor: "#272738"
@@ -188,7 +185,7 @@ Terminal {
             }
         }
 
-        // --- 4. BORDERED INSPECTOR DRAWER PANEL WITH SPARKLINE ---
+        // --- 3. BORDERED INSPECTOR DRAWER PANEL WITH SPARKLINE ---
         Panel {
             width: parent.width
             height: 4
@@ -226,7 +223,7 @@ Terminal {
             }
         }
 
-        // --- 5. OPTIONAL LIVE DOCKER LOG DRAWER ---
+        // --- 4. OPTIONAL LIVE DOCKER LOG DRAWER ---
         Panel {
             visible: root.showLogs
             width: parent.width
@@ -252,7 +249,7 @@ Terminal {
             }
         }
 
-        // --- 6. COMPLETE FOOTER SHORTCUT LEGEND ---
+        // --- 5. COMPLETE FOOTER SHORTCUT LEGEND ---
         Panel {
             width: parent.width
             height: 3

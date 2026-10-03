@@ -26,6 +26,7 @@ public:
 
     void setRenderer(Renderer* renderer);
     Renderer* renderer() const { return m_renderer; }
+    void stop();
     void setMouseReporting(bool enable);
 
     int terminalWidth() const { return m_device.getWidth(); }

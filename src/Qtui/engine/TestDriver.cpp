@@ -250,6 +250,10 @@ bool TestDriver::assertTextContains(const QString& expectedText)
         std::cerr << "[TestDriver ASSERTION FAILED] Expected text pattern not found in UI!" << std::endl;
         std::cerr << "EXPECTED PATTERN: \"" << expectedText.toStdString() << "\"" << std::endl;
         std::cerr << "========================================================================" << std::endl;
+        if (m_terminalEngine) {
+            m_terminalEngine->stop();
+        }
+        QCoreApplication::exit(1);
         std::exit(1);
     }
 
@@ -259,7 +263,13 @@ bool TestDriver::assertTextContains(const QString& expectedText)
 
 void TestDriver::quit(int exitCode)
 {
+    if (m_quitCalled) return;
+    m_quitCalled = true;
+
     std::cerr << "[TestDriver] Test script execution completed cleanly with exit code " << exitCode << std::endl;
+    if (m_terminalEngine) {
+        m_terminalEngine->stop();
+    }
     std::exit(exitCode);
 }
 
@@ -274,6 +284,9 @@ void TestDriver::executeScriptFile(QQmlEngine* engine, const QString& scriptPath
     QFile file(scriptPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         std::cerr << "[TestDriver ERROR] Cannot open scenario script file: " << scriptPath.toStdString() << std::endl;
+        if (m_terminalEngine) {
+            m_terminalEngine->stop();
+        }
         std::exit(1);
     }
 
@@ -290,12 +303,16 @@ void TestDriver::executeScriptFile(QQmlEngine* engine, const QString& scriptPath
     QJSValue jsRes = engine->evaluate(scriptCode, scriptPath);
     if (jsRes.isError()) {
         std::cerr << "[TestDriver JS ERROR] " << jsRes.toString().toStdString() << std::endl;
+        if (m_terminalEngine) {
+            m_terminalEngine->stop();
+        }
         std::exit(1);
     }
 
-    // Auto snapshot and exit on script completion (per agreed grill-me alignment)
-    snapshot();
-    quit(0);
+    if (!m_quitCalled) {
+        snapshot();
+        quit(0);
+    }
 }
 
 } // namespace qtui

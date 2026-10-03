@@ -48,6 +48,7 @@ private:
     Terminal* m_terminal = nullptr;
     QQmlEngine* m_qmlEngine = nullptr;
     bool m_scriptExecuted = false;
+    bool m_quitCalled = false;
 };
 
 } // namespace qtui

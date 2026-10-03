@@ -239,12 +239,17 @@ TerminalEngine::~TerminalEngine() {
   if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance())
       bridge->unregisterEngine(this);
 #endif
+  stop();
+  delete m_renderer;
+  m_renderer = nullptr;
+}
+
+void TerminalEngine::stop() {
   m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
+      m_rendererStarted = false;
   }
-  delete m_renderer;
-  m_renderer = nullptr;
   m_device.showCursor();
   m_device.disableRawMode();
 }

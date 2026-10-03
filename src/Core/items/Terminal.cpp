@@ -186,6 +186,17 @@ void Terminal::setRendererMode(RendererMode mode) {
     if (m_rendererMode == mode) return;
     m_rendererMode = mode;
     
+    if (!m_mouseReportingExplicit) {
+        bool autoReporting = (m_rendererMode == RendererMode::Frame);
+        if (m_mouseReporting != autoReporting) {
+            m_mouseReporting = autoReporting;
+            emit mouseReportingChanged();
+            if (m_engine) {
+                m_engine->setMouseReporting(m_mouseReporting);
+            }
+        }
+    }
+
     if (m_engine) {
         if (m_rendererMode == RendererMode::Frame) {
             m_engine->setRenderer(new FrameRenderer());
@@ -204,14 +215,30 @@ void Terminal::setClipboardMode(ClipboardMode mode) {
     emit clipboardModeChanged();
 }
 
+void Terminal::setMouseReporting(bool enable) {
+    m_mouseReportingExplicit = true;
+    if (m_mouseReporting == enable) return;
+    m_mouseReporting = enable;
+    emit mouseReportingChanged();
+    if (m_engine) {
+        m_engine->setMouseReporting(enable);
+    }
+}
+
 int Terminal::width() const {
-    if (m_fillTerminal && m_engine) {
-        return m_engine->terminalWidth();
+    if (m_engine) {
+        int w = Item::width();
+        return w > 0 ? w : m_engine->terminalWidth();
     }
     return Item::width();
 }
 
 int Terminal::height() const {
+    if (m_rendererMode == RendererMode::Stream) {
+        int h = implicitHeight();
+        if (h <= 0) h = Item::height();
+        return h > 0 ? h : (m_engine ? m_engine->terminalHeight() : 0);
+    }
     if (m_fillTerminal && m_engine) {
         return m_engine->terminalHeight();
     }

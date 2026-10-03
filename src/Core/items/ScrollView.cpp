@@ -94,6 +94,15 @@ void ScrollView::mousePressEvent(MouseEvent* event) {
     }
 }
 
+void ScrollView::wheelEvent(MouseEvent* event) {
+    if (event->wheelDeltaY() == 0)
+        return;
+    if (focusable() && !focus())
+        setFocus(true);
+    setContentY(m_contentY - event->wheelDeltaY());
+    event->setAccepted(true);
+}
+
 void ScrollView::ensureChildVisible(Item* childItem) {
     if (!childItem) return;
     int viewportH = height() - topPadding() - bottomPadding();

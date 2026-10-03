@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE void requestRender();
 
     void setRenderer(Renderer* renderer);
+    void setMouseReporting(bool enable);
 
     int terminalWidth() const { return m_device.getWidth(); }
     int terminalHeight() const { return m_device.getHeight(); }
@@ -45,8 +46,9 @@ private:
     void startRenderer();
     void setMouseMotionReportingEnabled(bool enabled);
     void handleResize();
-    void handleKeyInput(int key, const QString& text, int modifiers);
-    void handleMouseInput(int button, int x, int y, bool release, bool motion = false);
+    void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
+    void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
+                          int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
     void cycleFocus(bool forward, Item* scope = nullptr);
     class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 

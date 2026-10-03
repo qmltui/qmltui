@@ -18,6 +18,7 @@ class Terminal : public Rectangle {
   Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
   Q_PROPERTY(RendererMode rendererMode READ rendererMode WRITE setRendererMode NOTIFY rendererModeChanged)
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
+  Q_PROPERTY(bool mouseReporting READ mouseReporting WRITE setMouseReporting NOTIFY mouseReportingChanged)
   Q_PROPERTY(qtui::Item* hoveredItem READ hoveredItem NOTIFY hoveredItemChanged)
 
 public:
@@ -56,12 +57,18 @@ public:
   ClipboardMode clipboardMode() const { return m_clipboardMode; }
   void setClipboardMode(ClipboardMode mode);
 
+  bool mouseReporting() const { return m_mouseReporting; }
+  void setMouseReporting(bool enable);
+
   Item* focusedItem() const { return m_focusedItem.data(); }
   void setFocusedItem(Item* item);
   Item* hoveredItem() const { return m_hoveredItem.data(); }
   void setHoveredItem(Item* item);
 
   void setMouseMotionRequested(QObject* requester, bool requested);
+  bool isMouseMotionRequester(const QObject* requester) const {
+      return requester && m_mouseMotionRequesters.contains(const_cast<QObject*>(requester));
+  }
   bool hasMouseMotionRequests() const { return !m_mouseMotionRequesters.isEmpty(); }
 
   void findFocusableItems(Item* root, QList<Item*>& list);
@@ -79,6 +86,7 @@ signals:
   void fillTerminalChanged();
   void rendererModeChanged();
   void clipboardModeChanged();
+  void mouseReportingChanged();
   void clipboardCopyRequested(const QString& text);
   void focusedItemChanged();
   void hoveredItemChanged();
@@ -96,6 +104,8 @@ private:
   bool m_fillTerminalExplicit = false;
   RendererMode m_rendererMode = RendererMode::Frame;
   ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
+  bool m_mouseReporting = true;
+  bool m_mouseReportingExplicit = false;
 };
 
 } // namespace qtui

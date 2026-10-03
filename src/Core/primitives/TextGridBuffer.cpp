@@ -157,6 +157,12 @@ std::string TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool 
             appendParameter("24");
         if (removedAttributes & static_cast<uint8_t>(TextAttribute::Reversed))
             appendParameter("27");
+        if (removedAttributes & static_cast<uint8_t>(TextAttribute::Blink))
+            appendParameter("25");
+        if (removedAttributes & static_cast<uint8_t>(TextAttribute::Conceal))
+            appendParameter("28");
+        if (removedAttributes & static_cast<uint8_t>(TextAttribute::Strikethrough))
+            appendParameter("29");
         if (addedAttributes & static_cast<uint8_t>(TextAttribute::Bold))
             appendParameter("1");
         if (addedAttributes & static_cast<uint8_t>(TextAttribute::Italic))
@@ -165,6 +171,12 @@ std::string TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool 
             appendParameter("4");
         if (addedAttributes & static_cast<uint8_t>(TextAttribute::Reversed))
             appendParameter("7");
+        if (addedAttributes & static_cast<uint8_t>(TextAttribute::Blink))
+            appendParameter("5");
+        if (addedAttributes & static_cast<uint8_t>(TextAttribute::Conceal))
+            appendParameter("8");
+        if (addedAttributes & static_cast<uint8_t>(TextAttribute::Strikethrough))
+            appendParameter("9");
         currentAttributes = nextAttributes;
 
         if (!parameters.empty()) {
@@ -237,6 +249,9 @@ std::string TextGridBuffer::toAnsiString() const {
                 if (lastAttr & static_cast<uint8_t>(TextAttribute::Italic))    ansi << "\033[3m";
                 if (lastAttr & static_cast<uint8_t>(TextAttribute::Underline)) ansi << "\033[4m";
                 if (lastAttr & static_cast<uint8_t>(TextAttribute::Reversed))  ansi << "\033[7m";
+                if (lastAttr & static_cast<uint8_t>(TextAttribute::Blink)) ansi << "\033[5m";
+                if (lastAttr & static_cast<uint8_t>(TextAttribute::Conceal)) ansi << "\033[8m";
+                if (lastAttr & static_cast<uint8_t>(TextAttribute::Strikethrough)) ansi << "\033[9m";
             }
             
             if (!cell.continuation)

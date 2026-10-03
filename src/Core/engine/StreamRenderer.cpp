@@ -50,6 +50,9 @@ void appendCellStyle(std::ostringstream& output, const Cell& cell) {
     if (attributes & static_cast<uint8_t>(TextAttribute::Italic)) output << "\033[3m";
     if (attributes & static_cast<uint8_t>(TextAttribute::Underline)) output << "\033[4m";
     if (attributes & static_cast<uint8_t>(TextAttribute::Reversed)) output << "\033[7m";
+    if (attributes & static_cast<uint8_t>(TextAttribute::Blink)) output << "\033[5m";
+    if (attributes & static_cast<uint8_t>(TextAttribute::Conceal)) output << "\033[8m";
+    if (attributes & static_cast<uint8_t>(TextAttribute::Strikethrough)) output << "\033[9m";
 }
 
 } // namespace
@@ -131,7 +134,13 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
 void StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     if (!rootWindow) return;
 
-    int requiredHeight = rootWindow->height();
+    int requiredHeight = rootWindow->implicitHeight();
+    if (requiredHeight <= 0) {
+        requiredHeight = rootWindow->Item::height();
+    }
+    if (requiredHeight <= 0) {
+        requiredHeight = rootWindow->height();
+    }
     if (requiredHeight < 0) requiredHeight = 0;
     const int maximumPromptHeight = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
     if (requiredHeight > maximumPromptHeight) requiredHeight = maximumPromptHeight;

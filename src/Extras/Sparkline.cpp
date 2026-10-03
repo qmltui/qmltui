@@ -37,6 +37,13 @@ void Sparkline::setMaxVal(double maxVal) {
     markDirty();
 }
 
+void Sparkline::setFilled(bool filled) {
+    if (m_filled == filled) return;
+    m_filled = filled;
+    emit filledChanged();
+    markDirty();
+}
+
 void Sparkline::setColor(const QString &color) {
     if (m_color == color) return;
     m_color = color;
@@ -108,38 +115,71 @@ void Sparkline::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
     double range = computedMax - computedMin;
     if (range <= 0.0) range = 1.0;
 
-    // Unicode block level characters from   to █
+    // Unicode block level characters from   to █ (8 sub-cell levels per row, U+2581 to U+2588)
     static const char* blockGlyphs[] = {
-        " ",          // 0: lowest
-        "\xE2\x96\x81", // 1: ▂
-        "\xE2\x96\x82", // 2: ▃
-        "\xE2\x96\x83", // 3: ▄
-        "\xE2\x96\x84", // 4: ▅
-        "\xE2\x96\x85", // 5: ▆
-        "\xE2\x96\x86", // 6: ▇
+        "\xE2\x96\x81", // 0:  
+        "\xE2\x96\x82", // 1: ▂
+        "\xE2\x96\x83", // 2: ▃
+        "\xE2\x96\x84", // 3: ▄
+        "\xE2\x96\x85", // 4: ▅
+        "\xE2\x96\x86", // 5: ▆
+        "\xE2\x96\x87", // 6: ▇
         "\xE2\x96\x88"  // 7: █
     };
 
-    int count = std::min(availW, static_cast<int>(m_values.size()));
-    int startIndex = static_cast<int>(m_values.size()) - count;
+    int valCount = static_cast<int>(m_values.size());
+    int totalLevels = availH * 8;
 
-    for (int dx = 0; dx < count; ++dx) {
-        int cx = startX + dx;
-        int cy = startY + (availH - 1);
+    for (int dx = 0; dx < availW; ++dx) {
+        double val = computedMin;
+        if (valCount >= availW) {
+            int idx = valCount - availW + dx;
+            val = m_values[idx].toDouble();
+        } else {
+            int fillOffset = availW - valCount;
+            if (dx >= fillOffset) {
+                val = m_values[dx - fillOffset].toDouble();
+            } else {
+                val = m_values[0].toDouble();
+            }
+        }
 
-        if (clipRect.contains(cx, cy)) {
-            double val = m_values[startIndex + dx].toDouble();
-            double pct = std::clamp((val - computedMin) / range, 0.0, 1.0);
-            int level = static_cast<int>(pct * 7.0);
-            level = std::clamp(level, 0, 7);
+        double pct = std::clamp((val - computedMin) / range, 0.0, 1.0);
+        int totalSubCells = static_cast<int>(pct * (totalLevels - 1));
+        totalSubCells = std::clamp(totalSubCells, 0, totalLevels - 1);
 
-            Cell& cell = buffer.cellAt(cx, cy);
-            cell.fgColor = m_resolvedColor;
-            cell.bgColor = m_resolvedBgColor;
-            const char* glyph = blockGlyphs[level];
-            cell.character = QByteArray(glyph);
-            cell.displayWidth = 1;
-            cell.continuation = false;
+        int targetRow = totalSubCells / 8;
+        int targetLevel = totalSubCells % 8;
+
+        for (int ry = 0; ry < availH; ++ry) {
+            int cy = startY + (availH - 1 - ry); // ry=0 is bottom row
+            int cx = startX + dx;
+
+            if (clipRect.contains(cx, cy)) {
+                Cell& cell = buffer.cellAt(cx, cy);
+                cell.fgColor = m_resolvedColor;
+                cell.bgColor = m_resolvedBgColor;
+
+                if (availH == 1) {
+                    // Single row sparkline mode
+                    cell.character = QByteArray(blockGlyphs[targetLevel]);
+                } else {
+                    // Multi-row chart mode
+                    if (ry == targetRow) {
+                        cell.character = QByteArray(blockGlyphs[targetLevel]);
+                    } else if (ry < targetRow) {
+                        if (m_filled) {
+                            cell.character = QByteArray("\xE2\x96\x88"); // Solid fill
+                        } else {
+                            cell.character = QByteArray(" "); // Blank space for clean curve outline
+                        }
+                    } else {
+                        cell.character = QByteArray(" "); // Blank space above curve
+                    }
+                }
+                cell.displayWidth = 1;
+                cell.continuation = false;
+            }
         }
     }
 }

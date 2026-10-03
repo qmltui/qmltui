@@ -22,8 +22,16 @@
 #### void setKeyCallback(KeyCallback cb)
 Registers a callback function invoked whenever a valid key sequence is decoded from the input buffer. The callback receives `int qtKey`, `const QString& text`, and `int modifiers`.
 
+#### void setPasteCallback(PasteCallback cb)
+Registers a callback for a complete bracketed-paste payload, preserving the
+distinction between typed text and pasted text.
+
 #### void setMouseCallback(MouseCallback cb)
 Registers a callback function invoked whenever an SGR mouse tracking sequence is decoded. The callback receives `int button`, `int x`, `int y`, `bool release`, and `bool motion`.
+
+#### void setDetailedMouseCallback(DetailedMouseCallback cb)
+Registers a callback receiving normalized button, modifier, motion, and signed
+wheel-delta fields while retaining `setMouseCallback` for compatibility.
 
 #### void decode(const char* buffer, size_t size)
 Appends raw incoming terminal bytes to the internal decoding buffer and triggers sequence parsing.

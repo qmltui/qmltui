@@ -7,6 +7,8 @@
 #include <QQmlEngine>
 #include <memory>
 #include <TreeView.h>
+#include <TableView.h>
+#include <ListView.h>
 
 class CountModel final : public QAbstractListModel {
 public:
@@ -68,18 +70,113 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     return timer.elapsed();
 }
 
+static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
+{
+    CountModel model(rowCount);
+    engine.rootContext()->setContextProperty("benchmarkModel", &model);
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+        
+        TableView {
+            width: 80
+            height: 24
+            model: benchmarkModel
+            delegate: Text {
+                required property string display
+                text: display
+            }
+        }
+    )", QUrl());
+    if (!component.isReady()) {
+        qCritical().noquote() << component.errorString();
+        return -1;
+    }
+
+    QElapsedTimer timer;
+    timer.start();
+    std::unique_ptr<QObject> object(component.create());
+    auto *table = qobject_cast<qtui::TableView*>(object.get());
+    if (!table) return -1;
+    qtui::TextGridBuffer buffer;
+    if (!buffer.resize(80, 24)) return -1;
+    table->render(buffer, 0, 0);
+    return timer.elapsed();
+}
+
+static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int steps)
+{
+    CountModel model(rowCount);
+    engine.rootContext()->setContextProperty("benchmarkModel", &model);
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+
+        ListView {
+            width: 80
+            height: 24
+            model: benchmarkModel
+            delegate: Rectangle {
+                required property int index
+                required property string display
+                height: 3
+                color: ListView.isCurrentItem ? "blue" : "black"
+                Text {
+                    text: display
+                    color: ListView.isCurrentItem ? "white" : "gray"
+                }
+            }
+        }
+    )", QUrl());
+    if (!component.isReady()) {
+        qCritical().noquote() << component.errorString();
+        return -1;
+    }
+
+    std::unique_ptr<QObject> object(component.create());
+    auto *listView = qobject_cast<qtui::ListView*>(object.get());
+    if (!listView) return -1;
+    qtui::TextGridBuffer buffer;
+    if (!buffer.resize(80, 24)) return -1;
+
+    listView->render(buffer, 0, 0);
+
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < steps; ++i) {
+        listView->setCurrentIndex(i % rowCount);
+        listView->render(buffer, 0, 0);
+    }
+    return timer.elapsed();
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
     qtui::TreeView ensureModuleIsLinked;
+    qtui::TableView ensureTableViewLinked;
+    qtui::ListView ensureListViewLinked;
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath()
                          + QStringLiteral("/../Qtui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath()
+                         + QStringLiteral("/.."));
+    engine.addImportPath(QCoreApplication::applicationDirPath()
+                         + QStringLiteral("/../examples/apps/container_fleet"));
 
-    const qint64 oneThousandMs = measureCreation(engine, 1'000);
-    const qint64 tenThousandMs = measureCreation(engine, 10'000);
-    qInfo() << "TreeView creation: 1k rows" << oneThousandMs
-            << "ms; 10k rows" << tenThousandMs << "ms";
-    qInfo() << "Virtualization review threshold: 10k creation > 500 ms";
-    return oneThousandMs < 0 || tenThousandMs < 0 ? 1 : 0;
+    const qint64 tree1kMs = measureCreation(engine, 1'000);
+    const qint64 tree10kMs = measureCreation(engine, 10'000);
+    qInfo() << "TreeView creation: 1k rows" << tree1kMs
+            << "ms; 10k rows" << tree10kMs << "ms";
+
+    const qint64 table1kMs = measureTableViewDelegate(engine, 1'000);
+    const qint64 table10kMs = measureTableViewDelegate(engine, 10'000);
+    qInfo() << "TableView (Custom Delegate) creation & render: 1k rows" << table1kMs
+            << "ms; 10k rows" << table10kMs << "ms";
+
+    const qint64 listSelectMs = measureListViewSelection(engine, 1'000, 1'000);
+    qInfo() << "ListView 1,000 selection changes & render steps:" << listSelectMs << "ms"
+            << "(" << (listSelectMs / 1000.0) << "ms per selection step)";
+
+    return (tree1kMs < 0 || tree10kMs < 0 || table1kMs < 0 || table10kMs < 0 || listSelectMs < 0) ? 1 : 0;
 }

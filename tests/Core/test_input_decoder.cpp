@@ -11,12 +11,15 @@ class TestInputDecoder : public QObject {
 private slots:
     void testAsciiKeys();
     void testCtrlC();
+    void testCtrlQ();
     void testArrowKeys();
     void testModifiedNavigationKeys();
     void testShiftTab();
     void testSplitSequence();
     void testMouseSGR();
+    void testDetailedMouseSGR();
     void testBracketedPaste();
+    void testFunctionKeys();
     void testUtf8();
     void testMalformedMouseSGR();
 };
@@ -57,6 +60,23 @@ void TestInputDecoder::testCtrlC() {
     decoder.decode(buf, 1);
 
     QCOMPARE(receivedKey, Qt::Key_C);
+    QCOMPARE(receivedModifiers, Qt::ControlModifier);
+}
+
+void TestInputDecoder::testCtrlQ() {
+    InputDecoder decoder;
+    int receivedKey = 0;
+    int receivedModifiers = 0;
+
+    decoder.setKeyCallback([&](int qtKey, const QString&, int modifiers) {
+        receivedKey = qtKey;
+        receivedModifiers = modifiers;
+    });
+
+    const char* buffer = "\021"; // Ctrl+Q; Shift is not distinguishable here.
+    decoder.decode(buffer, 1);
+
+    QCOMPARE(receivedKey, Qt::Key_Q);
     QCOMPARE(receivedModifiers, Qt::ControlModifier);
 }
 
@@ -199,13 +219,33 @@ void TestInputDecoder::testMouseSGR() {
     QCOMPARE(recMotion, true);
 }
 
+void TestInputDecoder::testDetailedMouseSGR() {
+    InputDecoder decoder;
+    QList<InputDecoder::MouseInput> received;
+    decoder.setDetailedMouseCallback([&](const InputDecoder::MouseInput& input) {
+        received.append(input);
+    });
+
+    decoder.decode("\033[<52;4;7M", 11); // Ctrl+Shift button motion.
+    decoder.decode("\033[<64;4;7M", 11); // Wheel up.
+    decoder.decode("\033[<65;4;7M", 11); // Wheel down.
+
+    QCOMPARE(received.size(), 3);
+    QCOMPARE(received[0].button, 0);
+    QVERIFY(received[0].motion);
+    QCOMPARE(received[0].modifiers,
+             static_cast<int>(Qt::ShiftModifier | Qt::ControlModifier));
+    QCOMPARE(received[1].wheelDeltaY, 1);
+    QCOMPARE(received[2].wheelDeltaY, -1);
+    QCOMPARE(received[1].x, 3);
+    QCOMPARE(received[1].y, 6);
+}
+
 void TestInputDecoder::testBracketedPaste() {
     InputDecoder decoder;
     QString receivedText;
     int callbackCount = 0;
-    decoder.setKeyCallback([&](int key, const QString &text, int modifiers) {
-        Q_UNUSED(key)
-        Q_UNUSED(modifiers)
+    decoder.setPasteCallback([&](const QString &text) {
         receivedText += text;
         ++callbackCount;
     });
@@ -225,6 +265,28 @@ void TestInputDecoder::testBracketedPaste() {
     decoder.decode(largePaste.constData(), largePaste.size());
     QCOMPARE(callbackCount, 2);
     QCOMPARE(receivedText.toUtf8(), largePayload);
+
+    decoder.decode("\033[200~\033[201~", 12);
+    QCOMPARE(callbackCount, 3);
+}
+
+void TestInputDecoder::testFunctionKeys() {
+    InputDecoder decoder;
+    QList<QPair<int, int>> received;
+    decoder.setKeyCallback([&](int key, const QString&, int modifiers) {
+        received.append({key, modifiers});
+    });
+
+    decoder.decode("\033[15~", 5);
+    decoder.decode("\033[17;2~", 7);
+    decoder.decode("\033[24;5~", 7);
+
+    QCOMPARE(received.size(), 3);
+    QCOMPARE(received[0], qMakePair(static_cast<int>(Qt::Key_F5), 0));
+    QCOMPARE(received[1], qMakePair(static_cast<int>(Qt::Key_F6),
+                                    static_cast<int>(Qt::ShiftModifier)));
+    QCOMPARE(received[2], qMakePair(static_cast<int>(Qt::Key_F12),
+                                    static_cast<int>(Qt::ControlModifier)));
 }
 
 void TestInputDecoder::testUtf8() {

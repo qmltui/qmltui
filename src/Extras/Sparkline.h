@@ -14,6 +14,7 @@ class Sparkline : public Item {
     Q_PROPERTY(QVariant values READ values WRITE setValues NOTIFY valuesChanged)
     Q_PROPERTY(double minVal READ minVal WRITE setMinVal NOTIFY minValChanged)
     Q_PROPERTY(double maxVal READ maxVal WRITE setMaxVal NOTIFY maxValChanged)
+    Q_PROPERTY(bool filled READ filled WRITE setFilled NOTIFY filledChanged)
     Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
     Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
@@ -31,6 +32,9 @@ public:
 
     double maxVal() const { return m_maxVal; }
     void setMaxVal(double maxVal);
+
+    bool filled() const { return m_filled; }
+    void setFilled(bool filled);
 
     QString color() const { return m_color; }
     void setColor(const QString &color);
@@ -50,6 +54,7 @@ signals:
     void valuesChanged();
     void minValChanged();
     void maxValChanged();
+    void filledChanged();
     void colorChanged();
     void bgColorChanged();
     void borderStyleChanged();
@@ -61,6 +66,7 @@ private:
 
     double m_minVal = 0.0;
     double m_maxVal = 0.0; // 0.0 means auto-scale
+    bool m_filled = false;
     QString m_color = "cyan";
     uint32_t m_resolvedColor = 0xFF00FFFF;
 

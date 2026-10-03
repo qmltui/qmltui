@@ -321,6 +321,7 @@ void TextInput::keyPressEvent(KeyEvent* event) {
         change = m_editor.moveCursor(m_editor.text().size(), shift);
     } else if (key == Qt::Key_Return || key == Qt::Key_Enter) {
         emit accepted();
+        emit editingFinished();
     } else if (key == Qt::Key_Backspace || (control && key == Qt::Key_H)) {
         if (!m_readOnly)
             change = wordModifier && key == Qt::Key_Backspace

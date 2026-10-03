@@ -121,6 +121,7 @@ void ListView::setCurrentIndex(int index) {
     const int normalized = index < 0 || maxIndex < 0
         ? -1 : (std::min)(index, maxIndex);
     if (m_currentIndex == normalized) return;
+    const int previousIndex = m_currentIndex;
     m_currentIndex = normalized;
     emit currentIndexChanged();
     if (m_orientation == Qt::Vertical && normalized >= 0) {
@@ -134,8 +135,26 @@ void ListView::setCurrentIndex(int index) {
             setContentY(rowBottom - viewportHeight);
     }
     rebuildViewport();
-    refreshDelegateStates();
+    if (Item *prevItem = m_createdItems.value(previousIndex, nullptr))
+        updateDelegateState(prevItem, previousIndex);
+    if (Item *currItem = m_createdItems.value(m_currentIndex, nullptr))
+        updateDelegateState(currItem, m_currentIndex);
     markDirty();
+}
+
+void ListView::setReuseItems(bool reuse) {
+    if (m_reuseItems == reuse) return;
+    m_reuseItems = reuse;
+    if (!m_reuseItems) {
+        while (!m_reusePool.isEmpty()) {
+            Item *item = m_reusePool.pop();
+            if (item) {
+                item->setParentItem(nullptr);
+                delete item;
+            }
+        }
+    }
+    emit reuseItemsChanged();
 }
 
 void ListView::disconnectModelSignals()
@@ -206,8 +225,76 @@ void ListView::clearItems() {
         }
     }
     m_createdItems.clear();
+    while (!m_reusePool.isEmpty()) {
+        Item *item = m_reusePool.pop();
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        }
+    }
     m_materializedFirst = -1;
     m_materializedLast = -1;
+}
+
+void ListView::recycleDelegateItem(Item *item) {
+    if (!item) return;
+    item->setVisible(false);
+    if (auto *attached = qobject_cast<ListViewAttached *>(
+            qmlAttachedPropertiesObject<ListViewAttached>(item, false))) {
+        emit attached->pooled();
+    }
+    m_reusePool.push(item);
+}
+
+void ListView::rebindDelegateItem(Item *item, int index) {
+    if (!item || index < 0 || index >= m_modelCount) return;
+
+    QQmlContext *context = delegateContext(item);
+    if (!context) return;
+
+    QQmlPropertyMap *rowMap = qobject_cast<QQmlPropertyMap *>(
+        context->contextProperty("model").value<QObject *>());
+
+    QVariant rowValue;
+    QVariantMap rowValues;
+
+    if (!m_listValues.isEmpty() && index < m_listValues.size()) {
+        rowValue = m_listValues.at(index);
+        QVariant normalized = rowValue;
+        if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
+            normalized = normalized.value<QJSValue>().toVariant();
+        if (normalized.canConvert<QVariantMap>())
+            rowValues = normalized.toMap();
+        DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
+        DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
+    } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
+        const QModelIndex modelIndex = model->index(index, 0);
+        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+            const QVariant value = model->data(modelIndex, it.key());
+            if (rowMap) rowMap->insert(it.value(), value);
+            rowValues.insert(it.value(), value);
+        }
+        if (rowMap) {
+            DelegateUtils::setContextProperty(m_delegate, context, "model", QVariant::fromValue(rowMap));
+            DelegateUtils::setContextProperty(m_delegate, context, "modelData", QVariant::fromValue(rowMap));
+        }
+    }
+
+    DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+    setPropertyIfExists(item, "index", index);
+
+    for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
+        DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+    }
+
+    updateDelegateState(item, index);
+    item->setVisible(true);
+
+    if (auto *attached = qobject_cast<ListViewAttached *>(
+            qmlAttachedPropertiesObject<ListViewAttached>(item, false))) {
+        emit attached->reused();
+    }
 }
 
 int ListView::delegateStride() const
@@ -320,15 +407,29 @@ void ListView::rebuildViewport(bool force)
         Item *item = it.value();
         it = m_createdItems.erase(it);
         if (item) {
-            item->setParentItem(nullptr);
-            delete item;
+            if (m_reuseItems) {
+                recycleDelegateItem(item);
+            } else {
+                item->setParentItem(nullptr);
+                delete item;
+            }
         }
     }
 
     const int previousStride = delegateStride();
     for (int index = first; index <= last; ++index) {
-        if (!m_createdItems.contains(index))
-            m_createdItems.insert(index, createDelegateItem(index));
+        if (!m_createdItems.contains(index)) {
+            Item *item = nullptr;
+            if (m_reuseItems && !m_reusePool.isEmpty()) {
+                item = m_reusePool.pop();
+                rebindDelegateItem(item, index);
+            } else {
+                item = createDelegateItem(index);
+            }
+            if (item) {
+                m_createdItems.insert(index, item);
+            }
+        }
     }
     m_materializedFirst = first;
     m_materializedLast = last;
@@ -453,7 +554,19 @@ void ListView::insertModelRows(QAbstractItemModel *model, int first, int last,
         emit currentIndexChanged();
     }
     m_modelCount = (std::max)(0, model->rowCount());
-    clearItems();
+
+    const int count = last - first + 1;
+    QMap<int, Item*> newCreatedItems;
+    for (auto it = m_createdItems.begin(); it != m_createdItems.end(); ++it) {
+        int idx = it.key();
+        if (idx >= first) {
+            newCreatedItems.insert(idx + count, it.value());
+        } else {
+            newCreatedItems.insert(idx, it.value());
+        }
+    }
+    m_createdItems = newCreatedItems;
+
     updateContentExtent();
     rebuildViewport(true);
 }
@@ -470,7 +583,32 @@ void ListView::removeModelRows(int first, int last) {
         m_currentIndex = std::min(first, m_modelCount - 1);
     if (m_currentIndex != oldCurrentIndex)
         emit currentIndexChanged();
-    clearItems();
+
+    const int count = last - first + 1;
+    for (int idx = first; idx <= last; ++idx) {
+        if (m_createdItems.contains(idx)) {
+            Item *item = m_createdItems.take(idx);
+            if (item) {
+                if (m_reuseItems) recycleDelegateItem(item);
+                else {
+                    item->setParentItem(nullptr);
+                    delete item;
+                }
+            }
+        }
+    }
+
+    QMap<int, Item*> newCreatedItems;
+    for (auto it = m_createdItems.begin(); it != m_createdItems.end(); ++it) {
+        int idx = it.key();
+        if (idx > last) {
+            newCreatedItems.insert(idx - count, it.value());
+        } else {
+            newCreatedItems.insert(idx, it.value());
+        }
+    }
+    m_createdItems = newCreatedItems;
+
     updateContentExtent();
     rebuildViewport(true);
 }

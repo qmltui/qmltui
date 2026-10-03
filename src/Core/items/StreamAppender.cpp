@@ -73,8 +73,14 @@ void StreamAppender::setDelegate(QQmlComponent* delegate) {
     appendExistingRows();
 }
 
+static bool isDelegateReady(QQmlComponent* delegate, QObject* owner) {
+    if (!delegate) return false;
+    if (QQmlListReference(delegate, "choices").isValid()) return true;
+    return DelegateUtils::isReady(delegate, owner);
+}
+
 void StreamAppender::appendExistingRows() {
-    if (!m_model || !DelegateUtils::isReady(m_delegate, this) || !terminal()) return;
+    if (!m_model || !isDelegateReady(m_delegate, this) || !terminal()) return;
 
     const int lastRow = m_model->rowCount() - 1;
     if (m_consumedRowCount <= lastRow) {
@@ -151,8 +157,11 @@ QQmlComponent* StreamAppender::delegateForRow(int row) const {
         const bool roleMatches = !choiceValue.isValid() || choiceValue == roleValue;
         if (!rowMatches || !columnMatches || !roleMatches) continue;
 
-        return qobject_cast<QQmlComponent*>(
-            choice->property("delegate").value<QObject*>());
+        const QVariant prop = choice->property("delegate");
+        if (auto* comp = prop.value<QQmlComponent*>())
+            return comp;
+        if (auto* obj = prop.value<QObject*>())
+            return qobject_cast<QQmlComponent*>(obj);
     }
 
     return nullptr;

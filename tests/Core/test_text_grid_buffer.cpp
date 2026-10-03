@@ -20,6 +20,7 @@ private slots:
     void testDiffHandlesWideCharacterTransitions();
     void testRelativeDiffBatchesContiguousCells();
     void testStyledTextSerialization();
+    void testExtendedAttributeSerialization();
     void testHtmlTagParsing();
     void testTextFormatModes();
     void testDrawingHelpers();
@@ -167,6 +168,20 @@ void TestTextGridBuffer::testStyledTextSerialization() {
 
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Bold);
     QVERIFY(buffer.toAnsiString().find("\033[1m") != std::string::npos);
+}
+
+void TestTextGridBuffer::testExtendedAttributeSerialization() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(1, 1));
+    Cell& cell = buffer.cellAt(0, 0);
+    cell.character = "X";
+    cell.attributes = TextAttribute::Blink | TextAttribute::Conceal
+        | TextAttribute::Strikethrough;
+
+    const std::string ansi = buffer.toAnsiString();
+    QVERIFY(ansi.find("\033[5m") != std::string::npos);
+    QVERIFY(ansi.find("\033[8m") != std::string::npos);
+    QVERIFY(ansi.find("\033[9m") != std::string::npos);
 }
 
 void TestTextGridBuffer::testHtmlTagParsing() {

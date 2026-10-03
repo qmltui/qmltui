@@ -26,6 +26,7 @@ public:
 
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
+    void wheelEvent(class MouseEvent* event) override;
     void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
     void ensureChildVisible(Item* childItem);

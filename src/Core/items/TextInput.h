@@ -98,6 +98,7 @@ signals:
     void canUndoChanged();
     void canRedoChanged();
     void accepted();
+    void editingFinished();
 
 private:
     struct EditorStatus {

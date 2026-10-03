@@ -25,6 +25,8 @@ Terminal {
 
     rendererMode: Terminal.Stream
     fillTerminal: false
+    useAlternateScreen: false
+    mouseReporting: false
     implicitHeight: awaitingPermission ? 6 : 2
 
     property int agentState: Main.ReadyState
@@ -91,6 +93,12 @@ Terminal {
     }
 
     Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+            return
+        }
+
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
             if (root.ready)
                 Qt.quit()

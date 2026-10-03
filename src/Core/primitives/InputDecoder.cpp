@@ -44,8 +44,16 @@ void InputDecoder::setKeyCallback(KeyCallback cb) {
     m_keyCallback = std::move(cb);
 }
 
+void InputDecoder::setPasteCallback(PasteCallback cb) {
+    m_pasteCallback = std::move(cb);
+}
+
 void InputDecoder::setMouseCallback(MouseCallback cb) {
     m_mouseCallback = std::move(cb);
+}
+
+void InputDecoder::setDetailedMouseCallback(DetailedMouseCallback cb) {
+    m_detailedMouseCallback = std::move(cb);
 }
 
 void InputDecoder::decode(const char* buffer, size_t size) {
@@ -74,8 +82,11 @@ void InputDecoder::processBuffer() {
             const size_t end = m_buffer.find(PasteEnd, i);
             if (end == std::string::npos)
                 break;
-            if (m_keyCallback && end > i)
-                m_keyCallback(0, QString::fromUtf8(m_buffer.data() + i, end - i), 0);
+            const QString text = QString::fromUtf8(m_buffer.data() + i, end - i);
+            if (m_pasteCallback)
+                m_pasteCallback(text);
+            else if (m_keyCallback && !text.isEmpty())
+                m_keyCallback(0, text, 0);
             i = end + PasteEnd.size();
             m_bracketedPaste = false;
             continue;
@@ -153,11 +164,26 @@ void InputDecoder::processBuffer() {
                     }
                     release = m_buffer[j++] == 'm';
 
+                    const int encodedButton = button;
                     const bool motion = (button & 32) != 0;
                     if (motion)
                         button &= ~32;
                     if (m_mouseCallback)
                         m_mouseCallback(button, cx - 1, cy - 1, release, motion);
+                    if (m_detailedMouseCallback) {
+                        MouseInput input;
+                        input.button = encodedButton & 3;
+                        input.x = cx - 1;
+                        input.y = cy - 1;
+                        input.release = release;
+                        input.motion = motion;
+                        if (encodedButton & 4) input.modifiers |= Qt::ShiftModifier;
+                        if (encodedButton & 8) input.modifiers |= Qt::AltModifier;
+                        if (encodedButton & 16) input.modifiers |= Qt::ControlModifier;
+                        if (encodedButton & 64)
+                            input.wheelDeltaY = (encodedButton & 1) ? -1 : 1;
+                        m_detailedMouseCallback(input);
+                    }
                     i = j;
                     continue;
                 }
@@ -240,10 +266,18 @@ void InputDecoder::processBuffer() {
                         else if (parameters == "5" || parameters.starts_with("5;")) m_keyCallback(Qt::Key_PageUp, "", modifiers);
                         else if (parameters == "6" || parameters.starts_with("6;")) m_keyCallback(Qt::Key_PageDown, "", modifiers);
                         else if (parameters == "2" || parameters.starts_with("2;")) m_keyCallback(Qt::Key_Insert, "", modifiers);
-                        else if (parameters == "11") m_keyCallback(Qt::Key_F1, "", 0);
-                        else if (parameters == "12") m_keyCallback(Qt::Key_F2, "", 0);
-                        else if (parameters == "13") m_keyCallback(Qt::Key_F3, "", 0);
-                        else if (parameters == "14") m_keyCallback(Qt::Key_F4, "", 0);
+                        else if (parameters == "11" || parameters.starts_with("11;")) m_keyCallback(Qt::Key_F1, "", modifiers);
+                        else if (parameters == "12" || parameters.starts_with("12;")) m_keyCallback(Qt::Key_F2, "", modifiers);
+                        else if (parameters == "13" || parameters.starts_with("13;")) m_keyCallback(Qt::Key_F3, "", modifiers);
+                        else if (parameters == "14" || parameters.starts_with("14;")) m_keyCallback(Qt::Key_F4, "", modifiers);
+                        else if (parameters == "15" || parameters.starts_with("15;")) m_keyCallback(Qt::Key_F5, "", modifiers);
+                        else if (parameters == "17" || parameters.starts_with("17;")) m_keyCallback(Qt::Key_F6, "", modifiers);
+                        else if (parameters == "18" || parameters.starts_with("18;")) m_keyCallback(Qt::Key_F7, "", modifiers);
+                        else if (parameters == "19" || parameters.starts_with("19;")) m_keyCallback(Qt::Key_F8, "", modifiers);
+                        else if (parameters == "20" || parameters.starts_with("20;")) m_keyCallback(Qt::Key_F9, "", modifiers);
+                        else if (parameters == "21" || parameters.starts_with("21;")) m_keyCallback(Qt::Key_F10, "", modifiers);
+                        else if (parameters == "23" || parameters.starts_with("23;")) m_keyCallback(Qt::Key_F11, "", modifiers);
+                        else if (parameters == "24" || parameters.starts_with("24;")) m_keyCallback(Qt::Key_F12, "", modifiers);
                     }
                     i = finalPosition + 1;
                     continue;

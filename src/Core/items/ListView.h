@@ -5,6 +5,7 @@
 #include <QQmlComponent>
 #include <QHash>
 #include <QMap>
+#include <QStack>
 #include <QPointer>
 #include <QMetaObject>
 
@@ -28,6 +29,8 @@ public:
 signals:
     void viewChanged();
     void isCurrentItemChanged();
+    void pooled();
+    void reused();
 
 private:
     friend class ListView;
@@ -48,6 +51,7 @@ class ListView : public ScrollView {
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString highlightColor READ highlightColor WRITE setHighlightColor NOTIFY highlightColorChanged)
     Q_PROPERTY(QString highlightBgColor READ highlightBgColor WRITE setHighlightBgColor NOTIFY highlightBgColorChanged)
+    Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
     static ListViewAttached *qmlAttachedProperties(QObject *object);
@@ -76,6 +80,9 @@ public:
     QString highlightBgColor() const { return m_highlightBgColor; }
     void setHighlightBgColor(const QString& color);
 
+    bool reuseItems() const { return m_reuseItems; }
+    void setReuseItems(bool reuse);
+
     void layoutChildren();
     void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
     int implicitWidth() const override;
@@ -92,11 +99,14 @@ signals:
     void currentIndexChanged();
     void highlightColorChanged();
     void highlightBgColorChanged();
+    void reuseItemsChanged();
     void itemActivated(int index);
 
 private:
     void disconnectModelSignals();
     Item *createDelegateItem(int index);
+    void recycleDelegateItem(Item *item);
+    void rebindDelegateItem(Item *item, int index);
     void rebuildViewport(bool force = false);
     void updateContentExtent();
     int delegateStride() const;
@@ -119,7 +129,9 @@ private:
     uint32_t m_resolvedHighlightColor = 0xFF000000;
     QString m_highlightBgColor = "white";
     uint32_t m_resolvedHighlightBgColor = 0xFFFFFFFF;
+    bool m_reuseItems = true;
     QMap<int, Item*> m_createdItems;
+    QStack<Item*> m_reusePool;
     QVariantList m_listValues;
     QHash<int, QString> m_roleMap;
     int m_modelCount = 0;

@@ -63,14 +63,13 @@ TableView::~TableView() {
 }
 
 void TableView::clearDelegateItems() {
-    for (Item* item : m_delegateItems) {
+    for (Item* item : m_createdDelegateItems.values()) {
         if (item) {
             item->setParentItem(nullptr);
             delete item;
         }
     }
-    m_delegateItems.clear();
-    m_delegateIndexes.clear();
+    m_createdDelegateItems.clear();
 }
 
 void TableView::setColumns(const QVariantList &columns) {
@@ -444,86 +443,114 @@ QString TableView::cellText(int row, int col) const {
 
 
 
-void TableView::generateCompatibleDelegateItems()
+Item* TableView::createSingleDelegateItem(int row, int column)
 {
-    clearDelegateItems();
     QQmlComponent *component = m_delegate ? m_delegate.data() : m_rowDelegate.data();
-    if (!DelegateUtils::isReady(component, this)) return;
+    if (!DelegateUtils::isReady(component, this)) return nullptr;
 
     const bool cellMode = m_delegate;
-    const int rows = rowCount();
-    const int columns = cellMode ? (m_columns.isEmpty() ? 5 : m_columns.size()) : 1;
+    const int delegateColumns = cellMode ? (m_columns.isEmpty() ? 5 : m_columns.size()) : 1;
+    const int itemIndex = cellMode ? row * delegateColumns + column : row;
+
+    QVariantMap modelMap;
+    QVariant modelData;
+
     const QHash<int, QByteArray> roles = m_cppModel
         ? m_cppModel->roleNames() : QHash<int, QByteArray>();
 
-    for (int row = 0; row < rows; ++row) {
-        for (int column = 0; column < columns; ++column) {
-            const int itemIndex = cellMode ? row * columns + column : row;
-            QVariantMap modelMap;
-            QVariant modelData;
-            QPersistentModelIndex persistentIndex;
+    if (m_cppModel) {
+        const QModelIndex index = m_cppModel->index(row, cellMode ? column : 0);
+        for (auto role = roles.cbegin(); role != roles.cend(); ++role)
+            modelMap.insert(QString::fromUtf8(role.value()),
+                            m_cppModel->data(index, role.key()));
+        modelData = modelMap.isEmpty()
+            ? m_cppModel->data(index, Qt::DisplayRole) : QVariant(modelMap);
+    } else if (cellMode) {
+        modelData = cellText(row, column);
+        if (row < m_listModel.size()) {
+            QVariant rowValue = m_listModel[row];
+            if (rowValue.userType() == QMetaType::fromType<QJSValue>().id())
+                rowValue = rowValue.value<QJSValue>().toVariant();
+            if (rowValue.canConvert<QVariantMap>())
+                modelMap = rowValue.toMap();
+        }
+        modelMap.insert(QStringLiteral("display"), modelData);
+    } else if (row < m_listModel.size()) {
+        modelData = m_listModel[row];
+        QVariant value = modelData;
+        if (value.userType() == QMetaType::fromType<QJSValue>().id())
+            value = value.value<QJSValue>().toVariant();
+        if (value.canConvert<QVariantMap>()) modelMap = value.toMap();
+    }
 
-            if (m_cppModel) {
-                const QModelIndex index = m_cppModel->index(row, cellMode ? column : 0);
-                persistentIndex = index;
-                for (auto role = roles.cbegin(); role != roles.cend(); ++role)
-                    modelMap.insert(QString::fromUtf8(role.value()),
-                                    m_cppModel->data(index, role.key()));
-                modelData = modelMap.isEmpty()
-                    ? m_cppModel->data(index, Qt::DisplayRole) : QVariant(modelMap);
-            } else if (cellMode) {
-                modelData = cellText(row, column);
-                if (row < m_listModel.size()) {
-                    QVariant rowValue = m_listModel[row];
-                    if (rowValue.userType() == QMetaType::fromType<QJSValue>().id())
-                        rowValue = rowValue.value<QJSValue>().toVariant();
-                    if (rowValue.canConvert<QVariantMap>())
-                        modelMap = rowValue.toMap();
-                }
-                modelMap.insert(QStringLiteral("display"), modelData);
-            } else if (row < m_listModel.size()) {
-                modelData = m_listModel[row];
-                QVariant value = modelData;
-                if (value.userType() == QMetaType::fromType<QJSValue>().id())
-                    value = value.value<QJSValue>().toVariant();
-                if (value.canConvert<QVariantMap>()) modelMap = value.toMap();
-            }
+    const bool current = row == m_selectedRow && column == m_currentColumn;
+    QVariantMap initialProperties = modelMap;
+    initialProperties[QStringLiteral("index")] = itemIndex;
+    initialProperties[QStringLiteral("row")] = row;
+    if (cellMode) initialProperties[QStringLiteral("column")] = column;
+    initialProperties[QStringLiteral("current")] = current;
+    initialProperties[QStringLiteral("selected")] = current;
+    initialProperties[QStringLiteral("model")] = modelMap;
+    initialProperties[QStringLiteral("modelData")] = modelData;
 
-            const bool current = row == m_selectedRow && column == m_currentColumn;
-            QVariantMap initialProperties = modelMap;
-            initialProperties[QStringLiteral("index")] = itemIndex;
-            initialProperties[QStringLiteral("row")] = row;
-            if (cellMode) initialProperties[QStringLiteral("column")] = column;
-            initialProperties[QStringLiteral("current")] = current;
-            initialProperties[QStringLiteral("selected")] = current;
-            initialProperties[QStringLiteral("model")] = modelMap;
-            initialProperties[QStringLiteral("modelData")] = modelData;
+    QQmlContext *context = DelegateUtils::createContext(component, this);
+    if (!context) return nullptr;
 
-            QQmlContext *context = DelegateUtils::createContext(component, this);
-            if (!context) {
-                m_delegateItems.append(nullptr);
-                m_delegateIndexes.append(persistentIndex);
-                continue;
-            }
-            for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it)
-                DelegateUtils::setContextProperty(component, context, it.key(), it.value());
+    for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it)
+        DelegateUtils::setContextProperty(component, context, it.key(), it.value());
 
-            Item *item = DelegateUtils::createItem(
-                component, initialProperties, context, this, this);
+    Item *item = DelegateUtils::createItem(
+        component, initialProperties, context, this, this);
+    if (item) {
+        item->setWidth(cellMode ? columnWidth(column) : width());
+        if (item->height() <= 0) item->setHeight(1);
+    }
+    return item;
+}
+
+void TableView::updateDelegateViewport(int firstRow, int lastRow, int firstCol, int lastCol)
+{
+    if (!m_delegate && !m_rowDelegate) {
+        clearDelegateItems();
+        return;
+    }
+
+    // 1. Remove out-of-bounds items
+    for (auto it = m_createdDelegateItems.begin(); it != m_createdDelegateItems.end();) {
+        int r = it.key().first;
+        int c = it.key().second;
+        if (r < firstRow || r > lastRow || c < firstCol || c > lastCol) {
+            Item *item = it.value();
             if (item) {
-                item->setWidth(cellMode ? columnWidth(column) : width());
-                if (item->height() <= 0) item->setHeight(1);
+                item->setParentItem(nullptr);
+                delete item;
             }
-            m_delegateItems.append(item);
-            m_delegateIndexes.append(persistentIndex);
+            it = m_createdDelegateItems.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // 2. Instantiate missing visible items
+    for (int r = firstRow; r <= lastRow; ++r) {
+        for (int c = firstCol; c <= lastCol; ++c) {
+            QPair<int, int> pos(r, c);
+            if (!m_createdDelegateItems.contains(pos)) {
+                Item *item = createSingleDelegateItem(r, c);
+                if (item) {
+                    m_createdDelegateItems.insert(pos, item);
+                }
+            }
         }
     }
 }
 
 void TableView::generateDelegateItems()
 {
-    generateCompatibleDelegateItems();
+    clearDelegateItems();
+    markDirty();
 }
+
 void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible) return;
 
@@ -552,6 +579,8 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
         int numCols = m_columns.isEmpty() ? 5 : m_columns.size();
 
         for (int col = 0; col < numCols; ++col) {
+            if (curX >= startX + availW) break; // Horizontal clipping
+
             QString title = QString("Col%1").arg(col + 1);
             int colW = columnWidth(col);
             QString align = columnAlignment(col);
@@ -599,25 +628,43 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
     firstVisibleRow = std::clamp(firstVisibleRow, 0, (std::max)(0, totalRows - visibleRows));
 
     // 3. Render Delegate Component Items
-    if ((m_delegate || m_rowDelegate) && !m_delegateItems.isEmpty()) {
+    if (m_delegate || m_rowDelegate) {
         const bool cellMode = m_delegate;
         const int delegateColumns = cellMode
             ? (m_columns.isEmpty() ? 5 : m_columns.size()) : 1;
+
+        int firstRow = (std::max)(0, firstVisibleRow - 2);
+        int lastRow = (std::min)(totalRows - 1, firstVisibleRow + visibleRows + 1);
+
+        int firstCol = 0;
+        int lastCol = 0;
+        int curWidth = 0;
+        for (int col = 0; col < delegateColumns; ++col) {
+            lastCol = col;
+            curWidth += cellMode ? columnWidth(col) : availW;
+            if (curWidth >= availW) break;
+        }
+        if (cellMode && lastCol < delegateColumns - 1) {
+            lastCol += 1; // +1 overscan column
+        }
+
+        updateDelegateViewport(firstRow, lastRow, firstCol, lastCol);
+
         for (int visibleRow = 0;
              visibleRow < visibleRows && firstVisibleRow + visibleRow < totalRows;
              ++visibleRow) {
             const int actualRow = firstVisibleRow + visibleRow;
             int cellX = startX;
-            for (int column = 0; column < delegateColumns; ++column) {
-                const int delegateIndex = cellMode
-                    ? actualRow * delegateColumns + column : actualRow;
-                Item *item = delegateIndex >= 0 && delegateIndex < m_delegateItems.size()
-                    ? m_delegateItems[delegateIndex] : nullptr;
+            for (int column = 0; column <= lastCol; ++column) {
+                const int colW = cellMode ? columnWidth(column) : availW;
+                if (cellX >= startX + availW) break;
+
+                Item *item = m_createdDelegateItems.value(QPair<int, int>(actualRow, column), nullptr);
                 if (item) {
-                    item->setWidth(cellMode ? columnWidth(column) : availW);
+                    item->setWidth(colW);
                     item->render(buffer, cellX, startY + visibleRow, clipRect);
                 }
-                if (cellMode) cellX += columnWidth(column);
+                if (cellMode) cellX += colW;
             }
         }
         return;
@@ -625,6 +672,13 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
     // 4. Render Standard Row Cells
     int numCols = m_columns.isEmpty() ? 5 : m_columns.size();
+
+    QVector<int> colWidths(numCols);
+    QVector<QString> colAligns(numCols);
+    for (int col = 0; col < numCols; ++col) {
+        colWidths[col] = columnWidth(col);
+        colAligns[col] = columnAlignment(col);
+    }
 
     for (int r = 0; r < visibleRows && (firstVisibleRow + r) < totalRows; ++r) {
         int actualRow = firstVisibleRow + r;
@@ -642,8 +696,10 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
         int curX = startX;
         for (int col = 0; col < numCols; ++col) {
-            int colW = columnWidth(col);
-            QString align = columnAlignment(col);
+            if (curX >= startX + availW) break; // Horizontal clipping
+
+            int colW = colWidths[col];
+            QString align = colAligns[col];
             QString val = cellText(actualRow, col);
 
             uint32_t cellFg = fg;

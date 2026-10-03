@@ -10,7 +10,10 @@ enum class TextAttribute : uint8_t {
     Bold      = 1 << 0,
     Italic    = 1 << 1,
     Underline = 1 << 2,
-    Reversed  = 1 << 3
+    Reversed  = 1 << 3,
+    Blink = 1 << 4,
+    Conceal = 1 << 5,
+    Strikethrough = 1 << 6
 };
 
 inline TextAttribute operator|(TextAttribute a, TextAttribute b) {

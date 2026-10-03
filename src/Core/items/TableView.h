@@ -8,6 +8,8 @@
 #include <QPersistentModelIndex>
 #include <QJSValue>
 #include <QQmlComponent>
+#include <QHash>
+#include <QPair>
 
 namespace qtui {
 
@@ -151,7 +153,8 @@ private:
 
     void clearDelegateItems();
     void generateDelegateItems();
-    void generateCompatibleDelegateItems();
+    Item* createSingleDelegateItem(int row, int column);
+    void updateDelegateViewport(int firstRow, int lastRow, int firstCol, int lastCol);
 
     QVariantList m_columns;
     QVariant m_modelVariant;
@@ -192,8 +195,7 @@ private:
     QJSValue m_cellFormat;
     QPointer<QQmlComponent> m_delegate;
     QPointer<QQmlComponent> m_rowDelegate;
-    QList<Item*> m_delegateItems;
-    QList<QPersistentModelIndex> m_delegateIndexes;
+    QHash<QPair<int, int>, Item*> m_createdDelegateItems;
 };
 
 } // namespace qtui

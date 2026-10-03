@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`Cell` and `TextAttribute` define the primitive data structures representing a single terminal grid position in Qtui. A `Cell` stores the UTF-8 character bytes, visual display width, continuation flag (for multi-column characters), 32-bit ARGB foreground and background colors, and styling attributes (bold, italic, underline, reversed).
+`Cell` and `TextAttribute` define the primitive data structures representing a single terminal grid position in Qtui. A `Cell` stores the UTF-8 character bytes, visual display width, continuation flag (for multi-column characters), 32-bit ARGB foreground and background colors, and styling attributes (bold, italic, underline, reversed, blink, conceal, and strikethrough).
 
 Developers interact with `Cell` when implementing custom C++ terminal UI items.
 
@@ -23,6 +23,9 @@ Developers interact with `Cell` when implementing custom C++ terminal UI items.
 | `Italic` | `2` | Renders text in italic font. |
 | `Underline` | `4` | Renders text with an underline. |
 | `Reversed` | `8` | Inverts foreground and background colors. |
+| `Blink` | `16` | Requests blinking text. |
+| `Conceal` | `32` | Conceals the cell contents. |
+| `Strikethrough` | `64` | Draws a line through the text. |
 
 Bitwise operators `|` and `&` are overloaded to allow combining multiple `TextAttribute` flags (e.g. `TextAttribute::Bold | TextAttribute::Underline`).
 

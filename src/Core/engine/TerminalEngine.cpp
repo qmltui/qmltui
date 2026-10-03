@@ -189,8 +189,12 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_inputDecoder.setKeyCallback([this](int key, const QString& text, int modifiers) {
       handleKeyInput(key, text, modifiers);
   });
-  m_inputDecoder.setMouseCallback([this](int button, int x, int y, bool release, bool motion) {
-      handleMouseInput(button, x, y, release, motion);
+  m_inputDecoder.setPasteCallback([this](const QString& text) {
+      handleKeyInput(0, text, 0, true);
+  });
+  m_inputDecoder.setDetailedMouseCallback([this](const InputDecoder::MouseInput& input) {
+      handleMouseInput(input.button, input.x, input.y, input.release, input.motion,
+                       input.modifiers, input.wheelDeltaX, input.wheelDeltaY);
   });
   if (m_rootWindow) {
       connect(m_rootWindow, &Terminal::mouseMotionRequestedChanged,
@@ -202,9 +206,13 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
 
   m_renderer = new FrameRenderer();
 
-  // Enable button events, button-held motion, SGR coordinates, and bracketed paste.
-  // All-motion mode (1003) is enabled only while a component requests hover input.
-  m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h\033[?2004h");
+  // Enable bracketed paste. Enable mouse reporting only if enabled on root window.
+  m_device.write("\033[?2004h");
+  if (!m_rootWindow || m_rootWindow->mouseReporting()) {
+      m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h");
+  } else {
+      m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l");
+  }
   setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
 
   handleResize();
@@ -262,6 +270,15 @@ void TerminalEngine::setMouseMotionReportingEnabled(bool enabled) {
   }
 }
 
+void TerminalEngine::setMouseReporting(bool enable) {
+  if (enable) {
+    m_device.write("\033[?1000h\033[?1002h\033[?1006h");
+    setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
+  } else {
+    m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l");
+  }
+}
+
 void TerminalEngine::copyToClipboard(const QString& text) {
   m_device.write(osc52Sequence(text));
 }
@@ -309,10 +326,10 @@ void TerminalEngine::readTerminalData() {
   m_inputDecoder.decode(buffer, n);
 }
 
-void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers) {
+void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste) {
   if (!m_rootWindow) return;
 
-  KeyEvent event(key, text, modifiers);
+  KeyEvent event(key, text, modifiers, paste);
 
   for (Shortcut* sc : activeShortcuts()) {
       if (sc && sc->enabled() && sc->sequence() == key) {
@@ -438,7 +455,8 @@ void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers)
   }
 }
 
-void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion) {
+void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion,
+                                      int modifiers, int wheelDeltaX, int wheelDeltaY) {
   if (!m_rootWindow) return;
   const bool buttonMotion = motion && ((button & 3) != 3);
 
@@ -469,17 +487,30 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
               if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
                   ma->setMousePosition(localX, localY);
               }
-              if (motion && !buttonMotion)
-                  return;
-              MouseEvent event(localX, localY, button);
+              if (motion && !buttonMotion) {
+                  bool requested = false;
+                  for (Item* current = target; current; current = current->parentItem()) {
+                      if (m_rootWindow->isMouseMotionRequester(current)) {
+                          requested = true;
+                          break;
+                      }
+                  }
+                  if (!requested)
+                      return;
+              }
+              MouseEvent event(localX, localY, button, modifiers, motion,
+                               wheelDeltaX, wheelDeltaY);
 
               Item* current = target;
               while (current) {
                   int currentAbsX = current->absolutePosition().x();
                   int currentAbsY = current->absolutePosition().y();
-                  MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button);
+                  MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button,
+                                          modifiers, motion, wheelDeltaX, wheelDeltaY);
 
-                  if (motion) {
+                  if (wheelDeltaX != 0 || wheelDeltaY != 0) {
+                      current->wheelEvent(&currentEvent);
+                  } else if (motion) {
                       current->mouseMoveEvent(&currentEvent);
                   } else if (release) {
                       current->mouseReleaseEvent(&currentEvent);
@@ -535,18 +566,30 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
     if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
         ma->setMousePosition(localX, localY);
     }
-    if (motion && !buttonMotion)
+    if (motion && !buttonMotion) {
+      bool requested = false;
+      for (Item* current = target; current; current = current->parentItem()) {
+        if (m_rootWindow->isMouseMotionRequester(current)) {
+          requested = true;
+          break;
+        }
+      }
+      if (!requested)
         return;
-
-    MouseEvent event(localX, localY, button);
+    }
+    MouseEvent event(localX, localY, button, modifiers, motion,
+                     wheelDeltaX, wheelDeltaY);
 
     Item* current = target;
     while (current) {
       int currentAbsX = current->absolutePosition().x();
       int currentAbsY = current->absolutePosition().y();
-      MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button);
+      MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button,
+                              modifiers, motion, wheelDeltaX, wheelDeltaY);
 
-      if (motion) {
+      if (wheelDeltaX != 0 || wheelDeltaY != 0) {
+        current->wheelEvent(&currentEvent);
+      } else if (motion) {
         current->mouseMoveEvent(&currentEvent);
       } else if (release) {
         current->mouseReleaseEvent(&currentEvent);
@@ -685,7 +728,7 @@ void TerminalEngine::append(qtui::Item* item) {
     buffer.resize(w, h);
     item->render(buffer, 0, 0);
     
-    print(QString::fromStdString(buffer.toAnsiString()) + "\n");
+    print(QString::fromStdString(buffer.toAnsiString()));
 }
 
 } // namespace qtui

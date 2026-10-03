@@ -39,14 +39,14 @@ cmake --install build --prefix /your/prefix
 An external C++ project can use the custom-item API with:
 
 ```cmake
-find_package(Qtui 0.1 REQUIRED)
+find_package(Qtui 0.2 REQUIRED)
 target_link_libraries(my_app PRIVATE Qtui::Core)
 ```
 
 Link the modules an application uses with `Qtui::Core`, `Qtui::Controls`, and
-`Qtui::Widgets`. For modules built in the same CMake project through
+`Qtui::Extras`. For modules built in the same CMake project through
 `add_subdirectory` or `FetchContent`, list the source-tree targets (`QtuiCore`,
-`QtuiControls`, and `QtuiWidgets`) in
+`QtuiControls`, and `QtuiExtras`) in
 `qt_add_qml_module(DEPENDENCIES TARGET ...)`. Qt does not accept imported
 targets in `DEPENDENCIES TARGET`. No project-specific QML import-path variable
 is required. Installed QML modules live in Qt's standard
@@ -58,7 +58,7 @@ The installed QML modules are:
 
 - `Qtui`
 - `Qtui.Controls`
-- `Qtui.Widgets`
+- `Qtui.Extras`
 
 ## Supported public surface
 

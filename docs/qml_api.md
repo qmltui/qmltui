@@ -1,63 +1,119 @@
-# QML API Reference
+# QML API reference
 
-Qtui exposes a core subset of declarative UI elements, heavily styled after Qt Quick. This document outlines the available QML elements.
+Qtui 0.2 provides a terminal-rendered, Qt Quick-style QML API. Its core
+model/view/delegate names and delegate contracts are source-compatible with the
+documented Qt Quick subset below. Qtui remains a terminal toolkit: geometry is
+cell-based, delegates must derive from `Qtui.Item`, and APIs tied to the Qt Quick
+scene graph are intentionally not implemented.
 
-## Core Elements
-- `Terminal`: The root window element for any Qtui application. Captures top-level events and dictates the rendering mode.
-  - *Properties*: `fillTerminal` (bool), `useAlternateScreen` (bool), `rendererMode` (`Terminal.Frame` or `Terminal.Stream`).
-  - *Methods*: `print(string)` (appends text in Stream mode), `append(Item)` (renders and appends a QML item in Stream mode).
-- `StreamAppender`: Observes a `QAbstractItemModel` and appends inserted rows through a QML delegate, including `DelegateChooser`. Role names and values are application-defined. Existing rows are append-only; updates and removals do not rewrite streamed output.
-- `Item`: The base visual element. All other elements inherit from it. Provides positioning and sizing logic.
-  - *Properties*: `x`, `y`, `z`, `width`, `height`, `implicitWidth`, `implicitHeight`, `clip`, `visible`, `focusable`. Siblings render by ascending `z`; equal values retain declaration order.
-- `Text`: Renders colored text. Supports multiline wrapping.
-  - *Properties*: `text` (string), `color` (string, e.g. "red", "#FF0000"), `attributes` (bitmask of `Text.Bold`, `Text.Underline`, etc.), `textFormat` (`Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`).
-- `MouseArea`: Invisible component that intercepts mouse clicks and scrolls.
-  - *Properties*: `mouseX`, `mouseY`, `hoverEnabled`. Passive motion is reported only when `hoverEnabled` is true; drag motion remains enabled.
-  - *Signals*: `onClicked`, `onWheelUp`, `onWheelDown`.
+## Model and delegate compatibility
 
-## Layouts & Positioning
-- `Row`: Positions children horizontally. See [Layouts Demo](../examples/Core/layouts_and_padding/Main.qml).
-  - *Properties*: `spacing`.
-- `Column`: Positions children vertically.
-  - *Properties*: `spacing`.
-- `Anchors`: Allows aligning elements relative to parents and siblings.
-  - *Properties*: `anchors.fill`, `anchors.centerIn`, `anchors.left`, `anchors.right`, `anchors.top`, `anchors.bottom`, `anchors.margins`.
+All views accept ready inline components and components that become ready
+asynchronously. Delegate creation preserves the component's lexical QML context,
+including `pragma ComponentBehavior: Bound`. A delegate root that is not a
+`Qtui.Item`, or a component that enters the error state, is rejected with a QML
+warning instead of being partially installed.
 
-## Views & Repetition
-- `Repeater`: Dynamically generates children based on a numeric count or data model.
-  - *Properties*: `model`, `delegate`.
-- `Loader`: Dynamically creates one QtUI item from an inline component or URL.
-  The created object must derive from `qtui::Item`.
-  - *Properties*: `active`, `source`, `sourceComponent`, `item`, `status`,
-    `progress`, `asynchronous`, `errorString`.
-- `ListView`: A scrolling vertical list for data models. Supports scrolling with arrow keys or mouse wheel. See [ListView Demo](../examples/Core/listview_demo/Main.qml).
-  - *Properties*: `model`, `delegate`, `currentIndex`.
-- `ScrollView`: Provides scrollable bounds for content larger than its visual rectangle. See [ScrollView implementation](../Terminal/src/items/ScrollView.h).
+For map and `QAbstractItemModel` data, named roles are available both as required
+delegate properties and through `model`. `modelData` contains the row or cell
+value described in the table below. `dataChanged` updates only the roles named by
+the model when the model supplies such a list.
 
-## Inputs & Controls
-- `TextInput`: A single-line text input field supporting cursors and backspace editing.
-  - *Properties*: `text`, `color`, `cursorPosition`.
-  - *Signals*: `onAccepted`, `onTextChanged`.
-- `TextArea`: A multi-line text input field supporting vertical navigation and entering newlines.
-- `Border`: Draws a border outline around an item, using ASCII or Unicode box drawing characters.
+| Type | Standard delegate properties | `modelData` | Qtui-specific behavior |
+| --- | --- | --- | --- |
+| `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting |
+| `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight` |
+| `Repeater` | `index`, `model`, named roles | Row value or role map | Inserts delegates into its visual parent |
+| `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
+| `TableView.rowDelegate` | `row`, `index`, `model`, named roles | Entire row | Deprecated 0.1 row-scoped compatibility path |
+| `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
+| `StreamAppender` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
 
-The `Qtui.Controls` module provides `Button`, `ButtonGroup`, `CheckBox`,
-`RadioButton`, `Switch`, `Slider`, `Spinner`, `Panel`, `Dialog`, and
-`ConfirmationDialog`. Reusable controls expose content-derived implicit sizes;
-applications remain free to assign explicit dimensions.
+`currentIndex`, `selectedRow`, `currentRow`, and `currentColumn` use `-1` for no
+current item where applicable. Model destruction clears the view safely. Model
+replacement disconnects the old model before a new generation is observed.
 
-Any item can declare an attached text tooltip with `ToolTip.text`. Tooltips
-appear after `ToolTip.delay` on pointer hover or keyboard focus, hide after
-`ToolTip.timeout`, and can be controlled explicitly through `ToolTip.visible`.
-Popups support `owner` relationships; closing an owner closes its descendant
-overlays, and nested modal popups retain an isolated focus and input scope.
+## ListView
 
-## Widgets
+Properties include `model`, `delegate`, `orientation`, `spacing`, `currentIndex`,
+`highlightColor`, and `highlightBgColor`. `currentIndex` defaults to `-1` and can
+be reset to `-1`.
 
-The `Qtui.Widgets` module provides `BigText`, `Gauge`, `Paragraph`,
-`Sparkline`, `TabHeader`, `TableView`, `ToastManager`, and `TreeView`.
+Use the attached API for selection state:
 
-## Animations & States
-- `State`: Defines a cluster of property overrides based on conditions.
-- `Transition`: Smoothly animates property changes between states.
-- `PropertyAnimation`: Linearly interpolates numeric values (e.g., `x`, `width`) over a duration. See [Animation Demo](../examples/Core/animation_demo/Main.qml).
+```qml
+ListView {
+    model: applicationModel
+    delegate: Text {
+        required property string display
+        color: ListView.isCurrentItem ? "black" : "white"
+    }
+}
+```
+
+See the [ListView example](../examples/components/list_view/Main.qml).
+
+## TableView
+
+`delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
+`selected` identify the represented cell. Qtui's `columns` descriptors continue
+to provide terminal column titles, keys, widths, and alignment.
+
+`rowDelegate` retains the Qtui 0.1 row-scoped delegate contract for migration and
+is planned for removal in 0.3. When both properties are set, `delegate` wins and
+Qtui emits a warning.
+
+Selection properties are `currentRow` (read-only alias of `selectedRow`),
+`selectedRow`, and `currentColumn`. See the
+[TableView example](../examples/components/table_view/Main.qml).
+
+## TreeView
+
+For `QAbstractItemModel`, set `model`; optionally set `rootIndex` to display a
+subtree. Terminal-native map trees use `rootNode` and a `children` list. Keeping
+these entry points separate avoids overloading Qt Quick's `model` semantics.
+
+Properties include `model`, `rootNode`, `rootIndex`, `delegate`, `currentIndex`,
+`currentRow`, `currentColumn`, and `currentItemData`. Changes to the current
+node's roles notify `currentItemDataChanged`.
+
+Methods include `expand`, `collapse`, `toggleExpanded`, `isExpanded`, `depth`,
+`expandRecursively`, `collapseRecursively`, `expandToIndex`, `expandAll`, and
+`collapseAll`. Expansion emits `expanded(row, depth)` or
+`collapsed(row, recursively)`.
+
+See the [TreeView example](../examples/components/tree_view/Main.qml).
+
+## Migration from 0.1
+
+- Replace a delegate's bare `isCurrentItem` property with the attached
+  `ListView.isCurrentItem` property.
+- Replace TreeView's bare `isCurrent` property with `current`; use `selected`
+  when the delegate expresses selection styling.
+- Move map-shaped tree data from `TreeView.model` to `TreeView.rootNode`.
+- A `TableView.delegate` is now instantiated per cell. Rename an unchanged
+  row-scoped delegate to `rowDelegate` as a temporary compatibility measure, or
+  migrate it to consume `row` and `column`.
+- Declare delegate inputs as required properties when using
+  `pragma ComponentBehavior: Bound`.
+
+The 0.2 compatibility target is the API subset documented here, not every Qt
+Quick view feature. Qtui does not currently expose scene-graph transitions,
+flick physics, reuse-pool callbacks, selection models, or the complete Qt Quick
+positioning and item-lookup API.
+
+## Other core elements
+
+- `Terminal` is the root terminal surface. `rendererMode` selects frame or
+  stream rendering; `append(Item)` and `print(string)` append stream output.
+- `Item` is the visual base type and provides cell geometry, visibility, focus,
+  clipping, anchors, and stacking order.
+- `ScrollView` provides cell-based scrolling for content larger than its bounds.
+- `Loader` creates one `Qtui.Item` from `source` or `sourceComponent`.
+- `Row` and `Column` lay out children with integer spacing.
+- `Text`, `TextInput`, and `TextArea` provide terminal text rendering and input.
+- `MouseArea` provides click, wheel, hover, and drag input.
+
+`Qtui.Controls` contains the reusable controls, while `Qtui.Extras` contains
+terminal-oriented presentation components such as `BigText`, `Gauge`,
+`Paragraph`, `Sparkline`, `TabHeader`, and `ToastManager`.

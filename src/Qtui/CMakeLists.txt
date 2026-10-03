@@ -1,4 +1,6 @@
 
+
+
 # The library backing the QML module
 set(qtui_behavior_sources)
 if(QTUI_ENABLE_BEHAVIOR)
@@ -154,3 +156,11 @@ install(FILES
     engine/KeyEvent.h engine/MouseEvent.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/engine"
 )
+
+
+add_subdirectory(Canvas)
+add_subdirectory(Controls)
+add_subdirectory(Extras)
+if(QTUI_BUILD_TERMINAL_HOST)
+    add_subdirectory(TerminalHost)
+endif()

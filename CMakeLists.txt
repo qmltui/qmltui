@@ -4,7 +4,6 @@ project(Qtui VERSION 0.2.0 LANGUAGES CXX)
 option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
-option(QTUI_BUILD_EDGE_CONSOLE "Build the qtui-edge-console reference application" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_BUILD_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 
@@ -58,7 +57,6 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 if(QTUI_BUILD_TERMINAL_HOST)
@@ -74,14 +72,13 @@ if(QTUI_BUILD_TESTS)
 endif()
 
 qt_standard_project_setup(REQUIRES 6.8)
-set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 if(QTUI_BUILD_TESTS)
     include(CTest)
     enable_testing()
 endif()
 
-add_subdirectory(src)
+add_subdirectory(src/Qtui)
 
 # Example executable to test the library
 if(QTUI_BUILD_EXAMPLES)

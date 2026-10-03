@@ -14,3 +14,4 @@ Testing/
 *.log
 .qmlls.ini
 /Screenshot *.png
+.qtcreator/

@@ -1,3 +1,4 @@
+add_subdirectory(container_fleet)
 add_subdirectory(industrial_plc_hmi)
 add_subdirectory(plotting_dashboard)
 add_subdirectory(pos_cashier)

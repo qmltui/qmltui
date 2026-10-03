@@ -10,9 +10,12 @@ qt_add_qml_module(QtuiControls
         CheckBox.qml
         Dialog.qml
         Panel.qml
+        ProgressBar.qml
         RadioButton.qml
         Slider.qml
         Spinner.qml
+        StackLayout.qml
+        StackView.qml
         Switch.qml
     DEPENDENCIES TARGET QtuiCore
 )
@@ -41,9 +44,12 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/CheckBox.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Dialog.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Panel.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/ProgressBar.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/RadioButton.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Slider.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Spinner.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/StackLayout.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/StackView.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Switch.qml
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
 )

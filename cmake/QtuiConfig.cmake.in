@@ -2,6 +2,9 @@
 
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 6.8 COMPONENTS Core Qml)
+if(@QTUI_BUILD_TERMINAL_HOST@)
+    find_dependency(Qt6 6.8 COMPONENTS Gui)
+endif()
 if(@QTUI_ENABLE_BEHAVIOR@)
     find_dependency(Qt6 6.8 COMPONENTS QmlPrivate)
 endif()

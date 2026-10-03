@@ -26,6 +26,17 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+The experimental Unix PTY host is opt-in:
+
+```sh
+cmake -S . -B build -DQTUI_BUILD_TERMINAL_HOST=ON
+cmake --build build --target qtui_terminal_view
+```
+
+This adds the `Qtui.TerminalHost` QML module and `Qtui::TerminalHost` CMake
+target on Linux and macOS. See [TerminalView](docs/TerminalView.md) for its API,
+security defaults, offline libvterm setup, and current compatibility limits.
+
 View construction benchmarks are available with
 `-DQTUI_BUILD_BENCHMARKS=ON`; run the resulting `benchmark_views` executable
 to record 1,000- and 10,000-row creation time.
@@ -59,6 +70,7 @@ The installed QML modules are:
 - `Qtui`
 - `Qtui.Controls`
 - `Qtui.Extras`
+- `Qtui.TerminalHost` when built with `QTUI_BUILD_TERMINAL_HOST=ON`
 
 ## Supported public surface
 

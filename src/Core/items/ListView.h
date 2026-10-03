@@ -4,6 +4,7 @@
 #include <QVariant>
 #include <QQmlComponent>
 #include <QHash>
+#include <QMap>
 #include <QPointer>
 #include <QMetaObject>
 
@@ -95,6 +96,10 @@ signals:
 
 private:
     void disconnectModelSignals();
+    Item *createDelegateItem(int index);
+    void rebuildViewport(bool force = false);
+    void updateContentExtent();
+    int delegateStride() const;
     void updateDelegateState(Item *item, int index);
     void refreshDelegateStates();
     void clearItems();
@@ -114,7 +119,14 @@ private:
     uint32_t m_resolvedHighlightColor = 0xFF000000;
     QString m_highlightBgColor = "white";
     uint32_t m_resolvedHighlightBgColor = 0xFFFFFFFF;
-    QList<Item*> m_createdItems;
+    QMap<int, Item*> m_createdItems;
+    QVariantList m_listValues;
+    QHash<int, QString> m_roleMap;
+    int m_modelCount = 0;
+    int m_delegateExtent = 1;
+    bool m_delegateExtentKnown = false;
+    int m_materializedFirst = -1;
+    int m_materializedLast = -1;
     QList<QMetaObject::Connection> m_modelConnections;
     quint64 m_modelGeneration = 0;
 };

@@ -12,6 +12,7 @@ private slots:
     void testAsciiKeys();
     void testCtrlC();
     void testArrowKeys();
+    void testModifiedNavigationKeys();
     void testShiftTab();
     void testSplitSequence();
     void testMouseSGR();
@@ -74,14 +75,55 @@ void TestInputDecoder::testArrowKeys() {
     buf = "\033[B";
     decoder.decode(buf, 3);
     QCOMPARE(receivedKey, Qt::Key_Down);
+
+    buf = "\033[3~";
+    decoder.decode(buf, 4);
+    QCOMPARE(receivedKey, Qt::Key_Delete);
+}
+
+void TestInputDecoder::testModifiedNavigationKeys() {
+    InputDecoder decoder;
+    QList<QPair<int, int>> received;
+
+    decoder.setKeyCallback([&](int key, const QString&, int modifiers) {
+        received.append({key, modifiers});
+    });
+
+    decoder.decode("\033[1;2D", 6); // Shift+Left
+    decoder.decode("\033[1;5C", 6); // Ctrl+Right
+    decoder.decode("\033[1;6H", 6); // Ctrl+Shift+Home
+    decoder.decode("\033[1;3F", 6); // Alt+End
+    decoder.decode("\033[1;2~", 6); // Shift+Home (VT form)
+    decoder.decode("\033[4;6~", 6); // Ctrl+Shift+End (VT form)
+    decoder.decode("\033[3;5~", 6); // Ctrl+Delete
+
+    QCOMPARE(received.size(), 7);
+    QCOMPARE(received[0], qMakePair(static_cast<int>(Qt::Key_Left),
+                                    static_cast<int>(Qt::ShiftModifier)));
+    QCOMPARE(received[1], qMakePair(static_cast<int>(Qt::Key_Right),
+                                    static_cast<int>(Qt::ControlModifier)));
+    QCOMPARE(received[2], qMakePair(
+        static_cast<int>(Qt::Key_Home),
+        static_cast<int>(Qt::ShiftModifier | Qt::ControlModifier)));
+    QCOMPARE(received[3], qMakePair(static_cast<int>(Qt::Key_End),
+                                    static_cast<int>(Qt::AltModifier)));
+    QCOMPARE(received[4], qMakePair(static_cast<int>(Qt::Key_Home),
+                                    static_cast<int>(Qt::ShiftModifier)));
+    QCOMPARE(received[5], qMakePair(
+        static_cast<int>(Qt::Key_End),
+        static_cast<int>(Qt::ShiftModifier | Qt::ControlModifier)));
+    QCOMPARE(received[6], qMakePair(static_cast<int>(Qt::Key_Delete),
+                                    static_cast<int>(Qt::ControlModifier)));
 }
 
 void TestInputDecoder::testShiftTab() {
     InputDecoder decoder;
     QList<int> receivedKeys;
+    QList<int> receivedModifiers;
 
-    decoder.setKeyCallback([&](int qtKey, const QString&, int) {
+    decoder.setKeyCallback([&](int qtKey, const QString&, int modifiers) {
         receivedKeys.append(qtKey);
+        receivedModifiers.append(modifiers);
     });
 
     decoder.decode("\033[Z", 3);
@@ -90,8 +132,10 @@ void TestInputDecoder::testShiftTab() {
     decoder.decode("\033[27;2;9~", 9);
 
     QCOMPARE(receivedKeys.size(), 4);
-    for (int key : receivedKeys) {
+    for (qsizetype index = 0; index < receivedKeys.size(); ++index) {
+        const int key = receivedKeys[index];
         QCOMPARE(key, Qt::Key_Backtab);
+        QCOMPARE(receivedModifiers[index], static_cast<int>(Qt::ShiftModifier));
     }
 }
 

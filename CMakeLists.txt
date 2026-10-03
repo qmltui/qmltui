@@ -4,6 +4,7 @@ project(Qtui VERSION 0.2.0 LANGUAGES CXX)
 option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
+option(QTUI_BUILD_EDGE_CONSOLE "Build the qtui-edge-console reference application" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 
 include(GNUInstallDirs)

@@ -16,8 +16,8 @@ class Canvas : public Item {
     Q_PROPERTY(QString fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(bool autoClear READ autoClear WRITE setAutoClear NOTIFY autoClearChanged)
-    Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY renderModeChanged)
-    Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY renderModeChanged)
+    Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY pixelWidthChanged)
+    Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY pixelHeightChanged)
 
 public:
     enum class RenderMode {
@@ -62,6 +62,8 @@ signals:
     void fillColorChanged();
     void renderModeChanged();
     void autoClearChanged();
+    void pixelWidthChanged();
+    void pixelHeightChanged();
 
 private:
     void resizeBuffer();

@@ -5,6 +5,7 @@
 #include <QAbstractListModel>
 #include <QSignalSpy>
 #include <QCoreApplication>
+#include <algorithm>
 #include <memory>
 
 #include "UnicodeText.h"
@@ -112,6 +113,7 @@ private slots:
     void osc52Encoding();
     void treeDelegateIdentity();
     void listModelMutationContract();
+    void listViewVirtualizesLargeModels();
     void streamAppenderDelegateContract();
     void destroyedTreeModelIsCleared();
     void keyHandlingImprovements();
@@ -493,6 +495,60 @@ void TestTerminalFramework::listModelMutationContract() {
     QCOMPARE(list.currentIndex(), 0);
     list.setCurrentIndex(-1);
     QCOMPARE(list.currentIndex(), -1);
+}
+
+void TestTerminalFramework::listViewVirtualizesLargeModels() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+
+    QQmlComponent delegate(&engine);
+    delegate.setData(R"(
+        import Qtui
+        Item {
+            required property int index
+            required property string display
+            height: 2
+        }
+    )", QUrl());
+    QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
+
+    MutableListModel model;
+    for (int row = 0; row < 500; ++row)
+        model.append(QStringLiteral("row-%1").arg(row));
+
+    ListView list;
+    QQmlEngine::setContextForObject(&list, engine.rootContext());
+    list.setWidth(30);
+    list.setHeight(5);
+    list.setDelegate(&delegate);
+    list.setModel(QVariant::fromValue(static_cast<QObject *>(&model)));
+
+    TextGridBuffer buffer;
+    buffer.resize(30, 5);
+    list.render(buffer, 0, 0);
+    QCOMPARE(list.contentHeight(), 1000);
+    QVERIFY(list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly).size() <= 7);
+
+    list.setContentY(400);
+    list.render(buffer, 0, 0);
+    const QList<Item *> scrolledDelegates =
+        list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+    QVERIFY(scrolledDelegates.size() <= 7);
+    QVERIFY(std::any_of(scrolledDelegates.cbegin(), scrolledDelegates.cend(),
+                        [](Item *item) { return item->property("index").toInt() >= 200; }));
+
+    list.setCurrentIndex(450);
+    list.render(buffer, 0, 0);
+    QCOMPARE(list.currentIndex(), 450);
+    QVERIFY(list.contentY() > 800);
+    bool currentWasMaterialized = false;
+    for (Item *item : list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly)) {
+        if (item->property("index").toInt() == 450) {
+            currentWasMaterialized = true;
+            break;
+        }
+    }
+    QVERIFY(currentWasMaterialized);
 }
 
 void TestTerminalFramework::streamAppenderDelegateContract() {

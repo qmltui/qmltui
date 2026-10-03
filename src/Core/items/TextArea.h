@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Item.h"
+#include "TextEditorState.h"
 #include <QString>
-#include <QVector>
 
 namespace qtui {
 
@@ -25,13 +25,13 @@ public:
     explicit TextArea(QObject *parent = nullptr);
     ~TextArea() override;
 
-    QString text() const { return m_text; }
+    QString text() const { return m_editor.text(); }
     void setText(const QString& text);
     QString color() const { return m_color; }
     void setColor(const QString& color);
     QString placeholderText() const { return m_placeholderText; }
     void setPlaceholderText(const QString& text);
-    int cursorPosition() const { return m_cursorPosition; }
+    int cursorPosition() const { return m_editor.cursorPosition(); }
     void setCursorPosition(int pos);
     int selectionStart() const;
     int selectionEnd() const;
@@ -68,28 +68,22 @@ signals:
     void accepted();
 
 private:
+    void applyEditorChange(const TextEditorState::Change &change);
     void lineColumnForPosition(int position, int &line, int &column) const;
     int positionForLineColumn(int line, int column) const;
     void moveCursor(int position, bool extendSelection);
-    bool deleteSelection();
-    void replaceSelection(const QString &replacement);
-    void recordUndo();
     void ensureCursorVisible();
     int lineStart(int position) const;
     int lineEnd(int position) const;
     int positionAtMouse(int x, int y) const;
 
-    QString m_text;
+    TextEditorState m_editor;
     QString m_color = "white";
     QString m_placeholderText;
     uint32_t m_resolvedColor = 0xFFFFFFFF;
-    int m_cursorPosition = 0;
-    int m_selectionAnchor = 0;
     int m_contentX = 0;
     int m_contentY = 0;
     bool m_readOnly = false;
-    QVector<QString> m_undoStack;
-    QVector<QString> m_redoStack;
 };
 
 } // namespace qtui

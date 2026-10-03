@@ -1,482 +1,479 @@
-import QtQml 2.15
+import QtQml
+import QtQml.Models
 import Qtui
-import Qtui.Controls
+import Qtui.Canvas
 
 Terminal {
     id: rootWindow
 
     fillTerminal: true
-    color: "black"
+    color: "#030806"
     useAlternateScreen: true
 
-    // Game states
     property int score: 0
     property int highScore: 0
     property int level: 1
     property bool gameOver: false
+    property bool won: false
     property bool isPaused: false
+    property bool initialized: false
+    property bool resizing: false
 
-    // Coordinates of food
     property int foodX: 0
     property int foodY: 0
+    property bool foodPulse: false
 
-    // Snake direction state
     property string direction: "right"
-    property string nextDirection: "right"
+    property var directionQueue: []
+    property int movementTick: 0
 
-    // Timer interval calculation
-    readonly property int speedInterval: Math.max(50, 180 - level * 15)
+    readonly property int cellPixelWidth: 2
+    readonly property int cellPixelHeight: 2
+    readonly property int gridWidth: Math.floor(gameCanvas.pixelWidth / cellPixelWidth)
+    readonly property int gridHeight: Math.floor(gameCanvas.pixelHeight / cellPixelHeight)
+    readonly property bool playable: gridWidth >= 6 && gridHeight >= 5
+    readonly property int speedInterval: Math.max(48, 105 - ((level - 1) * 6))
 
-    // Grid details (aspect-ratio corrected: 2 columns = 1 row)
-    // Dynamically computed from gameField dimensions
-    readonly property int gridWidth: Math.max(1, Math.floor((gameField.width - 2) / 2))
-    readonly property int gridHeight: Math.max(1, gameField.height - 2)
+    function isSnakeAt(cellX, cellY, limit) {
+        let count = limit === undefined ? snakeModel.count : limit
+        for (let i = 0; i < count; ++i) {
+            let segment = snakeModel.get(i)
+            if (segment.cellX === cellX && segment.cellY === cellY)
+                return true
+        }
+        return false
+    }
 
-    // Reset game state
+    function paintCell(cellX, cellY, cellColor) {
+        let originX = cellX * cellPixelWidth
+        let originY = cellY * cellPixelHeight
+        for (let pixelY = 0; pixelY < cellPixelHeight; ++pixelY) {
+            for (let pixelX = 0; pixelX < cellPixelWidth; ++pixelX)
+                gameCanvas.setPixelColor(originX + pixelX, originY + pixelY, cellColor)
+        }
+    }
+
+    function redrawCanvas() {
+        gameCanvas.clear()
+        if (!playable || snakeModel.count === 0)
+            return
+
+        if (!gameOver) {
+            paintCell(foodX, foodY, foodPulse ? "#ffb000" : "#ff4365")
+            gameCanvas.setPixelColor(foodX * cellPixelWidth + 1,
+                                     foodY * cellPixelHeight, "#b7f34a")
+        }
+
+        for (let i = snakeModel.count - 1; i >= 0; --i) {
+            let segment = snakeModel.get(i)
+            let segmentColor = i === 0 ? "#82ff9f" : (i % 2 === 0 ? "#22b455" : "#2bdc68")
+            paintCell(segment.cellX, segment.cellY, segmentColor)
+        }
+
+        let head = snakeModel.get(0)
+        let eyeX = head.cellX * cellPixelWidth + (direction === "right" ? 1 : 0)
+        let eyeY = head.cellY * cellPixelHeight + (direction === "down" ? 1 : 0)
+        gameCanvas.setPixelColor(eyeX, eyeY, "#07150c")
+    }
+
     function resetGame() {
         score = 0
         level = 1
         gameOver = false
+        won = false
         isPaused = false
         direction = "right"
-        nextDirection = "right"
-
+        directionQueue = []
+        movementTick = 0
+        foodPulse = false
         snakeModel.clear()
 
-        // Find center of current grid size
-        var cx = Math.floor(gridWidth / 2)
-        var cy = Math.floor(gridHeight / 2)
-
-        // Initialize 3-segment snake starting in the middle moving right
-        snakeModel.append({ "x": cx, "y": cy })
-        snakeModel.append({ "x": cx - 1, "y": cy })
-        snakeModel.append({ "x": cx - 2, "y": cy })
-
-        spawnFood()
-        gameTimer.restart()
-    }
-
-    // Spawn food in a random cell not occupied by the snake
-    function spawnFood() {
-        if (gridWidth <= 0 || gridHeight <= 0) return
-        var valid = false
-        var rx = 0
-        var ry = 0
-        var attempts = 0
-        while (!valid && attempts < 100) {
-            rx = Math.floor(Math.random() * gridWidth)
-            ry = Math.floor(Math.random() * gridHeight)
-            attempts++
-
-            // Check if coordinates overlap with snake body
-            valid = true
-            for (var i = 0; i < snakeModel.count; i++) {
-                var segment = snakeModel.get(i)
-                if (segment.x === rx && segment.y === ry) {
-                    valid = false
-                    break
-                }
-            }
+        if (!playable) {
+            redrawCanvas()
+            return
         }
-        foodX = rx
-        foodY = ry
+
+        let centerX = Math.floor(gridWidth / 2)
+        let centerY = Math.floor(gridHeight / 2)
+        snakeModel.append({ "cellX": centerX, "cellY": centerY })
+        snakeModel.append({ "cellX": centerX - 1, "cellY": centerY })
+        snakeModel.append({ "cellX": centerX - 2, "cellY": centerY })
+        spawnFood()
+        redrawCanvas()
     }
 
-    // Single step of the snake
-    function step() {
-        if (gameOver || isPaused || gridWidth <= 0 || gridHeight <= 0) return
+    function spawnFood() {
+        if (!playable || snakeModel.count >= gridWidth * gridHeight)
+            return
 
-        // Update direction to the buffered nextDirection
-        direction = nextDirection
-
-        var headX = snakeModel.get(0).x
-        var headY = snakeModel.get(0).y
-
-        var nextX = headX
-        var nextY = headY
-
-        if (direction === "right") nextX++
-        else if (direction === "left") nextX--
-        else if (direction === "up") nextY--
-        else if (direction === "down") nextY++
-
-        // Edge wrapping logic
-        nextX = (nextX + gridWidth) % gridWidth
-        nextY = (nextY + gridHeight) % gridHeight
-
-        // Collision Check: self-collision
-        for (var i = 0; i < snakeModel.count; i++) {
-            var segment = snakeModel.get(i)
-            if (segment.x === nextX && segment.y === nextY) {
-                gameOver = true
-                if (score > highScore) {
-                    highScore = score
-                }
+        let cellCount = gridWidth * gridHeight
+        let firstCell = Math.floor(Math.random() * cellCount)
+        for (let offset = 0; offset < cellCount; ++offset) {
+            let candidate = (firstCell + offset) % cellCount
+            let candidateX = candidate % gridWidth
+            let candidateY = Math.floor(candidate / gridWidth)
+            if (!isSnakeAt(candidateX, candidateY)) {
+                foodX = candidateX
+                foodY = candidateY
                 return
             }
         }
 
-        // Food Eaten Check
-        if (nextX === foodX && nextY === foodY) {
+        won = true
+        gameOver = true
+    }
+
+    function finishGame(didWin) {
+        won = didWin
+        gameOver = true
+        highScore = Math.max(highScore, score)
+        redrawCanvas()
+    }
+
+    function queueDirection(candidate) {
+        let queuedDirections = directionQueue.slice()
+        let previousDirection = queuedDirections.length > 0
+                ? queuedDirections[queuedDirections.length - 1] : direction
+        if (candidate === previousDirection || queuedDirections.length >= 2)
+            return
+
+        let isReverse = (previousDirection === "left" && candidate === "right")
+                || (previousDirection === "right" && candidate === "left")
+                || (previousDirection === "up" && candidate === "down")
+                || (previousDirection === "down" && candidate === "up")
+        if (isReverse)
+            return
+
+        queuedDirections.push(candidate)
+        directionQueue = queuedDirections
+    }
+
+    function step() {
+        if (!playable || gameOver || isPaused || resizing || snakeModel.count === 0)
+            return
+
+        if (directionQueue.length > 0) {
+            let queuedDirections = directionQueue.slice()
+            direction = queuedDirections.shift()
+            directionQueue = queuedDirections
+        }
+
+        let head = snakeModel.get(0)
+        let nextX = head.cellX
+        let nextY = head.cellY
+
+        if (direction === "right")
+            ++nextX
+        else if (direction === "left")
+            --nextX
+        else if (direction === "up")
+            --nextY
+        else
+            ++nextY
+
+        nextX = (nextX + gridWidth) % gridWidth
+        nextY = (nextY + gridHeight) % gridHeight
+
+        let ateFood = nextX === foodX && nextY === foodY
+        // On a normal move the tail leaves its cell, so entering that cell is legal.
+        let collisionCount = snakeModel.count - (ateFood ? 0 : 1)
+        if (isSnakeAt(nextX, nextY, collisionCount)) {
+            finishGame(false)
+            return
+        }
+
+        if (ateFood) {
+            let tail = snakeModel.get(snakeModel.count - 1)
+            snakeModel.append({ "cellX": tail.cellX, "cellY": tail.cellY })
+        }
+
+        for (let i = snakeModel.count - 1; i > 0; --i) {
+            let previous = snakeModel.get(i - 1)
+            snakeModel.setProperty(i, "cellX", previous.cellX)
+            snakeModel.setProperty(i, "cellY", previous.cellY)
+        }
+        snakeModel.setProperty(0, "cellX", nextX)
+        snakeModel.setProperty(0, "cellY", nextY)
+
+        ++movementTick
+        if (movementTick % 3 === 0)
+            foodPulse = !foodPulse
+
+        if (ateFood) {
             score += 10
+            highScore = Math.max(highScore, score)
+            level = Math.floor(score / 50) + 1
+            if (snakeModel.count === gridWidth * gridHeight)
+                finishGame(true)
+            else
+                spawnFood()
+        }
+        redrawCanvas()
+    }
 
-            // Grow: append a copy of the tail segment at the end
-            var tailIdx = snakeModel.count - 1
-            var tail = snakeModel.get(tailIdx)
-            snakeModel.append({ "x": tail.x, "y": tail.y })
+    function scheduleResize() {
+        if (!initialized)
+            return
+        resizing = true
+        resizeTimer.restart()
+    }
 
-            // Shift all segments forward (in-place modification preserves delegates for smooth animation)
-            for (var i = snakeModel.count - 2; i > 0; i--) {
-                snakeModel.setProperty(i, "x", snakeModel.get(i - 1).x)
-                snakeModel.setProperty(i, "y", snakeModel.get(i - 1).y)
+    function finishResize() {
+        resizing = false
+        if (!playable) {
+            redrawCanvas()
+            return
+        }
+
+        for (let i = 0; i < snakeModel.count; ++i) {
+            let segment = snakeModel.get(i)
+            if (segment.cellX >= gridWidth || segment.cellY >= gridHeight) {
+                resetGame()
+                return
             }
-            snakeModel.setProperty(0, "x", nextX)
-            snakeModel.setProperty(0, "y", nextY)
+        }
 
-            // Level up every 50 points
-            var newLevel = Math.floor(score / 50) + 1
-            if (newLevel !== level) {
-                level = newLevel
-            }
-
-            // Trigger floating score popup animation
-            scorePopup.baseX = (foodX * 2) + 1
-            scorePopup.baseY = foodY + 1
-            popupAnim.stop()
-            popupAnim.start()
-
+        if (snakeModel.count === 0)
+            resetGame()
+        else if (foodX >= gridWidth || foodY >= gridHeight || isSnakeAt(foodX, foodY))
             spawnFood()
-        } else {
-            // Normal move: Shift all segments forward in-place
-            for (var i = snakeModel.count - 1; i > 0; i--) {
-                snakeModel.setProperty(i, "x", snakeModel.get(i - 1).x)
-                snakeModel.setProperty(i, "y", snakeModel.get(i - 1).y)
-            }
-            snakeModel.setProperty(0, "x", nextX)
-            snakeModel.setProperty(0, "y", nextY)
-        }
+        redrawCanvas()
     }
 
-    // Game loop timer
-    Timer {
-        id: gameTimer
-        interval: rootWindow.speedInterval
-        running: true
-        repeat: true
-        onTriggered: {
-            rootWindow.step()
-        }
-    }
-
-    // Keyboard events
     Keys.onPressed: (event) => {
-        // Crucial Q/Escape handler for Qtui
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit()
             event.accepted = true
             return
         }
 
-        if (gameOver) {
-            if (event.key === Qt.Key_R || event.key === Qt.Key_r) {
-                resetGame()
-                event.accepted = true
-            }
+        if (event.key === Qt.Key_R || (gameOver && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter))) {
+            resetGame()
+            event.accepted = true
             return
         }
 
-        // Handle game pauses
-        if (event.key === Qt.Key_Space) {
+        if (event.key === Qt.Key_Space && !gameOver && playable) {
             isPaused = !isPaused
             event.accepted = true
             return
         }
 
-        if (isPaused) return
+        if (gameOver || isPaused || !playable)
+            return
 
-        // Buffer direction changes to prevent 180 degree turns
-        if ((event.key === Qt.Key_Left || event.key === Qt.Key_A || event.key === Qt.Key_a) && direction !== "right") {
-            nextDirection = "left"
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_A) {
+            queueDirection("left")
             event.accepted = true
-        } else if ((event.key === Qt.Key_Right || event.key === Qt.Key_D || event.key === Qt.Key_d) && direction !== "left") {
-            nextDirection = "right"
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_D) {
+            queueDirection("right")
             event.accepted = true
-        } else if ((event.key === Qt.Key_Up || event.key === Qt.Key_W || event.key === Qt.Key_w) && direction !== "down") {
-            nextDirection = "up"
+        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_W) {
+            queueDirection("up")
             event.accepted = true
-        } else if ((event.key === Qt.Key_Down || event.key === Qt.Key_S || event.key === Qt.Key_s) && direction !== "up") {
-            nextDirection = "down"
+        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_S) {
+            queueDirection("down")
             event.accepted = true
         }
     }
 
     Component.onCompleted: {
+        initialized = true
         resetGame()
     }
 
-    // Monitor resize safety: respawn food if size changes drastically
-    onGridWidthChanged: {
-        if (foodX >= gridWidth) spawnFood()
-    }
-    onGridHeightChanged: {
-        if (foodY >= gridHeight) spawnFood()
-    }
+    onGridWidthChanged: scheduleResize()
+    onGridHeightChanged: scheduleResize()
 
-    // Data models
     ListModel {
         id: snakeModel
     }
 
-    // UI Layout
+    Timer {
+        interval: rootWindow.speedInterval
+        running: rootWindow.initialized && rootWindow.playable && !rootWindow.gameOver
+                 && !rootWindow.isPaused && !rootWindow.resizing
+        repeat: true
+        onTriggered: rootWindow.step()
+    }
+
+    Timer {
+        id: resizeTimer
+        interval: 100
+        repeat: false
+        onTriggered: rootWindow.finishResize()
+    }
+
     Column {
         anchors.fill: parent
         spacing: 0
 
-        // Minimalist Status header
         Rectangle {
+            id: header
             width: parent.width
-            height: 1
-            color: "#111b15"
+            height: 3
+            color: "#0b1711"
 
-            Row {
+            Text {
                 anchors.left: parent.left
-                anchors.leftMargin: 2
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 4
-
-                Text {
-                    text: "🐍 TUI Snake"
-                    color: "lightgreen"
-                    bold: true
-                }
-
-                Text { text: "|"; color: "gray" }
-
-                Text {
-                    text: "Score: " + rootWindow.score
-                    color: "yellow"
-                    bold: true
-                }
-
-                Text {
-                    text: "High: " + rootWindow.highScore
-                    color: "yellow"
-                }
-
-                Text { text: "|"; color: "gray" }
-
-                Text {
-                    text: "Level: " + rootWindow.level
-                    color: "cyan"
-                }
-
-                Text {
-                    text: "Speed: " + rootWindow.speedInterval + "ms"
-                    color: "magenta"
-                }
-
-                Text { text: "|"; color: "gray" }
-
-                Spinner {
-                    style: Spinner.Style.Dots
-                    color: rootWindow.gameOver ? "red" : (rootWindow.isPaused ? "yellow" : "green")
-                }
-
-                Text {
-                    text: rootWindow.gameOver ? "GAME OVER" : (rootWindow.isPaused ? "PAUSED" : "RUNNING")
-                    color: rootWindow.gameOver ? "red" : (rootWindow.isPaused ? "yellow" : "green")
-                    bold: true
-                }
+                anchors.leftMargin: 1
+                anchors.top: parent.top
+                text: parent.width < 64 ? qsTr("SNAKE") : qsTr("SNAKE // HALF-BLOCK EDITION")
+                color: "#7dff9b"
+                bold: true
             }
 
             Text {
                 anchors.right: parent.right
-                anchors.rightMargin: 2
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Move: WASD/Arrows | Pause: Space | Reset: R | Quit: Q"
-                color: "gray"
+                anchors.rightMargin: 1
+                anchors.top: parent.top
+                text: parent.width < 54
+                      ? qsTr("%1 pts").arg(rootWindow.score)
+                      : qsTr("SCORE %1  BEST %2  LVL %3")
+                            .arg(rootWindow.score).arg(rootWindow.highScore).arg(rootWindow.level)
+                color: "#ffd166"
+                bold: true
+            }
+
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 1
+                anchors.bottom: parent.bottom
+                text: parent.width < 70
+                      ? qsTr("WASD/ARROWS · SPACE · R · Q")
+                      : qsTr("MOVE WASD/ARROWS  ·  PAUSE SPACE  ·  RESTART R  ·  QUIT Q")
+                color: "#789488"
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: 1
+                anchors.bottom: parent.bottom
+                visible: parent.width >= 70
+                text: rootWindow.gameOver
+                      ? (rootWindow.won ? qsTr("BOARD CLEARED") : qsTr("GAME OVER"))
+                      : (rootWindow.isPaused ? qsTr("PAUSED") : qsTr("RUNNING · %1ms").arg(rootWindow.speedInterval))
+                color: rootWindow.gameOver ? "#ff5d73" : (rootWindow.isPaused ? "#ffd166" : "#57e389")
+                bold: true
             }
         }
 
-        // Full screen Game Field
         Rectangle {
             id: gameField
             width: parent.width
-            height: parent.height - 1
+            height: parent.height - header.height
+            color: "#030806"
             border.style: "single"
-            border.color: "green"
-            color: "black"
+            border.color: rootWindow.gameOver ? "#8f3045" : "#225c38"
 
-            // Render food (Pulsing color using ColorAnimation)
-            Text {
-                id: foodItem
-                text: "★ "
-                color: "red"
-                bold: true
-                x: (rootWindow.foodX * 2) + 1
-                y: rootWindow.foodY + 1
-                width: 2
-                height: 1
-                visible: rootWindow.gridWidth > 0 && rootWindow.gridHeight > 0
-
-                ColorAnimation {
-                    id: foodColorAnim
-                    target: foodItem
-                    property: "color"
-                    running: true
-                    duration: 300
-                    from: "red"
-                    to: "yellow"
-                    onFinished: {
-                        if (to === "yellow") {
-                            from = "yellow";
-                            to = "magenta";
-                        } else if (to === "magenta") {
-                            from = "magenta";
-                            to = "red";
-                        } else {
-                            from = "red";
-                            to = "yellow";
-                        }
-                        stop();
-                        start();
-                    }
-                }
-
-            }
-
-            // Render Snake segments with smooth slide animations
-            Repeater {
-                model: snakeModel
-                delegate: Text {
-                    id: segmentText
-
-                    readonly property int safeX: (model.x + rootWindow.gridWidth) % Math.max(1, rootWindow.gridWidth)
-                    readonly property int safeY: (model.y + rootWindow.gridHeight) % Math.max(1, rootWindow.gridHeight)
-
-                    property int targetX: (safeX * 2) + 1
-                    property int targetY: safeY + 1
-
-                    text: index === 0 ? "██" : "▓▓"
-                    color: index === 0 ? "lightgreen" : "green"
-                    bold: index === 0
-
-                    x: targetX
-                    y: targetY
-                    width: 2
-                    height: 1
-
-                    // Smooth horizontal glide animation (duration is 0 on wrap jumps to teleport instantly)
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: Math.abs(segmentText.x - segmentText.targetX) <= 2 ? Math.max(30, rootWindow.speedInterval - 15) : 0
-                        }
-                    }
-
-                    // Smooth vertical glide animation (duration is 0 on wrap jumps to teleport instantly)
-                    Behavior on y {
-                        NumberAnimation {
-                            duration: Math.abs(segmentText.y - segmentText.targetY) <= 1 ? Math.max(30, rootWindow.speedInterval - 15) : 0
-                        }
-                    }
-
-                }
-            }
-
-            // Floating +10 Score popup (Using NumberAnimation on y offset)
-            Text {
-                id: scorePopup
-                text: "+10"
-                color: "yellow"
-                bold: true
-                visible: popupAnim.running
-
-                property int baseX: 0
-                property int baseY: 0
-                property real offset: 0.0
-
-                x: baseX
-                y: baseY - Math.round(offset)
-                width: 3
-                height: 1
-
-                PropertyAnimation {
-                    id: popupAnim
-                    target: scorePopup
-                    property: "offset"
-                    running: false
-                    from: 0.0
-                    to: 3.0
-                    duration: 500
-                    easing: Easing.OutQuad
-                }
-
-
-            }
-
-            // Paused Overlay
-            Rectangle {
-                visible: rootWindow.isPaused && !rootWindow.gameOver
+            Canvas {
+                id: gameCanvas
                 anchors.fill: parent
                 anchors.margins: 1
-                color: "black"
+                renderMode: Canvas.HalfBlock
+                autoClear: false
+                fillColor: "#030806"
+            }
 
+            Rectangle {
+                id: sizeWarning
+                anchors.centerIn: parent
+                readonly property bool compact: width < 30 || gameField.height < 9
+                width: Math.max(3, Math.min(parent.width - 2, 38))
+                height: compact ? Math.max(1, Math.min(parent.height - 2, 3)) : 7
+                visible: !rootWindow.playable
+                color: "#17120b"
+                border.style: "single"
+                border.color: "#ffd166"
                 Column {
                     anchors.centerIn: parent
                     spacing: 1
-
                     Text {
-                        text: "P A U S E D"
-                        color: "yellow"
-                        bold: true
+                        width: parent.width
+                        text: sizeWarning.compact ? qsTr("TOO SMALL") : qsTr("TERMINAL TOO SMALL")
                         horizontalAlignment: Qt.AlignHCenter
+                        color: "#ffd166"
+                        bold: true
                     }
                     Text {
-                        text: "Press SPACE to Resume"
-                        color: "white"
+                        width: parent.width
+                        visible: !sizeWarning.compact
+                        text: qsTr("Resize to at least 14 × 10")
                         horizontalAlignment: Qt.AlignHCenter
+                        color: "#d7c7a4"
+                    }
+                    Text {
+                        width: parent.width
+                        visible: !sizeWarning.compact
+                        text: qsTr("Current grid: %1 × %2").arg(rootWindow.gridWidth).arg(rootWindow.gridHeight)
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#789488"
                     }
                 }
             }
 
-            // Game Over Overlay
             Rectangle {
-                visible: rootWindow.gameOver
                 anchors.centerIn: parent
-                width: 32
-                height: 8
-                color: "#2a0808"
-                border.style: "single"
-                border.color: "red"
-
+                width: Math.min(parent.width - 4, 38)
+                height: 9
+                visible: rootWindow.gameOver && rootWindow.playable
+                color: rootWindow.won ? "#092417" : "#240c13"
+                border.style: "double"
+                border.color: rootWindow.won ? "#57e389" : "#ff5d73"
                 Column {
                     anchors.centerIn: parent
                     spacing: 1
-
                     Text {
-                        text: "G A M E   O V E R"
-                        color: "red"
+                        width: parent.width
+                        text: rootWindow.won ? qsTr("BOARD CLEARED!") : qsTr("GAME OVER")
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: rootWindow.won ? "#57e389" : "#ff5d73"
                         bold: true
-                        horizontalAlignment: Qt.AlignHCenter
-                        width: parent.width
                     }
                     Text {
-                        text: "Final Score: " + rootWindow.score
-                        color: "yellow"
-                        horizontalAlignment: Qt.AlignHCenter
                         width: parent.width
+                        text: qsTr("Score %1  ·  Best %2").arg(rootWindow.score).arg(rootWindow.highScore)
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#ffd166"
                     }
                     Text {
-                        text: "Press R to Restart"
-                        color: "white"
-                        horizontalAlignment: Qt.AlignHCenter
                         width: parent.width
+                        text: qsTr("R / ENTER to play again")
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#e4eee8"
                     }
                     Text {
-                        text: "Press Q to Quit"
-                        color: "gray"
-                        horizontalAlignment: Qt.AlignHCenter
                         width: parent.width
+                        text: qsTr("Q / ESC to quit")
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#789488"
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 28
+                height: 5
+                visible: rootWindow.isPaused && !rootWindow.gameOver && rootWindow.playable
+                color: "#17120b"
+                border.style: "single"
+                border.color: "#ffd166"
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 1
+                    Text {
+                        width: parent.width
+                        text: qsTr("PAUSED")
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#ffd166"
+                        bold: true
+                    }
+                    Text {
+                        width: parent.width
+                        text: qsTr("SPACE to continue")
+                        horizontalAlignment: Qt.AlignHCenter
+                        color: "#e4eee8"
                     }
                 }
             }

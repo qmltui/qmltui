@@ -50,6 +50,8 @@ qt_add_qml_module(QtuiCore
         items/Border.cpp
         items/TextInput.h
         items/TextInput.cpp
+        items/TextEditorState.h
+        items/TextEditorState.cpp
         items/TextArea.h
         items/TextArea.cpp
         items/LogView.h

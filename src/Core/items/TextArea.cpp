@@ -1,10 +1,11 @@
 #include "TextArea.h"
 
-#include "../primitives/ColorMapper.h"
-#include "../primitives/UnicodeText.h"
 #include "../engine/KeyEvent.h"
 #include "../engine/MouseEvent.h"
+#include "../primitives/ColorMapper.h"
+#include "../primitives/UnicodeText.h"
 #include "Terminal.h"
+
 #include <algorithm>
 
 namespace qtui {
@@ -18,21 +19,30 @@ TextArea::TextArea(QObject* parent) : Item(parent) {
 
 TextArea::~TextArea() = default;
 
+void TextArea::applyEditorChange(const TextEditorState::Change &change) {
+    if (change.text) {
+        int maximumWidth = 0;
+        for (const QString &line : m_editor.text().split('\n'))
+            maximumWidth = std::max(maximumWidth, UnicodeText::displayWidth(line));
+        setImplicitWidth(std::max(
+            1, maximumWidth + leftPadding() + rightPadding()));
+        setImplicitHeight(std::max(
+            1, static_cast<int>(m_editor.text().count('\n')) + 1
+                + topPadding() + bottomPadding()));
+        emit textChanged();
+    }
+    if (change.cursor)
+        emit cursorPositionChanged();
+    if (change.selection)
+        emit selectionChanged();
+    if (change.any()) {
+        ensureCursorVisible();
+        markDirty();
+    }
+}
+
 void TextArea::setText(const QString& text) {
-    if (m_text == text) return;
-    m_text = text;
-    m_cursorPosition = std::min(m_cursorPosition, static_cast<int>(m_text.size()));
-    m_selectionAnchor = std::min(m_selectionAnchor, static_cast<int>(m_text.size()));
-    int maximumWidth = 0;
-    for (const QString &line : m_text.split('\n'))
-        maximumWidth = std::max(maximumWidth, UnicodeText::displayWidth(line));
-    setImplicitWidth(std::max(1, maximumWidth + leftPadding() + rightPadding()));
-    setImplicitHeight(std::max(1, static_cast<int>(m_text.count('\n')) + 1 + topPadding() + bottomPadding()));
-    emit textChanged();
-    emit cursorPositionChanged();
-    emit selectionChanged();
-    ensureCursorVisible();
-    markDirty();
+    applyEditorChange(m_editor.setText(text));
 }
 
 void TextArea::setColor(const QString& color) {
@@ -55,15 +65,15 @@ void TextArea::setCursorPosition(int pos) {
 }
 
 int TextArea::selectionStart() const {
-    return std::min(m_cursorPosition, m_selectionAnchor);
+    return m_editor.selectionStart();
 }
 
 int TextArea::selectionEnd() const {
-    return std::max(m_cursorPosition, m_selectionAnchor);
+    return m_editor.selectionEnd();
 }
 
 QString TextArea::selectedText() const {
-    return m_text.mid(selectionStart(), selectionEnd() - selectionStart());
+    return m_editor.selectedText();
 }
 
 void TextArea::setReadOnly(bool readOnly) {
@@ -81,7 +91,9 @@ void TextArea::setContentX(int x) {
 }
 
 void TextArea::setContentY(int y) {
-    const int maximum = std::max(0, static_cast<int>(m_text.count('\n')) + 1 - std::max(1, height() - topPadding() - bottomPadding()));
+    const int maximum = std::max(
+        0, static_cast<int>(m_editor.text().count('\n')) + 1
+            - std::max(1, height() - topPadding() - bottomPadding()));
     const int clamped = std::clamp(y, 0, maximum);
     if (m_contentY == clamped) return;
     m_contentY = clamped;
@@ -90,143 +102,86 @@ void TextArea::setContentY(int y) {
 }
 
 void TextArea::selectAll() {
-    m_selectionAnchor = 0;
-    m_cursorPosition = m_text.size();
-    emit cursorPositionChanged();
-    emit selectionChanged();
-    ensureCursorVisible();
+    applyEditorChange(m_editor.selectAll());
 }
 
 void TextArea::clearSelection() {
-    if (m_selectionAnchor == m_cursorPosition) return;
-    m_selectionAnchor = m_cursorPosition;
-    emit selectionChanged();
-    markDirty();
+    applyEditorChange(m_editor.clearSelection());
 }
 
 void TextArea::copy() {
-    if (selectedText().isEmpty()) return;
+    if (!m_editor.hasSelection()) return;
     if (Terminal *term = terminal())
-        term->copyToClipboard(selectedText());
+        term->copyToClipboard(m_editor.selectedText());
 }
 
 void TextArea::cut() {
-    if (m_readOnly || selectedText().isEmpty()) return;
+    if (m_readOnly || !m_editor.hasSelection()) return;
     copy();
-    recordUndo();
-    deleteSelection();
+    applyEditorChange(m_editor.deleteSelection());
 }
 
 void TextArea::paste(const QString &text) {
     if (m_readOnly || text.isEmpty()) return;
-    recordUndo();
-    replaceSelection(text);
+    applyEditorChange(m_editor.replaceSelection(text));
 }
 
 void TextArea::undo() {
-    if (m_readOnly || m_undoStack.isEmpty()) return;
-    m_redoStack.append(m_text);
-    const QString previous = m_undoStack.takeLast();
-    setText(previous);
-    moveCursor(std::min(m_cursorPosition, static_cast<int>(previous.size())), false);
+    if (m_readOnly) return;
+    applyEditorChange(m_editor.undo());
 }
 
 void TextArea::redo() {
-    if (m_readOnly || m_redoStack.isEmpty()) return;
-    m_undoStack.append(m_text);
-    const QString next = m_redoStack.takeLast();
-    setText(next);
-    moveCursor(std::min(m_cursorPosition, static_cast<int>(next.size())), false);
+    if (m_readOnly) return;
+    applyEditorChange(m_editor.redo());
 }
 
 void TextArea::lineColumnForPosition(int position, int &line, int &column) const {
     const int start = lineStart(position);
-    line = m_text.left(start).count('\n');
-    column = UnicodeText::displayWidth(m_text.mid(start, position - start));
+    line = m_editor.text().left(start).count('\n');
+    column = UnicodeText::displayWidth(
+        m_editor.text().mid(start, position - start));
 }
 
 int TextArea::positionForLineColumn(int line, int column) const {
-    const QStringList lines = m_text.split('\n');
+    const QStringList lines = m_editor.text().split('\n');
     if (lines.isEmpty()) return 0;
     line = std::clamp(line, 0, static_cast<int>(lines.size()) - 1);
     int position = 0;
-    for (int i = 0; i < line; ++i)
-        position += lines[i].size() + 1;
-    int width = 0;
-    for (const Grapheme &cluster : UnicodeText::graphemes(lines[line])) {
-        if (width + cluster.width > column)
-            break;
-        width += cluster.width;
-        position += cluster.utf16Length;
-    }
-    return position;
+    for (int index = 0; index < line; ++index)
+        position += lines[index].size() + 1;
+    return position + TextEditorState::positionForColumn(lines[line], column);
 }
 
 int TextArea::lineStart(int position) const {
-    const int newline = m_text.lastIndexOf('\n', std::max(0, position - 1));
+    const int newline = m_editor.text().lastIndexOf(
+        '\n', std::max(0, position - 1));
     return newline < 0 ? 0 : newline + 1;
 }
 
 int TextArea::lineEnd(int position) const {
-    const int newline = m_text.indexOf('\n', position);
-    return newline < 0 ? m_text.size() : newline;
+    const int newline = m_editor.text().indexOf('\n', position);
+    return newline < 0 ? m_editor.text().size() : newline;
 }
 
 void TextArea::moveCursor(int position, bool extendSelection) {
-    const int clamped = std::clamp(position, 0, static_cast<int>(m_text.size()));
-    if (!extendSelection)
-        m_selectionAnchor = clamped;
-    if (m_cursorPosition == clamped) {
-        if (!extendSelection) emit selectionChanged();
-        return;
-    }
-    m_cursorPosition = clamped;
-    emit cursorPositionChanged();
-    emit selectionChanged();
-    ensureCursorVisible();
-    markDirty();
-}
-
-bool TextArea::deleteSelection() {
-    if (selectionStart() == selectionEnd()) return false;
-    const int start = selectionStart();
-    QString changed = m_text;
-    changed.remove(start, selectionEnd() - start);
-    m_cursorPosition = start;
-    m_selectionAnchor = start;
-    m_text.clear();
-    setText(changed);
-    return true;
-}
-
-void TextArea::replaceSelection(const QString &replacement) {
-    const int start = selectionStart();
-    m_text.replace(start, selectionEnd() - start, replacement);
-    m_cursorPosition = start + replacement.size();
-    m_selectionAnchor = m_cursorPosition;
-    const QString changed = m_text;
-    m_text.clear();
-    setText(changed);
-}
-
-void TextArea::recordUndo() {
-    if (m_undoStack.isEmpty() || m_undoStack.last() != m_text)
-        m_undoStack.append(m_text);
-    if (m_undoStack.size() > 100)
-        m_undoStack.removeFirst();
-    m_redoStack.clear();
+    applyEditorChange(m_editor.moveCursor(position, extendSelection));
 }
 
 void TextArea::ensureCursorVisible() {
     int line = 0;
     int column = 0;
-    lineColumnForPosition(m_cursorPosition, line, column);
-    const int viewportWidth = std::max(1, width() - leftPadding() - rightPadding());
-    const int viewportHeight = std::max(1, height() - topPadding() - bottomPadding());
+    lineColumnForPosition(m_editor.cursorPosition(), line, column);
+    const int viewportWidth = std::max(
+        1, width() - leftPadding() - rightPadding());
+    const int viewportHeight = std::max(
+        1, height() - topPadding() - bottomPadding());
     if (line < m_contentY) setContentY(line);
-    else if (line >= m_contentY + viewportHeight) setContentY(line - viewportHeight + 1);
+    else if (line >= m_contentY + viewportHeight)
+        setContentY(line - viewportHeight + 1);
     if (column < m_contentX) setContentX(column);
-    else if (column >= m_contentX + viewportWidth) setContentX(column - viewportWidth + 1);
+    else if (column >= m_contentX + viewportWidth)
+        setContentX(column - viewportWidth + 1);
 }
 
 void TextArea::keyPressEvent(KeyEvent* event) {
@@ -237,79 +192,80 @@ void TextArea::keyPressEvent(KeyEvent* event) {
 
     if (key == Qt::Key_Tab || key == Qt::Key_Backtab)
         return;
+
+    TextEditorState::Change change;
     if (control && key == Qt::Key_A) {
-        selectAll();
+        change = m_editor.selectAll();
     } else if (control && key == Qt::Key_C) {
-        if (selectedText().isEmpty())
-            return;
+        if (!m_editor.hasSelection()) return;
         copy();
     } else if (control && key == Qt::Key_X) {
-        cut();
+        if (m_readOnly || !m_editor.hasSelection()) return;
+        copy();
+        change = m_editor.deleteSelection();
+    } else if (control && key == Qt::Key_Z && shift) {
+        if (!m_readOnly) change = m_editor.redo();
     } else if (control && key == Qt::Key_Z) {
-        undo();
+        if (!m_readOnly) change = m_editor.undo();
     } else if (control && key == Qt::Key_Y) {
-        redo();
+        if (!m_readOnly) change = m_editor.redo();
     } else if (key == Qt::Key_Left) {
-        int position = UnicodeText::previousBoundary(m_text, m_cursorPosition);
-        if (control) {
-            while (position > 0 && m_text[position - 1].isSpace())
-                position = UnicodeText::previousBoundary(m_text, position);
-            while (position > 0 && !m_text[position - 1].isSpace())
-                position = UnicodeText::previousBoundary(m_text, position);
-        }
-        moveCursor(position, shift);
+        const int position = m_editor.hasSelection() && !shift
+            ? m_editor.selectionStart()
+            : (control
+                ? m_editor.previousWordPosition()
+                : UnicodeText::previousBoundary(
+                    m_editor.text(), m_editor.cursorPosition()));
+        change = m_editor.moveCursor(position, shift);
     } else if (key == Qt::Key_Right) {
-        int position = UnicodeText::nextBoundary(m_text, m_cursorPosition);
-        if (control) {
-            while (position < m_text.size() && !m_text[position].isSpace())
-                position = UnicodeText::nextBoundary(m_text, position);
-            while (position < m_text.size() && m_text[position].isSpace())
-                position = UnicodeText::nextBoundary(m_text, position);
-        }
-        moveCursor(position, shift);
+        const int position = m_editor.hasSelection() && !shift
+            ? m_editor.selectionEnd()
+            : (control
+                ? (shift
+                    ? m_editor.nextWordEndPosition()
+                    : m_editor.nextWordPosition())
+                : UnicodeText::nextBoundary(
+                    m_editor.text(), m_editor.cursorPosition()));
+        change = m_editor.moveCursor(position, shift);
     } else if (key == Qt::Key_Home) {
-        moveCursor(lineStart(m_cursorPosition), shift);
+        change = m_editor.moveCursor(lineStart(m_editor.cursorPosition()), shift);
     } else if (key == Qt::Key_End) {
-        moveCursor(lineEnd(m_cursorPosition), shift);
+        change = m_editor.moveCursor(lineEnd(m_editor.cursorPosition()), shift);
     } else if (key == Qt::Key_Up || key == Qt::Key_Down) {
         int line = 0, column = 0;
-        lineColumnForPosition(m_cursorPosition, line, column);
-        moveCursor(positionForLineColumn(line + (key == Qt::Key_Up ? -1 : 1), column), shift);
+        lineColumnForPosition(m_editor.cursorPosition(), line, column);
+        change = m_editor.moveCursor(positionForLineColumn(
+            line + (key == Qt::Key_Up ? -1 : 1), column), shift);
     } else if (key == Qt::Key_PageUp || key == Qt::Key_PageDown) {
         int line = 0, column = 0;
-        lineColumnForPosition(m_cursorPosition, line, column);
-        const int page = std::max(1, height() - topPadding() - bottomPadding());
-        moveCursor(positionForLineColumn(
+        lineColumnForPosition(m_editor.cursorPosition(), line, column);
+        const int page = std::max(
+            1, height() - topPadding() - bottomPadding());
+        change = m_editor.moveCursor(positionForLineColumn(
             line + (key == Qt::Key_PageUp ? -page : page), column), shift);
     } else if (!m_readOnly && key == Qt::Key_Backspace) {
-        recordUndo();
-        if (!deleteSelection() && m_cursorPosition > 0) {
-            const int previous = UnicodeText::previousBoundary(m_text, m_cursorPosition);
-            m_text.remove(previous, m_cursorPosition - previous);
-            m_cursorPosition = previous;
-            m_selectionAnchor = previous;
-            const QString changed = m_text;
-            m_text.clear();
-            setText(changed);
-        }
+        change = control
+            ? m_editor.deletePreviousWord()
+            : m_editor.deletePreviousCharacter();
     } else if (!m_readOnly && key == Qt::Key_Delete) {
-        recordUndo();
-        if (!deleteSelection() && m_cursorPosition < m_text.size()) {
-            const int next = UnicodeText::nextBoundary(m_text, m_cursorPosition);
-            m_text.remove(m_cursorPosition, next - m_cursorPosition);
-            const QString changed = m_text;
-            m_text.clear();
-            setText(changed);
-        }
-    } else if (!m_readOnly && (key == Qt::Key_Return || key == Qt::Key_Enter)) {
-        recordUndo();
-        replaceSelection("\n");
-    } else if (!m_readOnly && !event->text().isEmpty()) {
-        recordUndo();
-        replaceSelection(event->text());
+        change = control
+            ? m_editor.deleteNextWord()
+            : m_editor.deleteNextCharacter();
+    } else if (!m_readOnly && control && key == Qt::Key_W) {
+        change = m_editor.deletePreviousWord();
+    } else if (!m_readOnly && control && key == Qt::Key_U) {
+        change = m_editor.deleteToStart();
+    } else if (!m_readOnly && control && key == Qt::Key_K) {
+        change = m_editor.deleteToEnd();
+    } else if (!m_readOnly
+               && (key == Qt::Key_Return || key == Qt::Key_Enter)) {
+        change = m_editor.replaceSelection("\n");
+    } else if (!m_readOnly && !control && !event->text().isEmpty()) {
+        change = m_editor.replaceSelection(event->text());
     } else {
         return;
     }
+    applyEditorChange(change);
     event->setAccepted(true);
 }
 
@@ -330,16 +286,23 @@ int TextArea::positionAtMouse(int x, int y) const {
     return positionForLineColumn(line, column);
 }
 
-void TextArea::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void TextArea::render(
+    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     Item::render(buffer, absX, absY, clipRect);
-    const int viewportWidth = std::max(0, width() - leftPadding() - rightPadding());
-    const int viewportHeight = std::max(0, height() - topPadding() - bottomPadding());
+    const int viewportWidth = std::max(
+        0, width() - leftPadding() - rightPadding());
+    const int viewportHeight = std::max(
+        0, height() - topPadding() - bottomPadding());
     const ClipRect contentClip = clipRect.intersected(
-        ClipRect{absX + leftPadding(), absY + topPadding(), viewportWidth, viewportHeight});
+        ClipRect{absX + leftPadding(), absY + topPadding(),
+                 viewportWidth, viewportHeight});
 
-    const QString displayText = m_text.isEmpty() && !activeFocus() ? m_placeholderText : m_text;
-    const uint32_t displayColor = !isEffectivelyEnabled() ? 0xFF808080
-        : (m_text.isEmpty() && !activeFocus() ? 0xFF808080 : m_resolvedColor);
+    const QString displayText = m_editor.text().isEmpty() && !activeFocus()
+        ? m_placeholderText : m_editor.text();
+    const uint32_t displayColor = !isEffectivelyEnabled()
+        ? 0xFF808080
+        : (m_editor.text().isEmpty() && !activeFocus()
+            ? 0xFF808080 : m_resolvedColor);
     const QStringList lines = displayText.split('\n');
     int globalOffset = 0;
     for (int line = 0; line < m_contentY && line < lines.size(); ++line)
@@ -352,15 +315,22 @@ void TextArea::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         int displayColumn = 0;
         for (const Grapheme &cluster : UnicodeText::graphemes(lines[lineIndex])) {
             const int x = absX + leftPadding() + displayColumn - m_contentX;
-            if (x >= absX + leftPadding() && x + cluster.width <= absX + leftPadding() + viewportWidth &&
-                contentClip.contains(x, y)) {
-                buffer.writeText(x, y, QString::fromUtf8(cluster.utf8), displayColor);
+            const int width = std::max(1, cluster.width);
+            if (x >= absX + leftPadding()
+                && x + width <= absX + leftPadding() + viewportWidth
+                && contentClip.contains(x, y)
+                && contentClip.contains(x + width - 1, y)) {
+                buffer.writeText(
+                    x, y, QString::fromUtf8(cluster.utf8), displayColor);
                 const int clusterStart = globalOffset + cluster.utf16Start;
                 const int clusterEnd = clusterStart + cluster.utf16Length;
-                if (!m_text.isEmpty() && clusterEnd > selectionStart() && clusterStart < selectionEnd()) {
-                    for (int dx = 0; dx < std::max(1, cluster.width); ++dx)
+                if (!m_editor.text().isEmpty()
+                    && clusterEnd > selectionStart()
+                    && clusterStart < selectionEnd()) {
+                    for (int dx = 0; dx < width; ++dx)
                         buffer.cellAt(x + dx, y).attributes =
-                            buffer.cellAt(x + dx, y).attributes | TextAttribute::Reversed;
+                            buffer.cellAt(x + dx, y).attributes
+                            | TextAttribute::Reversed;
                 }
             }
             displayColumn += cluster.width;
@@ -370,7 +340,7 @@ void TextArea::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect
 
     if (activeFocus()) {
         int line = 0, column = 0;
-        lineColumnForPosition(m_cursorPosition, line, column);
+        lineColumnForPosition(m_editor.cursorPosition(), line, column);
         const int x = absX + leftPadding() + column - m_contentX;
         const int y = absY + topPadding() + line - m_contentY;
         if (contentClip.contains(x, y)) {

@@ -6,8 +6,8 @@ qt_add_qml_module(qtui_rectangle
     QML_FILES
         Main.qml
     DEPENDENCIES
-        Qtui
-        Qtui.Canvas
+        TARGET Qtui::Canvas
+        TARGET Qtui::Core
 )
 
 target_link_libraries(qtui_rectangle PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Canvas)

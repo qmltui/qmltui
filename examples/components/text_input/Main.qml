@@ -2,33 +2,38 @@ import QtQml 2.15
 import Qtui
 
 Terminal {
+    id: rootWindow
+    fillTerminal: true
+    color: "#0f172a"
+    useAlternateScreen: true
+
+    property string lastAction: "Ready for text input..."
+
+    // Explicit key handling to quit, as per project rules (.agents/AGENTS.md)
     Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_Q) || event.key === Qt.Key_Q) {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit()
             event.accepted = true
         }
     }
-
-    id: rootWindow
-    width: 80
-    height: 24
-    color: "green"
-    useAlternateScreen: true
 
     Column {
         anchors.fill: parent
         anchors.margins: 1
         spacing: 1
 
-        // Title Header with background color and bold text
+        // Title Header
         Rectangle {
             width: parent.width
             height: 3
-            color: "#222222"
+            color: "#1e293b"
+            border.style: "single"
+            border.color: "cyan"
 
             Text {
                 anchors.fill: parent
-                text: "Declarative Terminal UI Framework - Interactive Demo"
+                anchors.margins: 1
+                text: "Interactive TextInput Component Demo"
                 color: "cyan"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter
@@ -36,141 +41,157 @@ Terminal {
             }
         }
 
-        // Row of focusable widgets
-        Row {
-            spacing: 4
-
-            // Focusable Button 1
-            Rectangle {
-                id: opt1
-                width: 15
-                height: 3
-                focusable: true
-                color: activeFocus ? "blue" : "#111111"
-
-                Text {
-                    anchors.fill: parent
-                    text: opt1.activeFocus ? ">> Option 1 <<" : "   Option 1   "
-                    color: opt1.activeFocus ? "white" : "silver"
-                    bold: opt1.activeFocus
-                    verticalAlignment: Qt.AlignVCenter
-                }
-
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Return) {
-                        statusText.text = "Selected Option 1 via Return Key!"
-                        event.accepted = true
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: (event) => {
-                        opt1.focus = true
-                        statusText.text = "Clicked Option 1!"
-                    }
-                }
-            }
-
-            // Focusable Button 2
-            Rectangle {
-                id: opt2
-                width: 15
-                height: 3
-                focusable: true
-                color: activeFocus ? "green" : "#111111"
-
-                Text {
-                    anchors.fill: parent
-                    text: opt2.activeFocus ? ">> Option 2 <<" : "   Option 2   "
-                    color: opt2.activeFocus ? "white" : "silver"
-                    bold: opt2.activeFocus
-                    verticalAlignment: Qt.AlignVCenter
-                }
-
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Return) {
-                        statusText.text = "Selected Option 2 via Return Key!"
-                        event.accepted = true
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: (event) => {
-                        opt2.focus = true
-                        statusText.text = "Clicked Option 2!"
-                    }
-                }
-            }
-        }
-
-        // Status Label
+        // Subtitle / Instructions
         Text {
-            id: statusText
             width: parent.width
-            text: "Use Tab/Shift-Tab to cycle focus, Enter to select, or Click any item."
-            color: "yellow"
+            text: "Use Tab / Shift+Tab to switch focus. Type to edit. Left/Right/Home/End/Backspace/Delete work natively. Press Enter to submit."
+            color: "#94a3b8"
         }
 
-        // Rich Text / ANSI parser showcase
-        Column {
-            spacing: 0
-            
-            Text {
-                text: "ANSI Color & Attribute Parsing Showcase:"
-                color: "gray"
-                underline: true
-            }
+        // Main Input Form Panel
+        Rectangle {
+            width: parent.width
+            height: parent.height - 8
+            color: "#020617"
+            border.style: "double"
+            border.color: "#334155"
 
-            Text {
-                text: "\u001b[1;31mRed Bold\u001b[0m, \u001b[3mItalic Green\u001b[0m, \u001b[4;34mUnderline Blue\u001b[0m, \u001b[7;35mReversed Purple\u001b[0m"
-            }
-
-            Text {
-                text: "Truecolor SGR: \u001b[38;2;255;165;0mOrange (255,165,0)\u001b[0m, \u001b[38;2;128;0;128;48;2;240;240;240mPurple on lightgray\u001b[0m"
-            }
-        }
-
-        // Interactive Mouse Area Showcase
-        Row {
-            spacing: 2
-
-            Rectangle {
-                id: mouseDetector
-                width: 40
-                height: 5
-                color: "#333333"
+            Column {
+                anchors.fill: parent
+                anchors.margins: 1
+                spacing: 1
 
                 Text {
-                    id: mouseDetectorText
-                    anchors.fill: parent
-                    color: "white"
-                    text: "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseArea.mouseX + ", " + mouseArea.mouseY + ")\nLast event: None"
+                    text: "SYSTEM LOGIN & COMMAND FORM"
+                    color: "#f8fafc"
+                    bold: true
                 }
 
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    
-                    onPressed: (event) => {
-                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Pressed button " + event.button
+                // 1. Username Field
+                Row {
+                    spacing: 2
+
+                    Text {
+                        width: 14
+                        text: "Username:"
+                        color: userInput.activeFocus ? "#38bdf8" : "#94a3b8"
+                        bold: userInput.activeFocus
                     }
-                    onReleased: (event) => {
-                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Released button " + event.button
+
+                    Rectangle {
+                        width: 45
+                        height: 3
+                        color: userInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: userInput.activeFocus ? "double" : "single"
+                        border.color: userInput.activeFocus ? "#38bdf8" : "#475569"
+
+                        TextInput {
+                            id: userInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "admin"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            onAccepted: {
+                                rootWindow.lastAction = "Submitted Username: '" + text + "'"
+                            }
+                            onTextChanged: {
+                                rootWindow.lastAction = "Editing Username: '" + text + "'"
+                            }
+                        }
                     }
-                    onClicked: (event) => {
-                        mouseDetectorText.text = "Mouse Tracker Panel:\nMove mouse or click here\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast event: Clicked button " + event.button
+                }
+
+                // 2. Email Field
+                Row {
+                    spacing: 2
+
+                    Text {
+                        width: 14
+                        text: "Email:"
+                        color: emailInput.activeFocus ? "#38bdf8" : "#94a3b8"
+                        bold: emailInput.activeFocus
+                    }
+
+                    Rectangle {
+                        width: 45
+                        height: 3
+                        color: emailInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: emailInput.activeFocus ? "double" : "single"
+                        border.color: emailInput.activeFocus ? "#38bdf8" : "#475569"
+
+                        TextInput {
+                            id: emailInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "operator@qtui.dev"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            onAccepted: {
+                                rootWindow.lastAction = "Submitted Email: '" + text + "'"
+                            }
+                            onTextChanged: {
+                                rootWindow.lastAction = "Editing Email: '" + text + "'"
+                            }
+                        }
+                    }
+                }
+
+                // 3. Terminal Command Line Field
+                Row {
+                    spacing: 2
+
+                    Text {
+                        width: 14
+                        text: "Command:"
+                        color: cmdInput.activeFocus ? "#38bdf8" : "#94a3b8"
+                        bold: cmdInput.activeFocus
+                    }
+
+                    Rectangle {
+                        width: 45
+                        height: 3
+                        color: cmdInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: cmdInput.activeFocus ? "double" : "single"
+                        border.color: cmdInput.activeFocus ? "#38bdf8" : "#475569"
+
+                        TextInput {
+                            id: cmdInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "systemctl status --verbose"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            onAccepted: {
+                                rootWindow.lastAction = "Executed Command: '" + text + "'"
+                            }
+                            onTextChanged: {
+                                rootWindow.lastAction = "Editing Command: '" + text + "'"
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        // Live Action / Output Bar
+        Rectangle {
+            width: parent.width
+            height: 3
+            color: "#1e293b"
+            border.style: "single"
+            border.color: "yellow"
 
             Text {
-                width: parent.width - mouseDetector.width - 2
-                height: 5
-                text: "Instructions:\nPress 'q' to exit.\nResize the terminal window\nto see live resizing!"
-                color: "red"
+                anchors.fill: parent
+                anchors.margins: 1
+                text: "STATUS: " + rootWindow.lastAction
+                color: "yellow"
+                bold: true
+                verticalAlignment: Qt.AlignVCenter
             }
         }
     }

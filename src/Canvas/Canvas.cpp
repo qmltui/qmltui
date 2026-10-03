@@ -46,6 +46,8 @@ void Canvas::setRenderMode(RenderMode mode) {
     m_renderMode = mode;
     resizeBuffer();
     emit renderModeChanged();
+    emit pixelWidthChanged();
+    emit pixelHeightChanged();
     markDirty();
 }
 
@@ -59,11 +61,13 @@ void Canvas::setAutoClear(bool autoClear) {
 void Canvas::setWidth(int width) {
     Item::setWidth(width);
     resizeBuffer();
+    emit pixelWidthChanged();
 }
 
 void Canvas::setHeight(int height) {
     Item::setHeight(height);
     resizeBuffer();
+    emit pixelHeightChanged();
 }
 
 void Canvas::setPixel(int x, int y, bool value) {

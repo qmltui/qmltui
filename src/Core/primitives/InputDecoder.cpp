@@ -7,6 +7,35 @@
 
 namespace qtui {
 
+namespace {
+
+int xtermModifiers(const std::string &parameters) {
+    const size_t separator = parameters.rfind(';');
+    if (separator == std::string::npos || separator + 1 >= parameters.size())
+        return 0;
+
+    int value = 0;
+    for (size_t index = separator + 1; index < parameters.size(); ++index) {
+        const char character = parameters[index];
+        if (character < '0' || character > '9')
+            return 0;
+        value = value * 10 + (character - '0');
+        if (value > 8)
+            return 0;
+    }
+    if (value < 2)
+        return 0;
+
+    const int bits = value - 1;
+    int modifiers = 0;
+    if (bits & 1) modifiers |= Qt::ShiftModifier;
+    if (bits & 2) modifiers |= Qt::AltModifier;
+    if (bits & 4) modifiers |= Qt::ControlModifier;
+    return modifiers;
+}
+
+} // namespace
+
 InputDecoder::InputDecoder() {}
 
 InputDecoder::~InputDecoder() {}
@@ -151,12 +180,21 @@ void InputDecoder::processBuffer() {
                         if (m_keyCallback) m_keyCallback(Qt::Key_Left, "", 0);
                         i = j + 1;
                         continue;
+                    } else if (m_buffer[j] == 'H') { // Home
+                        if (m_keyCallback) m_keyCallback(Qt::Key_Home, "", 0);
+                        i = j + 1;
+                        continue;
+                    } else if (m_buffer[j] == 'F') { // End
+                        if (m_keyCallback) m_keyCallback(Qt::Key_End, "", 0);
+                        i = j + 1;
+                        continue;
                     } else if (m_buffer[j] == 'Z') { // Shift-Tab
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Backtab, "", 0);
+                        if (m_keyCallback)
+                            m_keyCallback(Qt::Key_Backtab, "", Qt::ShiftModifier);
                         i = j + 1;
                         continue;
                     }
-                    if ((m_buffer[j] >= 'A' && m_buffer[j] <= 'Z') || (m_buffer[j] >= 'a' && m_buffer[j] <= 'z') || m_buffer[j] == '~') {
+                    if ((m_buffer[j] >= 'A' && m_buffer[j] <= 'Z') || (m_buffer[j] >= 'a' && m_buffer[j] <= 'z')) {
                         i = j + 1;
                         continue;
                     }
@@ -176,14 +214,33 @@ void InputDecoder::processBuffer() {
                     const char finalByte = m_buffer[finalPosition];
                     const std::string parameters =
                         m_buffer.substr(j, finalPosition - j);
+                    const int modifiers = xtermModifiers(parameters);
                     const bool isBacktab =
                         (finalByte == 'Z')
                         || (finalByte == 'u' && parameters == "9;2")
                         || (finalByte == '~' && parameters == "27;2;9");
                     if (isBacktab && m_keyCallback) {
                         m_keyCallback(Qt::Key_Backtab, "", Qt::ShiftModifier);
+                    } else if (m_keyCallback
+                               && (finalByte == 'A' || finalByte == 'B'
+                                   || finalByte == 'C' || finalByte == 'D'
+                                   || finalByte == 'H' || finalByte == 'F')) {
+                        int key = 0;
+                        if (finalByte == 'A') key = Qt::Key_Up;
+                        else if (finalByte == 'B') key = Qt::Key_Down;
+                        else if (finalByte == 'C') key = Qt::Key_Right;
+                        else if (finalByte == 'D') key = Qt::Key_Left;
+                        else if (finalByte == 'H') key = Qt::Key_Home;
+                        else if (finalByte == 'F') key = Qt::Key_End;
+                        m_keyCallback(key, "", modifiers);
                     } else if (finalByte == '~' && m_keyCallback) {
-                        if (parameters == "11") m_keyCallback(Qt::Key_F1, "", 0);
+                        if (parameters == "3" || parameters.starts_with("3;")) m_keyCallback(Qt::Key_Delete, "", modifiers);
+                        else if (parameters == "1" || parameters == "7" || parameters.starts_with("1;") || parameters.starts_with("7;")) m_keyCallback(Qt::Key_Home, "", modifiers);
+                        else if (parameters == "4" || parameters == "8" || parameters.starts_with("4;") || parameters.starts_with("8;")) m_keyCallback(Qt::Key_End, "", modifiers);
+                        else if (parameters == "5" || parameters.starts_with("5;")) m_keyCallback(Qt::Key_PageUp, "", modifiers);
+                        else if (parameters == "6" || parameters.starts_with("6;")) m_keyCallback(Qt::Key_PageDown, "", modifiers);
+                        else if (parameters == "2" || parameters.starts_with("2;")) m_keyCallback(Qt::Key_Insert, "", modifiers);
+                        else if (parameters == "11") m_keyCallback(Qt::Key_F1, "", 0);
                         else if (parameters == "12") m_keyCallback(Qt::Key_F2, "", 0);
                         else if (parameters == "13") m_keyCallback(Qt::Key_F3, "", 0);
                         else if (parameters == "14") m_keyCallback(Qt::Key_F4, "", 0);

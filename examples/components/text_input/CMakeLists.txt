@@ -11,3 +11,7 @@ qt_add_qml_module(qtui_text_input
 
 target_link_libraries(qtui_text_input PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
+if(QTUI_BUILD_TESTS)
+    target_link_libraries(qtui_text_input PRIVATE Qtui::Testing)
+endif()
+

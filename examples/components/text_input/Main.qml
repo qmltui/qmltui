@@ -7,7 +7,7 @@ Terminal {
     color: "#0f172a"
     useAlternateScreen: true
 
-    property string lastAction: "Ready for text input... Use Tab to cycle inputs"
+    property string lastAction: "Ready for text input... Tab: cycle | Ins: Overwrite mode | Shift+Arrows: select"
 
     // Explicit key handling to quit, as per project rules (.agents/AGENTS.md)
     Keys.onPressed: (event) => {
@@ -33,7 +33,7 @@ Terminal {
             Text {
                 anchors.fill: parent
                 anchors.margins: 1
-                text: "Interactive TextInput Component Demo — Customizable Terminal Cursors"
+                text: "TextInput Component Demo — GridLayout & Terminal Features"
                 color: "cyan"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter
@@ -44,11 +44,11 @@ Terminal {
         // Subtitle / Instructions
         Text {
             width: parent.width
-            text: "Use Tab / Shift+Tab to switch inputs. Observe Block, Beam, Underline, and Custom Delegate cursors!"
+            text: "Tab: next | Ins: toggle Overwrite | Up/Down: Scroll | Shift+Arrows: select"
             color: "#94a3b8"
         }
 
-        // Main Input Form Panel
+        // Main Input Form Container wrapped in ScrollView with GridLayout
         Rectangle {
             width: parent.width
             height: parent.height - 8
@@ -56,31 +56,35 @@ Terminal {
             border.style: "double"
             border.color: "#334155"
 
-            Column {
+            ScrollView {
                 anchors.fill: parent
                 anchors.margins: 1
-                spacing: 1
+                focusable: true
 
-                Text {
-                    text: "TERMINAL CURSOR STYLES DEMO"
-                    color: "#f8fafc"
-                    bold: true
-                }
+                GridLayout {
+                    width: parent.width - 2
+                    columns: 2
+                    columnSpacing: 2
+                    rowSpacing: 1
 
-                // 1. Block Cursor (Cyan + Blinking)
-                Row {
-                    spacing: 2
-
+                    // Header row spanning 2 columns
                     Text {
-                        width: 18
+                        text: "TERMINAL INPUT FIELDS (GRIDLAYOUT)"
+                        color: "#f8fafc"
+                        bold: true
+                        Layout.columnSpan: 2
+                    }
+
+                    // 1. Block Cursor (Cyan + Blinking)
+                    Text {
                         text: "1. Block (Blink):"
                         color: userInput.activeFocus ? "#38bdf8" : "#94a3b8"
                         bold: userInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
                     }
-
                     Rectangle {
-                        width: 45
-                        height: 3
+                        implicitWidth: 45
+                        implicitHeight: 3
                         color: userInput.activeFocus ? "#1e293b" : "#0f172a"
                         border.style: userInput.activeFocus ? "double" : "single"
                         border.color: userInput.activeFocus ? "#38bdf8" : "#475569"
@@ -99,30 +103,21 @@ Terminal {
                             cursorBlinking: true
                             cursorBlinkRate: 400
 
-                            onAccepted: {
-                                rootWindow.lastAction = "Submitted Block: '" + text + "'"
-                            }
-                            onTextChanged: {
-                                rootWindow.lastAction = "Editing Block: '" + text + "'"
-                            }
+                            onAccepted: rootWindow.lastAction = "Submitted Block: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Block: '" + text + "'"
                         }
                     }
-                }
 
-                // 2. Beam Cursor (Yellow)
-                Row {
-                    spacing: 2
-
+                    // 2. Beam Cursor (Yellow)
                     Text {
-                        width: 18
                         text: "2. Beam Shape:"
                         color: beamInput.activeFocus ? "#eab308" : "#94a3b8"
                         bold: beamInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
                     }
-
                     Rectangle {
-                        width: 45
-                        height: 3
+                        implicitWidth: 45
+                        implicitHeight: 3
                         color: beamInput.activeFocus ? "#1e293b" : "#0f172a"
                         border.style: beamInput.activeFocus ? "double" : "single"
                         border.color: beamInput.activeFocus ? "#eab308" : "#475569"
@@ -139,30 +134,21 @@ Terminal {
                             cursorShape: TextInput.Beam
                             cursorColor: "yellow"
 
-                            onAccepted: {
-                                rootWindow.lastAction = "Submitted Beam: '" + text + "'"
-                            }
-                            onTextChanged: {
-                                rootWindow.lastAction = "Editing Beam: '" + text + "'"
-                            }
+                            onAccepted: rootWindow.lastAction = "Submitted Beam: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Beam: '" + text + "'"
                         }
                     }
-                }
 
-                // 3. Underline Cursor (Green + Blinking)
-                Row {
-                    spacing: 2
-
+                    // 3. Underline Cursor (Green + Blinking)
                     Text {
-                        width: 18
                         text: "3. Underline:"
                         color: cmdInput.activeFocus ? "#22c55e" : "#94a3b8"
                         bold: cmdInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
                     }
-
                     Rectangle {
-                        width: 45
-                        height: 3
+                        implicitWidth: 45
+                        implicitHeight: 3
                         color: cmdInput.activeFocus ? "#1e293b" : "#0f172a"
                         border.style: cmdInput.activeFocus ? "double" : "single"
                         border.color: cmdInput.activeFocus ? "#22c55e" : "#475569"
@@ -181,30 +167,21 @@ Terminal {
                             cursorBlinking: true
                             cursorBlinkRate: 350
 
-                            onAccepted: {
-                                rootWindow.lastAction = "Submitted Underline: '" + text + "'"
-                            }
-                            onTextChanged: {
-                                rootWindow.lastAction = "Editing Underline: '" + text + "'"
-                            }
+                            onAccepted: rootWindow.lastAction = "Submitted Underline: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Underline: '" + text + "'"
                         }
                     }
-                }
 
-                // 4. Custom Delegate Glyph Cursor (Magenta)
-                Row {
-                    spacing: 2
-
+                    // 4. Custom Delegate Glyph Cursor (Magenta)
                     Text {
-                        width: 18
-                        text: "4. Custom (▋):"
+                        text: "4. Custom Glyph (▋):"
                         color: customInput.activeFocus ? "#f43f5e" : "#94a3b8"
                         bold: customInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
                     }
-
                     Rectangle {
-                        width: 45
-                        height: 3
+                        implicitWidth: 45
+                        implicitHeight: 3
                         color: customInput.activeFocus ? "#1e293b" : "#0f172a"
                         border.style: customInput.activeFocus ? "double" : "single"
                         border.color: customInput.activeFocus ? "#f43f5e" : "#475569"
@@ -221,12 +198,105 @@ Terminal {
                             cursorDelegate: "▋"
                             cursorColor: "#f43f5e"
 
-                            onAccepted: {
-                                rootWindow.lastAction = "Submitted Custom: '" + text + "'"
-                            }
-                            onTextChanged: {
-                                rootWindow.lastAction = "Editing Custom: '" + text + "'"
-                            }
+                            onAccepted: rootWindow.lastAction = "Submitted Custom: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Custom: '" + text + "'"
+                        }
+                    }
+
+                    // 5. Custom Selection Colors (Blue Background + Yellow Text)
+                    Text {
+                        text: "5. Custom Selection:"
+                        color: selInput.activeFocus ? "#a855f7" : "#94a3b8"
+                        bold: selInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    Rectangle {
+                        implicitWidth: 45
+                        implicitHeight: 3
+                        color: selInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: selInput.activeFocus ? "double" : "single"
+                        border.color: selInput.activeFocus ? "#a855f7" : "#475569"
+
+                        TextInput {
+                            id: selInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "Shift+Arrow to select this text"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            // Custom Selection & Cursor Styling
+                            cursorShape: TextInput.Beam
+                            cursorColor: "#a855f7"
+                            selectionColor: "#1e3a8a"
+                            selectedTextColor: "#fde047"
+
+                            onAccepted: rootWindow.lastAction = "Submitted Selection: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Selection: '" + text + "'"
+                        }
+                    }
+
+                    // 6. Placeholder Color & Clear
+                    Text {
+                        text: "6. Placeholder Color:"
+                        color: holderInput.activeFocus ? "#ec4899" : "#94a3b8"
+                        bold: holderInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    Rectangle {
+                        implicitWidth: 45
+                        implicitHeight: 3
+                        color: holderInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: holderInput.activeFocus ? "double" : "single"
+                        border.color: holderInput.activeFocus ? "#ec4899" : "#475569"
+
+                        TextInput {
+                            id: holderInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: ""
+                            placeholderText: "Type custom query here... (Pink placeholder)"
+                            placeholderColor: "#ec4899"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            cursorShape: TextInput.Underline
+                            cursorColor: "#ec4899"
+
+                            onAccepted: rootWindow.lastAction = "Submitted Search: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Search: '" + text + "'"
+                        }
+                    }
+
+                    // 7. Overwrite Mode (Insert key toggleable)
+                    Text {
+                        text: "7. Overwrite (Ins):"
+                        color: overwriteInput.activeFocus ? "#10b981" : "#94a3b8"
+                        bold: overwriteInput.activeFocus
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    Rectangle {
+                        implicitWidth: 45
+                        implicitHeight: 3
+                        color: overwriteInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: overwriteInput.activeFocus ? "double" : "single"
+                        border.color: overwriteInput.activeFocus ? "#10b981" : "#475569"
+
+                        TextInput {
+                            id: overwriteInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "Type over these characters"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+                            overwriteMode: true
+
+                            cursorShape: TextInput.Block
+                            cursorColor: "#10b981"
+
+                            onOverwriteModeChanged: rootWindow.lastAction = "Overwrite Mode: " + (overwriteMode ? "ON" : "OFF")
+                            onAccepted: rootWindow.lastAction = "Submitted Overwrite: '" + text + "'"
+                            onTextChanged: rootWindow.lastAction = "Editing Overwrite: '" + text + "' (displayText: '" + displayText + "')"
                         }
                     }
                 }

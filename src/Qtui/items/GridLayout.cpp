@@ -8,6 +8,7 @@ namespace qtui {
 
 GridLayout::GridLayout(QObject *parent) : Item(parent) {
     setClip(true);
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 GridLayout::~GridLayout() = default;
@@ -16,35 +17,35 @@ void GridLayout::setColumns(int cols) {
     if (m_columns == cols) return;
     m_columns = cols;
     emit columnsChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void GridLayout::setRows(int r) {
     if (m_rows == r) return;
     m_rows = r;
     emit rowsChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void GridLayout::setColumnSpacing(int spacing) {
     if (m_columnSpacing == spacing) return;
     m_columnSpacing = spacing;
     emit columnSpacingChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void GridLayout::setRowSpacing(int spacing) {
     if (m_rowSpacing == spacing) return;
     m_rowSpacing = spacing;
     emit rowSpacingChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void GridLayout::setFlow(Flow flow) {
     if (m_flow == flow) return;
     m_flow = flow;
     emit flowChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 struct GridItemInfo {
@@ -279,6 +280,7 @@ void GridLayout::layoutChildren() {
         info.item->setWidth(itemW);
         info.item->setHeight(itemH);
     }
+    clearDirty(DirtyFlag::LayoutDirty);
 }
 
 int GridLayout::implicitWidth() const {
@@ -349,7 +351,8 @@ int GridLayout::implicitHeight() const {
 }
 
 void GridLayout::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
-    layoutChildren();
+    if (!m_visible) return;
+    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
     Item::render(buffer, absX, absY, clipRect);
 }
 

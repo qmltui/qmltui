@@ -41,6 +41,7 @@ public:
 
     void render(TextGridBuffer &buffer, int absX, int absY,
                 const ClipRect &clipRect = ClipRect()) override;
+    void layoutChildren();
 
 signals:
     void columnsChanged();
@@ -50,8 +51,6 @@ signals:
     void flowChanged();
 
 private:
-    void layoutChildren();
-
     int m_columns = -1;
     int m_rows = -1;
     int m_columnSpacing = 0;

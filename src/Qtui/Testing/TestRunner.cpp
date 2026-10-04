@@ -323,6 +323,12 @@ TestRunner::TestRunner(QQmlEngine* qmlEngine, Terminal* terminal, QString script
     });
 }
 
+TestRunner::~TestRunner()
+{
+    // A joinable std::thread would terminate the process on destruction.
+    stopHardWatchdog();
+}
+
 void TestRunner::start()
 {
     m_elapsed.start();
@@ -371,9 +377,22 @@ void TestRunner::start()
         return;
 
     m_evaluating = true;
+    startHardWatchdog();
     const QJSValue result = m_qmlEngine->evaluate(QString::fromUtf8(scriptBytes), m_scriptPath);
+    const bool interrupted = [this] {
+        std::lock_guard<std::mutex> lock(m_hardWatchdogMutex);
+        return m_scenarioInterrupted;
+    }();
+    stopHardWatchdog();
     m_evaluating = false;
 
+    if (interrupted) {
+        failScenario(QStringLiteral("Scenario did not yield to the event loop within %1 ms; "
+                                    "JavaScript execution was interrupted")
+                         .arg(m_scenarioTimeoutMs),
+                     false);
+        return;
+    }
     if (m_state == State::Failed)
         return;
     if (result.isError()) {
@@ -412,16 +431,24 @@ bool TestRunner::installJavaScriptFacade()
         "captureImage", "frameText", "cell", "findText", "clickText",
         "click", "doubleClick", "drag", "scroll", "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
+        "expectRepaint", "frameCount", "injectText", "injectKey",
         "fail", "rootObject", "finish"
     ];
     const facade = {};
     methodNames.forEach(function(name) {
         facade[name] = function() {
             nativeRunner.beginOperation(name, String(new Error().stack || ""));
-            return nativeRunner[name].apply(nativeRunner, arguments);
+            const result = nativeRunner[name].apply(nativeRunner, arguments);
+            // Skipped when the call throws, so a failing operation stays open
+            // and is the one blamed in the result.
+            nativeRunner.endOperation();
+            return result;
         };
     });
     this.Test = facade;
+    // The scenario keeps only the facade: the raw runner would let a script
+    // bypass the operation trace or forge entries in it.
+    delete this.__QtuiTestNative;
 })(__QtuiTestNative);
 )JS");
     const QJSValue facadeResult = m_qmlEngine->evaluate(facadeSource,
@@ -463,6 +490,52 @@ void TestRunner::beginOperation(const QString& name, const QString& stack)
     m_currentOperation = m_operations.size() - 1;
 }
 
+void TestRunner::startHardWatchdog()
+{
+    if (m_hardWatchdog.joinable() || !m_qmlEngine)
+        return;
+    // Give the event-loop watchdog a chance to report first: it produces a much
+    // better message ("Timed out after N ms waiting for ...") and only fails to
+    // fire when JavaScript never yields.
+    const auto deadline = std::chrono::milliseconds(m_scenarioTimeoutMs + 1000);
+    QPointer<QQmlEngine> engine = m_qmlEngine;
+    m_hardWatchdog = std::thread([this, engine, deadline] {
+        std::unique_lock<std::mutex> lock(m_hardWatchdogMutex);
+        if (m_hardWatchdogWake.wait_for(lock, deadline,
+                                        [this] { return m_hardWatchdogFinished; })) {
+            return; // scenario finished in time
+        }
+        m_scenarioInterrupted = true;
+        lock.unlock();
+        // Documented as thread safe, and intended for exactly this case.
+        if (engine)
+            engine->setInterrupted(true);
+    });
+}
+
+void TestRunner::stopHardWatchdog()
+{
+    {
+        std::lock_guard<std::mutex> lock(m_hardWatchdogMutex);
+        m_hardWatchdogFinished = true;
+    }
+    m_hardWatchdogWake.notify_all();
+    if (m_hardWatchdog.joinable())
+        m_hardWatchdog.join();
+    if (m_qmlEngine && m_qmlEngine->isInterrupted())
+        m_qmlEngine->setInterrupted(false);
+}
+
+void TestRunner::endOperation()
+{
+    // The facade calls this once a Test.* call has returned normally. Closing
+    // the record here means a later failure — a JavaScript error on a following
+    // line, or the scenario watchdog — is no longer attributed to an operation
+    // that already succeeded.
+    completeCurrentOperation(QStringLiteral("passed"));
+    m_currentOperation = -1;
+}
+
 void TestRunner::completeCurrentOperation(const QString& status)
 {
     if (m_currentOperation < 0 || m_currentOperation >= m_operations.size())
@@ -494,7 +567,7 @@ int TestRunner::validateTimeout(int timeoutMs)
     return 0;
 }
 
-bool TestRunner::waitForNextFrame(int timeoutMs)
+bool TestRunner::waitForNextFrame(int timeoutMs, bool requestRender)
 {
     if (!m_terminalEngine)
         return false;
@@ -525,7 +598,8 @@ bool TestRunner::waitForNextFrame(int timeoutMs)
 
     m_activeLoop = &loop;
     timeout.start(timeoutMs);
-    m_terminalEngine->requestRender();
+    if (requestRender)
+        m_terminalEngine->requestRender();
     loop.exec();
     m_activeLoop = nullptr;
     disconnect(frameConnection);
@@ -533,8 +607,12 @@ bool TestRunner::waitForNextFrame(int timeoutMs)
     if (m_state == State::Failed)
         return false;
     if (!received) {
-        failScenario(QStringLiteral("Timed out after %1 ms waiting for a committed frame")
-                         .arg(timeoutMs));
+        failScenario(requestRender
+                         ? QStringLiteral("Timed out after %1 ms waiting for a committed frame")
+                               .arg(timeoutMs)
+                         : QStringLiteral("Timed out after %1 ms waiting for the application to "
+                                          "schedule a repaint")
+                               .arg(timeoutMs));
         return false;
     }
     return true;
@@ -603,7 +681,18 @@ bool TestRunner::waitForTextCondition(const QString& text, bool shouldContain, i
 
 void TestRunner::press(const QString& key, const QStringList& modifiers)
 {
-    if (!ensureRunning("press"))
+    sendKey("press", key, modifiers, /*awaitFrame=*/true);
+}
+
+void TestRunner::injectKey(const QString& key, const QStringList& modifiers)
+{
+    sendKey("injectKey", key, modifiers, /*awaitFrame=*/false);
+}
+
+void TestRunner::sendKey(const char* operation, const QString& key,
+                         const QStringList& modifiers, bool awaitFrame)
+{
+    if (!ensureRunning(operation))
         return;
 
     ParsedKey parsed;
@@ -628,7 +717,8 @@ void TestRunner::press(const QString& key, const QStringList& modifiers)
     }
 
     m_terminalEngine->handleKeyInput(parsed.key, parsed.text, parsedModifiers);
-    (void)waitForNextFrame(m_operationTimeoutMs);
+    if (awaitFrame)
+        (void)waitForNextFrame(m_operationTimeoutMs);
 }
 
 void TestRunner::typeText(const QString& text)
@@ -641,6 +731,19 @@ void TestRunner::typeText(const QString& text)
     }
     m_terminalEngine->handleKeyInput(0, text, Qt::NoModifier, true);
     (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+void TestRunner::injectText(const QString& text)
+{
+    if (!ensureRunning("injectText"))
+        return;
+    if (text.isEmpty()) {
+        failScenario(QStringLiteral("Test.injectText() requires non-empty text"));
+        return;
+    }
+    // Deliberately does not wait for a frame: typeText() would request one and
+    // consume the repaint that expectRepaint() needs to observe.
+    m_terminalEngine->handleKeyInput(0, text, Qt::NoModifier, true);
 }
 
 void TestRunner::click(int x, int y, const QString& button, const QStringList& modifiers)
@@ -944,7 +1047,21 @@ void TestRunner::expectSnapshot(const QString& snapshotRelativePath)
     }
 
     if (actualText != expectedText) {
-        const QString baseName = QFileInfo(snapshotRelativePath).completeBaseName();
+        // Derive the name from the whole relative path, not just the file name,
+        // so two snapshots called a/frame.txt and b/frame.txt do not overwrite
+        // each other's .actual.txt / .diff artifacts. The conventional
+        // "snapshots/" prefix is dropped because the artifacts already live
+        // under snapshots/.
+        QString baseName = snapshotRelativePath;
+        if (baseName.startsWith(QLatin1String("snapshots/")))
+            baseName = baseName.mid(QStringLiteral("snapshots/").size());
+        if (const int dot = baseName.lastIndexOf(QLatin1Char('.')); dot > 0)
+            baseName.truncate(dot);
+        baseName.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]+")),
+                         QStringLiteral("_"));
+        baseName = baseName.mid(0, 120);
+        if (baseName.isEmpty())
+            baseName = QStringLiteral("snapshot");
         const QString actualArtifactPath = QStringLiteral("snapshots/%1.actual.txt").arg(baseName);
         const QString diffArtifactPath = QStringLiteral("snapshots/%1.diff").arg(baseName);
         QString writeError;
@@ -993,6 +1110,24 @@ void TestRunner::waitForFrame(int timeoutMs)
     const int validated = validateTimeout(timeoutMs);
     if (validated)
         (void)waitForNextFrame(validated);
+}
+
+void TestRunner::expectRepaint(int timeoutMs)
+{
+    if (!ensureRunning("expectRepaint"))
+        return;
+    const int validated = validateTimeout(timeoutMs);
+    if (!validated)
+        return;
+    // Deliberately no draining of an in-flight render here: after an inject*
+    // call the pending render *is* the repaint the application scheduled, and
+    // consuming it would make this assertion vacuous.
+    (void)waitForNextFrame(validated, /*requestRender=*/false);
+}
+
+int TestRunner::frameCount() const
+{
+    return m_terminalEngine ? static_cast<int>(m_terminalEngine->frameSequence()) : -1;
 }
 
 void TestRunner::waitForCondition(const QJSValue& condition, int timeoutMs)
@@ -1202,12 +1337,38 @@ QString TestRunner::resolveArtifactPath(const QString& relativePath, QString* er
     const QString cleaned = QDir::cleanPath(relativePath);
     if (relativePath.trimmed().isEmpty() || cleaned == QLatin1String(".")
         || QFileInfo(cleaned).isAbsolute() || cleaned == QLatin1String("..")
-        || cleaned.startsWith(QLatin1String("../"))) {
-        *error = QStringLiteral("Artifact path must be relative to the artifact directory: %1")
+        || cleaned.startsWith(QLatin1String("../"))
+        || relativePath.contains(QLatin1Char('\n')) || relativePath.contains(QLatin1Char('\r'))) {
+        *error = QStringLiteral("Artifact path must be a relative path without newlines: %1")
                      .arg(relativePath);
         return {};
     }
-    return QDir(m_artifactDirectory).absoluteFilePath(cleaned);
+
+    const QString path = QDir(m_artifactDirectory).absoluteFilePath(cleaned);
+
+    // The lexical checks above cannot see through symlinks, so verify the real
+    // location: create the parent, then require that its canonical path is the
+    // artifact root or below it. Without this a symlinked subdirectory lets a
+    // scenario write anywhere on the filesystem while still reporting success.
+    const QString parent = QFileInfo(path).absolutePath();
+    if (!QDir().mkpath(parent)) {
+        *error = QStringLiteral("Cannot create artifact parent directory for %1").arg(path);
+        return {};
+    }
+    const QString canonicalRoot = QFileInfo(m_artifactDirectory).canonicalFilePath();
+    const QString canonicalParent = QFileInfo(parent).canonicalFilePath();
+    if (canonicalRoot.isEmpty() || canonicalParent.isEmpty()
+        || (canonicalParent != canonicalRoot
+            && !canonicalParent.startsWith(canonicalRoot + QLatin1Char('/')))) {
+        *error = QStringLiteral("Artifact path escapes the artifact directory: %1")
+                     .arg(relativePath);
+        return {};
+    }
+    if (QFileInfo(path).isSymLink()) {
+        *error = QStringLiteral("Artifact path is a symbolic link: %1").arg(relativePath);
+        return {};
+    }
+    return path;
 }
 
 bool TestRunner::writeTextArtifact(const QString& relativePath, const QString& contents,

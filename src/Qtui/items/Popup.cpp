@@ -62,6 +62,12 @@ bool Popup::isDescendantOfPopup(const Popup *popup) const {
     return false;
 }
 
+bool Popup::isDescendantOfScope(const InputScope* other) const {
+    if (!other) return false;
+    const Popup* otherPopup = dynamic_cast<const Popup*>(other);
+    return otherPopup ? isDescendantOfPopup(otherPopup) : false;
+}
+
 void Popup::open() {
     if (Terminal *term = terminal())
         m_previousFocusItem = term->focusedItem();

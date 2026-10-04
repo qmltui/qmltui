@@ -24,6 +24,7 @@ private:
     std::string promptRowToAnsi(int row) const;
 
     TextGridBuffer m_promptBuffer;
+    Terminal* m_rootWindow = nullptr;
     int m_terminalWidth = 80;
     int m_terminalHeight = 24;
     int m_lastPromptHeight = 0;

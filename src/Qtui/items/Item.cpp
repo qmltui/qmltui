@@ -26,11 +26,7 @@ Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
 
     if (parent) {
         if (Item* parentItem = qobject_cast<Item*>(parent)) {
-            if (!parentItem->m_visualChildren.contains(this)) {
-                parentItem->m_visualChildren.append(this);
-                parentItem->invalidateStackingOrder();
-                parentItem->markDirty();
-            }
+            parentItem->registerChildItem(this);
         }
     }
 }
@@ -47,8 +43,6 @@ Item::~Item() {
     }
 }
 
-
-
 QQmlListProperty<QObject> Item::data() const {
     return QQmlListProperty<QObject>(const_cast<Item*>(this), nullptr,
         &Item::appendData,
@@ -63,11 +57,7 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
         obj->setParent(self);
         self->m_dataChildren.append(obj);
         if (Item* item = qobject_cast<Item*>(obj)) {
-            if (!self->m_visualChildren.contains(item)) {
-                self->m_visualChildren.append(item);
-                self->invalidateStackingOrder();
-                self->markDirty();
-            }
+            self->registerChildItem(item);
         }
     }
 }
@@ -86,9 +76,14 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
     Item *self = qobject_cast<Item*>(list->object);
     if (self) {
         self->m_dataChildren.clear();
+        for (Item* item : self->m_visualChildren) {
+            const auto connections = self->m_childGeometryConnections.take(item);
+            for (const QMetaObject::Connection &connection : connections)
+                disconnect(connection);
+        }
         self->m_visualChildren.clear();
         self->invalidateStackingOrder();
-        self->markDirty();
+        self->scheduleChildGeometryInvalidation();
     }
 }
 
@@ -235,13 +230,20 @@ bool Item::isEffectivelyEnabled() const {
     return true;
 }
 
-void Item::markDirty() {
+void Item::markDirty(DirtyFlags flags) {
+    m_dirtyFlags |= flags;
     emit dirty();
-    // Bubble up to parent
+    // Bubble DescendantDirty up to parent
     Item* p = qobject_cast<Item*>(parent());
-    if (p) {
-        p->markDirty();
+    while (p) {
+        p->m_dirtyFlags |= DirtyFlag::DescendantDirty;
+        emit p->dirty();
+        p = qobject_cast<Item*>(p->parent());
     }
+}
+
+void Item::clearDirty(DirtyFlags flags) {
+    m_dirtyFlags &= ~flags;
 }
 
 void Item::setFocus(bool focus) {
@@ -293,6 +295,14 @@ Terminal* Item::terminal() const {
     return nullptr;
 }
 
+QPoint Item::contentOffset() const {
+    QVariant scrollX = property("contentX");
+    QVariant scrollY = property("contentY");
+    int x = scrollX.isValid() ? scrollX.toInt() : 0;
+    int y = scrollY.isValid() ? scrollY.toInt() : 0;
+    return QPoint(x, y);
+}
+
 QPoint Item::absolutePosition() const {
     int ax = m_x;
     int ay = m_y;
@@ -308,15 +318,9 @@ QPoint Item::absolutePosition() const {
         ax += p->x();
         ay += p->y();
         
-        // Subtract scroll offsets if parent is scrollable
-        QVariant scrollY = p->property("contentY");
-        if (scrollY.isValid()) {
-            ay -= scrollY.toInt();
-        }
-        QVariant scrollX = p->property("contentX");
-        if (scrollX.isValid()) {
-            ax -= scrollX.toInt();
-        }
+        QPoint offset = p->contentOffset();
+        ax -= offset.x();
+        ay -= offset.y();
         
         p = qobject_cast<Item*>(p->parent());
     }
@@ -334,61 +338,66 @@ void Item::childEvent(QChildEvent* event) {
     QObject::childEvent(event);
     if (event->added()) {
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
-            if (!m_visualChildren.contains(childItem)) {
-                m_visualChildren.append(childItem);
-                invalidateStackingOrder();
-                auto childGeometryChanged = [this]() {
-                    scheduleChildGeometryInvalidation();
-                };
-                QList<QMetaObject::Connection> connections;
-                connections.append(connect(childItem, &Item::widthChanged, this, childGeometryChanged));
-                connections.append(connect(childItem, &Item::heightChanged, this, childGeometryChanged));
-                connections.append(connect(childItem, &Item::implicitWidthChanged, this, childGeometryChanged));
-                connections.append(connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
-                connections.append(connect(childItem, &Item::visibleChanged, this, childGeometryChanged));
-                m_childGeometryConnections.insert(childItem, connections);
-                markDirty();
-            }
+            registerChildItem(childItem);
             if (childItem->focus()) {
                 childItem->setFocus(true);
             }
         }
     } else if (event->removed()) {
-        QObject* childObj = event->child();
-        for (auto it = m_visualChildren.begin(); it != m_visualChildren.end(); ++it) {
-            if (*it == childObj) {
-                Item* childItem = *it;
-                m_visualChildren.erase(it);
-                const auto connections = m_childGeometryConnections.take(childItem);
-                for (const QMetaObject::Connection &connection : connections)
-                    disconnect(connection);
-                invalidateStackingOrder();
-                markDirty();
-                break;
+        if (Item* childItem = qobject_cast<Item*>(event->child())) {
+            unregisterChildItem(childItem);
+        } else {
+            QObject* childObj = event->child();
+            for (auto it = m_visualChildren.begin(); it != m_visualChildren.end(); ++it) {
+                if (*it == childObj) {
+                    Item* childItem = *it;
+                    unregisterChildItem(childItem);
+                    break;
+                }
             }
         }
     }
 }
 
+void Item::registerChildItem(Item* childItem) {
+    if (!childItem || m_visualChildren.contains(childItem)) return;
+    m_visualChildren.append(childItem);
+    invalidateStackingOrder();
 
+    auto childGeometryChanged = [this]() {
+        scheduleChildGeometryInvalidation();
+    };
+    QList<QMetaObject::Connection> connections;
+    connections.append(connect(childItem, &Item::widthChanged, this, childGeometryChanged));
+    connections.append(connect(childItem, &Item::heightChanged, this, childGeometryChanged));
+    connections.append(connect(childItem, &Item::implicitWidthChanged, this, childGeometryChanged));
+    connections.append(connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
+    connections.append(connect(childItem, &Item::visibleChanged, this, childGeometryChanged));
+    m_childGeometryConnections.insert(childItem, connections);
+
+    scheduleChildGeometryInvalidation();
+}
+
+void Item::unregisterChildItem(Item* childItem) {
+    if (!childItem) return;
+    if (m_visualChildren.removeOne(childItem)) {
+        const auto connections = m_childGeometryConnections.take(childItem);
+        for (const QMetaObject::Connection &connection : connections)
+            disconnect(connection);
+        invalidateStackingOrder();
+        scheduleChildGeometryInvalidation();
+    }
+}
 
 void Item::scheduleChildGeometryInvalidation() {
-    if (m_childGeometryInvalidationPending) return;
-    m_childGeometryInvalidationPending = true;
-    QPointer<Item> self(this);
-    QMetaObject::invokeMethod(this, [self]() {
-        if (!self) return;
-        self->m_childGeometryInvalidationPending = false;
-        emit self->implicitWidthChanged();
-        emit self->implicitHeightChanged();
-        self->markDirty();
-    }, Qt::QueuedConnection);
+    emit implicitWidthChanged();
+    emit implicitHeightChanged();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-    
-    // Resolve anchors first
-    m_anchors.resolve();
+
+    m_dirtyFlags = DirtyFlag::None;
 
     int w = width();
     int h = height();
@@ -500,6 +509,12 @@ void Item::mouseMoveEvent(class MouseEvent* event) {
 
 void Item::wheelEvent(class MouseEvent* event) {
     Q_UNUSED(event);
+}
+
+bool Item::childMouseEventFilter(Item* item, class MouseEvent* event) {
+    Q_UNUSED(item);
+    Q_UNUSED(event);
+    return false;
 }
 
 QQmlListProperty<qtui::State> Item::states() const {

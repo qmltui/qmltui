@@ -9,6 +9,7 @@ namespace qtui {
 LinearLayout::LinearLayout(Direction direction, QObject *parent)
     : Item(parent), m_direction(direction) {
     setClip(true);
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void LinearLayout::setSpacing(int spacing) {
@@ -18,7 +19,7 @@ void LinearLayout::setSpacing(int spacing) {
     emit spacingChanged();
     emit implicitWidthChanged();
     emit implicitHeightChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 static LayoutAttached *layoutInfo(Item *item) {
@@ -125,6 +126,7 @@ void LinearLayout::layoutChildren() {
         }
         position += sizes[i] + m_spacing;
     }
+    clearDirty(DirtyFlag::LayoutDirty);
 }
 
 int LinearLayout::implicitWidth() const {
@@ -154,7 +156,7 @@ int LinearLayout::implicitHeight() const {
 void LinearLayout::render(TextGridBuffer &buffer, int absX, int absY,
                           const ClipRect &clipRect) {
     if (!visible()) return;
-    layoutChildren();
+    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
     Item::render(buffer, absX, absY, clipRect);
 }
 

@@ -12,18 +12,27 @@ StreamAppender::StreamAppender(QObject* parent)
 }
 
 void StreamAppender::setModel(QAbstractItemModel* model) {
-    if (m_model == model) return;
+    setModel(QVariant::fromValue(static_cast<QObject*>(model)));
+}
+
+void StreamAppender::setModel(const QVariant& model) {
+    if (m_modelVariant == model) return;
 
     if (m_model) {
         disconnect(m_model, nullptr, this, nullptr);
     }
 
-    m_model = model;
+    m_modelVariant = model;
+    m_model = qvariant_cast<QAbstractItemModel*>(model);
+    if (!m_model && model.canConvert<QObject*>()) {
+        m_model = qobject_cast<QAbstractItemModel*>(model.value<QObject*>());
+    }
     m_consumedRowCount = 0;
 
     if (m_model) {
         connect(m_model, &QObject::destroyed, this, [this]() {
             m_model.clear();
+            m_modelVariant.clear();
             m_consumedRowCount = 0;
             emit modelChanged();
         });

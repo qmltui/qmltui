@@ -1,4 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick
+import QtQml.Models
 import Qt.labs.qmlmodels
 import Qtui
 
@@ -6,16 +8,19 @@ Terminal {
     id: root
 
     enum MessageType {
-        SystemMessage,
+        BannerMessage,
         UserMessage,
-        AgentMessage,
         ThoughtMessage,
         ToolCallMessage,
         ToolResultMessage,
-        PermissionMessage,
-        ErrorMessage
+        DiffMessage,
+        PermissionDecisionMessage,
+        AgentMessage,
+        SystemMessage,
+        ErrorMessage,
+        SwarmTableMessage,
+        RepoTreeMessage
     }
-
 
     enum AgentState {
         ReadyState,
@@ -23,103 +28,411 @@ Terminal {
         PermissionState
     }
 
-    rendererMode: Terminal.Stream
-    fillTerminal: false
-    useAlternateScreen: false
+    rendererMode: shellMode ? Terminal.Frame : Terminal.Stream
+    fillTerminal: shellMode
+    useAlternateScreen: shellMode
+    title: {
+        if (root.shellMode) {
+            const prog = (fullScreenShell && fullScreenShell.shellProgram) ? fullScreenShell.shellProgram : "bash";
+            return "🐚 Qt AI Studio [SHELL: " + prog + "] · " + root.activeModel + " (" + root.sessionCostStr + ")";
+        }
+        if (root.awaitingPermission) {
+            return "⚠️ [ACTION REQUIRED] " + root.currentToolName + "(" + root.currentToolTarget + ") — Qt AI Studio";
+        }
+        if (modelModal && modelModal.visible) {
+            return "⚙️ Select Neural Model — Qt AI Studio (" + root.activeModel + ")";
+        }
+        if (diffInspector && diffInspector.visible) {
+            return "📝 Diff Inspector: " + diffInspector.targetFile + " — Qt AI Studio";
+        }
+        if (root.working) {
+            return root.spinnerFrames[root.spinnerIndex] + " " + root.workingLabel + " — Qt AI Studio (" + root.activeModel + " · " + root.sessionCostStr + ")";
+        }
+        return "● Ready — Qt AI Studio (" + root.activeModel + " · " + root.sessionCostStr + ")";
+    }
     mouseReporting: false
-    implicitHeight: awaitingPermission ? 6 : 2
+    implicitHeight: {
+        if (shellMode)
+            return -1;
+        if (modelModal && modelModal.visible)
+            return 16;
+        if (diffInspector && diffInspector.visible)
+            return 13;
+        if (awaitingPermission)
+            return 6;
+        if (promptBar && promptBar.popupVisible)
+            return 8;
+        return 2;
+    }
 
     property int agentState: Main.ReadyState
+    property int currentScenario: 1
     property int agentStep: 0
     property int permissionIndex: 0
     property int spinnerIndex: 0
+    property int elapsedDeciseconds: 0
+    property bool sessionAlwaysAllow: false
+    property bool shellMode: false
+    property string activeModel: "claude-3-7-sonnet"
+    property string sessionCostStr: "$0.014"
+    property int totalTokens: 1420
+    property string currentToolName: ""
+    property string currentToolTarget: ""
+    property string currentToolAction: ""
+    property string currentDiffFile: ""
     property string requestText: ""
-    readonly property bool ready: agentState === Main.ReadyState
-    readonly property bool working: agentState === Main.WorkingState
-    readonly property bool awaitingPermission: agentState === Main.PermissionState
-    readonly property var spinnerFrames: ["|", "/", "-", "\\"]
+
+    // History buffer for navigation
+    property var inputHistory: []
+    property int historyIndex: -1
+
+    readonly property bool ready: agentState === Main.ReadyState && !shellMode
+    readonly property bool working: agentState === Main.WorkingState && !shellMode
+    readonly property bool awaitingPermission: agentState === Main.PermissionState && !shellMode
+    readonly property var spinnerFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    readonly property string elapsedTimeStr: (elapsedDeciseconds / 10).toFixed(1) + "s"
+
     readonly property string workingLabel: {
-        if (agentStep <= 1)
-            return qsTr("Analyzing the request")
-        if (agentStep <= 3)
-            return qsTr("Reading project files")
-        if (agentStep <= 6)
-            return qsTr("Applying changes")
-        return qsTr("Running verification")
+        if (currentToolName.length > 0)
+            return currentToolName + " (" + elapsedTimeStr + ")...";
+        return "Reasoning (" + elapsedTimeStr + ")...";
     }
 
-    function addMessage(messageType, content) {
+    function addMessage(type, content, title, extra, detail, tag, approved) {
         chatHistory.append({
-            "type": messageType,
-            "content": content
-        })
+            "type": type,
+            "content": content !== undefined ? content : "",
+            "title": title !== undefined ? title : "",
+            "extra": extra !== undefined ? extra : "",
+            "detail": detail !== undefined ? detail : "",
+            "tag": tag !== undefined ? tag : "",
+            "approved": approved !== undefined ? approved : true
+        });
     }
 
-    function submitRequest() {
-        const request = input.text.trim()
-        if (request.length === 0 || !ready)
-            return
+    function toggleShellMode() {
+        shellMode = !shellMode;
+        if (shellMode) {
+            fullScreenShell.focusShell();
+            addMessage(Main.SystemMessage, "Switched to Full Terminal Shell (Ctrl+T / Esc to return).", "SHELL");
+        } else {
+            promptBar.focusPrompt();
+            addMessage(Main.SystemMessage, "Switched back to Agent Studio.", "STUDIO");
+        }
+    }
 
-        requestText = request
-        input.text = ""
-        agentStep = 0
-        agentState = Main.WorkingState
-        addMessage(Main.UserMessage, request)
-        agentTimer.start()
+    function exitShellMode() {
+        if (shellMode) {
+            shellMode = false;
+            promptBar.focusPrompt();
+            addMessage(Main.SystemMessage, "Switched back to Agent Studio.", "STUDIO");
+        }
+    }
+
+    function handleSlashCommand(cmd) {
+        const trimmed = cmd.trim();
+        const parts = trimmed.split(" ");
+        const mainCmd = parts[0].toLowerCase();
+
+        if (mainCmd === "/help") {
+            addMessage(Main.SystemMessage, "Commands & Workflows:\n" + "  Ctrl+T, F1    Toggle persistent background terminal shell (TerminalView)\n" + "  /demo [1-4]   Execute agent workflows (1: Refactor, 2: Swarm, 3: Patch, 4: Tree)\n" + "  /swarm        Show subagent swarm status (TableView)\n" + "  /tree         Inspect repository workspace hierarchy (TreeView)\n" + "  /cost         Show session token metrics and capacity (ProgressBar & Sparkline)\n" + "  /model        Toggle active neural model (Claude 3.7 / GPT-4.5 / Gemini 2.0)\n" + "  /doctor       Run system environment diagnostics\n" + "  /clear        Clear terminal history\n" + "  /exit, /quit  Exit studio session\n\n" + "Keys: Ctrl+T (toggle shell), Enter (submit), 1-4 (select), Ctrl+C (abort), Q/Esc (quit)", "HELP & WORKFLOWS");
+            return;
+        }
+
+        if (mainCmd === "/term" || mainCmd === "/shell" || mainCmd === "/bash") {
+            toggleShellMode();
+            return;
+        }
+
+        if (mainCmd === "/swarm") {
+            addMessage(Main.SwarmTableMessage, "", "Active Mesh Status");
+            return;
+        }
+
+        if (mainCmd === "/tree") {
+            addMessage(Main.RepoTreeMessage, "", "~/Qtui Workspace");
+            return;
+        }
+
+        if (mainCmd === "/cost" || mainCmd === "/usage") {
+            addMessage(Main.SystemMessage, "Session Metrics:\n" + "  • Input Tokens:   " + (totalTokens * 4) + "\n" + "  • Output Tokens:  " + totalTokens + "\n" + "  • Total Cost:     " + sessionCostStr + "\n" + "  • Active Model:   " + activeModel, "USAGE & COST");
+            return;
+        }
+
+        if (mainCmd === "/diff" || mainCmd === "/patch") {
+            diffInspector.open();
+            return;
+        }
+
+        if (mainCmd === "/model") {
+            modelModal.open();
+            return;
+        }
+
+        if (mainCmd === "/doctor") {
+            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TerminalView, TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "DOCTOR");
+            return;
+        }
+
+        if (mainCmd === "/clear") {
+            chatHistory.clear();
+            showBanner();
+            return;
+        }
+
+        if (mainCmd === "/exit" || mainCmd === "/quit") {
+            Qt.quit();
+            return;
+        }
+
+        if (mainCmd.startsWith("/demo")) {
+            let demoId = 1;
+            const match = trimmed.match(/\/demo\s*(\d+)/i);
+            if (match && match[1]) {
+                const parsed = parseInt(match[1]);
+                if (!isNaN(parsed) && parsed >= 1 && parsed <= 4)
+                    demoId = parsed;
+            }
+            startScenario(demoId);
+            return;
+        }
+
+        addMessage(Main.ErrorMessage, "Unknown command: " + cmd + ". Type /help for available workflows.", "ERROR");
+    }
+
+    function startScenario(scenarioId, customPrompt) {
+        agentTimer.stop();
+        workingTimer.stop();
+
+        currentScenario = scenarioId;
+        agentStep = 0;
+        elapsedDeciseconds = 0;
+        currentToolName = "Planning";
+        agentState = Main.WorkingState;
+
+        let promptText = customPrompt;
+        if (!promptText || promptText.length === 0) {
+            if (scenarioId === 1)
+                promptText = "Optimize StreamRenderer buffer resizing and verify zero-copy safety";
+            else if (scenarioId === 2)
+                promptText = "Dispatch parallel subagent swarm to audit memory leaks and concurrency locks";
+            else if (scenarioId === 3)
+                promptText = "Run security sandbox exploit audit and generate regression patch";
+            else
+                promptText = "Explore repository workspace hierarchy and file structure";
+        }
+
+        requestText = promptText;
+        addMessage(Main.UserMessage, promptText);
+
+        totalTokens += 380;
+        sessionCostStr = "$" + ((totalTokens * 0.000008) + 0.012).toFixed(3);
+
+        workingTimer.restart();
+        agentTimer.restart();
+    }
+
+    function submitRequest(text) {
+        const query = text ? text.trim() : promptBar.inputText.trim();
+        if (query.length === 0)
+            return;
+
+        // Allow slash commands in any state
+        if (query.startsWith("/")) {
+            inputHistory.push(query);
+            historyIndex = inputHistory.length;
+            promptBar.inputText = "";
+            handleSlashCommand(query);
+            return;
+        }
+
+        if (!ready)
+            return;
+        inputHistory.push(query);
+        historyIndex = inputHistory.length;
+        promptBar.inputText = "";
+
+        if (query === "!" || query === "/term" || query === "/shell" || query === "/bash") {
+            toggleShellMode();
+            return;
+        }
+
+        if (query.startsWith("!")) {
+            toggleShellMode();
+            return;
+        }
+
+        const lower = query.toLowerCase();
+        if (lower.indexOf("swarm") !== -1 || lower.indexOf("audit") !== -1 || lower.indexOf("subagent") !== -1) {
+            startScenario(2, query);
+        } else if (lower.indexOf("sec") !== -1 || lower.indexOf("vuln") !== -1 || lower.indexOf("patch") !== -1) {
+            startScenario(3, query);
+        } else if (lower.indexOf("tree") !== -1 || lower.indexOf("files") !== -1 || lower.indexOf("arch") !== -1) {
+            startScenario(4, query);
+        } else {
+            startScenario(1, query);
+        }
     }
 
     function choosePermission(index) {
-        permissionIndex = index
+        permissionIndex = index;
         if (index === 2) {
-            addMessage(Main.PermissionMessage, qsTr("Denied file modification"))
-            addMessage(Main.ErrorMessage, qsTr("Stopped before changing any files."))
-            agentState = Main.ReadyState
-            return
+            addMessage(Main.PermissionDecisionMessage, "Execution denied: " + currentToolName + "(" + currentToolTarget + ")", "DENIED", "", "", "", false);
+            addMessage(Main.ErrorMessage, "Agent task halted by user.", "ABORTED");
+            agentState = Main.ReadyState;
+            agentTimer.stop();
+            workingTimer.stop();
+            return;
         }
 
-        const decision = index === 0
-                       ? qsTr("Allowed file modification once")
-                       : qsTr("Allowed file modification for this session")
-        addMessage(Main.PermissionMessage, decision)
-        agentStep = 5
-        agentState = Main.WorkingState
-        agentTimer.start()
+        if (index === 3) {
+            addMessage(Main.ErrorMessage, "Cancelled request.", "CANCELLED");
+            agentState = Main.ReadyState;
+            agentTimer.stop();
+            workingTimer.stop();
+            return;
+        }
+
+        if (index === 1) {
+            sessionAlwaysAllow = true;
+            addMessage(Main.PermissionDecisionMessage, "Always allow: " + currentToolName + "(" + currentToolTarget + ")", "ALLOWED", "", "", "", true);
+        } else {
+            addMessage(Main.PermissionDecisionMessage, "Approved: " + currentToolName + "(" + currentToolTarget + ")", "APPROVED", "", "", "", true);
+        }
+
+        agentStep = 6;
+        agentState = Main.WorkingState;
+        currentToolName = "Bash";
+        agentTimer.restart();
     }
 
     function interruptAgent() {
-        agentTimer.stop()
-        addMessage(Main.ErrorMessage, qsTr("Interrupted by user."))
-        agentState = Main.ReadyState
+        agentTimer.stop();
+        workingTimer.stop();
+        addMessage(Main.ErrorMessage, "Execution interrupted by user (Ctrl+C).", "INTERRUPTED");
+        agentState = Main.ReadyState;
     }
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-            return
+    function showBanner() {
+        addMessage(Main.BannerMessage, "", "Qt", activeModel);
+    }
+
+    Keys.onPressed: event => {
+        // Handle Ctrl+T, Ctrl+B, or F1 to toggle shell mode
+        if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_T || event.key === Qt.Key_B)) {
+            root.toggleShellMode();
+            event.accepted = true;
+            return;
+        }
+        if (event.key === Qt.Key_F1) {
+            root.toggleShellMode();
+            event.accepted = true;
+            return;
+        }
+        if (event.key === Qt.Key_F2) {
+            modelModal.open();
+            event.accepted = true;
+            return;
+        }
+        if (event.key === Qt.Key_F3) {
+            diffInspector.open();
+            event.accepted = true;
+            return;
         }
 
+        // Handle Ctrl+Q to quit
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Q) {
+            Qt.quit();
+            event.accepted = true;
+            return;
+        }
+
+        // Handle Escape to quit ONLY if prompt is empty and no popup/modal is open
+        if (root.ready && event.key === Qt.Key_Escape && promptBar.inputText.length === 0 && !promptBar.popupVisible && !modelModal.visible && !diffInspector.visible) {
+            Qt.quit();
+            event.accepted = true;
+            return;
+        }
+
+        // Ctrl+C handler
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
-            if (root.ready)
-                Qt.quit()
-            else
-                root.interruptAgent()
-            event.accepted = true
-            return
+            if (root.working) {
+                root.interruptAgent();
+            } else if (root.awaitingPermission) {
+                root.choosePermission(3);
+            } else {
+                if (promptBar.inputText.length > 0)
+                    promptBar.inputText = "";
+                else
+                    Qt.quit();
+            }
+            event.accepted = true;
+            return;
         }
 
-        if (!root.awaitingPermission)
-            return
+        // Permission state controls
+        if (root.awaitingPermission) {
+            if (event.key === Qt.Key_1) {
+                root.choosePermission(0);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_2) {
+                root.choosePermission(1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_3) {
+                root.choosePermission(2);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_4) {
+                root.choosePermission(3);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Y) {
+                root.choosePermission(0);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_N) {
+                root.choosePermission(2);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up) {
+                root.permissionIndex = Math.max(0, root.permissionIndex - 1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                root.permissionIndex = Math.min(3, root.permissionIndex + 1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                root.choosePermission(root.permissionIndex);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Escape) {
+                root.choosePermission(3);
+                event.accepted = true;
+            }
+            return;
+        }
 
-        if (event.key === Qt.Key_Up) {
-            root.permissionIndex = Math.max(0, root.permissionIndex - 1)
-            event.accepted = true
-        } else if (event.key === Qt.Key_Down) {
-            root.permissionIndex = Math.min(2, root.permissionIndex + 1)
-            event.accepted = true
-        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            root.choosePermission(root.permissionIndex)
-            event.accepted = true
+        // History Navigation
+        if (root.ready) {
+            if (event.key === Qt.Key_Up) {
+                if (root.inputHistory.length > 0) {
+                    if (root.historyIndex > 0) {
+                        root.historyIndex--;
+                        promptBar.inputText = root.inputHistory[root.historyIndex];
+                        promptBar.inputCursorPosition = promptBar.inputText.length;
+                    } else if (root.historyIndex === -1) {
+                        root.historyIndex = root.inputHistory.length - 1;
+                        promptBar.inputText = root.inputHistory[root.historyIndex];
+                        promptBar.inputCursorPosition = promptBar.inputText.length;
+                    }
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                if (root.historyIndex >= 0 && root.historyIndex < root.inputHistory.length - 1) {
+                    root.historyIndex++;
+                    promptBar.inputText = root.inputHistory[root.historyIndex];
+                    promptBar.inputCursorPosition = promptBar.inputText.length;
+                } else if (root.historyIndex >= root.inputHistory.length - 1) {
+                    root.historyIndex = root.inputHistory.length;
+                    promptBar.inputText = "";
+                }
+                event.accepted = true;
+            }
         }
     }
 
@@ -134,287 +447,316 @@ Terminal {
             role: "type"
 
             DelegateChoice {
-                roleValue: Main.SystemMessage
-
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    text: content
-                    color: "gray"
+                roleValue: Main.BannerMessage
+                BannerCard {
+                    activeModel: root.activeModel
                 }
             }
 
             DelegateChoice {
                 roleValue: Main.UserMessage
-
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    text: qsTr("> %1").arg(content)
-                    color: "cyan"
-                    bold: true
-                }
-            }
-
-            DelegateChoice {
-                roleValue: Main.AgentMessage
-
-                Column {
-                    id: agentDelegate
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    Text {
-                        text: qsTr("Agent")
-                        color: "magenta"
-                        bold: true
-                    }
-
-                    Text {
-                        text: agentDelegate.content
-                        color: "white"
-                    }
+                UserPromptCard {
+                    required property var model
+                    content: model.content
                 }
             }
 
             DelegateChoice {
                 roleValue: Main.ThoughtMessage
-
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    text: qsTr("* %1").arg(content)
-                    color: "gray"
-                    italic: true
+                ThoughtCard {
+                    required property var model
+                    title: model.title
+                    content: model.content
                 }
             }
 
             DelegateChoice {
                 roleValue: Main.ToolCallMessage
-
-                Column {
-                    id: toolCallDelegate
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    Text {
-                        text: qsTr("Tool call")
-                        color: "cyan"
-                        bold: true
-                    }
-
-                    Text {
-                        text: qsTr("  %1").arg(toolCallDelegate.content)
-                        color: "white"
-                    }
+                ToolCallCard {
+                    required property var model
+                    title: model.title
+                    content: model.content
                 }
             }
 
             DelegateChoice {
                 roleValue: Main.ToolResultMessage
-
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
-
-                    text: qsTr("+ %1").arg(content)
-                    color: "green"
+                ToolResultCard {
+                    required property var model
+                    content: model.content
                 }
             }
 
             DelegateChoice {
-                roleValue: Main.PermissionMessage
+                roleValue: Main.DiffMessage
+                DiffCard {
+                    required property var model
+                    title: model.title
+                }
+            }
 
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
+            DelegateChoice {
+                roleValue: Main.PermissionDecisionMessage
+                PermissionCard {
+                    required property var model
+                    content: model.content
+                    approved: model.approved
+                }
+            }
 
-                    text: qsTr("! %1").arg(content)
-                    color: "yellow"
-                    bold: true
+            DelegateChoice {
+                roleValue: Main.AgentMessage
+                AgentResponseCard {
+                    required property var model
+                    title: model.title
+                    content: model.content
+                    extra: model.extra
+                }
+            }
+
+            DelegateChoice {
+                roleValue: Main.SystemMessage
+                SystemMessageCard {
+                    required property var model
+                    title: model.title
+                    content: model.content
                 }
             }
 
             DelegateChoice {
                 roleValue: Main.ErrorMessage
+                ErrorMessageCard {
+                    required property var model
+                    content: model.content
+                }
+            }
 
-                Text {
-                    required property int index
-                    required property int type
-                    required property string content
+            DelegateChoice {
+                roleValue: Main.SwarmTableMessage
+                SwarmTableCard {
+                    required property var model
+                    title: model.title
+                }
+            }
 
-                    text: qsTr("x %1").arg(content)
-                    color: "red"
-                    bold: true
+            DelegateChoice {
+                roleValue: Main.RepoTreeMessage
+                RepoTreeCard {
+                    required property var model
+                    title: model.title
                 }
             }
         }
     }
 
-    Column {
-        id: promptLayout
+    // Pinned Bottom Bar Component (Studio Mode)
+    PinnedPromptBar {
+        id: promptBar
+        visible: !root.shellMode
+        ready: root.ready
+        working: root.working
+        awaitingPermission: root.awaitingPermission
+        modalActive: (modelModal && modelModal.visible) || (diffInspector && diffInspector.visible)
+        activeModel: root.activeModel
+        sessionCostStr: root.sessionCostStr
+        currentToolName: root.currentToolName
+        currentToolTarget: root.currentToolTarget
+        currentToolAction: root.currentToolAction
+        permissionIndex: root.permissionIndex
+        spinnerFrames: root.spinnerFrames
+        spinnerIndex: root.spinnerIndex
+        workingLabel: root.workingLabel
+
+        onRequestSubmitted: text => root.submitRequest(text)
+        onPermissionChosen: index => root.choosePermission(index)
+        onToggleShellModeRequested: () => root.toggleShellMode()
+        onOpenModelPickerRequested: () => modelModal.open()
+        onOpenDiffInspectorRequested: () => diffInspector.open()
+    }
+
+    // Full Screen Persistent Terminal Session
+    FullScreenShell {
+        id: fullScreenShell
+        anchors.fill: parent
+        visible: root.shellMode
+        onReturnToStudioRequested: () => root.exitShellMode()
+    }
+
+    // Interactive Neural Model Picker Dialog (F2 / /model)
+    ModelPickerModal {
+        id: modelModal
+        x: 0
+        y: 0
         width: root.width
-
-        Text {
-            text: root.ready
-                  ? qsTr(" qtui code  |  ready")
-                  : root.awaitingPermission
-                    ? qsTr(" qtui code  |  permission required")
-                    : qsTr(" qtui code  |  working")
-            color: root.ready ? "cyan" : root.awaitingPermission ? "yellow" : "magenta"
-            bold: true
-        }
-
-        Row {
-            visible: root.working
-            width: root.width
-
-            Text {
-                text: root.spinnerFrames[root.spinnerIndex]
-                color: "magenta"
-                bold: true
-            }
-
-            Text {
-                text: qsTr(" %1 · Ctrl+C to interrupt").arg(root.workingLabel)
-                color: "gray"
-            }
-        }
-
-        Column {
-            visible: root.awaitingPermission
-            width: root.width
-
-            Text {
-                text: qsTr("The agent wants to edit Tui/src/engine/StreamRenderer.cpp")
-                color: "white"
-                bold: true
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: root.permissionIndex === 0 ? "yellow" : "transparent"
-                Text {
-                    text: (root.permissionIndex === 0 ? "> " : "  ") + qsTr("Allow once")
-                    color: root.permissionIndex === 0 ? "black" : "white"
-                    bold: root.permissionIndex === 0
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: root.permissionIndex === 1 ? "yellow" : "transparent"
-                Text {
-                    text: (root.permissionIndex === 1 ? "> " : "  ")
-                          + qsTr("Always allow for this session")
-                    color: root.permissionIndex === 1 ? "black" : "white"
-                    bold: root.permissionIndex === 1
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: root.permissionIndex === 2 ? "yellow" : "transparent"
-                Text {
-                    text: (root.permissionIndex === 2 ? "> " : "  ") + qsTr("Deny")
-                    color: root.permissionIndex === 2 ? "black" : "white"
-                    bold: root.permissionIndex === 2
-                }
-            }
-
-            Text {
-                text: qsTr("Use Up/Down and Enter · Ctrl+C to cancel")
-                color: "gray"
-            }
-        }
-
-        Row {
-            visible: root.ready
-            width: root.width
-
-            Text {
-                text: qsTr("> ")
-                color: "green"
-                bold: true
-            }
-
-            TextInput {
-                id: input
-                width: parent.width - 2
-                color: "white"
-                focus: root.ready
-                onAccepted: root.submitRequest()
-            }
+        currentModel: root.activeModel
+        onModelSelected: modelId => {
+            root.activeModel = modelId;
+            toast.notify("Model: " + modelId, "info");
+            root.addMessage(Main.SystemMessage, "Switched neural model to: " + modelId, "NEURAL ENGINE");
         }
     }
 
+    // Side-by-Side Patch Diff Inspector Dialog (F3 / /diff)
+    DiffInspectorModal {
+        id: diffInspector
+        x: 0
+        y: 0
+        width: root.width
+    }
+
+    // Floating Background Task Notification Toast
+    ToastNotification {
+        id: toast
+        x: Math.max(0, root.width - width - 2)
+        y: 1
+    }
+
+    // Unified Animation Timer
     Timer {
-        id: spinnerTimer
-        interval: 90
+        id: workingTimer
+        interval: 100
         running: root.working
         repeat: true
-        onTriggered: root.spinnerIndex = (root.spinnerIndex + 1) % root.spinnerFrames.length
+        onTriggered: {
+            root.elapsedDeciseconds += 1;
+            root.spinnerIndex = (root.spinnerIndex + 1) % root.spinnerFrames.length;
+        }
     }
 
+    // Multi-Step Agent Scenario Simulation Timer
     Timer {
         id: agentTimer
-        interval: 650
+        interval: 600
         repeat: true
 
         onTriggered: {
-            if (root.agentStep === 0) {
-                root.addMessage(Main.ThoughtMessage, qsTr("Inspecting the repository structure"))
-            } else if (root.agentStep === 1) {
-                root.addMessage(Main.ToolCallMessage,
-                                qsTr("Read Tui/src/engine/StreamRenderer.cpp"))
-            } else if (root.agentStep === 2) {
-                root.addMessage(Main.ToolResultMessage, qsTr("Read 152 lines"))
-            } else if (root.agentStep === 3) {
-                root.addMessage(Main.AgentMessage,
-                                qsTr("I found the renderer. I need permission to update it."))
-            } else if (root.agentStep === 4) {
-                root.addMessage(Main.PermissionMessage,
-                                qsTr("Requested permission to modify one source file"))
-                root.permissionIndex = 0
-                root.agentState = Main.PermissionState
-                agentTimer.stop()
-            } else if (root.agentStep === 5) {
-                root.addMessage(Main.ToolCallMessage,
-                                qsTr("Edit Tui/src/engine/StreamRenderer.cpp"))
-            } else if (root.agentStep === 6) {
-                root.addMessage(Main.ToolResultMessage, qsTr("Updated 14 lines"))
-            } else if (root.agentStep === 7) {
-                root.addMessage(Main.ToolCallMessage, qsTr("Run cmake --build build"))
-            } else if (root.agentStep === 8) {
-                root.addMessage(Main.ToolResultMessage, qsTr("Build succeeded · 6/6 tests passed"))
-            } else {
-                root.addMessage(Main.AgentMessage,
-                                qsTr("Implemented the change and verified the test suite."))
-                root.agentState = Main.ReadyState
-                agentTimer.stop()
+            // Scenario 1: Refactor
+            if (root.currentScenario === 1) {
+                if (root.agentStep === 0) {
+                    root.currentToolName = "Planner";
+                    root.addMessage(Main.ThoughtMessage, "Analyzing StreamRenderer buffer logic to eliminate resize flicker and clamp bounds.", "0.8s");
+                } else if (root.agentStep === 1) {
+                    root.currentToolName = "Grep";
+                    root.addMessage(Main.ToolCallMessage, "query=\"promptRowToAnsi\", path=\"src/Qtui/engine/\"", "Grep");
+                } else if (root.agentStep === 2) {
+                    root.addMessage(Main.ToolResultMessage, "Found 3 matches across 2 files (StreamRenderer.h, StreamRenderer.cpp)");
+                } else if (root.agentStep === 3) {
+                    root.currentToolName = "ViewFile";
+                    root.addMessage(Main.ToolCallMessage, "path=\"src/Qtui/engine/StreamRenderer.cpp\", lines=70-105", "ViewFile");
+                } else if (root.agentStep === 4) {
+                    root.addMessage(Main.ToolResultMessage, "Read 35 lines from StreamRenderer.cpp");
+                } else if (root.agentStep === 5) {
+                    root.currentDiffFile = "src/Qtui/engine/StreamRenderer.cpp";
+                    root.currentToolName = "EditFile";
+                    root.currentToolTarget = "src/Qtui/engine/StreamRenderer.cpp";
+                    root.currentToolAction = "Clamp safeHeight and emit atomic buffer flush (+3, -1 lines)";
+
+                    root.addMessage(Main.DiffMessage, "", root.currentDiffFile);
+
+                    if (!root.sessionAlwaysAllow) {
+                        root.permissionIndex = 0;
+                        root.agentState = Main.PermissionState;
+                        agentTimer.stop();
+                        return;
+                    } else {
+                        root.addMessage(Main.PermissionDecisionMessage, "Auto-approved: EditFile(" + root.currentToolTarget + ")", "APPROVED", "", "", "", true);
+                    }
+                } else if (root.agentStep === 6) {
+                    root.currentToolName = "Bash";
+                    root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build agent_stream_demo\"", "Bash");
+                } else if (root.agentStep === 7) {
+                    root.addMessage(Main.ToolResultMessage, "[Exit 0] Built target agent_stream_demo (0.28s)");
+                } else if (root.agentStep === 8) {
+                    root.currentToolName = "CTest";
+                    root.addMessage(Main.ToolCallMessage, "command=\"ctest --test-dir build -R agent_stream\"", "CTest");
+                } else if (root.agentStep === 9) {
+                    root.addMessage(Main.ToolResultMessage, "Passed 2/2 tests: zero regressions (0.08s)");
+                } else {
+                    root.addMessage(Main.AgentMessage, "StreamRenderer optimization complete:\n" + "• Implemented in-memory atomic double buffering in StreamRenderer.cpp\n" + "• Replaced multi-step clears with single device.write() flushes\n" + "• Rebuilt and validated: 100% tests passed", "Agent", "2.1k tokens · 7.7s");
+                    toast.notify("Refactor patch applied & tested", "success");
+                    root.agentState = Main.ReadyState;
+                    agentTimer.stop();
+                    workingTimer.stop();
+                }
+            } else
+            // Scenario 2: Swarm Audit (Displays TableView)
+            if (root.currentScenario === 2) {
+                if (root.agentStep === 0) {
+                    root.currentToolName = "Swarm";
+                    root.addMessage(Main.ThoughtMessage, "Spawning 3 parallel subagent workers (Memory, QML bindings, Concurrency).", "0.6s");
+                } else if (root.agentStep === 1) {
+                    root.currentToolName = "Subagent(MemoryAuditor)";
+                    root.addMessage(Main.ToolCallMessage, "scope=\"src/Qtui/engine/\", check=\"leaks\"", "Subagent");
+                } else if (root.agentStep === 2) {
+                    root.addMessage(Main.ToolResultMessage, "MemoryAuditor: 0 heap leaks, 0 use-after-free conditions (checked 18 classes)");
+                } else if (root.agentStep === 3) {
+                    root.currentToolName = "Subagent(QmlProfiler)";
+                    root.addMessage(Main.ToolCallMessage, "scope=\"examples/concepts/agent_stream/\", check=\"bindings\"", "Subagent");
+                } else if (root.agentStep === 4) {
+                    root.addMessage(Main.ToolResultMessage, "QmlProfiler: 100% typed delegate roles; 0 binding loops detected");
+                } else if (root.agentStep === 5) {
+                    root.addMessage(Main.SwarmTableMessage, "", "Parallel Audit Results");
+                } else {
+                    root.addMessage(Main.AgentMessage, "Swarm audit finished with 100% clean verification across all 3 workers.", "Agent", "3.1k tokens · 1.4s");
+                    toast.notify("Swarm audit complete: 100% clean", "success");
+                    root.agentState = Main.ReadyState;
+                    agentTimer.stop();
+                    workingTimer.stop();
+                }
+            } else
+            // Scenario 3: Security Sandbox
+            if (root.currentScenario === 3) {
+                if (root.agentStep === 0) {
+                    root.currentToolName = "SecSandbox";
+                    root.addMessage(Main.ThoughtMessage, "Scanning text buffer bounds against UTF-8 overflow vectors.", "0.5s");
+                } else if (root.agentStep === 1) {
+                    root.currentToolName = "FuzzTester";
+                    root.addMessage(Main.ToolCallMessage, "input=\"malformed_utf8_sequences.bin\"", "FuzzTester");
+                } else if (root.agentStep === 2) {
+                    root.addMessage(Main.ToolResultMessage, "Identified edge case in wide-character column clipping");
+                } else if (root.agentStep === 3) {
+                    root.currentToolName = "SecurityPatch";
+                    root.currentToolTarget = "src/Qtui/engine/TextGridBuffer.cpp";
+                    root.currentToolAction = "Add displayWidth boundary clamp (+4, -1 lines)";
+                    root.addMessage(Main.DiffMessage, "", "src/Qtui/engine/TextGridBuffer.cpp");
+
+                    if (!root.sessionAlwaysAllow) {
+                        root.permissionIndex = 0;
+                        root.agentState = Main.PermissionState;
+                        agentTimer.stop();
+                        return;
+                    }
+                } else if (root.agentStep === 4) {
+                    root.addMessage(Main.ToolResultMessage, "Passed 24/24 buffer stress tests with 0 faults (0.12s)");
+                } else {
+                    root.addMessage(Main.AgentMessage, "Security patch applied and verified with stress tests.", "Agent", "2.4k tokens · 2.1s");
+                    toast.notify("Security patch verified", "success");
+                    root.agentState = Main.ReadyState;
+                    agentTimer.stop();
+                    workingTimer.stop();
+                }
+            } else
+            // Scenario 4: Workspace Hierarchy (Displays TreeView)
+            {
+                if (root.agentStep === 0) {
+                    root.currentToolName = "RepoIndexer";
+                    root.addMessage(Main.ThoughtMessage, "Scanning repository workspace hierarchy and file layout...", "0.4s");
+                } else if (root.agentStep === 1) {
+                    root.addMessage(Main.RepoTreeMessage, "", "~/Qtui Workspace");
+                } else {
+                    root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: StreamRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Interactive shell: Press Ctrl+T to toggle persistent live /bin/bash terminal", "Agent", "1.2k tokens · 0.9s");
+                    toast.notify("Workspace tree indexed", "info");
+                    root.agentState = Main.ReadyState;
+                    agentTimer.stop();
+                    workingTimer.stop();
+                }
             }
-            root.agentStep += 1
+
+            root.agentStep += 1;
         }
     }
 
     Component.onCompleted: {
-        root.addMessage(Main.SystemMessage, qsTr("Qtui Code"))
-        root.addMessage(Main.SystemMessage,
-                        qsTr("Model-backed stream · typed delegates · interactive permissions"))
-        root.addMessage(Main.SystemMessage,
-                        qsTr("Enter sends · Ctrl+C interrupts work or quits when idle"))
+        root.showBanner();
     }
 }

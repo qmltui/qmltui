@@ -156,6 +156,7 @@ private slots:
     void nestedAlternateScreensDelayFlush();
     void normalScreenForwardsMessagesImmediately();
     void testSessionOutputModeTransitions();
+    void terminalTitle();
 };
 
 void TestTerminalFramework::testSessionOutputModeTransitions() {
@@ -873,6 +874,46 @@ void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
 
     qInfo().noquote() << immediate;
     QVERIFY(capture.messages.contains(immediate));
+}
+
+void TestTerminalFramework::terminalTitle()
+{
+    Terminal terminal;
+    QCOMPARE(terminal.title(), QString());
+
+    QSignalSpy spy(&terminal, &Terminal::titleChanged);
+    terminal.setTitle(QStringLiteral("My Terminal App"));
+    QCOMPARE(terminal.title(), QStringLiteral("My Terminal App"));
+    QCOMPARE(spy.count(), 1);
+
+    // Setting same title does not re-emit
+    terminal.setTitle(QStringLiteral("My Terminal App"));
+    QCOMPARE(spy.count(), 1);
+
+    // Test engine title reflects and helper formats sequence
+    QCOMPARE(terminal.engine()->title(), QStringLiteral("My Terminal App"));
+    QCOMPARE(TerminalEngine::titleSequence(QStringLiteral("Hello")), std::string("\033]0;Hello\a"));
+
+    // Test QML loading with title binding
+    QQmlEngine qmlEngine;
+    QQmlComponent component(&qmlEngine);
+    component.setData(R"(
+        import QtQuick
+        import Qtui
+
+        Terminal {
+            property string appName: "Qtui"
+            title: appName + " - Dashboard"
+        }
+    )", QUrl());
+
+    auto* root = qobject_cast<Terminal*>(component.create());
+    QVERIFY(root);
+    QCOMPARE(root->title(), QStringLiteral("Qtui - Dashboard"));
+
+    root->setProperty("appName", QStringLiteral("SuperApp"));
+    QCOMPARE(root->title(), QStringLiteral("SuperApp - Dashboard"));
+    delete root;
 }
 
 QTEST_MAIN(TestTerminalFramework)

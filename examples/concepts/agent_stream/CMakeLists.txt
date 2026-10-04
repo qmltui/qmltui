@@ -7,7 +7,34 @@ qt_add_qml_module(agent_stream_demo
     VERSION 1.0
     QML_FILES
         Main.qml
-    DEPENDENCIES TARGET Qtui::Core
+        Theme.qml
+        BannerCard.qml
+        UserPromptCard.qml
+        ThoughtCard.qml
+        ToolCallCard.qml
+        ToolResultCard.qml
+        DiffCard.qml
+        PermissionCard.qml
+        AgentResponseCard.qml
+        SystemMessageCard.qml
+        ErrorMessageCard.qml
+        PinnedPromptBar.qml
+        SwarmTableCard.qml
+        RepoTreeCard.qml
+        CommandPalette.qml
+        ModelPickerModal.qml
+        DiffInspectorModal.qml
+        ToastNotification.qml
+        FullScreenShell.qml
+    DEPENDENCIES
+        TARGET Qtui::Core
+        TARGET Qtui::Controls
+        TARGET Qtui::Extras
+        TARGET Qtui::TerminalHost
 )
 
-target_link_libraries(agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
+target_link_libraries(agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras Qtui::TerminalHost)
+
+if(TARGET Qtui::Testing)
+    target_link_libraries(agent_stream_demo PRIVATE Qtui::Testing)
+endif()

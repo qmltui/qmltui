@@ -6,15 +6,49 @@
 #include "UnixPtySession.h"
 #include "VTermAdapter.h"
 
+#include <QFile>
 #include <QProcessEnvironment>
 #include <QTimer>
+
+#if defined(Q_OS_UNIX)
+#include <pwd.h>
+#include <unistd.h>
+#endif
 
 #include <algorithm>
 
 namespace qtui {
 
+QString TerminalView::defaultUserShell() {
+  const QString envShell = qEnvironmentVariable("SHELL").trimmed();
+  if (!envShell.isEmpty() && QFile::exists(envShell))
+    return envShell;
+#if defined(Q_OS_UNIX)
+  if (const struct passwd *pw = getpwuid(getuid())) {
+    if (pw->pw_shell && pw->pw_shell[0] != '\0') {
+      const QString pwShell = QString::fromLocal8Bit(pw->pw_shell).trimmed();
+      if (!pwShell.isEmpty() && QFile::exists(pwShell))
+        return pwShell;
+    }
+  }
+  if (QFile::exists(QStringLiteral("/bin/bash")))
+    return QStringLiteral("/bin/bash");
+  if (QFile::exists(QStringLiteral("/bin/zsh")))
+    return QStringLiteral("/bin/zsh");
+  if (QFile::exists(QStringLiteral("/bin/sh")))
+    return QStringLiteral("/bin/sh");
+#elif defined(Q_OS_WIN)
+  const QString comSpec = qEnvironmentVariable("COMSPEC").trimmed();
+  if (!comSpec.isEmpty() && QFile::exists(comSpec))
+    return comSpec;
+  return QStringLiteral("powershell.exe");
+#endif
+  return QStringLiteral("/bin/sh");
+}
+
 TerminalView::TerminalView(QObject *parent)
-    : Item(parent), m_adapter(std::make_unique<VTermAdapter>(1, 1)),
+    : Item(parent), m_program(defaultUserShell()),
+      m_adapter(std::make_unique<VTermAdapter>(1, 1)),
       m_session(std::make_unique<UnixPtySession>()) {
   setFocusable(true);
   setClip(true);
@@ -144,6 +178,15 @@ void TerminalView::setBackgroundColor(const QColor &value) {
   markDirty();
 }
 
+void TerminalView::setPalette(const QList<QColor>& value) {
+  if (m_palette == value)
+    return;
+  m_palette = value;
+  m_adapter->setPalette(m_palette);
+  emit paletteChanged();
+  markDirty();
+}
+
 void TerminalView::setScrollbackLimit(int value) {
   value = std::max(0, value);
   if (m_scrollbackLimit == value)
@@ -160,6 +203,18 @@ void TerminalView::setScrollOffset(int value) {
     return;
   m_scrollOffset = value;
   emit scrollOffsetChanged();
+  markDirty();
+}
+
+int TerminalView::scrollbackSize() const {
+  return m_adapter ? m_adapter->scrollbackSize() : 0;
+}
+
+void TerminalView::setShowScrollbar(bool value) {
+  if (m_showScrollbar == value)
+    return;
+  m_showScrollbar = value;
+  emit showScrollbarChanged();
   markDirty();
 }
 
@@ -189,7 +244,10 @@ void TerminalView::start() {
     setError(QStringLiteral("Terminal process is already active"));
     return;
   }
-  if (m_program.trimmed().isEmpty()) {
+  QString prog = m_program.trimmed();
+  if (prog.isEmpty())
+    prog = defaultUserShell();
+  if (prog.isEmpty()) {
     setError(QStringLiteral("program must not be empty"));
     return;
   }
@@ -223,8 +281,10 @@ void TerminalView::start() {
     m_errorString.clear();
     emit errorStringChanged();
   }
+  m_adapter->reset();
+  setScrollOffset(0);
   setProcessState(Starting);
-  if (!m_session->start(m_program, m_arguments, m_workingDirectory,
+  if (!m_session->start(prog, m_arguments, m_workingDirectory,
                         processEnvironment, std::max(1, height()),
                         std::max(1, width())))
     setProcessState(NotRunning);
@@ -283,14 +343,64 @@ void TerminalView::setHeight(int value) {
 
 void TerminalView::render(TextGridBuffer &buffer, int absX, int absY,
                           const ClipRect &clipRect) {
-  m_adapter->render(buffer, absX, absY, clipRect, std::max(0, width()),
-                    std::max(0, height()), m_scrollOffset);
+  const int w = std::max(0, width());
+  const int h = std::max(0, height());
+  const int scrollback = m_adapter ? m_adapter->scrollbackSize() : 0;
+  const bool drawScrollbar = m_showScrollbar && (scrollback > 0) && (w > 2);
+  const int contentWidth = drawScrollbar ? (w - 1) : w;
+
+  m_adapter->render(buffer, absX, absY, clipRect, contentWidth,
+                    h, m_scrollOffset);
+
+  if (drawScrollbar && h > 0) {
+    const int totalLines = scrollback + h;
+    const int sbH = std::max(1, (h * h) / totalLines);
+    const int maxScroll = scrollback;
+    const int sbPos = ((maxScroll - m_scrollOffset) * (h - sbH)) / std::max(1, maxScroll);
+    const int sbX = absX + w - 1;
+
+    for (int dy = 0; dy < h; ++dy) {
+      const int cy = absY + dy;
+      if (clipRect.contains(sbX, cy)) {
+        if (sbX >= 0 && sbX < buffer.width() && cy >= 0 && cy < buffer.height()) {
+          Cell &cell = buffer.cellAt(sbX, cy);
+          cell.fgColor = (dy >= sbPos && dy < sbPos + sbH) ? 0xFF38BDF8 : 0xFF475569;
+          cell.bgColor = 0xFF090D16;
+          cell.character = (dy >= sbPos && dy < sbPos + sbH) ? "\xE2\x96\x88" : "\xE2\x96\x91";
+        }
+      }
+    }
+  }
+
   Item::render(buffer, absX, absY, clipRect);
 }
 
 void TerminalView::keyPressEvent(KeyEvent *event) {
   if (!event || m_processState != Running)
     return;
+
+  // Shift+PageUp / Shift+PageDown / Shift+Up / Shift+Down local scrollback navigation
+  if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_PageUp) {
+    setScrollOffset(m_scrollOffset + std::max(1, height() - 2));
+    event->setAccepted(true);
+    return;
+  }
+  if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_PageDown) {
+    setScrollOffset(m_scrollOffset - std::max(1, height() - 2));
+    event->setAccepted(true);
+    return;
+  }
+  if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_Up) {
+    setScrollOffset(m_scrollOffset + 1);
+    event->setAccepted(true);
+    return;
+  }
+  if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_Down) {
+    setScrollOffset(m_scrollOffset - 1);
+    event->setAccepted(true);
+    return;
+  }
+
   if (event->isPaste())
     m_adapter->sendPaste(event->text());
   else
@@ -305,6 +415,19 @@ void TerminalView::mousePressEvent(MouseEvent *event) {
     return;
   if (!focus())
     setFocus(true);
+
+  if (m_showScrollbar && m_adapter && m_adapter->scrollbackSize() > 0 && event->x() >= width() - 1) {
+    const int h = std::max(1, height());
+    const int totalLines = m_adapter->scrollbackSize() + h;
+    const int sbH = std::max(1, (h * h) / totalLines);
+    const int maxScroll = m_adapter->scrollbackSize();
+    const int clickY = std::clamp(event->y(), 0, h - 1);
+    const int targetRatio = (clickY * maxScroll) / std::max(1, h - sbH);
+    setScrollOffset(std::clamp(maxScroll - targetRatio, 0, maxScroll));
+    event->setAccepted(true);
+    return;
+  }
+
   if (m_processState == Running && m_adapter->mouseReporting()) {
     m_adapter->sendMouseMove(event->y(), event->x(), event->modifiers());
     m_adapter->sendMouseButton(event->button(), true, event->modifiers());

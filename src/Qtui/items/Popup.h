@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Rectangle.h"
+#include "../engine/InputScope.h"
 #include <QPointer>
 
 namespace qtui {
 
-class Popup : public Rectangle {
+class Popup : public Rectangle, public InputScope {
     Q_OBJECT
     QML_ELEMENT
 
@@ -52,6 +53,16 @@ public:
 
     void setVisible(bool visible) override;
     void setParentItem(Item *parentItem) override;
+
+    // InputScope interface
+    bool isScopeVisible() const override { return visible(); }
+    bool isScopeModal() const override { return modal(); }
+    bool closeOnOutsideClick() const override { return (closePolicy() & CloseOnOutsideClick) != 0; }
+    bool closeOnEscape() const override { return (closePolicy() & CloseOnEscape) != 0; }
+    bool rejectScope() override { reject(); return true; }
+    Item* asItem() override { return this; }
+    const Item* asItem() const override { return this; }
+    bool isDescendantOfScope(const InputScope* other) const override;
 
 signals:
     void opened();

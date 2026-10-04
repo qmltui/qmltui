@@ -46,6 +46,22 @@ Waits for the requested duration while continuing to process Qt events, QML time
 
 Requests rendering and waits for a committed frame whose sequence is newer than the frame visible when the call began. `timeoutMs` must be between 1 and 30,000 milliseconds. The scenario fails if no new frame is committed before the timeout. JavaScript usage: `Test.waitForFrame()` or `Test.waitForFrame(5000)`.
 
+#### void expectRepaint(int timeoutMs = 2000)
+
+Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `Test.injectKey("k"); Test.expectRepaint();`
+
+#### void injectKey(const QString &key, const QStringList &modifiers = {})
+
+`press()` without the implicit frame wait. Same key and modifier names, no rendering requested and no frame awaited. JavaScript usage: `Test.injectKey("Down", ["Shift"])`.
+
+#### void injectText(const QString &text)
+
+`typeText()` without the implicit frame wait. JavaScript usage: `Test.injectText("abc")`.
+
+#### int frameCount()
+
+Sequence number of the most recently committed frame, or `-1` when no engine is attached. Compare it across an interaction to assert that nothing repainted. JavaScript usage: `const before = Test.frameCount();`
+
 #### void waitForCondition(const QJSValue &condition, int timeoutMs = 2000)
 
 Evaluates a synchronous JavaScript callback immediately and then approximately every 10 milliseconds until it returns a truthy value. The callback receives two arguments: the normalized text of the current committed frame and the number of milliseconds elapsed since waiting began. `timeoutMs` must be between 1 and 30,000 milliseconds.

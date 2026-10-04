@@ -5,7 +5,45 @@
 
 namespace qtui {
 
+namespace {
+
+struct ResolvingGuard {
+    bool& flag;
+    bool active;
+    ResolvingGuard(bool& f) : flag(f), active(!f) { if (active) flag = true; }
+    ~ResolvingGuard() { if (active) flag = false; }
+};
+
+void connectTarget(Item* target, Anchors* anchors) {
+    if (!target) return;
+    QObject::connect(target, &Item::xChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::yChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::widthChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::heightChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::implicitWidthChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+}
+
+void disconnectTarget(Item* target, Anchors* anchors) {
+    if (!target) return;
+    QObject::disconnect(target, &Item::xChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::yChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::widthChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::heightChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::implicitWidthChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve);
+}
+
+} // namespace
+
 Anchors::Anchors(Item* owner) : QObject(owner), m_owner(owner) {
+    if (m_owner) {
+        connect(m_owner, &Item::widthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+        connect(m_owner, &Item::implicitWidthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+        connect(m_owner, &Item::heightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+        connect(m_owner, &Item::implicitHeightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+        connect(m_owner, &Item::parentChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+    }
 }
 
 Anchors::~Anchors() = default;
@@ -19,15 +57,13 @@ void Anchors::setFill(QObject* target) {
     if (m_fillTarget.data() == itemTarget) return;
 
     if (m_fillTarget) {
-        disconnect(m_fillTarget.data(), &Item::widthChanged, this, &Anchors::resolve);
-        disconnect(m_fillTarget.data(), &Item::heightChanged, this, &Anchors::resolve);
+        disconnectTarget(m_fillTarget.data(), this);
     }
 
     m_fillTarget = itemTarget;
 
     if (m_fillTarget) {
-        connect(m_fillTarget.data(), &Item::widthChanged, this, &Anchors::resolve);
-        connect(m_fillTarget.data(), &Item::heightChanged, this, &Anchors::resolve);
+        connectTarget(m_fillTarget.data(), this);
     }
 
     emit fillChanged();
@@ -43,19 +79,13 @@ void Anchors::setCenterIn(QObject* target) {
     if (m_centerInTarget.data() == itemTarget) return;
 
     if (m_centerInTarget) {
-        disconnect(m_centerInTarget.data(), &Item::widthChanged, this, &Anchors::resolve);
-        disconnect(m_centerInTarget.data(), &Item::heightChanged, this, &Anchors::resolve);
+        disconnectTarget(m_centerInTarget.data(), this);
     }
 
     m_centerInTarget = itemTarget;
 
     if (m_centerInTarget) {
-        connect(m_centerInTarget.data(), &Item::widthChanged, this, &Anchors::resolve);
-        connect(m_centerInTarget.data(), &Item::heightChanged, this, &Anchors::resolve);
-        connect(m_owner, &Item::widthChanged, this, &Anchors::resolve);
-        connect(m_owner, &Item::implicitWidthChanged, this, &Anchors::resolve);
-        connect(m_owner, &Item::heightChanged, this, &Anchors::resolve);
-        connect(m_owner, &Item::implicitHeightChanged, this, &Anchors::resolve);
+        connectTarget(m_centerInTarget.data(), this);
     }
 
     emit centerInChanged();
@@ -66,13 +96,11 @@ AnchorLine* Anchors::left() const { return m_left.data(); }
 void Anchors::setLeft(AnchorLine* line) {
     if (m_left.data() == line) return;
     if (m_left) {
-        disconnect(m_left->owner(), &Item::xChanged, this, &Anchors::resolve);
-        disconnect(m_left->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        disconnectTarget(m_left->owner(), this);
     }
     m_left = line;
     if (m_left) {
-        connect(m_left->owner(), &Item::xChanged, this, &Anchors::resolve);
-        connect(m_left->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        connectTarget(m_left->owner(), this);
     }
     emit leftChanged();
     resolve();
@@ -82,13 +110,11 @@ AnchorLine* Anchors::right() const { return m_right.data(); }
 void Anchors::setRight(AnchorLine* line) {
     if (m_right.data() == line) return;
     if (m_right) {
-        disconnect(m_right->owner(), &Item::xChanged, this, &Anchors::resolve);
-        disconnect(m_right->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        disconnectTarget(m_right->owner(), this);
     }
     m_right = line;
     if (m_right) {
-        connect(m_right->owner(), &Item::xChanged, this, &Anchors::resolve);
-        connect(m_right->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        connectTarget(m_right->owner(), this);
     }
     emit rightChanged();
     resolve();
@@ -98,13 +124,11 @@ AnchorLine* Anchors::top() const { return m_top.data(); }
 void Anchors::setTop(AnchorLine* line) {
     if (m_top.data() == line) return;
     if (m_top) {
-        disconnect(m_top->owner(), &Item::yChanged, this, &Anchors::resolve);
-        disconnect(m_top->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        disconnectTarget(m_top->owner(), this);
     }
     m_top = line;
     if (m_top) {
-        connect(m_top->owner(), &Item::yChanged, this, &Anchors::resolve);
-        connect(m_top->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        connectTarget(m_top->owner(), this);
     }
     emit topChanged();
     resolve();
@@ -114,13 +138,11 @@ AnchorLine* Anchors::bottom() const { return m_bottom.data(); }
 void Anchors::setBottom(AnchorLine* line) {
     if (m_bottom.data() == line) return;
     if (m_bottom) {
-        disconnect(m_bottom->owner(), &Item::yChanged, this, &Anchors::resolve);
-        disconnect(m_bottom->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        disconnectTarget(m_bottom->owner(), this);
     }
     m_bottom = line;
     if (m_bottom) {
-        connect(m_bottom->owner(), &Item::yChanged, this, &Anchors::resolve);
-        connect(m_bottom->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        connectTarget(m_bottom->owner(), this);
     }
     emit bottomChanged();
     resolve();
@@ -130,13 +152,11 @@ AnchorLine* Anchors::horizontalCenter() const { return m_horizontalCenter.data()
 void Anchors::setHorizontalCenter(AnchorLine* line) {
     if (m_horizontalCenter.data() == line) return;
     if (m_horizontalCenter) {
-        disconnect(m_horizontalCenter->owner(), &Item::xChanged, this, &Anchors::resolve);
-        disconnect(m_horizontalCenter->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        disconnectTarget(m_horizontalCenter->owner(), this);
     }
     m_horizontalCenter = line;
     if (m_horizontalCenter) {
-        connect(m_horizontalCenter->owner(), &Item::xChanged, this, &Anchors::resolve);
-        connect(m_horizontalCenter->owner(), &Item::widthChanged, this, &Anchors::resolve);
+        connectTarget(m_horizontalCenter->owner(), this);
     }
     emit horizontalCenterChanged();
     resolve();
@@ -146,13 +166,11 @@ AnchorLine* Anchors::verticalCenter() const { return m_verticalCenter.data(); }
 void Anchors::setVerticalCenter(AnchorLine* line) {
     if (m_verticalCenter.data() == line) return;
     if (m_verticalCenter) {
-        disconnect(m_verticalCenter->owner(), &Item::yChanged, this, &Anchors::resolve);
-        disconnect(m_verticalCenter->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        disconnectTarget(m_verticalCenter->owner(), this);
     }
     m_verticalCenter = line;
     if (m_verticalCenter) {
-        connect(m_verticalCenter->owner(), &Item::yChanged, this, &Anchors::resolve);
-        connect(m_verticalCenter->owner(), &Item::heightChanged, this, &Anchors::resolve);
+        connectTarget(m_verticalCenter->owner(), this);
     }
     emit verticalCenterChanged();
     resolve();
@@ -217,7 +235,7 @@ void Anchors::resolve() {
     if (!m_owner) return;
     if (m_resolving) return;
 
-    m_resolving = true;
+    ResolvingGuard guard(m_resolving);
 
     if (m_fillTarget) {
         int targetW = m_fillTarget->width();
@@ -239,8 +257,6 @@ void Anchors::resolve() {
         m_owner->setY(targetY + tm);
         m_owner->setWidth(targetW - lm - rm);
         m_owner->setHeight(targetH - tm - bm);
-        
-        m_resolving = false;
         return;
     } 
     
@@ -259,8 +275,6 @@ void Anchors::resolve() {
 
         m_owner->setX(targetX + (targetW - ownerW) / 2);
         m_owner->setY(targetY + (targetH - ownerH) / 2);
-        
-        m_resolving = false;
         return;
     }
 
@@ -342,8 +356,6 @@ void Anchors::resolve() {
         int y2 = getLineCoord(m_bottom.data()) - bottomMargin();
         m_owner->setY(y2 - m_owner->height());
     }
-
-    m_resolving = false;
 }
 
 } // namespace qtui

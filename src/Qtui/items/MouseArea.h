@@ -24,6 +24,10 @@ public:
 
     void setMousePosition(int x, int y);
 
+    void mousePressEvent(MouseEvent *event) override;
+    void mouseReleaseEvent(MouseEvent *event) override;
+    void mouseMoveEvent(MouseEvent *event) override;
+
 signals:
     void mouseXChanged();
     void mouseYChanged();

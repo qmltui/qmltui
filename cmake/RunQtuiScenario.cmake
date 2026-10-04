@@ -78,6 +78,30 @@ if(DEFINED FORBIDDEN_ARTIFACT)
     file(REMOVE "${FORBIDDEN_ARTIFACT}")
 endif()
 
+# SYMLINK_TRAP=<name>:<target> plants a symlink inside the artifact directory so
+# a scenario can verify that artifact containment resolves symlinks instead of
+# only checking the path text.
+if(DEFINED SYMLINK_TRAP AND NOT "${SYMLINK_TRAP}" STREQUAL "")
+    string(FIND "${SYMLINK_TRAP}" ":" trap_separator REVERSE)
+    if(trap_separator LESS 0)
+        message(FATAL_ERROR "SYMLINK_TRAP must be <name>:<target>, got '${SYMLINK_TRAP}'")
+    endif()
+    string(SUBSTRING "${SYMLINK_TRAP}" 0 ${trap_separator} trap_name)
+    math(EXPR trap_target_start "${trap_separator} + 1")
+    string(SUBSTRING "${SYMLINK_TRAP}" ${trap_target_start} -1 trap_target)
+    file(MAKE_DIRECTORY "${trap_target}")
+    file(CREATE_LINK "${trap_target}" "${ARTIFACT_DIR}/${trap_name}" SYMBOLIC)
+endif()
+
+# An empty QML_IMPORT_PATH would blank out a value the caller exported, so only
+# pass the import path through when we actually have one.
+set(import_path_environment)
+if(NOT "${QML_IMPORT_PATH}" STREQUAL "")
+    list(APPEND import_path_environment
+        "QML2_IMPORT_PATH=${QML_IMPORT_PATH}"
+        "QML_IMPORT_PATH=${QML_IMPORT_PATH}")
+endif()
+
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E env
         ${scenario_environment}
@@ -87,8 +111,7 @@ execute_process(
         "QTUI_TEST_TIMEOUT_MS=${SCENARIO_TIMEOUT_MS}"
         "QTUI_TEST_OPERATION_TIMEOUT_MS=${OPERATION_TIMEOUT_MS}"
         "QTUI_TEST_LIVE=${live_value}"
-        "QML2_IMPORT_PATH=${QML_IMPORT_PATH}"
-        "QML_IMPORT_PATH=${QML_IMPORT_PATH}"
+        ${import_path_environment}
         "${TEST_EXECUTABLE}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE stdout

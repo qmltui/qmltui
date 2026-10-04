@@ -3,6 +3,7 @@
 namespace qtui {
 
 Row::Row(QObject *parent) : Item(parent) {
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 Row::~Row() = default;
@@ -13,7 +14,7 @@ void Row::setSpacing(int spacing) {
     emit spacingChanged();
     emit implicitWidthChanged();
     emit implicitHeightChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void Row::layoutChildren() {
@@ -31,6 +32,7 @@ void Row::layoutChildren() {
             currentX += childItem->width() + m_spacing;
         }
     }
+    clearDirty(DirtyFlag::LayoutDirty);
 }
 
 int Row::implicitWidth() const {
@@ -68,7 +70,7 @@ int Row::implicitHeight() const {
 
 void Row::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-    layoutChildren(); 
+    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
     Item::render(buffer, absX, absY, clipRect);
 }
 

@@ -43,9 +43,6 @@ int Rectangle::bottomPadding() const {
 void Rectangle::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!visible()) return;
 
-    // Resolve anchors first (done by Item::render too, but we need correct width/height now)
-    anchors()->resolve();
-
     int w = width();
     int h = height();
 

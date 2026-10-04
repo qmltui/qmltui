@@ -157,11 +157,11 @@ void Text::setTextFormat(TextFormat format) {
 void Text::setGradient(Gradient* gradient) {
     if (m_gradient == gradient) return;
     if (m_gradient) {
-        disconnect(m_gradient, &Gradient::updated, this, &Text::markDirty);
+        disconnect(m_gradient, nullptr, this, nullptr);
     }
     m_gradient = gradient;
     if (m_gradient) {
-        connect(m_gradient, &Gradient::updated, this, &Text::markDirty);
+        connect(m_gradient, &Gradient::updated, this, [this]() { markDirty(); });
     }
     emit gradientChanged();
     markDirty();

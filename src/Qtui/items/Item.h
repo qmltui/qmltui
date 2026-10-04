@@ -48,6 +48,15 @@ class Item : public QObject {
   Q_DISABLE_COPY_MOVE(Item)
   QML_ELEMENT
 
+public:
+  enum class DirtyFlag {
+    None = 0,
+    SelfDirty = 1 << 0,
+    DescendantDirty = 1 << 1,
+    LayoutDirty = 1 << 2
+  };
+  Q_DECLARE_FLAGS(DirtyFlags, DirtyFlag)
+
   Q_PROPERTY(int x READ x WRITE setX NOTIFY xChanged)
   Q_PROPERTY(int y READ y WRITE setY NOTIFY yChanged)
   Q_PROPERTY(qreal z READ z WRITE setZ NOTIFY zChanged)
@@ -140,6 +149,7 @@ public:
 
   Terminal *terminal() const;
   QPoint absolutePosition() const;
+  virtual QPoint contentOffset() const;
   void setGeometryDirect(int x, int y, int w, int h);
 
   Item *parentItem() const { return qobject_cast<Item *>(QObject::parent()); }
@@ -178,7 +188,15 @@ public:
   virtual void mouseReleaseEvent(class MouseEvent* event);
   virtual void mouseMoveEvent(class MouseEvent* event);
   virtual void wheelEvent(class MouseEvent* event);
-  void markDirty();
+  bool filtersChildMouseEvents() const { return m_filtersChildMouseEvents; }
+  void setFiltersChildMouseEvents(bool filter) { m_filtersChildMouseEvents = filter; }
+  virtual bool childMouseEventFilter(Item* item, class MouseEvent* event);
+
+  DirtyFlags dirtyFlags() const { return m_dirtyFlags; }
+  void markDirty(DirtyFlags flags);
+  void markDirty() { markDirty(DirtyFlag::SelfDirty); }
+  void clearDirty(DirtyFlags flags);
+  void clearDirty() { clearDirty(DirtyFlags(DirtyFlag::SelfDirty) | DirtyFlag::DescendantDirty); }
 
 signals:
   void xChanged();
@@ -206,6 +224,8 @@ signals:
 private:
   void invalidateStackingOrder();
   void scheduleChildGeometryInvalidation();
+  void registerChildItem(Item* childItem);
+  void unregisterChildItem(Item* childItem);
   static void appendData(QQmlListProperty<QObject> *list, QObject *item);
   static qsizetype dataCount(QQmlListProperty<QObject> *list);
   static QObject *dataAt(QQmlListProperty<QObject> *list, qsizetype index);
@@ -260,7 +280,10 @@ protected:
   QMap<QPair<QPointer<QObject>, QString>, QVariant> m_savedPropertyValues;
   QList<QPointer<Animation>> m_runningTransitionAnimations;
   QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
-  bool m_childGeometryInvalidationPending = false;
+  bool m_filtersChildMouseEvents = false;
+  DirtyFlags m_dirtyFlags = DirtyFlag::SelfDirty;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Item::DirtyFlags)
 
 } // namespace qtui

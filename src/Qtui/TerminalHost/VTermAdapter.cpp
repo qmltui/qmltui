@@ -116,6 +116,25 @@ void VTermAdapter::setDefaultColors(const QColor& foreground, const QColor& back
     m_defaultBackground = background.rgba();
 }
 
+void VTermAdapter::setPaletteColor(int index, const QColor& color) {
+    if (!m_state || index < 0 || index >= 16 || !color.isValid())
+        return;
+    VTermColor c;
+    vterm_color_rgb(&c, static_cast<uint8_t>(color.red()),
+                    static_cast<uint8_t>(color.green()),
+                    static_cast<uint8_t>(color.blue()));
+    vterm_state_set_palette_color(m_state, index, &c);
+}
+
+void VTermAdapter::setPalette(const QList<QColor>& palette) {
+    m_palette = palette;
+    for (int i = 0; i < std::min(16, static_cast<int>(palette.size())); ++i) {
+        setPaletteColor(i, palette[i]);
+    }
+    if (m_damageCallback)
+        m_damageCallback();
+}
+
 void VTermAdapter::setScrollbackLimit(int limit) {
     m_scrollbackLimit = std::max(0, limit);
     while (static_cast<int>(m_scrollback.size()) > m_scrollbackLimit)
@@ -123,6 +142,34 @@ void VTermAdapter::setScrollbackLimit(int limit) {
 }
 
 void VTermAdapter::clearScrollback() {
+    m_scrollback.clear();
+    if (m_damageCallback)
+        m_damageCallback();
+}
+
+void VTermAdapter::reset() {
+    if (!m_vterm)
+        return;
+    if (m_state) {
+        vterm_state_reset(m_state, 1);
+        if (!m_palette.isEmpty()) {
+            for (int i = 0; i < std::min(16, static_cast<int>(m_palette.size())); ++i)
+                setPaletteColor(i, m_palette[i]);
+        }
+        VTermColor fg;
+        VTermColor bg;
+        vterm_color_rgb(&fg, static_cast<uint8_t>((m_defaultForeground >> 16) & 0xff),
+                        static_cast<uint8_t>((m_defaultForeground >> 8) & 0xff),
+                        static_cast<uint8_t>(m_defaultForeground & 0xff));
+        vterm_color_rgb(&bg, static_cast<uint8_t>((m_defaultBackground >> 16) & 0xff),
+                        static_cast<uint8_t>((m_defaultBackground >> 8) & 0xff),
+                        static_cast<uint8_t>(m_defaultBackground & 0xff));
+        vterm_state_set_default_colors(m_state, &fg, &bg);
+    }
+    if (m_screen) {
+        vterm_screen_reset(m_screen, 1);
+        vterm_screen_flush_damage(m_screen);
+    }
     m_scrollback.clear();
     if (m_damageCallback)
         m_damageCallback();

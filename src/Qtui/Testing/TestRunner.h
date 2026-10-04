@@ -12,6 +12,10 @@
 #include <QVariantMap>
 #include <QVector>
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 class QEventLoop;
 class QQmlEngine;
 
@@ -29,6 +33,7 @@ public:
     TestRunner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
                QString artifactDirectory, QSize viewport, int operationTimeoutMs,
                int scenarioTimeoutMs, QString configurationError);
+    ~TestRunner() override;
 
     static TestRunner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);
 
@@ -48,6 +53,23 @@ public:
 
     /// Waits for a committed frame newer than the current frame.
     Q_INVOKABLE void waitForFrame(int timeoutMs = 2000);
+
+    /// Sends text without waiting for a frame, so a following expectRepaint()
+    /// can observe whether the application scheduled the repaint itself.
+    Q_INVOKABLE void injectText(const QString& text);
+
+    /// press() without the implicit frame wait, for use with expectRepaint().
+    Q_INVOKABLE void injectKey(const QString& key, const QStringList& modifiers = {});
+
+    /// Fails unless the application commits a new frame on its own. Unlike
+    /// waitForFrame(), this never requests a render, so it verifies that a
+    /// change actually invalidated the scene rather than only that the scene
+    /// paints correctly when a render is forced.
+    Q_INVOKABLE void expectRepaint(int timeoutMs = 2000);
+
+    /// Sequence number of the most recently committed frame. Use it to assert
+    /// that an interaction did not cause any repaint at all.
+    Q_INVOKABLE int frameCount() const;
 
     /// Polls a synchronous JavaScript callback until it returns a truthy value.
     /// The callback receives the current frame text and elapsed milliseconds.
@@ -126,6 +148,7 @@ public:
 
     /// Internal entry point used by the JavaScript facade for structured traces.
     Q_INVOKABLE void beginOperation(const QString& name, const QString& stack);
+    Q_INVOKABLE void endOperation();
 
 signals:
     void finished(int exitCode);
@@ -156,7 +179,9 @@ private:
         int column = 0;
     };
 
-    bool waitForNextFrame(int timeoutMs);
+    bool waitForNextFrame(int timeoutMs, bool requestRender = true);
+    void sendKey(const char* operation, const QString& key,
+                 const QStringList& modifiers, bool awaitFrame);
     bool waitForTextCondition(const QString& text, bool shouldContain, int timeoutMs);
     int validateTimeout(int timeoutMs);
     bool ensureRunning(const char* operation);
@@ -177,6 +202,8 @@ private:
     void failScenario(const QString& message, bool raiseJsError = true);
     void scheduleExit(int exitCode);
     QString formatJsError(const QJSValue& error) const;
+    void startHardWatchdog();
+    void stopHardWatchdog();
 
     QPointer<QQmlEngine> m_qmlEngine;
     QPointer<Terminal> m_terminal;
@@ -200,6 +227,15 @@ private:
     State m_state = State::Starting;
     bool m_evaluating = false;
     bool m_exitScheduled = false;
+
+    // m_watchdog is a QTimer, so it cannot fire while a scenario blocks inside
+    // synchronous JavaScript. This thread interrupts the JS engine instead, so
+    // a runaway loop still fails with a diagnosis rather than hanging.
+    std::thread m_hardWatchdog;
+    std::mutex m_hardWatchdogMutex;
+    std::condition_variable m_hardWatchdogWake;
+    bool m_hardWatchdogFinished = false;
+    bool m_scenarioInterrupted = false;
 };
 
 } // namespace qtui

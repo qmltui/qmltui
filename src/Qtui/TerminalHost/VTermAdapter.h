@@ -48,8 +48,11 @@ public:
   void feed(const QByteArray &bytes);
   void resize(int rows, int columns);
   void setDefaultColors(const QColor &foreground, const QColor &background);
+  void setPaletteColor(int index, const QColor &color);
+  void setPalette(const QList<QColor> &palette);
   void setScrollbackLimit(int limit);
   void clearScrollback();
+  void reset();
   int scrollbackSize() const { return static_cast<int>(m_scrollback.size()); }
   bool mouseReporting() const { return m_mouseMode != VTERM_PROP_MOUSE_NONE; }
 
@@ -100,6 +103,7 @@ private:
   VTermPos m_cursor{0, 0};
   uint32_t m_defaultForeground = 0xffffffffu;
   uint32_t m_defaultBackground = 0xff000000u;
+  QList<QColor> m_palette;
   std::deque<std::vector<VTermScreenCell>> m_scrollback;
   QByteArray m_selectionBuffer;
   QByteArray m_titleBuffer;

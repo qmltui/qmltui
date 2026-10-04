@@ -18,12 +18,12 @@ public:
     int implicitHeight() const override;
     void render(TextGridBuffer &buffer, int absX, int absY,
                 const ClipRect &clipRect = ClipRect()) override;
+    void layoutChildren();
 
 signals:
     void spacingChanged();
 
 private:
-    void layoutChildren();
     int preferredMainSize(Item *item) const;
     int minimumMainSize(Item *item) const;
     int maximumMainSize(Item *item) const;

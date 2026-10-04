@@ -4,11 +4,9 @@
 #include "FrameRenderer.h"
 #include "../items/Item.h"
 #include "../items/Terminal.h"
-#include "../items/Popup.h"
-#include "../items/MouseArea.h"
-#include "../items/ScrollView.h"
 #include "KeyEvent.h"
 #include "MouseEvent.h"
+#include "InputRouter_p.h"
 #include "TerminalMessageRouter_p.h"
 #include "../primitives/TextGridBuffer.h"
 #include "Keys.h"
@@ -30,15 +28,6 @@
 #endif
 
 namespace qtui {
-
-static bool isDescendantOf(Item* child, Item* ancestor) {
-    QObject* p = child;
-    while (p) {
-        if (p == ancestor) return true;
-        p = p->parent();
-    }
-    return false;
-}
 
 #ifdef Q_OS_UNIX
 class TerminalResizeBridge : public QObject {
@@ -181,7 +170,7 @@ static bool environmentRequestsTestSession() {
 }
 
 TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
-    : QObject(parent), m_rootWindow(rootWindow) {
+    : QObject(parent), m_rootWindow(rootWindow), m_router(std::make_unique<InputRouter>(rootWindow)) {
   TerminalMessageRouter::registerEngine();
   m_terminalOutputEnabled = !environmentRequestsTestSession()
       || environmentFlagEnabled("QTUI_TEST_LIVE");
@@ -220,6 +209,9 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
     }
   }
   setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
+  if (m_rootWindow && !m_rootWindow->title().isEmpty()) {
+    setTitle(m_rootWindow->title());
+  }
 
   handleResize();
 
@@ -333,6 +325,19 @@ std::string TerminalEngine::osc52Sequence(const QString& text) {
   return "\033]52;c;" + encoded.toStdString() + "\a";
 }
 
+void TerminalEngine::setTitle(const QString& title) {
+  if (m_title == title)
+    return;
+  m_title = title;
+  if (m_terminalOutputEnabled && !m_title.isEmpty()) {
+    m_device.write(titleSequence(m_title));
+  }
+}
+
+std::string TerminalEngine::titleSequence(const QString& text) {
+  return "\033]0;" + text.toUtf8().toStdString() + "\a";
+}
+
 void TerminalEngine::handleResize() {
   int w = terminalWidth();
   int h = terminalHeight();
@@ -372,355 +377,20 @@ void TerminalEngine::readTerminalData() {
 }
 
 void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste) {
-  if (!m_rootWindow) return;
-
-  KeyEvent event(key, text, modifiers, paste);
-
-  for (Shortcut* sc : activeShortcuts()) {
-      if (sc && sc->enabled() && sc->sequence() == key) {
-          emit sc->activated();
-          return;
-      }
-  }
-
-  auto dispatchToItem = [](Item* item, KeyEvent& ev) {
-      if (!item->isEffectivelyEnabled()) return;
-
-      Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, false));
-      bool beforeItem = attached && (attached->priority() == Keys::BeforeItem);
-
-      auto emitAttachedSignals = [&]() {
-          if (!attached) return;
-          if (ev.key() == Qt::Key_Return || ev.key() == Qt::Key_Enter) emit attached->returnPressed(&ev);
-          else if (ev.key() == Qt::Key_Escape) emit attached->escapePressed(&ev);
-          else if (ev.key() == Qt::Key_Space) emit attached->spacePressed(&ev);
-          else if (ev.key() == Qt::Key_Up) emit attached->upPressed(&ev);
-          else if (ev.key() == Qt::Key_Down) emit attached->downPressed(&ev);
-          else if (ev.key() == Qt::Key_Left) emit attached->leftPressed(&ev);
-          else if (ev.key() == Qt::Key_Right) emit attached->rightPressed(&ev);
-          else if (ev.key() == Qt::Key_Tab) emit attached->tabPressed(&ev);
-          if (!ev.isAccepted()) emit attached->pressed(&ev);
-      };
-
-      if (beforeItem) {
-          emitAttachedSignals();
-          if (ev.isAccepted()) return;
-          item->keyPressEvent(&ev);
-      } else {
-          item->keyPressEvent(&ev);
-          if (ev.isAccepted()) return;
-          emitAttachedSignals();
-      }
-
-      if (!ev.isAccepted() && attached) {
-          for (Item* forwardedItem : attached->forwardToItems()) {
-              if (forwardedItem && forwardedItem->isEffectivelyEnabled()) {
-                  forwardedItem->keyPressEvent(&ev);
-                  if (ev.isAccepted()) return;
-                  Keys* fwdAttached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(forwardedItem, false));
-                  if (fwdAttached) {
-                      emit fwdAttached->pressed(&ev);
-                      if (ev.isAccepted()) return;
-                  }
-              }
-          }
-      }
-  };
-
-  const QList<Popup*> popups = m_rootWindow->orderedPopups();
-  Popup* activeModalPopup = nullptr;
-  for (int i = popups.size() - 1; i >= 0; --i) {
-      Popup* p = popups[i];
-      if (p && p->visible() && p->modal()) {
-          activeModalPopup = p;
-          break;
-      }
-  }
-
-  if (activeModalPopup) {
-      Popup *topPopup = activeModalPopup;
-      for (auto it = popups.crbegin(); it != popups.crend(); ++it)
-          if (*it && (*it)->visible()
-              && (*it == activeModalPopup || (*it)->isDescendantOfPopup(activeModalPopup))) {
-              topPopup = *it;
-              break;
-          }
-      if (key == Qt::Key_Escape && (topPopup->closePolicy() & Popup::CloseOnEscape)) {
-          topPopup->reject();
-          return;
-      }
-      
-      Item* focused = m_rootWindow->focusedItem();
-      Item* current = (focused && isDescendantOf(focused, activeModalPopup)) ? focused : activeModalPopup;
-      
-      while (current) {
-          dispatchToItem(current, event);
-          if (event.isAccepted()) break;
-          
-          if (current == activeModalPopup) break;
-          current = qobject_cast<Item*>(current->parent());
-      }
-      if (!event.isAccepted()) {
-          if (key == Qt::Key_Tab)
-              cycleFocus(true, activeModalPopup);
-          else if (key == Qt::Key_Backtab)
-              cycleFocus(false, activeModalPopup);
-      }
-      return;
-  }
-
-  if (key == Qt::Key_Escape) {
-      for (auto it = popups.crbegin(); it != popups.crend(); ++it) {
-          Popup *popup = *it;
-          if (popup && popup->visible() && (popup->closePolicy() & Popup::CloseOnEscape)) {
-              popup->reject();
-              return;
-          }
-      }
-  }
-
-  Item* focused = m_rootWindow->focusedItem();
-  if (focused && (!focused->visible() || !focused->isEffectivelyEnabled()))
-      m_rootWindow->setFocusedItem(nullptr);
-  Item* current = m_rootWindow->focusedItem() ? m_rootWindow->focusedItem() : m_rootWindow;
-
-  while (current) {
-    dispatchToItem(current, event);
-    if (event.isAccepted()) break;
-
-    current = qobject_cast<Item*>(current->parent());
-  }
-
-  if (!event.isAccepted()) {
-    if (key == Qt::Key_Tab) {
-      cycleFocus(true);
-    } else if (key == Qt::Key_Backtab) {
-      cycleFocus(false);
-    }
-  }
+  if (m_router) m_router->routeKey(key, text, modifiers, paste);
 }
 
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion,
                                       int modifiers, int wheelDeltaX, int wheelDeltaY) {
-  if (!m_rootWindow) return;
-  const bool buttonMotion = motion && ((button & 3) != 3);
-
-  const QList<Popup*> popups = m_rootWindow->orderedPopups();
-  Popup *activeModal = m_rootWindow->topModalPopup();
-  
-  for (int i = popups.count() - 1; i >= 0; --i) {
-      Popup* popup = popups[i];
-      if (!popup || !popup->visible()) continue;
-      if (activeModal && popup != activeModal && !popup->isDescendantOfPopup(activeModal)) continue;
-      
-      QPoint absPos = popup->absolutePosition();
-      bool inside = (x >= absPos.x() && x < absPos.x() + popup->width() &&
-                     y >= absPos.y() && y < absPos.y() + popup->height());
-                     
-      if (inside) {
-          int parentAbsX = absPos.x() - popup->x();
-          int parentAbsY = absPos.y() - popup->y();
-          Item* target = hitTestItem(popup, x, y, parentAbsX, parentAbsY);
-          if (target) {
-              if (motion) m_rootWindow->setHoveredItem(target);
-              int targetAbsX = target->absolutePosition().x();
-              int targetAbsY = target->absolutePosition().y();
-              int localX = x - targetAbsX;
-              int localY = y - targetAbsY;
-
-              MouseArea* ma = qobject_cast<MouseArea*>(target);
-              if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
-                  ma->setMousePosition(localX, localY);
-              }
-              if (motion && !buttonMotion) {
-                  bool requested = false;
-                  for (Item* current = target; current; current = current->parentItem()) {
-                      if (m_rootWindow->isMouseMotionRequester(current)) {
-                          requested = true;
-                          break;
-                      }
-                  }
-                  if (!requested)
-                      return;
-              }
-              MouseEvent event(localX, localY, button, modifiers, motion,
-                               wheelDeltaX, wheelDeltaY);
-
-              Item* current = target;
-              while (current) {
-                  int currentAbsX = current->absolutePosition().x();
-                  int currentAbsY = current->absolutePosition().y();
-                  MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button,
-                                          modifiers, motion, wheelDeltaX, wheelDeltaY);
-
-                  if (wheelDeltaX != 0 || wheelDeltaY != 0) {
-                      current->wheelEvent(&currentEvent);
-                  } else if (motion) {
-                      current->mouseMoveEvent(&currentEvent);
-                  } else if (release) {
-                      current->mouseReleaseEvent(&currentEvent);
-                  } else {
-                      current->mousePressEvent(&currentEvent);
-                  }
-                  if (currentEvent.isAccepted()) break;
-
-                  if (current == ma) {
-                      if (release) {
-                          emit ma->released(&currentEvent);
-                          emit ma->clicked(&currentEvent);
-                      } else {
-                          emit ma->pressed(&currentEvent);
-                      }
-                      if (currentEvent.isAccepted()) break;
-                  }
-                  
-                  if (current == popup) break;
-                  current = qobject_cast<Item*>(current->parent());
-              }
-              return;
-          }
-      } else {
-          if (popup->closePolicy() & Popup::CloseOnOutsideClick) {
-              if (release) {
-                  popup->reject();
-                  return;
-              }
-          }
-          if (popup->modal()) {
-              if (motion) m_rootWindow->setHoveredItem(nullptr);
-              return;
-          }
-      }
-  }
-
-  if (activeModal) {
-    if (motion) m_rootWindow->setHoveredItem(nullptr);
-    return;
-  }
-
-  Item* target = hitTestItem(m_rootWindow, x, y, 0, 0);
-  if (motion) m_rootWindow->setHoveredItem(target);
-  if (target) {
-    int targetAbsX = target->absolutePosition().x();
-    int targetAbsY = target->absolutePosition().y();
-
-    int localX = x - targetAbsX;
-    int localY = y - targetAbsY;
-
-    MouseArea* ma = qobject_cast<MouseArea*>(target);
-    if (ma && (!motion || buttonMotion || ma->hoverEnabled())) {
-        ma->setMousePosition(localX, localY);
-    }
-    if (motion && !buttonMotion) {
-      bool requested = false;
-      for (Item* current = target; current; current = current->parentItem()) {
-        if (m_rootWindow->isMouseMotionRequester(current)) {
-          requested = true;
-          break;
-        }
-      }
-      if (!requested)
-        return;
-    }
-    MouseEvent event(localX, localY, button, modifiers, motion,
-                     wheelDeltaX, wheelDeltaY);
-
-    Item* current = target;
-    while (current) {
-      int currentAbsX = current->absolutePosition().x();
-      int currentAbsY = current->absolutePosition().y();
-      MouseEvent currentEvent(x - currentAbsX, y - currentAbsY, button,
-                              modifiers, motion, wheelDeltaX, wheelDeltaY);
-
-      if (wheelDeltaX != 0 || wheelDeltaY != 0) {
-        current->wheelEvent(&currentEvent);
-      } else if (motion) {
-        current->mouseMoveEvent(&currentEvent);
-      } else if (release) {
-        current->mouseReleaseEvent(&currentEvent);
-      } else {
-        current->mousePressEvent(&currentEvent);
-      }
-      if (currentEvent.isAccepted()) break;
-
-      if (current == ma) {
-        if (release) {
-          emit ma->released(&currentEvent);
-          emit ma->clicked(&currentEvent);
-        } else {
-          emit ma->pressed(&currentEvent);
-        }
-        if (currentEvent.isAccepted()) break;
-      }
-
-      current = qobject_cast<Item*>(current->parent());
-    }
-  }
+  if (m_router) m_router->routeMouse(button, x, y, release, motion, modifiers, wheelDeltaX, wheelDeltaY);
 }
 
 void TerminalEngine::cycleFocus(bool forward, Item* scope) {
-  if (!m_rootWindow) return;
-
-  QList<Item*> focusableList;
-  m_rootWindow->findFocusableItems(scope ? scope : m_rootWindow, focusableList);
-  if (focusableList.isEmpty()) return;
-
-  Item* currentFocus = m_rootWindow->focusedItem();
-  int idx = focusableList.indexOf(currentFocus);
-
-  Item* nextFocus = nullptr;
-  if (idx == -1) {
-    nextFocus = forward ? focusableList.first() : focusableList.last();
-  } else {
-    if (forward) {
-      nextFocus = focusableList[(idx + 1) % focusableList.size()];
-    } else {
-      nextFocus = focusableList[(idx - 1 + focusableList.size()) % focusableList.size()];
-    }
-  }
-
-  if (nextFocus) {
-    nextFocus->setFocus(true);
-  }
+  if (m_router) m_router->cycleFocus(forward, scope);
 }
 
 Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const {
-  if (!item || !item->visible() || !item->isEffectivelyEnabled()) return nullptr;
-
-  int itemAbsX = parentAbsX + item->x();
-  int itemAbsY = parentAbsY + item->y();
-
-  bool inside = (absX >= itemAbsX && absX < itemAbsX + item->width() &&
-                 absY >= itemAbsY && absY < itemAbsY + item->height());
-
-  if (item->clip() && !inside) {
-    return nullptr;
-  }
-
-  int childParentAbsX = itemAbsX;
-  int childParentAbsY = itemAbsY;
-  
-  if (const ScrollView* sv = qobject_cast<const ScrollView*>(item)) {
-    childParentAbsY -= sv->contentY();
-  } else {
-    QVariant scrollX = item->property("contentX");
-    if (scrollX.isValid()) childParentAbsX -= scrollX.toInt();
-    QVariant scrollY = item->property("contentY");
-    if (scrollY.isValid()) childParentAbsY -= scrollY.toInt();
-  }
-
-  const auto& children = item->stackingChildren();
-  for (int i = children.size() - 1; i >= 0; --i) {
-    Item* child = children[i];
-    Item* hit = hitTestItem(child, absX, absY, childParentAbsX, childParentAbsY);
-    if (hit) return hit;
-  }
-
-  if (inside) {
-    return item;
-  }
-
-  return nullptr;
+  return m_router ? m_router->hitTestItem(item, absX, absY, parentAbsX, parentAbsY) : nullptr;
 }
 
 void TerminalEngine::renderFrame() {

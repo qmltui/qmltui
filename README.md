@@ -54,6 +54,11 @@ Installed CMake consumers can register a scenario with:
 
 ```cmake
 find_package(Qtui 0.2 REQUIRED)
+
+# Linking Qtui::Testing is what puts the runner inside the application; without
+# it the scenario fails with "did not create result.json".
+target_link_libraries(my_app PRIVATE Qtui::Core Qtui::Testing)
+
 qtui_add_scenario_test(
     NAME my_app_smoke
     TARGET my_app
@@ -61,6 +66,13 @@ qtui_add_scenario_test(
     LABELS AgentSmoke
 )
 ```
+
+`qtui_add_scenario_test` defaults its QML import path to
+`Qtui_QML_IMPORT_PATH`, which `find_package(Qtui)` sets to the installed import
+root; pass `QML_IMPORT_PATH` explicitly to override it. Link `Qtui::Testing`
+only into a test-only executable — an application carrying the runner executes
+the scenario named by `QTUI_SCRIPT`/`QTUI_EVAL` if those variables are set in
+its environment. See `examples/apps/industrial_plc_hmi` for that split.
 
 JavaScript scenarios can inspect cells, find rendered text, and click it
 without hard-coded coordinates. See `src/Qtui/Testing/doc/TestRunner.md` for

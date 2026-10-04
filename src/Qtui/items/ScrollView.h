@@ -24,6 +24,8 @@ public:
 
     int effectiveContentHeight() const;
 
+    QPoint contentOffset() const override { return QPoint(0, m_contentY); }
+
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
     void wheelEvent(class MouseEvent* event) override;

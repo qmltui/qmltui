@@ -54,6 +54,15 @@ void Terminal::copyToClipboard(const QString& text) {
         m_engine->copyToClipboard(text);
 }
 
+void Terminal::setTitle(const QString& title) {
+    if (m_title == title) return;
+    m_title = title;
+    emit titleChanged();
+    if (m_engine) {
+        m_engine->setTitle(title);
+    }
+}
+
 void Terminal::setUseAlternateScreen(bool use) {
     if (m_useAlternateScreen == use) return;
     m_useAlternateScreen = use;
@@ -108,6 +117,20 @@ Popup *Terminal::topModalPopup() const {
     for (auto it = ordered.crbegin(); it != ordered.crend(); ++it)
         if (*it && (*it)->visible() && (*it)->modal()) return *it;
     return nullptr;
+}
+
+QList<InputScope*> Terminal::orderedInputScopes() const {
+    const QList<Popup*> popups = orderedPopups();
+    QList<InputScope*> scopes;
+    scopes.reserve(popups.size());
+    for (Popup* p : popups) {
+        if (p) scopes.append(p);
+    }
+    return scopes;
+}
+
+InputScope* Terminal::topModalScope() const {
+    return topModalPopup();
 }
 
 void Terminal::setFocusedItem(Item* item) {

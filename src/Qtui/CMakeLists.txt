@@ -1,6 +1,8 @@
 
 
 
+include("${CMAKE_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
+
 # The library backing the QML module
 set(qtui_behavior_sources)
 if(QTUI_ENABLE_BEHAVIOR)
@@ -27,6 +29,11 @@ qt_add_qml_module(QtuiCore
         engine/TerminalEngine.cpp
         engine/TerminalMessageRouter_p.h
         engine/TerminalMessageRouter.cpp
+        engine/InputRouter_p.h
+        engine/InputRouter.cpp
+        engine/InputScope.h
+        engine/FocusManager.h
+        engine/FocusManager.cpp
         engine/Renderer.h
         engine/FrameRenderer.h
         engine/FrameRenderer.cpp
@@ -151,6 +158,7 @@ install(FILES
 )
 install(FILES
     items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h items/TableView.h items/TreeView.h
+    items/Terminal.h items/Rectangle.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
 )
 install(FILES

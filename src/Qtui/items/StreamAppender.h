@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QVariant>
 
 namespace qtui {
 
@@ -14,13 +15,14 @@ class StreamAppender : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(QAbstractItemModel* model READ model WRITE setModel NOTIFY modelChanged)
+    Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
 
 public:
     explicit StreamAppender(QObject* parent = nullptr);
 
-    QAbstractItemModel* model() const { return m_model; }
+    QVariant model() const { return m_modelVariant; }
+    void setModel(const QVariant& model);
     void setModel(QAbstractItemModel* model);
 
     QQmlComponent* delegate() const { return m_delegate; }
@@ -36,6 +38,7 @@ private:
     QQmlComponent* delegateForRow(int row) const;
     Terminal* terminal() const;
 
+    QVariant m_modelVariant;
     QPointer<QAbstractItemModel> m_model;
     QPointer<QQmlComponent> m_delegate;
     int m_consumedRowCount = 0;

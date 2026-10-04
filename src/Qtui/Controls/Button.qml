@@ -46,10 +46,10 @@ Rectangle {
             control.pressed = true
         }
         onReleased: (event) => {
-            if (control.pressed) {
-                control.pressed = false
-                control.clicked()
-            }
+            control.pressed = false
+        }
+        onClicked: (event) => {
+            control.clicked()
         }
     }
 }

@@ -5,6 +5,7 @@ include("${CMAKE_SOURCE_DIR}/cmake/QtuiTesting.cmake")
 function(add_qtui_test test_name test_source)
     add_executable(${test_name} ${test_source})
     target_link_libraries(${test_name} PRIVATE Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls Qtui::Extras Qtui::Canvas Qtui::Image)
+    target_compile_definitions(${test_name} PRIVATE QTUI_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
         ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
@@ -21,6 +22,7 @@ add_qtui_test(test_text_input Core/test_text_input.cpp)
 add_qtui_test(test_scroll_view Core/test_scroll_view.cpp)
 add_qtui_test(test_views_virtualization Core/test_views_virtualization.cpp)
 add_qtui_test(test_terminal_framework Core/test_terminal_framework.cpp)
+add_qtui_test(test_input_router Core/test_input_router.cpp)
 
 add_qtui_test(test_canvas Canvas/test_canvas.cpp)
 add_qtui_test(test_popup Controls/test_popup.cpp)
@@ -50,15 +52,21 @@ set(qtui_test_runner_artifacts
 
 function(add_qtui_runner_scenario test_name executable script expected_exit)
     cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL"
-        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT"
+        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS"
         "" ${ARGN})
+    if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
+        set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
+    endif()
+    if(NOT SCENARIO_SCENARIO_TIMEOUT_MS)
+        set(SCENARIO_SCENARIO_TIMEOUT_MS 8000)
+    endif()
     set(arguments
         NAME ${test_name}
         TARGET ${executable}
         EXPECTED_EXIT ${expected_exit}
         ARTIFACT_DIR "${qtui_test_runner_artifacts}/${test_name}"
-        OPERATION_TIMEOUT_MS 1500
-        SCENARIO_TIMEOUT_MS 8000
+        OPERATION_TIMEOUT_MS ${SCENARIO_OPERATION_TIMEOUT_MS}
+        SCENARIO_TIMEOUT_MS ${SCENARIO_SCENARIO_TIMEOUT_MS}
     )
     if(SCENARIO_EMBEDDED)
         list(APPEND arguments EMBEDDED)
@@ -73,7 +81,7 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
     else()
         list(APPEND arguments LABELS AgentSmoke)
     endif()
-    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT PROCESS_TIMEOUT)
+    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT PROCESS_TIMEOUT SYMLINK_TRAP)
         if(NOT "${SCENARIO_${argument}}" STREQUAL "")
             list(APPEND arguments ${argument} "${SCENARIO_${argument}}")
         endif()
@@ -150,14 +158,40 @@ add_qtui_runner_scenario(test_runner_fixture_condition_error qtui_test_runner_fi
 )
 add_qtui_runner_scenario(test_runner_fixture_artifact_path qtui_test_runner_fixture
     "${qtui_test_runner_scenarios}/artifact_path.js" 1
-    FAILURE_PATTERN "Artifact path must be relative"
+    FAILURE_PATTERN "Artifact path must be a relative path"
     ARTIFACT "failure.txt"
     FORBIDDEN_ARTIFACT "${qtui_test_runner_artifacts}/escape.txt"
+)
+add_qtui_runner_scenario(test_runner_fixture_artifact_symlink qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/artifact_symlink.js" 1
+    FAILURE_PATTERN "escapes the artifact directory"
+    ARTIFACT "failure.txt"
+    SYMLINK_TRAP "escape-link:${qtui_test_runner_artifacts}/symlink_escape_target"
+    FORBIDDEN_ARTIFACT "${qtui_test_runner_artifacts}/symlink_escape_target/escaped.txt"
 )
 add_qtui_runner_scenario(test_runner_fixture_javascript_error qtui_test_runner_fixture
     "${qtui_test_runner_scenarios}/javascript_error.js" 1
     FAILURE_PATTERN "intentional JavaScript failure"
     ARTIFACT "failure.txt"
+)
+# expectRepaint() must be meaningful in both directions: it passes only when the
+# application itself invalidated the scene, and fails when nothing changed.
+add_qtui_runner_scenario(test_runner_repaint_scheduled qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/repaint_scheduled.js" 0
+)
+add_qtui_runner_scenario(test_runner_repaint_absent qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/repaint_absent.js" 1
+    FAILURE_PATTERN "waiting for the application to schedule a repaint"
+    ARTIFACT "failure.txt"
+)
+
+# A scenario that never yields must still produce a diagnosis rather than
+# hanging until the process timeout kills it with no artifacts.
+add_qtui_runner_scenario(test_runner_fixture_never_yields qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/never_yields.js" 1
+    FAILURE_PATTERN "did not yield to the event loop"
+    ARTIFACT "failure.txt"
+    SCENARIO_TIMEOUT_MS 1500
 )
 add_qtui_runner_scenario(test_runner_fixture_missing_finish qtui_test_runner_fixture
     "${qtui_test_runner_scenarios}/missing_finish.js" 0

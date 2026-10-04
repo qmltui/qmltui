@@ -46,4 +46,33 @@ void MouseArea::setMousePosition(int x, int y) {
     }
 }
 
+void MouseArea::mousePressEvent(MouseEvent *event) {
+    if (event->button() < 0 || event->button() > 2) {
+        return;
+    }
+    setMousePosition(event->x(), event->y());
+    emit pressed(event);
+    event->setAccepted(true);
+}
+
+void MouseArea::mouseReleaseEvent(MouseEvent *event) {
+    if (event->button() < 0 || event->button() > 2) {
+        return;
+    }
+    setMousePosition(event->x(), event->y());
+    emit released(event);
+    if (event->x() >= 0 && event->x() < width() &&
+        event->y() >= 0 && event->y() < height()) {
+        emit clicked(event);
+    }
+    event->setAccepted(true);
+}
+
+void MouseArea::mouseMoveEvent(MouseEvent *event) {
+    const bool buttonMotion = event->isMotion() && ((event->button() & 3) != 3);
+    if (!event->isMotion() || buttonMotion || m_hoverEnabled) {
+        setMousePosition(event->x(), event->y());
+    }
+}
+
 } // namespace qtui

@@ -1,5 +1,13 @@
 @PACKAGE_INIT@
 
+# QML import root holding the installed Qtui, Qtui.Controls, ... modules.
+# qtui_add_scenario_test() defaults QML_IMPORT_PATH to this, and consumers can
+# pass it to anything else needing a QML import path. This must be resolved
+# before any find_dependency() call below: PACKAGE_PREFIX_DIR is a plain
+# variable, so a nested package configuration file overwrites it with its own
+# prefix.
+set(Qtui_QML_IMPORT_PATH "@PACKAGE_QTUI_INSTALL_QMLDIR@")
+
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 6.8 COMPONENTS Core Qml)
 if(@QTUI_BUILD_TERMINAL_HOST@ OR @QTUI_ENABLE_TEST_RUNNER@ OR @QTUI_ENABLE_TEST_DRIVER@)

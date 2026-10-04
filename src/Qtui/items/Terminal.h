@@ -17,6 +17,7 @@ class Terminal : public Rectangle, public QQmlParserStatus {
   QML_ELEMENT
   Q_INTERFACES(QQmlParserStatus)
 
+  Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
   Q_PROPERTY(bool useAlternateScreen READ useAlternateScreen WRITE setUseAlternateScreen NOTIFY useAlternateScreenChanged)
   Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
   Q_PROPERTY(RendererMode rendererMode READ rendererMode WRITE setRendererMode NOTIFY rendererModeChanged)
@@ -51,6 +52,9 @@ public:
   Q_INVOKABLE void append(qtui::Item* item);
   Q_INVOKABLE void copyToClipboard(const QString& text);
 
+  QString title() const { return m_title; }
+  void setTitle(const QString& title);
+
   bool useAlternateScreen() const { return m_useAlternateScreen; }
   void setUseAlternateScreen(bool use);
 
@@ -59,6 +63,8 @@ public:
   const QList<Popup*>& activePopups() const { return m_popups; }
   QList<Popup*> orderedPopups() const;
   Popup *topModalPopup() const;
+  QList<class InputScope*> orderedInputScopes() const;
+  class InputScope* topModalScope() const;
 
   bool fillTerminal() const { return m_fillTerminal; }
   void setFillTerminal(bool fill);
@@ -93,6 +99,7 @@ public:
   void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
+  void titleChanged();
   void useAlternateScreenChanged();
   void fillTerminalChanged();
   void rendererModeChanged();
@@ -110,6 +117,7 @@ private:
   QHash<QObject*, QMetaObject::Connection> m_mouseMotionRequesters;
   QList<Popup*> m_popups;
   quint64 m_popupSerial = 0;
+  QString m_title;
   bool m_useAlternateScreen = true;
   bool m_fillTerminal = true;
   bool m_fillTerminalExplicit = false;

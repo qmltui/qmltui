@@ -21,13 +21,12 @@ public:
     int implicitHeight() const override;
 
     void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void layoutChildren();
 
 signals:
     void spacingChanged();
 
 private:
-    void layoutChildren();
-
     int m_spacing = 0;
 };
 

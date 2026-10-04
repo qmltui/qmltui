@@ -3,6 +3,7 @@
 namespace qtui {
 
 Column::Column(QObject *parent) : Item(parent) {
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 Column::~Column() = default;
@@ -13,7 +14,7 @@ void Column::setSpacing(int spacing) {
     emit spacingChanged();
     emit implicitWidthChanged();
     emit implicitHeightChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void Column::layoutChildren() {
@@ -30,6 +31,7 @@ void Column::layoutChildren() {
             currentY += childItem->height() + m_spacing;
         }
     }
+    clearDirty(DirtyFlag::LayoutDirty);
 }
 
 int Column::implicitWidth() const {
@@ -67,7 +69,7 @@ int Column::implicitHeight() const {
 
 void Column::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-    layoutChildren();
+    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
     Item::render(buffer, absX, absY, clipRect);
 }
 

@@ -6,7 +6,7 @@ set(QTUI_TESTING_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
 function(qtui_add_scenario_test)
     cmake_parse_arguments(QTUI_SCENARIO
         "EMBEDDED;LIVE"
-        "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT"
+        "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP"
         "LABELS"
         ${ARGN}
     )
@@ -41,7 +41,13 @@ function(qtui_add_scenario_test)
             "${CMAKE_CURRENT_BINARY_DIR}/TestRunnerArtifacts/${QTUI_SCENARIO_NAME}")
     endif()
     if(NOT QTUI_SCENARIO_QML_IMPORT_PATH)
-        set(QTUI_SCENARIO_QML_IMPORT_PATH "${QT_QML_OUTPUT_DIRECTORY}")
+        # In Qtui's own build tree the modules live in the build output dir; for
+        # find_package() consumers QtuiConfig exports the installed import root.
+        if(QT_QML_OUTPUT_DIRECTORY)
+            set(QTUI_SCENARIO_QML_IMPORT_PATH "${QT_QML_OUTPUT_DIRECTORY}")
+        elseif(Qtui_QML_IMPORT_PATH)
+            set(QTUI_SCENARIO_QML_IMPORT_PATH "${Qtui_QML_IMPORT_PATH}")
+        endif()
     endif()
     if(NOT QTUI_SCENARIO_PROCESS_TIMEOUT)
         math(EXPR QTUI_SCENARIO_PROCESS_TIMEOUT
@@ -77,6 +83,9 @@ function(qtui_add_scenario_test)
     if(QTUI_SCENARIO_FORBIDDEN_ARTIFACT)
         list(APPEND command
             "-DFORBIDDEN_ARTIFACT=${QTUI_SCENARIO_FORBIDDEN_ARTIFACT}")
+    endif()
+    if(QTUI_SCENARIO_SYMLINK_TRAP)
+        list(APPEND command "-DSYMLINK_TRAP=${QTUI_SCENARIO_SYMLINK_TRAP}")
     endif()
     list(APPEND command "-P" "${QTUI_TESTING_RUNNER_SCRIPT}")
 

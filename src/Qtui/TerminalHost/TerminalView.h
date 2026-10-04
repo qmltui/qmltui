@@ -34,8 +34,11 @@ class TerminalView : public Item, public QQmlParserStatus {
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
     Q_PROPERTY(QColor foregroundColor READ foregroundColor WRITE setForegroundColor NOTIFY foregroundColorChanged)
     Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(QList<QColor> palette READ palette WRITE setPalette NOTIFY paletteChanged)
     Q_PROPERTY(int scrollbackLimit READ scrollbackLimit WRITE setScrollbackLimit NOTIFY scrollbackLimitChanged)
     Q_PROPERTY(int scrollOffset READ scrollOffset WRITE setScrollOffset NOTIFY scrollOffsetChanged)
+    Q_PROPERTY(int scrollbackSize READ scrollbackSize NOTIFY scrollbackSizeChanged)
+    Q_PROPERTY(bool showScrollbar READ showScrollbar WRITE setShowScrollbar NOTIFY showScrollbarChanged)
     Q_PROPERTY(bool allowTitleChanges READ allowTitleChanges WRITE setAllowTitleChanges NOTIFY allowTitleChangesChanged)
     Q_PROPERTY(bool allowClipboardWrite READ allowClipboardWrite WRITE setAllowClipboardWrite NOTIFY allowClipboardWriteChanged)
     Q_PROPERTY(bool allowNotifications READ allowNotifications WRITE setAllowNotifications NOTIFY allowNotificationsChanged)
@@ -46,6 +49,8 @@ public:
 
     explicit TerminalView(QObject* parent = nullptr);
     ~TerminalView() override;
+
+    Q_INVOKABLE static QString defaultUserShell();
 
     QString program() const { return m_program; }
     void setProgram(const QString& value);
@@ -73,10 +78,15 @@ public:
     void setForegroundColor(const QColor& value);
     QColor backgroundColor() const { return m_backgroundColor; }
     void setBackgroundColor(const QColor& value);
+    QList<QColor> palette() const { return m_palette; }
+    void setPalette(const QList<QColor>& value);
     int scrollbackLimit() const { return m_scrollbackLimit; }
     void setScrollbackLimit(int value);
     int scrollOffset() const { return m_scrollOffset; }
     void setScrollOffset(int value);
+    int scrollbackSize() const;
+    bool showScrollbar() const { return m_showScrollbar; }
+    void setShowScrollbar(bool value);
 
     bool allowTitleChanges() const { return m_allowTitleChanges; }
     void setAllowTitleChanges(bool value);
@@ -120,8 +130,11 @@ signals:
     void titleChanged();
     void foregroundColorChanged();
     void backgroundColorChanged();
+    void paletteChanged();
     void scrollbackLimitChanged();
     void scrollOffsetChanged();
+    void scrollbackSizeChanged();
+    void showScrollbarChanged();
     void allowTitleChangesChanged();
     void allowClipboardWriteChanged();
     void allowNotificationsChanged();
@@ -153,8 +166,10 @@ private:
     QString m_title;
     QColor m_foregroundColor = Qt::white;
     QColor m_backgroundColor = Qt::black;
+    QList<QColor> m_palette;
     int m_scrollbackLimit = 10000;
     int m_scrollOffset = 0;
+    bool m_showScrollbar = true;
     bool m_allowTitleChanges = true;
     bool m_allowClipboardWrite = false;
     bool m_allowNotifications = false;

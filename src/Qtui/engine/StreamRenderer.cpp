@@ -60,13 +60,20 @@ void appendCellStyle(std::ostringstream& output, const Cell& cell) {
 StreamRenderer::StreamRenderer() = default;
 
 void StreamRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
+    m_rootWindow = rootWindow;
     m_lastPromptHeight = 0;
 }
 
 void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
-    (void)clearPromptRegion(device);
+    if (m_lastPromptHeight > 0) {
+        std::ostringstream oss;
+        oss << "\r\033[" << m_lastPromptHeight << "A\033[J";
+        (void)device.write(oss.str());
+        m_lastPromptHeight = 0;
+    }
+    m_rootWindow = nullptr;
 }
 
 void StreamRenderer::resize(int width, int height) {
@@ -78,9 +85,34 @@ void StreamRenderer::resize(int width, int height) {
 void StreamRenderer::print(TerminalDevice& device, const std::string& text) {
     if (!outputEnabled())
         return;
-    (void)clearPromptRegion(device);
-    (void)device.write(withTerminalLineEndings(text));
-    (void)drawPromptRegion(device);
+
+    int newPromptHeight = 0;
+    if (m_rootWindow) {
+        newPromptHeight = m_rootWindow->implicitHeight();
+        if (newPromptHeight <= 0) newPromptHeight = m_rootWindow->Item::height();
+        if (newPromptHeight <= 0) newPromptHeight = m_rootWindow->height();
+        if (newPromptHeight < 0) newPromptHeight = 0;
+        const int maxH = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
+        if (newPromptHeight > maxH) newPromptHeight = maxH;
+    } else {
+        newPromptHeight = m_lastPromptHeight;
+    }
+
+    m_promptBuffer.resize(m_terminalWidth, newPromptHeight);
+    if (m_rootWindow && newPromptHeight > 0) {
+        m_rootWindow->render(m_promptBuffer, 0, 0);
+    }
+
+    std::ostringstream output;
+    if (m_lastPromptHeight > 0) {
+        output << "\r\033[" << m_lastPromptHeight << "A\033[J";
+    }
+    output << withTerminalLineEndings(text);
+    for (int row = 0; row < newPromptHeight; ++row) {
+        output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
+    }
+    m_lastPromptHeight = newPromptHeight;
+    (void)device.write(output.str());
 }
 
 bool StreamRenderer::clearPromptRegion(TerminalDevice& device) {
@@ -137,6 +169,7 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
 }
 
 bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+    m_rootWindow = rootWindow;
     if (!rootWindow) return false;
 
     int requiredHeight = rootWindow->implicitHeight();
@@ -150,11 +183,24 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     const int maximumPromptHeight = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
     if (requiredHeight > maximumPromptHeight) requiredHeight = maximumPromptHeight;
 
-    if (outputEnabled() && !clearPromptRegion(device)) return false;
+    const int previousPromptHeight = m_lastPromptHeight;
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     rootWindow->render(m_promptBuffer, 0, 0);
-    return !outputEnabled() || drawPromptRegion(device);
+
+    if (!outputEnabled()) return true;
+
+    std::ostringstream output;
+    if (previousPromptHeight > 0) {
+        output << "\r\033[" << previousPromptHeight << "A";
+    }
+    for (int row = 0; row < m_lastPromptHeight; ++row) {
+        output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
+    }
+    if (previousPromptHeight > m_lastPromptHeight) {
+        output << "\033[J";
+    }
+    return device.write(output.str());
 }
 
 } // namespace qtui

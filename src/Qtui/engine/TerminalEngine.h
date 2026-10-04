@@ -6,6 +6,7 @@
 #include <QSocketNotifier>
 #include <atomic>
 #include <optional>
+#include <memory>
 #include "../primitives/TerminalDevice.h"
 #include "../primitives/InputDecoder.h"
 #include "../primitives/TextGridBuffer.h"
@@ -17,6 +18,7 @@ namespace qtui {
 
 class Terminal;
 class Item;
+class InputRouter;
 class TerminalEngine : public QObject {
     Q_OBJECT
 
@@ -44,6 +46,9 @@ public:
     void append(qtui::Item* item);
     void copyToClipboard(const QString& text);
     static std::string osc52Sequence(const QString& text);
+    void setTitle(const QString& title);
+    QString title() const { return m_title; }
+    static std::string titleSequence(const QString& text);
 
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
@@ -81,6 +86,8 @@ private:
     std::atomic<bool> m_renderPending{false};
     QSize m_testViewportSize;
     quint64 m_frameSequence = 0;
+    QString m_title;
+    std::unique_ptr<InputRouter> m_router;
 };
 
 } // namespace qtui

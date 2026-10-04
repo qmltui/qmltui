@@ -173,7 +173,7 @@ void TestCanvas::testHalfBlockDemoRendering() {
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/../..");
 
-    QQmlComponent component(&engine, QUrl::fromLocalFile(QCoreApplication::applicationDirPath() + "/../../examples/components/canvas/Main.qml"));
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QTUI_SOURCE_DIR "/examples/components/canvas/Main.qml")));
 
     QObject* obj = component.create();
     QVERIFY2(obj != nullptr, qPrintable(component.errorString()));

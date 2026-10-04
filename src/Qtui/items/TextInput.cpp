@@ -178,6 +178,45 @@ void TextInput::setSelectedTextColor(const QString &color) {
     markDirty();
 }
 
+void TextInput::setPlaceholderColor(const QString &color) {
+    if (m_placeholderColor == color) return;
+    m_placeholderColor = color;
+    if (m_placeholderColor.trimmed().isEmpty()) {
+        m_hasResolvedPlaceholderColor = false;
+        m_resolvedPlaceholderColor = 0;
+    } else {
+        m_hasResolvedPlaceholderColor = true;
+        m_resolvedPlaceholderColor = ColorMapper::fromString(m_placeholderColor, 0x64748BFF);
+    }
+    emit placeholderColorChanged();
+    markDirty();
+}
+
+void TextInput::setOverwriteMode(bool overwrite) {
+    if (m_overwriteMode == overwrite) return;
+    m_overwriteMode = overwrite;
+    emit overwriteModeChanged();
+    markDirty();
+}
+
+void TextInput::setAutoScroll(bool autoScroll) {
+    if (m_autoScroll == autoScroll) return;
+    m_autoScroll = autoScroll;
+    emit autoScrollChanged();
+}
+
+void TextInput::setInputMask(const QString &mask) {
+    if (m_inputMask == mask) return;
+    m_inputMask = mask;
+    emit inputMaskChanged();
+    markDirty();
+}
+
+void TextInput::clear() {
+    setText("");
+    clearSelection();
+}
+
 void TextInput::setReadOnly(bool readOnly) {
     if (m_readOnly == readOnly) return;
     m_readOnly = readOnly;
@@ -351,6 +390,8 @@ int TextInput::positionAtMouse(int x) const {
 }
 
 void TextInput::ensureCursorVisible() {
+    if (!m_autoScroll)
+        return;
     const int viewportWidth = std::max(1, width() - leftPadding() - rightPadding());
     const int column = displayColumnForPosition(m_editor.cursorPosition());
     if (column < m_contentX)
@@ -430,6 +471,10 @@ void TextInput::keyPressEvent(KeyEvent* event) {
         if (!m_readOnly)
             change = wordModifier && key == Qt::Key_Delete
                 ? m_editor.deleteNextWord() : m_editor.deleteNextCharacter();
+    } else if (key == Qt::Key_Insert) {
+        setOverwriteMode(!m_overwriteMode);
+        event->setAccepted(true);
+        return;
     } else if (control && key == Qt::Key_W) {
         if (!m_readOnly) change = m_editor.deletePreviousWord();
     } else if (control && key == Qt::Key_U) {
@@ -438,6 +483,12 @@ void TextInput::keyPressEvent(KeyEvent* event) {
         if (!m_readOnly) change = m_editor.deleteToEnd();
     } else if (!control && !alt && !event->text().isEmpty()) {
         if (!m_readOnly) {
+            if (m_overwriteMode && !m_editor.hasSelection()
+                && m_editor.cursorPosition() < m_editor.text().size()) {
+                const int currentPos = m_editor.cursorPosition();
+                const int nextPos = UnicodeText::nextBoundary(m_editor.text(), currentPos);
+                m_editor.select(currentPos, nextPos);
+            }
             const QString replacement = constrainedReplacement(event->text());
             if (!replacement.isEmpty())
                 change = m_editor.replaceSelection(replacement);
@@ -479,8 +530,11 @@ void TextInput::render(
     const ClipRect contentClip = clipRect.intersected(
         ClipRect{contentLeft, y, viewportWidth, 1});
     const bool placeholder = m_editor.text().isEmpty() && !m_placeholderText.isEmpty();
-    const uint32_t displayColor = !isEffectivelyEnabled() || placeholder
-        ? 0xFF808080 : m_resolvedColor;
+    const uint32_t displayColor = !isEffectivelyEnabled()
+        ? 0xFF808080
+        : (placeholder
+            ? (m_hasResolvedPlaceholderColor ? m_resolvedPlaceholderColor : 0x64748BFF)
+            : m_resolvedColor);
 
     if (placeholder) {
         int column = 0;

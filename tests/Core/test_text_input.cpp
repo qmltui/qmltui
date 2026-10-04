@@ -304,6 +304,25 @@ void TestTextInput::testTerminalCursorCustomization() {
 
     QCOMPARE(buffer.cellAt(1, 0).bgColor, static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
     QCOMPARE(buffer.cellAt(1, 0).fgColor, static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
+
+    // Test clear(), overwriteMode(), placeholderColor(), autoScroll()
+    input.setPlaceholderText("Enter name...");
+    input.setPlaceholderColor("gray");
+    QCOMPARE(input.placeholderColor(), QString("gray"));
+
+    input.clear();
+    QCOMPARE(input.text(), QString(""));
+    QCOMPARE(input.cursorPosition(), 0);
+
+    input.setOverwriteMode(true);
+    QCOMPARE(input.overwriteMode(), true);
+    input.setText("abcd");
+    input.setCursorPosition(1);
+
+    KeyEvent overwriteEv(Qt::Key_X, "x", 0);
+    input.keyPressEvent(&overwriteEv);
+    QCOMPARE(input.text(), QString("axcd"));
+    QCOMPARE(input.cursorPosition(), 2);
 }
 
 void TestTextInput::testQmlSurface() {

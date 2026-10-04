@@ -15,6 +15,11 @@ class TextInput : public Item {
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
+    Q_PROPERTY(QString placeholderColor READ placeholderColor WRITE setPlaceholderColor NOTIFY placeholderColorChanged)
+    Q_PROPERTY(QString displayText READ displayText NOTIFY textChanged)
+    Q_PROPERTY(bool overwriteMode READ overwriteMode WRITE setOverwriteMode NOTIFY overwriteModeChanged)
+    Q_PROPERTY(bool autoScroll READ autoScroll WRITE setAutoScroll NOTIFY autoScrollChanged)
+    Q_PROPERTY(QString inputMask READ inputMask WRITE setInputMask NOTIFY inputMaskChanged)
     Q_PROPERTY(int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
     Q_PROPERTY(int selectionStart READ selectionStart NOTIFY selectionChanged)
     Q_PROPERTY(int selectionEnd READ selectionEnd NOTIFY selectionChanged)
@@ -98,12 +103,21 @@ public:
     void setSelectionColor(const QString &color);
     QString selectedTextColor() const { return m_selectedTextColor; }
     void setSelectedTextColor(const QString &color);
+    QString placeholderColor() const { return m_placeholderColor; }
+    void setPlaceholderColor(const QString &color);
+    bool overwriteMode() const { return m_overwriteMode; }
+    void setOverwriteMode(bool overwrite);
+    bool autoScroll() const { return m_autoScroll; }
+    void setAutoScroll(bool autoScroll);
+    QString inputMask() const { return m_inputMask; }
+    void setInputMask(const QString &mask);
     bool canUndo() const { return m_editor.canUndo(); }
     bool canRedo() const { return m_editor.canRedo(); }
 
     Q_INVOKABLE void select(int start, int end);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void clearSelection();
+    Q_INVOKABLE void clear();
     Q_INVOKABLE void copy();
     Q_INVOKABLE void cut();
     Q_INVOKABLE void paste(const QString &text);
@@ -119,6 +133,10 @@ signals:
     void textChanged();
     void colorChanged();
     void placeholderTextChanged();
+    void placeholderColorChanged();
+    void overwriteModeChanged();
+    void autoScrollChanged();
+    void inputMaskChanged();
     void cursorPositionChanged();
     void selectionChanged();
     void readOnlyChanged();
@@ -162,12 +180,18 @@ private:
     TextEditorState m_editor;
     QString m_color = "white";
     QString m_placeholderText;
+    QString m_placeholderColor;
+    uint32_t m_resolvedPlaceholderColor = 0;
+    bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
     QRegularExpression m_validator;
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;
+    bool m_overwriteMode = false;
+    bool m_autoScroll = true;
+    QString m_inputMask;
     EchoMode m_echoMode = Normal;
 
     CursorShape m_cursorShape = Block;

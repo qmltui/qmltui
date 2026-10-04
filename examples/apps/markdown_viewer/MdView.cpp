@@ -1,4 +1,4 @@
-#include "MarkdownView.h"
+#include "MdView.h"
 
 #include <MouseEvent.h>
 #include <UnicodeText.h>
@@ -6,14 +6,14 @@
 
 namespace qtui {
 
-MarkdownView::MarkdownView(QObject *parent) : Item(parent) {
+MdView::MdView(QObject *parent) : Item(parent) {
     setImplicitWidth(80);
     setImplicitHeight(24);
-    connect(this, &Item::widthChanged, this, &MarkdownView::updateDimensions);
-    connect(this, &Item::heightChanged, this, &MarkdownView::clampScroll);
+    connect(this, &Item::widthChanged, this, &MdView::updateDimensions);
+    connect(this, &Item::heightChanged, this, &MdView::clampScroll);
 }
 
-void MarkdownView::setDocument(MarkdownDocument *document) {
+void MdView::setDocument(MdDoc *document) {
     if (m_document == document)
         return;
     if (m_document)
@@ -21,7 +21,7 @@ void MarkdownView::setDocument(MarkdownDocument *document) {
 
     m_document = document;
     if (m_document) {
-        connect(m_document, &MarkdownDocument::parsedChanged, this, [this]() {
+        connect(m_document, &MdDoc::parsedChanged, this, [this]() {
             rebuildSearchMatches();
             updateDimensions();
             clampScroll();
@@ -48,15 +48,42 @@ void MarkdownView::setDocument(MarkdownDocument *document) {
     markDirty();
 }
 
-int MarkdownView::contentHeight() const {
+void MdView::setStyle(MdViewStyle *style) {
+    if (m_style == style)
+        return;
+    if (m_style)
+        disconnect(m_style, nullptr, this, nullptr);
+    m_style = style;
+    if (m_style) {
+        connect(m_style, &MdViewStyle::styleChanged, this, [this]() {
+            updateDimensions();
+            clampScroll();
+            markDirty();
+        });
+    }
+    emit styleChanged();
+    updateDimensions();
+    clampScroll();
+    markDirty();
+}
+
+MdPalette MdView::effectivePalette() const {
+    if (m_explicitPalette)
+        return m_palette;
+    if (m_style && m_style->palette() != MdPalette())
+        return m_style->palette();
+    return m_palette;
+}
+
+int MdView::contentHeight() const {
     return m_document ? m_document->lineCount() : 0;
 }
 
-int MarkdownView::viewportHeight() const {
-    return std::max(0, height() - (m_borderStyle == QStringLiteral("none") ? 0 : 2));
+int MdView::viewportHeight() const {
+    return std::max(0, height() - (borderStyle() == QStringLiteral("none") ? 0 : 2));
 }
 
-int MarkdownView::lineNumberDigits() const {
+int MdView::lineNumberDigits() const {
     const int lines = std::max(1, contentHeight());
     int digits = 1;
     for (int value = lines; value >= 10; value /= 10)
@@ -64,12 +91,65 @@ int MarkdownView::lineNumberDigits() const {
     return digits;
 }
 
-int MarkdownView::lineNumberGutterWidth() const {
+int MdView::lineNumberGutterWidth() const {
+    if (!showLineNumbers())
+        return 0;
     // Right-aligned number, one space, a separator, then one content margin.
     return lineNumberDigits() + 3;
 }
 
-void MarkdownView::setScrollY(int y) {
+bool MdView::showLineNumbers() const {
+    if (m_explicitShowLineNumbers)
+        return m_showLineNumbers;
+    if (m_style)
+        return m_style->showLineNumbers();
+    return m_showLineNumbers;
+}
+
+void MdView::setShowLineNumbers(bool show) {
+    m_explicitShowLineNumbers = true;
+    if (m_showLineNumbers == show)
+        return;
+    m_showLineNumbers = show;
+    emit showLineNumbersChanged();
+    updateDimensions();
+    clampScroll();
+    markDirty();
+}
+
+QString MdView::borderStyle() const {
+    if (m_explicitBorderStyle)
+        return m_borderStyle;
+    if (m_style)
+        return m_style->borderStyle();
+    return m_borderStyle;
+}
+
+void MdView::setBorderStyle(const QString &style) {
+    m_explicitBorderStyle = true;
+    const QString normalized = style.trimmed().toLower();
+    const QString value = normalized.isEmpty() ? QStringLiteral("none") : normalized;
+    if (m_borderStyle == value)
+        return;
+    m_borderStyle = value;
+    emit borderStyleChanged();
+    updateDimensions();
+    clampScroll();
+    markDirty();
+}
+
+QString MdView::renderStyle() const {
+    return m_document ? m_document->renderStyle() : QStringLiteral("modern");
+}
+
+void MdView::setRenderStyle(const QString &style) {
+    if (m_document)
+        m_document->setRenderStyle(style);
+    emit renderStyleChanged();
+    markDirty();
+}
+
+void MdView::setScrollY(int y) {
     const int maximum = std::max(0, contentHeight() - viewportHeight());
     const int clamped = std::clamp(y, 0, maximum);
     if (m_scrollY == clamped)
@@ -79,11 +159,11 @@ void MarkdownView::setScrollY(int y) {
     markDirty();
 }
 
-void MarkdownView::clampScroll() {
+void MdView::clampScroll() {
     setScrollY(m_scrollY);
 }
 
-void MarkdownView::setSearchQuery(const QString &query) {
+void MdView::setSearchQuery(const QString &query) {
     if (m_searchQuery == query)
         return;
     m_searchQuery = query;
@@ -92,7 +172,7 @@ void MarkdownView::setSearchQuery(const QString &query) {
     markDirty();
 }
 
-void MarkdownView::rebuildSearchMatches() {
+void MdView::rebuildSearchMatches() {
     const int previousIndex = m_activeMatchIndex;
     m_searchMatches = m_document ? m_document->searchMatches(m_searchQuery)
                                  : QList<SearchMatch>{};
@@ -105,7 +185,7 @@ void MarkdownView::rebuildSearchMatches() {
         emit activeMatchIndexChanged();
 }
 
-void MarkdownView::setActiveMatchIndex(int index) {
+void MdView::setActiveMatchIndex(int index) {
     const int clamped = m_searchMatches.isEmpty()
         ? 0 : std::clamp(index, 0, static_cast<int>(m_searchMatches.size() - 1));
     if (m_activeMatchIndex == clamped)
@@ -115,7 +195,8 @@ void MarkdownView::setActiveMatchIndex(int index) {
     markDirty();
 }
 
-void MarkdownView::setPalette(const MarkdownPalette &palette) {
+void MdView::setPalette(const MdPalette &palette) {
+    m_explicitPalette = true;
     if (m_palette == palette)
         return;
     m_palette = palette;
@@ -123,24 +204,12 @@ void MarkdownView::setPalette(const MarkdownPalette &palette) {
     markDirty();
 }
 
-void MarkdownView::setBorderStyle(const QString &style) {
-    const QString normalized = style.trimmed().toLower();
-    const QString value = normalized.isEmpty() ? QStringLiteral("none") : normalized;
-    if (m_borderStyle == value)
-        return;
-    m_borderStyle = value;
-    emit borderStyleChanged();
-    updateDimensions();
-    clampScroll();
-    markDirty();
-}
-
-void MarkdownView::updateDimensions() {
+void MdView::updateDimensions() {
     if (!m_document || m_updatingDimensions)
         return;
 
     m_updatingDimensions = true;
-    const int borderWidth = m_borderStyle == QStringLiteral("none") ? 0 : 2;
+    const int borderWidth = borderStyle() == QStringLiteral("none") ? 0 : 2;
     int gutterWidth = lineNumberGutterWidth();
     while (true) {
         m_document->setWrapWidth(std::max(1, width() - borderWidth - gutterWidth));
@@ -153,45 +222,46 @@ void MarkdownView::updateDimensions() {
     clampScroll();
 }
 
-void MarkdownView::scrollToLine(int lineIndex) {
+void MdView::scrollToLine(int lineIndex) {
     setScrollY(lineIndex);
 }
 
-void MarkdownView::scrollBy(int delta) {
+void MdView::scrollBy(int delta) {
     setScrollY(m_scrollY + delta);
 }
 
-void MarkdownView::pageUp() {
+void MdView::pageUp() {
     scrollBy(-std::max(1, viewportHeight() - 1));
 }
 
-void MarkdownView::pageDown() {
+void MdView::pageDown() {
     scrollBy(std::max(1, viewportHeight() - 1));
 }
 
-void MarkdownView::drawBorder(TextGridBuffer &buffer, int absX, int absY,
-                              const ClipRect &clipRect) const {
+void MdView::drawBorder(TextGridBuffer &buffer, int absX, int absY,
+                        const ClipRect &clipRect) const {
     const int w = width();
     const int h = height();
     if (w <= 0 || h <= 0)
         return;
 
+    const QString bStyle = borderStyle();
     QString topLeft = QStringLiteral("┌");
     QString topRight = QStringLiteral("┐");
     QString bottomLeft = QStringLiteral("└");
     QString bottomRight = QStringLiteral("┘");
     QString horizontal = QStringLiteral("─");
     QString vertical = QStringLiteral("│");
-    if (m_borderStyle == QStringLiteral("double")) {
+    if (bStyle == QStringLiteral("double")) {
         topLeft = QStringLiteral("╔"); topRight = QStringLiteral("╗");
         bottomLeft = QStringLiteral("╚"); bottomRight = QStringLiteral("╝");
         horizontal = QStringLiteral("═"); vertical = QStringLiteral("║");
-    } else if (m_borderStyle == QStringLiteral("ascii")) {
+    } else if (bStyle == QStringLiteral("ascii")) {
         topLeft = topRight = bottomLeft = bottomRight = QStringLiteral("+");
         horizontal = QStringLiteral("-"); vertical = QStringLiteral("|");
     }
 
-    const uint32_t color = m_palette.resolve(MarkdownRole::Border);
+    const uint32_t color = effectivePalette().resolve(MdRole::Border);
     auto write = [&](int x, int y, const QString &text) {
         if (clipRect.contains(x, y))
             buffer.writeText(x, y, text, color);
@@ -210,20 +280,19 @@ void MarkdownView::drawBorder(TextGridBuffer &buffer, int absX, int absY,
             write(absX + x, absY + h - 1, horizontal);
     }
     for (int y = 1; y < h - 1; ++y) {
-        write(absX, absY + y, vertical);
+        write(absX + y, absY, vertical);
         if (w > 1)
             write(absX + w - 1, absY + y, vertical);
     }
 }
 
-void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
-                          const ClipRect &clipRect) {
-    if (!visible() || width() <= 0 || height() <= 0)
+void MdView::render(TextGridBuffer &buffer, int absX, int absY,
+                    const ClipRect &clipRect) {
+    const ClipRect ownClip = clipRect.intersected(ClipRect{absX, absY, width(), height()});
+    if (ownClip.width <= 0 || ownClip.height <= 0)
         return;
 
-    Item::render(buffer, absX, absY, clipRect);
-    const ClipRect ownClip = clipRect.intersected({absX, absY, width(), height()});
-    const bool bordered = m_borderStyle != QStringLiteral("none");
+    const bool bordered = borderStyle() != QStringLiteral("none");
     if (bordered)
         drawBorder(buffer, absX, absY, ownClip);
 
@@ -237,6 +306,8 @@ void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
     const auto &lines = m_document->renderedLines();
     const int numberDigits = lineNumberDigits();
     const int gutterWidth = lineNumberGutterWidth();
+    const MdPalette pal = effectivePalette();
+
     for (int row = 0; row < availableHeight; ++row) {
         const int lineIndex = m_scrollY + row;
         if (lineIndex >= lines.size())
@@ -244,27 +315,32 @@ void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
         const DocumentLine &line = lines[lineIndex];
         const int y = startY + row;
 
-        const QString lineNumber = QStringLiteral("%1").arg(lineIndex + 1, numberDigits, 10,
-                                                             QLatin1Char(' '));
-        if (ownClip.contains(startX, y)
-            && ownClip.contains(startX + numberDigits - 1, y)) {
-            buffer.writeText(startX, y, lineNumber, m_palette.resolvedTextMuted());
-        }
-        const int separatorX = startX + numberDigits + 1;
-        if (ownClip.contains(separatorX, y)) {
-            buffer.writeText(separatorX, y, QStringLiteral("│"),
-                             m_palette.resolvedBorder());
+        if (showLineNumbers()) {
+            const QString lineNumber = QStringLiteral("%1").arg(lineIndex + 1, numberDigits, 10,
+                                                                 QLatin1Char(' '));
+            if (ownClip.contains(startX, y)
+                && ownClip.contains(startX + numberDigits - 1, y)) {
+                buffer.writeText(startX, y, lineNumber, pal.resolvedTextMuted());
+            }
+            const int separatorX = startX + numberDigits + 1;
+            if (ownClip.contains(separatorX, y)) {
+                buffer.writeText(separatorX, y, QStringLiteral("│"),
+                                 pal.resolvedBorder());
+            }
         }
 
+        const QString quotePrefix = m_document ? m_document->effectiveStyle()->blockquotePrefix()
+                                               : QStringLiteral("│ ");
+        const int qWidth = std::max(1, UnicodeText::displayWidth(quotePrefix));
         int prefixWidth = 0;
         for (int depth = 0; depth < line.quoteDepth; ++depth) {
             const int x = startX + gutterWidth + prefixWidth;
-            if (ownClip.contains(x, y) && ownClip.contains(x + 1, y)) {
-                buffer.writeText(x, y, QStringLiteral("│ "),
-                                 m_palette.resolve(MarkdownRole::Quote), 0x00000000,
+            if (ownClip.contains(x, y) && (qWidth <= 1 || ownClip.contains(x + qWidth - 1, y))) {
+                buffer.writeText(x, y, quotePrefix,
+                                 pal.resolve(MdRole::Quote), 0x00000000,
                                  TextAttribute::Bold);
             }
-            prefixWidth += 2;
+            prefixWidth += qWidth;
         }
 
         const int contentX = startX + gutterWidth + prefixWidth + line.indent;
@@ -278,8 +354,8 @@ void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
                     break;
                 const int clusterStart = utf16Column;
                 const int clusterEnd = clusterStart + cluster.utf16Length;
-                uint32_t foreground = m_palette.resolve(segment.foreground);
-                uint32_t background = m_palette.resolve(segment.background);
+                uint32_t foreground = pal.resolve(segment.foreground);
+                uint32_t background = pal.resolve(segment.background);
                 TextAttribute attributes = segment.attr;
 
                 for (int matchIndex = 0; matchIndex < m_searchMatches.size(); ++matchIndex) {
@@ -289,12 +365,12 @@ void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
                     const int matchEnd = match.utf16Column + match.utf16Length;
                     if (clusterStart < matchEnd && clusterEnd > match.utf16Column) {
                         if (matchIndex == m_activeMatchIndex) {
-                            foreground = m_palette.resolvedActiveMatchFg();
-                            background = m_palette.resolvedActiveMatchBg();
+                            foreground = pal.resolvedActiveMatchBg();
+                            background = pal.resolvedActiveMatchBg();
                             attributes = attributes | TextAttribute::Bold;
                         } else {
-                            foreground = m_palette.resolvedSearchMatchFg();
-                            background = m_palette.resolvedSearchMatchBg();
+                            foreground = pal.resolvedSearchMatchFg();
+                            background = pal.resolvedSearchMatchBg();
                         }
                         break;
                     }
@@ -315,10 +391,10 @@ void MarkdownView::render(TextGridBuffer &buffer, int absX, int absY,
     }
 }
 
-void MarkdownView::mousePressEvent(MouseEvent *event) {
+void MdView::mousePressEvent(MouseEvent *event) {
     if (!m_document || width() <= 0 || height() <= 0)
         return;
-    const int borderOffset = m_borderStyle == QStringLiteral("none") ? 0 : 1;
+    const int borderOffset = borderStyle() == QStringLiteral("none") ? 0 : 1;
     const int lineIndex = event->y() - borderOffset + m_scrollY;
     const auto &lines = m_document->renderedLines();
     if (lineIndex < 0 || lineIndex >= lines.size())
@@ -328,7 +404,9 @@ void MarkdownView::mousePressEvent(MouseEvent *event) {
     const int clickX = event->x() - borderOffset - lineNumberGutterWidth();
     if (clickX < 0)
         return;
-    int x = line.indent + line.quoteDepth * 2;
+    const QString quotePrefix = m_document->effectiveStyle()->blockquotePrefix();
+    const int qWidth = std::max(1, UnicodeText::displayWidth(quotePrefix));
+    int x = line.indent + line.quoteDepth * qWidth;
     for (const FormattedSegment &segment : line.segments) {
         const int width = UnicodeText::displayWidth(segment.text);
         if (clickX >= x && clickX < x + width && !segment.href.isEmpty()) {
@@ -340,7 +418,7 @@ void MarkdownView::mousePressEvent(MouseEvent *event) {
     }
 }
 
-void MarkdownView::wheelEvent(MouseEvent *event) {
+void MdView::wheelEvent(MouseEvent *event) {
     if (event->wheelDeltaY() > 0) {
         scrollBy(-3);
         event->setAccepted(true);

@@ -4,14 +4,14 @@
 #include <QList>
 #include <Cell.h>
 
-#include "MarkdownStyle.h"
+#include "MdRole.h"
 
 namespace qtui {
 
 struct StyledSpan {
     QString text;
-    MarkdownRole foreground = MarkdownRole::Code;
-    MarkdownRole background = MarkdownRole::Transparent;
+    MdRole foreground = MdRole::Code;
+    MdRole background = MdRole::Transparent;
     TextAttribute attributes = TextAttribute::None;
 };
 
@@ -27,7 +27,11 @@ public:
         Rust,
         Json,
         CMake,
-        Markdown
+        Markdown,
+        Haskell,
+        Go,
+        Yaml,
+        Html
     };
 
     static Language detectLanguage(const QString &langTag);

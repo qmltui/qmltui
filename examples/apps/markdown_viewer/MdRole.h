@@ -4,11 +4,12 @@
 
 namespace qtui {
 
-enum class MarkdownRole : uint8_t {
+enum class MdRole : uint8_t {
     Transparent,
     Text,
     TextMuted,
     Heading1,
+    Heading1Bg,
     Heading2,
     Heading3,
     Heading4,
@@ -17,12 +18,15 @@ enum class MarkdownRole : uint8_t {
     Link,
     Code,
     CodeBackground,
+    InlineCode,
+    InlineCodeBackground,
     Quote,
     Border,
     Success,
     Warning,
     SyntaxKeyword,
     SyntaxType,
+    SyntaxFunction,
     SyntaxString,
     SyntaxComment,
     SyntaxNumber,

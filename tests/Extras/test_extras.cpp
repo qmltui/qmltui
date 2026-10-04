@@ -9,6 +9,8 @@
 #include <ToastManager.h>
 #include <TabHeader.h>
 #include <Gauge.h>
+#include <Gradient.h>
+#include <GradientStop.h>
 #include <Paragraph.h>
 #include <TextGridBuffer.h>
 #include <MouseEvent.h>
@@ -280,6 +282,84 @@ private slots:
         gauge.render(buffer, 0, 0);
 
         QCOMPARE(gauge.value(), 75.0);
+    }
+
+    void testGaugeWithGradient() {
+        Gauge gauge;
+        gauge.setWidth(30);
+        gauge.setHeight(1);
+        gauge.setLabel("GPU: ");
+        gauge.setValue(50.0);
+
+        Gradient gradient;
+        auto *stop1 = new GradientStop(&gradient);
+        stop1->setPosition(0.0);
+        stop1->setColor("#00ff00");
+
+        auto *stop2 = new GradientStop(&gradient);
+        stop2->setPosition(1.0);
+        stop2->setColor("#ff0000");
+
+        auto stopsProp = gradient.stops();
+        stopsProp.append(&stopsProp, stop1);
+        stopsProp.append(&stopsProp, stop2);
+
+        gauge.setGradient(&gradient);
+        QCOMPARE(gauge.gradient(), &gradient);
+
+        TextGridBuffer buffer;
+        buffer.resize(30, 1);
+        gauge.render(buffer, 0, 0);
+
+        QCOMPARE(gauge.value(), 50.0);
+    }
+
+    void testGaugeWithBorder() {
+        Gauge gauge;
+        gauge.setBorderStyle("single");
+        QCOMPARE(gauge.implicitHeight(), 3);
+
+        gauge.setWidth(30);
+        gauge.setHeight(3);
+        gauge.setLabel("CPU: ");
+        gauge.setValue(50.0);
+
+        TextGridBuffer buffer;
+        buffer.resize(30, 3);
+        gauge.render(buffer, 0, 0);
+
+        // Row 0 has top border (e.g. ┌)
+        QVERIFY(buffer.cellAt(0, 0).character.startsWith("\xE2\x94\x8C"));
+        // Row 1 has label and content inside the box
+        QCOMPARE(buffer.cellAt(1, 1).character, QByteArray("C"));
+        QCOMPARE(buffer.cellAt(2, 1).character, QByteArray("P"));
+        QCOMPARE(buffer.cellAt(3, 1).character, QByteArray("U"));
+        // Row 2 has bottom border (e.g. └)
+        QVERIFY(buffer.cellAt(0, 2).character.startsWith("\xE2\x94\x94"));
+    }
+
+    void testGaugeShowBrackets() {
+        Gauge gauge;
+        gauge.setWidth(20);
+        gauge.setHeight(1);
+        gauge.setLabel("");
+        gauge.setValue(50.0);
+        gauge.setShowPercentage(false);
+        gauge.setShowBrackets(false);
+        gauge.setFilledChar("=");
+        gauge.setUnfilledChar("-");
+
+        TextGridBuffer buffer;
+        buffer.resize(20, 1);
+        gauge.render(buffer, 0, 0);
+
+        // Entire 20 characters should be filled or unfilled bar characters, no '[' or ']'
+        for (int x = 0; x < 10; ++x) {
+            QCOMPARE(buffer.cellAt(x, 0).character, QByteArray("="));
+        }
+        for (int x = 10; x < 20; ++x) {
+            QCOMPARE(buffer.cellAt(x, 0).character, QByteArray("-"));
+        }
     }
 
     void testParagraph() {

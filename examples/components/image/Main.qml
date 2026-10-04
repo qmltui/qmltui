@@ -13,32 +13,36 @@ Terminal {
     property string statusMessage: "Loaded: " + imageSource
 
     // Explicit key handling for quit and quick preset switching
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
         } else if (event.key === Qt.Key_1) {
-            pathInput.text = "panda.png"
-            root.updateImageSource("panda.png")
-            event.accepted = true
+            pathInput.text = "panda.png";
+            root.updateImageSource("panda.png");
+            event.accepted = true;
         } else if (event.key === Qt.Key_2) {
-            pathInput.text = "demo_image.png"
-            root.updateImageSource("demo_image.png")
-            event.accepted = true
+            pathInput.text = "demo_image.png";
+            root.updateImageSource("demo_image.png");
+            event.accepted = true;
         } else if (event.key === Qt.Key_3) {
-            pathInput.text = "map.png"
-            root.updateImageSource("map.png")
-            event.accepted = true
+            pathInput.text = "map.png";
+            root.updateImageSource("map.png");
+            event.accepted = true;
         } else if (event.key === Qt.Key_4) {
-            pathInput.text = "image2.jpg"
-            root.updateImageSource("image2.jpg")
-            event.accepted = true
+            pathInput.text = "image2.jpg";
+            root.updateImageSource("image2.jpg");
+            event.accepted = true;
+        } else if (event.key === Qt.Key_5) {
+            pathInput.text = "qt_logo_icon_248726.webp";
+            root.updateImageSource("qt_logo_icon_248726.webp");
+            event.accepted = true;
         }
     }
 
     function updateImageSource(newPath) {
-        root.imageSource = newPath
-        root.statusMessage = "Loaded: " + newPath
+        root.imageSource = newPath;
+        root.statusMessage = "Loaded: " + newPath;
     }
 
     Column {
@@ -99,7 +103,7 @@ Terminal {
                     focusable: true
 
                     onAccepted: {
-                        root.updateImageSource(text)
+                        root.updateImageSource(text);
                     }
                 }
             }

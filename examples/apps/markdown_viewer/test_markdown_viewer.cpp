@@ -9,14 +9,18 @@
 #include <TextGridBuffer.h>
 #include <UnicodeText.h>
 
-#include "MarkdownDocument.h"
-#include "MarkdownPalette.h"
-#include "MarkdownView.h"
+#include "MdDoc.h"
+#include "MdDocStyle.h"
+#include "MdPalette.h"
+#include "MdRole.h"
+#include "MdView.h"
+#include "MdViewStyle.h"
+#include "SyntaxHighlighter.h"
 
 using namespace qtui;
 
 namespace {
-QString renderedText(const MarkdownDocument &document) {
+QString renderedText(const MdDoc &document) {
     QStringList lines;
     for (const DocumentLine &line : document.renderedLines()) {
         QString text;
@@ -49,10 +53,15 @@ private slots:
     void renderingHonorsClipAndSearchStyle();
     void paletteResolvesSemanticRoles();
     void codeBlockBackgroundIsConsistent();
+    void docStylePropertiesAndOverrides();
+    void modernH1BadgeAndHeadings();
+    void haskellSyntaxHighlighting();
+    void modernTableRendering();
+    void showLineNumbersToggle();
 };
 
 void MarkdownViewerTest::whitespaceSearchIsEmpty() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setText(QStringLiteral("alpha beta alpha"));
 
     QVERIFY(document.searchMatches(QStringLiteral("   \t\n")).isEmpty());
@@ -61,7 +70,7 @@ void MarkdownViewerTest::whitespaceSearchIsEmpty() {
 }
 
 void MarkdownViewerTest::linkedHeadingBuildsMetadata() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setText(QStringLiteral("# Linked *title* [site](https://example.com)\n"));
 
     QCOMPARE(document.documentTitle(), QStringLiteral("Linked title site"));
@@ -75,7 +84,7 @@ void MarkdownViewerTest::linkedHeadingBuildsMetadata() {
 }
 
 void MarkdownViewerTest::nestedBlocksArePreserved() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setWrapWidth(40);
     document.setText(QStringLiteral(
         "> quoted\n>\n> - nested item\n>\n> ```cpp\n> const int value = 42;\n> ```\n"));
@@ -90,7 +99,7 @@ void MarkdownViewerTest::nestedBlocksArePreserved() {
 }
 
 void MarkdownViewerTest::wrappingIsUnicodeSafe() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setWrapWidth(18);
     document.setText(QString::fromUtf8(
         "# 東京 👩‍💻\n\n"
@@ -113,7 +122,7 @@ void MarkdownViewerTest::wrappingIsUnicodeSafe() {
 }
 
 void MarkdownViewerTest::relayoutPreservesMetadata() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setText(QStringLiteral(
         "# Title\n\nA paragraph with enough words to wrap at a narrow width.\n\n"
         "[link](https://example.com)\n"));
@@ -135,7 +144,7 @@ void MarkdownViewerTest::reloadReadsTheSourceAgain() {
     QCOMPARE(file.write("# First\n"), qint64(8));
     QVERIFY(file.flush());
 
-    MarkdownDocument document;
+    MdDoc document;
     document.setSource(QUrl::fromLocalFile(file.fileName()).toString());
     QCOMPARE(document.documentTitle(), QStringLiteral("First"));
 
@@ -147,10 +156,11 @@ void MarkdownViewerTest::reloadReadsTheSourceAgain() {
 }
 
 void MarkdownViewerTest::viewTracksDocumentLifetimeAndClampsScroll() {
-    MarkdownView view;
+    MdView view;
+    view.setShowLineNumbers(true);
     view.setWidth(30);
     view.setHeight(5);
-    auto *document = new MarkdownDocument;
+    auto *document = new MdDoc;
     document->setText(QString(100, QLatin1Char('x')).replace(QLatin1Char('x'),
         QStringLiteral("line\n")));
     view.setDocument(document);
@@ -168,10 +178,11 @@ void MarkdownViewerTest::viewTracksDocumentLifetimeAndClampsScroll() {
 }
 
 void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setText(QStringLiteral("prefix match suffix"));
 
-    MarkdownView view;
+    MdView view;
+    view.setShowLineNumbers(true);
     view.setWidth(24);
     view.setHeight(5);
     view.setBorderStyle(QStringLiteral("single"));
@@ -209,16 +220,25 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
 }
 
 void MarkdownViewerTest::paletteResolvesSemanticRoles() {
-    MarkdownPalette palette;
+    MdPalette palette;
     palette.m_link = QStringLiteral("#010203");
     palette.m_syntaxString = QStringLiteral("#a0b0c0");
-    QCOMPARE(palette.resolve(MarkdownRole::Link), 0xff010203u);
-    QCOMPARE(palette.resolve(MarkdownRole::SyntaxString), 0xffa0b0c0u);
-    QCOMPARE(palette.resolve(MarkdownRole::Transparent), 0u);
+    palette.m_heading1Bg = QStringLiteral("#5856d6");
+    palette.m_inlineCode = QStringLiteral("#f43f5e");
+    palette.m_inlineCodeBg = QStringLiteral("#4c1d24");
+    palette.m_syntaxFunction = QStringLiteral("#50fa7b");
+
+    QCOMPARE(palette.resolve(MdRole::Link), 0xff010203u);
+    QCOMPARE(palette.resolve(MdRole::SyntaxString), 0xffa0b0c0u);
+    QCOMPARE(palette.resolve(MdRole::Heading1Bg), 0xff5856d6u);
+    QCOMPARE(palette.resolve(MdRole::InlineCode), 0xfff43f5eu);
+    QCOMPARE(palette.resolve(MdRole::InlineCodeBackground), 0xff4c1d24u);
+    QCOMPARE(palette.resolve(MdRole::SyntaxFunction), 0xff50fa7bu);
+    QCOMPARE(palette.resolve(MdRole::Transparent), 0u);
 }
 
 void MarkdownViewerTest::codeBlockBackgroundIsConsistent() {
-    MarkdownDocument document;
+    MdDoc document;
     document.setWrapWidth(40);
     document.setText(QStringLiteral("```cpp\nint x = 42;\n```\n\nInline `code_badge` here.\n"));
 
@@ -228,25 +248,152 @@ void MarkdownViewerTest::codeBlockBackgroundIsConsistent() {
         if (line.isCodeBlock) {
             foundCodeBlockLine = true;
             for (const FormattedSegment &segment : line.segments) {
-                QCOMPARE(segment.background, MarkdownRole::Transparent);
+                QCOMPARE(segment.background, MdRole::Transparent);
             }
         }
     }
     QVERIFY(foundCodeBlockLine);
 
-    // Check inline code span still maintains CodeBackground
+    // Check inline code span uses InlineCodeBackground
     bool foundInlineCode = false;
     for (const DocumentLine &line : document.renderedLines()) {
         if (!line.isCodeBlock) {
             for (const FormattedSegment &segment : line.segments) {
                 if (segment.text.contains(QStringLiteral("code_badge"))) {
                     foundInlineCode = true;
-                    QCOMPARE(segment.background, MarkdownRole::CodeBackground);
+                    QCOMPARE(segment.background, MdRole::InlineCodeBackground);
                 }
             }
         }
     }
     QVERIFY(foundInlineCode);
+}
+
+void MarkdownViewerTest::docStylePropertiesAndOverrides() {
+    MdDocStyle style;
+    QCOMPARE(style.h1Format(), MdDocStyle::Heading1Format::Badge);
+    QCOMPARE(style.tableFormat(), MdDocStyle::TableFormat::Open);
+    QCOMPARE(style.codeBlockFormat(), MdDocStyle::CodeBlockFormat::Indented);
+
+    style.setH1Format(MdDocStyle::Heading1Format::Banner);
+    style.setTableFormat(MdDocStyle::TableFormat::Boxed);
+    style.setCodeBlockFormat(MdDocStyle::CodeBlockFormat::Boxed);
+    QCOMPARE(style.h1Format(), MdDocStyle::Heading1Format::Banner);
+    QCOMPARE(style.tableFormat(), MdDocStyle::TableFormat::Boxed);
+    QCOMPARE(style.codeBlockFormat(), MdDocStyle::CodeBlockFormat::Boxed);
+
+    // Granular override
+    style.setH1Format(MdDocStyle::Heading1Format::Badge);
+    QCOMPARE(style.h1Format(), MdDocStyle::Heading1Format::Badge);
+    QCOMPARE(style.tableFormat(), MdDocStyle::TableFormat::Boxed);
+
+    MdDoc document;
+    document.setStyle(&style);
+    document.setText(QStringLiteral("# Title\n"));
+    QVERIFY(!document.renderedLines().isEmpty());
+    QCOMPARE(document.renderedLines().first().segments.first().background, MdRole::Heading1Bg);
+}
+
+void MarkdownViewerTest::modernH1BadgeAndHeadings() {
+    MdDoc document;
+    MdDocStyle style;
+    style.setHeadingFormat(MdDocStyle::HeadingFormat::Hashes);
+    document.setStyle(&style);
+    document.setText(QStringLiteral("# Showcase\n\n## Section 2\n\n### Section 3\n"));
+
+    QVERIFY(!document.renderedLines().isEmpty());
+    const DocumentLine &h1Line = document.renderedLines().first();
+    QVERIFY(h1Line.isHeading);
+    QCOMPARE(h1Line.headingLevel, 1);
+
+    // Check H1 has Heading1Bg background segments
+    bool hasH1Bg = false;
+    for (const FormattedSegment &seg : h1Line.segments) {
+        if (seg.background == MdRole::Heading1Bg)
+            hasH1Bg = true;
+    }
+    QVERIFY(hasH1Bg);
+
+    // Check H2 has "## " prefix
+    const QString text = renderedText(document);
+    QVERIFY(text.contains(QStringLiteral("## Section 2")));
+    QVERIFY(text.contains(QStringLiteral("### Section 3")));
+}
+
+void MarkdownViewerTest::haskellSyntaxHighlighting() {
+    const QString haskellCode = QStringLiteral("module Main where\nimport Data.List (intercalate)\nhello :: String -> String\nmain = putStrLn $ intercalate \"\\n\" [ \"a\" ]\n");
+    const auto lang = SyntaxHighlighter::detectLanguage(QStringLiteral("haskell"));
+    QCOMPARE(lang, SyntaxHighlighter::Language::Haskell);
+
+    const auto lines = haskellCode.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    QVERIFY(lines.size() >= 3);
+
+    // Line 1: module Main where
+    const auto line1Spans = SyntaxHighlighter::highlightLine(lines[0], lang);
+    bool foundModule = false;
+    bool foundMain = false;
+    for (const StyledSpan &span : line1Spans) {
+        if (span.text == QStringLiteral("module") && span.foreground == MdRole::SyntaxKeyword)
+            foundModule = true;
+        if (span.text == QStringLiteral("Main") && span.foreground == MdRole::SyntaxType)
+            foundMain = true;
+    }
+    QVERIFY(foundModule);
+    QVERIFY(foundMain);
+
+    // Line 3: hello :: String -> String
+    const auto line3Spans = SyntaxHighlighter::highlightLine(lines[2], lang);
+    bool foundDoubleColon = false;
+    bool foundString = false;
+    bool foundArrow = false;
+    for (const StyledSpan &span : line3Spans) {
+        if (span.text == QStringLiteral("::") && span.foreground == MdRole::SyntaxSymbol)
+            foundDoubleColon = true;
+        if (span.text == QStringLiteral("String") && span.foreground == MdRole::SyntaxType)
+            foundString = true;
+        if (span.text == QStringLiteral("->") && span.foreground == MdRole::SyntaxSymbol)
+            foundArrow = true;
+    }
+    QVERIFY(foundDoubleColon);
+    QVERIFY(foundString);
+    QVERIFY(foundArrow);
+}
+
+void MarkdownViewerTest::modernTableRendering() {
+    MdDoc document;
+    MdDocStyle style;
+    style.setTableFormat(MdDocStyle::TableFormat::Open);
+    document.setStyle(&style);
+    document.setWrapWidth(80);
+    document.setText(QStringLiteral(
+        "| Name | Power | Comment |\n"
+        "| :--- | :--- | :--- |\n"
+        "| Carrots | 9001 | It's over 9000?! |\n"
+        "| Ramen | 9002 | Also over 9000?! |\n"));
+
+    const QString text = renderedText(document);
+    QVERIFY(text.contains(QStringLiteral("Name")));
+    QVERIFY(text.contains(QStringLiteral("Power")));
+    QVERIFY(text.contains(QStringLiteral("Carrots")));
+    QVERIFY(text.contains(QStringLiteral("9001")));
+    QVERIFY(text.contains(QStringLiteral("+")));
+}
+
+void MarkdownViewerTest::showLineNumbersToggle() {
+    MdView view;
+    view.setWidth(80);
+    view.setHeight(24);
+    MdDoc document;
+    document.setText(QStringLiteral("Line 1\nLine 2\nLine 3\n"));
+    view.setDocument(&document);
+
+    view.setShowLineNumbers(false);
+    QCOMPARE(view.showLineNumbers(), false);
+    QCOMPARE(document.wrapWidth(), 80);
+
+    view.setShowLineNumbers(true);
+    QCOMPARE(view.showLineNumbers(), true);
+    QVERIFY(document.wrapWidth() < 80);
 }
 
 QTEST_MAIN(MarkdownViewerTest)

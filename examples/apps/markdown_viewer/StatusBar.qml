@@ -33,7 +33,7 @@ Rectangle {
         }
 
         Text {
-            text: "[Tab] Next section  [Shift+Tab] Previous  [j/k] Scroll  [/] Find  [t] Theme  [o] Switch  [q] Quit"
+            text: "[Tab] Section  [j/k] Scroll  [s] Style  [e] Editor  [l] Lines  [/] Find  [t] Theme  [o] Sample  [q] Quit"
             color: theme.textMuted
         }
     }

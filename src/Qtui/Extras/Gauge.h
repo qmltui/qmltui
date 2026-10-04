@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Item.h>
+#include <Gradient.h>
 #include <QString>
 
 namespace qtui {
@@ -13,10 +14,12 @@ class Gauge : public Item {
     Q_PROPERTY(double maxValue READ maxValue WRITE setMaxValue NOTIFY maxValueChanged)
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
     Q_PROPERTY(QString gaugeColor READ gaugeColor WRITE setGaugeColor NOTIFY gaugeColorChanged)
+    Q_PROPERTY(qtui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
     Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
     Q_PROPERTY(QString filledChar READ filledChar WRITE setFilledChar NOTIFY filledCharChanged)
     Q_PROPERTY(QString unfilledChar READ unfilledChar WRITE setUnfilledChar NOTIFY unfilledCharChanged)
     Q_PROPERTY(bool showPercentage READ showPercentage WRITE setShowPercentage NOTIFY showPercentageChanged)
+    Q_PROPERTY(bool showBrackets READ showBrackets WRITE setShowBrackets NOTIFY showBracketsChanged)
     Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
     Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
@@ -36,6 +39,9 @@ public:
     QString gaugeColor() const { return m_gaugeColor; }
     void setGaugeColor(const QString &color);
 
+    Gradient* gradient() const { return m_gradient; }
+    void setGradient(Gradient* gradient);
+
     QString bgColor() const { return m_bgColor; }
     void setBgColor(const QString &color);
 
@@ -47,6 +53,9 @@ public:
 
     bool showPercentage() const { return m_showPercentage; }
     void setShowPercentage(bool show);
+
+    bool showBrackets() const { return m_showBrackets; }
+    void setShowBrackets(bool show);
 
     QString borderStyle() const { return m_borderStyle; }
     void setBorderStyle(const QString &style);
@@ -61,10 +70,12 @@ signals:
     void maxValueChanged();
     void labelChanged();
     void gaugeColorChanged();
+    void gradientChanged();
     void bgColorChanged();
     void filledCharChanged();
     void unfilledCharChanged();
     void showPercentageChanged();
+    void showBracketsChanged();
     void borderStyleChanged();
     void borderColorChanged();
 
@@ -75,6 +86,7 @@ private:
 
     QString m_gaugeColor = "green";
     uint32_t m_resolvedGaugeColor = 0xFF00FF00;
+    Gradient* m_gradient = nullptr;
 
     QString m_bgColor = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
@@ -82,6 +94,7 @@ private:
     QString m_filledChar = "█";
     QString m_unfilledChar = "░";
     bool m_showPercentage = true;
+    bool m_showBrackets = true;
 
     QString m_borderStyle = "none";
     QString m_borderColor = "gray";

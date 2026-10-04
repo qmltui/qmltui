@@ -13,7 +13,8 @@ Rectangle {
     property int headingCount: 0
     property int codeBlockCount: 0
     property int tableCount: 0
-    property string activeThemeName: "Tokyo Night"
+    property string activeThemeName: "aurora"
+    property string activeStyleName: "modern"
 
     border.style: "single"
     border.color: theme.border
@@ -25,7 +26,7 @@ Rectangle {
         spacing: 2
 
         Text {
-            property int maxTitleLen: Math.max(12, header.width - 46)
+            property int maxTitleLen: Math.max(10, header.width - 55)
             text: "📖 " + (header.title.length > maxTitleLen ? header.title.substring(0, maxTitleLen - 1) + "…" : header.title)
             color: theme.accent
             bold: true
@@ -59,7 +60,7 @@ Rectangle {
         }
 
         Text {
-            text: "[" + header.activeThemeName + "]"
+            text: "[" + header.activeThemeName + " : " + header.activeStyleName + "]"
             color: theme.accentSecondary
         }
     }

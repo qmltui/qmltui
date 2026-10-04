@@ -158,7 +158,7 @@ install(FILES
 )
 install(FILES
     items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h items/TableView.h items/TreeView.h
-    items/Terminal.h items/Rectangle.h
+    items/Terminal.h items/Rectangle.h items/Gradient.h items/GradientStop.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
 )
 install(FILES

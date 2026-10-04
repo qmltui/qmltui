@@ -19,22 +19,31 @@ qt_add_qml_module(qtui_markdown_viewer_module
     URI Qtui.Examples.MarkdownViewer
     VERSION 1.0
     SOURCES
-        MarkdownStyle.h
+        MdRole.h
+        MdPalette.h
+        MdPalette.cpp
+        MdDocStyle.h
+        MdDocStyle.cpp
+        MdViewStyle.h
+        MdViewStyle.cpp
+        MdDoc.h
+        MdDoc.cpp
+        MdView.h
+        MdView.cpp
         SyntaxHighlighter.h
         SyntaxHighlighter.cpp
-        MarkdownDocument.h
-        MarkdownDocument.cpp
-        MarkdownPalette.h
-        MarkdownPalette.cpp
-        MarkdownView.h
-        MarkdownView.cpp
     QML_FILES
         Main.qml
         Theme.qml
+        ModernDocStyle.qml
+        ClassicDocStyle.qml
+        MinimalDocStyle.qml
+        StyleEditor.qml
         HeaderBar.qml
         StatusBar.qml
         SearchBar.qml
     RESOURCES
+        resources/modern_showcase.md
         resources/welcome.md
         resources/qtui_guide.md
         resources/cheatsheet.md

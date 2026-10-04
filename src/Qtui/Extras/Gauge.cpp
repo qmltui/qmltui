@@ -1,5 +1,6 @@
 #include "Gauge.h"
 #include <ColorMapper.h>
+#include <Gradient.h>
 #include <algorithm>
 #include <cmath>
 
@@ -40,6 +41,19 @@ void Gauge::setGaugeColor(const QString &color) {
     markDirty();
 }
 
+void Gauge::setGradient(Gradient *gradient) {
+    if (m_gradient == gradient) return;
+    if (m_gradient) {
+        disconnect(m_gradient, nullptr, this, nullptr);
+    }
+    m_gradient = gradient;
+    if (m_gradient) {
+        connect(m_gradient, &Gradient::updated, this, [this]() { markDirty(); });
+    }
+    emit gradientChanged();
+    markDirty();
+}
+
 void Gauge::setBgColor(const QString &color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
@@ -69,9 +83,17 @@ void Gauge::setShowPercentage(bool show) {
     markDirty();
 }
 
+void Gauge::setShowBrackets(bool show) {
+    if (m_showBrackets == show) return;
+    m_showBrackets = show;
+    emit showBracketsChanged();
+    markDirty();
+}
+
 void Gauge::setBorderStyle(const QString &style) {
     if (m_borderStyle == style) return;
     m_borderStyle = style;
+    setImplicitHeight(m_borderStyle == "none" ? 1 : 3);
     emit borderStyleChanged();
     markDirty();
 }
@@ -105,7 +127,7 @@ void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     if (availW <= 0 || availH <= 0) return;
 
     QString pctText = m_showPercentage ? QString(" %1%").arg(static_cast<int>((m_value / m_maxValue) * 100.0)) : "";
-    int textReservedW = m_label.length() + pctText.length() + 2; // Bracket frames '[' and ']'
+    int textReservedW = m_label.length() + pctText.length() + (m_showBrackets ? 2 : 0);
     int barW = std::max(1, availW - textReservedW);
 
     int curX = startX;
@@ -117,16 +139,24 @@ void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     }
 
     // Render Opening Bracket
-    buffer.writeText(curX, startY, "[", 0xFF808080, m_resolvedBgColor);
-    curX += 1;
+    if (m_showBrackets) {
+        buffer.writeText(curX, startY, "[", 0xFF808080, m_resolvedBgColor);
+        curX += 1;
+    }
 
     // Render Bar Fill
     double pct = std::clamp(m_value / m_maxValue, 0.0, 1.0);
     int filledCells = static_cast<int>(pct * barW);
+    bool useGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
 
     for (int i = 0; i < barW; ++i) {
         if (i < filledCells) {
-            buffer.writeText(curX + i, startY, m_filledChar, m_resolvedGaugeColor, m_resolvedBgColor);
+            uint32_t cellColor = m_resolvedGaugeColor;
+            if (useGradient) {
+                qreal t = (barW > 1) ? static_cast<qreal>(i) / (barW - 1) : 0.0;
+                cellColor = m_gradient->colorAt(t);
+            }
+            buffer.writeText(curX + i, startY, m_filledChar, cellColor, m_resolvedBgColor);
         } else {
             buffer.writeText(curX + i, startY, m_unfilledChar, 0xFF555555, m_resolvedBgColor);
         }
@@ -134,12 +164,18 @@ void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     curX += barW;
 
     // Render Closing Bracket
-    buffer.writeText(curX, startY, "]", 0xFF808080, m_resolvedBgColor);
-    curX += 1;
+    if (m_showBrackets) {
+        buffer.writeText(curX, startY, "]", 0xFF808080, m_resolvedBgColor);
+        curX += 1;
+    }
 
     // Render Percentage Text
     if (m_showPercentage) {
-        buffer.writeText(curX, startY, pctText, m_resolvedGaugeColor, m_resolvedBgColor, TextAttribute::Bold);
+        uint32_t pctColor = m_resolvedGaugeColor;
+        if (useGradient) {
+            pctColor = m_gradient->colorAt(pct);
+        }
+        buffer.writeText(curX, startY, pctText, pctColor, m_resolvedBgColor, TextAttribute::Bold);
     }
 }
 

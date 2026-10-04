@@ -24,6 +24,14 @@ SyntaxHighlighter::Language SyntaxHighlighter::detectLanguage(const QString &lan
         return Language::CMake;
     if (tag == "md" || tag == "markdown")
         return Language::Markdown;
+    if (tag == "hs" || tag == "haskell" || tag == "lhs")
+        return Language::Haskell;
+    if (tag == "go" || tag == "golang")
+        return Language::Go;
+    if (tag == "yaml" || tag == "yml")
+        return Language::Yaml;
+    if (tag == "html" || tag == "xml" || tag == "svg")
+        return Language::Html;
     return Language::None;
 }
 
@@ -80,6 +88,20 @@ bool SyntaxHighlighter::isKeyword(const QString &word, Language lang) {
         "FetchContent_Declare", "FetchContent_MakeAvailable"
     };
 
+    static const QSet<QString> haskellKeywords = {
+        "module", "where", "import", "as", "qualified", "hiding", "case", "of",
+        "if", "then", "else", "let", "in", "do", "data", "type", "newtype",
+        "class", "instance", "deriving", "default", "foreign", "infix", "infixl",
+        "infixr", "forall", "mdo", "family", "pattern"
+    };
+
+    static const QSet<QString> goKeywords = {
+        "package", "import", "func", "var", "const", "type", "struct", "interface",
+        "return", "if", "else", "for", "range", "switch", "case", "default",
+        "defer", "go", "select", "chan", "map", "fallthrough", "break", "continue",
+        "goto", "nil", "true", "false"
+    };
+
     switch (lang) {
     case Language::Cpp:
         return cppKeywords.contains(word);
@@ -94,6 +116,10 @@ bool SyntaxHighlighter::isKeyword(const QString &word, Language lang) {
         return rustKeywords.contains(word);
     case Language::CMake:
         return cmakeKeywords.contains(word);
+    case Language::Haskell:
+        return haskellKeywords.contains(word);
+    case Language::Go:
+        return goKeywords.contains(word);
     default:
         return false;
     }
@@ -115,8 +141,22 @@ bool SyntaxHighlighter::isType(const QString &word, Language lang) {
         "Popup", "Timer", "MouseArea", "Repeater", "Loader", "BigText", "Gauge", "Sparkline", "StatusBadge"
     };
 
+    static const QSet<QString> haskellTypes = {
+        "Int", "Integer", "Float", "Double", "Bool", "Char", "String", "IO",
+        "Maybe", "Either", "Ordering", "FilePath", "Show", "Eq", "Ord", "Monad",
+        "Functor", "Applicative"
+    };
+
+    static const QSet<QString> goTypes = {
+        "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64",
+        "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune",
+        "error", "any", "uintptr"
+    };
+
     if (lang == Language::Cpp) return cppTypes.contains(word);
     if (lang == Language::Qml) return qmlTypes.contains(word);
+    if (lang == Language::Haskell) return haskellTypes.contains(word) || (word.length() > 0 && word[0].isUpper());
+    if (lang == Language::Go) return goTypes.contains(word);
     return false;
 }
 
@@ -124,39 +164,84 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
     QList<StyledSpan> spans;
     if (line.isEmpty()) return spans;
     if (lang == Language::None) {
-        spans.append({line, MarkdownRole::Code, MarkdownRole::Transparent,
+        spans.append({line, MdRole::Code, MdRole::Transparent,
                       TextAttribute::None});
         return spans;
     }
 
+    static const QSet<QString> haskellFunctions = {
+        "putStrLn", "print", "putStr", "getLine", "getContents", "intercalate",
+        "map", "filter", "foldr", "foldl", "scanl", "scanr", "concat", "concatMap",
+        "head", "tail", "init", "last", "null", "length", "reverse", "take", "drop",
+        "splitAt", "takeWhile", "dropWhile", "span", "break", "lines", "words",
+        "unlines", "unwords", "show", "read", "error", "undefined", "seq", "pure",
+        "return", "fmap", "liftA2", "mempty", "mappend", "mconcat"
+    };
+
     int i = 0;
     const int len = line.length();
 
-    auto flushToken = [&](const QString &token, MarkdownRole role,
+    auto flushToken = [&](const QString &token, MdRole role,
                           TextAttribute attr = TextAttribute::None) {
         if (!token.isEmpty())
-            spans.append({token, role, MarkdownRole::Transparent, attr});
+            spans.append({token, role, MdRole::Transparent, attr});
     };
 
     while (i < len) {
         // Comments
-        // C++/QML/JS/Rust line comment //
-        if ((lang == Language::Cpp || lang == Language::Qml || lang == Language::JavaScript || lang == Language::Rust) &&
+        // C++/QML/JS/Rust/Go line comment //
+        if ((lang == Language::Cpp || lang == Language::Qml || lang == Language::JavaScript ||
+             lang == Language::Rust || lang == Language::Go) &&
             i + 1 < len && line[i] == '/' && line[i + 1] == '/') {
-            flushToken(line.mid(i), MarkdownRole::SyntaxComment, TextAttribute::Italic);
+            flushToken(line.mid(i), MdRole::SyntaxComment, TextAttribute::Italic);
             break;
         }
 
-        // Python/Bash/CMake line comment #
-        if ((lang == Language::Python || lang == Language::Bash || lang == Language::CMake) && line[i] == '#') {
-            flushToken(line.mid(i), MarkdownRole::SyntaxComment, TextAttribute::Italic);
+        // Haskell line comment --
+        if (lang == Language::Haskell && i + 1 < len && line[i] == '-' && line[i + 1] == '-') {
+            flushToken(line.mid(i), MdRole::SyntaxComment, TextAttribute::Italic);
+            break;
+        }
+
+        // Python/Bash/CMake/Yaml line comment #
+        if ((lang == Language::Python || lang == Language::Bash || lang == Language::CMake ||
+             lang == Language::Yaml) && line[i] == '#') {
+            flushToken(line.mid(i), MdRole::SyntaxComment, TextAttribute::Italic);
             break;
         }
 
         // C++ Preprocessor directive (#include, #pragma, etc.)
         if (lang == Language::Cpp && line[i] == '#' && (i == 0 || line.left(i).trimmed().isEmpty())) {
-            flushToken(line.mid(i), MarkdownRole::SyntaxPreprocessor, TextAttribute::Bold);
+            flushToken(line.mid(i), MdRole::SyntaxPreprocessor, TextAttribute::Bold);
             break;
+        }
+
+        // Multi-character symbols & operators (e.g. ::, ->, <-, =>, <$>, <*>, <>, ++, ==, !=, <=, >=, &&, ||, <<, >>, $, $)
+        if (i + 2 < len) {
+            const QString tri = line.mid(i, 3);
+            if (tri == "<$>" || tri == "<*>" || tri == "...") {
+                flushToken(tri, MdRole::SyntaxSymbol);
+                i += 3;
+                continue;
+            }
+        }
+        if (i + 1 < len) {
+            const QString duo = line.mid(i, 2);
+            if (duo == "::" || duo == "->" || duo == "<-" || duo == "=>" || duo == "<>" ||
+                duo == "++" || duo == "==" || duo == "!=" || duo == "<=" || duo == ">=" ||
+                duo == "&&" || duo == "||" || duo == "<<" || duo == ">>" || duo == ":=" ||
+                duo == "+=" || duo == "-=" || duo == "*=" || duo == "/=") {
+                flushToken(duo, MdRole::SyntaxSymbol);
+                i += 2;
+                continue;
+            }
+        }
+
+        // Single character operators like $
+        if (line[i] == '$' && lang == Language::Haskell) {
+            flushToken(QStringLiteral("$"), MdRole::SyntaxSymbol);
+            i++;
+            continue;
         }
 
         // Strings ("..." or '...')
@@ -172,7 +257,7 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
             }
             if (i < len && line[i] == quoteChar)
                 i++;
-            flushToken(line.mid(strStart, i - strStart), MarkdownRole::SyntaxString);
+            flushToken(line.mid(strStart, i - strStart), MdRole::SyntaxString);
             continue;
         }
 
@@ -184,23 +269,30 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
                                line[i] == 'u' || line[i] == 'U' || line[i] == 'l' || line[i] == 'L' || line[i] == 'f')) {
                 i++;
             }
-            flushToken(line.mid(numStart, i - numStart), MarkdownRole::SyntaxNumber);
+            flushToken(line.mid(numStart, i - numStart), MdRole::SyntaxNumber);
             continue;
         }
 
         // Identifiers & Keywords
         if (line[i].isLetter() || line[i] == '_' || line[i] == '$') {
             int wordStart = i;
-            while (i < len && (line[i].isLetterOrNumber() || line[i] == '_' || line[i] == '$' || line[i] == ':')) {
+            while (i < len && (line[i].isLetterOrNumber() || line[i] == '_' || line[i] == '$' || line[i] == '.' || line[i] == '\'')) {
+                // If dot is followed by letter (like Data.List), consume it as part of qualified name
+                if (line[i] == '.' && (i + 1 >= len || !line[i + 1].isLetter()))
+                    break;
                 i++;
             }
             QString word = line.mid(wordStart, i - wordStart);
             if (isKeyword(word, lang)) {
-                flushToken(word, MarkdownRole::SyntaxKeyword, TextAttribute::Bold);
+                flushToken(word, MdRole::SyntaxKeyword, TextAttribute::Bold);
             } else if (isType(word, lang) || (word.length() > 1 && word[0].isUpper())) {
-                flushToken(word, MarkdownRole::SyntaxType);
+                flushToken(word, MdRole::SyntaxType);
+            } else if (lang == Language::Haskell && (haskellFunctions.contains(word) || wordStart == 0 || line.mid(i).trimmed().startsWith("::") || line.mid(i).trimmed().startsWith("="))) {
+                flushToken(word, MdRole::SyntaxFunction);
+            } else if (i < len && line[i] == '(') {
+                flushToken(word, MdRole::SyntaxFunction);
             } else {
-                flushToken(word, MarkdownRole::Code);
+                flushToken(word, MdRole::Code);
             }
             continue;
         }
@@ -210,8 +302,8 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
             line[i] == '[' || line[i] == ']' || line[i] == ';' || line[i] == ',' ||
             line[i] == '=' || line[i] == '+' || line[i] == '-' || line[i] == '*' ||
             line[i] == '/' || line[i] == '&' || line[i] == '|' || line[i] == '!' ||
-            line[i] == '<' || line[i] == '>') {
-            flushToken(QString(line[i]), MarkdownRole::SyntaxSymbol);
+            line[i] == '<' || line[i] == '>' || line[i] == ':' || line[i] == '\\') {
+            flushToken(QString(line[i]), MdRole::SyntaxSymbol);
             i++;
             continue;
         }
@@ -222,9 +314,9 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
             i++;
         }
         if (i > wsStart) {
-            flushToken(line.mid(wsStart, i - wsStart), MarkdownRole::Code);
+            flushToken(line.mid(wsStart, i - wsStart), MdRole::Code);
         } else {
-            flushToken(QString(line[i]), MarkdownRole::Code);
+            flushToken(QString(line[i]), MdRole::Code);
             i++;
         }
     }

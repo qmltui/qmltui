@@ -3,32 +3,37 @@
 #include <Item.h>
 #include <QPointer>
 #include <QtQml/qqmlregistration.h>
-#include "MarkdownDocument.h"
-#include "MarkdownPalette.h"
+
+#include "MdDoc.h"
+#include "MdPalette.h"
+#include "MdViewStyle.h"
 
 namespace qtui {
 
-class MarkdownView : public Item {
+class MdView : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(qtui::MarkdownDocument* document READ document WRITE setDocument NOTIFY documentChanged)
+    Q_PROPERTY(qtui::MdDoc* document READ document WRITE setDocument NOTIFY documentChanged)
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
     Q_PROPERTY(int contentHeight READ contentHeight NOTIFY contentHeightChanged)
     Q_PROPERTY(QString searchQuery READ searchQuery WRITE setSearchQuery NOTIFY searchQueryChanged)
     Q_PROPERTY(int activeMatchIndex READ activeMatchIndex WRITE setActiveMatchIndex NOTIFY activeMatchIndexChanged)
 
-    // Grouped Palette Property (Q_GADGET value type)
-    Q_PROPERTY(qtui::MarkdownPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
+    // View Style & Direct Palette Overrides
+    Q_PROPERTY(qtui::MdViewStyle* style READ style WRITE setStyle NOTIFY styleChanged)
+    Q_PROPERTY(qtui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
 
     Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
+    Q_PROPERTY(bool showLineNumbers READ showLineNumbers WRITE setShowLineNumbers NOTIFY showLineNumbersChanged)
+    Q_PROPERTY(QString renderStyle READ renderStyle WRITE setRenderStyle NOTIFY renderStyleChanged)
 
 public:
-    explicit MarkdownView(QObject *parent = nullptr);
-    ~MarkdownView() override = default;
+    explicit MdView(QObject *parent = nullptr);
+    ~MdView() override = default;
 
-    MarkdownDocument* document() const { return m_document; }
-    void setDocument(MarkdownDocument *doc);
+    MdDoc* document() const { return m_document; }
+    void setDocument(MdDoc *doc);
 
     int scrollY() const { return m_scrollY; }
     void setScrollY(int y);
@@ -41,11 +46,22 @@ public:
     int activeMatchIndex() const { return m_activeMatchIndex; }
     void setActiveMatchIndex(int idx);
 
-    MarkdownPalette palette() const { return m_palette; }
-    void setPalette(const MarkdownPalette &pal);
+    MdViewStyle* style() const { return m_style; }
+    void setStyle(MdViewStyle *style);
 
-    QString borderStyle() const { return m_borderStyle; }
+    MdPalette palette() const { return m_palette; }
+    void setPalette(const MdPalette &pal);
+
+    MdPalette effectivePalette() const;
+
+    QString borderStyle() const;
     void setBorderStyle(const QString &style);
+
+    bool showLineNumbers() const;
+    void setShowLineNumbers(bool show);
+
+    QString renderStyle() const;
+    void setRenderStyle(const QString &style);
 
     Q_INVOKABLE void scrollToLine(int lineIndex);
     Q_INVOKABLE void scrollBy(int delta);
@@ -62,8 +78,11 @@ signals:
     void contentHeightChanged();
     void searchQueryChanged();
     void activeMatchIndexChanged();
+    void styleChanged();
     void paletteChanged();
     void borderStyleChanged();
+    void showLineNumbersChanged();
+    void renderStyleChanged();
     void linkActivated(const QString &url);
 
 private:
@@ -76,13 +95,19 @@ private:
     void drawBorder(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect) const;
 
-    QPointer<MarkdownDocument> m_document;
+    QPointer<MdDoc> m_document;
+    QPointer<MdViewStyle> m_style;
     int m_scrollY = 0;
     QString m_searchQuery;
     int m_activeMatchIndex = 0;
 
-    MarkdownPalette m_palette;
+    MdPalette m_palette;
     QString m_borderStyle = "none";
+    bool m_showLineNumbers = false;
+    bool m_explicitShowLineNumbers = false;
+    bool m_explicitBorderStyle = false;
+    bool m_explicitPalette = false;
+
     QList<SearchMatch> m_searchMatches;
     bool m_updatingDimensions = false;
 };

@@ -10,6 +10,7 @@ qt_add_qml_module(qtui_image_demo
         image2.jpg
         panda.png
         map.png
+        qt_logo_icon_248726.webp
         
     DEPENDENCIES TARGET
         Qtui::Core

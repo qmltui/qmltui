@@ -21,26 +21,24 @@ Panel {
     Column {
         x: 1
         y: 1
-        width: parent.width - 2
-        spacing: 1
+        width: parent ? parent.width - 2 : 0
+        spacing: 0
 
-        Text {
-            text: qsTr("TOTAL DUE: $%1").arg(root.totalAmount.toFixed(2))
-            color: "#4AE183"
-            bold: true
-        }
-        Text {
-            text: qsTr("SUBTOTAL: $%1 | TAX: $%2").arg(root.subtotal.toFixed(2)).arg(root.taxAmount.toFixed(2))
-            color: "#D4E4FA"
+        Row {
+            spacing: 2
+            Text {
+                text: qsTr("TOTAL DUE: $%1").arg(root.totalAmount.toFixed(2))
+                color: "#4AE183"
+                bold: true
+            }
+            Text {
+                text: qsTr("ENTRY: $%1").arg(root.buffer)
+                color: "#FFB961"
+                bold: true
+            }
         }
 
         Text { text: "─────────────────────────────────"; color: "#273647" }
-
-        Text {
-            text: qsTr("KEYPAD ENTRY: $%1").arg(root.buffer)
-            color: "#FFB961"
-            bold: true
-        }
 
         // Keypad Grid Rows
         Row {
@@ -55,7 +53,7 @@ Panel {
             Button { label: " 4 "; normalColor: "#1c2b3c"; normalBorderStyle: "single"; onClicked: root.keyPressed("4") }
             Button { label: " 5 "; normalColor: "#1c2b3c"; normalBorderStyle: "single"; onClicked: root.keyPressed("5") }
             Button { label: " 6 "; normalColor: "#1c2b3c"; normalBorderStyle: "single"; onClicked: root.keyPressed("6") }
-            Button { label: "BS "; normalColor: "#808000"; normalBorderStyle: "single"; onClicked: root.keyPressed("BS") }
+            Button { label: " BS"; normalColor: "#808000"; normalBorderStyle: "single"; onClicked: root.keyPressed("BS") }
         }
         Row {
             spacing: 1
@@ -74,7 +72,7 @@ Panel {
         Text { text: "─────────────────────────────────"; color: "#273647" }
 
         Button {
-            label: "💳 PROCEED TO PAYMENT [F12]"
+            label: "[F12] PROCEED TO PAYMENT"
             normalColor: "#06BB63"
             textColor: "#051424"
             normalBorderStyle: "single"

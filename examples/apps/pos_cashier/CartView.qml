@@ -41,16 +41,16 @@ Item {
             Column {
                 x: 1
                 y: 1
-                width: parent.width - 2
+                width: parent ? parent.width - 2 : 0
                 spacing: 0
 
                 Row {
-                    width: parent.width
+                    width: parent ? parent.width : 0
                     spacing: 1
-                    Text { width: Math.floor(parent.width * 0.36); text: "ITEM NAME"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.16); text: "PRICE"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.22); text: "QTY ADJUST"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.22); text: "TOTAL"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.30) : 0; text: "ITEM NAME"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.14) : 0; text: "PRICE"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.34) : 0; text: "QTY ADJUST"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.18) : 0; text: "TOTAL"; color: "#80DEEA"; bold: true }
                 }
 
                 Text { text: "────────────────────────────────────────────────────────────"; color: "#273647" }
@@ -61,14 +61,14 @@ Item {
                     Row {
                         id: cRow
                         property var modelData: null
-                        width: parent.width
+                        width: parent ? parent.width : 0
                         spacing: 1
 
-                        Text { width: Math.floor(parent.width * 0.36); text: cRow.modelData ? cRow.modelData.name : ""; color: "#FFFFFF"; bold: true }
-                        Text { width: Math.floor(parent.width * 0.16); text: cRow.modelData ? "$" + cRow.modelData.price.toFixed(2) : ""; color: "#D4E4FA" }
+                        Text { width: parent ? Math.floor(parent.width * 0.30) : 0; text: cRow.modelData ? cRow.modelData.name : ""; color: "#FFFFFF"; bold: true }
+                        Text { width: parent ? Math.floor(parent.width * 0.14) : 0; text: cRow.modelData ? "$" + cRow.modelData.price.toFixed(2) : ""; color: "#D4E4FA" }
 
                         Row {
-                            width: Math.floor(parent.width * 0.22)
+                            width: parent ? Math.floor(parent.width * 0.34) : 0
                             spacing: 1
                             Button {
                                 label: "-"
@@ -97,7 +97,7 @@ Item {
                             }
                         }
 
-                        Text { width: Math.floor(parent.width * 0.22); text: cRow.modelData ? "$" + (cRow.modelData.qty * cRow.modelData.price).toFixed(2) : ""; color: "#4AE183"; bold: true }
+                        Text { width: parent ? Math.floor(parent.width * 0.18) : 0; text: cRow.modelData ? "$" + (cRow.modelData.qty * cRow.modelData.price).toFixed(2) : ""; color: "#4AE183"; bold: true }
                     }
                 }
 

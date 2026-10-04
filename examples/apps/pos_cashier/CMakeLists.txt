@@ -14,3 +14,7 @@ qt_add_qml_module(qtui_pos_cashier
 )
 
 target_link_libraries(qtui_pos_cashier PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras)
+
+if(TARGET Qtui::Testing)
+    target_link_libraries(qtui_pos_cashier PRIVATE Qtui::Testing)
+endif()

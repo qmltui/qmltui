@@ -1,6 +1,7 @@
 import Qtui.Extras
 import Qtui.Canvas
-import QtQml 2.15
+import QtQml
+import QtQml.Models
 import Qtui
 import Qtui.Controls
 import IndustrialPlcHmi
@@ -11,11 +12,8 @@ Terminal {
     color: "black"
     useAlternateScreen: true
 
-    // Active View Tab State
-    property int activeTab: 0 // 0: Dashboard, 1: Alarms, 2: Diagnostics, 3: Settings
-
-    // PLC State Variables
-    property string machineState: "idle" // idle, processing, error, maintenance
+    property int activeTab: PlcTypes.Dashboard
+    property int machineState: PlcTypes.Idle
     property int speed: 0
     property int targetSpeed: 1500
     property double temperature: 28.5
@@ -26,29 +24,40 @@ Terminal {
     property bool valveA: false
     property bool valveB: false
     property bool alarmBlinking: false
-    property string pendingAction: ""
-    
-    // Log/Status History (shows latest events)
-    property var logMessages: ["SYSTEM INITIALIZED", "STATE CHANGED TO: IDLE", "READY FOR OPERATOR COMMANDS"]
-    
-    // Temperature & Telemetry History (rolling data points for plotting and sparklines)
-    property var tempHistory: [28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5]
-    property var speedHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    property var pressureHistory: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    property int pendingAction: PlcTypes.NoAction
+    property string latestStatus: "READY FOR OPERATOR COMMANDS"
+    property int nextEventSequence: 4
+    property bool deterministicSimulation: false
+    property int deterministicNoiseIndex: 0
+    property list<real> deterministicNoise: [0.25, 0.75, 0.5, 0.9, 0.1, 0.6]
+    property list<real> tempHistory: [28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5, 28.5]
+    property list<real> speedHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    property list<real> pressureHistory: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    ListModel {
+        id: eventLog
+
+        ListElement { sequence: 1; severity: "INFO"; message: "SYSTEM INITIALIZED" }
+        ListElement { sequence: 2; severity: "INFO"; message: "STATE CHANGED TO: IDLE" }
+        ListElement { sequence: 3; severity: "INFO"; message: "READY FOR OPERATOR COMMANDS" }
+    }
+
+    onMachineStateChanged: {
+        if (!rootWindow.isKnownMachineState(rootWindow.machineState)) {
+            rootWindow.enterFault("INVALID PLC STATE DETECTED")
+        }
+    }
 
     // Mandatory Quit key handler as per workspace rule + Navigation & Control Shortcuts
     Keys.onPressed: (event) => {
         if (confirmDlg.visible) {
             if (event.key === Qt.Key_Y) {
-                executeConfirmedAction();
-                confirmDlg.visible = false;
-                event.accepted = true;
+                confirmDlg.accept()
             } else if (event.key === Qt.Key_N || event.key === Qt.Key_Escape) {
-                pendingAction = "";
-                confirmDlg.visible = false;
-                event.accepted = true;
+                confirmDlg.reject()
             }
-            return; // Modal active, ignore other keys
+            event.accepted = true
+            return
         }
 
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
@@ -59,19 +68,19 @@ Terminal {
 
         // View Tab Switching Shortcuts
         if (event.key === Qt.Key_F1 || event.key === Qt.Key_1) {
-            activeTab = 0;
+            activeTab = PlcTypes.Dashboard;
             event.accepted = true;
             return;
         } else if (event.key === Qt.Key_F2 || event.key === Qt.Key_2) {
-            activeTab = 1;
+            activeTab = PlcTypes.Alarms;
             event.accepted = true;
             return;
         } else if (event.key === Qt.Key_F3 || event.key === Qt.Key_3) {
-            activeTab = 2;
+            activeTab = PlcTypes.Diagnostics;
             event.accepted = true;
             return;
         } else if (event.key === Qt.Key_F4 || event.key === Qt.Key_4) {
-            activeTab = 3;
+            activeTab = PlcTypes.Settings;
             event.accepted = true;
             return;
         }
@@ -95,31 +104,81 @@ Terminal {
         }
     }
 
-    // Helper functions
-    function log(msg) {
-        let temp = logMessages;
-        temp.unshift(msg);
-        if (temp.length > 10) {
-            temp.pop();
+    function logEvent(severity, message) {
+        eventLog.append({
+            "sequence": rootWindow.nextEventSequence,
+            "severity": severity,
+            "message": message
+        })
+        rootWindow.nextEventSequence += 1
+        if (eventLog.count > 10) {
+            eventLog.remove(0, eventLog.count - 10)
         }
-        logMessages = temp;
+        rootWindow.latestStatus = message
     }
 
     function pushHistory(newTemp, newSpeed, newPressure) {
-        var tArr = [];
-        for (var i = 1; i < tempHistory.length; i++) tArr.push(tempHistory[i]);
-        tArr.push(newTemp);
-        tempHistory = tArr;
+        const nextTemperatures = tempHistory.slice(1)
+        nextTemperatures.push(newTemp)
+        tempHistory = nextTemperatures
 
-        var sArr = [];
-        for (var j = 1; j < speedHistory.length; j++) sArr.push(speedHistory[j]);
-        sArr.push(newSpeed);
-        speedHistory = sArr;
+        const nextSpeeds = speedHistory.slice(1)
+        nextSpeeds.push(newSpeed)
+        speedHistory = nextSpeeds
 
-        var pArr = [];
-        for (var k = 1; k < pressureHistory.length; k++) pArr.push(pressureHistory[k]);
-        pArr.push(newPressure);
-        pressureHistory = pArr;
+        const nextPressures = pressureHistory.slice(1)
+        nextPressures.push(newPressure)
+        pressureHistory = nextPressures
+    }
+
+    function simulationNoise(minimum, maximum) {
+        let unitValue = Math.random()
+        if (rootWindow.deterministicSimulation) {
+            unitValue = rootWindow.deterministicNoise[
+                        rootWindow.deterministicNoiseIndex % rootWindow.deterministicNoise.length]
+            rootWindow.deterministicNoiseIndex += 1
+        }
+        return minimum + unitValue * (maximum - minimum)
+    }
+
+    function isKnownMachineState(state) {
+        return state === PlcTypes.Idle
+                || state === PlcTypes.Processing
+                || state === PlcTypes.Error
+                || state === PlcTypes.Maintenance
+    }
+
+    function setTargetSpeed(input) {
+        const newSpeed = Number(input)
+        if (!Number.isFinite(newSpeed) || !Number.isInteger(newSpeed)
+                || newSpeed < 0 || newSpeed > 3000) {
+            logEvent("WARNING", "REJECTED RPM SETPOINT: " + input)
+            return false
+        }
+        targetSpeed = newSpeed
+        logEvent("INFO", "SET RPM -> " + newSpeed)
+        return true
+    }
+
+    function setMaxTempLimit(input) {
+        const newLimit = Number(input)
+        if (!Number.isFinite(newLimit) || newLimit < 30.0 || newLimit > 110.0) {
+            logEvent("WARNING", "REJECTED TEMP LIMIT: " + input)
+            return false
+        }
+        maxTempLimit = newLimit
+        logEvent("INFO", "LIMIT TEMP -> " + newLimit.toFixed(1) + "C")
+        return true
+    }
+
+    function enterFault(message) {
+        machineState = PlcTypes.Error
+        speed = 0
+        valveA = false
+        valveB = false
+        pendingAction = PlcTypes.NoAction
+        errorCount += 1
+        logEvent("CRITICAL", message)
     }
 
     function getPlotPoints(canvasWidth, canvasHeight) {
@@ -142,56 +201,59 @@ Terminal {
     }
 
     function triggerStart() {
-        if (machineState !== "error") {
-            machineState = "processing";
-            log("STATE: PROCESSING (START CMD)");
+        if (machineState !== PlcTypes.Error) {
+            machineState = PlcTypes.Processing
+            logEvent("INFO", "STATE: PROCESSING (START CMD)")
         }
     }
 
     function triggerStop() {
-        if (machineState !== "error") {
-            machineState = "idle";
-            log("STATE: IDLE (STOP CMD)");
+        if (machineState !== PlcTypes.Error) {
+            machineState = PlcTypes.Idle
+            valveA = false
+            valveB = false
+            logEvent("INFO", "STATE: IDLE (STOP CMD)")
         }
     }
 
     function requestReset() {
-        if (machineState === "error") {
-            pendingAction = "reset";
-            confirmDlg.title = "CLEAR FAULT ALARM";
-            confirmDlg.message = "Acknowledge and reset over-temperature alarm lockout?";
-            confirmDlg.visible = true;
-            confirmDlg.focus = true;
+        if (machineState === PlcTypes.Error) {
+            pendingAction = PlcTypes.Reset
+            confirmDlg.open("CLEAR FAULT ALARM",
+                            "Acknowledge and reset over-temperature alarm lockout?")
         }
     }
 
     function requestMaintenance() {
-        if (machineState !== "error") {
-            pendingAction = "maint";
-            confirmDlg.title = "MAINTENANCE MODE";
-            confirmDlg.message = machineState === "maintenance" 
-                ? "Exit maintenance mode and return station to IDLE?"
-                : "Switch PLC station into low-speed MAINTENANCE mode?";
-            confirmDlg.visible = true;
-            confirmDlg.focus = true;
+        if (machineState !== PlcTypes.Error) {
+            pendingAction = PlcTypes.ToggleMaintenance
+            confirmDlg.open("MAINTENANCE MODE",
+                            machineState === PlcTypes.Maintenance
+                            ? "Exit maintenance mode and return station to IDLE?"
+                            : "Switch PLC station into low-speed MAINTENANCE mode?")
         }
     }
 
     function executeConfirmedAction() {
-        if (pendingAction === "reset") {
-            machineState = "idle";
-            temperature = 35.0; // Cool down
-            log("STATE: IDLE (ALARM RESET)");
-        } else if (pendingAction === "maint") {
-            if (machineState === "maintenance") {
-                machineState = "idle";
-                log("STATE: IDLE (MAINT RUN COMPLETED)");
+        if (pendingAction === PlcTypes.Reset) {
+            machineState = PlcTypes.Idle
+            temperature = 35.0
+            logEvent("INFO", "STATE: IDLE (ALARM RESET)")
+        } else if (pendingAction === PlcTypes.ToggleMaintenance) {
+            if (machineState === PlcTypes.Maintenance) {
+                machineState = PlcTypes.Idle
+                valveA = false
+                valveB = false
+                logEvent("INFO", "STATE: IDLE (MAINT RUN COMPLETED)")
             } else {
-                machineState = "maintenance";
-                log("STATE: MAINTENANCE ACTIVE");
+                machineState = PlcTypes.Maintenance
+                speed = 150
+                valveA = true
+                valveB = false
+                logEvent("INFO", "STATE: MAINTENANCE ACTIVE")
             }
         }
-        pendingAction = "";
+        pendingAction = PlcTypes.NoAction
     }
 
     // Telemetry & States Simulation Timer
@@ -201,7 +263,7 @@ Terminal {
         running: true
         repeat: true
         onTriggered: {
-            if (rootWindow.machineState === "processing") {
+            if (rootWindow.machineState === PlcTypes.Processing) {
                 rootWindow.cycles += 1;
                 
                 // Ramp speed up towards setpoint
@@ -213,10 +275,15 @@ Terminal {
                 
                 // Temp goes up based on speed
                 let tempFactor = (rootWindow.speed / 1000.0) * 1.8;
-                rootWindow.temperature = Math.min(110.0, rootWindow.temperature + tempFactor + (Math.random() * 1.5 - 0.5));
+                rootWindow.temperature = Math.min(
+                            110.0,
+                            rootWindow.temperature + tempFactor
+                            + rootWindow.simulationNoise(-0.5, 1.0))
                 
                 // Pressure fluctuates relative to temp
-                rootWindow.pressure = 1.0 + (rootWindow.temperature - 25.0) * 0.06 + (Math.random() * 0.1 - 0.05);
+                rootWindow.pressure = 1.0
+                        + (rootWindow.temperature - 25.0) * 0.06
+                        + rootWindow.simulationNoise(-0.05, 0.05)
                 
                 // Valve simulation sequence
                 rootWindow.valveA = (rootWindow.cycles % 8 < 4);
@@ -224,11 +291,10 @@ Terminal {
 
                 // Check safety limit
                 if (rootWindow.temperature >= rootWindow.maxTempLimit) {
-                    rootWindow.machineState = "error";
-                    rootWindow.errorCount += 1;
-                    rootWindow.log("ALARM: OVER-TEMPERATURE FAULT!");
+                    rootWindow.enterFault("OVER-TEMPERATURE FAULT")
                 }
-            } else if (rootWindow.machineState === "idle" || rootWindow.machineState === "error") {
+            } else if (rootWindow.machineState === PlcTypes.Idle
+                       || rootWindow.machineState === PlcTypes.Error) {
                 // Decay/Cool down
                 if (rootWindow.speed > 0) {
                     rootWindow.speed = Math.max(0, rootWindow.speed - 350);
@@ -241,7 +307,7 @@ Terminal {
                 }
                 rootWindow.valveA = false;
                 rootWindow.valveB = false;
-            } else if (rootWindow.machineState === "maintenance") {
+            } else if (rootWindow.machineState === PlcTypes.Maintenance) {
                 // Maintenance low speed check
                 rootWindow.speed = 150;
                 rootWindow.temperature = 31.0;
@@ -251,15 +317,20 @@ Terminal {
             }
 
             // Periodic operational logging
-            if (rootWindow.machineState === "processing" && rootWindow.cycles % 5 === 0) {
-                rootWindow.log("PROCESS CYCLE " + rootWindow.cycles + " | T: " + rootWindow.temperature.toFixed(1) + "C");
+            if (rootWindow.machineState === PlcTypes.Processing
+                    && rootWindow.cycles % 5 === 0) {
+                rootWindow.logEvent(
+                            "INFO",
+                            "PROCESS CYCLE " + rootWindow.cycles + " | T: "
+                            + rootWindow.temperature.toFixed(1) + "C")
             }
 
             // Push to telemetry history
             rootWindow.pushHistory(rootWindow.temperature, rootWindow.speed, rootWindow.pressure);
 
             // Update Braille Plot points
-            if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+            if (rootWindow.activeTab === PlcTypes.Dashboard
+                    && tempCanvas.width > 0 && tempCanvas.height > 0) {
                 tempCanvas.updatePlot();
             }
         }
@@ -269,7 +340,7 @@ Terminal {
     Timer {
         id: blinkTimer
         interval: 500
-        running: rootWindow.machineState === "error"
+        running: rootWindow.machineState === PlcTypes.Error
         repeat: true
         onTriggered: {
             rootWindow.alarmBlinking = !rootWindow.alarmBlinking;
@@ -280,9 +351,12 @@ Terminal {
     Rectangle {
         id: mainRect
         anchors.fill: parent
-        color: rootWindow.machineState === "error" 
-               ? (rootWindow.alarmBlinking ? HmiTheme.bgError : HmiTheme.bgErrorAlt) 
-               : (rootWindow.machineState === "maintenance" ? HmiTheme.bgMaintenance : (rootWindow.machineState === "processing" ? HmiTheme.bgProcessing : HmiTheme.bgIdle))
+        color: rootWindow.machineState === PlcTypes.Error
+               ? (rootWindow.alarmBlinking ? HmiTheme.bgError : HmiTheme.bgErrorAlt)
+               : (rootWindow.machineState === PlcTypes.Maintenance
+                  ? HmiTheme.bgMaintenance
+                  : (rootWindow.machineState === PlcTypes.Processing
+                     ? HmiTheme.bgProcessing : HmiTheme.bgIdle))
 
         // 1. HEADER PANEL
         HeaderPanel {
@@ -305,19 +379,17 @@ Terminal {
         }
 
         // 3. MAIN CONTENT VIEW STACK
-        Rectangle {
+        Item {
             id: viewContainer
             anchors.top: navBar.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: footerPanel.top
-            color: "transparent"
 
             // VIEW 0: MAIN DASHBOARD VIEW
-            Rectangle {
+            Item {
                 anchors.fill: parent
-                visible: rootWindow.activeTab === 0
-                color: "transparent"
+                visible: rootWindow.activeTab === PlcTypes.Dashboard
 
                 // SIDEBAR TELEMETRY PANEL (LEFT)
                 Rectangle {
@@ -332,7 +404,7 @@ Terminal {
                     Column {
                         anchors.fill: parent
                         anchors.margins: 1
-                        spacing: 1
+                        spacing: 0
 
                         Text {
                             text: "📊 TELEMETRY & GAUGES"
@@ -410,51 +482,51 @@ Terminal {
                             ActuatorLed { name: "V-B"; active: rootWindow.valveB }
                         }
 
-                        // Animated conveyor flow pulse
-                        Rectangle {
+                        Item {
                             id: conveyorPulseRect
+                            property int pulseFrame: 0
+                            readonly property list<string> flowFrames: [">  ", ">> ", ">>>", " >>", "  >", "   "]
+
                             width: parent.width
                             height: 1
-                            color: "transparent"
 
-                            property real pulsePos: 0
-                            NumberAnimation {
-                                target: conveyorPulseRect
-                                property: "pulsePos"
-                                running: rootWindow.machineState === "processing" || rootWindow.machineState === "maintenance"
-                                from: 0
-                                to: 10
-                                duration: rootWindow.machineState === "maintenance" ? 2000 : 800
-                                loops: -1
+                            Timer {
+                                interval: rootWindow.machineState === PlcTypes.Maintenance ? 500 : 125
+                                running: rootWindow.activeTab === PlcTypes.Dashboard
+                                         && (rootWindow.machineState === PlcTypes.Processing
+                                             || rootWindow.machineState === PlcTypes.Maintenance)
+                                repeat: true
+                                onTriggered: conveyorPulseRect.pulseFrame += 1
                             }
 
                             Text {
                                 anchors.centerIn: parent
                                 text: {
-                                    if (rootWindow.machineState === "processing") {
-                                        let chars = [">  ", ">> ", ">>>", " >>", "  >", "   ", ">  ", ">> ", ">>>", " >>"];
-                                        return "[ FLOW: " + chars[parent.pulsePos % chars.length] + " ]";
-                                    } else if (rootWindow.machineState === "maintenance") {
-                                        return "[ MAINT: " + (parent.pulsePos % 2 === 0 ? "◧" : "◨") + " ]";
-                                    } else if (rootWindow.machineState === "error") {
+                                    if (rootWindow.machineState === PlcTypes.Processing) {
+                                        return "[ FLOW: " + conveyorPulseRect.flowFrames[
+                                                    conveyorPulseRect.pulseFrame
+                                                    % conveyorPulseRect.flowFrames.length] + " ]"
+                                    } else if (rootWindow.machineState === PlcTypes.Maintenance) {
+                                        return "[ MAINT: " + (conveyorPulseRect.pulseFrame % 2 === 0
+                                                               ? "◧" : "◨") + " ]"
+                                    } else if (rootWindow.machineState === PlcTypes.Error) {
                                         return "[ 🛑 LOCKED ]";
                                     } else {
                                         return "[ ■ IDLE ]";
                                     }
                                 }
-                                color: rootWindow.machineState === "processing" ? HmiTheme.textSuccess : (rootWindow.machineState === "error" ? HmiTheme.textDanger : HmiTheme.textDim)
+                                color: rootWindow.machineState === PlcTypes.Processing ? HmiTheme.textSuccess : (rootWindow.machineState === PlcTypes.Error ? HmiTheme.textDanger : HmiTheme.textDim)
                                 bold: true
                             }
                         }
 
                         Text {
-                            text: "📈 METRICS"
-                            color: HmiTheme.textSecondary
-                            bold: true
+                            text: "Cycles: " + rootWindow.cycles
+                                  + " | Alarms: " + rootWindow.errorCount
+                            color: rootWindow.errorCount > 0
+                                   ? HmiTheme.textDanger : HmiTheme.textPrimary
+                            bold: rootWindow.errorCount > 0
                         }
-
-                        Text { text: "Cycles: " + rootWindow.cycles; color: HmiTheme.textPrimary }
-                        Text { text: "Alarms: " + rootWindow.errorCount; color: rootWindow.errorCount > 0 ? HmiTheme.textDanger : HmiTheme.textPrimary; bold: rootWindow.errorCount > 0 }
                     }
                 }
 
@@ -468,10 +540,10 @@ Terminal {
                     border.style: "single"
                     border.color: HmiTheme.borderNormal
 
-                    Column {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        spacing: 1
+            Column {
+                anchors.fill: parent
+                anchors.margins: 1
+                spacing: 0
 
                         Text {
                             text: "📈 TEMP TREND (20-100°C)"
@@ -484,10 +556,9 @@ Terminal {
                             color: rootWindow.temperature >= rootWindow.maxTempLimit ? HmiTheme.textDanger : HmiTheme.textHighlight
                         }
 
-                        Rectangle {
-                            width: parent.width
-                            height: Math.max(5, parent.height - 4)
-                            color: "transparent"
+                Item {
+                    width: parent.width
+                    height: Math.max(3, parent.height - 3)
 
                             Row {
                                 anchors.fill: parent
@@ -522,7 +593,10 @@ Terminal {
                                         id: tempCanvas
                                         anchors.fill: parent
                                         anchors.margins: 1
-                                        color: rootWindow.machineState === "error" ? HmiTheme.statusError : (rootWindow.machineState === "processing" ? HmiTheme.textHighlight : HmiTheme.statusIdle)
+                            color: rootWindow.machineState === PlcTypes.Error
+                                   ? HmiTheme.statusError
+                                   : (rootWindow.machineState === PlcTypes.Processing
+                                      ? HmiTheme.textHighlight : HmiTheme.statusIdle)
 
                                         onWidthChanged: updatePlot()
                                         onHeightChanged: updatePlot()
@@ -572,16 +646,10 @@ Terminal {
                     border.style: "single"
                     border.color: HmiTheme.borderNormal
 
-                    Column {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        spacing: 1
-
-                        Text {
-                            text: "🛠️ CONTROLS"
-                            color: HmiTheme.textSecondary
-                            bold: true
-                        }
+            Column {
+                anchors.fill: parent
+                anchors.margins: 1
+                spacing: 0
 
                         Text { text: "RPM Setpoint:"; color: HmiTheme.textPrimary }
                         Rectangle {
@@ -590,16 +658,16 @@ Terminal {
                             border.style: rpmInput.activeFocus ? "double" : "single"
                             border.color: rpmInput.activeFocus ? HmiTheme.borderFocus : HmiTheme.borderNormal
 
-                            TextInput {
-                                id: rpmInput
+                    TextInput {
+                        id: rpmInput
                                 anchors.fill: parent
                                 anchors.margins: 1
                                 text: rootWindow.targetSpeed.toString()
-                                color: HmiTheme.textPrimary
-                                onAccepted: {
-                                    rootWindow.targetSpeed = parseInt(rpmInput.text);
-                                    rootWindow.log("SET RPM -> " + rpmInput.text);
-                                }
+                        color: HmiTheme.textPrimary
+                        onAccepted: {
+                            rootWindow.setTargetSpeed(rpmInput.text)
+                            rpmInput.text = rootWindow.targetSpeed.toString()
+                        }
                             }
                         }
 
@@ -615,11 +683,11 @@ Terminal {
                                 anchors.fill: parent
                                 anchors.margins: 1
                                 text: rootWindow.maxTempLimit.toString()
-                                color: HmiTheme.textPrimary
-                                onAccepted: {
-                                    rootWindow.maxTempLimit = parseFloat(tempLimitInput.text);
-                                    rootWindow.log("LIMIT TEMP -> " + tempLimitInput.text + "C");
-                                }
+                        color: HmiTheme.textPrimary
+                        onAccepted: {
+                            rootWindow.setMaxTempLimit(tempLimitInput.text)
+                            tempLimitInput.text = rootWindow.maxTempLimit.toString()
+                        }
                             }
                         }
 
@@ -634,7 +702,7 @@ Terminal {
                                 normalColor: "#1e3a1e"
                                 focusColor: "#2e5a2e"
                                 textColor: HmiTheme.textSuccess
-                                onClicked: triggerStart()
+                        onClicked: rootWindow.triggerStart()
                             }
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
@@ -643,7 +711,7 @@ Terminal {
                                 normalColor: "#3a1e1e"
                                 focusColor: "#5a2e2e"
                                 textColor: HmiTheme.textDanger
-                                onClicked: triggerStop()
+                        onClicked: rootWindow.triggerStop()
                             }
                         }
 
@@ -658,7 +726,7 @@ Terminal {
                                 normalColor: "#3a301e"
                                 focusColor: "#5a482e"
                                 textColor: HmiTheme.textWarning
-                                onClicked: requestReset()
+                        onClicked: rootWindow.requestReset()
                             }
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
@@ -667,7 +735,7 @@ Terminal {
                                 normalColor: "#21252b"
                                 focusColor: "#2c313a"
                                 textColor: HmiTheme.textHighlight
-                                onClicked: requestMaintenance()
+                        onClicked: rootWindow.requestMaintenance()
                             }
                         }
                     }
@@ -676,14 +744,14 @@ Terminal {
 
             // VIEW 1: ALARMS & LOGS
             AlarmsView {
-                visible: rootWindow.activeTab === 1
-                logs: rootWindow.logMessages
+                visible: rootWindow.activeTab === PlcTypes.Alarms
+                eventModel: eventLog
                 errorCount: rootWindow.errorCount
             }
 
             // VIEW 2: HARDWARE DIAGNOSTICS
             DiagnosticsView {
-                visible: rootWindow.activeTab === 2
+                visible: rootWindow.activeTab === PlcTypes.Diagnostics
                 cycles: rootWindow.cycles
                 valveA: rootWindow.valveA
                 valveB: rootWindow.valveB
@@ -692,17 +760,11 @@ Terminal {
 
             // VIEW 3: SYSTEM PARAMETERS & SETTINGS
             SettingsView {
-                visible: rootWindow.activeTab === 3
+                visible: rootWindow.activeTab === PlcTypes.Settings
                 targetSpeed: rootWindow.targetSpeed
                 maxTempLimit: rootWindow.maxTempLimit
-                onSpeedChanged: (newSpeed) => {
-                    rootWindow.targetSpeed = newSpeed;
-                    rootWindow.log("SET RPM -> " + newSpeed);
-                }
-                onTempLimitChanged: (newLimit) => {
-                    rootWindow.maxTempLimit = newLimit;
-                    rootWindow.log("LIMIT TEMP -> " + newLimit + "C");
-                }
+                onTargetSpeedRequested: (input) => rootWindow.setTargetSpeed(input)
+                onTempLimitRequested: (input) => rootWindow.setMaxTempLimit(input)
             }
         }
 
@@ -714,8 +776,8 @@ Terminal {
             anchors.left: parent.left
             anchors.right: parent.right
             border.style: "single"
-            border.color: rootWindow.machineState === "error" ? HmiTheme.borderError : HmiTheme.borderNormal
-            color: rootWindow.machineState === "error" ? HmiTheme.footerBgError : HmiTheme.footerBg
+            border.color: rootWindow.machineState === PlcTypes.Error ? HmiTheme.borderError : HmiTheme.borderNormal
+            color: rootWindow.machineState === PlcTypes.Error ? HmiTheme.footerBgError : HmiTheme.footerBg
 
             Column {
                 anchors.fill: parent
@@ -724,20 +786,20 @@ Terminal {
 
                 Text {
                     width: parent.width
-                    text: rootWindow.machineState === "error"
+                    text: rootWindow.machineState === PlcTypes.Error
                           ? "🚨 CRITICAL FAULT: OVER-TEMP LIMIT (" + rootWindow.temperature.toFixed(1) + "°C >= " + rootWindow.maxTempLimit.toFixed(1) + "°C)"
-                          : "STATUS: " + rootWindow.logMessages[0]
-                    color: rootWindow.machineState === "error" ? HmiTheme.textWarning : HmiTheme.textPrimary
+                          : "STATUS: " + rootWindow.latestStatus
+                    color: rootWindow.machineState === PlcTypes.Error ? HmiTheme.textWarning : HmiTheme.textPrimary
                     bold: true
                 }
 
                 Text {
                     width: parent.width
-                    text: rootWindow.machineState === "error"
+                    text: rootWindow.machineState === PlcTypes.Error
                           ? "ACTION: PRESS [R] / RESET BUTTON TO CLEAR ALARM LOCKOUT"
                           : "KEYS: [F1-F4] Views  [S]Start  [X]Stop  [R]Reset  [M]Maint  [Q]Quit"
-                    color: rootWindow.machineState === "error" ? HmiTheme.textDanger : HmiTheme.textSecondary
-                    bold: rootWindow.machineState === "error"
+                    color: rootWindow.machineState === PlcTypes.Error ? HmiTheme.textDanger : HmiTheme.textSecondary
+                    bold: rootWindow.machineState === PlcTypes.Error
                 }
             }
         }
@@ -745,8 +807,8 @@ Terminal {
         // 5. MODAL SAFETY INTERLOCK DIALOG
         ConfirmDialog {
             id: confirmDlg
-            onConfirmed: executeConfirmedAction()
-            onCancelled: rootWindow.pendingAction = ""
+            onConfirmed: rootWindow.executeConfirmedAction()
+            onCancelled: rootWindow.pendingAction = PlcTypes.NoAction
         }
     }
 }

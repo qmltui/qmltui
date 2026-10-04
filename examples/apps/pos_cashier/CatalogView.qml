@@ -5,8 +5,8 @@ import Qtui.Controls
 Item {
     id: root
     property var products: []
-    property string currentCategory: "ALL"
     property var cartItems: []
+    property string currentCategory: "ALL"
     property double totalAmount: 0.0
     property double subtotal: 0.0
     property double taxAmount: 0.0
@@ -19,14 +19,15 @@ Item {
     signal viewCartRequested()
     signal categorySelected(string category)
 
-    // Left Side: Category Bar & Product Catalog Grid (68% width)
+    // Left Side: Catalog & Product Grid (64% width)
     Item {
         id: catalogLeft
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: Math.floor(parent.width * 0.68)
+        width: Math.floor(parent.width * 0.64)
 
+        // Category Tabs Panel
         Panel {
             id: categoryPanel
             anchors.top: parent.top
@@ -44,56 +45,43 @@ Item {
                 spacing: 1
 
                 Button {
-                    label: root.currentCategory === "ALL" ? "[ ALL ]" : " ALL "
+                    label: root.currentCategory === "ALL" ? "[ ALL ]" : "  ALL  "
                     normalColor: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "ALL" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "ALL" ? "double" : "single"
+                    normalBorderStyle: "single"
                     onClicked: root.categorySelected("ALL")
                 }
                 Button {
                     label: root.currentCategory === "COFFEE" ? "[ COFFEE ]" : " COFFEE "
                     normalColor: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "COFFEE" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "COFFEE" ? "double" : "single"
+                    normalBorderStyle: "single"
                     onClicked: root.categorySelected("COFFEE")
                 }
                 Button {
                     label: root.currentCategory === "PASTRIES" ? "[ PASTRIES ]" : " PASTRIES "
                     normalColor: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "PASTRIES" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "PASTRIES" ? "double" : "single"
+                    normalBorderStyle: "single"
                     onClicked: root.categorySelected("PASTRIES")
                 }
                 Button {
                     label: root.currentCategory === "TEA" ? "[ TEA ]" : " TEA "
                     normalColor: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "TEA" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "TEA" ? "double" : "single"
+                    normalBorderStyle: "single"
                     onClicked: root.categorySelected("TEA")
-                }
-                Button {
-                    label: root.currentCategory === "COLD DRINKS" ? "[ COLD DRINKS ]" : " COLD DRINKS "
-                    normalColor: root.currentCategory === "COLD DRINKS" ? "#06BB63" : "#1c2b3c"
-                    textColor: root.currentCategory === "COLD DRINKS" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "COLD DRINKS" ? "double" : "single"
-                    onClicked: root.categorySelected("COLD DRINKS")
-                }
-                Button {
-                    label: root.currentCategory === "MERCHANDISE" ? "[ MERCH ]" : " MERCH "
-                    normalColor: root.currentCategory === "MERCHANDISE" ? "#06BB63" : "#1c2b3c"
-                    textColor: root.currentCategory === "MERCHANDISE" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: root.currentCategory === "MERCHANDISE" ? "double" : "single"
-                    onClicked: root.categorySelected("MERCHANDISE")
                 }
             }
         }
 
+        // Product Catalog Grid Panel
         Panel {
-            id: catalogGridPanel
+            id: productPanel
             anchors.top: categoryPanel.bottom
-            anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.bottom: parent.bottom
             color: "#051424"
             border.color: "#273647"
             title: qsTr("📦 PRODUCT CATALOG (%1)").arg(root.currentCategory)
@@ -102,42 +90,43 @@ Item {
             Column {
                 x: 1
                 y: 1
-                width: parent.width - 2
+                width: parent ? parent.width - 2 : 0
                 spacing: 0
 
                 // Grid header
                 Row {
-                    width: parent.width
+                    width: parent ? parent.width : 0
                     spacing: 1
-                    Text { width: Math.floor(parent.width * 0.12); text: "SKU"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.38); text: "PRODUCT NAME"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.18); text: "CATEGORY"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.14); text: "PRICE"; color: "#80DEEA"; bold: true }
-                    Text { width: Math.floor(parent.width * 0.15); text: "ACTION"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.10) : 0; text: "SKU"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.36) : 0; text: "PRODUCT NAME"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.16) : 0; text: "CATEGORY"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.14) : 0; text: "PRICE"; color: "#80DEEA"; bold: true }
+                    Text { width: parent ? Math.floor(parent.width * 0.22) : 0; text: "ACTION"; color: "#80DEEA"; bold: true }
                 }
 
                 Text {
-                    width: parent.width
+                    width: parent ? parent.width : 0
                     text: "────────────────────────────────────────────────────────────────────────────"
                     color: "#273647"
                 }
 
-                // Product items list
+                // Product items list (bounded to 6 items to fit inside workspace)
                 Repeater {
-                    model: root.products
+                    model: root.products.filter(p => root.currentCategory === "ALL" || p.category === root.currentCategory).slice(0, 6)
 
                     Row {
                         id: prodRow
-                        property var modelData: null
-                        visible: (root.currentCategory === "ALL" || (modelData && modelData.category === root.currentCategory))
-                        width: parent.width
+                        property var modelData: modelData
+                        width: parent ? parent.width : 0
                         spacing: 1
 
-                        Text { width: Math.floor(parent.width * 0.12); text: prodRow.modelData ? prodRow.modelData.sku : ""; color: "#8F9094" }
-                        Text { width: Math.floor(parent.width * 0.38); text: prodRow.modelData ? prodRow.modelData.name + " (" + prodRow.modelData.detail + ")" : ""; color: "#FFFFFF"; bold: true }
-                        Text { width: Math.floor(parent.width * 0.18); text: prodRow.modelData ? prodRow.modelData.category : ""; color: "#FFB961" }
-                        Text { width: Math.floor(parent.width * 0.14); text: prodRow.modelData ? "$" + prodRow.modelData.price.toFixed(2) : ""; color: "#4AE183"; bold: true }
+                        Text { width: parent ? Math.floor(parent.width * 0.10) : 0; text: prodRow.modelData ? prodRow.modelData.sku : ""; color: "#8F9094" }
+                        Text { width: parent ? Math.floor(parent.width * 0.36) : 0; text: prodRow.modelData ? prodRow.modelData.name : ""; color: "#FFFFFF"; bold: true }
+                        Text { width: parent ? Math.floor(parent.width * 0.16) : 0; text: prodRow.modelData ? prodRow.modelData.category : ""; color: "#FFB961" }
+                        Text { width: parent ? Math.floor(parent.width * 0.14) : 0; text: prodRow.modelData ? "$" + prodRow.modelData.price.toFixed(2) : ""; color: "#4AE183"; bold: true }
                         Button {
+                            height: 1
+                            width: parent ? Math.floor(parent.width * 0.22) : 0
                             label: "+ ADD"
                             normalColor: "#1c2b3c"
                             textColor: "#4AE183"
@@ -155,7 +144,7 @@ Item {
         }
     }
 
-    // Right Side: Cart Summary & Quick Action Panel (32% width)
+    // Right Side: Cart Summary & Quick Action Panel (36% width)
     Item {
         id: catalogRight
         anchors.top: parent.top
@@ -168,7 +157,7 @@ Item {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            height: Math.min(15, parent.height)
             color: "#0d1c2d"
             border.color: "#273647"
             title: qsTr("🛒 CURRENT CART (%1)").arg(root.itemCount)
@@ -177,8 +166,8 @@ Item {
             Column {
                 x: 1
                 y: 1
-                width: parent.width - 2
-                spacing: 1
+                width: parent ? parent.width - 2 : 0
+                spacing: 0
 
                 Text {
                     text: qsTr("TOTAL: $%1").arg(root.totalAmount.toFixed(2))
@@ -186,17 +175,8 @@ Item {
                     bold: true
                 }
                 Text {
-                    text: qsTr("SUBTOTAL: $%1").arg(root.subtotal.toFixed(2))
+                    text: qsTr("SUBTOTAL: $%1 | TAX: $%2").arg(root.subtotal.toFixed(2)).arg(root.taxAmount.toFixed(2))
                     color: "#D4E4FA"
-                }
-                Text {
-                    text: qsTr("TAX (8.5%): $%1").arg(root.taxAmount.toFixed(2))
-                    color: "#8F9094"
-                }
-                Text {
-                    visible: root.discountRate > 0
-                    text: qsTr("DISCOUNT: -$%1").arg(root.discountAmount.toFixed(2))
-                    color: "#F48FB1"
                 }
 
                 Text { text: "─────────────────────────────────"; color: "#273647" }
@@ -219,7 +199,7 @@ Item {
                     }
                 }
 
-                Text { text: ""; height: 1 }
+                Text { text: "─────────────────────────────────"; color: "#273647" }
                 Text { text: qsTr("QUICK CART ITEMS:"); color: "#80DEEA"; bold: true }
 
                 Repeater {
@@ -228,12 +208,12 @@ Item {
                     Row {
                         id: qRow
                         property var modelData: null
-                        width: parent.width
+                        width: parent ? parent.width : 0
                         spacing: 1
 
-                        Text { width: Math.floor(parent.width * 0.50); text: qRow.modelData ? qRow.modelData.name : ""; color: "#FFFFFF" }
-                        Text { width: Math.floor(parent.width * 0.18); text: qRow.modelData ? "x" + qRow.modelData.qty : ""; color: "#FFB961" }
-                        Text { width: Math.floor(parent.width * 0.28); text: qRow.modelData ? "$" + (qRow.modelData.qty * qRow.modelData.price).toFixed(2) : ""; color: "#4AE183" }
+                        Text { width: parent ? Math.floor(parent.width * 0.50) : 0; text: qRow.modelData ? qRow.modelData.name : ""; color: "#FFFFFF" }
+                        Text { width: parent ? Math.floor(parent.width * 0.18) : 0; text: qRow.modelData ? "x" + qRow.modelData.qty : ""; color: "#FFB961" }
+                        Text { width: parent ? Math.floor(parent.width * 0.28) : 0; text: qRow.modelData ? "$" + (qRow.modelData.qty * qRow.modelData.price).toFixed(2) : ""; color: "#4AE183" }
                     }
                 }
 

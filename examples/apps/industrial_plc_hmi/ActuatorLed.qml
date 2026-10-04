@@ -1,6 +1,6 @@
-import QtQml 2.15
+import QtQml
 import Qtui
-import IndustrialPlcHmi 1.0
+import IndustrialPlcHmi
 
 Rectangle {
     id: root

@@ -22,6 +22,9 @@ Terminal {
     property int foodX: 0
     property int foodY: 0
     property bool foodPulse: false
+    property alias snakeModel: snakeModel
+    readonly property int headX: snakeModel.count > 0 ? snakeModel.get(0).cellX : 0
+    readonly property int headY: snakeModel.count > 0 ? snakeModel.get(0).cellY : 0
 
     property string direction: "right"
     property var directionQueue: []

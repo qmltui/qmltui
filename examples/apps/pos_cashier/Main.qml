@@ -108,33 +108,42 @@ Terminal {
     }
 
     function addItem(prod) {
-        let items = Array.from(cartItems);
-        let found = false;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].id === prod.id || items[i].sku === prod.sku) {
-                items[i].qty += 1;
-                found = true;
-                break;
+        Qt.callLater(function() {
+            let items = Array.from(cartItems);
+            let found = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].id === prod.id || items[i].sku === prod.sku) {
+                    items[i].qty += 1;
+                    found = true;
+                    break;
+                }
             }
-        }
-        if (!found) items.push({ id: prod.id, sku: prod.sku, name: prod.name, price: prod.price, qty: 1 });
-        cartItems = items;
-        statusNotification = qsTr("Added %1 to cart").arg(prod.name);
+            if (!found) items.push({ id: prod.id, sku: prod.sku, name: prod.name, price: prod.price, qty: 1 });
+            cartItems = items;
+            statusNotification = qsTr("Added %1 to cart").arg(prod.name);
+        });
     }
 
     function updateQty(sku, delta) {
-        let items = Array.from(cartItems);
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].sku === sku) {
-                items[i].qty += delta;
-                if (items[i].qty <= 0) items.splice(i, 1);
-                break;
+        Qt.callLater(function() {
+            let items = Array.from(cartItems);
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].sku === sku) {
+                    items[i].qty += delta;
+                    if (items[i].qty <= 0) items.splice(i, 1);
+                    break;
+                }
             }
-        }
-        cartItems = items;
+            cartItems = items;
+        });
     }
 
-    function clearCart() { cartItems = []; statusNotification = qsTr("Cart cleared"); }
+    function clearCart() {
+        Qt.callLater(function() {
+            cartItems = [];
+            statusNotification = qsTr("Cart cleared");
+        });
+    }
     function applyDiscount(rate) { discountRate = rate; statusNotification = rate > 0 ? qsTr("Applied %1% discount").arg(Math.round(rate * 100)) : qsTr("Discount removed"); }
 
     function handleKeypadPress(key) {
@@ -146,7 +155,7 @@ Terminal {
 
     function addCustomItem() {
         let priceVal = parseFloat(keypadBuffer);
-        if (!isNaN(priceVal) && priceVal > 0) {
+        if (!isNaN(priceVal) && isFinite(priceVal) && priceVal > 0) {
             addItem({ id: "CUST_" + Math.floor(Math.random() * 1000), sku: "99" + Math.floor(Math.random() * 80 + 10), name: "Custom Item", price: priceVal });
             keypadBuffer = "0.00";
         }
@@ -160,7 +169,19 @@ Terminal {
     }
 
     function processPayment() {
-        lastPaidAmount = getTotalAmount();
+        let total = getTotalAmount();
+        if (cartItems.length === 0 || total <= 0) {
+            statusNotification = qsTr("Cannot process payment for empty order!");
+            return;
+        }
+        let tendered = parseFloat(cashTenderedText);
+        if (paymentMethod === "CASH") {
+            if (isNaN(tendered) || !isFinite(tendered) || tendered < total) {
+                statusNotification = qsTr("Payment failed: Tendered ($%1) is less than total ($%2)").arg(isNaN(tendered) ? "0.00" : tendered.toFixed(2)).arg(total.toFixed(2));
+                return;
+            }
+        }
+        lastPaidAmount = total;
         lastPaymentMethod = paymentMethod;
         lastTransactionId = "POS-2026-" + Math.floor(1000 + Math.random() * 9000);
         lastAuthCode = "XP-" + Math.floor(1000 + Math.random() * 9000);
@@ -169,23 +190,30 @@ Terminal {
     }
 
     function resetNewSale() {
-        clearCart();
-        discountRate = 0.0;
-        keypadBuffer = "0.00";
-        rootWindow.state = "catalog";
-        statusNotification = qsTr("New sale started.");
+        Qt.callLater(function() {
+            cartItems = [];
+            discountRate = 0.0;
+            keypadBuffer = "0.00";
+            rootWindow.state = "catalog";
+            statusNotification = qsTr("New sale started.");
+        });
     }
 
     // MANDATORY Keys.onPressed block per AGENTS.md rule
     Keys.onPressed: (event) => {
-        if (rootWindow.state === "payment" || rootWindow.state === "receipt") {
-            if (event.key === Qt.Key_Escape) { rootWindow.state = "cart"; event.accepted = true; return; }
-            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                if (rootWindow.state === "payment") processPayment();
-                else if (rootWindow.state === "receipt") resetNewSale();
-                event.accepted = true;
-                return;
-            }
+        if (rootWindow.state === "payment") {
+            if (event.key === Qt.Key_1) { paymentMethod = "CASH"; event.accepted = true; return; }
+            else if (event.key === Qt.Key_2) { paymentMethod = "CARD"; event.accepted = true; return; }
+            else if (event.key === Qt.Key_3) { paymentMethod = "MOBILE"; event.accepted = true; return; }
+            else if (event.key === Qt.Key_4) { paymentMethod = "SPLIT"; event.accepted = true; return; }
+            else if (event.key === Qt.Key_Escape) { rootWindow.state = "cart"; event.accepted = true; return; }
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) { processPayment(); event.accepted = true; return; }
+            event.accepted = true;
+            return;
+        } else if (rootWindow.state === "receipt") {
+            if (event.key === Qt.Key_Escape || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) { resetNewSale(); event.accepted = true; return; }
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) { Qt.quit(); event.accepted = true; return; }
         if (event.key === Qt.Key_F1) { clearCart(); event.accepted = true; }
@@ -215,21 +243,29 @@ Terminal {
                 normalColor: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "catalog" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "catalog" ? "double" : "single"
-                onClicked: rootWindow.state = "catalog"
+                onClicked: {
+                    if (rootWindow.state === "receipt") resetNewSale();
+                    else rootWindow.state = "catalog";
+                }
             }
             Button {
                 label: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(getItemCount()) : qsTr(" 2 CART (%1) ").arg(getItemCount())
                 normalColor: rootWindow.state === "cart" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "cart" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "cart" ? "double" : "single"
-                onClicked: rootWindow.state = "cart"
+                onClicked: {
+                    if (rootWindow.state === "receipt") resetNewSale();
+                    else rootWindow.state = "cart";
+                }
             }
             Button {
                 label: rootWindow.state === "payment" ? "[ 3 PAYMENT ]" : " 3 PAYMENT "
                 normalColor: rootWindow.state === "payment" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "payment" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "payment" ? "double" : "single"
-                onClicked: goToCheckout()
+                onClicked: {
+                    if (rootWindow.state !== "receipt") goToCheckout();
+                }
             }
             Button {
                 visible: rootWindow.state === "receipt"
@@ -274,6 +310,7 @@ Terminal {
         CatalogView {
             id: catalogView
             anchors.fill: parent
+            visible: rootWindow.state === "catalog"
             products: rootWindow.products
             currentCategory: rootWindow.currentCategory
             cartItems: rootWindow.cartItems
@@ -293,6 +330,7 @@ Terminal {
         CartView {
             id: cartView
             anchors.fill: parent
+            visible: rootWindow.state === "cart"
             cartItems: rootWindow.cartItems
             totalAmount: rootWindow.getTotalAmount()
             subtotal: rootWindow.getSubtotal()
@@ -312,6 +350,7 @@ Terminal {
         PaymentView {
             id: paymentView
             anchors.fill: parent
+            visible: rootWindow.state === "payment"
             totalAmount: rootWindow.getTotalAmount()
             itemCount: rootWindow.getItemCount()
             paymentMethod: rootWindow.paymentMethod
@@ -326,6 +365,7 @@ Terminal {
         SuccessView {
             id: successView
             anchors.fill: parent
+            visible: rootWindow.state === "receipt"
             transactionId: rootWindow.lastTransactionId
             paidAmount: rootWindow.lastPaidAmount
             paymentMethod: rootWindow.lastPaymentMethod

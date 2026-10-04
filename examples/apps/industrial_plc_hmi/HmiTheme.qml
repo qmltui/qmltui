@@ -1,41 +1,42 @@
 pragma Singleton
-import QtQml 2.15
+import QtQml
 
 QtObject {
-    // Semantic Palette
-    readonly property string bgIdle: "#111111"
-    readonly property string bgProcessing: "#0a1212"
-    readonly property string bgMaintenance: "#14140e"
+    id: root
+    // Semantic Palette (Stitch Design Tokens: Cyber-Industrial Terminal)
+    readonly property string bgIdle: "#131314"
+    readonly property string bgProcessing: "#0d1a0e"
+    readonly property string bgMaintenance: "#1f180d"
     readonly property string bgError: "#2a0505"
     readonly property string bgErrorAlt: "#120202"
-    
-    readonly property string headerBg: "#1c1e24"
+
+    readonly property string headerBg: "#1f2020"
     readonly property string headerBgError: "#3b0808"
-    readonly property string footerBg: "#16181d"
+    readonly property string footerBg: "#1b1c1c"
     readonly property string footerBgError: "#3a0505"
-    readonly property string cardBg: "#181a1f"
-    readonly property string cardBgAlt: "#21252b"
-    
-    readonly property string borderNormal: "#444444"
-    readonly property string borderFocus: "#e5c07b"
-    readonly property string borderError: "#e06c75"
-    readonly property string borderActive: "#61afef"
-    
+    readonly property string cardBg: "#1f2020"
+    readonly property string cardBgAlt: "#2a2a2a"
+
+    readonly property string borderNormal: "#3b4b37"
+    readonly property string borderFocus: "#00ff41"
+    readonly property string borderError: "#ff3e3e"
+    readonly property string borderActive: "#00ff41"
+
     // Status colors
-    readonly property string statusIdle: "#98c379"
-    readonly property string statusProcessing: "#56b6c2"
-    readonly property string statusMaintenance: "#e5c07b"
-    readonly property string statusError: "#e06c75"
-    
+    readonly property string statusIdle: "#00ff41"
+    readonly property string statusProcessing: "#00ff41"
+    readonly property string statusMaintenance: "#ffd393"
+    readonly property string statusError: "#ff3e3e"
+
     // Text colors
-    readonly property string textPrimary: "#ffffff"
-    readonly property string textSecondary: "#abb2bf"
-    readonly property string textDim: "#5c6370"
-    readonly property string textHighlight: "#61afef"
-    readonly property string textWarning: "#e5c07b"
-    readonly property string textDanger: "#e06c75"
-    readonly property string textSuccess: "#98c379"
-    readonly property string textAccent: "#c678dd"
+    readonly property string textPrimary: "#e4e2e2"
+    readonly property string textSecondary: "#b9ccb2"
+    readonly property string textDim: "#84967e"
+    readonly property string textHighlight: "#00ff41"
+    readonly property string textWarning: "#ffd393"
+    readonly property string textDanger: "#ff3e3e"
+    readonly property string textSuccess: "#00ff41"
+    readonly property string textAccent: "#ffd393"
     
     // Progress bar helper
     function makeProgressBar(value, minVal, maxVal, width) {

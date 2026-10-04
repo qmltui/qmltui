@@ -1,21 +1,23 @@
-import QtQml 2.15
+pragma ComponentBehavior: Bound
+import QtQml
 import Qtui
-import IndustrialPlcHmi 1.0
+import IndustrialPlcHmi
 
 Rectangle {
     id: root
+    property var eventModel: null
+    property int errorCount: 0
+
     anchors.fill: parent
     color: HmiTheme.cardBg
     border.style: "single"
     border.color: HmiTheme.borderNormal
 
-    property var logs: []
-    property int errorCount: 0
-
     Column {
+        id: contentColumn
         anchors.fill: parent
         anchors.margins: 1
-        spacing: 1
+        spacing: 0
 
         Rectangle {
             width: parent.width
@@ -42,38 +44,58 @@ Rectangle {
             }
         }
 
-        // Log Rows
-        Repeater {
-            model: Math.min(10, root.logs.length)
-            delegate: Rectangle {
-                width: parent.width
-                height: 1
-                color: index % 2 === 0 ? "#181a1f" : "#1e222b"
+        Column {
+            id: logRows
+            width: parent.width
+            height: Math.max(0, parent.height - 3)
+            spacing: 0
 
-                Row {
-                    spacing: 2
-                    Text { 
-                        text: " #" + (index + 1).toString().padStart(2, '0') + " "
-                        color: HmiTheme.textDim 
-                    }
-                    Text { 
-                        text: root.logs[index].indexOf("ALARM") >= 0 ? "[CRITICAL]" : "[INFO]    "
-                        color: root.logs[index].indexOf("ALARM") >= 0 ? HmiTheme.textDanger : HmiTheme.textSuccess
-                        bold: root.logs[index].indexOf("ALARM") >= 0
-                    }
-                    Text { 
-                        text: root.logs[index]
-                        color: HmiTheme.textPrimary 
+            Repeater {
+                model: root.eventModel
+
+                delegate: Rectangle {
+                    id: eventRow
+                    required property int index
+                    required property int sequence
+                    required property string severity
+                    required property string message
+
+                    width: logRows.width
+                    height: 1
+                    color: index % 2 === 0 ? "#181a1f" : "#1e222b"
+
+                    Row {
+                        spacing: 2
+                        Text {
+                            text: " #" + String(eventRow.sequence).padStart(2, "0") + " "
+                            color: HmiTheme.textDim
+                        }
+                        Text {
+                            width: 10
+                            text: "[" + eventRow.severity + "]"
+                            color: root.severityColor(eventRow.severity)
+                            bold: eventRow.severity === "CRITICAL"
+                        }
+                        Text {
+                            text: eventRow.message
+                            color: HmiTheme.textPrimary
+                        }
                     }
                 }
             }
         }
 
-        Text { text: ""; height: 1 }
-
         Text {
-            text: "Press [R] / [F3] to Clear Fault Lockout when in ALARM state"
+            text: "Press [R] to clear fault lockout when in ALARM state"
             color: HmiTheme.textWarning
         }
+    }
+
+    function severityColor(severity) {
+        if (severity === "CRITICAL")
+            return HmiTheme.textDanger
+        if (severity === "WARNING")
+            return HmiTheme.textWarning
+        return HmiTheme.textSuccess
     }
 }

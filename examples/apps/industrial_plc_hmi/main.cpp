@@ -2,13 +2,13 @@
 #include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[]) {
-    QCoreApplication app(argc, argv);
+  QCoreApplication app(argc, argv);
 
-    QQmlApplicationEngine engine;
-    engine.loadFromModule("IndustrialPlcHmi", "Main");
+  QQmlApplicationEngine engine;
+  engine.loadFromModule("IndustrialPlcHmi", "Main");
 
-    if (engine.rootObjects().isEmpty())
-        return -1;
+  if (engine.rootObjects().isEmpty())
+    return -1;
 
-    return app.exec();
+  return app.exec();
 }

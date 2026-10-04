@@ -13,3 +13,7 @@ qt_add_qml_module(qtui_container_fleet
 )
 
 target_link_libraries(qtui_container_fleet PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras)
+
+if(TARGET Qtui::Testing)
+    target_link_libraries(qtui_container_fleet PRIVATE Qtui::Testing)
+endif()

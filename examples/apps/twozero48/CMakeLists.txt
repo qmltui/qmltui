@@ -9,3 +9,7 @@ qt_add_qml_module(qtui_twozero48
 )
 
 target_link_libraries(qtui_twozero48 PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras)
+
+if(TARGET Qtui::Testing)
+    target_link_libraries(qtui_twozero48 PRIVATE Qtui::Testing)
+endif()

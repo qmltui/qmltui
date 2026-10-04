@@ -1,23 +1,23 @@
-import QtQml 2.15
+import QtQml
 import Qtui
-import IndustrialPlcHmi 1.0
+import IndustrialPlcHmi
 
 Rectangle {
     id: root
+    property int targetSpeed: 1500
+    property double maxTempLimit: 85.0
+    signal targetSpeedRequested(string input)
+    signal tempLimitRequested(string input)
+
     anchors.fill: parent
     color: HmiTheme.cardBg
     border.style: "single"
     border.color: HmiTheme.borderNormal
 
-    property int targetSpeed: 1500
-    property double maxTempLimit: 85.0
-    signal speedChanged(int newSpeed)
-    signal tempLimitChanged(double newLimit)
-
     Column {
         anchors.fill: parent
         anchors.margins: 1
-        spacing: 1
+        spacing: 0
 
         Text {
             text: "⚙️ SYSTEM PARAMETERS & SAFETY THRESHOLDS"
@@ -31,7 +31,7 @@ Rectangle {
 
             Column {
                 width: Math.floor((parent.width - 2) * 0.48)
-                spacing: 1
+                spacing: 0
 
                 Text { text: "1. TARGET SPEED SETPOINT (RPM):"; color: HmiTheme.textPrimary }
                 Rectangle {
@@ -47,10 +47,8 @@ Rectangle {
                         text: root.targetSpeed.toString()
                         color: HmiTheme.textPrimary
                         onAccepted: {
-                            let val = parseInt(setRpmInput.text);
-                            if (!isNaN(val) && val >= 0 && val <= 3000) {
-                                root.speedChanged(val);
-                            }
+                            root.targetSpeedRequested(setRpmInput.text)
+                            setRpmInput.text = root.targetSpeed.toString()
                         }
                     }
                 }
@@ -69,10 +67,8 @@ Rectangle {
                         text: root.maxTempLimit.toString()
                         color: HmiTheme.textPrimary
                         onAccepted: {
-                            let val = parseFloat(setTempInput.text);
-                            if (!isNaN(val) && val >= 30.0 && val <= 110.0) {
-                                root.tempLimitChanged(val);
-                            }
+                            root.tempLimitRequested(setTempInput.text)
+                            setTempInput.text = root.maxTempLimit.toString()
                         }
                     }
                 }
@@ -80,7 +76,7 @@ Rectangle {
 
             Column {
                 width: parent.width - Math.floor((parent.width - 2) * 0.48) - 2
-                spacing: 1
+                spacing: 0
 
                 Text { text: "📋 SYSTEM DEFAULT CALIBRATION"; color: HmiTheme.textSecondary; bold: true }
                 Text { text: "Max Speed Safety Ceiling : 3000 RPM"; color: HmiTheme.textDim }

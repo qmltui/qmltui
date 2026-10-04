@@ -1,24 +1,15 @@
-// In-tree JavaScript test scenario for Container Fleet Demo
-TestDriver.snapshot("/tmp/fleet_1_all.png");
+Test.waitForText("CONTAINER FLEET");
+Test.captureText("fleet/all.txt");
 
-// 1. Switch to Filter 2 (RUNNING)
-TestDriver.sendKey("2");
-TestDriver.wait(300);
-TestDriver.snapshot("/tmp/fleet_2_running.png");
+Test.press("2");
+Test.waitForText("RUNNING");
+Test.captureText("fleet/running.txt");
 
-// 2. Switch to Filter 3 (CRITICAL)
-TestDriver.sendKey("3");
-TestDriver.wait(300);
-TestDriver.snapshot("/tmp/fleet_3_critical.png");
+Test.press("3");
+Test.waitForText("CRITICAL");
+Test.captureText("fleet/critical.txt");
 
-// 3. Toggle Live Logs Drawer via 'L'
-TestDriver.sendKey("L");
-TestDriver.wait(300);
-TestDriver.snapshot("/tmp/fleet_4_logs.png");
-
-// 4. Cycle Sort Mode via 'S'
-TestDriver.sendKey("S");
-TestDriver.wait(300);
-TestDriver.snapshot("/tmp/fleet_5_sorted.png");
-
-TestDriver.quit(0);
+Test.press("L");
+Test.waitForFrame();
+Test.captureImage("fleet/logs.png");
+Test.finish();

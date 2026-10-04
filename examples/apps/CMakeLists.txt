@@ -1,5 +1,7 @@
 add_subdirectory(container_fleet)
-add_subdirectory(industrial_plc_hmi)
+if(QTUI_ENABLE_BEHAVIOR)
+    add_subdirectory(industrial_plc_hmi)
+endif()
 add_subdirectory(plotting_dashboard)
 add_subdirectory(pos_cashier)
 add_subdirectory(process_monitor)
@@ -8,5 +10,3 @@ add_subdirectory(spaceship_game)
 add_subdirectory(system_dashboard)
 add_subdirectory(twozero48)
 add_subdirectory(din_gateway)
-
-

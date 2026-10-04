@@ -1,18 +1,27 @@
-import QtQml 2.15
+import QtQml
 import Qtui
-import IndustrialPlcHmi 1.0
+import IndustrialPlcHmi
 
 Rectangle {
     id: root
-    height: 3
-    property string machineState: "idle"
+    property int machineState: PlcTypes.Idle
     property string stationId: "STN#42"
+    readonly property bool validState: root.machineState === PlcTypes.Idle
+                                       || root.machineState === PlcTypes.Processing
+                                       || root.machineState === PlcTypes.Error
+                                       || root.machineState === PlcTypes.Maintenance
+
+    height: 3
 
     border.style: "double"
-    border.color: root.machineState === "error" 
+    border.color: root.machineState === PlcTypes.Error || !root.validState
                   ? HmiTheme.borderError 
-                  : (root.machineState === "maintenance" ? HmiTheme.textWarning : (root.machineState === "processing" ? HmiTheme.textHighlight : HmiTheme.statusIdle))
-    color: root.machineState === "error" ? HmiTheme.headerBgError : HmiTheme.headerBg
+                  : (root.machineState === PlcTypes.Maintenance
+                     ? HmiTheme.textWarning
+                     : (root.machineState === PlcTypes.Processing
+                        ? HmiTheme.textHighlight : HmiTheme.statusIdle))
+    color: root.machineState === PlcTypes.Error || !root.validState
+           ? HmiTheme.headerBgError : HmiTheme.headerBg
 
     Text {
         x: 2
@@ -29,17 +38,23 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: 2
         y: 1
-        color: root.machineState === "error" 
+        color: root.machineState === PlcTypes.Error || !root.validState
                ? HmiTheme.statusError 
-               : (root.machineState === "maintenance" ? HmiTheme.statusMaintenance : (root.machineState === "processing" ? HmiTheme.statusProcessing : HmiTheme.statusIdle))
+               : (root.machineState === PlcTypes.Maintenance
+                  ? HmiTheme.statusMaintenance
+                  : (root.machineState === PlcTypes.Processing
+                     ? HmiTheme.statusProcessing : HmiTheme.statusIdle))
 
         Text {
             anchors.centerIn: parent
-            text: root.machineState === "error"
+            text: !root.validState
+                  ? "[? INVALID]"
+                  : root.machineState === PlcTypes.Error
                   ? "[▲ FAULT!]"
-                  : (root.machineState === "maintenance" 
+                  : (root.machineState === PlcTypes.Maintenance
                      ? "[⚙ MAINT]" 
-                     : (root.machineState === "processing" ? "[● RUNNING]" : "[■ STANDBY]"))
+                     : (root.machineState === PlcTypes.Processing
+                        ? "[● RUNNING]" : "[■ STANDBY]"))
             color: HmiTheme.textPrimary
             bold: true
         }

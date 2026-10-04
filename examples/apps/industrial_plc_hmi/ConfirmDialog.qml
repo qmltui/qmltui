@@ -1,19 +1,20 @@
-import QtQml 2.15
+import QtQml
 import Qtui
-import IndustrialPlcHmi 1.0
+import IndustrialPlcHmi
 
 Rectangle {
     id: root
-    width: 44
-    height: 9
-    anchors.centerIn: parent
-    visible: false
-
     property string title: "CONFIRM ACTION"
     property string message: "Are you sure you want to proceed?"
     signal confirmed()
     signal cancelled()
 
+    width: Math.min(64, parent ? Math.max(36, parent.width - 4) : 64)
+    height: 7
+    anchors.centerIn: parent
+    visible: false
+    focus: visible
+    z: 100
     color: "#1c1c1c"
     border.style: "double"
     border.color: HmiTheme.textWarning
@@ -21,7 +22,7 @@ Rectangle {
     Column {
         anchors.fill: parent
         anchors.margins: 1
-        spacing: 1
+        spacing: 0
 
         Rectangle {
             width: parent.width
@@ -42,7 +43,7 @@ Rectangle {
             color: HmiTheme.textPrimary
         }
 
-        Text { text: ""; height: 1 } // Spacer
+        Text { text: ""; height: 1 }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -50,5 +51,21 @@ Rectangle {
             color: HmiTheme.textWarning
             bold: true
         }
+    }
+
+    function open(dialogTitle, dialogMessage) {
+        root.title = dialogTitle
+        root.message = dialogMessage
+        root.visible = true
+    }
+
+    function accept() {
+        root.visible = false
+        root.confirmed()
+    }
+
+    function reject() {
+        root.visible = false
+        root.cancelled()
     }
 }

@@ -48,6 +48,7 @@ private slots:
     void viewTracksDocumentLifetimeAndClampsScroll();
     void renderingHonorsClipAndSearchStyle();
     void paletteResolvesSemanticRoles();
+    void codeBlockBackgroundIsConsistent();
 };
 
 void MarkdownViewerTest::whitespaceSearchIsEmpty() {
@@ -214,6 +215,38 @@ void MarkdownViewerTest::paletteResolvesSemanticRoles() {
     QCOMPARE(palette.resolve(MarkdownRole::Link), 0xff010203u);
     QCOMPARE(palette.resolve(MarkdownRole::SyntaxString), 0xffa0b0c0u);
     QCOMPARE(palette.resolve(MarkdownRole::Transparent), 0u);
+}
+
+void MarkdownViewerTest::codeBlockBackgroundIsConsistent() {
+    MarkdownDocument document;
+    document.setWrapWidth(40);
+    document.setText(QStringLiteral("```cpp\nint x = 42;\n```\n\nInline `code_badge` here.\n"));
+
+    // Check fenced code block lines
+    bool foundCodeBlockLine = false;
+    for (const DocumentLine &line : document.renderedLines()) {
+        if (line.isCodeBlock) {
+            foundCodeBlockLine = true;
+            for (const FormattedSegment &segment : line.segments) {
+                QCOMPARE(segment.background, MarkdownRole::Transparent);
+            }
+        }
+    }
+    QVERIFY(foundCodeBlockLine);
+
+    // Check inline code span still maintains CodeBackground
+    bool foundInlineCode = false;
+    for (const DocumentLine &line : document.renderedLines()) {
+        if (!line.isCodeBlock) {
+            for (const FormattedSegment &segment : line.segments) {
+                if (segment.text.contains(QStringLiteral("code_badge"))) {
+                    foundInlineCode = true;
+                    QCOMPARE(segment.background, MarkdownRole::CodeBackground);
+                }
+            }
+        }
+    }
+    QVERIFY(foundInlineCode);
 }
 
 QTEST_MAIN(MarkdownViewerTest)

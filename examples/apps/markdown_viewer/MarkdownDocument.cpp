@@ -630,8 +630,8 @@ void MarkdownDocument::processCode(const QSharedPointer<MD::Code> &code, int ind
                 break;
         }
         if (used < contentWidth)
-            line.segments.append({QString(contentWidth - used, QChar(' ')), MarkdownRole::Code,
-                                  MarkdownRole::CodeBackground});
+            line.segments.append({QString(contentWidth - used, QChar(' ')), MarkdownRole::Text,
+                                  MarkdownRole::Transparent});
         line.segments.append({QStringLiteral("│"), MarkdownRole::Border});
         m_renderedLines.append(line);
     }

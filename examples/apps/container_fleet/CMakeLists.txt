@@ -17,3 +17,7 @@ target_link_libraries(qtui_container_fleet PRIVATE Qt6::Core Qt6::Qml Qtui::Core
 if(TARGET Qtui::Testing)
     target_link_libraries(qtui_container_fleet PRIVATE Qtui::Testing)
 endif()
+
+if(QTUI_INSTALL_EXAMPLES)
+    install(TARGETS qtui_container_fleet RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()

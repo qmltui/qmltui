@@ -79,6 +79,10 @@ target_link_libraries(qtui_markdown_viewer PRIVATE
     qtui_markdown_viewer_moduleplugin
 )
 
+if(QTUI_INSTALL_EXAMPLES)
+    install(TARGETS qtui_markdown_viewer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()
+
 if(TARGET Qtui::Testing)
     qt_add_executable(qtui_markdown_viewer_test_runner main_test_runner.cpp)
     target_link_libraries(qtui_markdown_viewer_test_runner PRIVATE

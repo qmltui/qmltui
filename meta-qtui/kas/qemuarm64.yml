@@ -1,0 +1,10 @@
+header:
+  version: 14
+  includes:
+    - meta-qtui/kas/base.yml
+
+machine: qemuarm64
+
+local_conf_header:
+  qemu_config: |
+    IMAGE_FSTYPES += "ext4"

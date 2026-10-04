@@ -1,0 +1,18 @@
+header:
+  version: 14
+  includes:
+    - meta-qtui/kas/base.yml
+
+machine: raspberrypi4-64
+
+repos:
+  meta-raspberrypi:
+    url: "https://github.com/agherzan/meta-raspberrypi.git"
+    branch: "scarthgap"
+    path: "layers/meta-raspberrypi"
+
+local_conf_header:
+  rpi_config: |
+    ENABLE_UART = "1"
+    RPI_USE_U_BOOT = "0"
+    IMAGE_FSTYPES += "rpi-sdimg wic.zst"

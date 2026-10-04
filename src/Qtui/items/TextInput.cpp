@@ -18,9 +18,28 @@ TextInput::TextInput(QObject *parent) : Item(parent) {
     connect(this, &Item::widthChanged, this, &TextInput::ensureCursorVisible);
     connect(this, &Item::paddingChanged, this, &TextInput::ensureCursorVisible);
     connect(this, &Item::paddingChanged, this, &TextInput::updateImplicitWidth);
+
+    connect(&m_blinkTimer, &QTimer::timeout, this, [this]() {
+        m_blinkState = !m_blinkState;
+        markDirty();
+    });
+
+    connect(this, &Item::activeFocusChanged, this, [this]() {
+        resetBlinkTimer();
+        markDirty();
+    });
 }
 
 TextInput::~TextInput() = default;
+
+void TextInput::resetBlinkTimer() {
+    m_blinkState = true;
+    if (activeFocus() && m_cursorBlinking && m_cursorBlinkRate > 0) {
+        m_blinkTimer.start(m_cursorBlinkRate);
+    } else {
+        m_blinkTimer.stop();
+    }
+}
 
 TextInput::EditorStatus TextInput::editorStatus() const {
     return EditorStatus{acceptableInput(), canUndo(), canRedo()};
@@ -44,6 +63,7 @@ void TextInput::applyEditorChange(
         emit canRedoChanged();
     if (change.any()) {
         ensureCursorVisible();
+        resetBlinkTimer();
         markDirty();
     }
 }
@@ -76,6 +96,58 @@ void TextInput::setPlaceholderText(const QString &text) {
 void TextInput::setCursorPosition(int pos) {
     const EditorStatus before = editorStatus();
     applyEditorChange(m_editor.moveCursor(pos), before);
+}
+
+void TextInput::setCursorShape(CursorShape shape) {
+    if (m_cursorShape == shape) return;
+    m_cursorShape = shape;
+    emit cursorShapeChanged();
+    markDirty();
+}
+
+void TextInput::setCursorColor(const QString &color) {
+    if (m_cursorColor == color) return;
+    m_cursorColor = color;
+    if (m_cursorColor.trimmed().isEmpty()) {
+        m_hasResolvedCursorColor = false;
+        m_resolvedCursorColor = 0;
+    } else {
+        m_hasResolvedCursorColor = true;
+        m_resolvedCursorColor = ColorMapper::fromString(m_cursorColor, 0xFFFFFFFF);
+    }
+    emit cursorColorChanged();
+    markDirty();
+}
+
+void TextInput::setCursorBlinking(bool blinking) {
+    if (m_cursorBlinking == blinking) return;
+    m_cursorBlinking = blinking;
+    resetBlinkTimer();
+    emit cursorBlinkingChanged();
+    markDirty();
+}
+
+void TextInput::setCursorBlinkRate(int rate) {
+    const int validRate = std::max(50, rate);
+    if (m_cursorBlinkRate == validRate) return;
+    m_cursorBlinkRate = validRate;
+    resetBlinkTimer();
+    emit cursorBlinkRateChanged();
+    markDirty();
+}
+
+void TextInput::setCursorVisible(bool visible) {
+    if (m_cursorVisible == visible) return;
+    m_cursorVisible = visible;
+    emit cursorVisibleChanged();
+    markDirty();
+}
+
+void TextInput::setCursorDelegate(const QString &delegate) {
+    if (m_cursorDelegate == delegate) return;
+    m_cursorDelegate = delegate;
+    emit cursorDelegateChanged();
+    markDirty();
 }
 
 void TextInput::setReadOnly(bool readOnly) {
@@ -414,13 +486,60 @@ void TextInput::render(
         }
     }
 
-    if (activeFocus()) {
+    if (activeFocus() && m_cursorVisible && m_blinkState) {
         const int x = contentLeft
             + displayColumnForPosition(m_editor.cursorPosition()) - m_contentX;
         if (contentClip.contains(x, y)) {
             Cell &cell = buffer.cellAt(x, y);
-            if (cell.character.isEmpty()) cell.character = " ";
-            cell.attributes = cell.attributes | TextAttribute::Reversed;
+
+            if (!m_cursorDelegate.isEmpty()) {
+                cell.character = m_cursorDelegate.toUtf8();
+                if (m_hasResolvedCursorColor) {
+                    cell.fgColor = m_resolvedCursorColor;
+                } else {
+                    cell.attributes = cell.attributes | TextAttribute::Reversed;
+                }
+            } else {
+                switch (m_cursorShape) {
+                case Block: {
+                    if (cell.character.isEmpty())
+                        cell.character = " ";
+                    if (m_hasResolvedCursorColor) {
+                        cell.bgColor = m_resolvedCursorColor;
+                        cell.fgColor = 0x000000FF;
+                    } else {
+                        cell.attributes = cell.attributes | TextAttribute::Reversed;
+                    }
+                    break;
+                }
+                case Underline: {
+                    if (cell.character.isEmpty() || cell.character == " ")
+                        cell.character = "_";
+                    if (m_hasResolvedCursorColor) {
+                        cell.fgColor = m_resolvedCursorColor;
+                    }
+                    cell.attributes = cell.attributes | TextAttribute::Underline;
+                    break;
+                }
+                case Beam: {
+                    cell.character = "│";
+                    if (m_hasResolvedCursorColor) {
+                        cell.fgColor = m_resolvedCursorColor;
+                    }
+                    break;
+                }
+                case HollowBlock: {
+                    if (cell.character.isEmpty() || cell.character == " ")
+                        cell.character = "▯";
+                    if (m_hasResolvedCursorColor) {
+                        cell.fgColor = m_resolvedCursorColor;
+                    } else {
+                        cell.attributes = cell.attributes | TextAttribute::Bold;
+                    }
+                    break;
+                }
+                }
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ private slots:
     void testWordEditing();
     void testHorizontalViewport();
     void testFieldPropertiesAndPasswordRendering();
+    void testTerminalCursorCustomization();
     void testQmlSurface();
 };
 
@@ -249,6 +250,38 @@ void TestTextInput::testFieldPropertiesAndPasswordRendering() {
     KeyEvent typed(Qt::Key_X, "x", 0);
     input.keyPressEvent(&typed);
     QCOMPARE(input.text(), QString("secret"));
+}
+
+void TestTextInput::testTerminalCursorCustomization() {
+    TextInput input;
+    input.setText("hello");
+    input.setActiveFocus(true);
+
+    QCOMPARE(input.cursorShape(), TextInput::Block);
+    QCOMPARE(input.cursorBlinking(), false);
+    QCOMPARE(input.cursorVisible(), true);
+
+    input.setCursorShape(TextInput::Beam);
+    QCOMPARE(input.cursorShape(), TextInput::Beam);
+
+    input.setCursorColor("cyan");
+    QCOMPARE(input.cursorColor(), QString("cyan"));
+
+    input.setCursorBlinking(true);
+    QCOMPARE(input.cursorBlinking(), true);
+
+    input.setCursorBlinkRate(250);
+    QCOMPARE(input.cursorBlinkRate(), 250);
+
+    input.setCursorDelegate("▋");
+    QCOMPARE(input.cursorDelegate(), QString("▋"));
+
+    TextGridBuffer buffer;
+    buffer.resize(10, 1);
+    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+
+    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("▋"));
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan color mapped (ARGB)
 }
 
 void TestTextInput::testQmlSurface() {

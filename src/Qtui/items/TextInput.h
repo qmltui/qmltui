@@ -4,6 +4,7 @@
 #include "TextEditorState.h"
 #include <QRegularExpression>
 #include <QString>
+#include <QTimer>
 
 namespace qtui {
 
@@ -25,6 +26,12 @@ class TextInput : public Item {
     Q_PROPERTY(bool acceptableInput READ acceptableInput NOTIFY acceptableInputChanged)
     Q_PROPERTY(EchoMode echoMode READ echoMode WRITE setEchoMode NOTIFY echoModeChanged)
     Q_PROPERTY(QString echoCharacter READ echoCharacter WRITE setEchoCharacter NOTIFY echoCharacterChanged)
+    Q_PROPERTY(CursorShape cursorShape READ cursorShape WRITE setCursorShape NOTIFY cursorShapeChanged)
+    Q_PROPERTY(QString cursorColor READ cursorColor WRITE setCursorColor NOTIFY cursorColorChanged)
+    Q_PROPERTY(bool cursorBlinking READ cursorBlinking WRITE setCursorBlinking NOTIFY cursorBlinkingChanged)
+    Q_PROPERTY(int cursorBlinkRate READ cursorBlinkRate WRITE setCursorBlinkRate NOTIFY cursorBlinkRateChanged)
+    Q_PROPERTY(bool cursorVisible READ cursorVisible WRITE setCursorVisible NOTIFY cursorVisibleChanged)
+    Q_PROPERTY(QString cursorDelegate READ cursorDelegate WRITE setCursorDelegate NOTIFY cursorDelegateChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY canUndoChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
 
@@ -35,6 +42,14 @@ public:
         NoEcho
     };
     Q_ENUM(EchoMode)
+
+    enum CursorShape {
+        Block,
+        Underline,
+        Beam,
+        HollowBlock
+    };
+    Q_ENUM(CursorShape)
 
     explicit TextInput(QObject *parent = nullptr);
     ~TextInput() override;
@@ -65,6 +80,18 @@ public:
     void setEchoMode(EchoMode mode);
     QString echoCharacter() const { return m_echoCharacter; }
     void setEchoCharacter(const QString &character);
+    CursorShape cursorShape() const { return m_cursorShape; }
+    void setCursorShape(CursorShape shape);
+    QString cursorColor() const { return m_cursorColor; }
+    void setCursorColor(const QString &color);
+    bool cursorBlinking() const { return m_cursorBlinking; }
+    void setCursorBlinking(bool blinking);
+    int cursorBlinkRate() const { return m_cursorBlinkRate; }
+    void setCursorBlinkRate(int rate);
+    bool cursorVisible() const { return m_cursorVisible; }
+    void setCursorVisible(bool visible);
+    QString cursorDelegate() const { return m_cursorDelegate; }
+    void setCursorDelegate(const QString &delegate);
     bool canUndo() const { return m_editor.canUndo(); }
     bool canRedo() const { return m_editor.canRedo(); }
 
@@ -95,6 +122,12 @@ signals:
     void acceptableInputChanged();
     void echoModeChanged();
     void echoCharacterChanged();
+    void cursorShapeChanged();
+    void cursorColorChanged();
+    void cursorBlinkingChanged();
+    void cursorBlinkRateChanged();
+    void cursorVisibleChanged();
+    void cursorDelegateChanged();
     void canUndoChanged();
     void canRedoChanged();
     void accepted();
@@ -116,6 +149,7 @@ private:
     int positionAtMouse(int x) const;
     void ensureCursorVisible();
     void updateImplicitWidth();
+    void resetBlinkTimer();
 
     TextEditorState m_editor;
     QString m_color = "white";
@@ -127,6 +161,17 @@ private:
     int m_maximumLength = 0;
     bool m_readOnly = false;
     EchoMode m_echoMode = Normal;
+
+    CursorShape m_cursorShape = Block;
+    QString m_cursorColor;
+    uint32_t m_resolvedCursorColor = 0;
+    bool m_hasResolvedCursorColor = false;
+    bool m_cursorBlinking = false;
+    int m_cursorBlinkRate = 500;
+    bool m_cursorVisible = true;
+    QString m_cursorDelegate;
+    QTimer m_blinkTimer;
+    bool m_blinkState = true;
 };
 
 } // namespace qtui

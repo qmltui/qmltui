@@ -4,15 +4,18 @@
 #include <QHash>
 #include <QMetaObject>
 #include <QPointer>
+#include <QQmlEngine>
+#include <QQmlParserStatus>
 
 namespace qtui {
 
 class TerminalEngine;
 class Popup;
 
-class Terminal : public Rectangle {
+class Terminal : public Rectangle, public QQmlParserStatus {
   Q_OBJECT
   QML_ELEMENT
+  Q_INTERFACES(QQmlParserStatus)
 
   Q_PROPERTY(bool useAlternateScreen READ useAlternateScreen WRITE setUseAlternateScreen NOTIFY useAlternateScreenChanged)
   Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
@@ -33,8 +36,14 @@ public:
   };
   Q_ENUM(ClipboardMode)
 
+  using TestRunnerHook = void (*)(QQmlEngine*, Terminal*);
+  static void registerTestRunnerHook(TestRunnerHook hook);
+
   explicit Terminal(QObject *parent = nullptr);
   ~Terminal() override;
+
+  void classBegin() override {}
+  void componentComplete() override;
 
   TerminalEngine* engine() const { return m_engine; }
 

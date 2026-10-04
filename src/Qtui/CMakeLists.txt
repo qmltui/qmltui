@@ -25,8 +25,8 @@ qt_add_qml_module(QtuiCore
         primitives/TerminalDevice.cpp
         engine/TerminalEngine.h
         engine/TerminalEngine.cpp
-        engine/TestDriver.h
-        engine/TestDriver.cpp
+        engine/TerminalMessageRouter_p.h
+        engine/TerminalMessageRouter.cpp
         engine/Renderer.h
         engine/FrameRenderer.h
         engine/FrameRenderer.cpp
@@ -160,10 +160,14 @@ install(FILES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/engine"
 )
 
+if(QTUI_BUILD_TESTS OR QTUI_ENABLE_TEST_RUNNER OR QTUI_ENABLE_TEST_DRIVER)
+    add_subdirectory(Testing)
+endif()
 
 add_subdirectory(Canvas)
 add_subdirectory(Controls)
 add_subdirectory(Extras)
+add_subdirectory(Image)
 if(QTUI_BUILD_TERMINAL_HOST)
     add_subdirectory(TerminalHost)
 endif()

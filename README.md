@@ -41,6 +41,31 @@ View construction benchmarks are available with
 `-DQTUI_BUILD_BENCHMARKS=ON`; run the resulting `benchmark_views` executable
 to record 1,000- and 10,000-row creation time.
 
+## Agent-oriented application testing
+
+Enable `Qtui::Testing` with `QTUI_BUILD_TESTS=ON` in-tree or
+`QTUI_ENABLE_TEST_RUNNER=ON` for installation. Test-enabled applications can
+run scenarios through `QTUI_SCRIPT`, inline actions through `QTUI_EVAL`, or
+capture one frame with `QTUI_INSPECT=1`. Runs are quiet by default and write
+`result.json` plus a normalized final frame beneath
+`QTUI_TEST_ARTIFACT_DIR`; set `QTUI_TEST_LIVE=1` for interactive rendering.
+
+Installed CMake consumers can register a scenario with:
+
+```cmake
+find_package(Qtui 0.2 REQUIRED)
+qtui_add_scenario_test(
+    NAME my_app_smoke
+    TARGET my_app
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
+    LABELS AgentSmoke
+)
+```
+
+JavaScript scenarios can inspect cells, find rendered text, and click it
+without hard-coded coordinates. See `src/Qtui/Testing/doc/TestRunner.md` for
+the JavaScript and result contracts.
+
 ## Install and consume
 
 ```sh
@@ -70,6 +95,7 @@ The installed QML modules are:
 - `Qtui`
 - `Qtui.Controls`
 - `Qtui.Extras`
+- `Qtui.Image`
 - `Qtui.TerminalHost` when built with `QTUI_BUILD_TERMINAL_HOST=ON`
 
 ## Supported public surface

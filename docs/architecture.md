@@ -15,7 +15,31 @@ There are two primary renderers:
 
 Every frame, items traverse the tree, computing bounds, clip rectangles, and painting `Cell` structures containing characters, colors, and ANSI attributes to a `TextGridBuffer`. 
 
+## Terminal-safe Qt diagnostics
+
+`TerminalEngine` registers a process-wide Qt message router while terminal
+engines exist. Messages are forwarded normally until a renderer enters the
+alternate screen. While any alternate-screen session is active, non-fatal Qt
+messages are buffered so stderr cannot disturb ANSI cursor positioning. The
+last session restores the terminal before replaying the messages through the
+handler that was installed by the application. Engine and session counts make
+this safe for multiple simultaneous `TerminalEngine` instances.
+
+`TerminalDevice` remains limited to terminal byte I/O; it does not own Qt
+logging policy. Fatal Qt messages are forwarded immediately because Qt aborts
+after their handler returns.
+
+## Agent testing feedback loop
+
+The optional `Qtui::Testing` library attaches a `TestRunner` to an explicit
+`Terminal`. Automated sessions suppress terminal-device output while retaining
+normal frame commits, input dispatch, QML timers, and render-failure signals.
+Each run writes an atomic schema-versioned result, a normalized final frame,
+and requested captures beneath a contained artifact root. Live rendering is an
+explicit presentation mode rather than the default test path.
+
 ## Input Handling
+
 Terminal input happens asynchronously via standard input byte streams.
 The `TerminalDevice` handles reading raw bytes and forwards them to the `TerminalEngine`.
 `InputDecoder` processes these byte streams (often UTF-8 and ANSI escape sequences) to deduce mouse events, standard keypresses, and complex multi-key combinations. It translates these into `KeyEvent` and `MouseEvent` objects, which are routed to the focused item.

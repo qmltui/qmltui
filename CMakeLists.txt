@@ -6,12 +6,15 @@ option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_BUILD_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
-option(QTUI_ENABLE_TEST_DRIVER "Enable built-in QML/JS autotest driver and snapshot engine" OFF)
+option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui Testing library" OFF)
+option(QTUI_ENABLE_TEST_DRIVER "Alias for QTUI_ENABLE_TEST_RUNNER" OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 set(QTUI_INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qt6/qml" CACHE PATH
     "Install location for Qtui QML modules")
+set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml" CACHE PATH
+    "Build-tree location for generated QML modules")
 
 include(FetchContent)
 set(UTF8PROC_INSTALL OFF CACHE BOOL "" FORCE)
@@ -82,6 +85,13 @@ add_subdirectory(src/Qtui)
 # Example executable to test the library
 if(QTUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
+elseif(QTUI_BUILD_TESTS)
+    if(QTUI_ENABLE_BEHAVIOR)
+        add_subdirectory(examples/apps/industrial_plc_hmi
+            examples/apps/industrial_plc_hmi)
+    endif()
+    add_subdirectory(examples/apps/pos_cashier
+        examples/apps/pos_cashier)
 endif()
 
 if(QTUI_BUILD_TESTS)
@@ -106,5 +116,7 @@ install(EXPORT QtuiTargets
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfigVersion.cmake"
+    cmake/QtuiTesting.cmake
+    cmake/RunQtuiScenario.cmake
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qtui"
 )

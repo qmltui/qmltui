@@ -1,0 +1,1 @@
+Test.waitForText("THIS TEXT NEVER APPEARS", 100);

@@ -5,12 +5,9 @@ build-*/
 # Cache and temporary directories
 .cache/
 .codex/
-.agents/*
-!.agents/skills/
-!.agents/skills/**
 .tokensave/
 .vscode/
-Testing/
+/Testing/
 
 # User settings and logs
 *.log

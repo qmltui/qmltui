@@ -1,0 +1,24 @@
+
+ TESTRUNNER FIXTURE
+
+ STATUS: ASYNC READY
+
+ type text here
+
+ INPUT:
+
+ 界Z
+
+ DUPLICATE
+ DUPLICATE
+
+
+
+
+
+
+
+
+
+
+ .

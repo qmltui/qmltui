@@ -27,19 +27,19 @@ Item {
     // Effective filled character
     readonly property string effectiveFillChar: {
         if (fillCharacter && fillCharacter.length > 0) return fillCharacter;
-        if (control.style === "pill") return "▮";
+        if (control.style === "pill") return "█";
         if (control.style === "dot") return "●";
-        if (control.style === "block") return "█";
-        return "▰"; // default segmented
+        if (control.style === "hash") return "#";
+        return "█"; // default solid block (universal)
     }
 
     // Effective empty character
     readonly property string effectiveEmptyChar: {
         if (emptyCharacter && emptyCharacter.length > 0) return emptyCharacter;
-        if (control.style === "pill") return "▯";
+        if (control.style === "pill") return "░";
         if (control.style === "dot") return "○";
-        if (control.style === "block") return "░";
-        return "▱"; // default segmented
+        if (control.style === "hash") return "-";
+        return "░"; // default light shade (universal)
     }
 
     readonly property real position: {

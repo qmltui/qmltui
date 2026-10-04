@@ -50,6 +50,13 @@ void ScrollView::setContentY(int y) {
     markDirty();
 }
 
+void ScrollView::setScrollBarVisible(bool visible) {
+    if (m_scrollBarVisible == visible) return;
+    m_scrollBarVisible = visible;
+    emit scrollBarVisibleChanged();
+    markDirty();
+}
+
 void ScrollView::keyPressEvent(KeyEvent* event) {
     int key = event->key();
     int viewportH = height() - topPadding() - bottomPadding();
@@ -140,24 +147,26 @@ void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRe
         }
     }
 
-    // 6. Draw vertical scrollbar if content exceeds viewport
-    int effectiveH = effectiveContentHeight();
-    if (effectiveH > viewportH) {
-        int sbH = std::max(1, (viewportH * viewportH) / effectiveH);
-        int maxScroll = effectiveH - viewportH;
-        int sbPos = (m_contentY * (viewportH - sbH)) / std::max(1, maxScroll);
-        int sbX = absX + w - rp; // just inside border / right padding
+    // 6. Draw vertical scrollbar if content exceeds viewport and scrollBarVisible is true
+    if (m_scrollBarVisible) {
+        int effectiveH = effectiveContentHeight();
+        if (effectiveH > viewportH) {
+            int sbH = std::max(1, (viewportH * viewportH) / effectiveH);
+            int maxScroll = effectiveH - viewportH;
+            int sbPos = (m_contentY * (viewportH - sbH)) / std::max(1, maxScroll);
+            int sbX = absX + w - rp; // just inside border / right padding
 
-        for (int dy = 0; dy < viewportH; ++dy) {
-            int cy = absY + tp + dy;
-            if (clipRect.contains(sbX, cy)) {
-                if (sbX >= 0 && sbX < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                    Cell& cell = buffer.cellAt(sbX, cy);
-                    cell.fgColor = 0xFF888888;
-                    if (dy >= sbPos && dy < sbPos + sbH) {
-                        cell.character = "\xE2\x96\x88"; // █
-                    } else {
-                        cell.character = "\xE2\x96\x91"; // ░
+            for (int dy = 0; dy < viewportH; ++dy) {
+                int cy = absY + tp + dy;
+                if (clipRect.contains(sbX, cy)) {
+                    if (sbX >= 0 && sbX < buffer.width() && cy >= 0 && cy < buffer.height()) {
+                        Cell& cell = buffer.cellAt(sbX, cy);
+                        cell.fgColor = 0xFF888888;
+                        if (dy >= sbPos && dy < sbPos + sbH) {
+                            cell.character = "\xE2\x96\x88"; // █
+                        } else {
+                            cell.character = "\xE2\x96\x91"; // ░
+                        }
                     }
                 }
             }

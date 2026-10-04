@@ -62,6 +62,8 @@ qt_add_qml_module(QtuiCore
         items/LogView.cpp
         items/ScrollView.h
         items/ScrollView.cpp
+        items/GridLayout.h
+        items/GridLayout.cpp
         items/Terminal.h
         items/Terminal.cpp
         items/Popup.h

@@ -2,6 +2,8 @@
 #include <QObject>
 #include "Row.h"
 #include "Column.h"
+#include "GridLayout.h"
+#include "Layout.h"
 #include "TextGridBuffer.h"
 
 using namespace qtui;
@@ -12,6 +14,7 @@ class TestLayout : public QObject {
 private slots:
     void testRowLayout();
     void testColumnLayout();
+    void testGridLayout();
 };
 
 void TestLayout::testRowLayout() {
@@ -66,6 +69,42 @@ void TestLayout::testColumnLayout() {
 
     QCOMPARE(col.implicitHeight(), 2 + 2 + 3 + 4 + 1); // top + bottom + h1 + h2 + spacing
     QCOMPARE(col.implicitWidth(), 2 + 2 + 5); // left + right + max_width
+}
+
+void TestLayout::testGridLayout() {
+    GridLayout grid;
+    grid.setColumns(2);
+    grid.setColumnSpacing(2);
+    grid.setRowSpacing(1);
+
+    Item *label1 = new Item(&grid);
+    label1->setImplicitWidth(10);
+    label1->setImplicitHeight(1);
+
+    Item *field1 = new Item(&grid);
+    field1->setImplicitWidth(20);
+    field1->setImplicitHeight(3);
+
+    Item *label2 = new Item(&grid);
+    label2->setImplicitWidth(10);
+    label2->setImplicitHeight(1);
+
+    Item *field2 = new Item(&grid);
+    field2->setImplicitWidth(20);
+    field2->setImplicitHeight(3);
+
+    TextGridBuffer buffer;
+    grid.render(buffer, 0, 0);
+
+    QCOMPARE(label1->x(), 0);
+    QCOMPARE(field1->x(), 12);
+    QCOMPARE(label2->x(), 0);
+    QCOMPARE(field2->x(), 12);
+
+    QCOMPARE(label1->y(), 0);
+    QCOMPARE(field1->y(), 0);
+    QCOMPARE(label2->y(), 4);
+    QCOMPARE(field2->y(), 4);
 }
 
 QTEST_MAIN(TestLayout)

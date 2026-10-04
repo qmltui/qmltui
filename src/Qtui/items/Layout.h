@@ -18,6 +18,11 @@ class LayoutAttached : public QObject {
     Q_PROPERTY(bool fillHeight MEMBER fillHeight NOTIFY changed)
     Q_PROPERTY(int horizontalStretch MEMBER horizontalStretch NOTIFY changed)
     Q_PROPERTY(int verticalStretch MEMBER verticalStretch NOTIFY changed)
+    Q_PROPERTY(int row MEMBER row NOTIFY changed)
+    Q_PROPERTY(int column MEMBER column NOTIFY changed)
+    Q_PROPERTY(int rowSpan MEMBER rowSpan NOTIFY changed)
+    Q_PROPERTY(int columnSpan MEMBER columnSpan NOTIFY changed)
+    Q_PROPERTY(Qt::Alignment alignment MEMBER alignment NOTIFY changed)
 
 public:
     explicit LayoutAttached(QObject *parent = nullptr) : QObject(parent) {}
@@ -32,6 +37,11 @@ public:
     bool fillHeight = false;
     int horizontalStretch = 1;
     int verticalStretch = 1;
+    int row = -1;
+    int column = -1;
+    int rowSpan = 1;
+    int columnSpan = 1;
+    Qt::Alignment alignment = Qt::AlignLeft | Qt::AlignTop;
 
 signals:
     void changed();

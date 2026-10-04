@@ -13,7 +13,9 @@ Gauge::Gauge(QObject *parent) : Item(parent) {
 
 void Gauge::setValue(double val) {
     if (qFuzzyCompare(m_value, val)) return;
-    m_value = std::clamp(val, 0.0, m_maxValue);
+    // Stored unclamped so value and maxValue may be assigned in any order;
+    // render() clamps the displayed ratio.
+    m_value = val;
     emit valueChanged();
     markDirty();
 }
@@ -21,7 +23,6 @@ void Gauge::setValue(double val) {
 void Gauge::setMaxValue(double maxVal) {
     if (qFuzzyCompare(m_maxValue, maxVal) || maxVal <= 0.0) return;
     m_maxValue = maxVal;
-    m_value = std::clamp(m_value, 0.0, m_maxValue);
     emit maxValueChanged();
     markDirty();
 }
@@ -126,7 +127,8 @@ void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
 
     if (availW <= 0 || availH <= 0) return;
 
-    QString pctText = m_showPercentage ? QString(" %1%").arg(static_cast<int>((m_value / m_maxValue) * 100.0)) : "";
+    double pct = std::clamp(m_value / m_maxValue, 0.0, 1.0);
+    QString pctText = m_showPercentage ? QString(" %1%").arg(static_cast<int>(pct * 100.0)) : "";
     int textReservedW = m_label.length() + pctText.length() + (m_showBrackets ? 2 : 0);
     int barW = std::max(1, availW - textReservedW);
 
@@ -145,7 +147,6 @@ void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     }
 
     // Render Bar Fill
-    double pct = std::clamp(m_value / m_maxValue, 0.0, 1.0);
     int filledCells = static_cast<int>(pct * barW);
     bool useGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
 

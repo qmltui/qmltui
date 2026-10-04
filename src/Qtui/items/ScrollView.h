@@ -11,6 +11,7 @@ class ScrollView : public Item {
 
     Q_PROPERTY(int contentHeight READ contentHeight WRITE setContentHeight NOTIFY contentHeightChanged)
     Q_PROPERTY(int contentY READ contentY WRITE setContentY NOTIFY contentYChanged)
+    Q_PROPERTY(bool scrollBarVisible READ scrollBarVisible WRITE setScrollBarVisible NOTIFY scrollBarVisibleChanged)
 
 public:
     explicit ScrollView(QObject *parent = nullptr);
@@ -21,6 +22,9 @@ public:
 
     int contentY() const { return m_contentY; }
     void setContentY(int y);
+
+    bool scrollBarVisible() const { return m_scrollBarVisible; }
+    void setScrollBarVisible(bool visible);
 
     int effectiveContentHeight() const;
 
@@ -36,10 +40,12 @@ public:
 signals:
     void contentHeightChanged();
     void contentYChanged();
+    void scrollBarVisibleChanged();
 
 private:
     int m_contentHeight = 0;
     int m_contentY = 0;
+    bool m_scrollBarVisible = true;
 };
 
 } // namespace qtui

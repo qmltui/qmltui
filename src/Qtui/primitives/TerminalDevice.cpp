@@ -65,12 +65,17 @@ bool TerminalDevice::enableRawMode() {
     termios raw = m_originalTermios;
     // Disable echo, canonical mode, extended input processing, and signals
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    // Disable software flow control
-    raw.c_iflag &= ~(IXON | ICRNL);
+    // Disable software flow control and bit-stripping
+    raw.c_iflag &= ~(IXON | ICRNL | ISTRIP | INLCR | IGNCR);
+    // Ensure 8-bit character size
+    raw.c_cflag |= (CS8);
     // Disable output processing
     raw.c_oflag &= ~(OPOST);
 
     m_isRawMode = tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == 0;
+    if (m_isRawMode) {
+        write("\033%G"); // Switch terminal device parser into UTF-8 mode
+    }
     return m_isRawMode;
 #endif
 }

@@ -18,3 +18,7 @@ target_link_libraries(qtui_pos_cashier PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtu
 if(TARGET Qtui::Testing)
     target_link_libraries(qtui_pos_cashier PRIVATE Qtui::Testing)
 endif()
+
+if(QTUI_INSTALL_EXAMPLES)
+    install(TARGETS qtui_pos_cashier RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()

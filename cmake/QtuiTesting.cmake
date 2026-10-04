@@ -1,7 +1,10 @@
 include_guard(GLOBAL)
 include(CMakeParseArguments)
 
-set(QTUI_TESTING_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake")
+# Cached so every directory sees the path even though include_guard(GLOBAL)
+# skips repeated includes from other directories.
+set(QTUI_TESTING_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
+    CACHE INTERNAL "Path to the Qtui scenario runner script")
 
 function(qtui_add_scenario_test)
     cmake_parse_arguments(QTUI_SCENARIO

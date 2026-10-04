@@ -5,6 +5,7 @@
 #include <QAbstractListModel>
 #include <QSignalSpy>
 #include <QCoreApplication>
+#include <QtLogging>
 #include <algorithm>
 #include <memory>
 
@@ -27,6 +28,40 @@
 #undef private
 
 using namespace qtui;
+
+namespace {
+
+QStringList* capturedMessages = nullptr;
+
+void captureMessage(QtMsgType, const QMessageLogContext&, const QString& message)
+{
+    if (capturedMessages)
+        capturedMessages->append(message);
+}
+
+class ScopedMessageCapture
+{
+public:
+    ScopedMessageCapture()
+        : m_previousHandler(qInstallMessageHandler(captureMessage))
+    {
+        Q_ASSERT(!capturedMessages);
+        capturedMessages = &messages;
+    }
+
+    ~ScopedMessageCapture()
+    {
+        qInstallMessageHandler(m_previousHandler);
+        capturedMessages = nullptr;
+    }
+
+    QStringList messages;
+
+private:
+    QtMessageHandler m_previousHandler;
+};
+
+} // namespace
 
 class MutableListModel : public QAbstractListModel {
     Q_OBJECT
@@ -117,7 +152,44 @@ private slots:
     void streamAppenderDelegateContract();
     void destroyedTreeModelIsCleared();
     void keyHandlingImprovements();
+    void alternateScreenDefersMessages();
+    void nestedAlternateScreensDelayFlush();
+    void normalScreenForwardsMessagesImmediately();
+    void testSessionOutputModeTransitions();
 };
+
+void TestTerminalFramework::testSessionOutputModeTransitions() {
+    const QByteArray previousScript = qgetenv("QTUI_SCRIPT");
+    const QByteArray previousLive = qgetenv("QTUI_TEST_LIVE");
+    qputenv("QTUI_SCRIPT", QByteArrayLiteral("quiet-test.js"));
+    qunsetenv("QTUI_TEST_LIVE");
+
+    bool quietByDefault = false;
+    bool enabledOnRequest = false;
+    bool quietAgain = false;
+    {
+        Terminal terminal;
+        TerminalEngine engine(&terminal);
+        quietByDefault = !engine.terminalOutputEnabled();
+        engine.setTerminalOutputEnabled(true);
+        enabledOnRequest = engine.terminalOutputEnabled();
+        engine.setTerminalOutputEnabled(false);
+        quietAgain = !engine.terminalOutputEnabled();
+    }
+
+    if (previousScript.isNull())
+        qunsetenv("QTUI_SCRIPT");
+    else
+        qputenv("QTUI_SCRIPT", previousScript);
+    if (previousLive.isNull())
+        qunsetenv("QTUI_TEST_LIVE");
+    else
+        qputenv("QTUI_TEST_LIVE", previousLive);
+
+    QVERIFY(quietByDefault);
+    QVERIFY(enabledOnRequest);
+    QVERIFY(quietAgain);
+}
 
 void TestTerminalFramework::unicodeDisplayWidth() {
     QCOMPARE(UnicodeText::displayWidth(QStringLiteral("ASCII")), 5);
@@ -739,6 +811,68 @@ void TestTerminalFramework::keyHandlingImprovements() {
     // 5. Test Shortcut
     engine.handleKeyInput(Qt::Key_Q, {}, 0);
     QCOMPARE(terminal->property("shortcutFired").toBool(), true);
+}
+
+void TestTerminalFramework::alternateScreenDefersMessages()
+{
+    ScopedMessageCapture capture;
+    const QString deferred = QStringLiteral("qtui-deferred-message");
+    const QString afterStop = QStringLiteral("qtui-message-after-stop");
+    const QString afterDestroy = QStringLiteral("qtui-message-after-destroy");
+
+    {
+        Terminal terminal;
+        terminal.engine()->setTestViewportSize(QSize(10, 3));
+        terminal.engine()->renderFrame();
+
+        qInfo().noquote() << deferred;
+        QVERIFY(!capture.messages.contains(deferred));
+
+        terminal.engine()->stop();
+        QVERIFY(capture.messages.contains(deferred));
+
+        qInfo().noquote() << afterStop;
+        QVERIFY(capture.messages.contains(afterStop));
+    }
+
+    qInfo().noquote() << afterDestroy;
+    QVERIFY(capture.messages.contains(afterDestroy));
+}
+
+void TestTerminalFramework::nestedAlternateScreensDelayFlush()
+{
+    ScopedMessageCapture capture;
+    const QString deferred = QStringLiteral("qtui-nested-deferred-message");
+
+    Terminal first;
+    Terminal second;
+    first.engine()->setTestViewportSize(QSize(10, 3));
+    second.engine()->setTestViewportSize(QSize(10, 3));
+    first.engine()->renderFrame();
+    second.engine()->renderFrame();
+
+    qInfo().noquote() << deferred;
+    QVERIFY(!capture.messages.contains(deferred));
+
+    first.engine()->stop();
+    QVERIFY(!capture.messages.contains(deferred));
+
+    second.engine()->stop();
+    QVERIFY(capture.messages.contains(deferred));
+}
+
+void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
+{
+    ScopedMessageCapture capture;
+    const QString immediate = QStringLiteral("qtui-immediate-message");
+
+    Terminal terminal;
+    terminal.setUseAlternateScreen(false);
+    terminal.engine()->setTestViewportSize(QSize(10, 3));
+    terminal.engine()->renderFrame();
+
+    qInfo().noquote() << immediate;
+    QVERIFY(capture.messages.contains(immediate));
 }
 
 QTEST_MAIN(TestTerminalFramework)

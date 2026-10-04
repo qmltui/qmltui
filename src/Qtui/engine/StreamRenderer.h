@@ -13,14 +13,14 @@ public:
     void start(Terminal* rootWindow, TerminalDevice& device) override;
     void stop(Terminal* rootWindow, TerminalDevice& device) override;
     void resize(int width, int height) override;
-    void renderFrame(Terminal* rootWindow, TerminalDevice& device) override;
+    bool renderFrame(Terminal* rootWindow, TerminalDevice& device) override;
 
     void print(TerminalDevice& device, const std::string& text) override;
     const TextGridBuffer* currentBuffer() const override { return &m_promptBuffer; }
 
 private:
-    void clearPromptRegion(TerminalDevice& device);
-    void drawPromptRegion(TerminalDevice& device);
+    bool clearPromptRegion(TerminalDevice& device);
+    bool drawPromptRegion(TerminalDevice& device);
     std::string promptRowToAnsi(int row) const;
 
     TextGridBuffer m_promptBuffer;

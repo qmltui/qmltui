@@ -16,6 +16,7 @@ qt_add_qml_module(QtuiControls
         Spinner.qml
         StackLayout.qml
         StackView.qml
+        StatusBadge.qml
         Switch.qml
     DEPENDENCIES TARGET QtuiCore
 )
@@ -50,6 +51,7 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Spinner.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/StackLayout.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/StackView.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/StatusBadge.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Switch.qml
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
 )

@@ -2,10 +2,13 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QSize>
 #include <QSocketNotifier>
 #include <atomic>
+#include <optional>
 #include "../primitives/TerminalDevice.h"
 #include "../primitives/InputDecoder.h"
+#include "../primitives/TextGridBuffer.h"
 #include "Renderer.h"
 
 class TestScrollView;
@@ -14,7 +17,6 @@ namespace qtui {
 
 class Terminal;
 class Item;
-
 class TerminalEngine : public QObject {
     Q_OBJECT
 
@@ -24,13 +26,19 @@ public:
 
     Q_INVOKABLE void requestRender();
 
+    quint64 frameSequence() const { return m_frameSequence; }
+    std::optional<TextGridBuffer> currentFrame() const;
+    void setTestViewportSize(const QSize& size);
+
     void setRenderer(Renderer* renderer);
     Renderer* renderer() const { return m_renderer; }
+    void setTerminalOutputEnabled(bool enabled);
+    bool terminalOutputEnabled() const { return m_terminalOutputEnabled; }
     void stop();
     void setMouseReporting(bool enable);
 
-    int terminalWidth() const { return m_device.getWidth(); }
-    int terminalHeight() const { return m_device.getHeight(); }
+    int terminalWidth() const;
+    int terminalHeight() const;
 
     void print(const QString& text);
     void append(qtui::Item* item);
@@ -40,6 +48,10 @@ public:
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
                           int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
+
+signals:
+    void frameRendered(quint64 sequence);
+    void renderFailed(const QString& message);
 
 private slots:
     void readTerminalData();
@@ -59,12 +71,16 @@ private:
     InputDecoder m_inputDecoder;
     Renderer* m_renderer = nullptr;
     bool m_rendererStarted = false;
+    bool m_alternateScreenMessageSession = false;
+    bool m_terminalOutputEnabled = true;
     bool m_mouseMotionReportingEnabled = false;
     
     QSocketNotifier* m_notifier = nullptr;
     QPointer<Terminal> m_rootWindow;
     
     std::atomic<bool> m_renderPending{false};
+    QSize m_testViewportSize;
+    quint64 m_frameSequence = 0;
 };
 
 } // namespace qtui

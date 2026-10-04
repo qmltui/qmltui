@@ -9,6 +9,8 @@
 #include "../items/ScrollView.h"
 #include "KeyEvent.h"
 #include "MouseEvent.h"
+#include "TerminalMessageRouter_p.h"
+#include "../primitives/TextGridBuffer.h"
 #include "Keys.h"
 #include "Shortcut.h"
 #include <QCoreApplication>
@@ -166,24 +168,23 @@ int TerminalResizeBridge::sigwinchFd[2] = {-1, -1};
 #endif
 
 
-static QtMessageHandler g_previousMessageHandler = nullptr;
+static bool environmentFlagEnabled(const char* name) {
+  const QByteArray value = qgetenv(name).trimmed().toLower();
+  return !value.isEmpty() && value != "0" && value != "false" && value != "off";
+}
 
-static void qtuiMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    if (type == QtWarningMsg && msg.contains(QLatin1String("Setting initial properties failed"))) {
-        return;
-    }
-    if (g_previousMessageHandler) {
-        g_previousMessageHandler(type, context, msg);
-    } else {
-        fprintf(stderr, "%s\n", qPrintable(msg));
-    }
+static bool environmentRequestsTestSession() {
+  return !qgetenv("QTUI_SCRIPT").trimmed().isEmpty()
+      || !qgetenv("QTUI_EVAL").trimmed().isEmpty()
+      || environmentFlagEnabled("QTUI_INSPECT")
+      || environmentFlagEnabled("QTUI_TEST_EMBEDDED_SCENARIO");
 }
 
 TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
     : QObject(parent), m_rootWindow(rootWindow) {
-  if (!g_previousMessageHandler) {
-      g_previousMessageHandler = qInstallMessageHandler(qtuiMessageHandler);
-  }
+  TerminalMessageRouter::registerEngine();
+  m_terminalOutputEnabled = !environmentRequestsTestSession()
+      || environmentFlagEnabled("QTUI_TEST_LIVE");
 
   // Setup InputDecoder callbacks
   m_inputDecoder.setKeyCallback([this](int key, const QString& text, int modifiers) {
@@ -201,17 +202,22 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
               this, &TerminalEngine::setMouseMotionReportingEnabled);
   }
 
-  m_device.enableRawMode();
-  m_device.hideCursor();
+  if (m_terminalOutputEnabled) {
+    m_device.enableRawMode();
+    m_device.hideCursor();
+  }
 
   m_renderer = new FrameRenderer();
+  m_renderer->setOutputEnabled(m_terminalOutputEnabled);
 
   // Enable bracketed paste. Enable mouse reporting only if enabled on root window.
-  m_device.write("\033[?2004h");
-  if (!m_rootWindow || m_rootWindow->mouseReporting()) {
+  if (m_terminalOutputEnabled) {
+    m_device.write("\033[?2004h");
+    if (!m_rootWindow || m_rootWindow->mouseReporting()) {
       m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h");
-  } else {
+    } else {
       m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l");
+    }
   }
   setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
 
@@ -242,30 +248,61 @@ TerminalEngine::~TerminalEngine() {
   stop();
   delete m_renderer;
   m_renderer = nullptr;
+  TerminalMessageRouter::unregisterEngine();
 }
 
 void TerminalEngine::stop() {
-  m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
+  if (m_terminalOutputEnabled)
+    m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
       m_rendererStarted = false;
   }
-  m_device.showCursor();
-  m_device.disableRawMode();
+  if (m_terminalOutputEnabled) {
+    m_device.showCursor();
+    m_device.disableRawMode();
+  }
+  if (m_alternateScreenMessageSession) {
+      m_alternateScreenMessageSession = false;
+      TerminalMessageRouter::endAlternateScreenSession();
+  }
 }
 
 void TerminalEngine::requestRender() {
-  if (m_renderPending)
+  if (m_renderPending.exchange(true))
     return;
-  m_renderPending = true;
   QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame,
                             Qt::QueuedConnection);
+}
+
+int TerminalEngine::terminalWidth() const {
+  return m_testViewportSize.isValid() ? m_testViewportSize.width() : m_device.getWidth();
+}
+
+int TerminalEngine::terminalHeight() const {
+  return m_testViewportSize.isValid() ? m_testViewportSize.height() : m_device.getHeight();
+}
+
+std::optional<TextGridBuffer> TerminalEngine::currentFrame() const {
+  if (!m_renderer || !m_renderer->currentBuffer())
+    return std::nullopt;
+  return *m_renderer->currentBuffer();
+}
+
+void TerminalEngine::setTestViewportSize(const QSize& size) {
+  if (!size.isValid() || size.isEmpty() || m_testViewportSize == size)
+    return;
+  m_testViewportSize = size;
+  handleResize();
+  requestRender();
 }
 
 void TerminalEngine::setMouseMotionReportingEnabled(bool enabled) {
   if (m_mouseMotionReportingEnabled == enabled)
     return;
   m_mouseMotionReportingEnabled = enabled;
+  if (!m_terminalOutputEnabled)
+    return;
   if (enabled) {
     m_device.write("\033[?1003h");
   } else {
@@ -276,6 +313,8 @@ void TerminalEngine::setMouseMotionReportingEnabled(bool enabled) {
 }
 
 void TerminalEngine::setMouseReporting(bool enable) {
+  if (!m_terminalOutputEnabled)
+    return;
   if (enable) {
     m_device.write("\033[?1000h\033[?1002h\033[?1006h");
     setMouseMotionReportingEnabled(m_rootWindow && m_rootWindow->hasMouseMotionRequests());
@@ -285,7 +324,8 @@ void TerminalEngine::setMouseReporting(bool enable) {
 }
 
 void TerminalEngine::copyToClipboard(const QString& text) {
-  m_device.write(osc52Sequence(text));
+  if (m_terminalOutputEnabled)
+    m_device.write(osc52Sequence(text));
 }
 
 std::string TerminalEngine::osc52Sequence(const QString& text) {
@@ -294,8 +334,8 @@ std::string TerminalEngine::osc52Sequence(const QString& text) {
 }
 
 void TerminalEngine::handleResize() {
-  int w = m_device.getWidth();
-  int h = m_device.getHeight();
+  int w = terminalWidth();
+  int h = terminalHeight();
   if (m_renderer) {
       m_renderer->resize(w, h);
   }
@@ -684,14 +724,24 @@ Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX
 }
 
 void TerminalEngine::renderFrame() {
-  if (!m_rootWindow)
-    return;
-
   m_renderPending = false;
-  if (m_renderer) {
-      startRenderer();
-      m_renderer->renderFrame(m_rootWindow, m_device);
+  if (!m_rootWindow) {
+    emit renderFailed(QStringLiteral("Terminal root was destroyed before rendering"));
+    return;
   }
+
+  if (!m_renderer) {
+      emit renderFailed(QStringLiteral("No renderer is attached to TerminalEngine"));
+      return;
+  }
+
+  startRenderer();
+  if (!m_renderer->renderFrame(m_rootWindow, m_device)) {
+      emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
+      return;
+  }
+
+  emit frameRendered(++m_frameSequence);
 }
 
 void TerminalEngine::setRenderer(Renderer* renderer) {
@@ -699,15 +749,62 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
     if (m_renderer) {
         if (m_rendererStarted) {
             m_renderer->stop(m_rootWindow, m_device);
+            m_rendererStarted = false;
+            if (m_alternateScreenMessageSession) {
+                // Restore normal terminal processing before replaying messages
+                // accumulated by the renderer being replaced.
+                if (m_terminalOutputEnabled) {
+                    m_device.showCursor();
+                    m_device.disableRawMode();
+                }
+                m_alternateScreenMessageSession = false;
+                TerminalMessageRouter::endAlternateScreenSession();
+                if (m_terminalOutputEnabled) {
+                    m_device.enableRawMode();
+                    m_device.hideCursor();
+                }
+            }
         }
         delete m_renderer;
     }
     m_renderer = renderer;
     m_rendererStarted = false;
     if (m_renderer) {
-        m_renderer->resize(m_device.getWidth(), m_device.getHeight());
+        m_renderer->setOutputEnabled(m_terminalOutputEnabled);
+        m_renderer->resize(terminalWidth(), terminalHeight());
         requestRender();
     }
+}
+
+void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
+  if (m_terminalOutputEnabled == enabled)
+    return;
+
+  if (m_renderer && m_rendererStarted) {
+    m_renderer->stop(m_rootWindow, m_device);
+    m_rendererStarted = false;
+  }
+  if (m_alternateScreenMessageSession) {
+    m_alternateScreenMessageSession = false;
+    TerminalMessageRouter::endAlternateScreenSession();
+  }
+
+  if (!enabled) {
+    m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
+    m_device.showCursor();
+    m_device.disableRawMode();
+  } else {
+    m_device.enableRawMode();
+    m_device.hideCursor();
+    m_device.write("\033[?2004h");
+    if (!m_rootWindow || m_rootWindow->mouseReporting())
+      m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h");
+  }
+
+  m_terminalOutputEnabled = enabled;
+  if (m_renderer)
+    m_renderer->setOutputEnabled(enabled);
+  requestRender();
 }
 
 void TerminalEngine::print(const QString& text) {
@@ -719,6 +816,10 @@ void TerminalEngine::print(const QString& text) {
 
 void TerminalEngine::startRenderer() {
     if (!m_renderer || m_rendererStarted) return;
+    if (m_renderer->usesAlternateScreen(m_rootWindow)) {
+        TerminalMessageRouter::beginAlternateScreenSession();
+        m_alternateScreenMessageSession = true;
+    }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;
 }

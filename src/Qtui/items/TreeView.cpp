@@ -652,8 +652,12 @@ void TreeView::updateTree() {
 
 static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& value) {
     if (!obj) return;
-    if (obj->metaObject()->indexOfProperty(name) != -1) {
-        obj->setProperty(name, value);
+    int idx = obj->metaObject()->indexOfProperty(name);
+    if (idx != -1) {
+        QMetaProperty prop = obj->metaObject()->property(idx);
+        if (prop.isWritable()) {
+            obj->setProperty(name, value);
+        }
     }
 }
 
@@ -687,8 +691,10 @@ void TreeView::updateDelegateItem(Item *item, int index) {
     modelMap["selected"] = isCurrent;
     item->setProperty("model", modelMap);
 
-    for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it)
+    for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+        if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent")) continue;
         setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+    }
 
     if (QQmlContext *context = delegateContext(item)) {
         DelegateUtils::setContextProperty(m_delegate, context, "index", index);

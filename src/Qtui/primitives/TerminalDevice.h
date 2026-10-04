@@ -38,6 +38,7 @@ private:
     bool m_termiosValid = false;
 #endif
     bool m_isRawMode = false;
+    bool m_hasWrittenOutput = false;
 };
 
 } // namespace qtui

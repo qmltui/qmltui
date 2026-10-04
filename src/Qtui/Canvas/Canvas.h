@@ -79,6 +79,7 @@ private:
 
 class CanvasShape : public Item {
     Q_OBJECT
+    QML_ELEMENT
     QML_UNCREATABLE("CanvasShape is an abstract base class")
     Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
 
@@ -236,4 +237,3 @@ private:
 };
 
 } // namespace qtui
-

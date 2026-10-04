@@ -4,6 +4,8 @@
 namespace qtui {
 
 void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
+    if (!outputEnabled())
+        return;
     if (rootWindow && rootWindow->useAlternateScreen()) {
         device.write("\033[?1049h");
     }
@@ -11,6 +13,8 @@ void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 void FrameRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
+    if (!outputEnabled())
+        return;
     if (rootWindow && rootWindow->useAlternateScreen()) {
         device.write("\033[?1049l"); // Disable alternate screen buffer
     } else {
@@ -23,16 +27,21 @@ void FrameRenderer::resize(int width, int height) {
     m_nextBuffer.resize(width, height);
 }
 
-void FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
-    if (!rootWindow) return;
+bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+    if (!rootWindow) return false;
     
     m_nextBuffer.clear();
     rootWindow->render(m_nextBuffer, 0, 0);
 
     std::string ansi = m_currentBuffer.diff(m_nextBuffer);
-    if (!ansi.empty() && !device.write(ansi))
-        return;
+    if (outputEnabled() && !ansi.empty() && !device.write(ansi))
+        return false;
     m_currentBuffer.swap(m_nextBuffer);
+    return true;
+}
+
+bool FrameRenderer::usesAlternateScreen(Terminal* rootWindow) const {
+    return outputEnabled() && rootWindow && rootWindow->useAlternateScreen();
 }
 
 } // namespace qtui

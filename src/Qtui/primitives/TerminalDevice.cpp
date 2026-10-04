@@ -30,8 +30,10 @@ TerminalDevice::TerminalDevice() {
 
 TerminalDevice::~TerminalDevice() {
     disableRawMode();
-    showCursor();
-    write("\033[0m"); // Reset text formatting and colors back to terminal defaults
+    if (m_hasWrittenOutput) {
+        showCursor();
+        write("\033[0m"); // Reset text formatting and colors back to terminal defaults
+    }
 }
 
 bool TerminalDevice::enableRawMode() {
@@ -107,6 +109,8 @@ void TerminalDevice::clearScreen() {
 }
 
 bool TerminalDevice::write(const std::string& data) {
+    if (!data.empty())
+        m_hasWrittenOutput = true;
 #ifdef _WIN32
     HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOutput == INVALID_HANDLE_VALUE) return false;

@@ -64,7 +64,9 @@ void StreamRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
-    clearPromptRegion(device);
+    if (!outputEnabled())
+        return;
+    (void)clearPromptRegion(device);
 }
 
 void StreamRenderer::resize(int width, int height) {
@@ -74,27 +76,30 @@ void StreamRenderer::resize(int width, int height) {
 }
 
 void StreamRenderer::print(TerminalDevice& device, const std::string& text) {
-    clearPromptRegion(device);
-    device.write(withTerminalLineEndings(text));
-    drawPromptRegion(device);
+    if (!outputEnabled())
+        return;
+    (void)clearPromptRegion(device);
+    (void)device.write(withTerminalLineEndings(text));
+    (void)drawPromptRegion(device);
 }
 
-void StreamRenderer::clearPromptRegion(TerminalDevice& device) {
+bool StreamRenderer::clearPromptRegion(TerminalDevice& device) {
     if (m_lastPromptHeight > 0) {
         std::ostringstream oss;
         oss << "\r\033[" << m_lastPromptHeight << "A\033[J";
-        device.write(oss.str());
+        return device.write(oss.str());
     }
+    return true;
 }
 
-void StreamRenderer::drawPromptRegion(TerminalDevice& device) {
-    if (m_lastPromptHeight <= 0) return;
+bool StreamRenderer::drawPromptRegion(TerminalDevice& device) {
+    if (m_lastPromptHeight <= 0) return true;
 
     std::ostringstream output;
     for (int row = 0; row < m_lastPromptHeight; ++row) {
         output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
     }
-    device.write(output.str());
+    return device.write(output.str());
 }
 
 std::string StreamRenderer::promptRowToAnsi(int row) const {
@@ -131,8 +136,8 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
     return output.str();
 }
 
-void StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
-    if (!rootWindow) return;
+bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+    if (!rootWindow) return false;
 
     int requiredHeight = rootWindow->implicitHeight();
     if (requiredHeight <= 0) {
@@ -145,11 +150,11 @@ void StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     const int maximumPromptHeight = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
     if (requiredHeight > maximumPromptHeight) requiredHeight = maximumPromptHeight;
 
-    clearPromptRegion(device);
+    if (outputEnabled() && !clearPromptRegion(device)) return false;
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     rootWindow->render(m_promptBuffer, 0, 0);
-    drawPromptRegion(device);
+    return !outputEnabled() || drawPromptRegion(device);
 }
 
 } // namespace qtui

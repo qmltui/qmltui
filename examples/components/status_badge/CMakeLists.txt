@@ -1,0 +1,12 @@
+qt_add_executable(qtui_status_badge main.cpp)
+
+qt_add_qml_module(qtui_status_badge
+    URI StatusBadgeDemo
+    VERSION 1.0
+    QML_FILES
+        Main.qml
+
+    DEPENDENCIES TARGET Qtui::Core Qtui::Controls
+)
+
+target_link_libraries(qtui_status_badge PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)

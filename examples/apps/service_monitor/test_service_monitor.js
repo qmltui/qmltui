@@ -1,0 +1,7 @@
+Test.expectText("SERVICE MONITOR")
+Test.expectText("api-gateway")
+Test.expectText("▲ DEGRADED")
+Test.press("Down")
+Test.press("Down")
+Test.press("Enter")
+Test.expectText("Selected service row 2")

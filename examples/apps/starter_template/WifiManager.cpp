@@ -2,45 +2,22 @@
 #include <QProcess>
 #include <QNetworkInterface>
 #include <QHostAddress>
-#include <QStandardPaths>
 #include <QFile>
 #include <QDir>
 #include <QTextStream>
 #include <QTime>
 #include <QRegularExpression>
-#include <QDebug>
-
-namespace {
-QString runQuiet(const QString &program, const QStringList &arguments, int timeoutMs = 2000, int *exitCode = nullptr)
-{
-    QProcess proc;
-    proc.setProcessChannelMode(QProcess::SeparateChannels);
-    proc.start(program, arguments);
-    if (!proc.waitForFinished(timeoutMs)) {
-        proc.kill();
-        proc.waitForFinished(200);
-        if (exitCode) *exitCode = -1;
-        return QString();
-    }
-    if (exitCode) *exitCode = proc.exitCode();
-    return QString::fromUtf8(proc.readAllStandardOutput());
-}
-
-void executeQuiet(const QString &program, const QStringList &arguments, int timeoutMs = 1500)
-{
-    QProcess proc;
-    proc.setProcessChannelMode(QProcess::SeparateChannels);
-    proc.start(program, arguments);
-    if (!proc.waitForFinished(timeoutMs)) {
-        proc.kill();
-        proc.waitForFinished(100);
-    }
-}
-} // namespace
+#include <memory>
 
 WifiManager::WifiManager(QObject *parent)
     : QObject(parent)
 {
+    const QByteArray requestedBackend = qgetenv("QTUI_STARTER_BACKEND").trimmed().toLower();
+    if (requestedBackend == "observe")
+        m_backendMode = BackendMode::Observe;
+    else if (requestedBackend == "mock")
+        m_backendMode = BackendMode::Mock;
+
     m_interface = detectWirelessInterface();
     addLog(QString("Hardware initialized. Active wireless interface: %1").arg(m_interface));
 
@@ -53,13 +30,85 @@ WifiManager::WifiManager(QObject *parent)
     connect(&m_sysInfoTimer, &QTimer::timeout, this, &WifiManager::updateSystemDiagnostics);
     m_sysInfoTimer.start(2000); // Update CPU/RAM/Uptime every 2s
 
-    ensureInterfaceUp();
-    ensureWpaSupplicantRunning();
-
     updateSystemDiagnostics();
-    refreshStatus();
-    handleScanFinished(); // Load cached networks immediately
-    scan();
+
+    if (m_backendMode == BackendMode::Mock) {
+        m_networks = {
+            QVariantMap{{"ssid", "Qtui Lab"}, {"signal", 88}, {"frequency", 5180},
+                        {"security", "WPA2"}, {"connected", false}},
+            QVariantMap{{"ssid", "Device Setup"}, {"signal", 64}, {"frequency", 2412},
+                        {"security", "WPA2"}, {"connected", false}}
+        };
+        m_statusMessage = QStringLiteral("Mock network backend ready");
+        emit networksChanged();
+        emit statusChanged();
+        return;
+    }
+
+    if (allowsMutation()) {
+        m_operationActive = true;
+        prepareWifiStack([this](bool success) {
+            m_operationActive = false;
+            if (!success)
+                addLog(QStringLiteral("[WARNING] Wi-Fi stack preparation was incomplete"));
+            applyWifiPowerPolicy();
+            refreshStatus();
+        });
+        return;
+    }
+
+    QTimer::singleShot(0, this, &WifiManager::refreshStatus);
+}
+
+void WifiManager::runCommand(const QString &program, const QStringList &arguments,
+                             int timeoutMs, CommandCallback callback)
+{
+    auto *process = new QProcess(this);
+    process->setProcessChannelMode(QProcess::SeparateChannels);
+    auto completed = std::make_shared<bool>(false);
+    auto complete = [process, completed, callback = std::move(callback)](int exitCode) mutable {
+        if (*completed)
+            return;
+        *completed = true;
+        const QString standardOutput = QString::fromUtf8(process->readAllStandardOutput());
+        const QString standardError = QString::fromUtf8(process->readAllStandardError());
+        if (callback)
+            callback(exitCode, standardOutput, standardError);
+        process->deleteLater();
+    };
+
+    connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+            [complete](int exitCode, QProcess::ExitStatus) mutable { complete(exitCode); });
+    connect(process, &QProcess::errorOccurred, this,
+            [complete](QProcess::ProcessError error) mutable {
+        if (error == QProcess::FailedToStart)
+            complete(-1);
+    });
+    QTimer::singleShot(timeoutMs, process, [process, complete]() mutable {
+        if (process->state() != QProcess::NotRunning)
+            process->kill();
+        complete(-1);
+    });
+    process->start(program, arguments);
+}
+
+void WifiManager::runCommandSequence(const QList<Command> &commands,
+                                     std::function<void(bool)> callback, int index)
+{
+    if (index >= commands.size()) {
+        callback(true);
+        return;
+    }
+    const Command command = commands.at(index);
+    runCommand(command.first, command.second, 1500,
+               [this, commands, callback = std::move(callback), index]
+               (int exitCode, const QString &, const QString &) mutable {
+        if (exitCode != 0) {
+            callback(false);
+            return;
+        }
+        runCommandSequence(commands, std::move(callback), index + 1);
+    });
 }
 
 void WifiManager::addLog(const QString &message)
@@ -93,25 +142,13 @@ QString WifiManager::detectWirelessInterface()
         }
     }
 
-    QString out = runQuiet("iw", QStringList() << "dev", 800);
-    if (!out.isEmpty()) {
-        QRegularExpression rx(R"(Interface\s+([a-zA-Z0-9_-]+))");
-        auto match = rx.match(out);
-        if (match.hasMatch()) {
-            return match.captured(1);
-        }
-    }
-
     return "mlan0";
 }
 
-void WifiManager::ensureInterfaceUp()
+void WifiManager::prepareWifiStack(std::function<void(bool)> callback)
 {
-    if (QFile::exists("/dev/rfkill")) {
-        executeQuiet("rfkill", QStringList() << "unblock" << "wifi");
-        executeQuiet("rfkill", QStringList() << "unblock" << "all");
-    }
-    executeQuiet("ip", QStringList() << "link" << "set" << m_interface << "up");
+    QList<Command> commands;
+    commands.append({"ip", {"link", "set", m_interface, "up"}});
 
     // Dual-stack: make sure IPv6 is enabled and SLAAC accepts router
     // advertisements on the wireless interface.
@@ -122,10 +159,7 @@ void WifiManager::ensureInterfaceUp()
     };
     writeSysctl(QString("/proc/sys/net/ipv6/conf/%1/disable_ipv6").arg(m_interface), "0");
     writeSysctl(QString("/proc/sys/net/ipv6/conf/%1/accept_ra").arg(m_interface), "2");
-}
 
-void WifiManager::ensureWpaSupplicantRunning()
-{
     QString ctrlSocket = QString("/var/run/wpa_supplicant/%1").arg(m_interface);
     if (!QFile::exists(ctrlSocket)) {
         QDir().mkpath("/var/run/wpa_supplicant");
@@ -142,85 +176,113 @@ void WifiManager::ensureWpaSupplicantRunning()
             }
         }
 
-        executeQuiet("wpa_supplicant", QStringList()
-            << "-B" << "-qq"
-            << "-i" << m_interface
-            << "-c" << confPath
-            << "-C" << "/var/run/wpa_supplicant");
+        commands.append({"wpa_supplicant", {"-B", "-qq", "-i", m_interface,
+                                              "-c", confPath, "-C", "/var/run/wpa_supplicant"}});
     }
+    if (QFile::exists("/dev/rfkill")) {
+        runCommand("rfkill", {"unblock", "all"}, 1000,
+                   [this, commands, callback = std::move(callback)]
+                   (int, const QString &, const QString &) mutable {
+            runCommandSequence(commands, std::move(callback));
+        });
+    } else {
+        runCommandSequence(commands, std::move(callback));
+    }
+}
+
+void WifiManager::applyWifiPowerPolicy()
+{
+    if (qEnvironmentVariableIntValue("QTUI_WIFI_LOW_LATENCY") != 1)
+        return;
+    runCommand("iw", {"dev", m_interface, "set", "power_save", "off"}, 1000,
+               [this](int exitCode, const QString &, const QString &error) {
+        if (exitCode == 0)
+            addLog("Low-latency Wi-Fi profile: power saving disabled");
+        else
+            addLog(QString("[WARNING] Wi-Fi power policy unsupported: %1").arg(error.trimmed()));
+    });
 }
 
 void WifiManager::periodicScan()
 {
-    // When connected to Wi-Fi, stop auto-discovery scanning
-    if (m_connected) {
-        return;
-    }
-
-    if (!m_scanning) {
+    if (allowsMutation() && !m_connected && !m_scanning && !m_operationActive)
         scan();
-    }
 }
 
 void WifiManager::scan()
 {
-    if (m_scanning)
+    if (!allowsMutation()) {
+        m_lastError = QStringLiteral("Network changes are disabled in this backend mode");
+        emit errorChanged();
+        return;
+    }
+    if (m_connected || m_scanning || m_operationActive)
         return;
 
     m_interface = detectWirelessInterface();
-    ensureInterfaceUp();
-    ensureWpaSupplicantRunning();
-
+    m_operationActive = true;
     m_scanning = true;
+    m_scanResultAttempts = 0;
     m_statusMessage = QString("Scanning wireless networks on %1...").arg(m_interface);
     emit scanningChanged();
     emit statusChanged();
 
-    QProcess *process = new QProcess(this);
-    process->setProcessChannelMode(QProcess::SeparateChannels);
-    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this, process](int, QProcess::ExitStatus) {
-        process->deleteLater();
-        QTimer::singleShot(2500, this, &WifiManager::handleScanFinished);
-        QTimer::singleShot(5000, this, &WifiManager::handleScanFinished);
+    runCommand("wpa_cli", {"-i", m_interface, "scan"}, 1500,
+               [this](int exitCode, const QString &, const QString &error) {
+        if (exitCode != 0) {
+            failOperation(QString("Wi-Fi scan failed: %1").arg(error.trimmed()));
+            return;
+        }
+        QTimer::singleShot(700, this, &WifiManager::handleScanFinished);
     });
-
-    process->start("wpa_cli", QStringList() << "-i" << m_interface << "scan");
-    if (!process->waitForStarted(500)) {
-        process->deleteLater();
-        QTimer::singleShot(2500, this, &WifiManager::handleScanFinished);
-        QTimer::singleShot(5000, this, &WifiManager::handleScanFinished);
-    }
 }
 
 void WifiManager::handleScanFinished()
 {
-    QVariantList newNetworks;
-
-    // 1. Try wpa_cli scan_results
-    QString wpaOutput = runQuiet("wpa_cli", QStringList() << "-i" << m_interface << "scan_results", 1500);
-    if (!wpaOutput.isEmpty()) {
-        parseWpaCliScanOutput(wpaOutput, newNetworks);
-    }
-
-    // 2. If wpa_cli had no results, try direct iw dev scan
-    if (newNetworks.isEmpty()) {
-        QString iwOutput = runQuiet("iw", QStringList() << "dev" << m_interface << "scan", 3000);
-        if (!iwOutput.isEmpty()) {
-            parseIwScanOutput(iwOutput, newNetworks);
+    runCommand("wpa_cli", {"-i", m_interface, "scan_results"}, 1500,
+               [this](int exitCode, const QString &output, const QString &error) {
+        QVariantList networks;
+        if (exitCode == 0)
+            parseWpaCliScanOutput(output, networks);
+        if (networks.isEmpty() && ++m_scanResultAttempts < 6) {
+            QTimer::singleShot(500, this, &WifiManager::handleScanFinished);
+            return;
         }
-    }
+        if (exitCode != 0) {
+            failOperation(QString("Could not read Wi-Fi scan results: %1").arg(error.trimmed()));
+            return;
+        }
+        finishScan(networks);
+    });
+}
 
-    m_networks = newNetworks;
+void WifiManager::finishScan(const QVariantList &networks)
+{
+    m_networks = networks;
     emit networksChanged();
 
     m_scanning = false;
+    m_operationActive = false;
     if (m_networks.isEmpty()) {
         m_statusMessage = QString("No wireless networks found on %1").arg(m_interface);
     } else {
         m_statusMessage = QString("Found %1 wireless network(s)").arg(m_networks.size());
     }
     emit scanningChanged();
+    emit statusChanged();
+}
+
+void WifiManager::failOperation(const QString &message)
+{
+    m_operationActive = false;
+    if (m_scanning) {
+        m_scanning = false;
+        emit scanningChanged();
+    }
+    m_lastError = message;
+    m_statusMessage = message;
+    addLog("[ERROR] " + message);
+    emit errorChanged();
     emit statusChanged();
 }
 
@@ -309,13 +371,22 @@ void WifiManager::parseIwScanOutput(const QString &output, QVariantList &outList
 
 void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
 {
+    if (!allowsMutation()) {
+        m_lastError = QStringLiteral("Network changes are disabled in this backend mode");
+        emit errorChanged();
+        emit connectionResult(false, m_lastError);
+        return;
+    }
     if (ssid.isEmpty()) {
         m_lastError = "No target SSID specified";
         addLog("[ERROR] " + m_lastError);
         emit errorChanged();
         return;
     }
+    if (m_operationActive)
+        return;
 
+    m_operationActive = true;
     m_lastError.clear();
     emit errorChanged();
 
@@ -323,80 +394,99 @@ void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
     addLog(QString("Initiating connection to '%1'...").arg(ssid));
     emit statusChanged();
 
-    ensureInterfaceUp();
-    ensureWpaSupplicantRunning();
-
-    // 1. Remove previous network profiles
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "remove_network" << "all");
-
-    // 2. Add new network profile via wpa_cli
-    QString netIdRaw = runQuiet("wpa_cli", QStringList() << "-i" << m_interface << "add_network", 1500).trimmed();
-    QString netId = "0";
-    for (const QString &line : netIdRaw.split('\n', Qt::SkipEmptyParts)) {
-        QString trimmed = line.trimmed();
-        bool ok = false;
-        int val = trimmed.toInt(&ok);
-        if (ok && val >= 0) {
-            netId = trimmed;
-            break;
-        }
-    }
-
-    // 3. Configure SSID and PSK
-    addLog(QString("Configured profile %1 (SSID: '%2')").arg(netId, ssid));
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "set_network" << netId << "ssid" << QString("\"%1\"").arg(ssid));
-    if (password.isEmpty()) {
-        executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "set_network" << netId << "key_mgmt" << "NONE");
-    } else {
-        executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "set_network" << netId << "psk" << QString("\"%1\"").arg(password));
-    }
-
-    // 4. Enable and select
-    addLog("Selected network profile and began 4-way authentication...");
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "enable_network" << netId);
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "select_network" << netId);
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "save_config");
-
-    m_currentSsid = ssid;
-    emit connectedChanged();
-    emit statusChanged();
-
-    // 5. Poll connection progress and trigger DHCP via udhcpc
-    QTimer::singleShot(2500, this, [this]() {
-        addLog("Requesting addresses (IPv4: udhcpc, IPv6: SLAAC/DHCPv6)...");
-        requestAddresses();
-        refreshStatus();
-    });
-
-    QTimer::singleShot(5000, this, [this, ssid]() {
-        requestAddresses();
-        refreshStatus();
-        if (m_connected) {
-            addLog(QString("[SUCCESS] Connected to '%1' | IPv4: %2 | IPv6: %3")
-                       .arg(ssid, m_ipAddress, m_globalIp6.isEmpty() ? QStringLiteral("-") : m_globalIp6));
-            emit connectionResult(true, QString("Connected to %1").arg(ssid));
-        } else {
-            m_lastError = QString("Association timeout for '%1' - verify passphrase").arg(ssid);
-            addLog("[WARNING] " + m_lastError);
-            emit errorChanged();
+    runCommand("wpa_cli", {"-i", m_interface, "remove_network", "all"}, 1500,
+               [this, ssid, password](int removeExit, const QString &, const QString &removeError) {
+        if (removeExit != 0) {
+            failOperation(QString("Could not reset Wi-Fi profiles: %1").arg(removeError.trimmed()));
             emit connectionResult(false, m_lastError);
+            return;
         }
+        runCommand("wpa_cli", {"-i", m_interface, "add_network"}, 1500,
+                   [this, ssid, password](int addExit, const QString &output, const QString &addError) {
+            if (addExit != 0) {
+                failOperation(QString("Could not create Wi-Fi profile: %1").arg(addError.trimmed()));
+                emit connectionResult(false, m_lastError);
+                return;
+            }
+            QString networkId;
+            for (const QString &line : output.split('\n', Qt::SkipEmptyParts)) {
+                bool ok = false;
+                line.trimmed().toInt(&ok);
+                if (ok) {
+                    networkId = line.trimmed();
+                    break;
+                }
+            }
+            if (networkId.isEmpty()) {
+                failOperation(QStringLiteral("wpa_supplicant returned no network identifier"));
+                emit connectionResult(false, m_lastError);
+                return;
+            }
+
+            QList<Command> commands;
+            commands.append({"wpa_cli", {"-i", m_interface, "set_network", networkId,
+                                           "ssid", QString("\"%1\"").arg(ssid)}});
+            if (password.isEmpty())
+                commands.append({"wpa_cli", {"-i", m_interface, "set_network", networkId,
+                                               "key_mgmt", "NONE"}});
+            else
+                commands.append({"wpa_cli", {"-i", m_interface, "set_network", networkId,
+                                               "psk", QString("\"%1\"").arg(password)}});
+            commands.append({"wpa_cli", {"-i", m_interface, "enable_network", networkId}});
+            commands.append({"wpa_cli", {"-i", m_interface, "select_network", networkId}});
+            commands.append({"wpa_cli", {"-i", m_interface, "save_config"}});
+
+            runCommandSequence(commands, [this, ssid, networkId](bool success) {
+                if (!success) {
+                    failOperation(QStringLiteral("Could not configure the Wi-Fi profile"));
+                    emit connectionResult(false, m_lastError);
+                    return;
+                }
+                addLog(QString("Configured profile %1 and began association with '%2'")
+                           .arg(networkId, ssid));
+                m_operationActive = false;
+                m_pendingConnectionSsid = ssid;
+                QTimer::singleShot(1500, this, &WifiManager::checkConnectionStatus);
+                QTimer::singleShot(3500, this, &WifiManager::checkConnectionStatus);
+                QTimer::singleShot(7000, this, [this, ssid] {
+                    if (m_pendingConnectionSsid != ssid)
+                        return;
+                    m_pendingConnectionSsid.clear();
+                    m_lastError = QString("Association timeout for '%1' - verify passphrase").arg(ssid);
+                    addLog("[WARNING] " + m_lastError);
+                    emit errorChanged();
+                    emit connectionResult(false, m_lastError);
+                });
+            });
+        });
     });
 }
 
 void WifiManager::disconnectNetwork()
 {
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "disconnect");
-    executeQuiet("wpa_cli", QStringList() << "-i" << m_interface << "remove_network" << "all");
-    m_connected = false;
-    m_currentSsid.clear();
-    m_statusMessage = "Disconnected from wireless network";
-    addLog("Wireless connection disconnected by user request");
-    emit connectedChanged();
-    emit statusChanged();
-
-    // Trigger immediate scan when returning to disconnected state
-    scan();
+    if (!allowsMutation() || m_operationActive)
+        return;
+    m_operationActive = true;
+    const QList<Command> commands = {
+        {"wpa_cli", {"-i", m_interface, "disconnect"}},
+        {"wpa_cli", {"-i", m_interface, "remove_network", "all"}}
+    };
+    runCommandSequence(commands, [this](bool success) {
+        m_operationActive = false;
+        if (!success) {
+            failOperation(QStringLiteral("Could not disconnect the wireless network"));
+            return;
+        }
+        m_connected = false;
+        m_currentSsid.clear();
+        m_pendingConnectionSsid.clear();
+        m_statusMessage = "Disconnected from wireless network";
+        addLog("Wireless connection disconnected by user request");
+        emit connectedChanged();
+        emit statusChanged();
+        requestAddresses();
+        QTimer::singleShot(500, this, &WifiManager::scan);
+    });
 }
 
 void WifiManager::refreshStatus()
@@ -407,66 +497,73 @@ void WifiManager::refreshStatus()
 
 void WifiManager::checkConnectionStatus()
 {
-    QString output = runQuiet("wpa_cli", QStringList() << "-i" << m_interface << "status", 800);
-    bool wasConnected = m_connected;
-    bool isConnected = false;
-    QString currentSsid;
-
-    if (!output.isEmpty()) {
-        QStringList lines = output.split('\n');
-        for (const QString &line : lines) {
-            if (line.startsWith("wpa_state=COMPLETED")) {
-                isConnected = true;
-            } else if (line.startsWith("ssid=")) {
-                currentSsid = line.mid(5).trimmed();
+    if (m_backendMode == BackendMode::Mock || m_statusCheckActive || m_operationActive)
+        return;
+    m_statusCheckActive = true;
+    runCommand("wpa_cli", {"-i", m_interface, "status"}, 800,
+               [this](int exitCode, const QString &output, const QString &) {
+        bool connected = false;
+        QString ssid;
+        if (exitCode == 0) {
+            for (const QString &line : output.split('\n')) {
+                if (line.startsWith("wpa_state=COMPLETED"))
+                    connected = true;
+                else if (line.startsWith("ssid="))
+                    ssid = line.mid(5).trimmed();
             }
         }
-    }
-
-    // Live link quality of the active association (RSSI dBm -> percent),
-    // shown by the connected view's signal meter.
-    int signal = 0;
-    if (isConnected) {
-        const QString poll = runQuiet("wpa_cli", QStringList() << "-i" << m_interface << "signal_poll", 800);
-        static const QRegularExpression rssiRx(QStringLiteral("RSSI=(-?\\d+)"));
-        const QRegularExpressionMatch match = rssiRx.match(poll);
-        if (match.hasMatch())
-            signal = qBound(0, 2 * (match.captured(1).toInt() + 100), 100);
-    }
-    if (signal != m_currentSignal) {
-        m_currentSignal = signal;
-        emit statusChanged();
-    }
-
-    if (isConnected != wasConnected || currentSsid != m_currentSsid) {
-        m_connected = isConnected;
-        m_currentSsid = currentSsid;
-        emit connectedChanged();
-        emit statusChanged();
-
-        if (m_connected) {
-            requestAddresses();
+        if (!connected) {
+            m_statusCheckActive = false;
+            applyConnectionStatus(false, ssid, 0);
+            return;
         }
-    }
-
-    updateNetworkInterfaces();
-
-    if (m_connected && m_ipAddress == "-") {
-        requestAddresses();
-    }
+        runCommand("wpa_cli", {"-i", m_interface, "signal_poll"}, 800,
+                   [this, ssid](int, const QString &poll, const QString &) {
+            static const QRegularExpression rssiRx(QStringLiteral("RSSI=(-?\\d+)"));
+            const QRegularExpressionMatch match = rssiRx.match(poll);
+            const int signal = match.hasMatch()
+                ? qBound(0, 2 * (match.captured(1).toInt() + 100), 100) : 0;
+            m_statusCheckActive = false;
+            applyConnectionStatus(true, ssid, signal);
+        });
+    });
 }
 
 void WifiManager::requestAddresses()
 {
-    // 1. Tell systemd-networkd to reconfigure interface
-    executeQuiet("networkctl", QStringList() << "reconfigure" << m_interface, 500);
+    if (allowsMutation())
+        runCommand("networkctl", {"reconfigure", m_interface}, 1000);
+}
 
-    // 2. Launch background udhcpc daemon completely silent with stdout/stderr redirected to /dev/null
-    const QString pidFile = QString("/var/run/udhcpc.%1.pid").arg(m_interface);
-    if (!QFile::exists(pidFile)) {
-        const QString cmd = QString("udhcpc -i %1 -b -q -p %2 -t 8 -A 3 -x hostname:%3 >/dev/null 2>&1")
-            .arg(m_interface, pidFile, m_hostname);
-        QProcess::startDetached("sh", QStringList() << "-c" << cmd);
+void WifiManager::applyConnectionStatus(bool connected, const QString &ssid, int signal)
+{
+    const bool connectionChanged = connected != m_connected || ssid != m_currentSsid;
+    const bool signalChanged = signal != m_currentSignal;
+    m_connected = connected;
+    m_currentSsid = ssid;
+    m_currentSignal = signal;
+    if (connectionChanged)
+        emit connectedChanged();
+    if (connectionChanged || signalChanged)
+        emit statusChanged();
+
+    updateNetworkInterfaces();
+    if (connected && connectionChanged) {
+        requestAddresses();
+        applyWifiPowerPolicy();
+    }
+    if (connected && !m_pendingConnectionSsid.isEmpty()) {
+        const QString requestedSsid = m_pendingConnectionSsid;
+        m_pendingConnectionSsid.clear();
+        addLog(QString("[SUCCESS] Connected to '%1' | IPv4: %2 | IPv6: %3")
+                   .arg(requestedSsid, m_ipAddress,
+                        m_globalIp6.isEmpty() ? QStringLiteral("-") : m_globalIp6));
+        emit connectionResult(true, QString("Connected to %1").arg(requestedSsid));
+    }
+    if (m_initialStatusPending) {
+        m_initialStatusPending = false;
+        if (!connected && allowsMutation())
+            QTimer::singleShot(0, this, &WifiManager::scan);
     }
 }
 

@@ -10,6 +10,7 @@ IMAGE_INSTALL = "\
     packagegroup-qtui-base \
     packagegroup-qtui-tools \
     packagegroup-qtui-examples \
+    qtui-starter-template-benchmark \
     qtui-autostart \
     ${CORE_IMAGE_EXTRA_INSTALL} \
 "

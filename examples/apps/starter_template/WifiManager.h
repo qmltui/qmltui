@@ -6,7 +6,9 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QTimer>
+#include <QPair>
 #include <qqmlregistration.h>
+#include <functional>
 
 class WifiManager : public QObject {
     Q_OBJECT
@@ -93,15 +95,34 @@ private slots:
     void updateSystemDiagnostics();
 
 private:
+    enum class BackendMode { Live, Observe, Mock };
+    using Command = QPair<QString, QStringList>;
+    using CommandCallback = std::function<void(int, const QString &, const QString &)>;
+
     QString detectWirelessInterface();
-    void ensureInterfaceUp();
-    void ensureWpaSupplicantRunning();
+    void prepareWifiStack(std::function<void(bool)> callback);
+    void applyWifiPowerPolicy();
+    void runCommand(const QString &program, const QStringList &arguments,
+                    int timeoutMs, CommandCallback callback = {});
+    void runCommandSequence(const QList<Command> &commands,
+                            std::function<void(bool)> callback, int index = 0);
+    void applyConnectionStatus(bool connected, const QString &ssid, int signal);
+    void finishScan(const QVariantList &networks);
+    void failOperation(const QString &message);
+    bool allowsMutation() const { return m_backendMode == BackendMode::Live; }
     void parseIwScanOutput(const QString &output, QVariantList &outList);
     void parseWpaCliScanOutput(const QString &output, QVariantList &outList);
     void updateNetworkInterfaces();
     void requestAddresses();
     void updateSshStatus();
     void addLog(const QString &message);
+
+    BackendMode m_backendMode = BackendMode::Live;
+    bool m_operationActive = false;
+    bool m_statusCheckActive = false;
+    bool m_initialStatusPending = true;
+    int m_scanResultAttempts = 0;
+    QString m_pendingConnectionSsid;
 
     bool m_scanning = false;
     bool m_connected = false;

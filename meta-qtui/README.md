@@ -111,12 +111,44 @@ QTUI_TTY="/dev/ttyLP0"
 # Terminal emulation
 TERM="xterm-256color"
 COLORTERM="truecolor"
+
+# Optional: trade higher Wi-Fi power use for steadier SSH latency
+QTUI_WIFI_LOW_LATENCY="0"
 ```
 
 To switch to a different app (e.g. `qtui_din_gateway`), edit `/etc/default/qtui-app` and restart the service:
 ```sh
 systemctl restart qtui-app
 ```
+
+The starter manages association through `wpa_supplicant`; `systemd-networkd`
+alone manages DHCP, addresses, and routes. Do not launch a second
+`qtui_starter_template` over SSH while the boot service is running. The
+production executable rejects that with exit status 2. The demo image includes
+the non-mutating, Testing-linked `qtui_starter_template_benchmark` instead;
+the minimal production image intentionally does not include it.
+
+To opt into the low-latency Wi-Fi policy, set `QTUI_WIFI_LOW_LATENCY="1"` in
+`/etc/default/qtui-app` and restart `qtui-app`. The launcher disables interface
+power saving, and the starter reapplies the policy after association. Leave it
+disabled for battery-sensitive deployments.
+
+### Measuring TUI latency over SSH
+
+Run the host-side harness after installing the demo image:
+
+```sh
+meta-qtui/scripts/measure-ssh-tui-latency.py \
+    root@192.168.1.35 --output qtui-latency.json
+```
+
+It first runs a deterministic on-device benchmark, then keeps one SSH PTY open
+for at least 30 alternating F1/F2 samples. The JSON report separates startup,
+first-byte, settled-frame, and render-diff sizes from normal-interval ping
+RTT/loss and records kernel, Wi-Fi link/RSSI, power-save, image, and executable
+metadata. Local p95 above 20 ms is a failure. SSH settled-frame p95 above
+75 ms is reported as a warning because radio and network conditions are not a
+CI-stable property.
 
 ---
 

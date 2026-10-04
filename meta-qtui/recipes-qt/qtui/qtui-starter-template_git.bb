@@ -15,6 +15,8 @@ B = "${WORKDIR}/build"
 
 inherit qt6-cmake pkgconfig
 
+PACKAGES =+ "${PN}-benchmark"
+
 do_unpack[nostamp] = "1"
 do_configure[nostamp] = "1"
 
@@ -41,3 +43,5 @@ python do_unpack() {
 }
 
 FILES:${PN} += "${bindir}/qtui_starter_template"
+FILES:${PN}-benchmark = "${bindir}/qtui_starter_template_benchmark"
+RDEPENDS:${PN}-benchmark = "${PN} qtui-testing"

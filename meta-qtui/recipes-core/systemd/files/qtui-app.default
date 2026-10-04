@@ -7,6 +7,10 @@ QTUI_APP="/usr/bin/qtui_starter_template"
 # Additional arguments passed to the application
 QTUI_ARGS=""
 
+# Disable Wi-Fi power saving for steadier SSH interaction latency. This is
+# opt-in because it increases power consumption.
+QTUI_WIFI_LOW_LATENCY="0"
+
 # Target terminal device:
 # For physical LCD / HDMI framebuffer console: /dev/tty1
 # For i.MX 93 USB-C serial debug console: /dev/ttyLP0

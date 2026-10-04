@@ -15,6 +15,7 @@ EXTRA_OECMAKE += "\
     -DQTUI_BUILD_TESTS=OFF \
     -DQTUI_BUILD_EXAMPLES=OFF \
     -DQTUI_ENABLE_BEHAVIOR=ON \
+    -DQTUI_ENABLE_TEST_RUNNER=ON \
 "
 
 PACKAGECONFIG ??= "terminalhost"
@@ -24,6 +25,10 @@ FILES_SOLIBSDEV = ""
 SOLIBS = ".so*"
 
 # QML modules and shared libraries packaging
+PACKAGES =+ "${PN}-testing"
+
+FILES:${PN}-testing = "${libdir}/libQtuiTesting.so*"
+
 FILES:${PN} += "\
     ${libdir}/libQtui*.so* \
     ${libdir}/qml/Qtui \

@@ -276,12 +276,23 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.setCursorDelegate("▋");
     QCOMPARE(input.cursorDelegate(), QString("▋"));
 
+    // Test cursor at position 0 (over character 'h') - character 'h' must be preserved!
+    input.setCursorPosition(0);
     TextGridBuffer buffer;
     buffer.resize(10, 1);
     input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("▋"));
-    QCOMPARE(buffer.cellAt(0, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan color mapped (ARGB)
+    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("h"));
+    QCOMPARE(buffer.cellAt(0, 0).bgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
+
+    // Test cursor at position 5 (end of text) - delegate glyph "▋" rendered at empty position
+    input.setCursorPosition(5);
+    buffer = TextGridBuffer();
+    buffer.resize(10, 1);
+    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+
+    QCOMPARE(buffer.cellAt(5, 0).character, QByteArray("▋"));
+    QCOMPARE(buffer.cellAt(5, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF));
 
     input.setSelectionColor("blue");
     input.setSelectedTextColor("yellow");

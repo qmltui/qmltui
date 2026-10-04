@@ -530,18 +530,26 @@ void TextInput::render(
             + displayColumnForPosition(m_editor.cursorPosition()) - m_contentX;
         if (contentClip.contains(x, y)) {
             Cell &cell = buffer.cellAt(x, y);
+            const bool isSpaceOrEmpty = cell.character.isEmpty() || cell.character == " ";
 
             if (!m_cursorDelegate.isEmpty()) {
-                cell.character = m_cursorDelegate.toUtf8();
+                if (isSpaceOrEmpty) {
+                    cell.character = m_cursorDelegate.toUtf8();
+                }
                 if (m_hasResolvedCursorColor) {
-                    cell.fgColor = m_resolvedCursorColor;
+                    if (isSpaceOrEmpty) {
+                        cell.fgColor = m_resolvedCursorColor;
+                    } else {
+                        cell.bgColor = m_resolvedCursorColor;
+                        cell.fgColor = 0x000000FF;
+                    }
                 } else {
                     cell.attributes = cell.attributes | TextAttribute::Reversed;
                 }
             } else {
                 switch (m_cursorShape) {
                 case Block: {
-                    if (cell.character.isEmpty())
+                    if (isSpaceOrEmpty)
                         cell.character = " ";
                     if (m_hasResolvedCursorColor) {
                         cell.bgColor = m_resolvedCursorColor;
@@ -552,7 +560,7 @@ void TextInput::render(
                     break;
                 }
                 case Underline: {
-                    if (cell.character.isEmpty() || cell.character == " ")
+                    if (isSpaceOrEmpty)
                         cell.character = "_";
                     if (m_hasResolvedCursorColor) {
                         cell.fgColor = m_resolvedCursorColor;
@@ -561,18 +569,31 @@ void TextInput::render(
                     break;
                 }
                 case Beam: {
-                    cell.character = "│";
-                    if (m_hasResolvedCursorColor) {
-                        cell.fgColor = m_resolvedCursorColor;
+                    if (isSpaceOrEmpty) {
+                        cell.character = "│";
+                        if (m_hasResolvedCursorColor) {
+                            cell.fgColor = m_resolvedCursorColor;
+                        }
+                    } else {
+                        if (m_hasResolvedCursorColor) {
+                            cell.bgColor = m_resolvedCursorColor;
+                            cell.fgColor = 0x000000FF;
+                        } else {
+                            cell.attributes = cell.attributes | TextAttribute::Reversed;
+                        }
                     }
                     break;
                 }
                 case HollowBlock: {
-                    if (cell.character.isEmpty() || cell.character == " ")
+                    if (isSpaceOrEmpty) {
                         cell.character = "▯";
-                    if (m_hasResolvedCursorColor) {
-                        cell.fgColor = m_resolvedCursorColor;
+                        if (m_hasResolvedCursorColor) {
+                            cell.fgColor = m_resolvedCursorColor;
+                        }
                     } else {
+                        if (m_hasResolvedCursorColor) {
+                            cell.fgColor = m_resolvedCursorColor;
+                        }
                         cell.attributes = cell.attributes | TextAttribute::Bold;
                     }
                     break;

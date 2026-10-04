@@ -282,6 +282,17 @@ void TestTextInput::testTerminalCursorCustomization() {
 
     QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("▋"));
     QCOMPARE(buffer.cellAt(0, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan color mapped (ARGB)
+
+    input.setSelectionColor("blue");
+    input.setSelectedTextColor("yellow");
+    QCOMPARE(input.selectionColor(), QString("blue"));
+    QCOMPARE(input.selectedTextColor(), QString("yellow"));
+
+    input.select(0, 3);
+    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+
+    QCOMPARE(buffer.cellAt(1, 0).bgColor, static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
+    QCOMPARE(buffer.cellAt(1, 0).fgColor, static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
 }
 
 void TestTextInput::testQmlSurface() {

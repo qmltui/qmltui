@@ -32,6 +32,8 @@ class TextInput : public Item {
     Q_PROPERTY(int cursorBlinkRate READ cursorBlinkRate WRITE setCursorBlinkRate NOTIFY cursorBlinkRateChanged)
     Q_PROPERTY(bool cursorVisible READ cursorVisible WRITE setCursorVisible NOTIFY cursorVisibleChanged)
     Q_PROPERTY(QString cursorDelegate READ cursorDelegate WRITE setCursorDelegate NOTIFY cursorDelegateChanged)
+    Q_PROPERTY(QString selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
+    Q_PROPERTY(QString selectedTextColor READ selectedTextColor WRITE setSelectedTextColor NOTIFY selectedTextColorChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY canUndoChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
 
@@ -92,6 +94,10 @@ public:
     void setCursorVisible(bool visible);
     QString cursorDelegate() const { return m_cursorDelegate; }
     void setCursorDelegate(const QString &delegate);
+    QString selectionColor() const { return m_selectionColor; }
+    void setSelectionColor(const QString &color);
+    QString selectedTextColor() const { return m_selectedTextColor; }
+    void setSelectedTextColor(const QString &color);
     bool canUndo() const { return m_editor.canUndo(); }
     bool canRedo() const { return m_editor.canRedo(); }
 
@@ -128,6 +134,8 @@ signals:
     void cursorBlinkRateChanged();
     void cursorVisibleChanged();
     void cursorDelegateChanged();
+    void selectionColorChanged();
+    void selectedTextColorChanged();
     void canUndoChanged();
     void canRedoChanged();
     void accepted();
@@ -172,6 +180,13 @@ private:
     QString m_cursorDelegate;
     QTimer m_blinkTimer;
     bool m_blinkState = true;
+
+    QString m_selectionColor;
+    uint32_t m_resolvedSelectionColor = 0;
+    bool m_hasResolvedSelectionColor = false;
+    QString m_selectedTextColor;
+    uint32_t m_resolvedSelectedTextColor = 0;
+    bool m_hasResolvedSelectedTextColor = false;
 };
 
 } // namespace qtui

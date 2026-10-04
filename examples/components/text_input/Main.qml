@@ -7,7 +7,7 @@ Terminal {
     color: "#0f172a"
     useAlternateScreen: true
 
-    property string lastAction: "Ready for text input..."
+    property string lastAction: "Ready for text input... Use Tab to cycle inputs"
 
     // Explicit key handling to quit, as per project rules (.agents/AGENTS.md)
     Keys.onPressed: (event) => {
@@ -33,7 +33,7 @@ Terminal {
             Text {
                 anchors.fill: parent
                 anchors.margins: 1
-                text: "Interactive TextInput Component Demo"
+                text: "Interactive TextInput Component Demo — Customizable Terminal Cursors"
                 color: "cyan"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter
@@ -44,7 +44,7 @@ Terminal {
         // Subtitle / Instructions
         Text {
             width: parent.width
-            text: "Use Tab / Shift+Tab to switch focus. Type to edit. Left/Right/Home/End/Backspace/Delete work natively. Press Enter to submit."
+            text: "Use Tab / Shift+Tab to switch inputs. Observe Block, Beam, Underline, and Custom Delegate cursors!"
             color: "#94a3b8"
         }
 
@@ -62,18 +62,18 @@ Terminal {
                 spacing: 1
 
                 Text {
-                    text: "SYSTEM LOGIN & COMMAND FORM"
+                    text: "TERMINAL CURSOR STYLES DEMO"
                     color: "#f8fafc"
                     bold: true
                 }
 
-                // 1. Username Field
+                // 1. Block Cursor (Cyan + Blinking)
                 Row {
                     spacing: 2
 
                     Text {
-                        width: 14
-                        text: "Username:"
+                        width: 18
+                        text: "1. Block (Blink):"
                         color: userInput.activeFocus ? "#38bdf8" : "#94a3b8"
                         bold: userInput.activeFocus
                     }
@@ -93,60 +93,70 @@ Terminal {
                             color: activeFocus ? "#ffffff" : "#cbd5e1"
                             focusable: true
 
+                            // Terminal Cursor Properties
+                            cursorShape: TextInput.Block
+                            cursorColor: "cyan"
+                            cursorBlinking: true
+                            cursorBlinkRate: 400
+
                             onAccepted: {
-                                rootWindow.lastAction = "Submitted Username: '" + text + "'"
+                                rootWindow.lastAction = "Submitted Block: '" + text + "'"
                             }
                             onTextChanged: {
-                                rootWindow.lastAction = "Editing Username: '" + text + "'"
+                                rootWindow.lastAction = "Editing Block: '" + text + "'"
                             }
                         }
                     }
                 }
 
-                // 2. Email Field
+                // 2. Beam Cursor (Yellow)
                 Row {
                     spacing: 2
 
                     Text {
-                        width: 14
-                        text: "Email:"
-                        color: emailInput.activeFocus ? "#38bdf8" : "#94a3b8"
-                        bold: emailInput.activeFocus
+                        width: 18
+                        text: "2. Beam Shape:"
+                        color: beamInput.activeFocus ? "#eab308" : "#94a3b8"
+                        bold: beamInput.activeFocus
                     }
 
                     Rectangle {
                         width: 45
                         height: 3
-                        color: emailInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: emailInput.activeFocus ? "double" : "single"
-                        border.color: emailInput.activeFocus ? "#38bdf8" : "#475569"
+                        color: beamInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: beamInput.activeFocus ? "double" : "single"
+                        border.color: beamInput.activeFocus ? "#eab308" : "#475569"
 
                         TextInput {
-                            id: emailInput
+                            id: beamInput
                             anchors.fill: parent
                             anchors.margins: 1
                             text: "operator@qtui.dev"
                             color: activeFocus ? "#ffffff" : "#cbd5e1"
                             focusable: true
 
+                            // Terminal Cursor Properties
+                            cursorShape: TextInput.Beam
+                            cursorColor: "yellow"
+
                             onAccepted: {
-                                rootWindow.lastAction = "Submitted Email: '" + text + "'"
+                                rootWindow.lastAction = "Submitted Beam: '" + text + "'"
                             }
                             onTextChanged: {
-                                rootWindow.lastAction = "Editing Email: '" + text + "'"
+                                rootWindow.lastAction = "Editing Beam: '" + text + "'"
                             }
                         }
                     }
                 }
 
-                // 3. Terminal Command Line Field
+                // 3. Underline Cursor (Green + Blinking)
                 Row {
                     spacing: 2
 
                     Text {
-                        width: 14
-                        text: "Command:"
-                        color: cmdInput.activeFocus ? "#38bdf8" : "#94a3b8"
+                        width: 18
+                        text: "3. Underline:"
+                        color: cmdInput.activeFocus ? "#22c55e" : "#94a3b8"
                         bold: cmdInput.activeFocus
                     }
 
@@ -155,7 +165,7 @@ Terminal {
                         height: 3
                         color: cmdInput.activeFocus ? "#1e293b" : "#0f172a"
                         border.style: cmdInput.activeFocus ? "double" : "single"
-                        border.color: cmdInput.activeFocus ? "#38bdf8" : "#475569"
+                        border.color: cmdInput.activeFocus ? "#22c55e" : "#475569"
 
                         TextInput {
                             id: cmdInput
@@ -165,11 +175,57 @@ Terminal {
                             color: activeFocus ? "#ffffff" : "#cbd5e1"
                             focusable: true
 
+                            // Terminal Cursor Properties
+                            cursorShape: TextInput.Underline
+                            cursorColor: "green"
+                            cursorBlinking: true
+                            cursorBlinkRate: 350
+
                             onAccepted: {
-                                rootWindow.lastAction = "Executed Command: '" + text + "'"
+                                rootWindow.lastAction = "Submitted Underline: '" + text + "'"
                             }
                             onTextChanged: {
-                                rootWindow.lastAction = "Editing Command: '" + text + "'"
+                                rootWindow.lastAction = "Editing Underline: '" + text + "'"
+                            }
+                        }
+                    }
+                }
+
+                // 4. Custom Delegate Glyph Cursor (Magenta)
+                Row {
+                    spacing: 2
+
+                    Text {
+                        width: 18
+                        text: "4. Custom (▋):"
+                        color: customInput.activeFocus ? "#f43f5e" : "#94a3b8"
+                        bold: customInput.activeFocus
+                    }
+
+                    Rectangle {
+                        width: 45
+                        height: 3
+                        color: customInput.activeFocus ? "#1e293b" : "#0f172a"
+                        border.style: customInput.activeFocus ? "double" : "single"
+                        border.color: customInput.activeFocus ? "#f43f5e" : "#475569"
+
+                        TextInput {
+                            id: customInput
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            text: "custom glyph cursor"
+                            color: activeFocus ? "#ffffff" : "#cbd5e1"
+                            focusable: true
+
+                            // Terminal Cursor Properties
+                            cursorDelegate: "▋"
+                            cursorColor: "#f43f5e"
+
+                            onAccepted: {
+                                rootWindow.lastAction = "Submitted Custom: '" + text + "'"
+                            }
+                            onTextChanged: {
+                                rootWindow.lastAction = "Editing Custom: '" + text + "'"
                             }
                         }
                     }

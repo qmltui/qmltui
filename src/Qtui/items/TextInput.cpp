@@ -150,6 +150,34 @@ void TextInput::setCursorDelegate(const QString &delegate) {
     markDirty();
 }
 
+void TextInput::setSelectionColor(const QString &color) {
+    if (m_selectionColor == color) return;
+    m_selectionColor = color;
+    if (m_selectionColor.trimmed().isEmpty()) {
+        m_hasResolvedSelectionColor = false;
+        m_resolvedSelectionColor = 0;
+    } else {
+        m_hasResolvedSelectionColor = true;
+        m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFF0000FF);
+    }
+    emit selectionColorChanged();
+    markDirty();
+}
+
+void TextInput::setSelectedTextColor(const QString &color) {
+    if (m_selectedTextColor == color) return;
+    m_selectedTextColor = color;
+    if (m_selectedTextColor.trimmed().isEmpty()) {
+        m_hasResolvedSelectedTextColor = false;
+        m_resolvedSelectedTextColor = 0;
+    } else {
+        m_hasResolvedSelectedTextColor = true;
+        m_resolvedSelectedTextColor = ColorMapper::fromString(m_selectedTextColor, 0xFFFFFFFF);
+    }
+    emit selectedTextColorChanged();
+    markDirty();
+}
+
 void TextInput::setReadOnly(bool readOnly) {
     if (m_readOnly == readOnly) return;
     m_readOnly = readOnly;
@@ -477,9 +505,20 @@ void TextInput::render(
                 const int clusterStart = cluster.utf16Start;
                 const int clusterEnd = clusterStart + cluster.utf16Length;
                 if (clusterEnd > selectionStart() && clusterStart < selectionEnd()) {
-                    for (int dx = 0; dx < width; ++dx)
-                        buffer.cellAt(x + dx, y).attributes =
-                            buffer.cellAt(x + dx, y).attributes | TextAttribute::Reversed;
+                    for (int dx = 0; dx < width; ++dx) {
+                        Cell &selCell = buffer.cellAt(x + dx, y);
+                        if (m_hasResolvedSelectionColor) {
+                            selCell.bgColor = m_resolvedSelectionColor;
+                            if (m_hasResolvedSelectedTextColor) {
+                                selCell.fgColor = m_resolvedSelectedTextColor;
+                            }
+                        } else {
+                            if (m_hasResolvedSelectedTextColor) {
+                                selCell.fgColor = m_resolvedSelectedTextColor;
+                            }
+                            selCell.attributes = selCell.attributes | TextAttribute::Reversed;
+                        }
+                    }
                 }
             }
             column += width;

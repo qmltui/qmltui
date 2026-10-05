@@ -37,14 +37,23 @@ Returns the current width of the grid buffer in terminal character columns.
 #### int height() const
 Returns the current height of the grid buffer in terminal character rows.
 
+#### bool contains(int x, int y) const
+Returns whether the coordinates identify a cell in this buffer.
+
+#### Cell *tryCellAt(int x, int y)
+Returns the addressed cell, or `nullptr` for out-of-bounds coordinates. A const
+overload is also provided.
+
 #### Cell& cellAt(int x, int y)
-Returns a mutable reference to the cell at grid coordinates (x, y). If (x, y) is out of bounds, returns a fallback empty cell reference.
+Returns a mutable reference to the cell at grid coordinates (x, y). Coordinates
+must be valid; debug builds assert this precondition.
 
 #### const Cell& cellAt(int x, int y) const
 Returns a read-only reference to the cell at grid coordinates (x, y).
 
 #### void writeText(int x, int y, const QString& text, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
-Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). Automatically decodes multi-byte UTF-8 sequences and assigns foreground/background colors and text attributes.
+Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). An
+overload accepts public `Color` foreground and background values.
 
 #### void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000)
 Draws a straight line from (x1, y1) to (x2, y2) using Bresenham's line algorithm with the specified character string and colors.
@@ -90,8 +99,9 @@ int main() {
     buffer.resize(40, 10);
 
     // Draw a box and header text
-    buffer.drawBox(0, 0, 40, 10, 0xFF00FF00); // Green box
-    buffer.writeText(2, 1, "Qtui Terminal Grid", 0xFFFFFFFF, 0x00000000, TextAttribute::Bold);
+    buffer.drawBox(0, 0, 40, 10, Color("green"));
+    buffer.writeText(2, 1, "Qtui Terminal Grid", Color("white"),
+                     Color("transparent"), TextAttribute::Bold);
 
     // Convert to ANSI string and print to standard output
     std::cout << buffer.toAnsiString() << std::endl;

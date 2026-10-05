@@ -12,7 +12,7 @@ void GradientStop::setPosition(qreal pos) {
     emit updated();
 }
 
-void GradientStop::setColor(const QString &color) {
+void GradientStop::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);

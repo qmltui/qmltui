@@ -2,7 +2,10 @@
 #include <QObject>
 #include "TextGridBuffer.h"
 #include "Text.h"
+#include "Color.h"
 #include <QString>
+
+#include <limits>
 
 using namespace qtui;
 
@@ -13,6 +16,7 @@ private slots:
     void testResize();
     void testClear();
     void testCellAccess();
+    void testColorValue();
     void testDiff();
     void testDiffBatchesContiguousCells();
     void testDiffReusesStyleAcrossRuns();
@@ -37,8 +41,11 @@ void TestTextGridBuffer::testResize() {
     QCOMPARE(buffer.width(), 10);
     QCOMPARE(buffer.height(), 5);
 
-    Cell c = buffer.cellAt(100, 100);
-    QCOMPARE(c.character, QByteArray(" "));
+    QVERIFY(buffer.contains(0, 0));
+    QVERIFY(!buffer.contains(100, 100));
+    QCOMPARE(buffer.tryCellAt(100, 100), nullptr);
+    const TextGridBuffer &constBuffer = buffer;
+    QCOMPARE(constBuffer.tryCellAt(100, 100), nullptr);
 }
 
 void TestTextGridBuffer::testClear() {
@@ -60,6 +67,53 @@ void TestTextGridBuffer::testCellAccess() {
     QCOMPARE(QString(buffer.cellAt(0, 0).character.data()), QString("A"));
     QCOMPARE(QString(buffer.cellAt(1, 1).character.data()), QString("B"));
     QCOMPARE(QString(buffer.cellAt(0, 1).character.data()), QString(" "));
+
+    QVERIFY(buffer.contains(0, 0));
+    QVERIFY(buffer.contains(1, 1));
+    QVERIFY(!buffer.contains(-1, 0));
+    QVERIFY(!buffer.contains(0, -1));
+    QVERIFY(!buffer.contains(2, 0));
+    QVERIFY(!buffer.contains(0, 2));
+    QVERIFY(buffer.tryCellAt(1, 0));
+    QCOMPARE(buffer.tryCellAt(-1, 0), nullptr);
+    QCOMPARE(buffer.tryCellAt(2, 1), nullptr);
+
+    const TextGridBuffer &constBuffer = buffer;
+    QVERIFY(constBuffer.tryCellAt(0, 1));
+    QCOMPARE(constBuffer.tryCellAt(0, 2), nullptr);
+}
+
+void TestTextGridBuffer::testColorValue() {
+    const Color red(" red ");
+    QVERIFY(red.isValid());
+    QCOMPARE(red.argb32(), 0xffff0000U);
+    QCOMPARE(red.toString(), QStringLiteral("#ff0000"));
+
+    QCOMPARE(Color("#0f8").argb32(), 0xff00ff88U);
+    QCOMPARE(Color("#80402010").argb32(), 0x80402010U);
+    QCOMPARE(Color("DarkSlateGrey").argb32(), 0xff2f4f4fU);
+    QCOMPARE(Color("aliceblue").argb32(), 0xfff0f8ffU);
+    QCOMPARE(Color::fromRgba(0.2, 0.4, 0.6, 0.5).argb32(), 0x80336699U);
+    QCOMPARE(Color::fromRgba(-1.0, 2.0, 0.5, 2.0).argb32(), 0xff00ff80U);
+    QCOMPARE(Color::fromRgba(1.0, 0.0, 0.0).argb32(), 0xffff0000U);
+    QVERIFY(!Color::fromRgba(std::numeric_limits<qreal>::quiet_NaN(),
+                             0.0, 0.0, 1.0).isValid());
+    QVERIFY(!Color().isValid());
+    QVERIFY(!Color("not-a-color").isValid());
+    QVERIFY(!Color("#xyz").isValid());
+
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(2, 1));
+    buffer.writeText(0, 0, QStringLiteral("X"), Color("tomato"),
+                     Color("navy"));
+    QCOMPARE(buffer.cellAt(0, 0).foreground(), Color("tomato"));
+    QCOMPARE(buffer.cellAt(0, 0).background(), Color("navy"));
+
+    Cell &cell = buffer.cellAt(1, 0);
+    cell.setForeground(Color("gold"));
+    cell.setBackground(Color("transparent"));
+    QCOMPARE(cell.fgColor, 0xffffd700U);
+    QCOMPARE(cell.bgColor, 0x00000000U);
 }
 
 void TestTextGridBuffer::testDiff() {

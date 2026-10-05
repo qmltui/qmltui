@@ -49,8 +49,8 @@ class ListView : public ScrollView {
     Q_PROPERTY(Qt::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
-    Q_PROPERTY(QString highlightColor READ highlightColor WRITE setHighlightColor NOTIFY highlightColorChanged)
-    Q_PROPERTY(QString highlightBgColor READ highlightBgColor WRITE setHighlightBgColor NOTIFY highlightBgColorChanged)
+    Q_PROPERTY(qtui::Color highlightColor READ highlightColor WRITE setHighlightColor NOTIFY highlightColorChanged)
+    Q_PROPERTY(qtui::Color highlightBgColor READ highlightBgColor WRITE setHighlightBgColor NOTIFY highlightBgColorChanged)
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
@@ -74,17 +74,17 @@ public:
     int currentIndex() const { return m_currentIndex; }
     void setCurrentIndex(int index);
 
-    QString highlightColor() const { return m_highlightColor; }
-    void setHighlightColor(const QString& color);
+    Color highlightColor() const { return m_highlightColor; }
+    void setHighlightColor(Color color);
 
-    QString highlightBgColor() const { return m_highlightBgColor; }
-    void setHighlightBgColor(const QString& color);
+    Color highlightBgColor() const { return m_highlightBgColor; }
+    void setHighlightBgColor(Color color);
 
     bool reuseItems() const { return m_reuseItems; }
     void setReuseItems(bool reuse);
 
     void layoutChildren();
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
     int implicitWidth() const override;
     int implicitHeight() const override;
 
@@ -125,9 +125,9 @@ private:
     Qt::Orientation m_orientation = Qt::Vertical;
     int m_spacing = 0;
     int m_currentIndex = -1;
-    QString m_highlightColor = "black";
+    Color m_highlightColor = "black";
     uint32_t m_resolvedHighlightColor = 0xFF000000;
-    QString m_highlightBgColor = "white";
+    Color m_highlightBgColor = "white";
     uint32_t m_resolvedHighlightBgColor = 0xFFFFFFFF;
     bool m_reuseItems = true;
     QMap<int, Item*> m_createdItems;

@@ -29,7 +29,7 @@ void Paragraph::setTextFormat(TextFormat format) {
     markDirty();
 }
 
-void Paragraph::setColor(const QString &color) {
+void Paragraph::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
@@ -38,7 +38,7 @@ void Paragraph::setColor(const QString &color) {
     markDirty();
 }
 
-void Paragraph::setBgColor(const QString &color) {
+void Paragraph::setBgColor(Color color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
     m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
@@ -69,6 +69,7 @@ void Paragraph::setScrollY(int scroll) {
     emit scrollYChanged();
     markDirty();
 }
+
 
 FormattedLine Paragraph::parseRichLine(const QString &line) const {
     FormattedLine result;
@@ -260,10 +261,9 @@ void Paragraph::invalidateTextCache() {
     m_cachedLines.clear();
 }
 
-void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    Q_UNUSED(clipRect);
     if (!m_visible || m_text.isEmpty()) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int availW = width();
     const int availH = height();

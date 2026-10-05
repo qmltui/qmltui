@@ -87,7 +87,7 @@ void Text::setText(const QString& text) {
     markDirty();
 }
 
-void Text::setColor(const QString& color) {
+void Text::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
@@ -202,10 +202,8 @@ int Text::visualLength(const QString &line) const {
     return len;
 }
 
-void Text::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     QStringList lines = m_text.split('\n');
     

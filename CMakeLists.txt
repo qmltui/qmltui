@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Qtui VERSION 0.2.0 LANGUAGES CXX)
+project(Qtui VERSION 0.3.0 LANGUAGES CXX)
 
 option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
@@ -132,7 +132,7 @@ configure_package_config_file(
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfigVersion.cmake"
     VERSION "${PROJECT_VERSION}"
-    COMPATIBILITY SameMajorVersion
+    COMPATIBILITY SameMinorVersion
 )
 install(EXPORT QtuiTargets
     FILE QtuiTargets.cmake

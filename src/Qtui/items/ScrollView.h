@@ -33,7 +33,7 @@ public:
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
     void wheelEvent(class MouseEvent* event) override;
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
     void ensureChildVisible(Item* childItem);
 
@@ -43,6 +43,11 @@ signals:
     void scrollBarVisibleChanged();
 
 private:
+    void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                      const ClipRect &clipRect) override;
+    ClipRect clipRectForChildren(int absX, int absY,
+                                const ClipRect &clipRect) const override;
+
     int m_contentHeight = 0;
     int m_contentY = 0;
     bool m_scrollBarVisible = true;

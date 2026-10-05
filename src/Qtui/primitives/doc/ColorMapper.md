@@ -1,8 +1,10 @@
-# ColorMapper
+# ColorMapper (internal)
 
 ## 1. Class Overview
 
-`ColorMapper` is a static helper class that parses color strings (hex values like `"#FF0000"`, `"#333"`, or named colors like `"red"`, `"blue"`, `"green"`, `"black"`, `"white"`) and converts them into 32-bit ARGB `uint32_t` integer values.
+`ColorMapper` is an internal bridge from legacy string parsing call sites to
+`qtui::Color`. It is not installed or part of the custom-item API. New code
+should include `Color.h` and use `qtui::Color` directly.
 
 Developers use `ColorMapper` when mapping QML string color properties into internal cell rendering formats.
 

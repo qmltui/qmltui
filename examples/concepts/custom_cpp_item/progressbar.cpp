@@ -1,5 +1,4 @@
 #include "progressbar.h"
-#include <ColorMapper.h>
 #include <algorithm>
 
 namespace qtui {
@@ -17,19 +16,19 @@ void ProgressBar::setValue(double val) {
     markDirty();
 }
 
-void ProgressBar::setBarColor(const QString &color) {
+void ProgressBar::setBarColor(Color color) {
     if (m_barColor == color) return;
     m_barColor = color;
-    m_resolvedBarColor = ColorMapper::fromString(m_barColor, 0xFF00FF00);
+    m_resolvedBarColor = m_barColor.isValid() ? m_barColor.argb32() : 0xFF00FF00;
     emit barColorChanged();
     markDirty();
 }
 
-void ProgressBar::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void ProgressBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible) return;
 
     // Render borders and backgrounds first
-    Rectangle::render(buffer, absX, absY, clipRect);
+    Rectangle::paint(buffer, absX, absY, clipRect);
 
     int lp = leftPadding();
     int rp = rightPadding();

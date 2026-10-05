@@ -15,6 +15,10 @@ endif()
 qt_add_qml_module(QtuiCore
     URI Qtui
     SOURCES
+        primitives/Color.h
+        primitives/Color.cpp
+        primitives/QtuiGlobal.h
+        primitives/QtuiGlobal.cpp
         primitives/ColorMapper.h
         primitives/ColorMapper.cpp
         primitives/InputDecoder.cpp
@@ -127,7 +131,6 @@ target_link_libraries(QtuiCore PUBLIC
 
 target_link_libraries(QtuiCore PRIVATE
     utf8proc
-    Qt6::Gui
 )
 if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
@@ -162,7 +165,7 @@ install(FILES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
 )
 install(FILES
-    primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
+    primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/primitives"
 )
 install(FILES

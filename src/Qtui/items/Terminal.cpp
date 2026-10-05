@@ -354,13 +354,17 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
     }
 }
 
-void Terminal::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-    
-    // Render normal hierarchy
-    Rectangle::render(buffer, absX, absY, clipRect);
-    
-    // Render popups as absolute overlay layers on top of everything
+
+    Rectangle::paint(buffer, absX, absY, clipRect);
+}
+
+void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                            const ClipRect &clipRect)
+{
+    Q_UNUSED(absX);
+    Q_UNUSED(absY);
     for (Popup* popup : orderedPopups()) {
         if (popup && popup->visible()) {
             if (popup->modal() && popup->dimBackground()) {

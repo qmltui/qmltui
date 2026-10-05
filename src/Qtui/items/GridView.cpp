@@ -477,12 +477,12 @@ int GridView::implicitHeight() const {
   return topPadding() + bottomPadding();
 }
 
-void GridView::render(TextGridBuffer &buffer, int absX, int absY,
+void GridView::paint(TextGridBuffer &buffer, int absX, int absY,
                       const ClipRect &clipRect) {
   if (!visible())
     return;
   layoutChildren();
-  ScrollView::render(buffer, absX, absY, clipRect);
+    ScrollView::paint(buffer, absX, absY, clipRect);
 }
 
 } // namespace qtui

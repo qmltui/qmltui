@@ -13,10 +13,10 @@ class TabHeader : public Item {
 
     Q_PROPERTY(QVariant tabs READ tabs WRITE setTabs NOTIFY tabsChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
-    Q_PROPERTY(QString activeTabColor READ activeTabColor WRITE setActiveTabColor NOTIFY activeTabColorChanged)
-    Q_PROPERTY(QString activeTabBgColor READ activeTabBgColor WRITE setActiveTabBgColor NOTIFY activeTabBgColorChanged)
-    Q_PROPERTY(QString inactiveTabColor READ inactiveTabColor WRITE setInactiveTabColor NOTIFY inactiveTabColorChanged)
-    Q_PROPERTY(QString inactiveTabBgColor READ inactiveTabBgColor WRITE setInactiveTabBgColor NOTIFY inactiveTabBgColorChanged)
+    Q_PROPERTY(qtui::Color activeTabColor READ activeTabColor WRITE setActiveTabColor NOTIFY activeTabColorChanged)
+    Q_PROPERTY(qtui::Color activeTabBgColor READ activeTabBgColor WRITE setActiveTabBgColor NOTIFY activeTabBgColorChanged)
+    Q_PROPERTY(qtui::Color inactiveTabColor READ inactiveTabColor WRITE setInactiveTabColor NOTIFY inactiveTabColorChanged)
+    Q_PROPERTY(qtui::Color inactiveTabBgColor READ inactiveTabBgColor WRITE setInactiveTabBgColor NOTIFY inactiveTabBgColorChanged)
 
 public:
     explicit TabHeader(QObject *parent = nullptr);
@@ -28,19 +28,19 @@ public:
     int currentIndex() const { return m_currentIndex; }
     void setCurrentIndex(int index);
 
-    QString activeTabColor() const { return m_activeTabColor; }
-    void setActiveTabColor(const QString &color);
+    Color activeTabColor() const { return m_activeTabColor; }
+    void setActiveTabColor(Color color);
 
-    QString activeTabBgColor() const { return m_activeTabBgColor; }
-    void setActiveTabBgColor(const QString &color);
+    Color activeTabBgColor() const { return m_activeTabBgColor; }
+    void setActiveTabBgColor(Color color);
 
-    QString inactiveTabColor() const { return m_inactiveTabColor; }
-    void setInactiveTabColor(const QString &color);
+    Color inactiveTabColor() const { return m_inactiveTabColor; }
+    void setInactiveTabColor(Color color);
 
-    QString inactiveTabBgColor() const { return m_inactiveTabBgColor; }
-    void setInactiveTabBgColor(const QString &color);
+    Color inactiveTabBgColor() const { return m_inactiveTabBgColor; }
+    void setInactiveTabBgColor(Color color);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 
@@ -57,16 +57,15 @@ private:
     QStringList m_tabList;
     int m_currentIndex = 0;
 
-    QString m_activeTabColor = "white";
+    Color m_activeTabColor = "white";
     uint32_t m_resolvedActiveTabColor = 0xFFFFFFFF;
-    QString m_activeTabBgColor = "blue";
+    Color m_activeTabBgColor = "blue";
     uint32_t m_resolvedActiveTabBgColor = 0xFF0000FF;
 
-    QString m_inactiveTabColor = "gray";
+    Color m_inactiveTabColor = "gray";
     uint32_t m_resolvedInactiveTabColor = 0xFF808080;
-    QString m_inactiveTabBgColor = "transparent";
+    Color m_inactiveTabBgColor = "transparent";
     uint32_t m_resolvedInactiveTabBgColor = 0x00000000;
-
 };
 
 } // namespace qtui

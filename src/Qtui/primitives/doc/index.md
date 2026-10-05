@@ -8,4 +8,4 @@ This directory contains developer reference documentation for the core C++ rende
 - [Cell](file:///home/yosri/qtui/Tui/src/core/doc/Cell.md) — Grid cell struct and `TextAttribute` enum defining character, color, and font formatting.
 - [InputDecoder](file:///home/yosri/qtui/Tui/src/core/doc/InputDecoder.md) — ANSI terminal input stream parser translating stdin bytes into Qt key and mouse events.
 - [TerminalDevice](file:///home/yosri/qtui/Tui/src/core/doc/TerminalDevice.md) — Low-level POSIX TTY manager handling raw mode, window geometry queries, and stdout flushing.
-- [ColorMapper](file:///home/yosri/qtui/Tui/src/core/doc/ColorMapper.md) — Utility class converting QML string colors into 32-bit ARGB integers.
+- [Color](Color.md) — Qtui's public QtCore-only color value for C++ and QML.

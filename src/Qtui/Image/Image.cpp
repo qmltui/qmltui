@@ -259,7 +259,7 @@ void Image::updateScaledCache() {
     }
 }
 
-void Image::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!visible() || m_status != Status::Ready || m_sourceImage.isNull())
         return;
 
@@ -316,7 +316,10 @@ void Image::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 if (topColor.alpha() < 10 && botColor.alpha() < 10)
                     continue;
 
-                Cell& cell = buffer.cellAt(targetX, targetY);
+                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell)
+                    continue;
+                Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
@@ -369,7 +372,10 @@ void Image::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 int brightness = qGray(col.rgb());
                 int rampIndex = (brightness * (ASCII_RAMP_LEN - 1)) / 255;
 
-                Cell& cell = buffer.cellAt(targetX, targetY);
+                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell)
+                    continue;
+                Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 char asciiChar[2] = { ASCII_RAMP[rampIndex], '\0' };
@@ -423,7 +429,10 @@ void Image::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 }
 
                 if (cellValue > 0) {
-                    Cell& cell = buffer.cellAt(targetX, targetY);
+                    Cell *targetCell = buffer.tryCellAt(targetX, targetY);
+                    if (!targetCell)
+                        continue;
+                    Cell& cell = *targetCell;
                     cell.displayWidth = 1;
                     cell.continuation = false;
                     int brailleChar = 0x2800 + cellValue;

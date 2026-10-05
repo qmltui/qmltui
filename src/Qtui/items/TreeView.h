@@ -29,10 +29,10 @@ class TreeView : public Item {
     Q_PROPERTY(int currentColumn READ currentColumn NOTIFY currentIndexChanged)
     Q_PROPERTY(QVariantMap currentItemData READ currentItemData NOTIFY currentItemDataChanged)
 
-    Q_PROPERTY(QString selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(QString selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
-    Q_PROPERTY(QString textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
-    Q_PROPERTY(QString branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
+    Q_PROPERTY(qtui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
+    Q_PROPERTY(qtui::Color selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
+    Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
+    Q_PROPERTY(qtui::Color branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
     Q_PROPERTY(QString expandedIcon READ expandedIcon WRITE setExpandedIcon NOTIFY expandedIconChanged)
     Q_PROPERTY(QString collapsedIcon READ collapsedIcon WRITE setCollapsedIcon NOTIFY collapsedIconChanged)
 
@@ -60,23 +60,24 @@ public:
     int currentColumn() const { return m_selectedIndex >= 0 ? 0 : -1; }
     QVariantMap currentItemData() const;
 
-    QString selectionColor() const { return m_selectionColor; }
-    void setSelectionColor(const QString &color);
+    Color selectionColor() const { return m_selectionColor; }
+    void setSelectionColor(Color color);
 
-    QString selectionBgColor() const { return m_selectionBgColor; }
-    void setSelectionBgColor(const QString &color);
+    Color selectionBgColor() const { return m_selectionBgColor; }
+    void setSelectionBgColor(Color color);
 
-    QString textColor() const { return m_textColor; }
-    void setTextColor(const QString &color);
+    Color textColor() const { return m_textColor; }
+    void setTextColor(Color color);
 
-    QString branchColor() const { return m_branchColor; }
-    void setBranchColor(const QString &color);
+    Color branchColor() const { return m_branchColor; }
+    void setBranchColor(Color color);
 
     QString expandedIcon() const { return m_expandedIcon; }
     void setExpandedIcon(const QString &icon);
 
     QString collapsedIcon() const { return m_collapsedIcon; }
     void setCollapsedIcon(const QString &icon);
+
 
     // Q_INVOKABLE Qt Quick TreeView Methods
     Q_INVOKABLE void expand(int index);
@@ -91,7 +92,7 @@ public:
     Q_INVOKABLE void collapseAll();
 
     void layoutChildren();
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 
@@ -115,6 +116,8 @@ signals:
     void collapsed(int row, bool recursively);
 
 private:
+    ClipRect clipRectForChildren(int absX, int absY,
+                                const ClipRect &clipRect) const override;
     struct VisibleNode {
         QString text;
         QString path;
@@ -158,19 +161,20 @@ private:
     int m_pendingCurrentIndex = -1;
     int m_scrollTop = 0;
 
-    QString m_selectionColor = "white";
+    Color m_selectionColor = "white";
     uint32_t m_resolvedSelectionColor = 0xFFFFFFFF;
-    QString m_selectionBgColor = "blue";
+    Color m_selectionBgColor = "blue";
     uint32_t m_resolvedSelectionBgColor = 0xFF0000FF;
 
-    QString m_textColor = "cyan";
+    Color m_textColor = "cyan";
     uint32_t m_resolvedTextColor = 0xFF00FFFF;
 
-    QString m_branchColor = "gray";
+    Color m_branchColor = "gray";
     uint32_t m_resolvedBranchColor = 0xFF808080;
 
     QString m_expandedIcon = "[-] ";
     QString m_collapsedIcon = "[+] ";
+
 
 };
 

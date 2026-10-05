@@ -10,7 +10,7 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
 - **Header**: `Tui/src/items/Text.h`
 - **Implementation**: `Tui/src/items/Text.cpp`
-- **Dependencies**: `Item.h`, `TextGridBuffer.h`, `ColorMapper.h`.
+- **Dependencies**: `Item.h`, `TextGridBuffer.h`, `Color.h`.
 
 ## 3. Class Hierarchy and Role
 
@@ -22,7 +22,7 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
 | `text` | `QString` | `text` | `setText` | `textChanged` | Text content string to display. |
-| `color` | `QString` | `color` | `setColor` | `colorChanged` | Foreground text color. |
+| `color` | `qtui::Color` | `color` | `setColor` | `colorChanged` | Foreground text color. |
 | `bold` | `bool` | `bold` | `setBold` | `boldChanged` | Renders text in bold attribute. |
 | `italic` | `bool` | `italic` | `setItalic` | `italicChanged` | Renders text in italic attribute. |
 | `underline` | `bool` | `underline` | `setUnderline` | `underlineChanged` | Renders text with underline. |
@@ -44,7 +44,7 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
+#### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
 Draws the formatted text line(s) into `buffer` applying alignment and font attributes.
 
 ## 13. QML Exposure

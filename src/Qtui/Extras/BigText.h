@@ -10,8 +10,8 @@ class BigText : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
 
 public:
     explicit BigText(QObject *parent = nullptr);
@@ -20,13 +20,13 @@ public:
     QString text() const { return m_text; }
     void setText(const QString &text);
 
-    QString color() const { return m_color; }
-    void setColor(const QString &color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
-    QString bgColor() const { return m_bgColor; }
-    void setBgColor(const QString &color);
+    Color bgColor() const { return m_bgColor; }
+    void setBgColor(Color color);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
 
 signals:
     void textChanged();
@@ -36,12 +36,11 @@ signals:
 private:
     QString m_text;
 
-    QString m_color = "yellow";
+    Color m_color = "yellow";
     uint32_t m_resolvedColor = 0xFFFFFF00;
 
-    QString m_bgColor = "transparent";
+    Color m_bgColor = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
-
 };
 
 } // namespace qtui

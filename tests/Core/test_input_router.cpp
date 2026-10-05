@@ -8,6 +8,7 @@
 #include "engine/FocusManager.h"
 #include "engine/KeyEvent.h"
 #include "engine/MouseEvent.h"
+#include "engine/Keys.h"
 
 using namespace qtui;
 
@@ -22,6 +23,11 @@ private slots:
     void testWheelDoesNotAcquireGrab();
     void testDismissalWithBackgroundMouseArea();
     void testSynchronousItemDeletionDuringDispatch();
+    void testUnacceptedMouseDeletionDuringDispatch();
+    void testKeyDeletionDuringDispatch();
+    void testAttachedKeysDeletionDuringDispatch();
+    void testHiddenAncestorRejectsFocusAndKeys();
+    void testHiddenAncestorInvalidatesMouseGrab();
     void testMouseAreaClickOnlyOnReleaseInside();
     void testLegacyWheelEventsNotSwallowedByMouseArea();
     void testModalPopupDiscardsStaleBackgroundGrab();
@@ -146,10 +152,12 @@ public:
     explicit FilterParent(QObject* parent = nullptr) : Item(parent) {}
     bool filterCalled = false;
     Item* filteredChild = nullptr;
+    MouseEvent::Type lastType = MouseEvent::Type::Move;
 
     bool childMouseEventFilter(Item* item, MouseEvent* event) override {
         filterCalled = true;
         filteredChild = item;
+        lastType = event->type();
         event->setAccepted(true);
         return true;
     }
@@ -183,7 +191,11 @@ void TestInputRouter::testChildMouseEventFilter() {
 
     QCOMPARE(parent.filterCalled, true);
     QCOMPARE(parent.filteredChild, static_cast<Item*>(&child));
+    QCOMPARE(parent.lastType, MouseEvent::Type::Press);
     QCOMPARE(childPressed, false); // Filter intercepted and accepted event
+
+    router.routeMouse(1, 7, 7, true, false);
+    QCOMPARE(parent.lastType, MouseEvent::Type::Release);
 }
 
 void TestInputRouter::testWheelDoesNotAcquireGrab() {
@@ -254,6 +266,130 @@ void TestInputRouter::testSynchronousItemDeletionDuringDispatch() {
 
     // Should not crash or leave dangling pointer
     router.routeMouse(0, 2, 2, false, false);
+    QCOMPARE(router.implicitMouseGrabItem(), nullptr);
+}
+
+class SelfDeletingMouseItem : public Item {
+public:
+    using Item::Item;
+
+    void mousePressEvent(MouseEvent *) override { delete this; }
+};
+
+void TestInputRouter::testUnacceptedMouseDeletionDuringDispatch() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(5);
+
+    auto *item = new SelfDeletingMouseItem(&terminal);
+    item->setWidth(10);
+    item->setHeight(3);
+
+    InputRouter router(&terminal);
+    QPointer<Item> guard(item);
+    router.routeMouse(0, 1, 1, false, false);
+
+    QVERIFY(guard.isNull());
+    QCOMPARE(router.implicitMouseGrabItem(), nullptr);
+}
+
+class SelfDeletingKeyItem : public Item {
+public:
+    using Item::Item;
+
+    void keyPressEvent(KeyEvent *) override { delete this; }
+};
+
+void TestInputRouter::testKeyDeletionDuringDispatch() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(5);
+
+    auto *item = new SelfDeletingKeyItem(&terminal);
+    item->setFocusable(true);
+    item->setFocus(true);
+
+    InputRouter router(&terminal);
+    QPointer<Item> guard(item);
+    router.routeKey(Qt::Key_A, QStringLiteral("a"), 0);
+
+    QVERIFY(guard.isNull());
+    QCOMPARE(terminal.focusedItem(), nullptr);
+}
+
+void TestInputRouter::testAttachedKeysDeletionDuringDispatch() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(5);
+
+    auto *item = new Item(&terminal);
+    item->setFocusable(true);
+    item->setFocus(true);
+    auto *keys = qobject_cast<Keys *>(
+        qmlAttachedPropertiesObject<Keys>(item, true));
+    QVERIFY(keys);
+    connect(keys, &Keys::pressed, item, [item](KeyEvent *) { delete item; });
+
+    InputRouter router(&terminal);
+    QPointer<Item> guard(item);
+    router.routeKey(Qt::Key_A, QStringLiteral("a"), 0);
+
+    QVERIFY(guard.isNull());
+    QCOMPARE(terminal.focusedItem(), nullptr);
+}
+
+class CountingKeyItem : public Item {
+public:
+    using Item::Item;
+    int keyCount = 0;
+
+    void keyPressEvent(KeyEvent *) override { ++keyCount; }
+};
+
+void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(5);
+    Item parent(&terminal);
+    parent.setWidth(20);
+    parent.setHeight(5);
+    CountingKeyItem child(&parent);
+    child.setFocusable(true);
+    child.setWidth(5);
+    child.setHeight(1);
+
+    parent.setVisible(false);
+    child.setFocus(true);
+    QCOMPARE(terminal.focusedItem(), nullptr);
+
+    parent.setVisible(true);
+    child.setFocus(true);
+    QCOMPARE(terminal.focusedItem(), static_cast<Item *>(&child));
+    parent.setVisible(false);
+    QCOMPARE(terminal.focusedItem(), nullptr);
+
+    InputRouter router(&terminal);
+    router.routeKey(Qt::Key_A, QStringLiteral("a"), 0);
+    QCOMPARE(child.keyCount, 0);
+}
+
+void TestInputRouter::testHiddenAncestorInvalidatesMouseGrab() {
+    Terminal terminal;
+    terminal.setWidth(20);
+    terminal.setHeight(5);
+    Item parent(&terminal);
+    parent.setWidth(20);
+    parent.setHeight(5);
+    MouseArea child(&parent);
+    child.setWidth(10);
+    child.setHeight(3);
+
+    InputRouter router(&terminal);
+    router.routeMouse(0, 1, 1, false, false);
+    QCOMPARE(router.implicitMouseGrabItem(), static_cast<Item *>(&child));
+
+    parent.setVisible(false);
+    router.routeMouse(0, 2, 1, false, true);
     QCOMPARE(router.implicitMouseGrabItem(), nullptr);
 }
 

@@ -27,13 +27,13 @@ class TableView : public Item {
     Q_PROPERTY(int sortColumn READ sortColumn WRITE setSortColumn NOTIFY sortColumnChanged)
     Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder WRITE setSortOrder NOTIFY sortOrderChanged)
 
-    Q_PROPERTY(QString headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
-    Q_PROPERTY(QString headerBgColor READ headerBgColor WRITE setHeaderBgColor NOTIFY headerBgColorChanged)
-    Q_PROPERTY(QString selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(QString selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
-    Q_PROPERTY(QString textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
-    Q_PROPERTY(QString rowBgColor READ rowBgColor WRITE setRowBgColor NOTIFY rowBgColorChanged)
-    Q_PROPERTY(QString alternatingRowBgColor READ alternatingRowBgColor WRITE setAlternatingRowBgColor NOTIFY alternatingRowBgColorChanged)
+    Q_PROPERTY(qtui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
+    Q_PROPERTY(qtui::Color headerBgColor READ headerBgColor WRITE setHeaderBgColor NOTIFY headerBgColorChanged)
+    Q_PROPERTY(qtui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
+    Q_PROPERTY(qtui::Color selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
+    Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
+    Q_PROPERTY(qtui::Color rowBgColor READ rowBgColor WRITE setRowBgColor NOTIFY rowBgColorChanged)
+    Q_PROPERTY(qtui::Color alternatingRowBgColor READ alternatingRowBgColor WRITE setAlternatingRowBgColor NOTIFY alternatingRowBgColorChanged)
 
     Q_PROPERTY(bool showGrid READ showGrid WRITE setShowGrid NOTIFY showGridChanged)
 
@@ -69,29 +69,30 @@ public:
 
     Q_INVOKABLE void sortByColumn(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
-    QString headerColor() const { return m_headerColor; }
-    void setHeaderColor(const QString &color);
+    Color headerColor() const { return m_headerColor; }
+    void setHeaderColor(Color color);
 
-    QString headerBgColor() const { return m_headerBgColor; }
-    void setHeaderBgColor(const QString &color);
+    Color headerBgColor() const { return m_headerBgColor; }
+    void setHeaderBgColor(Color color);
 
-    QString selectionColor() const { return m_selectionColor; }
-    void setSelectionColor(const QString &color);
+    Color selectionColor() const { return m_selectionColor; }
+    void setSelectionColor(Color color);
 
-    QString selectionBgColor() const { return m_selectionBgColor; }
-    void setSelectionBgColor(const QString &color);
+    Color selectionBgColor() const { return m_selectionBgColor; }
+    void setSelectionBgColor(Color color);
 
-    QString textColor() const { return m_textColor; }
-    void setTextColor(const QString &color);
+    Color textColor() const { return m_textColor; }
+    void setTextColor(Color color);
 
-    QString rowBgColor() const { return m_rowBgColor; }
-    void setRowBgColor(const QString &color);
+    Color rowBgColor() const { return m_rowBgColor; }
+    void setRowBgColor(Color color);
 
-    QString alternatingRowBgColor() const { return m_alternatingRowBgColor; }
-    void setAlternatingRowBgColor(const QString &color);
+    Color alternatingRowBgColor() const { return m_alternatingRowBgColor; }
+    void setAlternatingRowBgColor(Color color);
 
     bool showGrid() const { return m_showGrid; }
     void setShowGrid(bool show);
+
 
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
     void setColumnWidthProvider(const QJSValue &provider);
@@ -104,7 +105,7 @@ public:
     QQmlComponent* rowDelegate() const { return m_rowDelegate; }
     void setRowDelegate(QQmlComponent *delegate);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 
@@ -135,6 +136,8 @@ signals:
     void rowActivated(int index);
 
 private:
+    ClipRect clipRectForChildren(int absX, int absY,
+                                const ClipRect &clipRect) const override;
     int rowCount() const;
     QString cellText(int row, int col) const;
     int columnWidth(int col) const;
@@ -158,25 +161,26 @@ private:
     int m_sortColumn = -1;
     Qt::SortOrder m_sortOrder = Qt::AscendingOrder;
 
-    QString m_headerColor = "yellow";
+    Color m_headerColor = "yellow";
     uint32_t m_resolvedHeaderColor = 0xFFFFFF00;
-    QString m_headerBgColor = "transparent";
+    Color m_headerBgColor = "transparent";
     uint32_t m_resolvedHeaderBgColor = 0x00000000;
 
-    QString m_selectionColor = "white";
+    Color m_selectionColor = "white";
     uint32_t m_resolvedSelectionColor = 0xFFFFFFFF;
-    QString m_selectionBgColor = "blue";
+    Color m_selectionBgColor = "blue";
     uint32_t m_resolvedSelectionBgColor = 0xFF0000FF;
 
-    QString m_textColor = "gray";
+    Color m_textColor = "gray";
     uint32_t m_resolvedTextColor = 0xFFCCCCCC;
-    QString m_rowBgColor = "transparent";
+    Color m_rowBgColor = "transparent";
     uint32_t m_resolvedRowBgColor = 0x00000000;
 
-    QString m_alternatingRowBgColor = "#1e1e2e";
+    Color m_alternatingRowBgColor = "#1e1e2e";
     uint32_t m_resolvedAltRowBgColor = 0xFF1E1E2E;
 
     bool m_showGrid = false;
+
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;
     QPointer<QQmlComponent> m_delegate;

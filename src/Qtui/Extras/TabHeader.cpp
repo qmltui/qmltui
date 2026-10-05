@@ -41,7 +41,7 @@ void TabHeader::setCurrentIndex(int index) {
     markDirty();
 }
 
-void TabHeader::setActiveTabColor(const QString &color) {
+void TabHeader::setActiveTabColor(Color color) {
     if (m_activeTabColor == color) return;
     m_activeTabColor = color;
     m_resolvedActiveTabColor = ColorMapper::fromString(m_activeTabColor, 0xFFFFFFFF);
@@ -49,7 +49,7 @@ void TabHeader::setActiveTabColor(const QString &color) {
     markDirty();
 }
 
-void TabHeader::setActiveTabBgColor(const QString &color) {
+void TabHeader::setActiveTabBgColor(Color color) {
     if (m_activeTabBgColor == color) return;
     m_activeTabBgColor = color;
     m_resolvedActiveTabBgColor = ColorMapper::fromString(m_activeTabBgColor, 0xFF0000FF);
@@ -57,7 +57,7 @@ void TabHeader::setActiveTabBgColor(const QString &color) {
     markDirty();
 }
 
-void TabHeader::setInactiveTabColor(const QString &color) {
+void TabHeader::setInactiveTabColor(Color color) {
     if (m_inactiveTabColor == color) return;
     m_inactiveTabColor = color;
     m_resolvedInactiveTabColor = ColorMapper::fromString(m_inactiveTabColor, 0xFF808080);
@@ -65,7 +65,7 @@ void TabHeader::setInactiveTabColor(const QString &color) {
     markDirty();
 }
 
-void TabHeader::setInactiveTabBgColor(const QString &color) {
+void TabHeader::setInactiveTabBgColor(Color color) {
     if (m_inactiveTabBgColor == color) return;
     m_inactiveTabBgColor = color;
     m_resolvedInactiveTabBgColor = ColorMapper::fromString(m_inactiveTabBgColor, 0x00000000);
@@ -73,10 +73,9 @@ void TabHeader::setInactiveTabBgColor(const QString &color) {
     markDirty();
 }
 
-void TabHeader::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TabHeader::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    Q_UNUSED(clipRect);
     if (!m_visible || m_tabList.isEmpty()) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int availW = width();
     const int availH = height();

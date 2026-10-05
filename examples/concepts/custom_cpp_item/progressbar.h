@@ -1,6 +1,5 @@
 #pragma once
 #include <Rectangle.h>
-#include <QString>
 
 namespace qtui {
 
@@ -9,7 +8,7 @@ class ProgressBar : public Rectangle {
     QML_ELEMENT
 
     Q_PROPERTY(double value READ value WRITE setValue NOTIFY valueChanged)
-    Q_PROPERTY(QString barColor READ barColor WRITE setBarColor NOTIFY barColorChanged)
+    Q_PROPERTY(qtui::Color barColor READ barColor WRITE setBarColor NOTIFY barColorChanged)
 
 public:
     explicit ProgressBar(QObject *parent = nullptr);
@@ -18,10 +17,10 @@ public:
     double value() const { return m_value; }
     void setValue(double val);
 
-    QString barColor() const { return m_barColor; }
-    void setBarColor(const QString &color);
+    Color barColor() const { return m_barColor; }
+    void setBarColor(Color color);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
 
 signals:
     void valueChanged();
@@ -29,7 +28,7 @@ signals:
 
 private:
     double m_value = 0.0;
-    QString m_barColor = "green";
+    Color m_barColor = "green";
     uint32_t m_resolvedBarColor = 0xFF00FF00;
 };
 

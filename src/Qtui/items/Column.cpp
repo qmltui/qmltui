@@ -67,10 +67,8 @@ int Column::implicitHeight() const {
     return h;
 }
 
-void Column::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    if (!m_visible) return;
-    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
-    Item::render(buffer, absX, absY, clipRect);
+void Column::updateLayout() {
+    layoutChildren();
 }
 
 } // namespace qtui

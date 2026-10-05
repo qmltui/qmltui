@@ -68,10 +68,8 @@ int Row::implicitHeight() const {
     return h + topPadding() + bottomPadding();
 }
 
-void Row::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    if (!m_visible) return;
-    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
-    Item::render(buffer, absX, absY, clipRect);
+void Row::updateLayout() {
+    layoutChildren();
 }
 
 } // namespace qtui

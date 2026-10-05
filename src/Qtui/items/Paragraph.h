@@ -24,8 +24,8 @@ class Paragraph : public Item {
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
     Q_PROPERTY(QString alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
     Q_PROPERTY(bool wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
@@ -47,11 +47,11 @@ public:
     TextFormat textFormat() const { return m_textFormat; }
     void setTextFormat(TextFormat format);
 
-    QString color() const { return m_color; }
-    void setColor(const QString &color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
-    QString bgColor() const { return m_bgColor; }
-    void setBgColor(const QString &color);
+    Color bgColor() const { return m_bgColor; }
+    void setBgColor(Color color);
 
     QString alignment() const { return m_alignment; }
     void setAlignment(const QString &align);
@@ -62,7 +62,7 @@ public:
     int scrollY() const { return m_scrollY; }
     void setScrollY(int scroll);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void mousePressEvent(MouseEvent *event) override;
 
 signals:
@@ -84,10 +84,10 @@ private:
     QString m_text;
     TextFormat m_textFormat = AutoText;
 
-    QString m_color = "white";
+    Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
 
-    QString m_bgColor = "transparent";
+    Color m_bgColor = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
 
     QString m_alignment = "left";

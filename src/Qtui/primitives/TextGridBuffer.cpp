@@ -31,7 +31,6 @@ void TextGridBuffer::swap(TextGridBuffer& other) noexcept {
     swap(m_width, other.m_width);
     swap(m_height, other.m_height);
     swap(m_cells, other.m_cells);
-    swap(m_emptyCell, other.m_emptyCell);
 }
 
 void TextGridBuffer::clear() {
@@ -40,18 +39,29 @@ void TextGridBuffer::clear() {
     std::fill(m_cells.begin(), m_cells.end(), emptyCell);
 }
 
+bool TextGridBuffer::contains(int x, int y) const
+{
+    return x >= 0 && x < m_width && y >= 0 && y < m_height;
+}
+
+Cell *TextGridBuffer::tryCellAt(int x, int y)
+{
+    return contains(x, y) ? &m_cells[static_cast<size_t>(y * m_width + x)] : nullptr;
+}
+
+const Cell *TextGridBuffer::tryCellAt(int x, int y) const
+{
+    return contains(x, y) ? &m_cells[static_cast<size_t>(y * m_width + x)] : nullptr;
+}
+
 Cell& TextGridBuffer::cellAt(int x, int y) {
-    if (x >= 0 && x < m_width && y >= 0 && y < m_height) {
-        return m_cells[y * m_width + x];
-    }
-    return m_emptyCell; // Fallback
+    Q_ASSERT(contains(x, y));
+    return m_cells[static_cast<size_t>(y * m_width + x)];
 }
 
 const Cell& TextGridBuffer::cellAt(int x, int y) const {
-    if (x >= 0 && x < m_width && y >= 0 && y < m_height) {
-        return m_cells[y * m_width + x];
-    }
-    return m_emptyCell;
+    Q_ASSERT(contains(x, y));
+    return m_cells[static_cast<size_t>(y * m_width + x)];
 }
 
 std::string TextGridBuffer::diff(const TextGridBuffer& nextBuffer) const {

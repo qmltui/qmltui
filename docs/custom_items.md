@@ -40,37 +40,37 @@ private:
 }
 ```
 
-## 2. Rendering
-Override the `void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect)` method. 
-It is essential to respect the provided `clipRect` bounds when writing to the buffer to ensure scroll views and layouts behave correctly.
+## 2. Painting
+Override the protected `paint(TextGridBuffer&, int absX, int absY, const ClipRect&)`
+hook. `Item::render()` is public and non-virtual: the framework calls `paint()`,
+then traverses children in stacking order, applies content offsets and clipping,
+and finally draws framework overlays. Custom items must not traverse or render
+their children themselves.
+
+Respect `clipRect` and use `tryCellAt()` when coordinates may be outside the
+buffer. `cellAt()` is the fast, asserted accessor for coordinates already known
+to be valid.
 
 ```cpp
-void CustomBlock::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    // 1. Call base implementation (draws children and background)
-    Item::render(buffer, absX, absY, clipRect);
-    
-    // 2. Intersect with our own bounds if we have `clip` enabled
-    ClipRect contentClip = clipRect;
-    if (clip()) {
-        contentClip = clipRect.intersected(ClipRect{absX, absY, width(), height()});
-    }
-
-    // 3. Write characters into the TextGridBuffer
+void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
+                        const ClipRect& clipRect) {
+    const Color foreground("red");
     for (int i = 0; i < m_label.length(); ++i) {
-        int cx = absX + leftPadding() + i;
-        int cy = absY + topPadding();
-        
-        if (contentClip.contains(cx, cy)) {
-            if (cx >= 0 && cx < buffer.width() && cy >= 0 && cy < buffer.height()) {
-                Cell& cell = buffer.cellAt(cx, cy);
-                cell.character[0] = m_label[i].toLatin1();
-                cell.character[1] = '\0';
-                cell.fgColor = 0xFFFF0000; // Red
+        const int cx = absX + leftPadding() + i;
+        const int cy = absY + topPadding();
+        if (clipRect.contains(cx, cy)) {
+            if (Cell *cell = buffer.tryCellAt(cx, cy)) {
+                cell->character = m_label.mid(i, 1).toUtf8();
+                cell->setForeground(foreground);
             }
         }
     }
 }
 ```
+
+Override `updateLayout()` when layout work must run immediately before paint.
+Invalidations raised from `updateLayout()` or `paint()` are retained for the
+next frame.
 
 ## 3. Event Handling
 If your custom component handles input, override event functions:

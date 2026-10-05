@@ -49,7 +49,6 @@ public:
 signals:
     void priorityChanged();
     void pressed(qtui::KeyEvent *event);
-    void released(qtui::KeyEvent *event);
     void returnPressed(qtui::KeyEvent *event);
     void escapePressed(qtui::KeyEvent *event);
     void spacePressed(qtui::KeyEvent *event);

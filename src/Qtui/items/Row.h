@@ -19,8 +19,7 @@ public:
 
     int implicitWidth() const override;
     int implicitHeight() const override;
-
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void updateLayout() override;
     void layoutChildren();
 
 signals:

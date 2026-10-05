@@ -52,7 +52,7 @@ TerminalView::TerminalView(QObject *parent)
       m_session(std::make_unique<UnixPtySession>()) {
   setFocusable(true);
   setClip(true);
-  m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
+    m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
   m_adapter->setScrollbackLimit(m_scrollbackLimit);
   m_adapter->setOutputCallback(
       [this](const QByteArray &bytes) { m_session->write(bytes); });
@@ -165,42 +165,28 @@ qint64 TerminalView::processId() const {
   return m_session ? m_session->processId() : 0;
 }
 
-void TerminalView::setForegroundColor(const QString &value) {
-  const QColor color = QColor::fromString(value);
-  if (!color.isValid() || m_foregroundColor == color)
+void TerminalView::setForegroundColor(Color value) {
+  if (!value.isValid() || m_foregroundColor == value)
     return;
-  m_foregroundColor = color;
+  m_foregroundColor = value;
   m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
   emit foregroundColorChanged();
   markDirty();
 }
 
-void TerminalView::setBackgroundColor(const QString &value) {
-  const QColor color = QColor::fromString(value);
-  if (!color.isValid() || m_backgroundColor == color)
+void TerminalView::setBackgroundColor(Color value) {
+  if (!value.isValid() || m_backgroundColor == value)
     return;
-  m_backgroundColor = color;
+  m_backgroundColor = value;
   m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
   emit backgroundColorChanged();
   markDirty();
 }
 
-QStringList TerminalView::palette() const {
-  QStringList names;
-  names.reserve(m_palette.size());
-  for (const QColor &color : m_palette)
-    names.append(color.name());
-  return names;
-}
-
-void TerminalView::setPalette(const QStringList& value) {
-  QList<QColor> colors;
-  colors.reserve(value.size());
-  for (const QString &name : value)
-    colors.append(QColor::fromString(name));
-  if (m_palette == colors)
+void TerminalView::setPalette(const QList<Color>& value) {
+  if (m_palette == value)
     return;
-  m_palette = colors;
+  m_palette = value;
   m_adapter->setPalette(m_palette);
   emit paletteChanged();
   markDirty();
@@ -362,7 +348,7 @@ void TerminalView::setHeight(int value) {
   syncSize();
 }
 
-void TerminalView::render(TextGridBuffer &buffer, int absX, int absY,
+void TerminalView::paint(TextGridBuffer &buffer, int absX, int absY,
                           const ClipRect &clipRect) {
   const int w = std::max(0, width());
   const int h = std::max(0, height());
@@ -392,8 +378,6 @@ void TerminalView::render(TextGridBuffer &buffer, int absX, int absY,
       }
     }
   }
-
-  Item::render(buffer, absX, absY, clipRect);
 }
 
 void TerminalView::keyPressEvent(KeyEvent *event) {

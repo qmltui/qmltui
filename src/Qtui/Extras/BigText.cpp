@@ -78,7 +78,7 @@ void BigText::setText(const QString &text) {
     markDirty();
 }
 
-void BigText::setColor(const QString &color) {
+void BigText::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFF00);
@@ -86,7 +86,7 @@ void BigText::setColor(const QString &color) {
     markDirty();
 }
 
-void BigText::setBgColor(const QString &color) {
+void BigText::setBgColor(Color color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
     m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
@@ -94,10 +94,9 @@ void BigText::setBgColor(const QString &color) {
     markDirty();
 }
 
-void BigText::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    Q_UNUSED(clipRect);
     if (!m_visible || m_text.isEmpty()) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int startX = absX;
     const int startY = absY;

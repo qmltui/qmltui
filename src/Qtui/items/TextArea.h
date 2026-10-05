@@ -11,7 +11,7 @@ class TextArea : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
     Q_PROPERTY(int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
     Q_PROPERTY(int selectionStart READ selectionStart NOTIFY selectionChanged)
@@ -27,8 +27,8 @@ public:
 
     QString text() const { return m_editor.text(); }
     void setText(const QString& text);
-    QString color() const { return m_color; }
-    void setColor(const QString& color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
     QString placeholderText() const { return m_placeholderText; }
     void setPlaceholderText(const QString& text);
     int cursorPosition() const { return m_editor.cursorPosition(); }
@@ -54,7 +54,7 @@ public:
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
     void mouseMoveEvent(class MouseEvent* event) override;
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
     void textChanged();
@@ -78,7 +78,7 @@ private:
     int positionAtMouse(int x, int y) const;
 
     TextEditorState m_editor;
-    QString m_color = "white";
+    Color m_color = "white";
     QString m_placeholderText;
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     int m_contentX = 0;

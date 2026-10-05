@@ -26,7 +26,7 @@ Based on your request, I will generate four comprehensive documentation files co
 **Purpose**: A developer guide on extending Qtui with new visual or behavioral items.
 **Key Sections**:
 - **C++ Class Definition**: Inheriting from `qtui::Item`, adding `Q_PROPERTY`, and `QML_ELEMENT`.
-- **Rendering**: Overriding `void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect)`.
+- **Rendering**: Overriding protected `paint(...)`; `Item::render()` owns traversal.
 - **Event Handling**: Overriding `keyPressEvent()`, `mousePressEvent()`.
 - **Implicit Sizing**: Managing `implicitWidth` and `implicitHeight`.
 

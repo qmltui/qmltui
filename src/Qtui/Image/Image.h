@@ -4,7 +4,6 @@
 #include <QImage>
 #include <QUrl>
 #include <QSize>
-#include <QColor>
 
 namespace qtui {
 
@@ -69,7 +68,7 @@ public:
     int implicitWidth() const override;
     int implicitHeight() const override;
 
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
     void sourceChanged();

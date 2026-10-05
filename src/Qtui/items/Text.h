@@ -12,7 +12,7 @@ class Text : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
@@ -37,8 +37,8 @@ public:
     QString text() const { return m_text; }
     void setText(const QString& text);
 
-    QString color() const { return m_color; }
-    void setColor(const QString& color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
     bool bold() const { return m_bold; }
     void setBold(bool bold);
@@ -66,7 +66,7 @@ public:
 
     int visualLength(const QString &line) const;
 
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
     void textChanged();
@@ -82,7 +82,7 @@ signals:
 
 private:
     QString m_text;
-    QString m_color = "white"; // default string
+    Color m_color = "white"; // default string
     uint32_t m_resolvedColor = 0xFFFFFFFF; // pre-resolved color value
     bool m_bold = false;
     bool m_italic = false;

@@ -12,6 +12,7 @@
 #include <QSet>
 #include <QChildEvent>
 #include <QPointer>
+#include <QVarLengthArray>
 #include <algorithm>
 
 namespace qtui {
@@ -69,21 +70,17 @@ qsizetype Item::dataCount(QQmlListProperty<QObject> *list) {
 
 QObject *Item::dataAt(QQmlListProperty<QObject> *list, qsizetype index) {
     Item *self = qobject_cast<Item*>(list->object);
-    return self ? self->m_dataChildren.at(index) : nullptr;
+    return self ? self->m_dataChildren.at(index).data() : nullptr;
 }
 
 void Item::clearData(QQmlListProperty<QObject> *list) {
     Item *self = qobject_cast<Item*>(list->object);
     if (self) {
+        const QList<QPointer<QObject>> children = self->m_dataChildren;
         self->m_dataChildren.clear();
-        for (Item* item : self->m_visualChildren) {
-            const auto connections = self->m_childGeometryConnections.take(item);
-            for (const QMetaObject::Connection &connection : connections)
-                disconnect(connection);
-        }
-        self->m_visualChildren.clear();
-        self->invalidateStackingOrder();
-        self->scheduleChildGeometryInvalidation();
+        for (const QPointer<QObject> &child : children)
+            if (child && child->parent() == self)
+                child->setParent(nullptr);
     }
 }
 
@@ -106,15 +103,6 @@ void Item::setParentItem(Item *parentItem) {
     setParent(parentItem);
     emit parentChanged();
     markDirty();
-}
-
-void Item::removeChildItem(Item *child) {
-    // QObject parenting change handles this via childEvent, but we keep this method
-    // in case external callers explicitly call it.
-    if (m_visualChildren.removeOne(child)) {
-        invalidateStackingOrder();
-        markDirty();
-    }
 }
 
 void Item::setX(int x) {
@@ -230,6 +218,14 @@ bool Item::isEffectivelyEnabled() const {
     return true;
 }
 
+bool Item::isEffectivelyVisible() const {
+    for (const Item *current = this; current; current = current->parentItem()) {
+        if (!current->visible())
+            return false;
+    }
+    return true;
+}
+
 void Item::markDirty(DirtyFlags flags) {
     m_dirtyFlags |= flags;
     emit dirty();
@@ -247,6 +243,8 @@ void Item::clearDirty(DirtyFlags flags) {
 }
 
 void Item::setFocus(bool focus) {
+    if (focus && (!isEffectivelyVisible() || !isEffectivelyEnabled()))
+        return;
     if (m_focus == focus) {
         Terminal* term = terminal();
         if (term && focus && term->focusedItem() != this) {
@@ -327,13 +325,6 @@ QPoint Item::absolutePosition() const {
     return QPoint(ax, ay);
 }
 
-void Item::setGeometryDirect(int x, int y, int w, int h) {
-    m_x = x;
-    m_y = y;
-    m_width = w;
-    m_height = h;
-}
-
 void Item::childEvent(QChildEvent* event) {
     QObject::childEvent(event);
     if (event->added()) {
@@ -344,6 +335,21 @@ void Item::childEvent(QChildEvent* event) {
             }
         }
     } else if (event->removed()) {
+        QObject *childObject = event->child();
+        m_dataChildren.removeIf([childObject](const QPointer<QObject> &entry) {
+            return entry.isNull() || entry.data() == childObject;
+        });
+        const qsizetype removedStates = m_statesList.removeIf(
+            [childObject](const QPointer<State> &entry) {
+            return entry.isNull() || entry.data() == childObject;
+        });
+        m_transitionsList.removeIf([childObject](const QPointer<Transition> &entry) {
+            return entry.isNull() || entry.data() == childObject;
+        });
+        if (State *state = qobject_cast<State *>(childObject))
+            disconnect(state, nullptr, this, nullptr);
+        if (removedStates > 0)
+            evaluateStateConditions();
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
             unregisterChildItem(childItem);
         } else {
@@ -397,24 +403,72 @@ void Item::scheduleChildGeometryInvalidation() {
 void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
 
-    m_dirtyFlags = DirtyFlag::None;
+    QPointer<Item> selfGuard(this);
 
-    int w = width();
-    int h = height();
-
-    // Determine the clipping rectangle for children
-    ClipRect childrenClip = clipRect;
-    if (m_clip) {
-        childrenClip = clipRect.intersected(ClipRect{absX, absY, w, h});
+    const DirtyFlags consumedFlags = m_dirtyFlags;
+    m_dirtyFlags &= ~consumedFlags;
+    if (consumedFlags.testFlag(DirtyFlag::LayoutDirty)) {
+        updateLayout();
+        if (!selfGuard)
+            return;
     }
 
-    // Render children back-to-front (Painter's Algorithm)
-    for (Item* childItem : stackingChildren()) {
+    paint(buffer, absX, absY, clipRect);
+    if (!selfGuard)
+        return;
+
+    const ClipRect childrenClip = clipRectForChildren(absX, absY, clipRect);
+    const QPoint offset = contentOffset();
+
+    const QList<Item *> &orderedChildren = stackingChildren();
+    QVarLengthArray<QPointer<Item>, 8> children;
+    children.reserve(orderedChildren.size());
+    for (Item *child : orderedChildren)
+        children.append(child);
+    for (const QPointer<Item> &childGuard : children) {
+        Item *childItem = childGuard.data();
+        if (!childItem)
+            continue;
         if (qobject_cast<Popup*>(childItem) && childItem->visible()) continue;
-        if (childItem) {
-            childItem->render(buffer, absX + childItem->x(), absY + childItem->y(), childrenClip);
-        }
+        childItem->render(buffer,
+                          absX + childItem->x() - offset.x(),
+                          absY + childItem->y() - offset.y(),
+                          childrenClip);
+        if (!selfGuard)
+            return;
     }
+
+    paintOverlay(buffer, absX, absY, clipRect);
+}
+
+void Item::updateLayout()
+{
+}
+
+void Item::paint(TextGridBuffer &buffer, int absX, int absY,
+                 const ClipRect &clipRect)
+{
+    Q_UNUSED(buffer);
+    Q_UNUSED(absX);
+    Q_UNUSED(absY);
+    Q_UNUSED(clipRect);
+}
+
+void Item::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                        const ClipRect &clipRect)
+{
+    Q_UNUSED(buffer);
+    Q_UNUSED(absX);
+    Q_UNUSED(absY);
+    Q_UNUSED(clipRect);
+}
+
+ClipRect Item::clipRectForChildren(int absX, int absY,
+                                  const ClipRect &clipRect) const
+{
+    if (!m_clip)
+        return clipRect;
+    return clipRect.intersected(ClipRect{absX, absY, width(), height()});
 }
 
 int Item::width() const {
@@ -491,10 +545,6 @@ void Item::keyPressEvent(class KeyEvent* event) {
     Q_UNUSED(event);
 }
 
-void Item::keyReleaseEvent(class KeyEvent* event) {
-    Q_UNUSED(event);
-}
-
 void Item::mousePressEvent(class MouseEvent* event) {
     Q_UNUSED(event);
 }
@@ -542,13 +592,22 @@ qsizetype Item::stateCount(QQmlListProperty<qtui::State>* list) {
 
 qtui::State* Item::stateAt(QQmlListProperty<qtui::State>* list, qsizetype index) {
     Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_statesList.at(index) : nullptr;
+    return self ? self->m_statesList.at(index).data() : nullptr;
 }
 
 void Item::clearStates(QQmlListProperty<qtui::State>* list) {
     Item* self = qobject_cast<Item*>(list->object);
     if (self) {
+        const QList<QPointer<State>> states = self->m_statesList;
         self->m_statesList.clear();
+        for (const QPointer<State> &state : states) {
+            if (!state)
+                continue;
+            disconnect(state, nullptr, self, nullptr);
+            if (state->parent() == self)
+                state->setParent(nullptr);
+        }
+        self->evaluateStateConditions();
     }
 }
 
@@ -575,19 +634,24 @@ qsizetype Item::transitionCount(QQmlListProperty<qtui::Transition>* list) {
 
 qtui::Transition* Item::transitionAt(QQmlListProperty<qtui::Transition>* list, qsizetype index) {
     Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_transitionsList.at(index) : nullptr;
+    return self ? self->m_transitionsList.at(index).data() : nullptr;
 }
 
 void Item::clearTransitions(QQmlListProperty<qtui::Transition>* list) {
     Item* self = qobject_cast<Item*>(list->object);
     if (self) {
+        const QList<QPointer<Transition>> transitions = self->m_transitionsList;
         self->m_transitionsList.clear();
+        for (const QPointer<Transition> &transition : transitions)
+            if (transition && transition->parent() == self)
+                transition->setParent(nullptr);
     }
 }
 
 void Item::evaluateStateConditions() {
     State* activeState = nullptr;
-    for (State* s : m_statesList) {
+    for (const QPointer<State> &state : m_statesList) {
+        State *s = state.data();
         if (s && s->when()) {
             activeState = s;
             break;
@@ -597,13 +661,14 @@ void Item::evaluateStateConditions() {
         setState(activeState->name());
     } else {
         State* currentObj = nullptr;
-        for (State* s : m_statesList) {
+        for (const QPointer<State> &state : m_statesList) {
+            State *s = state.data();
             if (s && s->name() == m_stateName) {
                 currentObj = s;
                 break;
             }
         }
-        if (currentObj && currentObj->when() == false) {
+        if (!m_stateName.isEmpty() && (!currentObj || !currentObj->when())) {
             setState(QString());
         }
     }
@@ -628,7 +693,8 @@ void Item::setState(const QString& newState) {
     // 2. Find State objects for old and new states
     State* oldStateObj = nullptr;
     State* newStateObj = nullptr;
-    for (State* s : m_statesList) {
+    for (const QPointer<State> &state : m_statesList) {
+        State *s = state.data();
         if (s) {
             if (s->name() == oldState) oldStateObj = s;
             if (s->name() == newState) newStateObj = s;
@@ -637,7 +703,8 @@ void Item::setState(const QString& newState) {
 
     // 3. Find if there is a matching Transition
     Transition* transitionObj = nullptr;
-    for (Transition* t : m_transitionsList) {
+    for (const QPointer<Transition> &transition : m_transitionsList) {
+        Transition *t = transition.data();
         if (t && t->matches(oldState, newState)) {
             transitionObj = t;
             break;

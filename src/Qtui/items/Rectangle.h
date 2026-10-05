@@ -9,15 +9,15 @@ class Rectangle : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qtui::Border* border READ border CONSTANT)
 
 public:
     explicit Rectangle(QObject *parent = nullptr);
     ~Rectangle() override;
 
-    QString color() const { return m_color; }
-    void setColor(const QString &color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
     uint32_t resolvedBgColor() const { return m_resolvedBgColor; }
 
@@ -28,13 +28,13 @@ public:
     int topPadding() const override;
     int bottomPadding() const override;
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
     void colorChanged();
 
 private:
-    QString m_color = "transparent";
+    Color m_color = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
     Border m_border;
 };

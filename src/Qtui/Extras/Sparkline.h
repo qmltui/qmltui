@@ -15,8 +15,8 @@ class Sparkline : public Item {
     Q_PROPERTY(double minVal READ minVal WRITE setMinVal NOTIFY minValChanged)
     Q_PROPERTY(double maxVal READ maxVal WRITE setMaxVal NOTIFY maxValChanged)
     Q_PROPERTY(bool filled READ filled WRITE setFilled NOTIFY filledChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
 
 public:
     explicit Sparkline(QObject *parent = nullptr);
@@ -34,13 +34,13 @@ public:
     bool filled() const { return m_filled; }
     void setFilled(bool filled);
 
-    QString color() const { return m_color; }
-    void setColor(const QString &color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
-    QString bgColor() const { return m_bgColor; }
-    void setBgColor(const QString &color);
+    Color bgColor() const { return m_bgColor; }
+    void setBgColor(Color color);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
 
 signals:
     void valuesChanged();
@@ -57,12 +57,11 @@ private:
     double m_minVal = 0.0;
     double m_maxVal = 0.0; // 0.0 means auto-scale
     bool m_filled = false;
-    QString m_color = "cyan";
+    Color m_color = "cyan";
     uint32_t m_resolvedColor = 0xFF00FFFF;
 
-    QString m_bgColor = "transparent";
+    Color m_bgColor = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
-
 };
 
 } // namespace qtui

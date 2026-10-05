@@ -25,7 +25,7 @@ Canvas::Canvas(QObject* parent) : Item(parent) {
     resizeBuffer();
 }
 
-void Canvas::setColor(const QString& color) {
+void Canvas::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(color, 0xFFFFFFFF);
@@ -33,7 +33,7 @@ void Canvas::setColor(const QString& color) {
     markDirty();
 }
 
-void Canvas::setFillColor(const QString& color) {
+void Canvas::setFillColor(Color color) {
     if (m_fillColor == color) return;
     m_fillColor = color;
     m_resolvedFillColor = ColorMapper::fromString(color, 0x00000000);
@@ -99,12 +99,12 @@ void Canvas::setPixel(int x, int y, bool value) {
         }
         markDirty();
     } else {
-        uint32_t col = value ? m_resolvedColor : (m_fillColor.isEmpty() ? 0x00000000 : m_resolvedFillColor);
+    uint32_t col = value ? m_resolvedColor : (!m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor);
         setPixelColorHex(x, y, col);
     }
 }
 
-void Canvas::setPixelColor(int x, int y, const QString& color) {
+void Canvas::setPixelColor(int x, int y, Color color) {
     setPixelColorHex(x, y, ColorMapper::fromString(color, m_resolvedColor));
 }
 
@@ -127,13 +127,13 @@ void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
 }
 
 void Canvas::clear() {
-    uint32_t clearBg = m_fillColor.isEmpty() ? 0x00000000 : m_resolvedFillColor;
+    uint32_t clearBg = !m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor;
     std::fill(m_cells.begin(), m_cells.end(), 0x00);
     std::fill(m_pixelColors.begin(), m_pixelColors.end(), clearBg);
     markDirty();
 }
 
-void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!visible()) return;
 
     resizeBuffer();
@@ -141,7 +141,7 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
         if (m_renderMode == RenderMode::Braille) {
             std::fill(m_cells.begin(), m_cells.end(), 0x00);
         } else {
-            uint32_t clearBg = m_fillColor.isEmpty() ? 0x00000000 : m_resolvedFillColor;
+    uint32_t clearBg = !m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor;
             std::fill(m_pixelColors.begin(), m_pixelColors.end(), clearBg);
         }
     }
@@ -160,15 +160,16 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
     if (m_renderMode == RenderMode::Braille) {
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
-                uint8_t cellValue = m_cells[y * width() + x];
-                if (cellValue > 0) {
-                    int brailleChar = 0x2800 + cellValue;
-                    QChar qc(brailleChar);
-                    QString qs(qc);
-                    QByteArray utf8 = qs.toUtf8();
-
-                    Cell& cell = buffer.cellAt(absX + x, absY + y);
-                    cell.character = utf8;
+            uint8_t cellValue = m_cells[y * width() + x];
+            if (cellValue > 0) {
+                Cell *targetCell = buffer.tryCellAt(absX + x, absY + y);
+                if (!targetCell)
+                    continue;
+                Cell& cell = *targetCell;
+                    const int brailleChar = 0x2800 + cellValue;
+                    const QChar qc(brailleChar);
+                    const QString qs(qc);
+                    cell.character = qs.toUtf8();
                     cell.displayWidth = 1;
                     cell.continuation = false;
                     cell.fgColor = m_resolvedColor;
@@ -189,11 +190,14 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
                 bool topSet = (topColor >> 24) != 0;
                 bool bottomSet = (bottomColor >> 24) != 0;
 
-                if (!topSet && !bottomSet) {
-                    continue;
-                }
+            if (!topSet && !bottomSet) {
+                continue;
+            }
 
-                Cell& cell = buffer.cellAt(absX + cellX, absY + cellY);
+            Cell *targetCell = buffer.tryCellAt(absX + cellX, absY + cellY);
+            if (!targetCell)
+                continue;
+            Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
 
@@ -213,6 +217,7 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
             }
         }
     }
+
 }
 
 void Canvas::resizeBuffer() {
@@ -230,7 +235,7 @@ void Canvas::resizeBuffer() {
 }
 
 // --- CanvasShape ---
-void CanvasShape::setColor(const QString& color) {
+void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(color, 0xFFFFFFFF);

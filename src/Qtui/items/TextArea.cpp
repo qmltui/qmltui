@@ -45,7 +45,7 @@ void TextArea::setText(const QString& text) {
     applyEditorChange(m_editor.setText(text));
 }
 
-void TextArea::setColor(const QString& color) {
+void TextArea::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
@@ -286,9 +286,8 @@ int TextArea::positionAtMouse(int x, int y) const {
     return positionForLineColumn(line, column);
 }
 
-void TextArea::render(
+void TextArea::paint(
     TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    Item::render(buffer, absX, absY, clipRect);
     const int viewportWidth = std::max(
         0, width() - leftPadding() - rightPadding());
     const int viewportHeight = std::max(
@@ -327,10 +326,11 @@ void TextArea::render(
                 if (!m_editor.text().isEmpty()
                     && clusterEnd > selectionStart()
                     && clusterStart < selectionEnd()) {
-                    for (int dx = 0; dx < width; ++dx)
-                        buffer.cellAt(x + dx, y).attributes =
-                            buffer.cellAt(x + dx, y).attributes
-                            | TextAttribute::Reversed;
+                    for (int dx = 0; dx < width; ++dx) {
+                        if (Cell *cell = buffer.tryCellAt(x + dx, y))
+                            cell->attributes = cell->attributes
+                                | TextAttribute::Reversed;
+                    }
                 }
             }
             displayColumn += cluster.width;
@@ -343,11 +343,11 @@ void TextArea::render(
         lineColumnForPosition(m_editor.cursorPosition(), line, column);
         const int x = absX + leftPadding() + column - m_contentX;
         const int y = absY + topPadding() + line - m_contentY;
-        if (contentClip.contains(x, y)) {
-            Cell &cell = buffer.cellAt(x, y);
-            if (cell.character.isEmpty()) cell.character = " ";
-            cell.attributes = cell.attributes | TextAttribute::Reversed;
-        }
+        if (contentClip.contains(x, y))
+            if (Cell *cell = buffer.tryCellAt(x, y)) {
+                if (cell->character.isEmpty()) cell->character = " ";
+                cell->attributes = cell->attributes | TextAttribute::Reversed;
+            }
     }
 }
 

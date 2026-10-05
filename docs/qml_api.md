@@ -1,10 +1,29 @@
 # QML API reference
 
-Qtui 0.2 provides a terminal-rendered, Qt Quick-style QML API. Its core
+Qtui 0.3 provides a terminal-rendered, Qt Quick-style QML API. Its core
 model/view/delegate names and delegate contracts are source-compatible with the
 documented Qt Quick subset below. Qtui remains a terminal toolkit: geometry is
 cell-based, delegates must derive from `Qtui.Item`, and APIs tied to the Qt Quick
 scene graph are intentionally not implemented.
+
+## Color values
+
+Qtui provides its own QtGui-free `rgba` value type. Use the `Qtui` singleton
+to construct a value from normalized red, green, blue, and alpha channels:
+
+```qml
+import QtQml
+import Qtui
+
+QtObject {
+    property rgba accent: Qtui.rgba(0.2, 0.4, 0.6, 1.0)
+}
+```
+
+This property contains a `qtui::Color`, not a `QColor`. The built-in QML
+`color` type and `Qt.rgba()` belong to QtGui and are unavailable in a
+QtCore/QtQml-only Qtui application. String literals remain supported for Qtui
+properties whose declared C++ type is `qtui::Color`.
 
 ## Model and delegate compatibility
 
@@ -97,7 +116,7 @@ See the [TreeView example](../examples/components/tree_view/Main.qml).
 - Declare delegate inputs as required properties when using
   `pragma ComponentBehavior: Bound`.
 
-The 0.2 compatibility target is the API subset documented here, not every Qt
+The 0.3 public contract is the API subset documented here, not every Qt
 Quick view feature. Qtui does not currently expose scene-graph transitions,
 flick physics, reuse-pool callbacks, selection models, or the complete Qt Quick
 positioning and item-lookup API.

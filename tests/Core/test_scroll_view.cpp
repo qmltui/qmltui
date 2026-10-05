@@ -67,11 +67,11 @@ void TestScrollView::testMouseWheel() {
     view.setHeight(10);
     view.setContentHeight(20);
 
-    MouseEvent evUp(0, 0, 64);
+    MouseEvent evUp(MouseEvent::Type::Wheel, 0, 0, 64);
     view.mousePressEvent(&evUp);
     QCOMPARE(view.contentY(), 0); // already at top
 
-    MouseEvent evDown(0, 0, 65);
+    MouseEvent evDown(MouseEvent::Type::Wheel, 0, 0, 65);
     view.mousePressEvent(&evDown);
     QCOMPARE(view.contentY(), 1);
 

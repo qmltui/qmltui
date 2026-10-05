@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <QtQml/qqmlregistration.h>
 
+#include "../primitives/Color.h"
+
 namespace qtui {
 
 class GradientStop : public QObject {
@@ -12,7 +14,7 @@ class GradientStop : public QObject {
     QML_ELEMENT
 
     Q_PROPERTY(qreal position READ position WRITE setPosition NOTIFY positionChanged)
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
 
 public:
     explicit GradientStop(QObject *parent = nullptr);
@@ -20,8 +22,8 @@ public:
     qreal position() const { return m_position; }
     void setPosition(qreal pos);
 
-    QString color() const { return m_color; }
-    void setColor(const QString &color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
 
     uint32_t resolvedColor() const { return m_resolvedColor; }
 
@@ -32,7 +34,7 @@ signals:
 
 private:
     qreal m_position = 0.0;
-    QString m_color = "white";
+    Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
 };
 

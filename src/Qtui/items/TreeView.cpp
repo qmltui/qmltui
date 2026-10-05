@@ -207,7 +207,7 @@ QVariantMap TreeView::currentItemData() const {
     return m_visibleNodes[m_selectedIndex].rawData;
 }
 
-void TreeView::setSelectionColor(const QString &color) {
+void TreeView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
     m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFFFFFFFF);
@@ -215,7 +215,7 @@ void TreeView::setSelectionColor(const QString &color) {
     markDirty();
 }
 
-void TreeView::setSelectionBgColor(const QString &color) {
+void TreeView::setSelectionBgColor(Color color) {
     if (m_selectionBgColor == color) return;
     m_selectionBgColor = color;
     m_resolvedSelectionBgColor = ColorMapper::fromString(m_selectionBgColor, 0xFF0000FF);
@@ -223,7 +223,7 @@ void TreeView::setSelectionBgColor(const QString &color) {
     markDirty();
 }
 
-void TreeView::setTextColor(const QString &color) {
+void TreeView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
     m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0xFF00FFFF);
@@ -231,7 +231,7 @@ void TreeView::setTextColor(const QString &color) {
     markDirty();
 }
 
-void TreeView::setBranchColor(const QString &color) {
+void TreeView::setBranchColor(Color color) {
     if (m_branchColor == color) return;
     m_branchColor = color;
     m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0xFF808080);
@@ -252,6 +252,7 @@ void TreeView::setCollapsedIcon(const QString &icon) {
     emit collapsedIconChanged();
     markDirty();
 }
+
 
 void TreeView::expand(int index) {
     updateTree();
@@ -878,7 +879,7 @@ void TreeView::layoutChildren() {
     }
 }
 
-void TreeView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible) return;
 
     updateTree();
@@ -905,11 +906,6 @@ void TreeView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
     if (m_delegate) {
         layoutChildren();
-        for (Item *item : m_delegateItems) {
-            if (item && item->visible()) {
-                item->render(buffer, absX + item->x(), absY + item->y(), clipRect);
-            }
-        }
         return;
     }
 
@@ -933,6 +929,17 @@ void TreeView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
         buffer.writeText(startX, rowY, label.left(availW), fg, bg, attr);
     }
+}
+
+ClipRect TreeView::clipRectForChildren(int absX, int absY,
+                                       const ClipRect &clipRect) const
+{
+    return clipRect.intersected(ClipRect{
+        absX,
+        absY,
+        std::max(0, width()),
+        std::max(0, height()),
+    });
 }
 
 void TreeView::keyPressEvent(KeyEvent *event) {

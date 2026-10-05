@@ -1,0 +1,5 @@
+Test.expectText("Custom C++ Item")
+Test.expectText("0%")
+Test.expectRegex("┌─+┐")
+Test.expectRegex("└─+┘")
+Test.captureText("custom-item.txt")

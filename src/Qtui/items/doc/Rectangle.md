@@ -10,7 +10,7 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 
 - **Header**: `Terminal/src/items/Rectangle.h`
 - **Implementation**: `Terminal/src/items/Rectangle.cpp`
-- **Dependencies**: `Item.h`, `Border.h`, `ColorMapper.h`.
+- **Dependencies**: `Item.h`, `Border.h`, `Color.h`.
 
 ## 3. Class Hierarchy and Role
 
@@ -21,7 +21,7 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
-| `color` | `QString` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
+| `color` | `qtui::Color` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
 | `border` | `Border*` | `border` | — | — | Attached border configuration (`style`, `color`). |
 
 ## 7. Signals
@@ -51,8 +51,9 @@ Returns the bottom padding, accounting for the bottom border width.
 
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
-Renders the background color fill and borders into `buffer`, then calls `Item::render` to render children.
+#### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
+Paints the background color fill and borders into `buffer`; `Item::render()`
+traverses children afterward.
 
 ## 13. QML Exposure
 

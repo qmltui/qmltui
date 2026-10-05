@@ -13,9 +13,9 @@ class Gauge : public Item {
     Q_PROPERTY(double value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(double maxValue READ maxValue WRITE setMaxValue NOTIFY maxValueChanged)
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
-    Q_PROPERTY(QString gaugeColor READ gaugeColor WRITE setGaugeColor NOTIFY gaugeColorChanged)
+    Q_PROPERTY(qtui::Color gaugeColor READ gaugeColor WRITE setGaugeColor NOTIFY gaugeColorChanged)
     Q_PROPERTY(qtui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
-    Q_PROPERTY(QString bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
     Q_PROPERTY(QString filledChar READ filledChar WRITE setFilledChar NOTIFY filledCharChanged)
     Q_PROPERTY(QString unfilledChar READ unfilledChar WRITE setUnfilledChar NOTIFY unfilledCharChanged)
     Q_PROPERTY(bool showPercentage READ showPercentage WRITE setShowPercentage NOTIFY showPercentageChanged)
@@ -34,14 +34,14 @@ public:
     QString label() const { return m_label; }
     void setLabel(const QString &label);
 
-    QString gaugeColor() const { return m_gaugeColor; }
-    void setGaugeColor(const QString &color);
+    Color gaugeColor() const { return m_gaugeColor; }
+    void setGaugeColor(Color color);
 
     Gradient* gradient() const { return m_gradient; }
     void setGradient(Gradient* gradient);
 
-    QString bgColor() const { return m_bgColor; }
-    void setBgColor(const QString &color);
+    Color bgColor() const { return m_bgColor; }
+    void setBgColor(Color color);
 
     QString filledChar() const { return m_filledChar; }
     void setFilledChar(const QString &ch);
@@ -55,7 +55,7 @@ public:
     bool showBrackets() const { return m_showBrackets; }
     void setShowBrackets(bool show);
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
 
 signals:
     void valueChanged();
@@ -74,18 +74,17 @@ private:
     double m_maxValue = 100.0;
     QString m_label;
 
-    QString m_gaugeColor = "green";
+    Color m_gaugeColor = "green";
     uint32_t m_resolvedGaugeColor = 0xFF00FF00;
     Gradient* m_gradient = nullptr;
 
-    QString m_bgColor = "transparent";
+    Color m_bgColor = "transparent";
     uint32_t m_resolvedBgColor = 0x00000000;
 
     QString m_filledChar = "█";
     QString m_unfilledChar = "░";
     bool m_showPercentage = true;
     bool m_showBrackets = true;
-
 };
 
 } // namespace qtui

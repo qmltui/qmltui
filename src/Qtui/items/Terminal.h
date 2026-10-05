@@ -107,7 +107,7 @@ public:
   int terminalWidth() const;
   int terminalHeight() const;
 
-  void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+  void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
   void titleChanged();
@@ -124,6 +124,9 @@ signals:
   void mouseMotionRequestedChanged(bool requested);
 
 private:
+  void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                    const ClipRect &clipRect) override;
+
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;
   QPointer<Item> m_hoveredItem;

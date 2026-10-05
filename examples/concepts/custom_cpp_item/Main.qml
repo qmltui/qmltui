@@ -21,7 +21,7 @@ Terminal {
         running: true
         repeat: true
         onTriggered: {
-            // Toggle between 0.0 and 1.0. With Behavior, this should transition smoothly!
+            // Toggle between empty and full without optional Behavior support.
             progBar.value = (progBar.value === 0.0) ? 1.0 : 0.0;
         }
     }
@@ -33,7 +33,7 @@ Terminal {
 
         Text {
             width: parent.width
-            text: "Animation Driver Test"
+            text: "Custom C++ Item"
             color: "cyan"
             bold: true
             horizontalAlignment: Qt.AlignHCenter
@@ -48,11 +48,6 @@ Terminal {
             barColor: "green"
             value: 0.0
 
-            Behavior on value {
-                NumberAnimation {
-                    duration: 1000
-                }
-            }
         }
     }
 }

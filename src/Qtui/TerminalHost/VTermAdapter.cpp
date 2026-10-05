@@ -9,6 +9,11 @@ namespace qtui {
 
 namespace {
 
+uint8_t colorChannel(Color color, int shift)
+{
+    return static_cast<uint8_t>((color.argb32() >> shift) & 0xffU);
+}
+
 const VTermScreenCallbacks ScreenCallbacks{
     &VTermAdapter::damage,
     &VTermAdapter::moveRect,
@@ -100,33 +105,30 @@ void VTermAdapter::resize(int rows, int columns) {
     vterm_screen_flush_damage(m_screen);
 }
 
-void VTermAdapter::setDefaultColors(const QColor& foreground, const QColor& background) {
-    if (!m_state)
+void VTermAdapter::setDefaultColors(Color foreground, Color background) {
+    if (!m_state || !foreground.isValid() || !background.isValid())
         return;
     VTermColor fg;
     VTermColor bg;
-    vterm_color_rgb(&fg, static_cast<uint8_t>(foreground.red()),
-                    static_cast<uint8_t>(foreground.green()),
-                    static_cast<uint8_t>(foreground.blue()));
-    vterm_color_rgb(&bg, static_cast<uint8_t>(background.red()),
-                    static_cast<uint8_t>(background.green()),
-                    static_cast<uint8_t>(background.blue()));
+    vterm_color_rgb(&fg, colorChannel(foreground, 16),
+                    colorChannel(foreground, 8), colorChannel(foreground, 0));
+    vterm_color_rgb(&bg, colorChannel(background, 16),
+                    colorChannel(background, 8), colorChannel(background, 0));
     vterm_state_set_default_colors(m_state, &fg, &bg);
-    m_defaultForeground = foreground.rgba();
-    m_defaultBackground = background.rgba();
+    m_defaultForeground = foreground.argb32();
+    m_defaultBackground = background.argb32();
 }
 
-void VTermAdapter::setPaletteColor(int index, const QColor& color) {
+void VTermAdapter::setPaletteColor(int index, Color color) {
     if (!m_state || index < 0 || index >= 16 || !color.isValid())
         return;
     VTermColor c;
-    vterm_color_rgb(&c, static_cast<uint8_t>(color.red()),
-                    static_cast<uint8_t>(color.green()),
-                    static_cast<uint8_t>(color.blue()));
+    vterm_color_rgb(&c, colorChannel(color, 16), colorChannel(color, 8),
+                    colorChannel(color, 0));
     vterm_state_set_palette_color(m_state, index, &c);
 }
 
-void VTermAdapter::setPalette(const QList<QColor>& palette) {
+void VTermAdapter::setPalette(const QList<Color>& palette) {
     m_palette = palette;
     for (int i = 0; i < std::min(16, static_cast<int>(palette.size())); ++i) {
         setPaletteColor(i, palette[i]);
@@ -271,7 +273,10 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
                 }
             }
 
-            Cell& target = buffer.cellAt(targetX, targetY);
+            Cell *targetCell = buffer.tryCellAt(targetX, targetY);
+            if (!targetCell)
+                continue;
+            Cell& target = *targetCell;
             target.fgColor = hasSource ? colorToArgb(source.fg) : m_defaultForeground;
             target.bgColor = hasSource ? colorToArgb(source.bg) : m_defaultBackground;
             target.attributes = attributesFor(source);
@@ -296,10 +301,9 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
         && m_cursor.col >= 0 && m_cursor.col < width) {
         const int cursorX = absX + m_cursor.col;
         const int cursorY = absY + m_cursor.row;
-        if (clip.contains(cursorX, cursorY)) {
-            Cell& cursorCell = buffer.cellAt(cursorX, cursorY);
-            cursorCell.attributes = cursorCell.attributes | TextAttribute::Reversed;
-        }
+        if (clip.contains(cursorX, cursorY))
+            if (Cell *cursorCell = buffer.tryCellAt(cursorX, cursorY))
+                cursorCell->attributes = cursorCell->attributes | TextAttribute::Reversed;
     }
 }
 

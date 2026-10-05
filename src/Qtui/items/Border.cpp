@@ -17,7 +17,7 @@ void Border::setStyle(const QString& style) {
     }
 }
 
-void Border::setColor(const QString& color) {
+void Border::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     emit colorChanged();

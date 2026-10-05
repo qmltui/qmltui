@@ -186,7 +186,7 @@ private slots:
         QVERIFY(tree.isExpanded(0));
 
         // mousePressEvent toggles expanded state (expanded -> collapsed)
-        MouseEvent mouseEv(0, 0, 0);
+    MouseEvent mouseEv(MouseEvent::Type::Press, 0, 0, 0);
         tree.mousePressEvent(&mouseEv);
         QVERIFY(mouseEv.isAccepted());
         QCOMPARE(tree.selectedIndex(), 0);

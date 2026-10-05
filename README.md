@@ -126,7 +126,7 @@ capture one frame with `QTUI_INSPECT=1`. Runs are quiet by default and write
 Installed CMake consumers can register a scenario with:
 
 ```cmake
-find_package(Qtui 0.2 REQUIRED)
+find_package(Qtui 0.3 REQUIRED)
 
 # Linking Qtui::Testing is what puts the runner inside the application; without
 # it the scenario fails with "did not create result.json".
@@ -160,7 +160,7 @@ cmake --install build --prefix /your/prefix
 An external C++ project can use the custom-item API with:
 
 ```cmake
-find_package(Qtui 0.2 REQUIRED)
+find_package(Qtui 0.3 REQUIRED)
 target_link_libraries(my_app PRIVATE Qtui::Core)
 ```
 
@@ -195,4 +195,4 @@ them. Escape-sequence interpretation requires an explicit ANSI text format.
 
 See [QML API](docs/qml_api.md), [architecture](docs/architecture.md), and
 [custom items](docs/custom_items.md). Breaking stabilization changes are listed
-in the [migration notes](docs/migration-0.1.md).
+in the [0.3 migration notes](docs/migration-0.3.md).

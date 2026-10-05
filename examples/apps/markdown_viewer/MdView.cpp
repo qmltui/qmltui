@@ -216,7 +216,7 @@ void MdView::pageDown() {
     scrollBy(std::max(1, viewportHeight() - 1));
 }
 
-void MdView::render(TextGridBuffer &buffer, int absX, int absY,
+void MdView::paint(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect) {
     const ClipRect ownClip = clipRect.intersected(ClipRect{absX, absY, width(), height()});
     if (ownClip.width <= 0 || ownClip.height <= 0)

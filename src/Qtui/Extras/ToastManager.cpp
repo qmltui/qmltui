@@ -18,7 +18,7 @@ void ToastManager::showToast(const QString &title, const QString &message, const
     markDirty();
 }
 
-void ToastManager::setInfoColor(const QString &color) {
+void ToastManager::setInfoColor(Color color) {
     if (m_infoColor == color) return;
     m_infoColor = color;
     m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0xFF61AFEF);
@@ -26,7 +26,7 @@ void ToastManager::setInfoColor(const QString &color) {
     markDirty();
 }
 
-void ToastManager::setSuccessColor(const QString &color) {
+void ToastManager::setSuccessColor(Color color) {
     if (m_successColor == color) return;
     m_successColor = color;
     m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0xFF98C379);
@@ -34,7 +34,7 @@ void ToastManager::setSuccessColor(const QString &color) {
     markDirty();
 }
 
-void ToastManager::setWarningColor(const QString &color) {
+void ToastManager::setWarningColor(Color color) {
     if (m_warningColor == color) return;
     m_warningColor = color;
     m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0xFFE5C07B);
@@ -42,7 +42,7 @@ void ToastManager::setWarningColor(const QString &color) {
     markDirty();
 }
 
-void ToastManager::setErrorColor(const QString &color) {
+void ToastManager::setErrorColor(Color color) {
     if (m_errorColor == color) return;
     m_errorColor = color;
     m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0xFFE06C75);
@@ -82,10 +82,8 @@ void ToastManager::onTick() {
     if (m_toasts.isEmpty()) m_timer.stop();
 }
 
-void ToastManager::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void ToastManager::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible || m_toasts.isEmpty()) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     int curY = absY;
     if (m_position.contains("bottom")) {

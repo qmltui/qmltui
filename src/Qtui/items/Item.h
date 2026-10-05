@@ -10,6 +10,7 @@
 #include <QPoint>
 #include <QHash>
 #include <QMetaObject>
+#include <algorithm>
 
 #include "Anchors.h"
 #include "Border.h"
@@ -49,11 +50,11 @@ class Item : public QObject {
   QML_ELEMENT
 
 public:
-  enum class DirtyFlag {
+  enum class DirtyFlag : quint8 {
     None = 0,
     SelfDirty = 1 << 0,
     DescendantDirty = 1 << 1,
-    LayoutDirty = 1 << 2
+    LayoutDirty = 1 << 2,
   };
   Q_DECLARE_FLAGS(DirtyFlags, DirtyFlag)
 
@@ -137,6 +138,7 @@ public:
   bool enabled() const { return m_enabled; }
   void setEnabled(bool enabled);
   bool isEffectivelyEnabled() const;
+  bool isEffectivelyVisible() const;
 
   bool focus() const { return m_focus; }
   void setFocus(bool focus);
@@ -150,11 +152,9 @@ public:
   Terminal *terminal() const;
   QPoint absolutePosition() const;
   virtual QPoint contentOffset() const;
-  void setGeometryDirect(int x, int y, int w, int h);
 
   Item *parentItem() const { return qobject_cast<Item *>(QObject::parent()); }
   virtual void setParentItem(Item *parentItem);
-  void removeChildItem(Item *child);
   Anchors *anchors() const { return const_cast<Anchors*>(&m_anchors); }
   AnchorLine *left() const { return m_leftLine; }
   AnchorLine *right() const { return m_rightLine; }
@@ -181,9 +181,9 @@ public:
   virtual int bottomPadding() const;
   void setBottomPadding(int p);
 
-  virtual void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect());
+  void render(TextGridBuffer &buffer, int absX, int absY,
+              const ClipRect &clipRect = ClipRect());
   virtual void keyPressEvent(class KeyEvent* event);
-  virtual void keyReleaseEvent(class KeyEvent* event);
   virtual void mousePressEvent(class MouseEvent* event);
   virtual void mouseReleaseEvent(class MouseEvent* event);
   virtual void mouseMoveEvent(class MouseEvent* event);
@@ -222,6 +222,8 @@ signals:
   void dirty(); // For bubbling up render requests
 
 private:
+  virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                            const ClipRect &clipRect);
   void invalidateStackingOrder();
   void scheduleChildGeometryInvalidation();
   void registerChildItem(Item* childItem);
@@ -243,6 +245,12 @@ private:
 
 protected:
   void childEvent(QChildEvent* event) override;
+
+  virtual void updateLayout();
+  virtual void paint(TextGridBuffer &buffer, int absX, int absY,
+                     const ClipRect &clipRect);
+  virtual ClipRect clipRectForChildren(int absX, int absY,
+                                      const ClipRect &clipRect) const;
 
   int m_x = 0;
   int m_y = 0;
@@ -269,14 +277,14 @@ protected:
   int m_rightPadding = -1;
   int m_topPadding = -1;
   int m_bottomPadding = -1;
-  QList<QObject*> m_dataChildren;
+  QList<QPointer<QObject>> m_dataChildren;
   QList<Item *> m_visualChildren;
   mutable QList<Item *> m_stackingChildren;
   mutable bool m_stackingOrderDirty = true;
 
   QString m_stateName;
-  QList<qtui::State*> m_statesList;
-  QList<qtui::Transition*> m_transitionsList;
+  QList<QPointer<qtui::State>> m_statesList;
+  QList<QPointer<qtui::Transition>> m_transitionsList;
   QMap<QPair<QPointer<QObject>, QString>, QVariant> m_savedPropertyValues;
   QList<QPointer<Animation>> m_runningTransitionAnimations;
   QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;

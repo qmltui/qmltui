@@ -181,7 +181,7 @@ void ListView::refreshDelegateStates()
         updateDelegateState(it.value(), it.key());
 }
 
-void ListView::setHighlightColor(const QString& color) {
+void ListView::setHighlightColor(Color color) {
     if (m_highlightColor == color) return;
     m_highlightColor = color;
     m_resolvedHighlightColor = ColorMapper::fromString(m_highlightColor, 0xFF000000);
@@ -189,7 +189,7 @@ void ListView::setHighlightColor(const QString& color) {
     markDirty();
 }
 
-void ListView::setHighlightBgColor(const QString& color) {
+void ListView::setHighlightBgColor(Color color) {
     if (m_highlightBgColor == color) return;
     m_highlightBgColor = color;
     m_resolvedHighlightBgColor = ColorMapper::fromString(m_highlightBgColor, 0xFFFFFFFF);
@@ -707,11 +707,11 @@ int ListView::implicitHeight() const {
     }
 }
 
-void ListView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void ListView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!visible()) return;
     rebuildViewport();
     layoutChildren();
-    ScrollView::render(buffer, absX, absY, clipRect);
+    ScrollView::paint(buffer, absX, absY, clipRect);
 }
 
 } // namespace qtui

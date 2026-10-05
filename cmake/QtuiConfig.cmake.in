@@ -10,7 +10,7 @@ set(Qtui_QML_IMPORT_PATH "@PACKAGE_QTUI_INSTALL_QMLDIR@")
 
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 6.8 COMPONENTS Core Qml)
-if("@QTUI_BUILD_TERMINAL_HOST@" OR "@QTUI_ENABLE_TEST_RUNNER@" OR "@QTUI_ENABLE_TEST_DRIVER@")
+if("@QTUI_ENABLE_TEST_RUNNER@" OR "@QTUI_ENABLE_TEST_DRIVER@")
     find_dependency(Qt6 6.8 COMPONENTS Gui)
 endif()
 

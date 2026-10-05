@@ -350,10 +350,8 @@ int GridLayout::implicitHeight() const {
     return totalH;
 }
 
-void GridLayout::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
-    if (!m_visible) return;
-    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
-    Item::render(buffer, absX, absY, clipRect);
+void GridLayout::updateLayout() {
+    layoutChildren();
 }
 
 } // namespace qtui

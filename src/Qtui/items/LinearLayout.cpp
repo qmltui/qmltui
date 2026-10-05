@@ -153,11 +153,8 @@ int LinearLayout::implicitHeight() const {
     return value;
 }
 
-void LinearLayout::render(TextGridBuffer &buffer, int absX, int absY,
-                          const ClipRect &clipRect) {
-    if (!visible()) return;
-    if (dirtyFlags().testFlag(DirtyFlag::LayoutDirty)) layoutChildren();
-    Item::render(buffer, absX, absY, clipRect);
+void LinearLayout::updateLayout() {
+    layoutChildren();
 }
 
 } // namespace qtui

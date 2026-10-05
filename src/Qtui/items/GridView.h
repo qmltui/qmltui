@@ -37,7 +37,7 @@ public:
     void setCellHeight(int height);
 
     void layoutChildren();
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
     int implicitWidth() const override;
     int implicitHeight() const override;
 

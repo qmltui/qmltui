@@ -24,6 +24,21 @@ add_qtui_test(test_views_virtualization Core/test_views_virtualization.cpp)
 add_qtui_test(test_terminal_framework Core/test_terminal_framework.cpp)
 add_qtui_test(test_input_router Core/test_input_router.cpp)
 
+add_test(
+    NAME test_installed_custom_item_consumer
+    COMMAND "${CMAKE_COMMAND}"
+        "-DQTUI_BUILD_DIR=${CMAKE_BINARY_DIR}"
+        "-DCONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer"
+        "-DCONSUMER_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_build"
+        "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_prefix"
+        "-DQt6_DIR=${Qt6_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
+)
+set_tests_properties(test_installed_custom_item_consumer PROPERTIES
+    LABELS AgentSmoke
+    TIMEOUT 120
+)
+
 add_qtui_test(test_canvas Canvas/test_canvas.cpp)
 add_qtui_test(test_popup Controls/test_popup.cpp)
 add_qtui_test(test_extras Extras/test_extras.cpp)
@@ -320,7 +335,7 @@ endif()
 if(QTUI_BUILD_TERMINAL_HOST)
     add_executable(test_terminal_host TerminalHost/test_terminal_host.cpp)
     target_link_libraries(test_terminal_host PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Test Qt6::Qml Qtui::TerminalHost qtui_libvterm
+        Qt6::Core Qt6::Test Qt6::Qml Qtui::TerminalHost qtui_libvterm
     )
     target_compile_definitions(test_terminal_host PRIVATE
         QTUI_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}"

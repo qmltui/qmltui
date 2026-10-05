@@ -122,12 +122,16 @@ void ScrollView::ensureChildVisible(Item* childItem) {
     }
 }
 
-void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    if (!m_visible) return;
-
-    // 1. Resolve anchors
+void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+    Q_UNUSED(buffer);
+    Q_UNUSED(absX);
+    Q_UNUSED(absY);
+    Q_UNUSED(clipRect);
     m_anchors.resolve();
+}
 
+void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
+                              const ClipRect& clipRect) {
     int w = width();
     int h = height();
 
@@ -136,18 +140,7 @@ void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRe
     int tp = topPadding();
     int bp = bottomPadding();
     int viewportH = h - tp - bp;
-
-    // 4. Viewport clipping for children
-    ClipRect viewportClip = clipRect.intersected(ClipRect{absX + lp, absY + tp, w - lp - rp, viewportH});
-
-    // 5. Render children offset by -m_contentY
-    for (Item* childItem : childItems()) {
-        if (childItem) {
-            childItem->render(buffer, absX + childItem->x(), absY + childItem->y() - m_contentY, viewportClip);
-        }
-    }
-
-    // 6. Draw vertical scrollbar if content exceeds viewport and scrollBarVisible is true
+    // Draw vertical scrollbar if content exceeds viewport and scrollBarVisible is true
     if (m_scrollBarVisible) {
         int effectiveH = effectiveContentHeight();
         if (effectiveH > viewportH) {
@@ -172,6 +165,18 @@ void ScrollView::render(TextGridBuffer& buffer, int absX, int absY, const ClipRe
             }
         }
     }
+}
+
+ClipRect ScrollView::clipRectForChildren(int absX, int absY,
+                                        const ClipRect &clipRect) const
+{
+    const int lp = leftPadding();
+    const int rp = rightPadding();
+    const int tp = topPadding();
+    const int bp = bottomPadding();
+    return clipRect.intersected(ClipRect{absX + lp, absY + tp,
+                                        width() - lp - rp,
+                                        height() - tp - bp});
 }
 
 } // namespace qtui

@@ -8,6 +8,8 @@
 #include "ScrollView.h"
 #include "Text.h"
 #include "TextGridBuffer.h"
+#include "State.h"
+#include "Transition.h"
 
 using namespace qtui;
 
@@ -23,6 +25,9 @@ private slots:
     void testContainerRelayoutOnMutation();
     void testScrollViewDirtyEmissionNotSink();
     void testAnchorImplicitTargetResizing();
+    void testFrameworkOwnedPaintTraversal();
+    void testRenderPreservesNewInvalidations();
+    void testGuardedDataStateAndTransitionLists();
 };
 
 void TestLayout::testRowLayout() {
@@ -254,6 +259,122 @@ void TestLayout::testAnchorImplicitTargetResizing() {
 
     root.render(buffer, 0, 0);
     QCOMPARE(overlay->width(), row->implicitWidth());
+}
+
+class PaintProbe : public Item {
+public:
+    PaintProbe(char glyph, QStringList *order, QObject *parent = nullptr)
+        : Item(parent), m_glyph(glyph), m_order(order)
+    {
+        setWidth(1);
+        setHeight(1);
+    }
+
+    int layoutCount = 0;
+    bool invalidateDuringLayout = false;
+    QPointer<Item> deleteDuringPaint;
+
+protected:
+    void updateLayout() override
+    {
+        ++layoutCount;
+        if (invalidateDuringLayout)
+            markDirty(DirtyFlag::SelfDirty);
+    }
+
+    void paint(TextGridBuffer &buffer, int absX, int absY,
+               const ClipRect &) override
+    {
+        if (m_order)
+            m_order->append(QChar::fromLatin1(m_glyph));
+        if (Cell *cell = buffer.tryCellAt(absX, absY))
+            cell->character = QByteArray(1, m_glyph);
+        if (deleteDuringPaint)
+            delete deleteDuringPaint.data();
+    }
+
+private:
+    char m_glyph;
+    QStringList *m_order;
+};
+
+void TestLayout::testFrameworkOwnedPaintTraversal()
+{
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(3, 1));
+    QStringList order;
+
+    PaintProbe parent('P', &order);
+    auto *child = new PaintProbe('C', &order, &parent);
+    child->setX(1);
+    parent.render(buffer, 0, 0);
+
+    QCOMPARE(order, QStringList({QStringLiteral("P"), QStringLiteral("C")}));
+    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("P"));
+    QCOMPARE(buffer.cellAt(1, 0).character, QByteArray("C"));
+
+    auto *killer = new PaintProbe('K', nullptr, &parent);
+    auto *victim = new PaintProbe('V', nullptr, &parent);
+    killer->setZ(1);
+    victim->setZ(2);
+    killer->deleteDuringPaint = victim;
+    parent.render(buffer, 0, 0);
+    QVERIFY(killer->deleteDuringPaint.isNull());
+}
+
+void TestLayout::testRenderPreservesNewInvalidations()
+{
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(1, 1));
+    PaintProbe item('X', nullptr);
+    item.clearDirty(Item::DirtyFlags(Item::DirtyFlag::SelfDirty)
+                    | Item::DirtyFlag::DescendantDirty
+                    | Item::DirtyFlag::LayoutDirty);
+    item.invalidateDuringLayout = true;
+    item.markDirty(Item::DirtyFlag::LayoutDirty);
+
+    item.render(buffer, 0, 0);
+
+    QCOMPARE(item.layoutCount, 1);
+    QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
+    QVERIFY(!item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+}
+
+void TestLayout::testGuardedDataStateAndTransitionLists()
+{
+    Item item;
+
+    auto *object = new QObject;
+    auto data = item.data();
+    data.append(&data, object);
+    QCOMPARE(object->parent(), static_cast<QObject *>(&item));
+    QCOMPARE(data.count(&data), qsizetype(1));
+    delete object;
+    QCOMPARE(data.count(&data), qsizetype(0));
+
+    QObject retained;
+    data.append(&data, &retained);
+    data.clear(&data);
+    QCOMPARE(retained.parent(), nullptr);
+    QCOMPARE(data.count(&data), qsizetype(0));
+
+    State state;
+    state.setName(QStringLiteral("active"));
+    state.setWhen(true);
+    auto states = item.states();
+    states.append(&states, &state);
+    QCOMPARE(item.state(), QStringLiteral("active"));
+    states.clear(&states);
+    QCOMPARE(state.parent(), nullptr);
+    QCOMPARE(item.state(), QString());
+
+    Transition transition;
+    auto transitions = item.transitions();
+    transitions.append(&transitions, &transition);
+    QCOMPARE(transitions.count(&transitions), qsizetype(1));
+    transitions.clear(&transitions);
+    QCOMPARE(transition.parent(), nullptr);
+    QCOMPARE(transitions.count(&transitions), qsizetype(0));
 }
 
 QTEST_MAIN(TestLayout)

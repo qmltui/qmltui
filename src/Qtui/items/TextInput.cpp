@@ -76,7 +76,7 @@ void TextInput::setText(const QString &text) {
         before);
 }
 
-void TextInput::setColor(const QString& color) {
+void TextInput::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
@@ -105,10 +105,10 @@ void TextInput::setCursorShape(CursorShape shape) {
     markDirty();
 }
 
-void TextInput::setCursorColor(const QString &color) {
+void TextInput::setCursorColor(Color color) {
     if (m_cursorColor == color) return;
     m_cursorColor = color;
-    if (m_cursorColor.trimmed().isEmpty()) {
+    if (!m_cursorColor.isValid()) {
         m_hasResolvedCursorColor = false;
         m_resolvedCursorColor = 0;
     } else {
@@ -150,10 +150,10 @@ void TextInput::setCursorDelegate(const QString &delegate) {
     markDirty();
 }
 
-void TextInput::setSelectionColor(const QString &color) {
+void TextInput::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    if (m_selectionColor.trimmed().isEmpty()) {
+    if (!m_selectionColor.isValid()) {
         m_hasResolvedSelectionColor = false;
         m_resolvedSelectionColor = 0;
     } else {
@@ -164,10 +164,10 @@ void TextInput::setSelectionColor(const QString &color) {
     markDirty();
 }
 
-void TextInput::setSelectedTextColor(const QString &color) {
+void TextInput::setSelectedTextColor(Color color) {
     if (m_selectedTextColor == color) return;
     m_selectedTextColor = color;
-    if (m_selectedTextColor.trimmed().isEmpty()) {
+    if (!m_selectedTextColor.isValid()) {
         m_hasResolvedSelectedTextColor = false;
         m_resolvedSelectedTextColor = 0;
     } else {
@@ -178,10 +178,10 @@ void TextInput::setSelectedTextColor(const QString &color) {
     markDirty();
 }
 
-void TextInput::setPlaceholderColor(const QString &color) {
+void TextInput::setPlaceholderColor(Color color) {
     if (m_placeholderColor == color) return;
     m_placeholderColor = color;
-    if (m_placeholderColor.trimmed().isEmpty()) {
+    if (!m_placeholderColor.isValid()) {
         m_hasResolvedPlaceholderColor = false;
         m_resolvedPlaceholderColor = 0;
     } else {
@@ -514,10 +514,9 @@ void TextInput::mouseMoveEvent(MouseEvent *event) {
     event->setAccepted(true);
 }
 
-void TextInput::render(
+void TextInput::paint(
     TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
-    Item::render(buffer, absX, absY, clipRect);
 
     const int viewportWidth = std::max(0, width() - leftPadding() - rightPadding());
     const int viewportHeight = std::max(0, height() - topPadding() - bottomPadding());
@@ -560,7 +559,10 @@ void TextInput::render(
                 const int clusterEnd = clusterStart + cluster.utf16Length;
                 if (clusterEnd > selectionStart() && clusterStart < selectionEnd()) {
                     for (int dx = 0; dx < width; ++dx) {
-                        Cell &selCell = buffer.cellAt(x + dx, y);
+                        Cell *selectionCell = buffer.tryCellAt(x + dx, y);
+                        if (!selectionCell)
+                            continue;
+                        Cell &selCell = *selectionCell;
                         if (m_hasResolvedSelectionColor) {
                             selCell.bgColor = m_resolvedSelectionColor;
                             if (m_hasResolvedSelectedTextColor) {
@@ -583,7 +585,10 @@ void TextInput::render(
         const int x = contentLeft
             + displayColumnForPosition(m_editor.cursorPosition()) - m_contentX;
         if (contentClip.contains(x, y)) {
-            Cell &cell = buffer.cellAt(x, y);
+            Cell *cursorCell = buffer.tryCellAt(x, y);
+            if (!cursorCell)
+                return;
+            Cell &cell = *cursorCell;
             const bool isSpaceOrEmpty = cell.character.isEmpty() || cell.character == " ";
 
             if (!m_cursorDelegate.isEmpty()) {

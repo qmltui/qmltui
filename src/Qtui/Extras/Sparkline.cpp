@@ -44,7 +44,7 @@ void Sparkline::setFilled(bool filled) {
     markDirty();
 }
 
-void Sparkline::setColor(const QString &color) {
+void Sparkline::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFF00FFFF);
@@ -52,7 +52,7 @@ void Sparkline::setColor(const QString &color) {
     markDirty();
 }
 
-void Sparkline::setBgColor(const QString &color) {
+void Sparkline::setBgColor(Color color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
     m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
@@ -60,10 +60,8 @@ void Sparkline::setBgColor(const QString &color) {
     markDirty();
 }
 
-void Sparkline::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible || m_values.isEmpty()) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int availW = width();
     const int availH = height();
@@ -133,7 +131,10 @@ void Sparkline::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
             int cx = startX + dx;
 
             if (clipRect.contains(cx, cy)) {
-                Cell& cell = buffer.cellAt(cx, cy);
+                Cell *targetCell = buffer.tryCellAt(cx, cy);
+                if (!targetCell)
+                    continue;
+                Cell& cell = *targetCell;
                 cell.fgColor = m_resolvedColor;
                 cell.bgColor = m_resolvedBgColor;
 

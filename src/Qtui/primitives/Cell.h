@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <QByteArray>
 
+#include "Color.h"
+
 namespace qtui {
 
 enum class TextAttribute : uint8_t {
@@ -31,6 +33,11 @@ struct Cell {
     uint32_t fgColor = 0xFFFFFFFF; // Default foreground (White)
     uint32_t bgColor = 0x00000000; // Default background (Transparent)
     TextAttribute attributes = TextAttribute::None;
+
+    void setForeground(Color color) { fgColor = color.argb32(); }
+    void setBackground(Color color) { bgColor = color.argb32(); }
+    Color foreground() const { return Color::fromArgb32(fgColor); }
+    Color background() const { return Color::fromArgb32(bgColor); }
 
     bool operator==(const Cell& other) const {
         return character == other.character &&

@@ -228,7 +228,7 @@ void TableView::sortModel() {
     markDirty();
 }
 
-void TableView::setHeaderColor(const QString &color) {
+void TableView::setHeaderColor(Color color) {
     if (m_headerColor == color) return;
     m_headerColor = color;
     m_resolvedHeaderColor = ColorMapper::fromString(m_headerColor, 0xFFFFFF00);
@@ -236,7 +236,7 @@ void TableView::setHeaderColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setHeaderBgColor(const QString &color) {
+void TableView::setHeaderBgColor(Color color) {
     if (m_headerBgColor == color) return;
     m_headerBgColor = color;
     m_resolvedHeaderBgColor = ColorMapper::fromString(m_headerBgColor, 0x00000000);
@@ -244,7 +244,7 @@ void TableView::setHeaderBgColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setSelectionColor(const QString &color) {
+void TableView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
     m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFFFFFFFF);
@@ -252,7 +252,7 @@ void TableView::setSelectionColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setSelectionBgColor(const QString &color) {
+void TableView::setSelectionBgColor(Color color) {
     if (m_selectionBgColor == color) return;
     m_selectionBgColor = color;
     m_resolvedSelectionBgColor = ColorMapper::fromString(m_selectionBgColor, 0xFF0000FF);
@@ -260,7 +260,7 @@ void TableView::setSelectionBgColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setTextColor(const QString &color) {
+void TableView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
     m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0xFFCCCCCC);
@@ -268,7 +268,7 @@ void TableView::setTextColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setRowBgColor(const QString &color) {
+void TableView::setRowBgColor(Color color) {
     if (m_rowBgColor == color) return;
     m_rowBgColor = color;
     m_resolvedRowBgColor = ColorMapper::fromString(m_rowBgColor, 0x00000000);
@@ -276,7 +276,7 @@ void TableView::setRowBgColor(const QString &color) {
     markDirty();
 }
 
-void TableView::setAlternatingRowBgColor(const QString &color) {
+void TableView::setAlternatingRowBgColor(Color color) {
     if (m_alternatingRowBgColor == color) return;
     m_alternatingRowBgColor = color;
     m_resolvedAltRowBgColor = ColorMapper::fromString(m_alternatingRowBgColor, 0xFF1E1E2E);
@@ -290,6 +290,7 @@ void TableView::setShowGrid(bool show) {
     emit showGridChanged();
     markDirty();
 }
+
 
 void TableView::setColumnWidthProvider(const QJSValue &provider) {
     m_columnWidthProvider = provider;
@@ -536,10 +537,9 @@ void TableView::generateDelegateItems()
     markDirty();
 }
 
-void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    Q_UNUSED(clipRect);
     if (!m_visible) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int availW = width();
     int availH = height();
@@ -584,7 +584,8 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
             curX += colW;
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
-                buffer.cellAt(curX - 1, startY).character = "|";
+                if (Cell *cell = buffer.tryCellAt(curX - 1, startY))
+                    cell->character = "|";
             }
         }
 
@@ -627,6 +628,10 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
         updateDelegateViewport(firstRow, lastRow, firstCol, lastCol);
 
+        for (Item *item : m_createdDelegateItems)
+            if (item)
+                item->setVisible(false);
+
         for (int visibleRow = 0;
              visibleRow < visibleRows && firstVisibleRow + visibleRow < totalRows;
              ++visibleRow) {
@@ -638,8 +643,10 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
                 Item *item = m_createdDelegateItems.value(QPair<int, int>(actualRow, column), nullptr);
                 if (item) {
+                    item->setX(cellX - absX);
+                    item->setY(startY + visibleRow - absY);
                     item->setWidth(colW);
-                    item->render(buffer, cellX, startY + visibleRow, clipRect);
+                    item->setVisible(true);
                 }
                 if (cellMode) cellX += colW;
             }
@@ -700,10 +707,23 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
             curX += colW;
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
-                buffer.cellAt(curX - 1, rowY).character = "|";
+                if (Cell *cell = buffer.tryCellAt(curX - 1, rowY))
+                    cell->character = "|";
             }
         }
     }
+}
+
+ClipRect TableView::clipRectForChildren(int absX, int absY,
+                                        const ClipRect &clipRect) const
+{
+    const int header = (!m_columns.isEmpty() || m_columnWidthProvider.isCallable()) ? 2 : 0;
+    return clipRect.intersected(ClipRect{
+        absX,
+        absY + header,
+        std::max(0, width()),
+        std::max(0, height() - header),
+    });
 }
 
 void TableView::keyPressEvent(KeyEvent *event) {

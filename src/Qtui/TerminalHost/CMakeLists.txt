@@ -17,7 +17,7 @@ target_include_directories(QtuiTerminalHost PUBLIC
 )
 
 target_link_libraries(QtuiTerminalHost
-    PUBLIC QtuiCore Qt6::Gui
+    PUBLIC QtuiCore
     PRIVATE qtui_libvterm
 )
 

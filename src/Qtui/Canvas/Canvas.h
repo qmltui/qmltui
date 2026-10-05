@@ -12,8 +12,8 @@ class CanvasShape;
 class Canvas : public Item {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(QString fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(bool autoClear READ autoClear WRITE setAutoClear NOTIFY autoClearChanged)
     Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY pixelWidthChanged)
@@ -29,12 +29,12 @@ public:
     Canvas(QObject* parent = nullptr);
     ~Canvas() override = default;
 
-    QString color() const { return m_color; }
-    void setColor(const QString& color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
     uint32_t resolvedColor() const { return m_resolvedColor; }
 
-    QString fillColor() const { return m_fillColor; }
-    void setFillColor(const QString& color);
+    Color fillColor() const { return m_fillColor; }
+    void setFillColor(Color color);
     uint32_t resolvedFillColor() const { return m_resolvedFillColor; }
 
     RenderMode renderMode() const { return m_renderMode; }
@@ -50,12 +50,12 @@ public:
     int pixelHeight() const { return m_renderMode == RenderMode::Braille ? height() * 4 : height() * 2; }
 
     Q_INVOKABLE void setPixel(int x, int y, bool value = true);
-    Q_INVOKABLE void setPixelColor(int x, int y, const QString& color);
+    Q_INVOKABLE void setPixelColor(int x, int y, Color color);
     void setPixelColorHex(int x, int y, uint32_t color);
 
     Q_INVOKABLE void clear();
 
-    void render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) override;
 
 signals:
     void colorChanged();
@@ -71,9 +71,9 @@ private:
     bool m_autoClear = true;
     std::vector<uint8_t> m_cells;            // For Braille mode (2x4 bits per cell)
     std::vector<uint32_t> m_pixelColors;     // For HalfBlock mode (1x2 colors per cell, ARGB)
-    QString m_color = "white";
+    Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
-    QString m_fillColor;
+    Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
 };
 
@@ -81,27 +81,27 @@ class CanvasShape : public Item {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("CanvasShape is an abstract base class")
-    Q_PROPERTY(QString color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
 
 public:
     CanvasShape(QObject* parent = nullptr) : Item(parent) {}
     ~CanvasShape() override = default;
 
-    QString color() const { return m_color; }
-    void setColor(const QString& color);
+    Color color() const { return m_color; }
+    void setColor(Color color);
     uint32_t resolvedColor(Canvas* canvas) const;
 
     virtual void draw(Canvas* canvas) = 0;
 
-    void render(TextGridBuffer&, int, int, const ClipRect&) override {
-        // Shapes are drawn onto parent Canvas buffer during Canvas::render()
+    void paint(TextGridBuffer&, int, int, const ClipRect&) override {
+        // Shapes are drawn onto the parent Canvas buffer during Canvas::paint().
     }
 
 signals:
     void colorChanged();
 
 private:
-    QString m_color;
+    Color m_color;
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     bool m_hasCustomColor = false;
 };

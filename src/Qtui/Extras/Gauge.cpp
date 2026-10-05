@@ -34,7 +34,7 @@ void Gauge::setLabel(const QString &label) {
     markDirty();
 }
 
-void Gauge::setGaugeColor(const QString &color) {
+void Gauge::setGaugeColor(Color color) {
     if (m_gaugeColor == color) return;
     m_gaugeColor = color;
     m_resolvedGaugeColor = ColorMapper::fromString(m_gaugeColor, 0xFF00FF00);
@@ -55,7 +55,7 @@ void Gauge::setGradient(Gradient *gradient) {
     markDirty();
 }
 
-void Gauge::setBgColor(const QString &color) {
+void Gauge::setBgColor(Color color) {
     if (m_bgColor == color) return;
     m_bgColor = color;
     m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
@@ -91,10 +91,9 @@ void Gauge::setShowBrackets(bool show) {
     markDirty();
 }
 
-void Gauge::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Gauge::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    Q_UNUSED(clipRect);
     if (!m_visible) return;
-
-    Item::render(buffer, absX, absY, clipRect);
 
     const int availW = width();
     const int availH = height();

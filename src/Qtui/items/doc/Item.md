@@ -149,9 +149,6 @@ Notifies the parent item and rendering engine that this item needs to be redrawn
 #### QPoint absolutePosition() const
 Calculates and returns the absolute (x, y) coordinates of the item relative to the root window.
 
-#### void setGeometryDirect(int x, int y, int w, int h)
-Bypasses individual setters to configure geometry coordinates and dimensions in a single step.
-
 #### const QList<Item *> &childItems() const
 Returns the list of visual child items.
 
@@ -164,22 +161,23 @@ Returns whether this item is enabled, considering the parent's enabled state hie
 #### Terminal *terminal() const
 Returns the root `Terminal` object this item is associated with.
 
-#### void removeChildItem(Item *child)
-Removes the specified child item from visual children list.
-
 #### void evaluateStateConditions()
 Re-evaluates declarative states to update values according to state constraints.
 
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### virtual void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect())
-Renders the visual content of the item and its children into the target grid buffer.
+#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect())
+Runs framework-owned layout, paint, child traversal, clipping, scrolling, and
+overlay composition. This method is non-virtual. Subclasses override `paint()`.
+
+#### virtual void updateLayout()
+Performs layout work when the item has `LayoutDirty` set.
+
+#### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
+Paints only this item's own content. Child traversal is performed by `render()`.
 
 #### virtual void keyPressEvent(KeyEvent* event)
 Called when a key is pressed while the item has focus.
-
-#### virtual void keyReleaseEvent(KeyEvent* event)
-Called when a key is released while the item has focus.
 
 #### virtual void mousePressEvent(MouseEvent* event)
 Called when a mouse button is pressed over the item.
@@ -223,9 +221,10 @@ public:
         setImplicitHeight(3);
     }
 
-    void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) override {
-        buffer.drawBox(absX, absY, width(), height());
-        Item::render(buffer, absX, absY, clipRect);
+protected:
+    void paint(TextGridBuffer &buffer, int absX, int absY,
+               const ClipRect& clipRect) override {
+        buffer.drawBox(absX, absY, width(), height(), Color("green"));
     }
 };
 ```

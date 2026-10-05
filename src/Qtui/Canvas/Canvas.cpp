@@ -1,5 +1,6 @@
 #include "Canvas.h"
 #include "ColorMapper.h"
+#include <array>
 #include <cmath>
 #include <QJSValue>
 
@@ -97,7 +98,8 @@ void Canvas::setPixel(int x, int y, bool value) {
         } else {
             m_cells[idx] &= ~bitMask;
         }
-        markDirty();
+        if (!m_rendering)
+            markDirty();
     } else {
     uint32_t col = value ? m_resolvedColor : (!m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor);
         setPixelColorHex(x, y, col);
@@ -124,6 +126,8 @@ void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
             markDirty();
         }
     }
+    if (!m_rendering)
+        markDirty();
 }
 
 void Canvas::clear() {
@@ -136,6 +140,7 @@ void Canvas::clear() {
 void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!visible()) return;
 
+    m_rendering = true;
     resizeBuffer();
     if (m_autoClear) {
         if (m_renderMode == RenderMode::Braille) {
@@ -158,6 +163,19 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 
 
     if (m_renderMode == RenderMode::Braille) {
+        static const auto brailleTable = []() {
+            std::array<QByteArray, 256> table;
+            for (int i = 0; i < 256; ++i) {
+                char bytes[3] = {
+                    static_cast<char>(0xE2),
+                    static_cast<char>(0xA0 | (i >> 6)),
+                    static_cast<char>(0x80 | (i & 0x3F))
+                };
+                table[i] = QByteArray(bytes, 3);
+            }
+            return table;
+        }();
+
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
             uint8_t cellValue = m_cells[y * width() + x];
@@ -166,10 +184,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
-                    const int brailleChar = 0x2800 + cellValue;
-                    const QChar qc(brailleChar);
-                    const QString qs(qc);
-                    cell.character = qs.toUtf8();
+                    cell.character = brailleTable[cellValue];
                     cell.displayWidth = 1;
                     cell.continuation = false;
                     cell.fgColor = m_resolvedColor;
@@ -218,6 +233,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
         }
     }
 
+    m_rendering = false;
 }
 
 void Canvas::resizeBuffer() {

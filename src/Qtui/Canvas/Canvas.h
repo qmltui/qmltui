@@ -71,6 +71,9 @@ private:
     bool m_autoClear = true;
     std::vector<uint8_t> m_cells;            // For Braille mode (2x4 bits per cell)
     std::vector<uint32_t> m_pixelColors;     // For HalfBlock mode (1x2 colors per cell, ARGB)
+    // Pixel writes performed while rendering are part of the current frame;
+    // they must not schedule another render and create a repaint loop.
+    bool m_rendering = false;
     Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     Color m_fillColor;

@@ -23,13 +23,17 @@ export QTUI_WIFI_LOW_LATENCY
 printf "\033%%G" > /dev/tty1 2>/dev/null || true
 printf "\033%%G" 2>/dev/null || true
 
-# 4. Prepare wpa_supplicant configuration directory and files
+# 4. Prepare persistent wpa_supplicant configuration directory and files
 mkdir -p /var/run/wpa_supplicant /etc/wpa_supplicant
 if [ ! -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
     printf "ctrl_interface=/var/run/wpa_supplicant\nctrl_interface_group=0\nupdate_config=1\n" > /etc/wpa_supplicant/wpa_supplicant.conf
 fi
-cp -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-mlan0.conf 2>/dev/null || true
-cp -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf 2>/dev/null || true
+if [ ! -f /etc/wpa_supplicant/wpa_supplicant-mlan0.conf ]; then
+    cp -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-mlan0.conf 2>/dev/null || true
+fi
+if [ ! -f /etc/wpa_supplicant/wpa_supplicant-wlan0.conf ]; then
+    cp -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf 2>/dev/null || true
+fi
 
 # 5. Bring up wireless interfaces completely silently
 rfkill unblock wifi >/dev/null 2>&1 || true
@@ -41,10 +45,10 @@ if [ "$QTUI_WIFI_LOW_LATENCY" = "1" ]; then
     iw dev wlan0 set power_save off >/dev/null 2>&1 || true
 fi
 
-# 6. Start wpa_supplicant daemon completely silently in background
+# 6. Start wpa_supplicant daemon completely silently using persistent config
 if ! pidof wpa_supplicant >/dev/null 2>&1; then
-    wpa_supplicant -B -qq -i mlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || \
-    wpa_supplicant -B -qq -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || true
+    wpa_supplicant -B -qq -i mlan0 -c /etc/wpa_supplicant/wpa_supplicant-mlan0.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || \
+    wpa_supplicant -B -qq -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || true
 fi
 
 export TERM="linux"

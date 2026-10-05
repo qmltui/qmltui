@@ -469,7 +469,8 @@ void WifiManager::disconnectNetwork()
     m_operationActive = true;
     const QList<Command> commands = {
         {"wpa_cli", {"-i", m_interface, "disconnect"}},
-        {"wpa_cli", {"-i", m_interface, "remove_network", "all"}}
+        {"wpa_cli", {"-i", m_interface, "remove_network", "all"}},
+        {"wpa_cli", {"-i", m_interface, "save_config"}}
     };
     runCommandSequence(commands, [this](bool success) {
         m_operationActive = false;

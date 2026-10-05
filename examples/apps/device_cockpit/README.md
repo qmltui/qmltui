@@ -63,30 +63,16 @@ QTUI_SCRIPT=examples/apps/device_cockpit/test_cockpit.js \
 The scenario asserts the rendered mock values and page switching without any
 hard-coded coordinates, and captures the Overview frame as an artifact.
 
-## Deploy on a device
+## Running on a target device or serial console
 
-`meta-qtui` packages the cockpit and boots it on the console:
+The application can run on any Linux systemd console or serial port:
 
-- `qtui-device-cockpit` — the binary, split out of the `qtui-examples` recipe
-  so lean images do not pull in the demos.
-- `qtui-image-cockpit` — a minimal image whose `qtui-app` launcher starts the
-  cockpit on `tty1` at boot:
-
+- To run on a physical console (`tty1`):
   ```sh
-  # Using the meta-qtui layer repository (https://github.com/yosriayed/meta-qtui):
-  kas build --target qtui-image-cockpit kas/qemuarm64.yml  # or kas/frdm-imx93.yml
+  ./qtui_device_cockpit
   ```
-
-- For a serial console instead of (or in addition to) the framebuffer
-  console, the `qtui-autostart` package installs a getty-replacement
-  template; on the device:
-
+- To run as a service replacing a serial getty (e.g. `ttyS0` or `ttyLP0`):
   ```sh
-  systemctl disable serial-getty@ttyLP0.service
-  systemctl enable --now qtui-app@ttyLP0.service
+  systemctl disable serial-getty@ttyS0.service
+  # Launch qtui_device_cockpit on the designated TTY
   ```
-
-The launched application is `/etc/default/qtui-app` (`QTUI_APP=`), so any
-image using `qtui-autostart` can switch to the cockpit by editing one line.
-See the [meta-qtui repository](https://github.com/yosriayed/meta-qtui) for the
-full flash-and-boot walkthrough and deployment guides.

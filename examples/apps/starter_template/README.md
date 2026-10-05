@@ -1,8 +1,7 @@
 # Starter Template — Boot to Qtui Device Setup
 
 A Boot to Qt style device setup application for embedded Linux, rendered
-entirely in the terminal. It is the default boot application of the
-`meta-qtui` Yocto images: it gets the board on the network so you can deploy
+entirely in the terminal. It gets the board on the network so you can deploy
 and iterate on your own Qtui applications, and doubles as a starting point
 for writing them.
 

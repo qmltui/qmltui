@@ -7,7 +7,7 @@ update, and bus diagnostics — declarative QML on top of Qtui, with real Qt
 backends (QtDBus, QtSerialBus) instead of shell scripts and `dialog(1)`.
 
 It starts life as an in-tree Qtui app (this directory) and is structured so it
-can graduate to its own repository and Yocto layer once the page API settles.
+can graduate to its own repository once the page API settles.
 
 ## Why this app
 
@@ -16,8 +16,7 @@ can graduate to its own repository and Yocto layer once the page API settles.
 - It exercises and showcases Qtui exactly where it beats ratatui/Textual:
   model/view over live system data, retained-mode updates over a serial line,
   and agent-testable scenarios in CI without hardware.
-- It aligns with the embedded direction (`meta-qtui` layer)
-  and reuses proven patterns from `din_gateway` and `system_dashboard`.
+- It reuses proven patterns from `din_gateway` and `system_dashboard`.
 
 ## Architecture
 
@@ -86,7 +85,6 @@ M2+; the D-Bus backends already go through the system bus, so the seam exists.
 
 - systemd unit running the cockpit on `ttyS0`/`tty1` as the getty alternative
   (`TTYPath=`, `StandardInput=tty`, `Restart=always`).
-- Yocto recipe in `meta-qtui` (see https://github.com/yosriayed/meta-qtui).
 - Desktop quickstart: `QTUI_COCKPIT_MOCK=1 ./device_cockpit` in any terminal.
 
 ### Testing
@@ -98,15 +96,12 @@ toast and resulting state. Real-backend smoke tests are manual/on-target only.
 
 ## Milestone 1 — MVP
 
-Goal: a usable console with four pages, running over serial on the i.MX93 and
-in mock mode on a desktop, with CI scenarios.
+Goal: a usable console with four pages, running over serial and in mock mode
+on a desktop, with CI scenarios.
 
 Status: implemented. Logs polls one-shot `journalctl --after-cursor` instead
 of `-f`, whose pipe output is unreliable on some hosts; the live Network
-backend is read-only until the NetworkManager backend lands. Deployment ships
-in `meta-qtui`: the `qtui-device-cockpit` package, the `qtui-image-cockpit`
-image (cockpit on `tty1` via the `qtui-app` launcher), and the
-`qtui-app@.service` getty-replacement template for serial consoles. On-target
+backend is read-only until the NetworkManager backend lands. On-target
 validation on embedded targets is pending a device run.
 
 1. **Shell**: navigation, header, footer keybar, theme, toasts. Keyboard-first
@@ -124,8 +119,8 @@ validation on embedded targets is pending a device run.
    colorization, unit filter, pause/resume, "jump to service logs" action from
    the Services page.
 6. **Mocks + CI**: mock impl for all four providers; one scenario per page.
-7. **Deployment**: systemd getty-replacement unit, Yocto recipe, README with
-   desktop and i.MX93 instructions.
+7. **Deployment**: systemd getty-replacement unit, README with desktop
+   instructions.
 
 Explicitly out of M1: firmware update, CAN/Modbus, Wi-Fi configuration,
 polkit, config-file page registry, dynamic theming.
@@ -148,7 +143,7 @@ polkit, config-file page registry, dynamic theming.
 
 ## Risks
 
-- **NetworkManager vs connman on Yocto images**: mitigated by the provider
+- **NetworkManager vs connman on embedded targets**: mitigated by the provider
   interface; M1 ships NM plus read-only fallback, connman is a follow-up impl.
 - **journald access/permissions**: M1 subprocess approach inherits journalctl's
   own permission handling; root assumption covers the console case.

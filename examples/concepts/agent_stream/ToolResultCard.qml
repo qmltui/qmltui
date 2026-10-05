@@ -11,7 +11,7 @@ Column {
     Row {
         spacing: 1
         Text {
-            text: "  └─"
+            text: "  →"
             color: "#64748b"
         }
         Text {

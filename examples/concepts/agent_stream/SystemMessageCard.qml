@@ -15,7 +15,7 @@ Column {
 
     Text {
         visible: sysCard.title.length > 0
-        text: "── " + sysCard.title + " ──────────────────────────────"
+        text: "✦ " + sysCard.title
         color: "#38bdf8"
         bold: true
     }
@@ -31,7 +31,7 @@ Column {
 
     // Context capacity bar if it's a cost/metrics card
     Row {
-        visible: sysCard.title.indexOf("COST") !== -1 || sysCard.title.indexOf("USAGE") !== -1
+        visible: sysCard.title.toLowerCase().indexOf("cost") !== -1 || sysCard.title.toLowerCase().indexOf("usage") !== -1
         spacing: 1
 
         Text {
@@ -54,7 +54,7 @@ Column {
 
     // Live latency sparkline if it's a cost/metrics card
     Row {
-        visible: sysCard.title.indexOf("COST") !== -1 || sysCard.title.indexOf("USAGE") !== -1
+        visible: sysCard.title.toLowerCase().indexOf("cost") !== -1 || sysCard.title.toLowerCase().indexOf("usage") !== -1
         spacing: 1
 
         Text {
@@ -75,7 +75,7 @@ Column {
 
     // Multi-line Throughput Stream Waveform
     Column {
-        visible: sysCard.title.indexOf("COST") !== -1 || sysCard.title.indexOf("USAGE") !== -1
+        visible: sysCard.title.toLowerCase().indexOf("cost") !== -1 || sysCard.title.toLowerCase().indexOf("usage") !== -1
         width: parent.width
         spacing: 0
 

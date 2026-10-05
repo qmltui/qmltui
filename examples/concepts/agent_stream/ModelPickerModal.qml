@@ -20,7 +20,7 @@ Popup {
             "provider": "Anthropic",
             "context": "128k / 64k thinking",
             "rate": "$3.00/M in · $15.00/M out",
-            "badge": "DEFAULT",
+            "badge": "default",
             "badgeStatus": "success",
             "desc": "Hybrid reasoning with adaptive token budget & code synthesis"
         },
@@ -30,7 +30,7 @@ Popup {
             "provider": "OpenAI",
             "context": "128k / 32k thinking",
             "rate": "$7.50/M in · $37.50/M out",
-            "badge": "FRONTIER",
+            "badge": "frontier",
             "badgeStatus": "info",
             "desc": "Deep reasoning & architecture analysis with high fidelity"
         },
@@ -40,7 +40,7 @@ Popup {
             "provider": "Google",
             "context": "1.0M context window",
             "rate": "$0.10/M in · $0.40/M out",
-            "badge": "FASTEST",
+            "badge": "fastest",
             "badgeStatus": "warning",
             "desc": "Ultra-low latency streaming with 1M token context window"
         },
@@ -50,7 +50,7 @@ Popup {
             "provider": "DeepSeek",
             "context": "64k context window",
             "rate": "$0.55/M in · $2.19/M out",
-            "badge": "REASONING",
+            "badge": "reasoning",
             "badgeStatus": "subtle",
             "desc": "Open-weights reinforced reasoning for math & logic proofs"
         }
@@ -59,9 +59,7 @@ Popup {
     width: parent ? parent.width : 78
     height: 16
     clip: true
-    border.style: "single"
-    border.color: theme.cyan
-    color: "#090d16"
+    color: "#0f172a"
     modal: true
     dimBackground: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnOutsideClick
@@ -104,20 +102,20 @@ Popup {
             spacing: 1
 
             StatusBadge {
-                text: "MODELS"
+                text: "Models"
                 status: "info"
                 variant: "subtle"
                 showIcon: false
             }
 
             Text {
-                text: "Neural Model Selector"
+                text: "Neural model selector"
                 color: "white"
                 bold: true
             }
 
             Text {
-                text: " · [1-4/Enter] Select · [Esc] Close"
+                text: " · [1-4/Enter] select · [Esc] close"
                 color: theme.muted
             }
         }
@@ -177,7 +175,7 @@ Popup {
                         }
 
                         Text {
-                            text: isActive ? "[ACTIVE]" : ""
+                            text: isActive ? "● active" : ""
                             color: theme.green
                             bold: true
                         }

@@ -15,8 +15,6 @@ Rectangle {
     width: Math.min(50, message.length + 8)
     height: 1
     color: "#1e293b"
-    border.style: "single"
-    border.color: status === "success" ? theme.green : (status === "warning" ? theme.amber : theme.cyan)
     visible: false
 
     function notify(msg, stat) {
@@ -38,7 +36,7 @@ Rectangle {
         spacing: 1
 
         StatusBadge {
-            text: toast.status.toUpperCase()
+            text: toast.status
             status: toast.status
             variant: "subtle"
             showIcon: false

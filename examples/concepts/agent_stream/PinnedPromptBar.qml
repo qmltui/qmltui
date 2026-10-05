@@ -53,7 +53,7 @@ Column {
         spacing: 1
 
         StatusBadge {
-            text: promptBar.working ? "RUNNING" : "ONLINE"
+            text: promptBar.working ? "running" : "online"
             status: promptBar.working ? "warning" : "success"
             variant: "subtle"
             showIcon: false
@@ -74,7 +74,7 @@ Column {
             bold: true
         }
         Text {
-            text: " · [F2] Model · [F3] Diff · [Ctrl+T] Shell"
+            text: " · [F2] model · [F3] diff · [Ctrl+T] shell"
             color: theme.amber
         }
     }
@@ -235,7 +235,7 @@ Column {
             spacing: 1
 
             StatusBadge {
-                text: "GATEWAY"
+                text: "Permission"
                 status: "warning"
                 variant: "subtle"
                 showIcon: false

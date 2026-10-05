@@ -29,22 +29,21 @@ Column {
         height: 5
         headerColor: "#38bdf8"
         headerBgColor: "transparent"
-        borderStyle: "single"
-        borderColor: "#334155"
+        borderStyle: "none"
         showGrid: false
         alternatingRows: false
 
         columns: [
-            { title: "SUBAGENT", width: 18, align: "left" },
-            { title: "SCOPE", width: 20, align: "left" },
-            { title: "STATUS", width: 10, align: "center" },
-            { title: "FINDINGS", width: 26, align: "left" }
+            { title: "Subagent", width: 18, align: "left" },
+            { title: "Scope", width: 20, align: "left" },
+            { title: "Status", width: 10, align: "center" },
+            { title: "Findings", width: 26, align: "left" }
         ]
 
         model: swarmCard.tableModel ? swarmCard.tableModel : [
-            ["MemoryAuditor", "src/Qtui/engine/", "PASS", "0 leaks (checked 18)"],
-            ["QmlProfiler", "examples/agent/", "PASS", "0 binding loops"],
-            ["RaceVerifier", "Terminal.cpp", "PASS", "Thread-affinity safe"]
+            ["MemoryAuditor", "src/Qtui/engine/", "Pass", "0 leaks (checked 18)"],
+            ["QmlProfiler", "examples/agent/", "Pass", "0 binding loops"],
+            ["RaceVerifier", "Terminal.cpp", "Pass", "Thread-affinity safe"]
         ]
 
         cellFormat: (row, col, value) => {

@@ -30,7 +30,7 @@ Rectangle {
         spacing: 1
 
         StatusBadge {
-            text: "SHELL"
+            text: "Shell"
             status: "info"
             variant: "subtle"
             showIcon: false
@@ -43,12 +43,12 @@ Rectangle {
         }
 
         Text {
-            text: "· PID: " + (shellTerm.processId > 0 ? shellTerm.processId : "active")
+            text: "· pid: " + (shellTerm.processId > 0 ? shellTerm.processId : "active")
             color: theme.slate
         }
 
         Text {
-            text: "· ~/Qtui · [Shift+PgUp/PgDn] Scroll · [Ctrl+T / Esc] Return"
+            text: "· ~/Qtui · [Shift+PgUp/PgDn] scroll · [Ctrl+T / Esc] return"
             color: theme.amber
         }
     }

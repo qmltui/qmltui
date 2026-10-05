@@ -25,8 +25,7 @@ Column {
         id: repoTreeView
         width: parent.width > 0 ? Math.min(parent.width, 76) : 76
         height: 7
-        borderStyle: "single"
-        borderColor: "#334155"
+        borderStyle: "none"
         textColor: "white"
         branchColor: "#38bdf8"
 

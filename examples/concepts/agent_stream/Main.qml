@@ -121,7 +121,7 @@ Terminal {
         const mainCmd = parts[0].toLowerCase();
 
         if (mainCmd === "/help") {
-            addMessage(Main.SystemMessage, "Commands & Workflows:\n" + "  Ctrl+T, F1    Toggle persistent background terminal shell (TerminalView)\n" + "  /demo [1-4]   Execute agent workflows (1: Refactor, 2: Swarm, 3: Patch, 4: Tree)\n" + "  /swarm        Show subagent swarm status (TableView)\n" + "  /tree         Inspect repository workspace hierarchy (TreeView)\n" + "  /cost         Show session token metrics and capacity (ProgressBar & Sparkline)\n" + "  /model        Toggle active neural model (Claude 3.7 / GPT-4.5 / Gemini 2.0)\n" + "  /doctor       Run system environment diagnostics\n" + "  /clear        Clear terminal history\n" + "  /exit, /quit  Exit studio session\n\n" + "Keys: Ctrl+T (toggle shell), Enter (submit), 1-4 (select), Ctrl+C (abort), Q/Esc (quit)", "HELP & WORKFLOWS");
+            addMessage(Main.SystemMessage, "Commands & Workflows:\n" + "  Ctrl+T, F1    Toggle persistent background terminal shell (TerminalView)\n" + "  /demo [1-4]   Execute agent workflows (1: Refactor, 2: Swarm, 3: Patch, 4: Tree)\n" + "  /swarm        Show subagent swarm status (TableView)\n" + "  /tree         Inspect repository workspace hierarchy (TreeView)\n" + "  /cost         Show session token metrics and capacity (ProgressBar & Sparkline)\n" + "  /model        Toggle active neural model (Claude 3.7 / GPT-4.5 / Gemini 2.0)\n" + "  /doctor       Run system environment diagnostics\n" + "  /clear        Clear terminal history\n" + "  /exit, /quit  Exit studio session\n\n" + "Keys: Ctrl+T (toggle shell), Enter (submit), 1-4 (select), Ctrl+C (abort), Q/Esc (quit)", "Help & Workflows");
             return;
         }
 
@@ -141,7 +141,7 @@ Terminal {
         }
 
         if (mainCmd === "/cost" || mainCmd === "/usage") {
-            addMessage(Main.SystemMessage, "Session Metrics:\n" + "  • Input Tokens:   " + (totalTokens * 4) + "\n" + "  • Output Tokens:  " + totalTokens + "\n" + "  • Total Cost:     " + sessionCostStr + "\n" + "  • Active Model:   " + activeModel, "USAGE & COST");
+            addMessage(Main.SystemMessage, "Session Metrics:\n" + "  • Input Tokens:   " + (totalTokens * 4) + "\n" + "  • Output Tokens:  " + totalTokens + "\n" + "  • Total Cost:     " + sessionCostStr + "\n" + "  • Active Model:   " + activeModel, "Usage & Cost");
             return;
         }
 
@@ -156,7 +156,7 @@ Terminal {
         }
 
         if (mainCmd === "/doctor") {
-            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TerminalView, TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "DOCTOR");
+            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TerminalView, TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "Diagnostics");
             return;
         }
 
@@ -183,7 +183,7 @@ Terminal {
             return;
         }
 
-        addMessage(Main.ErrorMessage, "Unknown command: " + cmd + ". Type /help for available workflows.", "ERROR");
+        addMessage(Main.ErrorMessage, "Unknown command: " + cmd + ". Type /help for available workflows.", "Error");
     }
 
     function startScenario(scenarioId, customPrompt) {
@@ -263,8 +263,8 @@ Terminal {
     function choosePermission(index) {
         permissionIndex = index;
         if (index === 2) {
-            addMessage(Main.PermissionDecisionMessage, "Execution denied: " + currentToolName + "(" + currentToolTarget + ")", "DENIED", "", "", "", false);
-            addMessage(Main.ErrorMessage, "Agent task halted by user.", "ABORTED");
+            addMessage(Main.PermissionDecisionMessage, "Execution denied: " + currentToolName + "(" + currentToolTarget + ")", "Denied", "", "", "", false);
+            addMessage(Main.ErrorMessage, "Agent task halted by user.", "Aborted");
             agentState = Main.ReadyState;
             agentTimer.stop();
             workingTimer.stop();
@@ -272,7 +272,7 @@ Terminal {
         }
 
         if (index === 3) {
-            addMessage(Main.ErrorMessage, "Cancelled request.", "CANCELLED");
+            addMessage(Main.ErrorMessage, "Cancelled request.", "Cancelled");
             agentState = Main.ReadyState;
             agentTimer.stop();
             workingTimer.stop();
@@ -281,9 +281,9 @@ Terminal {
 
         if (index === 1) {
             sessionAlwaysAllow = true;
-            addMessage(Main.PermissionDecisionMessage, "Always allow: " + currentToolName + "(" + currentToolTarget + ")", "ALLOWED", "", "", "", true);
+            addMessage(Main.PermissionDecisionMessage, "Always allow: " + currentToolName + "(" + currentToolTarget + ")", "Allowed", "", "", "", true);
         } else {
-            addMessage(Main.PermissionDecisionMessage, "Approved: " + currentToolName + "(" + currentToolTarget + ")", "APPROVED", "", "", "", true);
+            addMessage(Main.PermissionDecisionMessage, "Approved: " + currentToolName + "(" + currentToolTarget + ")", "Approved", "", "", "", true);
         }
 
         agentStep = 6;
@@ -295,7 +295,7 @@ Terminal {
     function interruptAgent() {
         agentTimer.stop();
         workingTimer.stop();
-        addMessage(Main.ErrorMessage, "Execution interrupted by user (Ctrl+C).", "INTERRUPTED");
+        addMessage(Main.ErrorMessage, "Execution interrupted by user (Ctrl+C).", "Interrupted");
         agentState = Main.ReadyState;
     }
 
@@ -581,7 +581,7 @@ Terminal {
         onModelSelected: modelId => {
             root.activeModel = modelId;
             toast.notify("Model: " + modelId, "info");
-            root.addMessage(Main.SystemMessage, "Switched neural model to: " + modelId, "NEURAL ENGINE");
+            root.addMessage(Main.SystemMessage, "Switched neural model to: " + modelId, "Model");
         }
     }
 
@@ -648,13 +648,13 @@ Terminal {
                         agentTimer.stop();
                         return;
                     } else {
-                        root.addMessage(Main.PermissionDecisionMessage, "Auto-approved: EditFile(" + root.currentToolTarget + ")", "APPROVED", "", "", "", true);
+                        root.addMessage(Main.PermissionDecisionMessage, "Auto-approved: EditFile(" + root.currentToolTarget + ")", "Approved", "", "", "", true);
                     }
                 } else if (root.agentStep === 6) {
                     root.currentToolName = "Bash";
                     root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build agent_stream_demo\"", "Bash");
                 } else if (root.agentStep === 7) {
-                    root.addMessage(Main.ToolResultMessage, "[Exit 0] Built target agent_stream_demo (0.28s)");
+                    root.addMessage(Main.ToolResultMessage, "Built target agent_stream_demo (exit 0, 0.28s)");
                 } else if (root.agentStep === 8) {
                     root.currentToolName = "CTest";
                     root.addMessage(Main.ToolCallMessage, "command=\"ctest --test-dir build -R agent_stream\"", "CTest");

@@ -113,14 +113,14 @@ Column {
         spacing: 1
 
         StatusBadge {
-            text: "COMMANDS " + (commandPalette.filteredCommands.length > 0 ? "[" + (commandPalette.selectedIndex + 1) + "/" + commandPalette.filteredCommands.length + "]" : "")
+            text: "Commands " + (commandPalette.filteredCommands.length > 0 ? "[" + (commandPalette.selectedIndex + 1) + "/" + commandPalette.filteredCommands.length + "]" : "")
             status: "info"
             variant: "subtle"
             showIcon: false
         }
 
         Text {
-            text: "· [Tab/→] Fill · [Enter] Run · [↑/↓] Scroll · [Esc] Close"
+            text: "· [Tab/→] fill · [Enter] run · [↑/↓] select · [Esc] close"
             color: theme.muted
         }
     }

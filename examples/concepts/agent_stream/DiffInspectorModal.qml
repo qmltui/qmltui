@@ -13,9 +13,7 @@ Popup {
     width: parent ? parent.width : 78
     height: 13
     clip: true
-    border.style: "single"
-    border.color: theme.amber
-    color: "#090d16"
+    color: "#0f172a"
     modal: true
     dimBackground: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnOutsideClick
@@ -32,7 +30,7 @@ Popup {
             spacing: 1
 
             StatusBadge {
-                text: "DIFF"
+                text: "Diff"
                 status: "warning"
                 variant: "subtle"
                 showIcon: false
@@ -45,7 +43,7 @@ Popup {
             }
 
             Text {
-                text: " · [Esc/F3] Close"
+                text: " · [Esc/F3] close"
                 color: theme.muted
             }
         }
@@ -83,16 +81,16 @@ Popup {
 
             Text {
                 width: 36
-                text: "  ORIGINAL (HEAD)"
+                text: "  Original (HEAD)"
                 color: theme.muted
                 bold: true
             }
             Text {
-                text: "│ "
+                text: "  "
                 color: theme.muted
             }
             Text {
-                text: "MODIFIED (PROPOSED PATCH)"
+                text: "Modified (proposed patch)"
                 color: theme.muted
                 bold: true
             }
@@ -108,7 +106,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: " 72: void StreamRenderer::render() {"; color: theme.slate }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: " 72: void StreamRenderer::render() {"; color: theme.slate }
             }
         }
@@ -122,7 +120,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: " 73:   const int h = buffer.height();"; color: theme.slate }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: " 73:   const int h = buffer.height();"; color: theme.slate }
             }
         }
@@ -136,7 +134,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: "-74:   device.write(buffer.data());"; color: theme.rose }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: "    (replaced with bounds check)"; color: theme.muted }
             }
         }
@@ -150,7 +148,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: "                                    "; color: theme.muted }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: "+74:   const int safeHeight = clamp(h);"; color: theme.green }
             }
         }
@@ -164,7 +162,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: "                                    "; color: theme.muted }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: "+75:   markDirty(safeHeight);"; color: theme.green }
             }
         }
@@ -178,7 +176,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: "                                    "; color: theme.muted }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: "+76:   device.write(buffer.slice(...));"; color: theme.green }
             }
         }
@@ -192,7 +190,7 @@ Popup {
                 height: 1
                 spacing: 0
                 Text { width: 36; text: " 77: }"; color: theme.slate }
-                Text { text: "│ "; color: theme.muted }
+                Text { text: "  "; color: theme.muted }
                 Text { text: " 77: }"; color: theme.slate }
             }
         }

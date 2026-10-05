@@ -12,7 +12,7 @@ Column {
     Row {
         spacing: 1
         StatusBadge {
-            text: permCard.approved ? "APPROVED" : "DENIED"
+            text: permCard.approved ? "Approved" : "Denied"
             status: permCard.approved ? "success" : "error"
             variant: "subtle"
         }

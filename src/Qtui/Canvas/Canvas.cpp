@@ -185,15 +185,9 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
                 cell.continuation = false;
 
                 if (topSet && bottomSet) {
-                    if (topColor == bottomColor) {
-                        cell.character = "\xE2\x96\x88"; // █ Full Block
-                        cell.fgColor = topColor;
-                        cell.bgColor = 0x00000000;
-                    } else {
-                        cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
-                        cell.fgColor = topColor;
-                        cell.bgColor = bottomColor;
-                    }
+                    cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
+                    cell.fgColor = topColor;
+                    cell.bgColor = bottomColor;
                 } else if (topSet) {
                     cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
                     cell.fgColor = topColor;

@@ -16,7 +16,7 @@ can graduate to its own repository and Yocto layer once the page API settles.
 - It exercises and showcases Qtui exactly where it beats ratatui/Textual:
   model/view over live system data, retained-mode updates over a serial line,
   and agent-testable scenarios in CI without hardware.
-- It aligns with the existing Yocto direction (`meta-qtui`, FRDM i.MX93 guide)
+- It aligns with the embedded direction (`meta-qtui` layer)
   and reuses proven patterns from `din_gateway` and `system_dashboard`.
 
 ## Architecture
@@ -107,7 +107,7 @@ backend is read-only until the NetworkManager backend lands. Deployment ships
 in `meta-qtui`: the `qtui-device-cockpit` package, the `qtui-image-cockpit`
 image (cockpit on `tty1` via the `qtui-app` launcher), and the
 `qtui-app@.service` getty-replacement template for serial consoles. On-target
-validation on the FRDM i.MX93 is pending a device run.
+validation on embedded targets is pending a device run.
 
 1. **Shell**: navigation, header, footer keybar, theme, toasts. Keyboard-first
    (tab/arrow navigation, single-key page switching); mouse works where Qtui

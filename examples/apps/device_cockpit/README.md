@@ -73,7 +73,8 @@ hard-coded coordinates, and captures the Overview frame as an artifact.
   cockpit on `tty1` at boot:
 
   ```sh
-  kas build --target qtui-image-cockpit meta-qtui/kas/frdm-imx93.yml
+  # Using the meta-qtui layer repository (https://github.com/yosriayed/meta-qtui):
+  kas build --target qtui-image-cockpit kas/qemuarm64.yml  # or kas/frdm-imx93.yml
   ```
 
 - For a serial console instead of (or in addition to) the framebuffer

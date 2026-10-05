@@ -1,567 +1,306 @@
 pragma ComponentBehavior: Bound
 
-import Qtui.Canvas
-import QtQml 2.15
+import QtQml
 import Qtui
-import Qtui.Controls
+import Qtui.Canvas
 
 Terminal {
     id: rootWindow
+
     fillTerminal: true
-    color: "black"
+    color: "#07172f"
     useAlternateScreen: true
 
-    // Waveform Properties
-    property double waveTime: 0.0
-    property double frequency: 2.0
-    property double noiseLevel: 0.0
-    property string waveType: "sine" // sine, square, triangle, sawtooth
-
-    // Lissajous Properties
-    property double lissajousPhase: 0.0
-    property int freqA: 3
-    property int freqB: 4
-
-    // App state
     property bool paused: false
-    property double waveSpeed: 0.08
-    property int simulatedCpu: 4
+    property real phase: 0.0
+    property int windowStart: 0
+    property var animatedCyanPoints: []
+    property var animatedYellowPoints: []
+    property var linePoints: []
 
-    // Explicit key handling to quit, as per project rules
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-            return
-        }
+    readonly property var barValues: [4, 5, 14, 45, 82, 100, 82, 45, 14, 5, 4]
+    readonly property var heavyPayload: [
+        [1965, 8200], [1967, 5400], [1981, 65400], [1989, 30800],
+        [1997, 10200], [2004, 11600], [2014, 4500], [2016, 7900], [2018, 1500]
+    ]
+    readonly property var mediumPayload: [
+        [1963, 29500], [1964, 30600], [1965, 21000], [1966, 17900],
+        [1975, 17500], [1982, 8300], [1988, 18300], [1990, 9900],
+        [1992, 9100], [1994, 10500], [1997, 6200], [1999, 18000],
+        [2001, 10000], [2002, 8100], [2010, 2600], [2013, 13600],
+        [2017, 8000]
+    ]
+    readonly property var smallPayload: [
+        [1961, 18500], [1962, 14900], [1975, 21400], [1980, 12800],
+        [1988, 11000], [1993, 7600], [1996, 10600], [2000, 13100],
+        [2008, 12600], [2012, 10000], [2015, 10600], [2019, 7300]
+    ]
 
-        // Additional shortcut keys
-        if (event.key === Qt.Key_Space) {
-            rootWindow.paused = !rootWindow.paused
-            event.accepted = true
-        }
+    function clamp(value, minimum, maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
     }
 
-    // Mathematical calculations for the wave chart
-    function generateWaveformPoints(canvasWidth, canvasHeight, time, freq, noise, type) {
-        if (canvasWidth <= 0 || canvasHeight <= 0) return [];
-        
-        let pts = [];
-        let w = canvasWidth * 2;
-        let h = canvasHeight * 4;
-        let midY = h / 2;
-        let amp = h * 0.35;
+    function mapX(value, minimum, maximum, pixelWidth) {
+        if (pixelWidth <= 1 || maximum <= minimum)
+            return 0;
+        return Math.round((value - minimum) / (maximum - minimum) * (pixelWidth - 1));
+    }
 
-        for (let x = 0; x < w; x++) {
-            let angle = (x / w) * Math.PI * 2 * freq + time;
-            let yVal = 0.0;
+    function mapY(value, minimum, maximum, pixelHeight) {
+        if (pixelHeight <= 1 || maximum <= minimum)
+            return 0;
+        return Math.round((maximum - value) / (maximum - minimum) * (pixelHeight - 1));
+    }
 
-            if (type === "sine") {
-                yVal = Math.sin(angle);
-            } else if (type === "square") {
-                yVal = Math.sin(angle) >= 0 ? 1.0 : -1.0;
-            } else if (type === "triangle") {
-                yVal = (Math.abs((angle % (Math.PI * 2)) - Math.PI) / Math.PI) * 2.0 - 1.0;
-            } else if (type === "sawtooth") {
-                yVal = ((angle % (Math.PI * 2)) / Math.PI) - 1.0;
-            }
+    function makeWave(pixelWidth, pixelHeight, period, amplitude, offset) {
+        if (pixelWidth <= 1 || pixelHeight <= 1)
+            return [];
 
-            if (noise > 0) {
-                yVal += (Math.random() - 0.5) * noise;
-            }
+        const count = Math.floor(pixelWidth / 2);
+        let points = new Array(count * 2);
+        const middle = pixelHeight / 2;
+        const usableAmplitude = pixelHeight * amplitude;
+        const factor = (pixelWidth > 1) ? Math.PI * 2 * period / (pixelWidth - 1) : 0;
+        const phaseOffset = rootWindow.phase + offset;
+        const maxY = pixelHeight - 1;
 
-            let y = Math.round(midY - yVal * amp);
-            y = Math.max(0, Math.min(h - 1, y));
-            pts.push({ x: x, y: y });
+        for (let i = 0; i < count; i++) {
+            const x = i * 2;
+            const angle = x * factor + phaseOffset;
+            let y = Math.round(middle - Math.sin(angle) * usableAmplitude);
+            if (y < 0) y = 0;
+            else if (y > maxY) y = maxY;
+            const idx = i * 2;
+            points[idx] = x;
+            points[idx + 1] = y;
         }
-        return pts;
+        return points;
     }
 
-    // Mathematical calculations for the Lissajous X-Y phase plot
-    function generateLissajousPoints(canvasWidth, canvasHeight, phase, fA, fB) {
-        if (canvasWidth <= 0 || canvasHeight <= 0) return [];
+    function makeLine(pixelWidth, pixelHeight) {
+        let points = [];
+        if (pixelWidth <= 1 || pixelHeight <= 1)
+            return points;
 
-        let pts = [];
-        let w = canvasWidth * 2;
-        let h = canvasHeight * 4;
-        let midX = w / 2;
-        let midY = h / 2;
-        let sizeX = w * 0.42;
-        let sizeY = h * 0.42;
-        let steps = 160;
-
-        for (let i = 0; i <= steps; i++) {
-            let theta = (i / steps) * Math.PI * 2;
-            let xVal = Math.sin(fA * theta + phase);
-            let yVal = Math.sin(fB * theta);
-
-            let x = Math.round(midX + xVal * sizeX);
-            let y = Math.round(midY - yVal * sizeY);
-            
-            x = Math.max(0, Math.min(w - 1, x));
-            y = Math.max(0, Math.min(h - 1, y));
-            pts.push({ x: x, y: y });
+        for (let x = 0; x < pixelWidth; x += 2) {
+            const value = x / (pixelWidth - 1) * 5.0;
+            if (value < 1.0 || value > 4.0)
+                continue;
+            points.push(x, mapY(value, 0.0, 5.0, pixelHeight));
         }
-        return pts;
-    }
-
-    function cycleWaveType() {
-        if (waveType === "sine") waveType = "square";
-        else if (waveType === "square") waveType = "triangle";
-        else if (waveType === "triangle") waveType = "sawtooth";
-        else waveType = "sine";
-    }
-
-    function cycleNoise() {
-        if (noiseLevel === 0.0) noiseLevel = 0.15;
-        else if (noiseLevel === 0.15) noiseLevel = 0.35;
-        else if (noiseLevel === 0.35) noiseLevel = 0.6;
-        else noiseLevel = 0.0;
+        return points;
     }
 
     function updatePlots() {
-        if (waveformPlotCanvas.width > 0 && waveformPlotCanvas.height > 0) {
-            waveformPoly.points = rootWindow.generateWaveformPoints(
-                waveformPlotCanvas.width,
-                waveformPlotCanvas.height,
-                rootWindow.waveTime,
-                rootWindow.frequency,
-                rootWindow.noiseLevel,
-                rootWindow.waveType
-            );
+        rootWindow.animatedCyanPoints = rootWindow.makeWave(
+            animatedCyanCanvas.pixelWidth,
+            animatedCyanCanvas.pixelHeight,
+            1.8,
+            0.42,
+            0.0
+        );
+        rootWindow.animatedYellowPoints = rootWindow.makeWave(
+            animatedYellowCanvas.pixelWidth,
+            animatedYellowCanvas.pixelHeight,
+            1.45,
+            0.30,
+            Math.PI / 2
+        );
+        if (rootWindow.linePoints.length === 0)
+            rootWindow.linePoints = rootWindow.makeLine(lineCanvas.pixelWidth, lineCanvas.pixelHeight);
+    }
+
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            event.accepted = true;
+            Qt.quit();
+            return;
         }
-        if (lissajousPlotCanvas.width > 0 && lissajousPlotCanvas.height > 0) {
-            lissajousPoly.points = rootWindow.generateLissajousPoints(
-                lissajousPlotCanvas.width,
-                lissajousPlotCanvas.height,
-                rootWindow.lissajousPhase,
-                rootWindow.freqA,
-                rootWindow.freqB
-            );
+        if (event.key === Qt.Key_Space) {
+            rootWindow.paused = !rootWindow.paused;
+            event.accepted = true;
         }
     }
 
-    // Animation Timer
     Timer {
-        id: frameTimer
-        interval: 40 // ~25 FPS
-        running: true
+        interval: 250
+        running: rootWindow.visible && !rootWindow.paused
         repeat: true
         onTriggered: {
-            if (!rootWindow.paused) {
-                rootWindow.waveTime += rootWindow.waveSpeed;
-                rootWindow.lissajousPhase += 0.04;
-                if (Math.random() < 0.1) {
-                    rootWindow.simulatedCpu = Math.floor(Math.random() * 3) + 3;
-                }
-            }
+            rootWindow.phase += 0.32;
+            rootWindow.windowStart += 1;
             rootWindow.updatePlots();
         }
     }
 
-    // Outer Layout Wrapper
-    Rectangle {
-        anchors.fill: parent
-        color: "#111111"
+    Component.onCompleted: rootWindow.updatePlots()
 
-        // 1. HEADER PANEL
-        Rectangle {
-            id: header
-            height: 3
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            border.style: "double"
-            border.color: "cyan"
-            color: "#161b22"
+    Chart {
+        id: animatedPanel
+        title: qsTr("Qtui chart demo")
+        xAxisTitle: qsTr("X Axis")
+        yAxisTitle: qsTr("Y Axis")
+        xLabels: [
+            rootWindow.windowStart.toString(),
+            (rootWindow.windowStart + 10).toString(),
+            (rootWindow.windowStart + 20).toString()
+        ]
+        yLabels: [qsTr("20"), qsTr("0"), qsTr("-20")]
+        yLabelWidth: 6
+        statusText: rootWindow.paused ? qsTr("PAUSED") : qsTr("RUNNING")
+        statusColor: rootWindow.paused ? "#ffcc33" : "#65d889"
 
-            Text {
-                anchors.centerIn: parent
-                text: "📊 REAL-TIME VECTOR PLOTTING DASHBOARD"
-                color: "yellow"
-                bold: true
-            }
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 1
+        anchors.leftMargin: 1
+        width: Math.floor((rootWindow.width - 3) * 0.61)
+        height: Math.floor((rootWindow.height - 3) / 2)
+
+        BrailleLineSeries {
+            id: animatedCyanCanvas
+            anchors.fill: parent
+            color: "#26b6dc"
+            points: rootWindow.animatedCyanPoints
+            onWidthChanged: rootWindow.updatePlots()
+            onHeightChanged: rootWindow.updatePlots()
         }
 
-        // 2. FOOTER PANEL
-        Rectangle {
-            id: footer
-            height: 3
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            border.style: "single"
-            border.color: "cyan"
-            color: "#0d1117"
+        BrailleLineSeries {
+            id: animatedYellowCanvas
+            anchors.fill: parent
+            color: "#f1cf24"
+            points: rootWindow.animatedYellowPoints
+        }
+    }
 
-            Text {
-                anchors.centerIn: parent
-                text: "Focus: [Tab] / [Shift+Tab] | Quick Pause: [Space] | Quit: [Q] or [Esc]"
-                color: "gray"
+    Chart {
+        id: barPanel
+        title: qsTr("Bar chart")
+        xLabels: [qsTr("0"), qsTr("50"), qsTr("100")]
+        yLabels: [qsTr("100"), qsTr("50"), qsTr("0")]
+        yLabelWidth: 6
+
+        anchors.top: parent.top
+        anchors.left: animatedPanel.right
+        anchors.right: parent.right
+        anchors.topMargin: 1
+        anchors.leftMargin: 1
+        anchors.rightMargin: 1
+        height: animatedPanel.height
+
+        Canvas {
+            id: barCanvas
+            anchors.fill: parent
+            renderMode: Canvas.HalfBlock
+
+            Repeater {
+                model: rootWindow.barValues.length
+                delegate: CanvasRectangle {
+                    required property int index
+                    readonly property int barWidth: Math.max(1, Math.floor(barCanvas.pixelWidth / 22))
+                    readonly property int barHeight: Math.max(
+                        1,
+                        Math.floor(rootWindow.barValues[index] / 100 * (barCanvas.pixelHeight - 2))
+                    )
+
+                    x: 1 + Math.floor(index * (barCanvas.pixelWidth - 2) / rootWindow.barValues.length)
+                    y: barCanvas.pixelHeight - barHeight - 1
+                    width: barWidth
+                    height: barHeight
+                    fill: true
+                    color: "#2688e5"
+                }
             }
         }
+    }
 
-        // 3. SIDEBAR CONTROLS & STATS (LEFT)
-        Rectangle {
-            id: sidebar
-            width: 25
-            anchors.top: header.bottom
-            anchors.bottom: footer.top
-            anchors.left: parent.left
-            border.style: "single"
-            border.color: "magenta"
-            color: "#1e1e24"
+    Chart {
+        id: linePanel
+        title: qsTr("Line chart")
+        xAxisTitle: qsTr("X Axis")
+        yAxisTitle: qsTr("Y Axis")
+        xLabels: [qsTr("0"), qsTr("2.5"), qsTr("5.0")]
+        yLabels: [qsTr("5.0"), qsTr("2.5"), qsTr("0")]
+        yLabelWidth: 6
 
-            Column {
-                anchors.fill: parent
-                anchors.margins: 1
-                spacing: 1
+        anchors.top: animatedPanel.bottom
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.topMargin: 1
+        anchors.leftMargin: 1
+        anchors.bottomMargin: 1
+        width: Math.floor((rootWindow.width - 3) / 2)
 
-                Text {
-                    width: parent.width
-                    text: "📊 CONTROLS"
-                    color: "magenta"
-                    bold: true
-                    horizontalAlignment: Qt.AlignHCenter
-                }
+        BrailleLineSeries {
+            id: lineCanvas
+            anchors.fill: parent
+            color: "#f1cf24"
+            points: rootWindow.linePoints
+            onWidthChanged: rootWindow.linePoints = rootWindow.makeLine(lineCanvas.pixelWidth, lineCanvas.pixelHeight)
+            onHeightChanged: rootWindow.linePoints = rootWindow.makeLine(lineCanvas.pixelWidth, lineCanvas.pixelHeight)
+        }
+    }
 
-                // Play / Pause Toggle
-                Button {
-                    width: parent.width
-                    height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
-                    label: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
-                    onClicked: rootWindow.paused = !rootWindow.paused
-                }
+    Chart {
+        id: scatterPanel
+        title: qsTr("Scatter chart")
+        xAxisTitle: qsTr("Year")
+        yAxisTitle: qsTr("Cost")
+        xLabels: [qsTr("1960"), qsTr("1990"), qsTr("2020")]
+        yLabels: [qsTr("75 000"), qsTr("37 500"), qsTr("0")]
+        yLabelWidth: 8
 
-                // Waveform type selector
-                Button {
-                    width: parent.width
-                    height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
-                    label: "WAVE: " + rootWindow.waveType.toUpperCase()
-                    onClicked: rootWindow.cycleWaveType()
-                }
+        anchors.top: animatedPanel.bottom
+        anchors.left: linePanel.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.topMargin: 1
+        anchors.leftMargin: 1
+        anchors.rightMargin: 1
+        anchors.bottomMargin: 1
 
-                // Waveform frequency adjustments
-                Row {
-                    width: parent.width
-                    height: 3
-                    spacing: 1
-                    Button {
-                        width: Math.floor((parent.width - 1) / 2)
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "FREQ -"
-                        onClicked: rootWindow.frequency = Math.max(0.5, rootWindow.frequency - 0.5)
-                    }
-                    Button {
-                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "FREQ +"
-                        onClicked: rootWindow.frequency = Math.min(10.0, rootWindow.frequency + 0.5)
-                    }
-                }
+        Canvas {
+            id: heavyCanvas
+            anchors.fill: parent
+            color: "#26b6dc"
 
-                // Noise toggles
-                Button {
-                    width: parent.width
-                    height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
-                    label: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
-                    onClicked: rootWindow.cycleNoise()
-                }
-
-                // Spacer
-                Text {
-                    width: parent.width
-                    text: "─────────────────────"
-                    color: "darkgray"
-                }
-
-                Text {
-                    width: parent.width
-                    text: "🌀 LISSAJOUS"
-                    color: "cyan"
-                    bold: true
-                    horizontalAlignment: Qt.AlignHCenter
-                }
-
-                // Lissajous Freq A adjustments
-                Row {
-                    width: parent.width
-                    height: 3
-                    spacing: 1
-                    Button {
-                        width: Math.floor((parent.width - 1) / 2)
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "X-FREQ -"
-                        onClicked: rootWindow.freqA = Math.max(1, rootWindow.freqA - 1)
-                    }
-                    Button {
-                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "X-FREQ +"
-                        onClicked: rootWindow.freqA = Math.min(12, rootWindow.freqA + 1)
-                    }
-                }
-
-                // Lissajous Freq B adjustments
-                Row {
-                    width: parent.width
-                    height: 3
-                    spacing: 1
-                    Button {
-                        width: Math.floor((parent.width - 1) / 2)
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "Y-FREQ -"
-                        onClicked: rootWindow.freqB = Math.max(1, rootWindow.freqB - 1)
-                    }
-                    Button {
-                        width: parent.width - Math.floor((parent.width - 1) / 2) - 1
-                        height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
-                        label: "Y-FREQ +"
-                        onClicked: rootWindow.freqB = Math.min(12, rootWindow.freqB + 1)
-                    }
-                }
-
-                // Spacer
-                Text {
-                    width: parent.width
-                    text: "─────────────────────"
-                    color: "darkgray"
-                }
-
-                Text {
-                    width: parent.width
-                    text: "📈 STATS"
-                    color: "green"
-                    bold: true
-                    horizontalAlignment: Qt.AlignHCenter
-                }
-
-                Text {
-                    width: parent.width
-                    text: " • Freq: " + rootWindow.frequency.toFixed(1) + " Hz"
-                    color: "silver"
-                }
-
-                Text {
-                    width: parent.width
-                    text: " • Ratio: " + rootWindow.freqA + " : " + rootWindow.freqB
-                    color: "silver"
-                }
-
-                Text {
-                    width: parent.width
-                    text: " • Render: 25 FPS"
-                    color: "silver"
-                }
-
-                Text {
-                    width: parent.width
-                    text: " • CPU: ~" + rootWindow.simulatedCpu + "%"
-                    color: "silver"
+            Repeater {
+                model: rootWindow.heavyPayload.length
+                delegate: Point {
+                    required property int index
+                    x: rootWindow.mapX(rootWindow.heavyPayload[index][0], 1960, 2020, heavyCanvas.pixelWidth)
+                    y: rootWindow.mapY(rootWindow.heavyPayload[index][1], 0, 75000, heavyCanvas.pixelHeight)
                 }
             }
         }
 
-        // 4. MAIN PANEL (RIGHT CONTAINER)
-        Rectangle {
-            id: mainContent
-            anchors.top: header.bottom
-            anchors.bottom: footer.top
-            anchors.left: sidebar.right
-            anchors.right: parent.right
-            color: "transparent"
+        Canvas {
+            id: mediumCanvas
+            anchors.fill: parent
+            color: "#d34cc8"
 
-            // Split into two charts stacked vertically
-            Column {
-                anchors.fill: parent
-                spacing: 0
-
-                // Upper Chart (Oscilloscope)
-                Rectangle {
-                    width: parent.width
-                    height: Math.floor(parent.height / 2)
-                    border.style: "double"
-                    border.color: "green"
-                    color: "#0a140a"
-
-                    Text {
-                        id: upperTitle
-                        x: 2
-                        y: 1
-                        text: "OSCILLOSCOPE WAVEFORM VIEW"
-                        color: "green"
-                        bold: true
-                    }
-
-                    // Chart Drawing Area inset cleanly inside borders below title
-                    Item {
-                        id: upperChartBox
-                        anchors.top: upperTitle.bottom
-                        anchors.topMargin: 1
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 1
-                        anchors.left: parent.left
-                        anchors.leftMargin: 1
-                        anchors.right: parent.right
-                        anchors.rightMargin: 1
-
-                        // Superposed Canvas 1: High-Performance Background Grid Lines Canvas
-                        Canvas {
-                            id: waveformGridCanvas
-                            anchors.fill: parent
-                            color: "#004400"
-
-                            // Draw C++ native Grid lines
-                            Line {
-                                x1: 0
-                                y1: Math.floor(waveformGridCanvas.height * 2)
-                                x2: Math.floor(waveformGridCanvas.width * 2)
-                                y2: Math.floor(waveformGridCanvas.height * 2)
-                            }
-
-                            Repeater {
-                                model: 5
-                                delegate: Line {
-                                    required property int index
-                                    x1: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
-                                    y1: 0
-                                    x2: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
-                                    y2: Math.floor(waveformGridCanvas.height * 4)
-                                }
-                            }
-
-                            Repeater {
-                                model: 3
-                                delegate: Line {
-                                    required property int index
-                                    x1: 0
-                                    y1: Math.floor((index + 1) * (waveformGridCanvas.height * 4) / 4)
-                                    x2: Math.floor(waveformGridCanvas.width * 2)
-                                    y2: Math.floor((index + 1) * (waveformGridCanvas.height * 4) / 4)
-                                }
-                            }
-                        }
-
-                        // Superposed Canvas 2: High-Performance Foreground Waveform Plot Canvas
-                        Canvas {
-                            id: waveformPlotCanvas
-                            anchors.fill: parent
-                            color: "green"
-
-                            onWidthChanged: rootWindow.updatePlots()
-                            onHeightChanged: rootWindow.updatePlots()
-
-                            // Dynamic vector curve
-                            Polygon {
-                                id: waveformPoly
-                                closed: false
-                            }
-                        }
-                    }
+            Repeater {
+                model: rootWindow.mediumPayload.length
+                delegate: Point {
+                    required property int index
+                    x: rootWindow.mapX(rootWindow.mediumPayload[index][0], 1960, 2020, mediumCanvas.pixelWidth)
+                    y: rootWindow.mapY(rootWindow.mediumPayload[index][1], 0, 75000, mediumCanvas.pixelHeight)
                 }
+            }
+        }
 
-                // Lower Chart (Phase XY / Lissajous Orbit)
-                Rectangle {
-                    width: parent.width
-                    height: parent.height - Math.floor(parent.height / 2)
-                    border.style: "double"
-                    border.color: "cyan"
-                    color: "#0a14a"
+        Canvas {
+            id: smallCanvas
+            anchors.fill: parent
+            color: "#f1cf24"
 
-                    Text {
-                        id: lowerTitle
-                        x: 2
-                        y: 1
-                        text: "XY PHASE ORBIT PLOT"
-                        color: "cyan"
-                        bold: true
-                    }
-
-                    // Chart Drawing Area inset cleanly inside borders below title
-                    Item {
-                        id: lowerChartBox
-                        anchors.top: lowerTitle.bottom
-                        anchors.topMargin: 1
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 1
-                        anchors.left: parent.left
-                        anchors.leftMargin: 1
-                        anchors.right: parent.right
-                        anchors.rightMargin: 1
-
-                        // Superposed Canvas 1: High-Performance Background Cross-hairs Grid Canvas
-                        Canvas {
-                            id: lissajousGridCanvas
-                            anchors.fill: parent
-                            color: "#004444"
-
-                            Line {
-                                x1: 0
-                                y1: Math.floor(lissajousGridCanvas.height * 2)
-                                x2: Math.floor(lissajousGridCanvas.width * 2)
-                                y2: Math.floor(lissajousGridCanvas.height * 2)
-                            }
-
-                            Line {
-                                x1: Math.floor(lissajousGridCanvas.width)
-                                y1: 0
-                                x2: Math.floor(lissajousGridCanvas.width)
-                                y2: Math.floor(lissajousGridCanvas.height * 4)
-                            }
-                        }
-
-                        // Superposed Canvas 2: High-Performance Foreground Lissajous Orbit Plot Canvas
-                        Canvas {
-                            id: lissajousPlotCanvas
-                            anchors.fill: parent
-                            color: "cyan"
-
-                            onWidthChanged: rootWindow.updatePlots()
-                            onHeightChanged: rootWindow.updatePlots()
-
-                            // Dynamic Lissajous curve
-                            Polygon {
-                                id: lissajousPoly
-                                closed: true
-                            }
-                        }
-                    }
+            Repeater {
+                model: rootWindow.smallPayload.length
+                delegate: Point {
+                    required property int index
+                    x: rootWindow.mapX(rootWindow.smallPayload[index][0], 1960, 2020, smallCanvas.pixelWidth)
+                    y: rootWindow.mapY(rootWindow.smallPayload[index][1], 0, 75000, smallCanvas.pixelHeight)
                 }
             }
         }

@@ -12,6 +12,5 @@ RDEPENDS:${PN} = "\
     dropbear \
     openssh-sftp-server \
     fbset \
-    qtui-testing \
     qtui-starter-template-benchmark \
 "

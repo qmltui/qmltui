@@ -44,4 +44,4 @@ python do_unpack() {
 
 FILES:${PN} += "${bindir}/qtui_starter_template"
 FILES:${PN}-benchmark = "${bindir}/qtui_starter_template_benchmark"
-RDEPENDS:${PN}-benchmark = "${PN} qtui-testing"
+RDEPENDS:${PN}-benchmark = "${PN}"

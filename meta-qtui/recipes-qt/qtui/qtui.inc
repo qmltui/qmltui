@@ -25,10 +25,6 @@ FILES_SOLIBSDEV = ""
 SOLIBS = ".so*"
 
 # QML modules and shared libraries packaging
-PACKAGES =+ "${PN}-testing"
-
-FILES:${PN}-testing = "${libdir}/libQtuiTesting.so*"
-
 FILES:${PN} += "\
     ${libdir}/libQtui*.so* \
     ${libdir}/qml/Qtui \

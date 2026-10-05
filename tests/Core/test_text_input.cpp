@@ -3,7 +3,7 @@
 #include <QRegularExpression>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <QScopedPointer>
+#include <memory>
 #include "TextInput.h"
 #include "KeyEvent.h"
 #include "TextGridBuffer.h"
@@ -344,9 +344,9 @@ void TestTextInput::testQmlSurface() {
         }
     )", QUrl());
 
-    QScopedPointer<QObject> object(component.create());
+    std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    TextInput *input = qobject_cast<TextInput *>(object.data());
+    TextInput *input = qobject_cast<TextInput *>(object.get());
     QVERIFY(input);
     QCOMPARE(input->text(), QString("12"));
     QCOMPARE(input->placeholderText(), QString("digits"));

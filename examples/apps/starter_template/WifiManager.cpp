@@ -63,6 +63,12 @@ WifiManager::WifiManager(QObject *parent)
 void WifiManager::runCommand(const QString &program, const QStringList &arguments,
                              int timeoutMs, CommandCallback callback)
 {
+    QStringList finalArguments = arguments;
+    if (program == QLatin1String("wpa_cli") && !finalArguments.contains(QLatin1String("-p"))) {
+        finalArguments.prepend(QLatin1String("/var/run/wpa_supplicant"));
+        finalArguments.prepend(QLatin1String("-p"));
+    }
+
     auto *process = new QProcess(this);
     process->setProcessChannelMode(QProcess::SeparateChannels);
     auto completed = std::make_shared<bool>(false);
@@ -89,7 +95,7 @@ void WifiManager::runCommand(const QString &program, const QStringList &argument
             process->kill();
         complete(-1);
     });
-    process->start(program, arguments);
+    process->start(program, finalArguments);
 }
 
 void WifiManager::runCommandSequence(const QList<Command> &commands,
@@ -230,7 +236,17 @@ void WifiManager::scan()
     runCommand("wpa_cli", {"-i", m_interface, "scan"}, 1500,
                [this](int exitCode, const QString &, const QString &error) {
         if (exitCode != 0) {
-            failOperation(QString("Wi-Fi scan failed: %1").arg(error.trimmed()));
+            // Direct kernel netlink scan fallback
+            runCommand("iw", {"dev", m_interface, "scan"}, 3000,
+                       [this](int iwExit, const QString &iwOutput, const QString &iwError) {
+                if (iwExit == 0) {
+                    QVariantList networks;
+                    parseIwScanOutput(iwOutput, networks);
+                    finishScan(networks);
+                } else {
+                    failOperation(QString("Wi-Fi scan failed: %1").arg(iwError.trimmed().isEmpty() ? "interface unavailable" : iwError.trimmed()));
+                }
+            });
             return;
         }
         QTimer::singleShot(700, this, &WifiManager::handleScanFinished);
@@ -248,8 +264,20 @@ void WifiManager::handleScanFinished()
             QTimer::singleShot(500, this, &WifiManager::handleScanFinished);
             return;
         }
-        if (exitCode != 0) {
-            failOperation(QString("Could not read Wi-Fi scan results: %1").arg(error.trimmed()));
+        if (exitCode != 0 || networks.isEmpty()) {
+            // Try iw dev scan fallback to extract scan results
+            runCommand("iw", {"dev", m_interface, "scan"}, 3000,
+                       [this, error](int iwExit, const QString &iwOutput, const QString &) {
+                if (iwExit == 0) {
+                    QVariantList iwNetworks;
+                    parseIwScanOutput(iwOutput, iwNetworks);
+                    if (!iwNetworks.isEmpty()) {
+                        finishScan(iwNetworks);
+                        return;
+                    }
+                }
+                failOperation(QString("Could not read Wi-Fi scan results: %1").arg(error.trimmed().isEmpty() ? "no networks found" : error.trimmed()));
+            });
             return;
         }
         finishScan(networks);

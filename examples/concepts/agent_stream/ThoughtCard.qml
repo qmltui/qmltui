@@ -1,6 +1,5 @@
-import QtQuick
+import QtQml
 import Qtui
-import Qtui.Controls
 
 Column {
     id: thoughtCard

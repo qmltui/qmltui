@@ -185,7 +185,6 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
     view.setShowLineNumbers(true);
     view.setWidth(24);
     view.setHeight(5);
-    view.setBorderStyle(QStringLiteral("single"));
     view.setDocument(&document);
     view.setSearchQuery(QStringLiteral("match"));
 
@@ -215,8 +214,9 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
     TextGridBuffer fullBuffer;
     QVERIFY(fullBuffer.resize(24, 5));
     view.render(fullBuffer, 0, 0);
-    QCOMPARE(fullBuffer.cellAt(1, 1).character, QByteArray("1"));
-    QCOMPARE(fullBuffer.cellAt(3, 1).character, QStringLiteral("│").toUtf8());
+    QCOMPARE(fullBuffer.cellAt(0, 0).character, QByteArray("1"));
+    QCOMPARE(fullBuffer.cellAt(2, 0).character, QStringLiteral("│").toUtf8());
+    QCOMPARE(view.metaObject()->indexOfProperty("borderStyle"), -1);
 }
 
 void MarkdownViewerTest::paletteResolvesSemanticRoles() {

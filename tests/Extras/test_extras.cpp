@@ -12,6 +12,7 @@
 #include <Gradient.h>
 #include <GradientStop.h>
 #include <Paragraph.h>
+#include <Rectangle.h>
 #include <TextGridBuffer.h>
 #include <MouseEvent.h>
 #include <KeyEvent.h>
@@ -314,19 +315,24 @@ private slots:
         QCOMPARE(gauge.value(), 50.0);
     }
 
-    void testGaugeWithBorder() {
-        Gauge gauge;
-        gauge.setBorderStyle("single");
-        QCOMPARE(gauge.implicitHeight(), 3);
+    void testGaugeInBorderedRectangle() {
+        Rectangle frame;
+        frame.setWidth(30);
+        frame.setHeight(3);
+        frame.border()->setStyle("single");
 
-        gauge.setWidth(30);
-        gauge.setHeight(3);
+        Gauge gauge;
+        gauge.setParentItem(&frame);
+        gauge.setX(1);
+        gauge.setY(1);
+        gauge.setWidth(28);
+        gauge.setHeight(1);
         gauge.setLabel("CPU: ");
         gauge.setValue(50.0);
 
         TextGridBuffer buffer;
         buffer.resize(30, 3);
-        gauge.render(buffer, 0, 0);
+        frame.render(buffer, 0, 0);
 
         // Row 0 has top border (e.g. ┌)
         QVERIFY(buffer.cellAt(0, 0).character.startsWith("\xE2\x94\x8C"));
@@ -336,6 +342,27 @@ private slots:
         QCOMPARE(buffer.cellAt(3, 1).character, QByteArray("U"));
         // Row 2 has bottom border (e.g. └)
         QVERIFY(buffer.cellAt(0, 2).character.startsWith("\xE2\x94\x94"));
+    }
+
+    void testBordersBelongToRectangle() {
+        Rectangle rectangle;
+        Paragraph paragraph;
+        TableView table;
+        TreeView tree;
+        Gauge gauge;
+        Sparkline sparkline;
+        BigText bigText;
+        TabHeader tabs;
+
+        QVERIFY(rectangle.metaObject()->indexOfProperty("border") >= 0);
+        const QObject *borderlessItems[] = {
+            &paragraph, &table, &tree, &gauge, &sparkline, &bigText, &tabs
+        };
+        for (const QObject *item : borderlessItems) {
+            QCOMPARE(item->metaObject()->indexOfProperty("border"), -1);
+            QCOMPARE(item->metaObject()->indexOfProperty("borderStyle"), -1);
+            QCOMPARE(item->metaObject()->indexOfProperty("borderColor"), -1);
+        }
     }
 
     void testGaugeShowBrackets() {

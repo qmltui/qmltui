@@ -159,7 +159,6 @@ void TreeView::adjustScrollTop() {
     if (m_selectedIndex >= 0)
         m_selectedIndex = std::clamp(m_selectedIndex, 0, total - 1);
     int availH = height();
-    if (m_borderStyle != "none") availH -= 2;
     if (availH <= 0) availH = 10;
 
     if (m_selectedIndex < m_scrollTop) {
@@ -251,21 +250,6 @@ void TreeView::setCollapsedIcon(const QString &icon) {
     if (m_collapsedIcon == icon) return;
     m_collapsedIcon = icon;
     emit collapsedIconChanged();
-    markDirty();
-}
-
-void TreeView::setBorderStyle(const QString &style) {
-    if (m_borderStyle == style) return;
-    m_borderStyle = style;
-    emit borderStyleChanged();
-    markDirty();
-}
-
-void TreeView::setBorderColor(const QString &color) {
-    if (m_borderColor == color) return;
-    m_borderColor = color;
-    m_resolvedBorderColor = ColorMapper::fromString(m_borderColor, 0xFF808080);
-    emit borderColorChanged();
     markDirty();
 }
 
@@ -755,8 +739,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
             pathLookup.insert(oldPaths[oldIndex], oldIndex);
     }
 
-    const int borderRows = m_borderStyle != "none" ? 2 : 0;
-    const int viewportRows = (std::max)(0, height() - borderRows);
+    const int viewportRows = (std::max)(0, height());
     const int visibleCount = static_cast<int>(m_visibleNodes.size());
     const int firstRow = visibleCount == 0 ? 0
         : std::clamp(m_scrollTop, 0, visibleCount - 1);
@@ -876,22 +859,19 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
 void TreeView::layoutChildren() {
     if (!m_delegate || m_delegateItems.isEmpty()) return;
 
-    int offsetY = (m_borderStyle != "none") ? 1 : 0;
-    int offsetX = (m_borderStyle != "none") ? 1 : 0;
-
-    int curY = offsetY;
+    int curY = 0;
     for (Item *item : m_delegateItems) {
         if (!item) continue;
 
         int itemH = item->height();
         if (itemH <= 0) itemH = 1;
 
-        if (curY + itemH > height() - offsetY) {
+        if (curY + itemH > height()) {
             item->setVisible(false);
         } else {
-            item->setX(offsetX);
+            item->setX(0);
             item->setY(curY);
-            item->setWidth(width() - (offsetX * 2));
+            item->setWidth(width());
             item->setVisible(true);
             curY += itemH;
         }
@@ -904,8 +884,7 @@ void TreeView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect
     updateTree();
     adjustScrollTop();
 
-    const int expectedCapacity = (std::max)(0, height()
-        - (m_borderStyle != "none" ? 2 : 0));
+    const int expectedCapacity = (std::max)(0, height());
     if (m_delegate && (m_delegateStartIndex != m_scrollTop
                        || m_delegateCapacity != expectedCapacity)) {
         QList<Item*> oldItems = m_delegateItems;
@@ -917,18 +896,10 @@ void TreeView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         generateDelegateItems(oldItems, oldIndexes, oldPaths);
     }
 
-    int availH = height();
-    int availW = width();
-    int startX = absX;
-    int startY = absY;
-
-    if (m_borderStyle != "none") {
-        buffer.drawBox(absX, absY, availW, availH, m_resolvedBorderColor, 0x00000000);
-        startX += 1;
-        startY += 1;
-        availW -= 2;
-        availH -= 2;
-    }
+    const int availH = height();
+    const int availW = width();
+    const int startX = absX;
+    const int startY = absY;
 
     if (availW <= 0 || availH <= 0) return;
 
@@ -1020,8 +991,7 @@ void TreeView::keyPressEvent(KeyEvent *event) {
 
 void TreeView::mousePressEvent(MouseEvent *event) {
     setFocus(true);
-    int offsetY = (m_borderStyle != "none") ? 1 : 0;
-    int row = event->y() - offsetY + m_scrollTop;
+    int row = event->y() + m_scrollTop;
     updateTree();
 
     if (row >= 0 && row < m_visibleNodes.size()) {

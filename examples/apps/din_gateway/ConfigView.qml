@@ -1,6 +1,5 @@
 import QtQml 2.15
 import Qtui
-import Qtui.Controls
 import DinGatewayApp
 
 Rectangle {
@@ -99,21 +98,21 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { width: 22; text: "Modbus RTU Baud: "; color: GatewayTheme.textPrimary }
-                    Text { text: "[1]9600 [2]19200 [3]115200 (Active: " + modbusBaud + ")"; color: GatewayTheme.textSuccess; bold: true }
+                    Text { text: "[1]9600 [2]19200 [3]115200 (Active: " + configRoot.modbusBaud + ")"; color: GatewayTheme.textSuccess; bold: true }
                 }
 
                 Row {
                     width: parent.width
                     spacing: 1
                     Text { width: 22; text: "CAN Bus Bitrate: "; color: GatewayTheme.textPrimary }
-                    Text { text: "[4]250k [5]500k  [6]1000k  (Active: " + canBitrate + ")"; color: GatewayTheme.textAccent; bold: true }
+                    Text { text: "[4]250k [5]500k  [6]1000k  (Active: " + configRoot.canBitrate + ")"; color: GatewayTheme.textAccent; bold: true }
                 }
 
                 Row {
                     width: parent.width
                     spacing: 1
                     Text { width: 22; text: "MQTT Rate:       "; color: GatewayTheme.textPrimary }
-                    Text { text: "[7]1s   [8]5s    [9]30s    (Active: " + publishInterval + "s)"; color: GatewayTheme.textWarning; bold: true }
+                    Text { text: "[7]1s   [8]5s    [9]30s    (Active: " + configRoot.publishInterval + "s)"; color: GatewayTheme.textWarning; bold: true }
                 }
 
                 Text {
@@ -138,7 +137,7 @@ Rectangle {
                 spacing: 1
 
                 Text {
-                    text: "STATUS: " + statusMsg
+                    text: "STATUS: " + configRoot.statusMsg
                     color: GatewayTheme.textSuccess
                     bold: true
                 }

@@ -31,6 +31,7 @@ Terminal {
                 Repeater {
                     model: 30
                     Text {
+                        required property int index
                         text: "Scrollable Content Line #" + (index + 1)
                         color: (index % 2 === 0) ? "white" : "yellow"
                     }

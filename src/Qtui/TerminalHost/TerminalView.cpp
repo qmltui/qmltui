@@ -165,28 +165,42 @@ qint64 TerminalView::processId() const {
   return m_session ? m_session->processId() : 0;
 }
 
-void TerminalView::setForegroundColor(const QColor &value) {
-  if (!value.isValid() || m_foregroundColor == value)
+void TerminalView::setForegroundColor(const QString &value) {
+  const QColor color = QColor::fromString(value);
+  if (!color.isValid() || m_foregroundColor == color)
     return;
-  m_foregroundColor = value;
+  m_foregroundColor = color;
   m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
   emit foregroundColorChanged();
   markDirty();
 }
 
-void TerminalView::setBackgroundColor(const QColor &value) {
-  if (!value.isValid() || m_backgroundColor == value)
+void TerminalView::setBackgroundColor(const QString &value) {
+  const QColor color = QColor::fromString(value);
+  if (!color.isValid() || m_backgroundColor == color)
     return;
-  m_backgroundColor = value;
+  m_backgroundColor = color;
   m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
   emit backgroundColorChanged();
   markDirty();
 }
 
-void TerminalView::setPalette(const QList<QColor>& value) {
-  if (m_palette == value)
+QStringList TerminalView::palette() const {
+  QStringList names;
+  names.reserve(m_palette.size());
+  for (const QColor &color : m_palette)
+    names.append(color.name());
+  return names;
+}
+
+void TerminalView::setPalette(const QStringList& value) {
+  QList<QColor> colors;
+  colors.reserve(value.size());
+  for (const QString &name : value)
+    colors.append(QColor::fromString(name));
+  if (m_palette == colors)
     return;
-  m_palette = value;
+  m_palette = colors;
   m_adapter->setPalette(m_palette);
   emit paletteChanged();
   markDirty();

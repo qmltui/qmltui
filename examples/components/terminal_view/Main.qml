@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQml 2.15
 import Qtui
 import Qtui.Controls
@@ -84,8 +86,8 @@ Terminal {
                 }
 
                 Text {
-                    text: "│ Target: " + (commandTarget === 0 ? "Terminal 1" : (commandTarget === 1 ? "Terminal 2" : "BROADCAST (BOTH)"))
-                    color: commandTarget === 2 ? "#cba6f7" : (commandTarget === 0 ? "#89dceb" : "#a6e3a1")
+                    text: "│ Target: " + (root.commandTarget === 0 ? "Terminal 1" : (root.commandTarget === 1 ? "Terminal 2" : "BROADCAST (BOTH)"))
+                    color: root.commandTarget === 2 ? "#cba6f7" : (root.commandTarget === 0 ? "#89dceb" : "#a6e3a1")
                     bold: true
                 }
             }
@@ -103,7 +105,7 @@ Terminal {
             // LEFT PANEL: TERMINAL 1
             // ---------------------------------------------------------
             Rectangle {
-                width: parent.width / 2
+                width: Math.floor(parent.width / 2)
                 height: parent.height
                 border.style: "single"
                 border.color: terminal1.activeFocus ? "#89dceb" : "#45475a"
@@ -163,7 +165,7 @@ Terminal {
                             autoStart: true
 
                             onFinished: (code) => {
-                                logMessage = "Terminal 1 exited with code " + code
+                                root.logMessage = "Terminal 1 exited with code " + code
                             }
 
                             Keys.priority: Keys.BeforeItem
@@ -208,7 +210,7 @@ Terminal {
             // RIGHT PANEL: TERMINAL 2
             // ---------------------------------------------------------
             Rectangle {
-                width: parent.width / 2
+                width: parent.width - Math.floor(parent.width / 2)
                 height: parent.height
                 border.style: "single"
                 border.color: terminal2.activeFocus ? "#a6e3a1" : "#45475a"
@@ -267,7 +269,7 @@ Terminal {
                             autoStart: true
 
                             onFinished: (code) => {
-                                logMessage = "Terminal 2 exited with code " + code
+                                root.logMessage = "Terminal 2 exited with code " + code
                             }
 
                             Keys.priority: Keys.BeforeItem
@@ -340,8 +342,8 @@ Terminal {
                         normalBorderColor: terminal1.activeFocus ? "#89dceb" : "gray"
                         onClicked: {
                             terminal1.focus = true
-                            commandTarget = 0
-                            logMessage = "Focus set to Terminal 1"
+                            root.commandTarget = 0
+                            root.logMessage = "Focus set to Terminal 1"
                         }
                     }
 
@@ -350,8 +352,8 @@ Terminal {
                         normalBorderColor: terminal2.activeFocus ? "#a6e3a1" : "gray"
                         onClicked: {
                             terminal2.focus = true
-                            commandTarget = 1
-                            logMessage = "Focus set to Terminal 2"
+                            root.commandTarget = 1
+                            root.logMessage = "Focus set to Terminal 2"
                         }
                     }
 
@@ -360,7 +362,7 @@ Terminal {
                         normalBorderColor: "#89dceb"
                         onClicked: {
                             terminal2.sendText("echo 'Data payload from Terminal 1 -> Terminal 2'\n")
-                            logMessage = "[T1 ➔ T2] Transferred message payload to Terminal 2"
+                            root.logMessage = "[T1 ➔ T2] Transferred message payload to Terminal 2"
                         }
                     }
 
@@ -369,7 +371,7 @@ Terminal {
                         normalBorderColor: "#a6e3a1"
                         onClicked: {
                             terminal1.sendText("echo 'Data payload from Terminal 2 -> Terminal 1'\n")
-                            logMessage = "[T2 ➔ T1] Transferred message payload to Terminal 1"
+                            root.logMessage = "[T2 ➔ T1] Transferred message payload to Terminal 1"
                         }
                     }
 
@@ -379,7 +381,7 @@ Terminal {
                         onClicked: {
                             terminal1.sendText("echo '=== T1 Environment ==='; env | head -n 3\n")
                             terminal2.sendText("echo 'Received env trigger from T1'\n")
-                            logMessage = "Piped environment query in T1 & notification in T2"
+                            root.logMessage = "Piped environment query in T1 & notification in T2"
                         }
                     }
 
@@ -389,7 +391,7 @@ Terminal {
                         onClicked: {
                             terminal1.sendText("pwd\n")
                             terminal2.sendText("pwd\n")
-                            logMessage = "Dispatched directory check 'pwd' to both terminals"
+                            root.logMessage = "Dispatched directory check 'pwd' to both terminals"
                         }
                     }
 
@@ -399,7 +401,7 @@ Terminal {
                         onClicked: {
                             terminal1.clearScrollback()
                             terminal2.clearScrollback()
-                            logMessage = "Cleared scrollback for both terminals"
+                            root.logMessage = "Cleared scrollback for both terminals"
                         }
                     }
                 }
@@ -465,35 +467,35 @@ Terminal {
                             }
 
                             onAccepted: {
-                                dispatchCommand()
+                                root.dispatchCommand()
                             }
                         }
                     }
 
                     Button {
-                        label: commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
-                        normalBorderColor: commandTarget === 0 ? "#89dceb" : "gray"
+                        label: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
+                        normalBorderColor: root.commandTarget === 0 ? "#89dceb" : "gray"
                         onClicked: {
-                            commandTarget = 0
-                            logMessage = "Dispatcher target set to Terminal 1"
+                            root.commandTarget = 0
+                            root.logMessage = "Dispatcher target set to Terminal 1"
                         }
                     }
 
                     Button {
-                        label: commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
-                        normalBorderColor: commandTarget === 1 ? "#a6e3a1" : "gray"
+                        label: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
+                        normalBorderColor: root.commandTarget === 1 ? "#a6e3a1" : "gray"
                         onClicked: {
-                            commandTarget = 1
-                            logMessage = "Dispatcher target set to Terminal 2"
+                            root.commandTarget = 1
+                            root.logMessage = "Dispatcher target set to Terminal 2"
                         }
                     }
 
                     Button {
-                        label: commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
-                        normalBorderColor: commandTarget === 2 ? "#cba6f7" : "gray"
+                        label: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
+                        normalBorderColor: root.commandTarget === 2 ? "#cba6f7" : "gray"
                         onClicked: {
-                            commandTarget = 2
-                            logMessage = "Dispatcher target set to Broadcast (Both terminals)"
+                            root.commandTarget = 2
+                            root.logMessage = "Dispatcher target set to Broadcast (Both terminals)"
                         }
                     }
 
@@ -501,7 +503,7 @@ Terminal {
                         label: "[ Dispatch ➔ ]"
                         normalBorderColor: "#f9e2af"
                         onClicked: {
-                            dispatchCommand()
+                            root.dispatchCommand()
                         }
                     }
                 }
@@ -517,7 +519,7 @@ Terminal {
                     }
 
                     Text {
-                        text: logMessage
+                        text: root.logMessage
                         color: "#89dceb"
                     }
                 }
@@ -543,6 +545,4 @@ Terminal {
         }
     }
 }
-
-
 

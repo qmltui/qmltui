@@ -1,7 +1,6 @@
 import QtQml 2.15
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import DinGatewayApp
 
 Terminal {

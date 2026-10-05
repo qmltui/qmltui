@@ -36,8 +36,6 @@ class TableView : public Item {
     Q_PROPERTY(QString alternatingRowBgColor READ alternatingRowBgColor WRITE setAlternatingRowBgColor NOTIFY alternatingRowBgColorChanged)
 
     Q_PROPERTY(bool showGrid READ showGrid WRITE setShowGrid NOTIFY showGridChanged)
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
-    Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
     Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider NOTIFY columnWidthProviderChanged)
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
@@ -95,12 +93,6 @@ public:
     bool showGrid() const { return m_showGrid; }
     void setShowGrid(bool show);
 
-    QString borderStyle() const { return m_borderStyle; }
-    void setBorderStyle(const QString &style);
-
-    QString borderColor() const { return m_borderColor; }
-    void setBorderColor(const QString &color);
-
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
     void setColumnWidthProvider(const QJSValue &provider);
 
@@ -135,8 +127,6 @@ signals:
     void alternatingRowBgColorChanged();
 
     void showGridChanged();
-    void borderStyleChanged();
-    void borderColorChanged();
     void columnWidthProviderChanged();
     void cellFormatChanged();
     void delegateChanged();
@@ -187,10 +177,6 @@ private:
     uint32_t m_resolvedAltRowBgColor = 0xFF1E1E2E;
 
     bool m_showGrid = false;
-    QString m_borderStyle = "none";
-    QString m_borderColor = "gray";
-    uint32_t m_resolvedBorderColor = 0xFF808080;
-
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;
     QPointer<QQmlComponent> m_delegate;

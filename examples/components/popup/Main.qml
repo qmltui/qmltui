@@ -1,4 +1,4 @@
-import QtQuick
+import QtQml
 import Qtui
 
 Terminal {

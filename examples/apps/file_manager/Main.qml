@@ -2,8 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQml
 import Qtui
-import Qtui.Controls
-import Qtui.Extras
 import Qtui.TerminalHost
 import Qtui.Examples.FileManager
 

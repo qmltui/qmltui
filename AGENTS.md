@@ -37,6 +37,8 @@
 
 ## QML Application Behavior
 
+- For imports, pragmas, typing, renderer mode, geometry, and the type
+  reference, follow `.agents/skills/qtui-qml/SKILL.md`.
 - A root `Terminal` does not automatically map Q or Escape to application exit.
   Applications and examples must provide a reachable keyboard quit path.
 - A simple application may handle Q and Escape at the root and mark the event

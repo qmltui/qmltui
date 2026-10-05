@@ -20,8 +20,6 @@ class Gauge : public Item {
     Q_PROPERTY(QString unfilledChar READ unfilledChar WRITE setUnfilledChar NOTIFY unfilledCharChanged)
     Q_PROPERTY(bool showPercentage READ showPercentage WRITE setShowPercentage NOTIFY showPercentageChanged)
     Q_PROPERTY(bool showBrackets READ showBrackets WRITE setShowBrackets NOTIFY showBracketsChanged)
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
-    Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
 public:
     explicit Gauge(QObject *parent = nullptr);
@@ -57,12 +55,6 @@ public:
     bool showBrackets() const { return m_showBrackets; }
     void setShowBrackets(bool show);
 
-    QString borderStyle() const { return m_borderStyle; }
-    void setBorderStyle(const QString &style);
-
-    QString borderColor() const { return m_borderColor; }
-    void setBorderColor(const QString &color);
-
     void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
 
 signals:
@@ -76,8 +68,6 @@ signals:
     void unfilledCharChanged();
     void showPercentageChanged();
     void showBracketsChanged();
-    void borderStyleChanged();
-    void borderColorChanged();
 
 private:
     double m_value = 0.0;
@@ -96,9 +86,6 @@ private:
     bool m_showPercentage = true;
     bool m_showBrackets = true;
 
-    QString m_borderStyle = "none";
-    QString m_borderColor = "gray";
-    uint32_t m_resolvedBorderColor = 0xFF808080;
 };
 
 } // namespace qtui

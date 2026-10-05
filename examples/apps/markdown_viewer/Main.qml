@@ -61,7 +61,6 @@ Terminal {
 
     MdViewStyle {
         id: mdViewStyle
-        borderStyle: "none"
         showLineNumbers: root.showLineNumbers
 
         palette.text: theme.textPrimary

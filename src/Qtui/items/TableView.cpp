@@ -291,21 +291,6 @@ void TableView::setShowGrid(bool show) {
     markDirty();
 }
 
-void TableView::setBorderStyle(const QString &style) {
-    if (m_borderStyle == style) return;
-    m_borderStyle = style;
-    emit borderStyleChanged();
-    markDirty();
-}
-
-void TableView::setBorderColor(const QString &color) {
-    if (m_borderColor == color) return;
-    m_borderColor = color;
-    m_resolvedBorderColor = ColorMapper::fromString(m_borderColor, 0xFF808080);
-    emit borderColorChanged();
-    markDirty();
-}
-
 void TableView::setColumnWidthProvider(const QJSValue &provider) {
     m_columnWidthProvider = provider;
     emit columnWidthProviderChanged();
@@ -556,18 +541,10 @@ void TableView::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
     Item::render(buffer, absX, absY, clipRect);
 
-    int availW = width();
+    const int availW = width();
     int availH = height();
-    int startX = absX;
+    const int startX = absX;
     int startY = absY;
-
-    if (m_borderStyle != "none") {
-        buffer.drawBox(absX, absY, availW, availH, m_resolvedBorderColor, 0x00000000);
-        startX += 1;
-        startY += 1;
-        availW -= 2;
-        availH -= 2;
-    }
 
     if (availW <= 0 || availH <= 0) return;
 
@@ -757,13 +734,12 @@ void TableView::keyPressEvent(KeyEvent *event) {
 
 void TableView::mousePressEvent(MouseEvent *event) {
     setFocus(true);
-    int borderOffset = (m_borderStyle != "none") ? 1 : 0;
     bool hasHeaders = (!m_columns.isEmpty() || m_columnWidthProvider.isCallable());
 
-    int headerY = borderOffset;
+    int headerY = 0;
     if (hasHeaders && (event->y() == headerY || event->y() == headerY + 1)) {
         // Clicked header row -> sort by column!
-        int curX = borderOffset;
+        int curX = 0;
         int numCols = m_columns.isEmpty() ? 5 : m_columns.size();
         for (int col = 0; col < numCols; ++col) {
             int colW = columnWidth(col);
@@ -777,11 +753,11 @@ void TableView::mousePressEvent(MouseEvent *event) {
         }
     }
 
-    int offsetY = borderOffset + (hasHeaders ? 2 : 0);
+    int offsetY = hasHeaders ? 2 : 0;
     int clickRow = event->y() - offsetY;
 
     int totalRows = rowCount();
-    int availH = height() - (m_borderStyle != "none" ? 2 : 0) - (hasHeaders ? 2 : 0);
+    int availH = height() - (hasHeaders ? 2 : 0);
     int visibleRows = (std::max)(1, availH);
 
     int firstVisibleRow = 0;

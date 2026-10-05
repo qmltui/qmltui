@@ -70,21 +70,6 @@ void Paragraph::setScrollY(int scroll) {
     markDirty();
 }
 
-void Paragraph::setBorderStyle(const QString &style) {
-    if (m_borderStyle == style) return;
-    m_borderStyle = style;
-    emit borderStyleChanged();
-    markDirty();
-}
-
-void Paragraph::setBorderColor(const QString &color) {
-    if (m_borderColor == color) return;
-    m_borderColor = color;
-    m_resolvedBorderColor = ColorMapper::fromString(m_borderColor, 0xFF808080);
-    emit borderColorChanged();
-    markDirty();
-}
-
 FormattedLine Paragraph::parseRichLine(const QString &line) const {
     FormattedLine result;
     if (line.isEmpty()) return result;
@@ -280,18 +265,10 @@ void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 
     Item::render(buffer, absX, absY, clipRect);
 
-    int availW = width();
-    int availH = height();
-    int startX = absX;
-    int startY = absY;
-
-    if (m_borderStyle != "none") {
-        buffer.drawBox(absX, absY, availW, availH, m_resolvedBorderColor, 0x00000000);
-        startX += 1;
-        startY += 1;
-        availW -= 2;
-        availH -= 2;
-    }
+    const int availW = width();
+    const int availH = height();
+    const int startX = absX;
+    const int startY = absY;
 
     if (availW <= 0 || availH <= 0) return;
 
@@ -322,12 +299,11 @@ void Paragraph::render(TextGridBuffer &buffer, int absX, int absY, const ClipRec
 }
 
 void Paragraph::mousePressEvent(MouseEvent *event) {
-    int borderOffset = (m_borderStyle != "none") ? 1 : 0;
-    int availW = width() - (borderOffset * 2);
+    int availW = width();
     if (availW <= 0) return;
 
-    int clickX = event->x() - borderOffset;
-    int clickY = event->y() - borderOffset + m_scrollY;
+    int clickX = event->x();
+    int clickY = event->y() + m_scrollY;
 
     QList<FormattedLine> lines = getRenderedLines(availW);
     if (clickY >= 0 && clickY < lines.size()) {

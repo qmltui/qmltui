@@ -24,7 +24,6 @@ class MdView : public Item {
     Q_PROPERTY(qtui::MdViewStyle* style READ style WRITE setStyle NOTIFY styleChanged)
     Q_PROPERTY(qtui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
 
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
     Q_PROPERTY(bool showLineNumbers READ showLineNumbers WRITE setShowLineNumbers NOTIFY showLineNumbersChanged)
     Q_PROPERTY(QString renderStyle READ renderStyle WRITE setRenderStyle NOTIFY renderStyleChanged)
 
@@ -54,9 +53,6 @@ public:
 
     MdPalette effectivePalette() const;
 
-    QString borderStyle() const;
-    void setBorderStyle(const QString &style);
-
     bool showLineNumbers() const;
     void setShowLineNumbers(bool show);
 
@@ -80,7 +76,6 @@ signals:
     void activeMatchIndexChanged();
     void styleChanged();
     void paletteChanged();
-    void borderStyleChanged();
     void showLineNumbersChanged();
     void renderStyleChanged();
     void linkActivated(const QString &url);
@@ -92,9 +87,6 @@ private:
     int lineNumberDigits() const;
     int lineNumberGutterWidth() const;
     void clampScroll();
-    void drawBorder(TextGridBuffer &buffer, int absX, int absY,
-                    const ClipRect &clipRect) const;
-
     QPointer<MdDoc> m_document;
     QPointer<MdViewStyle> m_style;
     int m_scrollY = 0;
@@ -102,10 +94,8 @@ private:
     int m_activeMatchIndex = 0;
 
     MdPalette m_palette;
-    QString m_borderStyle = "none";
     bool m_showLineNumbers = false;
     bool m_explicitShowLineNumbers = false;
-    bool m_explicitBorderStyle = false;
     bool m_explicitPalette = false;
 
     QList<SearchMatch> m_searchMatches;

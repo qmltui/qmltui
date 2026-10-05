@@ -30,14 +30,14 @@ Rectangle {
         spacing: 2
 
         Text {
-            text: "⚡ " + deviceId
+            text: "⚡ " + headerRoot.deviceId
             color: GatewayTheme.textAccent
             bold: true
         }
 
         Text {
-            text: "SYS: ● " + activeMode
-            color: activeMode === "ONLINE" ? GatewayTheme.textSuccess : GatewayTheme.textWarning
+            text: "SYS: ● " + headerRoot.activeMode
+            color: headerRoot.activeMode === "ONLINE" ? GatewayTheme.textSuccess : GatewayTheme.textWarning
             bold: true
         }
     }
@@ -53,17 +53,17 @@ Rectangle {
             style: Spinner.Style.Dots
             color: GatewayTheme.textSuccess
             interval: 120
-            running: mqttConnected
+            running: headerRoot.mqttConnected
         }
 
         Text {
-            text: "MQTT: " + (mqttConnected ? "CONNECTED" : "DISCONNECTED")
-            color: mqttConnected ? GatewayTheme.textSuccess : GatewayTheme.textDanger
+            text: "MQTT: " + (headerRoot.mqttConnected ? "CONNECTED" : "DISCONNECTED")
+            color: headerRoot.mqttConnected ? GatewayTheme.textSuccess : GatewayTheme.textDanger
             bold: true
         }
 
         Text {
-            text: "UP: " + formatUptime(uptimeSeconds)
+            text: "UP: " + headerRoot.formatUptime(headerRoot.uptimeSeconds)
             color: GatewayTheme.textSecondary
         }
     }

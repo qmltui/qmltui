@@ -22,14 +22,4 @@ void MdViewStyle::setShowLineNumbers(bool show) {
     emit styleChanged();
 }
 
-void MdViewStyle::setBorderStyle(const QString &style) {
-    const QString normalized = style.trimmed().toLower();
-    const QString value = normalized.isEmpty() ? QStringLiteral("none") : normalized;
-    if (m_borderStyle == value)
-        return;
-    m_borderStyle = value;
-    emit borderStyleChanged();
-    emit styleChanged();
-}
-
 } // namespace qtui

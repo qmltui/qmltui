@@ -17,8 +17,6 @@ class TabHeader : public Item {
     Q_PROPERTY(QString activeTabBgColor READ activeTabBgColor WRITE setActiveTabBgColor NOTIFY activeTabBgColorChanged)
     Q_PROPERTY(QString inactiveTabColor READ inactiveTabColor WRITE setInactiveTabColor NOTIFY inactiveTabColorChanged)
     Q_PROPERTY(QString inactiveTabBgColor READ inactiveTabBgColor WRITE setInactiveTabBgColor NOTIFY inactiveTabBgColorChanged)
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
-    Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
 public:
     explicit TabHeader(QObject *parent = nullptr);
@@ -42,12 +40,6 @@ public:
     QString inactiveTabBgColor() const { return m_inactiveTabBgColor; }
     void setInactiveTabBgColor(const QString &color);
 
-    QString borderStyle() const { return m_borderStyle; }
-    void setBorderStyle(const QString &style);
-
-    QString borderColor() const { return m_borderColor; }
-    void setBorderColor(const QString &color);
-
     void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
@@ -59,8 +51,6 @@ signals:
     void activeTabBgColorChanged();
     void inactiveTabColorChanged();
     void inactiveTabBgColorChanged();
-    void borderStyleChanged();
-    void borderColorChanged();
 
 private:
     QVariant m_tabsVariant;
@@ -77,9 +67,6 @@ private:
     QString m_inactiveTabBgColor = "transparent";
     uint32_t m_resolvedInactiveTabBgColor = 0x00000000;
 
-    QString m_borderStyle = "none";
-    QString m_borderColor = "gray";
-    uint32_t m_resolvedBorderColor = 0xFF808080;
 };
 
 } // namespace qtui

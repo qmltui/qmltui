@@ -4,6 +4,7 @@ build-*/
 
 # Cache and temporary directories
 .cache/
+.claude/
 .codex/
 .tokensave/
 .vscode/

@@ -1,4 +1,4 @@
-import QtQuick
+import QtQml
 import Qtui
 
 Column {
@@ -25,7 +25,6 @@ Column {
         id: repoTreeView
         width: parent.width > 0 ? Math.min(parent.width, 76) : 76
         height: 7
-        borderStyle: "none"
         textColor: "white"
         branchColor: "#38bdf8"
 

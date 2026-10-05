@@ -1,6 +1,5 @@
-import QtQuick
+import QtQml
 import Qtui
-import Qtui.Controls
 
 Column {
     id: swarmCard
@@ -29,7 +28,6 @@ Column {
         height: 5
         headerColor: "#38bdf8"
         headerBgColor: "transparent"
-        borderStyle: "none"
         showGrid: false
         alternatingRows: false
 

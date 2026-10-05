@@ -116,6 +116,7 @@ Terminal {
         id: discoveryComponent
 
         Column {
+            id: configurationInstance
             property int generation: 0
 
             spacing: 1
@@ -135,7 +136,7 @@ Terminal {
             }
 
             Text {
-                text: qsTr("Loaded instance #%1").arg(parent.generation)
+                text: qsTr("Loaded instance #%1").arg(configurationInstance.generation)
                 color: "gray"
             }
         }
@@ -145,6 +146,7 @@ Terminal {
         id: executionComponent
 
         Column {
+            id: executionInstance
             property int generation: 0
 
             spacing: 1
@@ -162,7 +164,7 @@ Terminal {
             }
 
             Text {
-                text: qsTr("Loaded instance #%1").arg(parent.generation)
+                text: qsTr("Loaded instance #%1").arg(executionInstance.generation)
                 color: "gray"
             }
         }

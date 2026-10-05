@@ -35,8 +35,6 @@ class TreeView : public Item {
     Q_PROPERTY(QString branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
     Q_PROPERTY(QString expandedIcon READ expandedIcon WRITE setExpandedIcon NOTIFY expandedIconChanged)
     Q_PROPERTY(QString collapsedIcon READ collapsedIcon WRITE setCollapsedIcon NOTIFY collapsedIconChanged)
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
-    Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
 public:
     explicit TreeView(QObject *parent = nullptr);
@@ -80,12 +78,6 @@ public:
     QString collapsedIcon() const { return m_collapsedIcon; }
     void setCollapsedIcon(const QString &icon);
 
-    QString borderStyle() const { return m_borderStyle; }
-    void setBorderStyle(const QString &style);
-
-    QString borderColor() const { return m_borderColor; }
-    void setBorderColor(const QString &color);
-
     // Q_INVOKABLE Qt Quick TreeView Methods
     Q_INVOKABLE void expand(int index);
     Q_INVOKABLE void collapse(int index);
@@ -117,8 +109,6 @@ signals:
     void branchColorChanged();
     void expandedIconChanged();
     void collapsedIconChanged();
-    void borderStyleChanged();
-    void borderColorChanged();
     void nodeActivated(const QString &path);
     void itemActivated(int index);
     void expanded(int row, int depth);
@@ -182,9 +172,6 @@ private:
     QString m_expandedIcon = "[-] ";
     QString m_collapsedIcon = "[+] ";
 
-    QString m_borderStyle = "none";
-    QString m_borderColor = "gray";
-    uint32_t m_resolvedBorderColor = 0xFF808080;
 };
 
 } // namespace qtui

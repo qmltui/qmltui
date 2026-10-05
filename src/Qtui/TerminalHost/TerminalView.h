@@ -32,9 +32,9 @@ class TerminalView : public Item, public QQmlParserStatus {
     Q_PROPERTY(int exitCode READ exitCode NOTIFY exitCodeChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-    Q_PROPERTY(QColor foregroundColor READ foregroundColor WRITE setForegroundColor NOTIFY foregroundColorChanged)
-    Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
-    Q_PROPERTY(QList<QColor> palette READ palette WRITE setPalette NOTIFY paletteChanged)
+    Q_PROPERTY(QString foregroundColor READ foregroundColor WRITE setForegroundColor NOTIFY foregroundColorChanged)
+    Q_PROPERTY(QString backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(QStringList palette READ palette WRITE setPalette NOTIFY paletteChanged)
     Q_PROPERTY(int scrollbackLimit READ scrollbackLimit WRITE setScrollbackLimit NOTIFY scrollbackLimitChanged)
     Q_PROPERTY(int scrollOffset READ scrollOffset WRITE setScrollOffset NOTIFY scrollOffsetChanged)
     Q_PROPERTY(int scrollbackSize READ scrollbackSize NOTIFY scrollbackSizeChanged)
@@ -74,12 +74,14 @@ public:
     QString errorString() const { return m_errorString; }
     QString title() const { return m_title; }
 
-    QColor foregroundColor() const { return m_foregroundColor; }
-    void setForegroundColor(const QColor& value);
-    QColor backgroundColor() const { return m_backgroundColor; }
-    void setBackgroundColor(const QColor& value);
-    QList<QColor> palette() const { return m_palette; }
-    void setPalette(const QList<QColor>& value);
+    // Colors are exposed to QML as strings ("#rrggbb" or named colors), like
+    // every other Qtui item, so they work without the Qt Quick color provider.
+    QString foregroundColor() const { return m_foregroundColor.name(); }
+    void setForegroundColor(const QString& value);
+    QString backgroundColor() const { return m_backgroundColor.name(); }
+    void setBackgroundColor(const QString& value);
+    QStringList palette() const;
+    void setPalette(const QStringList& value);
     int scrollbackLimit() const { return m_scrollbackLimit; }
     void setScrollbackLimit(int value);
     int scrollOffset() const { return m_scrollOffset; }

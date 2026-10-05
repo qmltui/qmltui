@@ -276,6 +276,20 @@ if(TARGET qtui_snake_game)
         ARTIFACT "snake/paused.txt"
         ARTIFACT_CONTENT "PAUSED"
     )
+    add_qtui_runner_scenario(test_runner_snake_ai qtui_snake_game
+        "${Qtui_SOURCE_DIR}/examples/apps/snake_game/test_snake_ai.js" 0
+        FULL
+        SCENARIO_TIMEOUT_MS 15000
+        ARTIFACT "snake/ai_gameplay.txt"
+        ARTIFACT_CONTENT "SCORE"
+    )
+endif()
+if(TARGET qtui_container_fleet)
+    add_qtui_runner_scenario(test_runner_container_fleet qtui_container_fleet
+        "${Qtui_SOURCE_DIR}/examples/apps/container_fleet/test_fleet.js" 0
+        ARTIFACT "fleet/critical.txt"
+        ARTIFACT_CONTENT "CRITICAL"
+    )
 endif()
 if(TARGET qtui_pacman_game)
     add_qtui_runner_scenario(test_runner_pacman qtui_pacman_game
@@ -291,13 +305,13 @@ if(TARGET qtui_sql_studio)
         ARTIFACT_CONTENT "SQLStudio TUI"
     )
 endif()
-if(TARGET qtui_industrial_plc_hmi_test_runner)
-    add_qtui_runner_scenario(test_runner_plc qtui_industrial_plc_hmi_test_runner
-        "" 0
-        EMBEDDED
-        LIVE
+if(TARGET qtui_industrial_plc_hmi)
+    add_qtui_runner_scenario(test_runner_plc qtui_industrial_plc_hmi
+        "${Qtui_SOURCE_DIR}/examples/apps/industrial_plc_hmi/test_plc.js" 0
         FULL
         PROCESS_TIMEOUT 35
+        OPERATION_TIMEOUT_MS 5000
+        SCENARIO_TIMEOUT_MS 30000
         ARTIFACT "plc/reset.txt"
         ARTIFACT_CONTENT "STATE: IDLE (ALARM RESET)"
     )

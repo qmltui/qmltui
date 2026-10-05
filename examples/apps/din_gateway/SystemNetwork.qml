@@ -1,7 +1,5 @@
 import QtQml 2.15
 import Qtui
-import Qtui.Controls
-import Qtui.Extras
 import DinGatewayApp
 
 Rectangle {
@@ -45,16 +43,16 @@ Rectangle {
 
                 Text { text: "🌐 ETHERNET (eth0)"; color: GatewayTheme.textAccent; bold: true }
                 Text { text: "Link:   CONNECTED [100M Full]"; color: GatewayTheme.textSuccess }
-                Text { text: "IP:     " + ethIp; color: GatewayTheme.textPrimary; bold: true }
-                Text { text: "Subnet: " + ethSubnet; color: GatewayTheme.textSecondary }
-                Text { text: "GW:     " + ethGateway; color: GatewayTheme.textSecondary }
-                Text { text: "MAC:    " + ethMac; color: GatewayTheme.textDim }
+                Text { text: "IP:     " + sysNetRoot.ethIp; color: GatewayTheme.textPrimary; bold: true }
+                Text { text: "Subnet: " + sysNetRoot.ethSubnet; color: GatewayTheme.textSecondary }
+                Text { text: "GW:     " + sysNetRoot.ethGateway; color: GatewayTheme.textSecondary }
+                Text { text: "MAC:    " + sysNetRoot.ethMac; color: GatewayTheme.textDim }
 
                 Text { text: "📱 CELLULAR 4G/LTE (wwan0)"; color: GatewayTheme.textAccent; bold: true }
-                Text { text: "Net:    " + cellOperator; color: GatewayTheme.textPrimary }
-                Text { text: "IP:     " + cellIp; color: GatewayTheme.textPrimary }
-                Text { text: "RSSI:   " + cellRssi + "dBm " + GatewayTheme.makeProgressBar(100 + cellRssi, 0, 80, 8, "segmented"); color: GatewayTheme.textSuccess; bold: true }
-                Text { text: "RSRP:   " + cellRsrp + " dBm"; color: GatewayTheme.textSecondary }
+                Text { text: "Net:    " + sysNetRoot.cellOperator; color: GatewayTheme.textPrimary }
+                Text { text: "IP:     " + sysNetRoot.cellIp; color: GatewayTheme.textPrimary }
+                Text { text: "RSSI:   " + sysNetRoot.cellRssi + "dBm " + GatewayTheme.makeProgressBar(100 + sysNetRoot.cellRssi, 0, 80, 8, "segmented"); color: GatewayTheme.textSuccess; bold: true }
+                Text { text: "RSRP:   " + sysNetRoot.cellRsrp + " dBm"; color: GatewayTheme.textSecondary }
             }
         }
 
@@ -73,9 +71,9 @@ Rectangle {
 
                 Text { text: "💻 HARDWARE & CPU"; color: GatewayTheme.textAccent; bold: true }
                 Text { text: "SoC:    ARMv7-A / ARM64 MPU"; color: GatewayTheme.textPrimary }
-                Text { text: "CPU:    " + cpuLoadPct.toFixed(1) + "% " + GatewayTheme.makeProgressBar(cpuLoadPct, 0, 100, 10, "segmented") + " (" + cpuTemp.toFixed(1) + "°C)"; color: GatewayTheme.textSuccess; bold: true }
-                Text { text: "RAM:    " + memUsedMb + "MB/512MB " + GatewayTheme.makeProgressBar(memUsedMb, 0, 512, 10, "segmented"); color: GatewayTheme.textSecondary }
-                Text { text: "Disk:   " + (diskUsedMb/1024).toFixed(1) + "GB/7.5GB " + GatewayTheme.makeProgressBar(diskUsedMb, 0, 7680, 10, "segmented"); color: GatewayTheme.textSecondary }
+                Text { text: "CPU:    " + sysNetRoot.cpuLoadPct.toFixed(1) + "% " + GatewayTheme.makeProgressBar(sysNetRoot.cpuLoadPct, 0, 100, 10, "segmented") + " (" + sysNetRoot.cpuTemp.toFixed(1) + "°C)"; color: GatewayTheme.textSuccess; bold: true }
+                Text { text: "RAM:    " + sysNetRoot.memUsedMb + "MB/512MB " + GatewayTheme.makeProgressBar(sysNetRoot.memUsedMb, 0, 512, 10, "segmented"); color: GatewayTheme.textSecondary }
+                Text { text: "Disk:   " + (sysNetRoot.diskUsedMb/1024).toFixed(1) + "GB/7.5GB " + GatewayTheme.makeProgressBar(sysNetRoot.diskUsedMb, 0, 7680, 10, "segmented"); color: GatewayTheme.textSecondary }
 
                 Text { text: "☁ CLOUD MQTT SYNC"; color: GatewayTheme.textAccent; bold: true }
                 Text { text: "Broker: mqtt.iot-cloud-gateway.com"; color: GatewayTheme.textPrimary }

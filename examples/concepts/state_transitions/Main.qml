@@ -51,7 +51,6 @@ Terminal {
                 border.color: root.isActive ? "green" : "red"
                 focusable: true
                 focus: true
-                Component.onCompleted: forceActiveFocus()
 
                 Text {
                     id: statusLabel

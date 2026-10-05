@@ -1,4 +1,6 @@
-import QtQuick
+pragma ComponentBehavior: Bound
+
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -129,42 +131,43 @@ Column {
     Repeater {
         model: commandPalette.visibleCommands
         delegate: Rectangle {
+            id: commandEntry
             required property int index
-            readonly property var entry: commandPalette.visibleCommands[index]
-            readonly property var itemData: entry.item
-            readonly property int actualIdx: entry.actualIndex
-            readonly property bool isCurrent: actualIdx === commandPalette.selectedIndex
+            readonly property var entry: commandPalette.visibleCommands[commandEntry.index]
+            readonly property var itemData: commandEntry.entry.item
+            readonly property int actualIdx: commandEntry.entry.actualIndex
+            readonly property bool isCurrent: commandEntry.actualIdx === commandPalette.selectedIndex
 
             width: commandPalette.width
             height: 1
-            color: isCurrent ? "#1e293b" : "transparent"
+            color: commandEntry.isCurrent ? "#1e293b" : "transparent"
 
             Row {
                 anchors.fill: parent
                 spacing: 1
 
                 Text {
-                    text: isCurrent ? "  ❯ " : "    "
+                    text: commandEntry.isCurrent ? "  ❯ " : "    "
                     color: theme.cyan
-                    bold: isCurrent
+                    bold: commandEntry.isCurrent
                 }
 
                 Text {
-                    text: itemData.cmd
-                    color: isCurrent ? "white" : theme.cyan
-                    bold: isCurrent
+                    text: commandEntry.itemData.cmd
+                    color: commandEntry.isCurrent ? "white" : theme.cyan
+                    bold: commandEntry.isCurrent
                 }
 
                 Text {
-                    text: "· " + itemData.desc
-                    color: isCurrent ? theme.slate : theme.muted
+                    text: "· " + commandEntry.itemData.desc
+                    color: commandEntry.isCurrent ? theme.slate : theme.muted
                 }
             }
 
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    commandPalette.selectedIndex = actualIdx
+                    commandPalette.selectedIndex = commandEntry.actualIdx
                     commandPalette.executeCurrent()
                 }
             }

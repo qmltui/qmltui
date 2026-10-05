@@ -29,8 +29,6 @@ class Paragraph : public Item {
     Q_PROPERTY(QString alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
     Q_PROPERTY(bool wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
-    Q_PROPERTY(QString borderStyle READ borderStyle WRITE setBorderStyle NOTIFY borderStyleChanged)
-    Q_PROPERTY(QString borderColor READ borderColor WRITE setBorderColor NOTIFY borderColorChanged)
 
 public:
     enum TextFormat {
@@ -64,12 +62,6 @@ public:
     int scrollY() const { return m_scrollY; }
     void setScrollY(int scroll);
 
-    QString borderStyle() const { return m_borderStyle; }
-    void setBorderStyle(const QString &style);
-
-    QString borderColor() const { return m_borderColor; }
-    void setBorderColor(const QString &color);
-
     void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
     void mousePressEvent(MouseEvent *event) override;
 
@@ -81,9 +73,6 @@ signals:
     void alignmentChanged();
     void wrapModeChanged();
     void scrollYChanged();
-    void borderStyleChanged();
-    void borderColorChanged();
-
     void linkActivated(const QString &link);
 
 private:
@@ -105,9 +94,6 @@ private:
     bool m_wrapMode = true;
     int m_scrollY = 0;
 
-    QString m_borderStyle = "none";
-    QString m_borderColor = "gray";
-    uint32_t m_resolvedBorderColor = 0xFF808080;
     mutable int m_cachedWidth = -1;
     mutable QList<FormattedLine> m_cachedLines;
 };

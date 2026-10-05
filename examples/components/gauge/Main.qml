@@ -107,26 +107,38 @@ Terminal {
                 color: "#64748b"
             }
 
-            Gauge {
+            Rectangle {
                 width: parent.width - 2
-                label: "CPU LOAD   : "
-                value: root.cpuValue
-                maxValue: 100.0
-                gaugeColor: root.cpuValue > 80 ? "#ef4444" : (root.cpuValue > 60 ? "#f59e0b" : "#10b981")
-                borderStyle: "rounded"
-                borderColor: "#475569"
+                height: 3
+                border.style: "single"
+                border.color: "#475569"
+
+                Gauge {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    label: "CPU LOAD   : "
+                    value: root.cpuValue
+                    maxValue: 100.0
+                    gaugeColor: root.cpuValue > 80 ? "#ef4444" : (root.cpuValue > 60 ? "#f59e0b" : "#10b981")
+                }
             }
 
-            Gauge {
+            Rectangle {
                 width: parent.width - 2
-                label: "SWEEP SCAN : "
-                value: root.sweepProgress
-                maxValue: 100.0
-                gaugeColor: "#06b6d4"
-                filledChar: "▰"
-                unfilledChar: "▱"
-                borderStyle: "single"
-                borderColor: "#334155"
+                height: 3
+                border.style: "single"
+                border.color: "#334155"
+
+                Gauge {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    label: "SWEEP SCAN : "
+                    value: root.sweepProgress
+                    maxValue: 100.0
+                    gaugeColor: "#06b6d4"
+                    filledChar: "▰"
+                    unfilledChar: "▱"
+                }
             }
 
             // Section 2: Moving Color Gradients (via Qtui Gradient & Offset Animation)
@@ -135,57 +147,69 @@ Terminal {
                 color: "#64748b"
             }
 
-            Gauge {
+            Rectangle {
                 width: parent.width - 2
-                label: "CYBER WAVE : "
-                value: 85.0
-                maxValue: 100.0
-                filledChar: "█"
-                unfilledChar: "░"
-                showBrackets: false
-                borderStyle: "single"
-                borderColor: "#818cf8"
-                gradient: Gradient {
-                    offset: root.gradientOffset
-                    GradientStop {
-                        position: 0.00
-                        color: "#06b6d4"
-                    }
-                    GradientStop {
-                        position: 0.33
-                        color: "#ec4899"
-                    }
-                    GradientStop {
-                        position: 0.66
-                        color: "#eab308"
-                    }
-                    GradientStop {
-                        position: 1.00
-                        color: "#06b6d4"
+                height: 3
+                border.style: "single"
+                border.color: "#818cf8"
+
+                Gauge {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    label: "CYBER WAVE : "
+                    value: 85.0
+                    maxValue: 100.0
+                    filledChar: "█"
+                    unfilledChar: "░"
+                    showBrackets: false
+                    gradient: Gradient {
+                        offset: root.gradientOffset
+                        GradientStop {
+                            position: 0.00
+                            color: "#06b6d4"
+                        }
+                        GradientStop {
+                            position: 0.33
+                            color: "#ec4899"
+                        }
+                        GradientStop {
+                            position: 0.66
+                            color: "#eab308"
+                        }
+                        GradientStop {
+                            position: 1.00
+                            color: "#06b6d4"
+                        }
                     }
                 }
             }
 
-            Gauge {
+            Rectangle {
                 width: parent.width - 2
-                label: "TEMPERATURE: "
-                value: root.cpuValue
-                maxValue: 100.0
-                showBrackets: true
-                borderStyle: "rounded"
-                borderColor: "#64748b"
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.00
-                        color: "#34d399"
-                    }
-                    GradientStop {
-                        position: 0.55
-                        color: "#facc15"
-                    }
-                    GradientStop {
-                        position: 0.85
-                        color: "#f87171"
+                height: 3
+                border.style: "single"
+                border.color: "#64748b"
+
+                Gauge {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    label: "TEMPERATURE: "
+                    value: root.cpuValue
+                    maxValue: 100.0
+                    showBrackets: true
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.00
+                            color: "#34d399"
+                        }
+                        GradientStop {
+                            position: 0.55
+                            color: "#facc15"
+                        }
+                        GradientStop {
+                            position: 0.85
+                            color: "#f87171"
+                        }
                     }
                 }
             }
@@ -205,7 +229,6 @@ Terminal {
                 filledChar: "■"
                 unfilledChar: "·"
                 showBrackets: false
-                borderStyle: "none"
             }
         }
     }

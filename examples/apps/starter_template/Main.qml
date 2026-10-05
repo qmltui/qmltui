@@ -118,24 +118,30 @@ Terminal {
         }
     }
 
-    TabHeader {
-        id: navBar
+    Rectangle {
+        id: navFrame
         height: 3
         anchors.top: header.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        tabs: ["[F1] Network", "[F2] About"]
-        currentIndex: root.activePage
-        activeTabColor: Theme.textOnGreen
-        activeTabBgColor: Theme.qtGreen
-        inactiveTabColor: Theme.textSecondary
-        borderStyle: "single"
-        borderColor: Theme.borderNormal
-        onCurrentIndexChanged: root.activePage = currentIndex
+        border.style: "single"
+        border.color: Theme.borderNormal
+
+        TabHeader {
+            id: navBar
+            anchors.fill: parent
+            anchors.margins: 1
+            tabs: ["[F1] Network", "[F2] About"]
+            currentIndex: root.activePage
+            activeTabColor: Theme.textOnGreen
+            activeTabBgColor: Theme.qtGreen
+            inactiveTabColor: Theme.textSecondary
+            onCurrentIndexChanged: root.activePage = currentIndex
+        }
     }
 
     StackLayout {
-        anchors.top: navBar.bottom
+        anchors.top: navFrame.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: footer.top

@@ -1,4 +1,4 @@
-import QtQuick
+import QtQml
 
 QtObject {
     id: theme

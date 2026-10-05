@@ -6,8 +6,6 @@ qt_add_qml_module(qtui_braille_demo
     QML_FILES
         Main.qml
     DEPENDENCIES
-        Qtui
-        Qtui.Canvas
+        TARGET Qtui::Core
+        TARGET Qtui::Canvas
 )
-
-target_link_libraries(qtui_braille_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Canvas)

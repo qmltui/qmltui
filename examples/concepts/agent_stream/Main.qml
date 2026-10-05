@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import QtQuick
+import QtQml
 import QtQml.Models
 import Qt.labs.qmlmodels
 import Qtui

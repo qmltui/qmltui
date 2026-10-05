@@ -1,6 +1,6 @@
 ---
 name: qtui-dev-loop
-description: Develop and verify Qtui retained-mode terminal applications with focused Qt Test suites, Qtui::Testing/TestRunner scenarios, committed-frame artifacts, and optional live rendering. Use for Qtui C++, QML, examples, Testing integration, or Behavior-enabled applications; do not use for generic Qt Quick projects.
+description: Develop and verify changes to Qtui retained-mode terminal applications using focused Qt Test suites, TestRunner scenarios, and committed-frame artifacts. Use when implementing or testing Qtui C++, QML, examples, Testing integration, or Behavior-enabled applications; do not use for read-only QML review or generic Qt Quick projects.
 ---
 
 # Qtui Development Loop
@@ -77,10 +77,11 @@ a focused first pass.
 
 ## Integrate Application Scenarios
 
-Link `Qtui::Testing` only into a test-only executable. Linking it installs the
-Terminal auto-hook that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_INSPECT`.
-This avoids making production applications execute scenarios inherited from
-their environment.
+For new applications, link `Qtui::Testing` only into a dedicated test
+executable. Some existing examples conditionally link Testing into their main
+executable; treat these as legacy integration patterns and do not copy them
+into production applications. Linking Testing installs the Terminal auto-hook
+that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_INSPECT`.
 
 Choose one integration pattern:
 
@@ -88,7 +89,8 @@ Choose one integration pattern:
   `qtui_add_scenario_test(NAME ... TARGET ... SCRIPT ...)`. The helper sets a
   deterministic viewport and bounded timeouts, configures QML import paths,
   clears the scenario artifact directory, validates `result.json`, and adds the
-  `TestRunner` label.
+  `TestRunner` label. Add `LIVE` only for a scenario that must render to a
+  real terminal; automated suites should stay quiet.
 - **Embedded resource:** add the script and snapshots to a QML/resource module,
   construct `TestRunner` with the explicit `QQmlEngine`, root `Terminal`,
   resource path, artifact directory, viewport, and timeouts, then schedule
@@ -116,9 +118,15 @@ qtui_add_scenario_test(
 )
 ```
 
-Use the embedded test-runner mains in `examples/apps/markdown_viewer` and
-`examples/apps/industrial_plc_hmi` as construction examples. Use
-`tests/Testing` for focused framework scenarios and failure contracts.
+Use
+[`examples/apps/markdown_viewer/main_test_runner.cpp`](../../../examples/apps/markdown_viewer/main_test_runner.cpp)
+for explicitly constructed embedded runners. Use
+[`examples/apps/service_monitor/main_test.cpp`](../../../examples/apps/service_monitor/main_test.cpp)
+or
+[`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
+for dedicated test-only executables driven through the environment. Use
+[`tests/Testing`](../../../tests/Testing) for framework scenarios and failure
+contracts.
 
 ## Closed-Loop Inspection
 
@@ -176,7 +184,9 @@ Use the API documentation for exact signatures. Choose operations by intent:
 - Use `waitForText()`, `waitForRegex()`, or `waitForCondition()` for state that
   appears asynchronously. Use `expectText()`, `expectNoText()`,
   `expectRegex()`, `expectTextInRegion()`, and `expectStyle()` for assertions on
-  committed frames.
+  committed frames. `expectSnapshot()` compares the frame against a stored
+  snapshot file and writes a unified diff on mismatch. `fail()` aborts the
+  scenario with a message when a check cannot be expressed as an assertion.
 - `waitForFrame()` requests rendering. To prove that the application scheduled
   its own repaint, use `injectKey()` or `injectText()` followed by
   `expectRepaint()`; the regular input methods would consume that repaint.
@@ -223,3 +233,7 @@ Before handoff, run `rtk git diff --check`. Report targets built, focused and
 regression tests run, artifact paths inspected, live rendering when used, and
 relevant configurations not exercised. Preserve unrelated work in a dirty
 worktree.
+
+After changing either repository skill, run
+`python3 .agents/skills/qtui-qml/check-skills.py --build-dir build` to verify links,
+named example targets, the Common Type Map, and whitespace.

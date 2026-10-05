@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQml
 import Qtui
 import Qtui.Controls
@@ -62,15 +64,17 @@ Rectangle {
                 ]
 
                 Row {
+                    id: deviceInfo
+                    required property var modelData
                     spacing: 1
 
                     Text {
-                        text: modelData.label + ":"
+                        text: deviceInfo.modelData.label + ":"
                         color: Theme.textSecondary
                     }
 
                     Text {
-                        text: modelData.value
+                        text: deviceInfo.modelData.value
                         color: Theme.textPrimary
                         bold: true
                     }
@@ -104,15 +108,17 @@ Rectangle {
                 ]
 
                 Row {
+                    id: softwareInfo
+                    required property var modelData
                     spacing: 1
 
                     Text {
-                        text: modelData.label + ":"
+                        text: softwareInfo.modelData.label + ":"
                         color: Theme.textSecondary
                     }
 
                     Text {
-                        text: modelData.value
+                        text: softwareInfo.modelData.value
                         color: Theme.textPrimary
                         bold: true
                     }
@@ -147,23 +153,25 @@ Rectangle {
                 model: WifiManager.allInterfaces
 
                 Column {
+                    id: interfaceInfo
+                    required property var modelData
                     Text {
-                        text: modelData.displayName
+                        text: interfaceInfo.modelData.displayName
                         color: Theme.textSecondary
                     }
 
                     Text {
-                        visible: modelData.ip !== "-"
-                        text: "  v4 " + modelData.ip
+                        visible: interfaceInfo.modelData.ip !== "-"
+                        text: "  v4 " + interfaceInfo.modelData.ip
                         color: Theme.qtGreen
                         bold: true
                     }
 
                     Text {
-                        visible: modelData.ip6 !== "-"
-                        text: "  v6 " + modelData.ip6
-                        color: modelData.hasGlobalIp6 ? Theme.qtGreen : Theme.textSecondary
-                        bold: modelData.hasGlobalIp6
+                        visible: interfaceInfo.modelData.ip6 !== "-"
+                        text: "  v6 " + interfaceInfo.modelData.ip6
+                        color: interfaceInfo.modelData.hasGlobalIp6 ? Theme.qtGreen : Theme.textSecondary
+                        bold: interfaceInfo.modelData.hasGlobalIp6
                     }
                 }
             }

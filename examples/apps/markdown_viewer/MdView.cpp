@@ -80,7 +80,7 @@ int MdView::contentHeight() const {
 }
 
 int MdView::viewportHeight() const {
-    return std::max(0, height() - (borderStyle() == QStringLiteral("none") ? 0 : 2));
+    return std::max(0, height());
 }
 
 int MdView::lineNumberDigits() const {
@@ -112,27 +112,6 @@ void MdView::setShowLineNumbers(bool show) {
         return;
     m_showLineNumbers = show;
     emit showLineNumbersChanged();
-    updateDimensions();
-    clampScroll();
-    markDirty();
-}
-
-QString MdView::borderStyle() const {
-    if (m_explicitBorderStyle)
-        return m_borderStyle;
-    if (m_style)
-        return m_style->borderStyle();
-    return m_borderStyle;
-}
-
-void MdView::setBorderStyle(const QString &style) {
-    m_explicitBorderStyle = true;
-    const QString normalized = style.trimmed().toLower();
-    const QString value = normalized.isEmpty() ? QStringLiteral("none") : normalized;
-    if (m_borderStyle == value)
-        return;
-    m_borderStyle = value;
-    emit borderStyleChanged();
     updateDimensions();
     clampScroll();
     markDirty();
@@ -209,10 +188,9 @@ void MdView::updateDimensions() {
         return;
 
     m_updatingDimensions = true;
-    const int borderWidth = borderStyle() == QStringLiteral("none") ? 0 : 2;
     int gutterWidth = lineNumberGutterWidth();
     while (true) {
-        m_document->setWrapWidth(std::max(1, width() - borderWidth - gutterWidth));
+        m_document->setWrapWidth(std::max(1, width() - gutterWidth));
         const int updatedGutterWidth = lineNumberGutterWidth();
         if (updatedGutterWidth == gutterWidth)
             break;
@@ -238,68 +216,16 @@ void MdView::pageDown() {
     scrollBy(std::max(1, viewportHeight() - 1));
 }
 
-void MdView::drawBorder(TextGridBuffer &buffer, int absX, int absY,
-                        const ClipRect &clipRect) const {
-    const int w = width();
-    const int h = height();
-    if (w <= 0 || h <= 0)
-        return;
-
-    const QString bStyle = borderStyle();
-    QString topLeft = QStringLiteral("┌");
-    QString topRight = QStringLiteral("┐");
-    QString bottomLeft = QStringLiteral("└");
-    QString bottomRight = QStringLiteral("┘");
-    QString horizontal = QStringLiteral("─");
-    QString vertical = QStringLiteral("│");
-    if (bStyle == QStringLiteral("double")) {
-        topLeft = QStringLiteral("╔"); topRight = QStringLiteral("╗");
-        bottomLeft = QStringLiteral("╚"); bottomRight = QStringLiteral("╝");
-        horizontal = QStringLiteral("═"); vertical = QStringLiteral("║");
-    } else if (bStyle == QStringLiteral("ascii")) {
-        topLeft = topRight = bottomLeft = bottomRight = QStringLiteral("+");
-        horizontal = QStringLiteral("-"); vertical = QStringLiteral("|");
-    }
-
-    const uint32_t color = effectivePalette().resolve(MdRole::Border);
-    auto write = [&](int x, int y, const QString &text) {
-        if (clipRect.contains(x, y))
-            buffer.writeText(x, y, text, color);
-    };
-    write(absX, absY, topLeft);
-    if (w > 1)
-        write(absX + w - 1, absY, topRight);
-    if (h > 1) {
-        write(absX, absY + h - 1, bottomLeft);
-        if (w > 1)
-            write(absX + w - 1, absY + h - 1, bottomRight);
-    }
-    for (int x = 1; x < w - 1; ++x) {
-        write(absX + x, absY, horizontal);
-        if (h > 1)
-            write(absX + x, absY + h - 1, horizontal);
-    }
-    for (int y = 1; y < h - 1; ++y) {
-        write(absX + y, absY, vertical);
-        if (w > 1)
-            write(absX + w - 1, absY + y, vertical);
-    }
-}
-
 void MdView::render(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect) {
     const ClipRect ownClip = clipRect.intersected(ClipRect{absX, absY, width(), height()});
     if (ownClip.width <= 0 || ownClip.height <= 0)
         return;
 
-    const bool bordered = borderStyle() != QStringLiteral("none");
-    if (bordered)
-        drawBorder(buffer, absX, absY, ownClip);
-
-    const int startX = absX + (bordered ? 1 : 0);
-    const int startY = absY + (bordered ? 1 : 0);
-    const int availableWidth = width() - (bordered ? 2 : 0);
-    const int availableHeight = height() - (bordered ? 2 : 0);
+    const int startX = absX;
+    const int startY = absY;
+    const int availableWidth = width();
+    const int availableHeight = height();
     if (availableWidth <= 0 || availableHeight <= 0 || !m_document)
         return;
 
@@ -394,14 +320,13 @@ void MdView::render(TextGridBuffer &buffer, int absX, int absY,
 void MdView::mousePressEvent(MouseEvent *event) {
     if (!m_document || width() <= 0 || height() <= 0)
         return;
-    const int borderOffset = borderStyle() == QStringLiteral("none") ? 0 : 1;
-    const int lineIndex = event->y() - borderOffset + m_scrollY;
+    const int lineIndex = event->y() + m_scrollY;
     const auto &lines = m_document->renderedLines();
     if (lineIndex < 0 || lineIndex >= lines.size())
         return;
 
     const DocumentLine &line = lines[lineIndex];
-    const int clickX = event->x() - borderOffset - lineNumberGutterWidth();
+    const int clickX = event->x() - lineNumberGutterWidth();
     if (clickX < 0)
         return;
     const QString quotePrefix = m_document->effectiveStyle()->blockquotePrefix();

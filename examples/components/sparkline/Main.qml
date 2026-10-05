@@ -1,5 +1,7 @@
 import Qtui.Extras
 import Qtui.Controls
+pragma ComponentBehavior: Bound
+
 import QtQml 2.15
 import Qtui
 
@@ -562,6 +564,7 @@ Terminal {
                 Repeater {
                     model: rootWindow.logMessages
                     delegate: Text {
+                        required property string modelData
                         width: sidebarColumn.width
                         text: modelData
                         color: modelData.indexOf("WARN") >= 0 ? "yellow" : (modelData.indexOf("CRIT") >= 0 ? "red" : "gray")

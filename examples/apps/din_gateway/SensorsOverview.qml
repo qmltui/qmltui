@@ -1,6 +1,5 @@
 import QtQml 2.15
 import Qtui
-import Qtui.Controls
 import Qtui.Extras
 import DinGatewayApp
 
@@ -40,13 +39,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-01 Temp: "; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[0] ? sensorValues[0].toFixed(1) : "0.0") + "°C "; color: GatewayTheme.textSuccess; bold: true }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[0] || 0, 20, 80, 10, "segmented"); color: GatewayTheme.textSuccess }
+                    Text { text: (sensorsRoot.sensorValues[0] ? sensorsRoot.sensorValues[0].toFixed(1) : "0.0") + "°C "; color: GatewayTheme.textSuccess; bold: true }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[0] || 0, 20, 80, 10, "segmented"); color: GatewayTheme.textSuccess }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[0] || [0]
+                    values: sensorsRoot.sensorHistories[0] || [0]
                     minVal: 20
                     maxVal: 80
                     color: GatewayTheme.textSuccess
@@ -57,13 +56,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-02 Volt: "; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[1] ? sensorValues[1].toFixed(1) : "0.0") + "V  "; color: GatewayTheme.textAccent; bold: true }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[1] || 0, 40, 60, 10, "segmented"); color: GatewayTheme.textAccent }
+                    Text { text: (sensorsRoot.sensorValues[1] ? sensorsRoot.sensorValues[1].toFixed(1) : "0.0") + "V  "; color: GatewayTheme.textAccent; bold: true }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[1] || 0, 40, 60, 10, "segmented"); color: GatewayTheme.textAccent }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[1] || [0]
+                    values: sensorsRoot.sensorHistories[1] || [0]
                     minVal: 40
                     maxVal: 60
                     color: GatewayTheme.textAccent
@@ -74,13 +73,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-03 Curr: "; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[2] ? sensorValues[2].toFixed(1) : "0.0") + "A  "; color: GatewayTheme.textWarning; bold: true }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[2] || 0, 0, 30, 10, "segmented"); color: GatewayTheme.textWarning }
+                    Text { text: (sensorsRoot.sensorValues[2] ? sensorsRoot.sensorValues[2].toFixed(1) : "0.0") + "A  "; color: GatewayTheme.textWarning; bold: true }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[2] || 0, 0, 30, 10, "segmented"); color: GatewayTheme.textWarning }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[2] || [0]
+                    values: sensorsRoot.sensorHistories[2] || [0]
                     minVal: 0
                     maxVal: 30
                     color: GatewayTheme.textWarning
@@ -91,13 +90,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-04 Power:"; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[3] ? sensorValues[3].toFixed(2) : "0.00") + "kW "; color: GatewayTheme.textPrimary; bold: true }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[3] || 0, 0, 5, 10, "segmented"); color: GatewayTheme.textPrimary }
+                    Text { text: (sensorsRoot.sensorValues[3] ? sensorsRoot.sensorValues[3].toFixed(2) : "0.00") + "kW "; color: GatewayTheme.textPrimary; bold: true }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[3] || 0, 0, 5, 10, "segmented"); color: GatewayTheme.textPrimary }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[3] || [0]
+                    values: sensorsRoot.sensorHistories[3] || [0]
                     minVal: 0
                     maxVal: 5
                     color: GatewayTheme.textPrimary
@@ -125,13 +124,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-05 Humid: "; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[4] ? sensorValues[4].toFixed(1) : "0.0") + "%  "; color: GatewayTheme.textSecondary }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[4] || 0, 0, 100, 10, "segmented"); color: GatewayTheme.textSecondary }
+                    Text { text: (sensorsRoot.sensorValues[4] ? sensorsRoot.sensorValues[4].toFixed(1) : "0.0") + "%  "; color: GatewayTheme.textSecondary }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[4] || 0, 0, 100, 10, "segmented"); color: GatewayTheme.textSecondary }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[4] || [0]
+                    values: sensorsRoot.sensorHistories[4] || [0]
                     minVal: 0
                     maxVal: 100
                     color: GatewayTheme.textSecondary
@@ -142,13 +141,13 @@ Rectangle {
                     width: parent.width
                     spacing: 1
                     Text { text: "AI-06 Flow:  "; color: GatewayTheme.textPrimary }
-                    Text { text: (sensorValues[5] ? sensorValues[5].toFixed(1) : "0.0") + "L/m "; color: GatewayTheme.textAccent }
-                    Text { text: GatewayTheme.makeProgressBar(sensorValues[5] || 0, 0, 30, 10, "segmented"); color: GatewayTheme.textAccent }
+                    Text { text: (sensorsRoot.sensorValues[5] ? sensorsRoot.sensorValues[5].toFixed(1) : "0.0") + "L/m "; color: GatewayTheme.textAccent }
+                    Text { text: GatewayTheme.makeProgressBar(sensorsRoot.sensorValues[5] || 0, 0, 30, 10, "segmented"); color: GatewayTheme.textAccent }
                 }
                 Sparkline {
                     width: parent.width
                     height: 1
-                    values: sensorHistories[5] || [0]
+                    values: sensorsRoot.sensorHistories[5] || [0]
                     minVal: 0
                     maxVal: 30
                     color: GatewayTheme.textAccent
@@ -158,8 +157,8 @@ Rectangle {
                 Row {
                     width: parent.width
                     spacing: 1
-                    Text { text: "AI-07 Vib:  " + (sensorValues[6] ? sensorValues[6].toFixed(2) : "0.00") + "mm/s  "; color: GatewayTheme.textSuccess }
-                    Text { text: "AI-08 Pres: " + (sensorValues[7] ? sensorValues[7].toFixed(1) : "0.0") + "kPa"; color: GatewayTheme.textPrimary }
+                    Text { text: "AI-07 Vib:  " + (sensorsRoot.sensorValues[6] ? sensorsRoot.sensorValues[6].toFixed(2) : "0.00") + "mm/s  "; color: GatewayTheme.textSuccess }
+                    Text { text: "AI-08 Pres: " + (sensorsRoot.sensorValues[7] ? sensorsRoot.sensorValues[7].toFixed(1) : "0.0") + "kPa"; color: GatewayTheme.textPrimary }
                 }
 
                 Text { text: "🔌 RELAY DIGITAL OUTPUTS (RO-01 .. RO-04)"; color: GatewayTheme.textAccent; bold: true }
@@ -168,15 +167,15 @@ Rectangle {
                     width: parent.width
                     spacing: 1
 
-                    Text { text: "RO-1 [Fan]: " + (relay1 ? "[🟢 ON ]" : "[⚪ OFF]"); color: relay1 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: relay1 }
-                    Text { text: " RO-2 [Heat]: " + (relay2 ? "[🟢 ON ]" : "[⚪ OFF]"); color: relay2 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: relay2 }
+                    Text { text: "RO-1 [Fan]: " + (sensorsRoot.relay1 ? "[🟢 ON ]" : "[⚪ OFF]"); color: sensorsRoot.relay1 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: sensorsRoot.relay1 }
+                    Text { text: " RO-2 [Heat]: " + (sensorsRoot.relay2 ? "[🟢 ON ]" : "[⚪ OFF]"); color: sensorsRoot.relay2 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: sensorsRoot.relay2 }
                 }
                 Row {
                     width: parent.width
                     spacing: 1
 
-                    Text { text: "RO-3 [Srn]: " + (relay3 ? "[🟡 ARM]" : "[⚪ OFF]"); color: relay3 ? GatewayTheme.textWarning : GatewayTheme.textDim; bold: relay3 }
-                    Text { text: " RO-4 [Aux ]: " + (relay4 ? "[🟢 ON ]" : "[⚪ OFF]"); color: relay4 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: relay4 }
+                    Text { text: "RO-3 [Srn]: " + (sensorsRoot.relay3 ? "[🟡 ARM]" : "[⚪ OFF]"); color: sensorsRoot.relay3 ? GatewayTheme.textWarning : GatewayTheme.textDim; bold: sensorsRoot.relay3 }
+                    Text { text: " RO-4 [Aux ]: " + (sensorsRoot.relay4 ? "[🟢 ON ]" : "[⚪ OFF]"); color: sensorsRoot.relay4 ? GatewayTheme.textSuccess : GatewayTheme.textDim; bold: sensorsRoot.relay4 }
                 }
             }
         }

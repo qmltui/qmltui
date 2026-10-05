@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQml
 import Qtui
 import Qtui.Controls
@@ -144,16 +146,19 @@ Rectangle {
                         model: WifiManager.networks
 
                         Rectangle {
+                            id: networkEntry
+                            required property int index
+                            required property var modelData
                             width: networkScrollView.width
                             height: 3
-                            color: index === page.selectedIndex ? Theme.bgActive : Theme.bgPanel
+                            color: networkEntry.index === page.selectedIndex ? Theme.bgActive : Theme.bgPanel
                             border.style: "single"
-                            border.color: index === page.selectedIndex ? Theme.qtGreen : Theme.borderNormal
+                            border.color: networkEntry.index === page.selectedIndex ? Theme.qtGreen : Theme.borderNormal
 
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
-                                    page.selectedIndex = index;
+                                    page.selectedIndex = networkEntry.index;
                                     page.updateSelection();
                                     pwdInput.focus = true;
                                 }
@@ -166,29 +171,29 @@ Rectangle {
                                 spacing: 2
 
                                 Text {
-                                    text: index === page.selectedIndex ? Theme.pointer : " "
+                                    text: networkEntry.index === page.selectedIndex ? Theme.pointer : " "
                                     color: Theme.qtGreen
                                     bold: true
                                 }
 
                                 SignalMeter {
-                                    strength: modelData.signal
+                                    strength: networkEntry.modelData.signal
                                 }
 
                                 Text {
-                                    text: modelData.ssid
+                                    text: networkEntry.modelData.ssid
                                     color: Theme.textPrimary
-                                    bold: (index === page.selectedIndex)
+                                    bold: networkEntry.index === page.selectedIndex
                                 }
 
                                 StatusBadge {
-                                    text: modelData.security
-                                    badgeColor: modelData.security === "Open" ? Theme.textSecondary : Theme.qtGreen
+                                    text: networkEntry.modelData.security
+                                    badgeColor: networkEntry.modelData.security === "Open" ? Theme.textSecondary : Theme.qtGreen
                                     showIcon: false
                                 }
 
                                 Text {
-                                    text: modelData.connected ? Theme.check + " CONNECTED" : ""
+                                    text: networkEntry.modelData.connected ? Theme.check + " CONNECTED" : ""
                                     color: Theme.qtGreen
                                     bold: true
                                 }
@@ -409,35 +414,37 @@ Rectangle {
                     model: WifiManager.allInterfaces
 
                     Column {
+                        id: interfaceEntry
+                        required property var modelData
                         Row {
                             spacing: 2
 
                             Text {
                                 visible: !Theme.simpleGlyphs
-                                text: modelData.type === "wifi" ? "📶" : "🌐"
+                                text: interfaceEntry.modelData.type === "wifi" ? "📶" : "🌐"
                             }
 
                             Text {
-                                text: modelData.displayName
+                                text: interfaceEntry.modelData.displayName
                                 color: Theme.textPrimary
                                 bold: true
                             }
 
                             StatusBadge {
-                                text: modelData.connected ? "ONLINE" : (modelData.hasLink ? "CARRIER" : "NO LINK")
-                                badgeColor: modelData.connected ? Theme.statusOk : (modelData.hasLink ? Theme.statusWarn : Theme.textDim)
+                                text: interfaceEntry.modelData.connected ? "ONLINE" : (interfaceEntry.modelData.hasLink ? "CARRIER" : "NO LINK")
+                                badgeColor: interfaceEntry.modelData.connected ? Theme.statusOk : (interfaceEntry.modelData.hasLink ? Theme.statusWarn : Theme.textDim)
                                 showIcon: false
                             }
                         }
 
                         Text {
                             readonly property string addresses: "   "
-                                + (modelData.ip !== "-" ? "v4 " + modelData.ip + "  " : "")
-                                + (modelData.ip6 !== "-" ? "v6 " + modelData.ip6 : "")
+                                + (interfaceEntry.modelData.ip !== "-" ? "v4 " + interfaceEntry.modelData.ip + "  " : "")
+                                + (interfaceEntry.modelData.ip6 !== "-" ? "v6 " + interfaceEntry.modelData.ip6 : "")
                             readonly property int maxChars: Math.max(0, ifacePanel.width - 6)
-                            visible: modelData.ip !== "-" || modelData.ip6 !== "-"
+                            visible: interfaceEntry.modelData.ip !== "-" || interfaceEntry.modelData.ip6 !== "-"
                             text: addresses.length > maxChars ? addresses.substring(0, maxChars) : addresses
-                            color: modelData.connected ? Theme.qtGreen : Theme.textSecondary
+                            color: interfaceEntry.modelData.connected ? Theme.qtGreen : Theme.textSecondary
                         }
                     }
                 }
@@ -468,6 +475,7 @@ Rectangle {
                     model: WifiManager.logs.slice(0, Math.max(0, Math.floor((logPanel.height - 2) / 2)))
 
                     Text {
+                        required property string modelData
                         readonly property int maxChars: Math.max(0, logPanel.width - 6)
                         text: modelData.length > maxChars ? modelData.substring(0, maxChars) : modelData
                         color: modelData.indexOf("SUCCESS") >= 0 ? Theme.statusOk : (modelData.indexOf("ERROR") >= 0 || modelData.indexOf("WARNING") >= 0 ? Theme.statusError : Theme.textSecondary)
@@ -635,35 +643,37 @@ Rectangle {
                     model: WifiManager.allInterfaces
 
                     Column {
+                        id: connectedInterfaceEntry
+                        required property var modelData
                         Row {
                             spacing: 2
 
                             Text {
                                 visible: !Theme.simpleGlyphs
-                                text: modelData.type === "wifi" ? "📶" : "🌐"
+                                text: connectedInterfaceEntry.modelData.type === "wifi" ? "📶" : "🌐"
                             }
 
                             Text {
-                                text: modelData.displayName
+                                text: connectedInterfaceEntry.modelData.displayName
                                 color: Theme.textPrimary
                                 bold: true
                             }
 
                             StatusBadge {
-                                text: modelData.connected ? "ONLINE" : (modelData.hasLink ? "CARRIER" : "NO LINK")
-                                badgeColor: modelData.connected ? Theme.statusOk : (modelData.hasLink ? Theme.statusWarn : Theme.textDim)
+                                text: connectedInterfaceEntry.modelData.connected ? "ONLINE" : (connectedInterfaceEntry.modelData.hasLink ? "CARRIER" : "NO LINK")
+                                badgeColor: connectedInterfaceEntry.modelData.connected ? Theme.statusOk : (connectedInterfaceEntry.modelData.hasLink ? Theme.statusWarn : Theme.textDim)
                                 showIcon: false
                             }
                         }
 
                         Text {
                             readonly property string addresses: "   "
-                                + (modelData.ip !== "-" ? "v4 " + modelData.ip + "  " : "")
-                                + (modelData.ip6 !== "-" ? "v6 " + modelData.ip6 : "")
+                                + (connectedInterfaceEntry.modelData.ip !== "-" ? "v4 " + connectedInterfaceEntry.modelData.ip + "  " : "")
+                                + (connectedInterfaceEntry.modelData.ip6 !== "-" ? "v6 " + connectedInterfaceEntry.modelData.ip6 : "")
                             readonly property int maxChars: Math.max(0, connectedIfacePanel.width - 6)
-                            visible: modelData.ip !== "-" || modelData.ip6 !== "-"
+                            visible: connectedInterfaceEntry.modelData.ip !== "-" || connectedInterfaceEntry.modelData.ip6 !== "-"
                             text: addresses.length > maxChars ? addresses.substring(0, maxChars) : addresses
-                            color: modelData.connected ? Theme.qtGreen : Theme.textSecondary
+                            color: connectedInterfaceEntry.modelData.connected ? Theme.qtGreen : Theme.textSecondary
                         }
                     }
                 }
@@ -695,6 +705,7 @@ Rectangle {
                     model: WifiManager.logs.slice(0, Math.max(0, Math.floor((connectedLogPanel.height - 2) / 2)))
 
                     Text {
+                        required property string modelData
                         readonly property int maxChars: Math.max(0, connectedLogPanel.width - 6)
                         text: modelData.length > maxChars ? modelData.substring(0, maxChars) : modelData
                         color: modelData.indexOf("SUCCESS") >= 0 ? Theme.statusOk : (modelData.indexOf("ERROR") >= 0 || modelData.indexOf("WARNING") >= 0 ? Theme.statusError : Theme.textSecondary)

@@ -1,4 +1,4 @@
-import QtQuick
+import QtQml
 import Qtui
 import Qtui.Controls
 import Qtui.Image
@@ -9,7 +9,8 @@ Terminal {
     useAlternateScreen: true
     color: "#0f172a"
 
-    property string imageSource: (typeof userImagePath !== "undefined" && userImagePath !== "") ? userImagePath : "panda.png"
+    property string userImagePath: "panda.png"
+    property string imageSource: root.userImagePath.length > 0 ? root.userImagePath : "panda.png"
     property string statusMessage: "Loaded: " + imageSource
 
     // Explicit key handling for quit and quick preset switching
@@ -117,7 +118,7 @@ Terminal {
 
             Panel {
                 title: "HalfBlock Mode"
-                width: (parent.width - 2) / 3
+                width: Math.floor((parent.width - 2) / 3)
                 height: parent.height
 
                 Image {
@@ -134,7 +135,7 @@ Terminal {
 
             Panel {
                 title: "Braille Mode"
-                width: (parent.width - 2) / 3
+                width: Math.floor((parent.width - 2) / 3)
                 height: parent.height
 
                 Image {
@@ -151,7 +152,7 @@ Terminal {
 
             Panel {
                 title: "ASCII Mode"
-                width: (parent.width - 2) / 3
+                width: parent.width - 2 * Math.floor((parent.width - 2) / 3) - 2
                 height: parent.height
 
                 Image {

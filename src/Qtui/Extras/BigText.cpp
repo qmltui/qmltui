@@ -94,36 +94,13 @@ void BigText::setBgColor(const QString &color) {
     markDirty();
 }
 
-void BigText::setBorderStyle(const QString &style) {
-    if (m_borderStyle == style) return;
-    m_borderStyle = style;
-    emit borderStyleChanged();
-    markDirty();
-}
-
-void BigText::setBorderColor(const QString &color) {
-    if (m_borderColor == color) return;
-    m_borderColor = color;
-    m_resolvedBorderColor = ColorMapper::fromString(m_borderColor, 0xFF808080);
-    emit borderColorChanged();
-    markDirty();
-}
-
 void BigText::render(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
     if (!m_visible || m_text.isEmpty()) return;
 
     Item::render(buffer, absX, absY, clipRect);
 
-    int availW = width();
-    int availH = height();
-    int startX = absX;
-    int startY = absY;
-
-    if (m_borderStyle != "none") {
-        buffer.drawBox(absX, absY, availW, availH, m_resolvedBorderColor, 0x00000000);
-        startX += 1;
-        startY += 1;
-    }
+    const int startX = absX;
+    const int startY = absY;
 
     int curX = startX;
     for (int idx = 0; idx < m_text.length(); ++idx) {

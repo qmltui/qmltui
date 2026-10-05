@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQml
 import Qtui
-import Qtui.Controls
 
 Popup {
     id: root

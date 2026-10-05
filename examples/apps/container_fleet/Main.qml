@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
+import QtQml
 import Qtui
 import Qtui.Controls
 import Qtui.Extras
@@ -92,7 +92,6 @@ Terminal {
                 TabHeader {
                     id: filterTabs
                     currentIndex: fleetModel.activeFilter
-                    borderStyle: "none"
                     activeTabBgColor: root.colorAccentCyan
                     activeTabColor: "#11111b"
                     inactiveTabBgColor: "transparent"
@@ -140,48 +139,53 @@ Terminal {
         }
 
         // --- 2. NATIVE TABLEVIEW WITH HEADER SORTING ---
-        TableView {
-            id: tableView
-            focus: true
+        Rectangle {
             width: parent.width
             height: Math.max(6, parent.height - (root.showLogs ? 11 : 7))
-            showGrid: true
-            borderStyle: "single"
-            borderColor: "#272738"
-            headerColor: root.colorAccentCyan
-            headerBgColor: "#181825"
-            selectionColor: root.colorAccentYellow
-            selectionBgColor: root.colorCardSelBg
-            alternatingRows: true
-            alternatingRowBgColor: root.colorCardAltBg
-            rowBgColor: root.colorCardBg
+            border.style: "single"
+            border.color: "#272738"
 
-            columns: [
-                { title: "NODE NAME", width: 19, align: "left" },
-                { title: "IP ADDRESS", width: 14, align: "left" },
-                { title: "STATUS", width: 12, align: "center" },
-                { title: "CPU LOAD", width: 17, align: "left" },
-                { title: "MEMORY", width: 17, align: "left" },
-                { title: "TAGS & SERVICES", width: 22, align: "left" }
-            ]
+            TableView {
+                id: tableView
+                focus: true
+                anchors.fill: parent
+                anchors.margins: 1
+                showGrid: true
+                headerColor: root.colorAccentCyan
+                headerBgColor: "#181825"
+                selectionColor: root.colorAccentYellow
+                selectionBgColor: root.colorCardSelBg
+                alternatingRows: true
+                alternatingRowBgColor: root.colorCardAltBg
+                rowBgColor: root.colorCardBg
 
-            model: fleetModel.tableData
+                columns: [
+                    { title: "NODE NAME", width: 19, align: "left" },
+                    { title: "IP ADDRESS", width: 14, align: "left" },
+                    { title: "STATUS", width: 12, align: "center" },
+                    { title: "CPU LOAD", width: 17, align: "left" },
+                    { title: "MEMORY", width: 17, align: "left" },
+                    { title: "TAGS & SERVICES", width: 22, align: "left" }
+                ]
 
-            cellFormat: (row, col, value) => {
-                if (col === 2) {
-                    if (value === "RUNNING") return { text: "✔ RUNNING", color: root.colorAccentGreen, bold: true }
-                    if (value === "CRITICAL") return { text: "✖ CRITICAL", color: root.colorAccentRed, bold: true }
-                    if (value === "STANDBY") return { text: "⏸ STANDBY", color: root.colorAccentYellow, bold: true }
-                } else if (col === 3) {
-                    let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
-                    return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentCyan, bold: isHigh }
-                } else if (col === 4) {
-                    let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
-                    return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentGreen, bold: isHigh }
-                } else if (col === 5) {
-                    return { text: value, color: root.colorAccentPurple }
+                model: fleetModel.tableData
+
+                cellFormat: (row, col, value) => {
+                    if (col === 2) {
+                        if (value === "RUNNING") return { text: "✔ RUNNING", color: root.colorAccentGreen, bold: true }
+                        if (value === "CRITICAL") return { text: "✖ CRITICAL", color: root.colorAccentRed, bold: true }
+                        if (value === "STANDBY") return { text: "⏸ STANDBY", color: root.colorAccentYellow, bold: true }
+                    } else if (col === 3) {
+                        let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
+                        return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentCyan, bold: isHigh }
+                    } else if (col === 4) {
+                        let isHigh = value.indexOf("80%") !== -1 || value.indexOf("90%") !== -1 || value.indexOf("100%") !== -1
+                        return { text: value, color: isHigh ? root.colorAccentRed : root.colorAccentGreen, bold: isHigh }
+                    } else if (col === 5) {
+                        return { text: value, color: root.colorAccentPurple }
+                    }
+                    return { text: value }
                 }
-                return { text: value }
             }
         }
 

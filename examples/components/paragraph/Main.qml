@@ -28,18 +28,23 @@ Terminal {
             color: "gray"
         }
 
-        Paragraph {
+        Rectangle {
             width: 70
             height: 10
-            color: "white"
-            borderStyle: "single"
-            borderColor: "cyan"
-            wrapMode: true
-            textFormat: Paragraph.RichText
-            text: "<b>Qtui Framework</b>: Build <font color='cyan'><b>high-performance</b></font> terminal applications powered by <b>Qt 6</b>.\n\nUseful Links:\n• <a href='https://qt.io'>Qt Official Documentation</a>\n• [Qtui GitHub Repository](https://github.com/yosriayed/qtui)\n• <a href='https://doc.qt.io/qt-6/'>Qt 6 QML Reference Manual</a>\n\nClick any link to activate!"
+            border.style: "single"
+            border.color: "cyan"
 
-            onLinkActivated: (url) => {
-                statusText.text = "Activated Hyperlink: " + url
+            Paragraph {
+                anchors.fill: parent
+                anchors.margins: 1
+                color: "white"
+                wrapMode: true
+                textFormat: Paragraph.RichText
+                text: "<b>Qtui Framework</b>: Build <font color='cyan'><b>high-performance</b></font> terminal applications powered by <b>Qt 6</b>.\n\nUseful Links:\n• <a href='https://qt.io'>Qt Official Documentation</a>\n• [Qtui GitHub Repository](https://github.com/yosriayed/qtui)\n• <a href='https://doc.qt.io/qt-6/'>Qt 6 QML Reference Manual</a>\n\nClick any link to activate!"
+
+                onLinkActivated: (url) => {
+                    statusText.text = "Activated Hyperlink: " + url
+                }
             }
         }
 

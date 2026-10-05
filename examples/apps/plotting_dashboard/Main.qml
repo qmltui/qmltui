@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import Qtui.Canvas
 import QtQml 2.15
 import Qtui
@@ -456,6 +458,7 @@ Terminal {
                             Repeater {
                                 model: 5
                                 delegate: Line {
+                                    required property int index
                                     x1: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
                                     y1: 0
                                     x2: Math.floor((index + 1) * (waveformGridCanvas.width * 2) / 6)
@@ -466,6 +469,7 @@ Terminal {
                             Repeater {
                                 model: 3
                                 delegate: Line {
+                                    required property int index
                                     x1: 0
                                     y1: Math.floor((index + 1) * (waveformGridCanvas.height * 4) / 4)
                                     x2: Math.floor(waveformGridCanvas.width * 2)

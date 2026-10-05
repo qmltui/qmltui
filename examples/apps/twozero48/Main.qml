@@ -1,5 +1,6 @@
+pragma ComponentBehavior: Bound
+
 import QtQml 2.15
-import QtQml.Models 2.15
 import Qtui
 
 
@@ -326,20 +327,24 @@ Terminal {
                 Repeater {
                     model: 4
                     delegate: Row {
-                        property int rIdx: index
+                        id: boardRow
+                        required property int index
+                        readonly property int rIdx: boardRow.index
                         spacing: 2
 
                         Repeater {
                             model: 4
                             delegate: Rectangle {
-                                property int cIdx: index
-                                property int val: rootWindow.board[rIdx * 4 + cIdx]
+                                id: boardCell
+                                required property int index
+                                readonly property int cIdx: boardCell.index
+                                readonly property int val: rootWindow.board[boardRow.rIdx * 4 + boardCell.cIdx]
 
                                 width: 9
                                 height: 3
-                                color: rootWindow.getCellBgColor(val)
-                                border.style: rootWindow.getCellBorderStyle(val)
-                                border.color: rootWindow.getCellBorderColor(val)
+                                color: rootWindow.getCellBgColor(boardCell.val)
+                                border.style: rootWindow.getCellBorderStyle(boardCell.val)
+                                border.color: rootWindow.getCellBorderColor(boardCell.val)
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -349,9 +354,9 @@ Terminal {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: val > 0 ? String(val) : ""
-                                    color: rootWindow.getCellTextColor(val)
-                                    bold: val >= 8
+                                    text: boardCell.val > 0 ? String(boardCell.val) : ""
+                                    color: rootWindow.getCellTextColor(boardCell.val)
+                                    bold: boardCell.val >= 8
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
                                 }

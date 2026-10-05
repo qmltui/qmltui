@@ -1,4 +1,6 @@
-import QtQuick
+pragma ComponentBehavior: Bound
+
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -116,7 +118,7 @@ Item {
 
                     Row {
                         id: prodRow
-                        property var modelData: modelData
+                        required property var modelData
                         width: parent ? parent.width : 0
                         spacing: 1
 
@@ -207,7 +209,7 @@ Item {
 
                     Row {
                         id: qRow
-                        property var modelData: null
+                        required property var modelData
                         width: parent ? parent.width : 0
                         spacing: 1
 

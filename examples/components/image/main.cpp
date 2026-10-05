@@ -1,7 +1,7 @@
 #include <QCoreApplication>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QString>
+#include <QVariantMap>
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     }
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("userImagePath", initialPath);
+    engine.setInitialProperties({{QStringLiteral("userImagePath"), initialPath}});
     engine.loadFromModule("ImageDemo", "Main");
 
     if (engine.rootObjects().isEmpty())

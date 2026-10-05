@@ -1,7 +1,8 @@
-import QtQuick
+pragma ComponentBehavior: Bound
+
+import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 
 Popup {
     id: modelPicker
@@ -131,14 +132,15 @@ Popup {
         Repeater {
             model: modelPicker.models
             delegate: Rectangle {
+                id: modelEntry
                 required property int index
-                readonly property var m: modelPicker.models[index]
-                readonly property bool isSelected: index === modelPicker.selectedIndex
-                readonly property bool isActive: m.id === modelPicker.currentModel
+                readonly property var m: modelPicker.models[modelEntry.index]
+                readonly property bool isSelected: modelEntry.index === modelPicker.selectedIndex
+                readonly property bool isActive: modelEntry.m.id === modelPicker.currentModel
 
                 width: parent.width
                 height: 3
-                color: isSelected ? "#1e293b" : "transparent"
+                color: modelEntry.isSelected ? "#1e293b" : "transparent"
 
                 Column {
                     anchors.fill: parent
@@ -151,31 +153,31 @@ Popup {
                         spacing: 1
 
                         Text {
-                            text: (isSelected ? "❯ [" : "  [") + (index + 1) + "] "
-                            color: isSelected ? theme.cyan : theme.muted
-                            bold: isSelected
+                            text: (modelEntry.isSelected ? "❯ [" : "  [") + (modelEntry.index + 1) + "] "
+                            color: modelEntry.isSelected ? theme.cyan : theme.muted
+                            bold: modelEntry.isSelected
                         }
 
                         Text {
-                            text: m.name
-                            color: isSelected ? "white" : (isActive ? theme.cyan : theme.slate)
-                            bold: isSelected || isActive
+                            text: modelEntry.m.name
+                            color: modelEntry.isSelected ? "white" : (modelEntry.isActive ? theme.cyan : theme.slate)
+                            bold: modelEntry.isSelected || modelEntry.isActive
                         }
 
                         Text {
-                            text: "(" + m.provider + ")"
+                            text: "(" + modelEntry.m.provider + ")"
                             color: theme.muted
                         }
 
                         StatusBadge {
-                            text: m.badge
-                            status: m.badgeStatus
+                            text: modelEntry.m.badge
+                            status: modelEntry.m.badgeStatus
                             variant: "subtle"
                             showIcon: false
                         }
 
                         Text {
-                            text: isActive ? "● active" : ""
+                            text: modelEntry.isActive ? "● active" : ""
                             color: theme.green
                             bold: true
                         }
@@ -187,8 +189,8 @@ Popup {
                         spacing: 1
 
                         Text {
-                            text: "      " + m.desc
-                            color: isSelected ? theme.slate : theme.muted
+                            text: "      " + modelEntry.m.desc
+                            color: modelEntry.isSelected ? theme.slate : theme.muted
                         }
                     }
 
@@ -198,7 +200,7 @@ Popup {
                         spacing: 1
 
                         Text {
-                            text: "      Ctx: " + m.context + " · " + m.rate
+                            text: "      Ctx: " + modelEntry.m.context + " · " + modelEntry.m.rate
                             color: theme.muted
                         }
                     }
@@ -207,7 +209,7 @@ Popup {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        modelPicker.selectedIndex = index
+                        modelPicker.selectedIndex = modelEntry.index
                         modelPicker.chooseCurrent()
                     }
                 }

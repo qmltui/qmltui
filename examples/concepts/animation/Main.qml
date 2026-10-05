@@ -22,7 +22,7 @@ Terminal {
         running: true
         repeat: true
         onTriggered: {
-            stateCounter = (stateCounter + 1) % 4
+            rootWindow.stateCounter = (rootWindow.stateCounter + 1) % 4
         }
     }
 

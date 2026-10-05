@@ -1,4 +1,6 @@
-import QtQuick
+pragma ComponentBehavior: Bound
+
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -232,29 +234,29 @@ Terminal {
         height: 5
         color: "#0d1c2d"
         border.color: "#273647"
-        title: qsTr("RapidPOS  |  %1").arg(storeName)
+        title: qsTr("RapidPOS  |  %1").arg(rootWindow.storeName)
         titleColor: "#4AE183"
 
         Row {
             x: 1; y: 1; spacing: 2
-            Text { text: qsTr("👤 %1  📶 ONLINE  🕒 09:41 AM").arg(cashierName); color: "#D4E4FA" }
+            Text { text: qsTr("👤 %1  📶 ONLINE  🕒 09:41 AM").arg(rootWindow.cashierName); color: "#D4E4FA" }
             Button {
                 label: rootWindow.state === "catalog" ? "[ 1 CATALOG ]" : " 1 CATALOG "
                 normalColor: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "catalog" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "catalog" ? "double" : "single"
                 onClicked: {
-                    if (rootWindow.state === "receipt") resetNewSale();
+                    if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "catalog";
                 }
             }
             Button {
-                label: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(getItemCount()) : qsTr(" 2 CART (%1) ").arg(getItemCount())
+                label: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(rootWindow.getItemCount()) : qsTr(" 2 CART (%1) ").arg(rootWindow.getItemCount())
                 normalColor: rootWindow.state === "cart" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "cart" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "cart" ? "double" : "single"
                 onClicked: {
-                    if (rootWindow.state === "receipt") resetNewSale();
+                    if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "cart";
                 }
             }
@@ -264,7 +266,7 @@ Terminal {
                 textColor: rootWindow.state === "payment" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "payment" ? "double" : "single"
                 onClicked: {
-                    if (rootWindow.state !== "receipt") goToCheckout();
+                    if (rootWindow.state !== "receipt") rootWindow.goToCheckout();
                 }
             }
             Button {
@@ -293,8 +295,8 @@ Terminal {
         Row {
             x: 1; y: 1; spacing: 2
             Text {
-                text: statusNotification.length > 0 ? statusNotification : qsTr("[F1] Clear  [F2] 10% Disc  [F3] Catalog  [F4] Cart  [F12] Pay  [Q/ESC] Quit")
-                color: statusNotification.length > 0 ? "#FFB961" : "#A8E6CF"
+                text: rootWindow.statusNotification.length > 0 ? rootWindow.statusNotification : qsTr("[F1] Clear  [F2] 10% Disc  [F3] Catalog  [F4] Cart  [F12] Pay  [Q/ESC] Quit")
+                color: rootWindow.statusNotification.length > 0 ? "#FFB961" : "#A8E6CF"
             }
         }
     }

@@ -1,7 +1,6 @@
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import Qtui.Examples.DeviceCockpit
 
 Rectangle {
@@ -111,36 +110,41 @@ Rectangle {
             }
         }
 
-        TableView {
-            id: unitTable
+        Rectangle {
             width: parent.width
             height: parent.height - 4
-            model: page.services.units
-            borderStyle: "single"
-            borderColor: Theme.borderNormal
-            headerColor: Theme.textAccent
-            headerBgColor: Theme.bgPanel
-            selectionColor: Theme.textPrimary
-            selectionBgColor: Theme.bgActiveTab
+            border.style: "single"
+            border.color: Theme.borderNormal
 
-            columns: [
-                { title: "UNIT", key: "unit", width: 30 },
-                { title: "ACTIVE", key: "active", width: 9 },
-                { title: "SUB", key: "sub", width: 9 },
-                { title: "DESCRIPTION", key: "description", width: 46 }
-            ]
+            TableView {
+                id: unitTable
+                anchors.fill: parent
+                anchors.margins: 1
+                model: page.services.units
+                headerColor: Theme.textAccent
+                headerBgColor: Theme.bgPanel
+                selectionColor: Theme.textPrimary
+                selectionBgColor: Theme.bgActiveTab
 
-            cellFormat: (row, col, value) => {
-                if (col === 1) {
-                    if (value === "active")
-                        return { text: value, color: Theme.statusOk, bold: true }
-                    if (value === "failed")
-                        return { text: value, color: Theme.statusError, bold: true }
-                    return { text: value, color: Theme.textDim }
+                columns: [
+                    { title: "UNIT", key: "unit", width: 30 },
+                    { title: "ACTIVE", key: "active", width: 9 },
+                    { title: "SUB", key: "sub", width: 9 },
+                    { title: "DESCRIPTION", key: "description", width: 46 }
+                ]
+
+                cellFormat: (row, col, value) => {
+                    if (col === 1) {
+                        if (value === "active")
+                            return { text: value, color: Theme.statusOk, bold: true }
+                        if (value === "failed")
+                            return { text: value, color: Theme.statusError, bold: true }
+                        return { text: value, color: Theme.textDim }
+                    }
+                    if (col === 3)
+                        return { text: value, color: Theme.textSecondary }
+                    return { text: value }
                 }
-                if (col === 3)
-                    return { text: value, color: Theme.textSecondary }
-                return { text: value }
             }
         }
 

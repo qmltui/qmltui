@@ -1,6 +1,7 @@
+pragma ComponentBehavior: Bound
+
 import QtQml 2.15
 import Qtui
-import Qtui.Controls
 import DinGatewayApp
 
 Rectangle {
@@ -32,11 +33,11 @@ Rectangle {
                 anchors.margins: 1
                 spacing: 2
 
-                Text { text: "TX: " + totalTx; color: GatewayTheme.textSuccess; bold: true }
-                Text { text: "RX: " + totalRx; color: GatewayTheme.textAccent; bold: true }
-                Text { text: "CRC Err: " + crcErrors; color: crcErrors > 0 ? GatewayTheme.textWarning : GatewayTheme.textPrimary; bold: true }
-                Text { text: "Rate: " + packetsPerSec + " p/s"; color: GatewayTheme.textPrimary }
-                Text { text: "Bus Load: " + busLoadPct.toFixed(1) + "% " + GatewayTheme.makeProgressBar(busLoadPct, 0, 100, 10, "segmented"); color: GatewayTheme.textAccent; bold: true }
+                Text { text: "TX: " + trafficRoot.totalTx; color: GatewayTheme.textSuccess; bold: true }
+                Text { text: "RX: " + trafficRoot.totalRx; color: GatewayTheme.textAccent; bold: true }
+                Text { text: "CRC Err: " + trafficRoot.crcErrors; color: trafficRoot.crcErrors > 0 ? GatewayTheme.textWarning : GatewayTheme.textPrimary; bold: true }
+                Text { text: "Rate: " + trafficRoot.packetsPerSec + " p/s"; color: GatewayTheme.textPrimary }
+                Text { text: "Bus Load: " + trafficRoot.busLoadPct.toFixed(1) + "% " + GatewayTheme.makeProgressBar(trafficRoot.busLoadPct, 0, 100, 10, "segmented"); color: GatewayTheme.textAccent; bold: true }
             }
         }
 
@@ -61,25 +62,27 @@ Rectangle {
 
         // PACKET LOGS REPEATER LIST
         Repeater {
-            model: packetLogs.length
+            model: trafficRoot.packetLogs.length
 
             Rectangle {
+                id: packetEntry
+                required property int index
                 width: trafficRoot.width - 2
                 height: 1
-                color: index % 2 === 0 ? "transparent" : GatewayTheme.bgPanel
+                color: packetEntry.index % 2 === 0 ? "transparent" : GatewayTheme.bgPanel
 
-                property var itemData: packetLogs[index]
+                readonly property var itemData: trafficRoot.packetLogs[packetEntry.index]
 
                 Row {
                     anchors.fill: parent
                     spacing: 1
 
-                    Text { width: 14; text: itemData.time; color: GatewayTheme.textSecondary }
-                    Text { width: 10; text: itemData.bus; color: itemData.bus.indexOf("CAN") >= 0 ? GatewayTheme.textAccent : GatewayTheme.textWarning; bold: true }
-                    Text { width: 12; text: itemData.addr; color: GatewayTheme.textPrimary }
-                    Text { width: 16; text: itemData.func; color: GatewayTheme.textPrimary }
-                    Text { width: 30; text: itemData.payload; color: GatewayTheme.textPrimary }
-                    Text { width: 16; text: itemData.status; color: itemData.status.indexOf("ERR") >= 0 ? GatewayTheme.textDanger : GatewayTheme.textSuccess; bold: itemData.status.indexOf("ERR") >= 0 }
+                    Text { width: 14; text: packetEntry.itemData.time; color: GatewayTheme.textSecondary }
+                    Text { width: 10; text: packetEntry.itemData.bus; color: packetEntry.itemData.bus.indexOf("CAN") >= 0 ? GatewayTheme.textAccent : GatewayTheme.textWarning; bold: true }
+                    Text { width: 12; text: packetEntry.itemData.addr; color: GatewayTheme.textPrimary }
+                    Text { width: 16; text: packetEntry.itemData.func; color: GatewayTheme.textPrimary }
+                    Text { width: 30; text: packetEntry.itemData.payload; color: GatewayTheme.textPrimary }
+                    Text { width: 16; text: packetEntry.itemData.status; color: packetEntry.itemData.status.indexOf("ERR") >= 0 ? GatewayTheme.textDanger : GatewayTheme.textSuccess; bold: packetEntry.itemData.status.indexOf("ERR") >= 0 }
                 }
             }
         }

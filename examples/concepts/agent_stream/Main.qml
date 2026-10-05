@@ -51,19 +51,7 @@ Terminal {
         return "● Ready — Qt AI Studio (" + root.activeModel + " · " + root.sessionCostStr + ")";
     }
     mouseReporting: false
-    implicitHeight: {
-        if (shellMode)
-            return -1;
-        if (modelModal && modelModal.visible)
-            return 16;
-        if (diffInspector && diffInspector.visible)
-            return 13;
-        if (awaitingPermission)
-            return 6;
-        if (promptBar && promptBar.popupVisible)
-            return 8;
-        return 2;
-    }
+    liveItem: promptBar
 
     property int agentState: Main.ReadyState
     property int currentScenario: 1
@@ -115,10 +103,8 @@ Terminal {
         shellMode = !shellMode;
         if (shellMode) {
             fullScreenShell.focusShell();
-            addMessage(Main.SystemMessage, "Switched to Full Terminal Shell (Ctrl+T / Esc to return).", "SHELL");
         } else {
             promptBar.focusPrompt();
-            addMessage(Main.SystemMessage, "Switched back to Agent Studio.", "STUDIO");
         }
     }
 
@@ -126,7 +112,6 @@ Terminal {
         if (shellMode) {
             shellMode = false;
             promptBar.focusPrompt();
-            addMessage(Main.SystemMessage, "Switched back to Agent Studio.", "STUDIO");
         }
     }
 
@@ -440,8 +425,9 @@ Terminal {
         id: chatHistory
     }
 
-    StreamAppender {
+    StreamView {
         model: chatHistory
+        spacing: 1
 
         delegate: DelegateChooser {
             role: "type"
@@ -577,7 +563,10 @@ Terminal {
     // Full Screen Persistent Terminal Session
     FullScreenShell {
         id: fullScreenShell
-        anchors.fill: parent
+        x: 0
+        y: 0
+        width: root.terminalWidth
+        height: root.terminalHeight
         visible: root.shellMode
         onReturnToStudioRequested: () => root.exitShellMode()
     }

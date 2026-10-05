@@ -83,6 +83,11 @@ TerminalView::TerminalView(QObject *parent)
       root->setMouseMotionRequested(this, mode == VTERM_PROP_MOUSE_MOVE);
   });
 
+  connect(this, &Item::visibleChanged, this, [this] {
+    if (visible())
+      syncSize();
+  });
+
   connect(m_session.get(), &UnixPtySession::started, this, [this] {
     setProcessState(Running);
     emit processIdChanged();
@@ -281,12 +286,14 @@ void TerminalView::start() {
     m_errorString.clear();
     emit errorStringChanged();
   }
+  const int initialRows = std::max(1, height() > 1 ? height() : 24);
+  const int initialCols = std::max(1, width() > 1 ? width() : 80);
+  m_adapter->resize(initialRows, initialCols);
   m_adapter->reset();
   setScrollOffset(0);
   setProcessState(Starting);
   if (!m_session->start(prog, m_arguments, m_workingDirectory,
-                        processEnvironment, std::max(1, height()),
-                        std::max(1, width())))
+                        processEnvironment, initialRows, initialCols))
     setProcessState(NotRunning);
 }
 
@@ -484,6 +491,8 @@ void TerminalView::setError(const QString &error) {
 }
 
 void TerminalView::syncSize() {
+  if (height() <= 1 || width() <= 1)
+    return;
   const int rows = std::max(1, height());
   const int columns = std::max(1, width());
   m_adapter->resize(rows, columns);

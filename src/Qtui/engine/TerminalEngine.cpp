@@ -345,6 +345,7 @@ void TerminalEngine::handleResize() {
       m_renderer->resize(w, h);
   }
   if (m_rootWindow) {
+    emit m_rootWindow->terminalSizeChanged();
     if (m_rootWindow->fillTerminal()) {
       emit m_rootWindow->widthChanged();
       emit m_rootWindow->heightChanged();

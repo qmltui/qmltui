@@ -75,6 +75,7 @@ bool UnixPtySession::start(const QString& program, const QStringList& arguments,
     m_process.setChildProcessModifier([masterFd, slaveFd] {
         ::setsid();
         ::ioctl(slaveFd, TIOCSCTTY, 0);
+        ::tcsetpgrp(slaveFd, ::getpid());
         ::dup2(slaveFd, STDIN_FILENO);
         ::dup2(slaveFd, STDOUT_FILENO);
         ::dup2(slaveFd, STDERR_FILENO);

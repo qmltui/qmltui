@@ -115,7 +115,7 @@ validation on embedded targets is pending a device run.
 4. **Services page**: systemd unit `TableView` (name, load, active, sub,
    description), filter `TextInput`, start/stop/restart with confirm dialog,
    `StatusBadge` for states.
-5. **Logs page**: journald live follow on `StreamAppender`, priority
+5. **Logs page**: journald live follow on `StreamView`, priority
    colorization, unit filter, pause/resume, "jump to service logs" action from
    the Services page.
 6. **Mocks + CI**: mock impl for all four providers; one scenario per page.

@@ -13,5 +13,7 @@ build-*/
 *.log
 /Screenshot *.png
 .qtcreator/
+.qmlls.ini
+*.qmlls.ini
 layers/
 *:Zone.Identifier

@@ -4,6 +4,7 @@ import Qtui
 Column {
     id: toolResultCard
     required property string content
+    property int streamSpacing: 0
     width: parent ? parent.width : 80
     spacing: 0
 

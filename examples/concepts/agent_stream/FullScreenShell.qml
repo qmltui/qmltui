@@ -60,7 +60,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        arguments: ["-l"]
+        arguments: ["-i", "-l"]
         autoStart: true
         showScrollbar: true
         scrollbackLimit: 5000

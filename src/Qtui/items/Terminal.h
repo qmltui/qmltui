@@ -24,6 +24,9 @@ class Terminal : public Rectangle, public QQmlParserStatus {
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
   Q_PROPERTY(bool mouseReporting READ mouseReporting WRITE setMouseReporting NOTIFY mouseReportingChanged)
   Q_PROPERTY(qtui::Item* hoveredItem READ hoveredItem NOTIFY hoveredItemChanged)
+  Q_PROPERTY(qtui::Item* liveItem READ liveItem WRITE setLiveItem NOTIFY liveItemChanged FINAL)
+  Q_PROPERTY(int terminalWidth READ terminalWidth NOTIFY terminalSizeChanged FINAL)
+  Q_PROPERTY(int terminalHeight READ terminalHeight NOTIFY terminalSizeChanged FINAL)
 
 public:
   enum class RendererMode {
@@ -82,6 +85,9 @@ public:
   Item* hoveredItem() const { return m_hoveredItem.data(); }
   void setHoveredItem(Item* item);
 
+  Item* liveItem() const { return m_liveItem.data(); }
+  void setLiveItem(Item* item);
+
   void setMouseMotionRequested(QObject* requester, bool requested);
   bool isMouseMotionRequester(const QObject* requester) const {
       return requester && m_mouseMotionRequesters.contains(const_cast<QObject*>(requester));
@@ -96,6 +102,11 @@ public:
   int height() const override;
   void setHeight(int height) override;
 
+  int implicitHeight() const override;
+
+  int terminalWidth() const;
+  int terminalHeight() const;
+
   void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
 
 signals:
@@ -108,12 +119,15 @@ signals:
   void clipboardCopyRequested(const QString& text);
   void focusedItemChanged();
   void hoveredItemChanged();
+  void liveItemChanged();
+  void terminalSizeChanged();
   void mouseMotionRequestedChanged(bool requested);
 
 private:
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;
   QPointer<Item> m_hoveredItem;
+  QPointer<Item> m_liveItem;
   QHash<QObject*, QMetaObject::Connection> m_mouseMotionRequesters;
   QList<Popup*> m_popups;
   quint64 m_popupSerial = 0;

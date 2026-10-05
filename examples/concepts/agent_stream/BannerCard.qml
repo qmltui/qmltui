@@ -29,7 +29,4 @@ Column {
         text: "  Type a prompt or /demo [1-4] to simulate agent workflows · /help for commands"
         color: "#64748b"
     }
-    Text {
-        text: ""
-    }
 }

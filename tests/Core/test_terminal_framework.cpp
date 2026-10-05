@@ -16,7 +16,7 @@
 #include "MouseArea.h"
 #include "TextArea.h"
 #include "LogView.h"
-#include "StreamAppender.h"
+#include "StreamView.h"
 #include "LinearLayout.h"
 #include "Layout.h"
 #include "KeyEvent.h"
@@ -129,6 +129,17 @@ public:
     QStringList modelDataValues;
 };
 
+class InstanceTracker : public QObject {
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE void instanceCreated() { ++createdCount; }
+    Q_INVOKABLE void itemRendered(const QString &val) { renderedItems.append(val); }
+
+    int createdCount = 0;
+    QStringList renderedItems;
+};
+
 class TestTerminalFramework : public QObject {
     Q_OBJECT
 
@@ -149,7 +160,11 @@ private slots:
     void treeDelegateIdentity();
     void listModelMutationContract();
     void listViewVirtualizesLargeModels();
-    void streamAppenderDelegateContract();
+    void streamViewDelegateContract();
+    void streamViewDelegateReuse();
+    void streamViewSpacingAndSeparator();
+    void streamViewImperativeMethods();
+    void terminalLiveItemAndAutoImplicitHeight();
     void destroyedTreeModelIsCleared();
     void keyHandlingImprovements();
     void alternateScreenDefersMessages();
@@ -624,7 +639,7 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
     QVERIFY(currentWasMaterialized);
 }
 
-void TestTerminalFramework::streamAppenderDelegateContract() {
+void TestTerminalFramework::streamViewDelegateContract() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     DelegateRecorder recorder;
@@ -646,15 +661,22 @@ void TestTerminalFramework::streamAppenderDelegateContract() {
             required property var model
             required property var modelData
             required property string display
-            Component.onCompleted: delegateRecorder.record(
-                index, model, modelData, display)
+            property bool completed: false
+            Component.onCompleted: {
+                completed = true;
+                delegateRecorder.record(index, model, modelData, display);
+            }
+            onDisplayChanged: {
+                if (completed)
+                    delegateRecorder.record(index, model, modelData, display);
+            }
         }
     )", QUrl());
     QVERIFY2(validDelegate.isReady(), qPrintable(validDelegate.errorString()));
 
     Terminal terminal;
-    StreamAppender appender(&terminal);
-    QQmlEngine::setContextForObject(&appender, engine.rootContext());
+    StreamView streamView(&terminal);
+    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
     MutableListModel model;
     model.append(QStringLiteral("first"));
     model.append(QStringLiteral("second"));
@@ -662,16 +684,220 @@ void TestTerminalFramework::streamAppenderDelegateContract() {
     QTest::ignoreMessage(
         QtWarningMsg,
         QRegularExpression(QStringLiteral(".*Delegate root must derive from Qtui.Item.*")));
-    appender.setDelegate(&invalidDelegate);
-    appender.setModel(&model);
+    streamView.setDelegate(&invalidDelegate);
+    streamView.setModel(&model);
     QVERIFY(recorder.indexes.isEmpty());
 
-    appender.setDelegate(&validDelegate);
+    streamView.setDelegate(&validDelegate);
     QCOMPARE(recorder.indexes, QList<int>({0, 1}));
     QCOMPARE(recorder.displays,
              QStringList({QStringLiteral("first"), QStringLiteral("second")}));
     QCOMPARE(recorder.modelValues, recorder.displays);
     QCOMPARE(recorder.modelDataValues, recorder.displays);
+}
+
+void TestTerminalFramework::streamViewDelegateReuse() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+
+    InstanceTracker tracker;
+    engine.rootContext()->setContextProperty(QStringLiteral("tracker"), &tracker);
+
+    QQmlComponent delegate(&engine);
+    delegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            required property int index
+            required property string display
+            property bool ready: false
+            Component.onCompleted: {
+                tracker.instanceCreated();
+                ready = true;
+                tracker.itemRendered(display);
+            }
+            onDisplayChanged: {
+                if (ready)
+                    tracker.itemRendered(display);
+            }
+        }
+    )", QUrl());
+    QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
+
+    Terminal terminal;
+    StreamView streamView(&terminal);
+    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
+    streamView.setReuseItems(true);
+    streamView.setDelegate(&delegate);
+
+    MutableListModel model;
+    model.append(QStringLiteral("item1"));
+    model.append(QStringLiteral("item2"));
+    model.append(QStringLiteral("item3"));
+
+    streamView.setModel(&model);
+
+    QCOMPARE(tracker.createdCount, 1);
+    QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("item1"), QStringLiteral("item2"), QStringLiteral("item3")}));
+
+    tracker.createdCount = 0;
+    tracker.renderedItems.clear();
+
+    StreamView nonReusedView(&terminal);
+    QQmlEngine::setContextForObject(&nonReusedView, engine.rootContext());
+    nonReusedView.setReuseItems(false);
+    nonReusedView.setDelegate(&delegate);
+
+    MutableListModel model2;
+    model2.append(QStringLiteral("a"));
+    model2.append(QStringLiteral("b"));
+    nonReusedView.setModel(&model2);
+
+    QCOMPARE(tracker.createdCount, 2);
+    QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("a"), QStringLiteral("b")}));
+}
+
+void TestTerminalFramework::streamViewSpacingAndSeparator() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+
+    QQmlComponent itemDelegate(&engine);
+    itemDelegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            width: 5
+            height: 1
+            required property string display
+            Text { text: display }
+        }
+    )", QUrl());
+    QVERIFY2(itemDelegate.isReady(), qPrintable(itemDelegate.errorString()));
+
+    QQmlComponent sepDelegate(&engine);
+    sepDelegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            width: 5
+            height: 1
+            Text { text: "-----" }
+        }
+    )", QUrl());
+    QVERIFY2(sepDelegate.isReady(), qPrintable(sepDelegate.errorString()));
+
+    Terminal terminal;
+    StreamView streamView(&terminal);
+    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
+    streamView.setDelegate(&itemDelegate);
+    streamView.setSeparator(&sepDelegate);
+    streamView.setSpacing(1);
+
+    MutableListModel model;
+    model.append(QStringLiteral("A"));
+    model.append(QStringLiteral("B"));
+    streamView.setModel(&model);
+
+    QQmlComponent overrideDelegate(&engine);
+    overrideDelegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            width: 5
+            height: 1
+            property int streamSpacing: 0
+            required property string display
+            Text { text: display }
+        }
+    )", QUrl());
+    QVERIFY2(overrideDelegate.isReady(), qPrintable(overrideDelegate.errorString()));
+
+    StreamView overrideStreamView(&terminal);
+    QQmlEngine::setContextForObject(&overrideStreamView, engine.rootContext());
+    overrideStreamView.setDelegate(&overrideDelegate);
+    overrideStreamView.setSpacing(3);
+
+    MutableListModel model3;
+    model3.append(QStringLiteral("X"));
+    model3.append(QStringLiteral("Y"));
+    overrideStreamView.setModel(&model3);
+
+    streamView.clear();
+    QCOMPARE(streamView.model().isValid(), true);
+}
+
+void TestTerminalFramework::streamViewImperativeMethods() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+
+    QQmlComponent delegate(&engine);
+    delegate.setData(R"(
+        import QtQml
+        import Qtui
+        Item {
+            width: 10
+            height: 1
+            required property string text
+            Text { text: text }
+        }
+    )", QUrl());
+    QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
+
+    Terminal terminal;
+    StreamView streamView(&terminal);
+    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
+    streamView.setDelegate(&delegate);
+
+    QVariantMap data;
+    data.insert(QStringLiteral("text"), QStringLiteral("hello"));
+    streamView.append(data);
+
+    streamView.print(QStringLiteral("direct-ansi\n"));
+
+    Item customItem;
+    customItem.setWidth(8);
+    customItem.setHeight(1);
+    streamView.append(&customItem);
+}
+
+void TestTerminalFramework::terminalLiveItemAndAutoImplicitHeight() {
+    Terminal terminal;
+    terminal.setRendererMode(Terminal::RendererMode::Stream);
+
+    QCOMPARE(terminal.implicitHeight(), 0);
+
+    Item child1;
+    child1.setHeight(3);
+    child1.setParentItem(&terminal);
+
+    QCOMPARE(terminal.implicitHeight(), 3);
+
+    Item child2;
+    child2.setY(2);
+    child2.setHeight(5);
+    child2.setParentItem(&terminal);
+
+    QCOMPARE(terminal.implicitHeight(), 7); // 2 + 5 = 7
+
+    child2.setVisible(false);
+    QCOMPARE(terminal.implicitHeight(), 3); // child2 is hidden
+
+    // Test liveItem property
+    Item liveWidget;
+    liveWidget.setHeight(4);
+    terminal.setLiveItem(&liveWidget);
+
+    QCOMPARE(terminal.liveItem(), &liveWidget);
+    QCOMPARE(terminal.implicitHeight(), 4);
+
+    liveWidget.setHeight(6);
+    QCOMPARE(terminal.implicitHeight(), 6);
+
+    // Explicit override takes precedence if positive
+    terminal.setImplicitHeight(10);
+    QCOMPARE(terminal.implicitHeight(), 10);
+    terminal.setImplicitHeight(0);
+    QCOMPARE(terminal.implicitHeight(), 6);
 }
 
 void TestTerminalFramework::destroyedTreeModelIsCleared() {

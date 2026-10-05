@@ -27,7 +27,7 @@ the model when the model supplies such a list.
 | `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
 | `TableView.rowDelegate` | `row`, `index`, `model`, named roles | Entire row | Deprecated 0.1 row-scoped compatibility path |
 | `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
-| `StreamAppender` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
+| `StreamView` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
 
 `currentIndex`, `selectedRow`, `currentRow`, and `currentColumn` use `-1` for no
 current item where applicable. Model destruction clears the view safely. Model

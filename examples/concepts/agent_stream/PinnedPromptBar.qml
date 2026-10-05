@@ -5,8 +5,14 @@ import Qtui.Controls
 Column {
     id: promptBar
 
-    Theme { id: theme }
-
+    Theme {
+        id: theme
+    }
+    // 1-character/line vertical spacer above prompt bar
+    Item {
+        width: parent.width
+        height: 1
+    }
     required property bool ready
     required property bool working
     required property bool awaitingPermission
@@ -28,12 +34,12 @@ Column {
 
     signal requestSubmitted(string text)
     signal permissionChosen(int index)
-    signal toggleShellModeRequested()
-    signal openModelPickerRequested()
-    signal openDiffInspectorRequested()
+    signal toggleShellModeRequested
+    signal openModelPickerRequested
+    signal openDiffInspectorRequested
 
     function focusPrompt() {
-        inputField.focus = true
+        inputField.focus = true;
     }
 
     width: parent ? parent.width : 80
@@ -105,15 +111,15 @@ Column {
             id: cmdPopup
             width: parent.width
             filterText: inputField.text
-            onCommandSelected: (cmd) => {
-                inputField.text = cmd + " "
-                inputField.cursorPosition = inputField.text.length
-                promptBar.userNavigated = false
+            onCommandSelected: cmd => {
+                inputField.text = cmd + " ";
+                inputField.cursorPosition = inputField.text.length;
+                promptBar.userNavigated = false;
             }
-            onCommandExecuted: (cmd) => {
-                promptBar.userNavigated = false
-                promptBar.requestSubmitted(cmd)
-                inputField.text = ""
+            onCommandExecuted: cmd => {
+                promptBar.userNavigated = false;
+                promptBar.requestSubmitted(cmd);
+                inputField.text = "";
             }
         }
 
@@ -138,79 +144,79 @@ Column {
                 cursorShape: TextInput.Block
                 focus: promptBar.ready && !promptBar.modalActive
                 onTextChanged: {
-                    promptBar.userNavigated = false
+                    promptBar.userNavigated = false;
                     if (inputField.text.startsWith("/")) {
-                        const trimmed = inputField.text.trim()
+                        const trimmed = inputField.text.trim();
                         if (trimmed.indexOf(" ") !== -1 && inputField.text.endsWith(" ")) {
-                            cmdPopup.close()
+                            cmdPopup.close();
                         } else {
-                            cmdPopup.open()
+                            cmdPopup.open();
                         }
                     } else {
-                        cmdPopup.close()
+                        cmdPopup.close();
                     }
                 }
                 onAccepted: {
-                    cmdPopup.close()
-                    promptBar.userNavigated = false
-                    const trimmed = inputField.text.trim()
+                    cmdPopup.close();
+                    promptBar.userNavigated = false;
+                    const trimmed = inputField.text.trim();
                     if (trimmed.length > 0) {
-                        promptBar.requestSubmitted(trimmed)
-                        inputField.text = ""
+                        promptBar.requestSubmitted(trimmed);
+                        inputField.text = "";
                     }
                 }
 
                 Keys.priority: Keys.BeforeItem
-                Keys.onPressed: (event) => {
+                Keys.onPressed: event => {
                     if (cmdPopup.visible) {
                         if (event.key === Qt.Key_Up) {
-                            promptBar.userNavigated = true
-                            cmdPopup.selectPrev()
-                            event.accepted = true
-                            return
+                            promptBar.userNavigated = true;
+                            cmdPopup.selectPrev();
+                            event.accepted = true;
+                            return;
                         } else if (event.key === Qt.Key_Down) {
-                            promptBar.userNavigated = true
-                            cmdPopup.selectNext()
-                            event.accepted = true
-                            return
+                            promptBar.userNavigated = true;
+                            cmdPopup.selectNext();
+                            event.accepted = true;
+                            return;
                         } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right) {
-                            cmdPopup.chooseCurrent()
-                            event.accepted = true
-                            return
+                            cmdPopup.chooseCurrent();
+                            event.accepted = true;
+                            return;
                         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                             if (promptBar.userNavigated && cmdPopup.currentCommand.length > 0) {
-                                cmdPopup.executeCurrent()
+                                cmdPopup.executeCurrent();
                             } else {
-                                const trimmed = inputField.text.trim()
-                                cmdPopup.close()
-                                promptBar.userNavigated = false
+                                const trimmed = inputField.text.trim();
+                                cmdPopup.close();
+                                promptBar.userNavigated = false;
                                 if (trimmed.length > 0) {
-                                    promptBar.requestSubmitted(trimmed)
-                                    inputField.text = ""
+                                    promptBar.requestSubmitted(trimmed);
+                                    inputField.text = "";
                                 }
                             }
-                            event.accepted = true
-                            return
+                            event.accepted = true;
+                            return;
                         } else if (event.key === Qt.Key_Escape) {
-                            cmdPopup.close()
-                            promptBar.userNavigated = false
-                            event.accepted = true
-                            return
+                            cmdPopup.close();
+                            promptBar.userNavigated = false;
+                            event.accepted = true;
+                            return;
                         }
                     }
 
                     if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_T || event.key === Qt.Key_B)) {
-                        promptBar.toggleShellModeRequested()
-                        event.accepted = true
+                        promptBar.toggleShellModeRequested();
+                        event.accepted = true;
                     } else if (event.key === Qt.Key_F1) {
-                        promptBar.toggleShellModeRequested()
-                        event.accepted = true
+                        promptBar.toggleShellModeRequested();
+                        event.accepted = true;
                     } else if (event.key === Qt.Key_F2) {
-                        promptBar.openModelPickerRequested()
-                        event.accepted = true
+                        promptBar.openModelPickerRequested();
+                        event.accepted = true;
                     } else if (event.key === Qt.Key_F3) {
-                        promptBar.openDiffInspectorRequested()
-                        event.accepted = true
+                        promptBar.openDiffInspectorRequested();
+                        event.accepted = true;
                     }
                 }
             }
@@ -246,8 +252,14 @@ Column {
             width: parent.width
             height: 1
             spacing: 0
-            Text { text: "  Action: "; color: theme.muted }
-            Text { text: promptBar.currentToolAction; color: "white" }
+            Text {
+                text: "  Action: "
+                color: theme.muted
+            }
+            Text {
+                text: promptBar.currentToolAction
+                color: "white"
+            }
         }
 
         Rectangle {

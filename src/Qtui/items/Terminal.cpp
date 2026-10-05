@@ -272,6 +272,45 @@ int Terminal::width() const {
     return Item::width();
 }
 
+void Terminal::setLiveItem(Item* item) {
+    if (m_liveItem == item) return;
+    if (m_liveItem) {
+        disconnect(m_liveItem, &Item::heightChanged, this, &Item::implicitHeightChanged);
+        disconnect(m_liveItem, &Item::implicitHeightChanged, this, &Item::implicitHeightChanged);
+        disconnect(m_liveItem, &Item::visibleChanged, this, &Item::implicitHeightChanged);
+    }
+    m_liveItem = item;
+    if (m_liveItem) {
+        if (m_liveItem->parentItem() != this && !m_liveItem->parentItem()) {
+            m_liveItem->setParentItem(this);
+        }
+        connect(m_liveItem, &Item::heightChanged, this, &Item::implicitHeightChanged);
+        connect(m_liveItem, &Item::implicitHeightChanged, this, &Item::implicitHeightChanged);
+        connect(m_liveItem, &Item::visibleChanged, this, &Item::implicitHeightChanged);
+    }
+    emit liveItemChanged();
+    emit implicitHeightChanged();
+    markDirty();
+}
+
+int Terminal::implicitHeight() const {
+    if (m_implicitHeight > 0)
+        return m_implicitHeight;
+
+    int maxBottom = 0;
+    if (m_liveItem && m_liveItem->visible()) {
+        int liveH = m_liveItem->height() > 0 ? m_liveItem->height() : m_liveItem->implicitHeight();
+        maxBottom = std::max(maxBottom, m_liveItem->y() + liveH);
+    }
+
+    for (Item* child : childItems()) {
+        if (!child || !child->visible()) continue;
+        int childH = child->height() > 0 ? child->height() : child->implicitHeight();
+        maxBottom = std::max(maxBottom, child->y() + childH);
+    }
+    return maxBottom;
+}
+
 int Terminal::height() const {
     if (m_rendererMode == RendererMode::Stream) {
         int h = implicitHeight();
@@ -282,6 +321,14 @@ int Terminal::height() const {
         return m_engine->terminalHeight();
     }
     return Item::height();
+}
+
+int Terminal::terminalWidth() const {
+    return m_engine ? m_engine->terminalWidth() : width();
+}
+
+int Terminal::terminalHeight() const {
+    return m_engine ? m_engine->terminalHeight() : (m_rendererMode == RendererMode::Stream ? 24 : height());
 }
 
 static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {

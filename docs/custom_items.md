@@ -42,9 +42,9 @@ private:
 
 ## 2. Painting
 Override the protected `paint(TextGridBuffer&, int absX, int absY, const ClipRect&)`
-hook. `Item::render()` is public and non-virtual: the framework calls `paint()`,
-then traverses children in stacking order, applies content offsets and clipping,
-and finally draws framework overlays. Custom items must not traverse or render
+hook. The framework calls `paint()`, then traverses children in stacking order,
+applies content offsets and clipping, and finally calls `paintOverlay()`. Tree
+painting is private framework behavior; custom items must not traverse or paint
 their children themselves.
 
 Respect `clipRect` and use `tryCellAt()` when coordinates may be outside the
@@ -71,6 +71,9 @@ void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
 Override `updateLayout()` when layout work must run immediately before paint.
 Invalidations raised from `updateLayout()` or `paint()` are retained for the
 next frame.
+
+Override the optional protected `paintOverlay()` hook only for content that
+must appear above the item's children, such as a scrollbar or focus decoration.
 
 ## 3. Event Handling
 If your custom component handles input, override event functions:

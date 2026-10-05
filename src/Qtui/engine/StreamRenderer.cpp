@@ -1,5 +1,6 @@
 #include "StreamRenderer.h"
 #include "../items/Terminal.h"
+#include "ItemPaintTraversal_p.h"
 #include <sstream>
 
 namespace qtui {
@@ -100,7 +101,7 @@ void StreamRenderer::print(TerminalDevice& device, const std::string& text) {
 
     m_promptBuffer.resize(m_terminalWidth, newPromptHeight);
     if (m_rootWindow && newPromptHeight > 0) {
-        m_rootWindow->render(m_promptBuffer, 0, 0);
+        ItemPaintTraversal::paintSubtree(m_rootWindow, m_promptBuffer, 0, 0);
     }
 
     std::ostringstream output;
@@ -186,7 +187,7 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     const int previousPromptHeight = m_lastPromptHeight;
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
-    rootWindow->render(m_promptBuffer, 0, 0);
+    ItemPaintTraversal::paintSubtree(rootWindow, m_promptBuffer, 0, 0);
 
     if (!outputEnabled()) return true;
 

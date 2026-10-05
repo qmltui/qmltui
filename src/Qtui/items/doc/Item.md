@@ -166,15 +166,16 @@ Re-evaluates declarative states to update values according to state constraints.
 
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### void render(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect())
-Runs framework-owned layout, paint, child traversal, clipping, scrolling, and
-overlay composition. This method is non-virtual. Subclasses override `paint()`.
-
 #### virtual void updateLayout()
 Performs layout work when the item has `LayoutDirty` set.
 
 #### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
-Paints only this item's own content. Child traversal is performed by `render()`.
+Paints only this item's own content. The framework privately traverses children
+afterward.
+
+#### virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
+Paints this item's foreground decoration after its children. The default
+implementation does nothing.
 
 #### virtual void keyPressEvent(KeyEvent* event)
 Called when a key is pressed while the item has focus.

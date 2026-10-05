@@ -5,8 +5,9 @@ compatibility shim.
 
 ## Custom C++ items
 
-- Replace `render(...) override` with protected `paint(...) override`. Do not
-  call `Item::render()` or render children manually; traversal is framework-owned.
+- Replace `render(...) override` with protected `paint(...) override`. Item-tree
+  painting is private and framework-owned; do not paint children manually. Use
+  `paintOverlay(...)` only for content that must appear above the children.
 - Move deferred geometry work into `updateLayout()` and call `markDirty()` when
   a property affects either painting or layout.
 - Replace public `QString`/`QColor` color properties with `qtui::Color`. Use

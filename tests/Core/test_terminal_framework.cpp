@@ -22,12 +22,14 @@
 #include "KeyEvent.h"
 #include "ListView.h"
 #include "TreeView.h"
+#include "../TestPaint.h"
 
 #define private public
 #include "TerminalEngine.h"
 #undef private
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 namespace {
 
@@ -420,7 +422,7 @@ void TestTerminalFramework::responsiveLayout() {
     secondInfo->fillWidth = true;
     TextGridBuffer buffer;
     buffer.resize(10, 2);
-    layout.render(buffer, 0, 0);
+    paintItem(layout, buffer, 0, 0);
     QCOMPARE(first.width() + second.width(), 10);
     QCOMPARE(second.x(), first.width());
 }
@@ -439,7 +441,7 @@ void TestTerminalFramework::layoutInvalidation() {
 
     TextGridBuffer buffer;
     buffer.resize(3, 1);
-    layout.render(buffer, 0, 0);
+    paintItem(layout, buffer, 0, 0);
     QCOMPARE(child.width(), 5);
     QVERIFY(layout.clip());
 }
@@ -490,21 +492,21 @@ void TestTerminalFramework::treeDelegateIdentity() {
     QVERIFY(tree);
     TextGridBuffer buffer;
     buffer.resize(30, 5);
-    tree->render(buffer, 0, 0);
+    paintItem(tree, buffer, 0, 0);
     const QList<Item*> initialItems = tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
     QVERIFY(!initialItems.isEmpty());
     Item *firstDelegate = initialItems.first();
 
     model.renameFirst(QStringLiteral("renamed"));
-    tree->render(buffer, 0, 0);
+    paintItem(tree, buffer, 0, 0);
     QVERIFY(tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
 
     model.append(QStringLiteral("third"));
-    tree->render(buffer, 0, 0);
+    paintItem(tree, buffer, 0, 0);
     QVERIFY(tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
 
     model.moveFirstToEnd();
-    tree->render(buffer, 0, 0);
+    paintItem(tree, buffer, 0, 0);
     Item *firstVisible = nullptr;
     const QList<Item*> delegates = tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
     for (Item *delegate : delegates) {
@@ -518,7 +520,7 @@ void TestTerminalFramework::treeDelegateIdentity() {
 
     tree->setHeight(1);
     tree->setCurrentIndex(2);
-    tree->render(buffer, 0, 0);
+    paintItem(tree, buffer, 0, 0);
     bool selectedDelegateWasMaterialized = false;
     for (Item *delegate : tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
         if (delegate->property("index").toInt() == 2 && delegate->visible()) {
@@ -613,12 +615,12 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
 
     TextGridBuffer buffer;
     buffer.resize(30, 5);
-    list.render(buffer, 0, 0);
+    paintItem(list, buffer, 0, 0);
     QCOMPARE(list.contentHeight(), 1000);
     QVERIFY(list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly).size() <= 7);
 
     list.setContentY(400);
-    list.render(buffer, 0, 0);
+    paintItem(list, buffer, 0, 0);
     const QList<Item *> scrolledDelegates =
         list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
     QVERIFY(scrolledDelegates.size() <= 7);
@@ -626,7 +628,7 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
                         [](Item *item) { return item->property("index").toInt() >= 200; }));
 
     list.setCurrentIndex(450);
-    list.render(buffer, 0, 0);
+    paintItem(list, buffer, 0, 0);
     QCOMPARE(list.currentIndex(), 450);
     QVERIFY(list.contentY() > 800);
     bool currentWasMaterialized = false;

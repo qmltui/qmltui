@@ -1,5 +1,6 @@
 #include "FrameRenderer.h"
 #include "../items/Terminal.h"
+#include "ItemPaintTraversal_p.h"
 
 namespace qtui {
 
@@ -31,7 +32,7 @@ bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     if (!rootWindow) return false;
     
     m_nextBuffer.clear();
-    rootWindow->render(m_nextBuffer, 0, 0);
+    ItemPaintTraversal::paintSubtree(rootWindow, m_nextBuffer, 0, 0);
 
     std::string ansi = m_currentBuffer.diff(m_nextBuffer);
     if (outputEnabled() && !ansi.empty() && !device.write(ansi))

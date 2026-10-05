@@ -10,8 +10,10 @@
 #include "TextGridBuffer.h"
 #include "State.h"
 #include "Transition.h"
+#include "../TestPaint.h"
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestLayout : public QObject {
     Q_OBJECT
@@ -46,7 +48,7 @@ void TestLayout::testRowLayout() {
     child2->setHeight(2);
 
     TextGridBuffer buffer;
-    row.render(buffer, 0, 0);
+    paintItem(row, buffer, 0, 0);
 
     QCOMPARE(child1->x(), 1); // left padding
     QCOMPARE(child1->y(), 1); // top padding
@@ -73,7 +75,7 @@ void TestLayout::testColumnLayout() {
     child2->setHeight(4);
 
     TextGridBuffer buffer;
-    col.render(buffer, 0, 0);
+    paintItem(col, buffer, 0, 0);
 
     QCOMPARE(child1->x(), 2); // left padding
     QCOMPARE(child1->y(), 2); // top padding
@@ -107,7 +109,7 @@ void TestLayout::testGridLayout() {
     field2->setImplicitHeight(3);
 
     TextGridBuffer buffer;
-    grid.render(buffer, 0, 0);
+    paintItem(grid, buffer, 0, 0);
 
     QCOMPARE(label1->x(), 0);
     QCOMPARE(field1->x(), 12);
@@ -145,7 +147,7 @@ void TestLayout::testDirtyFlagsBubbling() {
 
     // After rendering root, flags should be cleared
     TextGridBuffer buffer;
-    root.render(buffer, 0, 0);
+    paintItem(root, buffer, 0, 0);
 
     QCOMPARE(root.dirtyFlags(), Item::DirtyFlags(Item::DirtyFlag::None));
 }
@@ -183,25 +185,25 @@ void TestLayout::testContainerRelayoutOnMutation() {
     Item* b = new Item(&col);
     b->setWidth(5); b->setHeight(2);
 
-    col.render(buffer, 0, 0);
+    paintItem(col, buffer, 0, 0);
     QCOMPARE(a->y(), 0);
     QCOMPARE(b->y(), 2);
 
     // 1. Grow child a: b should re-layout and move down to y=4
     a->setHeight(4);
-    col.render(buffer, 0, 0);
+    paintItem(col, buffer, 0, 0);
     QCOMPARE(a->y(), 0);
     QCOMPARE(b->y(), 4);
 
     // 2. Add child c: c should be laid out at y=6
     Item* c = new Item(&col);
     c->setWidth(5); c->setHeight(2);
-    col.render(buffer, 0, 0);
+    paintItem(col, buffer, 0, 0);
     QCOMPARE(c->y(), 6);
 
     // 3. Hide child a: b should move up to y=0, c to y=2
     a->setVisible(false);
-    col.render(buffer, 0, 0);
+    paintItem(col, buffer, 0, 0);
     QCOMPARE(b->y(), 0);
     QCOMPARE(c->y(), 2);
 }
@@ -224,11 +226,11 @@ void TestLayout::testScrollViewDirtyEmissionNotSink() {
 
     QSignalSpy rootDirty(&root, &Item::dirty);
 
-    root.render(buffer, 0, 0);
+    paintItem(root, buffer, 0, 0);
 
     // Mutate text multiple times across frames: each mutation MUST emit dirty on root!
     for (int i = 1; i <= 3; ++i) {
-        root.render(buffer, 0, 0);
+        paintItem(root, buffer, 0, 0);
         rootDirty.clear();
         row->setText(QString("row %1").arg(i));
         QVERIFY(rootDirty.count() > 0);
@@ -250,14 +252,14 @@ void TestLayout::testAnchorImplicitTargetResizing() {
     Item* overlay = new Item(&root);
     overlay->anchors()->setFill(row);
 
-    root.render(buffer, 0, 0);
+    paintItem(root, buffer, 0, 0);
     QCOMPARE(overlay->width(), row->implicitWidth());
 
     // Add another item to row: row's implicit width grows to 10
     Item* b = new Item(row);
     b->setWidth(5); b->setHeight(2);
 
-    root.render(buffer, 0, 0);
+    paintItem(root, buffer, 0, 0);
     QCOMPARE(overlay->width(), row->implicitWidth());
 }
 
@@ -307,7 +309,7 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
     PaintProbe parent('P', &order);
     auto *child = new PaintProbe('C', &order, &parent);
     child->setX(1);
-    parent.render(buffer, 0, 0);
+    paintItem(parent, buffer, 0, 0);
 
     QCOMPARE(order, QStringList({QStringLiteral("P"), QStringLiteral("C")}));
     QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("P"));
@@ -318,7 +320,7 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
     killer->setZ(1);
     victim->setZ(2);
     killer->deleteDuringPaint = victim;
-    parent.render(buffer, 0, 0);
+    paintItem(parent, buffer, 0, 0);
     QVERIFY(killer->deleteDuringPaint.isNull());
 }
 
@@ -333,7 +335,7 @@ void TestLayout::testRenderPreservesNewInvalidations()
     item.invalidateDuringLayout = true;
     item.markDirty(Item::DirtyFlag::LayoutDirty);
 
-    item.render(buffer, 0, 0);
+    paintItem(item, buffer, 0, 0);
 
     QCOMPARE(item.layoutCount, 1);
     QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));

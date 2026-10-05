@@ -39,6 +39,7 @@ qt_add_qml_module(QtuiCore
         engine/FocusManager.h
         engine/FocusManager.cpp
         engine/Renderer.h
+        engine/ItemPaintTraversal_p.h
         engine/FrameRenderer.h
         engine/FrameRenderer.cpp
         engine/StreamRenderer.h

@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 #include "Image.h"
 #include "TextGridBuffer.h"
+#include "../TestPaint.h"
 #include <QTemporaryFile>
 
 class TestImage : public QObject {
@@ -82,7 +83,7 @@ void TestImage::testRenderHalfBlock() {
     qtui::TextGridBuffer buffer;
     buffer.resize(4, 4);
 
-    img.render(buffer, 0, 0);
+    qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
     QCOMPARE(cell0.character, QByteArray("\xE2\x96\x80")); // ▀
@@ -111,7 +112,7 @@ void TestImage::testRenderASCII() {
     qtui::TextGridBuffer buffer;
     buffer.resize(4, 4);
 
-    img.render(buffer, 0, 0);
+    qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
     QCOMPARE(cell0.character, QByteArray("@"));
@@ -138,7 +139,7 @@ void TestImage::testRenderBraille() {
     qtui::TextGridBuffer buffer;
     buffer.resize(2, 2);
 
-    img.render(buffer, 0, 0);
+    qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
     QVERIFY(!cell0.character.isEmpty());
@@ -164,7 +165,7 @@ void TestImage::testFillModeScaling() {
 
     qtui::TextGridBuffer buffer;
     buffer.resize(20, 10);
-    img.render(buffer, 0, 0);
+    qtui::testing::paintItem(img, buffer, 0, 0);
 
     QCOMPARE(img.status(), qtui::Image::Status::Ready);
 

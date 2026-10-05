@@ -7,8 +7,10 @@
 #include "TerminalView.h"
 #include "UnixPtySession.h"
 #include "VTermAdapter.h"
+#include "../TestPaint.h"
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestTerminalHost : public QObject {
     Q_OBJECT
@@ -110,7 +112,7 @@ void TestTerminalHost::ptyLifecycleAndRendering() {
 
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(30, 4));
-    view.render(buffer, 0, 0, ClipRect{0, 0, 30, 4});
+    paintItem(view, buffer, 0, 0, ClipRect{0, 0, 30, 4});
     QByteArray rendered;
     for (int row = 0; row < 4; ++row)
         for (int column = 0; column < 30; ++column)

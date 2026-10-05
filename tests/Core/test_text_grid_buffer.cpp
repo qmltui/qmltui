@@ -3,11 +3,13 @@
 #include "TextGridBuffer.h"
 #include "Text.h"
 #include "Color.h"
+#include "../TestPaint.h"
 #include <QString>
 
 #include <limits>
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestTextGridBuffer : public QObject {
     Q_OBJECT
@@ -218,7 +220,7 @@ void TestTextGridBuffer::testStyledTextSerialization() {
 
     TextGridBuffer buffer;
     buffer.resize(text.width(), text.height());
-    text.render(buffer, 0, 0);
+    paintItem(text, buffer, 0, 0);
 
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Bold);
     QVERIFY(buffer.toAnsiString().find("\033[1m") != std::string::npos);
@@ -248,7 +250,7 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     
     TextGridBuffer buffer;
     buffer.resize(text.width(), text.height());
-    text.render(buffer, 0, 0);
+    paintItem(text, buffer, 0, 0);
     
     // Check characters inside the buffer
     // "Normal " -> 7 chars

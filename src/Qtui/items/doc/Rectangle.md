@@ -52,7 +52,7 @@ Returns the bottom padding, accounting for the bottom border width.
 ## 10. Protected Virtual Methods / Event Handlers
 
 #### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
-Paints the background color fill and borders into `buffer`; `Item::render()`
+Paints the background color fill and borders into `buffer`; the framework
 traverses children afterward.
 
 ## 13. QML Exposure

@@ -9,6 +9,7 @@
 #include <TreeView.h>
 #include <TableView.h>
 #include <ListView.h>
+#include "../TestPaint.h"
 
 class CountModel final : public QAbstractListModel {
 public:
@@ -66,7 +67,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     if (!tree) return -1;
     qtui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    tree->render(buffer, 0, 0);
+    qtui::testing::paintItem(tree, buffer, 0, 0);
     return timer.elapsed();
 }
 
@@ -100,7 +101,7 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     if (!table) return -1;
     qtui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    table->render(buffer, 0, 0);
+    qtui::testing::paintItem(table, buffer, 0, 0);
     return timer.elapsed();
 }
 
@@ -139,13 +140,13 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
     qtui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
 
-    listView->render(buffer, 0, 0);
+    qtui::testing::paintItem(listView, buffer, 0, 0);
 
     QElapsedTimer timer;
     timer.start();
     for (int i = 0; i < steps; ++i) {
         listView->setCurrentIndex(i % rowCount);
-        listView->render(buffer, 0, 0);
+        qtui::testing::paintItem(listView, buffer, 0, 0);
     }
     return timer.elapsed();
 }

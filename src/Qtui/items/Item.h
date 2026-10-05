@@ -20,6 +20,7 @@ namespace qtui {
 class State;
 class Transition;
 class Animation;
+class ItemPaintTraversal;
 
 struct ClipRect {
     int x = 0;
@@ -181,8 +182,6 @@ public:
   virtual int bottomPadding() const;
   void setBottomPadding(int p);
 
-  void render(TextGridBuffer &buffer, int absX, int absY,
-              const ClipRect &clipRect = ClipRect());
   virtual void keyPressEvent(class KeyEvent* event);
   virtual void mousePressEvent(class MouseEvent* event);
   virtual void mouseReleaseEvent(class MouseEvent* event);
@@ -222,8 +221,10 @@ signals:
   void dirty(); // For bubbling up render requests
 
 private:
-  virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                            const ClipRect &clipRect);
+  friend class ItemPaintTraversal;
+
+  void paintSubtree(TextGridBuffer &buffer, int absX, int absY,
+                    const ClipRect &clipRect = ClipRect());
   void invalidateStackingOrder();
   void scheduleChildGeometryInvalidation();
   void registerChildItem(Item* childItem);
@@ -249,6 +250,8 @@ protected:
   virtual void updateLayout();
   virtual void paint(TextGridBuffer &buffer, int absX, int absY,
                      const ClipRect &clipRect);
+  virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                            const ClipRect &clipRect);
   virtual ClipRect clipRectForChildren(int absX, int absY,
                                       const ClipRect &clipRect) const;
 

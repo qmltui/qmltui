@@ -8,6 +8,7 @@
 
 #include <TextGridBuffer.h>
 #include <UnicodeText.h>
+#include <ItemPaintTraversal_p.h>
 
 #include "MdDoc.h"
 #include "MdDocStyle.h"
@@ -192,7 +193,7 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
     QVERIFY(buffer.resize(24, 5));
     buffer.fillRect(0, 0, 24, 5, ".");
     const ClipRect clip{4, 0, 10, 3};
-    view.render(buffer, 0, 0, clip);
+    ItemPaintTraversal::paintSubtree(&view, buffer, 0, 0, clip);
 
     bool changedInside = false;
     bool highlighted = false;
@@ -213,7 +214,7 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
 
     TextGridBuffer fullBuffer;
     QVERIFY(fullBuffer.resize(24, 5));
-    view.render(fullBuffer, 0, 0);
+    ItemPaintTraversal::paintSubtree(&view, fullBuffer, 0, 0);
     QCOMPARE(fullBuffer.cellAt(0, 0).character, QByteArray("1"));
     QCOMPARE(fullBuffer.cellAt(2, 0).character, QStringLiteral("│").toUtf8());
     QCOMPARE(view.metaObject()->indexOfProperty("borderStyle"), -1);

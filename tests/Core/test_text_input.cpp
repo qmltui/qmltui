@@ -7,8 +7,10 @@
 #include "TextInput.h"
 #include "KeyEvent.h"
 #include "TextGridBuffer.h"
+#include "../TestPaint.h"
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestTextInput : public QObject {
     Q_OBJECT
@@ -217,7 +219,7 @@ void TestTextInput::testHorizontalViewport() {
 
     TextGridBuffer buffer;
     buffer.resize(4, 1);
-    input.render(buffer, 0, 0, ClipRect{0, 0, 4, 1});
+    paintItem(input, buffer, 0, 0, ClipRect{0, 0, 4, 1});
     QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("d"));
     QCOMPARE(buffer.cellAt(1, 0).character, QByteArray("e"));
     QCOMPARE(buffer.cellAt(2, 0).character, QByteArray("f"));
@@ -242,7 +244,7 @@ void TestTextInput::testFieldPropertiesAndPasswordRendering() {
 
     TextGridBuffer buffer;
     buffer.resize(4, 1);
-    input.render(buffer, 0, 0, ClipRect{0, 0, 4, 1});
+    paintItem(input, buffer, 0, 0, ClipRect{0, 0, 4, 1});
     QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("*"));
     QVERIFY(buffer.cellAt(0, 0).character != QByteArray("s"));
 
@@ -280,7 +282,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.setCursorPosition(0);
     TextGridBuffer buffer;
     buffer.resize(10, 1);
-    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+    paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("h"));
     QCOMPARE(buffer.cellAt(0, 0).bgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
@@ -289,7 +291,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.setCursorPosition(5);
     buffer = TextGridBuffer();
     buffer.resize(10, 1);
-    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+    paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(5, 0).character, QByteArray("▋"));
     QCOMPARE(buffer.cellAt(5, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF));
@@ -300,7 +302,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     QCOMPARE(input.selectedTextColor(), QString("yellow"));
 
     input.select(0, 3);
-    input.render(buffer, 0, 0, ClipRect{0, 0, 10, 1});
+    paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(1, 0).bgColor, static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
     QCOMPARE(buffer.cellAt(1, 0).fgColor, static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB

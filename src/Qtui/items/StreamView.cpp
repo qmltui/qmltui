@@ -1,6 +1,7 @@
 #include "StreamView.h"
 #include "DelegateUtils.h"
 #include "Item.h"
+#include "../engine/ItemPaintTraversal_p.h"
 #include "Terminal.h"
 #include "../primitives/TextGridBuffer.h"
 #include <QQmlContext>
@@ -217,7 +218,7 @@ std::string StreamView::renderItemToAnsi(Item* item, Terminal* output) {
 
     TextGridBuffer buffer;
     buffer.resize(w, h);
-    item->render(buffer, 0, 0);
+    ItemPaintTraversal::paintSubtree(item, buffer, 0, 0);
     return buffer.toAnsiString();
 }
 

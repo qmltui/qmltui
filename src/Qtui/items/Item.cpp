@@ -400,7 +400,7 @@ void Item::scheduleChildGeometryInvalidation() {
     emit implicitHeightChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
-void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
 
     QPointer<Item> selfGuard(this);
@@ -430,10 +430,10 @@ void Item::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         if (!childItem)
             continue;
         if (qobject_cast<Popup*>(childItem) && childItem->visible()) continue;
-        childItem->render(buffer,
-                          absX + childItem->x() - offset.x(),
-                          absY + childItem->y() - offset.y(),
-                          childrenClip);
+        childItem->paintSubtree(buffer,
+                               absX + childItem->x() - offset.x(),
+                               absY + childItem->y() - offset.y(),
+                               childrenClip);
         if (!selfGuard)
             return;
     }

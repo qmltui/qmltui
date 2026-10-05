@@ -3,6 +3,7 @@
 #include "Renderer.h"
 #include "FrameRenderer.h"
 #include "../items/Item.h"
+#include "ItemPaintTraversal_p.h"
 #include "../items/Terminal.h"
 #include "KeyEvent.h"
 #include "MouseEvent.h"
@@ -503,7 +504,7 @@ void TerminalEngine::append(qtui::Item* item) {
     
     TextGridBuffer buffer;
     buffer.resize(w, h);
-    item->render(buffer, 0, 0);
+    ItemPaintTraversal::paintSubtree(item, buffer, 0, 0);
     
     print(QString::fromStdString(buffer.toAnsiString()));
 }

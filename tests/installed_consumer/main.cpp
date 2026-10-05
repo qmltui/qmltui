@@ -7,6 +7,11 @@ class CustomItem final : public qtui::Item
 public:
     using Item::Item;
 
+    void paintForTest(qtui::TextGridBuffer &buffer, int absX, int absY)
+    {
+        paint(buffer, absX, absY, {});
+    }
+
 protected:
     void paint(qtui::TextGridBuffer &buffer, int absX, int absY,
                const qtui::ClipRect &) override
@@ -27,7 +32,7 @@ int main()
     CustomItem item;
     item.setWidth(1);
     item.setHeight(1);
-    item.render(buffer, 0, 0);
+    item.paintForTest(buffer, 0, 0);
 
     const qtui::Cell *cell = buffer.tryCellAt(0, 0);
     if (!cell || cell->character != "X")

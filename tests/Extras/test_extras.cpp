@@ -19,8 +19,10 @@
 #include <QQmlEngine>
 #include <QQmlComponent>
 #include <QAbstractItemModel>
+#include "../TestPaint.h"
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class HierarchicalTestModel : public QAbstractItemModel {
     Q_OBJECT
@@ -122,7 +124,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(10, 1);
-        sparkline.render(buffer, 0, 0);
+        paintItem(sparkline, buffer, 0, 0);
 
         QVERIFY(buffer.cellAt(4, 0).character[0] != ' ');
     }
@@ -133,7 +135,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(20, 3);
-        bigText.render(buffer, 0, 0);
+        paintItem(bigText, buffer, 0, 0);
 
         QCOMPARE(buffer.cellAt(0, 0).character[0], ' ');
         QVERIFY(buffer.cellAt(1, 0).character[0] != '\0');
@@ -156,7 +158,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(40, 6);
-        table.render(buffer, 0, 0);
+        paintItem(table, buffer, 0, 0);
 
         QCOMPARE(table.selectedRow(), -1);
         table.setSelectedRow(1);
@@ -178,7 +180,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
 
         QCOMPARE(tree.selectedIndex(), 0);
 
@@ -253,7 +255,7 @@ private slots:
         toast.showToast("Test", "Message", "info", 1000);
         TextGridBuffer buffer;
         buffer.resize(30, 5);
-        toast.render(buffer, 0, 0);
+        paintItem(toast, buffer, 0, 0);
     }
 
     void testTabHeader() {
@@ -268,7 +270,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(40, 1);
-        header.render(buffer, 0, 0);
+        paintItem(header, buffer, 0, 0);
     }
 
     void testGauge() {
@@ -280,7 +282,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 1);
-        gauge.render(buffer, 0, 0);
+        paintItem(gauge, buffer, 0, 0);
 
         QCOMPARE(gauge.value(), 75.0);
     }
@@ -310,7 +312,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 1);
-        gauge.render(buffer, 0, 0);
+        paintItem(gauge, buffer, 0, 0);
 
         QCOMPARE(gauge.value(), 50.0);
     }
@@ -332,7 +334,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 3);
-        frame.render(buffer, 0, 0);
+        paintItem(frame, buffer, 0, 0);
 
         // Row 0 has top border (e.g. ┌)
         QVERIFY(buffer.cellAt(0, 0).character.startsWith("\xE2\x94\x8C"));
@@ -378,7 +380,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(20, 1);
-        gauge.render(buffer, 0, 0);
+        paintItem(gauge, buffer, 0, 0);
 
         // Entire 20 characters should be filled or unfilled bar characters, no '[' or ']'
         for (int x = 0; x < 10; ++x) {
@@ -397,7 +399,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(20, 5);
-        p.render(buffer, 0, 0);
+        paintItem(p, buffer, 0, 0);
     }
 
     void testRequiredProperties() {
@@ -436,7 +438,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
-        list.render(buffer, 0, 0);
+        paintItem(list, buffer, 0, 0);
 
         const QList<Item*> delegateChildren = list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(delegateChildren.size(), 2);
@@ -499,9 +501,9 @@ private slots:
                 QVariantMap{{"name", "ChildFolder"}}
             }}
         });
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
         tree.expand(0);
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
 
         const QList<Item*> treeChildren = tree.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(treeChildren.size(), 2);
@@ -547,7 +549,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
-        list->render(buffer, 0, 0);
+        paintItem(list, buffer, 0, 0);
         QCOMPARE(list->currentIndex(), -1);
 
         const QList<Item *> delegates =
@@ -611,7 +613,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 6);
-        table.render(buffer, 0, 0);
+        paintItem(table, buffer, 0, 0);
 
         const QList<Item *> cells =
             table.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
@@ -647,7 +649,7 @@ private slots:
 
         table.setDelegate(nullptr);
         table.setRowDelegate(&rowComponent);
-        table.render(buffer, 0, 0);
+        paintItem(table, buffer, 0, 0);
         const QList<Item *> rows =
             table.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(rows.size(), 2);
@@ -691,7 +693,7 @@ private slots:
 
         TextGridBuffer buffer;
         buffer.resize(30, 10);
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
 
         const QList<Item *> delegates =
             tree.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
@@ -712,13 +714,13 @@ private slots:
 
         QSignalSpy currentDataSpy(&tree, &TreeView::currentItemDataChanged);
         tree.setCurrentIndex(2);
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
         QCOMPARE(tree.currentIndex(), 2);
         QCOMPARE(tree.currentColumn(), 0);
         QVERIFY(currentDataSpy.count() >= 1);
         const int beforeDataChange = currentDataSpy.count();
         model.renameGrandchild(QStringLiteral("renamed-grandchild"));
-        tree.render(buffer, 0, 0);
+        paintItem(tree, buffer, 0, 0);
         QVERIFY(currentDataSpy.count() > beforeDataChange);
         QCOMPARE(tree.currentItemData().value(QStringLiteral("display")).toString(),
                  QStringLiteral("renamed-grandchild"));

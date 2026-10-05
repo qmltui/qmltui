@@ -14,7 +14,7 @@ Gauge::Gauge(QObject *parent) : Item(parent) {
 void Gauge::setValue(double val) {
     if (qFuzzyCompare(m_value, val)) return;
     // Stored unclamped so value and maxValue may be assigned in any order;
-    // render() clamps the displayed ratio.
+    // paint() clamps the displayed ratio.
     m_value = val;
     emit valueChanged();
     markDirty();

@@ -3,6 +3,7 @@
 #include "../engine/FrameRenderer.h"
 #include "../engine/StreamRenderer.h"
 #include "Popup.h"
+#include "../engine/ItemPaintTraversal_p.h"
 #include <algorithm>
 #include <utility>
 #include <cstring>
@@ -373,7 +374,8 @@ void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
             
             QPoint absPos = popup->absolutePosition();
             // Pass the absolute terminal bounds as clipRect (clipRect is usually full screen)
-            popup->render(buffer, absPos.x(), absPos.y(), clipRect);
+            ItemPaintTraversal::paintSubtree(popup, buffer, absPos.x(),
+                                             absPos.y(), clipRect);
         }
     }
 }

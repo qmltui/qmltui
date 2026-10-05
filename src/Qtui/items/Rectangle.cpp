@@ -135,7 +135,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
     }
   }
 
-  // Delegate to base class to render children and layout anchors
+  // Child traversal is performed by Item after this hook returns.
 }
 
 } // namespace qtui

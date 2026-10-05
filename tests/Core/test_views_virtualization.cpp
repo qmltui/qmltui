@@ -7,9 +7,11 @@
 #include <ListView.h>
 #include <TableView.h>
 #include <TextGridBuffer.h>
+#include "../TestPaint.h"
 #include <memory>
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestCountModel final : public QAbstractListModel {
 public:
@@ -69,7 +71,7 @@ void TestViewsVirtualization::testListViewPooling() {
 
     TextGridBuffer buffer;
     buffer.resize(80, 10);
-    listView->render(buffer, 0, 0);
+    paintItem(listView, buffer, 0, 0);
 
     // Initial visible items (10 height / stride 1 + overscan 2 + 2 = max 14 items)
     const int initialChildren = listView->findChildren<Item*>().size();
@@ -78,7 +80,7 @@ void TestViewsVirtualization::testListViewPooling() {
     // Scroll through 500 rows
     for (int y = 0; y < 500; y += 5) {
         listView->setContentY(y);
-        listView->render(buffer, 0, 0);
+        paintItem(listView, buffer, 0, 0);
     }
 
     // Children count should stay bounded (pooled & reused)
@@ -113,7 +115,7 @@ void TestViewsVirtualization::testTableView2DVirtualization() {
 
     TextGridBuffer buffer;
     buffer.resize(80, 10);
-    tableView->render(buffer, 0, 0);
+    paintItem(tableView, buffer, 0, 0);
 
     // For 5000 rows x 5 columns (25,000 total cells), only visible viewport delegates (max 14 rows x 5 cols = 70) are created!
     const int childCount = tableView->findChildren<Item*>().size();

@@ -5,10 +5,12 @@
 #include "Canvas.h"
 #include "Terminal.h"
 #include "TextGridBuffer.h"
+#include "../TestPaint.h"
 
 
 
 using namespace qtui;
+using qtui::testing::paintItem;
 
 class TestCanvas : public QObject {
     Q_OBJECT
@@ -60,7 +62,7 @@ void TestCanvas::testBrailleMode() {
         TextGridBuffer buf;
         buf.resize(10, 5);
         ClipRect clip{0, 0, 10, 5};
-        canvas.render(buf, 0, 0, clip);
+        paintItem(canvas, buf, 0, 0, clip);
 
         Cell c = buf.cellAt(0, 0);
         QCOMPARE(c.character, QString(QChar(dt.expectedChar)).toUtf8());
@@ -75,7 +77,7 @@ void TestCanvas::testBrailleMode() {
     TextGridBuffer lineBuf;
     lineBuf.resize(10, 5);
     ClipRect clip{0, 0, 10, 5};
-    canvas.render(lineBuf, 0, 0, clip);
+    paintItem(canvas, lineBuf, 0, 0, clip);
 
     Cell lineCell = lineBuf.cellAt(0, 0);
     QCOMPARE(lineCell.character, QString(QChar(0x2824)).toUtf8()); // ⠤
@@ -98,7 +100,7 @@ void TestCanvas::testHalfBlockMode() {
     TextGridBuffer buffer;
     buffer.resize(10, 5);
     ClipRect clip{0, 0, 10, 5};
-    canvas.render(buffer, 0, 0, clip);
+    paintItem(canvas, buffer, 0, 0, clip);
 
     Cell c = buffer.cellAt(0, 0);
     QCOMPARE(c.character, QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
@@ -125,7 +127,7 @@ void TestCanvas::testShapesOnHalfBlock() {
     TextGridBuffer buffer;
     buffer.resize(20, 10);
     ClipRect clip{0, 0, 20, 10};
-    canvas.render(buffer, 0, 0, clip);
+    paintItem(canvas, buffer, 0, 0, clip);
 
     // Cell (0,0): top=yellow, bottom=yellow
     Cell c00 = buffer.cellAt(0, 0);
@@ -152,7 +154,7 @@ void TestCanvas::testAutoClear() {
     TextGridBuffer buffer;
     buffer.resize(10, 5);
     ClipRect clip{0, 0, 10, 5};
-    canvas.render(buffer, 0, 0, clip);
+    paintItem(canvas, buffer, 0, 0, clip);
 
     // Cell (2, 1) has top pixel y=2 green
     Cell c = buffer.cellAt(2, 1);
@@ -191,7 +193,7 @@ void TestCanvas::testQmlCanvasHalfBlock() {
     TextGridBuffer buffer;
     buffer.resize(20, 10);
     ClipRect clip{0, 0, 20, 10};
-    canvas->render(buffer, 0, 0, clip);
+    paintItem(canvas, buffer, 0, 0, clip);
 
     Cell c00 = buffer.cellAt(0, 0);
     QCOMPARE(c00.character, QByteArray("\xE2\x96\x80"));
@@ -218,7 +220,7 @@ void TestCanvas::testHalfBlockDemoRendering() {
 
     TextGridBuffer buffer;
     buffer.resize(80, 30);
-    term->render(buffer, 0, 0);
+    paintItem(term, buffer, 0, 0);
 
     // Count non-space cells or Upper Half Block characters rendered in the buffer
     int canvasCharCount = 0;
@@ -242,5 +244,4 @@ void TestCanvas::testHalfBlockDemoRendering() {
 
 QTEST_MAIN(TestCanvas)
 #include "test_canvas.moc"
-
 

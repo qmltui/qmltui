@@ -77,62 +77,6 @@ Terminal {
         }
     }
 
-    function cpuBrailleColumns(pixelWidth, pixelHeight, history) {
-        if (pixelWidth <= 0 || pixelHeight <= 0 || history.length === 0)
-            return []
-
-        // Keep time discrete, like btop: one sample owns one terminal cell.
-        // Stretching a short history over every braille pixel column turns a
-        // single change into a wide ramp and makes the graph look noisy.
-        const cellCount = Math.floor(pixelWidth / 2)
-        if (cellCount === 0)
-            return []
-
-        const columns = []
-        const visibleSamples = Math.min(history.length, cellCount)
-        const firstCell = cellCount - visibleSamples
-        const firstPixel = pixelWidth - cellCount * 2
-
-        for (let sample = 0; sample < visibleSamples; ++sample) {
-            let value = 0
-            if (history.length <= cellCount) {
-                value = Number(history[sample])
-            } else {
-                // Average only when the retained history is wider than the
-                // canvas. This preserves the overall shape without inventing
-                // interpolated points between samples.
-                const bucketStart = Math.floor(sample * history.length / visibleSamples)
-                const bucketEnd = Math.max(bucketStart + 1,
-                                           Math.floor((sample + 1) * history.length
-                                                      / visibleSamples))
-                let total = 0
-                for (let index = bucketStart; index < bucketEnd; ++index)
-                    total += Number(history[index])
-                value = total / (bucketEnd - bucketStart)
-            }
-
-            value = Math.max(0, Math.min(100, value))
-            const x = firstPixel + (firstCell + sample) * 2
-            let top = Math.floor((pixelHeight - 1) / 2)
-            let bottom = top
-            if (value > 0) {
-                // Measure inward from both edges so the filled silhouette is
-                // exactly mirrored even when the braille canvas has an even
-                // pixel height. At 100%, both outermost rows are reached.
-                const inset = Math.min(Math.floor((pixelHeight - 1) / 2),
-                                       Math.round((100 - value) * pixelHeight / 200))
-                top = inset
-                bottom = pixelHeight - 1 - inset
-            }
-
-            // A sample fills both braille dot columns in its terminal cell,
-            // producing the solid, readable silhouette used by btop.
-            columns.push({ x: x, top: top, bottom: bottom })
-            columns.push({ x: x + 1, top: top, bottom: bottom })
-        }
-        return columns
-    }
-
     Keys.onPressed: (event) => root.handleKeyEvent(event)
 
     Rectangle {
@@ -656,42 +600,13 @@ Terminal {
                 anchors.leftMargin: 1
                 anchors.right: corePanel.left
 
-                Canvas {
+                BtopCpuGraph {
                     id: cpuBrailleCanvas
 
-                    property var columns: []
-
                     anchors.fill: parent
-                    renderMode: Canvas.Braille
+                    values: systemModel.cpuHistory
                     color: systemModel.cpuUsage > 80 ? root.pinkColor : root.greenColor
-                    fillColor: root.panelColor
-                    onWidthChanged: columns = root.cpuBrailleColumns(
-                                        pixelWidth, pixelHeight, systemModel.cpuHistory)
-                    onHeightChanged: columns = root.cpuBrailleColumns(
-                                         pixelWidth, pixelHeight, systemModel.cpuHistory)
-
-                    Connections {
-                        target: systemModel
-                        function onStatsChanged() {
-                            cpuBrailleCanvas.columns = root.cpuBrailleColumns(
-                                        cpuBrailleCanvas.pixelWidth,
-                                        cpuBrailleCanvas.pixelHeight,
-                                        systemModel.cpuHistory)
-                        }
-                    }
-
-                    Repeater {
-                        model: cpuBrailleCanvas.columns.length
-
-                        Line {
-                            required property int index
-
-                            x1: cpuBrailleCanvas.columns[index].x
-                            y1: cpuBrailleCanvas.columns[index].top
-                            x2: cpuBrailleCanvas.columns[index].x
-                            y2: cpuBrailleCanvas.columns[index].bottom
-                        }
-                    }
+                    bgColor: root.panelColor
                 }
 
                 Text {

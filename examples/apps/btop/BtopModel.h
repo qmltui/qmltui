@@ -1,11 +1,17 @@
 #pragma once
 
+#include <Item.h>
+#include <Color.h>
+#include <TextGridBuffer.h>
+
 #include <QAbstractTableModel>
 #include <QElapsedTimer>
 #include <QHash>
 #include <QQmlEngine>
 #include <QTimer>
 #include <QVariantList>
+
+#include <sys/types.h>
 
 struct BtopProcessRow
 {
@@ -18,6 +24,42 @@ struct BtopProcessRow
     QString memoryText;
     double cpuPercent = 0.0;
     quint64 cpuTicks = 0;
+};
+
+class BtopCpuGraph : public qtui::Item
+{
+    Q_OBJECT
+    QML_ELEMENT
+
+    Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+
+public:
+    explicit BtopCpuGraph(QObject *parent = nullptr);
+
+    QVariantList values() const { return m_values; }
+    void setValues(const QVariantList &values);
+
+    qtui::Color color() const { return m_color; }
+    void setColor(qtui::Color color);
+
+    qtui::Color bgColor() const { return m_bgColor; }
+    void setBgColor(qtui::Color color);
+
+    void paint(qtui::TextGridBuffer &buffer, int absX, int absY, const qtui::ClipRect &clipRect) override;
+
+signals:
+    void valuesChanged();
+    void colorChanged();
+    void bgColorChanged();
+
+private:
+    QVariantList m_values;
+    qtui::Color m_color = QStringLiteral("white");
+    uint32_t m_resolvedColor = 0xFFFFFFFF;
+    qtui::Color m_bgColor;
+    uint32_t m_resolvedBgColor = 0x00000000;
 };
 
 class BtopModel : public QAbstractTableModel
@@ -119,10 +161,17 @@ signals:
 private:
     enum class SortMode { Cpu, Memory, Pid };
 
+    struct ProcessStaticInfo {
+        QString program;
+        QString command;
+        QString user;
+    };
+
     static double percent(quint64 part, quint64 total);
     static QString formatBytes(double bytes);
     static QString formatBrailleHistory(const QVariantList &history, int cellWidth = 10);
     static void appendHistory(QVariantList &history, double value);
+    static QString usernameForUid(uid_t uid);
 
     void readCpuStats();
     void readMemoryStats();
@@ -133,6 +182,9 @@ private:
 
     QList<BtopProcessRow> m_processes;
     QHash<int, quint64> m_previousProcessTicks;
+    QHash<int, ProcessStaticInfo> m_processStaticCache;
+    static QHash<uid_t, QString> s_uidCache;
+
     QTimer m_timer;
     QElapsedTimer m_networkClock;
 

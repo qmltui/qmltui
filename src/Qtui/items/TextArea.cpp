@@ -312,17 +312,18 @@ void TextArea::paint(
         if (lineIndex >= lines.size()) break;
         const int y = absY + topPadding() + visibleLine;
         int displayColumn = 0;
-        for (const Grapheme &cluster : UnicodeText::graphemes(lines[lineIndex])) {
+        GraphemeIterator iterator(lines[lineIndex], /*sanitizeControls=*/true);
+        GraphemeRef cluster;
+        while (iterator.next(cluster)) {
             const int x = absX + leftPadding() + displayColumn - m_contentX;
             const int width = std::max(1, cluster.width);
             if (x >= absX + leftPadding()
                 && x + width <= absX + leftPadding() + viewportWidth
                 && contentClip.contains(x, y)
                 && contentClip.contains(x + width - 1, y)) {
-                buffer.writeText(
-                    x, y, QString::fromUtf8(cluster.utf8), displayColor);
+                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
                 const int clusterStart = globalOffset + cluster.utf16Start;
-                const int clusterEnd = clusterStart + cluster.utf16Length;
+                const int clusterEnd = clusterStart + cluster.utf16Length();
                 if (!m_editor.text().isEmpty()
                     && clusterEnd > selectionStart()
                     && clusterStart < selectionEnd()) {
@@ -345,7 +346,7 @@ void TextArea::paint(
         const int y = absY + topPadding() + line - m_contentY;
         if (contentClip.contains(x, y))
             if (Cell *cell = buffer.tryCellAt(x, y)) {
-                if (cell->character.isEmpty()) cell->character = " ";
+                if (cell->character().isEmpty()) cell->setCharacter(" ");
                 cell->attributes = cell->attributes | TextAttribute::Reversed;
             }
     }

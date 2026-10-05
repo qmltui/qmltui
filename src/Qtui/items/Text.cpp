@@ -3,6 +3,8 @@
 #include "../primitives/UnicodeText.h"
 #include "../primitives/ColorMapper.h"
 #include <QRegularExpression>
+#include <QStringList>
+#include <algorithm>
 #include <vector>
 
 namespace qtui {
@@ -17,13 +19,13 @@ static int parseHtmlTag(const QString& line, int startIdx, TextStyle& currentSty
     if (line[startIdx] != '<') return -1;
     int closeIdx = line.indexOf('>', startIdx + 1);
     if (closeIdx == -1) return -1;
-    
+
     QString tagContent = line.mid(startIdx + 1, closeIdx - startIdx - 1).trimmed();
     QString tagLower = tagContent.toLower();
-    
+
     bool isClose = tagLower.startsWith('/');
     QString tagName = isClose ? tagLower.mid(1).trimmed() : tagLower;
-    
+
     // Check if it's a font tag (might have attributes)
     bool isFont = false;
     if (tagName.startsWith("font")) {
@@ -31,12 +33,12 @@ static int parseHtmlTag(const QString& line, int startIdx, TextStyle& currentSty
             isFont = true;
         }
     }
-    
-    bool isValidTag = (tagName == "b" || tagName == "strong" || tagName == "i" || tagName == "em" || 
+
+    bool isValidTag = (tagName == "b" || tagName == "strong" || tagName == "i" || tagName == "em" ||
                        tagName == "u" || tagName == "reversed" || isFont);
-                       
+
     if (!isValidTag) return -1;
-    
+
     if (isClose) {
         if (!styleStack.empty()) {
             currentStyle = styleStack.back();
@@ -61,8 +63,53 @@ static int parseHtmlTag(const QString& line, int startIdx, TextStyle& currentSty
             currentStyle.attributes = currentStyle.attributes | TextAttribute::Reversed;
         }
     }
-    
+
     return closeIdx;
+}
+
+// Applies an SGR parameter list ("1;31;48;2;r;g;b") to the current style.
+static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle,
+                               const TextStyle& baseStyle) {
+    static const uint32_t ansiColors[] = {
+        0xFF000000, 0xFFFF0000, 0xFF008000, 0xFFFFFF00,
+        0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF
+    };
+    const QStringList params = paramsStr.split(';');
+    for (int pIdx = 0; pIdx < params.count(); ++pIdx) {
+        if (params[pIdx].isEmpty()) continue;
+        const int code = params[pIdx].toInt();
+        if (code == 0) {
+            currentStyle = baseStyle;
+        } else if (code == 1) {
+            currentStyle.attributes = currentStyle.attributes | TextAttribute::Bold;
+        } else if (code == 3) {
+            currentStyle.attributes = currentStyle.attributes | TextAttribute::Italic;
+        } else if (code == 4) {
+            currentStyle.attributes = currentStyle.attributes | TextAttribute::Underline;
+        } else if (code == 7) {
+            currentStyle.attributes = currentStyle.attributes | TextAttribute::Reversed;
+        } else if (code >= 30 && code <= 37) {
+            currentStyle.fgColor = ansiColors[code - 30];
+        } else if (code >= 40 && code <= 47) {
+            currentStyle.bgColor = ansiColors[code - 40];
+        } else if (code == 39) {
+            currentStyle.fgColor = baseStyle.fgColor;
+        } else if (code == 49) {
+            currentStyle.bgColor = baseStyle.bgColor;
+        } else if (code == 38 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
+            const int r = params[pIdx + 2].toInt();
+            const int g = params[pIdx + 3].toInt();
+            const int b = params[pIdx + 4].toInt();
+            currentStyle.fgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
+            pIdx += 4;
+        } else if (code == 48 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
+            const int r = params[pIdx + 2].toInt();
+            const int g = params[pIdx + 3].toInt();
+            const int b = params[pIdx + 4].toInt();
+            currentStyle.bgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
+            pIdx += 4;
+        }
+    }
 }
 
 Text::Text(QObject *parent) : Item(parent) {
@@ -73,16 +120,8 @@ Text::~Text() = default;
 void Text::setText(const QString& text) {
     if (m_text == text) return;
     m_text = text;
-    
-    QStringList lines = m_text.split('\n');
-    int maxWidth = 0;
-    for (const QString& line : lines) {
-        int visLen = visualLength(line);
-        if (visLen > maxWidth) maxWidth = visLen;
-    }
-    setImplicitWidth(maxWidth);
-    setImplicitHeight(lines.count());
-    
+    invalidateLayout();
+    updateImplicitSize();
     emit textChanged();
     markDirty();
 }
@@ -91,6 +130,7 @@ void Text::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    invalidateLayout();   // the base colour is the SGR reset target
     emit colorChanged();
     markDirty();
 }
@@ -98,6 +138,7 @@ void Text::setColor(Color color) {
 void Text::setBold(bool bold) {
     if (m_bold == bold) return;
     m_bold = bold;
+    invalidateLayout();
     emit boldChanged();
     markDirty();
 }
@@ -105,6 +146,7 @@ void Text::setBold(bool bold) {
 void Text::setItalic(bool italic) {
     if (m_italic == italic) return;
     m_italic = italic;
+    invalidateLayout();
     emit italicChanged();
     markDirty();
 }
@@ -112,6 +154,7 @@ void Text::setItalic(bool italic) {
 void Text::setUnderline(bool underline) {
     if (m_underline == underline) return;
     m_underline = underline;
+    invalidateLayout();
     emit underlineChanged();
     markDirty();
 }
@@ -119,6 +162,7 @@ void Text::setUnderline(bool underline) {
 void Text::setReversed(bool reversed) {
     if (m_reversed == reversed) return;
     m_reversed = reversed;
+    invalidateLayout();
     emit reversedChanged();
     markDirty();
 }
@@ -140,16 +184,8 @@ void Text::setVerticalAlignment(int alignment) {
 void Text::setTextFormat(TextFormat format) {
     if (m_textFormat == format) return;
     m_textFormat = format;
-    
-    // Re-evaluate implicit width and height
-    QStringList lines = m_text.split('\n');
-    int maxWidth = 0;
-    for (const QString& line : lines) {
-        int visLen = visualLength(line);
-        if (visLen > maxWidth) maxWidth = visLen;
-    }
-    setImplicitWidth(maxWidth);
-    
+    invalidateLayout();
+    updateImplicitSize();
     emit textFormatChanged();
     markDirty();
 }
@@ -167,74 +203,152 @@ void Text::setGradient(Gradient* gradient) {
     markDirty();
 }
 
+void Text::updateImplicitSize() {
+    ensureLayout();
+    int maxWidth = 0;
+    for (const LineLayout &line : m_lines)
+        maxWidth = std::max(maxWidth, line.visualWidth);
+    setImplicitWidth(maxWidth);
+    setImplicitHeight(static_cast<int>(m_lines.size()));
+}
+
 int Text::visualLength(const QString &line) const {
-    if (m_textFormat == PlainText) {
-        return UnicodeText::displayWidth(line);
-    }
-    int len = 0;
-    TextStyle dummyStyle;
-    std::vector<TextStyle> dummyStack;
+    return parseLine(line, nullptr, nullptr);
+}
+
+int Text::parseLine(const QString &line, std::vector<GlyphEntry> *entries,
+                    QByteArray *bytes) const {
+    TextStyle baseStyle;
+    baseStyle.fgColor = m_resolvedColor;
+    baseStyle.bgColor = 0x00000000;
+    if (m_bold) baseStyle.attributes = baseStyle.attributes | TextAttribute::Bold;
+    if (m_italic) baseStyle.attributes = baseStyle.attributes | TextAttribute::Italic;
+    if (m_underline) baseStyle.attributes = baseStyle.attributes | TextAttribute::Underline;
+    if (m_reversed) baseStyle.attributes = baseStyle.attributes | TextAttribute::Reversed;
+
+    const bool parseAnsi = m_textFormat == AutoText || m_textFormat == AnsiText;
+    const bool parseHtml = m_textFormat == AutoText || m_textFormat == RichText;
+
+    TextStyle currentStyle = baseStyle;
+    std::vector<TextStyle> styleStack;
+    int visualWidth = 0;
+    const QStringView view(line);
+
     for (int i = 0; i < line.length(); ) {
-        if ((m_textFormat == AutoText || m_textFormat == AnsiText) &&
-            line[i] == '\033' && i + 1 < line.length() && line[i + 1] == '[') {
+        // SGR ANSI escape sequence: \033[...m
+        if (parseAnsi && line[i] == '\033' && i + 1 < line.length() && line[i + 1] == '[') {
             int j = i + 2;
-            while (j < line.length() && (line[j].isDigit() || line[j] == ';')) {
+            while (j < line.length() && (line[j].isDigit() || line[j] == ';'))
                 j++;
-            }
             if (j < line.length() && line[j] == 'm') {
+                if (entries)
+                    applySgrParameters(line.mid(i + 2, j - i - 2), currentStyle, baseStyle);
                 i = j + 1;
                 continue;
             }
         }
-        
-        if (m_textFormat == AutoText || m_textFormat == RichText) {
-            int tagClose = parseHtmlTag(line, i, dummyStyle, dummyStack);
+
+        // HTML-like tag
+        if (parseHtml) {
+            const int tagClose = parseHtmlTag(line, i, currentStyle, styleStack);
             if (tagClose != -1) {
                 i = tagClose + 1;
                 continue;
             }
         }
-        
-        const int next = UnicodeText::nextBoundary(line, i);
-        len += UnicodeText::displayWidth(line.mid(i, next - i));
-        i = next;
+
+        // One grapheme cluster starting at i. The raw width drives layout;
+        // control characters are written as their visible replacements.
+        GraphemeIterator iterator(view.mid(i));
+        GraphemeRef cluster;
+        if (!iterator.next(cluster))
+            break;
+        const int advance = std::max(0, cluster.width);
+        int cellWidth = advance;
+        if (advance == 0) {
+            GraphemeIterator sanitized(cluster.utf16, /*sanitizeControls=*/true);
+            GraphemeRef part;
+            cellWidth = 0;
+            while (sanitized.next(part))
+                cellWidth += part.width;
+        }
+
+        if (entries) {
+            GlyphEntry entry;
+            entry.fgColor = currentStyle.fgColor;
+            entry.bgColor = currentStyle.bgColor;
+            entry.attributes = currentStyle.attributes;
+            entry.advance = static_cast<uint8_t>(std::min(advance, 255));
+            entry.cellWidth = static_cast<uint8_t>(std::min(cellWidth, 255));
+            entry.glyphOffset = static_cast<uint32_t>(bytes->size());
+            char encoded[64];
+            const int length = UnicodeText::encodeUtf8(cluster.utf16, encoded, sizeof encoded,
+                                                       /*sanitizeControls=*/true);
+            if (length >= 0) {
+                bytes->append(encoded, length);
+                entry.glyphLength = static_cast<uint32_t>(length);
+            } else {
+                const QByteArray fallback = UnicodeText::toUtf8(cluster.utf16, true);
+                bytes->append(fallback);
+                entry.glyphLength = static_cast<uint32_t>(fallback.size());
+            }
+            entries->push_back(entry);
+        }
+
+        visualWidth += advance;
+        i += cluster.utf16Length();
     }
-    return len;
+    return visualWidth;
+}
+
+void Text::ensureLayout() const {
+    if (!m_layoutDirty) return;
+    m_glyphs.clear();
+    m_lines.clear();
+    m_glyphBytes.clear();
+
+    const QStringList lines = m_text.split('\n');
+    m_lines.reserve(static_cast<size_t>(lines.size()));
+    for (const QString &line : lines) {
+        LineLayout layout;
+        layout.firstGlyph = static_cast<int>(m_glyphs.size());
+        layout.visualWidth = parseLine(line, &m_glyphs, &m_glyphBytes);
+        layout.glyphCount = static_cast<int>(m_glyphs.size()) - layout.firstGlyph;
+        m_lines.push_back(layout);
+    }
+    m_layoutDirty = false;
 }
 
 void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
 
-    QStringList lines = m_text.split('\n');
-    
-    int lp = leftPadding();
-    int rp = rightPadding();
-    int tp = topPadding();
-    int bp = bottomPadding();
+    ensureLayout();
 
-    int availW = width() - lp - rp;
-    int availH = height() - tp - bp;
+    const int lp = leftPadding();
+    const int rp = rightPadding();
+    const int tp = topPadding();
+    const int bp = bottomPadding();
+
+    const int availW = width() - lp - rp;
+    const int availH = height() - tp - bp;
+    const int lineCount = static_cast<int>(m_lines.size());
 
     int currentY = absY + tp;
     if (m_verticalAlignment & Qt::AlignVCenter) {
-        currentY += (availH - lines.count()) / 2;
+        currentY += (availH - lineCount) / 2;
     } else if (m_verticalAlignment & Qt::AlignBottom) {
-        currentY += (availH - lines.count());
+        currentY += (availH - lineCount);
     }
 
-    // Base attributes and colors
-    uint32_t baseFgColor = m_resolvedColor;
-    uint32_t baseBgColor = 0x00000000;
-    TextAttribute baseAttrs = TextAttribute::None;
-    if (m_bold) baseAttrs = baseAttrs | TextAttribute::Bold;
-    if (m_italic) baseAttrs = baseAttrs | TextAttribute::Italic;
-    if (m_underline) baseAttrs = baseAttrs | TextAttribute::Underline;
-    if (m_reversed) baseAttrs = baseAttrs | TextAttribute::Reversed;
+    const bool useGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
+    const int rightLimit = absX + width() - rp;
+    const int leftLimit = absX + lp;
+    const char *glyphBytes = m_glyphBytes.constData();
 
-    for (const QString& line : lines) {
+    for (const LineLayout &line : m_lines) {
         if (currentY >= absY + tp && currentY < absY + height() - bp && currentY >= 0 && currentY < buffer.height()) {
-            int visLen = visualLength(line);
-            int lineStartX = absX + lp;
+            const int visLen = line.visualWidth;
+            int lineStartX = leftLimit;
             if (m_horizontalAlignment & Qt::AlignRight) {
                 lineStartX += (availW - visLen);
             } else if (m_horizontalAlignment & Qt::AlignHCenter) {
@@ -242,104 +356,24 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
             }
 
             int cx = lineStartX;
-            TextStyle currentStyle{baseFgColor, baseBgColor, baseAttrs};
-            std::vector<TextStyle> styleStack;
-            bool useGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
             int charIndexInLine = 0;
-
-            for (int i = 0; i < line.length(); ) {
-                bool skippedSequence = false;
-                
-                // SGR ANSI escape sequence parser: \033[...m
-                if ((m_textFormat == AutoText || m_textFormat == AnsiText) &&
-                    line[i] == '\033' && i + 1 < line.length() && line[i + 1] == '[') {
-                    int j = i + 2;
-                    QString paramsStr;
-                    while (j < line.length() && (line[j].isDigit() || line[j] == ';')) {
-                        paramsStr.append(line[j]);
-                        j++;
-                    }
-                    if (j < line.length() && line[j] == 'm') {
-                        QStringList params = paramsStr.split(';');
-                        for (int pIdx = 0; pIdx < params.count(); ++pIdx) {
-                            if (params[pIdx].isEmpty()) continue;
-                            int code = params[pIdx].toInt();
-                            if (code == 0) {
-                                currentStyle.fgColor = baseFgColor;
-                                currentStyle.bgColor = baseBgColor;
-                                currentStyle.attributes = baseAttrs;
-                            } else if (code == 1) {
-                                currentStyle.attributes = currentStyle.attributes | TextAttribute::Bold;
-                            } else if (code == 3) {
-                                currentStyle.attributes = currentStyle.attributes | TextAttribute::Italic;
-                            } else if (code == 4) {
-                                currentStyle.attributes = currentStyle.attributes | TextAttribute::Underline;
-                            } else if (code == 7) {
-                                currentStyle.attributes = currentStyle.attributes | TextAttribute::Reversed;
-                            } else if (code >= 30 && code <= 37) {
-                                static const uint32_t ansiColors[] = {
-                                    0xFF000000, 0xFFFF0000, 0xFF008000, 0xFFFFFF00,
-                                    0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF
-                                };
-                                currentStyle.fgColor = ansiColors[code - 30];
-                            } else if (code >= 40 && code <= 47) {
-                                static const uint32_t ansiColors[] = {
-                                    0xFF000000, 0xFFFF0000, 0xFF008000, 0xFFFFFF00,
-                                    0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF
-                                };
-                                currentStyle.bgColor = ansiColors[code - 40];
-                            } else if (code == 39) {
-                                currentStyle.fgColor = baseFgColor;
-                            } else if (code == 49) {
-                                currentStyle.bgColor = baseBgColor;
-                            } else if (code == 38 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
-                                int r = params[pIdx + 2].toInt();
-                                int g = params[pIdx + 3].toInt();
-                                int b = params[pIdx + 4].toInt();
-                                currentStyle.fgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
-                                pIdx += 4;
-                            } else if (code == 48 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
-                                int r = params[pIdx + 2].toInt();
-                                int g = params[pIdx + 3].toInt();
-                                int b = params[pIdx + 4].toInt();
-                                currentStyle.bgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
-                                pIdx += 4;
-                            }
-                        }
-                        i = j + 1;
-                        skippedSequence = true;
-                    }
-                }
-
-                if (skippedSequence) continue;
-
-                // HTML Tag parser
-                if (m_textFormat == AutoText || m_textFormat == RichText) {
-                    int tagClose = parseHtmlTag(line, i, currentStyle, styleStack);
-                    if (tagClose != -1) {
-                        i = tagClose + 1;
-                        continue;
-                    }
-                }
-
-                const int next = UnicodeText::nextBoundary(line, i);
-                const QString cluster = line.mid(i, next - i);
-                const int clusterWidth = UnicodeText::displayWidth(cluster);
-
-                uint32_t charFgColor = currentStyle.fgColor;
+            const GlyphEntry *entry = m_glyphs.data() + line.firstGlyph;
+            const GlyphEntry *end = entry + line.glyphCount;
+            for (; entry != end; ++entry) {
+                uint32_t charFgColor = entry->fgColor;
                 if (useGradient) {
-                    qreal t = (visLen > 1) ? (qreal)charIndexInLine / (visLen - 1) : 0.0;
+                    const qreal t = (visLen > 1) ? static_cast<qreal>(charIndexInLine) / (visLen - 1) : 0.0;
                     charFgColor = m_gradient->colorAt(t);
                 }
 
-                if (cx >= absX + lp && cx + clusterWidth <= absX + width() - rp &&
+                if (cx >= leftLimit && cx + entry->advance <= rightLimit &&
                     clipRect.contains(cx, currentY)) {
-                    buffer.writeText(cx, currentY, cluster, charFgColor,
-                                     currentStyle.bgColor, currentStyle.attributes);
+                    buffer.setGrapheme(cx, currentY,
+                                       QByteArrayView(glyphBytes + entry->glyphOffset, entry->glyphLength),
+                                       entry->cellWidth, charFgColor, entry->bgColor, entry->attributes);
                 }
-                cx += clusterWidth;
-                charIndexInLine += clusterWidth;
-                i = next;
+                cx += entry->advance;
+                charIndexInLine += entry->advance;
             }
         }
         currentY++;

@@ -41,12 +41,12 @@ void TestTerminalHost::adapterRenderingAndOsc() {
     QVERIFY(buffer.resize(8, 2));
     adapter.render(buffer, 0, 0, ClipRect{0, 0, 8, 2}, 8, 2, 0);
 
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("A"));
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("A"));
     QVERIFY((buffer.cellAt(0, 0).attributes & TextAttribute::Italic) != TextAttribute::None);
     QVERIFY((buffer.cellAt(0, 0).attributes & TextAttribute::Blink) != TextAttribute::None);
     QVERIFY((buffer.cellAt(0, 0).attributes & TextAttribute::Strikethrough) != TextAttribute::None);
     QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xffe00000u);
-    QCOMPARE(buffer.cellAt(1, 0).character, QByteArray(" "));
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray(" "));
     QCOMPARE(buffer.cellAt(2, 0).attributes, TextAttribute::None); // SGR 2 is unsupported upstream.
     QCOMPARE(title, QStringLiteral("Qtui terminal"));
     QCOMPARE(clipboard, QStringLiteral("hello"));
@@ -117,7 +117,7 @@ void TestTerminalHost::ptyLifecycleAndRendering() {
     for (int row = 0; row < 4; ++row)
         for (int column = 0; column < 30; ++column)
             if (!buffer.cellAt(column, row).continuation)
-                rendered += buffer.cellAt(column, row).character;
+                rendered += buffer.cellAt(column, row).character().toByteArray();
     QVERIFY(rendered.contains("OK"));
     QVERIFY(rendered.contains("4 30"));
     QVERIFY(rendered.contains("env-ok"));

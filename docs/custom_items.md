@@ -60,7 +60,7 @@ void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
         const int cy = absY + topPadding();
         if (clipRect.contains(cx, cy)) {
             if (Cell *cell = buffer.tryCellAt(cx, cy)) {
-                cell->character = m_label.mid(i, 1).toUtf8();
+                cell->setCharacter(m_label.mid(i, 1).toUtf8());
                 cell->setForeground(foreground);
             }
         }
@@ -68,9 +68,14 @@ void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
 }
 ```
 
-Override `updateLayout()` when layout work must run immediately before paint.
-Invalidations raised from `updateLayout()` or `paint()` are retained for the
-next frame.
+Override `updateLayout()` for work that positions or creates children. Each
+frame runs a layout pass over the tree before any painting, so geometry changed
+in `updateLayout()` is painted in the same frame. A size change on the item
+itself marks it `LayoutDirty` automatically.
+
+Do not change properties from `paint()` or `paintOverlay()`. Invalidations
+raised while painting are retained on the item but do not schedule a frame;
+run with `QTUI_DEBUG_PAINT_DIRTY=1` to have each offending item reported once.
 
 Override the optional protected `paintOverlay()` hook only for content that
 must appear above the item's children, such as a scrollbar or focus decoration.

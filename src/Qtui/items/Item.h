@@ -191,6 +191,11 @@ public:
   void setFiltersChildMouseEvents(bool filter) { m_filtersChildMouseEvents = filter; }
   virtual bool childMouseEventFilter(Item* item, class MouseEvent* event);
 
+  // Cheap type tests for the framework's own hot paths (per item per frame),
+  // set by the Popup and Terminal constructors instead of using RTTI.
+  bool isPopup() const { return m_itemFlags & static_cast<quint8>(ItemFlag::IsPopup); }
+  bool isTerminalRoot() const { return m_itemFlags & static_cast<quint8>(ItemFlag::IsTerminalRoot); }
+
   DirtyFlags dirtyFlags() const { return m_dirtyFlags; }
   void markDirty(DirtyFlags flags);
   void markDirty() { markDirty(DirtyFlag::SelfDirty); }
@@ -223,6 +228,7 @@ signals:
 private:
   friend class ItemPaintTraversal;
 
+  void layoutSubtree();
   void paintSubtree(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect = ClipRect());
   void invalidateStackingOrder();
@@ -245,7 +251,25 @@ private:
   static void clearTransitions(QQmlListProperty<qtui::Transition>* list);
 
 protected:
+  enum class ItemFlag : quint8 {
+    IsPopup = 1 << 0,
+    IsTerminalRoot = 1 << 1,
+  };
+  void setItemFlag(ItemFlag flag, bool on = true)
+  {
+    if (on)
+      m_itemFlags |= static_cast<quint8>(flag);
+    else
+      m_itemFlags &= static_cast<quint8>(~static_cast<quint8>(flag));
+  }
+
   void childEvent(QChildEvent* event) override;
+
+  // Emits implicitWidthChanged()/implicitHeightChanged() only when the
+  // effective implicit size differs from the last reported value. Containers
+  // whose implicit size derives from their children call this instead of
+  // emitting unconditionally.
+  void notifyImplicitSizeIfChanged();
 
   virtual void updateLayout();
   virtual void paint(TextGridBuffer &buffer, int absX, int absY,
@@ -262,6 +286,8 @@ protected:
   int m_height = -1;
   int m_implicitWidth = 0;
   int m_implicitHeight = 0;
+  int m_reportedImplicitWidth = 0;
+  int m_reportedImplicitHeight = 0;
   bool m_visible = true;
   bool m_enabled = true;
   bool m_focus = false;
@@ -292,6 +318,7 @@ protected:
   QList<QPointer<Animation>> m_runningTransitionAnimations;
   QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
   bool m_filtersChildMouseEvents = false;
+  quint8 m_itemFlags = 0;
   DirtyFlags m_dirtyFlags = DirtyFlag::SelfDirty;
 };
 

@@ -220,9 +220,9 @@ void TestTextInput::testHorizontalViewport() {
     TextGridBuffer buffer;
     buffer.resize(4, 1);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 4, 1});
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("d"));
-    QCOMPARE(buffer.cellAt(1, 0).character, QByteArray("e"));
-    QCOMPARE(buffer.cellAt(2, 0).character, QByteArray("f"));
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("d"));
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("e"));
+    QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QByteArray("f"));
     QVERIFY((buffer.cellAt(3, 0).attributes & TextAttribute::Reversed)
             != TextAttribute::None);
 }
@@ -245,8 +245,8 @@ void TestTextInput::testFieldPropertiesAndPasswordRendering() {
     TextGridBuffer buffer;
     buffer.resize(4, 1);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 4, 1});
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("*"));
-    QVERIFY(buffer.cellAt(0, 0).character != QByteArray("s"));
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("*"));
+    QVERIFY(buffer.cellAt(0, 0).character().toByteArray() != QByteArray("s"));
 
     input.setReadOnly(true);
     KeyEvent typed(Qt::Key_X, "x", 0);
@@ -284,7 +284,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     buffer.resize(10, 1);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("h"));
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("h"));
     QCOMPARE(buffer.cellAt(0, 0).bgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
 
     // Test cursor at position 5 (end of text) - delegate glyph "▋" rendered at empty position
@@ -293,7 +293,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     buffer.resize(10, 1);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
-    QCOMPARE(buffer.cellAt(5, 0).character, QByteArray("▋"));
+    QCOMPARE(buffer.cellAt(5, 0).character().toByteArray(), QByteArray("▋"));
     QCOMPARE(buffer.cellAt(5, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF));
 
     input.setSelectionColor("blue");

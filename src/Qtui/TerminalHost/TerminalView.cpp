@@ -373,7 +373,7 @@ void TerminalView::paint(TextGridBuffer &buffer, int absX, int absY,
           Cell &cell = buffer.cellAt(sbX, cy);
           cell.fgColor = (dy >= sbPos && dy < sbPos + sbH) ? 0xFF38BDF8 : 0xFF475569;
           cell.bgColor = 0xFF090D16;
-          cell.character = (dy >= sbPos && dy < sbPos + sbH) ? "\xE2\x96\x88" : "\xE2\x96\x91";
+          cell.setCharacter((dy >= sbPos && dy < sbPos + sbH) ? "\xE2\x96\x88" : "\xE2\x96\x91");
         }
       }
     }

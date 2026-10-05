@@ -5,6 +5,7 @@
 #include "../engine/MouseEvent.h"
 #include "Terminal.h"
 #include "Popup.h"
+#include "../engine/RenderPhase_p.h"
 #include "../primitives/ColorMapper.h"
 #include "../engine/State.h"
 #include "../engine/Transition.h"
@@ -140,37 +141,58 @@ const QList<Item *> &Item::stackingChildren() const {
     return m_stackingChildren;
 }
 
+// A size change requires the item to lay out its children again, so geometry
+// setters mark LayoutDirty as well as SelfDirty.
 void Item::setWidth(int width) {
     if (m_width == width) return;
     m_width = width;
     emit widthChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void Item::setHeight(int height) {
     if (m_height == height) return;
     m_height = height;
     emit heightChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void Item::setImplicitWidth(int w) {
     if (m_implicitWidth == w) return;
     m_implicitWidth = w;
+    m_reportedImplicitWidth = implicitWidth();
     emit implicitWidthChanged();
     if (m_width < 0) {
         emit widthChanged();
-        markDirty();
+        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
     }
 }
 
 void Item::setImplicitHeight(int h) {
     if (m_implicitHeight == h) return;
     m_implicitHeight = h;
+    m_reportedImplicitHeight = implicitHeight();
     emit implicitHeightChanged();
     if (m_height < 0) {
         emit heightChanged();
-        markDirty();
+        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    }
+}
+
+// Deliberately emits only the implicit-size signals, never widthChanged /
+// heightChanged: QML "width: parent.width" bindings in children of an
+// implicitly sized container would otherwise feed back into the container's
+// implicit size and loop.
+void Item::notifyImplicitSizeIfChanged() {
+    const int width = implicitWidth();
+    const int height = implicitHeight();
+    if (width != m_reportedImplicitWidth) {
+        m_reportedImplicitWidth = width;
+        emit implicitWidthChanged();
+    }
+    if (height != m_reportedImplicitHeight) {
+        m_reportedImplicitHeight = height;
+        emit implicitHeightChanged();
     }
 }
 
@@ -228,12 +250,23 @@ bool Item::isEffectivelyVisible() const {
 
 void Item::markDirty(DirtyFlags flags) {
     m_dirtyFlags |= flags;
-    emit dirty();
+
+    // Inside a frame the flags are enough: the layout pass is followed by the
+    // paint pass, and paint-time invalidations must not schedule another
+    // frame. Only idle invalidations notify the engine.
+    const RenderPhase::Phase phase = RenderPhase::current();
+    if (phase == RenderPhase::Paint)
+        RenderPhase::recordDirtyDuringPaint(this);
+    const bool notify = phase == RenderPhase::Idle;
+
+    if (notify)
+        emit dirty();
     // Bubble DescendantDirty up to parent
     Item* p = qobject_cast<Item*>(parent());
     while (p) {
         p->m_dirtyFlags |= DirtyFlag::DescendantDirty;
-        emit p->dirty();
+        if (notify)
+            emit p->dirty();
         p = qobject_cast<Item*>(p->parent());
     }
 }
@@ -293,12 +326,10 @@ Terminal* Item::terminal() const {
     return nullptr;
 }
 
+// Scrolling containers (ScrollView) override this; a plain Item never offsets
+// its children. The previous dynamic-property lookup ran per item per frame.
 QPoint Item::contentOffset() const {
-    QVariant scrollX = property("contentX");
-    QVariant scrollY = property("contentY");
-    int x = scrollX.isValid() ? scrollX.toInt() : 0;
-    int y = scrollY.isValid() ? scrollY.toInt() : 0;
-    return QPoint(x, y);
+    return QPoint();
 }
 
 QPoint Item::absolutePosition() const {
@@ -309,7 +340,7 @@ QPoint Item::absolutePosition() const {
     while (p) {
         // If parent is a Terminal element, we do NOT add its x and y,
         // because Terminal is the screen root. Its x/y is 0 relative to screen.
-        if (p->inherits("qtui::Terminal")) {
+        if (p->isTerminalRoot()) {
             break;
         }
         
@@ -391,20 +422,68 @@ void Item::unregisterChildItem(Item* childItem) {
         for (const QMetaObject::Connection &connection : connections)
             disconnect(connection);
         invalidateStackingOrder();
-        scheduleChildGeometryInvalidation();
+        // The child may be mid-destruction or mid-reparent and subclasses'
+        // implicitWidth() overrides may still list it, so do not evaluate the
+        // implicit size here: report unconditionally and make the next
+        // notifyImplicitSizeIfChanged() emit regardless.
+        markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+        m_reportedImplicitWidth = -1;
+        m_reportedImplicitHeight = -1;
+        emit implicitWidthChanged();
+        emit implicitHeightChanged();
     }
 }
 
+// A child's geometry changed: relayout, and tell dependants only if this
+// item's implicit size actually moved. Unconditional emission here used to
+// cascade through every ancestor and every anchored sibling per setter call.
 void Item::scheduleChildGeometryInvalidation() {
-    emit implicitWidthChanged();
-    emit implicitHeightChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
+// Top-down layout pass. Runs updateLayout() wherever LayoutDirty is set, then
+// recurses into children, and re-runs this item's layout once if a child's
+// layout changed this item's implicit size. Iterations are bounded so an
+// updateLayout() that keeps invalidating itself cannot hang the frame.
+void Item::layoutSubtree() {
+    if (!m_visible) return;
+
+    QPointer<Item> selfGuard(this);
+    constexpr int MaxLayoutPasses = 3;
+
+    for (int pass = 0; pass < MaxLayoutPasses && m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty); ++pass) {
+        m_dirtyFlags &= ~DirtyFlags(DirtyFlag::LayoutDirty);
+        updateLayout();
+        if (!selfGuard)
+            return;
+    }
+
+    const QList<Item *> &orderedChildren = stackingChildren();
+    QVarLengthArray<QPointer<Item>, 8> children;
+    children.reserve(orderedChildren.size());
+    for (Item *child : orderedChildren)
+        children.append(child);
+    for (const QPointer<Item> &childGuard : children) {
+        if (Item *childItem = childGuard.data())
+            childItem->layoutSubtree();
+        if (!selfGuard)
+            return;
+    }
+
+    if (m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty)) {
+        m_dirtyFlags &= ~DirtyFlags(DirtyFlag::LayoutDirty);
+        updateLayout();
+    }
+}
+
 void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
     if (!m_visible) return;
 
     QPointer<Item> selfGuard(this);
 
+    // Layout normally ran in layoutSubtree(); this handles items painted
+    // without a preceding layout pass and layouts invalidated by a sibling's
+    // paint.
     const DirtyFlags consumedFlags = m_dirtyFlags;
     m_dirtyFlags &= ~consumedFlags;
     if (consumedFlags.testFlag(DirtyFlag::LayoutDirty)) {
@@ -429,7 +508,7 @@ void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRe
         Item *childItem = childGuard.data();
         if (!childItem)
             continue;
-        if (qobject_cast<Popup*>(childItem) && childItem->visible()) continue;
+        if (childItem->isPopup() && childItem->visible()) continue;   // painted by Terminal::paintOverlay
         childItem->paintSubtree(buffer,
                                absX + childItem->x() - offset.x(),
                                absY + childItem->y() - offset.y(),

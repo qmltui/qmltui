@@ -110,9 +110,35 @@ This adds the `Qtui.TerminalHost` QML module and `Qtui::TerminalHost` CMake
 target on Linux and macOS. See [TerminalView](docs/TerminalView.md) for its API,
 security defaults, offline libvterm setup, and current compatibility limits.
 
-View construction benchmarks are available with
-`-DQTUI_BUILD_BENCHMARKS=ON`; run the resulting `benchmark_views` executable
-to record 1,000- and 10,000-row creation time.
+Benchmarks are available with `-DQTUI_BUILD_BENCHMARKS=ON`: `benchmark_views`
+records 1,000- and 10,000-row view creation time, and `benchmark_render`
+records per-frame paint and diff cost for representative scenes at 80x24 and
+240x70 (`--json <path>` for trending). Run `benchmark_render` before and after
+rendering changes and record the numbers in the pull request.
+`--frames <count>` changes the measured samples per case (default 200, after
+5 warm-up frames). JSON also includes setter time (`updateMedianUs`) and the
+median combined setter/paint cost (`updatePaintMedianUs`), so text-cache rebuilds
+are accounted for in changing-text workloads. These measurements exclude
+terminal writes and terminal-emulator drawing; an idle benchmark deliberately
+requests unchanged frames, whereas an idle application need not render at all.
+See the [0.4 acceptance report](docs/benchmarks/0.4-acceptance/README.md) for
+the comparison method, results, and validation limits.
+
+## Terminal capabilities
+
+Qtui detects the terminal's colour depth once at startup: `NO_COLOR` or
+`TERM=dumb` disable colour, `COLORTERM=truecolor`/`24bit` or a known
+`TERM_PROGRAM` select 24-bit colour, a `TERM` containing `256color` without
+`COLORTERM` selects the 256-colour palette, and anything else keeps 24-bit
+output. Override with `QTUI_COLOR_DEPTH=mono|16|256|truecolor`. Frames are
+bracketed with synchronized-output sequences on terminals; set
+`QTUI_SYNC_OUTPUT=0` to disable that.
+
+Rendering is paced to at most 60 frames per second (`QTUI_MAX_FPS`, 0 for
+uncapped) and terminal output is non-blocking: bytes a slow terminal cannot
+accept yet are queued and drained from the event loop, and new frames wait
+while more than `QTUI_OUTPUT_QUEUE_LIMIT` bytes (default 262144) are queued.
+`QTUI_FRAME_STATS=1` logs paint, diff and write cost per frame.
 
 ## Agent-oriented application testing
 
@@ -126,7 +152,7 @@ capture one frame with `QTUI_INSPECT=1`. Runs are quiet by default and write
 Installed CMake consumers can register a scenario with:
 
 ```cmake
-find_package(Qtui 0.3 REQUIRED)
+find_package(Qtui 0.4 REQUIRED)
 
 # Linking Qtui::Testing is what puts the runner inside the application; without
 # it the scenario fails with "did not create result.json".
@@ -160,7 +186,7 @@ cmake --install build --prefix /your/prefix
 An external C++ project can use the custom-item API with:
 
 ```cmake
-find_package(Qtui 0.3 REQUIRED)
+find_package(Qtui 0.4 REQUIRED)
 target_link_libraries(my_app PRIVATE Qtui::Core)
 ```
 

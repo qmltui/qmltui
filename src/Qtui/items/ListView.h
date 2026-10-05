@@ -102,6 +102,11 @@ signals:
     void reuseItemsChanged();
     void itemActivated(int index);
 
+protected:
+    // Materialises the visible delegate window and positions the items. Runs
+    // in the layout pass, never from paint().
+    void updateLayout() override;
+
 private:
     void disconnectModelSignals();
     Item *createDelegateItem(int index);

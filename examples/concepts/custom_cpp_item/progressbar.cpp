@@ -56,14 +56,14 @@ void ProgressBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRe
                 Cell& cell = buffer.cellAt(cx, barY);
                 if (dx >= availW - pctLen) {
                     int charIdx = dx - (availW - pctLen);
-                    cell.character = pctText.mid(charIdx, 1).toUtf8();
+                    cell.setCharacter(pctText.mid(charIdx, 1).toUtf8());
                     cell.fgColor = 0xFFFFFFFF; // White percentage text
                 } else {
                     if (dx < fillW) {
-                        cell.character = "█";
+                        cell.setCharacter("█");
                         cell.fgColor = m_resolvedBarColor;
                     } else {
-                        cell.character = "░";
+                        cell.setCharacter("░");
                         cell.fgColor = 0xFF444444;
                     }
                 }

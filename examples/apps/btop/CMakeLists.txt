@@ -59,4 +59,14 @@ if(TARGET Qtui::Testing)
         ROWS 42
         LABELS AgentSmoke
     )
+
+    # Only timer-driven refreshes may repaint while the user is idle.
+    qtui_add_scenario_test(
+        NAME btop_idle_budget
+        TARGET qtui_btop_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_idle_budget.js"
+        COLUMNS 132
+        ROWS 42
+        LABELS AgentSmoke
+    )
 endif()

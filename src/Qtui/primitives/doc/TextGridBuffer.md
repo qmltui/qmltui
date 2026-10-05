@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`TextGridBuffer` is the core off-screen rendering canvas for Qtui. It represents a 2D grid of terminal cells (`Cell`), where each cell stores UTF-8 character bytes, visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
+`TextGridBuffer` is the core off-screen rendering canvas for Qtui. It represents a 2D grid of terminal cells (`Cell`), where each `Cell` stores the UTF-8 bytes of one grapheme cluster (inline, without heap allocation), visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
 
 `TextGridBuffer` provides low-level character drawing primitives (`writeText`, `drawLine`, `drawBox`, `fillRect`) and efficient differential ANSI sequence generation (`diff`, `diffRelative`). The rendering engine uses `TextGridBuffer` to compare the previous frame with the current frame and emit minimal ANSI escape codes to the terminal output.
 

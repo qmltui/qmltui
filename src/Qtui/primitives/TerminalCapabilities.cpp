@@ -1,0 +1,90 @@
+#include "TerminalCapabilities.h"
+
+namespace qtui {
+
+namespace {
+
+bool parseColorDepth(const QString &value, ColorDepth &depth)
+{
+    const QString normalized = value.trimmed().toLower();
+    if (normalized == QLatin1String("mono") || normalized == QLatin1String("none")
+        || normalized == QLatin1String("0")) {
+        depth = ColorDepth::Mono;
+    } else if (normalized == QLatin1String("16") || normalized == QLatin1String("basic")
+               || normalized == QLatin1String("ansi")) {
+        depth = ColorDepth::Basic16;
+    } else if (normalized == QLatin1String("256") || normalized == QLatin1String("indexed")) {
+        depth = ColorDepth::Indexed256;
+    } else if (normalized == QLatin1String("truecolor") || normalized == QLatin1String("24bit")
+               || normalized == QLatin1String("rgb")) {
+        depth = ColorDepth::TrueColor;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool flagEnabled(const QString &value)
+{
+    const QString normalized = value.trimmed().toLower();
+    return !normalized.isEmpty() && normalized != QLatin1String("0")
+        && normalized != QLatin1String("false") && normalized != QLatin1String("off");
+}
+
+} // namespace
+
+TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment &environment,
+                                                  bool stdoutIsTty)
+{
+    TerminalCapabilities capabilities;
+    capabilities.isTty = stdoutIsTty;
+    capabilities.termProgram = environment.value(QStringLiteral("TERM_PROGRAM"));
+
+    const QString term = environment.value(QStringLiteral("TERM")).trimmed().toLower();
+    const QString colorTerm = environment.value(QStringLiteral("COLORTERM")).trimmed().toLower();
+    const QString program = capabilities.termProgram.trimmed().toLower();
+
+    // Colour depth, first match wins.
+    ColorDepth requested = ColorDepth::TrueColor;
+    if (parseColorDepth(environment.value(QStringLiteral("QTUI_COLOR_DEPTH")), requested)) {
+        capabilities.colorDepth = requested;
+    } else if (!environment.value(QStringLiteral("NO_COLOR")).isEmpty()) {
+        capabilities.colorDepth = ColorDepth::Mono;
+    } else if (term == QLatin1String("dumb")) {
+        capabilities.colorDepth = ColorDepth::Mono;
+    } else if (colorTerm == QLatin1String("truecolor") || colorTerm == QLatin1String("24bit")
+               || term.endsWith(QLatin1String("-direct"))) {
+        capabilities.colorDepth = ColorDepth::TrueColor;
+    } else if (program == QLatin1String("iterm.app") || program == QLatin1String("wezterm")
+               || program == QLatin1String("vscode") || program == QLatin1String("ghostty")
+               || program == QLatin1String("kitty") || program == QLatin1String("hyper")) {
+        capabilities.colorDepth = ColorDepth::TrueColor;
+    } else if (program == QLatin1String("apple_terminal")) {
+        capabilities.colorDepth = ColorDepth::Indexed256;
+    } else if (term.contains(QLatin1String("256color"))) {
+        capabilities.colorDepth = ColorDepth::Indexed256;
+    } else {
+        capabilities.colorDepth = ColorDepth::TrueColor;   // previous unconditional behaviour
+    }
+
+    // Synchronized output: unknown private modes are ignored by terminals, so
+    // it is on unless the output is not a terminal at all.
+    capabilities.syncOutput = stdoutIsTty && term != QLatin1String("dumb");
+    if (environment.contains(QStringLiteral("QTUI_SYNC_OUTPUT")))
+        capabilities.syncOutput = flagEnabled(environment.value(QStringLiteral("QTUI_SYNC_OUTPUT")));
+
+    return capabilities;
+}
+
+QString TerminalCapabilities::colorDepthName(ColorDepth depth)
+{
+    switch (depth) {
+    case ColorDepth::Mono: return QStringLiteral("mono");
+    case ColorDepth::Basic16: return QStringLiteral("16");
+    case ColorDepth::Indexed256: return QStringLiteral("256");
+    case ColorDepth::TrueColor: return QStringLiteral("truecolor");
+    }
+    return QStringLiteral("truecolor");
+}
+
+} // namespace qtui

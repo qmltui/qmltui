@@ -1,4 +1,5 @@
 #include "Behavior.h"
+#include "../primitives/Color.h"
 
 namespace qtui {
 
@@ -45,6 +46,17 @@ void Behavior::write(const QVariant& value) {
 
     QVariant currentVal = m_property.read();
     if (currentVal == value) return;
+
+    if (m_property.propertyType() == QMetaType::fromType<Color>().id()) {
+        Color c1 = (currentVal.userType() == QMetaType::fromType<Color>().id())
+                       ? currentVal.value<Color>()
+                       : Color::fromString(currentVal.toString());
+        Color c2 = (value.userType() == QMetaType::fromType<Color>().id())
+                       ? value.value<Color>()
+                       : Color::fromString(value.toString());
+        if (c1.isValid() && c2.isValid() && c1 == c2)
+            return;
+    }
 
     if (!m_animation) {
         m_property.write(value);

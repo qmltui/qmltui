@@ -48,12 +48,6 @@ Terminal {
             barColor: "green"
             value: 0.0
 
-            Behavior on value {
-                NumberAnimation {
-                    duration: 1000
-                }
-            }
-
         }
     }
 }

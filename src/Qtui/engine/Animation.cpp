@@ -1,5 +1,6 @@
 #include "Animation.h"
 #include "../primitives/ColorMapper.h"
+#include "../primitives/Color.h"
 #include <cmath>
 #include <algorithm>
 #include <QDebug>
@@ -82,8 +83,21 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
                 void* argv[] = { &val };
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
             } else if (typeId == QMetaType::QString) {
-                QString val = value.toString();
+                QString val = (value.userType() == QMetaType::fromType<Color>().id())
+                                  ? value.value<Color>().toString()
+                                  : value.toString();
                 void* argv[] = { &val };
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+            } else if (typeId == QMetaType::fromType<Color>().id()) {
+                Color col;
+                if (value.userType() == typeId) {
+                    col = value.value<Color>();
+                } else if (value.userType() == QMetaType::QString) {
+                    col = Color::fromString(value.toString());
+                } else {
+                    col = Color::fromArgb32(ColorMapper::fromString(value.toString()));
+                }
+                void* argv[] = { &col };
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
             } else if (typeId == QMetaType::Bool) {
                 bool val = value.toBool();
@@ -268,11 +282,25 @@ NumberAnimation::NumberAnimation(QObject* parent) : PropertyAnimation(parent) {
 ColorAnimation::ColorAnimation(QObject* parent) : PropertyAnimation(parent) {
 }
 
+static uint32_t extractColor(const QVariant& var, uint32_t defaultColor = 0xFFFFFFFF) {
+    if (var.userType() == QMetaType::fromType<Color>().id()) {
+        Color c = var.value<Color>();
+        if (c.isValid())
+            return c.argb32();
+    }
+    if (var.userType() == QMetaType::QString) {
+        Color c = Color::fromString(var.toString());
+        if (c.isValid())
+            return c.argb32();
+    }
+    return ColorMapper::fromString(var.toString(), defaultColor);
+}
+
 void ColorAnimation::writeValue(const QVariant& value) {
     if (!m_target || m_propertyName.isEmpty()) return;
 
-    uint32_t fromColor = ColorMapper::fromString(m_from.toString(), 0xFFFFFFFF);
-    uint32_t toColor = ColorMapper::fromString(m_to.toString(), 0xFFFFFFFF);
+    uint32_t fromColor = extractColor(m_from, 0xFFFFFFFF);
+    uint32_t toColor = extractColor(m_to, 0xFFFFFFFF);
 
     int fromA = (fromColor >> 24) & 0xFF;
     int fromR = (fromColor >> 16) & 0xFF;
@@ -291,13 +319,13 @@ void ColorAnimation::writeValue(const QVariant& value) {
     int currG = std::clamp(static_cast<int>(fromG + t * (toG - fromG)), 0, 255);
     int currB = std::clamp(static_cast<int>(fromB + t * (toB - fromB)), 0, 255);
 
-    QString hexColor = QString("#%1%2%3%4")
-        .arg(currA, 2, 16, QChar('0'))
-        .arg(currR, 2, 16, QChar('0'))
-        .arg(currG, 2, 16, QChar('0'))
-        .arg(currB, 2, 16, QChar('0'));
+    uint32_t currArgb = (static_cast<uint32_t>(currA) << 24)
+                      | (static_cast<uint32_t>(currR) << 16)
+                      | (static_cast<uint32_t>(currG) << 8)
+                      | static_cast<uint32_t>(currB);
 
-    writePropertyBypassingInterceptor(m_target.data(), m_propertyName, hexColor);
+    Color animatedColor = Color::fromArgb32(currArgb);
+    writePropertyBypassingInterceptor(m_target.data(), m_propertyName, QVariant::fromValue(animatedColor));
 }
 
 // ==========================================

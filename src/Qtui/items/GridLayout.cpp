@@ -18,6 +18,7 @@ void GridLayout::setColumns(int cols) {
     m_columns = cols;
     emit columnsChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void GridLayout::setRows(int r) {
@@ -25,6 +26,7 @@ void GridLayout::setRows(int r) {
     m_rows = r;
     emit rowsChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void GridLayout::setColumnSpacing(int spacing) {
@@ -32,6 +34,7 @@ void GridLayout::setColumnSpacing(int spacing) {
     m_columnSpacing = spacing;
     emit columnSpacingChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void GridLayout::setRowSpacing(int spacing) {
@@ -39,6 +42,7 @@ void GridLayout::setRowSpacing(int spacing) {
     m_rowSpacing = spacing;
     emit rowSpacingChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void GridLayout::setFlow(Flow flow) {
@@ -46,6 +50,7 @@ void GridLayout::setFlow(Flow flow) {
     m_flow = flow;
     emit flowChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 struct GridItemInfo {

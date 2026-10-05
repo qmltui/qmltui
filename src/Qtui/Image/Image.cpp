@@ -322,7 +322,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
-                cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
+                cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
 
                 if (topColor.alpha() >= 10) {
                     cell.fgColor = topColor.rgba();
@@ -379,7 +379,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 char asciiChar[2] = { ASCII_RAMP[rampIndex], '\0' };
-                cell.character = asciiChar;
+                cell.setCharacter(asciiChar);
                 cell.fgColor = col.rgba();
             }
         }
@@ -437,7 +437,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                     cell.continuation = false;
                     int brailleChar = 0x2800 + cellValue;
                     QChar qc(brailleChar);
-                    cell.character = QString(qc).toUtf8();
+                    cell.setCharacter(QString(qc).toUtf8());
                     cell.fgColor = lastRgb;
                 }
             }

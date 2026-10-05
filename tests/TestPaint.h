@@ -4,18 +4,19 @@
 
 namespace qtui::testing {
 
+// Renders one frame the way the engine does: layout pass, then paint pass.
 inline void paintItem(Item &item, TextGridBuffer &buffer,
                       int absX, int absY,
                       const ClipRect &clipRect = ClipRect())
 {
-    ItemPaintTraversal::paintSubtree(&item, buffer, absX, absY, clipRect);
+    ItemPaintTraversal::renderSubtree(&item, buffer, absX, absY, clipRect);
 }
 
 inline void paintItem(Item *item, TextGridBuffer &buffer,
                       int absX, int absY,
                       const ClipRect &clipRect = ClipRect())
 {
-    ItemPaintTraversal::paintSubtree(item, buffer, absX, absY, clipRect);
+    ItemPaintTraversal::renderSubtree(item, buffer, absX, absY, clipRect);
 }
 
 } // namespace qtui::testing

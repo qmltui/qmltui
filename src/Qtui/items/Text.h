@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Item.h"
+#include <QByteArray>
 #include <QString>
+#include <vector>
 
 namespace qtui {
 
@@ -81,7 +83,35 @@ signals:
     void gradientChanged();
 
 private:
+    // One grapheme cluster after inline ANSI/HTML markup has been resolved.
+    struct GlyphEntry {
+        uint32_t fgColor = 0xFFFFFFFF;
+        uint32_t bgColor = 0x00000000;
+        TextAttribute attributes = TextAttribute::None;
+        uint8_t advance = 1;    // raw cluster width: drives layout and clipping
+        uint8_t cellWidth = 1;  // width written to the cell (controls become visible glyphs)
+        uint32_t glyphOffset = 0;   // into m_glyphBytes
+        uint32_t glyphLength = 0;
+    };
+    struct LineLayout {
+        int visualWidth = 0;
+        int firstGlyph = 0;
+        int glyphCount = 0;
+    };
+
+    // Parses one line of markup into glyph entries (when entries is non-null)
+    // and returns its visual width.
+    int parseLine(const QString &line, std::vector<GlyphEntry> *entries,
+                  QByteArray *bytes) const;
+    void ensureLayout() const;
+    void invalidateLayout() { m_layoutDirty = true; }
+    void updateImplicitSize();
+
     QString m_text;
+    mutable std::vector<GlyphEntry> m_glyphs;
+    mutable std::vector<LineLayout> m_lines;
+    mutable QByteArray m_glyphBytes;
+    mutable bool m_layoutDirty = true;
     Color m_color = "white"; // default string
     uint32_t m_resolvedColor = 0xFFFFFFFF; // pre-resolved color value
     bool m_bold = false;

@@ -1,11 +1,19 @@
 #pragma once
 
 #include "Cell.h"
+#include "TerminalCapabilities.h"
 #include <vector>
 #include <string>
 #include <QString>
 
 namespace qtui {
+
+// How a frame diff is encoded for the terminal.
+struct AnsiEncodeOptions {
+    ColorDepth colorDepth = ColorDepth::TrueColor;
+    bool eraseToEndOfLine = true;   // "\033[K" instead of a run of trailing blanks
+    int eraseMinimumCells = 4;      // only when at least this many blanks remain
+};
 
 class TextGridBuffer {
 public:
@@ -24,6 +32,37 @@ public:
 
     Cell& cellAt(int x, int y);
     const Cell& cellAt(int x, int y) const;
+
+    // Writes one already-segmented grapheme cluster of the given display width
+    // at (x, y): the base cell plus width-1 continuation cells. A background
+    // with zero alpha keeps the underlying background. A zero-width cluster at
+    // x > 0 is appended to the nearest base cell on the left.
+    //
+    // Returns the number of columns to advance (width, or 0 for an appended
+    // zero-width cluster), or -1 when the cluster does not fit before the right
+    // edge and nothing was written. Rows outside the buffer are ignored but
+    // still advance.
+    int setGrapheme(int x, int y, QByteArrayView utf8, int width,
+                    uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000,
+                    TextAttribute attributes = TextAttribute::None);
+    int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor,
+                    Color bgColor = Color::fromArgb32(0x00000000),
+                    TextAttribute attributes = TextAttribute::None)
+    {
+        return setGrapheme(x, y, utf8, width, fgColor.argb32(), bgColor.argb32(), attributes);
+    }
+
+    // Same as above for a UTF-16 cluster (typically a GraphemeRef::utf16 view);
+    // control characters are replaced by their visible glyphs as in writeText.
+    int setGrapheme(int x, int y, QStringView cluster, int width,
+                    uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000,
+                    TextAttribute attributes = TextAttribute::None);
+    int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor,
+                    Color bgColor = Color::fromArgb32(0x00000000),
+                    TextAttribute attributes = TextAttribute::None)
+    {
+        return setGrapheme(x, y, cluster, width, fgColor.argb32(), bgColor.argb32(), attributes);
+    }
 
     // Drawing and text helpers
     void writeText(int x, int y, const QString& text, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
@@ -54,17 +93,25 @@ public:
         fillRect(x, y, width, height, character, fgColor.argb32(), bgColor.argb32());
     }
 
-    // Generates ANSI escape sequences using absolute cursor positioning.
+    // Generates ANSI escape sequences using absolute cursor positioning that
+    // turn this buffer's contents into nextBuffer's. The std::string overloads
+    // append to a caller-owned string so the renderer can reuse its allocation.
     std::string diff(const TextGridBuffer& nextBuffer) const;
+    void diff(const TextGridBuffer& nextBuffer, std::string& out,
+              const AnsiEncodeOptions& options = {}) const;
 
-    // Generates ANSI escape sequences using relative cursor movements.
+    // Same with relative cursor movements from the region's top-left corner.
     std::string diffRelative(const TextGridBuffer& nextBuffer) const;
+    void diffRelative(const TextGridBuffer& nextBuffer, std::string& out,
+                      const AnsiEncodeOptions& options = {}) const;
 
     // Converts the buffer linearly to an ANSI string with newlines.
     std::string toAnsiString() const;
+    void toAnsiString(std::string& out) const;
 
 private:
-    std::string diffInternal(const TextGridBuffer& nextBuffer, bool absolute, int& curX, int& curY) const;
+    void diffInternal(const TextGridBuffer& nextBuffer, bool absolute, std::string& out,
+                      const AnsiEncodeOptions& options) const;
 
     int m_width = 0;
     int m_height = 0;

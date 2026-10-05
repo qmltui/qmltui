@@ -47,6 +47,10 @@ signals:
     void cellWidthChanged();
     void cellHeightChanged();
 
+protected:
+    // Positions delegate items in the layout pass, never from paint().
+    void updateLayout() override;
+
 private:
     void disconnectModelSignals();
     void clearItems();

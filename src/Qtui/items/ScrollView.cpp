@@ -123,11 +123,12 @@ void ScrollView::ensureChildVisible(Item* childItem) {
 }
 
 void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+    // Anchors resolve synchronously when their targets change; nothing may be
+    // laid out from paint().
     Q_UNUSED(buffer);
     Q_UNUSED(absX);
     Q_UNUSED(absY);
     Q_UNUSED(clipRect);
-    m_anchors.resolve();
 }
 
 void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
@@ -156,9 +157,9 @@ void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
                         Cell& cell = buffer.cellAt(sbX, cy);
                         cell.fgColor = 0xFF888888;
                         if (dy >= sbPos && dy < sbPos + sbH) {
-                            cell.character = "\xE2\x96\x88"; // █
+                            cell.setCharacter("\xE2\x96\x88"); // █
                         } else {
-                            cell.character = "\xE2\x96\x91"; // ░
+                            cell.setCharacter("\xE2\x96\x91"); // ░
                         }
                     }
                 }

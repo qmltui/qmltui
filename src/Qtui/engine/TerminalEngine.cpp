@@ -13,11 +13,14 @@
 #include "Keys.h"
 #include "Shortcut.h"
 #include <QCoreApplication>
+#include <QLoggingCategory>
 #include <QMetaObject>
+#include <QProcessEnvironment>
 #include <QSet>
 #include <QThread>
 #include <QPointer>
 #include <QtGlobal>
+#include <algorithm>
 #include <iostream>
 #include <cstring>
 
@@ -29,6 +32,9 @@
 #endif
 
 namespace qtui {
+
+// One line per committed frame. Off by default; QTUI_FRAME_STATS=1 enables it.
+Q_LOGGING_CATEGORY(lcQtuiFrames, "qtui.frames", QtWarningMsg)
 
 #ifdef Q_OS_UNIX
 class TerminalResizeBridge : public QObject {
@@ -175,6 +181,29 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   TerminalMessageRouter::registerEngine();
   m_terminalOutputEnabled = !environmentRequestsTestSession()
       || environmentFlagEnabled("QTUI_TEST_LIVE");
+  m_frameStatsLogging = environmentFlagEnabled("QTUI_FRAME_STATS");
+  if (m_frameStatsLogging)
+      const_cast<QLoggingCategory&>(lcQtuiFrames()).setEnabled(QtDebugMsg, true);
+
+  // Frame pacing: coalesce bursts of invalidations into at most maxFrameRate
+  // commits per second. Test sessions stay uncapped so latency assertions
+  // measure the framework, not the pacer.
+  m_paceTimer.setSingleShot(true);
+  m_paceTimer.setTimerType(Qt::PreciseTimer);
+  connect(&m_paceTimer, &QTimer::timeout, this, &TerminalEngine::renderFrame);
+  bool fpsValid = false;
+  const int envFps = qgetenv("QTUI_MAX_FPS").trimmed().toInt(&fpsValid);
+  setMaxFrameRate(fpsValid && envFps >= 0 ? envFps : (environmentRequestsTestSession() ? 0 : 60));
+  bool limitValid = false;
+  const qlonglong envLimit = qgetenv("QTUI_OUTPUT_QUEUE_LIMIT").trimmed().toLongLong(&limitValid);
+  if (limitValid && envLimit >= 0)
+      m_outputQueueLimit = static_cast<size_t>(envLimit);
+  m_device.setDrainedCallback([this] {
+      if (!m_renderDeferredForOutput)
+          return;
+      m_renderDeferredForOutput = false;
+      QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame, Qt::QueuedConnection);
+  });
 
   // Setup InputDecoder callbacks
   m_inputDecoder.setKeyCallback([this](int key, const QString& text, int modifiers) {
@@ -193,12 +222,21 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   }
 
   if (m_terminalOutputEnabled) {
+    m_device.setAsyncOutput(true);
     m_device.enableRawMode();
     m_device.hideCursor();
   }
 
+#ifdef Q_OS_UNIX
+  const bool stdoutIsTty = ::isatty(STDOUT_FILENO) == 1;
+#else
+  const bool stdoutIsTty = true;
+#endif
+  m_capabilities = TerminalCapabilities::detect(QProcessEnvironment::systemEnvironment(), stdoutIsTty);
+
   m_renderer = new FrameRenderer();
   m_renderer->setOutputEnabled(m_terminalOutputEnabled);
+  m_renderer->setCapabilities(m_capabilities);
 
   // Enable bracketed paste. Enable mouse reporting only if enabled on root window.
   if (m_terminalOutputEnabled) {
@@ -245,6 +283,7 @@ TerminalEngine::~TerminalEngine() {
 }
 
 void TerminalEngine::stop() {
+  m_paceTimer.stop();
   if (m_terminalOutputEnabled)
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
   if (m_renderer && m_rendererStarted) {
@@ -253,7 +292,10 @@ void TerminalEngine::stop() {
   }
   if (m_terminalOutputEnabled) {
     m_device.showCursor();
+    const bool flushed = m_device.finishOutput();
     m_device.disableRawMode();
+    if (!flushed)
+        emit renderFailed(QStringLiteral("Terminal output could not be flushed during shutdown; undelivered bytes were discarded"));
   }
   if (m_alternateScreenMessageSession) {
       m_alternateScreenMessageSession = false;
@@ -264,8 +306,24 @@ void TerminalEngine::stop() {
 void TerminalEngine::requestRender() {
   if (m_renderPending.exchange(true))
     return;
+  if (QThread::currentThread() == thread() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
+    const qint64 sinceCommit = m_lastCommit.elapsed();
+    if (sinceCommit < m_frameIntervalMs) {
+      m_paceTimer.start(static_cast<int>(m_frameIntervalMs - sinceCommit));
+      return;
+    }
+  }
   QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame,
                             Qt::QueuedConnection);
+}
+
+void TerminalEngine::setMaxFrameRate(int framesPerSecond) {
+  m_maxFrameRate = std::max(0, framesPerSecond);
+  m_frameIntervalMs = m_maxFrameRate > 0 ? std::max(1, 1000 / m_maxFrameRate) : 0;
+  if (m_frameIntervalMs == 0 && m_paceTimer.isActive()) {
+    m_paceTimer.stop();
+    QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame, Qt::QueuedConnection);
+  }
 }
 
 int TerminalEngine::terminalWidth() const {
@@ -396,6 +454,16 @@ Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX
 }
 
 void TerminalEngine::renderFrame() {
+  m_paceTimer.stop();
+  if (m_device.pendingBytes() > m_outputQueueLimit) {
+    // The terminal has not consumed earlier frames yet. Keep the request
+    // latched; the device calls back once the queue has drained, and the next
+    // frame is diffed against the last committed buffer so nothing is lost.
+    m_renderPending = true;
+    m_renderDeferredForOutput = true;
+    ++m_frameStatsTotals.skippedForBackpressure;
+    return;
+  }
   m_renderPending = false;
   if (!m_rootWindow) {
     emit renderFailed(QStringLiteral("Terminal root was destroyed before rendering"));
@@ -413,7 +481,28 @@ void TerminalEngine::renderFrame() {
       return;
   }
 
-  emit frameRendered(++m_frameSequence);
+  m_lastCommit.restart();
+  FrameStats stats = m_renderer->lastFrameStats();
+  stats.sequence = ++m_frameSequence;
+  m_lastFrameStats = stats;
+  m_frameStatsTotals.frames += 1;
+  m_frameStatsTotals.paintMicrosTotal += stats.paintMicros;
+  m_frameStatsTotals.paintMicrosMax = std::max(m_frameStatsTotals.paintMicrosMax, stats.paintMicros);
+  m_frameStatsTotals.diffMicrosTotal += stats.diffMicros;
+  m_frameStatsTotals.writeMicrosTotal += stats.writeMicros;
+  m_frameStatsTotals.bytesTotal += stats.diffBytes;
+  m_frameStatsTotals.dirtyDuringPaintTotal += stats.dirtyDuringPaint;
+  if (m_frameStatsLogging) {
+      qCDebug(lcQtuiFrames, "frame %llu paint=%lldus diff=%lldus write=%lldus bytes=%lld dirtyDuringPaint=%d",
+              static_cast<unsigned long long>(stats.sequence),
+              static_cast<long long>(stats.paintMicros),
+              static_cast<long long>(stats.diffMicros),
+              static_cast<long long>(stats.writeMicros),
+              static_cast<long long>(stats.diffBytes),
+              stats.dirtyDuringPaint);
+  }
+
+  emit frameRendered(stats.sequence);
 }
 
 void TerminalEngine::setRenderer(Renderer* renderer) {
@@ -443,9 +532,17 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
     m_rendererStarted = false;
     if (m_renderer) {
         m_renderer->setOutputEnabled(m_terminalOutputEnabled);
+        m_renderer->setCapabilities(m_capabilities);
         m_renderer->resize(terminalWidth(), terminalHeight());
         requestRender();
     }
+}
+
+void TerminalEngine::setCapabilities(const TerminalCapabilities& capabilities) {
+    m_capabilities = capabilities;
+    if (m_renderer)
+        m_renderer->setCapabilities(m_capabilities);
+    requestRender();
 }
 
 void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
@@ -464,8 +561,12 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   if (!enabled) {
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
     m_device.showCursor();
+    const bool flushed = m_device.finishOutput();
     m_device.disableRawMode();
+    if (!flushed)
+        emit renderFailed(QStringLiteral("Terminal output could not be flushed when disabling output; undelivered bytes were discarded"));
   } else {
+    m_device.setAsyncOutput(true);
     m_device.enableRawMode();
     m_device.hideCursor();
     m_device.write("\033[?2004h");

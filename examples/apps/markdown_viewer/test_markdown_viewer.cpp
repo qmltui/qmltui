@@ -202,10 +202,10 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
         for (int x = 0; x < buffer.width(); ++x) {
             const Cell &cell = buffer.cellAt(x, y);
             if (clip.contains(x, y)) {
-                changedInside |= cell.character != QByteArray(".");
+                changedInside |= cell.character().toByteArray() != QByteArray(".");
                 highlighted |= cell.bgColor == activeBackground;
             } else {
-                QCOMPARE(cell.character, QByteArray("."));
+                QCOMPARE(cell.character().toByteArray(), QByteArray("."));
             }
         }
     }
@@ -215,8 +215,8 @@ void MarkdownViewerTest::renderingHonorsClipAndSearchStyle() {
     TextGridBuffer fullBuffer;
     QVERIFY(fullBuffer.resize(24, 5));
     ItemPaintTraversal::paintSubtree(&view, fullBuffer, 0, 0);
-    QCOMPARE(fullBuffer.cellAt(0, 0).character, QByteArray("1"));
-    QCOMPARE(fullBuffer.cellAt(2, 0).character, QStringLiteral("│").toUtf8());
+    QCOMPARE(fullBuffer.cellAt(0, 0).character().toByteArray(), QByteArray("1"));
+    QCOMPARE(fullBuffer.cellAt(2, 0).character().toByteArray(), QStringLiteral("│").toUtf8());
     QCOMPARE(view.metaObject()->indexOfProperty("borderStyle"), -1);
 }
 

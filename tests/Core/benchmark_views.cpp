@@ -49,7 +49,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
                 required property int depth
                 required property bool hasChildren
                 required property bool expanded
-                required property bool isCurrent
+                required property bool current
                 required property string display
                 required property var modelData
             }
@@ -68,6 +68,10 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     qtui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
     qtui::testing::paintItem(tree, buffer, 0, 0);
+    if (tree->childItems().size() < 24) {
+        qCritical("TreeView benchmark failed to create visible delegates");
+        return -1;
+    }
     return timer.elapsed();
 }
 
@@ -82,6 +86,7 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
         TableView {
             width: 80
             height: 24
+            columns: [{ title: "Row", width: 80 }]
             model: benchmarkModel
             delegate: Text {
                 required property string display
@@ -102,6 +107,10 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     qtui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
     qtui::testing::paintItem(table, buffer, 0, 0);
+    if (table->childItems().size() < 22 || buffer.cellAt(0, 2).character() != "0") {
+        qCritical("TableView benchmark failed to render visible delegates");
+        return -1;
+    }
     return timer.elapsed();
 }
 

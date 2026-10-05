@@ -431,7 +431,7 @@ bool TestRunner::installJavaScriptFacade()
         "captureImage", "frameText", "cell", "findText", "clickText",
         "click", "doubleClick", "drag", "scroll", "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
-        "expectRepaint", "frameCount", "injectText", "injectKey",
+        "expectRepaint", "frameCount", "frameStats", "injectText", "injectKey",
         "fail", "rootObject", "finish"
     ];
     const facade = {};
@@ -923,7 +923,7 @@ void TestRunner::expectTextInRegion(int x, int y, int width, int height, const Q
         for (int c = x; c < x + width; ++c) {
             const Cell& cell = frame->cellAt(c, r);
             if (cell.continuation) continue;
-            line.append(cell.character.isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character));
+            line.append(cell.character().isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character()));
         }
         regionText.append(line);
         regionText.append(QLatin1Char('\n'));
@@ -995,7 +995,7 @@ void TestRunner::expectStyle(int x, int y, const QJSValue& expectedStyle)
     }
     if (expectedStyle.hasProperty(QStringLiteral("character"))) {
         const QString expectedChar = expectedStyle.property(QStringLiteral("character")).toString();
-        const QString actualChar = QString::fromUtf8(cell.character);
+        const QString actualChar = QString::fromUtf8(cell.character());
         if (expectedChar != actualChar) {
             failScenario(QStringLiteral("Cell at (%1,%2) character expected \"%3\" but got \"%4\"").arg(x).arg(y).arg(expectedChar).arg(actualChar));
             return;
@@ -1130,6 +1130,34 @@ int TestRunner::frameCount() const
     return m_terminalEngine ? static_cast<int>(m_terminalEngine->frameSequence()) : -1;
 }
 
+QVariantMap TestRunner::frameStats() const
+{
+    QVariantMap stats;
+    if (!m_terminalEngine)
+        return stats;
+    const FrameStats last = m_terminalEngine->lastFrameStats();
+    const TerminalEngine::FrameStatsTotals totals = m_terminalEngine->frameStatsTotals();
+    const qint64 frames = static_cast<qint64>(totals.frames);
+    stats.insert(QStringLiteral("frame"), static_cast<qint64>(last.sequence));
+    stats.insert(QStringLiteral("paintMicros"), last.paintMicros);
+    stats.insert(QStringLiteral("diffMicros"), last.diffMicros);
+    stats.insert(QStringLiteral("writeMicros"), last.writeMicros);
+    stats.insert(QStringLiteral("diffBytes"), last.diffBytes);
+    stats.insert(QStringLiteral("bytesWritten"), last.bytesWritten);
+    stats.insert(QStringLiteral("dirtyDuringPaint"), last.dirtyDuringPaint);
+    stats.insert(QStringLiteral("frames"), frames);
+    stats.insert(QStringLiteral("paintMicrosAvg"),
+                 frames > 0 ? totals.paintMicrosTotal / frames : qint64(0));
+    stats.insert(QStringLiteral("paintMicrosMax"), totals.paintMicrosMax);
+    stats.insert(QStringLiteral("diffMicrosAvg"),
+                 frames > 0 ? totals.diffMicrosTotal / frames : qint64(0));
+    stats.insert(QStringLiteral("bytesTotal"), totals.bytesTotal);
+    stats.insert(QStringLiteral("dirtyDuringPaintTotal"), totals.dirtyDuringPaintTotal);
+    stats.insert(QStringLiteral("queuedBytes"), last.queuedBytes);
+    stats.insert(QStringLiteral("skippedForBackpressure"), totals.skippedForBackpressure);
+    return stats;
+}
+
 void TestRunner::waitForCondition(const QJSValue& condition, int timeoutMs)
 {
     if (!ensureRunning("waitForCondition"))
@@ -1236,8 +1264,8 @@ QString TestRunner::normalizedText(const TextGridBuffer& frame)
             const Cell& cell = frame.cellAt(column, row);
             if (cell.continuation)
                 continue;
-            line.append(cell.character.isEmpty() ? QStringLiteral(" ")
-                                                  : QString::fromUtf8(cell.character));
+            line.append(cell.character().isEmpty() ? QStringLiteral(" ")
+                                                  : QString::fromUtf8(cell.character()));
         }
         while (line.endsWith(QLatin1Char(' ')))
             line.chop(1);
@@ -1262,8 +1290,8 @@ QList<TestRunner::TextMatch> TestRunner::textMatches(const TextGridBuffer& frame
             const Cell& renderedCell = frame.cellAt(column, row);
             if (renderedCell.continuation)
                 continue;
-            const QString character = renderedCell.character.isEmpty()
-                ? QStringLiteral(" ") : QString::fromUtf8(renderedCell.character);
+            const QString character = renderedCell.character().isEmpty()
+                ? QStringLiteral(" ") : QString::fromUtf8(renderedCell.character());
             renderedRow.append(character);
             for (qsizetype index = 0; index < character.size(); ++index) {
                 sourceColumns.append(column);
@@ -1455,7 +1483,7 @@ void TestRunner::captureImage(const QString& relativePath)
             if (!cell.continuation) {
                 painter.setPen(cell.fgColor ? QColor::fromRgba(cell.fgColor)
                                             : QColor(QStringLiteral("#d4e4fa")));
-                painter.drawText(rect, Qt::AlignCenter, QString::fromUtf8(cell.character));
+                painter.drawText(rect, Qt::AlignCenter, QString::fromUtf8(cell.character()));
             }
         }
     }
@@ -1502,7 +1530,7 @@ QVariantMap TestRunner::cell(int x, int y)
     QVariantMap result;
     result.insert(QStringLiteral("x"), x);
     result.insert(QStringLiteral("y"), y);
-    result.insert(QStringLiteral("character"), QString::fromUtf8(renderedCell.character));
+    result.insert(QStringLiteral("character"), QString::fromUtf8(renderedCell.character()));
     result.insert(QStringLiteral("continuation"), renderedCell.continuation);
     result.insert(QStringLiteral("foreground"), rgbaString(renderedCell.fgColor));
     result.insert(QStringLiteral("background"), rgbaString(renderedCell.bgColor));
@@ -1622,7 +1650,8 @@ bool TestRunner::writeResultArtifact(int exitCode, QString* error)
                      {QStringLiteral("elapsedMs"), m_elapsed.isValid() ? m_elapsed.elapsed() : 0},
                      {QStringLiteral("viewport"), viewport},
                      {QStringLiteral("operations"), operations},
-                     {QStringLiteral("artifacts"), artifacts}};
+                     {QStringLiteral("artifacts"), artifacts},
+                     {QStringLiteral("frameStats"), QJsonObject::fromVariantMap(frameStats())}};
     root.insert(QStringLiteral("operation"),
                 m_currentOperation >= 0 && m_currentOperation < m_operations.size()
                     ? QJsonValue(operationObject(m_operations.at(m_currentOperation)))

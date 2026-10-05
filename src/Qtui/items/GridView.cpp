@@ -73,7 +73,7 @@ void GridView::setCellWidth(int width) {
     return;
   m_cellWidth = width;
   emit cellWidthChanged();
-  markDirty();
+  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::setCellHeight(int height) {
@@ -81,7 +81,7 @@ void GridView::setCellHeight(int height) {
     return;
   m_cellHeight = height;
   emit cellHeightChanged();
-  markDirty();
+  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::clearItems() {
@@ -399,7 +399,7 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
     if (m_createdItems[row])
       setPropertyIfExists(m_createdItems[row], "index", row);
   }
-  markDirty();
+  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::removeModelRows(int first, int last) {
@@ -418,7 +418,7 @@ void GridView::removeModelRows(int first, int last) {
     if (m_createdItems[row])
       setPropertyIfExists(m_createdItems[row], "index", row);
   }
-  markDirty();
+  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::moveModelRows(int first, int last, int destination) {
@@ -438,7 +438,7 @@ void GridView::moveModelRows(int first, int last, int destination) {
     if (m_createdItems[row])
       setPropertyIfExists(m_createdItems[row], "index", row);
   }
-  markDirty();
+  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::layoutChildren() {
@@ -477,12 +477,16 @@ int GridView::implicitHeight() const {
   return topPadding() + bottomPadding();
 }
 
+void GridView::updateLayout() {
+  ScrollView::updateLayout();
+  layoutChildren();
+}
+
 void GridView::paint(TextGridBuffer &buffer, int absX, int absY,
                       const ClipRect &clipRect) {
   if (!visible())
     return;
-  layoutChildren();
-    ScrollView::paint(buffer, absX, absY, clipRect);
+  ScrollView::paint(buffer, absX, absY, clipRect);
 }
 
 } // namespace qtui

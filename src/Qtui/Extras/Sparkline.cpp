@@ -140,19 +140,19 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
                 if (availH == 1) {
                     // Single row sparkline mode
-                    cell.character = QByteArray(blockGlyphs[targetLevel]);
+                    cell.setCharacter(blockGlyphs[targetLevel]);
                 } else {
                     // Multi-row chart mode
                     if (ry == targetRow) {
-                        cell.character = QByteArray(blockGlyphs[targetLevel]);
+                        cell.setCharacter(blockGlyphs[targetLevel]);
                     } else if (ry < targetRow) {
                         if (m_filled) {
-                            cell.character = QByteArray("\xE2\x96\x88"); // Solid fill
+                            cell.setCharacter("\xE2\x96\x88"); // Solid fill
                         } else {
-                            cell.character = QByteArray(" "); // Blank space for clean curve outline
+                            cell.setCharacter(" "); // Blank space for clean curve outline
                         }
                     } else {
-                        cell.character = QByteArray(" "); // Blank space above curve
+                        cell.setCharacter(" "); // Blank space above curve
                     }
                 }
                 cell.displayWidth = 1;

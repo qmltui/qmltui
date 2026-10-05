@@ -135,10 +135,22 @@ signals:
 
     void rowActivated(int index);
 
+protected:
+    // Computes the scroll offset and creates, positions and shows delegate
+    // items. Runs in the layout pass, never from paint().
+    void updateLayout() override;
+
 private:
     ClipRect clipRectForChildren(int absX, int absY,
                                 const ClipRect &clipRect) const override;
     int rowCount() const;
+    int computeFirstVisibleRow() const;
+    void layoutDelegates();
+    void refreshDelegateStates();
+    void rebindDelegateItem(Item *item, int row, int column);
+    void delegateModelData(int row, int column, QVariantMap &modelMap,
+                           QVariant &modelData) const;
+    void handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     QString cellText(int row, int col) const;
     int columnWidth(int col) const;
     QString columnAlignment(int col) const;
@@ -156,6 +168,7 @@ private:
 
     int m_selectedRow = -1;
     int m_currentColumn = -1;
+    int m_firstVisibleRow = 0;
     bool m_alternatingRows = false;
 
     int m_sortColumn = -1;

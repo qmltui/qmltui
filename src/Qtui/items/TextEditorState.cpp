@@ -209,9 +209,11 @@ int TextEditorState::snapToBoundary(const QString &text, int position) {
     if (clamped == 0 || clamped == text.size())
         return clamped;
 
-    for (const Grapheme &cluster : UnicodeText::graphemes(text)) {
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster)) {
         const int start = cluster.utf16Start;
-        const int end = start + cluster.utf16Length;
+        const int end = start + cluster.utf16Length();
         if (clamped == start || clamped == end)
             return clamped;
         if (clamped > start && clamped < end)
@@ -221,17 +223,29 @@ int TextEditorState::snapToBoundary(const QString &text, int position) {
 }
 
 int TextEditorState::graphemeCount(const QString &text) {
-    return UnicodeText::graphemes(text).size();
+    int count = 0;
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster))
+        ++count;
+    return count;
 }
 
 QString TextEditorState::truncateToGraphemes(const QString &text, int maximumLength) {
     if (maximumLength <= 0)
         return text;
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(text);
-    if (clusters.size() <= maximumLength)
-        return text;
-    const Grapheme &last = clusters[maximumLength - 1];
-    return text.left(last.utf16Start + last.utf16Length);
+    int count = 0;
+    int keepUntil = 0;
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster)) {
+        ++count;
+        if (count == maximumLength)
+            keepUntil = cluster.utf16Start + cluster.utf16Length();
+        if (count > maximumLength)
+            return text.left(keepUntil);
+    }
+    return text;
 }
 
 QString TextEditorState::sanitizeSingleLine(const QString &text) {
@@ -263,11 +277,13 @@ int TextEditorState::positionForColumn(const QString &text, int column) {
     const int target = std::max(0, column);
     int width = 0;
     int position = 0;
-    for (const Grapheme &cluster : UnicodeText::graphemes(text)) {
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster)) {
         if (width + cluster.width > target)
             break;
         width += cluster.width;
-        position = cluster.utf16Start + cluster.utf16Length;
+        position = cluster.utf16Start + cluster.utf16Length();
     }
     return position;
 }

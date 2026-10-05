@@ -63,7 +63,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
               cy < buffer.height()) {
             Cell &cell = buffer.cellAt(cx, cy);
             cell.bgColor = m_resolvedBgColor;
-            cell.character = " ";
+            cell.setCharacter(" ");
             cell.displayWidth = 1;
             cell.continuation = false;
           }
@@ -99,8 +99,11 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
       vt = "|";
     }
 
-    auto setCellChar = [](Cell &cell, const char *utf8Str, uint32_t fg) {
-      cell.character = QByteArray(utf8Str);
+    // Measure the six glyphs once instead of per border cell.
+    const QByteArrayView tlGlyph(tl), trGlyph(tr), blGlyph(bl), brGlyph(br),
+        hzGlyph(hz), vtGlyph(vt);
+    auto setCellChar = [](Cell &cell, QByteArrayView glyph, uint32_t fg) {
+      cell.setCharacter(glyph);
       cell.displayWidth = 1;
       cell.continuation = false;
       cell.fgColor = fg;
@@ -117,17 +120,17 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
             if (isBorder) {
               Cell &cell = buffer.cellAt(cx, cy);
               if (dx == 0 && dy == 0)
-                setCellChar(cell, tl, borderColor);
+                setCellChar(cell, tlGlyph, borderColor);
               else if (dx == w - 1 && dy == 0)
-                setCellChar(cell, tr, borderColor);
+                setCellChar(cell, trGlyph, borderColor);
               else if (dx == 0 && dy == h - 1)
-                setCellChar(cell, bl, borderColor);
+                setCellChar(cell, blGlyph, borderColor);
               else if (dx == w - 1 && dy == h - 1)
-                setCellChar(cell, br, borderColor);
+                setCellChar(cell, brGlyph, borderColor);
               else if (dy == 0 || dy == h - 1)
-                setCellChar(cell, hz, borderColor);
+                setCellChar(cell, hzGlyph, borderColor);
               else if (dx == 0 || dx == w - 1)
-                setCellChar(cell, vt, borderColor);
+                setCellChar(cell, vtGlyph, borderColor);
             }
           }
         }

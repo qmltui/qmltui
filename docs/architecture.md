@@ -13,7 +13,7 @@ There are two primary renderers:
 1. **FrameRenderer**: Maintains a complete terminal cell frame. It can use the alternate screen buffer (`\033[?1049h`), calculates differences between frames using a painter's algorithm on a `TextGridBuffer`, and issues minimal ANSI escape sequences (`\033[%d;%dH`) to paint changes dynamically without flicker.
 2. **StreamRenderer**: Streams permanent output through the normal terminal buffer while redrawing only the live region at the bottom using relative cursor positioning.
 
-Every frame, items traverse the tree, computing bounds, clip rectangles, and painting `Cell` structures containing characters, colors, and ANSI attributes to a `TextGridBuffer`. 
+Every frame, items traverse the tree, computing bounds, clip rectangles, and painting fixed-size `Cell` values (inline UTF-8 cluster bytes, colors, and ANSI attributes) into a `TextGridBuffer`.
 
 ## Terminal-safe Qt diagnostics
 

@@ -64,7 +64,10 @@ inline Item *createItem(QQmlComponent *component,
         QVariantMap filteredProperties;
         const QMetaObject *metaObject = object->metaObject();
         for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it) {
-            if (metaObject->indexOfProperty(it.key().toUtf8().constData()) >= 0)
+            const int idx = metaObject->indexOfProperty(it.key().toUtf8().constData());
+            // Read-only properties (notably Item's "children" list) would make
+            // setInitialProperties() warn for every delegate it creates.
+            if (idx >= 0 && metaObject->property(idx).isWritable())
                 filteredProperties.insert(it.key(), it.value());
         }
         component->setInitialProperties(object, filteredProperties);

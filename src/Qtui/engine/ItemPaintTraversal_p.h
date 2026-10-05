@@ -1,21 +1,47 @@
 #pragma once
 
 #include "../items/Item.h"
+#include "RenderPhase_p.h"
 
 namespace qtui {
 
-// Internal entry point for framework-owned Item tree painting. This header is
-// intentionally not installed; custom items implement paint() and optionally
-// paintOverlay() instead of initiating traversal themselves.
+// Internal entry point for framework-owned Item tree layout and painting. This
+// header is intentionally not installed; custom items implement updateLayout(),
+// paint() and optionally paintOverlay() instead of initiating traversal
+// themselves.
 class ItemPaintTraversal final
 {
 public:
+    // Layout pass only (RenderPhase::Layout).
+    static void layoutSubtree(Item *item)
+    {
+        if (!item)
+            return;
+        RenderPhase::Scope scope(RenderPhase::Layout);
+        item->layoutSubtree();
+    }
+
+    // Paint pass only (RenderPhase::Paint). Items with LayoutDirty still set
+    // lay out immediately before painting.
     static void paintSubtree(Item *item, TextGridBuffer &buffer,
                              int absX, int absY,
                              const ClipRect &clipRect = ClipRect())
     {
-        if (item)
-            item->paintSubtree(buffer, absX, absY, clipRect);
+        if (!item)
+            return;
+        RenderPhase::Scope scope(RenderPhase::Paint);
+        item->paintSubtree(buffer, absX, absY, clipRect);
+    }
+
+    // One frame: layout pass followed by paint pass. After it returns,
+    // RenderPhase::dirtyDuringPaintCount() reports invalidations raised while
+    // painting.
+    static void renderSubtree(Item *item, TextGridBuffer &buffer,
+                              int absX, int absY,
+                              const ClipRect &clipRect = ClipRect())
+    {
+        layoutSubtree(item);
+        paintSubtree(item, buffer, absX, absY, clipRect);
     }
 };
 

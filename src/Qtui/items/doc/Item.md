@@ -167,7 +167,11 @@ Re-evaluates declarative states to update values according to state constraints.
 ## 10. Protected Virtual Methods / Event Handlers
 
 #### virtual void updateLayout()
-Performs layout work when the item has `LayoutDirty` set.
+Performs layout work when the item has `LayoutDirty` set. The framework runs a
+top-down layout pass over the whole tree before the paint pass of each frame,
+so geometry changed here is painted in the same frame. `setWidth()`,
+`setHeight()`, and effective implicit-size changes mark `LayoutDirty`.
+Invalidations raised from `paint()` are retained but do not schedule a frame.
 
 #### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
 Paints only this item's own content. The framework privately traverses children

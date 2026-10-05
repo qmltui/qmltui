@@ -23,6 +23,15 @@ add_qtui_test(test_scroll_view Core/test_scroll_view.cpp)
 add_qtui_test(test_views_virtualization Core/test_views_virtualization.cpp)
 add_qtui_test(test_terminal_framework Core/test_terminal_framework.cpp)
 add_qtui_test(test_input_router Core/test_input_router.cpp)
+add_qtui_test(test_unicode_text Core/test_unicode_text.cpp)
+add_qtui_test(test_render_loop Core/test_render_loop.cpp)
+add_qtui_test(test_text_layout Core/test_text_layout.cpp)
+add_qtui_test(test_terminal_capabilities Core/test_terminal_capabilities.cpp)
+add_qtui_test(test_color_depth Core/test_color_depth.cpp)
+if(UNIX)
+    add_qtui_test(test_terminal_device Core/test_terminal_device.cpp)
+    set_tests_properties(test_terminal_device PROPERTIES TIMEOUT 20)
+endif()
 
 add_test(
     NAME test_installed_custom_item_consumer
@@ -199,6 +208,12 @@ add_qtui_runner_scenario(test_runner_repaint_absent qtui_test_runner_fixture
     FAILURE_PATTERN "waiting for the application to schedule a repaint"
     ARTIFACT "failure.txt"
 )
+# Frame cost is exposed to scenarios and recorded in result.json.
+add_qtui_runner_scenario(test_runner_frame_stats qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/frame_stats.js" 0
+    ARTIFACT "result.json"
+    ARTIFACT_CONTENT "paintMicrosAvg"
+)
 
 # A scenario that never yields must still produce a diagnosis rather than
 # hanging until the process timeout kills it with no artifacts.
@@ -331,6 +346,13 @@ if(TARGET qtui_industrial_plc_hmi)
         ARTIFACT_CONTENT "STATE: IDLE (ALARM RESET)"
     )
 endif()
+if(TARGET qtui_twozero48)
+    add_qtui_runner_scenario(test_runner_twozero48 qtui_twozero48
+        "${Qtui_SOURCE_DIR}/examples/apps/twozero48/test_twozero48.js" 0
+        ARTIFACT "twozero48/initial.txt"
+        ARTIFACT_CONTENT "2048 TUI"
+    )
+endif()
 
 if(QTUI_BUILD_TERMINAL_HOST)
     add_executable(test_terminal_host TerminalHost/test_terminal_host.cpp)
@@ -346,5 +368,11 @@ endif()
 if(QTUI_BUILD_BENCHMARKS)
     add_executable(benchmark_views Core/benchmark_views.cpp)
     target_link_libraries(benchmark_views PRIVATE
+        Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras Qtui::Canvas)
+
+    # Per-frame paint/diff cost for representative scenes. Informational; run
+    # it before and after rendering changes and record the numbers.
+    add_executable(benchmark_render Core/benchmark_render.cpp)
+    target_link_libraries(benchmark_render PRIVATE
         Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras Qtui::Canvas)
 endif()

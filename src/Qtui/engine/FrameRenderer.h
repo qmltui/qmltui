@@ -21,6 +21,7 @@ public:
 private:
     TextGridBuffer m_currentBuffer;
     TextGridBuffer m_nextBuffer;
+    std::string m_ansi;   // reused across frames
 };
 
 } // namespace qtui

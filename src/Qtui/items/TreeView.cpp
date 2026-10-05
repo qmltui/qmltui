@@ -62,32 +62,32 @@ void TreeView::setModel(const QVariant &model) {
             emit currentIndexChanged();
             emit selectedIndexChanged();
             emit currentItemDataChanged();
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this]() {
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this, [this]() {
             m_treeDirty = true;
             emit currentItemDataChanged();
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted, this, [this]() {
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved, this, [this]() {
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::rowsMoved, this, [this]() {
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_cppModel.data(), &QAbstractItemModel::layoutChanged, this, [this]() {
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
     } else if (model.userType() == QMetaType::fromType<QJSValue>().id()) {
         m_rootNodeMap = model.value<QJSValue>().toVariant().toMap();
@@ -103,7 +103,7 @@ void TreeView::setModel(const QVariant &model) {
         emit selectedIndexChanged();
     }
     emit currentItemDataChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setRootNode(const QVariant &node) {
@@ -120,7 +120,7 @@ void TreeView::setRootIndex(const QModelIndex &index)
     m_rootIndex = persistent;
     m_treeDirty = true;
     emit rootIndexChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setDelegate(QQmlComponent *delegate) {
@@ -134,19 +134,19 @@ void TreeView::setDelegate(QQmlComponent *delegate) {
             m_delegate.clear();
             clearDelegateItems();
             emit delegateChanged();
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
         connect(m_delegate, &QQmlComponent::statusChanged, this,
                 [this](QQmlComponent::Status status) {
                     if (status == QQmlComponent::Ready) {
                         m_treeDirty = true;
-                        markDirty();
+                        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
                     }
                 });
     }
     m_treeDirty = true;
     emit delegateChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::adjustScrollTop() {
@@ -198,7 +198,7 @@ void TreeView::setCurrentIndex(int index) {
         }
     }
 
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 QVariantMap TreeView::currentItemData() const {
@@ -212,7 +212,7 @@ void TreeView::setSelectionColor(Color color) {
     m_selectionColor = color;
     m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFFFFFFFF);
     emit selectionColorChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setSelectionBgColor(Color color) {
@@ -220,7 +220,7 @@ void TreeView::setSelectionBgColor(Color color) {
     m_selectionBgColor = color;
     m_resolvedSelectionBgColor = ColorMapper::fromString(m_selectionBgColor, 0xFF0000FF);
     emit selectionBgColorChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setTextColor(Color color) {
@@ -228,7 +228,7 @@ void TreeView::setTextColor(Color color) {
     m_textColor = color;
     m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0xFF00FFFF);
     emit textColorChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setBranchColor(Color color) {
@@ -236,21 +236,21 @@ void TreeView::setBranchColor(Color color) {
     m_branchColor = color;
     m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0xFF808080);
     emit branchColorChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setExpandedIcon(const QString &icon) {
     if (m_expandedIcon == icon) return;
     m_expandedIcon = icon;
     emit expandedIconChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::setCollapsedIcon(const QString &icon) {
     if (m_collapsedIcon == icon) return;
     m_collapsedIcon = icon;
     emit collapsedIconChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 
@@ -262,7 +262,7 @@ void TreeView::expand(int index) {
             m_expandedPaths.insert(node.key);
             m_collapsedPaths.remove(node.key);
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
             updateTree();
             emit expanded(index, 1);
         }
@@ -277,7 +277,7 @@ void TreeView::collapse(int index) {
             m_collapsedPaths.insert(node.key);
             m_expandedPaths.remove(node.key);
             m_treeDirty = true;
-            markDirty();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
             updateTree();
             emit collapsed(index, false);
         }
@@ -343,7 +343,7 @@ void TreeView::expandRecursively(int row, int requestedDepth)
         }
         if (changed) m_treeDirty = true;
     }
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
     emit expanded(row, requestedDepth);
 }
 
@@ -365,7 +365,7 @@ void TreeView::collapseRecursively(int row)
     }
     m_treeDirty = true;
     updateTree();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
     emit collapsed(row, true);
 }
 
@@ -390,7 +390,7 @@ void TreeView::expandToIndex(const QModelIndex &index)
             break;
         }
     }
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 static void collectAllKeys(const QVariantMap &map, const QString &parentKey, QStringList &keys) {
@@ -449,7 +449,7 @@ void TreeView::expandAll() {
         }
     }
     m_treeDirty = true;
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::collapseAll() {
@@ -462,7 +462,7 @@ void TreeView::collapseAll() {
         }
     }
     m_treeDirty = true;
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::clearDelegateItems() {
@@ -805,6 +805,8 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
         }
 
         QVariantMap initialProps = node.rawData;
+        initialProps.remove(QStringLiteral("children"));
+        initialProps.remove(QStringLiteral("parent"));
         if (!initialProps.contains("icon")) initialProps["icon"] = QString();
         if (!initialProps.contains("status")) initialProps["status"] = QString();
         if (!initialProps.contains("text")) initialProps["text"] = node.text;
@@ -842,6 +844,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems,
             item->setProperty("modelData", node.rawData);
 
             for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
+                if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent")) continue;
                 setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
             }
 
@@ -879,9 +882,8 @@ void TreeView::layoutChildren() {
     }
 }
 
-void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
-    if (!m_visible) return;
-
+void TreeView::updateLayout() {
+    Item::updateLayout();
     updateTree();
     adjustScrollTop();
 
@@ -897,17 +899,27 @@ void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect 
         generateDelegateItems(oldItems, oldIndexes, oldPaths);
     }
 
+    if (m_delegate)
+        layoutChildren();
+}
+
+void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+    if (!m_visible) return;
+
+    // Delegates were created and positioned by updateLayout() and paint
+    // themselves as children.
+    if (m_delegate) return;
+
+    // A tree invalidated without a layout request is refreshed here; the
+    // render-phase guard reports it so the missing invalidation can be fixed.
+    updateTree();
+
     const int availH = height();
     const int availW = width();
     const int startX = absX;
     const int startY = absY;
 
     if (availW <= 0 || availH <= 0) return;
-
-    if (m_delegate) {
-        layoutChildren();
-        return;
-    }
 
     // Default Rendering (No Delegate)
     for (int idx = m_scrollTop; idx < m_visibleNodes.size() && (idx - m_scrollTop) < availH; ++idx) {

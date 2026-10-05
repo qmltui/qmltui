@@ -126,7 +126,7 @@ private slots:
         buffer.resize(10, 1);
         paintItem(sparkline, buffer, 0, 0);
 
-        QVERIFY(buffer.cellAt(4, 0).character[0] != ' ');
+        QVERIFY(buffer.cellAt(4, 0).character()[0] != ' ');
     }
 
     void testBigText() {
@@ -137,8 +137,9 @@ private slots:
         buffer.resize(20, 3);
         paintItem(bigText, buffer, 0, 0);
 
-        QCOMPARE(buffer.cellAt(0, 0).character[0], ' ');
-        QVERIFY(buffer.cellAt(1, 0).character[0] != '\0');
+        QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+        QVERIFY(!buffer.cellAt(1, 0).character().isEmpty());
+        QVERIFY(buffer.cellAt(1, 0).character() != " ");
     }
 
     void testTableView() {
@@ -337,13 +338,13 @@ private slots:
         paintItem(frame, buffer, 0, 0);
 
         // Row 0 has top border (e.g. ┌)
-        QVERIFY(buffer.cellAt(0, 0).character.startsWith("\xE2\x94\x8C"));
+        QVERIFY(buffer.cellAt(0, 0).character().startsWith("\xE2\x94\x8C"));
         // Row 1 has label and content inside the box
-        QCOMPARE(buffer.cellAt(1, 1).character, QByteArray("C"));
-        QCOMPARE(buffer.cellAt(2, 1).character, QByteArray("P"));
-        QCOMPARE(buffer.cellAt(3, 1).character, QByteArray("U"));
+        QCOMPARE(buffer.cellAt(1, 1).character().toByteArray(), QByteArray("C"));
+        QCOMPARE(buffer.cellAt(2, 1).character().toByteArray(), QByteArray("P"));
+        QCOMPARE(buffer.cellAt(3, 1).character().toByteArray(), QByteArray("U"));
         // Row 2 has bottom border (e.g. └)
-        QVERIFY(buffer.cellAt(0, 2).character.startsWith("\xE2\x94\x94"));
+        QVERIFY(buffer.cellAt(0, 2).character().startsWith("\xE2\x94\x94"));
     }
 
     void testBordersBelongToRectangle() {
@@ -384,10 +385,10 @@ private slots:
 
         // Entire 20 characters should be filled or unfilled bar characters, no '[' or ']'
         for (int x = 0; x < 10; ++x) {
-            QCOMPARE(buffer.cellAt(x, 0).character, QByteArray("="));
+            QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("="));
         }
         for (int x = 10; x < 20; ++x) {
-            QCOMPARE(buffer.cellAt(x, 0).character, QByteArray("-"));
+            QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("-"));
         }
     }
 

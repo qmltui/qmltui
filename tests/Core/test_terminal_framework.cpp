@@ -223,7 +223,7 @@ void TestTerminalFramework::wideCellBuffer() {
     buffer.writeText(0, 0, QString::fromUtf8("中A"));
     QCOMPARE(buffer.cellAt(0, 0).displayWidth, 2);
     QVERIFY(buffer.cellAt(1, 0).continuation);
-    QCOMPARE(buffer.cellAt(2, 0).character, QByteArray("A"));
+    QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QByteArray("A"));
     QVERIFY(QString::fromStdString(buffer.toAnsiString()).contains(QString::fromUtf8("中A")));
 }
 

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
-find_package(Qtui 0.3 REQUIRED)
+find_package(Qtui 0.4 REQUIRED)
 
 qt_add_executable(qtui_installed_custom_item_consumer main.cpp)
 target_link_libraries(qtui_installed_custom_item_consumer PRIVATE

@@ -45,7 +45,8 @@ endif()
 
 if(TARGET Qtui::Testing AND QTUI_BUILD_TESTS)
     include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
-    foreach(scenario navigation preview search actions)
+    # idle_budget asserts the application does not repaint while nothing changes.
+    foreach(scenario navigation preview search actions idle_budget)
         qtui_add_scenario_test(
             NAME file_manager_${scenario}
             TARGET qtui_file_manager

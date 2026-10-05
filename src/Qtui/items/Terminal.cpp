@@ -25,6 +25,7 @@ void Terminal::componentComplete() {
 }
 
 Terminal::Terminal(QObject *parent) : Rectangle(parent) {
+    setItemFlag(ItemFlag::IsTerminalRoot);
     m_engine = new TerminalEngine(this, this);
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
 

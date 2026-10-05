@@ -89,7 +89,13 @@ signals:
     void bottomMarginChanged();
 
 private:
+    bool hasAnchors() const;
+    // Owner geometry signals are connected on first use so items that never
+    // anchor do not pay for a resolve() call on every size change.
+    void ensureOwnerConnections();
+
     Item* m_owner;
+    bool m_ownerConnected = false;
     QPointer<Item> m_fillTarget;
     QPointer<Item> m_centerInTarget;
     QPointer<AnchorLine> m_left;

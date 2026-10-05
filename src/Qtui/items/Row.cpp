@@ -12,9 +12,8 @@ void Row::setSpacing(int spacing) {
     if (m_spacing == spacing) return;
     m_spacing = spacing;
     emit spacingChanged();
-    emit implicitWidthChanged();
-    emit implicitHeightChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void Row::layoutChildren() {

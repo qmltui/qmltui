@@ -4,6 +4,7 @@
 namespace qtui {
 
 Popup::Popup(QObject *parent) : Rectangle(parent) {
+    setItemFlag(ItemFlag::IsPopup);
     // Popups are not focusable by default, but modal popups will trap input.
     setVisible(false);
     setColor("black");
@@ -51,7 +52,7 @@ void Popup::setOwner(Item *owner) {
 Popup *Popup::parentPopup() const {
     for (Item *current = m_owner ? m_owner.data() : parentItem(); current;
          current = current->parentItem()) {
-        if (auto *popup = qobject_cast<Popup*>(current)) return popup;
+        if (current->isPopup()) return static_cast<Popup*>(current);
     }
     return nullptr;
 }

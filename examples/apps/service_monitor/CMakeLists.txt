@@ -42,4 +42,14 @@ if(TARGET Qtui::Testing)
         ROWS 16
         LABELS AgentSmoke
     )
+
+    # The application must not repaint while nothing changes.
+    qtui_add_scenario_test(
+        NAME service_monitor_idle_budget
+        TARGET qtui_service_monitor_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_idle_budget.js"
+        COLUMNS 72
+        ROWS 16
+        LABELS AgentSmoke
+    )
 endif()

@@ -363,7 +363,9 @@ int TextInput::displayColumnForPosition(int position) const {
 
     const int snapped = TextEditorState::snapToBoundary(m_editor.text(), position);
     int count = 0;
-    for (const Grapheme &cluster : UnicodeText::graphemes(m_editor.text())) {
+    GraphemeIterator iterator(m_editor.text());
+    GraphemeRef cluster;
+    while (iterator.next(cluster)) {
         if (cluster.utf16Start >= snapped)
             break;
         ++count;
@@ -379,10 +381,15 @@ int TextInput::positionForDisplayColumn(int column) const {
 
     const int maskWidth = std::max(1, UnicodeText::displayWidth(m_echoCharacter));
     const int targetIndex = std::max(0, column) / maskWidth;
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(m_editor.text());
-    if (targetIndex >= clusters.size())
-        return m_editor.text().size();
-    return clusters[targetIndex].utf16Start;
+    GraphemeIterator iterator(m_editor.text());
+    GraphemeRef cluster;
+    int index = 0;
+    while (iterator.next(cluster)) {
+        if (index == targetIndex)
+            return cluster.utf16Start;
+        ++index;
+    }
+    return m_editor.text().size();
 }
 
 int TextInput::positionAtMouse(int x) const {
@@ -537,26 +544,33 @@ void TextInput::paint(
 
     if (placeholder) {
         int column = 0;
-        for (const Grapheme &cluster : UnicodeText::graphemes(m_placeholderText)) {
+        GraphemeIterator iterator(m_placeholderText, /*sanitizeControls=*/true);
+        GraphemeRef cluster;
+        while (iterator.next(cluster)) {
             const int x = contentLeft + column - m_contentX;
             const int width = std::max(1, cluster.width);
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y))
-                buffer.writeText(x, y, QString::fromUtf8(cluster.utf8), displayColor);
+                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
             column += cluster.width;
         }
     } else if (m_echoMode != NoEcho) {
         int column = 0;
-        for (const Grapheme &cluster : UnicodeText::graphemes(m_editor.text())) {
-            const QString rendered = m_echoMode == Password
-                ? m_echoCharacter : QString::fromUtf8(cluster.utf8);
-            const int width = std::max(1, UnicodeText::displayWidth(rendered));
+        const bool masked = m_echoMode == Password;
+        const int maskWidth = masked ? std::max(1, UnicodeText::displayWidth(m_echoCharacter)) : 1;
+        GraphemeIterator iterator(m_editor.text(), /*sanitizeControls=*/true);
+        GraphemeRef cluster;
+        while (iterator.next(cluster)) {
+            const int width = masked ? maskWidth : std::max(1, cluster.width);
             const int x = contentLeft + column - m_contentX;
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y)) {
-                buffer.writeText(x, y, rendered, displayColor);
+                if (masked)
+                    buffer.writeText(x, y, m_echoCharacter, displayColor);
+                else
+                    buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
                 const int clusterStart = cluster.utf16Start;
-                const int clusterEnd = clusterStart + cluster.utf16Length;
+                const int clusterEnd = clusterStart + cluster.utf16Length();
                 if (clusterEnd > selectionStart() && clusterStart < selectionEnd()) {
                     for (int dx = 0; dx < width; ++dx) {
                         Cell *selectionCell = buffer.tryCellAt(x + dx, y);
@@ -589,11 +603,11 @@ void TextInput::paint(
             if (!cursorCell)
                 return;
             Cell &cell = *cursorCell;
-            const bool isSpaceOrEmpty = cell.character.isEmpty() || cell.character == " ";
+            const bool isSpaceOrEmpty = cell.character().isEmpty() || cell.character() == " ";
 
             if (!m_cursorDelegate.isEmpty()) {
                 if (isSpaceOrEmpty) {
-                    cell.character = m_cursorDelegate.toUtf8();
+                    cell.setCharacter(m_cursorDelegate.toUtf8());
                 }
                 if (m_hasResolvedCursorColor) {
                     if (isSpaceOrEmpty) {
@@ -609,7 +623,7 @@ void TextInput::paint(
                 switch (m_cursorShape) {
                 case Block: {
                     if (isSpaceOrEmpty)
-                        cell.character = " ";
+                        cell.setCharacter(" ");
                     if (m_hasResolvedCursorColor) {
                         cell.bgColor = m_resolvedCursorColor;
                         cell.fgColor = 0x000000FF;
@@ -620,7 +634,7 @@ void TextInput::paint(
                 }
                 case Underline: {
                     if (isSpaceOrEmpty)
-                        cell.character = "_";
+                        cell.setCharacter("_");
                     if (m_hasResolvedCursorColor) {
                         cell.fgColor = m_resolvedCursorColor;
                     }
@@ -629,7 +643,7 @@ void TextInput::paint(
                 }
                 case Beam: {
                     if (isSpaceOrEmpty) {
-                        cell.character = "│";
+                        cell.setCharacter("│");
                         if (m_hasResolvedCursorColor) {
                             cell.fgColor = m_resolvedCursorColor;
                         }
@@ -645,7 +659,7 @@ void TextInput::paint(
                 }
                 case HollowBlock: {
                     if (isSpaceOrEmpty) {
-                        cell.character = "▯";
+                        cell.setCharacter("▯");
                         if (m_hasResolvedCursorColor) {
                             cell.fgColor = m_resolvedCursorColor;
                         }

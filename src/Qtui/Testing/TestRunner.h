@@ -71,6 +71,13 @@ public:
     /// that an interaction did not cause any repaint at all.
     Q_INVOKABLE int frameCount() const;
 
+    /// Cost of the most recently committed frame and totals for the session:
+    /// frame, paintMicros, diffMicros, writeMicros, diffBytes, bytesWritten,
+    /// dirtyDuringPaint, frames, paintMicrosAvg, paintMicrosMax, diffMicrosAvg,
+    /// bytesTotal, dirtyDuringPaintTotal. bytesTotal sums encoded diff bytes,
+    /// so it is meaningful in quiet sessions where nothing reaches a terminal.
+    Q_INVOKABLE QVariantMap frameStats() const;
+
     /// Polls a synchronous JavaScript callback until it returns a truthy value.
     /// The callback receives the current frame text and elapsed milliseconds.
     Q_INVOKABLE void waitForCondition(const QJSValue& condition, int timeoutMs = 2000);

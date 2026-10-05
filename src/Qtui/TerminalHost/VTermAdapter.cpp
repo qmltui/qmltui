@@ -292,7 +292,7 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
             }
             if (source.attrs.conceal || character.isEmpty())
                 character = QStringLiteral(" ");
-            target.character = character.toUtf8();
+            target.setCharacter(character.toUtf8());
         }
     }
 

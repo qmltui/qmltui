@@ -37,16 +37,24 @@ void disconnectTarget(Item* target, Anchors* anchors) {
 } // namespace
 
 Anchors::Anchors(Item* owner) : QObject(owner), m_owner(owner) {
-    if (m_owner) {
-        connect(m_owner, &Item::widthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
-        connect(m_owner, &Item::implicitWidthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
-        connect(m_owner, &Item::heightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
-        connect(m_owner, &Item::implicitHeightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
-        connect(m_owner, &Item::parentChanged, this, &Anchors::resolve, Qt::UniqueConnection);
-    }
 }
 
 Anchors::~Anchors() = default;
+
+bool Anchors::hasAnchors() const {
+    return m_fillTarget || m_centerInTarget || m_left || m_right || m_top || m_bottom
+        || m_horizontalCenter || m_verticalCenter;
+}
+
+void Anchors::ensureOwnerConnections() {
+    if (m_ownerConnected || !m_owner) return;
+    m_ownerConnected = true;
+    connect(m_owner, &Item::widthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+    connect(m_owner, &Item::implicitWidthChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+    connect(m_owner, &Item::heightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+    connect(m_owner, &Item::implicitHeightChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+    connect(m_owner, &Item::parentChanged, this, &Anchors::resolve, Qt::UniqueConnection);
+}
 
 QObject* Anchors::fill() const {
     return m_fillTarget.data();
@@ -234,6 +242,8 @@ void Anchors::setBottomMargin(int m) {
 void Anchors::resolve() {
     if (!m_owner) return;
     if (m_resolving) return;
+    if (!hasAnchors()) return;
+    ensureOwnerConnections();
 
     ResolvingGuard guard(m_resolving);
 

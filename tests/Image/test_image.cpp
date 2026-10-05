@@ -86,7 +86,7 @@ void TestImage::testRenderHalfBlock() {
     qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
-    QCOMPARE(cell0.character, QByteArray("\xE2\x96\x80")); // ▀
+    QCOMPARE(cell0.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
     QCOMPARE(QColor::fromRgba(cell0.fgColor).red(), 255);
     QCOMPARE(QColor::fromRgba(cell0.bgColor).blue(), 255);
 
@@ -115,7 +115,7 @@ void TestImage::testRenderASCII() {
     qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
-    QCOMPARE(cell0.character, QByteArray("@"));
+    QCOMPARE(cell0.character().toByteArray(), QByteArray("@"));
 
     QFile::remove(fileName);
 }
@@ -142,7 +142,7 @@ void TestImage::testRenderBraille() {
     qtui::testing::paintItem(img, buffer, 0, 0);
 
     const qtui::Cell& cell0 = buffer.cellAt(0, 0);
-    QVERIFY(!cell0.character.isEmpty());
+    QVERIFY(!cell0.character().isEmpty());
 
     QFile::remove(fileName);
 }

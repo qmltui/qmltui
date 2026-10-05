@@ -45,10 +45,15 @@ ListViewAttached *ListView::qmlAttachedProperties(QObject *object)
 
 ListView::ListView(QObject* parent) : ScrollView(parent) {
     setFocusable(true);
-    connect(this, &ScrollView::contentYChanged, this,
-            [this]() { rebuildViewport(); });
-    connect(this, &Item::heightChanged, this,
-            [this]() { rebuildViewport(); });
+    connect(this, &ScrollView::contentYChanged, this, [this]() {
+        rebuildViewport();
+        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    });
+    connect(this, &Item::heightChanged, this, [this]() {
+        rebuildViewport();
+        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    });
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 ListView::~ListView() {
@@ -440,7 +445,7 @@ void ListView::rebuildViewport(bool force)
         return;
     }
     refreshDelegateStates();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void ListView::generateItems() {
@@ -707,10 +712,14 @@ int ListView::implicitHeight() const {
     }
 }
 
-void ListView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
-    if (!visible()) return;
+void ListView::updateLayout() {
+    ScrollView::updateLayout();
     rebuildViewport();
     layoutChildren();
+}
+
+void ListView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+    if (!visible()) return;
     ScrollView::paint(buffer, absX, absY, clipRect);
 }
 

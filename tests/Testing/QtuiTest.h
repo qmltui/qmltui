@@ -16,7 +16,7 @@ inline bool expectGridText(const TextGridBuffer& buffer, int x, int y, const QSt
             QFAIL(qPrintable(QString("Grid index out of bounds at (%1, %2)").arg(cx).arg(y)));
             return false;
         }
-        QString cellChar = QString::fromUtf8(buffer.cellAt(cx, y).character);
+        QString cellChar = QString::fromUtf8(buffer.cellAt(cx, y).character().toByteArray());
         QString expChar = QString(expectedText.at(i));
         if (cellChar != expChar) {
             QCOMPARE(cellChar, expChar);

@@ -1,26 +1,22 @@
 pragma ComponentBehavior: Bound
 
-import QtQml 2.15
+import QtQml
 import Qtui
-
 
 Terminal {
     id: rootWindow
     fillTerminal: true
     color: "#faf8ef"
     useAlternateScreen: true
+    focus: true
 
     property int score: 0
     property int highScore: 0
     property bool gameOver: false
     property bool won: false
+    property bool keepPlaying: false
 
-    property real animatedScore: score
-    Behavior on animatedScore {
-        NumberAnimation {
-            duration: 300
-        }
-    }
+    readonly property bool playable: rootWindow.width >= 42 && rootWindow.height >= 20
 
     // 1D array representing the 4x4 grid board
     property var board: [
@@ -44,6 +40,7 @@ Terminal {
         score = 0;
         gameOver = false;
         won = false;
+        keepPlaying = false;
         spawnNewTile();
         spawnNewTile();
     }
@@ -171,29 +168,34 @@ Terminal {
             event.accepted = true;
             return;
         }
-        if (event.key === Qt.Key_R) {
+        if (event.key === Qt.Key_R || (gameOver && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter))) {
             initializeGame();
             event.accepted = true;
             return;
         }
-        
-        if (event.key === Qt.Key_Left || event.key === Qt.Key_A) {
+        if (event.key === Qt.Key_C && won && !keepPlaying) {
+            keepPlaying = true;
+            event.accepted = true;
+            return;
+        }
+
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_A || event.key === Qt.Key_H) {
             move("left");
             event.accepted = true;
-        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_D) {
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_D || event.key === Qt.Key_L) {
             move("right");
             event.accepted = true;
-        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_W) {
+        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_W || event.key === Qt.Key_K) {
             move("up");
             event.accepted = true;
-        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_S) {
+        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_S || event.key === Qt.Key_J) {
             move("down");
             event.accepted = true;
         }
     }
 
-    // Cell Styling Mappings
-    function getCellBgColor(val) {
+    // Authentic 2048 styling mappings
+    function getCellBg(val) {
         switch (val) {
             case 0: return "#ccc0b3";
             case 2: return "#eee4da";
@@ -211,29 +213,22 @@ Terminal {
         }
     }
 
-    function getCellTextColor(val) {
+    function getCellText(val) {
         if (val === 2 || val === 4) {
             return "#776e65";
         }
         return "#f9f6f2";
     }
 
-    function getCellBorderStyle(val) {
-        return "none";
-    }
-
-    function getCellBorderColor(val) {
-        return "transparent";
-    }
-
     // Visual layout structure
     Column {
         anchors.centerIn: parent
-        spacing: 2
+        spacing: 1
+        visible: rootWindow.playable
 
-        // Title and Highscore Bar
+        // Title and Score Header
         Row {
-            spacing: 4
+            spacing: 2
             anchors.horizontalCenter: parent.horizontalCenter
 
             // App Title Banner
@@ -251,9 +246,9 @@ Terminal {
                 }
             }
 
-            // Current Score
+            // Current Score Box
             Rectangle {
-                width: 12
+                width: 13
                 height: 3
                 border.style: "none"
                 color: "#bbada0"
@@ -267,16 +262,17 @@ Terminal {
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                     Text {
-                        text: String(Math.round(rootWindow.animatedScore))
+                        text: String(rootWindow.score)
                         color: "#ffffff"
+                        bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
             }
 
-            // High Score
+            // High Score Box
             Rectangle {
-                width: 12
+                width: 13
                 height: 3
                 border.style: "none"
                 color: "#bbada0"
@@ -292,6 +288,7 @@ Terminal {
                     Text {
                         text: String(rootWindow.highScore)
                         color: "#ffffff"
+                        bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
@@ -300,23 +297,19 @@ Terminal {
 
         // Subtitle / Instruction Text
         Text {
-            text: "Use [Arrow keys / WASD] to Slide | [R] Restart | [Q / Esc] Quit"
+            text: "Join the numbers to get 2048! [Arrows/WASD/HJKL] Move • [R] Reset • [Q] Quit"
             color: "#776e65"
+            bold: true
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        // Space divider
-        Text { text: ""; height: 1 }
-
-        // Grid Container
+        // Grid Container (Authentic 2048 board)
         Rectangle {
             id: gridBorder
-            width: 46
+            width: 39
             height: 17
-            border.style: "single"
-            border.color: "#bbada0"
+            border.style: "none"
             color: "#bbada0"
-            padding: 1
             anchors.horizontalCenter: parent.horizontalCenter
 
             // 4x4 Grid layout
@@ -326,25 +319,24 @@ Terminal {
 
                 Repeater {
                     model: 4
-                    delegate: Row {
+                    Row {
                         id: boardRow
                         required property int index
                         readonly property int rIdx: boardRow.index
-                        spacing: 2
+                        spacing: 1
 
                         Repeater {
                             model: 4
-                            delegate: Rectangle {
+                            Rectangle {
                                 id: boardCell
                                 required property int index
                                 readonly property int cIdx: boardCell.index
                                 readonly property int val: rootWindow.board[boardRow.rIdx * 4 + boardCell.cIdx]
 
-                                width: 9
+                                width: 8
                                 height: 3
-                                color: rootWindow.getCellBgColor(boardCell.val)
-                                border.style: rootWindow.getCellBorderStyle(boardCell.val)
-                                border.color: rootWindow.getCellBorderColor(boardCell.val)
+                                color: rootWindow.getCellBg(boardCell.val)
+                                border.style: "none"
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -355,8 +347,8 @@ Terminal {
                                 Text {
                                     anchors.centerIn: parent
                                     text: boardCell.val > 0 ? String(boardCell.val) : ""
-                                    color: rootWindow.getCellTextColor(boardCell.val)
-                                    bold: boardCell.val >= 8
+                                    color: rootWindow.getCellText(boardCell.val)
+                                    bold: true
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
                                 }
@@ -365,23 +357,70 @@ Terminal {
                     }
                 }
             }
-        }
 
-        // Banner Overlays for Win / Loss States
-        Rectangle {
-            width: 44
-            height: 3
-            border.style: "single"
-            border.color: rootWindow.won ? "magenta" : (rootWindow.gameOver ? "red" : "transparent")
-            color: rootWindow.won ? "#2d002d" : (rootWindow.gameOver ? "#2d0000" : "transparent")
-            visible: rootWindow.won || rootWindow.gameOver
-            anchors.horizontalCenter: parent.horizontalCenter
+            // Banner Overlays for Win / Loss States
+            Rectangle {
+                anchors.centerIn: parent
+                width: 35
+                height: 9
+                visible: rootWindow.gameOver || (rootWindow.won && !rootWindow.keepPlaying)
+                color: rootWindow.won ? "#edc22e" : "#eee4da"
+                border.style: "single"
+                border.color: rootWindow.won ? "#f59e0b" : "#8f7a66"
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 1
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: rootWindow.gameOver ? "Game Over!" : "You Win!"
+                        color: rootWindow.won ? "#ffffff" : "#776e65"
+                        bold: true
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Final Score: " + rootWindow.score
+                        color: rootWindow.won ? "#ffffff" : "#776e65"
+                        bold: true
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: rootWindow.gameOver ? "Press [R] to try again" : "Press [C] to keep going  •  [R] reset"
+                        color: rootWindow.won ? "#f9f6f2" : "#8f7a66"
+                    }
+                }
+            }
+        }
+    }
+
+    // Size Warning
+    Rectangle {
+        anchors.centerIn: parent
+        width: 32
+        height: 5
+        visible: !rootWindow.playable
+        border.style: "single"
+        border.color: "#bbada0"
+        color: "#eee4da"
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 1
 
             Text {
-                anchors.centerIn: parent
-                text: rootWindow.won ? "🎉 CONGRATULATIONS! YOU WON 2048! 🎉" : "💀 GAME OVER! Press [R] to Restart"
-                color: rootWindow.won ? "magenta" : "red"
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "TERMINAL TOO SMALL"
+                color: "#776e65"
                 bold: true
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Resize to at least 42 × 20"
+                color: "#8f7a66"
             }
         }
     }

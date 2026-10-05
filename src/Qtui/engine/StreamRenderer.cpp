@@ -1,6 +1,8 @@
 #include "StreamRenderer.h"
 #include "../items/Terminal.h"
 #include "ItemPaintTraversal_p.h"
+#include "../primitives/AnsiEncoder_p.h"
+#include <QElapsedTimer>
 #include <sstream>
 
 namespace qtui {
@@ -30,30 +32,10 @@ std::string withTerminalLineEndings(const std::string& text) {
     return result;
 }
 
-void appendCellStyle(std::ostringstream& output, const Cell& cell) {
-    output << "\033[0m";
-
-    if ((cell.fgColor >> 24) != 0) {
-        output << "\033[38;2;"
-               << ((cell.fgColor >> 16) & 0xFF) << ";"
-               << ((cell.fgColor >> 8) & 0xFF) << ";"
-               << (cell.fgColor & 0xFF) << "m";
-    }
-    if ((cell.bgColor >> 24) != 0) {
-        output << "\033[48;2;"
-               << ((cell.bgColor >> 16) & 0xFF) << ";"
-               << ((cell.bgColor >> 8) & 0xFF) << ";"
-               << (cell.bgColor & 0xFF) << "m";
-    }
-
-    const auto attributes = static_cast<uint8_t>(cell.attributes);
-    if (attributes & static_cast<uint8_t>(TextAttribute::Bold)) output << "\033[1m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Italic)) output << "\033[3m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Underline)) output << "\033[4m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Reversed)) output << "\033[7m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Blink)) output << "\033[5m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Conceal)) output << "\033[8m";
-    if (attributes & static_cast<uint8_t>(TextAttribute::Strikethrough)) output << "\033[9m";
+void appendCellStyle(std::ostringstream& output, const Cell& cell, ColorDepth depth) {
+    std::string style;
+    ansi::appendFullStyle(style, cell, depth);
+    output << style;
 }
 
 } // namespace
@@ -87,6 +69,7 @@ void StreamRenderer::print(TerminalDevice& device, const std::string& text) {
     if (!outputEnabled())
         return;
 
+    ItemPaintTraversal::layoutSubtree(m_rootWindow);
     int newPromptHeight = 0;
     if (m_rootWindow) {
         newPromptHeight = m_rootWindow->implicitHeight();
@@ -139,7 +122,7 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
     int lastContentColumn = -1;
     for (int column = m_promptBuffer.width() - 1; column >= 0; --column) {
         const Cell& cell = m_promptBuffer.cellAt(column, row);
-        if (!cell.continuation && !cell.character.isEmpty() && cell.character != " ") {
+        if (!cell.continuation && !cell.character().isEmpty() && cell.character() != " ") {
             lastContentColumn = column;
             break;
         }
@@ -158,13 +141,18 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
             || cell.fgColor != previousCell.fgColor
             || cell.bgColor != previousCell.bgColor
             || cell.attributes != previousCell.attributes) {
-            appendCellStyle(output, cell);
+            appendCellStyle(output, cell, capabilities().colorDepth);
             previousCell = cell;
             hasPreviousStyle = true;
         }
 
-        if (!cell.continuation)
-            output << (cell.character.isEmpty() ? std::string(" ") : cell.character.toStdString());
+        if (!cell.continuation) {
+            const QByteArrayView glyph = cell.character();
+            if (glyph.isEmpty())
+                output << ' ';
+            else
+                output.write(glyph.data(), glyph.size());
+        }
     }
     return output.str();
 }
@@ -173,6 +161,9 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     m_rootWindow = rootWindow;
     if (!rootWindow) return false;
 
+    QElapsedTimer timer;
+    timer.start();
+    ItemPaintTraversal::layoutSubtree(rootWindow);
     int requiredHeight = rootWindow->implicitHeight();
     if (requiredHeight <= 0) {
         requiredHeight = rootWindow->Item::height();
@@ -188,8 +179,14 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     ItemPaintTraversal::paintSubtree(rootWindow, m_promptBuffer, 0, 0);
+    FrameStats stats;
+    stats.dirtyDuringPaint = RenderPhase::dirtyDuringPaintCount();
+    stats.paintMicros = timer.nsecsElapsed() / 1000;
 
-    if (!outputEnabled()) return true;
+    if (!outputEnabled()) {
+        m_lastStats = stats;
+        return true;
+    }
 
     std::ostringstream output;
     if (previousPromptHeight > 0) {
@@ -201,7 +198,16 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     if (previousPromptHeight > m_lastPromptHeight) {
         output << "\033[J";
     }
-    return device.write(output.str());
+    const std::string ansi = output.str();
+    const qint64 encodedNs = timer.nsecsElapsed();
+    stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
+    stats.diffBytes = static_cast<qint64>(ansi.size());
+    const bool written = device.write(ansi);
+    stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
+    if (written)
+        stats.bytesWritten = stats.diffBytes;
+    m_lastStats = stats;
+    return written;
 }
 
 } // namespace qtui

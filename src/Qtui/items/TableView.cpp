@@ -26,10 +26,13 @@ static void setPropertyIfExists(QObject* obj, const char* name, const QVariant& 
 static QString alignText(const QString &text, int width, const QString &alignment) {
     if (width <= 0) return QString();
     QString t;
+    t.reserve(text.size());
     int usedWidth = 0;
-    for (const Grapheme &cluster : UnicodeText::graphemes(text)) {
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster)) {
         if (usedWidth + cluster.width > width) break;
-        t += QString::fromUtf8(cluster.utf8);
+        t.append(cluster.utf16);
         usedWidth += cluster.width;
     }
     const int pad = width - usedWidth;
@@ -56,6 +59,7 @@ TableView::TableView(QObject *parent) : Item(parent) {
     setFocusable(true);
     setImplicitWidth(40);
     setImplicitHeight(10);
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 TableView::~TableView() {
@@ -104,7 +108,9 @@ void TableView::setModel(const QVariant &model) {
             markDirty();
         });
         connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
-                [this]() { generateDelegateItems(); markDirty(); });
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+                    handleDataChanged(topLeft, bottomRight);
+                });
         connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted,
                 this, [this]() { generateDelegateItems(); markDirty(); });
         connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved,
@@ -136,8 +142,8 @@ void TableView::setSelectedRow(int row) {
         m_currentColumn = 0;
         emit currentColumnChanged();
     }
-    if (m_delegate || m_rowDelegate) generateDelegateItems();
-    markDirty();
+    refreshDelegateStates();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TableView::setCurrentColumn(int col) {
@@ -146,8 +152,8 @@ void TableView::setCurrentColumn(int col) {
     if (m_currentColumn == normalized) return;
     m_currentColumn = normalized;
     emit currentColumnChanged();
-    if (m_delegate || m_rowDelegate) generateDelegateItems();
-    markDirty();
+    refreshDelegateStates();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TableView::setAlternatingRows(bool alt) {
@@ -295,7 +301,7 @@ void TableView::setShowGrid(bool show) {
 void TableView::setColumnWidthProvider(const QJSValue &provider) {
     m_columnWidthProvider = provider;
     emit columnWidthProviderChanged();
-    markDirty();
+    markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
 void TableView::setCellFormat(const QJSValue &format) {
@@ -440,34 +446,7 @@ Item* TableView::createSingleDelegateItem(int row, int column)
 
     QVariantMap modelMap;
     QVariant modelData;
-
-    const QHash<int, QByteArray> roles = m_cppModel
-        ? m_cppModel->roleNames() : QHash<int, QByteArray>();
-
-    if (m_cppModel) {
-        const QModelIndex index = m_cppModel->index(row, cellMode ? column : 0);
-        for (auto role = roles.cbegin(); role != roles.cend(); ++role)
-            modelMap.insert(QString::fromUtf8(role.value()),
-                            m_cppModel->data(index, role.key()));
-        modelData = modelMap.isEmpty()
-            ? m_cppModel->data(index, Qt::DisplayRole) : QVariant(modelMap);
-    } else if (cellMode) {
-        modelData = cellText(row, column);
-        if (row < m_listModel.size()) {
-            QVariant rowValue = m_listModel[row];
-            if (rowValue.userType() == QMetaType::fromType<QJSValue>().id())
-                rowValue = rowValue.value<QJSValue>().toVariant();
-            if (rowValue.canConvert<QVariantMap>())
-                modelMap = rowValue.toMap();
-        }
-        modelMap.insert(QStringLiteral("display"), modelData);
-    } else if (row < m_listModel.size()) {
-        modelData = m_listModel[row];
-        QVariant value = modelData;
-        if (value.userType() == QMetaType::fromType<QJSValue>().id())
-            value = value.value<QJSValue>().toVariant();
-        if (value.canConvert<QVariantMap>()) modelMap = value.toMap();
-    }
+    delegateModelData(row, column, modelMap, modelData);
 
     const bool current = row == m_selectedRow && column == m_currentColumn;
     QVariantMap initialProperties = modelMap;
@@ -534,7 +513,188 @@ void TableView::updateDelegateViewport(int firstRow, int lastRow, int firstCol, 
 void TableView::generateDelegateItems()
 {
     clearDelegateItems();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+}
+
+void TableView::delegateModelData(int row, int column, QVariantMap &modelMap,
+                                  QVariant &modelData) const
+{
+    const bool cellMode = m_delegate;
+    if (m_cppModel) {
+        const QHash<int, QByteArray> roles = m_cppModel->roleNames();
+        const QModelIndex index = m_cppModel->index(row, cellMode ? column : 0);
+        for (auto role = roles.cbegin(); role != roles.cend(); ++role)
+            modelMap.insert(QString::fromUtf8(role.value()),
+                            m_cppModel->data(index, role.key()));
+        modelData = modelMap.isEmpty()
+            ? m_cppModel->data(index, Qt::DisplayRole) : QVariant(modelMap);
+    } else if (cellMode) {
+        modelData = cellText(row, column);
+        if (row < m_listModel.size()) {
+            QVariant rowValue = m_listModel[row];
+            if (rowValue.userType() == QMetaType::fromType<QJSValue>().id())
+                rowValue = rowValue.value<QJSValue>().toVariant();
+            if (rowValue.canConvert<QVariantMap>())
+                modelMap = rowValue.toMap();
+        }
+        modelMap.insert(QStringLiteral("display"), modelData);
+    } else if (row < m_listModel.size()) {
+        modelData = m_listModel[row];
+        QVariant value = modelData;
+        if (value.userType() == QMetaType::fromType<QJSValue>().id())
+            value = value.value<QJSValue>().toVariant();
+        if (value.canConvert<QVariantMap>()) modelMap = value.toMap();
+    }
+}
+
+// Pushes fresh model values into an existing delegate instead of recreating it.
+void TableView::rebindDelegateItem(Item *item, int row, int column)
+{
+    if (!item) return;
+    QQmlComponent *component = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    QQmlContext *context = delegateContext(item);
+
+    QVariantMap modelMap;
+    QVariant modelData;
+    delegateModelData(row, column, modelMap, modelData);
+
+    for (auto it = modelMap.cbegin(); it != modelMap.cend(); ++it) {
+        DelegateUtils::setContextProperty(component, context, it.key(), it.value());
+        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+    }
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), modelMap);
+    setPropertyIfExists(item, "model", modelMap);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"), modelData);
+    setPropertyIfExists(item, "modelData", modelData);
+}
+
+void TableView::handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    if (!m_delegate && !m_rowDelegate) {
+        markDirty();
+        return;
+    }
+    // Sorted views map rows through the sort, so a full rebuild stays correct.
+    if (!topLeft.isValid() || !bottomRight.isValid() || m_sortColumn >= 0) {
+        generateDelegateItems();
+        return;
+    }
+    const bool cellMode = m_delegate;
+    for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+        if (cellMode) {
+            for (int column = topLeft.column(); column <= bottomRight.column(); ++column)
+                rebindDelegateItem(m_createdDelegateItems.value(QPair<int, int>(row, column), nullptr),
+                                   row, column);
+        } else {
+            rebindDelegateItem(m_createdDelegateItems.value(QPair<int, int>(row, 0), nullptr), row, 0);
+        }
+    }
     markDirty();
+}
+
+void TableView::refreshDelegateStates()
+{
+    if (m_createdDelegateItems.isEmpty()) return;
+    QQmlComponent *component = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    for (auto it = m_createdDelegateItems.cbegin(); it != m_createdDelegateItems.cend(); ++it) {
+        Item *item = it.value();
+        if (!item) continue;
+        const bool current = it.key().first == m_selectedRow && it.key().second == m_currentColumn;
+        QQmlContext *context = delegateContext(item);
+        DelegateUtils::setContextProperty(component, context, QStringLiteral("current"), current);
+        DelegateUtils::setContextProperty(component, context, QStringLiteral("selected"), current);
+        setPropertyIfExists(item, "current", current);
+        setPropertyIfExists(item, "selected", current);
+    }
+}
+
+int TableView::computeFirstVisibleRow() const
+{
+    const bool hasHeaders = (!m_columns.isEmpty() || m_columnWidthProvider.isCallable());
+    const int visibleRows = (std::max)(1, height() - (hasHeaders ? 2 : 0));
+    const int totalRows = rowCount();
+    int firstVisibleRow = 0;
+    if (m_selectedRow >= visibleRows)
+        firstVisibleRow = m_selectedRow - visibleRows + 1;
+    return std::clamp(firstVisibleRow, 0, (std::max)(0, totalRows - visibleRows));
+}
+
+void TableView::updateLayout()
+{
+    Item::updateLayout();
+    m_firstVisibleRow = computeFirstVisibleRow();
+    layoutDelegates();
+}
+
+void TableView::layoutDelegates()
+{
+    if (!m_delegate && !m_rowDelegate) {
+        if (!m_createdDelegateItems.isEmpty())
+            clearDelegateItems();
+        return;
+    }
+
+    const bool hasHeaders = (!m_columns.isEmpty() || m_columnWidthProvider.isCallable());
+    const int headerRows = hasHeaders ? 2 : 0;
+    const int availW = width();
+    const int availH = height() - headerRows;
+    if (availW <= 0 || height() <= 0) {
+        for (Item *item : m_createdDelegateItems)
+            if (item && item->visible())
+                item->setVisible(false);
+        return;
+    }
+
+    const int totalRows = rowCount();
+    const int visibleRows = (std::max)(1, availH);
+    const bool cellMode = m_delegate;
+    const int delegateColumns = cellMode
+        ? (m_columns.isEmpty() ? 5 : m_columns.size()) : 1;
+
+    const int firstRow = (std::max)(0, m_firstVisibleRow - 2);
+    const int lastRow = (std::min)(totalRows - 1, m_firstVisibleRow + visibleRows + 1);
+
+    int lastCol = 0;
+    int curWidth = 0;
+    for (int col = 0; col < delegateColumns; ++col) {
+        lastCol = col;
+        curWidth += cellMode ? columnWidth(col) : availW;
+        if (curWidth >= availW) break;
+    }
+    if (cellMode && lastCol < delegateColumns - 1)
+        lastCol += 1; // +1 overscan column
+
+    updateDelegateViewport(firstRow, lastRow, 0, lastCol);
+
+    // Only touch properties that actually change: every setter call marks
+    // this view LayoutDirty again through the child geometry connections.
+    QSet<QPair<int, int>> placed;
+    for (int visibleRow = 0;
+         visibleRow < visibleRows && m_firstVisibleRow + visibleRow < totalRows;
+         ++visibleRow) {
+        const int actualRow = m_firstVisibleRow + visibleRow;
+        int cellX = 0;
+        for (int column = 0; column <= lastCol; ++column) {
+            const int colW = cellMode ? columnWidth(column) : availW;
+            if (cellX >= availW) break;
+
+            const QPair<int, int> key(actualRow, column);
+            if (Item *item = m_createdDelegateItems.value(key, nullptr)) {
+                item->setX(cellX);
+                item->setY(headerRows + visibleRow);
+                item->setWidth(colW);
+                if (!item->visible())
+                    item->setVisible(true);
+                placed.insert(key);
+            }
+            if (cellMode) cellX += colW;
+        }
+    }
+    for (auto it = m_createdDelegateItems.cbegin(); it != m_createdDelegateItems.cend(); ++it) {
+        Item *item = it.value();
+        if (item && item->visible() && !placed.contains(it.key()))
+            item->setVisible(false);
+    }
 }
 
 void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
@@ -585,7 +745,7 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
                 if (Cell *cell = buffer.tryCellAt(curX - 1, startY))
-                    cell->character = "|";
+                    cell->setCharacter("|");
             }
         }
 
@@ -595,64 +755,16 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         availH -= 2;
     }
 
-    // 2. Compute Viewport Vertical Scroll Offset
+    // 2. Viewport scroll offset (updateLayout caches the same value for the
+    // delegate path and mouse handling).
     int totalRows = rowCount();
     int visibleRows = (std::max)(1, availH);
+    const int firstVisibleRow = computeFirstVisibleRow();
 
-    int firstVisibleRow = 0;
-    if (m_selectedRow >= visibleRows) {
-        firstVisibleRow = m_selectedRow - visibleRows + 1;
-    }
-    firstVisibleRow = std::clamp(firstVisibleRow, 0, (std::max)(0, totalRows - visibleRows));
-
-    // 3. Render Delegate Component Items
-    if (m_delegate || m_rowDelegate) {
-        const bool cellMode = m_delegate;
-        const int delegateColumns = cellMode
-            ? (m_columns.isEmpty() ? 5 : m_columns.size()) : 1;
-
-        int firstRow = (std::max)(0, firstVisibleRow - 2);
-        int lastRow = (std::min)(totalRows - 1, firstVisibleRow + visibleRows + 1);
-
-        int firstCol = 0;
-        int lastCol = 0;
-        int curWidth = 0;
-        for (int col = 0; col < delegateColumns; ++col) {
-            lastCol = col;
-            curWidth += cellMode ? columnWidth(col) : availW;
-            if (curWidth >= availW) break;
-        }
-        if (cellMode && lastCol < delegateColumns - 1) {
-            lastCol += 1; // +1 overscan column
-        }
-
-        updateDelegateViewport(firstRow, lastRow, firstCol, lastCol);
-
-        for (Item *item : m_createdDelegateItems)
-            if (item)
-                item->setVisible(false);
-
-        for (int visibleRow = 0;
-             visibleRow < visibleRows && firstVisibleRow + visibleRow < totalRows;
-             ++visibleRow) {
-            const int actualRow = firstVisibleRow + visibleRow;
-            int cellX = startX;
-            for (int column = 0; column <= lastCol; ++column) {
-                const int colW = cellMode ? columnWidth(column) : availW;
-                if (cellX >= startX + availW) break;
-
-                Item *item = m_createdDelegateItems.value(QPair<int, int>(actualRow, column), nullptr);
-                if (item) {
-                    item->setX(cellX - absX);
-                    item->setY(startY + visibleRow - absY);
-                    item->setWidth(colW);
-                    item->setVisible(true);
-                }
-                if (cellMode) cellX += colW;
-            }
-        }
+    // 3. Delegate items are created and positioned in updateLayout() and paint
+    // themselves as children; nothing may change here.
+    if (m_delegate || m_rowDelegate)
         return;
-    }
 
     // 4. Render Standard Row Cells
     int numCols = m_columns.isEmpty() ? 5 : m_columns.size();
@@ -708,7 +820,7 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
             if (m_showGrid && col < numCols - 1 && curX < startX + availW) {
                 if (Cell *cell = buffer.tryCellAt(curX - 1, rowY))
-                    cell->character = "|";
+                    cell->setCharacter("|");
             }
         }
     }
@@ -777,16 +889,7 @@ void TableView::mousePressEvent(MouseEvent *event) {
     int clickRow = event->y() - offsetY;
 
     int totalRows = rowCount();
-    int availH = height() - (hasHeaders ? 2 : 0);
-    int visibleRows = (std::max)(1, availH);
-
-    int firstVisibleRow = 0;
-    if (m_selectedRow >= visibleRows) {
-        firstVisibleRow = m_selectedRow - visibleRows + 1;
-    }
-    firstVisibleRow = std::clamp(firstVisibleRow, 0, (std::max)(0, totalRows - visibleRows));
-
-    int actualRow = firstVisibleRow + clickRow;
+    int actualRow = computeFirstVisibleRow() + clickRow;
 
     if (clickRow >= 0 && actualRow < totalRows) {
         setSelectedRow(actualRow);

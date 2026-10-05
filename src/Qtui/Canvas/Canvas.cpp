@@ -116,16 +116,13 @@ void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_renderMode == RenderMode::Braille) {
         int idx = (y / 4) * width() + (x / 2);
-        uint8_t old = m_cells[idx];
         m_cells[idx] |= brailleBit(x % 2, y % 4);
-        if (m_cells[idx] != old) markDirty();
     } else {
         int idx = y * w + x;
-        if (m_pixelColors[idx] != color) {
-            m_pixelColors[idx] = color;
-            markDirty();
-        }
+        m_pixelColors[idx] = color;
     }
+    // Shape drawing during paint() writes the frame being rendered and must
+    // not schedule another one.
     if (!m_rendering)
         markDirty();
 }
@@ -134,7 +131,8 @@ void Canvas::clear() {
     uint32_t clearBg = !m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor;
     std::fill(m_cells.begin(), m_cells.end(), 0x00);
     std::fill(m_pixelColors.begin(), m_pixelColors.end(), clearBg);
-    markDirty();
+    if (!m_rendering)
+        markDirty();
 }
 
 void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
@@ -184,7 +182,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
-                    cell.character = brailleTable[cellValue];
+                    cell.setCharacter(brailleTable[cellValue]);
                     cell.displayWidth = 1;
                     cell.continuation = false;
                     cell.fgColor = m_resolvedColor;
@@ -217,15 +215,15 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 cell.continuation = false;
 
                 if (topSet && bottomSet) {
-                    cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
+                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
                     cell.fgColor = topColor;
                     cell.bgColor = bottomColor;
                 } else if (topSet) {
-                    cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
+                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
                     cell.fgColor = topColor;
                     cell.bgColor = 0x00000000;
                 } else {
-                    cell.character = "\xE2\x96\x84"; // ▄ Lower Half Block
+                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
                     cell.fgColor = bottomColor;
                     cell.bgColor = 0x00000000;
                 }

@@ -29,6 +29,8 @@ private slots:
     void testAnchorImplicitTargetResizing();
     void testFrameworkOwnedPaintTraversal();
     void testRenderPreservesNewInvalidations();
+    void testSizeChangeSchedulesLayout();
+    void testImplicitSizeSignalsOnlyOnChange();
     void testGuardedDataStateAndTransitionLists();
 };
 
@@ -274,6 +276,7 @@ public:
 
     int layoutCount = 0;
     bool invalidateDuringLayout = false;
+    bool invalidateDuringPaint = false;
     QPointer<Item> deleteDuringPaint;
 
 protected:
@@ -290,7 +293,9 @@ protected:
         if (m_order)
             m_order->append(QChar::fromLatin1(m_glyph));
         if (Cell *cell = buffer.tryCellAt(absX, absY))
-            cell->character = QByteArray(1, m_glyph);
+            cell->setCharacter(QByteArray(1, m_glyph));
+        if (invalidateDuringPaint)
+            markDirty(DirtyFlag::SelfDirty);
         if (deleteDuringPaint)
             delete deleteDuringPaint.data();
     }
@@ -312,8 +317,8 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
     paintItem(parent, buffer, 0, 0);
 
     QCOMPARE(order, QStringList({QStringLiteral("P"), QStringLiteral("C")}));
-    QCOMPARE(buffer.cellAt(0, 0).character, QByteArray("P"));
-    QCOMPARE(buffer.cellAt(1, 0).character, QByteArray("C"));
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("P"));
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("C"));
 
     auto *killer = new PaintProbe('K', nullptr, &parent);
     auto *victim = new PaintProbe('V', nullptr, &parent);
@@ -326,6 +331,8 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
 
 void TestLayout::testRenderPreservesNewInvalidations()
 {
+    // Invalidations raised from updateLayout() belong to the frame being
+    // rendered: the layout pass precedes the paint pass, which consumes them.
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(1, 1));
     PaintProbe item('X', nullptr);
@@ -334,12 +341,101 @@ void TestLayout::testRenderPreservesNewInvalidations()
                     | Item::DirtyFlag::LayoutDirty);
     item.invalidateDuringLayout = true;
     item.markDirty(Item::DirtyFlag::LayoutDirty);
+    QSignalSpy dirtySpy(&item, &Item::dirty);
 
     paintItem(item, buffer, 0, 0);
 
     QCOMPARE(item.layoutCount, 1);
-    QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
+    QVERIFY(!item.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
     QVERIFY(!item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+    QCOMPARE(dirtySpy.count(), 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("X"));
+
+    // Invalidations raised from paint() are retained for a later frame but
+    // never schedule one: the engine is not notified.
+    PaintProbe painter('Y', nullptr);
+    painter.invalidateDuringPaint = true;
+    QSignalSpy paintSpy(&painter, &Item::dirty);
+    paintItem(painter, buffer, 0, 0);
+    QVERIFY(painter.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
+    QCOMPARE(paintSpy.count(), 0);
+    QCOMPARE(RenderPhase::dirtyDuringPaintCount(), 1);
+
+    // Outside a frame, invalidations notify as before.
+    painter.markDirty();
+    QCOMPARE(paintSpy.count(), 1);
+    QCOMPARE(RenderPhase::current(), RenderPhase::Idle);
+}
+
+void TestLayout::testSizeChangeSchedulesLayout()
+{
+    // A container whose own size changes must lay out its children again even
+    // when no child geometry changed.
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(1, 1));
+    PaintProbe item('X', nullptr);
+    paintItem(item, buffer, 0, 0);
+    const int before = item.layoutCount;
+
+    item.setWidth(5);
+    QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+    paintItem(item, buffer, 0, 0);
+    QCOMPARE(item.layoutCount, before + 1);
+
+    item.setHeight(3);
+    QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+    paintItem(item, buffer, 0, 0);
+    QCOMPARE(item.layoutCount, before + 2);
+
+    // Implicit size only drives layout while it is the effective size.
+    item.setImplicitWidth(9);
+    QVERIFY(!item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+    item.setWidth(-1);
+    paintItem(item, buffer, 0, 0);
+    item.setImplicitWidth(11);
+    QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
+}
+
+void TestLayout::testImplicitSizeSignalsOnlyOnChange()
+{
+    // A container reports an implicit size change only when the value moved,
+    // so a child's height change does not fan out as a width change.
+    Row row;
+    Item *child = new Item(&row);
+    child->setWidth(4);
+    child->setHeight(2);
+
+    QSignalSpy widthSpy(&row, &Item::implicitWidthChanged);
+    QSignalSpy heightSpy(&row, &Item::implicitHeightChanged);
+
+    child->setHeight(3);
+    QCOMPARE(widthSpy.count(), 0);
+    QCOMPARE(heightSpy.count(), 1);
+
+    child->setWidth(9);
+    QCOMPARE(widthSpy.count(), 1);
+    QCOMPARE(heightSpy.count(), 1);
+
+    child->setX(5);            // position does not affect the row's implicit size
+    QCOMPARE(widthSpy.count(), 1);
+
+    row.setSpacing(2);         // one child: spacing does not change the width
+    QCOMPARE(widthSpy.count(), 1);
+
+    Item *second = new Item(&row);
+    second->setWidth(1);
+    QVERIFY(widthSpy.count() >= 2);
+    QCOMPARE(row.implicitWidth(), 9 + 2 + 1);
+
+    // Items that never anchor still resolve anchors set later.
+    Item parent;
+    parent.setWidth(20);
+    parent.setHeight(5);
+    Item *late = new Item(&parent);
+    late->anchors()->setFill(&parent);
+    QCOMPARE(late->width(), 20);
+    parent.setWidth(25);
+    QCOMPARE(late->width(), 25);
 }
 
 void TestLayout::testGuardedDataStateAndTransitionLists()

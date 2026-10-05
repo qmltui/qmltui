@@ -17,7 +17,7 @@ protected:
                const qtui::ClipRect &) override
     {
         if (qtui::Cell *cell = buffer.tryCellAt(absX, absY)) {
-            cell->character = "X";
+            cell->setCharacter("X");
             cell->setForeground(qtui::Color("tomato"));
         }
     }
@@ -35,7 +35,7 @@ int main()
     item.paintForTest(buffer, 0, 0);
 
     const qtui::Cell *cell = buffer.tryCellAt(0, 0);
-    if (!cell || cell->character != "X")
+    if (!cell || cell->character() != "X")
         return 2;
     if (cell->foreground() != qtui::Color("tomato"))
         return 3;

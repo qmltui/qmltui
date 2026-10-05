@@ -115,6 +115,11 @@ signals:
     void expanded(int row, int depth);
     void collapsed(int row, bool recursively);
 
+protected:
+    // Flattens the tree, follows the selection, and creates and positions
+    // delegate items. Runs in the layout pass, never from paint().
+    void updateLayout() override;
+
 private:
     ClipRect clipRectForChildren(int absX, int absY,
                                 const ClipRect &clipRect) const override;

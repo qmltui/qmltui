@@ -2,6 +2,8 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QQmlComponent>
+#include <QSignalSpy>
+#include <memory>
 #include "Canvas.h"
 #include "Terminal.h"
 #include "TextGridBuffer.h"
@@ -22,6 +24,7 @@ private slots:
     void testAutoClear();
     void testQmlCanvasHalfBlock();
     void testHalfBlockDemoRendering();
+    void testShapesDoNotInvalidateWhilePainting();
 };
 
 
@@ -65,7 +68,7 @@ void TestCanvas::testBrailleMode() {
         paintItem(canvas, buf, 0, 0, clip);
 
         Cell c = buf.cellAt(0, 0);
-        QCOMPARE(c.character, QString(QChar(dt.expectedChar)).toUtf8());
+        QCOMPARE(c.character().toByteArray(), QString(QChar(dt.expectedChar)).toUtf8());
         QCOMPARE(c.fgColor, 0xFFFF0000);
     }
 
@@ -80,7 +83,7 @@ void TestCanvas::testBrailleMode() {
     paintItem(canvas, lineBuf, 0, 0, clip);
 
     Cell lineCell = lineBuf.cellAt(0, 0);
-    QCOMPARE(lineCell.character, QString(QChar(0x2824)).toUtf8()); // ⠤
+    QCOMPARE(lineCell.character().toByteArray(), QString(QChar(0x2824)).toUtf8()); // ⠤
 }
 
 void TestCanvas::testHalfBlockMode() {
@@ -103,7 +106,7 @@ void TestCanvas::testHalfBlockMode() {
     paintItem(canvas, buffer, 0, 0, clip);
 
     Cell c = buffer.cellAt(0, 0);
-    QCOMPARE(c.character, QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
+    QCOMPARE(c.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
     QCOMPARE(c.fgColor, 0xFFFF0000); // Red
     QCOMPARE(c.bgColor, 0xFF0000FF); // Blue
 }
@@ -131,13 +134,13 @@ void TestCanvas::testShapesOnHalfBlock() {
 
     // Cell (0,0): top=yellow, bottom=yellow
     Cell c00 = buffer.cellAt(0, 0);
-    QCOMPARE(c00.character, QByteArray("\xE2\x96\x80"));
+    QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
     QCOMPARE(c00.fgColor, 0xFFFFFF00); // Yellow
     QCOMPARE(c00.bgColor, 0xFFFFFF00); // Yellow
 
     // Cell (0,1): top=yellow, bottom=yellow
     Cell c01 = buffer.cellAt(0, 1);
-    QCOMPARE(c01.character, QByteArray("\xE2\x96\x80"));
+    QCOMPARE(c01.character().toByteArray(), QByteArray("\xE2\x96\x80"));
     QCOMPARE(c01.fgColor, 0xFFFFFF00);
     QCOMPARE(c01.bgColor, 0xFFFFFF00);
 }
@@ -196,7 +199,7 @@ void TestCanvas::testQmlCanvasHalfBlock() {
     paintItem(canvas, buffer, 0, 0, clip);
 
     Cell c00 = buffer.cellAt(0, 0);
-    QCOMPARE(c00.character, QByteArray("\xE2\x96\x80"));
+    QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
     QCOMPARE(c00.fgColor, 0xFFFF0000);
     QCOMPARE(c00.bgColor, 0xFFFF0000);
 
@@ -228,10 +231,10 @@ void TestCanvas::testHalfBlockDemoRendering() {
         QString line;
         for (int x = 0; x < 80; ++x) {
             Cell c = buffer.cellAt(x, y);
-            if (c.character.startsWith("\xE2\xA0") || c.character == "\xE2\x96\x80" || c.character == "\xE2\x96\x84") {
+            if (c.character().startsWith("\xE2\xA0") || c.character().toByteArray() == "\xE2\x96\x80" || c.character().toByteArray() == "\xE2\x96\x84") {
                 canvasCharCount++;
             }
-            line += QString::fromUtf8(c.character);
+            line += QString::fromUtf8(c.character().toByteArray());
         }
         qDebug().noquote() << QString("Row %1: %2").arg(y, 2).arg(line);
     }
@@ -240,6 +243,48 @@ void TestCanvas::testHalfBlockDemoRendering() {
     QVERIFY(canvasCharCount > 0);
 
     delete obj;
+}
+
+void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
+    // Drawing shapes writes the frame being rendered; it must not leave the
+    // canvas dirty or ask the engine for another frame.
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+        import Qtui.Canvas
+
+        Canvas {
+            width: 20
+            height: 10
+            renderMode: Canvas.Braille
+            color: "cyan"
+            Line { x1: 0; y1: 0; x2: 30; y2: 30 }
+            Circle { cx: 20; cy: 20; radius: 8 }
+        }
+    )", QUrl());
+
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object != nullptr, qPrintable(component.errorString()));
+    Canvas* canvas = qobject_cast<Canvas*>(object.get());
+    QVERIFY(canvas != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(20, 10);
+    paintItem(canvas, buffer, 0, 0);
+
+    QSignalSpy dirtySpy(canvas, &Item::dirty);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(dirtySpy.count(), 0);
+    QVERIFY(!canvas->dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
+    QCOMPARE(RenderPhase::dirtyDuringPaintCount(), 0);
+    QVERIFY(buffer.cellAt(0, 0).character().startsWith("\xE2\xA0"));
+
+    // Pixel writes outside a frame still invalidate.
+    canvas->setPixel(1, 1, true);
+    QCOMPARE(dirtySpy.count(), 1);
 }
 
 QTEST_MAIN(TestCanvas)

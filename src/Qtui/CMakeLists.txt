@@ -23,10 +23,15 @@ qt_add_qml_module(QtuiCore
         primitives/ColorMapper.cpp
         primitives/InputDecoder.cpp
         primitives/Cell.h
+        primitives/Cell.cpp
         primitives/UnicodeText.h
         primitives/UnicodeText.cpp
         primitives/TextGridBuffer.h
         primitives/TextGridBuffer.cpp
+        primitives/TextGridBufferAnsi.cpp
+        primitives/AnsiEncoder_p.h
+        primitives/TerminalCapabilities.h
+        primitives/TerminalCapabilities.cpp
         primitives/TerminalDevice.h
         primitives/TerminalDevice.cpp
         engine/TerminalEngine.h
@@ -39,6 +44,8 @@ qt_add_qml_module(QtuiCore
         engine/FocusManager.h
         engine/FocusManager.cpp
         engine/Renderer.h
+        engine/RenderPhase_p.h
+        engine/RenderPhase.cpp
         engine/ItemPaintTraversal_p.h
         engine/FrameRenderer.h
         engine/FrameRenderer.cpp
@@ -167,6 +174,7 @@ install(FILES
 )
 install(FILES
     primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
+    primitives/TerminalCapabilities.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/primitives"
 )
 install(FILES

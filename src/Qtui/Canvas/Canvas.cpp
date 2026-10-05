@@ -72,17 +72,30 @@ void Canvas::setHeight(int height) {
     emit pixelHeightChanged();
 }
 
+namespace {
+constexpr uint8_t brailleBit(int dotX, int dotY) {
+    // Unicode Braille Patterns (U+2800..U+28FF) 8-dot bit mapping:
+    // Left column  (dotX=0): Dot 1 (y=0) -> bit 0 (0x01), Dot 2 (y=1) -> bit 1 (0x02), Dot 3 (y=2) -> bit 2 (0x04), Dot 7 (y=3) -> bit 6 (0x40)
+    // Right column (dotX=1): Dot 4 (y=0) -> bit 3 (0x08), Dot 5 (y=1) -> bit 4 (0x10), Dot 6 (y=2) -> bit 5 (0x20), Dot 8 (y=3) -> bit 7 (0x80)
+    constexpr uint8_t masks[2][4] = {
+        { 0x01, 0x02, 0x04, 0x40 },
+        { 0x08, 0x10, 0x20, 0x80 }
+    };
+    return masks[dotX & 1][dotY & 3];
+}
+}
+
 void Canvas::setPixel(int x, int y, bool value) {
     if (m_renderMode == RenderMode::Braille) {
         int cellX = x / 2;
         int cellY = y / 4;
         if (cellX < 0 || cellX >= width() || cellY < 0 || cellY >= height()) return;
-        int bitIndex = (y % 4) + (x % 2) * 4;
+        uint8_t bitMask = brailleBit(x % 2, y % 4);
         int idx = cellY * width() + cellX;
         if (value) {
-            m_cells[idx] |= (1 << bitIndex);
+            m_cells[idx] |= bitMask;
         } else {
-            m_cells[idx] &= ~(1 << bitIndex);
+            m_cells[idx] &= ~bitMask;
         }
         markDirty();
     } else {
@@ -102,7 +115,7 @@ void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
     if (m_renderMode == RenderMode::Braille) {
         int idx = (y / 4) * width() + (x / 2);
         uint8_t old = m_cells[idx];
-        m_cells[idx] |= (1 << ((y % 4) + (x % 2) * 4));
+        m_cells[idx] |= brailleBit(x % 2, y % 4);
         if (m_cells[idx] != old) markDirty();
     } else {
         int idx = y * w + x;

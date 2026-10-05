@@ -12,6 +12,14 @@ namespace qtui {
 static const char* ASCII_RAMP = " .:-=+*#%@";
 static const int ASCII_RAMP_LEN = 10;
 
+static constexpr uint8_t brailleBit(int dotX, int dotY) {
+    constexpr uint8_t masks[2][4] = {
+        { 0x01, 0x02, 0x04, 0x40 },
+        { 0x08, 0x10, 0x20, 0x80 }
+    };
+    return masks[dotX & 1][dotY & 3];
+}
+
 static QString resolvePath(const QUrl& url) {
     if (url.isEmpty()) return QString();
 
@@ -407,8 +415,7 @@ void Image::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                         if (px >= 0 && px < subW && py >= 0 && py < subH) {
                             QColor col = m_scaledImage.pixelColor(px, py);
                             if (col.alpha() >= 10 && qGray(col.rgb()) > 50) {
-                                int bitIndex = dotY + dotX * 4;
-                                cellValue |= (1 << bitIndex);
+                                cellValue |= brailleBit(dotX, dotY);
                                 lastRgb = col.rgba();
                             }
                         }

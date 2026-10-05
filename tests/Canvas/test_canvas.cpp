@@ -35,17 +35,50 @@ void TestCanvas::testBrailleMode() {
     QCOMPARE(canvas.pixelWidth(), 20);
     QCOMPARE(canvas.pixelHeight(), 20);
 
-    canvas.setPixel(0, 0, true);
+    // Test individual dot encodings for Unicode Braille block (U+2800..U+28FF)
+    struct DotTest {
+        int x;
+        int y;
+        int expectedChar; // Unicode code point
+    };
 
-    TextGridBuffer buffer;
-    buffer.resize(10, 5);
+    const DotTest dotTests[] = {
+        { 0, 0, 0x2801 }, // Dot 1 (Left row 0)  -> bit 0 (0x01)
+        { 0, 1, 0x2802 }, // Dot 2 (Left row 1)  -> bit 1 (0x02)
+        { 0, 2, 0x2804 }, // Dot 3 (Left row 2)  -> bit 2 (0x04)
+        { 1, 0, 0x2808 }, // Dot 4 (Right row 0) -> bit 3 (0x08)
+        { 1, 1, 0x2810 }, // Dot 5 (Right row 1) -> bit 4 (0x10)
+        { 1, 2, 0x2820 }, // Dot 6 (Right row 2) -> bit 5 (0x20)
+        { 0, 3, 0x2840 }, // Dot 7 (Left row 3)  -> bit 6 (0x40)
+        { 1, 3, 0x2880 }, // Dot 8 (Right row 3) -> bit 7 (0x80)
+    };
+
+    for (const auto& dt : dotTests) {
+        canvas.clear();
+        canvas.setPixel(dt.x, dt.y, true);
+
+        TextGridBuffer buf;
+        buf.resize(10, 5);
+        ClipRect clip{0, 0, 10, 5};
+        canvas.render(buf, 0, 0, clip);
+
+        Cell c = buf.cellAt(0, 0);
+        QCOMPARE(c.character, QString(QChar(dt.expectedChar)).toUtf8());
+        QCOMPARE(c.fgColor, 0xFFFF0000);
+    }
+
+    // Test horizontal line on Row 2 (dot 3 and dot 6) -> U+2824 (⠤)
+    canvas.clear();
+    canvas.setPixel(0, 2, true);
+    canvas.setPixel(1, 2, true);
+
+    TextGridBuffer lineBuf;
+    lineBuf.resize(10, 5);
     ClipRect clip{0, 0, 10, 5};
-    canvas.render(buffer, 0, 0, clip);
+    canvas.render(lineBuf, 0, 0, clip);
 
-    Cell c = buffer.cellAt(0, 0);
-    // Braille offset 1 (bit 0 set) is U+2801 (UTF-8: \xE2\xA0\x81)
-    QVERIFY(!c.character.isEmpty());
-    QCOMPARE(c.fgColor, 0xFFFF0000);
+    Cell lineCell = lineBuf.cellAt(0, 0);
+    QCOMPARE(lineCell.character, QString(QChar(0x2824)).toUtf8()); // ⠤
 }
 
 void TestCanvas::testHalfBlockMode() {

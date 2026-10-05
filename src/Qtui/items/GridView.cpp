@@ -353,7 +353,7 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
   if (!model || !m_delegate || first < 0 || first > last)
     return;
   for (int row = first; row <= last; ++row) {
-    QQmlPropertyMap *rowMap = QQmlPropertyMap::create(this);
+    QQmlPropertyMap *rowMap = new QQmlPropertyMap(this);
     const QModelIndex modelIndex = model->index(row, 0);
     QVariantMap initialProps;
     initialProps["index"] = row;

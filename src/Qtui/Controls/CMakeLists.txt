@@ -29,11 +29,16 @@ set_target_properties(QtuiControls QtuiControlsplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN;$ORIGIN/../../../.."
 )
 
-install(TARGETS QtuiControls QtuiControlsplugin
+install(TARGETS QtuiControls
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiControlsplugin
     EXPORT QtuiTargets
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 
 install(FILES

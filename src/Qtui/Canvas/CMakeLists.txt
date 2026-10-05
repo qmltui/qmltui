@@ -18,11 +18,16 @@ set_target_properties(QtuiCanvas QtuiCanvasplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN;$ORIGIN/../../../../.."
 )
 
-install(TARGETS QtuiCanvas QtuiCanvasplugin
+install(TARGETS QtuiCanvas
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiCanvasplugin
     EXPORT QtuiTargets
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Canvas"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Canvas"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Canvas/qmldir"

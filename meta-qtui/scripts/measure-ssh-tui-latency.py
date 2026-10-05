@@ -158,7 +158,7 @@ def measure_ssh_pty(args: argparse.Namespace) -> dict[str, Any]:
     process = subprocess.Popen(command, stdin=slave, stdout=slave, stderr=slave, env=environment, close_fds=True)
     os.close(slave)
     try:
-        initial, _, initial_settled = read_until(master, "Wi-Fi Authentication", args.startup_timeout, started)
+        initial, _, initial_settled = read_until(master, "[F1] Network", args.startup_timeout, started)
         startup_ms = (initial_settled - started) * 1000.0
         first_byte_values: list[float] = []
         settle_values: list[float] = []
@@ -166,9 +166,9 @@ def measure_ssh_pty(args: argparse.Namespace) -> dict[str, Any]:
         for index in range(args.samples):
             drain(master)
             if index % 2 == 0:
-                key, marker = b"\x1bOQ", "Software"
+                key, marker = b"2", "Terminal UI device setup"
             else:
-                key, marker = b"\x1bOP", "Wi-Fi Authentication"
+                key, marker = b"1", "[F1] Network"
             sample_started = time.monotonic()
             os.write(master, key)
             frame, first_byte_at, settled_at = read_until(

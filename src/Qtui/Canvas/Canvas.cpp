@@ -59,12 +59,14 @@ void Canvas::setAutoClear(bool autoClear) {
 }
 
 void Canvas::setWidth(int width) {
+    if (this->width() == width) return;
     Item::setWidth(width);
     resizeBuffer();
     emit pixelWidthChanged();
 }
 
 void Canvas::setHeight(int height) {
+    if (this->height() == height) return;
     Item::setHeight(height);
     resizeBuffer();
     emit pixelHeightChanged();
@@ -98,11 +100,17 @@ void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
     int h = pixelHeight();
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_renderMode == RenderMode::Braille) {
-        m_cells[(y / 4) * width() + (x / 2)] |= (1 << ((y % 4) + (x % 2) * 4));
+        int idx = (y / 4) * width() + (x / 2);
+        uint8_t old = m_cells[idx];
+        m_cells[idx] |= (1 << ((y % 4) + (x % 2) * 4));
+        if (m_cells[idx] != old) markDirty();
     } else {
-        m_pixelColors[y * w + x] = color;
+        int idx = y * w + x;
+        if (m_pixelColors[idx] != color) {
+            m_pixelColors[idx] = color;
+            markDirty();
+        }
     }
-    markDirty();
 }
 
 void Canvas::clear() {
@@ -177,15 +185,23 @@ void Canvas::render(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
                 cell.continuation = false;
 
                 if (topSet && bottomSet) {
-                    cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
-                    cell.fgColor = topColor;
-                    cell.bgColor = bottomColor;
+                    if (topColor == bottomColor) {
+                        cell.character = "\xE2\x96\x88"; // █ Full Block
+                        cell.fgColor = topColor;
+                        cell.bgColor = 0x00000000;
+                    } else {
+                        cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
+                        cell.fgColor = topColor;
+                        cell.bgColor = bottomColor;
+                    }
                 } else if (topSet) {
                     cell.character = "\xE2\x96\x80"; // ▀ Upper Half Block
                     cell.fgColor = topColor;
+                    cell.bgColor = 0x00000000;
                 } else {
                     cell.character = "\xE2\x96\x84"; // ▄ Lower Half Block
                     cell.fgColor = bottomColor;
+                    cell.bgColor = 0x00000000;
                 }
             }
         }

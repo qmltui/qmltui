@@ -90,6 +90,14 @@ cmake -B build-cross -S my_qtui_app
 cmake --build build-cross
 ```
 
+For complete documentation on building external apps, automated testing (Host, CI & On-Target), and fast iteration without reflashing, see the **[Embedded Development & Testing Guide](docs/development-and-testing-workflow.md)**.
+
+### Fast Dev-Loop Tool (`qtui-dev.sh`):
+```sh
+# Build and run any external project live on /dev/tty1 over SSH in < 2 seconds:
+./meta-qtui/scripts/qtui-dev.sh dev /path/to/my_qtui_app 192.168.1.35
+```
+
 ---
 
 ## Configuring the Autostart Service

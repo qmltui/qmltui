@@ -13,19 +13,19 @@ SRC_URI = "\
     file://autologin.conf \
     file://25-wlan.network \
     file://wpa_supplicant-wlan0.conf \
+    file://wpa_supplicant-mlan0.conf \
     file://vconsole.conf \
     file://dropbear.service \
+    file://70-wifi-powersave.rules \
+    file://moal.conf \
 "
 
 S = "${WORKDIR}"
 
-inherit systemd update-rc.d
+inherit systemd
 
-SYSTEMD_SERVICE:${PN} = "qtui-app.service dropbear.service"
+SYSTEMD_SERVICE:${PN} = "qtui-app.service"
 SYSTEMD_AUTO_ENABLE = "enable"
-
-INITSCRIPT_NAME = "qtui-app"
-INITSCRIPT_PARAMS = "defaults 99"
 
 do_install() {
     # Install launcher script
@@ -58,9 +58,18 @@ do_install() {
         # Install Dropbear standalone daemon service
         install -m 0644 ${WORKDIR}/dropbear.service ${D}${systemd_system_unitdir}/dropbear.service
 
-        # Install default wpa_supplicant template
+        # Install default wpa_supplicant templates
         install -d ${D}${sysconfdir}/wpa_supplicant
         install -m 0600 ${WORKDIR}/wpa_supplicant-wlan0.conf ${D}${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf
+        install -m 0600 ${WORKDIR}/wpa_supplicant-mlan0.conf ${D}${sysconfdir}/wpa_supplicant/wpa_supplicant-mlan0.conf
+
+        # Install udev rule to disable Wi-Fi power saving for low-latency SSH and deployment
+        install -d ${D}${sysconfdir}/udev/rules.d
+        install -m 0644 ${WORKDIR}/70-wifi-powersave.rules ${D}${sysconfdir}/udev/rules.d/70-wifi-powersave.rules
+
+        # Install modprobe config to disable NXP Wi-Fi IEEE power save at module load time
+        install -d ${D}${sysconfdir}/modprobe.d
+        install -m 0644 ${WORKDIR}/moal.conf ${D}${sysconfdir}/modprobe.d/moal.conf
     fi
 
     # Install SysVinit script
@@ -80,5 +89,8 @@ FILES:${PN} += "\
     ${systemd_system_unitdir}/serial-getty@.service.d/autologin.conf \
     ${sysconfdir}/systemd/network/25-wlan.network \
     ${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf \
+    ${sysconfdir}/wpa_supplicant/wpa_supplicant-mlan0.conf \
+    ${sysconfdir}/udev/rules.d/70-wifi-powersave.rules \
+    ${sysconfdir}/modprobe.d/moal.conf \
     ${sysconfdir}/init.d/qtui-app \
 "

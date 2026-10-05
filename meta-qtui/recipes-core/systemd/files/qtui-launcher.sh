@@ -35,21 +35,24 @@ if [ ! -f /etc/wpa_supplicant/wpa_supplicant-wlan0.conf ]; then
     cp -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf 2>/dev/null || true
 fi
 
-# 5. Bring up wireless interfaces completely silently
-rfkill unblock wifi >/dev/null 2>&1 || true
-rfkill unblock all >/dev/null 2>&1 || true
-ip link set mlan0 up >/dev/null 2>&1 || ip link set wlan0 up >/dev/null 2>&1 || true
-
-if [ "$QTUI_WIFI_LOW_LATENCY" = "1" ]; then
-    iw dev mlan0 set power_save off >/dev/null 2>&1 || \
-    iw dev wlan0 set power_save off >/dev/null 2>&1 || true
-fi
-
-# 6. Start wpa_supplicant daemon completely silently using persistent config
-if ! pidof wpa_supplicant >/dev/null 2>&1; then
-    wpa_supplicant -B -qq -i mlan0 -c /etc/wpa_supplicant/wpa_supplicant-mlan0.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || \
-    wpa_supplicant -B -qq -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || true
-fi
+# 5. Start wpa_supplicant daemon in background as soon as wireless hardware finishes initialization
+(
+    for i in $(seq 1 30); do
+        if [ -d /sys/class/net/mlan0 ] || [ -d /sys/class/net/wlan0 ]; then
+            iface="mlan0"
+            [ -d /sys/class/net/wlan0 ] && iface="wlan0"
+            ip link set $iface up >/dev/null 2>&1 || true
+            if [ "$QTUI_WIFI_LOW_LATENCY" = "1" ]; then
+                iw dev $iface set power_save off >/dev/null 2>&1 || true
+            fi
+            if ! pidof wpa_supplicant >/dev/null 2>&1; then
+                wpa_supplicant -B -qq -i $iface -c /etc/wpa_supplicant/wpa_supplicant-$iface.conf -C /var/run/wpa_supplicant >/dev/null 2>&1 || true
+            fi
+            break
+        fi
+        sleep 0.5
+    done
+) &
 
 export TERM="linux"
 export COLORTERM="truecolor"

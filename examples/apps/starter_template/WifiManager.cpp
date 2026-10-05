@@ -183,7 +183,7 @@ void WifiManager::prepareWifiStack(std::function<void(bool)> callback)
         }
 
         commands.append({"wpa_supplicant", {"-B", "-qq", "-i", m_interface,
-                                              "-c", confPath, "-C", "/var/run/wpa_supplicant"}});
+                                            "-c", confPath}});
     }
     if (QFile::exists("/dev/rfkill")) {
         runCommand("rfkill", {"unblock", "all"}, 1000,
@@ -226,6 +226,14 @@ void WifiManager::scan()
         return;
 
     m_interface = detectWirelessInterface();
+    const QString ctrlSocket = QString("/var/run/wpa_supplicant/%1").arg(m_interface);
+    if (!QFile::exists(ctrlSocket)) {
+        prepareWifiStack([this](bool) {
+            QTimer::singleShot(400, this, &WifiManager::scan);
+        });
+        return;
+    }
+
     m_operationActive = true;
     m_scanning = true;
     m_scanResultAttempts = 0;

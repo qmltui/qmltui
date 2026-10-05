@@ -13,7 +13,7 @@ inherit qt6-cmake pkgconfig
 EXTRA_OECMAKE += "\
     -DQTUI_USE_SYSTEM_UTF8PROC=ON \
     -DQTUI_BUILD_TESTS=OFF \
-    -DQTUI_BUILD_EXAMPLES=OFF \
+    -DQTUI_BUILD_EXAMPLES=ON \
     -DQTUI_ENABLE_BEHAVIOR=ON \
     -DQTUI_ENABLE_TEST_RUNNER=ON \
 "
@@ -26,13 +26,15 @@ SOLIBS = ".so*"
 
 # QML modules and shared libraries packaging
 FILES:${PN} += "\
+    ${bindir}/qtui_* \
     ${libdir}/libQtui*.so* \
     ${libdir}/qml/Qtui \
 "
 
-FILES:${PN}-dev = "\
+FILES:${PN}-dev += "\
     ${includedir}/qtui \
     ${libdir}/cmake/Qtui \
+    ${libdir}/libQtuiTesting.a \
 "
 
 INSANE_SKIP:${PN} += "dev-so"

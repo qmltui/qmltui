@@ -21,11 +21,16 @@ set_target_properties(QtuiImage QtuiImageplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN;$ORIGIN/../../../../.."
 )
 
-install(TARGETS QtuiImage QtuiImageplugin
+install(TARGETS QtuiImage
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiImageplugin
     EXPORT QtuiTargets
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/qmldir"

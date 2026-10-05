@@ -19,7 +19,7 @@ python do_unpack() {
         shutil.rmtree(s_dir)
     os.makedirs(s_dir, exist_ok=True)
     
-    for item in ['src', 'docs', 'cmake', 'CMakeLists.txt', 'LICENSE']:
+    for item in ['src', 'examples', 'docs', 'cmake', 'CMakeLists.txt', 'LICENSE']:
         src_path = os.path.join(src_dir, item)
         dst_path = os.path.join(s_dir, item)
         if os.path.isdir(src_path):

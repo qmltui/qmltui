@@ -21,11 +21,16 @@ set_target_properties(QtuiExtras QtuiExtrasplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN;$ORIGIN/../../../../.."
 )
 
-install(TARGETS QtuiExtras QtuiExtrasplugin
+install(TARGETS QtuiExtras
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiExtrasplugin
     EXPORT QtuiTargets
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Extras"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Extras"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 
 install(FILES

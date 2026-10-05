@@ -1,7 +1,7 @@
 
 
 
-include("${CMAKE_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
+include("${Qtui_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
 
 # The library backing the QML module
 set(qtui_behavior_sources)

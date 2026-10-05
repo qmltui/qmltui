@@ -1,11 +1,11 @@
 include(CTest)
 enable_testing()
-include("${CMAKE_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+include("${Qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake")
 
 function(add_qtui_test test_name test_source)
     add_executable(${test_name} ${test_source})
     target_link_libraries(${test_name} PRIVATE Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls Qtui::Extras Qtui::Canvas Qtui::Image)
-    target_compile_definitions(${test_name} PRIVATE QTUI_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(${test_name} PRIVATE QTUI_SOURCE_DIR="${Qtui_SOURCE_DIR}")
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
         ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
@@ -265,28 +265,28 @@ add_qtui_environment_scenario(test_runner_environment_conflict qtui_test_runner_
 
 if(TARGET qtui_pos_cashier)
     add_qtui_runner_scenario(test_runner_pos qtui_pos_cashier
-        "${CMAKE_SOURCE_DIR}/examples/apps/pos_cashier/test_pos.js" 0
+        "${Qtui_SOURCE_DIR}/examples/apps/pos_cashier/test_pos.js" 0
         ARTIFACT "pos/receipt.txt"
         ARTIFACT_CONTENT "TRANSACTION COMPLETED"
     )
 endif()
 if(TARGET qtui_snake_game)
     add_qtui_runner_scenario(test_runner_snake qtui_snake_game
-        "${CMAKE_SOURCE_DIR}/examples/apps/snake_game/test_snake.js" 0
+        "${Qtui_SOURCE_DIR}/examples/apps/snake_game/test_snake.js" 0
         ARTIFACT "snake/paused.txt"
         ARTIFACT_CONTENT "PAUSED"
     )
 endif()
 if(TARGET qtui_pacman_game)
     add_qtui_runner_scenario(test_runner_pacman qtui_pacman_game
-        "${CMAKE_SOURCE_DIR}/examples/apps/pacman_game/test_pacman.js" 0
+        "${Qtui_SOURCE_DIR}/examples/apps/pacman_game/test_pacman.js" 0
         ARTIFACT "pacman/paused.txt"
         ARTIFACT_CONTENT "PAUSED"
     )
 endif()
 if(TARGET qtui_sql_studio)
     add_qtui_runner_scenario(test_runner_sql_studio qtui_sql_studio
-        "${CMAKE_SOURCE_DIR}/examples/apps/sql_studio/test_sql_studio.js" 0
+        "${Qtui_SOURCE_DIR}/examples/apps/sql_studio/test_sql_studio.js" 0
         ARTIFACT "sql_studio_verified.txt"
         ARTIFACT_CONTENT "SQLStudio TUI"
     )

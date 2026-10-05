@@ -28,4 +28,4 @@ IMAGE_ROOTFS_EXTRA_SPACE = "8192"
 
 # SDK generation packages
 TOOLCHAIN_HOST_TASK:append = " nativesdk-packagegroup-qt6-toolchain-host"
-TOOLCHAIN_TARGET_TASK:append = " packagegroup-qtui-base qtui-dev"
+TOOLCHAIN_TARGET_TASK:append = " qtbase-dev qtdeclarative-dev qtui-dev qtui-staticdev"

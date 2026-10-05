@@ -7,7 +7,7 @@ Terminal {
     id: rootWindow
 
     fillTerminal: true
-    color: "#030806"
+    color: "#000000"
     useAlternateScreen: true
 
     property int score: 0
@@ -76,7 +76,7 @@ Terminal {
         let head = snakeModel.get(0)
         let eyeX = head.cellX * cellPixelWidth + (direction === "right" ? 1 : 0)
         let eyeY = head.cellY * cellPixelHeight + (direction === "down" ? 1 : 0)
-        gameCanvas.setPixelColor(eyeX, eyeY, "#07150c")
+        gameCanvas.setPixelColor(eyeX, eyeY, "#000000")
     }
 
     function resetGame() {
@@ -185,10 +185,19 @@ Terminal {
             return
         }
 
+        let oldTail = snakeModel.get(snakeModel.count - 1)
+        let oldTailX = oldTail.cellX
+        let oldTailY = oldTail.cellY
+
         if (ateFood) {
-            let tail = snakeModel.get(snakeModel.count - 1)
-            snakeModel.append({ "cellX": tail.cellX, "cellY": tail.cellY })
+            snakeModel.append({ "cellX": oldTailX, "cellY": oldTailY })
+        } else {
+            paintCell(oldTailX, oldTailY, "transparent")
         }
+
+        // Old head becomes body segment
+        let oldHead = snakeModel.get(0)
+        paintCell(oldHead.cellX, oldHead.cellY, "#2bdc68")
 
         for (let i = snakeModel.count - 1; i > 0; --i) {
             let previous = snakeModel.get(i - 1)
@@ -197,6 +206,12 @@ Terminal {
         }
         snakeModel.setProperty(0, "cellX", nextX)
         snakeModel.setProperty(0, "cellY", nextY)
+
+        // Paint new head
+        paintCell(nextX, nextY, "#82ff9f")
+        let eyeX = nextX * cellPixelWidth + (direction === "right" ? 1 : 0)
+        let eyeY = nextY * cellPixelHeight + (direction === "down" ? 1 : 0)
+        gameCanvas.setPixelColor(eyeX, eyeY, "#000000")
 
         ++movementTick
         if (movementTick % 3 === 0)
@@ -211,7 +226,12 @@ Terminal {
             else
                 spawnFood()
         }
-        redrawCanvas()
+
+        if (!gameOver) {
+            paintCell(foodX, foodY, foodPulse ? "#ffb000" : "#ff4365")
+            gameCanvas.setPixelColor(foodX * cellPixelWidth + 1,
+                                     foodY * cellPixelHeight, "#b7f34a")
+        }
     }
 
     function scheduleResize() {
@@ -315,7 +335,7 @@ Terminal {
             id: header
             width: parent.width
             height: 3
-            color: "#0b1711"
+            color: "#111111"
 
             Text {
                 anchors.left: parent.left
@@ -365,17 +385,19 @@ Terminal {
             id: gameField
             width: parent.width
             height: parent.height - header.height
-            color: "#030806"
+            color: "#000000"
             border.style: "single"
             border.color: rootWindow.gameOver ? "#8f3045" : "#225c38"
 
             Canvas {
                 id: gameCanvas
-                anchors.fill: parent
-                anchors.margins: 1
+                x: 1
+                y: 1
+                width: Math.max(0, gameField.width - 2)
+                height: Math.max(0, gameField.height - 2)
                 renderMode: Canvas.HalfBlock
                 autoClear: false
-                fillColor: "#030806"
+                fillColor: "transparent"
             }
 
             Rectangle {

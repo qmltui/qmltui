@@ -87,5 +87,5 @@ hard-coded coordinates, and captures the Overview frame as an artifact.
 
 The launched application is `/etc/default/qtui-app` (`QTUI_APP=`), so any
 image using `qtui-autostart` can switch to the cockpit by editing one line.
-See [docs/frdm_imx93_guide.md](../../../docs/frdm_imx93_guide.md) for the
-full flash-and-boot walkthrough.
+See the [meta-qtui repository](https://github.com/yosriayed/meta-qtui) for the
+full flash-and-boot walkthrough and deployment guides.

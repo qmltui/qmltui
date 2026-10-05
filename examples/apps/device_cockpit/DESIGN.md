@@ -86,8 +86,7 @@ M2+; the D-Bus backends already go through the system bus, so the seam exists.
 
 - systemd unit running the cockpit on `ttyS0`/`tty1` as the getty alternative
   (`TTYPath=`, `StandardInput=tty`, `Restart=always`).
-- Yocto recipe in `meta-qtui` (or a `meta-cockpit` layer when split out);
-  validated on the FRDM i.MX93 per `docs/frdm_imx93_guide.md`.
+- Yocto recipe in `meta-qtui` (see https://github.com/yosriayed/meta-qtui).
 - Desktop quickstart: `QTUI_COCKPIT_MOCK=1 ./device_cockpit` in any terminal.
 
 ### Testing

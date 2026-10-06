@@ -5,6 +5,8 @@ endif()
 
 file(REMOVE_RECURSE "${CONSUMER_BINARY_DIR}" "${INSTALL_PREFIX}")
 
+get_filename_component(consumer_qt_prefix "${Qt6_DIR}/../../.." ABSOLUTE)
+
 # Match the parent build's generator and configuration so the consumer binary
 # lands where this script expects it (single-config layout).
 set(consumer_generator_args)
@@ -31,7 +33,9 @@ execute_process(
             -S "${CONSUMER_SOURCE_DIR}"
             -B "${CONSUMER_BINARY_DIR}"
             ${consumer_generator_args}
-            "-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}"
+            # The Qt that built Qtui must win over any other Qt reachable from
+            # PATH (WSL exposes Windows installations, for example).
+            "-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};${consumer_qt_prefix}"
             "-DQt6_DIR=${Qt6_DIR}"
     RESULT_VARIABLE configure_result
     OUTPUT_VARIABLE configure_output

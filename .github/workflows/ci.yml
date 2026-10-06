@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / Behavior ${{ matrix.behavior }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+        behavior: [ON, OFF]
+        include:
+          - os: windows-2022
+            qt_arch: win64_msvc2022_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 6.8
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          arch: ${{ matrix.qt_arch }}
+          cache: true
+
+      - name: Install Linux runtime libraries for QtGui
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libxkbcommon0
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DQTUI_BUILD_TESTS=ON
+          -DQTUI_BUILD_EXAMPLES=ON
+          -DQTUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        if: runner.os != 'Windows'
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # DLLs are found through PATH on Windows; Qt's bin is already there.
+          $env:PATH = "$PWD\build;$PWD\build\qml\Qtui;$env:PATH"
+          $env:QT_FORCE_STDERR_LOGGING = "1"
+          ctest --test-dir build --output-on-failure
+
+  quickstart:
+    name: quickstart (FetchContent, standalone)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 6.8
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+
+      - name: Install Linux runtime libraries for QtGui
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libxkbcommon0
+
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Configure exactly as a newcomer would, against this tree
+        # FETCHCONTENT_SOURCE_DIR_QTUI is CMake's standard override for a
+        # declared dependency; the quickstart files themselves are unchanged.
+        run: >
+          cmake -S examples/quickstart -B build-qs -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DFETCHCONTENT_SOURCE_DIR_QTUI=${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build build-qs --parallel
+
+      - name: Smoke-run
+        # No terminal here: the app must start, render, and keep running until
+        # the timeout kills it (exit 124). Any crash or QML load error exits early.
+        run: |
+          set +e
+          timeout 3 ./build-qs/hello_qtui < /dev/null > run.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 124 ]; then
+            echo "hello_qtui exited early with code $code"; cat run.log; exit 1
+          fi
+          grep -q "Welcome" run.log || { echo "no rendered frame in output"; cat run.log | head -c 2000; exit 1; }

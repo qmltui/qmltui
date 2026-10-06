@@ -252,6 +252,19 @@ Terminal {
                     Keys.onPressed: (event) => root.handleKeyEvent(event)
                     model: systemModel
                     columns: systemModel.columnDefinitions()
+                    columnWidthProvider: (column) => {
+                        if (column === 0) return 8   // PID
+                        if (column === 1) return 15  // Program
+                        if (column === 3) return 6   // Thr
+                        if (column === 4) return 9   // User
+                        if (column === 5) return 10  // Mem
+                        if (column === 6) return 7   // Cpu%
+                        if (column === 2) {
+                            const fixedWidths = 8 + 15 + 6 + 9 + 10 + 7
+                            return Math.max(16, processTable.width - fixedWidths)
+                        }
+                        return 10
+                    }
                     headerColor: root.textColor
                     headerBgColor: root.panelColor
                     selectionColor: root.textColor

@@ -27,6 +27,8 @@ Test.waitForCondition((frameText) =>
 Test.captureText("cockpit/services.txt")
 
 // The rejected path leaves the unit untouched.
+// The provider replaces its QVariantList after stopping; select the refreshed row.
+Test.press("Down")
 Test.press("S")
 Test.waitForText("Start sshd.service?")
 Test.press("N")

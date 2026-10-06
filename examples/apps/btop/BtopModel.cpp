@@ -226,13 +226,13 @@ QVariant BtopModel::headerData(int section, Qt::Orientation orientation,
 }
 
 QVariantList BtopModel::columnDefinitions() const {
-  return {QVariantMap{{"title", "PID"}, {"width", 7}, {"alignment", "right"}},
-          QVariantMap{{"title", "Program"}, {"width", 13}},
-          QVariantMap{{"title", "Command"}, {"width", 22}},
-          QVariantMap{{"title", "Thr"}, {"width", 4}, {"alignment", "right"}},
-          QVariantMap{{"title", "User"}, {"width", 8}},
-          QVariantMap{{"title", "Mem"}, {"width", 7}, {"alignment", "right"}},
-          QVariantMap{{"title", "Cpu%"}, {"width", 5}, {"alignment", "right"}}};
+  return {QVariantMap{{"title", "PID"}, {"width", 8}, {"align", "left"}, {"alignment", "left"}},
+          QVariantMap{{"title", "Program"}, {"width", 15}, {"align", "left"}, {"alignment", "left"}},
+          QVariantMap{{"title", "Command"}, {"width", 24}, {"align", "left"}, {"alignment", "left"}},
+          QVariantMap{{"title", "Thr"}, {"width", 6}, {"align", "left"}, {"alignment", "left"}},
+          QVariantMap{{"title", "User"}, {"width", 9}, {"align", "left"}, {"alignment", "left"}},
+          QVariantMap{{"title", "Mem"}, {"width", 10}, {"align", "right"}, {"alignment", "right"}},
+          QVariantMap{{"title", "Cpu%"}, {"width", 7}, {"align", "right"}, {"alignment", "right"}}};
 }
 
 void BtopModel::togglePaused() {

@@ -447,7 +447,6 @@ void TestRenderLoop::canvasWithShapesStaysIdle()
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import Qtui
-        import Qtui.Canvas
         Terminal {
             Canvas {
                 objectName: "canvas"

@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import StarterTemplateApp
 
 Rectangle {
@@ -21,13 +20,14 @@ Rectangle {
         color: Theme.bgHeader
         border.color: Theme.borderNormal
 
-        BigText {
+        Text {
             id: brandText
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: 1
             text: "BOOT TO QTUI"
             color: Theme.qtGreen
+            bold: true
         }
 
         Text {

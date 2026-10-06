@@ -9,10 +9,10 @@ qt_add_qml_module(qtui_container_fleet
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qtui::Core Qtui::Controls Qtui::Extras
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
-target_link_libraries(qtui_container_fleet PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras)
+target_link_libraries(qtui_container_fleet PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
 if(TARGET Qtui::Testing)
     target_link_libraries(qtui_container_fleet PRIVATE Qtui::Testing)

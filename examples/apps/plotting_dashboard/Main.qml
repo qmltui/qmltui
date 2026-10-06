@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 
-import Qtui.Canvas
 import QtQml
 import Qtui
 import Qtui.Controls

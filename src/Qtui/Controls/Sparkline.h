@@ -9,7 +9,7 @@
 
 namespace qtui {
 
-class QTUI_EXTRAS_EXPORT Sparkline : public Item {
+class QTUI_CONTROLS_EXPORT Sparkline : public Item {
     Q_OBJECT
     QML_ELEMENT
 

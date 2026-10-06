@@ -43,14 +43,15 @@ Deleted: `process_monitor` and `system_dashboard` (btop covers them),
 tables, the latter untested), `device_cockpit` (DBus, Linux only, contradicts
 the Windows launch), `spaceship_game` (third game, untested).
 
-### 31 components (`examples/components/`)
+### 27 library components plus 3 recipes (`examples/components/`)
 
 | Category | Components |
 | :--- | :--- |
-| Data views | `TableView`, `TreeView`, `ListView`, `ScrollView`, `Canvas`, `Calendar` |
+| Data views | `TableView`, `TreeView`, `ListView`, `ScrollView`, `LogView`, `Canvas`, `Sparkline` |
 | Inputs | `Button`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `TextInput`, `TextArea` |
-| Display and metrics | `Text`, `BigText`, `Paragraph`, `Gauge`, `Sparkline`, `StatusBadge`, `Spinner`, `ProgressBar`, `Rectangle`, `Image` |
-| Overlays and navigation | `Dialog`, `Popup`, `Toast`, `ToolTip`, `TabHeader`, `Panel`, `Loader`, `TerminalView` |
+| Display and metrics | `Text`, `Paragraph`, `ProgressBar`, `BusyIndicator`, `Rectangle`, `Image` |
+| Overlays and navigation | `Dialog`, `Popup`, `Toast`, `ToolTip`, `TabBar`, `Panel`, `Loader`, `TerminalView` |
+| Recipes (not library types) | `StatusBadge`, `Calendar`, `BigText` as worked examples of composing and subclassing |
 
 ### 11 concept examples (`examples/concepts/`)
 
@@ -199,7 +200,7 @@ cmake -S . -B build && cmake --build build --target qtui_btop
 
 - `scripts/record_casts.sh` runs headless in CI on Linux and reproduces
   visually identical casts across runs (frame text diff is empty).
-- All 31 component cards have an SVG still. All 8 apps have a cast.
+- All component cards, library types and recipes alike, have an SVG still. All 8 apps have a cast.
 - The landing hero cast plays within one second of first paint on a cold cache.
 - No hand-written inventory anywhere; `scripts/inventory.py` output matches the
   filesystem.

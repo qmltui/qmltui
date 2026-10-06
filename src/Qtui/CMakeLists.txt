@@ -82,6 +82,8 @@ qt_add_qml_module(QtuiCore
         engine/Transition.cpp
         items/Item.h
         items/Item.cpp
+        items/Canvas.h
+        items/Canvas.cpp
         items/Rectangle.h
         items/Rectangle.cpp
         items/Anchors.h
@@ -188,7 +190,7 @@ install(FILES
 )
 install(FILES
     items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h items/TableView.h items/TreeView.h
-    items/Terminal.h items/Rectangle.h items/Gradient.h items/GradientStop.h
+    items/Terminal.h items/Rectangle.h items/Gradient.h items/GradientStop.h items/Canvas.h items/Popup.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
 )
 install(FILES
@@ -205,9 +207,7 @@ if(QTUI_BUILD_TESTS OR QTUI_ENABLE_TEST_RUNNER OR QTUI_ENABLE_TEST_DRIVER)
     add_subdirectory(Testing)
 endif()
 
-add_subdirectory(Canvas)
 add_subdirectory(Controls)
-add_subdirectory(Extras)
 add_subdirectory(Image)
 if(QTUI_BUILD_TERMINAL_HOST)
     add_subdirectory(TerminalHost)

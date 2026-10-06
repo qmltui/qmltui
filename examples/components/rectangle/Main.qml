@@ -1,6 +1,5 @@
 import QtQml
 import Qtui
-import Qtui.Canvas
 
 Terminal {
     id: root

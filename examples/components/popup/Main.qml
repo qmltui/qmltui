@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 
+import Qtui.Controls
 Terminal {
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {

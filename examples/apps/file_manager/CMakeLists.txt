@@ -22,7 +22,7 @@ qt_add_qml_module(qtui_file_manager
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Extras
+        TARGET Qtui::Controls
         TARGET Qtui::TerminalHost
 )
 
@@ -31,7 +31,7 @@ target_link_libraries(qtui_file_manager PRIVATE
     Qt6::Qml
     Qtui::Core
     Qtui::Controls
-    Qtui::Extras
+    Qtui::Controls
     Qtui::TerminalHost
 )
 

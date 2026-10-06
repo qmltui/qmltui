@@ -1,24 +1,24 @@
-#include "ToastManager.h"
+#include "Toast.h"
 #include <ColorMapper.h>
 #include <algorithm>
 
 namespace qtui {
 
-ToastManager::ToastManager(QObject *parent) : Item(parent) {
+Toast::Toast(QObject *parent) : Item(parent) {
     setImplicitWidth(30);
     setImplicitHeight(10);
 
-    connect(&m_timer, &QTimer::timeout, this, &ToastManager::onTick);
+    connect(&m_timer, &QTimer::timeout, this, &Toast::onTick);
     m_timer.setInterval(100);
 }
 
-void ToastManager::showToast(const QString &title, const QString &message, const QString &type, int timeoutMs) {
+void Toast::showToast(const QString &title, const QString &message, const QString &type, int timeoutMs) {
     m_toasts.append(ToastItem{ title, message, type, (std::max)(100, timeoutMs) });
     if (!m_timer.isActive()) m_timer.start();
     markDirty();
 }
 
-void ToastManager::setInfoColor(Color color) {
+void Toast::setInfoColor(Color color) {
     if (m_infoColor == color) return;
     m_infoColor = color;
     m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0xFF61AFEF);
@@ -26,7 +26,7 @@ void ToastManager::setInfoColor(Color color) {
     markDirty();
 }
 
-void ToastManager::setSuccessColor(Color color) {
+void Toast::setSuccessColor(Color color) {
     if (m_successColor == color) return;
     m_successColor = color;
     m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0xFF98C379);
@@ -34,7 +34,7 @@ void ToastManager::setSuccessColor(Color color) {
     markDirty();
 }
 
-void ToastManager::setWarningColor(Color color) {
+void Toast::setWarningColor(Color color) {
     if (m_warningColor == color) return;
     m_warningColor = color;
     m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0xFFE5C07B);
@@ -42,7 +42,7 @@ void ToastManager::setWarningColor(Color color) {
     markDirty();
 }
 
-void ToastManager::setErrorColor(Color color) {
+void Toast::setErrorColor(Color color) {
     if (m_errorColor == color) return;
     m_errorColor = color;
     m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0xFFE06C75);
@@ -50,21 +50,21 @@ void ToastManager::setErrorColor(Color color) {
     markDirty();
 }
 
-void ToastManager::setToastWidth(int w) {
+void Toast::setToastWidth(int w) {
     if (m_toastWidth == w) return;
     m_toastWidth = w;
     emit toastWidthChanged();
     markDirty();
 }
 
-void ToastManager::setPosition(const QString &pos) {
+void Toast::setPosition(const QString &pos) {
     if (m_position == pos) return;
     m_position = pos;
     emit positionChanged();
     markDirty();
 }
 
-void ToastManager::onTick() {
+void Toast::onTick() {
     if (m_toasts.isEmpty()) {
         m_timer.stop();
         return;
@@ -82,7 +82,7 @@ void ToastManager::onTick() {
     if (m_toasts.isEmpty()) m_timer.stop();
 }
 
-void ToastManager::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     if (!m_visible || m_toasts.isEmpty()) return;
 
     int curY = absY;

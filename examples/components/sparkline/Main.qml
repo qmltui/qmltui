@@ -1,4 +1,3 @@
-import Qtui.Extras
 import Qtui.Controls
 pragma ComponentBehavior: Bound
 

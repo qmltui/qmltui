@@ -7,5 +7,5 @@ qt_add_qml_module(qtui_braille_demo
         Main.qml
     DEPENDENCIES
         TARGET Qtui::Core
-        TARGET Qtui::Canvas
+        TARGET Qtui::Core
 )

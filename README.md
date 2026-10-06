@@ -193,9 +193,9 @@ target_link_libraries(my_app PRIVATE Qtui::Core)
 ```
 
 Link the modules an application uses with `Qtui::Core`, `Qtui::Controls`, and
-`Qtui::Extras`. For modules built in the same CMake project through
+`Qtui::Controls`. For modules built in the same CMake project through
 `add_subdirectory` or `FetchContent`, list the source-tree targets (`QtuiCore`,
-`QtuiControls`, and `QtuiExtras`) in
+and `QtuiControls`) in
 `qt_add_qml_module(DEPENDENCIES TARGET ...)`. Qt does not accept imported
 targets in `DEPENDENCIES TARGET`. No project-specific QML import-path variable
 is required. Installed QML modules live in Qt's standard
@@ -207,7 +207,6 @@ The installed QML modules are:
 
 - `Qtui`
 - `Qtui.Controls`
-- `Qtui.Extras`
 - `Qtui.Image`
 - `Qtui.TerminalHost` when built with `QTUI_BUILD_TERMINAL_HOST=ON`
 

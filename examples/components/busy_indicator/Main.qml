@@ -15,7 +15,7 @@ Terminal {
     Panel {
         anchors.fill: parent
         anchors.margins: 1
-        title: "Activity Indicators (Spinner Controls)"
+        title: "Activity Indicators (BusyIndicator Controls)"
         titleAlignment: Qt.AlignHCenter
         titleColor: "yellow"
         border.color: "cyan"
@@ -28,16 +28,16 @@ Terminal {
             spacing: 1
             Row {
                 spacing: 2
-                Spinner {
-                    style: Spinner.Style.Dots
+                BusyIndicator {
+                    style: BusyIndicator.Style.Dots
                     color: "cyan"
                 }
                 Text { text: "Loading network requests (Dots)"; color: "cyan" }
             }
             Row {
                 spacing: 2
-                Spinner {
-                    style: Spinner.Style.Line
+                BusyIndicator {
+                    style: BusyIndicator.Style.Line
                     color: "green"
                 }
                 Text { text: "Loading system resources (Line)"; color: "green" }
@@ -45,8 +45,8 @@ Terminal {
 
             Row {
                 spacing: 2
-                Spinner {
-                    style: Spinner.Style.Pipe
+                BusyIndicator {
+                    style: BusyIndicator.Style.Pipe
                     color: "yellow"
                 }
                 Text { text: "Encrypting sensitive data (Pipe)"; color: "yellow" }
@@ -55,8 +55,8 @@ Terminal {
 
             Row {
                 spacing: 2
-                Spinner {
-                    style: Spinner.Style.Block
+                BusyIndicator {
+                    style: BusyIndicator.Style.Block
                     color: "magenta"
                 }
                 Text { text: "Initializing database connection (Block)"; color: "magenta" }
@@ -64,8 +64,8 @@ Terminal {
 
             Row {
                 spacing: 2
-                Spinner {
-                    style: Spinner.Style.Bounce
+                BusyIndicator {
+                    style: BusyIndicator.Style.Bounce
                     color: "lightgreen"
                 }
                 Text { text: "Connecting to remote server (Bounce)"; color: "lightgreen" }

@@ -7,6 +7,12 @@
   `src/Qtui/primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.
   Legacy `conhost.exe` gets whatever its VT support allows and is not a target.
+- `Qtui.Controls` admits a type only if it needs engine knowledge an
+  application cannot reproduce in QML (cell geometry, Unicode width,
+  virtualization, overlays) or is universal in terminal toolkits. Everything
+  else is a recipe under `examples/components/`. Controls read colors from the
+  `Palette` singleton; do not add per-control color properties beyond
+  `textColor` and data colors such as `ProgressBar.color`.
 - Build terminal interfaces from `QtQml` and Qtui modules. Do not add a
   `QtQuick` import or Qt Quick dependency to Qtui applications or modules.
 - Keep optional subsystems gated. `QTUI_ENABLE_BEHAVIOR=ON` requires

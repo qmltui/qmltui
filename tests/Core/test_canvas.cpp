@@ -172,7 +172,6 @@ void TestCanvas::testQmlCanvasHalfBlock() {
     component.setData(R"(
         import QtQuick
         import Qtui
-        import Qtui.Canvas
 
         Canvas {
             width: 20
@@ -254,7 +253,6 @@ void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
     QQmlComponent component(&engine);
     component.setData(R"(
         import Qtui
-        import Qtui.Canvas
 
         Canvas {
             width: 20

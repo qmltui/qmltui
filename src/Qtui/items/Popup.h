@@ -10,7 +10,8 @@ namespace qtui {
 
 class QTUI_CORE_EXPORT Popup : public Rectangle, public InputScope {
     Q_OBJECT
-    QML_ELEMENT
+    // Registered as a QML type by Qtui.Controls (see Controls/ForeignTypes.h);
+    // the class stays in Core because Terminal manages popups.
 
     Q_PROPERTY(bool modal READ modal WRITE setModal NOTIFY modalChanged)
     Q_PROPERTY(bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)

@@ -4,12 +4,14 @@ qt_add_qml_module(qtui_calendar
     URI CalendarDemo
     VERSION 1.0
     QML_FILES
+        Calendar.qml
+        StatusBadge.qml
         Main.qml
 
-    DEPENDENCIES TARGET Qtui::Core Qtui::Controls Qtui::Extras
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
-target_link_libraries(qtui_calendar PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras)
+target_link_libraries(qtui_calendar PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
 if(TARGET Qtui::Testing)
     include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
@@ -20,9 +22,11 @@ if(TARGET Qtui::Testing)
         URI CalendarDemoTest
         VERSION 1.0
         QML_FILES
+        Calendar.qml
+        StatusBadge.qml
             Main.qml
         DEPENDENCIES
-            TARGET Qtui::Core Qtui::Controls Qtui::Extras
+ TARGET Qtui::Core Qtui::Controls
     )
 
     target_link_libraries(qtui_calendar_test PRIVATE
@@ -30,7 +34,7 @@ if(TARGET Qtui::Testing)
         Qt6::Qml
         Qtui::Core
         Qtui::Controls
-        Qtui::Extras
+        Qtui::Controls
         Qtui::Testing
     )
 

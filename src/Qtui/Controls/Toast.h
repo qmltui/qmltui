@@ -9,14 +9,16 @@
 
 namespace qtui {
 
-struct QTUI_EXTRAS_EXPORT ToastItem {
+struct QTUI_CONTROLS_EXPORT ToastItem {
     QString title;
     QString message;
     QString type; // "info", "success", "warning", "error"
     int remainingMs;
 };
 
-class QTUI_EXTRAS_EXPORT ToastManager : public Item {
+// Transient notifications stacked in a corner. Status colors are semantic and
+// therefore properties; the palette has no roles for them.
+class QTUI_CONTROLS_EXPORT Toast : public Item {
     Q_OBJECT
     QML_ELEMENT
 
@@ -28,8 +30,8 @@ class QTUI_EXTRAS_EXPORT ToastManager : public Item {
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY positionChanged)
 
 public:
-    explicit ToastManager(QObject *parent = nullptr);
-    ~ToastManager() override = default;
+    explicit Toast(QObject *parent = nullptr);
+    ~Toast() override = default;
 
     Q_INVOKABLE void showToast(const QString &title, const QString &message, const QString &type = "info", int timeoutMs = 3000);
 

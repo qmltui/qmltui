@@ -1,6 +1,6 @@
 import QtQml
 import Qtui
-import Qtui.Extras
+import Qtui.Controls
 import IndustrialPlcHmi
 
 Rectangle {

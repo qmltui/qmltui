@@ -13,16 +13,16 @@ qt_add_qml_module(qtui_btop
     VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES
-        TARGET Qtui::Core Qtui::Canvas Qtui::Controls Qtui::Extras
+ TARGET Qtui::Core Qtui::Controls
 )
 
 target_link_libraries(qtui_btop PRIVATE
     Qt6::Core
     Qt6::Qml
     Qtui::Core
-    Qtui::Canvas
+    Qtui::Core
     Qtui::Controls
-    Qtui::Extras
+    Qtui::Controls
 )
 
 if(TARGET Qtui::Testing)
@@ -38,16 +38,16 @@ if(TARGET Qtui::Testing)
         VERSION 1.0
         QML_FILES Main.qml
         DEPENDENCIES
-            TARGET Qtui::Core Qtui::Canvas Qtui::Controls Qtui::Extras
+ TARGET Qtui::Core Qtui::Controls
     )
 
     target_link_libraries(qtui_btop_test PRIVATE
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::Canvas
+        Qtui::Core
         Qtui::Controls
-        Qtui::Extras
+        Qtui::Controls
         Qtui::Testing
     )
 

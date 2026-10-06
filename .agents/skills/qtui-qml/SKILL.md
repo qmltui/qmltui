@@ -13,7 +13,7 @@ for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
 this document. Check `src/Qtui/items`, `src/Qtui/engine`, `src/Qtui/Controls`,
-`src/Qtui/Extras`, `src/Qtui/Canvas`, `src/Qtui/Image`, and `docs/qml_api.md`
+`src/Qtui/Image`, `src/Qtui/TerminalHost`, and `docs/qml_api.md`
 before using a type or property you have not seen in a nearby file.
 
 ## 1. Imports
@@ -25,10 +25,8 @@ dependency. `AGENTS.md` forbids it.
 
 ```qml
 // Qtui modules
-import Qtui                 // Terminal, Item, Rectangle, Text, views, layouts
-import Qtui.Controls        // Button, Panel, CheckBox, Slider, Dialog, ...
-import Qtui.Extras          // Sparkline, Gauge, BigText, TabHeader, ToastManager
-import Qtui.Canvas          // Canvas, CanvasRectangle, Circle, Line, Polygon
+import Qtui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
+import Qtui.Controls        // Palette, Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
 import Qtui.Image           // Image
 import Qtui.TerminalHost    // TerminalView (PTY, Linux/macOS only, optional build)
 
@@ -157,8 +155,8 @@ Panel {
 }
 ```
 
-Non-Rectangle types, including `Paragraph`, `TableView`, `TreeView`, `Gauge`,
-`Sparkline`, `BigText`, and `TabHeader`, do not expose `border`, `borderStyle`,
+Non-Rectangle types, including `Paragraph`, `TableView`, `TreeView`,
+`Sparkline`, and `TabBar`, do not expose `border`, `borderStyle`,
 or `borderColor`. Wrap one in a `Rectangle` or `Panel` and inset it by one cell
 when a border is needed:
 
@@ -231,26 +229,27 @@ Keys.onPressed: event => {
 This summary is a map, not the contract. Verify names against the module
 sources listed at the top.
 
+Admission rule: a type enters `Qtui.Controls` only if it needs engine
+knowledge an application cannot reproduce in QML, or is universal in terminal
+toolkits. Status badges, calendars, and banner text are recipes under
+`examples/components/`, not library types; copy them into your module.
+
 **`import Qtui`** (C++ in `src/Qtui/items` and `src/Qtui/engine`)
-`Terminal`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
-`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `Scrollback`, `LogView`,
+`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
+`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `LogView`,
+`Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,
 `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `Repeater`,
-`Loader`, `Popup`, `MouseArea`, `Shortcut`, `Keys` (attached), `State`,
+`Loader`, `MouseArea`, `Shortcut`, `Keys` (attached), `State`,
 `Transition`, `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`,
 `Animation`, `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`.
 
 `Behavior` is available only with `QTUI_ENABLE_BEHAVIOR=ON`.
 
-**`import Qtui.Controls`** (QML in `src/Qtui/Controls`)
-`Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`,
-`ProgressBar`, `Spinner`, `Panel`, `Dialog`, `Calendar`, `StatusBadge`,
-`StackView`, `StackLayout`. `ToolTip` is attached-only.
-
-**`import Qtui.Extras`**
-`Sparkline`, `Gauge`, `BigText`, `TabHeader`, `ToastManager`.
-
-**`import Qtui.Canvas`** (C++ in `src/Qtui/Canvas`)
-`Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Polygon`.
+**`import Qtui.Controls`** (QML and C++ in `src/Qtui/Controls`)
+`Palette` (singleton), `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`,
+`Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`,
+`StackLayout`, `Panel`, `Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is
+attached-only.
 
 **`import Qtui.Image`**
 `Image`.

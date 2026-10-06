@@ -36,8 +36,6 @@ EXAMPLE_TARGETS = (
 QMLTYPE_FILES = {
     "Qtui": "qml/Qtui/QtuiCore.qmltypes",
     "Qtui.Controls": "qml/Qtui/Controls/QtuiControls.qmltypes",
-    "Qtui.Extras": "qml/Qtui/Extras/QtuiExtras.qmltypes",
-    "Qtui.Canvas": "qml/Qtui/Canvas/QtuiCanvas.qmltypes",
     "Qtui.Image": "qml/Qtui/Image/QtuiImage.qmltypes",
     "Qtui.TerminalHost": "qml/Qtui/TerminalHost/QtuiTerminalHost.qmltypes",
 }

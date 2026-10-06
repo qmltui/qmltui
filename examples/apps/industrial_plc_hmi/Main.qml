@@ -1,5 +1,3 @@
-import Qtui.Extras
-import Qtui.Canvas
 import QtQml
 import QtQml.Models
 import Qtui

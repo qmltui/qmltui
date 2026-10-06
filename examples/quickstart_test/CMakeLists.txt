@@ -13,7 +13,7 @@ qt_add_qml_module(qtui_quickstart
     VERSION 1.0
     NO_CACHEGEN
     QML_FILES "${quickstart_dir}/Main.qml"
-    DEPENDENCIES TARGET Qtui::Core Qtui::Controls
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 target_link_libraries(qtui_quickstart PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
@@ -27,10 +27,10 @@ if(TARGET Qtui::Testing)
         NO_CACHEGEN
         QML_FILES "${quickstart_dir}/Main.qml"
         OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/HelloQtui"
-        DEPENDENCIES TARGET Qtui::Core Qtui::Controls
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
     )
     target_link_libraries(qtui_quickstart_test PRIVATE
-        Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Testing)
+ Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Testing)
 
     qtui_add_scenario_test(
         NAME quickstart_smoke

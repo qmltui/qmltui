@@ -52,7 +52,7 @@ qt_add_qml_module(qtui_markdown_viewer_module
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Extras
+        TARGET Qtui::Controls
 )
 
 target_include_directories(qtui_markdown_viewer_module
@@ -68,7 +68,7 @@ target_link_libraries(qtui_markdown_viewer_module PRIVATE
     Qt6::Gui
     Qtui::Core
     Qtui::Controls
-    Qtui::Extras
+    Qtui::Controls
     md4qt::md4qt
 )
 

@@ -4,7 +4,7 @@ include("${Qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake")
 
 function(add_qtui_test test_name test_source)
     add_executable(${test_name} ${test_source})
-    target_link_libraries(${test_name} PRIVATE Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls Qtui::Extras Qtui::Canvas Qtui::Image)
+ target_link_libraries(${test_name} PRIVATE Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls Qtui::Image)
     target_compile_definitions(${test_name} PRIVATE QTUI_SOURCE_DIR="${Qtui_SOURCE_DIR}")
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
@@ -54,9 +54,9 @@ set_tests_properties(test_installed_custom_item_consumer PROPERTIES
     TIMEOUT 120
 )
 
-add_qtui_test(test_canvas Canvas/test_canvas.cpp)
+add_qtui_test(test_canvas Core/test_canvas.cpp)
 add_qtui_test(test_popup Controls/test_popup.cpp)
-add_qtui_test(test_extras Extras/test_extras.cpp)
+add_qtui_test(test_indicators Controls/test_indicators.cpp)
 add_qtui_test(test_image Image/test_image.cpp)
 
 add_executable(qtui_test_runner_fixture Testing/main.cpp)
@@ -378,11 +378,11 @@ if(QTUI_BUILD_BENCHMARKS)
 
     add_executable(benchmark_views Core/benchmark_views.cpp)
     target_link_libraries(benchmark_views PRIVATE
-        Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras Qtui::Canvas)
+ Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
     # Per-frame paint/diff cost for representative scenes. Informational; run
     # it before and after rendering changes and record the numbers.
     add_executable(benchmark_render Core/benchmark_render.cpp)
     target_link_libraries(benchmark_render PRIVATE
-        Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras Qtui::Canvas)
+ Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 endif()

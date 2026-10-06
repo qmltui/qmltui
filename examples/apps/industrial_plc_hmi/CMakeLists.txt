@@ -28,8 +28,8 @@ qt_add_qml_module(qtui_industrial_plc_hmi
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Canvas
-        TARGET Qtui::Extras
+        TARGET Qtui::Core
+        TARGET Qtui::Controls
 )
 
 target_link_libraries(qtui_industrial_plc_hmi PRIVATE
@@ -37,8 +37,8 @@ target_link_libraries(qtui_industrial_plc_hmi PRIVATE
     Qt6::Qml
     Qtui::Core
     Qtui::Controls
-    Qtui::Canvas
-    Qtui::Extras
+    Qtui::Core
+    Qtui::Controls
 )
 
 if(TARGET Qtui::Testing)

@@ -1,5 +1,6 @@
 import QtQml
 import Qtui
+import Qtui.Controls
 
 Rectangle {
     id: control

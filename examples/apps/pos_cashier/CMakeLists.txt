@@ -10,10 +10,10 @@ qt_add_qml_module(qtui_pos_cashier
         Keypad.qml
         PaymentView.qml
         SuccessView.qml
-    DEPENDENCIES TARGET Qtui::Core Qtui::Controls Qtui::Extras
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
-target_link_libraries(qtui_pos_cashier PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras)
+target_link_libraries(qtui_pos_cashier PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
 if(TARGET Qtui::Testing)
     target_link_libraries(qtui_pos_cashier PRIVATE Qtui::Testing)

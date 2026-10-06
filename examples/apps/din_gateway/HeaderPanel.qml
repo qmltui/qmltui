@@ -49,8 +49,8 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 2
 
-        Spinner {
-            style: Spinner.Style.Dots
+        BusyIndicator {
+            style: BusyIndicator.Style.Dots
             color: GatewayTheme.textSuccess
             interval: 120
             running: headerRoot.mqttConnected

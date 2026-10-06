@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import Qtui.Examples.DeviceCockpit
 
 Rectangle {
@@ -125,11 +124,12 @@ Rectangle {
                     anchors.leftMargin: 2
                     spacing: 0
 
-                    Gauge {
+                    ProgressBar {
                         width: parent.width - 1
                         height: 1
                         value: page.info.cpuLoadPct
-                        text: "load"
+                        to: 100
+                        showPercentage: true
                         color: page.info.cpuLoadPct > 85 ? Theme.statusError : Theme.statusOk
                     }
                     Sparkline {
@@ -170,7 +170,7 @@ Rectangle {
                     anchors.leftMargin: 2
                     spacing: 1
 
-                    Gauge {
+                    ProgressBar {
                         width: Math.max(10, parent.width - 22)
                         height: 1
                         value: page.info.memUsedMb

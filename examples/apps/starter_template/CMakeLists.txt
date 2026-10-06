@@ -24,6 +24,7 @@ qt_add_qml_module(qtui_starter_template_module
         WifiManager.h
         WifiManager.cpp
     QML_FILES
+        StatusBadge.qml
         Main.qml
         Theme.qml
         NetworkPage.qml
@@ -32,7 +33,7 @@ qt_add_qml_module(qtui_starter_template_module
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Extras
+        TARGET Qtui::Controls
 )
 
 target_link_libraries(qtui_starter_template_module PRIVATE
@@ -41,14 +42,14 @@ target_link_libraries(qtui_starter_template_module PRIVATE
     Qt6::Network
     Qtui::Core
     Qtui::Controls
-    Qtui::Extras
+    Qtui::Controls
 )
 
 # QML module libraries do not make their runtime plugins build dependencies.
 # Keep focused starter-only builds runnable without building every example.
 foreach(plugin_target IN ITEMS
-        QtuiCoreplugin QtuiControlsplugin QtuiExtrasplugin
-        Qtui::CorePlugin Qtui::ControlsPlugin Qtui::ExtrasPlugin)
+        QtuiCoreplugin QtuiControlsplugin QtuiControlsplugin
+ Qtui::CorePlugin Qtui::ControlsPlugin Qtui::ControlsPlugin)
     if(TARGET ${plugin_target})
         add_dependencies(qtui_starter_template_module ${plugin_target})
     endif()

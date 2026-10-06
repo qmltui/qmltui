@@ -12,20 +12,20 @@ Text {
         Bounce
     }
 
-    property int style: Spinner.Style.Dots
+    property int style: BusyIndicator.Style.Dots
     property bool running: true
     property int interval: 100
 
     property int _frameIndex: 0
 
     readonly property list<string> _frames: {
-        if (style === Spinner.Style.Line) {
+        if (style === BusyIndicator.Style.Line) {
             return ["|", "/", "-", "\\"]
-        } else if (style === Spinner.Style.Pipe) {
+        } else if (style === BusyIndicator.Style.Pipe) {
             return ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
-        } else if (style === Spinner.Style.Block) {
+        } else if (style === BusyIndicator.Style.Block) {
             return ["▖", "▘", "▝", "▗"]
-        } else if (style === Spinner.Style.Bounce) {
+        } else if (style === BusyIndicator.Style.Bounce) {
             return ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
         } else {
             // Default Dots braille spinner

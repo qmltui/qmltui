@@ -16,7 +16,6 @@ Unlike traditional immediate-mode TUI libraries, Qtui uses a scene graph and ret
 
 - `Qtui`: Core terminal primitives (`Terminal`, `Item`, `Rectangle`, `Text`, `Paragraph`, `ListView`, `ScrollView`).
 - `Qtui.Controls`: Pre-built interactive widgets (`Button`, `CheckBox`, `RadioButton`, `Slider`, `Switch`, `Dialog`, `Popup`, `Calendar`).
-- `Qtui.Extras`: Visual indicators (`BigText`, `Gauge`, `Sparkline`, `TabHeader`, `ToastManager`).
 - `Qtui.Image`: Textual pixel art and image rendering (`Image`, `ImageGrid`).
 - `Qtui.TerminalHost`: Embedded Unix PTY virtual terminal host.
 

@@ -2,9 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQml
 import Qtui
-import Qtui.Canvas
 import Qtui.Controls
-import Qtui.Extras
 
 Terminal {
     id: root

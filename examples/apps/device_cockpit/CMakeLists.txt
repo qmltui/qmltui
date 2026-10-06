@@ -35,6 +35,7 @@ qt_add_qml_module(qtui_device_cockpit
         LinuxNetworkProvider.h
         LinuxNetworkProvider.cpp
     QML_FILES
+        StatusBadge.qml
         Main.qml
         Theme.qml
         HeaderPanel.qml
@@ -47,7 +48,7 @@ qt_add_qml_module(qtui_device_cockpit
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Extras
+        TARGET Qtui::Controls
 )
 
 target_link_libraries(qtui_device_cockpit PRIVATE
@@ -57,7 +58,7 @@ target_link_libraries(qtui_device_cockpit PRIVATE
     Qt6::DBus
     Qtui::Core
     Qtui::Controls
-    Qtui::Extras
+    Qtui::Controls
 )
 
 # Carries the scenario runner: the application executes QTUI_SCRIPT/QTUI_EVAL

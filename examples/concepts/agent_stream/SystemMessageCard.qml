@@ -1,7 +1,6 @@
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 
 Column {
     id: sysCard

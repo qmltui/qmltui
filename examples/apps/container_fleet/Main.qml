@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import ContainerFleetApp
 
 Terminal {
@@ -87,13 +86,9 @@ Terminal {
                 spacing: 4
 
                 // Left: Borderless Filter Tabs
-                TabHeader {
+                TabBar {
                     id: filterTabs
                     currentIndex: fleetModel.activeFilter
-                    activeTabBackgroundColor: root.colorAccentCyan
-                    activeTabColor: "#11111b"
-                    inactiveTabBackgroundColor: "transparent"
-                    inactiveTabColor: root.colorTextMuted
                     tabs: [
                         " 1: ALL (" + fleetModel.totalNodes + ") ",
                         " 2: RUNNING (" + fleetModel.runningNodes + ") ",

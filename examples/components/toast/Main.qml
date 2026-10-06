@@ -1,4 +1,3 @@
-import Qtui.Extras
 import QtQml
 import Qtui
 
@@ -53,7 +52,7 @@ Terminal {
         }
     }
 
-    ToastManager {
+    Toast {
         id: toastMgr
         anchors.top: parent.top
         anchors.right: parent.right

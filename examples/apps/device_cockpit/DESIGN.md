@@ -39,11 +39,11 @@ Three layers, strictly separated so pages are testable without a device:
 
 ### Shell
 
-- `Terminal` root in frame renderer mode; `TabHeader` (Qtui.Extras) or a
+- `Terminal` root in frame renderer mode; `TabBar` (Qtui.Controls) or a
   custom nav rail for page switching, `StackLayout` hosting pages.
 - Header: product name, hostname, clock, connection badge. Footer: active
   keybindings for the focused page (each page exposes a `keyHints` list).
-- `ToastManager` for async results ("service restarted", "IP applied").
+- `Toast` for async results ("service restarted", "IP applied").
 - Branding via a theme singleton (colors, product name), following
   `din_gateway/GatewayTheme.qml`; later sourced from a config file.
 
@@ -107,7 +107,7 @@ validation on embedded targets is pending a device run.
 1. **Shell**: navigation, header, footer keybar, theme, toasts. Keyboard-first
    (tab/arrow navigation, single-key page switching); mouse works where Qtui
    gives it for free.
-2. **Overview page**: `Gauge`/`Sparkline` for CPU, memory, temperature;
+2. **Overview page**: `ProgressBar`/`Sparkline` for CPU, memory, temperature;
    uptime, disk usage bars, per-interface network badges.
 3. **Network page**: interface `ListView` + detail `Panel` (IP, gateway, DNS,
    MAC, link state); DHCP↔static toggle with apply/confirm `Dialog` via

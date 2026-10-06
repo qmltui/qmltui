@@ -1,13 +1,13 @@
 #pragma once
 
-#include <QtuiExport.h>
-
 #include <Item.h>
 #include <QString>
 
 namespace qtui {
 
-class QTUI_EXTRAS_EXPORT BigText : public Item {
+// Recipe: a custom C++ item that paints banner text. Lives with the example,
+// not in the library; copy it into your own QML module.
+class BigText : public Item {
     Q_OBJECT
     QML_ELEMENT
 

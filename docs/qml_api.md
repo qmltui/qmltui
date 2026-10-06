@@ -276,6 +276,7 @@ C++ code reads the same instance through `qtui::Palette::instance()`.
 - `Text`, `TextInput`, and `TextArea` provide terminal text rendering and input.
 - `MouseArea` provides click, wheel, hover, and drag input.
 
-`Qtui.Controls` contains the reusable controls, while `Qtui.Extras` contains
-terminal-oriented presentation components such as `BigText`, `Gauge`,
-`Paragraph`, `Sparkline`, `TabHeader`, and `ToastManager`.
+`Qtui.Controls` contains the controls a user operates or reads as finished
+widgets, including `TabBar`, `Toast`, `Sparkline`, `Popup`, and the `Palette`
+singleton. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,
+and `BigText` are recipes under `examples/components/`.

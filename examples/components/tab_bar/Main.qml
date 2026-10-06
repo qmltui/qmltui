@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import Qtui.Extras
+import Qtui.Controls
 import QtQml
 import Qtui
 
@@ -32,13 +32,10 @@ Terminal {
                 color: "gray"
             }
 
-            TabHeader {
+            TabBar {
                 id: header
                 focus: true
                 width: 68
-                activeTabColor: "white"
-                activeTabBackgroundColor: "blue"
-                inactiveTabColor: "gray"
                 tabs: ["Overview", "Telemetry", "Logs", "Settings"]
             }
 

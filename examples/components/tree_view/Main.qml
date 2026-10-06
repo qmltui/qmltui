@@ -72,7 +72,7 @@ Terminal {
                                 "children": [
                                     { "text": "TableView.cpp", "icon": "📊", "status": "Clean", "expanded": false },
                                     { "text": "TreeView.cpp", "icon": "🌲", "status": "Updated", "expanded": false },
-                                    { "text": "ToastManager.cpp", "icon": "🔔", "status": "Clean", "expanded": false }
+                                    { "text": "Toast.cpp", "icon": "🔔", "status": "Clean", "expanded": false }
                                 ]
                             },
                         ]

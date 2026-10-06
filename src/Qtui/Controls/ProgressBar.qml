@@ -8,6 +8,13 @@ Item {
     property real from: 0.0
     property real to: 1.0
 
+    // Decorations folded in from the former Gauge: "[" "]" around the bar and
+    // a trailing percentage. Both take cells away from the bar itself.
+    property bool showBrackets: false
+    property bool showPercentage: false
+    readonly property int barWidth: Math.max(0, width - (showBrackets ? 2 : 0) - (showPercentage ? 5 : 0))
+    readonly property string percentageText: showPercentage ? (" " + String(Math.round(position * 100)).padStart(3, " ") + "%") : ""
+
     // Style presets: "segmented" (▰▱), "pill" (▮▯), "dot" (●○), "block" (█░)
     property string style: "segmented"
     // The fill color is data, not theme, so it stays a property; the default follows the palette.
@@ -79,7 +86,7 @@ Item {
     readonly property var segments: {
         if (!control.hasGradient) return [];
 
-        let w = control.width;
+        let w = control.barWidth;
         if (w <= 0) return [];
 
         let fillLen = Math.round(control.position * w);
@@ -130,8 +137,8 @@ Item {
         bold: true
         text: {
             if (control.hasGradient) return "";
-            let w = control.width;
-            if (w <= 0) return "";
+            let w = control.barWidth;
+            if (w <= 0) return control.showBrackets ? "[]" + control.percentageText : control.percentageText;
 
             let fillLen = Math.round(control.position * w);
             let emptyLen = w - fillLen;
@@ -145,7 +152,8 @@ Item {
             let emptyStr = "";
             for (let j = 0; j < emptyLen; ++j) emptyStr += emptyChar;
 
-            return filledStr + emptyStr;
+            const bar = filledStr + emptyStr;
+            return (control.showBrackets ? "[" + bar + "]" : bar) + control.percentageText;
         }
     }
 
@@ -155,6 +163,7 @@ Item {
         anchors.fill: parent
         spacing: 0
 
+        Text { visible: control.showBrackets; text: "["; color: Palette.mid; bold: true }
         Repeater {
             model: control.hasGradient ? control.segments.length : 0
 
@@ -165,5 +174,7 @@ Item {
                 bold: true
             }
         }
+        Text { visible: control.showBrackets; text: "]"; color: Palette.mid; bold: true }
+        Text { visible: control.showPercentage; text: control.percentageText; color: Palette.windowText; bold: true }
     }
 }

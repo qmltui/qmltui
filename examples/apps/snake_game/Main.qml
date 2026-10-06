@@ -1,7 +1,6 @@
 import QtQml
 import QtQml.Models
 import Qtui
-import Qtui.Canvas
 
 Terminal {
     id: rootWindow

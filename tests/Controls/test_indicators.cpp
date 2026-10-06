@@ -1,14 +1,12 @@
 #include <QtTest/QtTest>
 #include <Sparkline.h>
-#include <BigText.h>
 #include <TableView.h>
 #include <TreeView.h>
 #include <Repeater.h>
 #include <ListView.h>
 #include <GridView.h>
-#include <ToastManager.h>
-#include <TabHeader.h>
-#include <Gauge.h>
+#include <Toast.h>
+#include <TabBar.h>
 #include <Gradient.h>
 #include <GradientStop.h>
 #include <Paragraph.h>
@@ -129,19 +127,6 @@ private slots:
         QVERIFY(buffer.cellAt(4, 0).character()[0] != ' ');
     }
 
-    void testBigText() {
-        BigText bigText;
-        bigText.setText("123");
-
-        TextGridBuffer buffer;
-        buffer.resize(20, 3);
-        paintItem(bigText, buffer, 0, 0);
-
-        QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
-        QVERIFY(!buffer.cellAt(1, 0).character().isEmpty());
-        QVERIFY(buffer.cellAt(1, 0).character() != " ");
-    }
-
     void testTableView() {
         TableView table;
         table.setWidth(40);
@@ -248,8 +233,8 @@ private slots:
         QVERIFY(tree.isExpanded(2));
     }
 
-    void testToastManager() {
-        ToastManager toast;
+    void testToast() {
+        Toast toast;
         toast.setWidth(30);
         toast.setHeight(5);
 
@@ -259,8 +244,8 @@ private slots:
         paintItem(toast, buffer, 0, 0);
     }
 
-    void testTabHeader() {
-        TabHeader header;
+    void testTabBar() {
+        TabBar header;
         header.setWidth(40);
         header.setHeight(1);
         header.setTabs(QVariantList{"Overview", "Metrics", "Settings"});
@@ -274,121 +259,22 @@ private slots:
         paintItem(header, buffer, 0, 0);
     }
 
-    void testGauge() {
-        Gauge gauge;
-        gauge.setWidth(30);
-        gauge.setHeight(1);
-        gauge.setText("CPU: ");
-        gauge.setValue(75.0);
-
-        TextGridBuffer buffer;
-        buffer.resize(30, 1);
-        paintItem(gauge, buffer, 0, 0);
-
-        QCOMPARE(gauge.value(), 75.0);
-    }
-
-    void testGaugeWithGradient() {
-        Gauge gauge;
-        gauge.setWidth(30);
-        gauge.setHeight(1);
-        gauge.setText("GPU: ");
-        gauge.setValue(50.0);
-
-        Gradient gradient;
-        auto *stop1 = new GradientStop(&gradient);
-        stop1->setPosition(0.0);
-        stop1->setColor("#00ff00");
-
-        auto *stop2 = new GradientStop(&gradient);
-        stop2->setPosition(1.0);
-        stop2->setColor("#ff0000");
-
-        auto stopsProp = gradient.stops();
-        stopsProp.append(&stopsProp, stop1);
-        stopsProp.append(&stopsProp, stop2);
-
-        gauge.setGradient(&gradient);
-        QCOMPARE(gauge.gradient(), &gradient);
-
-        TextGridBuffer buffer;
-        buffer.resize(30, 1);
-        paintItem(gauge, buffer, 0, 0);
-
-        QCOMPARE(gauge.value(), 50.0);
-    }
-
-    void testGaugeInBorderedRectangle() {
-        Rectangle frame;
-        frame.setWidth(30);
-        frame.setHeight(3);
-        frame.border()->setStyle("single");
-
-        Gauge gauge;
-        gauge.setParentItem(&frame);
-        gauge.setX(1);
-        gauge.setY(1);
-        gauge.setWidth(28);
-        gauge.setHeight(1);
-        gauge.setText("CPU: ");
-        gauge.setValue(50.0);
-
-        TextGridBuffer buffer;
-        buffer.resize(30, 3);
-        paintItem(frame, buffer, 0, 0);
-
-        // Row 0 has top border (e.g. ┌)
-        QVERIFY(buffer.cellAt(0, 0).character().startsWith("\xE2\x94\x8C"));
-        // Row 1 has label and content inside the box
-        QCOMPARE(buffer.cellAt(1, 1).character().toByteArray(), QByteArray("C"));
-        QCOMPARE(buffer.cellAt(2, 1).character().toByteArray(), QByteArray("P"));
-        QCOMPARE(buffer.cellAt(3, 1).character().toByteArray(), QByteArray("U"));
-        // Row 2 has bottom border (e.g. └)
-        QVERIFY(buffer.cellAt(0, 2).character().startsWith("\xE2\x94\x94"));
-    }
-
     void testBordersBelongToRectangle() {
         Rectangle rectangle;
         Paragraph paragraph;
         TableView table;
         TreeView tree;
-        Gauge gauge;
         Sparkline sparkline;
-        BigText bigText;
-        TabHeader tabs;
+        TabBar tabs;
 
         QVERIFY(rectangle.metaObject()->indexOfProperty("border") >= 0);
         const QObject *borderlessItems[] = {
-            &paragraph, &table, &tree, &gauge, &sparkline, &bigText, &tabs
+            &paragraph, &table, &tree, &sparkline, &tabs
         };
         for (const QObject *item : borderlessItems) {
             QCOMPARE(item->metaObject()->indexOfProperty("border"), -1);
             QCOMPARE(item->metaObject()->indexOfProperty("borderStyle"), -1);
             QCOMPARE(item->metaObject()->indexOfProperty("borderColor"), -1);
-        }
-    }
-
-    void testGaugeShowBrackets() {
-        Gauge gauge;
-        gauge.setWidth(20);
-        gauge.setHeight(1);
-        gauge.setText("");
-        gauge.setValue(50.0);
-        gauge.setShowPercentage(false);
-        gauge.setShowBrackets(false);
-        gauge.setFillCharacter("=");
-        gauge.setEmptyCharacter("-");
-
-        TextGridBuffer buffer;
-        buffer.resize(20, 1);
-        paintItem(gauge, buffer, 0, 0);
-
-        // Entire 20 characters should be filled or unfilled bar characters, no '[' or ']'
-        for (int x = 0; x < 10; ++x) {
-            QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("="));
-        }
-        for (int x = 10; x < 20; ++x) {
-            QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("-"));
         }
     }
 
@@ -799,4 +685,4 @@ private slots:
 };
 
 QTEST_MAIN(TestWidgets)
-#include "test_extras.moc"
+#include "test_indicators.moc"

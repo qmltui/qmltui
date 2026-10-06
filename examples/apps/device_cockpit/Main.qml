@@ -1,7 +1,6 @@
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import Qtui.Examples.DeviceCockpit
 
 Terminal {
@@ -47,15 +46,12 @@ Terminal {
         border.style: "single"
         border.color: Theme.borderNormal
 
-        TabHeader {
+        TabBar {
             id: navBar
             anchors.fill: parent
             anchors.margins: 1
             tabs: ["[F1] Overview", "[F2] Network", "[F3] Services", "[F4] Logs"]
             currentIndex: root.activePage
-            activeTabColor: Theme.textPrimary
-            activeTabBackgroundColor: Theme.bgActiveTab
-            inactiveTabColor: Theme.textSecondary
             onCurrentIndexChanged: root.activePage = currentIndex
         }
     }
@@ -101,7 +97,7 @@ Terminal {
         }
     }
 
-    ToastManager {
+    Toast {
         id: toastManager
         anchors.fill: parent
         position: "bottom-right"

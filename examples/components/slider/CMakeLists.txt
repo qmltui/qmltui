@@ -6,7 +6,7 @@ qt_add_qml_module(qtui_slider
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qtui::Core Qtui::Controls
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
 target_link_libraries(qtui_slider PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)

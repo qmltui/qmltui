@@ -6,6 +6,7 @@ qt_add_qml_module(agent_stream_demo
     URI AgentStreamDemo
     VERSION 1.0
     QML_FILES
+        StatusBadge.qml
         Main.qml
         Theme.qml
         BannerCard.qml
@@ -29,11 +30,11 @@ qt_add_qml_module(agent_stream_demo
     DEPENDENCIES
         TARGET Qtui::Core
         TARGET Qtui::Controls
-        TARGET Qtui::Extras
+        TARGET Qtui::Controls
         TARGET Qtui::TerminalHost
 )
 
-target_link_libraries(agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Extras Qtui::TerminalHost)
+target_link_libraries(agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TerminalHost)
 
 if(TARGET Qtui::Testing)
     target_link_libraries(agent_stream_demo PRIVATE Qtui::Testing)

@@ -1,7 +1,6 @@
 import QtQml
 import Qtui
 import Qtui.Controls
-import Qtui.Extras
 import StarterTemplateApp
 
 Terminal {
@@ -125,15 +124,12 @@ Terminal {
         border.style: "single"
         border.color: Theme.borderNormal
 
-        TabHeader {
+        TabBar {
             id: navBar
             anchors.fill: parent
             anchors.margins: 1
             tabs: ["[F1] Network", "[F2] About"]
             currentIndex: root.activePage
-            activeTabColor: Theme.textOnGreen
-            activeTabBackgroundColor: Theme.qtGreen
-            inactiveTabColor: Theme.textSecondary
             onCurrentIndexChanged: root.activePage = currentIndex
         }
     }

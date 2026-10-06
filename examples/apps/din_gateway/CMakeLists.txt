@@ -22,10 +22,10 @@ qt_add_qml_module(qtui_din_gateway
         SystemNetwork.qml
         ConfigView.qml
 
-    DEPENDENCIES TARGET Qtui::Core Qtui::Canvas Qtui::Extras
+ DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
-target_link_libraries(qtui_din_gateway PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Canvas Qtui::Extras)
+target_link_libraries(qtui_din_gateway PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
 if(QTUI_INSTALL_EXAMPLES)
     install(TARGETS qtui_din_gateway RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

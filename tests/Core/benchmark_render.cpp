@@ -243,8 +243,7 @@ QVariantList compositeRows(int frame)
 
 const char *compositeQml = R"(
 import Qtui
-import Qtui.Extras
-import Qtui.Canvas
+import Qtui.Controls
 
 Item {
     id: root

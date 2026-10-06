@@ -8,7 +8,7 @@ qt_add_qml_module(qtui_popup_demo
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qtui::Core
+    DEPENDENCIES TARGET Qtui::Core Qtui::Controls
 )
 
-target_link_libraries(qtui_popup_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
+target_link_libraries(qtui_popup_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)

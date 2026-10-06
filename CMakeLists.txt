@@ -12,9 +12,14 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 if(WIN32)
-    # Qtui has no per-symbol export macros; let CMake export every symbol of
-    # each DLL so the QML module libraries can link against Qtui::Core.
+    # Public classes carry QTUI_*_EXPORT (see primitives/QtuiExport.h); the
+    # export-all pass additionally covers free functions and helpers that other
+    # Qtui DLLs reach. Symbols declared both ways trigger LNK4197, which is
+    # harmless and silenced here to keep build logs readable.
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    if(MSVC)
+        add_link_options(/ignore:4197)
+    endif()
 endif()
 set(QTUI_INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qml" CACHE PATH
     "Install location for Qtui QML modules")

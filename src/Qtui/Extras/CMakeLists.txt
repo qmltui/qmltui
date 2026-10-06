@@ -9,6 +9,7 @@ qt_add_qml_module(QtuiExtras
     DEPENDENCIES TARGET QtuiCore
 )
 
+target_compile_definitions(QtuiExtras PRIVATE QTUI_EXTRAS_LIBRARY)
 add_library(Qtui::Extras ALIAS QtuiExtras)
 target_include_directories(QtuiExtras PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

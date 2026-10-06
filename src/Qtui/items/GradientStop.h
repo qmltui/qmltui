@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QString>
 #include <cstdint>
@@ -9,7 +11,7 @@
 
 namespace qtui {
 
-class GradientStop : public QObject {
+class QTUI_CORE_EXPORT GradientStop : public QObject {
     Q_OBJECT
     QML_ELEMENT
 

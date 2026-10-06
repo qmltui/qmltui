@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QMetaType>
 #include <QString>
 #include <QtQml/qqmlregistration.h>
 
 namespace qtui {
 
-class Color
+class QTUI_CORE_EXPORT Color
 {
     Q_GADGET
     QML_VALUE_TYPE(rgba)

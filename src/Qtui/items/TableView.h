@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QVariantList>
 #include <QVariantMap>
@@ -14,7 +16,7 @@
 
 namespace qtui {
 
-class TableView : public Item {
+class QTUI_CORE_EXPORT TableView : public Item {
     Q_OBJECT
     QML_ELEMENT
 

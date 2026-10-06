@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 
 namespace qtui {
 
-class LinearLayout : public Item {
+class QTUI_CORE_EXPORT LinearLayout : public Item {
     Q_OBJECT
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
 
@@ -31,14 +33,14 @@ private:
     int m_spacing = 0;
 };
 
-class RowLayout : public LinearLayout {
+class QTUI_CORE_EXPORT RowLayout : public LinearLayout {
     Q_OBJECT
     QML_NAMED_ELEMENT(RowLayout)
 public:
     explicit RowLayout(QObject *parent = nullptr) : LinearLayout(Horizontal, parent) {}
 };
 
-class ColumnLayout : public LinearLayout {
+class QTUI_CORE_EXPORT ColumnLayout : public LinearLayout {
     Q_OBJECT
     QML_NAMED_ELEMENT(ColumnLayout)
 public:

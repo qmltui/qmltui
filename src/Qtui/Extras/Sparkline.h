@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 #include <QVariantList>
 #include <QString>
@@ -7,7 +9,7 @@
 
 namespace qtui {
 
-class Sparkline : public Item {
+class QTUI_EXTRAS_EXPORT Sparkline : public Item {
     Q_OBJECT
     QML_ELEMENT
 

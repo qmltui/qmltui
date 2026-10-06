@@ -10,6 +10,12 @@ option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui Testing libr
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+
+if(WIN32)
+    # Qtui has no per-symbol export macros; let CMake export every symbol of
+    # each DLL so the QML module libraries can link against Qtui::Core.
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 set(QTUI_INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qml" CACHE PATH
     "Install location for Qtui QML modules")
 set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml" CACHE PATH

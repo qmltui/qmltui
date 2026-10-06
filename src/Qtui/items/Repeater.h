@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QVariant>
 #include <QAbstractItemModel>
@@ -13,7 +15,7 @@ class QQmlPropertyMap;
 
 namespace qtui {
 
-class Repeater : public Item {
+class QTUI_CORE_EXPORT Repeater : public Item {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Repeater)
     QML_ELEMENT

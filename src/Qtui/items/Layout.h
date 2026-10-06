@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include <limits>
 
 namespace qtui {
 
-class LayoutAttached : public QObject {
+class QTUI_CORE_EXPORT LayoutAttached : public QObject {
     Q_OBJECT
     Q_PROPERTY(int minimumWidth MEMBER minimumWidth NOTIFY changed)
     Q_PROPERTY(int minimumHeight MEMBER minimumHeight NOTIFY changed)
@@ -47,7 +49,7 @@ signals:
     void changed();
 };
 
-class Layout : public QObject {
+class QTUI_CORE_EXPORT Layout : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Layout is an attached property")

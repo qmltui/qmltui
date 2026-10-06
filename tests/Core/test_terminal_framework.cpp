@@ -24,7 +24,6 @@
 #include "TreeView.h"
 #include "../TestPaint.h"
 
-#define private public
 #include "TerminalEngine.h"
 #undef private
 

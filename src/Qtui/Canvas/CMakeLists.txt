@@ -6,6 +6,7 @@ qt_add_qml_module(QtuiCanvas
     DEPENDENCIES TARGET QtuiCore
 )
 
+target_compile_definitions(QtuiCanvas PRIVATE QTUI_CANVAS_LIBRARY)
 add_library(Qtui::Canvas ALIAS QtuiCanvas)
 target_include_directories(QtuiCanvas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

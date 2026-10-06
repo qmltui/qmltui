@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include "../engine/MouseEvent.h"
 
 namespace qtui {
 
-class MouseArea : public Item {
+class QTUI_CORE_EXPORT MouseArea : public Item {
     Q_OBJECT
     QML_ELEMENT
 

@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 #include <QString>
 
 namespace qtui {
 
-class BigText : public Item {
+class QTUI_EXTRAS_EXPORT BigText : public Item {
     Q_OBJECT
     QML_ELEMENT
 

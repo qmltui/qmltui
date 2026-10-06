@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Color.h"
 
 #include <QObject>
@@ -8,7 +10,7 @@
 
 namespace qtui {
 
-class QtuiGlobal final : public QObject
+class QTUI_CORE_EXPORT QtuiGlobal : public QObject
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(Qtui)

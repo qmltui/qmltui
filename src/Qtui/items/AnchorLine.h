@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include "Item.h"
 
 namespace qtui {
 
-class AnchorLine : public QObject {
+class QTUI_CORE_EXPORT AnchorLine : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("AnchorLine is only available as a property of Item")

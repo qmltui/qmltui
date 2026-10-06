@@ -1,0 +1,48 @@
+#pragma once
+
+#include <QtCore/qglobal.h>
+
+// Symbol visibility for the Qtui libraries. Each library defines its own
+// *_LIBRARY macro privately while it is being built; consumers see the import
+// declaration. On non-Windows platforms these expand to default visibility.
+#if defined(QTUI_CORE_LIBRARY)
+#  define QTUI_CORE_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_CORE_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_TESTING_LIBRARY)
+#  define QTUI_TESTING_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_TESTING_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_CANVAS_LIBRARY)
+#  define QTUI_CANVAS_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_CANVAS_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_CONTROLS_LIBRARY)
+#  define QTUI_CONTROLS_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_CONTROLS_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_EXTRAS_LIBRARY)
+#  define QTUI_EXTRAS_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_EXTRAS_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_IMAGE_LIBRARY)
+#  define QTUI_IMAGE_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_IMAGE_EXPORT Q_DECL_IMPORT
+#endif
+
+#if defined(QTUI_TERMINALHOST_LIBRARY)
+#  define QTUI_TERMINALHOST_EXPORT Q_DECL_EXPORT
+#else
+#  define QTUI_TERMINALHOST_EXPORT Q_DECL_IMPORT
+#endif

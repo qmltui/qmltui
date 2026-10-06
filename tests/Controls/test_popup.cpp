@@ -16,7 +16,6 @@
 #include "KeyEvent.h"
 #include "MouseEvent.h"
 
-#define private public
 #include "TerminalEngine.h"
 #undef private
 

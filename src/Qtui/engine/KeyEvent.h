@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 
 namespace qtui {
 
-class KeyEvent : public QObject {
+class QTUI_CORE_EXPORT KeyEvent : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("KeyEvent is passed by the engine")

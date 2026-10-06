@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "ScrollView.h"
 #include <QVariant>
 #include <QQmlComponent>
@@ -11,7 +13,7 @@ class QAbstractItemModel;
 
 namespace qtui {
 
-class GridView : public ScrollView {
+class QTUI_CORE_EXPORT GridView : public ScrollView {
     Q_OBJECT
     QML_ELEMENT
     Q_CLASSINFO("DefaultProperty", "delegate")

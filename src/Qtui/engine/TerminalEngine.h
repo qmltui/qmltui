@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QElapsedTimer>
 #include <QObject>
 #include <QPointer>
@@ -14,13 +16,14 @@
 #include "Renderer.h"
 
 class TestScrollView;
+class TestTerminalFramework;
 
 namespace qtui {
 
 class Terminal;
 class Item;
 class InputRouter;
-class TerminalEngine : public QObject {
+class QTUI_CORE_EXPORT TerminalEngine : public QObject {
     Q_OBJECT
 
 public:
@@ -100,6 +103,7 @@ private slots:
 
 private:
     friend class ::TestScrollView;
+    friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
 
     void startRenderer();
     void setMouseMotionReportingEnabled(bool enabled);

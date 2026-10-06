@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QString>
 #include <QStringList>
@@ -7,7 +9,7 @@
 
 namespace qtui {
 
-struct FormattedChar {
+struct QTUI_CORE_EXPORT FormattedChar {
     QString text;
     int width = 1;
     uint32_t fg = 0xFFFFFFFF;
@@ -18,7 +20,7 @@ struct FormattedChar {
 
 using FormattedLine = QList<FormattedChar>;
 
-class Paragraph : public Item {
+class QTUI_CORE_EXPORT Paragraph : public Item {
     Q_OBJECT
     QML_ELEMENT
 

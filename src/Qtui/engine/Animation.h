@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QVariant>
 #include <QPointer>
@@ -10,7 +12,7 @@
 
 namespace qtui {
 
-class Easing : public QObject {
+class QTUI_CORE_EXPORT Easing : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Easing is only available as an enum")
@@ -28,7 +30,7 @@ public:
     Q_ENUM(Type)
 };
 
-class Animation : public QObject {
+class QTUI_CORE_EXPORT Animation : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Animation is an abstract base class")
@@ -63,7 +65,7 @@ protected:
     int m_loops = 1;
 };
 
-class PropertyAnimation : public Animation {
+class QTUI_CORE_EXPORT PropertyAnimation : public Animation {
     Q_OBJECT
     QML_ELEMENT
 
@@ -119,7 +121,7 @@ protected:
     qint64 m_accumulatedTime = 0;
 };
 
-class NumberAnimation : public PropertyAnimation {
+class QTUI_CORE_EXPORT NumberAnimation : public PropertyAnimation {
     Q_OBJECT
     QML_ELEMENT
 public:
@@ -127,7 +129,7 @@ public:
     ~NumberAnimation() override = default;
 };
 
-class ColorAnimation : public PropertyAnimation {
+class QTUI_CORE_EXPORT ColorAnimation : public PropertyAnimation {
     Q_OBJECT
     QML_ELEMENT
 public:
@@ -138,7 +140,7 @@ protected:
     void writeValue(const QVariant& value) override;
 };
 
-class AnimationManager : public QObject {
+class QTUI_CORE_EXPORT AnimationManager : public QObject {
     Q_OBJECT
 public:
     static AnimationManager* instance();

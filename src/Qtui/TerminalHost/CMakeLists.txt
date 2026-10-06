@@ -25,6 +25,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(QtuiTerminalHost PRIVATE util)
 endif()
 
+target_compile_definitions(QtuiTerminalHost PRIVATE QTUI_TERMINALHOST_LIBRARY)
 add_library(Qtui::TerminalHost ALIAS QtuiTerminalHost)
 set_target_properties(QtuiTerminalHost PROPERTIES EXPORT_NAME TerminalHost)
 set_target_properties(QtuiTerminalHost QtuiTerminalHostplugin PROPERTIES

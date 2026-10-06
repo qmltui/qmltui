@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QPointer>
 #include <QQmlEngine>
@@ -9,7 +11,7 @@ namespace qtui {
 class Item;
 class AnchorLine;
 
-class Anchors : public QObject {
+class QTUI_CORE_EXPORT Anchors : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Anchors is only available as a grouped property of Item")

@@ -31,6 +31,7 @@ qt_add_qml_module(QtuiCore
     SOURCES
         primitives/Color.h
         primitives/Color.cpp
+        primitives/QtuiExport.h
         primitives/QtuiGlobal.h
         primitives/QtuiGlobal.cpp
         primitives/ColorMapper.h
@@ -161,6 +162,7 @@ if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
 endif()
 
+target_compile_definitions(QtuiCore PRIVATE QTUI_CORE_LIBRARY)
 add_library(Qtui::Core ALIAS QtuiCore)
 set_target_properties(QtuiCore PROPERTIES EXPORT_NAME Core)
 set_target_properties(QtuiCoreplugin PROPERTIES

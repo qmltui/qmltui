@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Rectangle.h"
 #include "../engine/InputScope.h"
 #include <QPointer>
 
 namespace qtui {
 
-class Popup : public Rectangle, public InputScope {
+class QTUI_CORE_EXPORT Popup : public Rectangle, public InputScope {
     Q_OBJECT
     QML_ELEMENT
 

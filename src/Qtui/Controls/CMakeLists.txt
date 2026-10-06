@@ -21,6 +21,7 @@ qt_add_qml_module(QtuiControls
     DEPENDENCIES TARGET QtuiCore
 )
 
+target_compile_definitions(QtuiControls PRIVATE QTUI_CONTROLS_LIBRARY)
 add_library(Qtui::Controls ALIAS QtuiControls)
 target_link_libraries(QtuiControls PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 set_target_properties(QtuiControls PROPERTIES EXPORT_NAME Controls)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QVariantMap>
 #include <QVariantList>
@@ -13,7 +15,7 @@
 
 namespace qtui {
 
-class TreeView : public Item {
+class QTUI_CORE_EXPORT TreeView : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_CLASSINFO("DefaultProperty", "delegate")

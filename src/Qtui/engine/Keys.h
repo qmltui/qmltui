@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "KeyEvent.h"
 #include "../items/Item.h"
 #include <QObject>
@@ -8,7 +10,7 @@
 
 namespace qtui {
 
-class Keys : public QObject {
+class QTUI_CORE_EXPORT Keys : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Keys is only available as an attached property")

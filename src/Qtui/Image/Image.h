@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QImage>
 #include <QUrl>
@@ -7,7 +9,7 @@
 
 namespace qtui {
 
-class Image : public Item {
+class QTUI_IMAGE_EXPORT Image : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QUrl source READ source WRITE setSource NOTIFY sourceChanged)

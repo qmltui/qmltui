@@ -6,6 +6,7 @@ qt_add_qml_module(QtuiImage
     DEPENDENCIES TARGET QtuiCore
 )
 
+target_compile_definitions(QtuiImage PRIVATE QTUI_IMAGE_LIBRARY)
 add_library(Qtui::Image ALIAS QtuiImage)
 
 target_include_directories(QtuiImage PUBLIC

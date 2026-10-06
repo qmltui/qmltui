@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "ScrollView.h"
 #include <QVariant>
 #include <QQmlComponent>
@@ -15,7 +17,7 @@ namespace qtui {
 
 class ListView;
 
-class ListViewAttached : public QObject {
+class QTUI_CORE_EXPORT ListViewAttached : public QObject {
     Q_OBJECT
     QML_ANONYMOUS
     Q_PROPERTY(qtui::ListView* view READ view NOTIFY viewChanged)
@@ -39,7 +41,7 @@ private:
     bool m_isCurrentItem = false;
 };
 
-class ListView : public ScrollView {
+class QTUI_CORE_EXPORT ListView : public ScrollView {
     Q_OBJECT
     QML_ELEMENT
     QML_ATTACHED(ListViewAttached)

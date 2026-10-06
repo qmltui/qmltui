@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "../primitives/TextGridBuffer.h"
 #include <QObject>
 #include <QQmlEngine>
@@ -45,7 +47,7 @@ class Keys;
 class Terminal;
 class AnchorLine;
 
-class Item : public QObject {
+class QTUI_CORE_EXPORT Item : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(Item)
   QML_ELEMENT

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include <QPointer>
@@ -9,7 +11,7 @@ namespace qtui { class Item; class Terminal; class Popup; class Text; }
 
 namespace qtui::controls {
 
-class ToolTip : public QObject {
+class QTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("ToolTip is only available as an attached property")

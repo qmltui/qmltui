@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 
 namespace qtui {
 
-class Column : public Item {
+class QTUI_CORE_EXPORT Column : public Item {
     Q_OBJECT
     QML_ELEMENT
 

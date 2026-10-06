@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QString>
 #include <QQmlEngine>
@@ -10,7 +12,7 @@ namespace qtui {
 
 class Item;
 
-class Border : public QObject {
+class QTUI_CORE_EXPORT Border : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Border is only available as a grouped property of Rectangle")

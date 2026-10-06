@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include "TextEditorState.h"
 #include <QRegularExpression>
@@ -8,7 +10,7 @@
 
 namespace qtui {
 
-class TextInput : public Item {
+class QTUI_CORE_EXPORT TextInput : public Item {
     Q_OBJECT
     QML_ELEMENT
 

@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include "TextEditorState.h"
 #include <QString>
 
 namespace qtui {
 
-class TextArea : public Item {
+class QTUI_CORE_EXPORT TextArea : public Item {
     Q_OBJECT
     QML_ELEMENT
 

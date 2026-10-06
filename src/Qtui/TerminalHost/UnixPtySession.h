@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QByteArray>
 #include <QObject>
 #include <QProcess>
@@ -8,7 +10,7 @@ class QSocketNotifier;
 
 namespace qtui {
 
-class UnixPtySession final : public QObject {
+class QTUI_TERMINALHOST_EXPORT UnixPtySession final : public QObject {
     Q_OBJECT
 
 public:

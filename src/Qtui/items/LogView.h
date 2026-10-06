@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "TextArea.h"
 #include <QStringList>
 
 namespace qtui {
 
-class LogView : public TextArea {
+class QTUI_CORE_EXPORT LogView : public TextArea {
     Q_OBJECT
     QML_ELEMENT
 

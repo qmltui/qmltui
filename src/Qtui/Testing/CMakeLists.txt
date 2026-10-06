@@ -3,6 +3,7 @@ add_library(QtuiTesting
     TestRunner.cpp
 )
 
+target_compile_definitions(QtuiTesting PRIVATE QTUI_TESTING_LIBRARY)
 add_library(Qtui::Testing ALIAS QtuiTesting)
 set_target_properties(QtuiTesting PROPERTIES EXPORT_NAME Testing)
 

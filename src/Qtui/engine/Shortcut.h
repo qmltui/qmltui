@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include <QList>
 
 namespace qtui {
 
-class Shortcut : public QObject {
+class QTUI_CORE_EXPORT Shortcut : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(int sequence READ sequence WRITE setSequence NOTIFY sequenceChanged)

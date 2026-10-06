@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QVariantMap>
 #include <QQmlEngine>
@@ -8,7 +10,7 @@
 
 namespace qtui {
 
-class PropertyChanges : public QObject {
+class QTUI_CORE_EXPORT PropertyChanges : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
@@ -40,7 +42,7 @@ private:
     bool m_restoreEntryValues = true;
 };
 
-class State : public QObject {
+class QTUI_CORE_EXPORT State : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)

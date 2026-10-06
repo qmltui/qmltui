@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 
 #include <QList>
@@ -11,7 +13,7 @@
 
 namespace qtui {
 
-class Loader : public Item, public QQmlParserStatus {
+class QTUI_CORE_EXPORT Loader : public Item, public QQmlParserStatus {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Loader)
     QML_ELEMENT

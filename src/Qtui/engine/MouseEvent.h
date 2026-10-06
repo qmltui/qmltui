@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 
 namespace qtui {
 
-class MouseEvent : public QObject {
+class QTUI_CORE_EXPORT MouseEvent : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("MouseEvent is passed by the engine")

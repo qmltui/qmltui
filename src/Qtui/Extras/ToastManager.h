@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 #include <QTimer>
 #include <QList>
@@ -7,14 +9,14 @@
 
 namespace qtui {
 
-struct ToastItem {
+struct QTUI_EXTRAS_EXPORT ToastItem {
     QString title;
     QString message;
     QString type; // "info", "success", "warning", "error"
     int remainingMs;
 };
 
-class ToastManager : public Item {
+class QTUI_EXTRAS_EXPORT ToastManager : public Item {
     Q_OBJECT
     QML_ELEMENT
 

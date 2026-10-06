@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QByteArray>
 #include <QObject>
 #include <QSize>
@@ -25,7 +27,7 @@ namespace qtui {
 // Input is always delivered as raw VT byte sequences through inputReceived(),
 // so InputDecoder needs no platform knowledge. Geometry changes arrive through
 // resized(); the receiver queries size() afterwards.
-class TerminalBackend : public QObject {
+class QTUI_CORE_EXPORT TerminalBackend : public QObject {
     Q_OBJECT
 
 public:

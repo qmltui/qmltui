@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 #include <QVariantList>
 #include <QStringList>
@@ -7,7 +9,7 @@
 
 namespace qtui {
 
-class TabHeader : public Item {
+class QTUI_EXTRAS_EXPORT TabHeader : public Item {
     Q_OBJECT
     QML_ELEMENT
 

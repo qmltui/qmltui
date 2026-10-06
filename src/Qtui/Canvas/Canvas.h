@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QVariant>
 #include <QVariantList>
@@ -10,7 +12,7 @@ namespace qtui {
 class CanvasPainter;
 class CanvasShape;
 
-class Canvas : public Item {
+class QTUI_CANVAS_EXPORT Canvas : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
@@ -107,7 +109,7 @@ private:
     const Canvas& m_canvas;
 };
 
-class CanvasShape : public Item {
+class QTUI_CANVAS_EXPORT CanvasShape : public Item {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("CanvasShape is an abstract base class")
@@ -137,7 +139,7 @@ private:
     bool m_hasCustomColor = false;
 };
 
-class Point : public CanvasShape {
+class QTUI_CANVAS_EXPORT Point : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
 
@@ -146,7 +148,7 @@ public:
     void draw(CanvasPainter& painter) const override;
 };
 
-class Line : public CanvasShape {
+class QTUI_CANVAS_EXPORT Line : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(int x1 READ x1 WRITE setX1 NOTIFY x1Changed)
@@ -183,7 +185,7 @@ private:
 
 #include <QPoint>
 
-class Polygon : public CanvasShape {
+class QTUI_CANVAS_EXPORT Polygon : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QVariantList points READ points WRITE setPoints NOTIFY pointsChanged)
@@ -210,7 +212,7 @@ private:
 };
 
 
-class CanvasRectangle : public CanvasShape {
+class QTUI_CANVAS_EXPORT CanvasRectangle : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(bool fill READ fill WRITE setFill NOTIFY fillChanged)
@@ -230,7 +232,7 @@ private:
     bool m_fill = false;
 };
 
-class Circle : public CanvasShape {
+class QTUI_CANVAS_EXPORT Circle : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(int cx READ cx WRITE setCx NOTIFY cxChanged)

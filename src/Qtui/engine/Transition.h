@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include <QQmlListProperty>
@@ -7,7 +9,7 @@
 
 namespace qtui {
 
-class Transition : public QObject {
+class QTUI_CORE_EXPORT Transition : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QString from READ from WRITE setFrom NOTIFY fromChanged)

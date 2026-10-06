@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlEngine>
 #include <QtQml/private/qqmlpropertyvalueinterceptor_p.h>
@@ -9,7 +11,7 @@
 
 namespace qtui {
 
-class Behavior : public QObject, public QQmlPropertyValueInterceptor {
+class QTUI_CORE_EXPORT Behavior : public QObject, public QQmlPropertyValueInterceptor {
     Q_OBJECT
     Q_INTERFACES(QQmlPropertyValueInterceptor)
     QML_ELEMENT

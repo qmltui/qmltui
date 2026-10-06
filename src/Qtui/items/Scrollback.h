@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QAbstractItemModel>
 #include <QHash>
 #include <QObject>
@@ -14,7 +16,7 @@ namespace qtui {
 class Item;
 class Terminal;
 
-class Scrollback : public QObject, public QQmlParserStatus {
+class QTUI_CORE_EXPORT Scrollback : public QObject, public QQmlParserStatus {
     Q_OBJECT
     QML_ELEMENT
     Q_INTERFACES(QQmlParserStatus)

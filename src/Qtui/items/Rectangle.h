@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include "Border.h"
 
 namespace qtui {
 
-class Rectangle : public Item {
+class QTUI_CORE_EXPORT Rectangle : public Item {
     Q_OBJECT
     QML_ELEMENT
 

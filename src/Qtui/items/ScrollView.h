@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 
 namespace qtui {
 
-class ScrollView : public Item {
+class QTUI_CORE_EXPORT ScrollView : public Item {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(ScrollView)
     QML_ELEMENT

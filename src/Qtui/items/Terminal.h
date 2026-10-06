@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QHash>
 #include <QMetaObject>
@@ -12,7 +14,7 @@ namespace qtui {
 class TerminalEngine;
 class Popup;
 
-class Terminal : public Item, public QQmlParserStatus {
+class QTUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
   Q_OBJECT
   QML_ELEMENT
   Q_INTERFACES(QQmlParserStatus)

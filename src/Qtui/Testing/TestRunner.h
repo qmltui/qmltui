@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QElapsedTimer>
 #include <QJSValue>
@@ -25,7 +27,7 @@ class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
 
-class TestRunner final : public QObject {
+class QTUI_TESTING_EXPORT TestRunner final : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(TestRunner)
 

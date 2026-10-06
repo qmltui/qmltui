@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 
 #include <Color.h>
@@ -14,7 +16,7 @@ namespace qtui {
 class UnixPtySession;
 class VTermAdapter;
 
-class TerminalView : public Item, public QQmlParserStatus {
+class QTUI_TERMINALHOST_EXPORT TerminalView : public Item, public QQmlParserStatus {
     Q_OBJECT
     QML_NAMED_ELEMENT(TerminalView)
     Q_INTERFACES(QQmlParserStatus)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <QObject>
 #include <QQmlListProperty>
 #include <QtQml/qqmlregistration.h>
@@ -10,7 +12,7 @@
 
 namespace qtui {
 
-class Gradient : public QObject {
+class QTUI_CORE_EXPORT Gradient : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QQmlListProperty<qtui::GradientStop> stops READ stops CONSTANT)

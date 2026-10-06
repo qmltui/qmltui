@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include <Item.h>
 #include <Gradient.h>
 #include <QString>
 
 namespace qtui {
 
-class Gauge : public Item {
+class QTUI_EXTRAS_EXPORT Gauge : public Item {
     Q_OBJECT
     QML_ELEMENT
 

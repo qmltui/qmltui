@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtuiExport.h>
+
 #include "Item.h"
 #include <QByteArray>
 #include <QString>
@@ -9,7 +11,7 @@ namespace qtui {
 
 class Gradient;
 
-class Text : public Item {
+class QTUI_CORE_EXPORT Text : public Item {
     Q_OBJECT
     QML_ELEMENT
 

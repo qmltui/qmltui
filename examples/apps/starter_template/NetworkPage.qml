@@ -222,8 +222,7 @@ Rectangle {
                 Button {
                     text: WifiManager.scanning ? "Scanning..." : "[R] Rescan Now"
                     textColor: Theme.textPrimary
-                    normalBorderColor: Theme.borderNormal
-                    focusBorderColor: Theme.qtGreen
+                    border.color: Theme.borderNormal
                     enabled: !WifiManager.scanning
                     onClicked: {
                         WifiManager.scan();
@@ -233,8 +232,7 @@ Rectangle {
                 Button {
                     text: "[Enter] Connect"
                     textColor: Theme.qtGreen
-                    normalBorderColor: Theme.qtGreen
-                    focusBorderColor: Theme.qtGreen
+                    border.color: Theme.qtGreen
                     onClicked: {
                         pwdInput.focus = true;
                     }
@@ -316,8 +314,7 @@ Rectangle {
                     Button {
                         text: page.isConnecting ? "Connecting..." : Theme.check + " Connect [Enter]"
                         textColor: Theme.qtGreen
-                        normalBorderColor: Theme.qtGreen
-                        focusBorderColor: Theme.qtGreen
+                        border.color: Theme.qtGreen
                         enabled: !page.isConnecting && page.selectedSsid.length > 0
                         onClicked: {
                             page.doConnect();
@@ -609,8 +606,7 @@ Rectangle {
                     Button {
                         text: Theme.cross + " Disconnect & Switch Network"
                         textColor: Theme.statusError
-                        normalBorderColor: Theme.statusError
-                        focusBorderColor: Theme.statusError
+                        border.color: Theme.statusError
                         onClicked: {
                             WifiManager.disconnectNetwork();
                         }

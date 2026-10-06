@@ -124,7 +124,6 @@ Popup {
 
             Button {
                 text: "[Enter] Apply"
-                focusColor: Theme.bgActiveTab
                 onClicked: control.applyNow()
             }
             Button {

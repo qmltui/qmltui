@@ -16,8 +16,8 @@ Popup {
     implicitWidth: Math.max(32, contentColumn.implicitWidth + 4)
     implicitHeight: contentColumn.implicitHeight + 2
     border.style: "double"
-    border.color: activeFocus ? "yellow" : "white"
-    color: "black"
+    border.color: activeFocus ? Palette.highlight : Palette.mid
+    color: Palette.base
     initialFocusItem: acceptButton
     anchors.centerIn: parent
 
@@ -37,12 +37,12 @@ Popup {
         Text {
             text: control.title
             bold: true
-            color: "yellow"
+            color: Palette.accent
         }
 
         Text {
             text: control.message
-            color: "white"
+            color: Palette.text
         }
 
         Row {

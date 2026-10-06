@@ -202,6 +202,46 @@ Quick view feature. Qtui does not currently expose scene-graph transitions,
 flick physics, reuse-pool callbacks, selection models, or the complete Qt Quick
 positioning and item-lookup API.
 
+## Palette
+
+`Qtui.Controls` exports a `Palette` singleton: named color roles that every
+control reads. The roles follow `QPalette`, so the vocabulary is familiar.
+
+| Role | Used for |
+| :--- | :--- |
+| `window`, `windowText` | Root background and default text |
+| `base`, `text` | Editable and list surfaces and their text |
+| `button`, `buttonText` | Buttons, tabs, switches |
+| `highlight`, `highlightedText` | Focus, selection, current row |
+| `mid` | Borders and separators |
+| `placeholderText` | Input hints and disabled text |
+| `accent` | The brand color |
+
+`Palette.applyPreset(Palette.Terminal)` (the default) uses ANSI named colors and
+a transparent window, so an application takes on the user's terminal theme.
+`Palette.applyPreset(Palette.Dark)` is the Qtui brand look. Set roles
+individually to build your own; each control re-renders through its bindings,
+and one `changed` signal covers a whole preset switch.
+
+Controls expose only the overrides that make sense on an instance:
+`textColor` on text-bearing controls, `titleColor` on `Panel`, and `color` on
+`ProgressBar` because a fill color is data, not theme. `Button` is a
+`Rectangle`, so `color` and `border.*` can still be set directly on an instance
+when a single button must differ; doing so replaces the palette binding for
+that property.
+
+```qml
+import Qtui.Controls
+
+Terminal {
+    Component.onCompleted: Palette.applyPreset(Palette.Dark)
+    Button { text: "Save"; focus: true }        // border follows Palette.highlight
+    Button { text: "Delete"; textColor: "red" } // single override
+}
+```
+
+C++ code reads the same instance through `qtui::Palette::instance()`.
+
 ## Other core elements
 
 - `Terminal` derives from `Item` and owns the terminal session. `mode` is

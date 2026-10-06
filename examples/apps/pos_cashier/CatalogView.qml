@@ -48,30 +48,30 @@ Item {
 
                 Button {
                     text: root.currentCategory === "ALL" ? "[ ALL ]" : "  ALL  "
-                    normalColor: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
+                    color: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "ALL" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.categorySelected("ALL")
                 }
                 Button {
                     text: root.currentCategory === "COFFEE" ? "[ COFFEE ]" : " COFFEE "
-                    normalColor: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
+                    color: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "COFFEE" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.categorySelected("COFFEE")
                 }
                 Button {
                     text: root.currentCategory === "PASTRIES" ? "[ PASTRIES ]" : " PASTRIES "
-                    normalColor: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
+                    color: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "PASTRIES" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.categorySelected("PASTRIES")
                 }
                 Button {
                     text: root.currentCategory === "TEA" ? "[ TEA ]" : " TEA "
-                    normalColor: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
+                    color: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "TEA" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.categorySelected("TEA")
                 }
             }
@@ -130,10 +130,9 @@ Item {
                             height: 1
                             width: parent ? Math.floor(parent.width * 0.22) : 0
                             text: "+ ADD"
-                            normalColor: "#1c2b3c"
+                            color: "#1c2b3c"
                             textColor: "#4AE183"
-                            normalBorderStyle: "none"
-                            focusBorderStyle: "single"
+                            border.style: "none"
                             onClicked: {
                                 if (prodRow.modelData) {
                                     root.addItemRequested(prodRow.modelData);
@@ -187,16 +186,16 @@ Item {
                     spacing: 1
                     Button {
                         text: "[F12] PAY NOW"
-                        normalColor: "#06BB63"
+                        color: "#06BB63"
                         textColor: "#051424"
-                        normalBorderStyle: "single"
+                        border.style: "single"
                         onClicked: root.checkoutRequested()
                     }
                     Button {
                         text: "[F4] VIEW CART"
-                        normalColor: "#1c2b3c"
+                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
-                        normalBorderStyle: "single"
+                        border.style: "single"
                         onClicked: root.viewCartRequested()
                     }
                 }

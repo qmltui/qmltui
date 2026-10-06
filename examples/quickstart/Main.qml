@@ -6,13 +6,6 @@ Terminal {
     id: root
     color: "#0d1117"
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
     Column {
         anchors.centerIn: parent
         spacing: 1
@@ -33,6 +26,13 @@ Terminal {
             id: status
             text: "Status: ready"
             color: "magenta"
+        }
+    }
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
         }
     }
 }

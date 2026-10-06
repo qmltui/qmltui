@@ -49,30 +49,30 @@ Item {
                 spacing: 1
                 Button {
                     text: root.paymentMethod === "CASH" ? "[✓ 💵 CASH]" : " 💵 CASH "
-                    normalColor: root.paymentMethod === "CASH" ? "#06BB63" : "#1c2b3c"
+                    color: root.paymentMethod === "CASH" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "CASH" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.paymentMethodSelected("CASH")
                 }
                 Button {
                     text: root.paymentMethod === "CARD" ? "[✓ 💳 CARD]" : " 💳 CARD "
-                    normalColor: root.paymentMethod === "CARD" ? "#06BB63" : "#1c2b3c"
+                    color: root.paymentMethod === "CARD" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "CARD" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.paymentMethodSelected("CARD")
                 }
                 Button {
                     text: root.paymentMethod === "MOBILE" ? "[✓ 📱 MOBILE]" : " 📱 MOBILE "
-                    normalColor: root.paymentMethod === "MOBILE" ? "#06BB63" : "#1c2b3c"
+                    color: root.paymentMethod === "MOBILE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "MOBILE" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.paymentMethodSelected("MOBILE")
                 }
                 Button {
                     text: root.paymentMethod === "SPLIT" ? "[✓ 🔀 SPLIT]" : " 🔀 SPLIT "
-                    normalColor: root.paymentMethod === "SPLIT" ? "#06BB63" : "#1c2b3c"
+                    color: root.paymentMethod === "SPLIT" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "SPLIT" ? "#051424" : "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.paymentMethodSelected("SPLIT")
                 }
             }
@@ -95,19 +95,19 @@ Item {
                     Text { text: "  QUICK: "; color: "#80DEEA" }
                     Button {
                         text: "[Exact]"
-                        normalColor: "#1c2b3c"
+                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged(root.totalAmount.toFixed(2))
                     }
                     Button {
                         text: "[$20]"
-                        normalColor: "#1c2b3c"
+                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged("20.00")
                     }
                     Button {
                         text: "[$50]"
-                        normalColor: "#1c2b3c"
+                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged("50.00")
                     }
@@ -147,16 +147,16 @@ Item {
                 spacing: 2
                 Button {
                     text: "[ESC] BACK TO CART"
-                    normalColor: "#1c2b3c"
+                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.backToCartRequested()
                 }
                 Button {
                     text: "[ENTER] CONFIRM PAYMENT"
-                    normalColor: "#06BB63"
+                    color: "#06BB63"
                     textColor: "#051424"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.confirmPaymentRequested()
                 }
             }

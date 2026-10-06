@@ -35,6 +35,7 @@ Text {
 
     readonly property string _currentSymbol: _frames[_frameIndex % _frames.length]
     text: _currentSymbol
+    color: Palette.accent
     bold: true
 
     NumberAnimation {

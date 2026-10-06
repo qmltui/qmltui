@@ -1,4 +1,5 @@
 #include "ToolTip.h"
+#include "Palette.h"
 #include "Item.h"
 #include "Terminal.h"
 #include "Popup.h"
@@ -115,11 +116,13 @@ void ToolTip::showNow() {
         m_popup->setModal(false);
         m_popup->setDimBackground(false);
         m_popup->setClosePolicy(Popup::NoAutoClose);
-        m_popup->setColor(QStringLiteral("#303030"));
         m_label = new Text(m_popup);
         m_label->setX(1);
         m_label->setY(0);
     }
+    // Re-read on every show so a palette switch is picked up.
+    m_popup->setColor(Palette::instance()->base());
+    m_label->setColor(Palette::instance()->text());
     const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
     const int displayWidth = UnicodeText::displayWidth(m_text);
     const int textWidth = std::max(1, std::min(maxTextWidth, displayWidth));

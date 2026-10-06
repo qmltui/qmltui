@@ -5,10 +5,7 @@ Rectangle {
     id: control
     property string text: ""
     property bool checked: false
-    property string textColor: "white"
-    property string onColor: "green"
-    property string offColor: "red"
-    property string focusColor: "yellow"
+    property rgba textColor: Palette.windowText
     
     signal toggled(bool checked)
 
@@ -22,14 +19,14 @@ Rectangle {
 
         Text {
             text: control.checked ? "[ ON]" : "[OFF]"
-            color: !control.enabled ? "gray" : (control.activeFocus ? control.focusColor : (control.checked ? control.onColor : control.offColor))
+            color: !control.enabled ? Palette.placeholderText : (control.activeFocus ? Palette.highlight : (control.checked ? Palette.accent : Palette.mid))
             bold: control.activeFocus
         }
 
         Text {
             visible: control.text !== ""
             text: control.text
-            color: !control.enabled ? "gray" : (control.activeFocus ? control.focusColor : control.textColor)
+            color: !control.enabled ? Palette.placeholderText : (control.activeFocus ? Palette.highlight : control.textColor)
             bold: control.activeFocus
         }
     }

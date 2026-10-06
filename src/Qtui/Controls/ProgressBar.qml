@@ -10,7 +10,8 @@ Item {
 
     // Style presets: "segmented" (▰▱), "pill" (▮▯), "dot" (●○), "block" (█░)
     property string style: "segmented"
-    property string color: "#38bdf8"
+    // The fill color is data, not theme, so it stays a property; the default follows the palette.
+    property rgba color: Palette.accent
 
     // Custom arbitrary character properties (override style presets when set)
     property string fillCharacter: ""
@@ -112,7 +113,7 @@ Item {
         if (emptyLen > 0) {
             let emptyStr = "";
             for (let j = 0; j < emptyLen; ++j) emptyStr += emptyChar;
-            segs.push({ text: emptyStr, color: "#475569" });
+            segs.push({ text: emptyStr, color: Palette.mid });
         }
 
         return segs;

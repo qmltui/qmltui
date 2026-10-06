@@ -697,8 +697,7 @@ Terminal {
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
                                 text: "[S] START"
-                                normalColor: "#1e3a1e"
-                                focusColor: "#2e5a2e"
+                                color: "#1e3a1e"
                                 textColor: HmiTheme.textSuccess
                         onClicked: rootWindow.triggerStart()
                             }
@@ -706,8 +705,7 @@ Terminal {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
                                 text: "[X] STOP"
-                                normalColor: "#3a1e1e"
-                                focusColor: "#5a2e2e"
+                                color: "#3a1e1e"
                                 textColor: HmiTheme.textDanger
                         onClicked: rootWindow.triggerStop()
                             }
@@ -721,8 +719,7 @@ Terminal {
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
                                 text: "[R] RESET"
-                                normalColor: "#3a301e"
-                                focusColor: "#5a482e"
+                                color: "#3a301e"
                                 textColor: HmiTheme.textWarning
                         onClicked: rootWindow.requestReset()
                             }
@@ -730,8 +727,7 @@ Terminal {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
                                 text: "[M] MAINT"
-                                normalColor: "#21252b"
-                                focusColor: "#2c313a"
+                                color: "#21252b"
                                 textColor: HmiTheme.textHighlight
                         onClicked: rootWindow.requestMaintenance()
                             }

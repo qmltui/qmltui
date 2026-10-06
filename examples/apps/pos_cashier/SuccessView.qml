@@ -52,23 +52,23 @@ Item {
                 spacing: 1
                 Button {
                     text: "🖨️ PRINT"
-                    normalColor: "#1c2b3c"
+                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.receiptOptionClicked("PRINT")
                 }
                 Button {
                     text: "✉️ EMAIL"
-                    normalColor: "#1c2b3c"
+                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.receiptOptionClicked("EMAIL")
                 }
                 Button {
                     text: "💬 SMS"
-                    normalColor: "#1c2b3c"
+                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    normalBorderStyle: "single"
+                    border.style: "single"
                     onClicked: root.receiptOptionClicked("SMS")
                 }
             }
@@ -77,9 +77,9 @@ Item {
 
             Button {
                 text: "[ENTER] START NEW SALE"
-                normalColor: "#06BB63"
+                color: "#06BB63"
                 textColor: "#051424"
-                normalBorderStyle: "single"
+                border.style: "single"
                 onClicked: root.newSaleRequested()
             }
         }

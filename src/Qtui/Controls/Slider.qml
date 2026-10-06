@@ -7,9 +7,7 @@ Rectangle {
     property real from: 0.0
     property real to: 100.0
     property real stepSize: 1.0
-    property string trackColor: "gray"
-    property string handleColor: activeFocus ? "yellow" : "cyan"
-    property string textColor: "white"
+    property rgba textColor: Palette.windowText
     property bool showValue: true
     readonly property int trackWidth: Math.max(0, control.width
                                                 - (control.showValue ? valueText.implicitWidth + 1 : 0))
@@ -38,7 +36,7 @@ Rectangle {
             }
             return str
         }
-        color: !control.enabled ? "gray" : (control.activeFocus ? control.handleColor : control.trackColor)
+        color: !control.enabled ? Palette.placeholderText : (control.activeFocus ? Palette.highlight : Palette.mid)
         bold: control.activeFocus
     }
 
@@ -48,7 +46,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         text: "[" + Math.round(control.value) + "]"
-        color: control.enabled ? control.textColor : "gray"
+        color: control.enabled ? control.textColor : Palette.placeholderText
     }
 
     Keys.onPressed: (event) => {

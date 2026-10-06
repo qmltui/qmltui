@@ -241,9 +241,9 @@ Terminal {
             Text { text: qsTr("👤 %1  📶 ONLINE  🕒 09:41 AM").arg(rootWindow.cashierName); color: "#D4E4FA" }
             Button {
                 text: rootWindow.state === "catalog" ? "[ 1 CATALOG ]" : " 1 CATALOG "
-                normalColor: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
+                color: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "catalog" ? "#051424" : "#D4E4FA"
-                normalBorderStyle: rootWindow.state === "catalog" ? "double" : "single"
+                border.style: rootWindow.state === "catalog" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "catalog";
@@ -251,9 +251,9 @@ Terminal {
             }
             Button {
                 text: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(rootWindow.getItemCount()) : qsTr(" 2 CART (%1) ").arg(rootWindow.getItemCount())
-                normalColor: rootWindow.state === "cart" ? "#06BB63" : "#122131"
+                color: rootWindow.state === "cart" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "cart" ? "#051424" : "#D4E4FA"
-                normalBorderStyle: rootWindow.state === "cart" ? "double" : "single"
+                border.style: rootWindow.state === "cart" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "cart";
@@ -261,9 +261,9 @@ Terminal {
             }
             Button {
                 text: rootWindow.state === "payment" ? "[ 3 PAYMENT ]" : " 3 PAYMENT "
-                normalColor: rootWindow.state === "payment" ? "#06BB63" : "#122131"
+                color: rootWindow.state === "payment" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "payment" ? "#051424" : "#D4E4FA"
-                normalBorderStyle: rootWindow.state === "payment" ? "double" : "single"
+                border.style: rootWindow.state === "payment" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state !== "receipt") rootWindow.goToCheckout();
                 }
@@ -271,9 +271,9 @@ Terminal {
             Button {
                 visible: rootWindow.state === "receipt"
                 text: "[ 4 RECEIPT ]"
-                normalColor: "#06BB63"
+                color: "#06BB63"
                 textColor: "#051424"
-                normalBorderStyle: "double"
+                border.style: "double"
                 onClicked: rootWindow.state = "receipt"
             }
         }

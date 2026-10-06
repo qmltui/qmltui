@@ -74,10 +74,9 @@ Item {
                             spacing: 1
                             Button {
                                 text: "-"
-                                normalColor: "#1c2b3c"
+                                color: "#1c2b3c"
                                 textColor: "#FFB961"
-                                normalBorderStyle: "none"
-                                focusBorderStyle: "single"
+                                border.style: "none"
                                 onClicked: {
                                     if (cRow.modelData) root.updateQtyRequested(cRow.modelData.sku, -1);
                                 }
@@ -89,10 +88,9 @@ Item {
                             }
                             Button {
                                 text: "+"
-                                normalColor: "#1c2b3c"
+                                color: "#1c2b3c"
                                 textColor: "#4AE183"
-                                normalBorderStyle: "none"
-                                focusBorderStyle: "single"
+                                border.style: "none"
                                 onClicked: {
                                     if (cRow.modelData) root.updateQtyRequested(cRow.modelData.sku, 1);
                                 }
@@ -115,16 +113,16 @@ Item {
                     spacing: 2
                     Button {
                         text: "[F1] CLEAR SALE"
-                        normalColor: "#800000"
+                        color: "#800000"
                         textColor: "#FFFFFF"
-                        normalBorderStyle: "single"
+                        border.style: "single"
                         onClicked: root.clearCartRequested()
                     }
                     Button {
                         text: root.discountRate > 0 ? "[✓ 10% DISC]" : "[F2] 10% DISC"
-                        normalColor: root.discountRate > 0 ? "#FFB961" : "#1c2b3c"
+                        color: root.discountRate > 0 ? "#FFB961" : "#1c2b3c"
                         textColor: root.discountRate > 0 ? "#051424" : "#D4E4FA"
-                        normalBorderStyle: "single"
+                        border.style: "single"
                         onClicked: root.applyDiscountRequested(root.discountRate > 0 ? 0.0 : 0.10)
                     }
                 }

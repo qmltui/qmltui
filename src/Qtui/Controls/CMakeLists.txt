@@ -1,6 +1,8 @@
 qt_add_qml_module(QtuiControls
     URI Qtui.Controls
     SOURCES
+        Palette.h
+        Palette.cpp
         ToolTip.h
         ToolTip.cpp
     QML_FILES

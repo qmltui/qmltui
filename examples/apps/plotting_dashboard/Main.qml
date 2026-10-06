@@ -227,10 +227,8 @@ Terminal {
                 Button {
                     width: parent.width
                     height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
+                    border.style: "none"
+                    color: "#21252b"
                     text: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
                     onClicked: rootWindow.paused = !rootWindow.paused
                 }
@@ -239,10 +237,8 @@ Terminal {
                 Button {
                     width: parent.width
                     height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
+                    border.style: "none"
+                    color: "#21252b"
                     text: "WAVE: " + rootWindow.waveType.toUpperCase()
                     onClicked: rootWindow.cycleWaveType()
                 }
@@ -255,20 +251,16 @@ Terminal {
                     Button {
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "FREQ -"
                         onClicked: rootWindow.frequency = Math.max(0.5, rootWindow.frequency - 0.5)
                     }
                     Button {
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "FREQ +"
                         onClicked: rootWindow.frequency = Math.min(10.0, rootWindow.frequency + 0.5)
                     }
@@ -278,10 +270,8 @@ Terminal {
                 Button {
                     width: parent.width
                     height: 3
-                    normalBorderStyle: "none"
-                    focusBorderStyle: "single"
-                    normalColor: "#21252b"
-                    focusColor: "#3a3f4b"
+                    border.style: "none"
+                    color: "#21252b"
                     text: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
                     onClicked: rootWindow.cycleNoise()
                 }
@@ -309,20 +299,16 @@ Terminal {
                     Button {
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "X-FREQ -"
                         onClicked: rootWindow.freqA = Math.max(1, rootWindow.freqA - 1)
                     }
                     Button {
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "X-FREQ +"
                         onClicked: rootWindow.freqA = Math.min(12, rootWindow.freqA + 1)
                     }
@@ -336,20 +322,16 @@ Terminal {
                     Button {
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "Y-FREQ -"
                         onClicked: rootWindow.freqB = Math.max(1, rootWindow.freqB - 1)
                     }
                     Button {
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        normalBorderStyle: "none"
-                        focusBorderStyle: "single"
-                        normalColor: "#21252b"
-                        focusColor: "#3a3f4b"
+                        border.style: "none"
+                        color: "#21252b"
                         text: "Y-FREQ +"
                         onClicked: rootWindow.freqB = Math.min(12, rootWindow.freqB + 1)
                     }

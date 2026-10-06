@@ -52,7 +52,6 @@ Popup {
             Button {
                 id: confirmButton
                 text: "[Y] Confirm"
-                focusColor: Theme.bgActiveTab
                 onClicked: control.accept()
             }
             Button {

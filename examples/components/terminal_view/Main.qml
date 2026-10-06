@@ -337,7 +337,7 @@ Terminal {
 
                     Button {
                         text: "[ Focus T1 ]"
-                        normalBorderColor: terminal1.activeFocus ? "#89dceb" : "gray"
+                        border.color: terminal1.activeFocus ? "#89dceb" : "gray"
                         onClicked: {
                             terminal1.focus = true
                             root.commandTarget = 0
@@ -347,7 +347,7 @@ Terminal {
 
                     Button {
                         text: "[ Focus T2 ]"
-                        normalBorderColor: terminal2.activeFocus ? "#a6e3a1" : "gray"
+                        border.color: terminal2.activeFocus ? "#a6e3a1" : "gray"
                         onClicked: {
                             terminal2.focus = true
                             root.commandTarget = 1
@@ -357,7 +357,7 @@ Terminal {
 
                     Button {
                         text: "[ T1 ➔ T2 ]"
-                        normalBorderColor: "#89dceb"
+                        border.color: "#89dceb"
                         onClicked: {
                             terminal2.sendText("echo 'Data payload from Terminal 1 -> Terminal 2'\n")
                             root.logMessage = "[T1 ➔ T2] Transferred message payload to Terminal 2"
@@ -366,7 +366,7 @@ Terminal {
 
                     Button {
                         text: "[ T2 ➔ T1 ]"
-                        normalBorderColor: "#a6e3a1"
+                        border.color: "#a6e3a1"
                         onClicked: {
                             terminal1.sendText("echo 'Data payload from Terminal 2 -> Terminal 1'\n")
                             root.logMessage = "[T2 ➔ T1] Transferred message payload to Terminal 1"
@@ -375,7 +375,7 @@ Terminal {
 
                     Button {
                         text: "[ Pipe T1 Env -> T2 ]"
-                        normalBorderColor: "#cba6f7"
+                        border.color: "#cba6f7"
                         onClicked: {
                             terminal1.sendText("echo '=== T1 Environment ==='; env | head -n 3\n")
                             terminal2.sendText("echo 'Received env trigger from T1'\n")
@@ -385,7 +385,7 @@ Terminal {
 
                     Button {
                         text: "[ Sync PWD ]"
-                        normalBorderColor: "#f9e2af"
+                        border.color: "#f9e2af"
                         onClicked: {
                             terminal1.sendText("pwd\n")
                             terminal2.sendText("pwd\n")
@@ -395,7 +395,7 @@ Terminal {
 
                     Button {
                         text: "[ Clear Both ]"
-                        normalBorderColor: "#f38ba8"
+                        border.color: "#f38ba8"
                         onClicked: {
                             terminal1.clearScrollback()
                             terminal2.clearScrollback()
@@ -472,7 +472,7 @@ Terminal {
 
                     Button {
                         text: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
-                        normalBorderColor: root.commandTarget === 0 ? "#89dceb" : "gray"
+                        border.color: root.commandTarget === 0 ? "#89dceb" : "gray"
                         onClicked: {
                             root.commandTarget = 0
                             root.logMessage = "Dispatcher target set to Terminal 1"
@@ -481,7 +481,7 @@ Terminal {
 
                     Button {
                         text: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
-                        normalBorderColor: root.commandTarget === 1 ? "#a6e3a1" : "gray"
+                        border.color: root.commandTarget === 1 ? "#a6e3a1" : "gray"
                         onClicked: {
                             root.commandTarget = 1
                             root.logMessage = "Dispatcher target set to Terminal 2"
@@ -490,7 +490,7 @@ Terminal {
 
                     Button {
                         text: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
-                        normalBorderColor: root.commandTarget === 2 ? "#cba6f7" : "gray"
+                        border.color: root.commandTarget === 2 ? "#cba6f7" : "gray"
                         onClicked: {
                             root.commandTarget = 2
                             root.logMessage = "Dispatcher target set to Broadcast (Both terminals)"
@@ -499,7 +499,7 @@ Terminal {
 
                     Button {
                         text: "[ Dispatch ➔ ]"
-                        normalBorderColor: "#f9e2af"
+                        border.color: "#f9e2af"
                         onClicked: {
                             root.dispatchCommand()
                         }

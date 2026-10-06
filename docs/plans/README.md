@@ -14,7 +14,7 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 
 | Step | Plan | Deliverables | Launch blocker |
 | :---: | :--- | :--- | :---: |
-| **00** | [Launch Readiness](00-launch-readiness.md) | Qt Quick naming pass (`label` to `text`, versionless imports), compiled `examples/quickstart/`, `TerminalBackend` seam with POSIX and Win32 console backends, Windows Terminal support, CI on Linux, macOS, and Windows, `v0.4.0` tag, README rewrite | Yes |
+| **00** | [Launch Readiness](00-launch-readiness.md) | Qt Quick naming pass (`label` to `text`, versionless imports), root redesign (one `Terminal`, mode by `Scrollback`, nested `Terminal` takeover), compiled `examples/quickstart/`, `TerminalBackend` seam with POSIX and Win32 console backends, Windows Terminal support, CI on Linux, macOS, and Windows, `v0.4.0` tag, README rewrite | Yes |
 | **01** | [Documentation Portal](01-docs-portal.md) | SvelteKit site in `website/`, single markdown source next to the code, quickstart above the fold, working Pages deploy | Yes |
 | **02** | [Visual Gallery and Casts](02-visual-gallery-and-casts.md) | One recording pipeline for 8 apps and 31 components, SVG stills, hero cast, filterable showcase, generated inventory | Yes |
 | **03** | [Repo Split: `qtui-apps`](03-repo-split-qtui-apps.md) | Apps consume Qtui via `FetchContent`, in-tree `test_behavior`, `qtui-starter` template repository | No |

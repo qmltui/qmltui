@@ -1,93 +1,86 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 
-
 Terminal {
     id: root
-    width: 75
-    height: 20
+    width: 80
+    height: 24
+
+    ProcessProxy {
+        id: processes
+        filterText: filterInput.text
+        onActivatedPid: (pid) => { statusText.text = qsTr("Activated PID %1").arg(pid) }
+    }
 
     Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+        if (event.key === Qt.Key_Escape) {
+            if (filterInput.text.length > 0)
+                filterInput.text = ""
+            else
+                Qt.quit()
+            event.accepted = true
+        } else if (event.key === Qt.Key_Q && !filterInput.focus) {
             Qt.quit()
             event.accepted = true
         }
     }
 
-    Column {
-        anchors.fill: parent
-        spacing: 1
+    Text {
+        x: 1; y: 0; width: 76
+        text: qsTr("TABLEVIEW — EXTERNAL SORTING AND FILTERING")
+        color: "cyan"
+        bold: true
+    }
+    Text {
+        x: 1; y: 1; width: 76
+        text: qsTr("Click headers to sort; select a row to activate its source PID.")
+    }
+    Text { x: 1; y: 3; text: qsTr("Filter:") }
+    TextInput {
+        id: filterInput
+        objectName: "filterInput"
+        x: 9; y: 3; width: 30; height: 1
+        placeholderText: qsTr("Process name")
+    }
+    Text { x: 1; y: 5; width: 76; text: processes.sortLabel; color: "yellow" }
 
-        Text {
-            text: "📊 TABLEVIEW SORTING & ALIGNMENT DEMO"
-            color: "cyan"
-            bold: true
-        }
-
-        Text {
-            text: "Click column headers to sort! UP/DOWN to navigate, Q/ESC to quit"
-            color: "gray"
-        }
-
-        // Table 1: Sorting and Column Alignment Demo
-        Rectangle {
-            width: 73
-            height: 12
-            border.style: "single"
-            border.color: "cyan"
-
-            TableView {
-                focus: true
-                anchors.fill: parent
-                anchors.margins: 1
-                headerColor: "yellow"
-                headerBgColor: "#1e1e2e"
-                selectionColor: "white"
-                selectionBgColor: "blue"
-                alternatingRows: true
-                showGrid: true
-
-                sortColumn: 2
-                sortOrder: Qt.DescendingOrder
-
-                columns: [
-                    { title: "PID", width: 8, align: "left" },
-                    { title: "PROCESS NAME", width: 22, align: "left" },
-                    { title: "CPU%", width: 10, align: "right" },
-                    { title: "STATUS", width: 14, align: "center" }
-                ]
-
-                model: [
-                    ["1001", "systemd", "0.1%", "RUNNING"],
-                    ["1042", "terminal_engine", "12.4%", "RUNNING"],
-                    ["1089", "qml_renderer", "4.2%", "RUNNING"],
-                    ["1120", "dbus-daemon", "0.0%", "STOPPED"],
-                    ["1250", "net_stack", "1.8%", "RUNNING"],
-                    ["1304", "posix_tty", "0.5%", "CRASHED"],
-                    ["1410", "input_decoder", "0.2%", "RUNNING"],
-                    ["1520", "kworker/0:1", "0.0%", "STOPPED"]
-                ]
-
-                // Custom JS Cell Formatter
-                cellFormat: (row, col, value) => {
-                    if (col === 3) {
-                        if (value === "RUNNING") return { text: "✔ RUNNING", color: "green", bold: true }
-                        if (value === "STOPPED") return { text: "⏸ STOPPED", color: "yellow" }
-                        if (value === "CRASHED") return { text: "✖ CRASHED", color: "red", bold: true }
-                    }
-                    return { text: value }
-                }
-
-                onRowActivated: (idx) => {
-                    statusText.text = "Activated PID row #" + idx
-                }
+    Rectangle {
+        x: 1; y: 7; width: 76; height: 12
+        border.style: "single"
+        border.color: "cyan"
+        TableView {
+            id: table
+            objectName: "table"
+            focus: true
+            anchors.fill: parent
+            anchors.margins: 1
+            alternatingRows: true
+            showGrid: true
+            columns: [
+                { title: "PID", width: 8 },
+                { title: "PROCESS NAME", width: 24 },
+                { title: "CPU%", width: 12, align: "right" },
+                { title: "STATUS", width: 16, align: "center" }
+            ]
+            model: processes
+            onHeaderClicked: (column) => processes.headerClicked(column)
+            onRowActivated: (row) => processes.activate(row)
+            cellFormat: (row, column, value) => {
+                if (column === 3)
+                    return { text: value, color: value === "RUNNING" ? "green" : "yellow" }
+                return { text: value }
             }
         }
-
-        Text {
-            id: statusText
-            text: "Status: Click headers to sort or select a row and press ENTER"
-            color: "cyan"
-        }
+    }
+    Text {
+        id: statusText
+        x: 1; y: 20; width: 76
+        text: qsTr("Select a process")
+        color: "cyan"
+    }
+    Text {
+        x: 1; y: 22; width: 76
+        text: qsTr("Esc clears the filter, then quits. Q quits outside the filter.")
     }
 }

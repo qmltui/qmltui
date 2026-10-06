@@ -1,0 +1,330 @@
+#include <QTest>
+#include <QSignalSpy>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <TableView.h>
+#include <KeyEvent.h>
+#include <MouseEvent.h>
+#include "../TestPaint.h"
+#include <memory>
+#include <limits>
+
+using namespace qtui;
+
+class CountingTableList final : public QAbstractListModel
+{
+public:
+    enum { Detail = Qt::UserRole + 1, Kind };
+    int count = 1'000'000;
+    int kind = 0;
+    QString first = QStringLiteral("old");
+    mutable QHash<int, int> reads;
+    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : count; }
+    QVariant data(const QModelIndex &index, int role) const override {
+        ++reads[role];
+        if (!index.isValid()) return {};
+        if (role == Qt::DisplayRole) return index.row() == 0 ? first : QString::number(index.row());
+        if (role == Detail) return QStringLiteral("detail");
+        if (role == Kind) return kind;
+        return {};
+    }
+    QHash<int, QByteArray> roleNames() const override {
+        return {{Qt::DisplayRole, "display"}, {Detail, "detail"}, {Kind, "kind"}};
+    }
+    void change(int firstRow, int lastRow, const QList<int> &roles) {
+        emit dataChanged(index(firstRow, 0), index(lastRow, 0), roles);
+    }
+    void resetTo(int rows) { beginResetModel(); count = rows; endResetModel(); }
+};
+
+class TableFixture
+{
+public:
+    QQmlEngine engine;
+    QQmlComponent component{&engine};
+    std::unique_ptr<QObject> object;
+    TableView *table = nullptr;
+    TextGridBuffer buffer;
+    bool create(QObject *model, const QString &delegate, bool bound = true) {
+        const QString qml = (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString())
+            + QStringLiteral("import QtQml\nimport Qtui\nimport Qt.labs.qmlmodels\n"
+                "TableView { required property var inputModel; model: inputModel; width: 40; height: 8; "
+                "columns: [{title:'A',width:12},{title:'B',width:12},{title:'C',width:12}]; ")
+            + delegate + QStringLiteral(" }");
+        component.setData(qml.toUtf8(), QUrl());
+        if (!component.isReady()) return false;
+        object.reset(component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
+        table = qobject_cast<TableView *>(object.get());
+        if (!table || !buffer.resize(40, 8)) return false;
+        paint();
+        return true;
+    }
+    void paint() { buffer.clear(); testing::paintItem(table, buffer, 0, 0); }
+    QString line(int y) const {
+        QString result;
+        for (int x = 0; x < 40; ++x) result += QString::fromUtf8(buffer.cellAt(x, y).character());
+        return result;
+    }
+    QList<Item *> items() const { return table->childItems(); }
+};
+
+static const QString textDelegate = QStringLiteral(
+    "delegate: Text { required property string display; text: display }");
+
+class TestTableViewHardening : public QObject
+{
+    Q_OBJECT
+private slots:
+    void rolesAndViewport_data() {
+        QTest::addColumn<bool>("bound");
+        QTest::newRow("bound") << true;
+        QTest::newRow("unbound") << false;
+    }
+    void rolesAndViewport() {
+        QFETCH(bool, bound);
+        CountingTableList model;
+        TableFixture f;
+        QVERIFY2(f.create(&model, textDelegate, bound), qPrintable(f.component.errorString()));
+        const auto items = f.items();
+        QCOMPARE(items.size(), 24); // Six body rows plus two overscan, three columns.
+        QCOMPARE(f.line(2).count("old"), 3);
+        model.reads.clear();
+        model.first = QStringLiteral("new");
+        model.change(0, 0, {Qt::DisplayRole});
+        f.paint();
+        QCOMPARE(f.line(2).count("new"), 3);
+        QCOMPARE(model.reads.value(Qt::DisplayRole), 1); // Shared source column read once.
+        QCOMPARE(model.reads.value(CountingTableList::Detail), 0);
+        QCOMPARE(f.items(), items);
+        model.reads.clear();
+        model.change(0, model.count - 1, {Qt::DisplayRole});
+        f.paint();
+        QCOMPARE(model.reads.value(Qt::DisplayRole), 8);
+        QCOMPARE(model.reads.value(CountingTableList::Detail), 0);
+        QCOMPARE(f.items(), items);
+        model.reads.clear();
+        model.change(900'000, 999'999, {});
+        f.paint();
+        QVERIFY(model.reads.isEmpty());
+        QCOMPARE(f.items(), items);
+        f.table->setSelectedRow(1);
+        f.table->setCurrentColumn(2);
+        f.paint();
+        QVERIFY(model.reads.isEmpty());
+        model.change(0, 0, {});
+        f.paint();
+        QCOMPARE(model.reads.value(Qt::DisplayRole), 1);
+        QCOMPARE(model.reads.value(CountingTableList::Detail), 1);
+    }
+
+    void chooserChanges() {
+        CountingTableList model;
+        model.count = 1;
+        TableFixture f;
+        QVERIFY2(f.create(&model, QStringLiteral(R"(
+            delegate: DelegateChooser {
+                role: "kind"
+                DelegateChoice { roleValue: 0; delegate: Text {
+                    required property string display; text: "A:" + display
+                } }
+                DelegateChoice { roleValue: 1; delegate: Text {
+                    required property string display; text: "B:" + display
+                } }
+            }
+        )")), qPrintable(f.component.errorString()));
+        QCOMPARE(f.line(2).count("A:old"), 3);
+        QPointer<Item> original = f.items().first();
+        model.kind = 1;
+        model.change(0, 0, {CountingTableList::Kind});
+        f.paint();
+        QVERIFY(original.isNull());
+        QCOMPARE(f.line(2).count("B:old"), 3);
+        model.kind = 2;
+        model.change(0, 0, {CountingTableList::Kind});
+        f.paint();
+        QVERIFY(f.items().isEmpty());
+        QVERIFY(f.line(2).trimmed().isEmpty());
+        model.kind = 0;
+        model.change(0, 0, {CountingTableList::Kind});
+        f.paint();
+        QCOMPARE(f.line(2).count("A:old"), 3);
+    }
+
+    void proxySelectionAndIdentity() {
+        QStandardItemModel source;
+        for (const QString &label : {"charlie", "alpha", "bravo"})
+            source.appendRow(new QStandardItem(label));
+        QSortFilterProxyModel proxy;
+        proxy.setSourceModel(&source);
+        proxy.sort(0);
+        TableFixture f;
+        QVERIFY2(f.create(&proxy, textDelegate), qPrintable(f.component.errorString()));
+        QVERIFY(f.line(2).contains("alpha"));
+        f.table->setSelectedRow(0);
+        f.paint();
+        const auto items = f.items();
+        QSet<Item *> before(items.cbegin(), items.cend());
+        proxy.sort(0, Qt::DescendingOrder);
+        QCOMPARE(f.table->selectedRow(), 2);
+        f.paint();
+        const auto reordered = f.items();
+        QCOMPARE(QSet<Item *>(reordered.cbegin(), reordered.cend()), before);
+        QVERIFY(f.line(4).contains("alpha"));
+        QSignalSpy activated(f.table, &TableView::rowActivated);
+        KeyEvent enter(Qt::Key_Return, QString());
+        f.table->keyPressEvent(&enter);
+        QCOMPARE(activated.size(), 1);
+        QCOMPARE(proxy.mapToSource(proxy.index(activated.first().first().toInt(), 0)).row(), 1);
+        source.setData(source.index(1, 0), "zulu");
+        f.paint();
+        QCOMPARE(f.table->selectedRow(), 0);
+        QVERIFY(f.line(2).contains("zulu"));
+        proxy.setFilterFixedString("bravo");
+        QCOMPARE(f.table->selectedRow(), -1);
+        f.paint();
+        QVERIFY(f.line(2).contains("bravo"));
+        proxy.setFilterFixedString(QString());
+        QCOMPARE(f.table->selectedRow(), -1);
+        f.table->keyPressEvent(&enter);
+        QCOMPARE(activated.size(), 1);
+        f.table->setSelectedRow(0);
+        source.removeRow(proxy.mapToSource(proxy.index(0, 0)).row());
+        QCOMPARE(f.table->selectedRow(), -1);
+    }
+
+    void resetReplacementAndDestruction() {
+        auto model = std::make_unique<CountingTableList>();
+        TableFixture f;
+        QVERIFY(f.create(model.get(), textDelegate));
+        f.table->setSelectedRow(99);
+        QSignalSpy selection(f.table, &TableView::selectedRowChanged);
+        model->resetTo(2);
+        QCOMPARE(f.table->selectedRow(), 1);
+        QCOMPARE(selection.size(), 1);
+        // Reset without changing count keeps selection
+        model->resetTo(2);
+        QCOMPARE(f.table->selectedRow(), 1);
+        QCOMPARE(selection.size(), 1);
+        // Reset to 0 clears selection
+        model->resetTo(0);
+        QCOMPARE(f.table->selectedRow(), -1);
+        QCOMPARE(selection.size(), 2);
+        model->resetTo(5);
+        f.table->setSelectedRow(1);
+        model.reset();
+        QCOMPARE(f.table->selectedRow(), -1);
+        f.paint();
+        QVERIFY(f.items().isEmpty());
+        f.table->setDelegate(nullptr);
+        f.table->setModel(QVariantList{QVariantList{"z"}, QVariantList{"a"}});
+        f.table->setSelectedRow(1);
+        f.table->setModel(QVariantList{QVariantList{"z"}, QVariantList{"a"}});
+        QCOMPARE(f.table->selectedRow(), 1);
+        f.paint();
+        QVERIFY(f.line(2).startsWith("z"));
+        QVERIFY(f.line(3).startsWith("a"));
+        QVERIFY(f.table->metaObject()->indexOfProperty("sortColumn") < 0);
+    }
+
+    void mouseAndPageNavigation() {
+        CountingTableList model;
+        TableFixture f;
+        QVERIFY(f.create(&model, textDelegate));
+        QSignalSpy headers(f.table, &TableView::headerClicked);
+        MouseEvent header(MouseEvent::Type::Press, 15, 0, 0);
+        f.table->mousePressEvent(&header);
+        QCOMPARE(headers.size(), 1);
+        QCOMPARE(headers.first().first().toInt(), 1);
+        MouseEvent divider(MouseEvent::Type::Press, 15, 1, 0);
+        f.table->mousePressEvent(&divider);
+        QCOMPARE(headers.size(), 1);
+        MouseEvent right(MouseEvent::Type::Press, 15, 0, 2);
+        f.table->mousePressEvent(&right);
+        QCOMPARE(headers.size(), 1);
+        MouseEvent body(MouseEvent::Type::Press, 15, 2, 0);
+        f.table->mousePressEvent(&body);
+        QCOMPARE(f.table->selectedRow(), 0);
+        QCOMPARE(f.table->currentColumn(), 1);
+        KeyEvent page(Qt::Key_PageDown, QString());
+        f.table->keyPressEvent(&page);
+        QCOMPARE(f.table->selectedRow(), 6);
+    }
+
+    void geometryCacheAndVisibility() {
+        CountingTableList model;
+        TableFixture f;
+        QVERIFY(f.create(&model, textDelegate));
+        f.engine.globalObject().setProperty("widthCalls", 0);
+        f.engine.globalObject().setProperty("cellWidth", 12);
+        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { ++widthCalls; return c === 1 ? 0 : cellWidth; })"));
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("widthCalls").toInt(), 3);
+        QCOMPARE(f.items().size(), 16);
+        QVERIFY(f.line(0).startsWith("A           C"));
+        f.table->setSelectedRow(1);
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("widthCalls").toInt(), 3);
+        const auto before = f.items();
+        f.table->setColumns(f.table->columns());
+        f.paint();
+        QCOMPARE(f.items(), before);
+        f.engine.globalObject().setProperty("cellWidth", 8);
+        f.table->forceLayout();
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("widthCalls").toInt(), 6);
+        QVERIFY(f.line(0).startsWith("A       C"));
+        QCOMPARE(f.items(), before);
+        f.table->setHeight(1);
+        f.paint();
+        QVERIFY(f.items().isEmpty());
+        f.table->setHeight(8);
+        f.table->setColumnWidthProvider(QJSValue());
+        f.table->setDelegate(nullptr);
+        f.table->setColumns({QVariantMap{{"title", "wide"}, {"width", (std::numeric_limits<int>::max)()}}});
+        f.paint();
+        QVERIFY(f.line(0).startsWith("wide"));
+    }
+
+    void callbacksAndFallback() {
+        CountingTableList model;
+        TableFixture f;
+        QVERIFY(f.create(&model, QString()));
+        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { return c === 0 ? -1 : undefined; })"));
+        f.paint();
+        QVERIFY(f.line(0).startsWith("A           B"));
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*columnWidthProvider: Error: width-failure.*", QRegularExpression::DotMatchesEverythingOption));
+        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { throw new Error('width-failure'); })"));
+        f.paint();
+        f.table->forceLayout();
+        f.paint(); // No repeat of the same exception.
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*cellFormat: Error: format-failure.*", QRegularExpression::DotMatchesEverythingOption));
+        f.table->setCellFormat(f.engine.evaluate("(function(r,c,v) { throw new Error('format-failure'); })"));
+        f.paint();
+        f.paint();
+        QVERIFY(f.line(2).contains("old"));
+        f.table->setColumnWidthProvider(QJSValue());
+        f.table->setColumns({QVariantMap{{"title", "bad"}, {"width", -3}}});
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*Invalid TableView column width; using 12.*"));
+        f.paint();
+        QVERIFY(f.line(0).startsWith("bad"));
+    }
+
+    void rowDelegateUpdates() {
+        CountingTableList model;
+        model.count = 2;
+        TableFixture f;
+        QVERIFY2(f.create(&model, QStringLiteral("rowDelegate: Text { required property string display; text: display }")),
+            qPrintable(f.component.errorString()));
+        const auto before = f.items();
+        model.first = "changed";
+        model.change(0, 0, {Qt::DisplayRole});
+        f.paint();
+        QVERIFY(f.line(2).startsWith("changed"));
+        QCOMPARE(f.items(), before);
+    }
+};
+
+QTEST_MAIN(TestTableViewHardening)
+#include "test_table_view_hardening.moc"

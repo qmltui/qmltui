@@ -21,6 +21,7 @@ add_qtui_test(test_focus Core/test_focus.cpp)
 add_qtui_test(test_text_input Core/test_text_input.cpp)
 add_qtui_test(test_scroll_view Core/test_scroll_view.cpp)
 add_qtui_test(test_views_virtualization Core/test_views_virtualization.cpp)
+add_qtui_test(test_table_view_hardening Core/test_table_view_hardening.cpp)
 add_qtui_test(test_terminal_framework Core/test_terminal_framework.cpp)
 add_qtui_test(test_input_router Core/test_input_router.cpp)
 add_qtui_test(test_unicode_text Core/test_unicode_text.cpp)
@@ -366,6 +367,9 @@ if(QTUI_BUILD_TERMINAL_HOST)
 endif()
 
 if(QTUI_BUILD_BENCHMARKS)
+    add_executable(benchmark_table_view Core/benchmark_table_view.cpp)
+    target_link_libraries(benchmark_table_view PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
+
     add_executable(benchmark_views Core/benchmark_views.cpp)
     target_link_libraries(benchmark_views PRIVATE
         Qt6::Core Qt6::Qml Qtui::Core Qtui::Extras Qtui::Canvas)

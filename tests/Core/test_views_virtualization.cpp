@@ -41,6 +41,7 @@ class TestViewsVirtualization : public QObject {
 private slots:
     void testListViewPooling();
     void testTableView2DVirtualization();
+    void testTableViewDelegateChooser();
 };
 
 void TestViewsVirtualization::testListViewPooling() {
@@ -120,6 +121,65 @@ void TestViewsVirtualization::testTableView2DVirtualization() {
     // For 5000 rows x 5 columns (25,000 total cells), only visible viewport delegates (max 14 rows x 5 cols = 70) are created!
     const int childCount = tableView->findChildren<Item*>().size();
     QVERIFY(childCount > 0 && childCount <= 70);
+}
+
+void TestViewsVirtualization::testTableViewDelegateChooser() {
+    QQmlEngine engine;
+    TestCountModel model(100);
+    engine.rootContext()->setContextProperty("testModel", &model);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+        import QtQml.Models
+        import Qt.labs.qmlmodels
+
+        TableView {
+            width: 80
+            height: 10
+            model: testModel
+            columns: [
+                { title: "Col0", width: 20 },
+                { title: "Col1", width: 20 }
+            ]
+            delegate: DelegateChooser {
+                DelegateChoice {
+                    column: 0
+                    delegate: Text {
+                        required property string display
+                        text: "Col0:" + display
+                    }
+                }
+                DelegateChoice {
+                    column: 1
+                    delegate: Text {
+                        required property string display
+                        text: "Col1:" + display
+                    }
+                }
+            }
+        }
+    )", QUrl());
+
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto *tableView = qobject_cast<TableView*>(object.get());
+    QVERIFY(tableView != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(80, 10);
+    paintItem(tableView, buffer, 0, 0);
+
+    QVERIFY(tableView->childItems().size() > 0);
+
+    // Check that column 0 and column 1 rendered using their respective DelegateChoice delegates
+    // Header is row 0, divider is row 1, first data row is row 2
+    QString rowText;
+    for (int x = 0; x < 40; ++x) {
+        rowText.append(QString::fromUtf8(buffer.cellAt(x, 2).character()));
+    }
+    QVERIFY(rowText.contains("Col0:Item 0"));
+    QVERIFY(rowText.contains("Col1:Item 0"));
 }
 
 QTEST_MAIN(TestViewsVirtualization)

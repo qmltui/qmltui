@@ -123,12 +123,12 @@ Popup {
             spacing: 2
 
             Button {
-                label: "[Enter] Apply"
+                text: "[Enter] Apply"
                 focusColor: Theme.bgActiveTab
                 onClicked: control.applyNow()
             }
             Button {
-                label: "[Esc] Cancel"
+                text: "[Esc] Cancel"
                 onClicked: control.close()
             }
         }

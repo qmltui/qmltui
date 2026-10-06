@@ -39,7 +39,7 @@ Developers use `PowerUp` to render falling power-up item delegates.
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 
 PowerUp {

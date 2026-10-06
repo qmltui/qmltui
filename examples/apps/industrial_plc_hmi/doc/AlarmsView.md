@@ -41,7 +41,7 @@ Developers use `AlarmsView` as the main audit log screen for machine operators.
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 import IndustrialPlcHmi 1.0
 

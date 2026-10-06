@@ -1,5 +1,5 @@
 import Qtui.Extras
-import QtQml 2.15
+import QtQml
 import Qtui
 
 import Qtui.Controls
@@ -32,22 +32,22 @@ Terminal {
             spacing: 2
 
             Button {
-                label: "Info"
+                text: "Info"
                 onClicked: toastMgr.showToast("System Info", "Background sync in progress", "info", 3000)
             }
 
             Button {
-                label: "Success"
+                text: "Success"
                 onClicked: toastMgr.showToast("Success", "Build completed cleanly!", "success", 3000)
             }
 
             Button {
-                label: "Warning"
+                text: "Warning"
                 onClicked: toastMgr.showToast("Warning", "High memory usage detected", "warning", 3000)
             }
 
             Button {
-                label: "Error"
+                text: "Error"
                 onClicked: toastMgr.showToast("Connection Error", "Failed to reach backend", "error", 3000)
             }
         }

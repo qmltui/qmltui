@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 import Qtui.TerminalHost
@@ -338,7 +338,7 @@ Terminal {
                     spacing: 1
 
                     Button {
-                        label: "[ Focus T1 ]"
+                        text: "[ Focus T1 ]"
                         normalBorderColor: terminal1.activeFocus ? "#89dceb" : "gray"
                         onClicked: {
                             terminal1.focus = true
@@ -348,7 +348,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ Focus T2 ]"
+                        text: "[ Focus T2 ]"
                         normalBorderColor: terminal2.activeFocus ? "#a6e3a1" : "gray"
                         onClicked: {
                             terminal2.focus = true
@@ -358,7 +358,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ T1 ➔ T2 ]"
+                        text: "[ T1 ➔ T2 ]"
                         normalBorderColor: "#89dceb"
                         onClicked: {
                             terminal2.sendText("echo 'Data payload from Terminal 1 -> Terminal 2'\n")
@@ -367,7 +367,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ T2 ➔ T1 ]"
+                        text: "[ T2 ➔ T1 ]"
                         normalBorderColor: "#a6e3a1"
                         onClicked: {
                             terminal1.sendText("echo 'Data payload from Terminal 2 -> Terminal 1'\n")
@@ -376,7 +376,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ Pipe T1 Env -> T2 ]"
+                        text: "[ Pipe T1 Env -> T2 ]"
                         normalBorderColor: "#cba6f7"
                         onClicked: {
                             terminal1.sendText("echo '=== T1 Environment ==='; env | head -n 3\n")
@@ -386,7 +386,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ Sync PWD ]"
+                        text: "[ Sync PWD ]"
                         normalBorderColor: "#f9e2af"
                         onClicked: {
                             terminal1.sendText("pwd\n")
@@ -396,7 +396,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ Clear Both ]"
+                        text: "[ Clear Both ]"
                         normalBorderColor: "#f38ba8"
                         onClicked: {
                             terminal1.clearScrollback()
@@ -473,7 +473,7 @@ Terminal {
                     }
 
                     Button {
-                        label: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
+                        text: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
                         normalBorderColor: root.commandTarget === 0 ? "#89dceb" : "gray"
                         onClicked: {
                             root.commandTarget = 0
@@ -482,7 +482,7 @@ Terminal {
                     }
 
                     Button {
-                        label: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
+                        text: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
                         normalBorderColor: root.commandTarget === 1 ? "#a6e3a1" : "gray"
                         onClicked: {
                             root.commandTarget = 1
@@ -491,7 +491,7 @@ Terminal {
                     }
 
                     Button {
-                        label: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
+                        text: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
                         normalBorderColor: root.commandTarget === 2 ? "#cba6f7" : "gray"
                         onClicked: {
                             root.commandTarget = 2
@@ -500,7 +500,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "[ Dispatch ➔ ]"
+                        text: "[ Dispatch ➔ ]"
                         normalBorderColor: "#f9e2af"
                         onClicked: {
                             root.dispatchCommand()

@@ -50,13 +50,13 @@ Popup {
 
             Button {
                 id: acceptButton
-                label: control.acceptText
+                text: control.acceptText
                 onClicked: control.accept()
             }
 
             Button {
                 visible: control.showRejectButton
-                label: control.rejectText
+                text: control.rejectText
                 onClicked: control.reject()
             }
         }

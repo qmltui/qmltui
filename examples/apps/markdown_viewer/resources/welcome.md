@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 ### Declarative QML Component
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Examples.MarkdownViewer 1.0
 

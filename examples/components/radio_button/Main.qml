@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -31,20 +31,20 @@ Terminal {
 
         RadioButton {
             id: r1
-            label: "Debug Build"
+            text: "Debug Build"
             checked: true
             onToggled: (val) => statusText.text = "Selected Debug Build"
         }
 
         RadioButton {
             id: r2
-            label: "Release Build"
+            text: "Release Build"
             onToggled: (val) => statusText.text = "Selected Release Build"
         }
 
         RadioButton {
             id: r3
-            label: "MinSizeRel Build"
+            text: "MinSizeRel Build"
             onToggled: (val) => statusText.text = "Selected MinSizeRel Build"
         }
 

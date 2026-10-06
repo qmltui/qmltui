@@ -39,7 +39,7 @@ Developers use `Explosion` to render temporary impact effects.
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 
 Explosion {

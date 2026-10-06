@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -25,7 +25,7 @@ Terminal {
 
         Button {
             id: helpBtn
-            label: "[ Hover or Focus for ToolTip ]"
+            text: "[ Hover or Focus for ToolTip ]"
             ToolTip.text: "This is an attached ToolTip message!"
             ToolTip.visible: true
         }

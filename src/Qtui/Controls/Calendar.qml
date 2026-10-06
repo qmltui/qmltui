@@ -160,7 +160,7 @@ Rectangle {
             spacing: 1
 
             Button {
-                label: "<<"
+                text: "<<"
                 implicitWidth: 4
                 implicitHeight: 1
                 border.style: "none"
@@ -168,7 +168,7 @@ Rectangle {
             }
 
             Button {
-                label: "<"
+                text: "<"
                 implicitWidth: 3
                 implicitHeight: 1
                 border.style: "none"
@@ -184,7 +184,7 @@ Rectangle {
             }
 
             Button {
-                label: ">"
+                text: ">"
                 implicitWidth: 3
                 implicitHeight: 1
                 border.style: "none"
@@ -192,7 +192,7 @@ Rectangle {
             }
 
             Button {
-                label: ">>"
+                text: ">>"
                 implicitWidth: 4
                 implicitHeight: 1
                 border.style: "none"

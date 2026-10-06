@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import QtQml.Models 2.15
 import Qtui
 import Qtui.Canvas

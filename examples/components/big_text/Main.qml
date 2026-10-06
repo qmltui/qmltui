@@ -1,5 +1,5 @@
 import Qtui.Extras
-import QtQml 2.15
+import QtQml
 import Qtui
 
 

@@ -3,7 +3,7 @@ import Qtui
 
 Rectangle {
     id: control
-    property string label: ""
+    property string text: ""
     property bool pressed: false
     property string textColor: "white"
     property string normalColor: "transparent"
@@ -17,7 +17,7 @@ Rectangle {
     signal clicked()
 
     focusable: enabled
-    implicitWidth: labelText.implicitWidth + 4
+    implicitWidth: btnText.implicitWidth + 4
     implicitHeight: 3
     
     color: activeFocus ? focusColor : normalColor
@@ -25,9 +25,9 @@ Rectangle {
     border.color: !enabled ? disabledBorderColor : (activeFocus ? focusBorderColor : normalBorderColor)
     
     Text {
-        id: labelText
+        id: btnText
         anchors.centerIn: parent
-        text: control.label
+        text: control.text
         color: control.enabled ? control.textColor : control.disabledTextColor
     }
 

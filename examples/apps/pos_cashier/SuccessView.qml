@@ -51,21 +51,21 @@ Item {
             Row {
                 spacing: 1
                 Button {
-                    label: "🖨️ PRINT"
+                    text: "🖨️ PRINT"
                     normalColor: "#1c2b3c"
                     textColor: "#D4E4FA"
                     normalBorderStyle: "single"
                     onClicked: root.receiptOptionClicked("PRINT")
                 }
                 Button {
-                    label: "✉️ EMAIL"
+                    text: "✉️ EMAIL"
                     normalColor: "#1c2b3c"
                     textColor: "#D4E4FA"
                     normalBorderStyle: "single"
                     onClicked: root.receiptOptionClicked("EMAIL")
                 }
                 Button {
-                    label: "💬 SMS"
+                    text: "💬 SMS"
                     normalColor: "#1c2b3c"
                     textColor: "#D4E4FA"
                     normalBorderStyle: "single"
@@ -76,7 +76,7 @@ Item {
             Text { text: "──────────────────────────────────────────────────────────"; color: "#273647" }
 
             Button {
-                label: "[ENTER] START NEW SALE"
+                text: "[ENTER] START NEW SALE"
                 normalColor: "#06BB63"
                 textColor: "#051424"
                 normalBorderStyle: "single"

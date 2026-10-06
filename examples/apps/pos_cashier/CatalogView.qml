@@ -47,28 +47,28 @@ Item {
                 spacing: 1
 
                 Button {
-                    label: root.currentCategory === "ALL" ? "[ ALL ]" : "  ALL  "
+                    text: root.currentCategory === "ALL" ? "[ ALL ]" : "  ALL  "
                     normalColor: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "ALL" ? "#051424" : "#D4E4FA"
                     normalBorderStyle: "single"
                     onClicked: root.categorySelected("ALL")
                 }
                 Button {
-                    label: root.currentCategory === "COFFEE" ? "[ COFFEE ]" : " COFFEE "
+                    text: root.currentCategory === "COFFEE" ? "[ COFFEE ]" : " COFFEE "
                     normalColor: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "COFFEE" ? "#051424" : "#D4E4FA"
                     normalBorderStyle: "single"
                     onClicked: root.categorySelected("COFFEE")
                 }
                 Button {
-                    label: root.currentCategory === "PASTRIES" ? "[ PASTRIES ]" : " PASTRIES "
+                    text: root.currentCategory === "PASTRIES" ? "[ PASTRIES ]" : " PASTRIES "
                     normalColor: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "PASTRIES" ? "#051424" : "#D4E4FA"
                     normalBorderStyle: "single"
                     onClicked: root.categorySelected("PASTRIES")
                 }
                 Button {
-                    label: root.currentCategory === "TEA" ? "[ TEA ]" : " TEA "
+                    text: root.currentCategory === "TEA" ? "[ TEA ]" : " TEA "
                     normalColor: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "TEA" ? "#051424" : "#D4E4FA"
                     normalBorderStyle: "single"
@@ -129,7 +129,7 @@ Item {
                         Button {
                             height: 1
                             width: parent ? Math.floor(parent.width * 0.22) : 0
-                            label: "+ ADD"
+                            text: "+ ADD"
                             normalColor: "#1c2b3c"
                             textColor: "#4AE183"
                             normalBorderStyle: "none"
@@ -186,14 +186,14 @@ Item {
                 Row {
                     spacing: 1
                     Button {
-                        label: "[F12] PAY NOW"
+                        text: "[F12] PAY NOW"
                         normalColor: "#06BB63"
                         textColor: "#051424"
                         normalBorderStyle: "single"
                         onClicked: root.checkoutRequested()
                     }
                     Button {
-                        label: "[F4] VIEW CART"
+                        text: "[F4] VIEW CART"
                         normalColor: "#1c2b3c"
                         textColor: "#D4E4FA"
                         normalBorderStyle: "single"

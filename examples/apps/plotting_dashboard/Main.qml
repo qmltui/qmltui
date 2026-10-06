@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Qtui.Canvas
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -233,7 +233,7 @@ Terminal {
                     focusBorderStyle: "single"
                     normalColor: "#21252b"
                     focusColor: "#3a3f4b"
-                    label: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
+                    text: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
                     onClicked: rootWindow.paused = !rootWindow.paused
                 }
 
@@ -245,7 +245,7 @@ Terminal {
                     focusBorderStyle: "single"
                     normalColor: "#21252b"
                     focusColor: "#3a3f4b"
-                    label: "WAVE: " + rootWindow.waveType.toUpperCase()
+                    text: "WAVE: " + rootWindow.waveType.toUpperCase()
                     onClicked: rootWindow.cycleWaveType()
                 }
 
@@ -261,7 +261,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "FREQ -"
+                        text: "FREQ -"
                         onClicked: rootWindow.frequency = Math.max(0.5, rootWindow.frequency - 0.5)
                     }
                     Button {
@@ -271,7 +271,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "FREQ +"
+                        text: "FREQ +"
                         onClicked: rootWindow.frequency = Math.min(10.0, rootWindow.frequency + 0.5)
                     }
                 }
@@ -284,7 +284,7 @@ Terminal {
                     focusBorderStyle: "single"
                     normalColor: "#21252b"
                     focusColor: "#3a3f4b"
-                    label: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
+                    text: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
                     onClicked: rootWindow.cycleNoise()
                 }
 
@@ -315,7 +315,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "X-FREQ -"
+                        text: "X-FREQ -"
                         onClicked: rootWindow.freqA = Math.max(1, rootWindow.freqA - 1)
                     }
                     Button {
@@ -325,7 +325,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "X-FREQ +"
+                        text: "X-FREQ +"
                         onClicked: rootWindow.freqA = Math.min(12, rootWindow.freqA + 1)
                     }
                 }
@@ -342,7 +342,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "Y-FREQ -"
+                        text: "Y-FREQ -"
                         onClicked: rootWindow.freqB = Math.max(1, rootWindow.freqB - 1)
                     }
                     Button {
@@ -352,7 +352,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#21252b"
                         focusColor: "#3a3f4b"
-                        label: "Y-FREQ +"
+                        text: "Y-FREQ +"
                         onClicked: rootWindow.freqB = Math.min(12, rootWindow.freqB + 1)
                     }
                 }

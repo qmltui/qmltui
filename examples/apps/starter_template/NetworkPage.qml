@@ -220,7 +220,7 @@ Rectangle {
                 spacing: 2
 
                 Button {
-                    label: WifiManager.scanning ? "Scanning..." : "[R] Rescan Now"
+                    text: WifiManager.scanning ? "Scanning..." : "[R] Rescan Now"
                     textColor: Theme.textPrimary
                     normalBorderColor: Theme.borderNormal
                     focusBorderColor: Theme.qtGreen
@@ -231,7 +231,7 @@ Rectangle {
                 }
 
                 Button {
-                    label: "[Enter] Connect"
+                    text: "[Enter] Connect"
                     textColor: Theme.qtGreen
                     normalBorderColor: Theme.qtGreen
                     focusBorderColor: Theme.qtGreen
@@ -314,7 +314,7 @@ Rectangle {
                     spacing: 2
 
                     Button {
-                        label: page.isConnecting ? "Connecting..." : Theme.check + " Connect [Enter]"
+                        text: page.isConnecting ? "Connecting..." : Theme.check + " Connect [Enter]"
                         textColor: Theme.qtGreen
                         normalBorderColor: Theme.qtGreen
                         focusBorderColor: Theme.qtGreen
@@ -607,7 +607,7 @@ Rectangle {
                     spacing: 2
 
                     Button {
-                        label: Theme.cross + " Disconnect & Switch Network"
+                        text: Theme.cross + " Disconnect & Switch Network"
                         textColor: Theme.statusError
                         normalBorderColor: Theme.statusError
                         focusBorderColor: Theme.statusError

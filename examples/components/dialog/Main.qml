@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -24,7 +24,7 @@ Terminal {
         Text { text: "──────────────────────────────────────────"; color: "gray" }
 
         Button {
-            label: "[ Open Dialog ]"
+            text: "[ Open Dialog ]"
             onClicked: confirmDlg.open()
         }
 

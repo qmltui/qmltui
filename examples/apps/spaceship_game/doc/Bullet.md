@@ -40,7 +40,7 @@ Developers use `Bullet` as an entity delegate inside game loops or repeater mode
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 
 Bullet {

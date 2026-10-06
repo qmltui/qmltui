@@ -48,7 +48,7 @@ Developers use `Gauge` in monitoring dashboards to display live sensor values li
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 import IndustrialPlcHmi 1.0
 

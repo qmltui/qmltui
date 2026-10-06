@@ -75,7 +75,7 @@ Developers use `HmiTheme` across the PLC HMI application to enforce a consistent
 ## 8. Usage Example
 
 ```qml
-import QtQml 2.15
+import QtQml
 import Qtui
 import IndustrialPlcHmi 1.0
 

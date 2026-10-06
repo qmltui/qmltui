@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 
-import QtQml 2.15
+import QtQml
 import Qtui
 import DinGatewayApp
 

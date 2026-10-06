@@ -73,7 +73,7 @@ Item {
                             width: parent ? Math.floor(parent.width * 0.34) : 0
                             spacing: 1
                             Button {
-                                label: "-"
+                                text: "-"
                                 normalColor: "#1c2b3c"
                                 textColor: "#FFB961"
                                 normalBorderStyle: "none"
@@ -88,7 +88,7 @@ Item {
                                 bold: true
                             }
                             Button {
-                                label: "+"
+                                text: "+"
                                 normalColor: "#1c2b3c"
                                 textColor: "#4AE183"
                                 normalBorderStyle: "none"
@@ -114,14 +114,14 @@ Item {
                 Row {
                     spacing: 2
                     Button {
-                        label: "[F1] CLEAR SALE"
+                        text: "[F1] CLEAR SALE"
                         normalColor: "#800000"
                         textColor: "#FFFFFF"
                         normalBorderStyle: "single"
                         onClicked: root.clearCartRequested()
                     }
                     Button {
-                        label: root.discountRate > 0 ? "[✓ 10% DISC]" : "[F2] 10% DISC"
+                        text: root.discountRate > 0 ? "[✓ 10% DISC]" : "[F2] 10% DISC"
                         normalColor: root.discountRate > 0 ? "#FFB961" : "#1c2b3c"
                         textColor: root.discountRate > 0 ? "#051424" : "#D4E4FA"
                         normalBorderStyle: "single"

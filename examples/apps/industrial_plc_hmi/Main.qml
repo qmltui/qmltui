@@ -698,7 +698,7 @@ Terminal {
                             Button {
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
-                                label: "[S] START"
+                                text: "[S] START"
                                 normalColor: "#1e3a1e"
                                 focusColor: "#2e5a2e"
                                 textColor: HmiTheme.textSuccess
@@ -707,7 +707,7 @@ Terminal {
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
-                                label: "[X] STOP"
+                                text: "[X] STOP"
                                 normalColor: "#3a1e1e"
                                 focusColor: "#5a2e2e"
                                 textColor: HmiTheme.textDanger
@@ -722,7 +722,7 @@ Terminal {
                             Button {
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
-                                label: "[R] RESET"
+                                text: "[R] RESET"
                                 normalColor: "#3a301e"
                                 focusColor: "#5a482e"
                                 textColor: HmiTheme.textWarning
@@ -731,7 +731,7 @@ Terminal {
                             Button {
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
-                                label: "[M] MAINT"
+                                text: "[M] MAINT"
                                 normalColor: "#21252b"
                                 focusColor: "#2c313a"
                                 textColor: HmiTheme.textHighlight

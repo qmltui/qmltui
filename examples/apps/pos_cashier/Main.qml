@@ -241,7 +241,7 @@ Terminal {
             x: 1; y: 1; spacing: 2
             Text { text: qsTr("👤 %1  📶 ONLINE  🕒 09:41 AM").arg(rootWindow.cashierName); color: "#D4E4FA" }
             Button {
-                label: rootWindow.state === "catalog" ? "[ 1 CATALOG ]" : " 1 CATALOG "
+                text: rootWindow.state === "catalog" ? "[ 1 CATALOG ]" : " 1 CATALOG "
                 normalColor: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "catalog" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "catalog" ? "double" : "single"
@@ -251,7 +251,7 @@ Terminal {
                 }
             }
             Button {
-                label: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(rootWindow.getItemCount()) : qsTr(" 2 CART (%1) ").arg(rootWindow.getItemCount())
+                text: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(rootWindow.getItemCount()) : qsTr(" 2 CART (%1) ").arg(rootWindow.getItemCount())
                 normalColor: rootWindow.state === "cart" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "cart" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "cart" ? "double" : "single"
@@ -261,7 +261,7 @@ Terminal {
                 }
             }
             Button {
-                label: rootWindow.state === "payment" ? "[ 3 PAYMENT ]" : " 3 PAYMENT "
+                text: rootWindow.state === "payment" ? "[ 3 PAYMENT ]" : " 3 PAYMENT "
                 normalColor: rootWindow.state === "payment" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "payment" ? "#051424" : "#D4E4FA"
                 normalBorderStyle: rootWindow.state === "payment" ? "double" : "single"
@@ -271,7 +271,7 @@ Terminal {
             }
             Button {
                 visible: rootWindow.state === "receipt"
-                label: "[ 4 RECEIPT ]"
+                text: "[ 4 RECEIPT ]"
                 normalColor: "#06BB63"
                 textColor: "#051424"
                 normalBorderStyle: "double"

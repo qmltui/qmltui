@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 import DinGatewayApp
@@ -22,7 +22,7 @@ Rectangle {
         Button {
             width: Math.max(18, Math.floor((parent.width - 3) / 4))
             height: 1
-            label: navRoot.currentTab === 0 ? "▶ [F1] 📊 Sensors (8)" : "  [F1] 📊 Sensors (8)"
+            text: navRoot.currentTab === 0 ? "▶ [F1] 📊 Sensors (8)" : "  [F1] 📊 Sensors (8)"
             normalColor: navRoot.currentTab === 0 ? GatewayTheme.bgActiveTab : "transparent"
             focusColor: GatewayTheme.borderFocus
             textColor: navRoot.currentTab === 0 ? GatewayTheme.textPrimary : GatewayTheme.textSecondary
@@ -32,7 +32,7 @@ Rectangle {
         Button {
             width: Math.max(20, Math.floor((parent.width - 3) / 4))
             height: 1
-            label: navRoot.currentTab === 1 ? "▶ [F2] 📡 Modbus/CAN" : "  [F2] 📡 Modbus/CAN"
+            text: navRoot.currentTab === 1 ? "▶ [F2] 📡 Modbus/CAN" : "  [F2] 📡 Modbus/CAN"
             normalColor: navRoot.currentTab === 1 ? GatewayTheme.bgActiveTab : "transparent"
             focusColor: GatewayTheme.borderFocus
             textColor: navRoot.currentTab === 1 ? GatewayTheme.textPrimary : GatewayTheme.textSecondary
@@ -42,7 +42,7 @@ Rectangle {
         Button {
             width: Math.max(20, Math.floor((parent.width - 3) / 4))
             height: 1
-            label: navRoot.currentTab === 2 ? "▶ [F3] 🌐 System/Net" : "  [F3] 🌐 System/Net"
+            text: navRoot.currentTab === 2 ? "▶ [F3] 🌐 System/Net" : "  [F3] 🌐 System/Net"
             normalColor: navRoot.currentTab === 2 ? GatewayTheme.bgActiveTab : "transparent"
             focusColor: GatewayTheme.borderFocus
             textColor: navRoot.currentTab === 2 ? GatewayTheme.textPrimary : GatewayTheme.textSecondary
@@ -52,7 +52,7 @@ Rectangle {
         Button {
             width: Math.max(18, Math.floor((parent.width - 3) / 4))
             height: 1
-            label: navRoot.currentTab === 3 ? "▶ [F4] ⚙ Config" : "  [F4] ⚙ Config"
+            text: navRoot.currentTab === 3 ? "▶ [F4] ⚙ Config" : "  [F4] ⚙ Config"
             normalColor: navRoot.currentTab === 3 ? GatewayTheme.bgActiveTab : "transparent"
             focusColor: GatewayTheme.borderFocus
             textColor: navRoot.currentTab === 3 ? GatewayTheme.textPrimary : GatewayTheme.textSecondary

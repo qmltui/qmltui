@@ -615,7 +615,7 @@ Terminal {
                         }
 
                         Button {
-                            label: "[Go]"
+                            text: "[Go]"
                             implicitWidth: 6
                             implicitHeight: 1
                             onClicked: {
@@ -632,21 +632,21 @@ Terminal {
                         spacing: 1
 
                         Button {
-                            label: "[< " + (root.currentYear - 1) + "]"
+                            text: "[< " + (root.currentYear - 1) + "]"
                             implicitWidth: 9
                             implicitHeight: 1
                             onClicked: root.prevYear()
                         }
 
                         Button {
-                            label: "[ Today ]"
+                            text: "[ Today ]"
                             implicitWidth: 9
                             implicitHeight: 1
                             onClicked: root.goToToday()
                         }
 
                         Button {
-                            label: "[" + (root.currentYear + 1) + " >]"
+                            text: "[" + (root.currentYear + 1) + " >]"
                             implicitWidth: 9
                             implicitHeight: 1
                             onClicked: root.nextYear()
@@ -755,7 +755,7 @@ Terminal {
                         }
 
                         Button {
-                            label: "[Add]"
+                            text: "[Add]"
                             implicitWidth: 7
                             implicitHeight: 1
                             onClicked: {
@@ -797,7 +797,7 @@ Terminal {
                                     }
 
                                     Button {
-                                        label: "[x]"
+                                        text: "[x]"
                                         implicitWidth: 3
                                         implicitHeight: 1
                                         onClicked: root.deleteNote(root.formatDateKey(root.selectedDate), index)

@@ -2,7 +2,7 @@ import Qtui.Extras
 import Qtui.Controls
 pragma ComponentBehavior: Bound
 
-import QtQml 2.15
+import QtQml
 import Qtui
 
 Terminal {
@@ -420,7 +420,7 @@ Terminal {
                     focusBorderStyle: "single"
                     normalColor: "#1d212a"
                     focusColor: "#323947"
-                    label: rootWindow.running ? "⏸ PAUSE MONITOR" : "▶ RESUME MONITOR"
+                    text: rootWindow.running ? "⏸ PAUSE MONITOR" : "▶ RESUME MONITOR"
                     onClicked: rootWindow.running = !rootWindow.running
                 }
 
@@ -435,7 +435,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#1d212a"
                         focusColor: "#323947"
-                        label: "⚡ SPIKE [S]"
+                        text: "⚡ SPIKE [S]"
                         onClicked: {
                             rootWindow.loadSpikeTicks = 20;
                             rootWindow.addLog("WARN", "Manual load spike triggered");
@@ -448,7 +448,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#1d212a"
                         focusColor: "#323947"
-                        label: "🌊 MEM [L]"
+                        text: "🌊 MEM [L]"
                         onClicked: {
                             rootWindow.memSurgeTicks = 25;
                             rootWindow.addLog("WARN", "Memory surge triggered");
@@ -467,7 +467,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#1d212a"
                         focusColor: "#323947"
-                        label: "🚀 NET [N]"
+                        text: "🚀 NET [N]"
                         onClicked: {
                             rootWindow.netBurstTicks = 20;
                             rootWindow.addLog("INFO", "Traffic burst triggered");
@@ -480,7 +480,7 @@ Terminal {
                         focusBorderStyle: "single"
                         normalColor: "#1d212a"
                         focusColor: "#323947"
-                        label: "🔄 RESET [R]"
+                        text: "🔄 RESET [R]"
                         onClicked: rootWindow.resetAll()
                     }
                 }
@@ -492,7 +492,7 @@ Terminal {
                     focusBorderStyle: "single"
                     normalColor: "#1d212a"
                     focusColor: "#323947"
-                    label: "⏱️ INTERVAL: " + rootWindow.timerInterval + "ms"
+                    text: "⏱️ INTERVAL: " + rootWindow.timerInterval + "ms"
                     onClicked: rootWindow.cycleSpeed()
                 }
 

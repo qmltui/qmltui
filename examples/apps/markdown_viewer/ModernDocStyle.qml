@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui.Examples.MarkdownViewer 1.0
 
 MdDocStyle {

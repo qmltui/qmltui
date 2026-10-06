@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -167,7 +167,7 @@ Terminal {
                     }
 
                     Button {
-                        label: "Run Task"
+                        text: "Run Task"
                         onClicked: {
                             consoleResultText.text = "Result: Triggered task via '" + cmdInput.text + "'."
                         }

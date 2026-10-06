@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -24,19 +24,19 @@ Terminal {
         Text { text: "──────────────────────────────────────────"; color: "gray" }
 
         CheckBox {
-            label: "Enable Logging"
+            text: "Enable Logging"
             checked: true
             onToggled: (val) => statusText.text = "Logging: " + val
         }
 
         CheckBox {
-            label: "Show Hidden Files"
+            text: "Show Hidden Files"
             checked: false
             onToggled: (val) => statusText.text = "Show Hidden: " + val
         }
 
         CheckBox {
-            label: "Wrap Lines"
+            text: "Wrap Lines"
             checked: true
             onToggled: (val) => statusText.text = "Wrap Lines: " + val
         }

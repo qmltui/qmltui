@@ -55,12 +55,12 @@ Terminal {
             spacing: 2
 
             Button {
-                label: root.loaderActive ? qsTr("Unload [Space]") : qsTr("Load [Space]")
+                text: root.loaderActive ? qsTr("Unload [Space]") : qsTr("Load [Space]")
                 onClicked: root.loaderActive = !root.loaderActive
             }
 
             Button {
-                label: root.showExecution
+                text: root.showExecution
                     ? qsTr("Show discovery [S]")
                     : qsTr("Show execution [S]")
                 onClicked: root.showExecution = !root.showExecution
@@ -131,7 +131,7 @@ Terminal {
             Text { text: qsTr("Workspace: 4 packages, 7 targets") }
 
             CheckBox {
-                label: qsTr("Include optional features")
+                text: qsTr("Include optional features")
                 checked: true
             }
 
@@ -160,7 +160,7 @@ Terminal {
             Text { text: qsTr("cargo build --workspace") }
 
             Switch {
-                label: qsTr("Release mode")
+                text: qsTr("Release mode")
             }
 
             Text {

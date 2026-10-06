@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -24,19 +24,19 @@ Terminal {
         Text { text: "──────────────────────────────────────────"; color: "gray" }
 
         Switch {
-            label: "Dark Theme Mode"
+            text: "Dark Theme Mode"
             checked: true
             onToggled: (val) => statusText.text = "Dark Theme: " + (val ? "ON" : "OFF")
         }
 
         Switch {
-            label: "Vim Keybindings"
+            text: "Vim Keybindings"
             checked: false
             onToggled: (val) => statusText.text = "Vim Mode: " + (val ? "ON" : "OFF")
         }
 
         Switch {
-            label: "Telemetry Reporting"
+            text: "Telemetry Reporting"
             checked: true
             onToggled: (val) => statusText.text = "Telemetry: " + (val ? "ON" : "OFF")
         }

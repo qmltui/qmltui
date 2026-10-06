@@ -3,7 +3,7 @@ import Qtui
 
 Rectangle {
     id: control
-    property string label: ""
+    property string text: ""
     property bool checked: false
     property string textColor: "white"
     property string onColor: "green"
@@ -27,8 +27,8 @@ Rectangle {
         }
 
         Text {
-            visible: control.label !== ""
-            text: control.label
+            visible: control.text !== ""
+            text: control.text
             color: !control.enabled ? "gray" : (control.activeFocus ? control.focusColor : control.textColor)
             bold: control.activeFocus
         }

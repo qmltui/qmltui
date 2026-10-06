@@ -51,12 +51,12 @@ Popup {
 
             Button {
                 id: confirmButton
-                label: "[Y] Confirm"
+                text: "[Y] Confirm"
                 focusColor: Theme.bgActiveTab
                 onClicked: control.accept()
             }
             Button {
-                label: "[N] Cancel"
+                text: "[N] Cancel"
                 onClicked: control.reject()
             }
         }

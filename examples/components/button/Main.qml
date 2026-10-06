@@ -1,4 +1,4 @@
-import QtQml 2.15
+import QtQml
 import Qtui
 import Qtui.Controls
 
@@ -24,12 +24,12 @@ Terminal {
         Text { text: "──────────────────────────────────────────"; color: "gray" }
 
         Button {
-            label: "[ Primary Action ]"
+            text: "[ Primary Action ]"
             onClicked: statusText.text = "Primary button clicked!"
         }
 
         Button {
-            label: "[ Secondary Action ]"
+            text: "[ Secondary Action ]"
             onClicked: statusText.text = "Secondary button clicked!"
         }
 
@@ -43,18 +43,18 @@ Terminal {
             spacing: 2
             RadioButton {
                 id: btn1
-                label: "Option A"
+                text: "Option A"
                 checked: true
                 onToggled: (val) => statusText.text = "Option A selected"
             }
             RadioButton {
                 id: btn2
-                label: "Option B"
+                text: "Option B"
                 onToggled: (val) => statusText.text = "Option B selected"
             }
             RadioButton {
                 id: btn3
-                label: "Option C"
+                text: "Option C"
                 onToggled: (val) => statusText.text = "Option C selected"
             }
         }

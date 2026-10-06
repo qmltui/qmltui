@@ -81,9 +81,9 @@ int main(int argc, char *argv[]) {
     table->setShowGrid(true);
     table->setAlternatingRows(true);
     table->setHeaderColor(Color::fromString(QStringLiteral("#58a6ff")));
-    table->setHeaderBgColor(Color::fromString(QStringLiteral("#161b22")));
-    table->setRowBgColor(Color::fromString(QStringLiteral("#0d1117")));
-    table->setAlternatingRowBgColor(Color::fromString(QStringLiteral("#161b22")));
+    table->setHeaderBackgroundColor(Color::fromString(QStringLiteral("#161b22")));
+    table->setRowBackgroundColor(Color::fromString(QStringLiteral("#0d1117")));
+    table->setAlternatingRowBackgroundColor(Color::fromString(QStringLiteral("#161b22")));
     table->setTextColor(Color::fromString(QStringLiteral("#c9d1d9")));
 
     QVariantList columns;

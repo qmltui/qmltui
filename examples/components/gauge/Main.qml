@@ -118,10 +118,10 @@ Terminal {
                     Gauge {
                         anchors.fill: parent
                         anchors.margins: 1
-                        label: "CPU LOAD   : "
+                        text: "CPU LOAD   : "
                         value: root.cpuValue
-                        maxValue: 100.0
-                        gaugeColor: root.cpuValue > 80 ? "#ef4444" : (root.cpuValue > 60 ? "#f59e0b" : "#10b981")
+                        to: 100.0
+                        color: root.cpuValue > 80 ? "#ef4444" : (root.cpuValue > 60 ? "#f59e0b" : "#10b981")
                     }
                 }
 
@@ -134,12 +134,12 @@ Terminal {
                     Gauge {
                         anchors.fill: parent
                         anchors.margins: 1
-                        label: "SWEEP SCAN : "
+                        text: "SWEEP SCAN : "
                         value: root.sweepProgress
-                        maxValue: 100.0
-                        gaugeColor: "#06b6d4"
-                        filledChar: "▰"
-                        unfilledChar: "▱"
+                        to: 100.0
+                        color: "#06b6d4"
+                        fillCharacter: "▰"
+                        emptyCharacter: "▱"
                     }
                 }
 
@@ -158,11 +158,11 @@ Terminal {
                     Gauge {
                         anchors.fill: parent
                         anchors.margins: 1
-                        label: "CYBER WAVE : "
+                        text: "CYBER WAVE : "
                         value: 85.0
-                        maxValue: 100.0
-                        filledChar: "█"
-                        unfilledChar: "░"
+                        to: 100.0
+                        fillCharacter: "█"
+                        emptyCharacter: "░"
                         showBrackets: false
                         gradient: Gradient {
                             offset: root.gradientOffset
@@ -195,9 +195,9 @@ Terminal {
                     Gauge {
                         anchors.fill: parent
                         anchors.margins: 1
-                        label: "TEMPERATURE: "
+                        text: "TEMPERATURE: "
                         value: root.cpuValue
-                        maxValue: 100.0
+                        to: 100.0
                         showBrackets: true
                         gradient: Gradient {
                             GradientStop {
@@ -224,12 +224,12 @@ Terminal {
 
                 Gauge {
                     width: parent.width - 2
-                    label: "MEMORY VIRT: "
+                    text: "MEMORY VIRT: "
                     value: 64.0
-                    maxValue: 100.0
-                    gaugeColor: "#a855f7"
-                    filledChar: "■"
-                    unfilledChar: "·"
+                    to: 100.0
+                    color: "#a855f7"
+                    fillCharacter: "■"
+                    emptyCharacter: "·"
                     showBrackets: false
                 }
             }

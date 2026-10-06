@@ -617,8 +617,8 @@ Terminal {
                                 width: Math.max(10, cpuPanelColumn.width - 28)
                                 height: 1
                                 values: rootWindow.cpu0History
-                                minVal: 0
-                                maxVal: 100
+                                from: 0
+                                to: 100
                                 color: rootWindow.cpu0Val > 80 ? "red" : "green"
                             }
                         }
@@ -636,8 +636,8 @@ Terminal {
                                 width: Math.max(10, cpuPanelColumn.width - 28)
                                 height: 1
                                 values: rootWindow.cpu1History
-                                minVal: 0
-                                maxVal: 100
+                                from: 0
+                                to: 100
                                 color: rootWindow.cpu1Val > 80 ? "red" : "cyan"
                             }
                         }
@@ -655,8 +655,8 @@ Terminal {
                                 width: Math.max(10, cpuPanelColumn.width - 28)
                                 height: 1
                                 values: rootWindow.cpu2History
-                                minVal: 0
-                                maxVal: 100
+                                from: 0
+                                to: 100
                                 color: rootWindow.cpu2Val > 80 ? "red" : "yellow"
                             }
                         }
@@ -674,8 +674,8 @@ Terminal {
                                 width: Math.max(10, cpuPanelColumn.width - 28)
                                 height: 1
                                 values: rootWindow.cpu3History
-                                minVal: 0
-                                maxVal: 100
+                                from: 0
+                                to: 100
                                 color: rootWindow.cpu3Val > 80 ? "red" : "magenta"
                             }
                         }
@@ -714,8 +714,8 @@ Terminal {
                             height: 4
                             filled: false
                             values: rootWindow.cpu1History
-                            minVal: 0
-                            maxVal: 100
+                            from: 0
+                            to: 100
                             color: rootWindow.avgCpu > 70 ? "red" : "yellow"
                         }
                     }
@@ -754,8 +754,8 @@ Terminal {
                                 width: Math.max(10, netPanelColumn.width - 34)
                                 height: 1
                                 values: rootWindow.netRxHistory
-                                minVal: 0
-                                maxVal: 60
+                                from: 0
+                                to: 60
                                 color: "cyan"
                             }
                         }
@@ -773,8 +773,8 @@ Terminal {
                                 width: Math.max(10, netPanelColumn.width - 34)
                                 height: 1
                                 values: rootWindow.netTxHistory
-                                minVal: 0
-                                maxVal: 60
+                                from: 0
+                                to: 60
                                 color: "blue"
                             }
                         }
@@ -792,8 +792,8 @@ Terminal {
                                 width: Math.max(10, netPanelColumn.width - 34)
                                 height: 1
                                 values: rootWindow.diskReadHistory
-                                minVal: 0
-                                maxVal: 1000
+                                from: 0
+                                to: 1000
                                 color: "white"
                             }
                         }
@@ -833,8 +833,8 @@ Terminal {
                                 width: Math.max(10, memPanelColumn.width - 30)
                                 height: 1
                                 values: rootWindow.memHistory
-                                minVal: 0
-                                maxVal: 100
+                                from: 0
+                                to: 100
                                 color: rootWindow.memVal > 80 ? "red" : "magenta"
                             }
                         }
@@ -852,8 +852,8 @@ Terminal {
                                 width: Math.max(10, memPanelColumn.width - 30)
                                 height: 1
                                 values: rootWindow.reqRateHistory
-                                minVal: 0
-                                maxVal: 3500
+                                from: 0
+                                to: 3500
                                 color: "green"
                             }
                         }
@@ -871,8 +871,8 @@ Terminal {
                                 width: Math.max(10, memPanelColumn.width - 30)
                                 height: 1
                                 values: rootWindow.latencyHistory
-                                minVal: 0
-                                maxVal: 150
+                                from: 0
+                                to: 150
                                 color: rootWindow.latencyVal > 80 ? "red" : "cyan"
                             }
                         }

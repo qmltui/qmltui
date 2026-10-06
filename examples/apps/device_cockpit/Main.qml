@@ -54,7 +54,7 @@ Terminal {
             tabs: ["[F1] Overview", "[F2] Network", "[F3] Services", "[F4] Logs"]
             currentIndex: root.activePage
             activeTabColor: Theme.textPrimary
-            activeTabBgColor: Theme.bgActiveTab
+            activeTabBackgroundColor: Theme.bgActiveTab
             inactiveTabColor: Theme.textSecondary
             onCurrentIndexChanged: root.activePage = currentIndex
         }

@@ -26,8 +26,8 @@ Developers use `Gauge` in monitoring dashboards to display live sensor values li
 | `label` | `string` | `""` | No | Description label for the metric (e.g. `"Pressure"`). |
 | `value` | `double` | `0` | No | Current telemetry reading. |
 | `unit` | `string` | `""` | No | Measurement unit string (e.g. `"PSI"`, `"°C"`). |
-| `minVal` | `double` | `0` | No | Minimum expected gauge value. |
-| `maxVal` | `double` | `100` | No | Maximum expected gauge value. |
+| `from` | `double` | `0` | No | Minimum expected gauge value. |
+| `to` | `double` | `100` | No | Maximum expected gauge value. |
 | `warningVal` | `double` | `75` | No | Value threshold at which warning styling activates. |
 | `dangerVal` | `double` | `85` | No | Value threshold at which danger/error styling activates. |
 | `barWidth` | `int` | `Math.max(8, root.width - 2)` | No | Width of the text-based progress bar in characters. |
@@ -56,8 +56,8 @@ Gauge {
     label: "Hydraulic Pressure"
     value: 82.5
     unit: "BAR"
-    minVal: 0
-    maxVal: 100
+    from: 0
+    to: 100
     warningVal: 70
     dangerVal: 80
 }

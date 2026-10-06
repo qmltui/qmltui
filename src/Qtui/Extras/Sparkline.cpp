@@ -23,17 +23,17 @@ void Sparkline::setValues(const QVariant &values) {
     markDirty();
 }
 
-void Sparkline::setMinVal(double minVal) {
-    if (qFuzzyCompare(m_minVal, minVal)) return;
-    m_minVal = minVal;
-    emit minValChanged();
+void Sparkline::setFrom(double from) {
+    if (qFuzzyCompare(m_from, from)) return;
+    m_from = from;
+    emit fromChanged();
     markDirty();
 }
 
-void Sparkline::setMaxVal(double maxVal) {
-    if (qFuzzyCompare(m_maxVal, maxVal)) return;
-    m_maxVal = maxVal;
-    emit maxValChanged();
+void Sparkline::setTo(double to) {
+    if (qFuzzyCompare(m_to, to)) return;
+    m_to = to;
+    emit toChanged();
     markDirty();
 }
 
@@ -52,11 +52,11 @@ void Sparkline::setColor(Color color) {
     markDirty();
 }
 
-void Sparkline::setBgColor(Color color) {
-    if (m_bgColor == color) return;
-    m_bgColor = color;
-    m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
-    emit bgColorChanged();
+void Sparkline::setBackgroundColor(Color color) {
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    emit backgroundColorChanged();
     markDirty();
 }
 
@@ -71,10 +71,10 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
     if (availW <= 0 || availH <= 0) return;
 
     // Determine min/max range
-    double computedMin = m_minVal;
-    double computedMax = m_maxVal;
+    double computedMin = m_from;
+    double computedMax = m_to;
 
-    if (qFuzzyIsNull(m_maxVal)) {
+    if (qFuzzyIsNull(m_to)) {
         computedMin = m_values[0].toDouble();
         computedMax = m_values[0].toDouble();
         for (const QVariant &v : m_values) {
@@ -136,7 +136,7 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                     continue;
                 Cell& cell = *targetCell;
                 cell.fgColor = m_resolvedColor;
-                cell.bgColor = m_resolvedBgColor;
+                cell.bgColor = m_resolvedBackgroundColor;
 
                 if (availH == 1) {
                     // Single row sparkline mode

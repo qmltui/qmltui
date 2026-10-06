@@ -11,7 +11,7 @@ void Rectangle::setColor(Color color) {
   if (m_color == color)
     return;
   m_color = color;
-  m_resolvedBgColor = ColorMapper::fromString(m_color, 0x00000000);
+  m_resolvedBackgroundColor = ColorMapper::fromString(m_color, 0x00000000);
   emit colorChanged();
   markDirty();
 }
@@ -53,7 +53,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
   int h = height();
 
   // Render background if specified and not transparent
-  if ((m_resolvedBgColor >> 24) != 0) {
+  if ((m_resolvedBackgroundColor >> 24) != 0) {
     for (int dy = 0; dy < h; ++dy) {
       int cy = absY + dy;
       for (int dx = 0; dx < w; ++dx) {
@@ -62,7 +62,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
           if (cx >= 0 && cx < buffer.width() && cy >= 0 &&
               cy < buffer.height()) {
             Cell &cell = buffer.cellAt(cx, cy);
-            cell.bgColor = m_resolvedBgColor;
+            cell.bgColor = m_resolvedBackgroundColor;
             cell.setCharacter(" ");
             cell.displayWidth = 1;
             cell.continuation = false;

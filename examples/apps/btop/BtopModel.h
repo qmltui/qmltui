@@ -33,7 +33,7 @@ class BtopCpuGraph : public qtui::Item
 
     Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged)
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
     explicit BtopCpuGraph(QObject *parent = nullptr);
@@ -44,22 +44,22 @@ public:
     qtui::Color color() const { return m_color; }
     void setColor(qtui::Color color);
 
-    qtui::Color bgColor() const { return m_bgColor; }
-    void setBgColor(qtui::Color color);
+    qtui::Color backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(qtui::Color color);
 
     void paint(qtui::TextGridBuffer &buffer, int absX, int absY, const qtui::ClipRect &clipRect) const override;
 
 signals:
     void valuesChanged();
     void colorChanged();
-    void bgColorChanged();
+    void backgroundColorChanged();
 
 private:
     QVariantList m_values;
     qtui::Color m_color = QStringLiteral("white");
     uint32_t m_resolvedColor = 0xFFFFFFFF;
-    qtui::Color m_bgColor;
-    uint32_t m_resolvedBgColor = 0x00000000;
+    qtui::Color m_backgroundColor;
+    uint32_t m_resolvedBackgroundColor = 0x00000000;
 };
 
 class BtopModel : public QAbstractTableModel

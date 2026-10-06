@@ -12,11 +12,11 @@ class Sparkline : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(QVariant values READ values WRITE setValues NOTIFY valuesChanged)
-    Q_PROPERTY(double minVal READ minVal WRITE setMinVal NOTIFY minValChanged)
-    Q_PROPERTY(double maxVal READ maxVal WRITE setMaxVal NOTIFY maxValChanged)
+    Q_PROPERTY(double from READ from WRITE setFrom NOTIFY fromChanged)
+    Q_PROPERTY(double to READ to WRITE setTo NOTIFY toChanged)
     Q_PROPERTY(bool filled READ filled WRITE setFilled NOTIFY filledChanged)
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
     explicit Sparkline(QObject *parent = nullptr);
@@ -25,11 +25,11 @@ public:
     QVariant values() const { return m_valuesVariant; }
     void setValues(const QVariant &values);
 
-    double minVal() const { return m_minVal; }
-    void setMinVal(double minVal);
+    double from() const { return m_from; }
+    void setFrom(double from);
 
-    double maxVal() const { return m_maxVal; }
-    void setMaxVal(double maxVal);
+    double to() const { return m_to; }
+    void setTo(double to);
 
     bool filled() const { return m_filled; }
     void setFilled(bool filled);
@@ -37,31 +37,31 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
-    Color bgColor() const { return m_bgColor; }
-    void setBgColor(Color color);
+    Color backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(Color color);
 
     void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
 
 signals:
     void valuesChanged();
-    void minValChanged();
-    void maxValChanged();
+    void fromChanged();
+    void toChanged();
     void filledChanged();
     void colorChanged();
-    void bgColorChanged();
+    void backgroundColorChanged();
 
 private:
     QVariant m_valuesVariant;
     QVariantList m_values;
 
-    double m_minVal = 0.0;
-    double m_maxVal = 0.0; // 0.0 means auto-scale
+    double m_from = 0.0;
+    double m_to = 0.0; // 0.0 means auto-scale
     bool m_filled = false;
     Color m_color = "cyan";
     uint32_t m_resolvedColor = 0xFF00FFFF;
 
-    Color m_bgColor = "transparent";
-    uint32_t m_resolvedBgColor = 0x00000000;
+    Color m_backgroundColor = "transparent";
+    uint32_t m_resolvedBackgroundColor = 0x00000000;
 };
 
 } // namespace qtui

@@ -30,7 +30,7 @@ class TreeView : public Item {
     Q_PROPERTY(QVariantMap currentItemData READ currentItemData NOTIFY currentItemDataChanged)
 
     Q_PROPERTY(qtui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(qtui::Color selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
+    Q_PROPERTY(qtui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qtui::Color branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
     Q_PROPERTY(QString expandedIcon READ expandedIcon WRITE setExpandedIcon NOTIFY expandedIconChanged)
@@ -63,8 +63,8 @@ public:
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
 
-    Color selectionBgColor() const { return m_selectionBgColor; }
-    void setSelectionBgColor(Color color);
+    Color selectionBackgroundColor() const { return m_selectionBackgroundColor; }
+    void setSelectionBackgroundColor(Color color);
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
@@ -105,7 +105,7 @@ signals:
     void selectedIndexChanged();
     void currentItemDataChanged();
     void selectionColorChanged();
-    void selectionBgColorChanged();
+    void selectionBackgroundColorChanged();
     void textColorChanged();
     void branchColorChanged();
     void expandedIconChanged();
@@ -168,8 +168,8 @@ private:
 
     Color m_selectionColor = "white";
     uint32_t m_resolvedSelectionColor = 0xFFFFFFFF;
-    Color m_selectionBgColor = "blue";
-    uint32_t m_resolvedSelectionBgColor = 0xFF0000FF;
+    Color m_selectionBackgroundColor = "blue";
+    uint32_t m_resolvedSelectionBackgroundColor = 0xFF0000FF;
 
     Color m_textColor = "cyan";
     uint32_t m_resolvedTextColor = 0xFF00FFFF;

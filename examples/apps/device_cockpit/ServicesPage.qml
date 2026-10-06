@@ -122,9 +122,9 @@ Rectangle {
                 anchors.margins: 1
                 model: page.services.units
                 headerColor: Theme.textAccent
-                headerBgColor: Theme.bgPanel
+                headerBackgroundColor: Theme.bgPanel
                 selectionColor: Theme.textPrimary
-                selectionBgColor: Theme.bgActiveTab
+                selectionBackgroundColor: Theme.bgActiveTab
 
                 columns: [
                     { title: "UNIT", key: "unit", width: 30 },

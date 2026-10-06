@@ -132,7 +132,7 @@ Terminal {
             tabs: ["[F1] Network", "[F2] About"]
             currentIndex: root.activePage
             activeTabColor: Theme.textOnGreen
-            activeTabBgColor: Theme.qtGreen
+            activeTabBackgroundColor: Theme.qtGreen
             inactiveTabColor: Theme.textSecondary
             onCurrentIndexChanged: root.activePage = currentIndex
         }

@@ -90,9 +90,9 @@ Terminal {
                 TabHeader {
                     id: filterTabs
                     currentIndex: fleetModel.activeFilter
-                    activeTabBgColor: root.colorAccentCyan
+                    activeTabBackgroundColor: root.colorAccentCyan
                     activeTabColor: "#11111b"
-                    inactiveTabBgColor: "transparent"
+                    inactiveTabBackgroundColor: "transparent"
                     inactiveTabColor: root.colorTextMuted
                     tabs: [
                         " 1: ALL (" + fleetModel.totalNodes + ") ",
@@ -150,12 +150,12 @@ Terminal {
                 anchors.margins: 1
                 showGrid: true
                 headerColor: root.colorAccentCyan
-                headerBgColor: "#181825"
+                headerBackgroundColor: "#181825"
                 selectionColor: root.colorAccentYellow
-                selectionBgColor: root.colorCardSelBg
+                selectionBackgroundColor: root.colorCardSelBg
                 alternatingRows: true
-                alternatingRowBgColor: root.colorCardAltBg
-                rowBgColor: root.colorCardBg
+                alternatingRowBackgroundColor: root.colorCardAltBg
+                rowBackgroundColor: root.colorCardBg
 
                 columns: [
                     { title: "NODE NAME", width: 19, align: "left" },

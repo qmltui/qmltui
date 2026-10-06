@@ -7,8 +7,8 @@ Column {
     property string label: ""
     property double value: 0
     property string unit: ""
-    property double minVal: 0
-    property double maxVal: 100
+    property double from: 0
+    property double to: 100
     property double warningVal: 75
     property double dangerVal: 85
     property int decimals: 1
@@ -26,7 +26,7 @@ Column {
 
     Text {
         width: parent ? parent.width : 20
-        text: HmiTheme.makeProgressBar(root.value, root.minVal, root.maxVal, root.barWidth)
+        text: HmiTheme.makeProgressBar(root.value, root.from, root.to, root.barWidth)
         color: root.value >= root.dangerVal ? HmiTheme.statusError : (root.value >= root.warningVal ? HmiTheme.textWarning : HmiTheme.textHighlight)
     }
 }

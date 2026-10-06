@@ -34,9 +34,9 @@ QtObject {
     readonly property string textDanger: "#f87171"
 
     // Helper method to generate creative visual progress meters
-    function makeProgressBar(val, minVal, maxVal, width, style) {
+    function makeProgressBar(val, from, to, width, style) {
         if (width <= 0) return "";
-        let pct = Math.max(0.0, Math.min(1.0, (val - minVal) / (maxVal - minVal)));
+        let pct = Math.max(0.0, Math.min(1.0, (val - from) / (to - from)));
         let fillLen = Math.round(pct * width);
         let emptyLen = width - fillLen;
 

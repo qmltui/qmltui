@@ -61,12 +61,12 @@ void BtopCpuGraph::setColor(Color color) {
   markDirty();
 }
 
-void BtopCpuGraph::setBgColor(Color color) {
-  if (m_bgColor == color)
+void BtopCpuGraph::setBackgroundColor(Color color) {
+  if (m_backgroundColor == color)
     return;
-  m_bgColor = color;
-  m_resolvedBgColor = ColorMapper::fromString(color, 0x00000000);
-  emit bgColorChanged();
+  m_backgroundColor = color;
+  m_resolvedBackgroundColor = ColorMapper::fromString(color, 0x00000000);
+  emit backgroundColorChanged();
   markDirty();
 }
 
@@ -155,8 +155,8 @@ void BtopCpuGraph::paint(TextGridBuffer &buffer, int absX, int absY,
         if (cell) {
           cell->setCharacter(brailleTable[val]);
           cell->fgColor = m_resolvedColor;
-          if (m_bgColor.isValid())
-            cell->bgColor = m_resolvedBgColor;
+          if (m_backgroundColor.isValid())
+            cell->bgColor = m_resolvedBackgroundColor;
           cell->displayWidth = 1;
           cell->continuation = false;
         }

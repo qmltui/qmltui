@@ -129,15 +129,15 @@ Rectangle {
                         width: parent.width - 1
                         height: 1
                         value: page.info.cpuLoadPct
-                        label: "load"
-                        gaugeColor: page.info.cpuLoadPct > 85 ? Theme.statusError : Theme.statusOk
+                        text: "load"
+                        color: page.info.cpuLoadPct > 85 ? Theme.statusError : Theme.statusOk
                     }
                     Sparkline {
                         width: parent.width - 1
                         height: 3
                         values: page.info.cpuHistory
-                        minVal: 0
-                        maxVal: 100
+                        from: 0
+                        to: 100
                         color: Theme.textAccent
                     }
                     Row {
@@ -174,8 +174,8 @@ Rectangle {
                         width: Math.max(10, parent.width - 22)
                         height: 1
                         value: page.info.memUsedMb
-                        maxValue: Math.max(1, page.info.memTotalMb)
-                        gaugeColor: Theme.statusOk
+                        to: Math.max(1, page.info.memTotalMb)
+                        color: Theme.statusOk
                     }
                     Text {
                         text: Theme.formatMb(page.info.memUsedMb) + " / "

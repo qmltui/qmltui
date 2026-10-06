@@ -38,12 +38,12 @@ void Paragraph::setColor(Color color) {
     markDirty();
 }
 
-void Paragraph::setBgColor(Color color) {
-    if (m_bgColor == color) return;
-    m_bgColor = color;
-    m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
+void Paragraph::setBackgroundColor(Color color) {
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
     invalidateTextCache();
-    emit bgColorChanged();
+    emit backgroundColorChanged();
     markDirty();
 }
 
@@ -79,7 +79,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
     if (!isRich) {
         for (const Grapheme &cluster : UnicodeText::graphemes(line))
             result.append(FormattedChar{QString::fromUtf8(cluster.utf8), cluster.width,
-                                        m_resolvedColor, m_resolvedBgColor,
+                                        m_resolvedColor, m_resolvedBackgroundColor,
                                         TextAttribute::None, ""});
         return result;
     }
@@ -87,7 +87,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
     QStack<uint32_t> fgStack;
     QStack<uint32_t> bgStack;
     fgStack.push(m_resolvedColor);
-    bgStack.push(m_resolvedBgColor);
+    bgStack.push(m_resolvedBackgroundColor);
 
     QString activeHref;
     bool bold = false;
@@ -152,7 +152,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 
                     for (const Grapheme &cluster : UnicodeText::graphemes(linkText))
                         result.append(FormattedChar{QString::fromUtf8(cluster.utf8), cluster.width,
-                                                    0xFF61AFEF, m_resolvedBgColor,
+                                                    0xFF61AFEF, m_resolvedBackgroundColor,
                                                     TextAttribute::Underline, linkUrl});
                     i = closeParen + 1;
                     continue;
@@ -221,7 +221,7 @@ QList<FormattedLine> Paragraph::wordWrapFormatted(const FormattedLine &rawLine, 
             currentLine = word;
         } else if (lineWidth(currentLine) + 1 + lineWidth(word) <= maxW) {
             currentLine.append(FormattedChar{QStringLiteral(" "), 1, m_resolvedColor,
-                                              m_resolvedBgColor, TextAttribute::None, ""});
+                                              m_resolvedBackgroundColor, TextAttribute::None, ""});
             currentLine.append(word);
         } else {
             result.append(currentLine);

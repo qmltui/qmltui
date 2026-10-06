@@ -67,7 +67,7 @@ Rectangle {
                 anchors.margins: 1
                 anchors.leftMargin: 2
                 model: page.network.interfaces
-                highlightBgColor: Theme.bgActiveTab
+                highlightBackgroundColor: Theme.bgActiveTab
 
                 delegate: Rectangle {
                     id: nicRow

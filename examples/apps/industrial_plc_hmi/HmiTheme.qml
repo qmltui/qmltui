@@ -39,8 +39,8 @@ QtObject {
     readonly property string textAccent: "#ffd393"
     
     // Progress bar helper
-    function makeProgressBar(value, minVal, maxVal, width) {
-        let pct = Math.max(0.0, Math.min(1.0, (value - minVal) / (maxVal - minVal)));
+    function makeProgressBar(value, from, to, width) {
+        let pct = Math.max(0.0, Math.min(1.0, (value - from) / (to - from)));
         let filled = Math.round(pct * width);
         let empty = width - filled;
         let bar = "";

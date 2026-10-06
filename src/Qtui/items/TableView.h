@@ -26,12 +26,12 @@ class TableView : public Item {
     Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY alternatingRowsChanged)
 
     Q_PROPERTY(qtui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
-    Q_PROPERTY(qtui::Color headerBgColor READ headerBgColor WRITE setHeaderBgColor NOTIFY headerBgColorChanged)
+    Q_PROPERTY(qtui::Color headerBackgroundColor READ headerBackgroundColor WRITE setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
     Q_PROPERTY(qtui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(qtui::Color selectionBgColor READ selectionBgColor WRITE setSelectionBgColor NOTIFY selectionBgColorChanged)
+    Q_PROPERTY(qtui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
-    Q_PROPERTY(qtui::Color rowBgColor READ rowBgColor WRITE setRowBgColor NOTIFY rowBgColorChanged)
-    Q_PROPERTY(qtui::Color alternatingRowBgColor READ alternatingRowBgColor WRITE setAlternatingRowBgColor NOTIFY alternatingRowBgColorChanged)
+    Q_PROPERTY(qtui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
+    Q_PROPERTY(qtui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
 
     Q_PROPERTY(bool showGrid READ showGrid WRITE setShowGrid NOTIFY showGridChanged)
 
@@ -64,23 +64,23 @@ public:
     Color headerColor() const { return m_headerColor; }
     void setHeaderColor(Color color);
 
-    Color headerBgColor() const { return m_headerBgColor; }
-    void setHeaderBgColor(Color color);
+    Color headerBackgroundColor() const { return m_headerBackgroundColor; }
+    void setHeaderBackgroundColor(Color color);
 
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
 
-    Color selectionBgColor() const { return m_selectionBgColor; }
-    void setSelectionBgColor(Color color);
+    Color selectionBackgroundColor() const { return m_selectionBackgroundColor; }
+    void setSelectionBackgroundColor(Color color);
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
 
-    Color rowBgColor() const { return m_rowBgColor; }
-    void setRowBgColor(Color color);
+    Color rowBackgroundColor() const { return m_rowBackgroundColor; }
+    void setRowBackgroundColor(Color color);
 
-    Color alternatingRowBgColor() const { return m_alternatingRowBgColor; }
-    void setAlternatingRowBgColor(Color color);
+    Color alternatingRowBackgroundColor() const { return m_alternatingRowBackgroundColor; }
+    void setAlternatingRowBackgroundColor(Color color);
 
     bool showGrid() const { return m_showGrid; }
     void setShowGrid(bool show);
@@ -109,12 +109,12 @@ signals:
     void alternatingRowsChanged();
 
     void headerColorChanged();
-    void headerBgColorChanged();
+    void headerBackgroundColorChanged();
     void selectionColorChanged();
-    void selectionBgColorChanged();
+    void selectionBackgroundColorChanged();
     void textColorChanged();
-    void rowBgColorChanged();
-    void alternatingRowBgColorChanged();
+    void rowBackgroundColorChanged();
+    void alternatingRowBackgroundColorChanged();
 
     void showGridChanged();
     void columnWidthProviderChanged();
@@ -199,21 +199,21 @@ private:
 
     Color m_headerColor = "yellow";
     uint32_t m_resolvedHeaderColor = 0xFFFFFF00;
-    Color m_headerBgColor = "transparent";
-    uint32_t m_resolvedHeaderBgColor = 0x00000000;
+    Color m_headerBackgroundColor = "transparent";
+    uint32_t m_resolvedHeaderBackgroundColor = 0x00000000;
 
     Color m_selectionColor = "white";
     uint32_t m_resolvedSelectionColor = 0xFFFFFFFF;
-    Color m_selectionBgColor = "blue";
-    uint32_t m_resolvedSelectionBgColor = 0xFF0000FF;
+    Color m_selectionBackgroundColor = "blue";
+    uint32_t m_resolvedSelectionBackgroundColor = 0xFF0000FF;
 
     Color m_textColor = "gray";
     uint32_t m_resolvedTextColor = 0xFFCCCCCC;
-    Color m_rowBgColor = "transparent";
-    uint32_t m_resolvedRowBgColor = 0x00000000;
+    Color m_rowBackgroundColor = "transparent";
+    uint32_t m_resolvedRowBackgroundColor = 0x00000000;
 
-    Color m_alternatingRowBgColor = "#1e1e2e";
-    uint32_t m_resolvedAltRowBgColor = 0xFF1E1E2E;
+    Color m_alternatingRowBackgroundColor = "#1e1e2e";
+    uint32_t m_resolvedAltRowBackgroundColor = 0xFF1E1E2E;
 
     bool m_showGrid = false;
 

@@ -49,9 +49,9 @@ Terminal {
             width: parent.width
             height: Math.max(5, parent.height - 8)
             headerColor: "black"
-            headerBgColor: "white"
+            headerBackgroundColor: "white"
             selectionColor: "white"
-            selectionBgColor: "blue"
+            selectionBackgroundColor: "blue"
             alternatingRows: true
             showGrid: true
 

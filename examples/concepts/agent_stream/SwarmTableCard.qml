@@ -27,7 +27,7 @@ Column {
         width: parent.width > 0 ? Math.min(parent.width, 76) : 76
         height: 5
         headerColor: "#38bdf8"
-        headerBgColor: "transparent"
+        headerBackgroundColor: "transparent"
         showGrid: false
         alternatingRows: false
 

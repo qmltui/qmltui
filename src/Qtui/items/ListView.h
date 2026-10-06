@@ -50,7 +50,7 @@ class ListView : public ScrollView {
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(qtui::Color highlightColor READ highlightColor WRITE setHighlightColor NOTIFY highlightColorChanged)
-    Q_PROPERTY(qtui::Color highlightBgColor READ highlightBgColor WRITE setHighlightBgColor NOTIFY highlightBgColorChanged)
+    Q_PROPERTY(qtui::Color highlightBackgroundColor READ highlightBackgroundColor WRITE setHighlightBackgroundColor NOTIFY highlightBackgroundColorChanged)
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
@@ -77,8 +77,8 @@ public:
     Color highlightColor() const { return m_highlightColor; }
     void setHighlightColor(Color color);
 
-    Color highlightBgColor() const { return m_highlightBgColor; }
-    void setHighlightBgColor(Color color);
+    Color highlightBackgroundColor() const { return m_highlightBackgroundColor; }
+    void setHighlightBackgroundColor(Color color);
 
     bool reuseItems() const { return m_reuseItems; }
     void setReuseItems(bool reuse);
@@ -98,7 +98,7 @@ signals:
     void spacingChanged();
     void currentIndexChanged();
     void highlightColorChanged();
-    void highlightBgColorChanged();
+    void highlightBackgroundColorChanged();
     void reuseItemsChanged();
     void itemActivated(int index);
 
@@ -132,8 +132,8 @@ private:
     int m_currentIndex = -1;
     Color m_highlightColor = "black";
     uint32_t m_resolvedHighlightColor = 0xFF000000;
-    Color m_highlightBgColor = "white";
-    uint32_t m_resolvedHighlightBgColor = 0xFFFFFFFF;
+    Color m_highlightBackgroundColor = "white";
+    uint32_t m_resolvedHighlightBackgroundColor = 0xFFFFFFFF;
     bool m_reuseItems = true;
     QMap<int, Item*> m_createdItems;
     QStack<Item*> m_reusePool;

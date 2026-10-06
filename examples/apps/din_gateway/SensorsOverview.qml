@@ -46,8 +46,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[0] || [0]
-                    minVal: 20
-                    maxVal: 80
+                    from: 20
+                    to: 80
                     color: GatewayTheme.textSuccess
                 }
 
@@ -63,8 +63,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[1] || [0]
-                    minVal: 40
-                    maxVal: 60
+                    from: 40
+                    to: 60
                     color: GatewayTheme.textAccent
                 }
 
@@ -80,8 +80,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[2] || [0]
-                    minVal: 0
-                    maxVal: 30
+                    from: 0
+                    to: 30
                     color: GatewayTheme.textWarning
                 }
 
@@ -97,8 +97,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[3] || [0]
-                    minVal: 0
-                    maxVal: 5
+                    from: 0
+                    to: 5
                     color: GatewayTheme.textPrimary
                 }
             }
@@ -131,8 +131,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[4] || [0]
-                    minVal: 0
-                    maxVal: 100
+                    from: 0
+                    to: 100
                     color: GatewayTheme.textSecondary
                 }
 
@@ -148,8 +148,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: sensorsRoot.sensorHistories[5] || [0]
-                    minVal: 0
-                    maxVal: 30
+                    from: 0
+                    to: 30
                     color: GatewayTheme.textAccent
                 }
 

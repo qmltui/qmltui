@@ -214,11 +214,11 @@ Terminal {
                         anchors.right: parent.right
                         height: 2
                         values: systemModel.cpuHistory
-                        minVal: 0
-                        maxVal: 100
+                        from: 0
+                        to: 100
                         filled: true
                         color: systemModel.cpuUsage > 80 ? root.pinkColor : root.greenColor
-                        bgColor: root.panelColor
+                        backgroundColor: root.panelColor
                     }
 
                     Text {
@@ -263,12 +263,12 @@ Terminal {
                         return 10
                     }
                     headerColor: root.textColor
-                    headerBgColor: root.panelColor
+                    headerBackgroundColor: root.panelColor
                     selectionColor: root.textColor
-                    selectionBgColor: "#344318"
+                    selectionBackgroundColor: "#344318"
                     textColor: root.textColor
-                    rowBgColor: root.panelColor
-                    alternatingRowBgColor: "#101411"
+                    rowBackgroundColor: root.panelColor
+                    alternatingRowBackgroundColor: "#101411"
                     alternatingRows: true
                     showGrid: false
                     cellFormat: (row, column, value) => {
@@ -367,7 +367,7 @@ Terminal {
                         values: systemModel.downloadHistory
                         filled: true
                         color: root.purpleColor
-                        bgColor: root.panelColor
+                        backgroundColor: root.panelColor
                     }
 
                     Text {
@@ -390,7 +390,7 @@ Terminal {
                         values: systemModel.uploadHistory
                         filled: true
                         color: root.pinkColor
-                        bgColor: root.panelColor
+                        backgroundColor: root.panelColor
                     }
                 }
 
@@ -616,7 +616,7 @@ Terminal {
                     anchors.fill: parent
                     values: systemModel.cpuHistory
                     color: systemModel.cpuUsage > 80 ? root.pinkColor : root.greenColor
-                    bgColor: root.panelColor
+                    backgroundColor: root.panelColor
                 }
 
                 Text {

@@ -19,7 +19,7 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
-    uint32_t resolvedBgColor() const { return m_resolvedBgColor; }
+    uint32_t resolvedBackgroundColor() const { return m_resolvedBackgroundColor; }
 
     Border* border() { return &m_border; }
 
@@ -35,7 +35,7 @@ signals:
 
 private:
     Color m_color = "transparent";
-    uint32_t m_resolvedBgColor = 0x00000000;
+    uint32_t m_resolvedBackgroundColor = 0x00000000;
     Border m_border;
 };
 

@@ -15,7 +15,7 @@ Rectangle {
     property string errorColor: "red"
     property string infoColor: "cyan"
     property string badgeColor: ""
-    property string badgeBgColor: ""
+    property string badgeBackgroundColor: ""
     property bool bold: true
     property int horizontalPadding: 1
 
@@ -43,9 +43,9 @@ Rectangle {
 
     color: {
         if (variant === "filled") {
-            return badgeBgColor !== "" ? badgeBgColor : activeColor
+            return badgeBackgroundColor !== "" ? badgeBackgroundColor : activeColor
         }
-        return badgeBgColor !== "" ? badgeBgColor : "transparent"
+        return badgeBackgroundColor !== "" ? badgeBackgroundColor : "transparent"
     }
 
     border.style: variant === "outlined" ? "single" : "none"

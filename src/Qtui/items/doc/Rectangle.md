@@ -31,7 +31,7 @@ Emitted when the background color changes.
 
 ## 9. Public Methods
 
-#### uint32_t resolvedBgColor() const
+#### uint32_t resolvedBackgroundColor() const
 Returns the 32-bit ARGB integer value of the background color.
 
 #### Border* border()

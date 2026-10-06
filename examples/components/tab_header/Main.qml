@@ -37,7 +37,7 @@ Terminal {
                 focus: true
                 width: 68
                 activeTabColor: "white"
-                activeTabBgColor: "blue"
+                activeTabBackgroundColor: "blue"
                 inactiveTabColor: "gray"
                 tabs: ["Overview", "Telemetry", "Logs", "Settings"]
             }

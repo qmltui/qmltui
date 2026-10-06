@@ -11,13 +11,14 @@ class Gauge : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(double value READ value WRITE setValue NOTIFY valueChanged)
-    Q_PROPERTY(double maxValue READ maxValue WRITE setMaxValue NOTIFY maxValueChanged)
-    Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
-    Q_PROPERTY(qtui::Color gaugeColor READ gaugeColor WRITE setGaugeColor NOTIFY gaugeColorChanged)
+    Q_PROPERTY(double from READ from WRITE setFrom NOTIFY fromChanged)
+    Q_PROPERTY(double to READ to WRITE setTo NOTIFY toChanged)
+    Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qtui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
-    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
-    Q_PROPERTY(QString filledChar READ filledChar WRITE setFilledChar NOTIFY filledCharChanged)
-    Q_PROPERTY(QString unfilledChar READ unfilledChar WRITE setUnfilledChar NOTIFY unfilledCharChanged)
+    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(QString fillCharacter READ fillCharacter WRITE setFillCharacter NOTIFY fillCharacterChanged)
+    Q_PROPERTY(QString emptyCharacter READ emptyCharacter WRITE setEmptyCharacter NOTIFY emptyCharacterChanged)
     Q_PROPERTY(bool showPercentage READ showPercentage WRITE setShowPercentage NOTIFY showPercentageChanged)
     Q_PROPERTY(bool showBrackets READ showBrackets WRITE setShowBrackets NOTIFY showBracketsChanged)
 
@@ -28,26 +29,29 @@ public:
     double value() const { return m_value; }
     void setValue(double val);
 
-    double maxValue() const { return m_maxValue; }
-    void setMaxValue(double maxVal);
+    double from() const { return m_from; }
+    void setFrom(double from);
 
-    QString label() const { return m_label; }
-    void setLabel(const QString &label);
+    double to() const { return m_to; }
+    void setTo(double maxVal);
 
-    Color gaugeColor() const { return m_gaugeColor; }
-    void setGaugeColor(Color color);
+    QString text() const { return m_text; }
+    void setText(const QString &text);
+
+    Color color() const { return m_gaugeColor; }
+    void setColor(Color color);
 
     Gradient* gradient() const { return m_gradient; }
     void setGradient(Gradient* gradient);
 
-    Color bgColor() const { return m_bgColor; }
-    void setBgColor(Color color);
+    Color backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(Color color);
 
-    QString filledChar() const { return m_filledChar; }
-    void setFilledChar(const QString &ch);
+    QString fillCharacter() const { return m_filledChar; }
+    void setFillCharacter(const QString &ch);
 
-    QString unfilledChar() const { return m_unfilledChar; }
-    void setUnfilledChar(const QString &ch);
+    QString emptyCharacter() const { return m_unfilledChar; }
+    void setEmptyCharacter(const QString &ch);
 
     bool showPercentage() const { return m_showPercentage; }
     void setShowPercentage(bool show);
@@ -59,27 +63,29 @@ public:
 
 signals:
     void valueChanged();
-    void maxValueChanged();
-    void labelChanged();
-    void gaugeColorChanged();
+    void fromChanged();
+    void toChanged();
+    void textChanged();
+    void colorChanged();
     void gradientChanged();
-    void bgColorChanged();
-    void filledCharChanged();
-    void unfilledCharChanged();
+    void backgroundColorChanged();
+    void fillCharacterChanged();
+    void emptyCharacterChanged();
     void showPercentageChanged();
     void showBracketsChanged();
 
 private:
     double m_value = 0.0;
-    double m_maxValue = 100.0;
-    QString m_label;
+    double m_from = 0.0;
+    double m_to = 100.0;
+    QString m_text;
 
     Color m_gaugeColor = "green";
-    uint32_t m_resolvedGaugeColor = 0xFF00FF00;
+    uint32_t m_resolvedColor = 0xFF00FF00;
     Gradient* m_gradient = nullptr;
 
-    Color m_bgColor = "transparent";
-    uint32_t m_resolvedBgColor = 0x00000000;
+    Color m_backgroundColor = "transparent";
+    uint32_t m_resolvedBackgroundColor = 0x00000000;
 
     QString m_filledChar = "█";
     QString m_unfilledChar = "░";

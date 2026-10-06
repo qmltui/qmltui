@@ -215,11 +215,11 @@ void TreeView::setSelectionColor(Color color) {
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
-void TreeView::setSelectionBgColor(Color color) {
-    if (m_selectionBgColor == color) return;
-    m_selectionBgColor = color;
-    m_resolvedSelectionBgColor = ColorMapper::fromString(m_selectionBgColor, 0xFF0000FF);
-    emit selectionBgColorChanged();
+void TreeView::setSelectionBackgroundColor(Color color) {
+    if (m_selectionBackgroundColor == color) return;
+    m_selectionBackgroundColor = color;
+    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0xFF0000FF);
+    emit selectionBackgroundColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
@@ -923,7 +923,7 @@ void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect 
         int rowY = startY + (idx - m_scrollTop);
         bool isSelected = (idx == m_selectedIndex);
 
-        uint32_t bg = isSelected ? m_resolvedSelectionBgColor : 0x00000000;
+        uint32_t bg = isSelected ? m_resolvedSelectionBackgroundColor : 0x00000000;
         uint32_t fg = isSelected ? m_resolvedSelectionColor : m_resolvedTextColor;
         TextAttribute attr = isSelected ? TextAttribute::Bold : TextAttribute::None;
 

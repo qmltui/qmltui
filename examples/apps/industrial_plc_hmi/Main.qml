@@ -414,8 +414,8 @@ Terminal {
                             label: "Speed"
                             value: rootWindow.speed
                             unit: "RPM"
-                            minVal: 0
-                            maxVal: 3000
+                            from: 0
+                            to: 3000
                             warningVal: 2500
                             dangerVal: 2800
                             decimals: 0
@@ -424,8 +424,8 @@ Terminal {
                             width: parent.width
                             height: 1
                             values: rootWindow.speedHistory
-                            minVal: 0
-                            maxVal: 3000
+                            from: 0
+                            to: 3000
                             color: HmiTheme.statusProcessing
                         }
 
@@ -433,8 +433,8 @@ Terminal {
                             label: "Temp"
                             value: rootWindow.temperature
                             unit: "°C"
-                            minVal: 20
-                            maxVal: 100
+                            from: 20
+                            to: 100
                             warningVal: 75
                             dangerVal: rootWindow.maxTempLimit
                             decimals: 1
@@ -443,8 +443,8 @@ Terminal {
                             width: parent.width
                             height: 1
                             values: rootWindow.tempHistory
-                            minVal: 20
-                            maxVal: 100
+                            from: 20
+                            to: 100
                             color: rootWindow.temperature >= rootWindow.maxTempLimit ? HmiTheme.statusError : HmiTheme.textWarning
                         }
 
@@ -452,8 +452,8 @@ Terminal {
                             label: "Pres"
                             value: rootWindow.pressure
                             unit: "bar"
-                            minVal: 0
-                            maxVal: 5
+                            from: 0
+                            to: 5
                             warningVal: 3.5
                             dangerVal: 4.5
                             decimals: 2
@@ -462,8 +462,8 @@ Terminal {
                             width: parent.width
                             height: 1
                             values: rootWindow.pressureHistory
-                            minVal: 0
-                            maxVal: 5
+                            from: 0
+                            to: 5
                             color: HmiTheme.textHighlight
                         }
 

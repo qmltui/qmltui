@@ -49,11 +49,11 @@ void TabHeader::setActiveTabColor(Color color) {
     markDirty();
 }
 
-void TabHeader::setActiveTabBgColor(Color color) {
-    if (m_activeTabBgColor == color) return;
-    m_activeTabBgColor = color;
-    m_resolvedActiveTabBgColor = ColorMapper::fromString(m_activeTabBgColor, 0xFF0000FF);
-    emit activeTabBgColorChanged();
+void TabHeader::setActiveTabBackgroundColor(Color color) {
+    if (m_activeTabBackgroundColor == color) return;
+    m_activeTabBackgroundColor = color;
+    m_resolvedActiveTabBackgroundColor = ColorMapper::fromString(m_activeTabBackgroundColor, 0xFF0000FF);
+    emit activeTabBackgroundColorChanged();
     markDirty();
 }
 
@@ -65,11 +65,11 @@ void TabHeader::setInactiveTabColor(Color color) {
     markDirty();
 }
 
-void TabHeader::setInactiveTabBgColor(Color color) {
-    if (m_inactiveTabBgColor == color) return;
-    m_inactiveTabBgColor = color;
-    m_resolvedInactiveTabBgColor = ColorMapper::fromString(m_inactiveTabBgColor, 0x00000000);
-    emit inactiveTabBgColorChanged();
+void TabHeader::setInactiveTabBackgroundColor(Color color) {
+    if (m_inactiveTabBackgroundColor == color) return;
+    m_inactiveTabBackgroundColor = color;
+    m_resolvedInactiveTabBackgroundColor = ColorMapper::fromString(m_inactiveTabBackgroundColor, 0x00000000);
+    emit inactiveTabBackgroundColorChanged();
     markDirty();
 }
 
@@ -93,7 +93,7 @@ void TabHeader::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         if (curX + formatted.length() > startX + availW) break;
 
         uint32_t fg = isActive ? m_resolvedActiveTabColor : m_resolvedInactiveTabColor;
-        uint32_t bg = isActive ? m_resolvedActiveTabBgColor : m_resolvedInactiveTabBgColor;
+        uint32_t bg = isActive ? m_resolvedActiveTabBackgroundColor : m_resolvedInactiveTabBackgroundColor;
         TextAttribute attr = isActive ? TextAttribute::Bold : TextAttribute::None;
 
         buffer.writeText(curX, startY, formatted, fg, bg, attr);

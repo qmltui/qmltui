@@ -681,7 +681,7 @@ Terminal {
                             text: root.getRelativeDateLabel(root.selectedDate)
                             variant: "filled"
                             bold: true
-                            badgeBgColor: {
+                            badgeBackgroundColor: {
                                 var rel = root.getRelativeDateLabel(root.selectedDate)
                                 if (rel === "TODAY") return "green"
                                 if (rel === "+1 DAY" || rel === "-1 DAY") return "cyan"

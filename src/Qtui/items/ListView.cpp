@@ -194,11 +194,11 @@ void ListView::setHighlightColor(Color color) {
     markDirty();
 }
 
-void ListView::setHighlightBgColor(Color color) {
-    if (m_highlightBgColor == color) return;
-    m_highlightBgColor = color;
-    m_resolvedHighlightBgColor = ColorMapper::fromString(m_highlightBgColor, 0xFFFFFFFF);
-    emit highlightBgColorChanged();
+void ListView::setHighlightBackgroundColor(Color color) {
+    if (m_highlightBackgroundColor == color) return;
+    m_highlightBackgroundColor = color;
+    m_resolvedHighlightBackgroundColor = ColorMapper::fromString(m_highlightBackgroundColor, 0xFFFFFFFF);
+    emit highlightBackgroundColorChanged();
     markDirty();
 }
 

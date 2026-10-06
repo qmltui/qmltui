@@ -21,7 +21,7 @@ Rectangle {
     property string otherMonthDayColor: "gray"
     property string todayColor: "magenta"
     property string selectedTextColor: "black"
-    property string selectedBgColor: "cyan"
+    property string selectedBackgroundColor: "cyan"
     property string focusBorderColor: "yellow"
     property string normalBorderColor: "white"
     property string gridBorderColor: "gray"
@@ -253,7 +253,7 @@ Rectangle {
                             width: 4
                             height: 1
 
-                            color: isSelected ? control.selectedBgColor : "transparent"
+                            color: isSelected ? control.selectedBackgroundColor : "transparent"
 
                             Text {
                                 anchors.centerIn: parent

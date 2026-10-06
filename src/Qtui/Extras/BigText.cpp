@@ -86,11 +86,11 @@ void BigText::setColor(Color color) {
     markDirty();
 }
 
-void BigText::setBgColor(Color color) {
-    if (m_bgColor == color) return;
-    m_bgColor = color;
-    m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
-    emit bgColorChanged();
+void BigText::setBackgroundColor(Color color) {
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    emit backgroundColorChanged();
     markDirty();
 }
 
@@ -107,7 +107,7 @@ void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &
         const FontGlyph* glyph = findGlyph(c);
 
         for (int row = 0; row < 3; ++row) {
-            buffer.writeText(curX, startY + row, QString::fromUtf8(glyph->lines[row]), m_resolvedColor, m_resolvedBgColor);
+            buffer.writeText(curX, startY + row, QString::fromUtf8(glyph->lines[row]), m_resolvedColor, m_resolvedBackgroundColor);
         }
         curX += 4; // 3 chars wide + 1 space spacing
     }

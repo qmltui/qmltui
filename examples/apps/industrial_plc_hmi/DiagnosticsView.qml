@@ -61,8 +61,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: root.busVoltageHistory
-                    minVal: 23.0
-                    maxVal: 25.0
+                    from: 23.0
+                    to: 25.0
                     color: HmiTheme.statusIdle
                 }
 
@@ -71,8 +71,8 @@ Rectangle {
                     width: parent.width
                     height: 1
                     values: root.sensorLoopHistory
-                    minVal: 4.0
-                    maxVal: 20.0
+                    from: 4.0
+                    to: 20.0
                     color: HmiTheme.textHighlight
                 }
 

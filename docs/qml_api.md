@@ -55,7 +55,7 @@ replacement disconnects the old model before a new generation is observed.
 ## ListView
 
 Properties include `model`, `delegate`, `orientation`, `spacing`, `currentIndex`,
-`highlightColor`, and `highlightBgColor`. `currentIndex` defaults to `-1` and can
+`highlightColor`, and `highlightBackgroundColor`. `currentIndex` defaults to `-1` and can
 be reset to `-1`.
 
 Use the attached API for selection state:
@@ -141,7 +141,7 @@ changes. Call `forceLayout()` when values captured by an unchanged provider
 function change. This API also marks the view for repaint.
 
 `cellFormat(row, column, value)` applies only to built-in painting. Its optional
-result keys are `text`, `color`, `bgColor`, `bold`, and `align`. Custom delegates
+result keys are `text`, `color`, `backgroundColor`, `bold`, and `align`. Custom delegates
 own their styling. Callback exceptions produce diagnostics and fall back to
 the unformatted value or descriptor width. Repeated identical callback errors
 are suppressed until success or callback replacement; the remembered set is

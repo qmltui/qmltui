@@ -278,7 +278,7 @@ private slots:
         Gauge gauge;
         gauge.setWidth(30);
         gauge.setHeight(1);
-        gauge.setLabel("CPU: ");
+        gauge.setText("CPU: ");
         gauge.setValue(75.0);
 
         TextGridBuffer buffer;
@@ -292,7 +292,7 @@ private slots:
         Gauge gauge;
         gauge.setWidth(30);
         gauge.setHeight(1);
-        gauge.setLabel("GPU: ");
+        gauge.setText("GPU: ");
         gauge.setValue(50.0);
 
         Gradient gradient;
@@ -330,7 +330,7 @@ private slots:
         gauge.setY(1);
         gauge.setWidth(28);
         gauge.setHeight(1);
-        gauge.setLabel("CPU: ");
+        gauge.setText("CPU: ");
         gauge.setValue(50.0);
 
         TextGridBuffer buffer;
@@ -372,7 +372,7 @@ private slots:
         Gauge gauge;
         gauge.setWidth(20);
         gauge.setHeight(1);
-        gauge.setLabel("");
+        gauge.setText("");
         gauge.setValue(50.0);
         gauge.setShowPercentage(false);
         gauge.setShowBrackets(false);

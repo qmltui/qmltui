@@ -57,14 +57,14 @@ Developers use `HmiTheme` across the PLC HMI application to enforce a consistent
 
 ## 6. Methods
 
-#### `makeProgressBar(double value, double minVal, double maxVal, int width) : string`
+#### `makeProgressBar(double value, double from, double to, int width) : string`
 
 - **Parameters**:
   - `value`: Current numerical value.
-  - `minVal`: Minimum value of the range.
-  - `maxVal`: Maximum value of the range.
+  - `from`: Minimum value of the range.
+  - `to`: Maximum value of the range.
   - `width`: Number of characters wide the progress bar should be.
-- **Description**: Calculates the percentage completion between `minVal` and `maxVal`, and constructs a text progress bar string composed of filled block characters (`█`) and empty shade characters (`░`).
+- **Description**: Calculates the percentage completion between `from` and `to`, and constructs a text progress bar string composed of filled block characters (`█`) and empty shade characters (`░`).
 - **Return Type**: `string`
 
 ## 7. Inter-Component Interactions

@@ -14,9 +14,9 @@ class TabHeader : public Item {
     Q_PROPERTY(QVariant tabs READ tabs WRITE setTabs NOTIFY tabsChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(qtui::Color activeTabColor READ activeTabColor WRITE setActiveTabColor NOTIFY activeTabColorChanged)
-    Q_PROPERTY(qtui::Color activeTabBgColor READ activeTabBgColor WRITE setActiveTabBgColor NOTIFY activeTabBgColorChanged)
+    Q_PROPERTY(qtui::Color activeTabBackgroundColor READ activeTabBackgroundColor WRITE setActiveTabBackgroundColor NOTIFY activeTabBackgroundColorChanged)
     Q_PROPERTY(qtui::Color inactiveTabColor READ inactiveTabColor WRITE setInactiveTabColor NOTIFY inactiveTabColorChanged)
-    Q_PROPERTY(qtui::Color inactiveTabBgColor READ inactiveTabBgColor WRITE setInactiveTabBgColor NOTIFY inactiveTabBgColorChanged)
+    Q_PROPERTY(qtui::Color inactiveTabBackgroundColor READ inactiveTabBackgroundColor WRITE setInactiveTabBackgroundColor NOTIFY inactiveTabBackgroundColorChanged)
 
 public:
     explicit TabHeader(QObject *parent = nullptr);
@@ -31,14 +31,14 @@ public:
     Color activeTabColor() const { return m_activeTabColor; }
     void setActiveTabColor(Color color);
 
-    Color activeTabBgColor() const { return m_activeTabBgColor; }
-    void setActiveTabBgColor(Color color);
+    Color activeTabBackgroundColor() const { return m_activeTabBackgroundColor; }
+    void setActiveTabBackgroundColor(Color color);
 
     Color inactiveTabColor() const { return m_inactiveTabColor; }
     void setInactiveTabColor(Color color);
 
-    Color inactiveTabBgColor() const { return m_inactiveTabBgColor; }
-    void setInactiveTabBgColor(Color color);
+    Color inactiveTabBackgroundColor() const { return m_inactiveTabBackgroundColor; }
+    void setInactiveTabBackgroundColor(Color color);
 
     void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent *event) override;
@@ -48,9 +48,9 @@ signals:
     void tabsChanged();
     void currentIndexChanged();
     void activeTabColorChanged();
-    void activeTabBgColorChanged();
+    void activeTabBackgroundColorChanged();
     void inactiveTabColorChanged();
-    void inactiveTabBgColorChanged();
+    void inactiveTabBackgroundColorChanged();
 
 private:
     QVariant m_tabsVariant;
@@ -59,13 +59,13 @@ private:
 
     Color m_activeTabColor = "white";
     uint32_t m_resolvedActiveTabColor = 0xFFFFFFFF;
-    Color m_activeTabBgColor = "blue";
-    uint32_t m_resolvedActiveTabBgColor = 0xFF0000FF;
+    Color m_activeTabBackgroundColor = "blue";
+    uint32_t m_resolvedActiveTabBackgroundColor = 0xFF0000FF;
 
     Color m_inactiveTabColor = "gray";
     uint32_t m_resolvedInactiveTabColor = 0xFF808080;
-    Color m_inactiveTabBgColor = "transparent";
-    uint32_t m_resolvedInactiveTabBgColor = 0x00000000;
+    Color m_inactiveTabBackgroundColor = "transparent";
+    uint32_t m_resolvedInactiveTabBackgroundColor = 0x00000000;
 };
 
 } // namespace qtui

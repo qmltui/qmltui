@@ -13,32 +13,39 @@ Gauge::Gauge(QObject *parent) : Item(parent) {
 
 void Gauge::setValue(double val) {
     if (qFuzzyCompare(m_value, val)) return;
-    // Stored unclamped so value and maxValue may be assigned in any order;
+    // Stored unclamped so value and to may be assigned in any order;
     // paint() clamps the displayed ratio.
     m_value = val;
     emit valueChanged();
     markDirty();
 }
 
-void Gauge::setMaxValue(double maxVal) {
-    if (qFuzzyCompare(m_maxValue, maxVal) || maxVal <= 0.0) return;
-    m_maxValue = maxVal;
-    emit maxValueChanged();
+void Gauge::setFrom(double from) {
+    if (qFuzzyCompare(m_from, from)) return;
+    m_from = from;
+    emit fromChanged();
     markDirty();
 }
 
-void Gauge::setLabel(const QString &label) {
-    if (m_label == label) return;
-    m_label = label;
-    emit labelChanged();
+void Gauge::setTo(double to) {
+    if (qFuzzyCompare(m_to, to)) return;
+    m_to = to;
+    emit toChanged();
     markDirty();
 }
 
-void Gauge::setGaugeColor(Color color) {
+void Gauge::setText(const QString &text) {
+    if (m_text == text) return;
+    m_text = text;
+    emit textChanged();
+    markDirty();
+}
+
+void Gauge::setColor(Color color) {
     if (m_gaugeColor == color) return;
     m_gaugeColor = color;
-    m_resolvedGaugeColor = ColorMapper::fromString(m_gaugeColor, 0xFF00FF00);
-    emit gaugeColorChanged();
+    m_resolvedColor = ColorMapper::fromString(m_gaugeColor, 0xFF00FF00);
+    emit colorChanged();
     markDirty();
 }
 
@@ -55,25 +62,25 @@ void Gauge::setGradient(Gradient *gradient) {
     markDirty();
 }
 
-void Gauge::setBgColor(Color color) {
-    if (m_bgColor == color) return;
-    m_bgColor = color;
-    m_resolvedBgColor = ColorMapper::fromString(m_bgColor, 0x00000000);
-    emit bgColorChanged();
+void Gauge::setBackgroundColor(Color color) {
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    emit backgroundColorChanged();
     markDirty();
 }
 
-void Gauge::setFilledChar(const QString &ch) {
+void Gauge::setFillCharacter(const QString &ch) {
     if (m_filledChar == ch || ch.isEmpty()) return;
     m_filledChar = ch;
-    emit filledCharChanged();
+    emit fillCharacterChanged();
     markDirty();
 }
 
-void Gauge::setUnfilledChar(const QString &ch) {
+void Gauge::setEmptyCharacter(const QString &ch) {
     if (m_unfilledChar == ch || ch.isEmpty()) return;
     m_unfilledChar = ch;
-    emit unfilledCharChanged();
+    emit emptyCharacterChanged();
     markDirty();
 }
 
@@ -102,22 +109,22 @@ void Gauge::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &cl
 
     if (availW <= 0 || availH <= 0) return;
 
-    double pct = std::clamp(m_value / m_maxValue, 0.0, 1.0);
+    double pct = (qFuzzyCompare(m_to, m_from) ? 0.0 : std::clamp((m_value - m_from) / (m_to - m_from), 0.0, 1.0));
     QString pctText = m_showPercentage ? QString(" %1%").arg(static_cast<int>(pct * 100.0)) : "";
-    int textReservedW = m_label.length() + pctText.length() + (m_showBrackets ? 2 : 0);
+    int textReservedW = m_text.length() + pctText.length() + (m_showBrackets ? 2 : 0);
     int barW = std::max(1, availW - textReservedW);
 
     int curX = startX;
 
-    // Render Label
-    if (!m_label.isEmpty()) {
-        buffer.writeText(curX, startY, m_label, 0xFFFFFFFF, m_resolvedBgColor);
-        curX += m_label.length();
+    // Render Text
+    if (!m_text.isEmpty()) {
+        buffer.writeText(curX, startY, m_text, 0xFFFFFFFF, m_resolvedBackgroundColor);
+        curX += m_text.length();
     }
 
     // Render Opening Bracket
     if (m_showBrackets) {
-        buffer.writeText(curX, startY, "[", 0xFF808080, m_resolvedBgColor);
+        buffer.writeText(curX, startY, "[", 0xFF808080, m_resolvedBackgroundColor);
         curX += 1;
     }
 
@@ -127,31 +134,31 @@ void Gauge::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &cl
 
     for (int i = 0; i < barW; ++i) {
         if (i < filledCells) {
-            uint32_t cellColor = m_resolvedGaugeColor;
+            uint32_t cellColor = m_resolvedColor;
             if (useGradient) {
                 qreal t = (barW > 1) ? static_cast<qreal>(i) / (barW - 1) : 0.0;
                 cellColor = m_gradient->colorAt(t);
             }
-            buffer.writeText(curX + i, startY, m_filledChar, cellColor, m_resolvedBgColor);
+            buffer.writeText(curX + i, startY, m_filledChar, cellColor, m_resolvedBackgroundColor);
         } else {
-            buffer.writeText(curX + i, startY, m_unfilledChar, 0xFF555555, m_resolvedBgColor);
+            buffer.writeText(curX + i, startY, m_unfilledChar, 0xFF555555, m_resolvedBackgroundColor);
         }
     }
     curX += barW;
 
     // Render Closing Bracket
     if (m_showBrackets) {
-        buffer.writeText(curX, startY, "]", 0xFF808080, m_resolvedBgColor);
+        buffer.writeText(curX, startY, "]", 0xFF808080, m_resolvedBackgroundColor);
         curX += 1;
     }
 
     // Render Percentage Text
     if (m_showPercentage) {
-        uint32_t pctColor = m_resolvedGaugeColor;
+        uint32_t pctColor = m_resolvedColor;
         if (useGradient) {
             pctColor = m_gradient->colorAt(pct);
         }
-        buffer.writeText(curX, startY, pctText, pctColor, m_resolvedBgColor, TextAttribute::Bold);
+        buffer.writeText(curX, startY, pctText, pctColor, m_resolvedBackgroundColor, TextAttribute::Bold);
     }
 }
 

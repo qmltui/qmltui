@@ -25,7 +25,7 @@ class Paragraph : public Item {
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qtui::Color bgColor READ bgColor WRITE setBgColor NOTIFY bgColorChanged)
+    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
     Q_PROPERTY(QString alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
     Q_PROPERTY(bool wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
@@ -50,8 +50,8 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
-    Color bgColor() const { return m_bgColor; }
-    void setBgColor(Color color);
+    Color backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(Color color);
 
     QString alignment() const { return m_alignment; }
     void setAlignment(const QString &align);
@@ -69,7 +69,7 @@ signals:
     void textChanged();
     void textFormatChanged();
     void colorChanged();
-    void bgColorChanged();
+    void backgroundColorChanged();
     void alignmentChanged();
     void wrapModeChanged();
     void scrollYChanged();
@@ -87,8 +87,8 @@ private:
     Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
 
-    Color m_bgColor = "transparent";
-    uint32_t m_resolvedBgColor = 0x00000000;
+    Color m_backgroundColor = "transparent";
+    uint32_t m_resolvedBackgroundColor = 0x00000000;
 
     QString m_alignment = "left";
     bool m_wrapMode = true;

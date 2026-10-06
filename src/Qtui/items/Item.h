@@ -253,6 +253,10 @@ private:
   static void clearTransitions(QQmlListProperty<qtui::Transition>* list);
 
 protected:
+  // `focus: true` set while a subtree is still detached from its Terminal is
+  // recorded on the item; these apply it once the subtree is attached.
+  Item* findFocusRequest() const;
+  void applyPendingFocus();
   enum class ItemFlag : quint8 {
     IsPopup = 1 << 0,
     IsTerminalRoot = 1 << 1,

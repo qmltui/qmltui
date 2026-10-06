@@ -20,6 +20,9 @@ void Terminal::registerTestRunnerHook(TestRunnerHook hook) {
 void Terminal::componentComplete() {
     initializeEngine();
     if (!m_engine) return;
+    // Children complete before the root; honour any `focus: true` that was set
+    // while the tree was still being assembled.
+    applyPendingFocus();
     if (s_testRunnerHook) {
         if (QQmlEngine* engine = qmlEngine(this)) {
             s_testRunnerHook(engine, this);

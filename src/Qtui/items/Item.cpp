@@ -316,6 +316,25 @@ void Item::setFocusable(bool focusable) {
 
 
 
+// Depth-first: the first focusable descendant that asked for focus.
+Item* Item::findFocusRequest() const {
+    for (Item* child : m_visualChildren) {
+        if (child->m_focus && child->m_focusable)
+            return child;
+        if (Item* nested = child->findFocusRequest())
+            return nested;
+    }
+    return nullptr;
+}
+
+void Item::applyPendingFocus() {
+    Terminal* term = isTerminalRoot() ? static_cast<Terminal*>(this) : terminal();
+    if (!term || term->focusedItem())
+        return;
+    if (Item* request = findFocusRequest())
+        term->setFocusedItem(request);
+}
+
 Terminal* Item::terminal() const {
     QObject* p = parent();
     while (p) {
@@ -415,6 +434,7 @@ void Item::registerChildItem(Item* childItem) {
     m_childGeometryConnections.insert(childItem, connections);
 
     scheduleChildGeometryInvalidation();
+    applyPendingFocus();
 }
 
 void Item::unregisterChildItem(Item* childItem) {

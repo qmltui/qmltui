@@ -4,7 +4,6 @@ import Qtui.Examples.MarkdownViewer 1.0
 
 Terminal {
     id: root
-    fillTerminal: true
     color: theme.bg
     mouseReporting: false
 

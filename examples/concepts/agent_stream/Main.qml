@@ -28,9 +28,7 @@ Terminal {
         PermissionState
     }
 
-    rendererMode: shellMode ? Terminal.Frame : Terminal.Stream
-    fillTerminal: shellMode
-    useAlternateScreen: shellMode
+    mode: shellMode ? Terminal.FullScreen : Terminal.Inline
     title: {
         if (root.shellMode) {
             const prog = (fullScreenShell && fullScreenShell.shellProgram) ? fullScreenShell.shellProgram : "bash";
@@ -51,7 +49,6 @@ Terminal {
         return "● Ready — Qt AI Studio (" + root.activeModel + " · " + root.sessionCostStr + ")";
     }
     mouseReporting: false
-    liveItem: promptBar
 
     property int agentState: Main.ReadyState
     property int currentScenario: 1
@@ -425,7 +422,7 @@ Terminal {
         id: chatHistory
     }
 
-    StreamView {
+    Scrollback {
         model: chatHistory
         spacing: 1
 

@@ -5,9 +5,7 @@ import Qtui.Canvas
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "#0f172a"
-    useAlternateScreen: true
 
     property bool paused: false
     property double animTime: 0.0

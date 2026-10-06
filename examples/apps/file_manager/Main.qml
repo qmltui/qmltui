@@ -9,8 +9,6 @@ Terminal {
     id: root
 
     title: "Yazi Terminal File Manager"
-    fillTerminal: true
-    useAlternateScreen: true
     color: Theme.bgMain
     focus: true
 

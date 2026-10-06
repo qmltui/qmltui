@@ -84,8 +84,7 @@ void TestScrollView::testMouseWheel() {
 
 void TestScrollView::testScrollHitTesting() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     ScrollView* scrollView = new ScrollView(&terminal);
     scrollView->setX(5);

@@ -9,6 +9,7 @@
 #include "engine/KeyEvent.h"
 #include "engine/MouseEvent.h"
 #include "engine/Keys.h"
+#include "engine/TerminalEngine.h"
 
 using namespace qtui;
 
@@ -36,8 +37,7 @@ private slots:
 
 void TestInputRouter::testImplicitMouseGrab() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea ma(&terminal);
     ma.setX(5);
@@ -87,8 +87,7 @@ void TestInputRouter::testImplicitMouseGrab() {
 
 void TestInputRouter::testPressArmedPopupDismissal() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     Popup popup(&terminal);
     popup.setX(10);
@@ -117,8 +116,7 @@ void TestInputRouter::testPressArmedPopupDismissal() {
 
 void TestInputRouter::testFocusCycling() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     Item item1(&terminal);
     item1.setFocusable(true);
@@ -165,8 +163,7 @@ public:
 
 void TestInputRouter::testChildMouseEventFilter() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     FilterParent parent(&terminal);
     parent.setX(0);
@@ -200,8 +197,7 @@ void TestInputRouter::testChildMouseEventFilter() {
 
 void TestInputRouter::testWheelDoesNotAcquireGrab() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     ScrollView sv(&terminal);
     sv.setX(0); sv.setY(0); sv.setWidth(40); sv.setHeight(10);
@@ -229,8 +225,7 @@ void TestInputRouter::testWheelDoesNotAcquireGrab() {
 
 void TestInputRouter::testDismissalWithBackgroundMouseArea() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea bg(&terminal);
     bg.setX(0); bg.setY(0); bg.setWidth(80); bg.setHeight(24);
@@ -253,8 +248,7 @@ void TestInputRouter::testDismissalWithBackgroundMouseArea() {
 
 void TestInputRouter::testSynchronousItemDeletionDuringDispatch() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea* ma = new MouseArea(&terminal);
     ma->setX(0); ma->setY(0); ma->setWidth(10); ma->setHeight(5);
@@ -278,8 +272,7 @@ public:
 
 void TestInputRouter::testUnacceptedMouseDeletionDuringDispatch() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(5);
+    terminal.engine()->setTestViewportSize(QSize(20, 5));
 
     auto *item = new SelfDeletingMouseItem(&terminal);
     item->setWidth(10);
@@ -302,8 +295,7 @@ public:
 
 void TestInputRouter::testKeyDeletionDuringDispatch() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(5);
+    terminal.engine()->setTestViewportSize(QSize(20, 5));
 
     auto *item = new SelfDeletingKeyItem(&terminal);
     item->setFocusable(true);
@@ -319,8 +311,7 @@ void TestInputRouter::testKeyDeletionDuringDispatch() {
 
 void TestInputRouter::testAttachedKeysDeletionDuringDispatch() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(5);
+    terminal.engine()->setTestViewportSize(QSize(20, 5));
 
     auto *item = new Item(&terminal);
     item->setFocusable(true);
@@ -348,8 +339,7 @@ public:
 
 void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(5);
+    terminal.engine()->setTestViewportSize(QSize(20, 5));
     Item parent(&terminal);
     parent.setWidth(20);
     parent.setHeight(5);
@@ -375,8 +365,7 @@ void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
 
 void TestInputRouter::testHiddenAncestorInvalidatesMouseGrab() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(5);
+    terminal.engine()->setTestViewportSize(QSize(20, 5));
     Item parent(&terminal);
     parent.setWidth(20);
     parent.setHeight(5);
@@ -395,8 +384,7 @@ void TestInputRouter::testHiddenAncestorInvalidatesMouseGrab() {
 
 void TestInputRouter::testMouseAreaClickOnlyOnReleaseInside() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea ma(&terminal);
     ma.setX(5); ma.setY(5); ma.setWidth(10); ma.setHeight(5);
@@ -419,8 +407,7 @@ void TestInputRouter::testMouseAreaClickOnlyOnReleaseInside() {
 
 void TestInputRouter::testLegacyWheelEventsNotSwallowedByMouseArea() {
     Terminal terminal;
-    terminal.setWidth(40);
-    terminal.setHeight(10);
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
 
     ScrollView* view = new ScrollView(&terminal);
     view->setWidth(20); view->setHeight(5);
@@ -438,8 +425,7 @@ void TestInputRouter::testLegacyWheelEventsNotSwallowedByMouseArea() {
 
 void TestInputRouter::testModalPopupDiscardsStaleBackgroundGrab() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea bg(&terminal);
     bg.setX(0); bg.setY(0); bg.setWidth(40); bg.setHeight(10);
@@ -469,8 +455,7 @@ void TestInputRouter::testModalPopupDiscardsStaleBackgroundGrab() {
 
 void TestInputRouter::testTopmostPopupDismissalOrder() {
     Terminal terminal;
-    terminal.setWidth(80);
-    terminal.setHeight(24);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     Popup low(&terminal);
     low.setX(10); low.setY(10); low.setWidth(10); low.setHeight(5);

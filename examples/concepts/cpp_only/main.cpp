@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
     // 2. Root Terminal container
     Terminal terminal;
     terminal.setTitle(QStringLiteral("Qtui C++ Service Dashboard"));
-    terminal.setFillTerminal(true);
     terminal.setColor(Color::fromString(QStringLiteral("#0d1117")));
 
     // 3. Main layout column with margins and spacing

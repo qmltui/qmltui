@@ -3,7 +3,6 @@ import Qtui
 
 
 Terminal {
-    fillTerminal: true
 
     ProcessTableModel {
         id: processModel

@@ -16,7 +16,7 @@
 #include "MouseArea.h"
 #include "TextArea.h"
 #include "LogView.h"
-#include "StreamView.h"
+#include "Scrollback.h"
 #include "LinearLayout.h"
 #include "Layout.h"
 #include "KeyEvent.h"
@@ -162,11 +162,11 @@ private slots:
     void treeDelegateIdentity();
     void listModelMutationContract();
     void listViewVirtualizesLargeModels();
-    void streamViewDelegateContract();
-    void streamViewDelegateReuse();
-    void streamViewSpacingAndSeparator();
-    void streamViewImperativeMethods();
-    void terminalLiveItemAndAutoImplicitHeight();
+    void scrollbackDelegateContract();
+    void scrollbackDelegateReuse();
+    void scrollbackSpacingAndSeparator();
+    void scrollbackImperativeMethods();
+    void terminalVisibleChildrenAndAutoImplicitHeight();
     void destroyedTreeModelIsCleared();
     void keyHandlingImprovements();
     void alternateScreenDefersMessages();
@@ -239,8 +239,7 @@ void TestTerminalFramework::transparentTextPreservesBackground() {
 
 void TestTerminalFramework::disabledAndModalFocus() {
     Terminal terminal;
-    terminal.setWidth(40);
-    terminal.setHeight(10);
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item first(&terminal);
     Item second(&terminal);
     first.setFocusable(true);
@@ -269,8 +268,7 @@ void TestTerminalFramework::disabledAndModalFocus() {
 
 void TestTerminalFramework::nestedModalFocus() {
     Terminal terminal;
-    terminal.setWidth(40);
-    terminal.setHeight(10);
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item background(&terminal);
     background.setFocusable(true);
     terminal.setFocusedItem(&background);
@@ -343,8 +341,7 @@ void TestTerminalFramework::graphemeSelection() {
 
 void TestTerminalFramework::mouseDragSelection() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(4);
+    terminal.engine()->setTestViewportSize(QSize(20, 4));
     TextArea area(&terminal);
     area.setWidth(10);
     area.setHeight(2);
@@ -360,8 +357,7 @@ void TestTerminalFramework::mouseDragSelection() {
 
 void TestTerminalFramework::mouseMotionIsDemandDriven() {
     Terminal terminal;
-    terminal.setWidth(20);
-    terminal.setHeight(4);
+    terminal.engine()->setTestViewportSize(QSize(20, 4));
     TerminalEngine engine(&terminal);
     MouseArea first(&terminal);
     first.setWidth(10);
@@ -641,7 +637,7 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
     QVERIFY(currentWasMaterialized);
 }
 
-void TestTerminalFramework::streamViewDelegateContract() {
+void TestTerminalFramework::scrollbackDelegateContract() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     DelegateRecorder recorder;
@@ -677,8 +673,8 @@ void TestTerminalFramework::streamViewDelegateContract() {
     QVERIFY2(validDelegate.isReady(), qPrintable(validDelegate.errorString()));
 
     Terminal terminal;
-    StreamView streamView(&terminal);
-    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
+    Scrollback scrollback(&terminal);
+    QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
     MutableListModel model;
     model.append(QStringLiteral("first"));
     model.append(QStringLiteral("second"));
@@ -686,11 +682,11 @@ void TestTerminalFramework::streamViewDelegateContract() {
     QTest::ignoreMessage(
         QtWarningMsg,
         QRegularExpression(QStringLiteral(".*Delegate root must derive from Qtui.Item.*")));
-    streamView.setDelegate(&invalidDelegate);
-    streamView.setModel(&model);
+    scrollback.setDelegate(&invalidDelegate);
+    scrollback.setModel(&model);
     QVERIFY(recorder.indexes.isEmpty());
 
-    streamView.setDelegate(&validDelegate);
+    scrollback.setDelegate(&validDelegate);
     QCOMPARE(recorder.indexes, QList<int>({0, 1}));
     QCOMPARE(recorder.displays,
              QStringList({QStringLiteral("first"), QStringLiteral("second")}));
@@ -698,7 +694,7 @@ void TestTerminalFramework::streamViewDelegateContract() {
     QCOMPARE(recorder.modelDataValues, recorder.displays);
 }
 
-void TestTerminalFramework::streamViewDelegateReuse() {
+void TestTerminalFramework::scrollbackDelegateReuse() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
@@ -727,17 +723,17 @@ void TestTerminalFramework::streamViewDelegateReuse() {
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     Terminal terminal;
-    StreamView streamView(&terminal);
-    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
-    streamView.setReuseItems(true);
-    streamView.setDelegate(&delegate);
+    Scrollback scrollback(&terminal);
+    QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
+    scrollback.setReuseItems(true);
+    scrollback.setDelegate(&delegate);
 
     MutableListModel model;
     model.append(QStringLiteral("item1"));
     model.append(QStringLiteral("item2"));
     model.append(QStringLiteral("item3"));
 
-    streamView.setModel(&model);
+    scrollback.setModel(&model);
 
     QCOMPARE(tracker.createdCount, 1);
     QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("item1"), QStringLiteral("item2"), QStringLiteral("item3")}));
@@ -745,7 +741,7 @@ void TestTerminalFramework::streamViewDelegateReuse() {
     tracker.createdCount = 0;
     tracker.renderedItems.clear();
 
-    StreamView nonReusedView(&terminal);
+    Scrollback nonReusedView(&terminal);
     QQmlEngine::setContextForObject(&nonReusedView, engine.rootContext());
     nonReusedView.setReuseItems(false);
     nonReusedView.setDelegate(&delegate);
@@ -759,7 +755,7 @@ void TestTerminalFramework::streamViewDelegateReuse() {
     QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("a"), QStringLiteral("b")}));
 }
 
-void TestTerminalFramework::streamViewSpacingAndSeparator() {
+void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
@@ -789,16 +785,16 @@ void TestTerminalFramework::streamViewSpacingAndSeparator() {
     QVERIFY2(sepDelegate.isReady(), qPrintable(sepDelegate.errorString()));
 
     Terminal terminal;
-    StreamView streamView(&terminal);
-    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
-    streamView.setDelegate(&itemDelegate);
-    streamView.setSeparator(&sepDelegate);
-    streamView.setSpacing(1);
+    Scrollback scrollback(&terminal);
+    QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
+    scrollback.setDelegate(&itemDelegate);
+    scrollback.setSeparator(&sepDelegate);
+    scrollback.setSpacing(1);
 
     MutableListModel model;
     model.append(QStringLiteral("A"));
     model.append(QStringLiteral("B"));
-    streamView.setModel(&model);
+    scrollback.setModel(&model);
 
     QQmlComponent overrideDelegate(&engine);
     overrideDelegate.setData(R"(
@@ -814,21 +810,21 @@ void TestTerminalFramework::streamViewSpacingAndSeparator() {
     )", QUrl());
     QVERIFY2(overrideDelegate.isReady(), qPrintable(overrideDelegate.errorString()));
 
-    StreamView overrideStreamView(&terminal);
-    QQmlEngine::setContextForObject(&overrideStreamView, engine.rootContext());
-    overrideStreamView.setDelegate(&overrideDelegate);
-    overrideStreamView.setSpacing(3);
+    Scrollback overrideScrollback(&terminal);
+    QQmlEngine::setContextForObject(&overrideScrollback, engine.rootContext());
+    overrideScrollback.setDelegate(&overrideDelegate);
+    overrideScrollback.setSpacing(3);
 
     MutableListModel model3;
     model3.append(QStringLiteral("X"));
     model3.append(QStringLiteral("Y"));
-    overrideStreamView.setModel(&model3);
+    overrideScrollback.setModel(&model3);
 
-    streamView.clear();
-    QCOMPARE(streamView.model().isValid(), true);
+    scrollback.clear();
+    QCOMPARE(scrollback.model().isValid(), true);
 }
 
-void TestTerminalFramework::streamViewImperativeMethods() {
+void TestTerminalFramework::scrollbackImperativeMethods() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
@@ -846,25 +842,25 @@ void TestTerminalFramework::streamViewImperativeMethods() {
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     Terminal terminal;
-    StreamView streamView(&terminal);
-    QQmlEngine::setContextForObject(&streamView, engine.rootContext());
-    streamView.setDelegate(&delegate);
+    Scrollback scrollback(&terminal);
+    QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
+    scrollback.setDelegate(&delegate);
 
     QVariantMap data;
     data.insert(QStringLiteral("text"), QStringLiteral("hello"));
-    streamView.append(data);
+    scrollback.append(data);
 
-    streamView.print(QStringLiteral("direct-ansi\n"));
+    scrollback.print(QStringLiteral("direct-ansi\n"));
 
     Item customItem;
     customItem.setWidth(8);
     customItem.setHeight(1);
-    streamView.append(&customItem);
+    scrollback.append(&customItem);
 }
 
-void TestTerminalFramework::terminalLiveItemAndAutoImplicitHeight() {
+void TestTerminalFramework::terminalVisibleChildrenAndAutoImplicitHeight() {
     Terminal terminal;
-    terminal.setRendererMode(Terminal::RendererMode::Stream);
+    terminal.setMode(Terminal::Mode::Inline);
 
     QCOMPARE(terminal.implicitHeight(), 0);
 
@@ -884,12 +880,11 @@ void TestTerminalFramework::terminalLiveItemAndAutoImplicitHeight() {
     child2.setVisible(false);
     QCOMPARE(terminal.implicitHeight(), 3); // child2 is hidden
 
-    // Test liveItem property
+    // Ordinary visible children contribute to inline height
     Item liveWidget;
     liveWidget.setHeight(4);
-    terminal.setLiveItem(&liveWidget);
+    liveWidget.setParentItem(&terminal);
 
-    QCOMPARE(terminal.liveItem(), &liveWidget);
     QCOMPARE(terminal.implicitHeight(), 4);
 
     liveWidget.setHeight(6);
@@ -1096,7 +1091,7 @@ void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
     const QString immediate = QStringLiteral("qtui-immediate-message");
 
     Terminal terminal;
-    terminal.setUseAlternateScreen(false);
+    terminal.setMode(Terminal::Mode::Inline);
     terminal.engine()->setTestViewportSize(QSize(10, 3));
     terminal.engine()->renderFrame();
 

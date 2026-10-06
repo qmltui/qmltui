@@ -91,49 +91,48 @@ onClicked: statusText.text = computeStatus()
 text: root.isActive ? "Active" : "Idle"
 ```
 
-## 3. Renderer Mode: Frame or Stream
+## 3. Terminal Mode and Scrollback
 
-`Terminal.rendererMode` defaults to `Terminal.Frame`. Leave it unset for a
-full-screen application; set it explicitly only for Stream mode.
+`Terminal.mode` defaults to `Terminal.FullScreen`, which fills the terminal
+and uses the alternate screen. `Terminal.Inline` uses the normal buffer,
+terminal width, and visible content height, capped at terminal rows minus one.
 
-**Frame mode** redraws the whole grid cell by cell in the alternate screen
-buffer. Use it for dashboards, file managers, monitors, and modal-heavy UIs.
+All visible children participate in the UI in either mode. Ordinary stacking
+order applies; use layouts to arrange siblings. Hidden children do not
+contribute to inline height. Do not vertically fill a content-sized inline
+root: establish child height explicitly or implicitly. Root dimensions are
+session-managed; put borders and fixed-size geometry on inner rectangles.
 
 ```qml
 Terminal {
-    id: root
-    useAlternateScreen: true
-    title: "Fleet Cockpit"
+    mode: Terminal.Inline
 
-    Row {
-        anchors.fill: parent
+    Scrollback {
+        id: history
+    }
+
+    Column {
+        width: parent.width
+        Text { text: "Ready" }
+        TextInput {
+            width: parent.width
+            height: 1
+            focus: true
+        }
     }
 }
 ```
 
-**Stream mode** runs in the normal buffer, appends output to the user's
-scrollback, and redraws only `liveItem` at the bottom. Use it for assistants,
-REPLs, consoles, and build tools. Stream mode requires `rendererMode`,
-`useAlternateScreen: false`, and a `liveItem`.
+`Scrollback` is nonvisual and has no anchors or geometry. Its creation or
+destruction never changes mode. It accepts text through `print()`, snapshots
+items/data through `append()`, or renders model entries through a delegate.
+Accepted output is queued during full-screen mode and committed when inline
+resumes or the session stops. The shared queue is bounded to 1 MiB; rejection
+emits `outputRejected(reason)`, and `print()` returns false.
 
-```qml
-Terminal {
-    id: root
-    rendererMode: Terminal.Stream
-    useAlternateScreen: false
-    liveItem: promptBar
-
-    StreamView {
-        id: streamView
-        anchors.fill: parent
-    }
-
-    Item {
-        id: promptBar
-        height: 3
-    }
-}
-```
+Change `mode` for presentation; bind ordinary child `visible` and focus state
+for page switching. There are no nested terminals or automatic takeover pages.
+Always include the application quit path described below.
 
 ## 4. Geometry, Layout, and Borders
 
@@ -234,7 +233,7 @@ sources listed at the top.
 
 **`import Qtui`** (C++ in `src/Qtui/items` and `src/Qtui/engine`)
 `Terminal`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
-`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `StreamView`, `LogView`,
+`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `Scrollback`, `LogView`,
 `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `Repeater`,
 `Loader`, `Popup`, `MouseArea`, `Shortcut`, `Keys` (attached), `State`,
 `Transition`, `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`,
@@ -271,8 +270,8 @@ Before finishing a Qtui QML file:
 4. New files start with `pragma ComponentBehavior: Bound`.
 5. Properties use concrete types where one exists.
 6. Model delegates declare `required property` for the roles they read.
-7. Stream-mode roots set `rendererMode`, `useAlternateScreen: false`, and
-   `liveItem`.
+7. Inline roots set `mode: Terminal.Inline`; visible children have a finite
+   content height. `Scrollback` has no geometry.
 8. Borders are configured only on `Rectangle` or Rectangle-derived controls;
    borderless types are wrapped when needed.
 9. A reachable keyboard quit path exists and does not fire while a text input

@@ -148,6 +148,7 @@ private slots:
     void treeViewStaysIdle();
     void canvasWithShapesStaysIdle();
     void framePacingCoalescesBursts();
+    void terminalModesAndVisibleChildren();
 
 private:
     QQmlEngine m_qmlEngine;
@@ -161,13 +162,50 @@ void TestRenderLoop::initTestCase()
     m_qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 }
 
+void TestRenderLoop::terminalModesAndVisibleChildren()
+{
+    Session session = createSession(m_qmlEngine, R"(
+        import QtQml
+        import Qtui
+        Terminal {
+            mode: Terminal.Inline
+            Text { text: "FIRST" }
+            Text { objectName: "second"; y: 2; text: "SECOND" }
+            Text { objectName: "overlay"; visible: false; text: "OVERLAY"; z: 1 }
+        }
+    )");
+    QVERIFY(session.engine);
+    QTUI_VERIFY_IDLE(session.engine);
+    QCOMPARE(session.engine->currentFrame()->height(), 3);
+    QVERIFY(frameText(session.engine).contains("FIRST"));
+    QVERIFY(frameText(session.engine).contains("SECOND"));
+    auto* second = session.terminal->findChild<Item*>("second");
+    auto* overlay = session.terminal->findChild<Item*>("overlay");
+    QVERIFY(second && overlay);
+    QTUI_VERIFY_ONE_FRAME(session.engine, second->setY(4));
+    QCOMPARE(session.engine->currentFrame()->height(), 5);
+    QTUI_VERIFY_ONE_FRAME(session.engine, second->setVisible(false));
+    QCOMPARE(session.engine->currentFrame()->height(), 1);
+    QTUI_VERIFY_ONE_FRAME(session.engine, overlay->setVisible(true));
+    QVERIFY(frameText(session.engine).contains("OVERLAY"));
+    QVERIFY(!frameText(session.engine).contains("FIRST"));
+    QTUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::FullScreen));
+    QCOMPARE(session.engine->currentFrame()->height(), session.engine->terminalHeight());
+    QVERIFY(frameText(session.engine).contains("OVERLAY"));
+    QVERIFY(!second->visible());
+    QTUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::Inline));
+    QCOMPARE(session.engine->currentFrame()->height(), 1);
+    QTUI_VERIFY_ONE_FRAME(session.engine, delete overlay);
+    QVERIFY(frameText(session.engine).contains("FIRST"));
+    QTUI_VERIFY_IDLE(session.engine);
+}
+
 void TestRenderLoop::tableViewWithDelegateStaysIdle()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             TableView {
                 objectName: "table"
                 anchors.fill: parent
@@ -202,7 +240,6 @@ void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             TableView {
                 objectName: "table"
                 anchors.fill: parent
@@ -266,10 +303,8 @@ void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
 void TestRenderLoop::streamPromptUsesCompletedLayout()
 {
     Terminal terminal;
-    terminal.setUseAlternateScreen(false);
-    terminal.setRendererMode(Terminal::RendererMode::Stream);
+    terminal.setMode(Terminal::Mode::Inline);
     auto *prompt = new LayoutPrompt(&terminal);
-    terminal.setLiveItem(prompt);
     auto *engine = terminal.engine();
     engine->setTestViewportSize(QSize(30, 8));
     QTRY_COMPARE(engine->frameSequence(), quint64(1));
@@ -291,7 +326,6 @@ void TestRenderLoop::tableViewWithCellFormatStaysIdle()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             TableView {
                 objectName: "table"
                 anchors.fill: parent
@@ -318,7 +352,6 @@ void TestRenderLoop::listViewStaysIdle()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             ListView {
                 objectName: "list"
                 anchors.fill: parent
@@ -352,7 +385,6 @@ void TestRenderLoop::gridViewStaysIdle()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             GridView {
                 objectName: "grid"
                 anchors.fill: parent
@@ -383,7 +415,6 @@ void TestRenderLoop::treeViewStaysIdle()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             TreeView {
                 objectName: "tree"
                 anchors.fill: parent
@@ -416,7 +447,6 @@ void TestRenderLoop::canvasWithShapesStaysIdle()
         import Qtui
         import Qtui.Canvas
         Terminal {
-            fillTerminal: true
             Canvas {
                 objectName: "canvas"
                 anchors.fill: parent
@@ -441,7 +471,6 @@ void TestRenderLoop::framePacingCoalescesBursts()
         import QtQml
         import Qtui
         Terminal {
-            fillTerminal: true
             Text { objectName: "label"; text: "0" }
         }
     )");

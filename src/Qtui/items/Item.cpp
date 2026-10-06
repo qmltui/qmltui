@@ -410,6 +410,8 @@ void Item::registerChildItem(Item* childItem) {
     connections.append(connect(childItem, &Item::implicitWidthChanged, this, childGeometryChanged));
     connections.append(connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
     connections.append(connect(childItem, &Item::visibleChanged, this, childGeometryChanged));
+    if (isTerminalRoot())
+        connections.append(connect(childItem, &Item::yChanged, this, childGeometryChanged));
     m_childGeometryConnections.insert(childItem, connections);
 
     scheduleChildGeometryInvalidation();

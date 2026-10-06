@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 import CustomItemDemo 1.0
@@ -10,44 +11,46 @@ Terminal {
         }
     }
 
-    id: rootWindow
-    width: 80
-    height: 24
-    color: "black"
-    useAlternateScreen: true
+    Rectangle {
 
-    property Timer timer: Timer {
-        interval: 2000
-        running: true
-        repeat: true
-        onTriggered: {
-            // Toggle between empty and full without optional Behavior support.
-            progBar.value = (progBar.value === 0.0) ? 1.0 : 0.0;
-        }
-    }
+        id: rootWindow
+        width: 80
+        height: 24
+        color: "black"
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 2
-        width: 44
-
-        Text {
-            width: parent.width
-            text: "Custom C++ Item"
-            color: "cyan"
-            bold: true
-            horizontalAlignment: Qt.AlignHCenter
+        property Timer timer: Timer {
+            interval: 2000
+            running: true
+            repeat: true
+            onTriggered: {
+                // Toggle between empty and full without optional Behavior support.
+                progBar.value = (progBar.value === 0.0) ? 1.0 : 0.0;
+            }
         }
 
-        ProgressBar {
-            id: progBar
-            width: parent.width
-            height: 3
-            border.style: "single"
-            border.color: "gray"
-            barColor: "green"
-            value: 0.0
+        Column {
+            anchors.centerIn: parent
+            spacing: 2
+            width: 44
 
+            Text {
+                width: parent.width
+                text: "Custom C++ Item"
+                color: "cyan"
+                bold: true
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
+            ProgressBar {
+                id: progBar
+                width: parent.width
+                height: 3
+                border.style: "single"
+                border.color: "gray"
+                barColor: "green"
+                value: 0.0
+
+            }
         }
     }
 }

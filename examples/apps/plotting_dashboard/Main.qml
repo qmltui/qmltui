@@ -7,9 +7,7 @@ import Qtui.Controls
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "black"
-    useAlternateScreen: true
 
     // Waveform Properties
     property double waveTime: 0.0

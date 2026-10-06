@@ -15,7 +15,7 @@ public:
     void resize(int width, int height) override;
     bool renderFrame(Terminal* rootWindow, TerminalDevice& device) override;
 
-    void print(TerminalDevice& device, const std::string& text) override;
+    bool renderFrame(Terminal* rootWindow, TerminalDevice& device, std::string_view scrollback);
     const TextGridBuffer* currentBuffer() const override { return &m_promptBuffer; }
 
 private:

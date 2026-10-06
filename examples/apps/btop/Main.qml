@@ -8,9 +8,6 @@ import Qtui.Extras
 
 Terminal {
     id: root
-
-    fillTerminal: true
-    useAlternateScreen: true
     color: backgroundColor
 
     readonly property string backgroundColor: "#080a0b"

@@ -1,4 +1,5 @@
-#include "StreamView.h"
+#include "Scrollback.h"
+#include "../engine/TerminalEngine.h"
 #include "DelegateUtils.h"
 #include "Item.h"
 #include "../engine/ItemPaintTraversal_p.h"
@@ -26,19 +27,19 @@ static int resolveItemSpacing(Item* item, int defaultSpacing) {
     return defaultSpacing;
 }
 
-StreamView::StreamView(QObject* parent)
+Scrollback::Scrollback(QObject* parent)
     : QObject(parent) {
 }
 
-StreamView::~StreamView() {
+Scrollback::~Scrollback() {
     clearDelegateCache();
 }
 
-void StreamView::setModel(QAbstractItemModel* model) {
+void Scrollback::setModel(QAbstractItemModel* model) {
     setModel(QVariant::fromValue(static_cast<QObject*>(model)));
 }
 
-void StreamView::setModel(const QVariant& model) {
+void Scrollback::setModel(const QVariant& model) {
     if (m_modelVariant == model) return;
 
     if (m_model) {
@@ -62,7 +63,7 @@ void StreamView::setModel(const QVariant& model) {
         connect(m_model, &QAbstractItemModel::rowsInserted, this,
                 [this](const QModelIndex& parent, int first, int last) {
                     if (parent.isValid()) {
-                        qWarning("StreamView ignores rows inserted below the model root.");
+                        qWarning("Scrollback ignores rows inserted below the model root.");
                         return;
                     }
                     Q_UNUSED(first);
@@ -84,7 +85,7 @@ void StreamView::setModel(const QVariant& model) {
     appendExistingRows();
 }
 
-void StreamView::setDelegate(QQmlComponent* delegate) {
+void Scrollback::setDelegate(QQmlComponent* delegate) {
     if (m_delegate == delegate) return;
     if (m_delegate) disconnect(m_delegate, nullptr, this, nullptr);
     clearDelegateCache();
@@ -107,14 +108,14 @@ void StreamView::setDelegate(QQmlComponent* delegate) {
     appendExistingRows();
 }
 
-void StreamView::setSpacing(int spacing) {
+void Scrollback::setSpacing(int spacing) {
     spacing = std::max(0, spacing);
     if (m_spacing == spacing) return;
     m_spacing = spacing;
     emit spacingChanged();
 }
 
-void StreamView::setSeparator(QQmlComponent* separator) {
+void Scrollback::setSeparator(QQmlComponent* separator) {
     if (m_separator == separator) return;
     if (m_separator) disconnect(m_separator, nullptr, this, nullptr);
     if (m_cachedSeparator.item) {
@@ -135,7 +136,7 @@ void StreamView::setSeparator(QQmlComponent* separator) {
     emit separatorChanged();
 }
 
-void StreamView::setReuseItems(bool reuse) {
+void Scrollback::setReuseItems(bool reuse) {
     if (m_reuseItems == reuse) return;
     m_reuseItems = reuse;
     if (!m_reuseItems) {
@@ -144,13 +145,13 @@ void StreamView::setReuseItems(bool reuse) {
     emit reuseItemsChanged();
 }
 
-void StreamView::clear() {
+void Scrollback::clear() {
     m_consumedRowCount = 0;
     m_hasRenderedFirstItem = false;
     clearDelegateCache();
 }
 
-void StreamView::clearDelegateCache() {
+void Scrollback::clearDelegateCache() {
     for (auto it = m_delegateCache.begin(); it != m_delegateCache.end(); ++it) {
         if (it.value().item) {
             delete it.value().item;
@@ -163,7 +164,7 @@ void StreamView::clearDelegateCache() {
     }
 }
 
-StreamView::CachedDelegate StreamView::getOrCreateDelegate(QQmlComponent* component, const QVariantMap& initialProperties) {
+Scrollback::CachedDelegate Scrollback::getOrCreateDelegate(QQmlComponent* component, const QVariantMap& initialProperties) {
     if (!component) return {nullptr, nullptr};
     auto it = m_delegateCache.find(component);
     if (it != m_delegateCache.end() && it.value().item) {
@@ -187,7 +188,7 @@ StreamView::CachedDelegate StreamView::getOrCreateDelegate(QQmlComponent* compon
     return cached;
 }
 
-StreamView::CachedDelegate StreamView::getOrCreateSeparator() {
+Scrollback::CachedDelegate Scrollback::getOrCreateSeparator() {
     if (!m_separator || !DelegateUtils::isReady(m_separator, this))
         return {nullptr, nullptr};
 
@@ -206,7 +207,7 @@ StreamView::CachedDelegate StreamView::getOrCreateSeparator() {
     return m_cachedSeparator;
 }
 
-std::string StreamView::renderItemToAnsi(Item* item, Terminal* output) {
+std::string Scrollback::renderItemToAnsi(Item* item, Terminal* output) {
     if (!item) return "";
     int w = item->width() > 0 ? item->width() : (output ? output->width() : 80);
     if (w <= 0) w = 80;
@@ -222,7 +223,7 @@ std::string StreamView::renderItemToAnsi(Item* item, Terminal* output) {
     return buffer.toAnsiString();
 }
 
-std::string StreamView::renderSeparatorToAnsi(Terminal* output) {
+std::string Scrollback::renderSeparatorToAnsi(Terminal* output) {
     if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return "";
 
     if (m_reuseItems) {
@@ -241,7 +242,7 @@ std::string StreamView::renderSeparatorToAnsi(Terminal* output) {
     return ansi;
 }
 
-void StreamView::applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
+void Scrollback::applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
                                          int index, const QVariantMap& modelMap, const QVariant& rawData) {
     if (!item) return;
 
@@ -264,7 +265,7 @@ void StreamView::applyModelDataToDelegate(Item* item, QQmlContext* context, QQml
     }
 }
 
-void StreamView::appendExistingRows() {
+void Scrollback::appendExistingRows() {
     if (!m_model || !isDelegateReady(m_delegate, this) || !terminal()) return;
 
     const int lastRow = m_model->rowCount() - 1;
@@ -273,14 +274,13 @@ void StreamView::appendExistingRows() {
     }
 }
 
-int StreamView::appendRows(int first, int last) {
+int Scrollback::appendRows(int first, int last) {
     Terminal* output = terminal();
     if (!m_model || !m_delegate || !output) return first;
 
     const QHash<int, QByteArray> roles = m_model->roleNames();
-    std::string batchAnsi;
-
     for (int row = first; row <= last; ++row) {
+        std::string batchAnsi;
         const QModelIndex index = m_model->index(row, 0);
         QQmlComponent* rowDelegate = delegateForRow(row);
         if (!DelegateUtils::isReady(rowDelegate, this)) return row;
@@ -331,16 +331,13 @@ int StreamView::appendRows(int first, int last) {
         }
 
         batchAnsi += renderItemToAnsi(itemToRender, output);
+        if (!batchAnsi.empty() && !print(QString::fromStdString(batchAnsi))) return row;
         m_hasRenderedFirstItem = true;
-    }
-
-    if (!batchAnsi.empty()) {
-        output->print(QString::fromStdString(batchAnsi));
     }
     return last + 1;
 }
 
-void StreamView::append(const QVariant& data) {
+void Scrollback::append(const QVariant& data) {
     Terminal* output = terminal();
     if (!m_delegate || !output) return;
 
@@ -424,13 +421,13 @@ void StreamView::append(const QVariant& data) {
 
     batchAnsi += renderItemToAnsi(itemToRender, output);
     if (!batchAnsi.empty()) {
-        output->print(QString::fromStdString(batchAnsi));
+        if (!print(QString::fromStdString(batchAnsi))) return;
     }
     m_hasRenderedFirstItem = true;
     ++m_consumedRowCount;
 }
 
-void StreamView::append(qtui::Item* item) {
+void Scrollback::append(qtui::Item* item) {
     Terminal* output = terminal();
     if (!item || !output) return;
 
@@ -446,20 +443,28 @@ void StreamView::append(qtui::Item* item) {
 
     batchAnsi += renderItemToAnsi(item, output);
     if (!batchAnsi.empty()) {
-        output->print(QString::fromStdString(batchAnsi));
+        if (!print(QString::fromStdString(batchAnsi))) return;
     }
     m_hasRenderedFirstItem = true;
     ++m_consumedRowCount;
 }
 
-void StreamView::print(const QString& text) {
+bool Scrollback::print(const QString& text) {
     Terminal* output = terminal();
-    if (output) {
-        output->print(text);
-    }
+    const QString reason = !output
+        ? QStringLiteral("Scrollback must belong to a Terminal")
+        : !output->engine()
+            ? QStringLiteral("Scrollback requires a root Terminal session")
+        : !output->engine()->submitScrollback(text)
+            ? QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected")
+            : QString();
+    if (reason.isEmpty()) return true;
+    qWarning("%s", qPrintable(reason));
+    emit outputRejected(reason);
+    return false;
 }
 
-QQmlComponent* StreamView::delegateForRow(int row) const {
+QQmlComponent* Scrollback::delegateForRow(int row) const {
     QQmlListReference choices(m_delegate, "choices");
     if (!choices.isValid()) {
         return m_delegate;
@@ -498,7 +503,7 @@ QQmlComponent* StreamView::delegateForRow(int row) const {
     return nullptr;
 }
 
-Terminal* StreamView::terminal() const {
+Terminal* Scrollback::terminal() const {
     QObject* current = parent();
     while (current) {
         if (auto* result = qobject_cast<Terminal*>(current)) {

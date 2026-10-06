@@ -8,8 +8,6 @@ Terminal {
     id: root
 
     title: "Boot to Qtui — Device Setup"
-    fillTerminal: true
-    useAlternateScreen: true
     color: Theme.bgMain
     focus: true
 

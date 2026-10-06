@@ -5,10 +5,7 @@ import Qtui.Canvas
 
 Terminal {
     id: rootWindow
-
-    fillTerminal: true
     color: "#000000"
-    useAlternateScreen: true
 
     property int score: 0
     property int highScore: 0

@@ -5,8 +5,6 @@ import Qtui.Image
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: "#0f172a"
 
     property string userImagePath: "panda.png"

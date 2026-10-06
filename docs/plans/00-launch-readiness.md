@@ -10,9 +10,9 @@ never hit a broken step.
 Exit criteria:
 
 - Every public QML control uses Qt Quick naming where an equivalent exists.
-- `Terminal` is the only root type. Its mode is derived from whether it
-  contains a `Scrollback`, and a nested `Terminal` is the full-screen takeover.
-  `rendererMode`, `useAlternateScreen`, `liveItem`, `StreamView`, and
+- `Terminal` is the only root type, with explicit `FullScreen` or `Inline`
+  mode. Visible children form the UI; `Scrollback` owns committed output.
+  `rendererMode`, `useAlternateScreen`, `fillTerminal`, `liveItem`, `StreamView`, and
   `Terminal.border` no longer exist.
 - A quickstart project lives in the repo, is compiled in CI, and is the exact
   text the documentation site embeds.
@@ -52,31 +52,35 @@ grep -rln 'import QtQml 2' examples src tests docs
 
 ---
 
-## 3. Root Type Redesign: One `Terminal`, Mode by Content
+## 3. Root Type Redesign: Explicit Mode, Ordinary Children, Separate Output
+
+Design approved on 2026-09-08. This section describes the intended API, not
+the currently implemented API.
 
 ### The problem today
 
-`Terminal` inherits `Rectangle` and carries the union of two modes. `rendererMode`,
-`useAlternateScreen`, `liveItem`, `print()`, and `append()` only mean something
-in Stream mode; `border` means nothing on a root; `height()` branches on the
-mode internally. `StreamView` is a `QObject` that is instantiable anywhere but
-only works inside a Stream-mode root, and the QML skill documents it with
-`anchors.fill`, which it does not have. `Terminal.print()` and
-`StreamView.print()` do the same job. `examples/concepts/agent_stream` switches
-modes by binding three root properties, two visibilities, and focus to one
-boolean; forgetting any one of the five produces a half-broken screen.
+`examples/concepts/agent_stream` coordinates `rendererMode`, `fillTerminal`,
+and `useAlternateScreen` to change presentation. These overlapping controls
+should become one property. Visibility and focus remain ordinary QML concerns.
+
+The current `StreamRenderer` already paints the root's visible subtree;
+`liveItem` contributes sizing and notifications but does not select the rendered
+subtree. `StreamView` is a nonvisual `QObject`, despite its name, and duplicates
+the root's printing API. Output is forwarded to the active renderer, whose
+default `print()` implementation does nothing in frame mode.
 
 ### The design
 
-Two types. No mode flag. No new vocabulary.
+Two types, with presentation independent from output and object creation.
 
 | Type | Role |
 | :--- | :--- |
-| `Terminal` | The only root. Inherits `Item`. Full-screen unless it contains a `Scrollback`. Nested inside another `Terminal`, it is a full-screen takeover with `open()` and `close()`. |
-| `Scrollback` | Declares that the enclosing `Terminal` runs inline. Owns the stream: model, delegate, `append()`, `print()`. At most one per `Terminal`. |
+| `Terminal` | The only root. Inherits `Item` and owns one engine and terminal session. Explicit `mode`, defaulting to `Terminal.FullScreen`. |
+| `Scrollback` | Nonvisual output object, renamed from `StreamView`. Owns model/delegate output and stream submission. Its presence never changes mode. |
 
-**Rule in one sentence:** a `Terminal` with a `Scrollback` is inline, and every
-other child is the live region; a `Terminal` without one owns the screen.
+`mode` controls terminal presentation, `visible` controls displayed content,
+and `focus` controls keyboard ownership. No nested terminals, `TerminalPage`,
+or special takeover lifecycle is introduced.
 
 ### `Terminal` properties
 
@@ -84,13 +88,12 @@ other child is the live region; a `Terminal` without one owns the screen.
 | :--- | :--- |
 | `title` | Window title, unchanged |
 | `color` | Background, mirrors Qt Quick `Window.color`. `border` is removed. |
-| `fillTerminal` | Default `true`. Setting `width` and `height` opts into a fixed size. Ignored when inline. |
+| `mode` | `Terminal.FullScreen` (default) or `Terminal.Inline`; supports runtime changes. Selects renderer, screen buffer, and root sizing together. |
+| `width`, `height` | Session-managed geometry, according to the sizing rules below. Fixed-size panels belong inside the root. |
 | `terminalWidth`, `terminalHeight` | Read-only, unchanged |
 | `mouseReporting`, `clipboardMode`, `copyToClipboard()` | Unchanged |
-| `hoveredItem`, `activeFocusItem` | Read-only |
-| `inline` | Read-only `bool`. True when a `Scrollback` is registered. |
-| `open()`, `close()`, `visible`, `opened()`, `closed()` | Only on a nested `Terminal`. A root ignores them with a warning. |
-| Removed | `rendererMode`, `useAlternateScreen`, `liveItem`, `print()`, `append()`, `border` |
+| Focus and hover accessors | Preserve the current contract; no takeover-specific focus API. |
+| Removed | `rendererMode`, `useAlternateScreen`, `fillTerminal`, `liveItem`, `print()`, `append()`, `border` |
 
 ### `Scrollback` properties
 
@@ -98,46 +101,77 @@ other child is the live region; a `Terminal` without one owns the screen.
 | :--- | :--- |
 | `model`, `delegate`, `spacing`, `separator`, `reuseItems` | Moved from `StreamView` |
 | `append(data)`, `append(item)`, `print(text)`, `clear()` | Moved from `StreamView` and `Terminal` |
-| Not an `Item` | It has no geometry. The live region is the sibling items. |
+| Not an `Item` | No geometry, anchors, or participation in layout. |
 
-### How the mode is resolved (no tree scanning)
+Scrollback is committed output, not an editable view. Specify append, model
+reset, and `clear()` semantics before implementation; clearing logical state
+must not promise to retract bytes already committed to the user's terminal.
 
-`Scrollback` and nested `Terminal` are `QQmlParserStatus` types. In
-`componentComplete()` each walks its parent chain to the nearest `Terminal`
-and registers, exactly as `Popup` does today with `registerPopup()`. QML
-completes children before parents, so when the root `Terminal` completes it
-already knows whether a `Scrollback` registered and installs `StreamRenderer` or
-`FrameRenderer` once. A `Scrollback` created later through a `Loader` registers
-on completion and the engine swaps renderers through the existing
-`setRenderer()`; destroying it swaps back. A second `Scrollback` under one
-`Terminal` warns and is ignored. Only the outermost `Terminal` owns the engine
-and the device.
+### Visible children and sizing
 
-### Takeover semantics
+All visible children participate in the same UI in both modes. The root does
+not stack children or choose an active page. Children at the same coordinates
+can overlap under normal painting order; use `Row`, `Column`, or other layouts
+to arrange them. Creating or destroying a `Scrollback` has no presentation effect.
 
-A nested `Terminal` is excluded from the live region and keeps its state while
-closed, so a shell session survives being hidden. `open()` swaps to the frame
-renderer, enters the alternate screen, sizes the item to the terminal, hides the
-live region, and moves focus into it. `close()` reverses all five steps and
-restores focus to the previous item. This replaces the manual choreography in
-`agent_stream`.
+| Mode | Root size |
+| :--- | :--- |
+| `FullScreen` | Terminal width and height. |
+| `Inline` | Terminal width; height derived from visible content bounds and capped to available rows. |
+
+Inline children establish their height through explicit or implicit sizing.
+Vertically filling the root cannot determine the root's own content-driven
+height. Hidden content does not contribute to inline bounds.
+
+### Presentation transitions and output ownership
+
+One session owns terminal I/O, input, and screen transitions. Renderers draw
+the visible UI; scrollback submission moves out of the renderer interface.
+Changing `mode` preserves the session and QML objects, without hiding children
+or moving focus automatically. Applications bind page visibility and focus to
+their own state, including contextual Escape behavior.
+
+Scrollback submissions made during full-screen mode wait until inline mode
+resumes. Restore the normal screen, commit pending output in submission order,
+then redraw the live region. Define bounded buffering and an observable overflow
+policy before implementing this path; output must not silently disappear into
+the frame renderer or accumulate without a limit.
 
 ### Before and after
 
 ```qml
-// Dashboard: nothing to declare
+pragma ComponentBehavior: Bound
+import QtQml
+import Qtui
+
+// Dashboard: full-screen by default
 Terminal {
     title: "PLC Cockpit"
     color: "#0d1117"
     Row { anchors.fill: parent }
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            event.accepted = true
+            Qt.quit()
+        }
+    }
 }
 ```
 
+The following composition sketch uses application-defined `PromptBar`,
+`ShellPage`, and `MessageCard` components and an existing `chatHistory` model:
+
 ```qml
-// Agent or REPL
+pragma ComponentBehavior: Bound
+import QtQml
+import Qtui
+
 Terminal {
     id: root
     title: "Qt AI Studio"
+    property bool shellMode: false
+    mode: shellMode ? Terminal.FullScreen : Terminal.Inline
 
     Scrollback {
         id: history
@@ -145,32 +179,55 @@ Terminal {
         delegate: MessageCard {}
     }
 
-    PromptBar {                                     // live region
-        onSubmitted: (text) => history.append({ type: "user", text })
-        onShellRequested: shell.open()
+    PromptBar {
+        id: prompt
+        visible: !root.shellMode
+        onSubmitted: (text) => chatHistory.append({ type: "user", text: text })
+        onShellRequested: root.shellMode = true
     }
 
-    Terminal {                                      // takeover
+    ShellPage {
         id: shell
-        ShellPage { onExitRequested: shell.close() }
+        anchors.fill: parent
+        visible: root.shellMode
+        onExitRequested: root.shellMode = false
+    }
+
+    onShellModeChanged: {
+        if (shellMode)
+            shell.focusShell()
+        else
+            prompt.focusPrompt()
+    }
+
+    Keys.onPressed: event => {
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Q) {
+            event.accepted = true
+            Qt.quit()
+        }
     }
 }
 ```
+
+Both pages stay alive while hidden. If both are visible, both render. Shell
+exit and contextual Escape are handled by the application components; changing
+mode itself does not select a page or establish a focus-restoration policy.
 
 ### Migration inside the tree
 
 | Today | After |
 | :--- | :--- |
 | `Terminal { rendererMode: Terminal.Frame }` | `Terminal {}` |
-| `rendererMode: Terminal.Stream; useAlternateScreen: false; liveItem: x` | `Scrollback {}` plus `X {}` as a sibling |
+| `rendererMode: Terminal.Stream; useAlternateScreen: false; liveItem: x` | `mode: Terminal.Inline`; ordinary children form the live region |
 | `StreamView { model; delegate }` | `Scrollback { model; delegate }` |
 | `Terminal.print()`, `StreamView.print()` | `Scrollback.print()` |
-| `rendererMode: cond ? Frame : Stream` and visibility and focus juggling | nested `Terminal` with `open()` and `close()` |
+| Coordinated renderer, screen-buffer, and fill properties | `mode: cond ? Terminal.FullScreen : Terminal.Inline`; retain application visibility and focus bindings |
 | `Terminal.border` | Removed |
-| `fillTerminal: true` on every full-screen root | Default; delete the line |
+| `fillTerminal`, explicit root dimensions | Remove `fillTerminal`; move fixed-size geometry to an inner item |
 
 Files to update: `src/Qtui/items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
-`Scrollback`), `engine/TerminalEngine.cpp` (takeover entry and exit),
+`Scrollback`), `engine/TerminalEngine.cpp` and renderers (mode transitions and
+separate scrollback output),
 `examples/concepts/agent_stream/Main.qml`, every example root that sets
 `fillTerminal: true` or a border, `docs/qml_api.md`, `docs/architecture.md`,
 `.agents/skills/qtui-qml/SKILL.md` section 3, and the `TestRunner` hook if it
@@ -178,13 +235,22 @@ reads `rendererMode`.
 
 ### Acceptance
 
-- `grep -rn 'rendererMode\|useAlternateScreen\|liveItem\|StreamView' src examples docs tests` returns nothing.
-- `agent_stream` opens and closes the shell takeover through `open()` and
-  `close()` and its TestRunner scenario passes in both Behavior trees.
+- No removed public API remains in implementation, examples, tests, or current
+  API documentation. Migration explanations in this roadmap may name old APIs.
+- `agent_stream` uses one `mode` binding plus ordinary visibility and focus;
+  entering and leaving its persistent shell passes committed-frame assertions.
+- Multiple visible children render together in both modes; layout, overlap,
+  hidden-child sizing, and content-height changes have committed-frame coverage.
+- Adding or removing `Scrollback` never changes mode. Output submitted while
+  full-screen is preserved and committed in order when inline resumes.
+- Device-output tests verify alternate-screen entry/exit, output ordering,
+  bounded-buffer behavior, and terminal restoration; headless frames alone
+  cannot verify terminal I/O.
 - A new concept example `examples/concepts/inline_repl/` shows the minimal
   inline case: one `Scrollback`, one `TextInput` as the live region, under 40
   lines, with a scenario test.
-- Both Behavior trees green; `test_runner_pos` and `test_runner_plc` unchanged.
+- Both Behavior trees green; POS and PLC frame results preserved in applicable
+  configurations. PLC is exercised only with Behavior enabled.
 
 ## 4. The Quickstart as a Compiled Project
 
@@ -297,8 +363,8 @@ Terminal {
 }
 ```
 
-`Button.text` assumes Section 2 is done. `fillTerminal` is omitted because
-Section 3 makes it the default. `color` on `Terminal` is the root background,
+`Button.text` assumes Section 2 is done. `mode` is omitted because full-screen
+is the default; Section 3 removes `fillTerminal`. `color` is the root background,
 as on Qt Quick `Window`.
 
 ### In-tree build
@@ -495,8 +561,8 @@ cmake --build build-win --config Release
 ctest --test-dir build-win -C Release --output-on-failure
 .\build-win\examples\quickstart\Release\hello_qtui.exe   # inside Windows Terminal
 
-# No stale root API remains
-grep -rn 'rendererMode\|useAlternateScreen\|liveItem\|StreamView' src examples docs tests || echo "clean"
+# Audit stale public root API; migration explanations in plans are excluded
+rg -n 'rendererMode|useAlternateScreen|fillTerminal|liveItem|StreamView' src examples docs tests -g '!docs/plans/**'
 
 # No stale names remain
 grep -rn 'label:' examples docs src/Qtui/*/doc | grep -v 'StatusBadge\|Panel' || echo "clean"

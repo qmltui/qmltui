@@ -3,9 +3,7 @@ import Qtui
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "#0f172a"
-    useAlternateScreen: true
 
     property string lastAction: "Ready for text input... Tab: cycle | Ins: Overwrite mode | Shift+Arrows: select"
 

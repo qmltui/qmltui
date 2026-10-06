@@ -7,9 +7,7 @@ import Qtui
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "black"
-    useAlternateScreen: true
 
     // Maximum history data points for sparklines
     property int maxHistory: 100

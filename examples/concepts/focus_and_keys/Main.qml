@@ -5,7 +5,6 @@ Terminal {
     id: rootWindow
 
     color: "black"
-    useAlternateScreen: true
 
     // 1. Declarative Shortcuts (Feature Showcase)
     Shortcut {

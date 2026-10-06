@@ -5,8 +5,6 @@ import Qtui
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: "black"
 
     Keys.onPressed: (event) => {

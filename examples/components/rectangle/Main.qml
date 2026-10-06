@@ -4,8 +4,6 @@ import Qtui.Canvas
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: "black"
     focus: true
 

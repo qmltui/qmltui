@@ -5,6 +5,7 @@
 #include <QEventLoop>
 #include <QObject>
 #include <QTest>
+#include <QSignalSpy>
 #include <fcntl.h>
 #include <cerrno>
 #include <cstdlib>
@@ -20,6 +21,7 @@
 #include "TerminalCapabilities.h"
 #include "TerminalDevice.h"
 #include "TerminalEngine.h"
+#include "Scrollback.h"
 
 using namespace qtui;
 
@@ -105,6 +107,7 @@ private slots:
     void testStreamPrintLaysOutPrompt();
     void testPtyShutdownRestoresRawMode();
     void testDestructorUsesBoundedShutdown();
+    void testScrollbackAcrossModes();
 };
 
 void TestTerminalDevice::initTestCase()
@@ -303,11 +306,12 @@ void TestTerminalDevice::testStreamPrintLaysOutPrompt()
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
     Terminal terminal;
-    terminal.setLiveItem(new Prompt(&terminal));
+    terminal.setMode(Terminal::Mode::Inline);
+    new Prompt(&terminal);
     StreamRenderer renderer;
     renderer.resize(30, 8);
     renderer.start(&terminal, device);
-    renderer.print(device, "message");
+    QVERIFY(renderer.renderFrame(&terminal, device, "message\r\n"));
     const std::string output = readAvailable(pipe.readEnd);
     QVERIFY(output.find("message\r\n") != std::string::npos);
     QVERIFY(output.find("THIRD ROW") != std::string::npos);
@@ -363,7 +367,6 @@ void TestTerminalDevice::testDestructorUsesBoundedShutdown()
 void TestTerminalDevice::testSyncOutputBracketsFrame()
 {
     Terminal terminal;
-    terminal.setUseAlternateScreen(false);
     terminal.setColor(Color("#123456"));
     terminal.engine()->setTestViewportSize(QSize(8, 1));
 
@@ -392,6 +395,66 @@ void TestTerminalDevice::testSyncOutputBracketsFrame()
         QVERIFY(readAvailable(pipe.readEnd).empty());
         QCOMPARE(renderer.lastFrameStats().diffBytes, qint64(0));
     }
+}
+
+void TestTerminalDevice::testScrollbackAcrossModes()
+{
+    Pipe pipe;
+    QVERIFY(pipe.open());
+    const int savedOutput = ::dup(STDOUT_FILENO);
+    QVERIFY(savedOutput >= 0);
+    const auto restoreOutput = qScopeGuard([&] {
+        ::dup2(savedOutput, STDOUT_FILENO);
+        ::close(savedOutput);
+    });
+    QVERIFY(::dup2(pipe.writeEnd, STDOUT_FILENO) >= 0);
+    Terminal terminal;
+    auto* engine = terminal.engine();
+    engine->setTestViewportSize(QSize(30, 8));
+    engine->setTerminalOutputEnabled(true);
+    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    QVERIFY(commit());
+    QVERIFY(readAvailable(pipe.readEnd).find("\033[?1049h") != std::string::npos);
+
+    {
+        Scrollback history(&terminal);
+        QVERIFY(history.print(QString::fromUtf8("first café\n")));
+        QVERIFY(history.print(QStringLiteral("second")));
+        QSignalSpy rejected(&history, &Scrollback::outputRejected);
+        QTest::ignoreMessage(QtWarningMsg, "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+        QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
+        QCOMPARE(rejected.count(), 1);
+    } // Accepted bytes belong to the session, not the output object.
+    QVERIFY(commit());
+    QVERIFY(readAvailable(pipe.readEnd).find("first") == std::string::npos);
+    QVERIFY(engine->pendingScrollbackBytes() > 0);
+
+    terminal.setMode(Terminal::Mode::Inline);
+    QVERIFY(commit());
+    const std::string resumed = readAvailable(pipe.readEnd);
+    const auto exit = resumed.find("\033[?1049l");
+    const auto first = resumed.find("first café\r\n");
+    const auto second = resumed.find("second\r\n");
+    QVERIFY(exit != std::string::npos);
+    QVERIFY(first != std::string::npos);
+    QVERIFY(second != std::string::npos);
+    QVERIFY(exit < first && first < second);
+    QCOMPARE(engine->pendingScrollbackBytes(), size_t(0));
+    QCOMPARE(terminal.engine(), engine);
+    QVERIFY(commit());
+    QVERIFY(readAvailable(pipe.readEnd).find("first") == std::string::npos);
+
+    terminal.setMode(Terminal::Mode::FullScreen);
+    QVERIFY(commit());
+    (void)readAvailable(pipe.readEnd);
+    Scrollback history(&terminal);
+    QVERIFY(history.print(QStringLiteral("shutdown output")));
+    engine->stop();
+    const std::string stopped = readAvailable(pipe.readEnd);
+    QVERIFY(stopped.find("\033[?1049l") < stopped.find("shutdown output\r\n"));
+    QVERIFY(stopped.find("shutdown output\r\n") != std::string::npos);
+    engine->stop();
+    QVERIFY(readAvailable(pipe.readEnd).empty());
 }
 
 QTEST_MAIN(TestTerminalDevice)

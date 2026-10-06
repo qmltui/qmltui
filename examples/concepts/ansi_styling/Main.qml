@@ -11,7 +11,6 @@ Terminal {
 
     id: rootWindow
     color: "black"
-    useAlternateScreen: true
 
     Column {
         anchors.fill: parent

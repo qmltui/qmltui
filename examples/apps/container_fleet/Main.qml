@@ -8,8 +8,6 @@ import ContainerFleetApp
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: "#0d0e15" // Deep dark pastel canvas background
 
     // Instantiate C++ QAbstractListModel with tableData extension

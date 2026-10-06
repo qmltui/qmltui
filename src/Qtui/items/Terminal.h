@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rectangle.h"
+#include "Item.h"
 #include <QHash>
 #include <QMetaObject>
 #include <QPointer>
@@ -12,28 +12,26 @@ namespace qtui {
 class TerminalEngine;
 class Popup;
 
-class Terminal : public Rectangle, public QQmlParserStatus {
+class Terminal : public Item, public QQmlParserStatus {
   Q_OBJECT
   QML_ELEMENT
   Q_INTERFACES(QQmlParserStatus)
 
   Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
-  Q_PROPERTY(bool useAlternateScreen READ useAlternateScreen WRITE setUseAlternateScreen NOTIFY useAlternateScreenChanged)
-  Q_PROPERTY(bool fillTerminal READ fillTerminal WRITE setFillTerminal NOTIFY fillTerminalChanged)
-  Q_PROPERTY(RendererMode rendererMode READ rendererMode WRITE setRendererMode NOTIFY rendererModeChanged)
+  Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+  Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged)
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
   Q_PROPERTY(bool mouseReporting READ mouseReporting WRITE setMouseReporting NOTIFY mouseReportingChanged)
   Q_PROPERTY(qtui::Item* hoveredItem READ hoveredItem NOTIFY hoveredItemChanged)
-  Q_PROPERTY(qtui::Item* liveItem READ liveItem WRITE setLiveItem NOTIFY liveItemChanged FINAL)
   Q_PROPERTY(int terminalWidth READ terminalWidth NOTIFY terminalSizeChanged FINAL)
   Q_PROPERTY(int terminalHeight READ terminalHeight NOTIFY terminalSizeChanged FINAL)
 
 public:
-  enum class RendererMode {
-      Frame,
-      Stream
+  enum class Mode {
+      FullScreen,
+      Inline
   };
-  Q_ENUM(RendererMode)
+  Q_ENUM(Mode)
   enum class ClipboardMode {
       Disabled,
       Osc52
@@ -49,17 +47,15 @@ public:
   void classBegin() override {}
   void componentComplete() override;
 
-  TerminalEngine* engine() const { return m_engine; }
+  TerminalEngine* engine() const;
 
-  Q_INVOKABLE void print(const QString& text);
-  Q_INVOKABLE void append(qtui::Item* item);
   Q_INVOKABLE void copyToClipboard(const QString& text);
 
   QString title() const { return m_title; }
   void setTitle(const QString& title);
 
-  bool useAlternateScreen() const { return m_useAlternateScreen; }
-  void setUseAlternateScreen(bool use);
+  Color color() const { return m_color; }
+  void setColor(Color color);
 
   void registerPopup(Popup* popup);
   void unregisterPopup(Popup* popup);
@@ -69,11 +65,8 @@ public:
   QList<class InputScope*> orderedInputScopes() const;
   class InputScope* topModalScope() const;
 
-  bool fillTerminal() const { return m_fillTerminal; }
-  void setFillTerminal(bool fill);
-
-  RendererMode rendererMode() const { return m_rendererMode; }
-  void setRendererMode(RendererMode mode);
+  Mode mode() const { return m_mode; }
+  void setMode(Mode mode);
   ClipboardMode clipboardMode() const { return m_clipboardMode; }
   void setClipboardMode(ClipboardMode mode);
 
@@ -84,9 +77,6 @@ public:
   void setFocusedItem(Item* item);
   Item* hoveredItem() const { return m_hoveredItem.data(); }
   void setHoveredItem(Item* item);
-
-  Item* liveItem() const { return m_liveItem.data(); }
-  void setLiveItem(Item* item);
 
   void setMouseMotionRequested(QObject* requester, bool requested);
   bool isMouseMotionRequester(const QObject* requester) const {
@@ -111,34 +101,31 @@ public:
 
 signals:
   void titleChanged();
-  void useAlternateScreenChanged();
-  void fillTerminalChanged();
-  void rendererModeChanged();
+  void colorChanged();
+  void modeChanged();
   void clipboardModeChanged();
   void mouseReportingChanged();
   void clipboardCopyRequested(const QString& text);
   void focusedItemChanged();
   void hoveredItemChanged();
-  void liveItemChanged();
   void terminalSizeChanged();
   void mouseMotionRequestedChanged(bool requested);
 
 private:
+  void initializeEngine();
   void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect) const override;
 
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;
   QPointer<Item> m_hoveredItem;
-  QPointer<Item> m_liveItem;
   QHash<QObject*, QMetaObject::Connection> m_mouseMotionRequesters;
   QList<Popup*> m_popups;
   quint64 m_popupSerial = 0;
   QString m_title;
-  bool m_useAlternateScreen = true;
-  bool m_fillTerminal = true;
-  bool m_fillTerminalExplicit = false;
-  RendererMode m_rendererMode = RendererMode::Frame;
+  Color m_color = "transparent";
+  uint32_t m_background = 0;
+  Mode m_mode = Mode::FullScreen;
   ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
   bool m_mouseReporting = true;
   bool m_mouseReportingExplicit = false;

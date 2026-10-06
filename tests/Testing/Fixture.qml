@@ -3,7 +3,6 @@ import Qtui
 
 Terminal {
     id: root
-    useAlternateScreen: false
     focus: true
     color: "#101820"
 

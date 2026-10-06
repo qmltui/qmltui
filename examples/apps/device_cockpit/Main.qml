@@ -6,8 +6,6 @@ import Qtui.Examples.DeviceCockpit
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: Theme.bgMain
 
     property int activePage: 0

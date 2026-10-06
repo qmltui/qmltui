@@ -6,6 +6,7 @@
 #include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlParserStatus>
 #include <QVariant>
 
 namespace qtui {
@@ -13,9 +14,10 @@ namespace qtui {
 class Item;
 class Terminal;
 
-class StreamView : public QObject {
+class Scrollback : public QObject, public QQmlParserStatus {
     Q_OBJECT
     QML_ELEMENT
+    Q_INTERFACES(QQmlParserStatus)
     Q_CLASSINFO("DefaultProperty", "delegate")
 
     Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
@@ -25,8 +27,10 @@ class StreamView : public QObject {
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
-    explicit StreamView(QObject* parent = nullptr);
-    ~StreamView() override;
+    explicit Scrollback(QObject* parent = nullptr);
+    ~Scrollback() override;
+    void classBegin() override {}
+    void componentComplete() override { appendExistingRows(); }
 
     QVariant model() const { return m_modelVariant; }
     void setModel(const QVariant& model);
@@ -46,10 +50,11 @@ public:
 
     Q_INVOKABLE void append(const QVariant& data);
     Q_INVOKABLE void append(qtui::Item* item);
-    Q_INVOKABLE void print(const QString& text);
+    Q_INVOKABLE bool print(const QString& text);
     Q_INVOKABLE void clear();
 
 signals:
+    void outputRejected(const QString& reason);
     void modelChanged();
     void delegateChanged();
     void spacingChanged();

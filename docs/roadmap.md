@@ -22,8 +22,9 @@ The current library is a full-screen retained-mode terminal UI:
 - `Terminal` is the root of a QML item tree.
 - Items render into a fixed-size `TextGridBuffer`.
 - `TextGridBuffer::diff()` emits ANSI updates for changed cells.
-- `useAlternateScreen` can be disabled, but the engine still behaves mostly like
-  a screen-owning TUI because it clears/redraws the terminal viewport.
+- `Terminal.mode` selects full-screen or inline presentation. The current
+  public contract is documented in [the QML API](qml_api.md#other-core-elements);
+  the stream roadmap below records the earlier design motivation.
 
 This model is useful for dashboards, forms, modal screens, focused widgets,
 approval prompts, panels, and other controlled terminal UI regions.

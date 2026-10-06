@@ -7,7 +7,6 @@ import Qtui.Controls
 
 Terminal {
     id: rootWindow
-    useAlternateScreen: true
     focus: true
     color: "#051424"
     state: "catalog"

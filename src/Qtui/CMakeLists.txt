@@ -93,8 +93,8 @@ qt_add_qml_module(QtuiCore
         items/GradientStop.cpp
         items/Gradient.h
         items/Gradient.cpp
-        items/StreamView.h
-        items/StreamView.cpp
+        items/Scrollback.h
+        items/Scrollback.cpp
         items/DelegateUtils.h
         items/Row.h
         items/Row.cpp

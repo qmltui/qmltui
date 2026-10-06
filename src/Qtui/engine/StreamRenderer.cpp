@@ -4,33 +4,11 @@
 #include "../primitives/AnsiEncoder_p.h"
 #include <QElapsedTimer>
 #include <sstream>
+#include <algorithm>
 
 namespace qtui {
 
 namespace {
-
-std::string withTerminalLineEndings(const std::string& text) {
-    std::string result;
-    result.reserve(text.size() + 2);
-
-    char previous = '\0';
-    for (char character : text) {
-        if (character == '\n' && previous != '\r') {
-            result.push_back('\r');
-        }
-        result.push_back(character);
-        previous = character;
-    }
-
-    if (result.empty() || result.back() != '\n') {
-        if (!result.empty() && result.back() == '\r') {
-            result.push_back('\n');
-        } else {
-            result.append("\r\n");
-        }
-    }
-    return result;
-}
 
 void appendCellStyle(std::ostringstream& output, const Cell& cell, ColorDepth depth) {
     std::string style;
@@ -63,40 +41,6 @@ void StreamRenderer::resize(int width, int height) {
     m_terminalWidth = width;
     m_terminalHeight = height;
     m_promptBuffer.resize(width, m_lastPromptHeight);
-}
-
-void StreamRenderer::print(TerminalDevice& device, const std::string& text) {
-    if (!outputEnabled())
-        return;
-
-    ItemPaintTraversal::layoutSubtree(m_rootWindow);
-    int newPromptHeight = 0;
-    if (m_rootWindow) {
-        newPromptHeight = m_rootWindow->implicitHeight();
-        if (newPromptHeight <= 0) newPromptHeight = m_rootWindow->Item::height();
-        if (newPromptHeight <= 0) newPromptHeight = m_rootWindow->height();
-        if (newPromptHeight < 0) newPromptHeight = 0;
-        const int maxH = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
-        if (newPromptHeight > maxH) newPromptHeight = maxH;
-    } else {
-        newPromptHeight = m_lastPromptHeight;
-    }
-
-    m_promptBuffer.resize(m_terminalWidth, newPromptHeight);
-    if (m_rootWindow && newPromptHeight > 0) {
-        ItemPaintTraversal::paintSubtree(m_rootWindow, m_promptBuffer, 0, 0);
-    }
-
-    std::ostringstream output;
-    if (m_lastPromptHeight > 0) {
-        output << "\r\033[" << m_lastPromptHeight << "A\033[J";
-    }
-    output << withTerminalLineEndings(text);
-    for (int row = 0; row < newPromptHeight; ++row) {
-        output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
-    }
-    m_lastPromptHeight = newPromptHeight;
-    (void)device.write(output.str());
 }
 
 bool StreamRenderer::clearPromptRegion(TerminalDevice& device) {
@@ -158,26 +102,23 @@ std::string StreamRenderer::promptRowToAnsi(int row) const {
 }
 
 bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+    return renderFrame(rootWindow, device, {});
+}
+
+bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
+                                 std::string_view scrollback) {
     m_rootWindow = rootWindow;
     if (!rootWindow) return false;
 
     QElapsedTimer timer;
     timer.start();
     ItemPaintTraversal::layoutSubtree(rootWindow);
-    int requiredHeight = rootWindow->implicitHeight();
-    if (requiredHeight <= 0) {
-        requiredHeight = rootWindow->Item::height();
-    }
-    if (requiredHeight <= 0) {
-        requiredHeight = rootWindow->height();
-    }
-    if (requiredHeight < 0) requiredHeight = 0;
-    const int maximumPromptHeight = m_terminalHeight > 0 ? m_terminalHeight - 1 : 0;
-    if (requiredHeight > maximumPromptHeight) requiredHeight = maximumPromptHeight;
+    const int requiredHeight = std::clamp(rootWindow->height(), 0, std::max(0, m_terminalHeight - 1));
 
     const int previousPromptHeight = m_lastPromptHeight;
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
+    m_promptBuffer.clear();
     ItemPaintTraversal::paintSubtree(rootWindow, m_promptBuffer, 0, 0);
     FrameStats stats;
     stats.dirtyDuringPaint = RenderPhase::dirtyDuringPaintCount();
@@ -191,6 +132,10 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     std::ostringstream output;
     if (previousPromptHeight > 0) {
         output << "\r\033[" << previousPromptHeight << "A";
+    }
+    if (!scrollback.empty()) {
+        output << "\r\033[J";
+        output.write(scrollback.data(), static_cast<std::streamsize>(scrollback.size()));
     }
     for (int row = 0; row < m_lastPromptHeight; ++row) {
         output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";

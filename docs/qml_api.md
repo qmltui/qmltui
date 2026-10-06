@@ -46,7 +46,7 @@ the model when the model supplies such a list.
 | `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
 | `TableView.rowDelegate` | `row`, `index`, `model`, named roles | Entire row | Deprecated 0.1 row-scoped compatibility path |
 | `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
-| `StreamView` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
+| `Scrollback` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
 
 `currentIndex`, `selectedRow`, `currentRow`, and `currentColumn` use `-1` for no
 current item where applicable. Model destruction clears the view safely. Model
@@ -204,8 +204,30 @@ positioning and item-lookup API.
 
 ## Other core elements
 
-- `Terminal` is the root terminal surface. `rendererMode` selects frame or
-  stream rendering; `append(Item)` and `print(string)` append stream output.
+- `Terminal` derives from `Item` and owns the terminal session. `mode` is
+  `Terminal.FullScreen` by default, or `Terminal.Inline`. It selects screen
+  buffer, rendering, and sizing together, and can change at runtime.
+- All visible children render in ordinary stacking order in both modes. Use
+  layouts to arrange them; overlapping children are not automatically stacked
+  vertically or treated as pages. Visibility and focus remain application state.
+- Full-screen roots fill the terminal. Inline roots use terminal width and
+  visible content height, capped at terminal rows minus one cursor row. Hidden
+  children do not contribute to height. Vertically filling a content-sized
+  root is circular; give inline content an explicit or implicit height.
+- `Scrollback` is nonvisual and never changes mode. `print(string)` returns
+  whether output was accepted. `append(Item)` snapshots a borrowed item;
+  `append(data)` renders a delegate without inserting into the bound model.
+  Model inserts append rows, edits do not rewrite committed output, and resets
+  start a new output sequence. `clear()` resets the delegate cache and consumed
+  position; it does not erase the model, accepted output, or terminal history.
+- Accepted scrollback belongs to the session, with a 1 MiB UTF-8 queue shared
+  by its output objects. Full-screen mode defers output until inline resumes
+  or the session stops. Oversized submissions are rejected in full, retaining
+  earlier output; `outputRejected(reason)` and a warning report rejection.
+  Output snapshots retain their submission-time formatting across resizing.
+- Root `color` is the background. Borders and fixed dimensions belong on inner
+  rectangles or panels. Nested `Terminal` roots are unsupported; switch normal
+  child visibility and `mode` for a persistent full-screen page.
 - `Item` is the visual base type and provides cell geometry, visibility, focus,
   clipping, anchors, and stacking order.
 - `ScrollView` provides cell-based scrolling for content larger than its bounds.

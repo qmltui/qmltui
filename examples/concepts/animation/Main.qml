@@ -10,10 +10,7 @@ Terminal {
     }
 
     id: rootWindow
-
-    fillTerminal: true
     color: "black"
-    useAlternateScreen: true
 
     property int stateCounter: 0
 

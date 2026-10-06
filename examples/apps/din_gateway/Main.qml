@@ -5,9 +5,7 @@ import DinGatewayApp
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "black"
-    useAlternateScreen: true
 
     property int activeTab: 0 // 0: Sensors, 1: Bus Traffic, 2: Network/System, 3: Config
 

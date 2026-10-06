@@ -4,7 +4,6 @@ import Qtui.Controls
 
 Terminal {
     id: root
-    fillTerminal: true
     color: "black"
 
     // Mandatory Quit key handler

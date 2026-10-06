@@ -12,8 +12,11 @@ Terminal {
     }
 
     color: "green"
-    border.style: "single"
-    border.color: "yellow"
+    Rectangle {
+        anchors.fill: parent
+        border.style: "single"
+        border.color: "yellow"
+    }
 
     // Animation offset property
     property real gradientOffset: 0.0

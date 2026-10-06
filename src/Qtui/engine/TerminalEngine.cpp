@@ -2,6 +2,7 @@
 #include "InputDecoder.h"
 #include "Renderer.h"
 #include "FrameRenderer.h"
+#include "StreamRenderer.h"
 #include "../items/Item.h"
 #include "ItemPaintTraversal_p.h"
 #include "../items/Terminal.h"
@@ -283,6 +284,8 @@ TerminalEngine::~TerminalEngine() {
 }
 
 void TerminalEngine::stop() {
+  if (m_stopped) return;
+  m_stopped = true;
   m_paceTimer.stop();
   if (m_terminalOutputEnabled)
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
@@ -291,6 +294,11 @@ void TerminalEngine::stop() {
       m_rendererStarted = false;
   }
   if (m_terminalOutputEnabled) {
+    // Accepted output survives a full-screen exit even when inline mode is
+    // never resumed. The renderer has already restored the normal buffer.
+    if (!m_scrollback.empty() && !m_device.write(m_scrollback))
+        emit renderFailed(QStringLiteral("Failed to commit pending scrollback during shutdown"));
+    m_scrollback.clear();
     m_device.showCursor();
     const bool flushed = m_device.finishOutput();
     m_device.disableRawMode();
@@ -304,6 +312,7 @@ void TerminalEngine::stop() {
 }
 
 void TerminalEngine::requestRender() {
+  if (m_stopped) return;
   if (m_renderPending.exchange(true))
     return;
   if (QThread::currentThread() == thread() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
@@ -405,11 +414,10 @@ void TerminalEngine::handleResize() {
   }
   if (m_rootWindow) {
     emit m_rootWindow->terminalSizeChanged();
-    if (m_rootWindow->fillTerminal()) {
+
       emit m_rootWindow->widthChanged();
       emit m_rootWindow->heightChanged();
       m_rootWindow->markDirty();
-    }
   }
 }
 
@@ -454,6 +462,7 @@ Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX
 }
 
 void TerminalEngine::renderFrame() {
+  if (m_stopped) return;
   m_paceTimer.stop();
   if (m_device.pendingBytes() > m_outputQueueLimit) {
     // The terminal has not consumed earlier frames yet. Keep the request
@@ -476,12 +485,23 @@ void TerminalEngine::renderFrame() {
   }
 
   startRenderer();
-  if (!m_renderer->renderFrame(m_rootWindow, m_device)) {
+  // Snapshot before painting: bindings may submit additional output during layout.
+  std::string submitted;
+  auto* stream = dynamic_cast<StreamRenderer*>(m_renderer);
+  if (stream) submitted.swap(m_scrollback);
+  m_scrollbackInFlight = submitted.size();
+  const bool committed = stream
+      ? stream->renderFrame(m_rootWindow, m_device, submitted)
+      : m_renderer->renderFrame(m_rootWindow, m_device);
+  if (!committed) {
+      if (stream) m_scrollback.insert(0, submitted);
+      m_scrollbackInFlight = 0;
       emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
       return;
   }
 
   m_lastCommit.restart();
+  m_scrollbackInFlight = 0;
   FrameStats stats = m_renderer->lastFrameStats();
   stats.sequence = ++m_frameSequence;
   m_lastFrameStats = stats;
@@ -580,11 +600,27 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   requestRender();
 }
 
-void TerminalEngine::print(const QString& text) {
-    if (m_renderer) {
-        startRenderer();
-        m_renderer->print(m_device, text.toStdString());
+bool TerminalEngine::submitScrollback(const QString& text) {
+    if (m_stopped || text.size() > static_cast<qsizetype>(ScrollbackQueueLimit)) return false;
+    const QByteArray utf8 = text.toUtf8();
+    std::string bytes;
+    bytes.reserve(static_cast<size_t>(utf8.size()) + 2);
+    char previous = '\0';
+    for (char c : utf8) {
+        if (c == '\n' && previous != '\r') bytes += '\r';
+        bytes += c;
+        previous = c;
     }
+    if (bytes.empty() || bytes.back() != '\n') {
+        if (bytes.empty() || bytes.back() != '\r') bytes += '\r';
+        bytes += '\n';
+    }
+    if (bytes.size() > ScrollbackQueueLimit - std::min(ScrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
+        return false;
+    m_scrollback += bytes;
+    if (m_rootWindow && m_rootWindow->mode() == Terminal::Mode::Inline)
+        requestRender();
+    return true;
 }
 
 void TerminalEngine::startRenderer() {
@@ -595,19 +631,6 @@ void TerminalEngine::startRenderer() {
     }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;
-}
-
-void TerminalEngine::append(qtui::Item* item) {
-    if (!item) return;
-    int w = item->width() > 0 ? item->width() : m_device.getWidth();
-    int h = item->height() > 0 ? item->height() : item->implicitHeight();
-    if (h <= 0) h = 1;
-    
-    TextGridBuffer buffer;
-    buffer.resize(w, h);
-    ItemPaintTraversal::paintSubtree(item, buffer, 0, 0);
-    
-    print(QString::fromStdString(buffer.toAnsiString()));
 }
 
 } // namespace qtui

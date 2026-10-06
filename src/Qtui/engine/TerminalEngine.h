@@ -76,8 +76,11 @@ public:
     int terminalWidth() const;
     int terminalHeight() const;
 
-    void print(const QString& text);
-    void append(qtui::Item* item);
+    // Accepted output belongs to the session, independent of renderer lifetime.
+    // Reject a whole submission on overflow; retain already accepted output.
+    bool submitScrollback(const QString& text);
+    static constexpr size_t ScrollbackQueueLimit = 1024 * 1024;
+    size_t pendingScrollbackBytes() const { return m_scrollback.size(); }
     void copyToClipboard(const QString& text);
     static std::string osc52Sequence(const QString& text);
     void setTitle(const QString& title);
@@ -131,6 +134,9 @@ private:
     size_t m_outputQueueLimit = 256 * 1024;
     bool m_renderDeferredForOutput = false;
     QString m_title;
+    std::string m_scrollback;
+    size_t m_scrollbackInFlight = 0;
+    bool m_stopped = false;
     std::unique_ptr<InputRouter> m_router;
 };
 

@@ -5,8 +5,6 @@ import Qtui.Extras
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     title: "Qtui Year Calendar & Day Planner"
 
     property int currentYear: 2026

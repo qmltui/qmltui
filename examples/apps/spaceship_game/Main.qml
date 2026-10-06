@@ -4,10 +4,7 @@ import Qtui
 
 Terminal {
     id: rootWindow
-
-    fillTerminal: true
     color: "#02050b"
-    useAlternateScreen: true
 
     property int score: 0
     property int highScore: 0

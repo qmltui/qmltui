@@ -3,8 +3,6 @@ import Qtui
 
 Terminal {
     id: root
-    fillTerminal: true
-    useAlternateScreen: true
     color: "#0d1117"
 
     property string message: qsTr("↑/↓ navigate • Enter select • Q quit")

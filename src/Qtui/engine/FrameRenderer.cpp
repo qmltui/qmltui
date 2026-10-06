@@ -8,7 +8,7 @@ namespace qtui {
 void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
-    if (rootWindow && rootWindow->useAlternateScreen()) {
+    if (rootWindow) {
         device.write("\033[?1049h");
     }
     device.clearScreen();
@@ -17,7 +17,7 @@ void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
 void FrameRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
-    if (rootWindow && rootWindow->useAlternateScreen()) {
+    if (rootWindow) {
         device.write("\033[?1049l"); // Disable alternate screen buffer
     } else {
         device.clearScreen();
@@ -74,7 +74,7 @@ bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 bool FrameRenderer::usesAlternateScreen(Terminal* rootWindow) const {
-    return outputEnabled() && rootWindow && rootWindow->useAlternateScreen();
+    return outputEnabled() && rootWindow;
 }
 
 } // namespace qtui

@@ -3,6 +3,7 @@
 #include "../engine/FrameRenderer.h"
 #include "../engine/StreamRenderer.h"
 #include "Popup.h"
+#include "../primitives/ColorMapper.h"
 #include "../engine/ItemPaintTraversal_p.h"
 #include <algorithm>
 #include <utility>
@@ -17,6 +18,8 @@ void Terminal::registerTestRunnerHook(TestRunnerHook hook) {
 }
 
 void Terminal::componentComplete() {
+    initializeEngine();
+    if (!m_engine) return;
     if (s_testRunnerHook) {
         if (QQmlEngine* engine = qmlEngine(this)) {
             s_testRunnerHook(engine, this);
@@ -24,11 +27,35 @@ void Terminal::componentComplete() {
     }
 }
 
-Terminal::Terminal(QObject *parent) : Rectangle(parent) {
+Terminal::Terminal(QObject *parent) : Item(parent) {
     setItemFlag(ItemFlag::IsTerminalRoot);
-    m_engine = new TerminalEngine(this, this);
-    connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+    // QML parentage and mode are not established in the constructor. C++
+    // applications can initialize synchronously through engine().
+    QMetaObject::invokeMethod(this, &Terminal::initializeEngine, Qt::QueuedConnection);
+    connect(this, &Item::implicitHeightChanged, this, [this] {
+        if (m_mode == Mode::Inline) emit heightChanged();
+    });
+}
 
+TerminalEngine* Terminal::engine() const {
+    const_cast<Terminal*>(this)->initializeEngine();
+    return m_engine;
+}
+
+void Terminal::initializeEngine() {
+    if (m_engine) return;
+    for (QObject* ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
+        if (qobject_cast<Terminal*>(ancestor)) {
+            qWarning("Terminal must be a root; use ordinary Items for pages.");
+            return;
+        }
+    }
+    m_engine = new TerminalEngine(this, this);
+    if (m_mode == Mode::Inline) m_engine->setRenderer(new StreamRenderer());
+    connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+    emit terminalSizeChanged();
+    emit widthChanged();
+    emit heightChanged();
 }
 
 Terminal::~Terminal() {
@@ -36,18 +63,6 @@ Terminal::~Terminal() {
     for (const QMetaObject::Connection& connection : std::as_const(m_mouseMotionRequesters))
         disconnect(connection);
     m_mouseMotionRequesters.clear();
-}
-
-void Terminal::print(const QString& text) {
-    if (m_engine) {
-        m_engine->print(text);
-    }
-}
-
-void Terminal::append(qtui::Item* item) {
-    if (m_engine) {
-        m_engine->append(item);
-    }
 }
 
 void Terminal::copyToClipboard(const QString& text) {
@@ -65,10 +80,12 @@ void Terminal::setTitle(const QString& title) {
     }
 }
 
-void Terminal::setUseAlternateScreen(bool use) {
-    if (m_useAlternateScreen == use) return;
-    m_useAlternateScreen = use;
-    emit useAlternateScreenChanged();
+void Terminal::setColor(Color color) {
+    if (m_color == color) return;
+    m_color = color;
+    m_background = ColorMapper::fromString(color, 0x00000000);
+    emit colorChanged();
+    markDirty();
 }
 
 void Terminal::registerPopup(Popup* popup) {
@@ -197,38 +214,20 @@ void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
     }
 }
 
-void Terminal::setFillTerminal(bool fill) {
-    m_fillTerminalExplicit = true;
-    if (m_fillTerminal == fill) return;
-    m_fillTerminal = fill;
-    emit fillTerminalChanged();
-    emit widthChanged();
-    emit heightChanged();
-    markDirty();
+void Terminal::setWidth(int) {
+    qWarning("Terminal width is managed by the session; size an inner Item instead.");
 }
 
-void Terminal::setWidth(int w) {
-    if (m_fillTerminal && !m_fillTerminalExplicit) {
-        m_fillTerminal = false;
-        emit fillTerminalChanged();
-    }
-    Item::setWidth(w);
+void Terminal::setHeight(int) {
+    qWarning("Terminal height is managed by mode; size an inner Item instead.");
 }
 
-void Terminal::setHeight(int h) {
-    if (m_fillTerminal && !m_fillTerminalExplicit) {
-        m_fillTerminal = false;
-        emit fillTerminalChanged();
-    }
-    Item::setHeight(h);
-}
-
-void Terminal::setRendererMode(RendererMode mode) {
-    if (m_rendererMode == mode) return;
-    m_rendererMode = mode;
+void Terminal::setMode(Mode mode) {
+    if (m_mode == mode) return;
+    m_mode = mode;
     
     if (!m_mouseReportingExplicit) {
-        bool autoReporting = (m_rendererMode == RendererMode::Frame);
+        bool autoReporting = (m_mode == Mode::FullScreen);
         if (m_mouseReporting != autoReporting) {
             m_mouseReporting = autoReporting;
             emit mouseReportingChanged();
@@ -239,14 +238,15 @@ void Terminal::setRendererMode(RendererMode mode) {
     }
 
     if (m_engine) {
-        if (m_rendererMode == RendererMode::Frame) {
+        if (m_mode == Mode::FullScreen) {
             m_engine->setRenderer(new FrameRenderer());
         } else {
             m_engine->setRenderer(new StreamRenderer());
         }
     }
     
-    emit rendererModeChanged();
+    emit modeChanged();
+    emit heightChanged();
     markDirty();
 }
 
@@ -267,32 +267,7 @@ void Terminal::setMouseReporting(bool enable) {
 }
 
 int Terminal::width() const {
-    if (m_engine) {
-        int w = Item::width();
-        return w > 0 ? w : m_engine->terminalWidth();
-    }
-    return Item::width();
-}
-
-void Terminal::setLiveItem(Item* item) {
-    if (m_liveItem == item) return;
-    if (m_liveItem) {
-        disconnect(m_liveItem, &Item::heightChanged, this, &Item::implicitHeightChanged);
-        disconnect(m_liveItem, &Item::implicitHeightChanged, this, &Item::implicitHeightChanged);
-        disconnect(m_liveItem, &Item::visibleChanged, this, &Item::implicitHeightChanged);
-    }
-    m_liveItem = item;
-    if (m_liveItem) {
-        if (m_liveItem->parentItem() != this && !m_liveItem->parentItem()) {
-            m_liveItem->setParentItem(this);
-        }
-        connect(m_liveItem, &Item::heightChanged, this, &Item::implicitHeightChanged);
-        connect(m_liveItem, &Item::implicitHeightChanged, this, &Item::implicitHeightChanged);
-        connect(m_liveItem, &Item::visibleChanged, this, &Item::implicitHeightChanged);
-    }
-    emit liveItemChanged();
-    emit implicitHeightChanged();
-    markDirty();
+    return terminalWidth();
 }
 
 int Terminal::implicitHeight() const {
@@ -300,10 +275,6 @@ int Terminal::implicitHeight() const {
         return m_implicitHeight;
 
     int maxBottom = 0;
-    if (m_liveItem && m_liveItem->visible()) {
-        int liveH = m_liveItem->height() > 0 ? m_liveItem->height() : m_liveItem->implicitHeight();
-        maxBottom = std::max(maxBottom, m_liveItem->y() + liveH);
-    }
 
     for (Item* child : childItems()) {
         if (!child || !child->visible()) continue;
@@ -314,23 +285,17 @@ int Terminal::implicitHeight() const {
 }
 
 int Terminal::height() const {
-    if (m_rendererMode == RendererMode::Stream) {
-        int h = implicitHeight();
-        if (h <= 0) h = Item::height();
-        return h > 0 ? h : (m_engine ? m_engine->terminalHeight() : 0);
-    }
-    if (m_fillTerminal && m_engine) {
-        return m_engine->terminalHeight();
-    }
-    return Item::height();
+    if (m_mode == Mode::Inline)
+        return std::clamp(implicitHeight(), 0, std::max(0, terminalHeight() - 1));
+    return terminalHeight();
 }
 
 int Terminal::terminalWidth() const {
-    return m_engine ? m_engine->terminalWidth() : width();
+    return m_engine ? m_engine->terminalWidth() : 80;
 }
 
 int Terminal::terminalHeight() const {
-    return m_engine ? m_engine->terminalHeight() : (m_rendererMode == RendererMode::Stream ? 24 : height());
+    return m_engine ? m_engine->terminalHeight() : 24;
 }
 
 static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
@@ -359,7 +324,19 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
 void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
-    Rectangle::paint(buffer, absX, absY, clipRect);
+    if ((m_background >> 24) == 0) return;
+    const int right = std::min(buffer.width(), absX + width());
+    const int bottom = std::min(buffer.height(), absY + height());
+    for (int y = std::max(0, absY); y < bottom; ++y) {
+        for (int x = std::max(0, absX); x < right; ++x) {
+            if (!clipRect.contains(x, y)) continue;
+            Cell& cell = buffer.cellAt(x, y);
+            cell.bgColor = m_background;
+            cell.setCharacter(" ");
+            cell.displayWidth = 1;
+            cell.continuation = false;
+        }
+    }
 }
 
 void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,

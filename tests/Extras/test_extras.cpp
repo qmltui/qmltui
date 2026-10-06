@@ -376,8 +376,8 @@ private slots:
         gauge.setValue(50.0);
         gauge.setShowPercentage(false);
         gauge.setShowBrackets(false);
-        gauge.setFilledChar("=");
-        gauge.setUnfilledChar("-");
+        gauge.setFillCharacter("=");
+        gauge.setEmptyCharacter("-");
 
         TextGridBuffer buffer;
         buffer.resize(20, 1);

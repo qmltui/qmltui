@@ -8,9 +8,7 @@ import IndustrialPlcHmi
 
 Terminal {
     id: rootWindow
-    fillTerminal: true
     color: "black"
-    useAlternateScreen: true
 
     property int activeTab: PlcTypes.Dashboard
     property int machineState: PlcTypes.Idle

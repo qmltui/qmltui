@@ -4,14 +4,23 @@ Qtui provides a retained-mode layout and rendering tree for terminal application
 
 ## Core Loop
 The execution is driven by standard Qt event loops (usually `QCoreApplication`). The `TerminalEngine` is responsible for bridging the gap between the event loop and the terminal.
-When the user instantiates a `Terminal` object as the root of their QML file, the `TerminalEngine` is created. It connects the QML rendering lifecycle to terminal I/O.
+The root `Terminal` initializes its engine after QML completion, when parentage
+and mode are available. C++ applications can initialize it through `engine()`;
+otherwise it initializes on the next event-loop turn. The engine connects the
+rendering lifecycle to terminal I/O and survives presentation-mode changes.
 
 ## Rendering Pipeline
 The rendering model is "retained mode", meaning the component tree stays resident in memory and handles its own layout and drawing properties.
 The `Renderer` interface dictates how the application is drawn to the terminal.
 There are two primary renderers:
-1. **FrameRenderer**: Maintains a complete terminal cell frame. It can use the alternate screen buffer (`\033[?1049h`), calculates differences between frames using a painter's algorithm on a `TextGridBuffer`, and issues minimal ANSI escape sequences (`\033[%d;%dH`) to paint changes dynamically without flicker.
+1. **FrameRenderer**: Maintains a complete terminal cell frame in the alternate screen buffer (`\033[?1049h`), calculates differences between frames on a `TextGridBuffer`, and issues minimal ANSI escape sequences to paint changes dynamically without flicker.
 2. **StreamRenderer**: Streams permanent output through the normal terminal buffer while redrawing only the live region at the bottom using relative cursor positioning.
+
+`Terminal.mode` selects `FullScreen` or `Inline`; ordinary visible root children
+form the UI in either mode. `Scrollback` submits output to a bounded session
+queue independently of the active renderer. Inline commits combine pending
+output and the live region in one write. Full-screen mode retains pending
+output until inline resumes or shutdown restores the normal screen.
 
 Every frame, items traverse the tree, computing bounds, clip rectangles, and painting fixed-size `Cell` values (inline UTF-8 cluster bytes, colors, and ANSI attributes) into a `TextGridBuffer`.
 

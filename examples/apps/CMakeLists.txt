@@ -21,7 +21,10 @@ if(Qt6DBus_FOUND AND UNIX)
     add_subdirectory(device_cockpit)
 endif()
 add_subdirectory(din_gateway)
-if(TARGET md4qt::md4qt)
+# The viewer fetches md4qt (KDE) itself; a failed fetch fails configuration
+# loudly instead of silently dropping the app.
+option(QTUI_BUILD_MARKDOWN_VIEWER "Build the markdown_viewer showcase (fetches md4qt)" ON)
+if(QTUI_BUILD_MARKDOWN_VIEWER)
     add_subdirectory(markdown_viewer)
 endif()
 add_subdirectory(starter_template)

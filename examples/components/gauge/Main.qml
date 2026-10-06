@@ -86,7 +86,7 @@ Terminal {
             Row {
                 spacing: 2
                 Text {
-                    text: "🎛️  GAUGE COMPONENT & ANIMATION SHOWCASE"
+                    text: "◈ GAUGE COMPONENT & ANIMATION SHOWCASE"
                     color: "#38bdf8"
                     bold: true
                 }
@@ -97,7 +97,7 @@ Terminal {
             }
 
             Text {
-                text: "Demonstrates animated values, moving TrueColor gradients,\n custom glyphs & borders."
+                text: "Demonstrates animated values, moving TrueColor gradients,\ncustom glyphs & borders."
                 color: "#94a3b8"
             }
 

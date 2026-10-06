@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QPointer>
 #include <QSize>
-#include <QSocketNotifier>
 #include <QTimer>
 #include <atomic>
 #include <optional>
@@ -96,7 +95,6 @@ signals:
     void renderFailed(const QString& message);
 
 private slots:
-    void readTerminalData();
     void readResizeSignal();
     void renderFrame();
 
@@ -117,8 +115,6 @@ private:
     bool m_alternateScreenMessageSession = false;
     bool m_terminalOutputEnabled = true;
     bool m_mouseMotionReportingEnabled = false;
-    
-    QSocketNotifier* m_notifier = nullptr;
     QPointer<Terminal> m_rootWindow;
     
     std::atomic<bool> m_renderPending{false};

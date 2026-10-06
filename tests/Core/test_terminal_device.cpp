@@ -12,6 +12,7 @@
 #include <QScopeGuard>
 #include <string>
 #include <thread>
+#include <termios.h>
 #include <unistd.h>
 
 #include "Color.h"

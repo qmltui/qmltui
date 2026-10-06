@@ -12,6 +12,20 @@ if(QTUI_ENABLE_BEHAVIOR)
     )
 endif()
 
+# One terminal backend per platform behind primitives/TerminalBackend.h.
+set(qtui_platform_sources)
+if(WIN32)
+    list(APPEND qtui_platform_sources
+        primitives/Win32ConsoleBackend.h
+        primitives/Win32ConsoleBackend.cpp
+    )
+else()
+    list(APPEND qtui_platform_sources
+        primitives/PosixTerminalBackend.h
+        primitives/PosixTerminalBackend.cpp
+    )
+endif()
+
 qt_add_qml_module(QtuiCore
     URI Qtui
     SOURCES
@@ -32,6 +46,9 @@ qt_add_qml_module(QtuiCore
         primitives/AnsiEncoder_p.h
         primitives/TerminalCapabilities.h
         primitives/TerminalCapabilities.cpp
+        primitives/TerminalBackend.h
+        primitives/TerminalBackend.cpp
+        ${qtui_platform_sources}
         primitives/TerminalDevice.h
         primitives/TerminalDevice.cpp
         engine/TerminalEngine.h
@@ -173,7 +190,7 @@ install(FILES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/items"
 )
 install(FILES
-    primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
+    primitives/QtuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
     primitives/TerminalCapabilities.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/primitives"
 )

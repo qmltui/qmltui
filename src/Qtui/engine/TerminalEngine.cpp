@@ -25,144 +25,13 @@
 #include <iostream>
 #include <cstring>
 
-#ifdef Q_OS_UNIX
-#include <signal.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <cerrno>
-#endif
+#include "../primitives/TerminalBackend.h"
 
 namespace qtui {
 
 // One line per committed frame. Off by default; QTUI_FRAME_STATS=1 enables it.
 Q_LOGGING_CATEGORY(lcQtuiFrames, "qtui.frames", QtWarningMsg)
 
-#ifdef Q_OS_UNIX
-class TerminalResizeBridge : public QObject {
-    Q_OBJECT
-public:
-    static TerminalResizeBridge* instance() {
-        if (!qApp || QThread::currentThread() != qApp->thread())
-            return nullptr;
-        static QPointer<TerminalResizeBridge> bridge;
-        if (!bridge)
-            bridge = new TerminalResizeBridge(qApp);
-        return bridge.data();
-    }
-
-    void registerEngine(TerminalEngine* engine) {
-        // Ensure this is called on the application thread
-        if (!qApp || QThread::currentThread() != qApp->thread()) {
-            qWarning("TerminalEngine must be created on the QCoreApplication thread.");
-            return;
-        }
-
-        if (!m_engines.contains(engine)) {
-            m_engines.insert(engine);
-            if (m_engines.size() == 1) {
-                setup();
-            }
-        }
-    }
-
-    void unregisterEngine(TerminalEngine* engine) {
-        if (!qApp || QThread::currentThread() != qApp->thread()) return;
-        m_engines.remove(engine);
-        if (m_engines.isEmpty())
-            teardown();
-    }
-
-signals:
-    void sigwinchReceived();
-
-private slots:
-    void handleSocketNotification() {
-        char buf[128];
-        ssize_t bytesRead;
-        while ((bytesRead = ::read(sigwinchFd[0], buf, sizeof(buf))) > 0) {
-            // Drain the pipe completely
-        }
-        emit sigwinchReceived();
-    }
-
-private:
-    explicit TerminalResizeBridge(QObject* parent = nullptr) : QObject(parent) {}
-    ~TerminalResizeBridge() override { teardown(); }
-    
-    void setup() {
-        if (m_installed) return; // Retained for process lifetime
-
-        if (::pipe(sigwinchFd) != 0) {
-            sigwinchFd[0] = -1;
-            sigwinchFd[1] = -1;
-            return;
-        }
-
-        for (int i = 0; i < 2; ++i) {
-            int flags = ::fcntl(sigwinchFd[i], F_GETFD);
-            if (flags != -1) {
-                ::fcntl(sigwinchFd[i], F_SETFD, flags | FD_CLOEXEC);
-            }
-            flags = ::fcntl(sigwinchFd[i], F_GETFL);
-            if (flags != -1) {
-                ::fcntl(sigwinchFd[i], F_SETFL, flags | O_NONBLOCK);
-            }
-        }
-
-        struct sigaction sa;
-        sa.sa_handler = TerminalResizeBridge::sigwinchHandler;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESTART;
-        
-        if (::sigaction(SIGWINCH, &sa, &m_oldAction) == 0) {
-            m_installed = true;
-            m_notifier = new QSocketNotifier(sigwinchFd[0], QSocketNotifier::Read, this);
-            connect(m_notifier, &QSocketNotifier::activated, this, &TerminalResizeBridge::handleSocketNotification);
-        } else {
-            ::close(sigwinchFd[0]);
-            ::close(sigwinchFd[1]);
-            sigwinchFd[0] = -1;
-            sigwinchFd[1] = -1;
-        }
-    }
-
-    void teardown() {
-        if (m_notifier) {
-            m_notifier->setEnabled(false);
-            delete m_notifier;
-            m_notifier = nullptr;
-        }
-        if (m_installed) {
-            ::sigaction(SIGWINCH, &m_oldAction, nullptr);
-            m_installed = false;
-        }
-        for (int& fd : sigwinchFd) {
-            if (fd != -1) {
-                ::close(fd);
-                fd = -1;
-            }
-        }
-    }
-
-    static void sigwinchHandler(int) {
-        int savedErrno = errno;
-        if (sigwinchFd[1] != -1) {
-            char c = 1;
-            ssize_t res = ::write(sigwinchFd[1], &c, 1);
-            (void)res;
-        }
-        errno = savedErrno;
-    }
-
-    static int sigwinchFd[2];
-    QSet<TerminalEngine*> m_engines;
-    QSocketNotifier* m_notifier = nullptr;
-    struct sigaction m_oldAction;
-    bool m_installed = false;
-};
-
-int TerminalResizeBridge::sigwinchFd[2] = {-1, -1};
-#endif
 
 
 static bool environmentFlagEnabled(const char* name) {
@@ -228,12 +97,8 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
     m_device.hideCursor();
   }
 
-#ifdef Q_OS_UNIX
-  const bool stdoutIsTty = ::isatty(STDOUT_FILENO) == 1;
-#else
-  const bool stdoutIsTty = true;
-#endif
-  m_capabilities = TerminalCapabilities::detect(QProcessEnvironment::systemEnvironment(), stdoutIsTty);
+  m_capabilities = TerminalCapabilities::detect(QProcessEnvironment::systemEnvironment(),
+                                                m_device.backend()->isInteractive());
 
   m_renderer = new FrameRenderer();
   m_renderer->setOutputEnabled(m_terminalOutputEnabled);
@@ -255,28 +120,19 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
 
   handleResize();
 
-  m_notifier = new QSocketNotifier(STDIN_FILENO, QSocketNotifier::Read, this);
-  connect(m_notifier, &QSocketNotifier::activated, this,
-          &TerminalEngine::readTerminalData);
-
-#ifdef Q_OS_UNIX
-  if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance()) {
-      connect(bridge, &TerminalResizeBridge::sigwinchReceived,
-              this, &TerminalEngine::readResizeSignal);
-      bridge->registerEngine(this);
-  } else {
-      qWarning("TerminalEngine must be created on the QCoreApplication thread.");
-  }
-#endif
+  // Raw VT bytes and geometry changes come from the platform backend; the
+  // decoder and renderers never see platform details.
+  TerminalBackend* backend = m_device.backend();
+  connect(backend, &TerminalBackend::inputReceived, this, [this](const QByteArray& bytes) {
+      m_inputDecoder.decode(bytes.constData(), static_cast<size_t>(bytes.size()));
+  });
+  connect(backend, &TerminalBackend::resized, this, &TerminalEngine::readResizeSignal);
+  backend->startInput();
 
   requestRender();
 }
 
 TerminalEngine::~TerminalEngine() {
-#ifdef Q_OS_UNIX
-  if (TerminalResizeBridge* bridge = TerminalResizeBridge::instance())
-      bridge->unregisterEngine(this);
-#endif
   stop();
   delete m_renderer;
   m_renderer = nullptr;
@@ -424,24 +280,6 @@ void TerminalEngine::handleResize() {
 void TerminalEngine::readResizeSignal() {
   handleResize();
   requestRender();
-}
-
-void TerminalEngine::readTerminalData() {
-  char buffer[1024];
-  const ssize_t n = read(STDIN_FILENO, buffer, sizeof(buffer));
-  if (n == 0) {
-      if (m_notifier) m_notifier->setEnabled(false);
-      return;
-  }
-  if (n < 0) {
-      if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-          return;
-      if (m_notifier) m_notifier->setEnabled(false);
-      qWarning("Terminal input failed: %s", std::strerror(errno));
-      return;
-  }
-
-  m_inputDecoder.decode(buffer, n);
 }
 
 void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste) {
@@ -634,5 +472,3 @@ void TerminalEngine::startRenderer() {
 }
 
 } // namespace qtui
-
-#include "TerminalEngine.moc"

@@ -193,7 +193,7 @@ target_link_libraries(my_app PRIVATE Qtui::Core)
 ```
 
 Link the modules an application uses with `Qtui::Core`, `Qtui::Controls`, and
-`Qtui::Controls`. For modules built in the same CMake project through
+`Qtui::Image`. For modules built in the same CMake project through
 `add_subdirectory` or `FetchContent`, list the source-tree targets (`QtuiCore`,
 and `QtuiControls`) in
 `qt_add_qml_module(DEPENDENCIES TARGET ...)`. Qt does not accept imported
@@ -213,9 +213,12 @@ The installed QML modules are:
 ## Supported public surface
 
 The QML modules are the primary API. The supported C++ extension surface is
-the `qtui::Item` subclassing API, its rendering buffer/cell types, and key and
-mouse event types needed by custom items. Renderer, terminal-device, and view
-implementation details are internal and may change during the 0.x series.
+the `qtui::Item` subclassing API, its rendering buffer/cell types, key and
+mouse event types needed by custom items, and the `qtui::TerminalBackend`
+factory for applications that talk to something other than the process's own
+terminal. Renderer, terminal-device, and view implementation details are
+internal and may change during the 0.x series. Controls take their colors
+from the `Palette` singleton in `Qtui.Controls`.
 
 Plain text renders terminal control characters visibly and never interprets
 them. Escape-sequence interpretation requires an explicit ANSI text format.

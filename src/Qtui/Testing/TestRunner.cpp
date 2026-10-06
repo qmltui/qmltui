@@ -358,6 +358,9 @@ void TestRunner::start()
                          .arg(m_scriptPath, scriptFile.errorString()), false);
         return;
     }
+    // A synchronous scenario finishes inside evaluate() below and removes a
+    // temporary script; Windows refuses to delete a file that is still open.
+    scriptFile.close();
 
     connect(m_qmlEngine, &QObject::destroyed, this, [this] {
         failScenario(QStringLiteral("QQmlEngine was destroyed during the scenario"), false);

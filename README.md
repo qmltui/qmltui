@@ -4,8 +4,11 @@ Qtui is a retained-mode terminal UI framework for Qt 6. It exposes terminal
 items, layouts, controls, views, animation, and widgets as QML modules while
 using the Qt event loop and model/view APIs.
 
-Qtui currently targets Linux and macOS terminals with UTF-8 and ANSI/VT escape
-support. Windows code is experimental and compile-tested only.
+Qtui targets Linux and macOS terminals and Windows Terminal, all with UTF-8 and
+ANSI/VT escape support. Terminal I/O goes through one platform backend per OS
+(`termios` and `SIGWINCH` on POSIX, virtual-terminal console modes on Windows);
+everything above it is shared. The optional PTY-backed `TerminalView` module is
+Unix only.
 
 ## QML at a glance
 

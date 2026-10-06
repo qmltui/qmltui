@@ -7,6 +7,8 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QElapsedTimer>
+#include <algorithm>
 #include <QTest>
 #include <memory>
 
@@ -496,13 +498,20 @@ void TestRenderLoop::framePacingCoalescesBursts()
     session.engine->setMaxFrameRate(50);
     QCOMPARE(session.engine->maxFrameRate(), 50);
     before = session.engine->frameSequence();
+    QElapsedTimer burstTimer;
+    burstTimer.start();
     for (int i = 21; i <= 40; ++i) {
         label->setProperty("text", QString::number(i));
         QTest::qWait(1);
     }
+    // qWait(1) can take a full timer tick (about 16 ms on Windows), so bound
+    // the frame count by the time the burst actually took at 50 fps.
+    const qint64 burstMs = burstTimer.elapsed();
     QTest::qWait(120);
     const quint64 capped = session.engine->frameSequence() - before;
-    QVERIFY2(capped >= 1 && capped <= 6, qPrintable(QString::number(capped)));
+    const quint64 maxCapped = static_cast<quint64>(burstMs / 20) + 2;
+    QVERIFY2(capped >= 1 && capped <= std::max<quint64>(6, maxCapped),
+             qPrintable(QStringLiteral("%1 frames in %2 ms").arg(capped).arg(burstMs)));
     QVERIFY(frameText(session.engine).contains(QStringLiteral("40")));
     QTUI_VERIFY_IDLE(session.engine);
     session.engine->setMaxFrameRate(0);

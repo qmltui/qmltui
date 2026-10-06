@@ -97,6 +97,7 @@ function(qtui_add_scenario_test)
     list(APPEND labels ${QTUI_SCENARIO_LABELS})
     list(REMOVE_DUPLICATES labels)
     set_tests_properties("${QTUI_SCENARIO_NAME}" PROPERTIES
+        SKIP_RETURN_CODE 125
         TIMEOUT ${ctest_timeout}
         LABELS "${labels}"
     )

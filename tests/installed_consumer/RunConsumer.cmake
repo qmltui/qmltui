@@ -5,6 +5,16 @@ endif()
 
 file(REMOVE_RECURSE "${CONSUMER_BINARY_DIR}" "${INSTALL_PREFIX}")
 
+# Match the parent build's generator and configuration so the consumer binary
+# lands where this script expects it (single-config layout).
+set(consumer_generator_args)
+if(DEFINED CONSUMER_GENERATOR AND NOT "${CONSUMER_GENERATOR}" STREQUAL "")
+    list(APPEND consumer_generator_args -G "${CONSUMER_GENERATOR}")
+endif()
+if(DEFINED CONSUMER_BUILD_TYPE AND NOT "${CONSUMER_BUILD_TYPE}" STREQUAL "")
+    list(APPEND consumer_generator_args "-DCMAKE_BUILD_TYPE=${CONSUMER_BUILD_TYPE}")
+endif()
+
 execute_process(
     COMMAND "${CMAKE_COMMAND}" --install "${QTUI_BUILD_DIR}"
             --prefix "${INSTALL_PREFIX}"
@@ -20,6 +30,7 @@ execute_process(
     COMMAND "${CMAKE_COMMAND}"
             -S "${CONSUMER_SOURCE_DIR}"
             -B "${CONSUMER_BINARY_DIR}"
+            ${consumer_generator_args}
             "-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}"
             "-DQt6_DIR=${Qt6_DIR}"
     RESULT_VARIABLE configure_result
@@ -44,15 +55,42 @@ get_filename_component(qt_prefix "${Qt6_DIR}/../../.." ABSOLUTE)
 set(runtime_library_path
     "${INSTALL_PREFIX}/lib:${qt_prefix}/lib:$ENV{LD_LIBRARY_PATH}")
 
-execute_process(
-    COMMAND "${CMAKE_COMMAND}" -E env
-            "LD_LIBRARY_PATH=${runtime_library_path}"
-            "DYLD_LIBRARY_PATH=${INSTALL_PREFIX}/lib:${qt_prefix}/lib:$ENV{DYLD_LIBRARY_PATH}"
-            "${CONSUMER_BINARY_DIR}/qtui_installed_custom_item_consumer"
-    RESULT_VARIABLE run_result
-    OUTPUT_VARIABLE run_output
-    ERROR_VARIABLE run_error
-)
+set(consumer_executable "${CONSUMER_BINARY_DIR}/qtui_installed_custom_item_consumer")
+if(WIN32)
+    string(APPEND consumer_executable ".exe")
+    # DLLs are found through PATH on Windows; Qtui installs its runtime next to
+    # the QML modules. Set the environment directly: a PATH value holds
+    # semicolons, which CMake would otherwise treat as list separators.
+    file(GLOB_RECURSE consumer_dll_paths "${INSTALL_PREFIX}/*.dll")
+    set(consumer_dll_dirs)
+    foreach(dll IN LISTS consumer_dll_paths)
+        get_filename_component(dll_dir "${dll}" DIRECTORY)
+        list(APPEND consumer_dll_dirs "${dll_dir}")
+    endforeach()
+    list(REMOVE_DUPLICATES consumer_dll_dirs)
+    file(TO_NATIVE_PATH "${qt_prefix}/bin" consumer_path)
+    foreach(dir IN LISTS consumer_dll_dirs)
+        file(TO_NATIVE_PATH "${dir}" dir_native)
+        string(APPEND consumer_path ";${dir_native}")
+    endforeach()
+    set(ENV{PATH} "${consumer_path};$ENV{PATH}")
+    execute_process(
+        COMMAND "${consumer_executable}"
+        RESULT_VARIABLE run_result
+        OUTPUT_VARIABLE run_output
+        ERROR_VARIABLE run_error
+    )
+else()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E env
+                "LD_LIBRARY_PATH=${runtime_library_path}"
+                "DYLD_LIBRARY_PATH=${INSTALL_PREFIX}/lib:${qt_prefix}/lib:$ENV{DYLD_LIBRARY_PATH}"
+                "${consumer_executable}"
+        RESULT_VARIABLE run_result
+        OUTPUT_VARIABLE run_output
+        ERROR_VARIABLE run_error
+    )
+endif()
 if(NOT run_result EQUAL 0)
     message(FATAL_ERROR "Consumer execution failed (${run_result}):\n${run_output}\n${run_error}")
 endif()

@@ -27,6 +27,9 @@ if(NOT mode_count EQUAL 1)
 endif()
 
 set(scenario_environment
+    # Windows routes qWarning() to the debugger when no console is attached;
+    # the failure-pattern checks below need it on stderr.
+    "QT_FORCE_STDERR_LOGGING=1"
     "--unset=QTUI_SCRIPT"
     "--unset=QTUI_EVAL"
     "--unset=QTUI_INSPECT"
@@ -82,7 +85,8 @@ endif()
 # a scenario can verify that artifact containment resolves symlinks instead of
 # only checking the path text.
 if(DEFINED SYMLINK_TRAP AND NOT "${SYMLINK_TRAP}" STREQUAL "")
-    string(FIND "${SYMLINK_TRAP}" ":" trap_separator REVERSE)
+    # The name never contains a colon; the target may (Windows drive letters).
+    string(FIND "${SYMLINK_TRAP}" ":" trap_separator)
     if(trap_separator LESS 0)
         message(FATAL_ERROR "SYMLINK_TRAP must be <name>:<target>, got '${SYMLINK_TRAP}'")
     endif()
@@ -90,7 +94,16 @@ if(DEFINED SYMLINK_TRAP AND NOT "${SYMLINK_TRAP}" STREQUAL "")
     math(EXPR trap_target_start "${trap_separator} + 1")
     string(SUBSTRING "${SYMLINK_TRAP}" ${trap_target_start} -1 trap_target)
     file(MAKE_DIRECTORY "${trap_target}")
-    file(CREATE_LINK "${trap_target}" "${ARTIFACT_DIR}/${trap_name}" SYMBOLIC)
+    file(CREATE_LINK "${trap_target}" "${ARTIFACT_DIR}/${trap_name}" SYMBOLIC RESULT trap_result)
+    if(NOT trap_result EQUAL 0)
+        # Windows needs Developer Mode or elevation to create symlinks. Report a
+        # skip (SKIP_RETURN_CODE 125) where CMake can, otherwise fail loudly.
+        if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.29)
+            message(STATUS "Skipping: cannot create symlink trap on this host: ${trap_result}")
+            cmake_language(EXIT 125)
+        endif()
+        message(FATAL_ERROR "Cannot create symlink trap: ${trap_result}")
+    endif()
 endif()
 
 # An empty QML_IMPORT_PATH would blank out a value the caller exported, so only

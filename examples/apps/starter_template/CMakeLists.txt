@@ -107,14 +107,16 @@ if(TARGET Qtui::Testing)
             LABELS AgentFull
         )
 
-        qt_add_executable(test_starter_wifi_manager test_wifi_manager.cpp)
-        target_link_libraries(test_starter_wifi_manager PRIVATE
-            Qt6::Core
-            Qt6::Qml
-            Qt6::Test
-            qtui_starter_template_module
-        )
-        add_test(NAME starter_template_wifi_manager COMMAND test_starter_wifi_manager)
-        set_tests_properties(starter_template_wifi_manager PROPERTIES LABELS AgentSmoke)
+        if(UNIX)   # the fake `nmcli`/`iw` fixtures are shell scripts
+            qt_add_executable(test_starter_wifi_manager test_wifi_manager.cpp)
+            target_link_libraries(test_starter_wifi_manager PRIVATE
+                Qt6::Core
+                Qt6::Qml
+                Qt6::Test
+                qtui_starter_template_module
+            )
+            add_test(NAME starter_template_wifi_manager COMMAND test_starter_wifi_manager)
+            set_tests_properties(starter_template_wifi_manager PROPERTIES LABELS AgentSmoke)
+        endif()
     endif()
 endif()

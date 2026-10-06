@@ -42,6 +42,8 @@ add_test(
         "-DCONSUMER_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_build"
         "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_prefix"
         "-DQt6_DIR=${Qt6_DIR}"
+        "-DCONSUMER_GENERATOR=${CMAKE_GENERATOR}"
+        "-DCONSUMER_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
 )
 set_tests_properties(test_installed_custom_item_consumer PROPERTIES
@@ -148,6 +150,7 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
     list(APPEND command "-P" "${QTUI_TESTING_RUNNER_SCRIPT}")
     add_test(NAME ${test_name} COMMAND ${command})
     set_tests_properties(${test_name} PROPERTIES
+        SKIP_RETURN_CODE 125
         TIMEOUT 15
         LABELS "TestRunner;AgentSmoke"
     )

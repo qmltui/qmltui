@@ -1,58 +1,96 @@
-# Qtui Adoption Roadmap & Master Documentation Plan
+# Qtui Launch Roadmap
 
-This directory contains the modular, phased technical plans to establish **Qtui** as the premier terminal UI framework for C++ and Qt, combining the viral adoption ergonomics of Ratatui/Textual with the rigorous standards of the Qt ecosystem.
+Nothing is published yet. That is the one advantage this roadmap is built
+around: every rough edge can still be fixed before a newcomer ever sees it, and
+the first public impression can be made deliberately.
 
-## Modular Implementation Plans
+Goal: a Qt developer lands on the site, watches a terminal app run, copies
+three files, and has their own Qtui app running in five minutes. Then they find
+a component catalog, a showcase, and Qt Creator help that all look and behave
+like the rest of Qt. That developer is as likely to be on Windows as on
+Linux, so Windows Terminal is a launch platform, not an afterthought.
 
-| Step | Plan Document | Scope & Deliverables | Status |
+## Plans, in Execution Order
+
+| Step | Plan | Deliverables | Launch blocker |
 | :---: | :--- | :--- | :---: |
-| **01** | [**01. Showcase Repository Decoupling**](01-repo-split-qtui-apps.md) | Extract `examples/apps` into dedicated `qtui-apps` repo, decouple core CMake and tests, add in-tree `test_behavior.cpp`. | **Ready for Execution** |
-| **02** | [**02. Official Qt Documentation Standards**](02-official-qt-docs-standards.md) | Standardize QML/C++ docs (imports, property tables, signals, methods) and generate `.qch` help for Qt Creator F1 support. | **Planned** |
-| **03** | [**03. Svelte Documentation Portal**](03-svelte-docs-portal.md) | SvelteKit + mdsvex documentation site, 5-minute `FetchContent` Quickstart, Qt-branded dark terminal theme, and search. | **Planned** |
-| **04** | [**04. Visual Showcase & Component Catalog**](04-visual-gallery-catalog.md) | 17-app categorized showcase gallery, 31-component visual catalog, `<TerminalWindow.svelte>`, and automated screenshot pipeline. | **Planned** |
-| **05** | [**05. Tiered Live Previews: Casts & WASM**](05-live-preview-wasm-casts.md) | Tier 1 instant Asciinema vector casts + Tier 2 full interactive WebAssembly (WASM) playground piped into `xterm.js`. | **Planned** |
+| **00** | [Launch Readiness](00-launch-readiness.md) | Qt Quick naming pass (`label` to `text`, versionless imports), compiled `examples/quickstart/`, `TerminalBackend` seam with POSIX and Win32 console backends, Windows Terminal support, CI on Linux, macOS, and Windows, `v0.4.0` tag, README rewrite | Yes |
+| **01** | [Documentation Portal](01-docs-portal.md) | SvelteKit site in `website/`, single markdown source next to the code, quickstart above the fold, working Pages deploy | Yes |
+| **02** | [Visual Gallery and Casts](02-visual-gallery-and-casts.md) | One recording pipeline for 8 apps and 31 components, SVG stills, hero cast, filterable showcase, generated inventory | Yes |
+| **03** | [Repo Split: `qtui-apps`](03-repo-split-qtui-apps.md) | Apps consume Qtui via `FetchContent`, in-tree `test_behavior`, `qtui-starter` template repository | No |
+| **04** | [Qt Docs Conventions and Qt Creator](04-qt-docs-standards-qch.md) | Qt-style type pages with compiled examples, `qtui.qch` release asset, `qmlls` completion guide | No |
+| **05** | [WebAssembly Playground](05-wasm-playground.md) | `WasmTerminalBackend` on the Plan 00 seam, Emscripten bridge, `xterm.js` playground for `btop`, `snake_game`, `twozero48` | No |
 
----
+Plans 00 to 02 gate the first announcement. Plans 03 to 05 follow in the weeks
+after, each shippable on its own.
 
-## Architectural Vision
+## Facts the Plans Are Built On
+
+Verified against the tree on 2026-09-07:
+
+- Version `0.4.0`, Qt 6.8 minimum, no git tags yet, no `.github/workflows/`.
+- Exported CMake targets: `Qtui::Core`, `Qtui::Controls`, `Qtui::Extras`,
+  `Qtui::Testing`; QML modules `Qtui`, `Qtui.Controls`, `Qtui.Extras`,
+  `Qtui.Canvas`, `Qtui.Image`, `Qtui.TerminalHost`. `find_package(Qtui)` is
+  supported via installed config files.
+- 16 apps in `examples/apps/` today, trimmed to 8 for launch (Plan 02), each
+  telling a story no other app tells. 31 components in `examples/components/`,
+  11 concepts in `examples/concepts/`. Inventories are generated, not typed.
+- `TestRunner` captures text frames with `QTUI_INSPECT`; image capture needs a
+  `QGuiApplication`. Stills therefore derive from casts.
+- Terminal I/O is POSIX (`termios`, `QSocketNotifier` on stdin, `SIGWINCH`)
+  behind about a dozen `#ifdef _WIN32` blocks. Windows output already enables
+  VT processing, but input never arrives because `QSocketNotifier` needs a
+  socket on Windows, VT input mode is not enabled, and resize is Unix only.
+  One backend seam fixes Windows now and WebAssembly later.
+
+## Architecture After All Plans
 
 ```mermaid
 graph TB
-    subgraph "Core Engine Repository (qtui)"
-        Engine["Qtui::Core & Engine (C++20 Retained Mode)"]
-        Controls["Qtui::Controls & Qtui::Extras"]
-        Comp["examples/components/ (31 Primitives)"]
-        Conc["examples/concepts/ (11 Guides)"]
-        InTreeTests["tests/ (Self-Contained CTest Suite)"]
-        QCH["qtui.qch (Qt Creator F1 Help)"]
+    subgraph "Qtui (core repository)"
+        Engine["Qtui::Core, Controls, Extras"]
+        Backends["TerminalBackend: Posix, Win32Console, (Wasm)"]
+        Backends --> Engine
+        Quick["examples/quickstart (compiled in CI)"]
+        Comp["examples/components (31)"]
+        Conc["examples/concepts (11)"]
+        Docs["docs/components, docs/guide, src/Qtui/*/doc (single source)"]
+        Tests["tests/ (self-contained, test_behavior)"]
+        QCH["qtui.qch (release asset)"]
     end
 
-    subgraph "Showcase Repository (qtui-apps)"
-        Apps["17 Showcase Apps (btop, PLC, Fleet, etc.)"]
-        Fetch["FetchContent(Qtui) / -DQTUI_SOURCE_DIR"]
-        AppTests["App Scenario Smoke Tests"]
+    subgraph "qtui-apps"
+        Apps["8 showcase apps"]
+        Starter["qtui-starter (template repo)"]
     end
 
-    subgraph "Documentation Portal (docs/ via SvelteKit)"
-        Landing["Landing Page (Hero GIF + 5-Min Quickstart)"]
-        Catalog["31 Component Cards (Code + Preview)"]
-        ShowcaseGrid["17 App Showcase (Casts + Run Commands)"]
-        LivePlayer["<AsciinemaPlayer.svelte> (30KB Vector Casts)"]
-        WasmPlayground["/playground (Interactive Qt WASM + xterm.js)"]
+    subgraph "website/ (SvelteKit, GitHub Pages)"
+        Landing["Landing: hero cast + quickstart"]
+        Catalog["Component catalog"]
+        Showcase["Showcase gallery"]
+        Playground["/playground (WASM, later)"]
     end
 
-    Apps -.->|"Consumes via FetchContent"| Engine
-    Docs -.->|"References Primitives"| Comp
-    Docs -.->|"Showcases Apps From"| Apps
-    Engine --> QCH
+    Apps -->|FetchContent v0.4.0| Engine
+    Starter -->|FetchContent v0.4.0| Engine
+    Docs -->|sync-content| Catalog
+    Quick -->|verbatim| Landing
+    Apps -->|casts| Showcase
+    Comp -->|casts + SVG| Catalog
+    Docs --> QCH
 ```
 
----
+## Working Rules
 
-## Phased Execution Sequence
-
-1. **Phase 1 (Immediate)**: Untangle core tests, extract `examples/apps` into `/home/yosri/qtui-apps`, set up standalone CMake and CI.
-2. **Phase 2**: Create the SvelteKit documentation skeleton in `docs/` with the 5-minute Quickstart and Qt-brand styling (`#2CDE85` on `#0d1117`).
-3. **Phase 3**: Migrate and format all 31 component documents following the official Qt QML Type layout.
-4. **Phase 4**: Capture high-resolution screenshots and Asciinema casts for the showcase apps and components.
-5. **Phase 5**: Wire the CMake `.qch` help generation target for Qt Creator F1 help and launch the `/playground` WASM demo.
+- Anything a newcomer copies is compiled in CI: the quickstart, every doc
+  example, every showcase run command.
+- Anything a newcomer counts is generated from the filesystem.
+- Any number shown on the site (load time, payload size) is measured in the
+  build, never estimated in a plan.
+- One showcase app per story. A new app is added only if it demonstrates
+  something no existing app does, and it arrives with tests and a cast.
+- Every platform claim on the site is backed by a CI row: Linux, macOS, and
+  Windows Terminal at launch.
+- Naming follows Qt Quick unless there is a terminal-specific reason not to,
+  and that reason is written in the type's Detailed Description.

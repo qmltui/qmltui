@@ -252,7 +252,92 @@ reads `rendererMode`.
 - Both Behavior trees green; POS and PLC frame results preserved in applicable
   configurations. PLC is exercised only with Behavior enabled.
 
-## 4. The Quickstart as a Compiled Project
+## 4. Module Boundaries, Component Cuts, and the Palette
+
+Decided on 2026-09-08. Three problems share one fix window: which module a
+type lives in is not principled (`Qtui.Extras` exists because nothing else
+fit), the library ships components that are an application's business, and
+every control invents its own color properties (Button alone has nine) while
+three example apps each wrote their own theme singleton.
+
+### Module rules
+
+1. **`Qtui`** holds what cannot be built in QML from other Qtui types: the
+   scene primitives, geometry and layouts, input areas, the model-driven views,
+   text editing, Canvas and its shapes, animation and states, and the root
+   types. `ListView` and `TableView` stay here for the same reason they live in
+   `QtQuick` rather than `QtQuick.Controls`.
+2. **`Qtui.Controls`** holds everything a user operates or reads as a finished
+   widget with a consistent look and keyboard behaviour, regardless of whether
+   it is implemented in QML or C++. `Popup` moves here (Dialog, ToolTip, and
+   Toast build on it, and it is a Controls type in Qt).
+3. **A separate module exists only for an optional dependency.** `Qtui.Image`
+   (QtGui) and `Qtui.TerminalHost` (libvterm, Unix PTY) stay. `Qtui.Canvas`
+   folds into `Qtui`. `Qtui.Extras` is dissolved.
+
+| Module | Contents after the move |
+| :--- | :--- |
+| `Qtui` | Terminal, Scrollback, Item, Rectangle, Text, Paragraph, TextInput, TextArea, Row, Column, Layouts, Repeater, Loader, MouseArea, ScrollView, ListView, GridView, TableView, TreeView, LogView, Canvas and shapes, animations, states, Keys, Shortcut |
+| `Qtui.Controls` | Palette, Button, ButtonGroup, CheckBox, RadioButton, Switch, Slider, ProgressBar, BusyIndicator, TabBar, StackView, StackLayout, Panel, Dialog, Popup, ToolTip, Toast, Sparkline |
+| `Qtui.Image` | Image |
+| `Qtui.TerminalHost` | TerminalView |
+
+Renames to Qt Quick names in the same step: `TabHeader` to `TabBar`, `Spinner`
+to `BusyIndicator`, `ToastManager` to `Toast`. Two overlaps get a decision, not
+a footnote: `Paragraph` folds into `Text` with `wrapMode`; `LogView` and
+`Scrollback` are different things and the docs say how.
+
+### Component cuts
+
+A type stays in `Qtui.Controls` only if it needs engine knowledge an app author
+cannot reproduce in QML (cell geometry, Unicode width, virtualization,
+overlays) or is universal enough that every TUI toolkit ships it. Everything
+else is an application's concern and becomes a recipe under
+`examples/components/`, where it teaches composition without an API promise.
+
+| Cut | Reason | Becomes |
+| :--- | :--- | :--- |
+| `Gauge` | Duplicates ProgressBar; its gradient and bracket options fold into ProgressBar | Removed |
+| `BigText` | Niche banner fonts with a large table to maintain | Custom C++ item recipe |
+| `StatusBadge` | A Rectangle and a Text with four app-specific colors | QML composition recipe |
+| `Calendar` | Heavy to document and test, rare in terminal apps, kept out of Controls by Qt too | QML recipe |
+
+This rule goes into `AGENTS.md` so `Extras` cannot grow back.
+
+### Palette
+
+A palette, not a style system: named color roles that every control reads,
+with per-control override properties reduced to the few that make sense. The
+roles are Qt's, so the vocabulary is familiar:
+
+| Role | Used for |
+| :--- | :--- |
+| `window`, `windowText` | Root background, default text |
+| `base`, `text` | Editable and list surfaces and their text |
+| `button`, `buttonText` | Buttons, tabs, switches |
+| `highlight`, `highlightedText` | Focus, selection, current row |
+| `mid` | Borders and separators |
+| `placeholderText` | Input hints and disabled text |
+| `accent` | The brand color |
+
+Delivery in two compatible steps. Now: a `Palette` singleton in
+`Qtui.Controls`, implemented in C++ so C++ controls read the same instance, with
+two presets: `Terminal` (the default: ANSI named colors, so the app takes the
+user's terminal theme) and `Dark` (the emerald-on-navy brand look). Later, if
+a real need appears: an inherited `palette` grouped property on Item, as in
+Qt Quick, with the singleton as the root of the inheritance.
+
+Controls drop their color-property zoo and read the palette for normal,
+focused, and disabled states. `ProgressBar.color` survives because a fill
+color is data, not theme. Everything else that a control colors comes from a
+role.
+
+Order within this section: palette first, then cuts and moves, then renames,
+because removing color properties changes what the moved controls look like.
+All of it lands before the README rewrite and the tag so `v0.4.0` carries the
+final module shape and property lists.
+
+## 5. The Quickstart as a Compiled Project
 
 The quickstart must be real code that CI compiles, never prose that rots.
 Create `examples/quickstart/` with exactly three files. The documentation site
@@ -376,7 +461,7 @@ used by `examples/apps/starter_template/CMakeLists.txt`.
 
 ---
 
-## 5. GitHub Actions CI (`.github/workflows/ci.yml`)
+## 6. GitHub Actions CI (`.github/workflows/ci.yml`)
 
 There is no `.github/workflows/` directory today. Add one job matrix and one
 standalone quickstart job.
@@ -430,7 +515,7 @@ the tag exists, and the file a newcomer copies is unchanged.
 
 ---
 
-## 6. Terminal Backend Seam and Windows Terminal
+## 7. Terminal Backend Seam and Windows Terminal
 
 ### Why now
 
@@ -532,7 +617,7 @@ host needs it.
 - The README and the site quickstart list Windows alongside Linux and macOS
   with the MSVC and MinGW commands that CI runs.
 
-## 7. Tag and Release
+## 8. Tag and Release
 
 1. Confirm `project(Qtui VERSION 0.4.0 ...)` matches the tag.
 2. `git tag -a v0.4.0 -m "Qtui 0.4.0"` and push the tag.
@@ -544,7 +629,7 @@ host needs it.
 
 ---
 
-## 8. README Rewrite
+## 9. README Rewrite
 
 The README is the second thing a newcomer sees after the site. Replace the top
 of `README.md` with, in this order: one hero cast (from Plan 02), a two-sentence
@@ -553,7 +638,7 @@ component catalog. Everything else moves below the fold or onto the site.
 
 ---
 
-## 9. Verification
+## 10. Verification
 
 ```bash
 # Both Behavior trees green

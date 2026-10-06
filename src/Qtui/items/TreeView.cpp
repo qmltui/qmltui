@@ -903,16 +903,12 @@ void TreeView::updateLayout() {
         layoutChildren();
 }
 
-void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     if (!m_visible) return;
 
     // Delegates were created and positioned by updateLayout() and paint
-    // themselves as children.
+    // themselves as children. The flattened node list was refreshed there too.
     if (m_delegate) return;
-
-    // A tree invalidated without a layout request is refreshed here; the
-    // render-phase guard reports it so the missing invalidation can be fixed.
-    updateTree();
 
     const int availH = height();
     const int availW = width();

@@ -82,7 +82,7 @@ void ToastManager::onTick() {
     if (m_toasts.isEmpty()) m_timer.stop();
 }
 
-void ToastManager::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void ToastManager::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     if (!m_visible || m_toasts.isEmpty()) return;
 
     int curY = absY;

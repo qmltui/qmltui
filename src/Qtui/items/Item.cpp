@@ -525,8 +525,7 @@ void Item::updateLayout()
 }
 
 void Item::paint(TextGridBuffer &buffer, int absX, int absY,
-                 const ClipRect &clipRect)
-{
+                 const ClipRect &clipRect) const {
     Q_UNUSED(buffer);
     Q_UNUSED(absX);
     Q_UNUSED(absY);
@@ -534,8 +533,7 @@ void Item::paint(TextGridBuffer &buffer, int absX, int absY,
 }
 
 void Item::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                        const ClipRect &clipRect)
-{
+                        const ClipRect &clipRect) const {
     Q_UNUSED(buffer);
     Q_UNUSED(absX);
     Q_UNUSED(absY);

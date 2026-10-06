@@ -7,6 +7,7 @@
 
 namespace qtui {
 
+class CanvasPainter;
 class CanvasShape;
 
 class Canvas : public Item {
@@ -49,13 +50,14 @@ public:
     int pixelWidth() const { return m_renderMode == RenderMode::Braille ? width() * 2 : width(); }
     int pixelHeight() const { return m_renderMode == RenderMode::Braille ? height() * 4 : height() * 2; }
 
+    // Scripted drawing from QML. These persist until the next frame when
+    // autoClear is true, or until clear() otherwise, and schedule a repaint.
     Q_INVOKABLE void setPixel(int x, int y, bool value = true);
     Q_INVOKABLE void setPixelColor(int x, int y, Color color);
     void setPixelColorHex(int x, int y, uint32_t color);
-
     Q_INVOKABLE void clear();
 
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const override;
 
 signals:
     void colorChanged();
@@ -66,18 +68,43 @@ signals:
     void pixelHeightChanged();
 
 private:
-    void resizeBuffer();
+    friend class CanvasPainter;
+    CanvasPainter painter() const;
+    void resizeBuffer() const;
+
     RenderMode m_renderMode = RenderMode::Braille;
     bool m_autoClear = true;
-    std::vector<uint8_t> m_cells;            // For Braille mode (2x4 bits per cell)
-    std::vector<uint32_t> m_pixelColors;     // For HalfBlock mode (1x2 colors per cell, ARGB)
-    // Pixel writes performed while rendering are part of the current frame;
-    // they must not schedule another render and create a repaint loop.
-    bool m_rendering = false;
+    // Pixel storage is derived rendering state: shapes write it while the
+    // canvas paints, so it is mutable and never marks the item dirty.
+    mutable std::vector<uint8_t> m_cells;            // Braille mode (2x4 bits per cell)
+    mutable std::vector<uint32_t> m_pixelColors;     // HalfBlock mode (1x2 colors per cell, ARGB)
     Color m_color = "white";
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
+};
+
+// The pixel surface shapes draw into during Canvas::paint(). It writes the
+// canvas's pixel storage and nothing else, so painting stays const and never
+// schedules another frame.
+class CanvasPainter {
+public:
+    int pixelWidth() const { return m_canvas.pixelWidth(); }
+    int pixelHeight() const { return m_canvas.pixelHeight(); }
+    Canvas::RenderMode renderMode() const { return m_canvas.m_renderMode; }
+
+    // Colour used by shapes that do not set their own.
+    uint32_t defaultColor() const { return m_canvas.m_resolvedColor; }
+
+    void setPixel(int x, int y, bool value = true);
+    void setPixelColor(int x, int y, Color color);
+    void setPixelColorHex(int x, int y, uint32_t color);
+    void clear();
+
+private:
+    friend class Canvas;
+    explicit CanvasPainter(const Canvas& canvas) : m_canvas(canvas) {}
+    const Canvas& m_canvas;
 };
 
 class CanvasShape : public Item {
@@ -92,11 +119,12 @@ public:
 
     Color color() const { return m_color; }
     void setColor(Color color);
-    uint32_t resolvedColor(Canvas* canvas) const;
+    uint32_t resolvedColor(const CanvasPainter& painter) const;
 
-    virtual void draw(Canvas* canvas) = 0;
+    // Draws this shape into the parent canvas's pixel surface.
+    virtual void draw(CanvasPainter& painter) const = 0;
 
-    void paint(TextGridBuffer&, int, int, const ClipRect&) override {
+    void paint(TextGridBuffer&, int, int, const ClipRect&) const override {
         // Shapes are drawn onto the parent Canvas buffer during Canvas::paint().
     }
 
@@ -115,7 +143,7 @@ class Point : public CanvasShape {
 
 public:
     Point(QObject* parent = nullptr);
-    void draw(Canvas* canvas) override;
+    void draw(CanvasPainter& painter) const override;
 };
 
 class Line : public CanvasShape {
@@ -144,7 +172,7 @@ signals:
     void y2Changed();
 
 public:
-    void draw(Canvas* canvas) override;
+    void draw(CanvasPainter& painter) const override;
 
 private:
     int m_x1 = 0;
@@ -173,7 +201,7 @@ signals:
     void closedChanged();
 
 public:
-    void draw(Canvas* canvas) override;
+    void draw(CanvasPainter& painter) const override;
 
 private:
     QVariantList m_points;
@@ -196,7 +224,7 @@ signals:
     void fillChanged();
 
 public:
-    void draw(Canvas* canvas) override;
+    void draw(CanvasPainter& painter) const override;
 
 private:
     bool m_fill = false;
@@ -228,7 +256,7 @@ signals:
     void fillChanged();
 
 public:
-    void draw(Canvas* canvas) override;
+    void draw(CanvasPainter& painter) const override;
 
 private:
     int m_cx = 0;

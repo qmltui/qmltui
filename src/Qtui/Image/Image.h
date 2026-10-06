@@ -68,7 +68,7 @@ public:
     int implicitWidth() const override;
     int implicitHeight() const override;
 
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void sourceChanged();
@@ -81,7 +81,7 @@ signals:
 
 private:
     void loadImage();
-    void updateScaledCache();
+    void updateScaledCache() const;
 
     QUrl m_source;
     FillMode m_fillMode = FillMode::Stretch;
@@ -91,10 +91,12 @@ private:
     Qt::Alignment m_alignment = Qt::AlignCenter;
 
     QImage m_sourceImage;
-    QImage m_scaledImage;
-    QSize m_lastTargetSize;
-    FillMode m_lastFillMode = FillMode::Stretch;
-    bool m_lastSmooth = true;
+    // Scaled copy of the source for the current size: a cache refreshed while
+    // painting, so it is mutable.
+    mutable QImage m_scaledImage;
+    mutable QSize m_lastTargetSize;
+    mutable FillMode m_lastFillMode = FillMode::Stretch;
+    mutable bool m_lastSmooth = true;
 };
 
 } // namespace qtui

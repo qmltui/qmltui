@@ -122,7 +122,7 @@ void ScrollView::ensureChildVisible(Item* childItem) {
     }
 }
 
-void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     // Anchors resolve synchronously when their targets change; nothing may be
     // laid out from paint().
     Q_UNUSED(buffer);
@@ -132,7 +132,7 @@ void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRec
 }
 
 void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
-                              const ClipRect& clipRect) {
+                              const ClipRect& clipRect) const {
     int w = width();
     int h = height();
 

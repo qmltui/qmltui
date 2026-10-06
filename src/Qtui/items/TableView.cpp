@@ -371,7 +371,7 @@ void TableView::setRowDelegate(QQmlComponent *delegate)
 }
 
 
-void TableView::callbackWarning(const QString &message, QSet<QString> &errors) {
+void TableView::callbackWarning(const QString &message, QSet<QString> &errors) const {
     if (!errors.contains(message) && errors.size() < 16) {
         errors.insert(message);
         qmlWarning(this) << message;
@@ -653,7 +653,7 @@ void TableView::layoutDelegates() {
     m_fetchedRoles.clear();
 }
 
-void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible || width() <= 0 || height() <= 0) return;
     if (headerRows()) {

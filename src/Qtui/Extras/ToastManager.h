@@ -49,7 +49,7 @@ public:
     QString position() const { return m_position; }
     void setPosition(const QString &pos);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
 
 signals:
     void infoColorChanged();

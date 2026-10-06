@@ -107,7 +107,7 @@ public:
     void setWidth(int width) override;
     void setHeight(int height) override;
     void paint(TextGridBuffer& buffer, int absX, int absY,
-                const ClipRect& clipRect = ClipRect()) override;
+                const ClipRect& clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent* event) override;
     void mousePressEvent(MouseEvent* event) override;
     void mouseReleaseEvent(MouseEvent* event) override;

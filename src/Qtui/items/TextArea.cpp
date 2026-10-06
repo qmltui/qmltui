@@ -287,7 +287,7 @@ int TextArea::positionAtMouse(int x, int y) const {
 }
 
 void TextArea::paint(
-    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     const int viewportWidth = std::max(
         0, width() - leftPadding() - rightPadding());
     const int viewportHeight = std::max(

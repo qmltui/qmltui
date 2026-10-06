@@ -522,7 +522,7 @@ void TextInput::mouseMoveEvent(MouseEvent *event) {
 }
 
 void TextInput::paint(
-    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
     const int viewportWidth = std::max(0, width() - leftPadding() - rightPadding());

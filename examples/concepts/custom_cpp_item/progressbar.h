@@ -20,7 +20,7 @@ public:
     Color barColor() const { return m_barColor; }
     void setBarColor(Color color);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
 
 signals:
     void valueChanged();

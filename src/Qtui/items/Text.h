@@ -68,7 +68,7 @@ public:
 
     int visualLength(const QString &line) const;
 
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void textChanged();

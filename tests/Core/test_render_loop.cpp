@@ -32,7 +32,7 @@ public:
     }
 protected:
     void updateLayout() override { setImplicitHeight(m_rows); }
-    void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) override {
+    void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) const override {
         for (int row = 0; row < m_rows; ++row)
             buffer.writeText(x, y + row, QStringLiteral("PROMPT %1").arg(row + 1));
     }

@@ -273,9 +273,9 @@ protected:
 
   virtual void updateLayout();
   virtual void paint(TextGridBuffer &buffer, int absX, int absY,
-                     const ClipRect &clipRect);
+                     const ClipRect &clipRect) const;
   virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                            const ClipRect &clipRect);
+                            const ClipRect &clipRect) const;
   virtual ClipRect clipRectForChildren(int absX, int absY,
                                       const ClipRect &clipRect) const;
 

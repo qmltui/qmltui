@@ -170,7 +170,7 @@ void Image::loadImage() {
     markDirty();
 }
 
-void Image::updateScaledCache() {
+void Image::updateScaledCache() const {
     if (m_sourceImage.isNull()) return;
 
     int itemW = width();
@@ -259,7 +259,7 @@ void Image::updateScaledCache() {
     }
 }
 
-void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!visible() || m_status != Status::Ready || m_sourceImage.isNull())
         return;
 

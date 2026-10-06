@@ -44,7 +44,7 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
 ## 10. Protected Virtual Methods / Event Handlers
 
-#### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) [override]
+#### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const [override]
 Draws the formatted text line(s) into `buffer` applying alignment and font attributes.
 
 ## 13. QML Exposure

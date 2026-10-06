@@ -97,7 +97,7 @@ public:
     QQmlComponent* rowDelegate() const { return m_rowDelegate; }
     void setRowDelegate(QQmlComponent *delegate);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 
@@ -171,7 +171,7 @@ private:
     QString cellText(int row, int col) const;
     void resolveColumns();
     int resolveColumnWidth(int column, const QVariantMap &descriptor);
-    void callbackWarning(const QString &message, QSet<QString> &errors);
+    void callbackWarning(const QString &message, QSet<QString> &errors) const;
 
     void clearDelegateItems();
     void generateDelegateItems();
@@ -193,8 +193,8 @@ private:
     bool m_geometryDirty = true;
     QHash<int, QByteArray> m_roleNames;
     QList<ColumnGeometry> m_geometry;
-    QSet<QString> m_widthErrors;
-    QSet<QString> m_formatErrors;
+    mutable QSet<QString> m_widthErrors;
+    mutable QSet<QString> m_formatErrors;
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 
     Color m_headerColor = "yellow";

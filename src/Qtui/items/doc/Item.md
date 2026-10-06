@@ -173,11 +173,12 @@ so geometry changed here is painted in the same frame. `setWidth()`,
 `setHeight()`, and effective implicit-size changes mark `LayoutDirty`.
 Invalidations raised from `paint()` are retained but do not schedule a frame.
 
-#### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
+#### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const
 Paints only this item's own content. The framework privately traverses children
-afterward.
+afterward. The method is `const`: painting writes cells, never item state.
+Lazily computed layout caches belong in `mutable` members.
 
-#### virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect)
+#### virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const
 Paints this item's foreground decoration after its children. The default
 implementation does nothing.
 
@@ -228,7 +229,7 @@ public:
 
 protected:
     void paint(TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect& clipRect) override {
+               const ClipRect& clipRect) const override {
         buffer.drawBox(absX, absY, width(), height(), Color("green"));
     }
 };

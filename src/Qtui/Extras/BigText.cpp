@@ -94,7 +94,7 @@ void BigText::setBgColor(Color color) {
     markDirty();
 }
 
-void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible || m_text.isEmpty()) return;
 

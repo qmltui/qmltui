@@ -62,7 +62,7 @@ public:
     int scrollY() const { return m_scrollY; }
     void setScrollY(int scroll);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void mousePressEvent(MouseEvent *event) override;
 
 signals:

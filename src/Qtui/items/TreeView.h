@@ -92,7 +92,7 @@ public:
     Q_INVOKABLE void collapseAll();
 
     void layoutChildren();
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 

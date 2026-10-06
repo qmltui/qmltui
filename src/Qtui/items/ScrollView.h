@@ -33,7 +33,7 @@ public:
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
     void wheelEvent(class MouseEvent* event) override;
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
     void ensureChildVisible(Item* childItem);
 
@@ -44,7 +44,7 @@ signals:
 
 private:
     void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                      const ClipRect &clipRect) override;
+                      const ClipRect &clipRect) const override;
     ClipRect clipRectForChildren(int absX, int absY,
                                 const ClipRect &clipRect) const override;
 

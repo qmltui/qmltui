@@ -64,7 +64,7 @@ public:
     Q_INVOKABLE void pageUp();
     Q_INVOKABLE void pageDown();
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void mousePressEvent(MouseEvent *event) override;
     void wheelEvent(MouseEvent *event) override;
 

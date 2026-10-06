@@ -349,7 +349,7 @@ void TerminalView::setHeight(int value) {
 }
 
 void TerminalView::paint(TextGridBuffer &buffer, int absX, int absY,
-                          const ClipRect &clipRect) {
+                          const ClipRect &clipRect) const {
   const int w = std::max(0, width());
   const int h = std::max(0, height());
   const int scrollback = m_adapter ? m_adapter->scrollbackSize() : 0;

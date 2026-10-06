@@ -73,7 +73,7 @@ void TabHeader::setInactiveTabBgColor(Color color) {
     markDirty();
 }
 
-void TabHeader::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void TabHeader::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible || m_tabList.isEmpty()) return;
 

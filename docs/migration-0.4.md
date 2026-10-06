@@ -40,6 +40,15 @@ such streams should limit accepted cluster length/variety or isolate that
 workload in a restartable process. Evicting table entries while cells can still
 reference them would corrupt live and captured frames.
 
+## paint() and paintOverlay() are const
+
+Add `const` to every `paint(...) override` and `paintOverlay(...) override`.
+Anything the item computes lazily while painting (wrapped lines, scaled images)
+must live in a `mutable` member; property changes belong in setters or
+`updateLayout()`. Canvas shapes now implement
+`draw(CanvasPainter&) const` and draw through the painter instead of the
+`Canvas*`; `CanvasShape::resolvedColor()` takes the painter as well.
+
 ## Layout and paint phases
 
 Each frame runs a layout pass (`updateLayout()`) over the whole tree before

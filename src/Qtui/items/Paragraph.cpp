@@ -261,7 +261,7 @@ void Paragraph::invalidateTextCache() {
     m_cachedLines.clear();
 }
 
-void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible || m_text.isEmpty()) return;
 

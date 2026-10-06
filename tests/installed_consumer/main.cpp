@@ -14,8 +14,7 @@ public:
 
 protected:
     void paint(qtui::TextGridBuffer &buffer, int absX, int absY,
-               const qtui::ClipRect &) override
-    {
+               const qtui::ClipRect &) const override {
         if (qtui::Cell *cell = buffer.tryCellAt(absX, absY)) {
             cell->setCharacter("X");
             cell->setForeground(qtui::Color("tomato"));

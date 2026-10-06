@@ -91,7 +91,7 @@ void Gauge::setShowBrackets(bool show) {
     markDirty();
 }
 
-void Gauge::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Gauge::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible) return;
 

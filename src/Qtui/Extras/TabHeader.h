@@ -40,7 +40,7 @@ public:
     Color inactiveTabBgColor() const { return m_inactiveTabBgColor; }
     void setInactiveTabBgColor(Color color);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
 

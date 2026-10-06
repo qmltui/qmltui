@@ -45,7 +45,7 @@ int Rectangle::bottomPadding() const {
 }
 
 void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
-                      const ClipRect &clipRect) {
+                      const ClipRect &clipRect) const {
   if (!visible())
     return;
 

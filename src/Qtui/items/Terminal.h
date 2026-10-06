@@ -107,7 +107,7 @@ public:
   int terminalWidth() const;
   int terminalHeight() const;
 
-  void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) override;
+  void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
   void titleChanged();
@@ -125,7 +125,7 @@ signals:
 
 private:
   void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                    const ClipRect &clipRect) override;
+                    const ClipRect &clipRect) const override;
 
   TerminalEngine *m_engine = nullptr;
   QPointer<Item> m_focusedItem;

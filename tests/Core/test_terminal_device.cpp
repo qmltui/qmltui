@@ -295,7 +295,7 @@ void TestTerminalDevice::testStreamPrintLaysOutPrompt()
         explicit Prompt(Item *parent) : Item(parent) { setImplicitHeight(1); }
     protected:
         void updateLayout() override { setImplicitHeight(3); }
-        void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) override {
+        void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) const override {
             buffer.writeText(x, y + 2, QStringLiteral("THIRD ROW"));
         }
     };

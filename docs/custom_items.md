@@ -41,7 +41,7 @@ private:
 ```
 
 ## 2. Painting
-Override the protected `paint(TextGridBuffer&, int absX, int absY, const ClipRect&)`
+Override the protected `paint(TextGridBuffer&, int absX, int absY, const ClipRect&) const`
 hook. The framework calls `paint()`, then traverses children in stacking order,
 applies content offsets and clipping, and finally calls `paintOverlay()`. Tree
 painting is private framework behavior; custom items must not traverse or paint
@@ -53,7 +53,7 @@ to be valid.
 
 ```cpp
 void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
-                        const ClipRect& clipRect) {
+                        const ClipRect& clipRect) const {
     const Color foreground("red");
     for (int i = 0; i < m_label.length(); ++i) {
         const int cx = absX + leftPadding() + i;
@@ -73,9 +73,11 @@ frame runs a layout pass over the tree before any painting, so geometry changed
 in `updateLayout()` is painted in the same frame. A size change on the item
 itself marks it `LayoutDirty` automatically.
 
-Do not change properties from `paint()` or `paintOverlay()`. Invalidations
-raised while painting are retained on the item but do not schedule a frame;
-run with `QTUI_DEBUG_PAINT_DIRTY=1` to have each offending item reported once.
+`paint()` and `paintOverlay()` are `const`: they write cells and nothing else.
+Keep lazily computed layout caches in `mutable` members. Invalidations that
+still reach the tree while painting (through pointers to other items) are
+retained but do not schedule a frame; run with `QTUI_DEBUG_PAINT_DIRTY=1` to
+have each offending item reported once.
 
 Override the optional protected `paintOverlay()` hook only for content that
 must appear above the item's children, such as a scrollbar or focus decoration.

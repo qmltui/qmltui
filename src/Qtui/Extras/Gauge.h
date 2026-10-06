@@ -55,7 +55,7 @@ public:
     bool showBrackets() const { return m_showBrackets; }
     void setShowBrackets(bool show);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) override;
+    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
 
 signals:
     void valueChanged();

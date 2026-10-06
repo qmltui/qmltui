@@ -356,15 +356,14 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
     }
 }
 
-void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
     Rectangle::paint(buffer, absX, absY, clipRect);
 }
 
 void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                            const ClipRect &clipRect)
-{
+                            const ClipRect &clipRect) const {
     Q_UNUSED(absX);
     Q_UNUSED(absY);
     for (Popup* popup : orderedPopups()) {

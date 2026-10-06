@@ -1,5 +1,6 @@
 #include "Canvas.h"
 #include "ColorMapper.h"
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <QJSValue>
@@ -7,13 +8,26 @@
 
 namespace qtui {
 
-static void drawBresenhamLine(Canvas* canvas, int x1, int y1, int x2, int y2, uint32_t color) {
+namespace {
+
+constexpr uint8_t brailleBit(int dotX, int dotY) {
+    // Unicode Braille Patterns (U+2800..U+28FF) 8-dot bit mapping:
+    // Left column  (dotX=0): Dot 1 (y=0) -> bit 0 (0x01), Dot 2 (y=1) -> bit 1 (0x02), Dot 3 (y=2) -> bit 2 (0x04), Dot 7 (y=3) -> bit 6 (0x40)
+    // Right column (dotX=1): Dot 4 (y=0) -> bit 3 (0x08), Dot 5 (y=1) -> bit 4 (0x10), Dot 6 (y=2) -> bit 5 (0x20), Dot 8 (y=3) -> bit 7 (0x80)
+    constexpr uint8_t masks[2][4] = {
+        { 0x01, 0x02, 0x04, 0x40 },
+        { 0x08, 0x10, 0x20, 0x80 }
+    };
+    return masks[dotX & 1][dotY & 3];
+}
+
+void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, uint32_t color) {
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int err = dx + dy, e2;
     int x = x1, y = y1;
     while (true) {
-        canvas->setPixelColorHex(x, y, color);
+        painter.setPixelColorHex(x, y, color);
         if (x == x2 && y == y2) break;
         e2 = 2 * err;
         if (e2 >= dy) { err += dy; x += sx; }
@@ -21,9 +35,62 @@ static void drawBresenhamLine(Canvas* canvas, int x1, int y1, int x2, int y2, ui
     }
 }
 
+} // namespace
+
+// --- CanvasPainter ---
+void CanvasPainter::setPixel(int x, int y, bool value) {
+    if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
+        const int cellX = x / 2;
+        const int cellY = y / 4;
+        if (x < 0 || y < 0 || cellX >= m_canvas.width() || cellY >= m_canvas.height()) return;
+        const uint8_t bitMask = brailleBit(x % 2, y % 4);
+        const size_t idx = static_cast<size_t>(cellY * m_canvas.width() + cellX);
+        if (idx >= m_canvas.m_cells.size()) return;
+        if (value) {
+            m_canvas.m_cells[idx] |= bitMask;
+        } else {
+            m_canvas.m_cells[idx] &= static_cast<uint8_t>(~bitMask);
+        }
+    } else {
+        const uint32_t color = value
+            ? m_canvas.m_resolvedColor
+            : (!m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor);
+        setPixelColorHex(x, y, color);
+    }
+}
+
+void CanvasPainter::setPixelColor(int x, int y, Color color) {
+    setPixelColorHex(x, y, ColorMapper::fromString(color, m_canvas.m_resolvedColor));
+}
+
+void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
+    const int w = pixelWidth();
+    const int h = pixelHeight();
+    if (x < 0 || x >= w || y < 0 || y >= h) return;
+    if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
+        const size_t idx = static_cast<size_t>((y / 4) * m_canvas.width() + (x / 2));
+        if (idx < m_canvas.m_cells.size())
+            m_canvas.m_cells[idx] |= brailleBit(x % 2, y % 4);
+    } else {
+        const size_t idx = static_cast<size_t>(y * w + x);
+        if (idx < m_canvas.m_pixelColors.size())
+            m_canvas.m_pixelColors[idx] = color;
+    }
+}
+
+void CanvasPainter::clear() {
+    const uint32_t clearBg = !m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor;
+    std::fill(m_canvas.m_cells.begin(), m_canvas.m_cells.end(), 0x00);
+    std::fill(m_canvas.m_pixelColors.begin(), m_canvas.m_pixelColors.end(), clearBg);
+}
+
 // --- Canvas ---
 Canvas::Canvas(QObject* parent) : Item(parent) {
     resizeBuffer();
+}
+
+CanvasPainter Canvas::painter() const {
+    return CanvasPainter(*this);
 }
 
 void Canvas::setColor(Color color) {
@@ -73,92 +140,46 @@ void Canvas::setHeight(int height) {
     emit pixelHeightChanged();
 }
 
-namespace {
-constexpr uint8_t brailleBit(int dotX, int dotY) {
-    // Unicode Braille Patterns (U+2800..U+28FF) 8-dot bit mapping:
-    // Left column  (dotX=0): Dot 1 (y=0) -> bit 0 (0x01), Dot 2 (y=1) -> bit 1 (0x02), Dot 3 (y=2) -> bit 2 (0x04), Dot 7 (y=3) -> bit 6 (0x40)
-    // Right column (dotX=1): Dot 4 (y=0) -> bit 3 (0x08), Dot 5 (y=1) -> bit 4 (0x10), Dot 6 (y=2) -> bit 5 (0x20), Dot 8 (y=3) -> bit 7 (0x80)
-    constexpr uint8_t masks[2][4] = {
-        { 0x01, 0x02, 0x04, 0x40 },
-        { 0x08, 0x10, 0x20, 0x80 }
-    };
-    return masks[dotX & 1][dotY & 3];
-}
-}
-
 void Canvas::setPixel(int x, int y, bool value) {
-    if (m_renderMode == RenderMode::Braille) {
-        int cellX = x / 2;
-        int cellY = y / 4;
-        if (cellX < 0 || cellX >= width() || cellY < 0 || cellY >= height()) return;
-        uint8_t bitMask = brailleBit(x % 2, y % 4);
-        int idx = cellY * width() + cellX;
-        if (value) {
-            m_cells[idx] |= bitMask;
-        } else {
-            m_cells[idx] &= ~bitMask;
-        }
-        if (!m_rendering)
-            markDirty();
-    } else {
-    uint32_t col = value ? m_resolvedColor : (!m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor);
-        setPixelColorHex(x, y, col);
-    }
+    resizeBuffer();
+    painter().setPixel(x, y, value);
+    markDirty();
 }
 
 void Canvas::setPixelColor(int x, int y, Color color) {
-    setPixelColorHex(x, y, ColorMapper::fromString(color, m_resolvedColor));
+    resizeBuffer();
+    painter().setPixelColor(x, y, color);
+    markDirty();
 }
 
 void Canvas::setPixelColorHex(int x, int y, uint32_t color) {
-    int w = pixelWidth();
-    int h = pixelHeight();
-    if (x < 0 || x >= w || y < 0 || y >= h) return;
-    if (m_renderMode == RenderMode::Braille) {
-        int idx = (y / 4) * width() + (x / 2);
-        m_cells[idx] |= brailleBit(x % 2, y % 4);
-    } else {
-        int idx = y * w + x;
-        m_pixelColors[idx] = color;
-    }
-    // Shape drawing during paint() writes the frame being rendered and must
-    // not schedule another one.
-    if (!m_rendering)
-        markDirty();
+    resizeBuffer();
+    painter().setPixelColorHex(x, y, color);
+    markDirty();
 }
 
 void Canvas::clear() {
-    uint32_t clearBg = !m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor;
-    std::fill(m_cells.begin(), m_cells.end(), 0x00);
-    std::fill(m_pixelColors.begin(), m_pixelColors.end(), clearBg);
-    if (!m_rendering)
-        markDirty();
+    painter().clear();
+    markDirty();
 }
 
-void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!visible()) return;
+    Q_UNUSED(clipRect);
 
-    m_rendering = true;
     resizeBuffer();
-    if (m_autoClear) {
-        if (m_renderMode == RenderMode::Braille) {
-            std::fill(m_cells.begin(), m_cells.end(), 0x00);
-        } else {
-    uint32_t clearBg = !m_fillColor.isValid() ? 0x00000000 : m_resolvedFillColor;
-            std::fill(m_pixelColors.begin(), m_pixelColors.end(), clearBg);
-        }
-    }
+    CanvasPainter surface = painter();
+    if (m_autoClear)
+        surface.clear();
 
-
-    // Draw all visual children shapes
+    // Draw all visual children shapes into the pixel surface.
     for (Item* child : childItems()) {
         if (child && child->visible()) {
-            if (CanvasShape* shape = qobject_cast<CanvasShape*>(child)) {
-                shape->draw(this);
+            if (const CanvasShape* shape = qobject_cast<const CanvasShape*>(child)) {
+                shape->draw(surface);
             }
         }
     }
-
 
     if (m_renderMode == RenderMode::Braille) {
         static const auto brailleTable = []() {
@@ -176,41 +197,39 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
-            uint8_t cellValue = m_cells[y * width() + x];
-            if (cellValue > 0) {
+                const uint8_t cellValue = m_cells[static_cast<size_t>(y * width() + x)];
+                if (cellValue == 0)
+                    continue;
                 Cell *targetCell = buffer.tryCellAt(absX + x, absY + y);
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
-                    cell.setCharacter(brailleTable[cellValue]);
-                    cell.displayWidth = 1;
-                    cell.continuation = false;
-                    cell.fgColor = m_resolvedColor;
-                }
+                cell.setCharacter(brailleTable[cellValue]);
+                cell.displayWidth = 1;
+                cell.continuation = false;
+                cell.fgColor = m_resolvedColor;
             }
         }
     } else { // HalfBlock
-        int w = width();
-        int h = height();
+        const int w = width();
+        const int h = height();
         for (int cellY = 0; cellY < h; ++cellY) {
             for (int cellX = 0; cellX < w; ++cellX) {
-                int topY = cellY * 2;
-                int bottomY = cellY * 2 + 1;
+                const int topY = cellY * 2;
+                const int bottomY = cellY * 2 + 1;
 
-                uint32_t topColor = (topY < h * 2) ? m_pixelColors[topY * w + cellX] : 0x00000000;
-                uint32_t bottomColor = (bottomY < h * 2) ? m_pixelColors[bottomY * w + cellX] : 0x00000000;
+                const uint32_t topColor = (topY < h * 2) ? m_pixelColors[static_cast<size_t>(topY * w + cellX)] : 0x00000000;
+                const uint32_t bottomColor = (bottomY < h * 2) ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)] : 0x00000000;
 
-                bool topSet = (topColor >> 24) != 0;
-                bool bottomSet = (bottomColor >> 24) != 0;
+                const bool topSet = (topColor >> 24) != 0;
+                const bool bottomSet = (bottomColor >> 24) != 0;
+                if (!topSet && !bottomSet)
+                    continue;
 
-            if (!topSet && !bottomSet) {
-                continue;
-            }
-
-            Cell *targetCell = buffer.tryCellAt(absX + cellX, absY + cellY);
-            if (!targetCell)
-                continue;
-            Cell& cell = *targetCell;
+                Cell *targetCell = buffer.tryCellAt(absX + cellX, absY + cellY);
+                if (!targetCell)
+                    continue;
+                Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
 
@@ -230,18 +249,16 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
             }
         }
     }
-
-    m_rendering = false;
 }
 
-void Canvas::resizeBuffer() {
+void Canvas::resizeBuffer() const {
     if (m_renderMode == RenderMode::Braille) {
-        size_t needed = static_cast<size_t>(width() * height());
+        const size_t needed = static_cast<size_t>(std::max(0, width()) * std::max(0, height()));
         if (m_cells.size() != needed) {
             m_cells.resize(needed, 0x00);
         }
     } else {
-        size_t needed = static_cast<size_t>(width() * (height() * 2));
+        const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * 2));
         if (m_pixelColors.size() != needed) {
             m_pixelColors.resize(needed, 0x00000000);
         }
@@ -258,16 +275,16 @@ void CanvasShape::setColor(Color color) {
     if (parentItem()) parentItem()->markDirty();
 }
 
-uint32_t CanvasShape::resolvedColor(Canvas* canvas) const {
+uint32_t CanvasShape::resolvedColor(const CanvasPainter& painter) const {
     if (m_hasCustomColor) return m_resolvedColor;
-    return canvas ? canvas->resolvedColor() : 0xFFFFFFFF;
+    return painter.defaultColor();
 }
 
 // --- Point ---
 Point::Point(QObject* parent) : CanvasShape(parent) {}
 
-void Point::draw(Canvas* canvas) {
-    canvas->setPixelColorHex(x(), y(), resolvedColor(canvas));
+void Point::draw(CanvasPainter& painter) const {
+    painter.setPixelColorHex(x(), y(), resolvedColor(painter));
 }
 
 // --- Line ---
@@ -301,8 +318,8 @@ void Line::setY2(int y2) {
     if (parentItem()) parentItem()->markDirty();
 }
 
-void Line::draw(Canvas* canvas) {
-    drawBresenhamLine(canvas, m_x1, m_y1, m_x2, m_y2, resolvedColor(canvas));
+void Line::draw(CanvasPainter& painter) const {
+    drawBresenhamLine(painter, m_x1, m_y1, m_x2, m_y2, resolvedColor(painter));
 }
 
 // --- Polygon ---
@@ -335,18 +352,18 @@ void Polygon::setClosed(bool closed) {
     if (parentItem()) parentItem()->markDirty();
 }
 
-void Polygon::draw(Canvas* canvas) {
+void Polygon::draw(CanvasPainter& painter) const {
     if (m_parsedPoints.isEmpty()) return;
 
-    uint32_t col = resolvedColor(canvas);
+    const uint32_t col = resolvedColor(painter);
     for (int i = 0; i < m_parsedPoints.size() - 1; ++i) {
-        drawBresenhamLine(canvas, m_parsedPoints[i].x(), m_parsedPoints[i].y(),
-                         m_parsedPoints[i + 1].x(), m_parsedPoints[i + 1].y(), col);
+        drawBresenhamLine(painter, m_parsedPoints[i].x(), m_parsedPoints[i].y(),
+                          m_parsedPoints[i + 1].x(), m_parsedPoints[i + 1].y(), col);
     }
 
     if (m_closed && m_parsedPoints.size() > 2) {
-        drawBresenhamLine(canvas, m_parsedPoints.back().x(), m_parsedPoints.back().y(),
-                         m_parsedPoints.front().x(), m_parsedPoints.front().y(), col);
+        drawBresenhamLine(painter, m_parsedPoints.back().x(), m_parsedPoints.back().y(),
+                          m_parsedPoints.front().x(), m_parsedPoints.front().y(), col);
     }
 }
 
@@ -357,26 +374,26 @@ CanvasRectangle::CanvasRectangle(QObject* parent) : CanvasShape(parent) {}
 
 void CanvasRectangle::setFill(bool fill) { if (m_fill != fill) { m_fill = fill; emit fillChanged(); if (parentItem()) parentItem()->markDirty(); } }
 
-void CanvasRectangle::draw(Canvas* canvas) {
-    uint32_t col = resolvedColor(canvas);
-    int rx = x();
-    int ry = y();
-    int rw = width();
-    int rh = height();
+void CanvasRectangle::draw(CanvasPainter& painter) const {
+    const uint32_t col = resolvedColor(painter);
+    const int rx = x();
+    const int ry = y();
+    const int rw = width();
+    const int rh = height();
 
     if (rw <= 0 || rh <= 0) return;
 
     if (m_fill) {
         for (int py = ry; py < ry + rh; ++py) {
             for (int px = rx; px < rx + rw; ++px) {
-                canvas->setPixelColorHex(px, py, col);
+                painter.setPixelColorHex(px, py, col);
             }
         }
     } else {
-        drawBresenhamLine(canvas, rx, ry, rx + rw - 1, ry, col);
-        drawBresenhamLine(canvas, rx, ry + rh - 1, rx + rw - 1, ry + rh - 1, col);
-        drawBresenhamLine(canvas, rx, ry, rx, ry + rh - 1, col);
-        drawBresenhamLine(canvas, rx + rw - 1, ry, rx + rw - 1, ry + rh - 1, col);
+        drawBresenhamLine(painter, rx, ry, rx + rw - 1, ry, col);
+        drawBresenhamLine(painter, rx, ry + rh - 1, rx + rw - 1, ry + rh - 1, col);
+        drawBresenhamLine(painter, rx, ry, rx, ry + rh - 1, col);
+        drawBresenhamLine(painter, rx + rw - 1, ry, rx + rw - 1, ry + rh - 1, col);
     }
 }
 
@@ -388,13 +405,13 @@ void Circle::setCy(int cy) { m_cy = cy; m_cySet = true; emit cyChanged(); if (pa
 void Circle::setRadius(int r) { if (m_radius != r) { m_radius = r; emit radiusChanged(); if (parentItem()) parentItem()->markDirty(); } }
 void Circle::setFill(bool fill) { if (m_fill != fill) { m_fill = fill; emit fillChanged(); if (parentItem()) parentItem()->markDirty(); } }
 
-void Circle::draw(Canvas* canvas) {
-    uint32_t col = resolvedColor(canvas);
-    int r = m_radius;
+void Circle::draw(CanvasPainter& painter) const {
+    const uint32_t col = resolvedColor(painter);
+    const int r = m_radius;
     if (r <= 0) return;
 
-    int centerx = cx();
-    int centery = cy();
+    const int centerx = cx();
+    const int centery = cy();
     int x = r;
     int y = 0;
     int err = 0;
@@ -402,22 +419,22 @@ void Circle::draw(Canvas* canvas) {
     auto drawPoints = [&](int pcx, int pcy, int px, int py) {
         if (m_fill) {
             for (int ix = pcx - px; ix <= pcx + px; ++ix) {
-                canvas->setPixelColorHex(ix, pcy + py, col);
-                canvas->setPixelColorHex(ix, pcy - py, col);
+                painter.setPixelColorHex(ix, pcy + py, col);
+                painter.setPixelColorHex(ix, pcy - py, col);
             }
             for (int ix = pcx - py; ix <= pcx + py; ++ix) {
-                canvas->setPixelColorHex(ix, pcy + px, col);
-                canvas->setPixelColorHex(ix, pcy - px, col);
+                painter.setPixelColorHex(ix, pcy + px, col);
+                painter.setPixelColorHex(ix, pcy - px, col);
             }
         } else {
-            canvas->setPixelColorHex(pcx + px, pcy + py, col);
-            canvas->setPixelColorHex(pcx - px, pcy + py, col);
-            canvas->setPixelColorHex(pcx + px, pcy - py, col);
-            canvas->setPixelColorHex(pcx - px, pcy - py, col);
-            canvas->setPixelColorHex(pcx + py, pcy + px, col);
-            canvas->setPixelColorHex(pcx - py, pcy + px, col);
-            canvas->setPixelColorHex(pcx + py, pcy - px, col);
-            canvas->setPixelColorHex(pcx - py, pcy - px, col);
+            painter.setPixelColorHex(pcx + px, pcy + py, col);
+            painter.setPixelColorHex(pcx - px, pcy + py, col);
+            painter.setPixelColorHex(pcx + px, pcy - py, col);
+            painter.setPixelColorHex(pcx - px, pcy - py, col);
+            painter.setPixelColorHex(pcx + py, pcy + px, col);
+            painter.setPixelColorHex(pcx - py, pcy + px, col);
+            painter.setPixelColorHex(pcx + py, pcy - px, col);
+            painter.setPixelColorHex(pcx - py, pcy - px, col);
         }
     };
 

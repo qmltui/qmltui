@@ -217,7 +217,7 @@ void MdView::pageDown() {
 }
 
 void MdView::paint(TextGridBuffer &buffer, int absX, int absY,
-                    const ClipRect &clipRect) {
+                    const ClipRect &clipRect) const {
     const ClipRect ownClip = clipRect.intersected(ClipRect{absX, absY, width(), height()});
     if (ownClip.width <= 0 || ownClip.height <= 0)
         return;

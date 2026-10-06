@@ -60,7 +60,7 @@ void Sparkline::setBgColor(Color color) {
     markDirty();
 }
 
-void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) {
+void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     if (!m_visible || m_values.isEmpty()) return;
 
     const int availW = width();

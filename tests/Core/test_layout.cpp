@@ -276,7 +276,7 @@ public:
 
     int layoutCount = 0;
     bool invalidateDuringLayout = false;
-    bool invalidateDuringPaint = false;
+    Item *invalidateDuringPaint = nullptr;   // paint() is const: mutate through a pointer, as a bug would
     QPointer<Item> deleteDuringPaint;
 
 protected:
@@ -288,14 +288,13 @@ protected:
     }
 
     void paint(TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect &) override
-    {
+               const ClipRect &) const override {
         if (m_order)
             m_order->append(QChar::fromLatin1(m_glyph));
         if (Cell *cell = buffer.tryCellAt(absX, absY))
             cell->setCharacter(QByteArray(1, m_glyph));
         if (invalidateDuringPaint)
-            markDirty(DirtyFlag::SelfDirty);
+            invalidateDuringPaint->markDirty(DirtyFlag::SelfDirty);
         if (deleteDuringPaint)
             delete deleteDuringPaint.data();
     }
@@ -354,7 +353,7 @@ void TestLayout::testRenderPreservesNewInvalidations()
     // Invalidations raised from paint() are retained for a later frame but
     // never schedule one: the engine is not notified.
     PaintProbe painter('Y', nullptr);
-    painter.invalidateDuringPaint = true;
+    painter.invalidateDuringPaint = &painter;
     QSignalSpy paintSpy(&painter, &Item::dirty);
     paintItem(painter, buffer, 0, 0);
     QVERIFY(painter.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));

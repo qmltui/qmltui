@@ -47,7 +47,7 @@ public:
     qtui::Color bgColor() const { return m_bgColor; }
     void setBgColor(qtui::Color color);
 
-    void paint(qtui::TextGridBuffer &buffer, int absX, int absY, const qtui::ClipRect &clipRect) override;
+    void paint(qtui::TextGridBuffer &buffer, int absX, int absY, const qtui::ClipRect &clipRect) const override;
 
 signals:
     void valuesChanged();

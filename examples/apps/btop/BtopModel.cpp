@@ -71,7 +71,7 @@ void BtopCpuGraph::setBgColor(Color color) {
 }
 
 void BtopCpuGraph::paint(TextGridBuffer &buffer, int absX, int absY,
-                         const ClipRect &) {
+                         const ClipRect &) const {
   if (!visible() || width() <= 0 || height() <= 0 || m_values.isEmpty())
     return;
 

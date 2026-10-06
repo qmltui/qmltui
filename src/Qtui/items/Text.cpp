@@ -319,7 +319,7 @@ void Text::ensureLayout() const {
     m_layoutDirty = false;
 }
 
-void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
+void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
     ensureLayout();

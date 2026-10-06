@@ -71,6 +71,22 @@ Created by `TerminalDevice`'s constructor through `createTerminalBackend()` and 
 
 Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIGWINCH` bridge is installed while at least one backend is listening and removed with the last one.
 
+## 14. Application-provided backends
+
+`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, a WebAssembly bridge, or an in-memory backend in tests.
+
+```cpp
+#include <TerminalBackend.h>
+
+qtui::TerminalBackend::setFactory([](int) {
+    return std::make_unique<SerialConsoleBackend>(QStringLiteral("/dev/ttyS0"));
+});
+```
+
+`qtui::MemoryTerminalBackend` in `Qtui::Testing` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
+
+This is a C++ extension point and may still change before 1.0, like custom items.
+
 ## 15. Windows notes
 
 - Windows Terminal is the target. Legacy `conhost.exe` gets whatever its VT support provides.

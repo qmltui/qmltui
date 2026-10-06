@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QSize>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -35,6 +36,16 @@ public:
 
     explicit TerminalBackend(QObject* parent = nullptr);
     ~TerminalBackend() override;
+
+    // Application-provided backends -----------------------------------------
+    // A factory installed here replaces the platform backend for every
+    // TerminalDevice created afterwards: serial consoles, in-process hosts,
+    // WebAssembly bridges, or an in-memory backend for tests. Install it before
+    // the first Terminal completes; pass nullptr to restore the platform default.
+    // This is a C++ extension point and may still change before 1.0.
+    using Factory = std::function<std::unique_ptr<TerminalBackend>(int outputFd)>;
+    static void setFactory(Factory factory);
+    static const Factory& factory();
 
     // Mode ----------------------------------------------------------------
     virtual bool enterRawMode() = 0;
@@ -79,9 +90,10 @@ signals:
     void resized();
 };
 
-// Creates the backend for this platform. outputFd < 0 selects the process's
+// Creates a backend: the installed TerminalBackend::factory() when there is
+// one, otherwise this platform's backend. outputFd < 0 selects the process's
 // standard output; any other descriptor is used for output and size queries
 // while input always comes from the process's standard input.
-std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1);
+QTUI_CORE_EXPORT std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1);
 
 } // namespace qtui

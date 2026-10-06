@@ -499,6 +499,17 @@ Implementations:
 chosen at construction. The `TestRunner` continues to drive the engine without
 any backend, which is the existing headless path.
 
+### Application-provided backends
+
+`TerminalBackend::setFactory()` lets an application replace the platform
+backend process-wide: serial consoles on devices without a tty layer,
+in-process hosts over sockets or ConPTY, the WebAssembly bridge of Plan 05,
+and tests. `Qtui::Testing` ships `MemoryTerminalBackend` as the reference
+implementation, and `tests/Core/test_terminal_backend.cpp` drives the engine
+through it end to end. C++ only, no QML surface, documented as subject to
+change before 1.0. Per-Terminal injection is deferred until a multi-session
+host needs it.
+
 ### Scope limits for launch
 
 - **Windows Terminal is the target.** Legacy `conhost.exe` gets whatever works

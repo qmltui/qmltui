@@ -1,6 +1,8 @@
 add_library(QtuiTesting
     TestRunner.h
     TestRunner.cpp
+    MemoryTerminalBackend.h
+    MemoryTerminalBackend.cpp
 )
 
 target_compile_definitions(QtuiTesting PRIVATE QTUI_TESTING_LIBRARY)
@@ -49,7 +51,7 @@ if(QTUI_ENABLE_TEST_RUNNER OR QTUI_ENABLE_TEST_DRIVER)
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
-    install(FILES TestRunner.h
+    install(FILES TestRunner.h MemoryTerminalBackend.h
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/Testing"
     )
 endif()

@@ -78,13 +78,94 @@ See the [ListView example](../examples/components/list_view/Main.qml).
 `selected` identify the represented cell. Qtui's `columns` descriptors continue
 to provide terminal column titles, keys, widths, and alignment.
 
-`rowDelegate` retains the Qtui 0.1 row-scoped delegate contract for migration and
-is planned for removal in 0.3. When both properties are set, `delegate` wins and
+`rowDelegate` retains the deprecated Qtui 0.1 row-scoped delegate contract for
+migration; it remains supported with no scheduled removal release. When both properties are set, `delegate` wins and
 Qtui emits a warning.
 
 Selection properties are `currentRow` (read-only alias of `selectedRow`),
 `selectedRow`, and `currentColumn`. See the
 [TableView example](../examples/components/table_view/Main.qml).
+
+### Sorting, filtering, and model coordinates
+
+TableView displays the supplied model's order. It does not sort, filter, or
+rearrange its input. `headerClicked(int column)` reports a primary-button click
+on a visible header cell; the divider is not a header activation target.
+Applications connect this signal to their sorting policy.
+
+Use a C++ `QSortFilterProxyModel` for sorting/filtering on the Qt 6.8 baseline.
+Give the view the proxy as its `model`, and configure the source model, sort
+role, filter role, and filter column in application code. Numeric sort roles
+should contain numbers, independently of display strings such as `"12.4%"`.
+For role-based list models, the application maps visual columns to sort roles;
+a visual column number is not necessarily a source-model column number.
+
+Qt 6.10+ also supplies `SortFilterProxyModel`, `RoleSorter`, and filters through
+`import QtQml.Models`; that native QML API is a technology preview. It requires
+a `QAbstractItemModel` source, not a JavaScript array. It is optional and does
+not change Qtui's Qt 6.8 requirement or require a `QtQuick` import. Qtui does not
+provide a competing proxy wrapper.
+
+`selectedRow`, delegate `row`/`column`, and `rowActivated(row)` use the supplied
+model's coordinate space. When it is a proxy, translate an activation using
+`proxy.mapToSource(proxy.index(row, 0))` in application code before accessing
+the underlying record. The demo's `ProcessProxy::activate()` illustrates this.
+Array/list inputs remain in their supplied order, so their row indexes directly
+address the supplied list.
+
+The current C++ model record follows persistent indexes through insertions,
+moves, and proxy reordering. Removing or filtering it out clears selection;
+removing the filter does not restore it. Reset, replacement (including array
+replacement), and destruction also clear selection. Invalid selections never
+emit `rowActivated`. Pointer input updates both row and column. Page keys move
+by the visible body-row count.
+
+The existing single-current-cell API is retained: built-in rendering highlights
+the selected row, while cell delegates receive `selected == current` for the
+current cell. This is not Qt Quick's `ItemSelectionModel` API.
+
+### Column geometry and formatting
+
+Column descriptor maps accept `title`, `key`, `width`, and `alignment` (or the
+compatibility spelling `align`). The default width is 12 cells. The compatibility
+column count is five when no descriptors are provided; it is not inferred from
+the model. A one-column C++ list model can supply roles for multiple visual
+columns, all backed by source column zero.
+
+`columnWidthProvider(column)` is evaluated once per needed column when geometry
+is invalidated, not once per row. Return a finite non-negative integer: zero
+hides a column, while a negative number or `undefined` falls back to its
+descriptor width. Invalid widths use 12 cells and produce a QML diagnostic.
+Geometry is refreshed after size, descriptor, provider, or structural model
+changes. Call `forceLayout()` when values captured by an unchanged provider
+function change. This API also marks the view for repaint.
+
+`cellFormat(row, column, value)` applies only to built-in painting. Its optional
+result keys are `text`, `color`, `bgColor`, `bold`, and `align`. Custom delegates
+own their styling. Callback exceptions produce diagnostics and fall back to
+the unformatted value or descriptor width. Repeated identical callback errors
+are suppressed until success or callback replacement; the remembered set is
+bounded.
+
+For compatibility, array/map cell delegates receive stringified `modelData`;
+C++ models with named roles provide a role map, and those without named roles
+provide the display value. `rowDelegate.modelData` represents the entire row.
+
+Delegate count is bounded by the viewport and overscan. Updates query only
+changed roles of realized source indexes, sharing reads between visual columns
+backed by the same source index. Selection-only changes do not query roles.
+Offscreen delegates are destroyed rather than pooled. Horizontal scrolling,
+independent viewport positioning, typed column objects, and multi-selection
+remain outside this API.
+
+### Breaking migration: view-owned sorting removed
+
+Remove TableView's `sortColumn`, `sortOrder`, and `sortByColumn()` usages. Replace
+them with application-owned model/proxy sorting and `onHeaderClicked`. Sort
+indicators are application presentation; TableView no longer appends arrows.
+The sorting demo now uses typed source values, an external C++ proxy, a filter
+input, and activation mapped back to the source PID. Header clicks on an
+unconnected table have no sorting side effects.
 
 ## TreeView
 

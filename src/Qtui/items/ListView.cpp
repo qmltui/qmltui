@@ -270,8 +270,6 @@ void ListView::rebindDelegateItem(Item *item, int index) {
             normalized = normalized.value<QJSValue>().toVariant();
         if (normalized.canConvert<QVariantMap>())
             rowValues = normalized.toMap();
-        DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
         const QModelIndex modelIndex = model->index(index, 0);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
@@ -279,17 +277,23 @@ void ListView::rebindDelegateItem(Item *item, int index) {
             if (rowMap) rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
-        if (rowMap) {
-            DelegateUtils::setContextProperty(m_delegate, context, "model", QVariant::fromValue(rowMap));
-            DelegateUtils::setContextProperty(m_delegate, context, "modelData", QVariant::fromValue(rowMap));
-        }
     }
 
-    DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+    QQmlComponent *component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
+
+    if (rowMap) {
+        DelegateUtils::setContextProperty(component, context, "model", QVariant::fromValue(rowMap));
+        DelegateUtils::setContextProperty(component, context, "modelData", QVariant::fromValue(rowMap));
+    } else {
+        DelegateUtils::setContextProperty(component, context, "model", rowValue);
+        DelegateUtils::setContextProperty(component, context, "modelData", rowValue);
+    }
+
+    DelegateUtils::setContextProperty(component, context, "index", index);
     setPropertyIfExists(item, "index", index);
 
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
-        DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+        DelegateUtils::setContextProperty(component, context, it.key(), it.value());
         setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
     }
 
@@ -322,13 +326,6 @@ Item *ListView::createDelegateItem(int index)
 {
     if (index < 0 || index >= m_modelCount)
         return nullptr;
-    QQmlContext *context = DelegateUtils::createContext(m_delegate, this);
-    if (!context)
-        return nullptr;
-
-    QVariantMap initialProps;
-    initialProps["index"] = index;
-    DelegateUtils::setContextProperty(m_delegate, context, "index", index);
 
     QVariant rowValue;
     QVariantMap rowValues;
@@ -340,10 +337,6 @@ Item *ListView::createDelegateItem(int index)
             normalized = normalized.value<QJSValue>().toVariant();
         if (normalized.canConvert<QVariantMap>())
             rowValues = normalized.toMap();
-        initialProps["model"] = rowValue;
-        initialProps["modelData"] = rowValue;
-        DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
         rowMap = new QQmlPropertyMap(this);
         const QModelIndex modelIndex = model->index(index, 0);
@@ -352,19 +345,43 @@ Item *ListView::createDelegateItem(int index)
             rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
+    }
+
+    QQmlComponent *component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
+    if (!DelegateUtils::isReady(component, this)) {
+        delete rowMap;
+        return nullptr;
+    }
+
+    QQmlContext *context = DelegateUtils::createContext(component, this);
+    if (!context) {
+        delete rowMap;
+        return nullptr;
+    }
+
+    QVariantMap initialProps;
+    initialProps["index"] = index;
+    DelegateUtils::setContextProperty(component, context, "index", index);
+
+    if (rowMap) {
         initialProps["model"] = QVariant::fromValue(rowMap);
         initialProps["modelData"] = QVariant::fromValue(rowMap);
-        DelegateUtils::setContextProperty(m_delegate, context, "model", rowMap);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowMap);
+        DelegateUtils::setContextProperty(component, context, "model", rowMap);
+        DelegateUtils::setContextProperty(component, context, "modelData", rowMap);
+    } else {
+        initialProps["model"] = rowValue;
+        initialProps["modelData"] = rowValue;
+        DelegateUtils::setContextProperty(component, context, "model", rowValue);
+        DelegateUtils::setContextProperty(component, context, "modelData", rowValue);
     }
 
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
         initialProps[it.key()] = it.value();
-        DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+        DelegateUtils::setContextProperty(component, context, it.key(), it.value());
     }
 
     Item *item = DelegateUtils::createItem(
-        m_delegate, initialProps, context, this, this);
+        component, initialProps, context, this, this);
     if (!item) {
         delete rowMap;
         return nullptr;

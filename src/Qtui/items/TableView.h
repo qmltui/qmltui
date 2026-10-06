@@ -9,7 +9,8 @@
 #include <QJSValue>
 #include <QQmlComponent>
 #include <QHash>
-#include <QPair>
+#include <QSet>
+#include <utility>
 
 namespace qtui {
 
@@ -23,9 +24,6 @@ class TableView : public Item {
     Q_PROPERTY(int currentRow READ selectedRow NOTIFY selectedRowChanged)
     Q_PROPERTY(int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
     Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY alternatingRowsChanged)
-
-    Q_PROPERTY(int sortColumn READ sortColumn WRITE setSortColumn NOTIFY sortColumnChanged)
-    Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder WRITE setSortOrder NOTIFY sortOrderChanged)
 
     Q_PROPERTY(qtui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
     Q_PROPERTY(qtui::Color headerBgColor READ headerBgColor WRITE setHeaderBgColor NOTIFY headerBgColorChanged)
@@ -61,13 +59,7 @@ public:
     bool alternatingRows() const { return m_alternatingRows; }
     void setAlternatingRows(bool alt);
 
-    int sortColumn() const { return m_sortColumn; }
-    void setSortColumn(int col);
-
-    Qt::SortOrder sortOrder() const { return m_sortOrder; }
-    void setSortOrder(Qt::SortOrder order);
-
-    Q_INVOKABLE void sortByColumn(int column, Qt::SortOrder order = Qt::AscendingOrder);
+    Q_INVOKABLE void forceLayout();
 
     Color headerColor() const { return m_headerColor; }
     void setHeaderColor(Color color);
@@ -116,9 +108,6 @@ signals:
     void currentColumnChanged();
     void alternatingRowsChanged();
 
-    void sortColumnChanged();
-    void sortOrderChanged();
-
     void headerColorChanged();
     void headerBgColorChanged();
     void selectionColorChanged();
@@ -134,6 +123,7 @@ signals:
     void rowDelegateChanged();
 
     void rowActivated(int index);
+    void headerClicked(int column);
 
 protected:
     // Computes the scroll offset and creates, positions and shows delegate
@@ -144,22 +134,48 @@ private:
     ClipRect clipRectForChildren(int absX, int absY,
                                 const ClipRect &clipRect) const override;
     int rowCount() const;
+    int columnCount() const;
+    int headerRows() const;
     int computeFirstVisibleRow() const;
     void layoutDelegates();
-    void refreshDelegateStates();
-    void rebindDelegateItem(Item *item, int row, int column);
-    void delegateModelData(int row, int column, QVariantMap &modelMap,
-                           QVariant &modelData) const;
-    void handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    using Position = std::pair<int, int>;
+    struct DelegateRecord {
+        QPointer<Item> item;
+        QPointer<QQmlComponent> component;
+        QPersistentModelIndex source;
+        QVariantMap values;
+        QVariant modelData;
+        QSet<int> dirtyRoles;
+        bool allRolesDirty = true;
+        bool loaded = false;
+        bool current = false;
+        int row = -1;
+        int column = -1;
+    };
+    struct ColumnGeometry {
+        int column;
+        int x;
+        int width;
+        QString title;
+        QString alignment;
+    };
+    QModelIndex sourceIndex(int row, int column) const;
+    void updateDelegate(DelegateRecord &record, int row, int column);
+    void updateDelegateState(DelegateRecord &record, int row, int column);
+    void refreshDelegateStates(Position previous);
+    void handleStructureChanged();
+    void synchronizeSelection();
+    void clearSelection();
+    void handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                           const QList<int> &roles);
     QString cellText(int row, int col) const;
-    int columnWidth(int col) const;
-    QString columnAlignment(int col) const;
-    void sortModel();
+    void resolveColumns();
+    int resolveColumnWidth(int column, const QVariantMap &descriptor);
+    void callbackWarning(const QString &message, QSet<QString> &errors);
 
     void clearDelegateItems();
     void generateDelegateItems();
-    Item* createSingleDelegateItem(int row, int column);
-    void updateDelegateViewport(int firstRow, int lastRow, int firstCol, int lastCol);
+    static void destroyDelegate(DelegateRecord &record);
 
     QVariantList m_columns;
     QVariant m_modelVariant;
@@ -171,8 +187,15 @@ private:
     int m_firstVisibleRow = 0;
     bool m_alternatingRows = false;
 
-    int m_sortColumn = -1;
-    Qt::SortOrder m_sortOrder = Qt::AscendingOrder;
+    QPersistentModelIndex m_currentIndex;
+    bool m_resetDelegates = false;
+    bool m_structureDirty = false;
+    bool m_geometryDirty = true;
+    QHash<int, QByteArray> m_roleNames;
+    QList<ColumnGeometry> m_geometry;
+    QSet<QString> m_widthErrors;
+    QSet<QString> m_formatErrors;
+    QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 
     Color m_headerColor = "yellow";
     uint32_t m_resolvedHeaderColor = 0xFFFFFF00;
@@ -198,7 +221,7 @@ private:
     QJSValue m_cellFormat;
     QPointer<QQmlComponent> m_delegate;
     QPointer<QQmlComponent> m_rowDelegate;
-    QHash<QPair<int, int>, Item*> m_createdDelegateItems;
+    QHash<Position, DelegateRecord> m_createdDelegateItems;
 };
 
 } // namespace qtui

@@ -6,8 +6,52 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlInfo>
+#include <QQmlListReference>
 
 namespace qtui::DelegateUtils {
+
+inline QQmlComponent *resolveDelegate(QQmlComponent *delegate,
+                                      int row,
+                                      int column,
+                                      const QVariantMap &modelMap)
+{
+    if (!delegate)
+        return nullptr;
+
+    QQmlListReference choices(delegate, "choices");
+    if (!choices.isValid())
+        return delegate;
+
+    const QString roleName = delegate->property("role").toString();
+    const QVariant roleValue = !roleName.isEmpty() ? modelMap.value(roleName) : QVariant();
+
+    for (qsizetype choiceIndex = 0; choiceIndex < choices.count(); ++choiceIndex) {
+        QObject *choice = choices.at(choiceIndex);
+        if (!choice)
+            continue;
+
+        const QVariant choiceRowVar = choice->property("row");
+        const QVariant choiceColVar = choice->property("column");
+        const int choiceRow = choiceRowVar.isValid() ? choiceRowVar.toInt() : -1;
+        const int choiceColumn = choiceColVar.isValid() ? choiceColVar.toInt() : -1;
+        const QVariant choiceValue = choice->property("roleValue");
+
+        const bool rowMatches = choiceRow < 0 || choiceRow == row;
+        const bool columnMatches = choiceColumn < 0 || choiceColumn == column;
+        const bool roleMatches = !choiceValue.isValid() || choiceValue == roleValue;
+        if (!rowMatches || !columnMatches || !roleMatches)
+            continue;
+
+        const QVariant prop = choice->property("delegate");
+        if (auto *comp = prop.value<QQmlComponent *>())
+            return comp;
+        if (auto *obj = prop.value<QObject *>()) {
+            if (auto *comp = qobject_cast<QQmlComponent *>(obj))
+                return comp;
+        }
+    }
+    return nullptr;
+}
 
 inline QQmlContext *createContext(QQmlComponent *component, QObject *owner)
 {
@@ -42,6 +86,9 @@ inline bool isReady(QQmlComponent *component, QObject *owner)
 {
     if (!component)
         return false;
+    QQmlListReference choices(component, "choices");
+    if (choices.isValid())
+        return true;
     if (component->status() == QQmlComponent::Ready)
         return true;
     if (component->status() == QQmlComponent::Error)

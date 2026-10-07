@@ -139,26 +139,44 @@ Terminal {
         Item {
             id: upperRegion
 
-            visible: root.upperPanelsVisible
+            clip: true
+            visible: height > 0
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            height: !visible ? 0
+            height: !root.upperPanelsVisible ? 0
                     : root.cpuPanelVisible
                       ? Math.max(19, Math.floor(parent.height * 0.64))
                       : parent.height
 
+            Behavior on height {
+                NumberAnimation {
+                    duration: 150
+                    easing: Easing.InOutQuad
+                }
+            }
+
             Rectangle {
                 id: processPanel
 
-                visible: root.processPanelVisible
+                clip: true
+                visible: width > 0
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
-                width: root.sidePanelsVisible ? Math.floor(parent.width * 0.55) : parent.width
+                width: !root.processPanelVisible ? 0
+                       : root.sidePanelsVisible ? Math.floor(parent.width * 0.55)
+                       : parent.width
                 color: root.panelColor
                 border.style: "single"
                 border.color: root.borderColor
+
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 150
+                        easing: Easing.InOutQuad
+                    }
+                }
 
                 Text {
                     anchors.top: parent.top
@@ -307,25 +325,36 @@ Terminal {
             Item {
                 id: sideRegion
 
-                visible: root.sidePanelsVisible
+                clip: true
+                visible: (root.sidePanelsVisible || processPanel.width < parent.width)
+                         && (parent.width - processPanel.width > 0)
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                anchors.left: root.processPanelVisible ? processPanel.right : parent.left
+                anchors.left: processPanel.right
                 anchors.right: parent.right
 
                 Rectangle {
                     id: networkPanel
 
-                    visible: root.networkPanelVisible
+                    clip: true
+                    visible: height > 0
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    height: root.memoryPanelVisible
-                            ? Math.max(8, Math.floor(parent.height * 0.36))
-                            : parent.height
+                    height: !root.networkPanelVisible ? 0
+                            : root.memoryPanelVisible
+                              ? Math.max(8, Math.floor(parent.height * 0.36))
+                              : parent.height
                     color: root.panelColor
                     border.style: "single"
                     border.color: root.borderColor
+
+                    Behavior on height {
+                        NumberAnimation {
+                            duration: 150
+                            easing: Easing.InOutQuad
+                        }
+                    }
 
                     Text {
                         anchors.top: parent.top
@@ -395,8 +424,10 @@ Terminal {
                 Rectangle {
                     id: memoryPanel
 
-                    visible: root.memoryPanelVisible
-                    anchors.top: root.networkPanelVisible ? networkPanel.bottom : parent.top
+                    clip: true
+                    visible: height > 0 && (root.memoryPanelVisible
+                             || (root.networkPanelVisible && networkPanel.height < parent.height))
+                    anchors.top: networkPanel.bottom
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     width: Math.floor(parent.width * 0.55)
@@ -478,8 +509,10 @@ Terminal {
                 }
 
                 Rectangle {
-                    visible: root.memoryPanelVisible
-                    anchors.top: root.networkPanelVisible ? networkPanel.bottom : parent.top
+                    clip: true
+                    visible: height > 0 && (root.memoryPanelVisible
+                             || (root.networkPanelVisible && networkPanel.height < parent.height))
+                    anchors.top: networkPanel.bottom
                     anchors.bottom: parent.bottom
                     anchors.left: memoryPanel.right
                     anchors.right: parent.right
@@ -566,8 +599,10 @@ Terminal {
         Rectangle {
             id: cpuPanel
 
-            visible: root.cpuPanelVisible
-            anchors.top: root.upperPanelsVisible ? upperRegion.bottom : parent.top
+            clip: true
+            visible: height > 0 && (root.cpuPanelVisible
+                     || (root.upperPanelsVisible && upperRegion.height < parent.height))
+            anchors.top: upperRegion.bottom
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right

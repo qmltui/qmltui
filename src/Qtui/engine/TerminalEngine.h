@@ -13,6 +13,7 @@
 #include "../primitives/TerminalDevice.h"
 #include "../primitives/InputDecoder.h"
 #include "../primitives/TextGridBuffer.h"
+#include "../primitives/Color.h"
 #include "Renderer.h"
 
 class TestScrollView;
@@ -88,6 +89,11 @@ public:
     void setTitle(const QString& title);
     QString title() const { return m_title; }
     static std::string titleSequence(const QString& text);
+    void updateBackgroundColor();
+    static std::string osc11Sequence(const Color& color);
+    static std::string osc111Sequence();
+    bool isBackgroundOsc11Active() const { return m_backgroundOsc11Active; }
+    Color appliedBackgroundColor() const { return m_appliedBackgroundColor; }
 
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
@@ -137,6 +143,8 @@ private:
     std::string m_scrollback;
     size_t m_scrollbackInFlight = 0;
     bool m_stopped = false;
+    bool m_backgroundOsc11Active = false;
+    Color m_appliedBackgroundColor;
     std::unique_ptr<InputRouter> m_router;
 };
 

@@ -52,6 +52,15 @@ Copies the given text to the system clipboard, utilizing OSC 52 sequences if con
 #### static std::string osc52Sequence(const QString& text)
 Generates the ANSI escape sequence for copying the given text to the clipboard using the OSC 52 protocol.
 
+#### void updateBackgroundColor()
+Synchronizes the host terminal emulator's window background color via OSC 11 when the root window defines an opaque background in full-screen mode, or restores it via OSC 111 when in inline mode, transparent, or shutting down.
+
+#### static std::string osc11Sequence(const Color& color)
+Generates the ANSI escape sequence (`\033]11;#rrggbb\a`) for setting the terminal background color using the OSC 11 protocol.
+
+#### static std::string osc111Sequence()
+Generates the ANSI escape sequence (`\033]111\a`) for resetting the terminal background color back to the terminal default using the OSC 111 protocol.
+
 ## 11. Ownership and Lifecycle
 
 `TerminalEngine` is owned by `Terminal` or parent `QObject`. On destruction, it restores standard terminal POSIX/Windows mode and shows the cursor.

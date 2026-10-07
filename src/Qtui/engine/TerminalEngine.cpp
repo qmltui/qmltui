@@ -89,6 +89,10 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   if (m_rootWindow) {
       connect(m_rootWindow, &Terminal::mouseMotionRequestedChanged,
               this, &TerminalEngine::setMouseMotionReportingEnabled);
+      connect(m_rootWindow, &Terminal::colorChanged,
+              this, &TerminalEngine::updateBackgroundColor);
+      connect(m_rootWindow, &Terminal::modeChanged,
+              this, &TerminalEngine::updateBackgroundColor);
   }
 
   if (m_terminalOutputEnabled) {
@@ -117,6 +121,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   if (m_rootWindow && !m_rootWindow->title().isEmpty()) {
     setTitle(m_rootWindow->title());
   }
+  updateBackgroundColor();
 
   handleResize();
 
@@ -148,6 +153,12 @@ void TerminalEngine::stop() {
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
       m_rendererStarted = false;
+  }
+  if (m_backgroundOsc11Active) {
+      if (m_terminalOutputEnabled)
+          m_device.write(osc111Sequence());
+      m_backgroundOsc11Active = false;
+      m_appliedBackgroundColor = Color();
   }
   if (m_terminalOutputEnabled) {
     // Accepted output survives a full-screen exit even when inline mode is
@@ -260,6 +271,56 @@ void TerminalEngine::setTitle(const QString& title) {
 
 std::string TerminalEngine::titleSequence(const QString& text) {
   return "\033]0;" + text.toUtf8().toStdString() + "\a";
+}
+
+void TerminalEngine::updateBackgroundColor() {
+  if (m_stopped)
+    return;
+
+  const bool canApply = m_terminalOutputEnabled
+      && m_rootWindow
+      && m_rootWindow->mode() == Terminal::Mode::FullScreen;
+
+  if (canApply) {
+    const Color rootColor = m_rootWindow->color();
+    const std::string osc11 = osc11Sequence(rootColor);
+    if (!osc11.empty()) {
+      if (!m_backgroundOsc11Active || m_appliedBackgroundColor != rootColor) {
+        m_device.write(osc11);
+        m_backgroundOsc11Active = true;
+        m_appliedBackgroundColor = rootColor;
+      }
+      return;
+    }
+  }
+
+  if (m_backgroundOsc11Active) {
+    if (m_terminalOutputEnabled) {
+      m_device.write(osc111Sequence());
+    }
+    m_backgroundOsc11Active = false;
+    m_appliedBackgroundColor = Color();
+  }
+}
+
+std::string TerminalEngine::osc11Sequence(const Color& color) {
+  if (!color.isValid())
+    return {};
+  const Color rgb = color.toRgb();
+  const quint32 argb = rgb.argb32();
+  const uint8_t a = (argb >> 24) & 0xff;
+  if (a == 0)
+    return {};
+  const uint8_t r = (argb >> 16) & 0xff;
+  const uint8_t g = (argb >> 8) & 0xff;
+  const uint8_t b = argb & 0xff;
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "\033]11;#%02x%02x%02x\a", r, g, b);
+  return std::string(buf);
+}
+
+std::string TerminalEngine::osc111Sequence() {
+  return "\033]111\a";
 }
 
 void TerminalEngine::handleResize() {
@@ -392,6 +453,7 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
         m_renderer->setOutputEnabled(m_terminalOutputEnabled);
         m_renderer->setCapabilities(m_capabilities);
         m_renderer->resize(terminalWidth(), terminalHeight());
+        updateBackgroundColor();
         requestRender();
     }
 }
@@ -417,22 +479,29 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   }
 
   if (!enabled) {
+    if (m_backgroundOsc11Active) {
+      m_device.write(osc111Sequence());
+      m_backgroundOsc11Active = false;
+      m_appliedBackgroundColor = Color();
+    }
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
     m_device.showCursor();
     const bool flushed = m_device.finishOutput();
     m_device.disableRawMode();
     if (!flushed)
         emit renderFailed(QStringLiteral("Terminal output could not be flushed when disabling output; undelivered bytes were discarded"));
+    m_terminalOutputEnabled = false;
   } else {
+    m_terminalOutputEnabled = true;
     m_device.setAsyncOutput(true);
     m_device.enableRawMode();
     m_device.hideCursor();
     m_device.write("\033[?2004h");
     if (!m_rootWindow || m_rootWindow->mouseReporting())
       m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h");
+    updateBackgroundColor();
   }
 
-  m_terminalOutputEnabled = enabled;
   if (m_renderer)
     m_renderer->setOutputEnabled(enabled);
   requestRender();

@@ -109,6 +109,7 @@ private slots:
     void testPtyShutdownRestoresRawMode();
     void testDestructorUsesBoundedShutdown();
     void testScrollbackAcrossModes();
+    void testOsc11BackgroundOutput();
 };
 
 void TestTerminalDevice::initTestCase()
@@ -456,6 +457,49 @@ void TestTerminalDevice::testScrollbackAcrossModes()
     QVERIFY(stopped.find("shutdown output\r\n") != std::string::npos);
     engine->stop();
     QVERIFY(readAvailable(pipe.readEnd).empty());
+}
+
+void TestTerminalDevice::testOsc11BackgroundOutput()
+{
+    Pipe pipe;
+    QVERIFY(pipe.open());
+    const int savedOutput = ::dup(STDOUT_FILENO);
+    QVERIFY(savedOutput >= 0);
+    const auto restoreOutput = qScopeGuard([&] {
+        ::dup2(savedOutput, STDOUT_FILENO);
+        ::close(savedOutput);
+    });
+    QVERIFY(::dup2(pipe.writeEnd, STDOUT_FILENO) >= 0);
+
+    Terminal terminal;
+    terminal.setColor(Color("#123456"));
+    auto* engine = terminal.engine();
+    engine->setTestViewportSize(QSize(20, 5));
+    engine->setTerminalOutputEnabled(true);
+
+    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    QVERIFY(commit());
+
+    const std::string startOutput = readAvailable(pipe.readEnd);
+    // Verify OSC 11 was sent with the formatted hex color
+    QVERIFY(startOutput.find("\033]11;#123456\a") != std::string::npos);
+
+    // Dynamic color change writes new OSC 11 sequence
+    terminal.setColor(Color("#654321"));
+    const std::string colorChangeOutput = readAvailable(pipe.readEnd);
+    QVERIFY(colorChangeOutput.find("\033]11;#654321\a") != std::string::npos);
+
+    // Changing to transparent writes OSC 111 reset sequence
+    terminal.setColor(Color("transparent"));
+    const std::string transparentOutput = readAvailable(pipe.readEnd);
+    QVERIFY(transparentOutput.find("\033]111\a") != std::string::npos);
+
+    // Setting color again and stopping writes OSC 111 on exit
+    terminal.setColor(Color("#abcdef"));
+    (void)readAvailable(pipe.readEnd);
+    engine->stop();
+    const std::string stopOutput = readAvailable(pipe.readEnd);
+    QVERIFY(stopOutput.find("\033]111\a") != std::string::npos);
 }
 
 QTEST_MAIN(TestTerminalDevice)

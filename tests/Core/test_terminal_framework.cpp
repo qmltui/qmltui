@@ -173,6 +173,7 @@ private slots:
     void normalScreenForwardsMessagesImmediately();
     void testSessionOutputModeTransitions();
     void terminalTitle();
+    void terminalBackgroundColor();
 };
 
 void TestTerminalFramework::testSessionOutputModeTransitions() {
@@ -1135,6 +1136,79 @@ void TestTerminalFramework::terminalTitle()
 
     root->setProperty("appName", QStringLiteral("SuperApp"));
     QCOMPARE(root->title(), QStringLiteral("SuperApp - Dashboard"));
+    delete root;
+}
+
+void TestTerminalFramework::terminalBackgroundColor()
+{
+    // 1. Test helper formats sequence
+    QCOMPARE(TerminalEngine::osc11Sequence(Color("#1e1e2e")), std::string("\033]11;#1e1e2e\a"));
+    QCOMPARE(TerminalEngine::osc11Sequence(Color("blue")), std::string("\033]11;#0000ff\a"));
+    QCOMPARE(TerminalEngine::osc11Sequence(Color("transparent")), std::string());
+    QCOMPARE(TerminalEngine::osc11Sequence(Color()), std::string());
+    QCOMPARE(TerminalEngine::osc111Sequence(), std::string("\033]111\a"));
+
+    // 2. Test Terminal engine tracking with enabled terminal output
+    Terminal terminal;
+    auto* engine = terminal.engine();
+    engine->setTerminalOutputEnabled(true);
+
+    QCOMPARE(engine->isBackgroundOsc11Active(), false);
+    QCOMPARE(engine->appliedBackgroundColor(), Color());
+
+    // Setting an opaque color in FullScreen mode activates OSC 11 tracking
+    terminal.setColor(Color("#282a36"));
+    QCOMPARE(engine->isBackgroundOsc11Active(), true);
+    QCOMPARE(engine->appliedBackgroundColor(), Color("#282a36"));
+
+    // Setting same color does not change state
+    terminal.setColor(Color("#282a36"));
+    QCOMPARE(engine->isBackgroundOsc11Active(), true);
+
+    // Setting transparent color resets tracking
+    terminal.setColor(Color("transparent"));
+    QCOMPARE(engine->isBackgroundOsc11Active(), false);
+    QCOMPARE(engine->appliedBackgroundColor(), Color());
+
+    // Setting opaque color again
+    terminal.setColor(Color("#112233"));
+    QCOMPARE(engine->isBackgroundOsc11Active(), true);
+    QCOMPARE(engine->appliedBackgroundColor(), Color("#112233"));
+
+    // Switching to Inline mode deactivates OSC 11 tracking
+    terminal.setMode(Terminal::Mode::Inline);
+    QCOMPARE(engine->isBackgroundOsc11Active(), false);
+    QCOMPARE(engine->appliedBackgroundColor(), Color());
+
+    // Switching back to FullScreen mode reactivates OSC 11 tracking
+    terminal.setMode(Terminal::Mode::FullScreen);
+    QCOMPARE(engine->isBackgroundOsc11Active(), true);
+    QCOMPARE(engine->appliedBackgroundColor(), Color("#112233"));
+
+    // Stopping the engine resets tracking
+    engine->stop();
+    QCOMPARE(engine->isBackgroundOsc11Active(), false);
+
+    // 3. Test QML loading with color binding
+    QQmlEngine qmlEngine;
+    QQmlComponent component(&qmlEngine);
+    component.setData(R"(
+        import QtQuick
+        import Qtui
+
+        Terminal {
+            id: root
+            property string themeColor: "#282a36"
+            color: themeColor
+        }
+    )", QUrl());
+
+    auto* root = qobject_cast<Terminal*>(component.create());
+    QVERIFY(root);
+    QCOMPARE(root->color(), Color("#282a36"));
+
+    root->setProperty("themeColor", QStringLiteral("#ff5555"));
+    QCOMPARE(root->color(), Color("#ff5555"));
     delete root;
 }
 

@@ -45,6 +45,28 @@ TerminalEngine* Terminal::engine() const {
     return m_engine;
 }
 
+TerminalCapabilities Terminal::capabilities() const {
+    return m_engine ? m_engine->capabilities() : TerminalCapabilities{};
+}
+
+bool Terminal::enqueueControlSequence(QByteArray bytes) {
+    auto* outputEngine = engine();
+    return outputEngine && outputEngine->enqueueControlSequence(std::move(bytes));
+}
+
+QByteArray Terminal::takeControlSequences() {
+    return m_engine ? m_engine->takeControlSequences() : QByteArray{};
+}
+
+bool Terminal::enqueuePostControlSequence(QByteArray bytes) {
+    auto* outputEngine = engine();
+    return outputEngine && outputEngine->enqueuePostControlSequence(std::move(bytes));
+}
+
+QByteArray Terminal::takePostControlSequences() {
+    return m_engine ? m_engine->takePostControlSequences() : QByteArray{};
+}
+
 void Terminal::initializeEngine() {
     if (m_engine) return;
     for (QObject* ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
@@ -54,8 +76,10 @@ void Terminal::initializeEngine() {
         }
     }
     m_engine = new TerminalEngine(this, this);
+    connect(m_engine, &TerminalEngine::capabilitiesChanged, this, &Terminal::capabilitiesChanged);
     if (m_mode == Mode::Inline) m_engine->setRenderer(new StreamRenderer());
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+    emit capabilitiesChanged();
     emit terminalSizeChanged();
     emit widthChanged();
     emit heightChanged();

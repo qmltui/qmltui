@@ -11,7 +11,10 @@ namespace qtui {
 
 // POSIX terminal backend: termios raw mode on standard input, write(2) and
 // poll(2) on the output descriptor, a read notifier on standard input, and a
-// process-wide SIGWINCH bridge shared by every backend instance.
+// process-wide signal bridge shared by every backend instance. While in raw
+// mode it also owns the process's handlers for fatal signals and job control:
+// a crash, SIGTERM or Ctrl+Z restores the terminal before the default action,
+// and SIGCONT re-enters raw mode and emits resumed().
 class PosixTerminalBackend final : public TerminalBackend {
     Q_OBJECT
 
@@ -31,6 +34,7 @@ public:
 
     QSize size() const override;
     bool isInteractive() const override;
+    bool isInputInteractive() const override;
 
     void startInput() override;
     void stopInput() override;

@@ -35,6 +35,9 @@ public:
     virtual bool usesAlternateScreen(Terminal*) const { return false; }
     virtual const TextGridBuffer* currentBuffer() const { return nullptr; }
     virtual void setOutputEnabled(bool enabled) { m_outputEnabled = enabled; }
+    // Bytes of committed frames were discarded after an output error: forget
+    // what the terminal is believed to show so the next frame repaints it all.
+    virtual void discardCommittedState() {}
 
     // Terminal capabilities the encoder should target (colour depth, sync).
     virtual void setCapabilities(const TerminalCapabilities& capabilities) { m_capabilities = capabilities; }

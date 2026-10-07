@@ -33,7 +33,10 @@ public:
     enum class RenderMode {
         HalfBlock,  // 1x2 TrueColor subpixels per cell using ▀
         Braille,    // 2x4 dot subpixel grid
-        ASCII       // Brightness gradient mapping to ASCII characters
+        ASCII,      // Brightness gradient mapping to ASCII characters
+        Kitty,      // true pixels via the kitty graphics protocol
+        Sixel,      // true pixels via the sixel protocol (e.g. Windows Terminal)
+        Auto        // best pixel protocol the terminal supports, else HalfBlock
     };
     Q_ENUM(RenderMode)
 
@@ -46,7 +49,7 @@ public:
     Q_ENUM(Status)
 
     explicit Image(QObject* parent = nullptr);
-    ~Image() override = default;
+    ~Image() override;
 
     QUrl source() const { return m_source; }
     void setSource(const QUrl& source);
@@ -84,10 +87,17 @@ signals:
 private:
     void loadImage();
     void updateScaledCache() const;
+    // Emits transmission, placement and placeholder cells for the kitty
+    // protocol; frees the previous upload when the source or geometry changes.
+    void paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
+    // Reserves the image cells and enqueues a positioned sixel after the diff.
+    void paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
+    // Frees the current kitty upload if the terminal is still reachable.
+    void releaseKittyImage() const;
 
     QUrl m_source;
     FillMode m_fillMode = FillMode::Stretch;
-    RenderMode m_renderMode = RenderMode::HalfBlock;
+    RenderMode m_renderMode = RenderMode::Auto;
     Status m_status = Status::Null;
     bool m_smooth = true;
     Qt::Alignment m_alignment = Qt::AlignCenter;
@@ -99,6 +109,17 @@ private:
     mutable QSize m_lastTargetSize;
     mutable FillMode m_lastFillMode = FillMode::Stretch;
     mutable bool m_lastSmooth = true;
+
+    // kitty graphics state. m_imageId is 0 until the first upload.
+    mutable quint32 m_imageId = 0;
+    mutable qint64 m_lastKittyKey = 0;
+    mutable QSize m_lastKittyCells;
+
+    // sixel state. m_lastSixelSignature encodes source, geometry and output
+    // session so the image is re-emitted after any of them change.
+    mutable qint64 m_lastSixelKey = 0;
+    mutable QSize m_lastSixelCells;
+    mutable quint64 m_lastSixelSession = 0;
 };
 
 } // namespace qtui

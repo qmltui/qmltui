@@ -1,4 +1,7 @@
 #include "Image.h"
+#include "Terminal.h"
+#include "TerminalEngine.h"
+#include "TerminalGraphics.h"
 #include <QDebug>
 #include <QDirIterator>
 #include <QFile>
@@ -88,8 +91,22 @@ static QString resolvePath(const QUrl& url) {
 
 Image::Image(QObject* parent) : Item(parent) {}
 
+Image::~Image() {
+    releaseKittyImage();
+}
+
+void Image::releaseKittyImage() const {
+    if (m_imageId == 0) return;
+    if (Terminal* root = terminal())
+        root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
+    m_imageId = 0;
+    m_lastKittyKey = 0;
+    m_lastKittyCells = QSize();
+}
+
 void Image::setSource(const QUrl& source) {
     if (m_source == source) return;
+    releaseKittyImage();   // the old upload no longer describes this item
     m_source = source;
     emit sourceChanged();
     loadImage();
@@ -267,13 +284,38 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     int itemH = height();
     if (itemW <= 0 || itemH <= 0) return;
 
+    // Resolve the effective mode. Auto picks the best pixel protocol the
+    // terminal supports; an explicit Kitty falls back when unsupported. Both
+    // collapse to HalfBlock so tests and plain terminals are unaffected.
+    RenderMode mode = m_renderMode;
+    if (mode == RenderMode::Auto || mode == RenderMode::Kitty || mode == RenderMode::Sixel) {
+        const TerminalCapabilities caps = terminal() ? terminal()->capabilities()
+                                                     : TerminalCapabilities{};
+        const graphics::Protocol available = graphics::resolve(caps);
+        // Auto takes the best available; an explicit mode is honoured only when
+        // that protocol is the one available, else all fall back to HalfBlock.
+        graphics::Protocol use = graphics::Protocol::None;
+        if (mode == RenderMode::Auto) use = available;
+        else if (mode == RenderMode::Kitty && available == graphics::Protocol::Kitty) use = available;
+        else if (mode == RenderMode::Sixel && available == graphics::Protocol::Sixel) use = available;
+        if (use == graphics::Protocol::Kitty) {
+            paintKitty(buffer, absX, absY, clipRect);
+            return;
+        }
+        if (use == graphics::Protocol::Sixel) {
+            paintSixel(buffer, absX, absY, clipRect);
+            return;
+        }
+        mode = RenderMode::HalfBlock;
+    }
+
     updateScaledCache();
     if (m_scaledImage.isNull()) return;
 
     int subW = m_scaledImage.width();
     int subH = m_scaledImage.height();
 
-    if (m_renderMode == RenderMode::HalfBlock) {
+    if (mode == RenderMode::HalfBlock) {
         // Compute alignment offsets in subpixel space
         int subTargetW = itemW;
         int subTargetH = itemH * 2;
@@ -332,7 +374,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 }
             }
         }
-    } else if (m_renderMode == RenderMode::ASCII) {
+    } else if (mode == RenderMode::ASCII) {
         int subTargetW = itemW;
         int subTargetH = itemH;
 
@@ -383,7 +425,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 cell.fgColor = col.rgba();
             }
         }
-    } else if (m_renderMode == RenderMode::Braille) {
+    } else if (mode == RenderMode::Braille) {
         // 2x4 subpixels per cell
         int subTargetW = itemW * 2;
         int subTargetH = itemH * 4;
@@ -443,6 +485,143 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
             }
         }
     }
+}
+
+void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
+    Terminal* root = terminal();
+    if (!root) return;
+    const int itemW = width();
+    const int itemH = height();
+    if (itemW <= 0 || itemH <= 0 || m_sourceImage.isNull()) return;
+
+    const int sw = m_sourceImage.width();
+    const int sh = m_sourceImage.height();
+    if (sw <= 0 || sh <= 0) return;
+
+    // Placement rectangle in cells. Stretch fills the item; PreserveAspectFit
+    // shrinks to the source aspect and centres. Other modes behave as Stretch.
+    int cols = itemW;
+    int rows = itemH;
+    int originX = absX;
+    int originY = absY;
+    if (m_fillMode == FillMode::PreserveAspectFit) {
+        const QSize cell = root->capabilities().cellPixelSize;
+        const double cw = cell.isValid() ? cell.width() : 1.0;
+        const double ch = cell.isValid() ? cell.height() : 2.0;
+        // Match pixel aspect: (cols*cw)/(rows*ch) == sw/sh, largest within item.
+        int fitCols = itemW;
+        int fitRows = static_cast<int>(std::lround(double(fitCols) * cw * sh / (double(sw) * ch)));
+        if (fitRows > itemH) {
+            fitRows = itemH;
+            fitCols = static_cast<int>(std::lround(double(fitRows) * ch * sw / (double(sh) * cw)));
+        }
+        cols = std::clamp(fitCols, 1, itemW);
+        rows = std::clamp(fitRows, 1, itemH);
+        if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
+        else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
+        if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
+        else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
+    }
+
+    // Re-upload only when the source or the placement geometry changed. The
+    // terminal scales the stored image into the cols x rows placement.
+    const qint64 key = m_sourceImage.cacheKey();
+    if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells) {
+        if (m_imageId != 0)
+            root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
+        QImage upload = m_sourceImage;
+        constexpr int maxEdge = 2048;   // bound the payload; the terminal scales anyway
+        if (sw > maxEdge || sh > maxEdge)
+            upload = upload.scaled(QSize(maxEdge, maxEdge), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_imageId = graphics::nextImageId();
+        root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
+        root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
+        m_lastKittyKey = key;
+        m_lastKittyCells = QSize(cols, rows);
+    }
+
+    graphics::writeKittyPlaceholders(buffer, originX, originY, cols, rows, m_imageId, clipRect);
+}
+
+void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
+    Terminal* root = terminal();
+    if (!root) return;
+    const int itemW = width();
+    const int itemH = height();
+    if (itemW <= 0 || itemH <= 0 || m_sourceImage.isNull()) return;
+    const int sw = m_sourceImage.width();
+    const int sh = m_sourceImage.height();
+    if (sw <= 0 || sh <= 0) return;
+
+    // Sixel needs real pixel dimensions. Use the reported cell size, or a
+    // 10x20 (1:2) default that matches a typical monospace cell.
+    const QSize cell = root->capabilities().cellPixelSize;
+    const int cw = cell.isValid() ? cell.width() : 10;
+    const int ch = cell.isValid() ? cell.height() : 20;
+
+    // Placement rectangle in cells; PreserveAspectFit shrinks and centres.
+    int cols = itemW;
+    int rows = itemH;
+    int originX = absX;
+    int originY = absY;
+    if (m_fillMode == FillMode::PreserveAspectFit) {
+        int fitCols = itemW;
+        int fitRows = static_cast<int>(std::lround(double(fitCols) * cw * sh / (double(sw) * ch)));
+        if (fitRows > itemH) {
+            fitRows = itemH;
+            fitCols = static_cast<int>(std::lround(double(fitRows) * ch * sw / (double(sh) * cw)));
+        }
+        cols = std::clamp(fitCols, 1, itemW);
+        rows = std::clamp(fitRows, 1, itemH);
+        if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
+        else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
+        if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
+        else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
+    }
+
+    // Reserve the cells so the diff clears whatever was there and nothing else
+    // paints into the image area. The sixel is drawn on top, after the diff.
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            const int x = originX + c;
+            const int y = originY + r;
+            if (!clipRect.contains(x, y)) continue;
+            Cell* target = buffer.tryCellAt(x, y);
+            if (!target) continue;
+            target->setCharacter(" ");
+            target->displayWidth = 1;
+            target->continuation = false;
+            target->fgColor = 0x00000000u;
+            target->bgColor = 0x00000000u;
+        }
+    }
+
+    // Re-emit only when the source, the geometry, or the output session
+    // changed. A new session means the screen was cleared (resize, resume,
+    // renderer switch), so the persisted sixel is gone and must be re-sent.
+    const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
+    const qint64 key = m_sourceImage.cacheKey();
+    if (key == m_lastSixelKey && QSize(cols, rows) == m_lastSixelCells
+        && session == m_lastSixelSession)
+        return;
+    m_lastSixelKey = key;
+    m_lastSixelCells = QSize(cols, rows);
+    m_lastSixelSession = session;
+
+    QImage scaled = m_sourceImage.scaled(QSize(cols * cw, rows * ch),
+                                         Qt::IgnoreAspectRatio,
+                                         m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
+    const QByteArray sixel = graphics::sixelEncode(scaled);
+    if (sixel.isEmpty()) return;
+
+    // Position the cursor at the image origin, paint, and restore. DECSC/DECRC
+    // keep the renderer's own cursor bookkeeping untouched.
+    QByteArray positioned = "7";                                  // save cursor
+    positioned += "[" + QByteArray::number(originY + 1) + ';'
+                + QByteArray::number(originX + 1) + 'H';              // 1-based move
+    positioned += sixel;
+    positioned += "8";                                            // restore cursor
+    root->enqueuePostControlSequence(positioned);
 }
 
 } // namespace qtui

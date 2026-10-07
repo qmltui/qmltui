@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <iterator>
 #include <cstring>
 #include <fcntl.h>
 #include <poll.h>
@@ -21,20 +22,34 @@ namespace qtui {
 
 namespace {
 
-// SIGWINCH cannot be delivered per object, so one process-wide bridge turns
-// the signal into a Qt signal through a self-pipe. It is installed while at
-// least one backend is listening for input and removed with the last one.
-class SigwinchBridge : public QObject {
+// Signals cannot be delivered per object, so one process-wide bridge turns
+// them into Qt signals through a self-pipe. It is installed while at least one
+// backend is listening for input and removed with the last one. SIGWINCH is
+// handled here; SIGCONT is written into the same pipe by the job-control
+// handler below so the main thread learns that the process resumed.
+class SignalBridge : public QObject {
     Q_OBJECT
 public:
-    static SigwinchBridge* instance()
+    enum Code : char { WindowChanged = 1, Continued = 2 };
+
+    static SignalBridge* instance()
     {
         if (!qApp || QThread::currentThread() != qApp->thread())
             return nullptr;
-        static QPointer<SigwinchBridge> bridge;
+        static QPointer<SignalBridge> bridge;
         if (!bridge)
-            bridge = new SigwinchBridge(qApp);
+            bridge = new SignalBridge(qApp);
         return bridge.data();
+    }
+
+    // Async-signal-safe: one write(2) on the self-pipe.
+    static void notify(Code code)
+    {
+        if (s_pipe[1] != -1) {
+            const char wake = code;
+            const ssize_t result = ::write(s_pipe[1], &wake, 1);
+            (void)result;
+        }
     }
 
     void addListener(QObject* listener)
@@ -54,11 +69,12 @@ public:
     }
 
 signals:
-    void received();
+    void received();      // SIGWINCH
+    void continued();     // SIGCONT after a job-control stop
 
 private:
-    explicit SigwinchBridge(QObject* parent) : QObject(parent) {}
-    ~SigwinchBridge() override { uninstall(); }
+    explicit SignalBridge(QObject* parent) : QObject(parent) {}
+    ~SignalBridge() override { uninstall(); }
 
     void install()
     {
@@ -77,7 +93,7 @@ private:
                 ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
         }
         struct sigaction action {};
-        action.sa_handler = &SigwinchBridge::handler;
+        action.sa_handler = &SignalBridge::handler;
         sigemptyset(&action.sa_mask);
         action.sa_flags = SA_RESTART;
         if (::sigaction(SIGWINCH, &action, &m_previousAction) != 0) {
@@ -88,10 +104,18 @@ private:
         m_notifier = new QSocketNotifier(s_pipe[0], QSocketNotifier::Read, this);
         connect(m_notifier, &QSocketNotifier::activated, this, [this] {
             char buffer[128];
-            while (::read(s_pipe[0], buffer, sizeof buffer) > 0) {
-                // Drain every pending wake-up before notifying once.
+            bool windowChanged = false;
+            bool resumed = false;
+            ssize_t count = 0;
+            while ((count = ::read(s_pipe[0], buffer, sizeof buffer)) > 0) {
+                // Drain every pending wake-up before notifying once per kind.
+                for (ssize_t i = 0; i < count; ++i) {
+                    if (buffer[i] == Continued) resumed = true;
+                    else windowChanged = true;
+                }
             }
-            emit received();
+            if (resumed) emit continued();
+            if (windowChanged) emit received();
         });
     }
 
@@ -122,11 +146,7 @@ private:
     static void handler(int)
     {
         const int savedErrno = errno;
-        if (s_pipe[1] != -1) {
-            const char wake = 1;
-            const ssize_t result = ::write(s_pipe[1], &wake, 1);
-            (void)result;
-        }
+        notify(WindowChanged);
         errno = savedErrno;
     }
 
@@ -137,7 +157,140 @@ private:
     bool m_installed = false;
 };
 
-int SigwinchBridge::s_pipe[2] = {-1, -1};
+int SignalBridge::s_pipe[2] = {-1, -1};
+
+// Emergency restore ----------------------------------------------------------
+// While a backend is in raw mode the terminal belongs to the application:
+// alternate screen, hidden cursor, mouse and paste reporting, no echo. A
+// crash, a kill, or Ctrl+Z would otherwise hand the user's shell a terminal
+// in that state. These handlers undo it with async-signal-safe calls only
+// (write, tcsetattr, sigaction, raise) and then let the signal take its
+// default course, so a crash still dumps core and exits with the right status
+// and a stop still stops. On SIGCONT raw mode is re-entered in the handler and
+// the main thread is told through the bridge so the engine can re-enable its
+// modes and repaint.
+struct EmergencyState {
+    volatile sig_atomic_t active = 0;
+    int outputFd = -1;
+    int inputFd = -1;
+    termios original{};
+    termios raw{};
+};
+EmergencyState g_emergency;
+
+// Everything TerminalEngine enables, undone in one write. Order: reporting
+// modes off, cursor shown, attributes reset, background restored, normal
+// screen. Unknown sequences are ignored by terminals that lack a mode.
+constexpr char kResetSequence[] =
+    "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
+    "\033[?25h\033[0m\033]111\a\033[?1049l";
+
+constexpr int kFatalSignals[] = {SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT,
+                                 SIGTERM, SIGHUP, SIGINT, SIGQUIT};
+struct sigaction g_previousFatal[std::size(kFatalSignals)];
+struct sigaction g_previousTstp;
+struct sigaction g_previousCont;
+bool g_handlersInstalled = false;
+
+void writeFromSignal(int fd, const char* data, size_t size)
+{
+    // The descriptor may be non-blocking; retry a bounded number of times
+    // rather than spin forever in a handler.
+    for (int attempt = 0; size > 0 && attempt < 10000; ++attempt) {
+        const ssize_t written = ::write(fd, data, size);
+        if (written > 0) {
+            data += written;
+            size -= static_cast<size_t>(written);
+            continue;
+        }
+        if (written < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
+            continue;
+        break;
+    }
+}
+
+void restoreTerminalFromSignal()
+{
+    if (!g_emergency.active)
+        return;
+    writeFromSignal(g_emergency.outputFd, kResetSequence, sizeof kResetSequence - 1);
+    ::tcsetattr(g_emergency.inputFd, TCSANOW, &g_emergency.original);
+}
+
+void installTstpHandler();
+
+void fatalHandler(int signo)
+{
+    restoreTerminalFromSignal();
+    ::signal(signo, SIG_DFL);
+    ::raise(signo);   // pending until this handler returns, then the default action
+}
+
+void tstpHandler(int)
+{
+    const int savedErrno = errno;
+    restoreTerminalFromSignal();
+    ::signal(SIGTSTP, SIG_DFL);
+    ::raise(SIGTSTP); // the shell sees an ordinary stop with a sane terminal
+    errno = savedErrno;
+}
+
+void contHandler(int)
+{
+    const int savedErrno = errno;
+    if (g_emergency.active) {
+        // The shell restored the terminal modes it saved when the job stopped,
+        // which are the cooked ones written above. Take raw mode back before
+        // the first keystroke, then let the engine re-enable its modes.
+        ::tcsetattr(g_emergency.inputFd, TCSANOW, &g_emergency.raw);
+        installTstpHandler();
+        SignalBridge::notify(SignalBridge::Continued);
+    }
+    errno = savedErrno;
+}
+
+void installTstpHandler()
+{
+    struct sigaction action {};
+    action.sa_handler = &tstpHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    ::sigaction(SIGTSTP, &action, nullptr);
+}
+
+void installEmergencyHandlers(int inputFd, int outputFd, const termios& original, const termios& raw)
+{
+    g_emergency.inputFd = inputFd;
+    g_emergency.outputFd = outputFd;
+    g_emergency.original = original;
+    g_emergency.raw = raw;
+    g_emergency.active = 1;
+    if (g_handlersInstalled)
+        return;   // a second backend in raw mode takes over the state only
+    struct sigaction action {};
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    action.sa_handler = &fatalHandler;
+    for (size_t i = 0; i < std::size(kFatalSignals); ++i)
+        ::sigaction(kFatalSignals[i], &action, &g_previousFatal[i]);
+    action.sa_handler = &tstpHandler;
+    ::sigaction(SIGTSTP, &action, &g_previousTstp);
+    action.sa_handler = &contHandler;
+    ::sigaction(SIGCONT, &action, &g_previousCont);
+    g_handlersInstalled = true;
+}
+
+void uninstallEmergencyHandlers()
+{
+    g_emergency.active = 0;
+    if (!g_handlersInstalled)
+        return;
+    for (size_t i = 0; i < std::size(kFatalSignals); ++i)
+        ::sigaction(kFatalSignals[i], &g_previousFatal[i], nullptr);
+    ::sigaction(SIGTSTP, &g_previousTstp, nullptr);
+    ::sigaction(SIGCONT, &g_previousCont, nullptr);
+    g_handlersInstalled = false;
+}
 
 } // namespace
 
@@ -168,13 +321,17 @@ bool PosixTerminalBackend::enterRawMode()
     raw.c_cflag |= CS8;
     // Disable output processing.
     raw.c_oflag &= ~OPOST;
-    return ::tcsetattr(m_inputFd, TCSAFLUSH, &raw) == 0;
+    if (::tcsetattr(m_inputFd, TCSAFLUSH, &raw) != 0)
+        return false;
+    installEmergencyHandlers(m_inputFd, m_outputFd, m_originalTermios, raw);
+    return true;
 }
 
 bool PosixTerminalBackend::leaveRawMode()
 {
     if (!m_termiosValid)
         return false;
+    uninstallEmergencyHandlers();
     return ::tcsetattr(m_inputFd, TCSAFLUSH, &m_originalTermios) == 0;
 }
 
@@ -279,6 +436,11 @@ bool PosixTerminalBackend::isInteractive() const
     return ::isatty(m_outputFd) == 1;
 }
 
+bool PosixTerminalBackend::isInputInteractive() const
+{
+    return ::isatty(m_inputFd) == 1;
+}
+
 void PosixTerminalBackend::startInput()
 {
     if (m_inputStarted)
@@ -288,8 +450,9 @@ void PosixTerminalBackend::startInput()
         m_readNotifier = std::make_unique<QSocketNotifier>(m_inputFd, QSocketNotifier::Read);
         connect(m_readNotifier.get(), &QSocketNotifier::activated, this, [this] { readInput(); });
     }
-    if (SigwinchBridge* bridge = SigwinchBridge::instance()) {
-        connect(bridge, &SigwinchBridge::received, this, &TerminalBackend::resized);
+    if (SignalBridge* bridge = SignalBridge::instance()) {
+        connect(bridge, &SignalBridge::received, this, &TerminalBackend::resized);
+        connect(bridge, &SignalBridge::continued, this, &TerminalBackend::resumed);
         bridge->addListener(this);
     } else {
         qWarning("TerminalBackend must start input on the QCoreApplication thread.");
@@ -302,7 +465,7 @@ void PosixTerminalBackend::stopInput()
         return;
     m_inputStarted = false;
     m_readNotifier.reset();
-    if (SigwinchBridge* bridge = SigwinchBridge::instance()) {
+    if (SignalBridge* bridge = SignalBridge::instance()) {
         disconnect(bridge, nullptr, this, nullptr);
         bridge->removeListener(this);
     }

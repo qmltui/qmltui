@@ -23,6 +23,11 @@ private slots:
     void testFunctionKeys();
     void testUtf8();
     void testMalformedMouseSGR();
+    void testControlReplies();
+    void testDiscardRecovery();
+    void testPasteReplyIsolation();
+    void testParameterDefaults();
+    void testAltPrefixedKeysAreNotStrings();
 };
 
 void TestInputDecoder::testAsciiKeys() {
@@ -360,6 +365,154 @@ void TestInputDecoder::testMalformedMouseSGR() {
     const QByteArray malformed = QByteArrayLiteral("\033[<1;;2M");
     decoder.decode(malformed.constData(), malformed.size());
     QCOMPARE(callbackCount, 0);
+}
+
+void TestInputDecoder::testControlReplies() {
+    const QList<QByteArray> replies = {
+        "\033[?0u", "\033[?2026;2$y", "\033[6;20;10t",
+        "\033_Gi=31;OK\033\\", "\033]11;rgb:00/00/00\a",
+        "\033P>|payload\aend\033\\", "\033[97:65:;6:1u"
+    };
+    for (const auto& bytes : replies) {
+        for (qsizetype split = 1; split < bytes.size(); ++split) {
+            InputDecoder decoder;
+            int keys = 0, repliesReceived = 0;
+            decoder.setKeyCallback([&](int, const QString&, int) { ++keys; });
+            decoder.setReplyCallback([&](const InputDecoder::ControlSequence& sequence) {
+                ++repliesReceived;
+                if (bytes.contains("2026")) {
+                    QCOMPARE(sequence.privateMarker, '?');
+                    QCOMPARE(sequence.parameter(0), 2026);
+                    QCOMPARE(sequence.parameter(1), 2);
+                    QCOMPARE(sequence.intermediates, QByteArrayView("$"));
+                    QCOMPARE(sequence.finalByte, 'y');
+                }
+                if (bytes.contains("Gi=")) {
+                    QCOMPARE(sequence.kind, InputDecoder::ControlSequence::Apc);
+                    QCOMPARE(sequence.payload, QByteArrayView("Gi=31;OK"));
+                }
+                if (bytes.contains("97:")) {
+                    QCOMPARE(sequence.parameter(0, 1), 65);
+                    QCOMPARE(sequence.parameter(0, 2, -1), -1);
+                    QCOMPARE(sequence.parameter(1, 1), 1);
+                }
+            });
+            decoder.decode(bytes.data(), split);
+            QCOMPARE(repliesReceived, 0);
+            decoder.decode(bytes.data() + split, bytes.size() - split);
+            QCOMPARE(repliesReceived, 1);
+            QCOMPARE(keys, 0);
+        }
+    }
+}
+
+void TestInputDecoder::testDiscardRecovery() {
+    const QList<QByteArray> sequences = {
+        QByteArray("\033[") + QByteArray(100, ';') + "A",
+        QByteArray("\033_G") + QByteArray(10000, 'x') + "\aMORE\033\\",
+        QByteArray("\033]11;") + QByteArray(10000, 'x') + "\a",
+        QByteArray("\033P$r") + QByteArray(10000, 'x') + "\033\\",
+        "\033[999999999999999999999999A",
+        "\033[1$2A",
+        "\033[123\x18",
+        "\033_Gpartial\x1a"
+    };
+    for (const auto& bytes : sequences) {
+        for (bool split : {false, true}) {
+            InputDecoder decoder;
+            QList<int> keys;
+            int replies = 0;
+            decoder.setKeyCallback([&](int key, const QString&, int) { keys.append(key); });
+            decoder.setReplyCallback([&](const auto&) { ++replies; });
+            if (split) {
+                for (char byte : bytes) decoder.decode(&byte, 1);
+            } else decoder.decode(bytes.data(), bytes.size());
+            QVERIFY(keys.isEmpty());
+            QCOMPARE(replies, 0);
+            decoder.decode("q", 1);
+            QCOMPARE(keys, QList<int>{Qt::Key_Q});
+        }
+    }
+    InputDecoder decoder;
+    QList<int> keys;
+    decoder.setKeyCallback([&](int key, const QString&, int) { keys.append(key); });
+    const QByteArray unterminated = QByteArray("\033_G") + QByteArray(10000, 'x');
+    decoder.decode(unterminated.data(), unterminated.size());
+    decoder.decode("payload", 7);
+    QVERIFY(keys.isEmpty());
+    decoder.decode("\033", 1);
+    decoder.decode("[A", 2);
+    QCOMPARE(keys, QList<int>{Qt::Key_Up});
+    const QByteArray unfinishedCsi = QByteArray("\033[") + QByteArray(100, ';');
+    decoder.decode(unfinishedCsi.data(), unfinishedCsi.size());
+    decoder.decode("\033", 1);
+    decoder.decode("[B", 2);
+    QCOMPARE(keys, (QList<int>{Qt::Key_Up, Qt::Key_Down}));
+}
+
+void TestInputDecoder::testPasteReplyIsolation() {
+    InputDecoder decoder;
+    QString pasted;
+    int replies = 0;
+    decoder.setPasteCallback([&](const QString& text) { pasted = text; });
+    decoder.setReplyCallback([&](const auto&) { ++replies; });
+    const QByteArray payload = "\033[?0u\033_Gi=31;OK\033\\";
+    const QByteArray bytes = "\033[200~" + payload + "\033[201~";
+    for (char byte : bytes) decoder.decode(&byte, 1);
+    QCOMPARE(pasted.toUtf8(), payload);
+    QCOMPARE(replies, 0);
+}
+
+void TestInputDecoder::testAltPrefixedKeysAreNotStrings() {
+    // metaSendsEscape terminals emit ESC followed by the key. ESC ], ESC _ and
+    // ESC P must not open a string control that swallows the typing after
+    // them, and ESC O followed by a non-final byte is Alt+Shift+O, not SS3.
+    struct Case { QByteArray bytes; QList<int> keys; };
+    const QList<Case> cases = {
+        {"\033]hi", {Qt::Key_Escape, ']', Qt::Key_H, Qt::Key_I}},
+        {"\033_x", {Qt::Key_Escape, '_', Qt::Key_X}},
+        {"\033Pq", {Qt::Key_Escape, 'P', Qt::Key_Q}},
+        {"\033O\r1", {Qt::Key_Escape, 'O', Qt::Key_Return, Qt::Key_1}},
+        {"\033OA", {Qt::Key_Up}},                        // a real SS3 still decodes
+        {"\033[\rq", {Qt::Key_Return, Qt::Key_Q}},       // Alt+[ then Enter: Enter survives
+    };
+    for (const auto& testCase : cases) {
+        for (bool split : {false, true}) {
+            InputDecoder decoder;
+            QList<int> keys;
+            int replies = 0;
+            decoder.setKeyCallback([&](int key, const QString&, int) { keys.append(key); });
+            decoder.setReplyCallback([&](const auto&) { ++replies; });
+            if (split) {
+                for (char byte : testCase.bytes) decoder.decode(&byte, 1);
+            } else decoder.decode(testCase.bytes.data(), testCase.bytes.size());
+            QCOMPARE(keys, testCase.keys);
+            QCOMPARE(replies, 0);
+        }
+    }
+    // A reply with the same introducer is still framed and never becomes keys.
+    InputDecoder decoder;
+    QList<int> keys;
+    int replies = 0;
+    decoder.setKeyCallback([&](int key, const QString&, int) { keys.append(key); });
+    decoder.setReplyCallback([&](const auto&) { ++replies; });
+    const QByteArray reply = "\033]11;rgb:00/00/00\a\033_Gi=31;OK\033\\\033P>|kitty\033\\";
+    decoder.decode(reply.data(), reply.size());
+    QVERIFY(keys.isEmpty());
+    QCOMPARE(replies, 3);
+}
+
+void TestInputDecoder::testParameterDefaults() {
+    InputDecoder decoder;
+    QList<QPair<int, int>> keys;
+    decoder.setKeyCallback([&](int key, const QString&, int mods) { keys.append({key, mods}); });
+    const QByteArray bytes = "\033[1;A\033[;5D\033OP\033[99|q";
+    decoder.decode(bytes.data(), bytes.size());
+    QCOMPARE(keys.size(), 4);
+    QCOMPARE(keys[0], qMakePair(int(Qt::Key_Up), 0));
+    QCOMPARE(keys[1], qMakePair(int(Qt::Key_Left), int(Qt::ControlModifier)));
+    QCOMPARE(keys[2], qMakePair(int(Qt::Key_F1), 0));
+    QCOMPARE(keys[3], qMakePair(int(Qt::Key_Q), 0));
 }
 
 QTEST_MAIN(TestInputDecoder)

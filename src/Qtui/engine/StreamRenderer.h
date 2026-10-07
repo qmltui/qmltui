@@ -17,6 +17,9 @@ public:
 
     bool renderFrame(Terminal* rootWindow, TerminalDevice& device, std::string_view scrollback);
     const TextGridBuffer* currentBuffer() const override { return &m_promptBuffer; }
+    // The cursor position is unknown after discarded output: do not move up
+    // over rows that may never have been drawn.
+    void discardCommittedState() override { m_lastPromptHeight = 0; }
 
 private:
     bool clearPromptRegion(TerminalDevice& device);

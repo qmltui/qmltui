@@ -3,6 +3,8 @@ qt_add_qml_module(QtuiImage
     SOURCES
         Image.h
         Image.cpp
+        TerminalGraphics.h
+        TerminalGraphics.cpp
     DEPENDENCIES TARGET QtuiCore
 )
 
@@ -40,5 +42,6 @@ install(FILES
 )
 install(FILES
     Image.h
+    TerminalGraphics.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/image"
 )

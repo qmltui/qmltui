@@ -101,3 +101,46 @@ int main(int argc, char *argv[]) {
     return app.exec();
 }
 ```
+
+## Terminal protocol negotiation and resource output
+
+At the first renderer start of each enabled output session, the engine queries
+Kitty keyboard flags, cell pixel size, synchronized output, and primary device
+attributes. The Kitty graphics probe is an APC string that a terminal without
+APC parsing prints, so it is sent only to terminals known to implement the
+protocol (kitty, Ghostty, WezTerm, Konsole, by `TERM_PROGRAM`, `TERM` or their
+own variables). Nothing is queried unless both the output and the input are the
+terminal: a pipe on either end would receive the probes or leave the replies for
+the shell. Recognized replies never become keys. DA1 closes negotiation; a
+100 ms timer handles terminals that do not reply. `QTUI_QUERY_TIMEOUT_MS`
+selects a positive timeout in milliseconds. Late replies are consumed without
+changing closed negotiation results. A later negotiation in the same process
+(renderer or output-session change) starts from the capabilities already
+proven, so a timeout never downgrades them. Resize starts a separate 100 ms
+cell-size query. A probe write that fails is reported once, through the
+frame that fails with it, and retried on the next frame.
+
+Environment overrides live in `TerminalCapabilities::applyEnvironmentOverrides()`
+and are applied to the detected defaults and again after replies, so they win
+over what the terminal claims: `QTUI_COLOR_DEPTH`, `QTUI_SYNC_OUTPUT`,
+`QTUI_KITTY_KEYBOARD` and `QTUI_KITTY_GRAPHICS`, where `0`, `false` and `off`
+disable.
+`setCapabilities()` is a deterministic programmatic override: it cancels pending
+negotiation and suppresses future probes for that engine. Protocol detection
+alone neither pushes keyboard modes nor uploads images.
+
+The C++ `Terminal::enqueueControlSequence(QByteArray)` hook accepts an entire
+resource command batch, up to the remaining space in a 4 MiB engine queue. It
+returns false when stopped, output is disabled, or the batch exceeds the budget.
+Callers must preserve cursor position and text rendition state and must submit
+all upload chunks and their placement together to obtain atomic acceptance.
+Commands request rendering and precede the same frame's cells, including when
+enqueued during paint. Command-only frames are emitted. Pending commands are
+flushed before renderer replacement, output disable, and stop.
+
+`outputSessionGeneration()` and `outputSessionInvalidated(generation)` let
+resource owners invalidate terminal-side handles on output lifecycle changes or
+write failure. Queue acceptance is not a terminal acknowledgement. Immediate
+frame failure and asynchronous output-drain failure report `renderFailed`; the
+latter discards pending output and invalidates resource handles. `takeControlSequences()`
+is the renderer integration drain and must not be used by application code.

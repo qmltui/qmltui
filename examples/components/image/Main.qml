@@ -3,45 +3,59 @@ import Qtui
 import Qtui.Controls
 import Qtui.Image
 
+// Dedicated showcase for Qtui.Image rendering. The large image uses the Auto
+// render mode: on a terminal that supports the kitty graphics protocol it is
+// drawn with real pixels, and on every other terminal it falls back to the
+// half-block glyph rendering. The status bar reports which path is active so
+// the difference is legible even in a recording.
 Terminal {
     id: root
     color: "#0f172a"
 
     property string userImagePath: "panda.png"
-    property string imageSource: root.userImagePath.length > 0 ? root.userImagePath : "panda.png"
-    property string statusMessage: "Loaded: " + imageSource
+    property string imageSource: userImagePath.length > 0 ? userImagePath : "panda.png"
 
-    // Explicit key handling for quit and quick preset switching
+    // Render modes to cycle through with [M] for a side-by-side feel over time.
+    readonly property var modes: [
+        { mode: Image.Auto, name: "Auto" },
+        { mode: Image.HalfBlock, name: "HalfBlock" },
+        { mode: Image.Braille, name: "Braille" },
+        { mode: Image.ASCII, name: "ASCII" },
+        { mode: Image.Sixel, name: "Sixel" },
+        { mode: Image.Kitty, name: "Kitty" }
+    ]
+    property int modeIndex: 0
+    readonly property string modeName: modes[modeIndex].name
+
+    readonly property bool kitty: capabilities.kittyGraphics
+    readonly property bool sixel: capabilities.sixelGraphics
+    // What Image will actually do for the current mode. Auto prefers kitty,
+    // then sixel, then the half-block fallback.
+    readonly property string activePath:
+        (kitty && (modeName === "Auto" || modeName === "Kitty")) ? "kitty (real pixels)"
+        : (sixel && (modeName === "Auto" || modeName === "Sixel")) ? "sixel (real pixels)"
+        : "half-block fallback"
+
+    function setImage(path) { root.userImagePath = path }
+
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit();
             event.accepted = true;
+        } else if (event.key === Qt.Key_M) {
+            root.modeIndex = (root.modeIndex + 1) % root.modes.length;
+            event.accepted = true;
         } else if (event.key === Qt.Key_1) {
-            pathInput.text = "panda.png";
-            root.updateImageSource("panda.png");
-            event.accepted = true;
+            root.setImage("panda.png"); event.accepted = true;
         } else if (event.key === Qt.Key_2) {
-            pathInput.text = "demo_image.png";
-            root.updateImageSource("demo_image.png");
-            event.accepted = true;
+            root.setImage("demo_image.png"); event.accepted = true;
         } else if (event.key === Qt.Key_3) {
-            pathInput.text = "map.png";
-            root.updateImageSource("map.png");
-            event.accepted = true;
+            root.setImage("map.png"); event.accepted = true;
         } else if (event.key === Qt.Key_4) {
-            pathInput.text = "image2.jpg";
-            root.updateImageSource("image2.jpg");
-            event.accepted = true;
+            root.setImage("image2.jpg"); event.accepted = true;
         } else if (event.key === Qt.Key_5) {
-            pathInput.text = "qt_logo_icon_248726.webp";
-            root.updateImageSource("qt_logo_icon_248726.webp");
-            event.accepted = true;
+            root.setImage("qt_logo_icon_248726.webp"); event.accepted = true;
         }
-    }
-
-    function updateImageSource(newPath) {
-        root.imageSource = newPath;
-        root.statusMessage = "Loaded: " + newPath;
     }
 
     Column {
@@ -49,7 +63,6 @@ Terminal {
         anchors.margins: 1
         spacing: 1
 
-        // Title Header
         Rectangle {
             width: parent.width
             height: 3
@@ -60,7 +73,7 @@ Terminal {
             Text {
                 anchors.fill: parent
                 anchors.margins: 1
-                text: "Qtui.Image Viewer Demo (Press Q or ESC to Quit)"
+                text: "Qtui.Image  —  Auto uses kitty graphics where available"
                 color: "cyan"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter
@@ -68,105 +81,29 @@ Terminal {
             }
         }
 
-        // Subtitle / Instructions
         Text {
             width: parent.width
-            text: "Type/paste image path & press Enter. Presets: [1] panda  [2] demo  [3] map  [4] photo"
+            text: "[1-5] image   [M] render mode   [Q] quit"
             color: "#94a3b8"
         }
 
-        // File Path Input Bar
-        Row {
-            spacing: 2
-
-            Text {
-                width: 14
-                text: "Image Path:"
-                color: pathInput.activeFocus ? "#38bdf8" : "#94a3b8"
-                bold: pathInput.activeFocus
-            }
-
-            Rectangle {
-                width: parent.width - 18
-                height: 3
-                color: pathInput.activeFocus ? "#1e293b" : "#0f172a"
-                border.style: pathInput.activeFocus ? "double" : "single"
-                border.color: pathInput.activeFocus ? "#38bdf8" : "#475569"
-
-                TextInput {
-                    id: pathInput
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    text: root.imageSource
-                    color: activeFocus ? "#ffffff" : "#cbd5e1"
-                    focusable: true
-
-                    onAccepted: {
-                        root.updateImageSource(text);
-                    }
-                }
-            }
-        }
-
-        // 3-Panel Render Mode View
-        Row {
+        Panel {
+            title: "Image  (" + root.modeName + ")"
             width: parent.width
-            height: parent.height - 12
-            spacing: 1
+            height: parent.height - 10
 
-            Panel {
-                title: "HalfBlock Mode"
-                width: Math.floor((parent.width - 2) / 3)
-                height: parent.height
-
-                Image {
-                    anchors.fill: parent
-                    anchors.topMargin: 2
-                    anchors.leftMargin: 1
-                    anchors.rightMargin: 1
-                    anchors.bottomMargin: 1
-                    source: root.imageSource
-                    fillMode: Image.PreserveAspectFit
-                    renderMode: Image.HalfBlock
-                }
-            }
-
-            Panel {
-                title: "Braille Mode"
-                width: Math.floor((parent.width - 2) / 3)
-                height: parent.height
-
-                Image {
-                    anchors.fill: parent
-                    anchors.topMargin: 2
-                    anchors.leftMargin: 1
-                    anchors.rightMargin: 1
-                    anchors.bottomMargin: 1
-                    source: root.imageSource
-                    fillMode: Image.PreserveAspectFit
-                    renderMode: Image.Braille
-                }
-            }
-
-            Panel {
-                title: "ASCII Mode"
-                width: parent.width - 2 * Math.floor((parent.width - 2) / 3) - 2
-                height: parent.height
-
-                Image {
-                    anchors.fill: parent
-                    anchors.topMargin: 2
-                    anchors.leftMargin: 1
-                    anchors.rightMargin: 1
-                    anchors.bottomMargin: 1
-                    source: root.imageSource
-                    fillMode: Image.PreserveAspectFit
-                    renderMode: Image.ASCII
-                }
+            Image {
+                anchors.fill: parent
+                anchors.topMargin: 2
+                anchors.leftMargin: 1
+                anchors.rightMargin: 1
+                anchors.bottomMargin: 1
+                source: root.imageSource
+                fillMode: Image.PreserveAspectFit
+                renderMode: root.modes[root.modeIndex].mode
             }
         }
 
-        // Status Bar
         Rectangle {
             width: parent.width
             height: 3
@@ -177,7 +114,12 @@ Terminal {
             Text {
                 anchors.fill: parent
                 anchors.margins: 1
-                text: "STATUS: " + root.statusMessage
+                // Image and mode first so they are never truncated on a narrow
+                // terminal; the path and cell size follow.
+                text: "Image: " + root.imageSource
+                    + "   Mode: " + root.modeName
+                    + "   Path: " + root.activePath
+                    + "   Cell: " + root.capabilities.cellPixelSize.width + "x" + root.capabilities.cellPixelSize.height
                 color: "yellow"
                 bold: true
                 verticalAlignment: Qt.AlignVCenter

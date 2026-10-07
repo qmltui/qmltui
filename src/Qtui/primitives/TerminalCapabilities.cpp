@@ -44,11 +44,8 @@ TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment &env
     const QString colorTerm = environment.value(QStringLiteral("COLORTERM")).trimmed().toLower();
     const QString program = capabilities.termProgram.trimmed().toLower();
 
-    // Colour depth, first match wins.
-    ColorDepth requested = ColorDepth::TrueColor;
-    if (parseColorDepth(environment.value(QStringLiteral("QTUI_COLOR_DEPTH")), requested)) {
-        capabilities.colorDepth = requested;
-    } else if (!environment.value(QStringLiteral("NO_COLOR")).isEmpty()) {
+    // Colour depth, first match wins; QTUI_COLOR_DEPTH is applied last as an override.
+    if (!environment.value(QStringLiteral("NO_COLOR")).isEmpty()) {
         capabilities.colorDepth = ColorDepth::Mono;
     } else if (term == QLatin1String("dumb")) {
         capabilities.colorDepth = ColorDepth::Mono;
@@ -70,10 +67,36 @@ TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment &env
     // Synchronized output: unknown private modes are ignored by terminals, so
     // it is on unless the output is not a terminal at all.
     capabilities.syncOutput = stdoutIsTty && term != QLatin1String("dumb");
+
+    // Terminals that implement the kitty graphics protocol, and therefore parse
+    // APC strings instead of printing them. Konsole and kitty do not set
+    // TERM_PROGRAM, so their own variables are checked as well.
+    capabilities.mayProbeGraphics = program == QLatin1String("kitty")
+        || program == QLatin1String("ghostty") || program == QLatin1String("wezterm")
+        || term == QLatin1String("xterm-kitty") || term == QLatin1String("xterm-ghostty")
+        || environment.contains(QStringLiteral("KITTY_WINDOW_ID"))
+        || environment.contains(QStringLiteral("KONSOLE_VERSION"))
+        || environment.contains(QStringLiteral("WEZTERM_EXECUTABLE"))
+        || environment.contains(QStringLiteral("GHOSTTY_RESOURCES_DIR"));
+
+    applyEnvironmentOverrides(capabilities, environment);
+    return capabilities;
+}
+
+void TerminalCapabilities::applyEnvironmentOverrides(TerminalCapabilities &capabilities,
+                                                     const QProcessEnvironment &environment)
+{
+    ColorDepth requested = ColorDepth::TrueColor;
+    if (parseColorDepth(environment.value(QStringLiteral("QTUI_COLOR_DEPTH")), requested))
+        capabilities.colorDepth = requested;
     if (environment.contains(QStringLiteral("QTUI_SYNC_OUTPUT")))
         capabilities.syncOutput = flagEnabled(environment.value(QStringLiteral("QTUI_SYNC_OUTPUT")));
-
-    return capabilities;
+    if (environment.contains(QStringLiteral("QTUI_KITTY_KEYBOARD"))
+        && !flagEnabled(environment.value(QStringLiteral("QTUI_KITTY_KEYBOARD"))))
+        capabilities.kittyKeyboard = false;
+    if (environment.contains(QStringLiteral("QTUI_KITTY_GRAPHICS"))
+        && !flagEnabled(environment.value(QStringLiteral("QTUI_KITTY_GRAPHICS"))))
+        capabilities.kittyGraphics = false;
 }
 
 QString TerminalCapabilities::colorDepthName(ColorDepth depth)

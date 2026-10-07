@@ -22,7 +22,7 @@ void TestImage::testInitialState() {
     qtui::Image img;
     QCOMPARE(img.status(), qtui::Image::Status::Null);
     QCOMPARE(img.fillMode(), qtui::Image::FillMode::Stretch);
-    QCOMPARE(img.renderMode(), qtui::Image::RenderMode::HalfBlock);
+    QCOMPARE(img.renderMode(), qtui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
     QCOMPARE(img.smooth(), true);
     QCOMPARE(img.source().isEmpty(), true);
 }

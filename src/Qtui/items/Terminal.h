@@ -3,6 +3,7 @@
 #include <QtuiExport.h>
 
 #include "Item.h"
+#include "../primitives/TerminalCapabilities.h"
 #include <QHash>
 #include <QMetaObject>
 #include <QPointer>
@@ -19,6 +20,7 @@ class QTUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
   QML_ELEMENT
   Q_INTERFACES(QQmlParserStatus)
 
+  Q_PROPERTY(qtui::TerminalCapabilities capabilities READ capabilities NOTIFY capabilitiesChanged)
   Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
   Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
   Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged)
@@ -50,6 +52,12 @@ public:
   void componentComplete() override;
 
   TerminalEngine* engine() const;
+  TerminalCapabilities capabilities() const;
+  // Framework resource commands only: preserve cursor and rendition state.
+  bool enqueueControlSequence(QByteArray bytes);
+  QByteArray takeControlSequences();
+  bool enqueuePostControlSequence(QByteArray bytes);
+  QByteArray takePostControlSequences();
 
   Q_INVOKABLE void copyToClipboard(const QString& text);
 
@@ -102,6 +110,7 @@ public:
   void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
+  void capabilitiesChanged();
   void titleChanged();
   void colorChanged();
   void modeChanged();

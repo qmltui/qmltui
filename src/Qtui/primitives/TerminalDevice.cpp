@@ -88,6 +88,7 @@ void TerminalDevice::drain() {
     if (status == TerminalBackend::WriteStatus::Error) {
         m_pending.clear();
         setNotifierEnabled(false);
+        if (m_outputErrorCallback) m_outputErrorCallback();
         return;
     }
     if (m_pending.empty()) {
@@ -104,6 +105,10 @@ bool TerminalDevice::flushBlocking(int timeoutMs) {
         return false;
     setNotifierEnabled(false);
     return true;
+}
+
+void TerminalDevice::setOutputErrorCallback(std::function<void()> callback) {
+    m_outputErrorCallback = std::move(callback);
 }
 
 void TerminalDevice::setDrainedCallback(std::function<void()> callback) {

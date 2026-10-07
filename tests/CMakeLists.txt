@@ -36,6 +36,21 @@ add_qtui_test(test_text_layout Core/test_text_layout.cpp)
 add_qtui_test(test_terminal_capabilities Core/test_terminal_capabilities.cpp)
 add_qtui_test(test_color_depth Core/test_color_depth.cpp)
 add_qtui_test(test_terminal_backend Core/test_terminal_backend.cpp)
+add_qtui_test(test_terminal_queries Core/test_terminal_queries.cpp)
+target_link_libraries(test_terminal_queries PRIVATE Qtui::TestRunner)
+if(UNIX)
+    # A live process under a pseudo-terminal: what the real descriptor receives
+    # on Ctrl+Z, fg and SIGTERM, and what the tty's modes are afterwards.
+    add_executable(qtui_signal_fixture Core/signal_fixture.cpp)
+    target_link_libraries(qtui_signal_fixture PRIVATE Qt6::Core Qtui::Core)
+    add_qtui_test(test_signal_safety Core/test_signal_safety.cpp)
+    target_compile_definitions(test_signal_safety PRIVATE
+        QTUI_SIGNAL_FIXTURE="$<TARGET_FILE:qtui_signal_fixture>")
+    add_dependencies(test_signal_safety qtui_signal_fixture)
+    if(NOT APPLE)
+        target_link_libraries(test_signal_safety PRIVATE util)   # forkpty
+    endif()
+endif()
 add_qtui_test(test_terminal_colors Controls/test_terminal_colors.cpp)
 add_executable(qtui_terminal_colors_fixture TestRunner/main.cpp)
 target_link_libraries(qtui_terminal_colors_fixture PRIVATE Qtui::Core Qtui::Controls Qtui::TestRunner)
@@ -78,6 +93,8 @@ add_qtui_test(test_popup Controls/test_popup.cpp)
 add_qtui_test(test_indicators Controls/test_indicators.cpp)
 add_qtui_test(test_standard_roles Controls/test_standard_roles.cpp)
 add_qtui_test(test_image Image/test_image.cpp)
+add_qtui_test(test_kitty_graphics Image/test_kitty_graphics.cpp)
+target_link_libraries(test_kitty_graphics PRIVATE Qtui::TestRunner)
 
 add_executable(qtui_test_runner_fixture TestRunner/main.cpp)
 target_link_libraries(qtui_test_runner_fixture PRIVATE

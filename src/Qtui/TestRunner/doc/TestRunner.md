@@ -36,7 +36,7 @@ Sends one key event to the target terminal and waits for the resulting committed
 
 #### void typeText(const QString &text)
 
-Types non-empty Unicode text as one key event per character and waits once for the resulting committed frame. Each event carries the same key code and text the terminal input decoder produces for a real keypress: letters map to `Qt.Key_A` through `Qt.Key_Z` whatever their case, digits and punctuation to their own codes, newline to `Qt.Key_Return`, and tab to `Qt.Key_Tab`, so `Keys.onPressed` handlers that compare `event.key` react to scripted typing exactly as they react to a user. Use this for text entry rather than issuing one `press()` call per character; use `press()` when a modifier is needed. JavaScript usage: `terminal.typeText("café 世界")`.
+Types non-empty Unicode text and waits once for the resulting committed frame. The UTF-8 bytes go through the same input decoder as a real keyboard, so each character becomes the key event a terminal keystroke produces: letters map to `Qt.Key_A` through `Qt.Key_Z` whatever their case, digits and punctuation to their own codes, newline to `Qt.Key_Return`, tab to `Qt.Key_Tab`, and control characters to their Ctrl combinations. `Keys.onPressed` handlers that compare `event.key` therefore react to scripted typing exactly as they react to a user. Because the decoder is the real one, a lone Escape byte waits for a following byte exactly as it does on a terminal; use `press("Escape")` for that key. Use this for text entry rather than issuing one `press()` call per character; use `press()` when a modifier is needed. JavaScript usage: `terminal.typeText("café 世界")`.
 
 #### void sleep(int durationMs)
 

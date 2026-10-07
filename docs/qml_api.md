@@ -239,6 +239,9 @@ Core items and Controls use the terminal's default foreground and background.
 `"default"` delegates to the terminal; named ANSI colors follow its color table,
 while hex colors request specific RGB values. `"transparent"` is an alias for
 `"default"`; transparent item backgrounds leave the surface underneath visible.
+On a `Canvas` this means `setPixelColor(x, y, "transparent")` paints a set pixel
+in the terminal's default ink, not a hole; erase a pixel with
+`setPixel(x, y, false)` or the whole surface with `clear()`.
 
 There is no framework palette, inherited color scheme, or theme singleton.
 Set ordinary properties to customize individual components, or define reusable
@@ -301,6 +304,24 @@ role names every view provides; see the
 - `Terminal` derives from `Item` and owns the terminal session. `mode` is
   `Terminal.FullScreen` by default, or `Terminal.Inline`. It selects screen
   buffer, rendering, and sizing together, and can change at runtime.
+- Read-only `Terminal.capabilities` exposes `kittyKeyboard`, `kittyGraphics`,
+  `cellPixelSize`, and `syncOutput`. An asynchronous startup probe refines these
+  values without delaying the first frame; changes notify QML bindings.
+  These describe detected protocol support: Kitty keyboard mode and graphics
+  rendering are not enabled by detection alone. Graphics transport support does
+  not imply Unicode placeholder support. `cellPixelSize` is invalid when unknown.
+- `Image.renderMode` selects how pixels reach the terminal: `HalfBlock` (default
+  glyph rendering), `Braille`, `ASCII`, `Kitty` (true pixels via the kitty
+  graphics protocol using Unicode placeholders), and `Auto`, the new default.
+  `Auto` uses kitty where the terminal supports it and true colour, and falls
+  back to `HalfBlock` everywhere else, so the same QML shows real images in
+  kitty, Ghostty, WezTerm and Konsole and glyph images in every other terminal.
+  Sixel (`Sixel` mode) is also supported, for terminals such as Windows Terminal
+  that implement sixel but not kitty; `Auto` prefers kitty, then sixel, then
+  half-block. Kitty uploads are freed automatically when the source changes, the
+  item is destroyed, or the session ends. Sixel paints at the cursor rather than
+  into cells, so it is drawn after the cell diff and cannot sit under other cell
+  content the way kitty placeholders can; use it for a dedicated image region.
 - All visible children render in ordinary stacking order in both modes. Use
   layouts to arrange them; overlapping children are not automatically stacked
   vertically or treated as pages. Visibility and focus remain application state.

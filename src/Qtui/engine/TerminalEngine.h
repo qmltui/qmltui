@@ -67,13 +67,22 @@ public:
     void setRenderer(Renderer* renderer);
     Renderer* renderer() const { return m_renderer; }
 
-    // Detected once from the environment at construction; override for
+    // Environment defaults refined by terminal replies; override for
     // programmatic control (forwarded to the renderer).
     const TerminalCapabilities& capabilities() const { return m_capabilities; }
     void setCapabilities(const TerminalCapabilities& capabilities);
     void setTerminalOutputEnabled(bool enabled);
     bool terminalOutputEnabled() const { return m_terminalOutputEnabled; }
     void stop();
+    bool enqueueControlSequence(QByteArray bytes);
+    QByteArray takeControlSequences();
+    // Like enqueueControlSequence, but drained after the cell diff each frame.
+    // Protocols that paint at the cursor (sixel) must land on top of the cells,
+    // not before them; kitty placements do not need this.
+    bool enqueuePostControlSequence(QByteArray bytes);
+    QByteArray takePostControlSequences();
+    static constexpr qsizetype ControlSequenceQueueLimit = 4 * 1024 * 1024;
+    quint64 outputSessionGeneration() const { return m_outputSessionGeneration; }
     void setMouseReporting(bool enable);
 
     int terminalWidth() const;
@@ -96,15 +105,21 @@ public:
     Color appliedBackgroundColor() const { return m_appliedBackgroundColor; }
 
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
+    // Raw terminal bytes, exactly as a backend delivers them. TestRunner feeds
+    // scripted typing here so it takes the same decoder path as a real keyboard.
+    void feedInput(QByteArrayView bytes);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
                           int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
 
 signals:
     void frameRendered(quint64 sequence);
+    void capabilitiesChanged();
+    void outputSessionInvalidated(quint64 generation);
     void renderFailed(const QString& message);
 
 private slots:
     void readResizeSignal();
+    void handleResume();
     void renderFrame();
 
 private:
@@ -112,6 +127,13 @@ private:
     friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
 
     void startRenderer();
+    void startQueries();
+    void finishQueries();
+    bool canQueryTerminal() const;
+    void applyCapabilities(const TerminalCapabilities& capabilities);
+    void handleReply(const InputDecoder::ControlSequence& sequence);
+    void invalidateOutputSession();
+    void flushControlSequences();
     void setMouseMotionReportingEnabled(bool enabled);
     void handleResize();
     void cycleFocus(bool forward, Item* scope = nullptr);
@@ -120,6 +142,15 @@ private:
     TerminalDevice m_device;
     InputDecoder m_inputDecoder;
     TerminalCapabilities m_capabilities;
+    TerminalCapabilities m_pendingCapabilities;
+    QTimer m_queryTimer;
+    QTimer m_pixelQueryTimer;
+    bool m_queriesPending = false;
+    bool m_queriesStarted = false;
+    bool m_capabilitiesOverridden = false;
+    QByteArray m_controlSequences;
+    QByteArray m_postControlSequences;
+    quint64 m_outputSessionGeneration = 0;
     Renderer* m_renderer = nullptr;
     bool m_rendererStarted = false;
     bool m_alternateScreenMessageSession = false;

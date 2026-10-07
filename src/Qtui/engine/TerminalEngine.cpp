@@ -68,11 +68,28 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   const qlonglong envLimit = qgetenv("QTUI_OUTPUT_QUEUE_LIMIT").trimmed().toLongLong(&limitValid);
   if (limitValid && envLimit >= 0)
       m_outputQueueLimit = static_cast<size_t>(envLimit);
+  m_device.setOutputErrorCallback([this] {
+      invalidateOutputSession();
+      m_renderDeferredForOutput = false;
+      m_renderPending = false;
+      // Frames whose bytes were discarded were already committed by the
+      // renderer; forget them so the next frame repaints the whole screen.
+      if (m_renderer) m_renderer->discardCommittedState();
+      emit renderFailed(QStringLiteral("Terminal output failed; queued bytes were discarded"));
+      requestRender();
+  });
   m_device.setDrainedCallback([this] {
       if (!m_renderDeferredForOutput)
           return;
       m_renderDeferredForOutput = false;
       QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame, Qt::QueuedConnection);
+  });
+
+  m_queryTimer.setSingleShot(true);
+  connect(&m_queryTimer, &QTimer::timeout, this, &TerminalEngine::finishQueries);
+  m_pixelQueryTimer.setSingleShot(true);
+  m_inputDecoder.setReplyCallback([this](const InputDecoder::ControlSequence& sequence) {
+      handleReply(sequence);
   });
 
   // Setup InputDecoder callbacks
@@ -132,6 +149,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
       m_inputDecoder.decode(bytes.constData(), static_cast<size_t>(bytes.size()));
   });
   connect(backend, &TerminalBackend::resized, this, &TerminalEngine::readResizeSignal);
+  connect(backend, &TerminalBackend::resumed, this, &TerminalEngine::handleResume);
   backend->startInput();
 
   requestRender();
@@ -147,9 +165,14 @@ TerminalEngine::~TerminalEngine() {
 void TerminalEngine::stop() {
   if (m_stopped) return;
   m_stopped = true;
+  flushControlSequences();
+  invalidateOutputSession();
   m_paceTimer.stop();
-  if (m_terminalOutputEnabled)
+  if (m_terminalOutputEnabled) {
+    if (m_capabilities.kittyGraphics)
+        m_device.write("\033_Ga=d,d=A\033\\");   // delete every image this session uploaded
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
+  }
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
       m_rendererStarted = false;
@@ -338,8 +361,45 @@ void TerminalEngine::handleResize() {
   }
 }
 
+bool TerminalEngine::canQueryTerminal() const {
+  // Replies arrive on the input channel and probes land on the output channel:
+  // both must be the terminal, or the probes are printed into a pipe and the
+  // replies are typed into the user's shell after exit.
+  const TerminalBackend* backend = m_device.backend();
+  return m_terminalOutputEnabled && !m_stopped && !m_capabilitiesOverridden
+      && backend && backend->isInteractive() && backend->isInputInteractive();
+}
+
 void TerminalEngine::readResizeSignal() {
+  if (m_queriesStarted && !m_queriesPending && canQueryTerminal()) {
+      if (m_device.write("\033[16t")) m_pixelQueryTimer.start(100);
+  }
   handleResize();
+  requestRender();
+}
+
+void TerminalEngine::handleResume() {
+  if (m_stopped || !m_terminalOutputEnabled) return;
+  // The SIGTSTP handler wrote the reset sequence and the SIGCONT handler took
+  // raw mode back. Everything else the terminal held for us is gone: re-enable
+  // each mode in the order the constructor uses, then repaint from scratch.
+  if (m_device.backend()->needsUtf8Designation())
+      m_device.write("\033%G");
+  m_device.hideCursor();
+  m_device.write("\033[?2004h");
+  if (!m_rootWindow || m_rootWindow->mouseReporting())
+      m_device.write("\033[?1003l\033[?1000h\033[?1002h\033[?1006h");
+  if (m_mouseMotionReportingEnabled)
+      m_device.write("\033[?1003h");
+  if (!m_title.isEmpty())
+      m_device.write(titleSequence(m_title));
+  if (m_backgroundOsc11Active)
+      m_device.write(osc11Sequence(m_appliedBackgroundColor));
+  if (m_renderer && m_rendererStarted) {
+      m_renderer->start(m_rootWindow, m_device);   // alternate screen again, cleared
+      m_renderer->discardCommittedState();
+  }
+  handleResize();   // the window may have been resized while stopped
   requestRender();
 }
 
@@ -384,6 +444,7 @@ void TerminalEngine::renderFrame() {
   }
 
   startRenderer();
+  startQueries();   // no-op once started; retried after a failed probe write
   // Snapshot before painting: bindings may submit additional output during layout.
   std::string submitted;
   auto* stream = dynamic_cast<StreamRenderer*>(m_renderer);
@@ -393,6 +454,7 @@ void TerminalEngine::renderFrame() {
       ? stream->renderFrame(m_rootWindow, m_device, submitted)
       : m_renderer->renderFrame(m_rootWindow, m_device);
   if (!committed) {
+      invalidateOutputSession();
       if (stream) m_scrollback.insert(0, submitted);
       m_scrollbackInFlight = 0;
       emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
@@ -426,6 +488,8 @@ void TerminalEngine::renderFrame() {
 
 void TerminalEngine::setRenderer(Renderer* renderer) {
     if (m_renderer == renderer) return;
+    flushControlSequences();
+    invalidateOutputSession();
     if (m_renderer) {
         if (m_rendererStarted) {
             m_renderer->stop(m_rootWindow, m_device);
@@ -459,16 +523,34 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
 }
 
 void TerminalEngine::setCapabilities(const TerminalCapabilities& capabilities) {
+    m_capabilitiesOverridden = true;
+    m_queriesPending = false;
+    m_queryTimer.stop();
+    m_pixelQueryTimer.stop();
+    applyCapabilities(capabilities);
+}
+
+void TerminalEngine::applyCapabilities(const TerminalCapabilities& capabilities) {
+    if (m_capabilities == capabilities) return;
     m_capabilities = capabilities;
-    if (m_renderer)
-        m_renderer->setCapabilities(m_capabilities);
+    if (m_renderer) m_renderer->setCapabilities(m_capabilities);
+    emit capabilitiesChanged();
     requestRender();
+}
+
+void TerminalEngine::feedInput(QByteArrayView bytes) {
+    m_inputDecoder.decode(bytes.constData(), static_cast<size_t>(bytes.size()));
 }
 
 void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   if (m_terminalOutputEnabled == enabled)
     return;
 
+  flushControlSequences();   // needs the outgoing flag
+  // Settle the flag before outputSessionInvalidated() fires so a slot that
+  // enqueues cleanup sees the state its bytes will actually meet.
+  m_terminalOutputEnabled = enabled;
+  invalidateOutputSession();
   if (m_renderer && m_rendererStarted) {
     m_renderer->stop(m_rootWindow, m_device);
     m_rendererStarted = false;
@@ -490,9 +572,7 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
     m_device.disableRawMode();
     if (!flushed)
         emit renderFailed(QStringLiteral("Terminal output could not be flushed when disabling output; undelivered bytes were discarded"));
-    m_terminalOutputEnabled = false;
   } else {
-    m_terminalOutputEnabled = true;
     m_device.setAsyncOutput(true);
     m_device.enableRawMode();
     m_device.hideCursor();
@@ -538,6 +618,136 @@ void TerminalEngine::startRenderer() {
     }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;
+}
+
+bool TerminalEngine::enqueueControlSequence(QByteArray bytes) {
+    if (m_stopped || !m_terminalOutputEnabled
+        || bytes.size() > ControlSequenceQueueLimit - m_controlSequences.size()) return false;
+    m_controlSequences += bytes;
+    requestRender();
+    return true;
+}
+
+QByteArray TerminalEngine::takeControlSequences() {
+    QByteArray bytes;
+    bytes.swap(m_controlSequences);
+    return bytes;
+}
+
+bool TerminalEngine::enqueuePostControlSequence(QByteArray bytes) {
+    if (m_stopped || !m_terminalOutputEnabled
+        || bytes.size() > ControlSequenceQueueLimit - m_postControlSequences.size()) return false;
+    m_postControlSequences += bytes;
+    requestRender();
+    return true;
+}
+
+QByteArray TerminalEngine::takePostControlSequences() {
+    QByteArray bytes;
+    bytes.swap(m_postControlSequences);
+    return bytes;
+}
+
+void TerminalEngine::flushControlSequences() {
+    QByteArray bytes = takeControlSequences();
+    bytes += takePostControlSequences();
+    if (m_terminalOutputEnabled && !bytes.isEmpty()
+        && !m_device.write(std::string(bytes.constData(), bytes.size())))
+        emit renderFailed(QStringLiteral("Failed to write terminal resource cleanup"));
+}
+
+void TerminalEngine::invalidateOutputSession() {
+    m_controlSequences.clear();
+    m_postControlSequences.clear();
+    m_queryTimer.stop();
+    m_pixelQueryTimer.stop();
+    m_queriesPending = false;
+    m_queriesStarted = false;
+    emit outputSessionInvalidated(++m_outputSessionGeneration);
+}
+
+void TerminalEngine::startQueries() {
+    if (m_queriesStarted || !m_rendererStarted || !canQueryTerminal())
+        return;
+    // Seed from what is already known so a second negotiation (renderer or
+    // output-session change) that times out cannot downgrade capabilities the
+    // terminal has proven. Replies still refine every field.
+    m_pendingCapabilities = m_capabilities;
+    // The graphics probe is an APC string; a terminal that does not parse APC
+    // prints it. Send it only to terminals known to implement the protocol.
+    std::string queries = "\033[?u";
+    if (m_capabilities.mayProbeGraphics)
+        queries += "\033_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\033\\";
+    queries += "\033[16t\033[?2026$p\033[c";
+    // A failed write is reported once, by the renderer that fails right after;
+    // leaving m_queriesStarted clear makes the next frame try again.
+    if (!m_device.write(queries))
+        return;
+    m_queriesStarted = true;
+    m_queriesPending = true;
+    bool valid = false;
+    const int timeout = qEnvironmentVariableIntValue("QTUI_QUERY_TIMEOUT_MS", &valid);
+    m_queryTimer.start(valid && timeout > 0 ? timeout : 100);
+}
+
+void TerminalEngine::finishQueries() {
+    if (!m_queriesPending) return;
+    m_queriesPending = false;
+    m_queryTimer.stop();
+    TerminalCapabilities::applyEnvironmentOverrides(m_pendingCapabilities);
+    applyCapabilities(m_pendingCapabilities);
+}
+
+void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) {
+    using Sequence = InputDecoder::ControlSequence;
+    const auto scalarParams = [&] {
+        for (const auto& field : sequence.params)
+            if (field.size() != 1 || field[0] < 0) return false;
+        return true;
+    };
+    if (sequence.kind == Sequence::Csi && scalarParams()) {
+        if (sequence.privateMarker == '?' && sequence.intermediates.isEmpty()
+            && sequence.finalByte == 'c' && !sequence.params.isEmpty()) {
+            // Primary device attributes: attribute 4 advertises sixel graphics.
+            // The reply also closes negotiation.
+            if (m_queriesPending) {
+                for (const auto& field : sequence.params)
+                    if (field.size() == 1 && field[0] == 4)
+                        m_pendingCapabilities.sixelGraphics = true;
+            }
+            finishQueries();
+            return;
+        }
+        if (sequence.privateMarker == 0 && sequence.intermediates.isEmpty()
+            && sequence.finalByte == 't' && sequence.params.size() == 3
+            && sequence.parameter(0) == 6 && sequence.parameter(1) > 0
+            && sequence.parameter(2) > 0) {
+            const QSize pixels(sequence.parameter(2), sequence.parameter(1));
+            if (m_queriesPending) m_pendingCapabilities.cellPixelSize = pixels;
+            else if (m_pixelQueryTimer.isActive()) {
+                m_pixelQueryTimer.stop();
+                TerminalCapabilities updated = m_capabilities;
+                updated.cellPixelSize = pixels;
+                applyCapabilities(updated);
+            }
+            return;
+        }
+        if (!m_queriesPending) return;
+        if (sequence.privateMarker == '?' && sequence.intermediates.isEmpty()
+            && sequence.finalByte == 'u' && sequence.params.size() == 1) {
+            // Any valid reply proves support; the flags describe the current
+            // mode, not a support mask. Overrides are applied in finishQueries().
+            m_pendingCapabilities.kittyKeyboard = true;
+        } else if (sequence.privateMarker == '?' && sequence.intermediates == QByteArrayView("$")
+                   && sequence.finalByte == 'y' && sequence.params.size() == 2
+                   && sequence.parameter(0) == 2026 && sequence.parameter(1) <= 4) {
+            m_pendingCapabilities.syncOutput = sequence.parameter(1) >= 1
+                && sequence.parameter(1) <= 3; // permanent reset cannot be enabled
+        }
+    } else if (m_queriesPending && sequence.kind == Sequence::Apc
+               && sequence.payload == QByteArrayView("Gi=31;OK")) {
+        m_pendingCapabilities.kittyGraphics = true;
+    }
 }
 
 } // namespace qtui

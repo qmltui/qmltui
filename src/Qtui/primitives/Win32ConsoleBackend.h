@@ -41,6 +41,7 @@ public:
 
     QSize size() const override;
     bool isInteractive() const override;
+    bool isInputInteractive() const override;
 
     void startInput() override;
     void stopInput() override;

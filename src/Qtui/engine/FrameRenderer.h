@@ -17,11 +17,13 @@ public:
     int terminalWidth() const { return m_currentBuffer.width(); }
     int terminalHeight() const { return m_currentBuffer.height(); }
     const TextGridBuffer* currentBuffer() const override { return &m_currentBuffer; }
+    void discardCommittedState() override { m_repaintAll = true; }
 
 private:
     TextGridBuffer m_currentBuffer;
     TextGridBuffer m_nextBuffer;
     std::string m_ansi;   // reused across frames
+    bool m_repaintAll = false;
 };
 
 } // namespace qtui

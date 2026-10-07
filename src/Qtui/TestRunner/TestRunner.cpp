@@ -1,7 +1,6 @@
 #include "TestRunner.h"
 #include <ColorMapper.h>
 
-#include "InputDecoder.h"
 #include "Terminal.h"
 #include "TerminalEngine.h"
 #include "TextGridBuffer.h"
@@ -798,22 +797,12 @@ void TestRunner::sendText(const char* operation, const QString& text, bool await
         return;
     }
 
-    // One key event per character, carrying the key code InputDecoder produces
-    // for the same bytes, so a Keys handler matching Qt.Key_W or Qt.Key_1 sees
-    // scripted typing exactly as it sees a user typing. A bracketed paste is a
-    // different event (key 0 with the paste flag) and is not what typing means.
-    for (const char32_t codepoint : text.toUcs4()) {
-        if (codepoint == U'\r' || codepoint == U'\n') {
-            m_terminalEngine->handleKeyInput(Qt::Key_Return, QStringLiteral("\n"), Qt::NoModifier);
-        } else if (codepoint == U'\t') {
-            m_terminalEngine->handleKeyInput(Qt::Key_Tab, QString(), Qt::NoModifier);
-        } else if (codepoint == 0x7f || codepoint == 0x08) {
-            m_terminalEngine->handleKeyInput(Qt::Key_Backspace, QString(), Qt::NoModifier);
-        } else {
-            m_terminalEngine->handleKeyInput(InputDecoder::keyForCharacter(codepoint),
-                                             QString::fromUcs4(&codepoint, 1), Qt::NoModifier);
-        }
-    }
+    // The bytes take the same path as a real keyboard: the input decoder turns
+    // them into one key event per character with the key code a terminal
+    // keystroke carries, so a Keys handler matching Qt.Key_W or Qt.Key_1 sees
+    // scripted typing exactly as it sees a user typing, and every future
+    // decoder change applies to scripts without a parallel table here.
+    m_terminalEngine->feedInput(text.toUtf8());
     if (awaitFrame)
         (void)waitForNextFrame(m_operationTimeoutMs);
 }

@@ -22,10 +22,12 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 | **05** | [WebAssembly Playground](05-wasm-playground.md) | `WasmTerminalBackend` on the Plan 00 seam, Emscripten bridge, `xterm.js` playground for `btop`, `snake_game`, `twozero48` | No |
 | **06** | [From Solid to Excellent](06-excellence-roadmap.md) | Qt Quick conformance suite, Behavior decision and Qt version matrix, kitty keyboard and signal safety, docs generated from test frames, missing controls and inherited palette, benchmark regression gate, known defects list (2026-09-10) | No |
 | **07** | [Any `QAbstractItemModel` Renders Correctly](07-model-view-completeness.md) | `TableView` header data and real column count, `rootIndex` on flat views, `GridView` virtualization, standard Qt item roles in built-in painters, `canFetchMore`/`fetchMore`, incremental `TreeView` with stable expansion, `test_model_contracts` matrix and `docs/guide/models.md` | No |
+| **08** | [Terminal Protocols](08-terminal-protocols.md) | Control-sequence parser with sub-parameters and APC strings, capability queries with replies, raw-sequence hook on the engine, kitty keyboard protocol (disambiguate flag, push/pop tied to signal safety), kitty graphics in `Qtui.Image` via Unicode placeholders with `Auto` fallback to half-block. WP1 done; signal safety done; kitty graphics done; sixel detected with the encoder seam prepared; kitty keyboard pending | No |
 
-Plans 00 to 02 gate the first announcement. Plans 03 to 07 follow in the weeks
-after, each shippable on its own. Plan 07 packages WP1 and WP2 are small
-enough to land before the tag.
+Plans 00 to 02 gate the first announcement. Plans 03 to 08 follow in the weeks
+after, each shippable on its own. Plan 07 shipped in full on 2026-09-12. Plan
+08 depends on the signal-safety item of Plan 06 and must not start before the
+tag: it touches the input decoder and the frame output path.
 
 ## Facts the Plans Are Built On
 

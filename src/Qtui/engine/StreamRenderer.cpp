@@ -124,12 +124,15 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     stats.dirtyDuringPaint = RenderPhase::dirtyDuringPaintCount();
     stats.paintMicros = timer.nsecsElapsed() / 1000;
 
+    const QByteArray controls = rootWindow->takeControlSequences();
+    const QByteArray postControls = rootWindow->takePostControlSequences();
     if (!outputEnabled()) {
         m_lastStats = stats;
         return true;
     }
 
     std::ostringstream output;
+    output.write(controls.constData(), controls.size());
     if (previousPromptHeight > 0) {
         output << "\r\033[" << previousPromptHeight << "A";
     }
@@ -143,6 +146,8 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     if (previousPromptHeight > m_lastPromptHeight) {
         output << "\033[J";
     }
+    // Cursor-painted graphics land after the live region is drawn.
+    output.write(postControls.constData(), postControls.size());
     const std::string ansi = output.str();
     const qint64 encodedNs = timer.nsecsElapsed();
     stats.diffMicros = encodedNs / 1000 - stats.paintMicros;

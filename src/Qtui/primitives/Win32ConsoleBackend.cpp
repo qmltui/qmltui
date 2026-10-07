@@ -157,6 +157,11 @@ bool Win32ConsoleBackend::isInteractive() const
     return m_outputModeValid;
 }
 
+bool Win32ConsoleBackend::isInputInteractive() const
+{
+    return m_inputModeValid;
+}
+
 void Win32ConsoleBackend::startInput()
 {
     if (m_inputStarted)

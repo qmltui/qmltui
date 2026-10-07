@@ -69,6 +69,8 @@ public:
 
     // Called from the event loop when the queue has drained completely.
     void setDrainedCallback(std::function<void()> callback);
+    // An asynchronous drain discarded bytes after a backend write error.
+    void setOutputErrorCallback(std::function<void()> callback);
 
 private:
     void drain();
@@ -83,6 +85,7 @@ private:
     bool m_finishSucceeded = true;
     std::string m_pending;
     std::function<void()> m_drainedCallback;
+    std::function<void()> m_outputErrorCallback;
 };
 
 } // namespace qtui

@@ -9,23 +9,108 @@ namespace qtui {
 
 namespace {
 
-int xtermModifiers(const std::string &parameters) {
-    const size_t separator = parameters.rfind(';');
-    if (separator == std::string::npos || separator + 1 >= parameters.size())
-        return 0;
+using Sequence = InputDecoder::ControlSequence;
 
-    int value = 0;
-    for (size_t index = separator + 1; index < parameters.size(); ++index) {
-        const char character = parameters[index];
-        if (character < '0' || character > '9')
-            return 0;
-        value = value * 10 + (character - '0');
-        if (value > 8)
-            return 0;
+enum class ParseResult { Complete, Incomplete, Invalid, Oversized };
+
+bool isFinalByte(unsigned char c);
+
+ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& consumed) {
+    const char introducer = bytes[1];
+    sequence.kind = introducer == '[' ? Sequence::Csi : introducer == 'O' ? Sequence::Ss3
+        : introducer == '_' ? Sequence::Apc : introducer == ']' ? Sequence::Osc : Sequence::Dcs;
+    const bool string = sequence.kind >= Sequence::Apc;
+    const size_t limit = string ? 4096 : 64;
+    bool intermediates = false;
+    size_t intermediateStart = 0;
+    for (size_t pos = 2; pos < bytes.size(); ++pos) {
+        const unsigned char c = bytes[pos];
+        consumed = pos + 1;
+        if (c == 0x18 || c == 0x1a)
+            return ParseResult::Invalid;
+        if (c == 0x1b) {
+            if (string) {
+                if (pos + 1 == bytes.size()) {
+                    consumed = pos;
+                    return pos >= limit ? ParseResult::Oversized : ParseResult::Incomplete;
+                }
+                if (bytes[pos + 1] == '\\') {
+                    consumed = pos + 2;
+                    sequence.payload = QByteArrayView(bytes.data() + 2, pos - 2);
+                    return consumed <= limit ? ParseResult::Complete : ParseResult::Invalid;
+                }
+            }
+            consumed = pos; // restart at the new ESC
+            return ParseResult::Invalid;
+        }
+        if (pos >= limit) {
+            consumed = pos;
+            return ParseResult::Oversized;
+        }
+        if (string) {
+            if (sequence.kind == Sequence::Osc && c == 7) {
+                sequence.payload = QByteArrayView(bytes.data() + 2, pos - 2);
+                return ParseResult::Complete;
+            }
+            continue;
+        }
+        if (isFinalByte(c)) {
+            sequence.finalByte = c;
+            if (intermediates)
+                sequence.intermediates = QByteArrayView(bytes.data() + intermediateStart, pos - intermediateStart);
+            return ParseResult::Complete;
+        }
+        if (c >= 0x20 && c <= 0x2f) {
+            if (!intermediates) intermediateStart = pos;
+            intermediates = true;
+            continue;
+        }
+        if (c < 0x20 || c == 0x7f) {
+            // A C0 control inside a CSI aborts it; the control is then decoded
+            // on its own (Alt+[ followed by Enter still delivers Enter).
+            consumed = pos;
+            return ParseResult::Invalid;
+        }
+        if (intermediates) return ParseResult::Oversized; // discard malformed remainder
+        if (pos == 2 && c >= '<' && c <= '?') {
+            sequence.privateMarker = c;
+            continue;
+        }
+        if (sequence.params.empty()) sequence.params.append({-1});
+        if (c == ';') sequence.params.append({-1});
+        else if (c == ':') sequence.params.last().append(-1);
+        else if (c >= '0' && c <= '9') {
+            int& value = sequence.params.last().last();
+            if (value < 0) value = 0;
+            if (value > (std::numeric_limits<int>::max() - (c - '0')) / 10)
+                return ParseResult::Oversized;
+            value = value * 10 + c - '0';
+        } else return ParseResult::Oversized;
     }
-    if (value < 2)
-        return 0;
+    return ParseResult::Incomplete;
+}
 
+bool isFinalByte(unsigned char c) {
+    return c >= 0x40 && c <= 0x7e;
+}
+
+// A string control (APC, DCS, OSC) is framed only when its first payload byte
+// matches a reply Qtui or a terminal query can produce. Otherwise ESC followed
+// by ']', '_' or 'P' is an Alt-prefixed keystroke from a metaSendsEscape
+// terminal and must never swallow the typing that follows it.
+bool looksLikeReply(unsigned char introducer, unsigned char first) {
+    switch (introducer) {
+    case '_': return first == 'G';                      // kitty graphics
+    case 'P': return first == '$' || first == '>'       // DECRPSS, XTVERSION
+                  || first == '!' || first == '+';      // DECRPTUI, XTGETTCAP
+    case ']': return first >= '0' && first <= '9';      // OSC colour and clipboard replies
+    default: return false;
+    }
+}
+
+int xtermModifiers(const Sequence& sequence) {
+    const int value = sequence.parameter(1, 0, 1);
+    if (value < 1 || value > 8) return 0;
     const int bits = value - 1;
     int modifiers = 0;
     if (bits & 1) modifiers |= Qt::ShiftModifier;
@@ -56,27 +141,120 @@ void InputDecoder::setDetailedMouseCallback(DetailedMouseCallback cb) {
     m_detailedMouseCallback = std::move(cb);
 }
 
-void InputDecoder::decode(const char* buffer, size_t size) {
-    constexpr size_t MaxEscapeBufferSize = 4096;
-    constexpr size_t MaxPasteBufferSize = 1024 * 1024;
-    if (!buffer || size == 0) return;
-    if (size > MaxPasteBufferSize) {
-        buffer += size - MaxPasteBufferSize;
-        size = MaxPasteBufferSize;
+void InputDecoder::setReplyCallback(ReplyCallback cb) {
+    m_replyCallback = std::move(cb);
+}
+
+void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
+    const char final = sequence.finalByte;
+    if (sequence.kind == Sequence::Csi && sequence.privateMarker == '<'
+        && sequence.intermediates.isEmpty() && (final == 'M' || final == 'm')) {
+        if (sequence.params.size() != 3) return;
+        for (const auto& field : sequence.params)
+            if (field.size() != 1 || field[0] < 0 || field[0] > 1'000'000) return;
+        const int button = sequence.parameter(0);
+        const int x = sequence.parameter(1) - 1;
+        const int y = sequence.parameter(2) - 1;
+        const bool release = final == 'm';
+        const bool motion = (button & 32) != 0;
+        if (m_mouseCallback) m_mouseCallback(button & ~32, x, y, release, motion);
+        if (m_detailedMouseCallback) {
+            MouseInput input;
+            input.button = button & 3;
+            input.x = x;
+            input.y = y;
+            input.release = release;
+            input.motion = motion;
+            if (button & 4) input.modifiers |= Qt::ShiftModifier;
+            if (button & 8) input.modifiers |= Qt::AltModifier;
+            if (button & 16) input.modifiers |= Qt::ControlModifier;
+            if (button & 64) input.wheelDeltaY = (button & 1) ? -1 : 1;
+            m_detailedMouseCallback(input);
+        }
+        return;
     }
-    if (m_buffer.size() > MaxPasteBufferSize - size)
-        m_buffer.erase(0, m_buffer.size() - (MaxPasteBufferSize - size));
-    m_buffer.append(buffer, size);
-    processBuffer();
-    const size_t retainedLimit = m_bracketedPaste
-        ? MaxPasteBufferSize : MaxEscapeBufferSize;
-    if (m_buffer.size() > retainedLimit)
-        m_buffer.erase(0, m_buffer.size() - retainedLimit);
+    if (!sequence.privateMarker && sequence.intermediates.isEmpty()
+        && (sequence.kind == Sequence::Csi || sequence.kind == Sequence::Ss3)) {
+        const int first = sequence.parameter(0);
+        if (sequence.kind == Sequence::Csi && final == '~' && first == 200) {
+            m_bracketedPaste = true;
+            return;
+        }
+        int key = 0;
+        int modifiers = xtermModifiers(sequence);
+        if (final == 'Z' || (final == 'u' && first == 9 && sequence.parameter(1) == 2)
+            || (final == '~' && first == 27 && sequence.parameter(1) == 2
+                && sequence.parameter(2) == 9)) {
+            key = Qt::Key_Backtab;
+            modifiers = Qt::ShiftModifier;
+        } else if (final == '~') {
+            static constexpr std::pair<int, int> keys[] = {
+                {1, Qt::Key_Home}, {2, Qt::Key_Insert}, {3, Qt::Key_Delete},
+                {4, Qt::Key_End}, {5, Qt::Key_PageUp}, {6, Qt::Key_PageDown},
+                {7, Qt::Key_Home}, {8, Qt::Key_End},
+                {11, Qt::Key_F1}, {12, Qt::Key_F2}, {13, Qt::Key_F3}, {14, Qt::Key_F4},
+                {15, Qt::Key_F5}, {17, Qt::Key_F6}, {18, Qt::Key_F7}, {19, Qt::Key_F8},
+                {20, Qt::Key_F9}, {21, Qt::Key_F10}, {23, Qt::Key_F11}, {24, Qt::Key_F12}
+            };
+            for (const auto& [parameter, value] : keys)
+                if (first == parameter) { key = value; break; }
+        } else {
+            static constexpr std::pair<char, int> keys[] = {
+                {'A', Qt::Key_Up}, {'B', Qt::Key_Down}, {'C', Qt::Key_Right},
+                {'D', Qt::Key_Left}, {'H', Qt::Key_Home}, {'F', Qt::Key_End},
+                {'P', Qt::Key_F1}, {'Q', Qt::Key_F2}, {'R', Qt::Key_F3}, {'S', Qt::Key_F4}
+            };
+            for (const auto& [character, value] : keys)
+                if (final == character) { key = value; break; }
+        }
+        if (key) {
+            if (m_keyCallback) m_keyCallback(key, QString(), modifiers);
+            return;
+        }
+    }
+    if (m_replyCallback) m_replyCallback(sequence);
+}
+
+void InputDecoder::decode(const char* buffer, size_t size) {
+    constexpr size_t MaxPasteBufferSize = 1024 * 1024;
+    if (!buffer) return;
+    // Process large reads incrementally so control framing is never lost by
+    // truncating the beginning of an input read.
+    while (size) {
+        const size_t chunk = std::min(size, size_t(4096));
+        m_buffer.append(buffer, chunk);
+        buffer += chunk;
+        size -= chunk;
+        processBuffer();
+        if (m_bracketedPaste && m_buffer.size() > MaxPasteBufferSize)
+            m_buffer.erase(0, m_buffer.size() - MaxPasteBufferSize);
+    }
 }
 
 void InputDecoder::processBuffer() {
     size_t i = 0;
     while (i < m_buffer.size()) {
+        if (m_discardKind) {
+            const unsigned char c = m_buffer[i];
+            if (c == 0x18 || c == 0x1a || (m_discardKind == 3 && c == 7)
+                || (m_discardEscape && c == '\\')) {
+                m_discardKind = 0;
+                m_discardEscape = false;
+                ++i;
+            } else if (m_discardEscape) {
+                // The previous ESC begins a fresh sequence, not payload.
+                m_discardKind = 0;
+                m_discardEscape = false;
+                m_buffer.insert(i, 1, '\033');
+            } else if (m_discardKind == 1 && c >= 0x40 && c <= 0x7e) {
+                m_discardKind = 0;
+                ++i;
+            } else {
+                m_discardEscape = c == 0x1b;
+                ++i;
+            }
+            continue;
+        }
         if (m_bracketedPaste) {
             constexpr std::string_view PasteEnd = "\033[201~";
             const size_t end = m_buffer.find(PasteEnd, i);
@@ -101,200 +279,34 @@ void InputDecoder::processBuffer() {
             continue;
         }
 
-        // Check for escape sequences
+        // Check for escape sequences, preserving the existing standalone ESC
+        // buffering contract until a following byte resolves it. SS3 has one
+        // final byte by definition, and string controls are framed only when
+        // they look like a reply; anything else is Escape followed by a key.
         if (c == '\033') {
-            if (i + 1 == m_buffer.size()) {
-                break;
+            if (i + 1 == m_buffer.size()) break;
+            const unsigned char next = m_buffer[i + 1];
+            bool framed = next == '[';
+            if (next == 'O' || next == '_' || next == ']' || next == 'P') {
+                if (i + 2 == m_buffer.size()) break;
+                const unsigned char first = m_buffer[i + 2];
+                framed = next == 'O' ? isFinalByte(first) : looksLikeReply(next, first);
             }
-            if (m_buffer[i + 1] == '[') {
-                constexpr std::string_view PasteStart = "\033[200~";
-                if (m_buffer.size() - i < PasteStart.size() &&
-                    PasteStart.starts_with(std::string_view(m_buffer).substr(i)))
-                    break;
-                if (std::string_view(m_buffer).substr(i).starts_with(PasteStart)) {
-                    i += PasteStart.size();
-                    m_bracketedPaste = true;
-                    continue;
-                }
-                size_t j = i + 2;
-                if (j == m_buffer.size()) break; // Incomplete
-
-                // Check for Mouse SGR protocol: \033[<cb;cx;cyM or m
-                if (m_buffer[j] == '<') {
-                    j++;
-                    bool complete = false;
-                    size_t temp = j;
-                    while (temp < m_buffer.size()) {
-                        if (m_buffer[temp] == 'M' || m_buffer[temp] == 'm') {
-                            complete = true;
-                            break;
-                        }
-                        temp++;
-                    }
-                    if (!complete) break; // Wait for the rest
-
-                    int button = 0;
-                    int cx = 0;
-                    int cy = 0;
-                    bool release = false;
-
-                    constexpr int MaxMouseField = 1'000'000;
-                    const auto parseField = [this, &j](int& value) {
-                        const size_t begin = j;
-                        value = 0;
-                        while (j < m_buffer.size() && m_buffer[j] >= '0' && m_buffer[j] <= '9') {
-                            const int digit = m_buffer[j] - '0';
-                            if (value > (MaxMouseField - digit) / 10)
-                                return false;
-                            value = value * 10 + digit;
-                            ++j;
-                        }
-                        return j > begin;
-                    };
-
-                    const bool valid = parseField(button)
-                        && j < m_buffer.size() && m_buffer[j++] == ';'
-                        && parseField(cx)
-                        && j < m_buffer.size() && m_buffer[j++] == ';'
-                        && parseField(cy)
-                        && j < m_buffer.size() && (m_buffer[j] == 'M' || m_buffer[j] == 'm');
-                    if (!valid) {
-                        i = temp + 1;
-                        continue;
-                    }
-                    release = m_buffer[j++] == 'm';
-
-                    const int encodedButton = button;
-                    const bool motion = (button & 32) != 0;
-                    if (motion)
-                        button &= ~32;
-                    if (m_mouseCallback)
-                        m_mouseCallback(button, cx - 1, cy - 1, release, motion);
-                    if (m_detailedMouseCallback) {
-                        MouseInput input;
-                        input.button = encodedButton & 3;
-                        input.x = cx - 1;
-                        input.y = cy - 1;
-                        input.release = release;
-                        input.motion = motion;
-                        if (encodedButton & 4) input.modifiers |= Qt::ShiftModifier;
-                        if (encodedButton & 8) input.modifiers |= Qt::AltModifier;
-                        if (encodedButton & 16) input.modifiers |= Qt::ControlModifier;
-                        if (encodedButton & 64)
-                            input.wheelDeltaY = (encodedButton & 1) ? -1 : 1;
-                        m_detailedMouseCallback(input);
-                    }
-                    i = j;
-                    continue;
-                }
-
-                // Check for Arrow keys or Shift-Tab
-                if (j < m_buffer.size()) {
-                    if (m_buffer[j] == 'A') { // Up
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Up, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'B') { // Down
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Down, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'C') { // Right
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Right, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'D') { // Left
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Left, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'H') { // Home
-                        if (m_keyCallback) m_keyCallback(Qt::Key_Home, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'F') { // End
-                        if (m_keyCallback) m_keyCallback(Qt::Key_End, "", 0);
-                        i = j + 1;
-                        continue;
-                    } else if (m_buffer[j] == 'Z') { // Shift-Tab
-                        if (m_keyCallback)
-                            m_keyCallback(Qt::Key_Backtab, "", Qt::ShiftModifier);
-                        i = j + 1;
-                        continue;
-                    }
-                    if ((m_buffer[j] >= 'A' && m_buffer[j] <= 'Z') || (m_buffer[j] >= 'a' && m_buffer[j] <= 'z')) {
-                        i = j + 1;
-                        continue;
-                    }
-
-                    size_t finalPosition = std::string::npos;
-                    for (size_t k = j; k < m_buffer.size(); k++) {
-                        const unsigned char byte = m_buffer[k];
-                        if (byte >= 0x40 && byte <= 0x7E) {
-                            finalPosition = k;
-                            break;
-                        }
-                    }
-                    if (finalPosition == std::string::npos) {
-                        break;
-                    }
-
-                    const char finalByte = m_buffer[finalPosition];
-                    const std::string parameters =
-                        m_buffer.substr(j, finalPosition - j);
-                    const int modifiers = xtermModifiers(parameters);
-                    const bool isBacktab =
-                        (finalByte == 'Z')
-                        || (finalByte == 'u' && parameters == "9;2")
-                        || (finalByte == '~' && parameters == "27;2;9");
-                    if (isBacktab && m_keyCallback) {
-                        m_keyCallback(Qt::Key_Backtab, "", Qt::ShiftModifier);
-                    } else if (m_keyCallback
-                               && (finalByte == 'A' || finalByte == 'B'
-                                   || finalByte == 'C' || finalByte == 'D'
-                                   || finalByte == 'H' || finalByte == 'F')) {
-                        int key = 0;
-                        if (finalByte == 'A') key = Qt::Key_Up;
-                        else if (finalByte == 'B') key = Qt::Key_Down;
-                        else if (finalByte == 'C') key = Qt::Key_Right;
-                        else if (finalByte == 'D') key = Qt::Key_Left;
-                        else if (finalByte == 'H') key = Qt::Key_Home;
-                        else if (finalByte == 'F') key = Qt::Key_End;
-                        m_keyCallback(key, "", modifiers);
-                    } else if (finalByte == '~' && m_keyCallback) {
-                        if (parameters == "3" || parameters.starts_with("3;")) m_keyCallback(Qt::Key_Delete, "", modifiers);
-                        else if (parameters == "1" || parameters == "7" || parameters.starts_with("1;") || parameters.starts_with("7;")) m_keyCallback(Qt::Key_Home, "", modifiers);
-                        else if (parameters == "4" || parameters == "8" || parameters.starts_with("4;") || parameters.starts_with("8;")) m_keyCallback(Qt::Key_End, "", modifiers);
-                        else if (parameters == "5" || parameters.starts_with("5;")) m_keyCallback(Qt::Key_PageUp, "", modifiers);
-                        else if (parameters == "6" || parameters.starts_with("6;")) m_keyCallback(Qt::Key_PageDown, "", modifiers);
-                        else if (parameters == "2" || parameters.starts_with("2;")) m_keyCallback(Qt::Key_Insert, "", modifiers);
-                        else if (parameters == "11" || parameters.starts_with("11;")) m_keyCallback(Qt::Key_F1, "", modifiers);
-                        else if (parameters == "12" || parameters.starts_with("12;")) m_keyCallback(Qt::Key_F2, "", modifiers);
-                        else if (parameters == "13" || parameters.starts_with("13;")) m_keyCallback(Qt::Key_F3, "", modifiers);
-                        else if (parameters == "14" || parameters.starts_with("14;")) m_keyCallback(Qt::Key_F4, "", modifiers);
-                        else if (parameters == "15" || parameters.starts_with("15;")) m_keyCallback(Qt::Key_F5, "", modifiers);
-                        else if (parameters == "17" || parameters.starts_with("17;")) m_keyCallback(Qt::Key_F6, "", modifiers);
-                        else if (parameters == "18" || parameters.starts_with("18;")) m_keyCallback(Qt::Key_F7, "", modifiers);
-                        else if (parameters == "19" || parameters.starts_with("19;")) m_keyCallback(Qt::Key_F8, "", modifiers);
-                        else if (parameters == "20" || parameters.starts_with("20;")) m_keyCallback(Qt::Key_F9, "", modifiers);
-                        else if (parameters == "21" || parameters.starts_with("21;")) m_keyCallback(Qt::Key_F10, "", modifiers);
-                        else if (parameters == "23" || parameters.starts_with("23;")) m_keyCallback(Qt::Key_F11, "", modifiers);
-                        else if (parameters == "24" || parameters.starts_with("24;")) m_keyCallback(Qt::Key_F12, "", modifiers);
-                    }
-                    i = finalPosition + 1;
-                    continue;
-                }
-            } else if (m_buffer[i + 1] == 'O') {
-                size_t j = i + 2;
-                if (j == m_buffer.size()) break; // Incomplete
-                if (m_buffer[j] == 'P') { if (m_keyCallback) m_keyCallback(Qt::Key_F1, "", 0); i = j + 1; continue; }
-                else if (m_buffer[j] == 'Q') { if (m_keyCallback) m_keyCallback(Qt::Key_F2, "", 0); i = j + 1; continue; }
-                else if (m_buffer[j] == 'R') { if (m_keyCallback) m_keyCallback(Qt::Key_F3, "", 0); i = j + 1; continue; }
-                else if (m_buffer[j] == 'S') { if (m_keyCallback) m_keyCallback(Qt::Key_F4, "", 0); i = j + 1; continue; }
-                else { i = j + 1; continue; }
-            } else {
-                if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
-                i++;
+            if (framed) {
+                ControlSequence sequence;
+                size_t consumed = 0;
+                const auto result = parseSequence(std::string_view(m_buffer).substr(i), sequence, consumed);
+                if (result == ParseResult::Incomplete) break;
+                i += consumed;
+                if (result == ParseResult::Complete) dispatchSequence(sequence);
+                else if (result == ParseResult::Oversized)
+                    m_discardKind = sequence.kind == ControlSequence::Osc ? 3
+                        : sequence.kind >= ControlSequence::Apc ? 2 : 1;
                 continue;
             }
+            if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
+            ++i;
+            continue;
         }
 
         if (c == '\t') {

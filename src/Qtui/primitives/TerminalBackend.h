@@ -75,6 +75,10 @@ public:
     virtual QSize size() const = 0;
     // True when output goes to a real terminal rather than a pipe or file.
     virtual bool isInteractive() const = 0;
+    // Input side of the same question: replies to terminal queries arrive on
+    // the input channel, so queries are only worth sending when both ends are
+    // the terminal. Defaults to the output answer.
+    virtual bool isInputInteractive() const { return isInteractive(); }
 
     // Input ---------------------------------------------------------------
     // Begins delivering inputReceived() and resized(). Idempotent.
@@ -88,6 +92,10 @@ signals:
     void inputReceived(const QByteArray& bytes);
     // The terminal geometry changed; call size().
     void resized();
+    // The process continued after a job-control stop. The backend has already
+    // re-entered raw mode; the screen content and every terminal mode the
+    // engine enabled are unknown and must be re-established and repainted.
+    void resumed();
 };
 
 // Creates a backend: the installed TerminalBackend::factory() when there is

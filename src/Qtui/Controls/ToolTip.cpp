@@ -1,5 +1,4 @@
 #include "ToolTip.h"
-#include "Palette.h"
 #include "Item.h"
 #include "Terminal.h"
 #include "Popup.h"
@@ -8,6 +7,20 @@
 #include <algorithm>
 
 namespace qtui::controls {
+void ToolTip::setColor(Color color) {
+    if (m_color == color) return;
+    m_color = color;
+    emit colorChanged();
+    updateAppearance();
+}
+
+void ToolTip::setTextColor(Color color) {
+    if (m_textColor == color) return;
+    m_textColor = color;
+    emit textColorChanged();
+    updateAppearance();
+}
+
 
 ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*>(target)) {
     m_delayTimer.setSingleShot(true);
@@ -117,12 +130,11 @@ void ToolTip::showNow() {
         m_popup->setDimBackground(false);
         m_popup->setClosePolicy(Popup::NoAutoClose);
         m_label = new Text(m_popup);
+        m_label->setBold(true);
         m_label->setX(1);
         m_label->setY(0);
     }
-    // Re-read on every show so a palette switch is picked up.
-    m_popup->setColor(Palette::instance()->base());
-    m_label->setColor(Palette::instance()->text());
+    updateAppearance();
     const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
     const int displayWidth = UnicodeText::displayWidth(m_text);
     const int textWidth = std::max(1, std::min(maxTextWidth, displayWidth));
@@ -144,6 +156,12 @@ void ToolTip::showNow() {
         emit visibleChanged();
     }
     if (m_timeout > 0) m_timeoutTimer.start(m_timeout);
+}
+
+void ToolTip::updateAppearance() {
+    if (!m_target || !m_popup || !m_label) return;
+    m_popup->setColor(m_color);
+    m_label->setColor(m_textColor);
 }
 
 void ToolTip::hide() {

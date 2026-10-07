@@ -4,6 +4,8 @@ import Qtui
 Popup {
     id: control
 
+    property rgba textColor: "default"
+    property rgba titleColor: textColor
     property string title: ""
     property string message: ""
     property string acceptText: qsTr("OK")
@@ -16,8 +18,8 @@ Popup {
     implicitWidth: Math.max(32, contentColumn.implicitWidth + 4)
     implicitHeight: contentColumn.implicitHeight + 2
     border.style: "double"
-    border.color: activeFocus ? Palette.highlight : Palette.mid
-    color: Palette.base
+    border.color: "default"
+    color: "default"
     initialFocusItem: acceptButton
     anchors.centerIn: parent
 
@@ -37,12 +39,12 @@ Popup {
         Text {
             text: control.title
             bold: true
-            color: Palette.accent
+            color: control.titleColor
         }
 
         Text {
             text: control.message
-            color: Palette.text
+            color: control.textColor
         }
 
         Row {

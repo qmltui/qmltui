@@ -1,28 +1,29 @@
 import QtQml
 import Qtui
 
-// A focusable, clickable action button. Colors come from Palette; set
+// A focusable action using terminal colors. Set
 // textColor, color, or border.* on an instance to override them.
 Rectangle {
     id: control
     property string text: ""
     property bool pressed: false
-    property rgba textColor: Palette.buttonText
+    property rgba textColor: "default"
     signal clicked()
 
     focusable: enabled
     implicitWidth: btnText.implicitWidth + 4
     implicitHeight: 3
 
-    color: Palette.button
+    color: "default"
     border.style: height >= 3 ? (activeFocus ? "double" : "single") : "none"
-    border.color: !enabled ? Palette.placeholderText : (activeFocus ? Palette.highlight : Palette.mid)
+    border.color: "default"
 
     Text {
         id: btnText
         anchors.centerIn: parent
         text: control.text
-        color: control.enabled ? control.textColor : Palette.placeholderText
+        color: control.textColor
+        bold: control.activeFocus
     }
 
     Keys.onPressed: (event) => {

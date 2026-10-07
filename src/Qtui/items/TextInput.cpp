@@ -186,7 +186,8 @@ void TextInput::setPlaceholderColor(Color color) {
         m_resolvedPlaceholderColor = 0;
     } else {
         m_hasResolvedPlaceholderColor = true;
-        m_resolvedPlaceholderColor = ColorMapper::fromString(m_placeholderColor, 0x64748BFF);
+        m_resolvedPlaceholderColor = ColorMapper::fromString(m_placeholderColor,
+                                                            Color::fromAnsiIndex(8).argb32());
     }
     emit placeholderColorChanged();
     markDirty();
@@ -536,11 +537,11 @@ void TextInput::paint(
     const ClipRect contentClip = clipRect.intersected(
         ClipRect{contentLeft, y, viewportWidth, 1});
     const bool placeholder = m_editor.text().isEmpty() && !m_placeholderText.isEmpty();
-    const uint32_t displayColor = !isEffectivelyEnabled()
-        ? 0xFF808080
-        : (placeholder
-            ? (m_hasResolvedPlaceholderColor ? m_resolvedPlaceholderColor : 0x64748BFF)
-            : m_resolvedColor);
+    const uint32_t displayColor = placeholder && m_hasResolvedPlaceholderColor
+        ? m_resolvedPlaceholderColor : m_resolvedColor;
+    const TextAttribute displayAttributes = !isEffectivelyEnabled()
+        || (placeholder && !m_hasResolvedPlaceholderColor)
+        ? TextAttribute::Dim : TextAttribute::None;
 
     if (placeholder) {
         int column = 0;
@@ -551,7 +552,7 @@ void TextInput::paint(
             const int width = std::max(1, cluster.width);
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y))
-                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
+                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
             column += cluster.width;
         }
     } else if (m_echoMode != NoEcho) {
@@ -566,9 +567,9 @@ void TextInput::paint(
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y)) {
                 if (masked)
-                    buffer.writeText(x, y, m_echoCharacter, displayColor);
+                    buffer.writeText(x, y, m_echoCharacter, displayColor, 0, displayAttributes);
                 else
-                    buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
+                    buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
                 const int clusterStart = cluster.utf16Start;
                 const int clusterEnd = clusterStart + cluster.utf16Length();
                 if (clusterEnd > selectionStart() && clusterStart < selectionEnd()) {

@@ -6,6 +6,10 @@
 
 `TextGridBuffer` provides low-level character drawing primitives (`writeText`, `drawLine`, `drawBox`, `fillRect`) and efficient differential ANSI sequence generation (`diff`, `diffRelative`). The rendering engine uses `TextGridBuffer` to compare the previous frame with the current frame and emit minimal ANSI escape codes to the terminal output.
 
+New cells and omitted drawing-helper foregrounds use `0x00000000`, the terminal
+default foreground. Pass `0xFFFFFFFF` explicitly to request literal RGB white.
+Zero-alpha drawing backgrounds preserve the surface underneath.
+
 ## 2. Project Structure and Dependencies
 
 - **Header**: `Terminal/src/core/TextGridBuffer.h`
@@ -51,17 +55,17 @@ must be valid; debug builds assert this precondition.
 #### const Cell& cellAt(int x, int y) const
 Returns a read-only reference to the cell at grid coordinates (x, y).
 
-#### void writeText(int x, int y, const QString& text, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
+#### void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
 Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). An
 overload accepts public `Color` foreground and background values.
 
-#### void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000)
+#### void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
 Draws a straight line from (x1, y1) to (x2, y2) using Bresenham's line algorithm with the specified character string and colors.
 
-#### void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000)
+#### void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
 Draws a hollow rectangular box with single-line UTF-8 box-drawing border characters (`┌ ┐ └ ┘ ─ │`).
 
-#### void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000)
+#### void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
 Fills a rectangular area starting at (x, y) with the given character and background/foreground colors.
 
 #### std::string diff(const TextGridBuffer& nextBuffer) const

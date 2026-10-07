@@ -30,7 +30,20 @@ add_qtui_test(test_text_layout Core/test_text_layout.cpp)
 add_qtui_test(test_terminal_capabilities Core/test_terminal_capabilities.cpp)
 add_qtui_test(test_color_depth Core/test_color_depth.cpp)
 add_qtui_test(test_terminal_backend Core/test_terminal_backend.cpp)
-add_qtui_test(test_palette Controls/test_palette.cpp)
+add_qtui_test(test_terminal_colors Controls/test_terminal_colors.cpp)
+add_executable(qtui_terminal_colors_fixture Testing/main.cpp)
+target_link_libraries(qtui_terminal_colors_fixture PRIVATE Qtui::Core Qtui::Controls Qtui::Testing)
+target_compile_definitions(qtui_terminal_colors_fixture PRIVATE
+    QTUI_TEST_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/Controls/TerminalColorsFixture.qml"
+)
+qtui_add_scenario_test(
+    NAME test_terminal_colors_frames
+    TARGET qtui_terminal_colors_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/Controls/test_terminal_colors_frames.js"
+    COLUMNS 40
+    ROWS 12
+    LABELS AgentSmoke
+)
 target_link_libraries(test_terminal_backend PRIVATE Qtui::Testing)
 if(UNIX)
     add_qtui_test(test_terminal_device Core/test_terminal_device.cpp)

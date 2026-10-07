@@ -298,10 +298,10 @@ void TextArea::paint(
 
     const QString displayText = m_editor.text().isEmpty() && !activeFocus()
         ? m_placeholderText : m_editor.text();
-    const uint32_t displayColor = !isEffectivelyEnabled()
-        ? 0xFF808080
-        : (m_editor.text().isEmpty() && !activeFocus()
-            ? 0xFF808080 : m_resolvedColor);
+    const uint32_t displayColor = m_resolvedColor;
+    const TextAttribute displayAttributes = !isEffectivelyEnabled()
+        || (m_editor.text().isEmpty() && !activeFocus())
+        ? TextAttribute::Dim : TextAttribute::None;
     const QStringList lines = displayText.split('\n');
     int globalOffset = 0;
     for (int line = 0; line < m_contentY && line < lines.size(); ++line)
@@ -321,7 +321,7 @@ void TextArea::paint(
                 && x + width <= absX + leftPadding() + viewportWidth
                 && contentClip.contains(x, y)
                 && contentClip.contains(x + width - 1, y)) {
-                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor);
+                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
                 const int clusterStart = globalOffset + cluster.utf16Start;
                 const int clusterEnd = clusterStart + cluster.utf16Length();
                 if (!m_editor.text().isEmpty()

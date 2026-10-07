@@ -32,7 +32,7 @@ Terminal {
             Text {
                 anchors.centerIn: parent
                 text: "Content Area 1"
-                color: "white"
+                color: "default"
             }
         }
 
@@ -51,7 +51,7 @@ Terminal {
             Text {
                 anchors.centerIn: parent
                 text: "Content Area 2"
-                color: "white"
+                color: "default"
             }
         }
 
@@ -70,7 +70,7 @@ Terminal {
             Text {
                 anchors.centerIn: parent
                 text: "Content Area 3"
-                color: "white"
+                color: "default"
             }
         }
     }

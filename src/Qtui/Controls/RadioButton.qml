@@ -6,7 +6,7 @@ Rectangle {
     property string text: ""
     property bool checked: false
     property ButtonGroup buttonGroup: null
-    property rgba textColor: Palette.windowText
+    property rgba textColor: "default"
     
     signal toggled(bool checked)
 
@@ -45,14 +45,14 @@ Rectangle {
 
         Text {
             text: control.checked ? "(*)" : "( )"
-            color: !control.enabled ? Palette.placeholderText : (control.activeFocus ? Palette.highlight : Palette.accent)
+            color: control.textColor
             bold: control.activeFocus
         }
 
         Text {
             visible: control.text !== ""
             text: control.text
-            color: !control.enabled ? Palette.placeholderText : (control.activeFocus ? Palette.highlight : control.textColor)
+            color: control.textColor
             bold: control.activeFocus
         }
     }

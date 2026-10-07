@@ -91,6 +91,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 
     QString activeHref;
     bool bold = false;
+    bool code = false;
     bool italic = false;
     bool underline = false;
 
@@ -112,7 +113,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
                         int endQuote = tag.indexOf(QRegularExpression("[\"'>\\s]"), startQuote);
                         if (endQuote == -1) endQuote = tag.length();
                         activeHref = tag.mid(startQuote, endQuote - startQuote);
-                        fgStack.push(0xFF61AFEF); // Cyan link color
+                        fgStack.push(fgStack.top()); // Links keep the configured text color.
                     }
                 } else if (lowerTag == "/a") {
                     activeHref.clear();
@@ -152,7 +153,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 
                     for (const Grapheme &cluster : UnicodeText::graphemes(linkText))
                         result.append(FormattedChar{QString::fromUtf8(cluster.utf8), cluster.width,
-                                                    0xFF61AFEF, m_resolvedBackgroundColor,
+                                                    fgStack.top(), m_resolvedBackgroundColor,
                                                     TextAttribute::Underline, linkUrl});
                     i = closeParen + 1;
                     continue;
@@ -169,17 +170,13 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
 
         // Parse Markdown `code`
         if (line[i] == '`') {
-            if (fgStack.top() == 0xFFFFFF00) {
-                if (fgStack.size() > 1) fgStack.pop();
-            } else {
-                fgStack.push(0xFFFFFF00);
-            }
+            code = !code;
             i += 1;
             continue;
         }
 
         TextAttribute attr = TextAttribute::None;
-        if (bold) attr = attr | TextAttribute::Bold;
+        if (bold || code) attr = attr | TextAttribute::Bold;
         if (italic || underline || !activeHref.isEmpty()) attr = attr | TextAttribute::Underline;
 
         const int next = UnicodeText::nextBoundary(line, i);
@@ -292,7 +289,8 @@ void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         int usedWidth = 0;
         for (const FormattedChar &fc : line) {
             if (usedWidth + fc.width > lineLen) break;
-            buffer.writeText(curX + usedWidth, lineY, fc.text, fc.fg, fc.bg, fc.attr);
+            buffer.writeText(curX + usedWidth, lineY, fc.text, fc.fg, fc.bg, fc.attr
+                | (!isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None));
             usedWidth += fc.width;
         }
     }

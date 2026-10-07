@@ -6,6 +6,7 @@
 #include <QVariantList>
 #include <QString>
 #include <QJSValue>
+#include <ColorMapper.h>
 
 namespace qtui {
 
@@ -59,8 +60,11 @@ private:
     double m_from = 0.0;
     double m_to = 0.0; // 0.0 means auto-scale
     bool m_filled = false;
-    Color m_color = "cyan";
-    uint32_t m_resolvedColor = 0xFF00FFFF;
+    Color m_color = "default";
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0);
 
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;

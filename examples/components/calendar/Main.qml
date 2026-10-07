@@ -521,7 +521,7 @@ Terminal {
                                                                     if (isSelected) return root.currentTheme.selectedText
                                                                     if (isToday) return root.currentTheme.today
                                                                     if (hasNotes) return root.currentTheme.noteColor
-                                                                    return "white"
+                                                                    return "default"
                                                                 }
                                                                 bold: isSelected || isToday || hasNotes
                                                             }
@@ -789,7 +789,7 @@ Terminal {
 
                                     Text {
                                         text: "• " + modelData
-                                        color: "white"
+                                        color: "default"
                                         width: Math.max(10, rightCol.width - 7)
                                     }
 
@@ -852,7 +852,7 @@ Terminal {
 
             Text {
                 text: "[C] Cols (" + root.gridColumns + ")  [T] Today  [1-4] Theme  [Q] Quit"
-                color: "white"
+                color: "default"
             }
         }
     }

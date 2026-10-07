@@ -252,13 +252,14 @@ reads `rendererMode`.
 - Both Behavior trees green; POS and PLC frame results preserved in applicable
   configurations. PLC is exercised only with Behavior enabled.
 
-## 4. Module Boundaries, Component Cuts, and the Palette
+## 4. Module Boundaries, Component Cuts, and Terminal Colors
 
-Decided on 2026-09-08. Three problems share one fix window: which module a
-type lives in is not principled (`Qtui.Extras` exists because nothing else
-fit), the library ships components that are an application's business, and
-every control invents its own color properties (Button alone has nine) while
-three example apps each wrote their own theme singleton.
+Decided on 2026-09-08, colors revised on 2026-09-09. Three problems share one
+fix window: which module a type lives in is not principled (`Qtui.Extras`
+exists because nothing else fit), the library ships components that are an
+application's business, and every control invents its own color properties
+(Button alone has nine) while three example apps each wrote their own theme
+singleton.
 
 ### Module rules
 
@@ -278,7 +279,7 @@ three example apps each wrote their own theme singleton.
 | Module | Contents after the move |
 | :--- | :--- |
 | `Qtui` | Terminal, Scrollback, Item, Rectangle, Text, Paragraph, TextInput, TextArea, Row, Column, Layouts, Repeater, Loader, MouseArea, ScrollView, ListView, GridView, TableView, TreeView, LogView, Canvas and shapes, animations, states, Keys, Shortcut |
-| `Qtui.Controls` | Palette, Button, ButtonGroup, CheckBox, RadioButton, Switch, Slider, ProgressBar, BusyIndicator, TabBar, StackView, StackLayout, Panel, Dialog, Popup, ToolTip, Toast, Sparkline |
+| `Qtui.Controls` | Button, ButtonGroup, CheckBox, RadioButton, Switch, Slider, ProgressBar, BusyIndicator, TabBar, StackView, StackLayout, Panel, Dialog, Popup, ToolTip, Toast, Sparkline |
 | `Qtui.Image` | Image |
 | `Qtui.TerminalHost` | TerminalView |
 
@@ -304,38 +305,61 @@ else is an application's concern and becomes a recipe under
 
 This rule goes into `AGENTS.md` so `Extras` cannot grow back.
 
-### Palette
+### Terminal colors
 
-A palette, not a style system: named color roles that every control reads,
-with per-control override properties reduced to the few that make sense. The
-roles are Qt's, so the vocabulary is familiar:
+Superseded on 2026-09-09. This section first specified a palette: named color
+roles on a `Palette` singleton in `Qtui.Controls`, implemented in C++ so C++
+controls read the same instance, with a `Terminal` preset (ANSI named colors)
+and a `Dark` preset (the emerald-on-navy brand look). Later, if a real need
+appeared, an inherited `palette` grouped property on `Item` as in Qt Quick.
+The singleton was built (`0706d8f`), the inherited property was prototyped,
+and both were removed. `v0.4.0` ships neither.
 
-| Role | Used for |
-| :--- | :--- |
-| `window`, `windowText` | Root background, default text |
-| `base`, `text` | Editable and list surfaces and their text |
-| `button`, `buttonText` | Buttons, tabs, switches |
-| `highlight`, `highlightedText` | Focus, selection, current row |
-| `mid` | Borders and separators |
-| `placeholderText` | Input hints and disabled text |
-| `accent` | The brand color |
+What made the singleton look necessary was the color-property zoo, and that
+problem is solved without it. Every role a palette would have supplied turns
+out to be either the terminal's own color or the application's decision:
 
-Delivery in two compatible steps. Now: a `Palette` singleton in
-`Qtui.Controls`, implemented in C++ so C++ controls read the same instance, with
-two presets: `Terminal` (the default: ANSI named colors, so the app takes the
-user's terminal theme) and `Dark` (the emerald-on-navy brand look). Later, if
-a real need appears: an inherited `palette` grouped property on Item, as in
-Qt Quick, with the singleton as the root of the inheritance.
+- **Normal text and chrome** are `"default"`: a color name for alpha 0, which
+  the encoder emits as SGR 39 for a foreground and SGR 49 for a background. The
+  terminal's own foreground and background therefore decide how a control
+  looks, on a light theme as much as a dark one. This is the part a palette
+  role could not have done. A named entry such as `"white"` does follow the
+  user's theme, and is still unreadable on a light background, which is how
+  the reversal started.
+- **Accents and dimmed states** are named ANSI entries (`"cyan"`, `"gray"`),
+  themed by the user's sixteen-color palette.
+- **Everything else** belongs to the application, set per instance.
 
-Controls drop their color-property zoo and read the palette for normal,
-focused, and disabled states. `ProgressBar.color` survives because a fill
-color is data, not theme. Everything else that a control colors comes from a
-role.
+Controls keep one override property each, where a color is genuinely
+per-widget: `textColor` on Button, CheckBox, RadioButton, Slider, Switch and
+Dialog, `titleColor` on Panel and Dialog, and `ProgressBar.color` because a
+fill color is data, not theme. Button is down from nine color properties to
+one. The three example apps that each wrote their own theme singleton lose the
+duplication by having nothing to duplicate: shared styling across an
+application is ordinary QML: a binding, or a component that wraps a control.
 
-Order within this section: palette first, then cuts and moves, then renames,
-because removing color properties changes what the moved controls look like.
-All of it lands before the README rewrite and the tag so `v0.4.0` carries the
-final module shape and property lists.
+Focus and disabled states no longer substitute colors, so whatever an instance
+configures survives both. Focus is carried by `border.style` (`double` when
+focused, `single` otherwise) and by `bold` on the label.
+
+The same rule applies below `Qtui.Controls`, which is what makes it hold: the
+color defaults on `Text`, `TextArea`, `TextInput`, `Paragraph`, `Canvas` and
+`Border`, and the text and branch roles on `TableView`, `TreeView` and
+`ListView`, are all `"default"`; `Cell::fgColor` and the `TextGridBuffer`
+drawing helpers default to the terminal foreground rather than literal white.
+A control that painted a literal RGB value would silently ignore the user's
+theme, so `tests/Controls/test_terminal_colors.cpp` asserts against it on
+committed frames (`defaultInk`, `explicitColorsSurviveStates`,
+`selectionColors`, `toastAndTooltipOverrides`).
+
+Open, and not a launch blocker: a disabled control is now visually identical to
+an enabled one apart from losing focus, because dimming used to come from the
+`placeholderText` role. `Text.dim` (SGR 2) exists and is the natural
+replacement, but no control uses it yet.
+
+Order within this section: cuts and moves, then renames. All of it lands
+before the README rewrite and the tag so `v0.4.0` carries the final module
+shape and property lists.
 
 ## 5. The Quickstart as a Compiled Project
 

@@ -8,6 +8,7 @@
 #include <QtQml/qqmlregistration.h>
 
 #include "../primitives/Color.h"
+#include "../primitives/ColorMapper.h"
 
 namespace qtui {
 
@@ -37,7 +38,10 @@ signals:
 private:
     qreal m_position = 0.0;
     Color m_color = "white";
-    uint32_t m_resolvedColor = 0xFFFFFFFF;
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
 };
 
 } // namespace qtui

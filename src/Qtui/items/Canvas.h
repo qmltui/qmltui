@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QVariantList>
 #include <vector>
+#include "../primitives/ColorMapper.h"
 
 namespace qtui {
 
@@ -79,9 +80,15 @@ private:
     // Pixel storage is derived rendering state: shapes write it while the
     // canvas paints, so it is mutable and never marks the item dirty.
     mutable std::vector<uint8_t> m_cells;            // Braille mode (2x4 bits per cell)
+    mutable std::vector<uint8_t> m_pixelSet;       // occupancy, independent of default color 0
     mutable std::vector<uint32_t> m_pixelColors;     // HalfBlock mode (1x2 colors per cell, ARGB)
-    Color m_color = "white";
-    uint32_t m_resolvedColor = 0xFFFFFFFF;
+    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
+    // not invisible ink: a fixed "white" default is unreadable on a light theme.
+    Color m_color = "default";
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
     Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
 };

@@ -306,22 +306,7 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
         for (int x = 0; x < buffer.width(); ++x) {
             if (clipRect.contains(x, y)) {
                 Cell& cell = buffer.cellAt(x, y);
-                // ANSI-indexed colors have no channels to halve; dim their palette RGB.
-                cell.fgColor = ColorMapper::toArgb(cell.fgColor);
-                cell.bgColor = ColorMapper::toArgb(cell.bgColor);
-                // Dim fg (shift right by 1 to halve, or divide by 2)
-                uint8_t a_fg = (cell.fgColor >> 24) & 0xFF;
-                uint8_t r_fg = (cell.fgColor >> 16) & 0xFF;
-                uint8_t g_fg = (cell.fgColor >> 8) & 0xFF;
-                uint8_t b_fg = cell.fgColor & 0xFF;
-                cell.fgColor = (a_fg << 24) | ((r_fg / 2) << 16) | ((g_fg / 2) << 8) | (b_fg / 2);
-                
-                // Dim bg
-                uint8_t a_bg = (cell.bgColor >> 24) & 0xFF;
-                uint8_t r_bg = (cell.bgColor >> 16) & 0xFF;
-                uint8_t g_bg = (cell.bgColor >> 8) & 0xFF;
-                uint8_t b_bg = cell.bgColor & 0xFF;
-                cell.bgColor = (a_bg << 24) | ((r_bg / 2) << 16) | ((g_bg / 2) << 8) | (b_bg / 2);
+                cell.attributes = cell.attributes | TextAttribute::Dim;
             }
         }
     }

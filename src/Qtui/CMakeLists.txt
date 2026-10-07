@@ -196,6 +196,8 @@ install(FILES
 install(FILES
     primitives/QtuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h primitives/UnicodeText.h
     primitives/TerminalCapabilities.h
+    # Pulled in by the installed item headers, so it has to ship with them.
+    primitives/ColorMapper.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/primitives"
 )
 install(FILES

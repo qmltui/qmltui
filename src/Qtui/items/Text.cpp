@@ -81,6 +81,11 @@ static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle
             currentStyle = baseStyle;
         } else if (code == 1) {
             currentStyle.attributes = currentStyle.attributes | TextAttribute::Bold;
+        } else if (code == 2) {
+            currentStyle.attributes = currentStyle.attributes | TextAttribute::Dim;
+        } else if (code == 22) {
+            currentStyle.attributes = static_cast<TextAttribute>(static_cast<uint8_t>(currentStyle.attributes)
+                & ~static_cast<uint8_t>(TextAttribute::Bold | TextAttribute::Dim));
         } else if (code == 3) {
             currentStyle.attributes = currentStyle.attributes | TextAttribute::Italic;
         } else if (code == 4) {
@@ -143,6 +148,14 @@ void Text::setBold(bool bold) {
     m_bold = bold;
     invalidateLayout();
     emit boldChanged();
+    markDirty();
+}
+
+void Text::setDim(bool dim) {
+    if (m_dim == dim) return;
+    m_dim = dim;
+    invalidateLayout();
+    emit dimChanged();
     markDirty();
 }
 
@@ -224,6 +237,7 @@ int Text::parseLine(const QString &line, std::vector<GlyphEntry> *entries,
     TextStyle baseStyle;
     baseStyle.fgColor = m_resolvedColor;
     baseStyle.bgColor = 0x00000000;
+    if (m_dim) baseStyle.attributes = baseStyle.attributes | TextAttribute::Dim;
     if (m_bold) baseStyle.attributes = baseStyle.attributes | TextAttribute::Bold;
     if (m_italic) baseStyle.attributes = baseStyle.attributes | TextAttribute::Italic;
     if (m_underline) baseStyle.attributes = baseStyle.attributes | TextAttribute::Underline;
@@ -373,7 +387,8 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
                     clipRect.contains(cx, currentY)) {
                     buffer.setGrapheme(cx, currentY,
                                        QByteArrayView(glyphBytes + entry->glyphOffset, entry->glyphLength),
-                                       entry->cellWidth, charFgColor, entry->bgColor, entry->attributes);
+                                       entry->cellWidth, charFgColor, entry->bgColor, entry->attributes
+                                           | (!isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None));
                 }
                 cx += entry->advance;
                 charIndexInLine += entry->advance;

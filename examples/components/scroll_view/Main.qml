@@ -33,7 +33,7 @@ Terminal {
                     Text {
                         required property int index
                         text: "Scrollable Content Line #" + (index + 1)
-                        color: (index % 2 === 0) ? "white" : "yellow"
+                        color: (index % 2 === 0) ? "default" : "yellow"
                     }
                 }
             }

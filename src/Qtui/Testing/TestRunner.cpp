@@ -972,6 +972,14 @@ void TestRunner::expectStyle(int x, int y, const QJSValue& expectedStyle)
             return;
         }
     }
+    if (expectedStyle.hasProperty(QStringLiteral("dim"))) {
+        const bool expectedDim = expectedStyle.property(QStringLiteral("dim")).toBool();
+        const bool actualDim = (static_cast<uint8_t>(cell.attributes) & static_cast<uint8_t>(TextAttribute::Dim)) != 0;
+        if (expectedDim != actualDim) {
+            failScenario(QStringLiteral("Cell at (%1,%2) dim expected %3 but got %4").arg(x).arg(y).arg(expectedDim).arg(actualDim));
+            return;
+        }
+    }
     if (expectedStyle.hasProperty(QStringLiteral("italic"))) {
         const bool expectedItalic = expectedStyle.property(QStringLiteral("italic")).toBool();
         const bool actualItalic = (static_cast<uint8_t>(cell.attributes) & static_cast<uint8_t>(TextAttribute::Italic)) != 0;
@@ -1527,6 +1535,7 @@ QVariantMap TestRunner::cell(int x, int y)
     };
     QVariantMap attributes;
     attributes.insert(QStringLiteral("bold"), hasAttribute(TextAttribute::Bold));
+    attributes.insert(QStringLiteral("dim"), hasAttribute(TextAttribute::Dim));
     attributes.insert(QStringLiteral("italic"), hasAttribute(TextAttribute::Italic));
     attributes.insert(QStringLiteral("underline"), hasAttribute(TextAttribute::Underline));
     attributes.insert(QStringLiteral("reversed"), hasAttribute(TextAttribute::Reversed));

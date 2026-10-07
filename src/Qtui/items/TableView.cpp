@@ -237,7 +237,7 @@ void TableView::setAlternatingRows(bool alternating) {
 void TableView::setHeaderColor(Color color) {
     if (m_headerColor == color) return;
     m_headerColor = color;
-    m_resolvedHeaderColor = ColorMapper::fromString(m_headerColor, 0xFFFFFF00);
+    m_resolvedHeaderColor = ColorMapper::fromString(m_headerColor, 0);
     emit headerColorChanged();
     markDirty();
 }
@@ -245,7 +245,7 @@ void TableView::setHeaderColor(Color color) {
 void TableView::setHeaderBackgroundColor(Color color) {
     if (m_headerBackgroundColor == color) return;
     m_headerBackgroundColor = color;
-    m_resolvedHeaderBackgroundColor = ColorMapper::fromString(m_headerBackgroundColor, 0x00000000);
+    m_resolvedHeaderBackgroundColor = ColorMapper::fromString(m_headerBackgroundColor, 0);
     emit headerBackgroundColorChanged();
     markDirty();
 }
@@ -253,7 +253,7 @@ void TableView::setHeaderBackgroundColor(Color color) {
 void TableView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFFFFFFFF);
+    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
     emit selectionColorChanged();
     markDirty();
 }
@@ -261,7 +261,7 @@ void TableView::setSelectionColor(Color color) {
 void TableView::setSelectionBackgroundColor(Color color) {
     if (m_selectionBackgroundColor == color) return;
     m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0xFF0000FF);
+    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
     emit selectionBackgroundColorChanged();
     markDirty();
 }
@@ -269,7 +269,7 @@ void TableView::setSelectionBackgroundColor(Color color) {
 void TableView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
-    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0xFFCCCCCC);
+    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
     emit textColorChanged();
     markDirty();
 }
@@ -277,7 +277,7 @@ void TableView::setTextColor(Color color) {
 void TableView::setRowBackgroundColor(Color color) {
     if (m_rowBackgroundColor == color) return;
     m_rowBackgroundColor = color;
-    m_resolvedRowBackgroundColor = ColorMapper::fromString(m_rowBackgroundColor, 0x00000000);
+    m_resolvedRowBackgroundColor = ColorMapper::fromString(m_rowBackgroundColor, 0);
     emit rowBackgroundColorChanged();
     markDirty();
 }
@@ -285,7 +285,7 @@ void TableView::setRowBackgroundColor(Color color) {
 void TableView::setAlternatingRowBackgroundColor(Color color) {
     if (m_alternatingRowBackgroundColor == color) return;
     m_alternatingRowBackgroundColor = color;
-    m_resolvedAltRowBackgroundColor = ColorMapper::fromString(m_alternatingRowBackgroundColor, 0xFF1E1E2E);
+    m_resolvedAltRowBackgroundColor = ColorMapper::fromString(m_alternatingRowBackgroundColor, 0);
     emit alternatingRowBackgroundColorChanged();
     markDirty();
 }
@@ -678,9 +678,15 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         const bool selected = row == m_selectedRow;
         const uint32_t bg = selected ? m_resolvedSelectionBackgroundColor :
             m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor : m_resolvedRowBackgroundColor;
-        const uint32_t fg = selected ? m_resolvedSelectionColor : m_resolvedTextColor;
-        const TextAttribute attributes = selected ? TextAttribute::Bold : TextAttribute::None;
-        if (selected || bg != 0) buffer.fillRect(absX, y, width(), 1, " ", fg, bg);
+        const uint32_t fg = selected && m_selectionColor.isValid() ? m_resolvedSelectionColor : m_resolvedTextColor;
+        const TextAttribute attributes = (selected ? TextAttribute::Bold : TextAttribute::None)
+            | (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
+                   ? TextAttribute::Reversed : TextAttribute::None);
+        if (selected || bg != 0) {
+            buffer.fillRect(absX, y, width(), 1, " ", fg, bg);
+            for (int x = 0; x < width(); ++x)
+                if (Cell* cell = buffer.tryCellAt(absX + x, y)) cell->attributes = attributes;
+        }
         for (const auto &geometry : std::as_const(m_geometry)) {
             if (geometry.x >= width()) break;
             QString value = cellText(row, geometry.column);
@@ -699,7 +705,7 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                         if (result.hasProperty("text")) value = result.property("text").toString();
                         if (result.hasProperty("color")) cellFg = ColorMapper::fromString(result.property("color").toString(), cellFg);
                         if (result.hasProperty("backgroundColor")) cellBg = ColorMapper::fromString(result.property("backgroundColor").toString(), cellBg);
-                        if (result.property("bold").toBool()) cellAttributes = TextAttribute::Bold;
+                        if (result.property("bold").toBool()) cellAttributes = cellAttributes | TextAttribute::Bold;
                         if (result.hasProperty("align")) alignment = result.property("align").toString();
                     }
                 }

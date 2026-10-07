@@ -210,7 +210,7 @@ QVariantMap TreeView::currentItemData() const {
 void TreeView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFFFFFFFF);
+    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
     emit selectionColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -218,7 +218,7 @@ void TreeView::setSelectionColor(Color color) {
 void TreeView::setSelectionBackgroundColor(Color color) {
     if (m_selectionBackgroundColor == color) return;
     m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0xFF0000FF);
+    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
     emit selectionBackgroundColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -226,7 +226,7 @@ void TreeView::setSelectionBackgroundColor(Color color) {
 void TreeView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
-    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0xFF00FFFF);
+    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
     emit textColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -234,7 +234,7 @@ void TreeView::setTextColor(Color color) {
 void TreeView::setBranchColor(Color color) {
     if (m_branchColor == color) return;
     m_branchColor = color;
-    m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0xFF808080);
+    m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0);
     emit branchColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -924,11 +924,15 @@ void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect 
         bool isSelected = (idx == m_selectedIndex);
 
         uint32_t bg = isSelected ? m_resolvedSelectionBackgroundColor : 0x00000000;
-        uint32_t fg = isSelected ? m_resolvedSelectionColor : m_resolvedTextColor;
-        TextAttribute attr = isSelected ? TextAttribute::Bold : TextAttribute::None;
+        uint32_t fg = isSelected && m_selectionColor.isValid() ? m_resolvedSelectionColor : m_resolvedTextColor;
+        TextAttribute attr = (isSelected ? TextAttribute::Bold : TextAttribute::None)
+            | (isSelected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
+                   ? TextAttribute::Reversed : TextAttribute::None);
 
         if (isSelected) {
             buffer.fillRect(startX, rowY, availW, 1, " ", fg, bg);
+            for (int x = 0; x < availW; ++x)
+                if (Cell* cell = buffer.tryCellAt(startX + x, rowY)) cell->attributes = attr;
         }
 
         QString indent = QString(node.depth * 2, ' ');

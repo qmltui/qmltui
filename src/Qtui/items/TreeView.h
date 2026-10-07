@@ -12,6 +12,7 @@
 #include <QAbstractItemModel>
 #include <QPointer>
 #include <QPersistentModelIndex>
+#include "../primitives/ColorMapper.h"
 
 namespace qtui {
 
@@ -168,16 +169,19 @@ private:
     int m_pendingCurrentIndex = -1;
     int m_scrollTop = 0;
 
-    Color m_selectionColor = "white";
-    uint32_t m_resolvedSelectionColor = 0xFFFFFFFF;
-    Color m_selectionBackgroundColor = "blue";
-    uint32_t m_resolvedSelectionBackgroundColor = 0xFF0000FF;
+    Color m_selectionColor;
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
+    Color m_selectionBackgroundColor;
+    uint32_t m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
 
-    Color m_textColor = "cyan";
-    uint32_t m_resolvedTextColor = 0xFF00FFFF;
+    Color m_textColor = "default";
+    uint32_t m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
 
-    Color m_branchColor = "gray";
-    uint32_t m_resolvedBranchColor = 0xFF808080;
+    Color m_branchColor = "default";
+    uint32_t m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0);
 
     QString m_expandedIcon = "[-] ";
     QString m_collapsedIcon = "[+] ";

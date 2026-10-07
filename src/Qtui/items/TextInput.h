@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include <QString>
 #include <QTimer>
+#include "../primitives/ColorMapper.h"
 
 namespace qtui {
 
@@ -180,14 +181,19 @@ private:
     void resetBlinkTimer();
 
     TextEditorState m_editor;
-    Color m_color = "white";
+    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
+    // not invisible ink: a fixed "white" default is unreadable on a light theme.
+    Color m_color = "default";
     QString m_placeholderText;
     Color m_placeholderColor;
     uint32_t m_resolvedPlaceholderColor = 0;
     bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
     QRegularExpression m_validator;
-    uint32_t m_resolvedColor = 0xFFFFFFFF;
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;

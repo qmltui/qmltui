@@ -113,7 +113,7 @@ Terminal {
 
                             Text {
                                 text: treeDelegate.display
-                                color: treeDelegate.current ? "white" : "gray"
+                                color: treeDelegate.current ? "default" : "gray"
                                 bold: treeDelegate.current
                             }
 

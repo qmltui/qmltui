@@ -21,6 +21,7 @@ class TestCanvas : public QObject {
 private slots:
     void testBrailleMode();
     void testHalfBlockMode();
+    void testHalfBlockDefaultInk();
     void testShapesOnHalfBlock();
     void testAutoClear();
     void testQmlCanvasHalfBlock();
@@ -110,6 +111,58 @@ void TestCanvas::testHalfBlockMode() {
     QCOMPARE(c.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
     QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u); // Red
     QCOMPARE(ColorMapper::toArgb(c.bgColor), 0xFF0000FFu); // Blue
+}
+
+void TestCanvas::testHalfBlockDefaultInk() {
+    Canvas canvas;
+    canvas.setWidth(3); canvas.setHeight(1);
+    canvas.setRenderMode(Canvas::RenderMode::HalfBlock);
+    canvas.setAutoClear(false);
+    canvas.setPixel(0, 0, true);
+    canvas.setPixel(1, 1, true);
+    canvas.setPixel(2, 0, true); canvas.setPixel(2, 1, true);
+    TextGridBuffer buffer;
+    buffer.resize(3, 1);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QStringLiteral("▀").toUtf8());
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QStringLiteral("▄").toUtf8());
+    QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QStringLiteral("█").toUtf8());
+    for (int x = 0; x < 3; ++x) QCOMPARE(buffer.cellAt(x, 0).fgColor, 0u);
+
+    canvas.setPixelColor(1, 0, "red");
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QStringLiteral("▄").toUtf8());
+    QCOMPARE(buffer.cellAt(1, 0).fgColor, 0u);
+    QCOMPARE(buffer.cellAt(1, 0).bgColor, Color::fromString("red").argb32());
+
+    canvas.setPixel(0, 0, false);
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+    canvas.clear();
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    for (int x = 0; x < 3; ++x)
+        QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray(" "));
+
+    // A transparent fill still clears to holes; only explicitly drawn ink
+    // uses the terminal default foreground.
+    canvas.setFillColor("transparent");
+    canvas.setPixel(0, 0, true);
+    canvas.setPixel(0, 0, false);
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+    canvas.clear();
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+
+    canvas.setAutoClear(true);
+    Point point(&canvas);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QStringLiteral("▀").toUtf8());
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0u);
 }
 
 void TestCanvas::testShapesOnHalfBlock() {

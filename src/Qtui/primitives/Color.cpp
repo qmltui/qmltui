@@ -45,7 +45,11 @@ const char *const ansiCanonicalNames[16] = {
 const QHash<QString, quint32> &namedColors()
 {
     static const QHash<QString, quint32> colors {
+        // Alpha 0 is "let the terminal decide": the encoder emits SGR 39 for a
+        // foreground and SGR 49 for a background. Both names are the same value;
+        // "default" is the honest spelling when the role is a text colour.
         {QStringLiteral("transparent"), 0x00000000U},
+        {QStringLiteral("default"), 0x00000000U},
         {QStringLiteral("orange"), 0xffffa500U},
         {QStringLiteral("pink"), 0xffffc0cbU},
         {QStringLiteral("lightblue"), 0xffadd8e6U},

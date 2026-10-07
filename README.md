@@ -217,8 +217,8 @@ the `qtui::Item` subclassing API, its rendering buffer/cell types, key and
 mouse event types needed by custom items, and the `qtui::TerminalBackend`
 factory for applications that talk to something other than the process's own
 terminal. Renderer, terminal-device, and view implementation details are
-internal and may change during the 0.x series. Controls take their colors
-from the `Palette` singleton in `Qtui.Controls`.
+internal and may change during the 0.x series. Core items and Controls use terminal-native foreground and background colors.
+Applications customize them through ordinary color properties and reusable QML components.
 
 Plain text renders terminal control characters visibly and never interprets
 them. Escape-sequence interpretation requires an explicit ANSI text format.

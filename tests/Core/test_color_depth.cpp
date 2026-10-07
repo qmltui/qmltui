@@ -4,6 +4,7 @@
 #include <string>
 
 #include "ColorMapper.h"
+#include "AnsiEncoder_p.h"
 #include "TextGridBuffer.h"
 
 using namespace qtui;
@@ -62,7 +63,74 @@ private slots:
     void testQuantisedColoursDeduplicate();
     void testAnsiNamesParseToIndices();
     void testAnsiNamesKeepIndexAtEveryDepth();
+    void testDimAndBoldTransitions();
+    void testDefaultAndExplicitWhite_data();
+    void testDefaultAndExplicitWhite();
 };
+
+void TestColorDepth::testDefaultAndExplicitWhite_data()
+{
+    QTest::addColumn<ColorDepth>("depth");
+    QTest::addColumn<QByteArray>("whiteParameter");
+    QTest::newRow("truecolor") << ColorDepth::TrueColor << QByteArray("38;2;255;255;255;");
+    QTest::newRow("indexed") << ColorDepth::Indexed256 << QByteArray("38;5;231;");
+    QTest::newRow("basic") << ColorDepth::Basic16 << QByteArray("97;");
+    QTest::newRow("mono") << ColorDepth::Mono << QByteArray();
+}
+
+void TestColorDepth::testDefaultAndExplicitWhite()
+{
+    QFETCH(ColorDepth, depth);
+    QFETCH(QByteArray, whiteParameter);
+    TextGridBuffer before, after;
+    before.resize(4, 1);
+    after.resize(4, 1);
+    // Styled spaces must use terminal colors and must not be erased away.
+    after.cellAt(0, 0).attributes = TextAttribute::Underline;
+    after.cellAt(1, 0).attributes = TextAttribute::Reversed;
+    after.writeText(2, 0, QStringLiteral("W"), 0xFFFFFFFF);
+    after.writeText(3, 0, QStringLiteral("D"));
+    AnsiEncodeOptions options;
+    options.colorDepth = depth;
+    for (bool relative : {false, true}) {
+        std::string out;
+        if (relative) before.diffRelative(after, out, options);
+        else before.diff(after, out, options);
+        const std::string expected = "\033[0m\033[4m \033[24;7m \033["
+            + whiteParameter.toStdString() + "27mW"
+            + (depth == ColorDepth::Mono ? "" : "\033[39m") + "D";
+        QVERIFY2(out.ends_with(expected), QByteArray::fromStdString(out).constData());
+    }
+    if (depth == ColorDepth::TrueColor) {
+        QCOMPARE(after.toAnsiString(), std::string(
+            "\033[0m\033[4m \033[0m\033[7m "
+            "\033[0m\033[38;2;255;255;255mW\033[0mD\033[0m"));
+    }
+}
+
+void TestColorDepth::testDimAndBoldTransitions()
+{
+    ansi::StyleState state;
+    Cell cell;
+    cell.fgColor = 0;
+    cell.bgColor = 0;
+    std::string out;
+    cell.attributes = TextAttribute::Bold | TextAttribute::Dim;
+    ansi::appendStyleTransition(out, cell, state, ColorDepth::TrueColor);
+    QVERIFY(out.find("\033[1;2m") != std::string::npos);
+    out.clear();
+    cell.attributes = TextAttribute::Bold;
+    ansi::appendStyleTransition(out, cell, state, ColorDepth::TrueColor);
+    QCOMPARE(out, std::string("\033[22;1m"));
+    out.clear();
+    cell.attributes = TextAttribute::Dim;
+    ansi::appendStyleTransition(out, cell, state, ColorDepth::TrueColor);
+    QCOMPARE(out, std::string("\033[22;2m"));
+    out.clear();
+    cell.attributes = TextAttribute::None;
+    ansi::appendStyleTransition(out, cell, state, ColorDepth::TrueColor);
+    QCOMPARE(out, std::string("\033[22m"));
+}
 
 void TestColorDepth::testIndexed256Anchors()
 {

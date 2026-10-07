@@ -5,10 +5,10 @@ Rectangle {
     id: control
     property string title: ""
     property int titleAlignment: Qt.AlignLeft
-    property rgba titleColor: Palette.windowText
+    property rgba titleColor: "default"
 
     border.style: "single"
-    border.color: Palette.mid
+    border.color: "default"
 
     Text {
         id: titleText

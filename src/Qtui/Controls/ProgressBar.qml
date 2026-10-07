@@ -17,8 +17,8 @@ Item {
 
     // Style presets: "segmented" (▰▱), "pill" (▮▯), "dot" (●○), "block" (█░)
     property string style: "segmented"
-    // The fill color is data, not theme, so it stays a property; the default follows the palette.
-    property rgba color: Palette.accent
+    // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
+    property rgba color: "default"
 
     // Custom arbitrary character properties (override style presets when set)
     property string fillCharacter: ""
@@ -120,7 +120,7 @@ Item {
         if (emptyLen > 0) {
             let emptyStr = "";
             for (let j = 0; j < emptyLen; ++j) emptyStr += emptyChar;
-            segs.push({ text: emptyStr, color: Palette.mid });
+            segs.push({ text: emptyStr, color: control.color });
         }
 
         return segs;
@@ -163,7 +163,7 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        Text { visible: control.showBrackets; text: "["; color: Palette.mid; bold: true }
+        Text { visible: control.showBrackets; text: "["; color: control.color; bold: true }
         Repeater {
             model: control.hasGradient ? control.segments.length : 0
 
@@ -174,7 +174,7 @@ Item {
                 bold: true
             }
         }
-        Text { visible: control.showBrackets; text: "]"; color: Palette.mid; bold: true }
-        Text { visible: control.showPercentage; text: control.percentageText; color: Palette.windowText; bold: true }
+        Text { visible: control.showBrackets; text: "]"; color: control.color; bold: true }
+        Text { visible: control.showPercentage; text: control.percentageText; color: control.color; bold: true }
     }
 }

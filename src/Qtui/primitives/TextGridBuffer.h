@@ -43,7 +43,7 @@ public:
     // edge and nothing was written. Rows outside the buffer are ignored but
     // still advance.
     int setGrapheme(int x, int y, QByteArrayView utf8, int width,
-                    uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000,
+                    uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000,
                     TextAttribute attributes = TextAttribute::None);
     int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
@@ -55,7 +55,7 @@ public:
     // Same as above for a UTF-16 cluster (typically a GraphemeRef::utf16 view);
     // control characters are replaced by their visible glyphs as in writeText.
     int setGrapheme(int x, int y, QStringView cluster, int width,
-                    uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000,
+                    uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000,
                     TextAttribute attributes = TextAttribute::None);
     int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
@@ -64,28 +64,29 @@ public:
         return setGrapheme(x, y, cluster, width, fgColor.argb32(), bgColor.argb32(), attributes);
     }
 
-    // Drawing and text helpers
-    void writeText(int x, int y, const QString& text, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
+    // Drawing and text helpers. Omitted foregrounds use the terminal default;
+    // zero-alpha backgrounds preserve the surface underneath.
+    void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
     void writeText(int x, int y, const QString &text, Color fgColor,
                    Color bgColor = Color::fromArgb32(0x00000000),
                    TextAttribute attributes = TextAttribute::None)
     {
         writeText(x, y, text, fgColor.argb32(), bgColor.argb32(), attributes);
     }
-    void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000);
+    void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
     void drawLine(int x1, int y1, int x2, int y2, const char *character,
                   Color fgColor,
                   Color bgColor = Color::fromArgb32(0x00000000))
     {
         drawLine(x1, y1, x2, y2, character, fgColor.argb32(), bgColor.argb32());
     }
-    void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000);
+    void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
     void drawBox(int x, int y, int width, int height, Color fgColor,
                  Color bgColor = Color::fromArgb32(0x00000000))
     {
         drawBox(x, y, width, height, fgColor.argb32(), bgColor.argb32());
     }
-    void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0xFFFFFFFF, uint32_t bgColor = 0x00000000);
+    void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
     void fillRect(int x, int y, int width, int height, const char *character,
                   Color fgColor,
                   Color bgColor = Color::fromArgb32(0x00000000))

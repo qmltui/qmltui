@@ -2,8 +2,6 @@ qt_add_qml_module(QtuiControls
     URI Qtui.Controls
     SOURCES
         ForeignTypes.h
-        Palette.h
-        Palette.cpp
         Sparkline.h
         Sparkline.cpp
         TabBar.h
@@ -71,6 +69,6 @@ install(FILES
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
 )
 install(FILES
-    Palette.h Sparkline.h TabBar.h Toast.h ToolTip.h
+    Sparkline.h TabBar.h Toast.h ToolTip.h
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/controls"
 )

@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`Text` renders single-line or multi-line formatted text strings in the terminal. It supports bold, italic, underline, reversed video attributes, horizontal/vertical alignment, and text format modes (`PlainText`, `RichText` HTML tag parsing, `AnsiText` escape sequences, and `AutoText`).
+`Text` renders single-line or multi-line formatted text strings in the terminal. It supports bold, dim, italic, underline, reversed video attributes, horizontal/vertical alignment, and text format modes (`PlainText`, `RichText` HTML tag parsing, `AnsiText` escape sequences, and `AutoText`).
 
 Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
@@ -22,8 +22,9 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
 | `text` | `QString` | `text` | `setText` | `textChanged` | Text content string to display. |
-| `color` | `qtui::Color` | `color` | `setColor` | `colorChanged` | Foreground text color. |
+| `color` | `qtui::Color` | `color` | `setColor` | `colorChanged` | Foreground text color; defaults to the terminal foreground. |
 | `bold` | `bool` | `bold` | `setBold` | `boldChanged` | Renders text in bold attribute. |
+| `dim` | `bool` | `dim` | `setDim` | `dimChanged` | Uses faint intensity (SGR 2). Disabled text is also dimmed, preserving its color. |
 | `italic` | `bool` | `italic` | `setItalic` | `italicChanged` | Renders text in italic attribute. |
 | `underline` | `bool` | `underline` | `setUnderline` | `underlineChanged` | Renders text with underline. |
 | `reversed` | `bool` | `reversed` | `setReversed` | `reversedChanged` | Inverts foreground and background colors. |

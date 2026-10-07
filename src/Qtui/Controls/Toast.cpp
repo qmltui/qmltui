@@ -3,6 +3,20 @@
 #include <algorithm>
 
 namespace qtui {
+void Toast::setColor(Color color) {
+    if (m_color == color) return;
+    m_color = color;
+    emit colorChanged();
+    markDirty();
+}
+
+void Toast::setTextColor(Color color) {
+    if (m_textColor == color) return;
+    m_textColor = color;
+    emit textColorChanged();
+    markDirty();
+}
+
 
 Toast::Toast(QObject *parent) : Item(parent) {
     setImplicitWidth(30);
@@ -21,7 +35,7 @@ void Toast::showToast(const QString &title, const QString &message, const QStrin
 void Toast::setInfoColor(Color color) {
     if (m_infoColor == color) return;
     m_infoColor = color;
-    m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0xFF61AFEF);
+    m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0);
     emit infoColorChanged();
     markDirty();
 }
@@ -29,7 +43,7 @@ void Toast::setInfoColor(Color color) {
 void Toast::setSuccessColor(Color color) {
     if (m_successColor == color) return;
     m_successColor = color;
-    m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0xFF98C379);
+    m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0);
     emit successColorChanged();
     markDirty();
 }
@@ -37,7 +51,7 @@ void Toast::setSuccessColor(Color color) {
 void Toast::setWarningColor(Color color) {
     if (m_warningColor == color) return;
     m_warningColor = color;
-    m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0xFFE5C07B);
+    m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0);
     emit warningColorChanged();
     markDirty();
 }
@@ -45,7 +59,7 @@ void Toast::setWarningColor(Color color) {
 void Toast::setErrorColor(Color color) {
     if (m_errorColor == color) return;
     m_errorColor = color;
-    m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0xFFE06C75);
+    m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0);
     emit errorColorChanged();
     markDirty();
 }
@@ -91,6 +105,8 @@ void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &cl
     }
 
     int tWidth = m_toastWidth;
+    const uint32_t background = ColorMapper::fromString(m_color, 0);
+    const uint32_t messageColor = ColorMapper::fromString(m_textColor, 0);
 
     for (const ToastItem &toast : m_toasts) {
         int toastX = absX + width() - tWidth;
@@ -104,14 +120,14 @@ void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &cl
         else if (toast.type == "error") borderColor = m_resolvedErrorColor;
 
         // Draw Box
-        buffer.drawBox(toastX, curY, tWidth, 3, borderColor, 0xFF181A1F);
+        buffer.drawBox(toastX, curY, tWidth, 3, borderColor, background);
 
         // Header Title
-        QString prefix = (toast.type == "error" ? "✖ " : (toast.type == "success" ? "✔ " : "ℹ "));
-        buffer.writeText(toastX + 1, curY, prefix + toast.title.left(tWidth - 4), borderColor, 0xFF181A1F, TextAttribute::Bold);
+        QString prefix = (toast.type == "error" ? "✖ " : (toast.type == "success" ? "✔ " : (toast.type == "warning" ? "⚠ " : "ℹ ")));
+        buffer.writeText(toastX + 1, curY, prefix + toast.title.left(tWidth - 4), borderColor, background, TextAttribute::Bold);
 
-        // Body message
-        buffer.writeText(toastX + 1, curY + 1, toast.message.left(tWidth - 3), 0xFFFFFFFF, 0xFF181A1F);
+        // Body message.
+        buffer.writeText(toastX + 1, curY + 1, toast.message.left(tWidth - 3), messageColor, background);
 
         curY += 4;
     }

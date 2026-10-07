@@ -40,7 +40,7 @@ Terminal {
                 Paragraph {
                     anchors.fill: parent
                     anchors.margins: 1
-                    color: "white"
+                    color: "default"
                     wrapMode: true
                     textFormat: Paragraph.RichText
                     text: "<b>Qtui Framework</b>: Build <font color='cyan'><b>high-performance</b></font> terminal applications powered by <b>Qt 6</b>.\n\nUseful Links:\n• <a href='https://qt.io'>Qt Official Documentation</a>\n• [Qtui GitHub Repository](https://github.com/yosriayed/qtui)\n• <a href='https://doc.qt.io/qt-6/'>Qt 6 QML Reference Manual</a>\n\nClick any link to activate!"

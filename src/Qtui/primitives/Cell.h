@@ -17,7 +17,8 @@ enum class TextAttribute : uint8_t {
     Reversed  = 1 << 3,
     Blink = 1 << 4,
     Conceal = 1 << 5,
-    Strikethrough = 1 << 6
+    Strikethrough = 1 << 6,
+    Dim = 1 << 7
 };
 
 inline TextAttribute operator|(TextAttribute a, TextAttribute b) {
@@ -38,7 +39,7 @@ inline TextAttribute operator&(TextAttribute a, TextAttribute b) {
 struct Cell {
     static constexpr int InlineGlyphCapacity = 12;
 
-    uint32_t fgColor = 0xFFFFFFFF; // Default foreground (White)
+    uint32_t fgColor = 0x00000000; // Terminal default foreground
     uint32_t bgColor = 0x00000000; // Default background (Transparent)
     uint8_t displayWidth = 1;
     bool continuation = false;

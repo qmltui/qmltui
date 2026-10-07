@@ -94,7 +94,7 @@ Returns normalized text for the current committed frame without requesting anoth
 
 #### object cell(int x, int y)
 
-Returns the current cell's character, continuation state, `#RRGGBBAA` colors, and bold, italic, underline, and reversed attributes. Invalid coordinates fail the scenario.
+Returns the current cell's character, continuation state, `#RRGGBBAA` colors, and bold, dim, italic, underline, and reversed attributes. Invalid coordinates fail the scenario.
 
 #### array findText(const QString &text)
 
@@ -134,7 +134,7 @@ Fails the scenario unless the bounding box `[x, y, width, height]` contains `tex
 
 #### void expectStyle(int x, int y, const QJSValue &expectedStyle)
 
-Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `Test.expectStyle(0, 0, { bold: true })`.
+Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `Test.expectStyle(0, 0, { bold: true })`. The `dim` attribute can be checked with `{ dim: true }`.
 
 #### void expectSnapshot(const QString &snapshotRelativePath)
 

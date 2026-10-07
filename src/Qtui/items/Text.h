@@ -3,6 +3,7 @@
 #include <QtuiExport.h>
 
 #include "Item.h"
+#include "../primitives/ColorMapper.h"
 #include <QByteArray>
 #include <QString>
 #include <vector>
@@ -18,6 +19,7 @@ class QTUI_CORE_EXPORT Text : public Item {
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
+    Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
@@ -46,6 +48,8 @@ public:
 
     bool bold() const { return m_bold; }
     void setBold(bool bold);
+    bool dim() const { return m_dim; }
+    void setDim(bool dim);
 
     bool italic() const { return m_italic; }
     void setItalic(bool italic);
@@ -76,6 +80,7 @@ signals:
     void textChanged();
     void colorChanged();
     void boldChanged();
+    void dimChanged();
     void italicChanged();
     void underlineChanged();
     void reversedChanged();
@@ -114,9 +119,14 @@ private:
     mutable std::vector<LineLayout> m_lines;
     mutable QByteArray m_glyphBytes;
     mutable bool m_layoutDirty = true;
-    Color m_color = "white"; // default string
-    uint32_t m_resolvedColor = 0xFFFFFFFF; // pre-resolved color value
+    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
+    // not invisible ink: a fixed "white" default is unreadable on a light theme.
+    Color m_color = "default";
+    // Derived from m_color, never written by hand: "white" is ANSI index 15,
+    // not literal RGB, and setColor() early-returns when the color is unchanged.
+    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
     bool m_bold = false;
+    bool m_dim = false;
     bool m_italic = false;
     bool m_underline = false;
     bool m_reversed = false;

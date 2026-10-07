@@ -103,6 +103,7 @@ struct AttributeCode {
 };
 inline constexpr AttributeCode attributeCodes[] = {
     {TextAttribute::Bold, "1", "22"},
+    {TextAttribute::Dim, "2", "22"},
     {TextAttribute::Italic, "3", "23"},
     {TextAttribute::Underline, "4", "24"},
     {TextAttribute::Reversed, "7", "27"},
@@ -158,7 +159,12 @@ inline void appendStyleTransition(std::string &out, const Cell &cell, StyleState
     }
 
     const uint8_t removed = state.attributes & ~next;
-    const uint8_t added = next & ~state.attributes;
+    uint8_t added = next & ~state.attributes;
+    // SGR 22 clears both bold and faint; restore whichever remains enabled.
+    const uint8_t intensity = static_cast<uint8_t>(TextAttribute::Bold)
+        | static_cast<uint8_t>(TextAttribute::Dim);
+    if (removed & intensity)
+        added |= next & intensity;
     for (const AttributeCode &code : attributeCodes) {
         if (removed & static_cast<uint8_t>(code.attribute)) {
             separator();

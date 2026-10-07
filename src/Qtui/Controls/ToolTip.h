@@ -3,6 +3,7 @@
 #include <QtuiExport.h>
 
 #include <QObject>
+#include <Color.h>
 #include <QQmlEngine>
 #include <QPointer>
 #include <QTimer>
@@ -14,6 +15,8 @@ namespace qtui::controls {
 class QTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
     QML_ELEMENT
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     QML_UNCREATABLE("ToolTip is only available as an attached property")
     QML_ATTACHED(ToolTip)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
@@ -38,7 +41,15 @@ public:
     qreal z() const { return m_z; }
     void setZ(qreal z);
 
+    Color textColor() const { return m_textColor; }
+    void setTextColor(Color color);
+
+    Color color() const { return m_color; }
+    void setColor(Color color);
+
 signals:
+    void colorChanged();
+    void textColorChanged();
     void textChanged();
     void visibleChanged();
     void delayChanged();
@@ -46,9 +57,12 @@ signals:
     void zChanged();
 
 private:
+    Color m_color = "default";
+    Color m_textColor = "default";
     void bindTerminal();
     void updateAutomaticVisibility();
     void showNow();
+    void updateAppearance();
     void hide();
     bool targetIsActive() const;
 

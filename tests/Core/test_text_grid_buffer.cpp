@@ -20,6 +20,7 @@ private slots:
     void testClear();
     void testCellAccess();
     void testColorValue();
+    void testDefaultForeground();
     void testDiff();
     void testDiffBatchesContiguousCells();
     void testDiffReusesStyleAcrossRuns();
@@ -148,6 +149,36 @@ void TestTextGridBuffer::testDiff() {
     QVERIFY(b2.diff(b2).empty());
 }
 
+void TestTextGridBuffer::testDefaultForeground() {
+    Cell cell;
+    cell.setCharacter("X");
+    QCOMPARE(cell.fgColor, 0u);
+    QCOMPARE(cell.bgColor, 0u);
+
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(10, 8));
+    buffer.cellAt(0, 0).setCharacter("X");
+    buffer.writeText(0, 1, QStringLiteral("Text"));
+    buffer.setGrapheme(0, 2, QByteArrayView("A"), 1);
+    const QString wide = QString::fromUtf8("中");
+    buffer.setGrapheme(0, 3, QStringView(wide), 2);
+    buffer.drawLine(0, 4, 9, 4);
+    buffer.drawBox(0, 5, 4, 3);
+    buffer.fillRect(5, 5, 4, 3, "#");
+    for (int y = 0; y < buffer.height(); ++y)
+        for (int x = 0; x < buffer.width(); ++x) {
+            QCOMPARE(buffer.cellAt(x, y).fgColor, 0u);
+            QCOMPARE(buffer.cellAt(x, y).bgColor, 0u);
+        }
+    QVERIFY(buffer.cellAt(1, 3).continuation);
+
+    buffer.writeText(0, 0, QStringLiteral("White"), 0xFFFFFFFF);
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xFFFFFFFFu);
+    buffer.clear();
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0u);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+}
+
 static int occurrenceCount(const std::string& text, const std::string& needle) {
     int count = 0;
     size_t position = 0;
@@ -181,7 +212,7 @@ void TestTextGridBuffer::testDiffReusesStyleAcrossRuns() {
 
     const std::string diff = before.diff(after);
     QCOMPARE(occurrenceCount(diff, "\033[0m"), 1);
-    QCOMPARE(occurrenceCount(diff, "38;2;255;255;255"), 1);
+    QCOMPARE(occurrenceCount(diff, "38;"), 0);
     QCOMPARE(occurrenceCount(diff, "H"), 2);
 }
 
@@ -198,7 +229,7 @@ void TestTextGridBuffer::testDiffEmitsStyleTransitions() {
     const std::string diff = before.diff(after);
     QVERIFY(diff.find("38;2;255;0;0") != std::string::npos);
     QVERIFY(diff.find("48;2;0;0;255") != std::string::npos);
-    QVERIFY(diff.find("38;2;255;255;255;49;22m") != std::string::npos);
+    QVERIFY(diff.find("39;49;22m") != std::string::npos);
     QVERIFY(diff.ends_with("B"));
 }
 
@@ -278,7 +309,9 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     // "Bold " -> starts at 7, length 5 (7 to 11)
     QCOMPARE(QString::fromUtf8(buffer.cellAt(7, 0).character().toByteArray()), QString("B"));
     QCOMPARE(buffer.cellAt(7, 0).attributes, TextAttribute::Bold);
-    QCOMPARE(buffer.cellAt(7, 0).fgColor, 0xFFFFFFFF); // White
+    // Text's default colour is the terminal's own foreground (0 -> SGR 39), not
+    // a literal RGB white that would vanish on a light theme.
+    QCOMPARE(buffer.cellAt(7, 0).fgColor, 0u);
     
     // "RedBold" -> starts at 12, length 7
     QCOMPARE(QString::fromUtf8(buffer.cellAt(12, 0).character().toByteArray()), QString("R"));
@@ -288,7 +321,7 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     // " Bold" -> starts at 19, length 5
     QCOMPARE(QString::fromUtf8(buffer.cellAt(20, 0).character().toByteArray()), QString("B"));
     QCOMPARE(buffer.cellAt(20, 0).attributes, TextAttribute::Bold);
-    QCOMPARE(buffer.cellAt(20, 0).fgColor, 0xFFFFFFFF); // Restored to White
+    QCOMPARE(buffer.cellAt(20, 0).fgColor, 0u); // restored to the terminal default
     
     // " Normal" -> starts at 24
     QCOMPARE(QString::fromUtf8(buffer.cellAt(25, 0).character().toByteArray()), QString("N"));
@@ -426,7 +459,7 @@ void TestTextGridBuffer::testToAnsiStringExactRow() {
     buffer.writeText(0, 0, "AB", 0xFFFF0000, 0xFF0000FF, TextAttribute::Bold);
     const std::string expected =
         "\033[0m\033[38;2;255;0;0m\033[48;2;0;0;255m\033[1mAB"
-        "\033[0m\033[38;2;255;255;255m \033[0m";
+        "\033[0m \033[0m";
     QCOMPARE(QByteArray::fromStdString(buffer.toAnsiString()), QByteArray::fromStdString(expected));
 }
 

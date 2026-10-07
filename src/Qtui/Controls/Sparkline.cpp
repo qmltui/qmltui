@@ -47,7 +47,7 @@ void Sparkline::setFilled(bool filled) {
 void Sparkline::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFF00FFFF);
+    m_resolvedColor = ColorMapper::fromString(m_color, 0);
     emit colorChanged();
     markDirty();
 }
@@ -55,7 +55,7 @@ void Sparkline::setColor(Color color) {
 void Sparkline::setBackgroundColor(Color color) {
     if (m_backgroundColor == color) return;
     m_backgroundColor = color;
-    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0);
     emit backgroundColorChanged();
     markDirty();
 }

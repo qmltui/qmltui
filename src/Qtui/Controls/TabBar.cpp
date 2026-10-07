@@ -1,17 +1,44 @@
 #include "TabBar.h"
-#include "Palette.h"
 #include <ColorMapper.h>
 #include <KeyEvent.h>
 #include <MouseEvent.h>
 #include <algorithm>
 
 namespace qtui {
+void TabBar::setSelectionColor(Color color) {
+    if (m_selectionColor == color) return;
+    m_selectionColor = color;
+    emit selectionColorChanged();
+    markDirty();
+}
+
+void TabBar::setSelectedTextColor(Color color) {
+    if (m_selectedTextColor == color) return;
+    m_selectedTextColor = color;
+    emit selectedTextColorChanged();
+    markDirty();
+}
+
+void TabBar::setColor(Color color) {
+    if (m_color == color) return;
+    m_color = color;
+    emit colorChanged();
+    markDirty();
+}
+
+void TabBar::setTextColor(Color color) {
+    if (m_textColor == color) return;
+    m_textColor = color;
+    emit textColorChanged();
+    markDirty();
+}
+
 
 TabBar::TabBar(QObject *parent) : Item(parent) {
     setFocusable(true);
     setImplicitWidth(30);
     setImplicitHeight(1);
-    connect(Palette::instance(), &Palette::changed, this, [this] { markDirty(); });
+
 }
 
 void TabBar::setTabs(const QVariant &tabs) {
@@ -51,11 +78,11 @@ void TabBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     const int availH = height();
     if (availW <= 0 || availH <= 0) return;
 
-    const Palette* palette = Palette::instance();
-    const uint32_t activeFg = ColorMapper::fromString(palette->highlightedText(), 0xFF000000);
-    const uint32_t activeBg = ColorMapper::fromString(palette->highlight(), 0xFFFFFF00);
-    const uint32_t inactiveFg = ColorMapper::fromString(palette->windowText(), 0xFFFFFFFF);
-    const uint32_t separatorFg = ColorMapper::fromString(palette->mid(), 0xFF808080);
+    const uint32_t inactiveFg = ColorMapper::fromString(m_textColor, 0);
+    const uint32_t background = ColorMapper::fromString(m_color, 0);
+    const uint32_t activeFg = ColorMapper::fromString(m_selectedTextColor, inactiveFg);
+    const uint32_t activeBg = ColorMapper::fromString(m_selectionColor, background);
+    const bool reverseSelection = !m_selectedTextColor.isValid() && !m_selectionColor.isValid();
 
     int curX = absX;
     for (int i = 0; i < m_tabList.size(); ++i) {
@@ -67,12 +94,14 @@ void TabBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
 
         buffer.writeText(curX, absY, formatted,
                          isActive ? activeFg : inactiveFg,
-                         isActive ? activeBg : 0x00000000,
-                         isActive ? TextAttribute::Bold : TextAttribute::None);
+                         isActive ? activeBg : background,
+                         (isActive ? TextAttribute::Bold : TextAttribute::None)
+                             | (isActive && reverseSelection ? TextAttribute::Reversed : TextAttribute::None)
+                             | (!isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None));
         curX += formatted.length();
 
         if (i < m_tabList.size() - 1 && curX < absX + availW) {
-            buffer.writeText(curX, absY, "│", separatorFg, 0x00000000);
+            buffer.writeText(curX, absY, "│", inactiveFg, background);
             curX += 1;
         }
     }

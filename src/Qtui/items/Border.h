@@ -37,7 +37,7 @@ signals:
 private:
     Item* m_owner;
     QString m_style = "none";
-    Color m_color = "white";
+    Color m_color = "default";
 };
 
 } // namespace qtui

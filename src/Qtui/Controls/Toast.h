@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QList>
 #include <QString>
+#include <ColorMapper.h>
 
 namespace qtui {
 
@@ -17,10 +18,12 @@ struct QTUI_CONTROLS_EXPORT ToastItem {
 };
 
 // Transient notifications stacked in a corner. Status colors are semantic and
-// therefore properties; the palette has no roles for them.
+// directly configurable, along with the body text and surface.
 class QTUI_CONTROLS_EXPORT Toast : public Item {
     Q_OBJECT
     QML_ELEMENT
+    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
 
     Q_PROPERTY(qtui::Color infoColor READ infoColor WRITE setInfoColor NOTIFY infoColorChanged)
     Q_PROPERTY(qtui::Color successColor READ successColor WRITE setSuccessColor NOTIFY successColorChanged)
@@ -55,7 +58,15 @@ public:
 
     void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
 
+    Color textColor() const { return m_textColor; }
+    void setTextColor(Color color);
+
+    Color color() const { return m_color; }
+    void setColor(Color color);
+
 signals:
+    void colorChanged();
+    void textColorChanged();
     void infoColorChanged();
     void successColorChanged();
     void warningColorChanged();
@@ -67,20 +78,25 @@ private slots:
     void onTick();
 
 private:
+    Color m_color = "default";
+    Color m_textColor = "default";
     QList<ToastItem> m_toasts;
     QTimer m_timer;
 
-    Color m_infoColor = "cyan";
-    uint32_t m_resolvedInfoColor = 0xFF61AFEF;
+    Color m_infoColor = "default";
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0);
 
-    Color m_successColor = "green";
-    uint32_t m_resolvedSuccessColor = 0xFF98C379;
+    Color m_successColor = "default";
+    uint32_t m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0);
 
-    Color m_warningColor = "yellow";
-    uint32_t m_resolvedWarningColor = 0xFFE5C07B;
+    Color m_warningColor = "default";
+    uint32_t m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0);
 
-    Color m_errorColor = "red";
-    uint32_t m_resolvedErrorColor = 0xFFE06C75;
+    Color m_errorColor = "default";
+    uint32_t m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0);
 
     int m_toastWidth = 28;
     QString m_position = "top-right";

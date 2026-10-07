@@ -56,6 +56,10 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
             ? m_canvas.m_resolvedColor
             : (!m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor);
         setPixelColorHex(x, y, color);
+        if (!value && (m_canvas.m_resolvedFillColor >> 24) == 0
+            && x >= 0 && y >= 0 && x < pixelWidth() && y < pixelHeight()) {
+            m_canvas.m_pixelSet[static_cast<size_t>(y * pixelWidth() + x)] = false;
+        }
     }
 }
 
@@ -73,8 +77,10 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
             m_canvas.m_cells[idx] |= brailleBit(x % 2, y % 4);
     } else {
         const size_t idx = static_cast<size_t>(y * w + x);
-        if (idx < m_canvas.m_pixelColors.size())
+        if (idx < m_canvas.m_pixelColors.size()) {
             m_canvas.m_pixelColors[idx] = color;
+            m_canvas.m_pixelSet[idx] = true;
+        }
     }
 }
 
@@ -82,6 +88,9 @@ void CanvasPainter::clear() {
     const uint32_t clearBg = !m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor;
     std::fill(m_canvas.m_cells.begin(), m_canvas.m_cells.end(), 0x00);
     std::fill(m_canvas.m_pixelColors.begin(), m_canvas.m_pixelColors.end(), clearBg);
+    // A transparent fill clears to holes, while a drawn default-color pixel
+    // is occupied and uses the terminal's foreground.
+    std::fill(m_canvas.m_pixelSet.begin(), m_canvas.m_pixelSet.end(), (clearBg >> 24) != 0);
 }
 
 // --- Canvas ---
@@ -221,8 +230,8 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 const uint32_t topColor = (topY < h * 2) ? m_pixelColors[static_cast<size_t>(topY * w + cellX)] : 0x00000000;
                 const uint32_t bottomColor = (bottomY < h * 2) ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)] : 0x00000000;
 
-                const bool topSet = (topColor >> 24) != 0;
-                const bool bottomSet = (bottomColor >> 24) != 0;
+                const bool topSet = m_pixelSet[static_cast<size_t>(topY * w + cellX)];
+                const bool bottomSet = m_pixelSet[static_cast<size_t>(bottomY * w + cellX)];
                 if (!topSet && !bottomSet)
                     continue;
 
@@ -233,7 +242,17 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 cell.displayWidth = 1;
                 cell.continuation = false;
 
-                if (topSet && bottomSet) {
+                if (topSet && bottomSet && (topColor >> 24) == 0 && (bottomColor >> 24) == 0) {
+                    // SGR 49 is the default background, not the default ink.
+                    // A full block paints both pixels with the foreground.
+                    cell.setCharacter("\xE2\x96\x88"); // █ Full Block
+                    cell.fgColor = 0;
+                    cell.bgColor = 0;
+                } else if (topSet && bottomSet && (bottomColor >> 24) == 0) {
+                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
+                    cell.fgColor = bottomColor;
+                    cell.bgColor = topColor;
+                } else if (topSet && bottomSet) {
                     cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
                     cell.fgColor = topColor;
                     cell.bgColor = bottomColor;
@@ -261,6 +280,7 @@ void Canvas::resizeBuffer() const {
         const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * 2));
         if (m_pixelColors.size() != needed) {
             m_pixelColors.resize(needed, 0x00000000);
+            m_pixelSet.resize(needed, false);
         }
     }
 }

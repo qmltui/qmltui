@@ -33,10 +33,9 @@ Two kinds of string are accepted, and they behave differently on screen:
   `purple`, `teal`, `silver`, `gray`, `red`, `lime`, `yellow`, `blue`,
   `magenta`, `cyan`, `white`) and the explicit form `"ansi:N"` are palette
   indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
-  depth, so the user's terminal theme decides how they look. This is what the
-  `Palette.Terminal` preset relies on. Other CSS names (`orange`, `steelblue`,
+  depth, so the user's terminal theme decides how they look. Other CSS names (`orange`, `steelblue`,
   ...) are literal RGB.
-- `transparent` means the terminal's default foreground or background.
+- `default` (also spelled `transparent`) means the terminal's default foreground or background.
 
 ## Model and delegate compatibility
 
@@ -215,45 +214,54 @@ Quick view feature. Qtui does not currently expose scene-graph transitions,
 flick physics, reuse-pool callbacks, selection models, or the complete Qt Quick
 positioning and item-lookup API.
 
-## Palette
+## Colors and styling
 
-`Qtui.Controls` exports a `Palette` singleton: named color roles that every
-control reads. The roles follow `QPalette`, so the vocabulary is familiar.
+Core items and Controls use the terminal's default foreground and background.
+`"default"` delegates to the terminal; named ANSI colors follow its color table,
+while hex colors request specific RGB values. `"transparent"` is an alias for
+`"default"`; transparent item backgrounds leave the surface underneath visible.
 
-| Role | Used for |
-| :--- | :--- |
-| `window`, `windowText` | Root background and default text |
-| `base`, `text` | Editable and list surfaces and their text |
-| `button`, `buttonText` | Buttons, tabs, switches |
-| `highlight`, `highlightedText` | Focus, selection, current row |
-| `mid` | Borders and separators |
-| `placeholderText` | Input hints and disabled text |
-| `accent` | The brand color |
-
-`Palette.applyPreset(Palette.Terminal)` (the default) uses ANSI named colors and
-a transparent window, so an application takes on the user's terminal theme.
-`Palette.applyPreset(Palette.Dark)` is the Qtui brand look. Set roles
-individually to build your own; each control re-renders through its bindings,
-and one `changed` signal covers a whole preset switch.
-
-Controls expose only the overrides that make sense on an instance:
-`textColor` on text-bearing controls, `titleColor` on `Panel`, and `color` on
-`ProgressBar` because a fill color is data, not theme. `Button` is a
-`Rectangle`, so `color` and `border.*` can still be set directly on an instance
-when a single button must differ; doing so replaces the palette binding for
-that property.
+There is no framework palette, inherited color scheme, or theme singleton.
+Set ordinary properties to customize individual components, or define reusable
+QML components for application-wide styling:
 
 ```qml
+// AppButton.qml
+pragma ComponentBehavior: Bound
 import Qtui.Controls
 
-Terminal {
-    Component.onCompleted: Palette.applyPreset(Palette.Dark)
-    Button { text: "Save"; focus: true }        // border follows Palette.highlight
-    Button { text: "Delete"; textColor: "red" } // single override
+Button {
+    textColor: "#ffffff"
+    color: "#202830"
+    border.color: "cyan"
 }
 ```
 
-C++ code reads the same instance through `qtui::Palette::instance()`.
+| Component | Color overrides |
+| :--- | :--- |
+| Text, Paragraph, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
+| Rectangle and rectangle-based controls | `color`, `border.color` |
+| Button, CheckBox, RadioButton, Switch, Slider | `textColor` |
+| Panel | `titleColor` |
+| Dialog | `textColor`, `titleColor` |
+| ProgressBar | `color`, optional gradient/threshold colors |
+| TabBar | `textColor`, `color`, `selectedTextColor`, `selectionColor` (background) |
+| Toast | `textColor`, `color`, `infoColor`, `successColor`, `warningColor`, `errorColor` |
+| ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color` |
+
+Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
+its configured color. `Text.dim` also exposes this attribute directly. TextInput
+hints use the configured text color with dimming unless `placeholderColor` is
+set. Rich Paragraph links use underline and inline code uses bold.
+
+TabBar and the built-in TableView/TreeView selection render with reverse video
+until selection colors are explicitly supplied. TextInput also supports explicit
+selection, selected-text, placeholder, and cursor colors. Custom delegates own
+their appearance, including selection styling.
+
+Core `Palette`, `TerminalPalette`, `ResolvedPalette`, `Item.palette`, and Controls
+`DarkPalette` are no longer provided. Replace earlier palette bindings with
+ordinary color bindings or application-defined components.
 
 ## Other core elements
 
@@ -290,6 +298,5 @@ C++ code reads the same instance through `qtui::Palette::instance()`.
 - `MouseArea` provides click, wheel, hover, and drag input.
 
 `Qtui.Controls` contains the controls a user operates or reads as finished
-widgets, including `TabBar`, `Toast`, `Sparkline`, `Popup`, and the `Palette`
-singleton. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,
+widgets, including `TabBar`, `Toast`, `Sparkline`, and `Popup`. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,
 and `BigText` are recipes under `examples/components/`.

@@ -10,9 +10,10 @@
 - `Qtui.Controls` admits a type only if it needs engine knowledge an
   application cannot reproduce in QML (cell geometry, Unicode width,
   virtualization, overlays) or is universal in terminal toolkits. Everything
-  else is a recipe under `examples/components/`. Controls read colors from the
-  `Palette` singleton; do not add per-control color properties beyond
-  `textColor` and data colors such as `ProgressBar.color`.
+  else is a recipe under `examples/components/`. Core items and Controls default to the terminal's foreground and background.
+  Expose ordinary color properties where useful; explicit overrides must survive
+  focus and disabled states. Applications own shared styling through QML bindings
+  and reusable components; do not add a framework palette or theme singleton.
 - Build terminal interfaces from `QtQml` and Qtui modules. Do not add a
   `QtQuick` import or Qt Quick dependency to Qtui applications or modules.
 - Keep optional subsystems gated. `QTUI_ENABLE_BEHAVIOR=ON` requires

@@ -10,6 +10,7 @@
 #include <QStack>
 #include <QPointer>
 #include <QMetaObject>
+#include "../primitives/ColorMapper.h"
 
 class QAbstractItemModel;
 
@@ -132,10 +133,13 @@ private:
     Qt::Orientation m_orientation = Qt::Vertical;
     int m_spacing = 0;
     int m_currentIndex = -1;
-    Color m_highlightColor = "black";
-    uint32_t m_resolvedHighlightColor = 0xFF000000;
-    Color m_highlightBackgroundColor = "white";
-    uint32_t m_resolvedHighlightBackgroundColor = 0xFFFFFFFF;
+    Color m_highlightColor = "default";
+    // Resolved caches mirror the Color members: an ANSI-named default must not be
+    // written as literal RGB, or the terminal theme stops applying to it (setters
+    // early-return when the color is unchanged, so the initializer is the only chance).
+    uint32_t m_resolvedHighlightColor = ColorMapper::fromString(m_highlightColor, 0);
+    Color m_highlightBackgroundColor = "default";
+    uint32_t m_resolvedHighlightBackgroundColor = ColorMapper::fromString(m_highlightBackgroundColor, 0);
     bool m_reuseItems = true;
     QMap<int, Item*> m_createdItems;
     QStack<Item*> m_reusePool;

@@ -30,6 +30,7 @@ Developers interact with `Cell` when implementing custom C++ terminal UI items.
 | `Blink` | `16` | Requests blinking text. |
 | `Conceal` | `32` | Conceals the cell contents. |
 | `Strikethrough` | `64` | Draws a line through the text. |
+| `Dim` | `128` | Uses the terminal's faint intensity (SGR 2). |
 
 Bitwise operators `|` and `&` are overloaded to allow combining multiple `TextAttribute` flags (e.g. `TextAttribute::Bold | TextAttribute::Underline`).
 
@@ -41,7 +42,7 @@ Bitwise operators `|` and `&` are overloaded to allow combining multiple `TextAt
 |----------|------|-------------|
 | `displayWidth` | `uint8_t` | Visual column width occupied by the cluster (default: `1`). |
 | `continuation` | `bool` | True if this cell is a continuation of a multi-column character (default: `false`). |
-| `fgColor` | `uint32_t` | 32-bit ARGB foreground color value (default: `0xFFFFFFFF` white). |
+| `fgColor` | `uint32_t` | 32-bit ARGB foreground color value (default: `0x00000000`, the terminal foreground). |
 | `bgColor` | `uint32_t` | 32-bit ARGB background color value (default: `0x00000000` transparent). |
 | `attributes` | `TextAttribute` | Bitwise combination of formatting flags applied to this cell (default: `TextAttribute::None`). |
 

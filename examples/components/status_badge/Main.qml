@@ -29,7 +29,7 @@ Terminal {
 
             Text { text: "──────────────────────────────────────────────────────────"; color: "gray" }
 
-            Text { text: "Standard Status States (Subtle Variant):"; color: "white"; bold: true }
+            Text { text: "Standard Status States (Subtle Variant):"; color: "default"; bold: true }
             Row {
                 spacing: 2
                 StatusBadge { status: "success" }
@@ -38,7 +38,7 @@ Terminal {
                 StatusBadge { status: "info" }
             }
 
-            Text { text: "Custom Text Labels & Custom Icons:"; color: "white"; bold: true }
+            Text { text: "Custom Text Labels & Custom Icons:"; color: "default"; bold: true }
             Row {
                 spacing: 2
                 StatusBadge { status: "success"; text: "ONLINE"; icon: "●" }
@@ -47,7 +47,7 @@ Terminal {
                 StatusBadge { status: "info"; text: "PENDING"; icon: "⌛" }
             }
 
-            Text { text: "Outlined Variant:"; color: "white"; bold: true }
+            Text { text: "Outlined Variant:"; color: "default"; bold: true }
             Row {
                 spacing: 2
                 StatusBadge { variant: "outlined"; status: "success"; text: "SYSTEM OK" }
@@ -55,7 +55,7 @@ Terminal {
                 StatusBadge { variant: "outlined"; status: "error"; text: "DB DOWN" }
             }
 
-            Text { text: "Filled Variant (Inverted ANSI Colors):"; color: "white"; bold: true }
+            Text { text: "Filled Variant (Inverted ANSI Colors):"; color: "default"; bold: true }
             Row {
                 spacing: 2
                 StatusBadge { variant: "filled"; status: "success"; text: " ACTIVE " }

@@ -326,6 +326,7 @@ void Repeater::generateItems() {
             }
         }
     }
+    parentVis->reorderChildItemsAfter(this, m_createdItems);
 }
 
 void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
@@ -392,6 +393,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
         if (i < m_createdItems.size() && m_createdItems[i]) setPropertyIfExists(m_createdItems[i], "index", i);
     }
     
+    parentVis->reorderChildItemsAfter(this, m_createdItems);
     markDirty();
 }
 
@@ -443,6 +445,8 @@ void Repeater::onRowsMoved(int first, int last, int destination) {
         DelegateUtils::setContextProperty(m_delegate, m_contexts[row], "index", row);
         if (row < m_createdItems.size() && m_createdItems[row]) setPropertyIfExists(m_createdItems[row], "index", row);
     }
+    if (Item* parentVis = parentItem())
+        parentVis->reorderChildItemsAfter(this, m_createdItems);
     markDirty();
 }
 

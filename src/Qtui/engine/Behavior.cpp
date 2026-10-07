@@ -1,5 +1,6 @@
 #include "Behavior.h"
 #include "../primitives/Color.h"
+#include <QtQml/private/qqmlproperty_p.h>
 
 namespace qtui {
 
@@ -59,7 +60,8 @@ void Behavior::write(const QVariant& value) {
     }
 
     if (!m_animation) {
-        m_property.write(value);
+        QQmlPropertyPrivate::write(m_property, value,
+            QQmlPropertyData::BypassInterceptor | QQmlPropertyData::DontRemoveBinding);
         return;
     }
 
@@ -78,7 +80,8 @@ void Behavior::write(const QVariant& value) {
         propAnim->start();
     } else {
         // Fallback if not a PropertyAnimation
-        m_property.write(value);
+        QQmlPropertyPrivate::write(m_property, value,
+            QQmlPropertyData::BypassInterceptor | QQmlPropertyData::DontRemoveBinding);
     }
 }
 

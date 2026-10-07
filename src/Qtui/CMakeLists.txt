@@ -162,6 +162,7 @@ target_link_libraries(QtuiCore PRIVATE
 )
 if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
+    target_compile_definitions(QtuiCore PRIVATE QTUI_ENABLE_BEHAVIOR)
 endif()
 
 target_compile_definitions(QtuiCore PRIVATE QTUI_CORE_LIBRARY)

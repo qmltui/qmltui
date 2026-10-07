@@ -437,6 +437,24 @@ void Item::registerChildItem(Item* childItem) {
     applyPendingFocus();
 }
 
+void Item::reorderChildItemsAfter(Item* sibling, const QList<Item*>& items) {
+    if (!m_visualChildren.contains(sibling) || items.isEmpty()) return;
+    const QSet<Item*> generated(items.cbegin(), items.cend());
+    QList<Item*> ordered;
+    ordered.reserve(m_visualChildren.size());
+    for (Item* child : std::as_const(m_visualChildren)) {
+        if (!generated.contains(child)) ordered.append(child);
+        if (child == sibling) {
+            for (Item* item : items)
+                if (item && item->parentItem() == this) ordered.append(item);
+        }
+    }
+    if (ordered == m_visualChildren) return;
+    m_visualChildren = std::move(ordered);
+    invalidateStackingOrder();
+    scheduleChildGeometryInvalidation();
+}
+
 void Item::unregisterChildItem(Item* childItem) {
     if (!childItem) return;
     if (m_visualChildren.removeOne(childItem)) {

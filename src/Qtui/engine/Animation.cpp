@@ -6,6 +6,9 @@
 #include <QDebug>
 #include <QMetaProperty>
 #include <QMetaType>
+#ifdef QTUI_ENABLE_BEHAVIOR
+#include <QtQml/private/qqmlproperty_p.h>
+#endif
 
 namespace qtui {
 
@@ -50,6 +53,16 @@ static double applyEasing(Easing::Type type, double t) {
 
 static void writePropertyBypassingInterceptor(QObject* target, const QString& name, const QVariant& value) {
     if (!target || name.isEmpty()) return;
+#ifdef QTUI_ENABLE_BEHAVIOR
+    // Dynamic QML properties have no C++ static_metacall. A regular property
+    // write would re-enter Behavior and remove the property's source binding.
+    const QQmlProperty property(target, name);
+    const QVariant converted = property.propertyType() == QMetaType::QString
+            && value.metaType() == QMetaType::fromType<Color>()
+        ? QVariant(value.value<Color>().toString()) : value;
+    QQmlPropertyPrivate::write(property, converted,
+        QQmlPropertyData::BypassInterceptor | QQmlPropertyData::DontRemoveBinding);
+#else
     const QMetaObject* meta = target->metaObject();
     int idx = meta->indexOfProperty(name.toUtf8().constData());
     if (idx >= 0) {
@@ -112,6 +125,7 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
             prop.write(target, value);
         }
     }
+#endif
 }
 
 // ==========================================
@@ -158,6 +172,12 @@ void Animation::stop() {
 // ==========================================
 
 PropertyAnimation::PropertyAnimation(QObject* parent) : Animation(parent) {
+    connect(this, &Animation::started, this, [this]() {
+        // Behavior may stop and restart an animation at an intermediate value.
+        // The new interpolation must not inherit the previous elapsed time.
+        m_timer.invalidate();
+        m_accumulatedTime = 0;
+    });
 }
 
 void PropertyAnimation::setTarget(QObject* t) {

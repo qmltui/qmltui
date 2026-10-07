@@ -229,6 +229,7 @@ signals:
 
 private:
   friend class ItemPaintTraversal;
+  friend class Repeater;
 
   void layoutSubtree();
   void paintSubtree(TextGridBuffer &buffer, int absX, int absY,
@@ -237,6 +238,7 @@ private:
   void scheduleChildGeometryInvalidation();
   void registerChildItem(Item* childItem);
   void unregisterChildItem(Item* childItem);
+  void reorderChildItemsAfter(Item* sibling, const QList<Item*>& items);
   static void appendData(QQmlListProperty<QObject> *list, QObject *item);
   static qsizetype dataCount(QQmlListProperty<QObject> *list);
   static QObject *dataAt(QQmlListProperty<QObject> *list, qsizetype index);

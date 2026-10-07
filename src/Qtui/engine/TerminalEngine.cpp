@@ -42,7 +42,7 @@ static bool environmentFlagEnabled(const char* name) {
 static bool environmentRequestsTestSession() {
   return !qgetenv("QTUI_SCRIPT").trimmed().isEmpty()
       || !qgetenv("QTUI_EVAL").trimmed().isEmpty()
-      || environmentFlagEnabled("QTUI_INSPECT")
+      || !qgetenv("QTUI_CAPTURE_AFTER_MS").trimmed().isEmpty()
       || environmentFlagEnabled("QTUI_TEST_EMBEDDED_SCENARIO");
 }
 

@@ -61,6 +61,20 @@ public:
         paint();
         return true;
     }
+    // Same as create(), but the caller supplies the whole TableView body, so
+    // tests can omit the columns descriptors.
+    bool createBody(QObject *model, const QString &body) {
+        const QString qml = QStringLiteral("pragma ComponentBehavior: Bound\nimport QtQml\nimport Qtui\n"
+                "TableView { required property var inputModel; model: inputModel; width: 40; height: 8; ")
+            + body + QStringLiteral(" }");
+        component.setData(qml.toUtf8(), QUrl());
+        if (!component.isReady()) return false;
+        object.reset(component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
+        table = qobject_cast<TableView *>(object.get());
+        if (!table || !buffer.resize(40, 8)) return false;
+        paint();
+        return true;
+    }
     void paint() { buffer.clear(); testing::paintItem(table, buffer, 0, 0); }
     QString line(int y) const {
         QString result;
@@ -77,6 +91,46 @@ class TestTableViewHardening : public QObject
 {
     Q_OBJECT
 private slots:
+    void alignedGridCells_data() {
+        QTest::addColumn<bool>("grid");
+        QTest::addColumn<QString>("alignment");
+        QTest::addColumn<QString>("header");
+        QTest::addColumn<QString>("body");
+        QTest::newRow("right-grid") << true << "right" << "LATENCY|" << "  12 ms|";
+        QTest::newRow("right-no-grid") << false << "right" << " LATENCY" << "   12 ms";
+        QTest::newRow("center-grid") << true << "center" << "LATENCY|" << " 12 ms |";
+        QTest::newRow("left-grid") << true << "left" << "LATENCY|" << "12 ms  |";
+    }
+
+    void alignedGridCells() {
+        QFETCH(bool, grid);
+        QFETCH(QString, alignment);
+        QFETCH(QString, header);
+        QFETCH(QString, body);
+        CountingTableList model;
+        model.first = "12 ms";
+        TableFixture f;
+        QVERIFY(f.create(&model, QString()));
+        f.table->setColumns({QVariantMap{{"title", "LATENCY"}, {"width", 8}, {"align", alignment}},
+                             QVariantMap{{"title", "TAIL"}, {"width", 8}, {"align", "right"}}});
+        f.table->setShowGrid(grid);
+        f.table->setHeaderBackgroundColor(Color("#224466"));
+        f.table->setCellFormat(f.engine.evaluate(
+            "(function() { return {backgroundColor: '#446688'}; })"));
+        f.paint();
+        QCOMPARE(f.line(0).left(16), header + "    TAIL");
+        QCOMPARE(f.line(2).left(16), body + "   12 ms");
+        QCOMPARE(f.buffer.cellAt(7, 0).bgColor, 0xff224466u);
+        QCOMPARE(f.buffer.cellAt(7, 2).bgColor, 0xff446688u);
+        // A viewport ending at the first column has no separator to reserve.
+        f.table->setWidth(8);
+        f.paint();
+        if (alignment == "right") {
+            QCOMPARE(f.line(0).left(8), QString(" LATENCY"));
+            QCOMPARE(f.line(2).left(8), QString("   12 ms"));
+        }
+    }
+
     void rolesAndViewport_data() {
         QTest::addColumn<bool>("bound");
         QTest::newRow("bound") << true;
@@ -323,6 +377,75 @@ private slots:
         f.paint();
         QVERIFY(f.line(2).startsWith("changed"));
         QCOMPARE(f.items(), before);
+    }
+    // Plan 07 WP1: header data and column count come from the model when no
+    // columns descriptors are set.
+    void modelHeaderDataDrivesColumns() {
+        QStandardItemModel model(2, 3);
+        for (int row = 0; row < 2; ++row)
+            for (int column = 0; column < 3; ++column)
+                model.setItem(row, column, new QStandardItem(QStringLiteral("%1%2").arg(QChar('a' + column)).arg(row)));
+        model.setHorizontalHeaderLabels({"Name", "Size", "Kind"});
+        TableFixture f;
+        QVERIFY2(f.createBody(&model, QString()), qPrintable(f.component.errorString()));
+        // Header row shows the model titles, one column each (40 / 3 = 13, 13, 14).
+        QCOMPARE(f.line(0).mid(0, 13).trimmed(), QStringLiteral("Name"));
+        QCOMPARE(f.line(0).mid(13, 13).trimmed(), QStringLiteral("Size"));
+        QCOMPARE(f.line(0).mid(26, 14).trimmed(), QStringLiteral("Kind"));
+        QCOMPARE(f.line(2).mid(0, 13).trimmed(), QStringLiteral("a0"));
+        QCOMPARE(f.line(2).mid(13, 13).trimmed(), QStringLiteral("b0"));
+        QCOMPARE(f.line(2).mid(26, 14).trimmed(), QStringLiteral("c0"));
+        QCOMPARE(f.line(3).mid(0, 13).trimmed(), QStringLiteral("a1"));
+        // headerDataChanged repaints the title.
+        model.setHeaderData(0, Qt::Horizontal, QStringLiteral("Path"));
+        f.paint();
+        QCOMPARE(f.line(0).mid(0, 13).trimmed(), QStringLiteral("Path"));
+        // Header alignment role becomes the column default for header and cells.
+        model.setHeaderData(1, Qt::Horizontal, int(Qt::AlignRight | Qt::AlignVCenter), Qt::TextAlignmentRole);
+        f.paint();
+        QVERIFY2(f.line(0).mid(13, 13).endsWith("Size"), qPrintable(f.line(0)));
+        QVERIFY2(f.line(2).mid(13, 13).endsWith("b0"), qPrintable(f.line(2)));
+        // Explicit columns still win over model header data.
+        f.table->setColumns({QVariantMap{{"title", "X"}, {"width", 10}}});
+        f.paint();
+        QCOMPARE(f.line(0).mid(0, 10).trimmed(), QStringLiteral("X"));
+        QVERIFY(!f.line(0).contains("Size"));
+        QCOMPARE(f.line(2).mid(0, 10).trimmed(), QStringLiteral("a0"));
+    }
+
+    void modelWithoutHeaderLabelsShowsNoHeader() {
+        QStandardItemModel model(1, 3);
+        for (int column = 0; column < 3; ++column)
+            model.setItem(0, column, new QStandardItem(QStringLiteral("v%1").arg(column)));
+        TableFixture f;
+        QVERIFY2(f.createBody(&model, QString()), qPrintable(f.component.errorString()));
+        // Default headerData() returns section numbers, which is not a header.
+        QCOMPARE(f.line(0).mid(0, 13).trimmed(), QStringLiteral("v0"));
+        QCOMPARE(f.line(0).mid(13, 13).trimmed(), QStringLiteral("v1"));
+        QCOMPARE(f.line(0).mid(26, 14).trimmed(), QStringLiteral("v2"));
+        QVERIFY(f.line(1).trimmed().isEmpty());
+        // Adding labels later turns the header on.
+        model.setHorizontalHeaderLabels({"A", "B", "C"});
+        f.paint();
+        QCOMPARE(f.line(0).mid(0, 13).trimmed(), QStringLiteral("A"));
+        QCOMPARE(f.line(2).mid(0, 13).trimmed(), QStringLiteral("v0"));
+        // Column insertion is reflected without descriptors.
+        model.insertColumn(3);
+        model.setItem(0, 3, new QStandardItem(QStringLiteral("v3")));
+        f.paint();
+        QCOMPARE(f.line(2).mid(30, 10).trimmed(), QStringLiteral("v3"));
+    }
+
+    void listModelWithoutColumnsIsSingleColumn() {
+        CountingTableList model;
+        model.count = 3;
+        TableFixture f;
+        QVERIFY2(f.createBody(&model, QString()), qPrintable(f.component.errorString()));
+        // One column filling the width, no header, and no repeated phantom cells.
+        QCOMPARE(f.line(0).count("old"), 1);
+        QCOMPARE(f.line(0).trimmed(), QStringLiteral("old"));
+        QCOMPARE(f.line(1).trimmed(), QStringLiteral("1"));
+        QCOMPARE(f.line(2).trimmed(), QStringLiteral("2"));
     }
 };
 

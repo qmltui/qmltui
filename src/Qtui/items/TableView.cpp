@@ -659,13 +659,16 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
     if (headerRows()) {
         for (const auto &geometry : std::as_const(m_geometry)) {
             if (geometry.x >= width()) break;
-            const int visibleWidth = (std::min)(geometry.width, width() - geometry.x);
+            const bool separator = m_showGrid && geometry.column < columnCount() - 1
+                && geometry.width < width() - geometry.x;
+            const int textWidth = geometry.width - int(separator);
+            const int visibleWidth = (std::min)(textWidth, width() - geometry.x);
             buffer.writeText(absX + geometry.x, absY,
-                alignedPrefix(geometry.title, geometry.width, visibleWidth, geometry.alignment),
+                alignedPrefix(geometry.title, textWidth, visibleWidth, geometry.alignment),
                 m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
-            if (m_showGrid && geometry.column < columnCount() - 1 && geometry.width < width() - geometry.x)
-                if (Cell *cell = buffer.tryCellAt(absX + geometry.x + geometry.width - 1, absY))
-                    cell->setCharacter("|");
+            if (separator)
+                buffer.writeText(absX + geometry.x + geometry.width - 1, absY, QStringLiteral("|"),
+                    m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
         }
         if (height() > 1)
             buffer.drawLine(absX, absY + 1, absX + width() - 1, absY + 1, "─", m_resolvedHeaderColor);
@@ -710,12 +713,15 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                     }
                 }
             }
-            const int visibleWidth = (std::min)(geometry.width, width() - geometry.x);
+            const bool separator = m_showGrid && geometry.column < columnCount() - 1
+                && geometry.width < width() - geometry.x;
+            const int textWidth = geometry.width - int(separator);
+            const int visibleWidth = (std::min)(textWidth, width() - geometry.x);
             buffer.writeText(absX + geometry.x, y,
-                alignedPrefix(value, geometry.width, visibleWidth, alignment), cellFg, cellBg, cellAttributes);
-            if (m_showGrid && geometry.column < columnCount() - 1 && geometry.width < width() - geometry.x)
-                if (Cell *cell = buffer.tryCellAt(absX + geometry.x + geometry.width - 1, y))
-                    cell->setCharacter("|");
+                alignedPrefix(value, textWidth, visibleWidth, alignment), cellFg, cellBg, cellAttributes);
+            if (separator)
+                buffer.writeText(absX + geometry.x + geometry.width - 1, y, QStringLiteral("|"),
+                    cellFg, cellBg, cellAttributes);
         }
     }
 }

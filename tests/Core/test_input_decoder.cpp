@@ -10,6 +10,7 @@ class TestInputDecoder : public QObject {
 
 private slots:
     void testAsciiKeys();
+    void testPrintableKeyCodes();
     void testCtrlC();
     void testCtrlQ();
     void testArrowKeys();
@@ -44,6 +45,31 @@ void TestInputDecoder::testAsciiKeys() {
     decoder.decode(buf, 1);
     QCOMPARE(receivedKey, Qt::Key_Return);
     QCOMPARE(receivedText, QString("\n"));
+}
+
+void TestInputDecoder::testPrintableKeyCodes() {
+    // The contract TestRunner::typeText() relies on: a keypress of any printable
+    // character carries the key code Qt Quick handlers compare against.
+    QCOMPARE(InputDecoder::keyForCharacter(U'a'), static_cast<int>(Qt::Key_A));
+    QCOMPARE(InputDecoder::keyForCharacter(U'Z'), static_cast<int>(Qt::Key_Z));
+    QCOMPARE(InputDecoder::keyForCharacter(U'2'), static_cast<int>(Qt::Key_2));
+    QCOMPARE(InputDecoder::keyForCharacter(U'+'), static_cast<int>(Qt::Key_Plus));
+    QCOMPARE(InputDecoder::keyForCharacter(U' '), static_cast<int>(Qt::Key_Space));
+    QCOMPARE(InputDecoder::keyForCharacter(U'é'), 0xE9);
+
+    InputDecoder decoder;
+    std::vector<std::pair<int, QString>> received;
+    decoder.setKeyCallback([&](int qtKey, const QString& text, int) {
+        received.emplace_back(qtKey, text);
+    });
+    const char* buf = "w2+";
+    decoder.decode(buf, 3);
+    QCOMPARE(received.size(), std::size_t(3));
+    QCOMPARE(received[0].first, static_cast<int>(Qt::Key_W));
+    QCOMPARE(received[0].second, QString("w"));
+    QCOMPARE(received[1].first, static_cast<int>(Qt::Key_2));
+    QCOMPARE(received[2].first, static_cast<int>(Qt::Key_Plus));
+    QCOMPARE(received[2].second, QString("+"));
 }
 
 void TestInputDecoder::testCtrlC() {

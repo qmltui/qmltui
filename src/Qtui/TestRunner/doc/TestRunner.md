@@ -36,7 +36,7 @@ Sends one key event to the target terminal and waits for the resulting committed
 
 #### void typeText(const QString &text)
 
-Sends non-empty Unicode text as one text-input event and waits for the resulting committed frame. Use this for text entry rather than issuing one `press()` call per character. JavaScript usage: `terminal.typeText("café 世界")`.
+Types non-empty Unicode text as one key event per character and waits once for the resulting committed frame. Each event carries the same key code and text the terminal input decoder produces for a real keypress: letters map to `Qt.Key_A` through `Qt.Key_Z` whatever their case, digits and punctuation to their own codes, newline to `Qt.Key_Return`, and tab to `Qt.Key_Tab`, so `Keys.onPressed` handlers that compare `event.key` react to scripted typing exactly as they react to a user. Use this for text entry rather than issuing one `press()` call per character; use `press()` when a modifier is needed. JavaScript usage: `terminal.typeText("café 世界")`.
 
 #### void sleep(int durationMs)
 
@@ -56,7 +56,7 @@ Waits for a committed frame **without** requesting one, so it verifies that the 
 
 #### void injectText(const QString &text)
 
-`typeText()` without the implicit frame wait. JavaScript usage: `terminal.injectText("abc")`.
+`typeText()` without the implicit frame wait: the same per-character key events, no rendering requested and no frame awaited. JavaScript usage: `terminal.injectText("abc")`.
 
 #### int frameCount()
 

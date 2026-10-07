@@ -83,5 +83,15 @@ Terminal {
             root.fixtureStatus = "KEY K"
             event.accepted = true
         }
+        // Reached through typeText(): scripted typing must carry the same key
+        // codes as real typing, including a digit and a symbol.
+        if (event.key === Qt.Key_2 && event.text === "2") {
+            root.fixtureStatus = "KEY 2"
+            event.accepted = true
+        }
+        if (event.key === Qt.Key_Plus && event.text === "+") {
+            root.fixtureStatus = "KEY PLUS"
+            event.accepted = true
+        }
     }
 }

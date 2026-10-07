@@ -333,7 +333,7 @@ void InputDecoder::processBuffer() {
             if (i + len <= m_buffer.size()) {
                 QString text = QString::fromUtf8(m_buffer.data() + i, len);
                 const auto codepoints = text.toUcs4();
-                int unicodeKey = codepoints.isEmpty() ? 0 : static_cast<int>(codepoints[0]);
+                int unicodeKey = codepoints.isEmpty() ? 0 : keyForCharacter(codepoints[0]);
                 if (m_keyCallback) m_keyCallback(unicodeKey, text, 0);
                 i += len;
                 continue;
@@ -344,11 +344,7 @@ void InputDecoder::processBuffer() {
 
         if (c >= 32 && c < 127) {
             QString text = QString((char)c);
-            int qtKey = c;
-            if (c >= 'a' && c <= 'z') {
-                qtKey = c - 'a' + Qt::Key_A;
-            }
-            if (m_keyCallback) m_keyCallback(qtKey, text, 0);
+            if (m_keyCallback) m_keyCallback(keyForCharacter(c), text, 0);
             i++;
             continue;
         }

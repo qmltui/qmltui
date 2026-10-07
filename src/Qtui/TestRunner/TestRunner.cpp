@@ -1,6 +1,7 @@
 #include "TestRunner.h"
 #include <ColorMapper.h>
 
+#include "InputDecoder.h"
 #include "Terminal.h"
 #include "TerminalEngine.h"
 #include "TextGridBuffer.h"
@@ -777,27 +778,44 @@ void TestRunner::sendKey(const char* operation, const QString& key,
 
 void TestRunner::typeText(const QString& text)
 {
-    if (!ensureRunning("typeText"))
-        return;
-    if (text.isEmpty()) {
-        failScenario(QStringLiteral("terminal.typeText() requires non-empty text"));
-        return;
-    }
-    m_terminalEngine->handleKeyInput(0, text, Qt::NoModifier, true);
-    (void)waitForNextFrame(m_operationTimeoutMs);
+    sendText("typeText", text, /*awaitFrame=*/true);
 }
 
 void TestRunner::injectText(const QString& text)
 {
-    if (!ensureRunning("injectText"))
-        return;
-    if (text.isEmpty()) {
-        failScenario(QStringLiteral("terminal.injectText() requires non-empty text"));
-        return;
-    }
     // Deliberately does not wait for a frame: typeText() would request one and
     // consume the repaint that expectRepaint() needs to observe.
-    m_terminalEngine->handleKeyInput(0, text, Qt::NoModifier, true);
+    sendText("injectText", text, /*awaitFrame=*/false);
+}
+
+void TestRunner::sendText(const char* operation, const QString& text, bool awaitFrame)
+{
+    if (!ensureRunning(operation))
+        return;
+    if (text.isEmpty()) {
+        failScenario(QStringLiteral("terminal.%1() requires non-empty text")
+                         .arg(QLatin1String(operation)));
+        return;
+    }
+
+    // One key event per character, carrying the key code InputDecoder produces
+    // for the same bytes, so a Keys handler matching Qt.Key_W or Qt.Key_1 sees
+    // scripted typing exactly as it sees a user typing. A bracketed paste is a
+    // different event (key 0 with the paste flag) and is not what typing means.
+    for (const char32_t codepoint : text.toUcs4()) {
+        if (codepoint == U'\r' || codepoint == U'\n') {
+            m_terminalEngine->handleKeyInput(Qt::Key_Return, QStringLiteral("\n"), Qt::NoModifier);
+        } else if (codepoint == U'\t') {
+            m_terminalEngine->handleKeyInput(Qt::Key_Tab, QString(), Qt::NoModifier);
+        } else if (codepoint == 0x7f || codepoint == 0x08) {
+            m_terminalEngine->handleKeyInput(Qt::Key_Backspace, QString(), Qt::NoModifier);
+        } else {
+            m_terminalEngine->handleKeyInput(InputDecoder::keyForCharacter(codepoint),
+                                             QString::fromUcs4(&codepoint, 1), Qt::NoModifier);
+        }
+    }
+    if (awaitFrame)
+        (void)waitForNextFrame(m_operationTimeoutMs);
 }
 
 void TestRunner::click(int x, int y, const QString& button, const QStringList& modifiers)

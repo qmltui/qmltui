@@ -200,6 +200,7 @@ private:
     };
 
     bool waitForNextFrame(int timeoutMs, bool requestRender = true);
+    void sendText(const char* operation, const QString& text, bool awaitFrame);
     void sendKey(const char* operation, const QString& key,
                  const QStringList& modifiers, bool awaitFrame);
     bool waitForTextCondition(const QString& text, bool shouldContain, int timeoutMs);

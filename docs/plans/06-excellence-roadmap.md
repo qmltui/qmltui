@@ -21,22 +21,29 @@ Measured on the Release tree (`build/`, Qt 6.8.6, Behavior ON, WSL2):
 | `benchmark_render`, worst scene at 240x70 | paint 137 us, diff 196 us |
 | Source size | 26k lines C++/QML, 9.4k tests, 35k examples |
 
-Defects found during the assessment, all reproducible from the tree:
+Defects found during the assessment, all reproducible from the tree at the
+time. Status as of 2026-09-12: all five fixed.
 
 - **TableView truncates right-aligned cells.** The README flagship example
-  (`examples/apps/service_monitor`) renders `LATENC|` and `12 m|` instead of
-  `LATENCY` and `12 ms`. Right alignment appears to be computed against the
-  full column width while the separator occupies the last cell.
-- **`benchmark_render` composite scene fails to load** with
-  `Cannot assign to non-existent property "maxVal"`, so the composite numbers
-  in `docs/benchmarks/0.4-acceptance/` cannot be reproduced from the current
-  tree.
-- **`Column`/`Row` order Repeater delegates after static children** regardless
-  of source order (verified 2026-09-09 on `cyber_audio`).
-- **`Behavior on <prop>` never applies** when the QML-declared property has a
-  binding (verified 2026-09-09).
-- **`TestRunner.typeText()` delivers `event.key == 0`**, so handlers matching
-  `Qt.Key_*` for printable keys ignore scripted input.
+  (`examples/apps/service_monitor`) rendered `LATENC|` and `12 m|` instead of
+  `LATENCY` and `12 ms`: right alignment was computed against the full column
+  width while the separator occupied the last cell. Fixed in `cb2b01c`
+  (2026-09-11), covered by `test_table_view_hardening`.
+- **`benchmark_render` composite scene failed to load** with
+  `Cannot assign to non-existent property "maxVal"`. Fixed in `23ddb4b`
+  (2026-09-11); the composite numbers are reproducible again.
+- **`Column`/`Row` ordered Repeater delegates after static children** regardless
+  of source order. Fixed in `cb2b01c` via `Item::reorderChildItemsAfter()`,
+  covered by `test_repeater`.
+- **`Behavior on <prop>` never applied** when the QML-declared property had a
+  binding. Fixed in `cb2b01c` (interceptor bypass keeps the binding), covered
+  by `test_behavior`.
+- **`TestRunner.typeText()` delivered `event.key == 0`**, so handlers matching
+  `Qt.Key_*` for printable keys ignored scripted input. Fixed 2026-09-12:
+  `typeText()` and `injectText()` send one key event per character with the
+  code `InputDecoder::keyForCharacter()` assigns to real input. Covered by
+  `test_input_decoder::testPrintableKeyCodes` and the `KEY 2` / `KEY PLUS`
+  steps in `tests/TestRunner/scenarios/success.js`.
 
 Gaps confirmed by grep, not bugs:
 

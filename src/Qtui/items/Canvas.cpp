@@ -37,6 +37,19 @@ void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, u
 
 } // namespace
 
+// Average mode: fold one colored dot into its cell. Colors without RGB (terminal
+// default or transparent) carry no information and are skipped.
+static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulators, size_t idx, uint32_t color) {
+    if (idx >= accumulators.size()) return;
+    const uint32_t rgb = ColorMapper::toArgb(color);
+    if ((rgb >> 24) == 0) return;
+    Canvas::CellAccumulator& acc = accumulators[idx];
+    acc.red += (rgb >> 16) & 0xFF;
+    acc.green += (rgb >> 8) & 0xFF;
+    acc.blue += rgb & 0xFF;
+    ++acc.count;
+}
+
 // --- CanvasPainter ---
 void CanvasPainter::setPixel(int x, int y, bool value) {
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
@@ -48,6 +61,10 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
         if (idx >= m_canvas.m_cells.size()) return;
         if (value) {
             m_canvas.m_cells[idx] |= bitMask;
+            if (idx < m_canvas.m_cellColors.size())
+                m_canvas.m_cellColors[idx] = 0x00000000;   // follow the canvas color
+            if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
+                accumulateCellColor(m_canvas.m_cellAccumulators, idx, m_canvas.m_resolvedColor);
         } else {
             m_canvas.m_cells[idx] &= static_cast<uint8_t>(~bitMask);
         }
@@ -73,8 +90,13 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
         const size_t idx = static_cast<size_t>((y / 4) * m_canvas.width() + (x / 2));
-        if (idx < m_canvas.m_cells.size())
+        if (idx < m_canvas.m_cells.size()) {
             m_canvas.m_cells[idx] |= brailleBit(x % 2, y % 4);
+            if (idx < m_canvas.m_cellColors.size())
+                m_canvas.m_cellColors[idx] = color;         // last dot drawn wins the cell
+            if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
+                accumulateCellColor(m_canvas.m_cellAccumulators, idx, color);
+        }
     } else {
         const size_t idx = static_cast<size_t>(y * w + x);
         if (idx < m_canvas.m_pixelColors.size()) {
@@ -87,6 +109,8 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
 void CanvasPainter::clear() {
     const uint32_t clearBg = !m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor;
     std::fill(m_canvas.m_cells.begin(), m_canvas.m_cells.end(), 0x00);
+    std::fill(m_canvas.m_cellColors.begin(), m_canvas.m_cellColors.end(), 0x00000000);
+    std::fill(m_canvas.m_cellAccumulators.begin(), m_canvas.m_cellAccumulators.end(), Canvas::CellAccumulator{});
     std::fill(m_canvas.m_pixelColors.begin(), m_canvas.m_pixelColors.end(), clearBg);
     // A transparent fill clears to holes, while a drawn default-color pixel
     // is occupied and uses the terminal's foreground.
@@ -125,6 +149,19 @@ void Canvas::setRenderMode(RenderMode mode) {
     emit renderModeChanged();
     emit pixelWidthChanged();
     emit pixelHeightChanged();
+    markDirty();
+}
+
+void Canvas::setCellColorMode(CellColorMode mode) {
+    if (m_cellColorMode == mode) return;
+    m_cellColorMode = mode;
+    if (mode == CellColorMode::Average) {
+        resizeBuffer();
+    } else {
+        m_cellAccumulators.clear();
+        m_cellAccumulators.shrink_to_fit();
+    }
+    emit cellColorModeChanged();
     markDirty();
 }
 
@@ -220,7 +257,18 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 cell.setCharacter(brailleTable[cellValue]);
                 cell.displayWidth = 1;
                 cell.continuation = false;
-                cell.fgColor = m_resolvedColor;
+                const size_t cellIdx = static_cast<size_t>(y * width() + x);
+                const uint32_t ink = m_cellColors[cellIdx];
+                cell.fgColor = ink ? ink : m_resolvedColor;
+                if (m_cellColorMode == CellColorMode::Average && cellIdx < m_cellAccumulators.size()) {
+                    const CellAccumulator& acc = m_cellAccumulators[cellIdx];
+                    if (acc.count > 0) {
+                        cell.fgColor = 0xFF000000u
+                            | ((acc.red / acc.count) << 16)
+                            | ((acc.green / acc.count) << 8)
+                            | (acc.blue / acc.count);
+                    }
+                }
             }
         }
     } else { // HalfBlock
@@ -277,9 +325,13 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 void Canvas::resizeBuffer() const {
     if (m_renderMode == RenderMode::Braille) {
         const size_t needed = static_cast<size_t>(std::max(0, width()) * std::max(0, height()));
-        if (m_cells.size() != needed) {
+        if (m_cells.size() != needed || m_cellColors.size() != needed) {
             m_cells.resize(needed, 0x00);
+            m_cellColors.resize(needed, 0x00000000);
         }
+        const size_t accumulatorsNeeded = m_cellColorMode == CellColorMode::Average ? needed : 0;
+        if (m_cellAccumulators.size() != accumulatorsNeeded)
+            m_cellAccumulators.assign(accumulatorsNeeded, CellAccumulator{});
     } else {
         const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * 2));
         if (m_pixelColors.size() != needed) {

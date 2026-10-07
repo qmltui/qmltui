@@ -20,6 +20,8 @@ class TestCanvas : public QObject {
 
 private slots:
     void testBrailleMode();
+    void testBraillePerCellColor();
+    void testBrailleAverageCellColor();
     void testHalfBlockMode();
     void testHalfBlockDefaultInk();
     void testShapesOnHalfBlock();
@@ -87,6 +89,94 @@ void TestCanvas::testBrailleMode() {
 
     Cell lineCell = lineBuf.cellAt(0, 0);
     QCOMPARE(lineCell.character().toByteArray(), QString(QChar(0x2824)).toUtf8()); // ⠤
+}
+
+void TestCanvas::testBraillePerCellColor() {
+    Canvas canvas;
+    canvas.setRenderMode(Canvas::RenderMode::Braille);
+    canvas.setWidth(4);
+    canvas.setHeight(1);
+    canvas.setColor("blue");
+    canvas.setAutoClear(false);
+
+    TextGridBuffer buf;
+    buf.resize(4, 1);
+    ClipRect clip{0, 0, 4, 1};
+
+    // First paint allocates the pixel storage.
+    paintItem(canvas, buf, 0, 0, clip);
+    canvas.clear();
+
+    canvas.setPixelColor(0, 0, "red");               // cell 0: explicit ink
+    canvas.setPixel(2, 0, true);                      // cell 1: canvas color
+    canvas.setPixelColor(4, 0, "red");               // cell 2: red, then...
+    canvas.setPixelColor(5, 1, "lime");              // ...the last dot drawn wins
+    canvas.setPixelColor(6, 0, "red");               // cell 3: explicit, then a plain dot
+    canvas.setPixel(7, 1, true);                      // resets the cell to the canvas color
+
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);   // red
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFF0000FFu);   // blue (canvas)
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF00FF00u);   // lime
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(3, 0).fgColor), 0xFF0000FFu);   // blue (canvas)
+    // Both dots of cell 2 are still set; only the ink changed.
+    QCOMPARE(buf.cellAt(2, 0).character().toByteArray(), QString(QChar(0x2801 | 0x2810)).toUtf8());
+
+    // Cells drawn with setPixel() keep following the canvas color; explicit ink does not.
+    canvas.setColor("yellow");
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFFFF00u);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
+
+    // clear() forgets the ink as well as the dots.
+    canvas.clear();
+    canvas.setPixel(0, 0, true);
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFFFF00u);
+}
+
+void TestCanvas::testBrailleAverageCellColor() {
+    Canvas canvas;
+    canvas.setRenderMode(Canvas::RenderMode::Braille);
+    canvas.setCellColorMode(Canvas::CellColorMode::Average);
+    canvas.setWidth(3);
+    canvas.setHeight(1);
+    canvas.setColor("blue");
+    canvas.setAutoClear(false);
+
+    TextGridBuffer buf;
+    buf.resize(3, 1);
+    ClipRect clip{0, 0, 3, 1};
+    paintItem(canvas, buf, 0, 0, clip);
+    canvas.clear();
+
+    canvas.setPixelColor(0, 0, "red");                // cell 0: red + lime -> olive-ish mean
+    canvas.setPixelColor(1, 0, "lime");
+    canvas.setPixelColor(2, 0, "red");                // cell 1: red only
+    canvas.setPixel(4, 0, true);                       // cell 2: canvas blue + red -> purple
+    canvas.setPixelColor(5, 0, "red");
+
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFF7F7F00u);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFF0000u);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF7F007Fu);
+
+    // Switching back to LastDot drops the accumulators and restores last-write-wins.
+    canvas.setCellColorMode(Canvas::CellColorMode::LastDot);
+    canvas.clear();
+    canvas.setPixelColor(0, 0, "red");
+    canvas.setPixelColor(1, 0, "lime");
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFF00FF00u);
+
+    // Dots in the terminal default color do not pull the average.
+    canvas.setCellColorMode(Canvas::CellColorMode::Average);
+    canvas.setColor("default");
+    canvas.clear();
+    canvas.setPixel(0, 0, true);
+    canvas.setPixelColor(1, 0, "red");
+    paintItem(canvas, buf, 0, 0, clip);
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
 }
 
 void TestCanvas::testHalfBlockMode() {

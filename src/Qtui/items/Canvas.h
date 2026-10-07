@@ -19,6 +19,7 @@ class QTUI_CORE_EXPORT Canvas : public Item {
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qtui::Color fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
+    Q_PROPERTY(CellColorMode cellColorMode READ cellColorMode WRITE setCellColorMode NOTIFY cellColorModeChanged)
     Q_PROPERTY(bool autoClear READ autoClear WRITE setAutoClear NOTIFY autoClearChanged)
     Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY pixelWidthChanged)
     Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY pixelHeightChanged)
@@ -29,6 +30,21 @@ public:
         HalfBlock
     };
     Q_ENUM(RenderMode)
+
+    // How a Braille cell picks its color when dots of different colors share it.
+    enum class CellColorMode {
+        LastDot,    // the most recently drawn dot decides (default, cheapest)
+        Average     // mean of every colored dot drawn into the cell since clear()
+    };
+    Q_ENUM(CellColorMode)
+
+    // Per-cell sums used by CellColorMode::Average.
+    struct CellAccumulator {
+        uint32_t red = 0;
+        uint32_t green = 0;
+        uint32_t blue = 0;
+        uint32_t count = 0;
+    };
 
     Canvas(QObject* parent = nullptr);
     ~Canvas() override = default;
@@ -43,6 +59,10 @@ public:
 
     RenderMode renderMode() const { return m_renderMode; }
     void setRenderMode(RenderMode mode);
+
+    CellColorMode cellColorMode() const { return m_cellColorMode; }
+
+    void setCellColorMode(CellColorMode mode);
 
     bool autoClear() const { return m_autoClear; }
     void setAutoClear(bool autoClear);
@@ -67,6 +87,7 @@ signals:
     void colorChanged();
     void fillColorChanged();
     void renderModeChanged();
+    void cellColorModeChanged();
     void autoClearChanged();
     void pixelWidthChanged();
     void pixelHeightChanged();
@@ -81,6 +102,12 @@ private:
     // Pixel storage is derived rendering state: shapes write it while the
     // canvas paints, so it is mutable and never marks the item dirty.
     mutable std::vector<uint8_t> m_cells;            // Braille mode (2x4 bits per cell)
+    // Braille mode ink per cell (ARGB). The last dot drawn into a cell decides its
+    // color; 0 means "the canvas color at paint time", which is what setPixel() writes.
+    mutable std::vector<uint32_t> m_cellColors;
+    // Average mode accumulators, allocated only while that mode is active.
+    mutable std::vector<CellAccumulator> m_cellAccumulators;
+    CellColorMode m_cellColorMode = CellColorMode::LastDot;
     mutable std::vector<uint8_t> m_pixelSet;       // occupancy, independent of default color 0
     mutable std::vector<uint32_t> m_pixelColors;     // HalfBlock mode (1x2 colors per cell, ARGB)
     // "default" is the terminal's foreground (alpha 0 -> SGR 39),

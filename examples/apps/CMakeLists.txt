@@ -1,8 +1,8 @@
 add_subdirectory(container_fleet)
 if(QTUI_ENABLE_BEHAVIOR)
     add_subdirectory(industrial_plc_hmi)
-    add_subdirectory(cyber_audio)
 endif()
+add_subdirectory(cyber_audio)
 add_subdirectory(plotting_dashboard)
 add_subdirectory(pos_cashier)
 # /proc readers and Linux system providers: POSIX only.

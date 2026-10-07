@@ -1,30 +1,50 @@
 function main(terminal) {
     terminal.waitForText("NEURAL AUDIO MATRIX");
     terminal.expectText("24-BAND NEON EQUALIZER");
-    terminal.expectText("STEREO PEAK VU METERS");
+    terminal.expectText("BRAILLE OSCILLOSCOPE");
+    terminal.expectText("STEREO VU");
+    terminal.expectText("MODE SPLIT");
+    // Footer key map is visible and lists every shortcut
+    terminal.expectText("Spectrum");
+    terminal.expectText("Glitch");
+    terminal.expectText("Quit");
     terminal.captureText("cyber_audio/initial.txt");
 
-    // Switch to Spectrum focus mode (triggers State transition with OutBounce)
+    // Spectrum focus: equalizer takes most of the height (OutBounce transition)
     terminal.typeText("2");
     terminal.sleep(450);
+    terminal.expectText("MODE SPECTRUM");
     terminal.captureText("cyber_audio/spectrum_focus.txt");
 
-    // Switch to Scope focus mode (Lissajous 3D phase scope)
+    // Scope focus: Lissajous phase scope
     terminal.typeText("3");
     terminal.sleep(450);
+    terminal.expectText("MODE SCOPE");
+    terminal.expectText("LISSAJOUS PHASE SCOPE");
     terminal.captureText("cyber_audio/scope_focus.txt");
 
-    // Toggle Bass Boost
+    // Effects are independent of the layout and show as header badges
     terminal.typeText("b");
-    terminal.sleep(200);
-
-    // Toggle Glitch overdrive mode
+    terminal.sleep(100);
+    terminal.expectText("BASS+");
     terminal.typeText("g");
-    terminal.sleep(200);
+    terminal.sleep(100);
+    terminal.expectText("GLITCH");
+    terminal.expectText("MODE SCOPE");
 
-    // Return to default Split mode
+    // Transport toggle
+    terminal.typeText(" ");
+    terminal.sleep(100);
+    terminal.expectText("PAUSED");
+    terminal.expectText("Play");
+    terminal.typeText(" ");
+    terminal.sleep(100);
+    terminal.expectText("PLAYING");
+
+    // Back to the default split layout
     terminal.typeText("1");
     terminal.sleep(450);
+    terminal.expectText("MODE SPLIT");
     terminal.captureText("cyber_audio/final.txt");
 
     terminal.finish();

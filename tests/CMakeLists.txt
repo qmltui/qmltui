@@ -300,15 +300,20 @@ add_qtui_environment_scenario(test_runner_inspect_image_unsupported qtui_pos_cas
     FAILURE_PATTERN "Image capture requires QGuiApplication"
     ARTIFACT "failure.txt"
 )
+add_qtui_runner_scenario(test_runner_fixture_missing_main qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/missing_main.js" 1
+    FAILURE_PATTERN "Scenario must define a function main(terminal)"
+    ARTIFACT "failure.txt"
+)
 add_qtui_environment_scenario(test_runner_eval qtui_test_runner_fixture 0
-    EVAL_CODE "Test.captureText('eval.txt')"
+    EVAL_CODE "terminal.captureText('eval.txt')"
     ARTIFACT "eval.txt"
     ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
 )
 add_qtui_environment_scenario(test_runner_environment_conflict qtui_test_runner_fixture 1
     CONFLICT
     SCRIPT "${qtui_test_runner_scenarios}/success.js"
-    EVAL_CODE "Test.frameText()"
+    EVAL_CODE "terminal.frameText()"
     FAILURE_PATTERN "mutually exclusive"
     ARTIFACT "result.json"
 )

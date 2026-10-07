@@ -1,2 +1,4 @@
-Test.captureText("../escape.txt");
-Test.finish();
+function main(terminal) {
+    terminal.captureText("../escape.txt");
+    terminal.finish();
+}

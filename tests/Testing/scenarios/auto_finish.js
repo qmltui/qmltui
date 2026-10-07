@@ -1,2 +1,4 @@
-Test.expectText("TESTRUNNER FIXTURE");
-Test.captureText("auto_finish.txt");
+function main(terminal) {
+    terminal.expectText("TESTRUNNER FIXTURE");
+    terminal.captureText("auto_finish.txt");
+}

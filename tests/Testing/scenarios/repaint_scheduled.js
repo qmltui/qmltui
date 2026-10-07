@@ -2,12 +2,14 @@
 // repaint. injectKey() sends the key without waiting for a frame, so
 // expectRepaint() observes the application's own invalidation rather than one
 // the harness requested. The fixture maps "k" to a status change.
-Test.waitForText("TESTRUNNER FIXTURE", 2000);
-Test.sleep(250);            // let the fixture's one-shot timer settle
-const before = Test.frameCount();
-Test.injectKey("k");
-Test.expectRepaint(1000);
-Test.expectText("STATUS: KEY K");
-if (Test.frameCount() <= before) {
-    Test.fail("frame sequence did not advance: " + before + " -> " + Test.frameCount());
+function main(terminal) {
+    terminal.waitForText("TESTRUNNER FIXTURE", 2000);
+    terminal.sleep(250);            // let the fixture's one-shot timer settle
+    const before = terminal.frameCount();
+    terminal.injectKey("k");
+    terminal.expectRepaint(1000);
+    terminal.expectText("STATUS: KEY K");
+    if (terminal.frameCount() <= before) {
+        terminal.fail("frame sequence did not advance: " + before + " -> " + terminal.frameCount());
+    }
 }

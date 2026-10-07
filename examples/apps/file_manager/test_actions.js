@@ -1,38 +1,36 @@
 // test_actions.js - Tests marking/selection, help modal, dotfiles toggle, and sorting
 
-function run() {
-    Test.waitForText("NORMAL", 2000);
+function main(terminal) {
+    terminal.waitForText("NORMAL", 2000);
 
     // 1. Selection / Marking
-    Test.press("Space");
-    Test.waitForText("[1 marked]", 2000);
-    Test.expectText("[✓]");
+    terminal.press("Space");
+    terminal.waitForText("[1 marked]", 2000);
+    terminal.expectText("[✓]");
 
     // Clear mark
-    Test.press("Space");
-    Test.expectNoText("[1 marked]");
+    terminal.press("Space");
+    terminal.expectNoText("[1 marked]");
 
     // 2. Help Modal Dialog
-    Test.press("?");
-    Test.waitForText("KEYBINDINGS", 2000);
-    Test.expectText("NAVIGATION");
-    Test.expectText("SELECTION & ACTIONS");
+    terminal.press("?");
+    terminal.waitForText("KEYBINDINGS", 2000);
+    terminal.expectText("NAVIGATION");
+    terminal.expectText("SELECTION & ACTIONS");
 
     // Close Help Modal
-    Test.press("Escape");
-    Test.waitForText("NORMAL", 2000);
-    Test.expectNoText("KEYBINDINGS");
+    terminal.press("Escape");
+    terminal.waitForText("NORMAL", 2000);
+    terminal.expectNoText("KEYBINDINGS");
 
     // 3. Toggle Dotfiles
-    Test.press(".");
-    Test.waitForText(".git", 2000);
-    Test.expectText(".env");
+    terminal.press(".");
+    terminal.waitForText(".git", 2000);
+    terminal.expectText(".env");
 
     // 4. Cycle Sort Mode
-    Test.press("s");
-    Test.waitForText("Sort: size", 2000);
+    terminal.press("s");
+    terminal.waitForText("Sort: size", 2000);
 
-    Test.captureText("actions.txt");
+    terminal.captureText("actions.txt");
 }
-
-run();

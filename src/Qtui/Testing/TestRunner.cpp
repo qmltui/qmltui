@@ -240,12 +240,18 @@ TestRunner* TestRunner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* te
     QByteArray generatedScript;
     if (!evalCode.isEmpty()) {
         mode = QStringLiteral("eval");
-        generatedScript = evalCode.toUtf8();
+        if (!evalCode.contains(QLatin1String("main(")) && !evalCode.contains(QLatin1String("main ("))) {
+            generatedScript = QStringLiteral("function main(terminal) {\n    %1;\n}\n").arg(evalCode).toUtf8();
+        } else {
+            generatedScript = evalCode.toUtf8();
+        }
     } else if (inspect) {
         mode = QStringLiteral("inspect");
-        generatedScript = QByteArrayLiteral("Test.captureText('inspect.txt');\n");
+        generatedScript = QByteArrayLiteral("function main(terminal) {\n"
+                                            "    terminal.captureText('inspect.txt');\n");
         if (environmentFlagEnabled("QTUI_INSPECT_IMAGE"))
-            generatedScript += QByteArrayLiteral("Test.captureImage('inspect.png');\n");
+            generatedScript += QByteArrayLiteral("    terminal.captureImage('inspect.png');\n");
+        generatedScript += QByteArrayLiteral("}\n");
     }
 
     if (!generatedScript.isEmpty() && configurationError.isEmpty()) {
@@ -382,7 +388,25 @@ void TestRunner::start()
 
     m_evaluating = true;
     startHardWatchdog();
-    const QJSValue result = m_qmlEngine->evaluate(QString::fromUtf8(scriptBytes), m_scriptPath);
+    const QJSValue evalResult = m_qmlEngine->evaluate(QString::fromUtf8(scriptBytes), m_scriptPath);
+    if (evalResult.isError()) {
+        stopHardWatchdog();
+        m_evaluating = false;
+        failScenario(formatJsError(evalResult), false);
+        return;
+    }
+
+    QJSValue mainFunc = m_qmlEngine->globalObject().property(QStringLiteral("main"));
+    if (!mainFunc.isCallable()) {
+        stopHardWatchdog();
+        m_evaluating = false;
+        failScenario(QStringLiteral("Scenario must define a function main(terminal)"), false);
+        return;
+    }
+
+    const QJSValue result = mainFunc.call({ m_terminalFacade });
+    m_qmlEngine->globalObject().deleteProperty(QStringLiteral("main"));
+
     const bool interrupted = [this] {
         std::lock_guard<std::mutex> lock(m_hardWatchdogMutex);
         return m_scenarioInterrupted;
@@ -449,17 +473,15 @@ bool TestRunner::installJavaScriptFacade()
             return result;
         };
     });
-    this.Test = facade;
-    // The scenario keeps only the facade: the raw runner would let a script
-    // bypass the operation trace or forge entries in it.
     delete this.__QtuiTestNative;
+    return facade;
 })(__QtuiTestNative);
 )JS");
-    const QJSValue facadeResult = m_qmlEngine->evaluate(facadeSource,
-                                                        QStringLiteral("qtui-test-facade.js"));
-    if (facadeResult.isError()) {
-        failScenario(QStringLiteral("Cannot install Test JavaScript facade: %1")
-                         .arg(formatJsError(facadeResult)), false);
+    m_terminalFacade = m_qmlEngine->evaluate(facadeSource,
+                                             QStringLiteral("qtui-test-facade.js"));
+    if (m_terminalFacade.isError()) {
+        failScenario(QStringLiteral("Cannot install Terminal JavaScript facade: %1")
+                         .arg(formatJsError(m_terminalFacade)), false);
         return false;
     }
     return true;
@@ -532,7 +554,7 @@ void TestRunner::stopHardWatchdog()
 
 void TestRunner::endOperation()
 {
-    // The facade calls this once a Test.* call has returned normally. Closing
+    // The facade calls this once a terminal.* call has returned normally. Closing
     // the record here means a later failure — a JavaScript error on a following
     // line, or the scenario watchdog — is no longer attributed to an operation
     // that already succeeded.
@@ -556,7 +578,7 @@ bool TestRunner::ensureRunning(const char* operation)
     if (m_state == State::Running)
         return true;
     if (m_state != State::Failed) {
-        failScenario(QStringLiteral("Test.%1() is not valid in the current scenario state")
+        failScenario(QStringLiteral("terminal.%1() is not valid in the current scenario state")
                          .arg(QString::fromLatin1(operation)));
     }
     return false;
@@ -576,7 +598,7 @@ bool TestRunner::waitForNextFrame(int timeoutMs, bool requestRender)
     if (!m_terminalEngine)
         return false;
     if (m_activeLoop) {
-        failScenario(QStringLiteral("Nested Test wait operations are not supported"));
+        failScenario(QStringLiteral("Nested wait operations are not supported"));
         return false;
     }
     if (timeoutMs < minimumTimeoutMs || timeoutMs > maximumTimeoutMs) {
@@ -730,7 +752,7 @@ void TestRunner::typeText(const QString& text)
     if (!ensureRunning("typeText"))
         return;
     if (text.isEmpty()) {
-        failScenario(QStringLiteral("Test.typeText() requires non-empty text"));
+        failScenario(QStringLiteral("terminal.typeText() requires non-empty text"));
         return;
     }
     m_terminalEngine->handleKeyInput(0, text, Qt::NoModifier, true);
@@ -742,7 +764,7 @@ void TestRunner::injectText(const QString& text)
     if (!ensureRunning("injectText"))
         return;
     if (text.isEmpty()) {
-        failScenario(QStringLiteral("Test.injectText() requires non-empty text"));
+        failScenario(QStringLiteral("terminal.injectText() requires non-empty text"));
         return;
     }
     // Deliberately does not wait for a frame: typeText() would request one and
@@ -1175,14 +1197,14 @@ void TestRunner::waitForCondition(const QJSValue& condition, int timeoutMs)
     if (!ensureRunning("waitForCondition"))
         return;
     if (!condition.isCallable()) {
-        failScenario(QStringLiteral("Test.waitForCondition() requires a callable condition"));
+        failScenario(QStringLiteral("terminal.waitForCondition() requires a callable condition"));
         return;
     }
     const int validated = validateTimeout(timeoutMs);
     if (!validated)
         return;
     if (m_activeLoop) {
-        failScenario(QStringLiteral("Nested Test wait operations are not supported"));
+        failScenario(QStringLiteral("Nested wait operations are not supported"));
         return;
     }
 
@@ -1556,7 +1578,7 @@ QVariantList TestRunner::findText(const QString& text)
     if (!ensureRunning("findText") || !m_terminalEngine)
         return {};
     if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
-        failScenario(QStringLiteral("Test.findText() requires non-empty single-row text"));
+        failScenario(QStringLiteral("terminal.findText() requires non-empty single-row text"));
         return {};
     }
     const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
@@ -1580,7 +1602,7 @@ void TestRunner::clickText(const QString& text, int occurrence, const QString& b
     if (!ensureRunning("clickText") || !m_terminalEngine)
         return;
     if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
-        failScenario(QStringLiteral("Test.clickText() requires non-empty single-row text"));
+        failScenario(QStringLiteral("terminal.clickText() requires non-empty single-row text"));
         return;
     }
     const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();

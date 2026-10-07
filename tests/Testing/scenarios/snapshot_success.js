@@ -1,2 +1,4 @@
-Test.waitForText("ASYNC READY");
-Test.expectSnapshot("snapshots/fixture.txt");
+function main(terminal) {
+    terminal.waitForText("ASYNC READY");
+    terminal.expectSnapshot("snapshots/fixture.txt");
+}

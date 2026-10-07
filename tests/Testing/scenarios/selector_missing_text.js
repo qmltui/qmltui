@@ -1,4 +1,3 @@
-function run() {
-    Test.clickText("THIS TEXT DOES NOT EXIST");
+function main(terminal) {
+    terminal.clickText("THIS TEXT DOES NOT EXIST");
 }
-run();

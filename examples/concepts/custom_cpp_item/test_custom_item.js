@@ -1,5 +1,7 @@
-Test.expectText("Custom C++ Item")
-Test.expectText("0%")
-Test.expectRegex("┌─+┐")
-Test.expectRegex("└─+┘")
-Test.captureText("custom-item.txt")
+function main(terminal) {
+    terminal.expectText("Custom C++ Item")
+    terminal.expectText("0%")
+    terminal.expectRegex("┌─+┐")
+    terminal.expectRegex("└─+┘")
+    terminal.captureText("custom-item.txt")
+}

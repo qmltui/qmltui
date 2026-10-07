@@ -1,7 +1,9 @@
-Test.expectText("SERVICE MONITOR")
-Test.expectText("api-gateway")
-Test.expectText("▲ DEGRADED")
-Test.press("Down")
-Test.press("Down")
-Test.press("Enter")
-Test.expectText("Selected service row 2")
+function main(terminal) {
+    terminal.expectText("SERVICE MONITOR")
+    terminal.expectText("api-gateway")
+    terminal.expectText("▲ DEGRADED")
+    terminal.press("Down")
+    terminal.press("Down")
+    terminal.press("Enter")
+    terminal.expectText("Selected service row 2")
+}

@@ -2,7 +2,7 @@
 
 ## Class Overview
 
-`qtui::TestRunner` turns a running Qtui `Terminal` application into a bounded JavaScript-driven test oracle. It loads a scenario from a filesystem or Qt resource path, exposes itself as the global `Test` object, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when it returns normally; `Test.finish()` is optional.
+`qtui::TestRunner` turns a running Qtui `Terminal` application into a bounded JavaScript-driven test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a test driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
 
 The class is intended for application-level automated tests. It operates on an explicitly supplied `Terminal`, so applications with multiple terminals do not rely on global target selection.
 
@@ -28,49 +28,49 @@ Emitted once when the scenario has passed or failed and process exit has been sc
 
 ## Public Slots and Q_INVOKABLE Methods
 
-The methods in this section are callable from JavaScript through the global `Test` object installed by `start()`. They must be called while the scenario is running. Unless stated otherwise, invalid arguments or failed operations fail the complete scenario, produce a failure artifact when a frame is available, and schedule a non-zero process exit.
+The methods in this section are callable from JavaScript through the `terminal` argument passed to `function main(terminal)`. They must be called while the scenario is running. Unless stated otherwise, invalid arguments or failed operations fail the complete scenario, produce a failure artifact when a frame is available, and schedule a non-zero process exit.
 
 #### void press(const QString &key, const QStringList &modifiers = {})
 
-Sends one key event to the target terminal and waits for the resulting committed frame. `key` accepts Enter/Return, Esc/Escape, Tab, Backtab, Backspace, Space, the arrow keys, Home, End, Insert, Delete, PageUp, PageDown, F1 through F35, or one ASCII character. Modifier names are case-insensitive and accept Shift, Ctrl/Control, Alt, and Meta. Backtab automatically applies Shift. Control, Alt, and Meta combinations do not carry text. JavaScript usage: `Test.press("Enter")` or `Test.press("a", ["Shift"])`.
+Sends one key event to the target terminal and waits for the resulting committed frame. `key` accepts Enter/Return, Esc/Escape, Tab, Backtab, Backspace, Space, the arrow keys, Home, End, Insert, Delete, PageUp, PageDown, F1 through F35, or one ASCII character. Modifier names are case-insensitive and accept Shift, Ctrl/Control, Alt, and Meta. Backtab automatically applies Shift. Control, Alt, and Meta combinations do not carry text. JavaScript usage: `terminal.press("Enter")` or `Test.press("a", ["Shift"])`.
 
 #### void typeText(const QString &text)
 
-Sends non-empty Unicode text as one text-input event and waits for the resulting committed frame. Use this for text entry rather than issuing one `press()` call per character. JavaScript usage: `Test.typeText("café 世界")`.
+Sends non-empty Unicode text as one text-input event and waits for the resulting committed frame. Use this for text entry rather than issuing one `press()` call per character. JavaScript usage: `terminal.typeText("café 世界")`.
 
 #### void sleep(int durationMs)
 
-Waits for the requested duration while continuing to process Qt events, QML timers, rendering, and the scenario watchdog. `durationMs` must be between 1 and 30,000 milliseconds. The overall scenario watchdog can fail the test before the sleep completes. Nested Test wait operations are rejected. JavaScript usage: `Test.sleep(250)`.
+Waits for the requested duration while continuing to process Qt events, QML timers, rendering, and the scenario watchdog. `durationMs` must be between 1 and 30,000 milliseconds. The overall scenario watchdog can fail the test before the sleep completes. Nested wait operations are rejected. JavaScript usage: `terminal.sleep(250)`.
 
 #### void waitForFrame(int timeoutMs = 2000)
 
-Requests rendering and waits for a committed frame whose sequence is newer than the frame visible when the call began. `timeoutMs` must be between 1 and 30,000 milliseconds. The scenario fails if no new frame is committed before the timeout. JavaScript usage: `Test.waitForFrame()` or `Test.waitForFrame(5000)`.
+Requests rendering and waits for a committed frame whose sequence is newer than the frame visible when the call began. `timeoutMs` must be between 1 and 30,000 milliseconds. The scenario fails if no new frame is committed before the timeout. JavaScript usage: `terminal.waitForFrame()` or `Test.waitForFrame(5000)`.
 
 #### void expectRepaint(int timeoutMs = 2000)
 
-Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `Test.injectKey("k"); Test.expectRepaint();`
+Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `terminal.injectKey("k"); Test.expectRepaint();`
 
 #### void injectKey(const QString &key, const QStringList &modifiers = {})
 
-`press()` without the implicit frame wait. Same key and modifier names, no rendering requested and no frame awaited. JavaScript usage: `Test.injectKey("Down", ["Shift"])`.
+`press()` without the implicit frame wait. Same key and modifier names, no rendering requested and no frame awaited. JavaScript usage: `terminal.injectKey("Down", ["Shift"])`.
 
 #### void injectText(const QString &text)
 
-`typeText()` without the implicit frame wait. JavaScript usage: `Test.injectText("abc")`.
+`typeText()` without the implicit frame wait. JavaScript usage: `terminal.injectText("abc")`.
 
 #### int frameCount()
 
-Sequence number of the most recently committed frame, or `-1` when no engine is attached. Compare it across an interaction to assert that nothing repainted. JavaScript usage: `const before = Test.frameCount();`
+Sequence number of the most recently committed frame, or `-1` when no engine is attached. Compare it across an interaction to assert that nothing repainted. JavaScript usage: `const before = terminal.frameCount();`
 
 #### void waitForCondition(const QJSValue &condition, int timeoutMs = 2000)
 
 Evaluates a synchronous JavaScript callback immediately and then approximately every 10 milliseconds until it returns a truthy value. The callback receives two arguments: the normalized text of the current committed frame and the number of milliseconds elapsed since waiting began. `timeoutMs` must be between 1 and 30,000 milliseconds.
 
-The callback must be callable and synchronous. A thrown JavaScript error fails the scenario. Promises are not awaited, and nested calls to `sleep()`, `waitForFrame()`, `waitForText()`, or `waitForCondition()` are rejected. JavaScript usage: `Test.waitForCondition((frameText, elapsedMs) => elapsedMs >= 100 && frameText.includes("READY"), 2000)`.
+The callback must be callable and synchronous. A thrown JavaScript error fails the scenario. Promises are not awaited, and nested calls to `sleep()`, `waitForFrame()`, `waitForText()`, or `waitForCondition()` are rejected. JavaScript usage: `terminal.waitForCondition((frameText, elapsedMs) => elapsedMs >= 100 && frameText.includes("READY"), 2000)`.
 
 #### void waitForText(const QString &text, int timeoutMs = 2000)
 
-Waits until a committed terminal frame contains the specified non-empty substring. It observes committed frames rather than sleeping for an assumed render delay. `timeoutMs` must be between 1 and 30,000 milliseconds. JavaScript usage: `Test.waitForText("SYSTEM READY", 3000)`.
+Waits until a committed terminal frame contains the specified non-empty substring. It observes committed frames rather than sleeping for an assumed render delay. `timeoutMs` must be between 1 and 30,000 milliseconds. JavaScript usage: `terminal.waitForText("SYSTEM READY", 3000)`.
 
 #### void expectText(const QString &text)
 
@@ -106,39 +106,39 @@ Clicks the center of the selected rendered-text match and waits for the resultin
 
 #### void click(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
 
-Sends a mouse press and release event at terminal coordinates `(x, y)`. Accepts button `"left"`, `"middle"`, or `"right"`, and optional modifiers `["Shift", "Ctrl", "Alt", "Meta"]`. JavaScript usage: `Test.click(10, 5)` or `Test.click(10, 5, "right")`.
+Sends a mouse press and release event at terminal coordinates `(x, y)`. Accepts button `"left"`, `"middle"`, or `"right"`, and optional modifiers `["Shift", "Ctrl", "Alt", "Meta"]`. JavaScript usage: `terminal.click(10, 5)` or `Test.click(10, 5, "right")`.
 
 #### void doubleClick(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
 
-Sends two consecutive mouse press and release cycles at terminal coordinates `(x, y)`. JavaScript usage: `Test.doubleClick(10, 5)`.
+Sends two consecutive mouse press and release cycles at terminal coordinates `(x, y)`. JavaScript usage: `terminal.doubleClick(10, 5)`.
 
 #### void drag(int startX, int startY, int endX, int endY, const QString &button = "left", const QStringList &modifiers = {})
 
-Simulates a mouse drag operation starting at `(startX, startY)` and moving to `(endX, endY)`. JavaScript usage: `Test.drag(5, 5, 25, 5)`.
+Simulates a mouse drag operation starting at `(startX, startY)` and moving to `(endX, endY)`. JavaScript usage: `terminal.drag(5, 5, 25, 5)`.
 
 #### void scroll(int x, int y, int deltaX, int deltaY, const QStringList &modifiers = {})
 
-Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY`. JavaScript usage: `Test.scroll(15, 10, 0, 120)`.
+Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY`. JavaScript usage: `terminal.scroll(15, 10, 0, 120)`.
 
 #### void waitForRegex(const QString &pattern, int timeoutMs = 2000)
 
-Waits until a committed terminal frame matches the regular expression `pattern`. JavaScript usage: `Test.waitForRegex("STATUS:\\s+READY", 3000)`.
+Waits until a committed terminal frame matches the regular expression `pattern`. JavaScript usage: `terminal.waitForRegex("STATUS:\\s+READY", 3000)`.
 
 #### void expectRegex(const QString &pattern)
 
-Fails the scenario unless the next committed frame matches the regular expression `pattern`. JavaScript usage: `Test.expectRegex("System\\s+v\\d+\\.\\d+")`.
+Fails the scenario unless the next committed frame matches the regular expression `pattern`. JavaScript usage: `terminal.expectRegex("System\\s+v\\d+\\.\\d+")`.
 
 #### void expectTextInRegion(int x, int y, int width, int height, const QString &text)
 
-Fails the scenario unless the bounding box `[x, y, width, height]` contains `text`. JavaScript usage: `Test.expectTextInRegion(0, 0, 80, 2, "HEADER")`.
+Fails the scenario unless the bounding box `[x, y, width, height]` contains `text`. JavaScript usage: `terminal.expectTextInRegion(0, 0, 80, 2, "HEADER")`.
 
 #### void expectStyle(int x, int y, const QJSValue &expectedStyle)
 
-Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `Test.expectStyle(0, 0, { bold: true })`. The `dim` attribute can be checked with `{ dim: true }`.
+Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `terminal.expectStyle(0, 0, { bold: true })`. The `dim` attribute can be checked with `{ dim: true }`.
 
 #### void expectSnapshot(const QString &snapshotRelativePath)
 
-Compares the committed frame against a snapshot resolved relative to the scenario. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory. JavaScript usage: `Test.expectSnapshot("snapshots/baseline.txt")`.
+Compares the committed frame against a snapshot resolved relative to the scenario. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory. JavaScript usage: `terminal.expectSnapshot("snapshots/baseline.txt")`.
 
 #### void fail(const QString &message)
 
@@ -146,7 +146,7 @@ Fails the scenario immediately with `message`. An empty message is replaced with
 
 #### void finish()
 
-Marks the scenario as finishing. Calling `Test.finish()` explicitly is optional: if a script or Promise returns normally without uncaught errors or failed assertions, `TestRunner` will automatically auto-finish the scenario successfully.
+Marks the scenario as finishing. Calling `terminal.finish()` explicitly is optional: if a script or Promise returns normally without uncaught errors or failed assertions, `TestRunner` will automatically auto-finish the scenario successfully.
 
 ## Asynchronous & Promise Integration
 
@@ -187,7 +187,7 @@ Installed consumers can register scenarios with `qtui_add_scenario_test(NAME ...
 
 #### void start()
 
-Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, exposes the global `Test` object, and evaluates the scenario. Call it once, normally through `QTimer::singleShot(0, driver, &TestRunner::start)`.
+Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, and invokes its `function main(terminal)` entry point. Call it once, normally through `QTimer::singleShot(0, driver, &TestRunner::start)`.
 
 ## Ownership and Lifecycle
 
@@ -197,11 +197,11 @@ Every instance uses `QCoreApplication::instance()` as its QObject parent and is 
 
 ## Thread Safety
 
-`TestRunner` is GUI-thread only. It enters bounded nested Qt event loops to keep QML timers, rendering, and signals active during waits. Calls from worker threads or concurrent calls are unsupported. Nested Test wait operations are explicitly rejected.
+`TestRunner` is GUI-thread only. It enters bounded nested Qt event loops to keep QML timers, rendering, and signals active during waits. Calls from worker threads or concurrent calls are unsupported. Nested wait operations are explicitly rejected.
 
 ## JavaScript Exposure
 
-`TestRunner` is not registered as a constructible QML type. At scenario startup, the supplied `QQmlEngine` wraps the existing driver with `newQObject()` and installs it on the JavaScript global object as `Test`. The script can call all `Q_INVOKABLE` methods but does not own the C++ object.
+`TestRunner` is not registered as a constructible QML type. At scenario startup, the driver wraps itself in a JavaScript facade and passes it as the `terminal` argument to `function main(terminal)`. The global namespace remains clean, and the script can call all `Q_INVOKABLE` methods on `terminal` without owning the C++ object.
 
 Scenario callbacks passed to `waitForCondition()` run in the same JavaScript engine and may close over ordinary scenario variables. They should be fast and side-effect-free so rendering and timers continue to make progress.
 

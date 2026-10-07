@@ -234,6 +234,7 @@ private:
     QTimer m_watchdog;
     QEventLoop* m_activeLoop = nullptr;
     State m_state = State::Starting;
+    QJSValue m_terminalFacade;
     bool m_evaluating = false;
     bool m_exitScheduled = false;
 

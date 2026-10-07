@@ -1,31 +1,29 @@
 // test_search.js - Tests instant live filtering and search mode
 
-function run() {
-    Test.waitForText("NORMAL", 2000);
-    Test.expectText("README.md");
-    Test.expectText("CMakeLists.txt");
+function main(terminal) {
+    terminal.waitForText("NORMAL", 2000);
+    terminal.expectText("README.md");
+    terminal.expectText("CMakeLists.txt");
 
     // Enter Filter Mode
-    Test.press("/");
-    Test.waitForText("FILTER", 2000);
-    Test.expectText("Filter:");
+    terminal.press("/");
+    terminal.waitForText("FILTER", 2000);
+    terminal.expectText("Filter:");
 
     // Type query
-    Test.typeText("CMake");
-    Test.waitForText("CMakeLists.txt", 2000);
-    Test.expectNoText("README.md");
-    Test.expectNoText("package.json");
+    terminal.typeText("CMake");
+    terminal.waitForText("CMakeLists.txt", 2000);
+    terminal.expectNoText("README.md");
+    terminal.expectNoText("package.json");
 
     // Commit filter with Enter
-    Test.press("Enter");
-    Test.expectText("CMakeLists.txt");
+    terminal.press("Enter");
+    terminal.expectText("CMakeLists.txt");
 
     // Clear filter with Escape
-    Test.press("Escape");
-    Test.waitForText("README.md", 2000);
-    Test.expectText("package.json");
+    terminal.press("Escape");
+    terminal.waitForText("README.md", 2000);
+    terminal.expectText("package.json");
 
-    Test.captureText("search.txt");
+    terminal.captureText("search.txt");
 }
-
-run();

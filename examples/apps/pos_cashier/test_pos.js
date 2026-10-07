@@ -1,20 +1,22 @@
-Test.waitForText("RapidPOS");
-Test.captureText("pos/catalog.txt");
+function main(terminal) {
+    terminal.waitForText("RapidPOS");
+    terminal.captureText("pos/catalog.txt");
 
-Test.press("F4");
-Test.waitForText("ITEM NAME");
-Test.expectText("ITEM NAME");
+    terminal.press("F4");
+    terminal.waitForText("ITEM NAME");
+    terminal.expectText("ITEM NAME");
 
-Test.press("F12");
-Test.waitForText("PAYMENT METHOD");
-Test.expectText("PAYMENT METHOD");
-Test.expectText("CASH TENDERED");
+    terminal.press("F12");
+    terminal.waitForText("PAYMENT METHOD");
+    terminal.expectText("PAYMENT METHOD");
+    terminal.expectText("CASH TENDERED");
 
-Test.clickText("[$20]");
-Test.waitForText("CHANGE DUE: $0.47");
-Test.captureText("pos/payment.txt");
+    terminal.clickText("[$20]");
+    terminal.waitForText("CHANGE DUE: $0.47");
+    terminal.captureText("pos/payment.txt");
 
-Test.clickText("CONFIRM PAYMENT");
-Test.waitForText("TRANSACTION COMPLETED");
-Test.captureText("pos/receipt.txt");
-Test.finish();
+    terminal.clickText("CONFIRM PAYMENT");
+    terminal.waitForText("TRANSACTION COMPLETED");
+    terminal.captureText("pos/receipt.txt");
+    terminal.finish();
+}

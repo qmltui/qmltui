@@ -1,1 +1,3 @@
-Test.waitForCondition(() => false, 100);
+function main(terminal) {
+    terminal.waitForCondition(() => false, 100);
+}

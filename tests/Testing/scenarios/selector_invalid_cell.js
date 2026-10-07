@@ -1,4 +1,3 @@
-function run() {
-    Test.cell(-1, 0);
+function main(terminal) {
+    terminal.cell(-1, 0);
 }
-run();

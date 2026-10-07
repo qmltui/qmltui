@@ -1,15 +1,17 @@
-Test.waitForText("DOCKER FLEET MONITOR");
-Test.captureText("fleet/all.txt");
+function main(terminal) {
+    terminal.waitForText("DOCKER FLEET MONITOR");
+    terminal.captureText("fleet/all.txt");
 
-Test.press("2");
-Test.waitForText("RUNNING");
-Test.captureText("fleet/running.txt");
+    terminal.press("2");
+    terminal.waitForText("RUNNING");
+    terminal.captureText("fleet/running.txt");
 
-Test.press("3");
-Test.waitForText("CRITICAL");
-Test.captureText("fleet/critical.txt");
+    terminal.press("3");
+    terminal.waitForText("CRITICAL");
+    terminal.captureText("fleet/critical.txt");
 
-Test.press("L");
-Test.waitForFrame();
-Test.captureText("fleet/logs.txt");
-Test.finish();
+    terminal.press("L");
+    terminal.waitForFrame();
+    terminal.captureText("fleet/logs.txt");
+    terminal.finish();
+}

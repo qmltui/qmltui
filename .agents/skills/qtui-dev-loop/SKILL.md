@@ -150,7 +150,7 @@ Use inline evaluation for a short exploratory action sequence:
 
 ```bash
 rtk env \
-  QTUI_EVAL="Test.clickText('Pay'); Test.captureText('after-pay.txt');" \
+  QTUI_EVAL="terminal.clickText('Pay'); terminal.captureText('after-pay.txt');" \
   QTUI_TEST_COLUMNS=80 \
   QTUI_TEST_ROWS=24 \
   QTUI_TEST_ARTIFACT_DIR=/tmp/qtui-eval \
@@ -168,12 +168,13 @@ rtk env QTUI_TEST_EMBEDDED_SCENARIO=1 QTUI_TEST_LIVE=1 \
   ./build/path/to/embedded-test-runner
 ```
 
-`QTUI_INSPECT_IMAGE=1` and `Test.captureImage()` rasterize the committed cell
+`QTUI_INSPECT_IMAGE=1` and `terminal.captureImage()` rasterize the committed cell
 grid and require a `QGuiApplication`; normal text capture works with
 `QCoreApplication`. Prefer text artifacts unless an image materially helps.
 
 ## Write Reliable JavaScript Scenarios
 
+Every test scenario script must define an entry point: `function main(terminal) { ... }`.
 Use the API documentation for exact signatures. Choose operations by intent:
 
 - `press()` and `typeText()` inject input and wait for the resulting committed
@@ -198,19 +199,18 @@ Use the API documentation for exact signatures. Choose operations by intent:
   resolved relative to the scenario; mismatches produce an actual frame and a
   unified diff beneath the artifact directory.
 
-Synchronous scripts pass when their final expression returns normally, so
-`Test.finish()` is optional. For an asynchronous scenario, make the Promise the
-script's final expression—usually by calling a function that returns it:
+Synchronous scenarios pass when `main` returns normally, so `terminal.finish()`
+is optional. For an asynchronous scenario, `main` can return a Promise or be
+declared `async`:
 
 ```javascript
-function run() {
-    Test.expectText("READY")
+function main(terminal) {
+    terminal.expectText("READY");
     return new Promise((resolve) => {
-        Test.sleep(50)
-        resolve()
-    })
+        terminal.sleep(50);
+        resolve();
+    });
 }
-run()
 ```
 
 Do not use a top-level `return`. Promise rejection, uncaught JavaScript errors,

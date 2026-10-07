@@ -27,6 +27,7 @@ private slots:
     void testQmlCanvasHalfBlock();
     void testHalfBlockDemoRendering();
     void testShapesDoNotInvalidateWhilePainting();
+    void testRequestPaint();
 };
 
 
@@ -337,6 +338,14 @@ void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
     // Pixel writes outside a frame still invalidate.
     canvas->setPixel(1, 1, true);
     QCOMPARE(dirtySpy.count(), 1);
+}
+
+void TestCanvas::testRequestPaint() {
+    Canvas canvas;
+    QSignalSpy dirtySpy(&canvas, &Item::dirty);
+    canvas.requestPaint();
+    QCOMPARE(dirtySpy.count(), 1);
+    QVERIFY(canvas.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
 }
 
 QTEST_MAIN(TestCanvas)

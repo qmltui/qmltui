@@ -59,6 +59,7 @@ public:
     Q_INVOKABLE void setPixelColor(int x, int y, Color color);
     void setPixelColorHex(int x, int y, uint32_t color);
     Q_INVOKABLE void clear();
+    Q_INVOKABLE void requestPaint();
 
     void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const override;
 

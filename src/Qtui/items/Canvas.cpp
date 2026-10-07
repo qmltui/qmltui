@@ -172,6 +172,10 @@ void Canvas::clear() {
     markDirty();
 }
 
+void Canvas::requestPaint() {
+    markDirty();
+}
+
 void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!visible()) return;
     Q_UNUSED(clipRect);

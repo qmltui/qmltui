@@ -52,6 +52,18 @@ Terminal {
         }
     }
 
+    // Erasing is setPixel(false), not painting "transparent": on a Canvas
+    // "transparent" is the terminal's default ink, so a "transparent" pixel is
+    // still set and renders as a block in the foreground colour.
+    function eraseCell(cellX, cellY) {
+        let originX = cellX * cellPixelWidth
+        let originY = cellY * cellPixelHeight
+        for (let pixelY = 0; pixelY < cellPixelHeight; ++pixelY) {
+            for (let pixelX = 0; pixelX < cellPixelWidth; ++pixelX)
+                gameCanvas.setPixel(originX + pixelX, originY + pixelY, false)
+        }
+    }
+
     function redrawCanvas() {
         gameCanvas.clear()
         if (!playable || snakeModel.count === 0)
@@ -188,7 +200,7 @@ Terminal {
         if (ateFood) {
             snakeModel.append({ "cellX": oldTailX, "cellY": oldTailY })
         } else {
-            paintCell(oldTailX, oldTailY, "transparent")
+            eraseCell(oldTailX, oldTailY)
         }
 
         // Old head becomes body segment

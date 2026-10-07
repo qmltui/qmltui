@@ -530,7 +530,7 @@ jobs:
           -DFETCHCONTENT_SOURCE_DIR_QTUI=${{ github.workspace }}
       - run: cmake --build build-qs --parallel
       - name: Smoke-run headless
-        run: QTUI_INSPECT=1 QTUI_TEST_ARTIFACT_DIR=qs-artifacts ./build-qs/hello_qtui
+        run: QTUI_CAPTURE_AFTER_MS=0 QTUI_TEST_ARTIFACT_DIR=qs-artifacts ./build-qs/hello_qtui
 ```
 
 `FETCHCONTENT_SOURCE_DIR_QTUI` is CMake's standard override for a declared
@@ -613,7 +613,7 @@ any backend, which is the existing headless path.
 `TerminalBackend::setFactory()` lets an application replace the platform
 backend process-wide: serial consoles on devices without a tty layer,
 in-process hosts over sockets or ConPTY, the WebAssembly bridge of Plan 05,
-and tests. `Qtui::Testing` ships `MemoryTerminalBackend` as the reference
+and tests. `Qtui::TestRunner` ships `MemoryTerminalBackend` as the reference
 implementation, and `tests/Core/test_terminal_backend.cpp` drives the engine
 through it end to end. C++ only, no QML surface, documented as subject to
 change before 1.0. Per-Terminal injection is deferred until a multi-session
@@ -673,7 +673,7 @@ cmake --build build-nobehavior && ctest --test-dir build-nobehavior --output-on-
 
 # Quickstart standalone against the working tree
 cmake -S examples/quickstart -B build-qs -DFETCHCONTENT_SOURCE_DIR_QTUI=$PWD
-cmake --build build-qs && QTUI_INSPECT=1 ./build-qs/hello_qtui
+cmake --build build-qs && QTUI_CAPTURE_AFTER_MS=0 ./build-qs/hello_qtui
 
 # Windows (from a Developer PowerShell)
 cmake -S . -B build-win -DQTUI_BUILD_TESTS=ON -DQTUI_BUILD_EXAMPLES=ON

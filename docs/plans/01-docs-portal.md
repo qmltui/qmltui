@@ -117,7 +117,7 @@ markdown file, so adding a component doc never requires touching the site.
 | `focus-and-keys` | Focus chain, `Keys`, the quit path | `examples/concepts/focus_and_keys` |
 | `cpp-models` | Feeding views from `QAbstractItemModel` | `docs/qml_api.md` |
 | `custom-items` | Subclassing `qtui::Item`, `paint()`, `CanvasPainter` | `docs/custom_items.md` |
-| `testing` | TestRunner scenarios, snapshots, CTest integration | `src/Qtui/Testing/doc/TestRunner.md` |
+| `testing` | TestRunner scenarios, snapshots, CTest integration | `src/Qtui/TestRunner/doc/TestRunner.md` |
 | `qt-creator` | F1 help, QML completion, kit setup | Plan 04 |
 
 Each guide page ends with a link to the concept example that demonstrates it.

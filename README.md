@@ -144,10 +144,10 @@ while more than `QTUI_OUTPUT_QUEUE_LIMIT` bytes (default 262144) are queued.
 
 ## Agent-oriented application testing
 
-Enable `Qtui::Testing` with `QTUI_BUILD_TESTS=ON` in-tree or
+Enable `Qtui::TestRunner` with `QTUI_BUILD_TESTS=ON` in-tree or
 `QTUI_ENABLE_TEST_RUNNER=ON` for installation. Test-enabled applications can
 run scenarios through `QTUI_SCRIPT`, inline actions through `QTUI_EVAL`, or
-capture one frame with `QTUI_INSPECT=1`. Runs are quiet by default and write
+capture one frame with `QTUI_CAPTURE_AFTER_MS=<delay>`. Runs are quiet by default and write
 `result.json` plus a normalized final frame beneath
 `QTUI_TEST_ARTIFACT_DIR`; set `QTUI_TEST_LIVE=1` for interactive rendering.
 
@@ -156,9 +156,9 @@ Installed CMake consumers can register a scenario with:
 ```cmake
 find_package(Qtui 0.4 REQUIRED)
 
-# Linking Qtui::Testing is what puts the runner inside the application; without
+# Linking Qtui::TestRunner is what puts the runner inside the application; without
 # it the scenario fails with "did not create result.json".
-target_link_libraries(my_app PRIVATE Qtui::Core Qtui::Testing)
+target_link_libraries(my_app PRIVATE Qtui::Core Qtui::TestRunner)
 
 qtui_add_scenario_test(
     NAME my_app_smoke
@@ -170,13 +170,14 @@ qtui_add_scenario_test(
 
 `qtui_add_scenario_test` defaults its QML import path to
 `Qtui_QML_IMPORT_PATH`, which `find_package(Qtui)` sets to the installed import
-root; pass `QML_IMPORT_PATH` explicitly to override it. Link `Qtui::Testing`
+root; pass `QML_IMPORT_PATH` explicitly to override it. Link `Qtui::TestRunner`
 only into a test-only executable — an application carrying the runner executes
 the scenario named by `QTUI_SCRIPT`/`QTUI_EVAL` if those variables are set in
 its environment. See `examples/apps/industrial_plc_hmi` for that split.
 
-JavaScript scenarios can inspect cells, find rendered text, and click it
-without hard-coded coordinates. See `src/Qtui/Testing/doc/TestRunner.md` for
+JavaScript scenarios can inspect cells, find rendered text, click it without
+hard-coded coordinates, and compare styled snapshots that cover colors and
+attributes as well as text. See `src/Qtui/TestRunner/doc/TestRunner.md` for
 the JavaScript and result contracts.
 
 ## Install and consume
@@ -223,6 +224,6 @@ Applications customize them through ordinary color properties and reusable QML c
 Plain text renders terminal control characters visibly and never interprets
 them. Escape-sequence interpretation requires an explicit ANSI text format.
 
-See [QML API](docs/qml_api.md), [architecture](docs/architecture.md), and
-[custom items](docs/custom_items.md). Breaking stabilization changes are listed
+See [QML API](docs/qml_api.md), [models in views](docs/guide/models.md),
+[architecture](docs/architecture.md), and [custom items](docs/custom_items.md). Breaking stabilization changes are listed
 in the [0.3 migration notes](docs/migration-0.3.md).

@@ -109,9 +109,9 @@ change over roughly six seconds.
 - Still SVG for component cards: `svg-term --in <name>.cast --at 3000 --out <name>.svg`.
   SVG keeps text selectable, scales cleanly, and is a few kilobytes.
 
-`QTUI_INSPECT` still writes `inspect.txt`, and `captureImage()` requires a
-`QGuiApplication`, which these apps are not. Neither produces the PNG the old
-plan assumed, which is why stills derive from casts.
+`QTUI_CAPTURE_AFTER_MS` writes `capture.txt` and `capture_styled.txt` only. `TestRunner` has no image capture
+(it was removed together with its Qt Gui dependency), which is why stills
+derive from casts.
 
 ### Size budget
 

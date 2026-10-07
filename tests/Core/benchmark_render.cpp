@@ -157,7 +157,7 @@ std::vector<Sample> measureItem(qtui::Item *item, int width, int height,
 
 bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
                     int width, int height, const Mutation &mutate,
-                    std::vector<Result> &results)
+                    std::vector<Result> &results, const QString &expectedText = {})
 {
     QQmlComponent component(&engine);
     component.setData(qml.toUtf8(), QUrl());
@@ -175,6 +175,22 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
     item->setHeight(height);
     if (mutate)
         mutate(item, 0);   // give the idle run a populated scene
+
+    if (!expectedText.isEmpty()) {
+        qtui::TextGridBuffer frame;
+        frame.resize(width, height);
+        qtui::testing::paintItem(item, frame, 0, 0);
+        QString text;
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x)
+                text += QString::fromUtf8(frame.cellAt(x, y).character());
+            text += QLatin1Char('\n');
+        }
+        if (!text.contains(expectedText)) {
+            qCritical().noquote() << name << "missing rendered content:" << expectedText;
+            return false;
+        }
+    }
 
     results.push_back(summarize(name, width, height, true,
                                 measureItem(item, width, height, nullptr)));
@@ -234,9 +250,9 @@ QVariantList compositeRows(int frame)
 {
     QVariantList rows;
     for (int row = 0; row < 40; ++row) {
-        rows.append(QVariantList{1000 + row,
+        rows.append(QVariant::fromValue(QVariantList{1000 + row,
                                  QStringLiteral("process-%1").arg(row),
-                                 QStringLiteral("%1%").arg((row * 7 + frame) % 100)});
+                                 QStringLiteral("%1%").arg((row * 7 + frame) % 100)}));
     }
     return rows;
 }
@@ -256,8 +272,8 @@ Item {
         width: Math.floor(root.width / 2)
         height: 6
         values: root.history
-        minVal: 0
-        maxVal: 100
+        from: 0
+        to: 100
         color: "green"
     }
     Canvas {
@@ -427,7 +443,8 @@ int main(int argc, char **argv)
         ok &= runQmlScenario(engine, QStringLiteral("text_rows"), textRowsQml(),
                              size.width(), size.height(), editOneRow, results);
         ok &= runQmlScenario(engine, QStringLiteral("composite"), QString::fromUtf8(compositeQml),
-                             size.width(), size.height(), advanceComposite, results);
+                             size.width(), size.height(), advanceComposite, results,
+                             QStringLiteral("process-0"));
         ok &= runQmlScenario(engine, QStringLiteral("list_view"), QString::fromUtf8(listViewQml),
                              size.width(), size.height(), scrollList, results);
     }

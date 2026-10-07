@@ -79,7 +79,7 @@ Rules:
 
 - Every example compiles. `scripts/check_doc_examples.py` extracts each
   `qml` block into a temporary `Main.qml`, builds it against the tree, and runs
-  it with `QTUI_INSPECT=1`. CI fails on any block that does not load.
+  it with `QTUI_CAPTURE_AFTER_MS=0`. CI fails on any block that does not load.
 - Property names follow the Plan 00 naming pass. The template says `text`, not
   `label`.
 - Frontmatter drives the catalog grid, the search index, and the `.qhp`

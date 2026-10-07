@@ -33,8 +33,7 @@ Remove `add_subdirectory(apps)`. Keep `components`, `concepts`, and
 
 Two groups of tests currently depend on apps:
 
-1. The inspect scenarios `test_runner_inspect` and
-   `test_runner_inspect_image_unsupported` (around lines 273 to 283) run
+1. The capture scenario `test_runner_capture` runs
    against `qtui_pos_cashier` and assert on the text "RapidPOS". Point them at
    `qtui_test_runner_fixture` and assert on "TESTRUNNER FIXTURE" instead.
 2. The per-app scenario blocks from `if(TARGET qtui_pos_cashier)` through the
@@ -122,7 +121,7 @@ FetchContent_MakeAvailable(Qtui)
 
 if(QTUI_APPS_BUILD_TESTS)
     include(CTest)
-    include(${qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake)   # qtui_add_scenario_test()
+    include(${qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake)   # qtui_add_scenario_test()
 endif()
 
 foreach(app IN ITEMS
@@ -157,7 +156,7 @@ cmake --build build --target qtui_btop
 ### D. Tests
 
 Each app directory keeps its `test_*.js` scenarios and registers them with
-`qtui_add_scenario_test()` from the fetched `QtuiTesting.cmake`. This
+`qtui_add_scenario_test()` from the fetched `QtuiTestRunner.cmake`. This
 reproduces the app scenario tests deleted from the core tree, and adds one for
 `plotting_dashboard`, which has none today. Known flake:
 `test_runner_twozero48` under `ctest -j`, keep it serial.

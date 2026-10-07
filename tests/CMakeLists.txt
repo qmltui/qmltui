@@ -424,4 +424,8 @@ if(QTUI_BUILD_BENCHMARKS)
     add_executable(benchmark_render Core/benchmark_render.cpp)
     target_link_libraries(benchmark_render PRIVATE
  Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
+    add_test(NAME test_benchmark_render_smoke COMMAND benchmark_render --strict --frames 2)
+    set_tests_properties(test_benchmark_render_smoke PROPERTIES
+        ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+    )
 endif()

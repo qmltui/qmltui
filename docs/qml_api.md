@@ -52,9 +52,9 @@ the model when the model supplies such a list.
 
 | Type | Standard delegate properties | `modelData` | Qtui-specific behavior |
 | --- | --- | --- | --- |
-| `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting |
-| `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight` |
-| `Repeater` | `index`, `model`, named roles | Row value or role map | Inserts delegates into its visual parent |
+| `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting; `rootIndex` selects the level of a tree model |
+| `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight`; only the viewport's cells are instantiated; `rootIndex` as ListView |
+| `Repeater` | `index`, `model`, named roles | Row value or role map | Inserts delegates into its visual parent; `rootIndex` as ListView |
 | `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
 | `TableView.rowDelegate` | `row`, `index`, `model`, named roles | Entire row | Deprecated 0.1 row-scoped compatibility path |
 | `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
@@ -63,6 +63,13 @@ the model when the model supplies such a list.
 `currentIndex`, `selectedRow`, `currentRow`, and `currentColumn` use `-1` for no
 current item where applicable. Model destruction clears the view safely. Model
 replacement disconnects the old model before a new generation is observed.
+
+`ListView`, `GridView`, and `Repeater` show one level of a model. Bound to a
+model with nested rows they show the top level and warn once; set `rootIndex`
+(a `QModelIndex`, as `DelegateModel.rootIndex` in Qt Quick) to show the
+children of one node instead. All views drive lazily populated models through
+`canFetchMore()`/`fetchMore()`. The [models guide](guide/models.md) has the
+full view-by-capability matrix.
 
 ## ListView
 
@@ -139,10 +146,15 @@ current cell. This is not Qt Quick's `ItemSelectionModel` API.
 ### Column geometry and formatting
 
 Column descriptor maps accept `title`, `key`, `width`, and `alignment` (or the
-compatibility spelling `align`). The default width is 12 cells. The compatibility
-column count is five when no descriptors are provided; it is not inferred from
-the model. A one-column C++ list model can supply roles for multiple visual
-columns, all backed by source column zero.
+compatibility spelling `align`). The default width is 12 cells. When no
+descriptors are provided, a C++ model supplies the column count through
+`columnCount()`, titles through `headerData(section, Qt::Horizontal)`, and a
+default alignment through `Qt::TextAlignmentRole` on the header; width is
+shared evenly across the columns. The header row appears only when at least
+one section returns a string title. JavaScript array models without
+descriptors keep the compatibility column count of five. A one-column C++
+list model can still supply roles for multiple visual columns through
+descriptors, all backed by source column zero.
 
 `columnWidthProvider(column)` is evaluated once per needed column when geometry
 is invalidated, not once per row. Return a finite non-negative integer: zero
@@ -193,6 +205,13 @@ Methods include `expand`, `collapse`, `toggleExpanded`, `isExpanded`, `depth`,
 `expandRecursively`, `collapseRecursively`, `expandToIndex`, `expandAll`, and
 `collapseAll`. Expansion emits `expanded(row, depth)` or
 `collapsed(row, recursively)`.
+
+For C++ models, expansion and the current node are tracked by persistent
+index, so renames, inserts above, proxy sorting, and moves preserve them.
+`dataChanged` refreshes visible nodes in place without re-creating delegates.
+Expanding a branch that reports `canFetchMore()` calls `fetchMore()` on it.
+A reset collapses everything, and a proxy that filters a branch out drops its
+expansion state, matching Qt's persistent-index semantics.
 
 See the [TreeView example](../examples/components/tree_view/Main.qml).
 

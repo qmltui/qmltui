@@ -40,7 +40,7 @@ after their handler returns.
 
 ## Agent testing feedback loop
 
-The optional `Qtui::Testing` library attaches a `TestRunner` to an explicit
+The optional `Qtui::TestRunner` library attaches a `TestRunner` to an explicit
 `Terminal`. Automated sessions suppress terminal-device output while retaining
 normal frame commits, input dispatch, QML timers, and render-failure signals.
 Each run writes an atomic schema-versioned result, a normalized final frame,

@@ -20,9 +20,12 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 | **03** | [Repo Split: `qtui-apps`](03-repo-split-qtui-apps.md) | Apps consume Qtui via `FetchContent`, in-tree `test_behavior`, `qtui-starter` template repository | No |
 | **04** | [Qt Docs Conventions and Qt Creator](04-qt-docs-standards-qch.md) | Qt-style type pages with compiled examples, `qtui.qch` release asset, `qmlls` completion guide | No |
 | **05** | [WebAssembly Playground](05-wasm-playground.md) | `WasmTerminalBackend` on the Plan 00 seam, Emscripten bridge, `xterm.js` playground for `btop`, `snake_game`, `twozero48` | No |
+| **06** | [From Solid to Excellent](06-excellence-roadmap.md) | Qt Quick conformance suite, Behavior decision and Qt version matrix, kitty keyboard and signal safety, docs generated from test frames, missing controls and inherited palette, benchmark regression gate, known defects list (2026-09-10) | No |
+| **07** | [Any `QAbstractItemModel` Renders Correctly](07-model-view-completeness.md) | `TableView` header data and real column count, `rootIndex` on flat views, `GridView` virtualization, standard Qt item roles in built-in painters, `canFetchMore`/`fetchMore`, incremental `TreeView` with stable expansion, `test_model_contracts` matrix and `docs/guide/models.md` | No |
 
-Plans 00 to 02 gate the first announcement. Plans 03 to 05 follow in the weeks
-after, each shippable on its own.
+Plans 00 to 02 gate the first announcement. Plans 03 to 07 follow in the weeks
+after, each shippable on its own. Plan 07 packages WP1 and WP2 are small
+enough to land before the tag.
 
 ## Facts the Plans Are Built On
 
@@ -30,14 +33,14 @@ Verified against the tree on 2026-09-07:
 
 - Version `0.4.0`, Qt 6.8 minimum, no git tags yet, no `.github/workflows/`.
 - Exported CMake targets: `Qtui::Core`, `Qtui::Controls`, `Qtui::Extras`,
-  `Qtui::Testing`; QML modules `Qtui`, `Qtui.Controls`, `Qtui.Extras`,
+  `Qtui::TestRunner`; QML modules `Qtui`, `Qtui.Controls`, `Qtui.Extras`,
   `Qtui.Canvas`, `Qtui.Image`, `Qtui.TerminalHost`. `find_package(Qtui)` is
   supported via installed config files.
 - 16 apps in `examples/apps/` today, trimmed to 8 for launch (Plan 02), each
   telling a story no other app tells. 31 components in `examples/components/`,
   11 concepts in `examples/concepts/`. Inventories are generated, not typed.
-- `TestRunner` captures text frames with `QTUI_INSPECT`; image capture needs a
-  `QGuiApplication`. Stills therefore derive from casts.
+- `TestRunner` captures text and styled frames with `QTUI_CAPTURE_AFTER_MS`;
+  it has no image capture. Stills therefore derive from casts.
 - Terminal I/O is POSIX (`termios`, `QSocketNotifier` on stdin, `SIGWINCH`)
   behind about a dozen `#ifdef _WIN32` blocks. Windows output already enables
   VT processing, but input never arrives because `QSocketNotifier` needs a

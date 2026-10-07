@@ -84,6 +84,24 @@ properties; only `ScrollView` and its subclasses scroll their children. A QML
 positions any more. Derive from `ScrollView` or override `contentOffset()` in
 a custom C++ item instead.
 
+## TableView default columns with a C++ model
+
+Without `columns` descriptors, `TableView` used to paint five columns backed by
+source column zero for every model. It now takes the column count from the
+model's `columnCount()` and the titles from `headerData()`, sharing the width
+evenly. A one-column list model therefore shows one full-width column instead
+of five copies of the same text, and a `QStandardItemModel` with
+`setHorizontalHeaderLabels()` gains a header row. Set `columns` explicitly to
+keep a fixed layout. JavaScript array models are unchanged.
+
+## GridView instantiates only visible cells
+
+`GridView` no longer creates a delegate for every model row. Like `ListView`,
+it materializes the rows inside the viewport plus one row of overscan and
+addresses cells by model index, so an invisible delegate keeps its slot rather
+than compacting the grid. Code that counted `GridView` children to learn the
+model size must read the model instead.
+
 ## Build integration
 
 Use `find_package(Qtui 0.4 REQUIRED)`.

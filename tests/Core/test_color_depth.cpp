@@ -40,6 +40,13 @@ void redOnNavy(TextGridBuffer &buffer)
     buffer.writeText(0, 0, QStringLiteral("AB"), 0xFFFF0000, 0xFF000080, TextAttribute::Bold);
 }
 
+// The same look, but written with ANSI names: yellow text on a navy background.
+void namedYellowOnNavy(TextGridBuffer &buffer)
+{
+    buffer.writeText(0, 0, QStringLiteral("AB"), Color("yellow").argb32(), Color("navy").argb32(),
+                     TextAttribute::None);
+}
+
 } // namespace
 
 class TestColorDepth : public QObject {
@@ -53,6 +60,8 @@ private slots:
     void testBasic16Encoding();
     void testMonoEncoding();
     void testQuantisedColoursDeduplicate();
+    void testAnsiNamesParseToIndices();
+    void testAnsiNamesKeepIndexAtEveryDepth();
 };
 
 void TestColorDepth::testIndexed256Anchors()
@@ -128,3 +137,40 @@ void TestColorDepth::testQuantisedColoursDeduplicate()
 
 QTEST_MAIN(TestColorDepth)
 #include "test_color_depth.moc"
+
+void TestColorDepth::testAnsiNamesParseToIndices()
+{
+    const Color red("red");
+    QVERIFY(red.isValid());
+    QVERIFY(red.isAnsiIndex());
+    QCOMPARE(red.ansiIndex(), 9);
+    QCOMPARE(red.toString(), QStringLiteral("red"));
+    QCOMPARE(red.toRgb().argb32(), 0xFFFF0000U);          // xterm default for index 9
+    QCOMPARE(Color("gray").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:3").ansiIndex(), 3);
+    QVERIFY(!Color("#ff0000").isAnsiIndex());             // hex stays literal RGB
+    QVERIFY(!Color("transparent").isAnsiIndex());
+    QVERIFY(!Color("orange").isAnsiIndex());              // not a palette entry
+    QCOMPARE(ColorMapper::toBasic16(red.argb32()), uint8_t(9));
+    QCOMPARE(ColorMapper::toArgb(red.argb32()), 0xFFFF0000U);
+}
+
+void TestColorDepth::testAnsiNamesKeepIndexAtEveryDepth()
+{
+    // Truecolor: an ANSI name must not be turned into 38;2;R;G;B, or the
+    // terminal theme cannot apply. Index 11 is bright yellow (93), navy is 4 (44).
+    const std::string trueColor = encode(ColorDepth::TrueColor, namedYellowOnNavy);
+    QVERIFY(trueColor.find("93;44") != std::string::npos);
+    QVERIFY(trueColor.find("38;2;") == std::string::npos);
+    QVERIFY(trueColor.find("48;2;") == std::string::npos);
+
+    const std::string indexed = encode(ColorDepth::Indexed256, namedYellowOnNavy);
+    QVERIFY(indexed.find("93;44") != std::string::npos);
+    QVERIFY(indexed.find("38;5;") == std::string::npos);
+
+    const std::string basic = encode(ColorDepth::Basic16, namedYellowOnNavy);
+    QVERIFY(basic.find("93;44") != std::string::npos);
+
+    const std::string mono = encode(ColorDepth::Mono, namedYellowOnNavy);
+    QVERIFY(mono.find("93") == std::string::npos);
+}

@@ -65,6 +65,8 @@ inline Rgb rgbOf(uint32_t argb)
 
 uint8_t ColorMapper::toIndexed256(uint32_t argb)
 {
+    if (isAnsiIndex(argb))
+        return ansiIndex(argb);   // indices 0-15 are the themed system colors
     const Rgb color = rgbOf(argb);
 
     const int ri = nearestCubeLevel(color.r);
@@ -86,6 +88,8 @@ uint8_t ColorMapper::toIndexed256(uint32_t argb)
 
 uint8_t ColorMapper::toBasic16(uint32_t argb)
 {
+    if (isAnsiIndex(argb))
+        return ansiIndex(argb);
     const Rgb color = rgbOf(argb);
     int best = 0;
     int bestDistance = 1 << 30;

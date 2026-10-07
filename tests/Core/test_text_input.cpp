@@ -8,6 +8,7 @@
 #include "KeyEvent.h"
 #include "TextGridBuffer.h"
 #include "../TestPaint.h"
+#include "ColorMapper.h"
 
 using namespace qtui;
 using qtui::testing::paintItem;
@@ -285,7 +286,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("h"));
-    QCOMPARE(buffer.cellAt(0, 0).bgColor, static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
+    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(0, 0).bgColor), static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
 
     // Test cursor at position 5 (end of text) - delegate glyph "▋" rendered at empty position
     input.setCursorPosition(5);
@@ -294,7 +295,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(5, 0).character().toByteArray(), QByteArray("▋"));
-    QCOMPARE(buffer.cellAt(5, 0).fgColor, static_cast<uint32_t>(0xFF00FFFF));
+    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(5, 0).fgColor), static_cast<uint32_t>(0xFF00FFFF));
 
     input.setSelectionColor("blue");
     input.setSelectedTextColor("yellow");
@@ -304,8 +305,8 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.select(0, 3);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
-    QCOMPARE(buffer.cellAt(1, 0).bgColor, static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
-    QCOMPARE(buffer.cellAt(1, 0).fgColor, static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
+    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(1, 0).bgColor), static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
+    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(1, 0).fgColor), static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
 
     // Test clear(), overwriteMode(), placeholderColor(), autoScroll()
     input.setPlaceholderText("Enter name...");

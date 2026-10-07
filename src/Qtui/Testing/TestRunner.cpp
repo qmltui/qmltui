@@ -1,4 +1,5 @@
 #include "TestRunner.h"
+#include <ColorMapper.h>
 
 #include "Terminal.h"
 #include "TerminalEngine.h"
@@ -171,7 +172,7 @@ QString absoluteOrResourcePath(const QString& path)
 
 QString rgbaString(uint32_t rgba)
 {
-    const QColor color = QColor::fromRgba(rgba);
+    const QColor color = QColor::fromRgba(ColorMapper::toArgb(rgba));
     return QStringLiteral("#%1%2%3%4")
         .arg(color.red(), 2, 16, QLatin1Char('0'))
         .arg(color.green(), 2, 16, QLatin1Char('0'))
@@ -1014,7 +1015,7 @@ void TestRunner::expectStyle(int x, int y, const QJSValue& expectedStyle)
                              .arg(property, expectedText));
             return false;
         }
-        if (expectedRgba != actual) {
+        if (ColorMapper::toArgb(expectedRgba) != ColorMapper::toArgb(actual)) {
             failScenario(QStringLiteral("Cell at (%1,%2) %3 expected %4 but got %5")
                              .arg(x).arg(y).arg(property, expectedText, rgbaString(actual)));
             return false;
@@ -1481,10 +1482,10 @@ void TestRunner::captureImage(const QString& relativePath)
         for (int column = 0; column < frame->width(); ++column) {
             const Cell& cell = frame->cellAt(column, row);
             const QRect rect(column * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            painter.fillRect(rect, cell.bgColor ? QColor::fromRgba(cell.bgColor)
+            painter.fillRect(rect, cell.bgColor ? QColor::fromRgba(ColorMapper::toArgb(cell.bgColor))
                                                 : QColor(QStringLiteral("#0d1c2d")));
             if (!cell.continuation) {
-                painter.setPen(cell.fgColor ? QColor::fromRgba(cell.fgColor)
+                painter.setPen(cell.fgColor ? QColor::fromRgba(ColorMapper::toArgb(cell.fgColor))
                                             : QColor(QStringLiteral("#d4e4fa")));
                 painter.drawText(rect, Qt::AlignCenter, QString::fromUtf8(cell.character()));
             }

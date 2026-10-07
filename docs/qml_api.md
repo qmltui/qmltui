@@ -25,6 +25,19 @@ This property contains a `qtui::Color`, not a `QColor`. The built-in QML
 QtCore/QtQml-only Qtui application. String literals remain supported for Qtui
 properties whose declared C++ type is `qtui::Color`.
 
+Two kinds of string are accepted, and they behave differently on screen:
+
+- Hex values such as `"#2cde85"` are literal RGB. On truecolor terminals they
+  render exactly; on 256- and 16-color terminals they are quantised.
+- The sixteen ANSI palette names (`black`, `maroon`, `green`, `olive`, `navy`,
+  `purple`, `teal`, `silver`, `gray`, `red`, `lime`, `yellow`, `blue`,
+  `magenta`, `cyan`, `white`) and the explicit form `"ansi:N"` are palette
+  indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
+  depth, so the user's terminal theme decides how they look. This is what the
+  `Palette.Terminal` preset relies on. Other CSS names (`orange`, `steelblue`,
+  ...) are literal RGB.
+- `transparent` means the terminal's default foreground or background.
+
 ## Model and delegate compatibility
 
 All views accept ready inline components and components that become ready

@@ -299,8 +299,9 @@ static uint32_t extractColor(const QVariant& var, uint32_t defaultColor = 0xFFFF
 void ColorAnimation::writeValue(const QVariant& value) {
     if (!m_target || m_propertyName.isEmpty()) return;
 
-    uint32_t fromColor = extractColor(m_from, 0xFFFFFFFF);
-    uint32_t toColor = extractColor(m_to, 0xFFFFFFFF);
+    // ANSI-indexed colors carry no RGB; interpolate their palette values.
+    uint32_t fromColor = ColorMapper::toArgb(extractColor(m_from, 0xFFFFFFFF));
+    uint32_t toColor = ColorMapper::toArgb(extractColor(m_to, 0xFFFFFFFF));
 
     int fromA = (fromColor >> 24) & 0xFF;
     int fromR = (fromColor >> 16) & 0xFF;

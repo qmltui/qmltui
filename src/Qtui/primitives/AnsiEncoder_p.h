@@ -25,6 +25,8 @@ inline void appendInt(std::string &out, int value)
 // values compare equal regardless of the source alpha.
 inline uint32_t normalizedColor(uint32_t color)
 {
+    if (ColorMapper::isAnsiIndex(color))
+        return Color::AnsiTag | ColorMapper::ansiIndex(color);   // keep the index, never RGB
     return (color >> 24) != 0 ? (0xFF000000u | (color & 0x00FFFFFFu)) : 0u;
 }
 
@@ -35,6 +37,12 @@ inline uint32_t mappedColor(uint32_t normalized, ColorDepth depth)
 {
     if (normalized == 0)
         return 0;
+    if (ColorMapper::isAnsiIndex(normalized)) {
+        // An ANSI index is emitted as such at every depth except Mono, so the
+        // terminal theme applies; on 256-color terminals indices 0-15 are the
+        // same themed entries.
+        return depth == ColorDepth::Mono ? 0 : (0x02000000u | ColorMapper::ansiIndex(normalized));
+    }
     switch (depth) {
     case ColorDepth::Mono:
         return 0;
@@ -54,6 +62,12 @@ inline void appendColorParameter(std::string &out, uint32_t mapped, ColorDepth d
 {
     if (mapped == 0) {
         out += background ? "49" : "39";
+        return;
+    }
+    if ((mapped >> 24) == 0x02U) {   // basic-16 index, from quantisation or an ANSI-named color
+        const int index = static_cast<int>(mapped & 0xFF);
+        const int base = index < 8 ? (background ? 40 : 30) : (background ? 100 : 90);
+        appendInt(out, base + (index & 7));
         return;
     }
     switch (depth) {

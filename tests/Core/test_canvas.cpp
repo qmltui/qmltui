@@ -8,6 +8,7 @@
 #include "Terminal.h"
 #include "TextGridBuffer.h"
 #include "../TestPaint.h"
+#include "ColorMapper.h"
 
 
 
@@ -69,7 +70,7 @@ void TestCanvas::testBrailleMode() {
 
         Cell c = buf.cellAt(0, 0);
         QCOMPARE(c.character().toByteArray(), QString(QChar(dt.expectedChar)).toUtf8());
-        QCOMPARE(c.fgColor, 0xFFFF0000);
+        QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u);
     }
 
     // Test horizontal line on Row 2 (dot 3 and dot 6) -> U+2824 (⠤)
@@ -107,8 +108,8 @@ void TestCanvas::testHalfBlockMode() {
 
     Cell c = buffer.cellAt(0, 0);
     QCOMPARE(c.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
-    QCOMPARE(c.fgColor, 0xFFFF0000); // Red
-    QCOMPARE(c.bgColor, 0xFF0000FF); // Blue
+    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u); // Red
+    QCOMPARE(ColorMapper::toArgb(c.bgColor), 0xFF0000FFu); // Blue
 }
 
 void TestCanvas::testShapesOnHalfBlock() {
@@ -135,14 +136,14 @@ void TestCanvas::testShapesOnHalfBlock() {
     // Cell (0,0): top=yellow, bottom=yellow
     Cell c00 = buffer.cellAt(0, 0);
     QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(c00.fgColor, 0xFFFFFF00); // Yellow
-    QCOMPARE(c00.bgColor, 0xFFFFFF00); // Yellow
+    QCOMPARE(ColorMapper::toArgb(c00.fgColor), 0xFFFFFF00u); // Yellow
+    QCOMPARE(ColorMapper::toArgb(c00.bgColor), 0xFFFFFF00u); // Yellow
 
     // Cell (0,1): top=yellow, bottom=yellow
     Cell c01 = buffer.cellAt(0, 1);
     QCOMPARE(c01.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(c01.fgColor, 0xFFFFFF00);
-    QCOMPARE(c01.bgColor, 0xFFFFFF00);
+    QCOMPARE(ColorMapper::toArgb(c01.fgColor), 0xFFFFFF00u);
+    QCOMPARE(ColorMapper::toArgb(c01.bgColor), 0xFFFFFF00u);
 }
 
 void TestCanvas::testAutoClear() {
@@ -161,7 +162,7 @@ void TestCanvas::testAutoClear() {
 
     // Cell (2, 1) has top pixel y=2 green
     Cell c = buffer.cellAt(2, 1);
-    QCOMPARE(c.fgColor, 0xFF008000); // Green
+    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFF008000u); // Green
 }
 
 void TestCanvas::testQmlCanvasHalfBlock() {
@@ -199,8 +200,8 @@ void TestCanvas::testQmlCanvasHalfBlock() {
 
     Cell c00 = buffer.cellAt(0, 0);
     QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(c00.fgColor, 0xFFFF0000);
-    QCOMPARE(c00.bgColor, 0xFFFF0000);
+    QCOMPARE(ColorMapper::toArgb(c00.fgColor), 0xFFFF0000u);
+    QCOMPARE(ColorMapper::toArgb(c00.bgColor), 0xFFFF0000u);
 
     delete obj;
 }

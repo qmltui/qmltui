@@ -17,6 +17,13 @@ public:
         return color.isValid() ? color.argb32() : defaultColor;
     }
 
+    // ANSI-indexed values (Color::AnsiTag in the alpha byte) carry a palette
+    // index, not RGB. These helpers let RGB consumers resolve them.
+    static bool isAnsiIndex(uint32_t argb) { return (argb >> 24) == 0x01U; }
+    static uint8_t ansiIndex(uint32_t argb) { return static_cast<uint8_t>(argb & 0x0FU); }
+    // Literal RGB (xterm default palette for indices); identity otherwise.
+    static uint32_t toArgb(uint32_t argb) { return Color::fromArgb32(argb).toRgb().argb32(); }
+
     // Nearest xterm-256 palette index (16..255: the 6x6x6 cube and the grey
     // ramp; the 16 system colours are skipped because terminals theme them).
     static uint8_t toIndexed256(uint32_t argb);

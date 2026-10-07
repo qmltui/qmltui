@@ -5,6 +5,7 @@
 #include "Color.h"
 #include "../TestPaint.h"
 #include <QString>
+#include "ColorMapper.h"
 
 #include <limits>
 
@@ -103,8 +104,10 @@ void TestTextGridBuffer::testCellAccess() {
 void TestTextGridBuffer::testColorValue() {
     const Color red(" red ");
     QVERIFY(red.isValid());
-    QCOMPARE(red.argb32(), 0xffff0000U);
-    QCOMPARE(red.toString(), QStringLiteral("#ff0000"));
+    QVERIFY(red.isAnsiIndex());                       // "red" is palette entry 9, not RGB
+    QCOMPARE(red.toRgb().argb32(), 0xffff0000U);
+    QCOMPARE(red.toString(), QStringLiteral("red"));
+    QCOMPARE(Color("#ff0000").toString(), QStringLiteral("#ff0000"));
 
     QCOMPARE(Color("#0f8").argb32(), 0xff00ff88U);
     QCOMPARE(Color("#80402010").argb32(), 0x80402010U);
@@ -280,7 +283,7 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     // "RedBold" -> starts at 12, length 7
     QCOMPARE(QString::fromUtf8(buffer.cellAt(12, 0).character().toByteArray()), QString("R"));
     QCOMPARE(buffer.cellAt(12, 0).attributes, TextAttribute::Bold);
-    QCOMPARE(buffer.cellAt(12, 0).fgColor, 0xFFFF0000); // Red
+    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(12, 0).fgColor), 0xFFFF0000u); // Red
     
     // " Bold" -> starts at 19, length 5
     QCOMPARE(QString::fromUtf8(buffer.cellAt(20, 0).character().toByteArray()), QString("B"));

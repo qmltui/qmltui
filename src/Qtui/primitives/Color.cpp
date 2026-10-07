@@ -8,28 +8,44 @@
 namespace qtui {
 namespace {
 
+// xterm's default palette for the sixteen ANSI entries. Used only to give an
+// ANSI-indexed color an RGB value where one is unavoidable (gradients, dimming,
+// image capture); the encoder never converts an index to RGB.
+constexpr quint32 ansiPaletteRgb[16] = {
+    0xff000000U, 0xff800000U, 0xff008000U, 0xff808000U,
+    0xff000080U, 0xff800080U, 0xff008080U, 0xffc0c0c0U,
+    0xff808080U, 0xffff0000U, 0xff00ff00U, 0xffffff00U,
+    0xff0000ffU, 0xffff00ffU, 0xff00ffffU, 0xffffffffU,
+};
+
+// The CSS names whose RGB is exactly an xterm default palette entry. They parse
+// to that ANSI index so the user's terminal theme decides their appearance.
+const QHash<QString, int> &ansiNamedColors()
+{
+    static const QHash<QString, int> names {
+        {QStringLiteral("black"), 0},   {QStringLiteral("maroon"), 1},
+        {QStringLiteral("green"), 2},   {QStringLiteral("olive"), 3},
+        {QStringLiteral("navy"), 4},    {QStringLiteral("purple"), 5},
+        {QStringLiteral("teal"), 6},    {QStringLiteral("silver"), 7},
+        {QStringLiteral("gray"), 8},    {QStringLiteral("grey"), 8},
+        {QStringLiteral("red"), 9},     {QStringLiteral("lime"), 10},
+        {QStringLiteral("yellow"), 11}, {QStringLiteral("blue"), 12},
+        {QStringLiteral("fuchsia"), 13}, {QStringLiteral("magenta"), 13},
+        {QStringLiteral("aqua"), 14},   {QStringLiteral("cyan"), 14},
+        {QStringLiteral("white"), 15},
+    };
+    return names;
+}
+
+const char *const ansiCanonicalNames[16] = {
+    "black", "maroon", "green", "olive", "navy", "purple", "teal", "silver",
+    "gray", "red", "lime", "yellow", "blue", "magenta", "cyan", "white",
+};
+
 const QHash<QString, quint32> &namedColors()
 {
     static const QHash<QString, quint32> colors {
         {QStringLiteral("transparent"), 0x00000000U},
-        {QStringLiteral("black"), 0xff000000U},
-        {QStringLiteral("silver"), 0xffc0c0c0U},
-        {QStringLiteral("gray"), 0xff808080U},
-        {QStringLiteral("white"), 0xffffffffU},
-        {QStringLiteral("maroon"), 0xff800000U},
-        {QStringLiteral("red"), 0xffff0000U},
-        {QStringLiteral("purple"), 0xff800080U},
-        {QStringLiteral("fuchsia"), 0xffff00ffU},
-        {QStringLiteral("green"), 0xff008000U},
-        {QStringLiteral("lime"), 0xff00ff00U},
-        {QStringLiteral("olive"), 0xff808000U},
-        {QStringLiteral("yellow"), 0xffffff00U},
-        {QStringLiteral("navy"), 0xff000080U},
-        {QStringLiteral("blue"), 0xff0000ffU},
-        {QStringLiteral("teal"), 0xff008080U},
-        {QStringLiteral("aqua"), 0xff00ffffU},
-        {QStringLiteral("cyan"), 0xff00ffffU},
-        {QStringLiteral("magenta"), 0xffff00ffU},
         {QStringLiteral("orange"), 0xffffa500U},
         {QStringLiteral("pink"), 0xffffc0cbU},
         {QStringLiteral("lightblue"), 0xffadd8e6U},
@@ -83,7 +99,6 @@ const QHash<QString, quint32> &namedColors()
         {QStringLiteral("gold"), 0xffffd700U},
         {QStringLiteral("goldenrod"), 0xffdaa520U},
         {QStringLiteral("greenyellow"), 0xffadff2fU},
-        {QStringLiteral("grey"), 0xff808080U},
         {QStringLiteral("honeydew"), 0xfff0fff0U},
         {QStringLiteral("hotpink"), 0xffff69b4U},
         {QStringLiteral("indianred"), 0xffcd5c5cU},
@@ -224,14 +239,32 @@ Color Color::fromString(const QString &value)
         return {};
     }
 
-    const auto it = namedColors().constFind(text.toLower());
+    const QString lower = text.toLower();
+    if (lower.startsWith(QLatin1String("ansi:"))) {
+        bool ok = false;
+        const int index = lower.mid(5).toInt(&ok);
+        return ok && index >= 0 && index < 16 ? fromAnsiIndex(index) : Color();
+    }
+    const auto ansi = ansiNamedColors().constFind(lower);
+    if (ansi != ansiNamedColors().cend())
+        return fromAnsiIndex(ansi.value());
+    const auto it = namedColors().constFind(lower);
     return it == namedColors().cend() ? Color() : fromArgb32(it.value());
+}
+
+Color Color::toRgb() const
+{
+    if (isAnsiIndex())
+        return fromArgb32(ansiPaletteRgb[m_argb & 0x0FU]);
+    return *this;
 }
 
 QString Color::toString() const
 {
     if (!m_valid)
         return {};
+    if (isAnsiIndex())
+        return QLatin1String(ansiCanonicalNames[m_argb & 0x0FU]);
     if ((m_argb >> 24) == 0xffU)
         return QStringLiteral("#%1").arg(m_argb & 0x00ffffffU, 6, 16, QLatin1Char('0'));
     return QStringLiteral("#%1").arg(m_argb, 8, 16, QLatin1Char('0'));

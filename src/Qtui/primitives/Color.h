@@ -21,6 +21,14 @@ class QTUI_CORE_EXPORT Color
     Q_PROPERTY(bool valid READ isValid CONSTANT)
 
 public:
+    // Alpha byte 0x01 is reserved: such a value is not a translucent RGB color
+    // but one of the sixteen ANSI palette entries (index in the low byte). The
+    // encoder emits those as SGR 30-37/90-97 at every color depth, so the
+    // terminal's own theme decides how they look. The sixteen CSS names whose
+    // RGB equals xterm's default palette ("red", "white", "gray", ...) parse to
+    // these entries; hex values are always literal RGB.
+    static constexpr quint32 AnsiTag = 0x01000000U;
+
     constexpr Color() = default;
     Q_INVOKABLE Color(const QString &value);
     Color(const char *value);
@@ -29,6 +37,14 @@ public:
     {
         return Color(argb, true);
     }
+    static constexpr Color fromAnsiIndex(int index)
+    {
+        return Color(AnsiTag | static_cast<quint32>(index & 0x0F), true);
+    }
+    constexpr bool isAnsiIndex() const { return m_valid && (m_argb >> 24) == 0x01U; }
+    constexpr int ansiIndex() const { return isAnsiIndex() ? static_cast<int>(m_argb & 0x0FU) : -1; }
+    // The literal RGB this color has under xterm's default palette; identity for RGB colors.
+    Color toRgb() const;
 
     static Color fromRgba(qreal red, qreal green, qreal blue,
                           qreal alpha = 1.0);
@@ -36,10 +52,10 @@ public:
 
     constexpr bool isValid() const { return m_valid; }
     constexpr quint32 argb32() const { return m_argb; }
-    constexpr qreal red() const { return channel(16); }
-    constexpr qreal green() const { return channel(8); }
-    constexpr qreal blue() const { return channel(0); }
-    constexpr qreal alpha() const { return channel(24); }
+    qreal red() const { return toRgb().channel(16); }
+    qreal green() const { return toRgb().channel(8); }
+    qreal blue() const { return toRgb().channel(0); }
+    qreal alpha() const { return toRgb().channel(24); }
 
     QString toString() const;
 

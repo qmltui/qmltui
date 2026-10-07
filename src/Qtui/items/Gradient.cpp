@@ -1,4 +1,5 @@
 #include "Gradient.h"
+#include "ColorMapper.h"
 #include <algorithm>
 #include <cmath>
 
@@ -81,6 +82,8 @@ uint32_t Gradient::colorAt(qreal t) const {
             uint32_t c1 = sorted[i]->resolvedColor();
             uint32_t c2 = sorted[i + 1]->resolvedColor();
 
+            c1 = ColorMapper::toArgb(c1);
+            c2 = ColorMapper::toArgb(c2);
             int r1 = (c1 >> 16) & 0xFF;
             int g1 = (c1 >> 8) & 0xFF;
             int b1 = c1 & 0xFF;

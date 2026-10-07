@@ -8,6 +8,7 @@
 #include <QTest>
 #include <functional>
 #include <memory>
+#include "Color.h"
 
 #include "Text.h"
 #include "TextGridBuffer.h"
@@ -139,11 +140,11 @@ void TestTextLayout::testAnsiAndHtmlMarkup()
     text.setText(QStringLiteral("\033[1;31mRe\033[0md <font color='blue'>b</font>\033[48;2;1;2;3mZ"));
     TextGridBuffer frame = paintToBuffer(text, 12, 1);
     QCOMPARE(rowText(frame, 0).trimmed(), QStringLiteral("Red bZ"));
-    QCOMPARE(frame.cellAt(0, 0).fgColor, 0xFFFF0000u);
+    QCOMPARE(frame.cellAt(0, 0).fgColor, Color::fromAnsiIndex(1).argb32());   // SGR 31 is palette red
     QCOMPARE(frame.cellAt(0, 0).attributes, TextAttribute::Bold);
     QCOMPARE(frame.cellAt(2, 0).fgColor, 0xFF00FF00u);       // SGR 0 restores the item colour
     QCOMPARE(frame.cellAt(2, 0).attributes, TextAttribute::None);
-    QCOMPARE(frame.cellAt(4, 0).fgColor, 0xFF0000FFu);       // <font color>
+    QCOMPARE(frame.cellAt(4, 0).fgColor, Color("blue").argb32());   // <font color> by name
     QCOMPARE(frame.cellAt(5, 0).bgColor, 0xFF010203u);       // 48;2;r;g;b
 }
 

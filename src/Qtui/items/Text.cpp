@@ -70,10 +70,9 @@ static int parseHtmlTag(const QString& line, int startIdx, TextStyle& currentSty
 // Applies an SGR parameter list ("1;31;48;2;r;g;b") to the current style.
 static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle,
                                const TextStyle& baseStyle) {
-    static const uint32_t ansiColors[] = {
-        0xFF000000, 0xFFFF0000, 0xFF008000, 0xFFFFFF00,
-        0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF
-    };
+    // SGR color codes name palette entries, not RGB: keep them as ANSI indices
+    // so the terminal's theme applies, exactly as it would for the raw sequence.
+    const auto ansiIndex = [](int index) { return Color::fromAnsiIndex(index).argb32(); };
     const QStringList params = paramsStr.split(';');
     for (int pIdx = 0; pIdx < params.count(); ++pIdx) {
         if (params[pIdx].isEmpty()) continue;
@@ -89,9 +88,13 @@ static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle
         } else if (code == 7) {
             currentStyle.attributes = currentStyle.attributes | TextAttribute::Reversed;
         } else if (code >= 30 && code <= 37) {
-            currentStyle.fgColor = ansiColors[code - 30];
+            currentStyle.fgColor = ansiIndex(code - 30);
         } else if (code >= 40 && code <= 47) {
-            currentStyle.bgColor = ansiColors[code - 40];
+            currentStyle.bgColor = ansiIndex(code - 40);
+        } else if (code >= 90 && code <= 97) {
+            currentStyle.fgColor = ansiIndex(code - 90 + 8);
+        } else if (code >= 100 && code <= 107) {
+            currentStyle.bgColor = ansiIndex(code - 100 + 8);
         } else if (code == 39) {
             currentStyle.fgColor = baseStyle.fgColor;
         } else if (code == 49) {

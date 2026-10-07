@@ -378,6 +378,14 @@ if(TARGET qtui_twozero48)
         ARTIFACT_CONTENT "2048 TUI"
     )
 endif()
+if(TARGET qtui_cyber_audio)
+    add_qtui_runner_scenario(test_runner_cyber_audio qtui_cyber_audio
+        "${Qtui_SOURCE_DIR}/examples/apps/cyber_audio/test_cyber_audio.js" 0
+        ARTIFACT "cyber_audio/initial.txt"
+        ARTIFACT_CONTENT "NEURAL AUDIO MATRIX"
+    )
+endif()
+
 
 if(QTUI_BUILD_TERMINAL_HOST)
     add_executable(test_terminal_host TerminalHost/test_terminal_host.cpp)

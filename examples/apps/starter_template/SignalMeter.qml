@@ -1,6 +1,5 @@
 import QtQml
 import Qtui
-import StarterTemplateApp
 
 // Phone-style Wi-Fi signal meter: four ascending bars plus a percent label.
 // Falls back to full blocks on the framebuffer console, where the partial

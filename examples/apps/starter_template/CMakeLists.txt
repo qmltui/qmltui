@@ -14,76 +14,70 @@ endif()
 
 set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
-qt_add_library(qtui_starter_template_module STATIC)
-
-qt_add_qml_module(qtui_starter_template_module
-    URI StarterTemplateApp
-    VERSION 1.0
-    RESOURCE_PREFIX "/qt/qml"
-    SOURCES
-        WifiManager.h
-        WifiManager.cpp
-    QML_FILES
-        StatusBadge.qml
-        Main.qml
-        Theme.qml
-        NetworkPage.qml
-        AboutPage.qml
-        SignalMeter.qml
-    DEPENDENCIES
-        TARGET Qtui::Core
-        TARGET Qtui::Controls
-        TARGET Qtui::Controls
+# Each executable owns the QML module (as table_view and cyber_audio do) so Qt
+# writes the build tree's QML import path into a qt.conf beside it and
+# `import Qtui.Controls` resolves when the binary is launched from Qt Creator
+# or a shell. A shared static module library would not get that treatment, and
+# since no C++ symbol of Qtui::Controls is referenced the linker would drop the
+# library that carries the module's qmldir.
+set(starter_template_sources
+    WifiManager.h
+    WifiManager.cpp
+)
+set(starter_template_qml_files
+    Main.qml
+    Theme.qml
+    StatusBadge.qml
+    NetworkPage.qml
+    AboutPage.qml
+    SignalMeter.qml
 )
 
-target_link_libraries(qtui_starter_template_module PRIVATE
-    Qt6::Core
-    Qt6::Qml
-    Qt6::Network
-    Qtui::Core
-    Qtui::Controls
-    Qtui::Controls
-)
+# Adds an executable that compiles the module under its own URI.
+function(starter_template_add_executable target uri main_source)
+    qt_add_executable(${target} ${main_source})
+    qt_add_qml_module(${target}
+        URI ${uri}
+        VERSION 1.0
+        RESOURCE_PREFIX "/qt/qml"
+        SOURCES ${starter_template_sources}
+        QML_FILES ${starter_template_qml_files}
+        DEPENDENCIES
+            TARGET Qtui::Core
+            TARGET Qtui::Controls
+    )
+    target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(${target} PRIVATE
+        Qt6::Core
+        Qt6::Qml
+        Qt6::Network
+        Qtui::Core
+        Qtui::Controls
+    )
 
-# QML module libraries do not make their runtime plugins build dependencies.
-# Keep focused starter-only builds runnable without building every example.
-foreach(plugin_target IN ITEMS
-        QtuiCoreplugin QtuiControlsplugin QtuiControlsplugin
- Qtui::CorePlugin Qtui::ControlsPlugin Qtui::ControlsPlugin)
-    if(TARGET ${plugin_target})
-        add_dependencies(qtui_starter_template_module ${plugin_target})
-    endif()
-endforeach()
+    # QML module dependencies do not make their runtime plugins build
+    # dependencies. Keep focused starter-only builds runnable without building
+    # every example.
+    foreach(plugin_target IN ITEMS
+            QtuiCoreplugin QtuiControlsplugin Qtui::CorePlugin Qtui::ControlsPlugin)
+        if(TARGET ${plugin_target})
+            add_dependencies(${target} ${plugin_target})
+        endif()
+    endforeach()
+endfunction()
 
-qt_add_executable(qtui_starter_template main.cpp)
-target_link_libraries(qtui_starter_template PRIVATE
-    Qt6::Core
-    Qt6::Qml
-    qtui_starter_template_moduleplugin
-)
+starter_template_add_executable(qtui_starter_template StarterTemplateApp main.cpp)
 
 install(TARGETS qtui_starter_template
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
 if(TARGET Qtui::TestRunner)
-    qt_add_executable(qtui_starter_template_test main_test.cpp)
-    target_link_libraries(qtui_starter_template_test PRIVATE
-        Qt6::Core
-        Qt6::Qml
-        Qtui::Core
-        Qtui::TestRunner
-        qtui_starter_template_moduleplugin
-    )
+    starter_template_add_executable(qtui_starter_template_test StarterTemplateAppTest main_test.cpp)
+    target_link_libraries(qtui_starter_template_test PRIVATE Qtui::TestRunner)
 
-    qt_add_executable(qtui_starter_template_benchmark main_benchmark.cpp)
-    target_link_libraries(qtui_starter_template_benchmark PRIVATE
-        Qt6::Core
-        Qt6::Qml
-        Qtui::Core
-        Qtui::TestRunner
-        qtui_starter_template_moduleplugin
-    )
+    starter_template_add_executable(qtui_starter_template_benchmark StarterTemplateAppBenchmark main_benchmark.cpp)
+    target_link_libraries(qtui_starter_template_benchmark PRIVATE Qtui::TestRunner)
 
     install(TARGETS qtui_starter_template_benchmark
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -109,12 +103,16 @@ if(TARGET Qtui::TestRunner)
         )
 
         if(UNIX)   # the fake `nmcli`/`iw` fixtures are shell scripts
-            qt_add_executable(test_starter_wifi_manager test_wifi_manager.cpp)
+            qt_add_executable(test_starter_wifi_manager
+                test_wifi_manager.cpp
+                ${starter_template_sources}
+            )
+            target_include_directories(test_starter_wifi_manager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
             target_link_libraries(test_starter_wifi_manager PRIVATE
                 Qt6::Core
                 Qt6::Qml
+                Qt6::Network
                 Qt6::Test
-                qtui_starter_template_module
             )
             add_test(NAME starter_template_wifi_manager COMMAND test_starter_wifi_manager)
             set_tests_properties(starter_template_wifi_manager PROPERTIES LABELS AgentSmoke)

@@ -1,7 +1,6 @@
 import QtQml
 import Qtui
 import Qtui.Controls
-import StarterTemplateApp
 
 Terminal {
     id: root

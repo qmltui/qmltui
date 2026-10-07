@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 import Qtui.Controls
-import StarterTemplateApp
 
 Rectangle {
     id: page

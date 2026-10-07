@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
-import CustomItemDemo 1.0
 
 Terminal {
     Keys.onPressed: (event) => {

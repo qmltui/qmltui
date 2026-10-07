@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
-import LazyModelDemo
 
 // A tree whose branches load on first expansion. The status line counts the
 // fetchMore() calls the TreeView issued; nothing is fetched until you expand.

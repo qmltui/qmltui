@@ -34,9 +34,8 @@ int main(int argc, char *argv[])
         quietStderr = std::make_unique<StderrRedirect>(StderrRedirect::defaultLogPath(app.applicationName()));
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
     engine.rootContext()->setContextProperty(QStringLiteral("cliOptions"), toVariantMap(options));
-    engine.loadFromModule("CyberAudio", "Main");
+    engine.loadFromModule("CyberAudioTest", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
     const int result = app.exec();

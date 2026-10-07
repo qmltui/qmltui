@@ -1,26 +1,27 @@
-qt_add_library(qtui_lazy_model_module STATIC)
-
-qt_add_qml_module(qtui_lazy_model_module
+# The QML module is owned by each executable (not a shared static library) so
+# Qt records the build tree's QML import path for it and `import Qtui`
+# resolves when the binary is launched from Qt Creator or a shell.
+qt_add_executable(qtui_lazy_model main.cpp)
+qt_add_qml_module(qtui_lazy_model
     URI LazyModelDemo
     VERSION 1.0
-    SOURCES
-        LazyDirectoryModel.h
-        LazyDirectoryModel.cpp
-    QML_FILES
-        Main.qml
+    QML_FILES Main.qml
+    SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp
     DEPENDENCIES TARGET Qtui::Core
 )
-
-target_link_libraries(qtui_lazy_model_module PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
-
-qt_add_executable(qtui_lazy_model main.cpp)
-target_link_libraries(qtui_lazy_model PRIVATE Qt6::Core Qt6::Qml Qtui::Core qtui_lazy_model_module)
+target_link_libraries(qtui_lazy_model PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
 if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
     include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
-    qt_add_executable(qtui_lazy_model_test main.cpp)
-    target_link_libraries(qtui_lazy_model_test PRIVATE
-        Qt6::Core Qt6::Qml Qtui::Core Qtui::TestRunner qtui_lazy_model_module)
+    qt_add_executable(qtui_lazy_model_test main_test.cpp)
+    qt_add_qml_module(qtui_lazy_model_test
+        URI LazyModelTest
+        VERSION 1.0
+        QML_FILES Main.qml
+        SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp
+        DEPENDENCIES TARGET Qtui::Core
+    )
+    target_link_libraries(qtui_lazy_model_test PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::TestRunner)
     qtui_add_scenario_test(
         NAME lazy_model_smoke
         TARGET qtui_lazy_model_test

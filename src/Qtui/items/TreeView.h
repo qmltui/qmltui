@@ -127,6 +127,10 @@ protected:
 private:
     ClipRect clipRectForChildren(int absX, int absY,
                                 const ClipRect &clipRect) const override;
+    // One row of the flattened tree. For C++ models only the shape (index,
+    // depth, hasChildren, expanded, key) is filled while flattening; text,
+    // path and role data are read on first use by ensureLoaded(), so a
+    // 100k-row model costs no role reads until rows become visible.
     struct VisibleNode {
         QString text;
         QString path;
@@ -134,13 +138,26 @@ private:
         int depth = 0;
         bool hasChildren = false;
         bool expanded = false;
+        bool loaded = true;
         QVariantMap rawData;
-        QPersistentModelIndex modelIndex;
+        QModelIndex modelIndex;
     };
 
     void flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
     void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
-    static void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node);
+    static void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node,
+                                  bool includeUnsetRoles = false);
+    static QString modelPath(const QAbstractItemModel *model, const QModelIndex &index);
+    void ensureLoaded(VisibleNode &node);
+    static bool sameNode(const VisibleNode &a, const VisibleNode &b);
+    // Writes only index, row, current and selected to a delegate that still
+    // shows the same, unchanged node after a re-flatten (the scroll path).
+    void updateDelegatePosition(Item *item, int index);
+    // Property indexes of index/row/current/selected per delegate meta-object,
+    // so the scroll path does not resolve property names on every write.
+    struct PositionProperties { int index = -1, row = -1, current = -1, selected = -1; };
+    const PositionProperties &positionProperties(const QObject *item);
+    QHash<const QMetaObject *, PositionProperties> m_positionProperties;
     // True when rows under `parent` are part of the flattened list (the root
     // level, or a visible node), so a structural change there is observable.
     bool isLevelShown(const QModelIndex &parent) const;
@@ -153,7 +170,8 @@ private:
     void clearDelegateItems();
     void generateDelegateItems(QList<Item*> oldItems = {},
                                QList<QPersistentModelIndex> oldIndexes = {},
-                               QStringList oldPaths = {});
+                               QStringList oldPaths = {},
+                               QList<VisibleNode> oldNodes = {});
     void updateDelegateItem(Item *item, int index);
 
     QVariant m_modelVariant;
@@ -166,6 +184,7 @@ private:
     QList<Item*> m_delegateItems;
     QList<QPersistentModelIndex> m_delegateModelIndexes;
     QStringList m_delegatePaths;
+    QList<VisibleNode> m_delegateNodes;
     int m_delegateStartIndex = -1;
     int m_delegateCapacity = 0;
 
@@ -174,8 +193,13 @@ private:
     QSet<QString> m_expandedPaths;
     QSet<QString> m_collapsedPaths;
     QSet<QPersistentModelIndex> m_expandedIndexes;
+    // Plain-index snapshot of m_expandedIndexes for the current flatten pass.
+    QSet<QModelIndex> m_expandedSnapshot;
     QList<VisibleNode> m_visibleNodes;
-    QHash<QPersistentModelIndex, int> m_visibleLookup;
+    QHash<QModelIndex, int> m_visibleLookup;
+    // The current node, tracked persistently so selection follows inserts
+    // and moves across a re-flatten.
+    QPersistentModelIndex m_currentModelIndex;
     bool m_treeDirty = true;
     bool m_fetching = false;
     int m_selectedIndex = -1;

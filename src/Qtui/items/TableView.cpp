@@ -1,5 +1,6 @@
 #include "TableView.h"
 #include "DelegateUtils.h"
+#include "StandardRoles_p.h"
 #include "KeyEvent.h"
 #include "MouseEvent.h"
 #include <ColorMapper.h>
@@ -191,12 +192,7 @@ void TableView::refreshModelHeader() {
     m_modelProvidesHeader = provides;
 }
 QString TableView::alignmentName(const QVariant &alignment) {
-    if (!alignment.isValid() || !alignment.canConvert<int>()) return {};
-    const auto flags = Qt::Alignment(alignment.toInt());
-    if (flags & Qt::AlignRight) return QStringLiteral("right");
-    if (flags & Qt::AlignHCenter) return QStringLiteral("center");
-    if (flags & Qt::AlignLeft) return QStringLiteral("left");
-    return {};
+    return StandardRoles::alignmentName(alignment);
 }
 QModelIndex TableView::sourceIndex(int row, int column) const {
     if (!m_cppModel || row < 0 || row >= rowCount()) return {};
@@ -576,6 +572,7 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
             for (auto it = m_roleNames.cbegin(); it != m_roleNames.cend(); ++it)
                 if (allRolesDirty || !record.loaded || dirtyRoles.contains(it.key()))
                     values.insert(QString::fromUtf8(it.value()), readRole(it.key()));
+            StandardRoles::apply(m_cppModel.data(), record.source, values, true);
             modelData = m_roleNames.isEmpty() ? readRole(Qt::DisplayRole) : QVariant(values);
         } else {
             const QVariant value = row >= 0 && row < m_listModel.size() ? unpack(m_listModel[row]) : QVariant();
@@ -766,6 +763,18 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             uint32_t cellFg = fg;
             uint32_t cellBg = bg;
             TextAttribute cellAttributes = attributes;
+            if (m_cppModel) {
+                // Standard item roles, as QStyledItemDelegate would paint them.
+                const QVariantMap standard = StandardRoles::read(m_cppModel.data(), sourceIndex(row, geometry.column));
+                value = StandardRoles::prefix(standard) + value;
+                if (!selected) {
+                    cellFg = StandardRoles::color(standard, "foreground", cellFg);
+                    cellBg = StandardRoles::color(standard, "background", cellBg);
+                }
+                const QString cellAlignment = standard.value(QStringLiteral("textAlignment")).toString();
+                if (!cellAlignment.isEmpty()) alignment = cellAlignment;
+                if (!StandardRoles::enabled(standard)) cellAttributes = cellAttributes | TextAttribute::Dim;
+            }
             if (m_cellFormat.isCallable()) {
                 const QJSValue result = m_cellFormat.call({row, geometry.column, value});
                 if (result.isError()) {

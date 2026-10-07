@@ -94,6 +94,20 @@ of five copies of the same text, and a `QStandardItemModel` with
 `setHorizontalHeaderLabels()` gains a header row. Set `columns` explicitly to
 keep a fixed layout. JavaScript array models are unchanged.
 
+## Views write model data only to QML-declared delegate properties
+
+Every view publishes `index`, `model`, `modelData`, the named roles, and the
+standard item values to a delegate by writing properties of the same name.
+They now write only properties declared in QML (`required property` or plain
+`property` in the delegate file or its QML bases) and, in TreeView, dynamic
+properties for names the delegate does not declare. A C++ property of the
+root type is never written: `Text.text`, `Rectangle.color`, and `Item.enabled`
+keep their bindings even when a role is called `text`, `color`, or `enabled`.
+Previously TreeView overwrote a `Text` root's `text` with the node label, and
+any view overwrote a root's `color` when a role had that name. Delegates that
+relied on the implicit label should declare `required property string text`
+or bind `text: display`.
+
 ## GridView instantiates only visible cells
 
 `GridView` no longer creates a delegate for every model row. Like `ListView`,

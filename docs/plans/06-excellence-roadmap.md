@@ -50,6 +50,13 @@ Gaps confirmed by grep, not bugs:
   `hovered` state, or wrapping Flow layout. (Layouts with `fillWidth`,
   stretch, and span attached properties do exist.)
 - Whole-grid diff every frame; at 240x70 the diff costs as much as the paint.
+- Model views, profiled 2026-09-11 (`docs/benchmarks/2026-09-11-view-phases.md`).
+  Fixed the same day: TreeView now flattens shape only and writes position
+  only on scroll (244 us to 98 us per step, creation nine times cheaper),
+  GridView pools delegates (95 us to 58 us). Still open: every
+  `QQmlPropertyMap` row builds its own dynamic meta-object (hidden by the
+  pools), name-based `setProperty` in ListView/GridView rebinding, and
+  `StandardItemDelegate` at about 100 us and 6 KB per instance.
 
 ---
 

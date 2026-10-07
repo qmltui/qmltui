@@ -8,6 +8,7 @@
 #include <QQmlComponent>
 #include <QHash>
 #include <QMap>
+#include <QList>
 #include <QPointer>
 #include <QMetaObject>
 
@@ -24,6 +25,7 @@ class QTUI_CORE_EXPORT GridView : public ScrollView {
     Q_PROPERTY(int cellWidth READ cellWidth WRITE setCellWidth NOTIFY cellWidthChanged)
     Q_PROPERTY(int cellHeight READ cellHeight WRITE setCellHeight NOTIFY cellHeightChanged)
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
+    Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
     GridView(QObject* parent = nullptr);
@@ -45,6 +47,11 @@ public:
     int cellHeight() const { return m_cellHeight; }
     void setCellHeight(int height);
 
+    // Pool delegates that scroll out and rebind them to rows that scroll in,
+    // as ListView does; off recreates them.
+    bool reuseItems() const { return m_reuseItems; }
+    void setReuseItems(bool reuse);
+
     void layoutChildren();
     void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
     int implicitWidth() const override;
@@ -56,6 +63,7 @@ signals:
     void delegateChanged();
     void cellWidthChanged();
     void cellHeightChanged();
+    void reuseItemsChanged();
 
 protected:
     // Positions delegate items in the layout pass, never from paint().
@@ -71,6 +79,8 @@ private:
     void maybeFetchMore();
     void refreshFromModel();
     Item *createDelegateItem(int index);
+    void bindDelegateItem(Item *item, int index, bool created);
+    void releaseDelegateItem(Item *item);
     void reindexItem(Item *item, int index);
     void updateContentExtent();
     int columnsPerRow() const;
@@ -83,6 +93,8 @@ private:
     int m_cellWidth = 0;
     int m_cellHeight = 0;
     QMap<int, Item*> m_createdItems;
+    QList<Item*> m_reusePool;
+    bool m_reuseItems = true;
     QVariantList m_listValues;
     QHash<int, QString> m_roleMap;
     int m_modelCount = 0;

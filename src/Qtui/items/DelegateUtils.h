@@ -3,6 +3,8 @@
 #include "Item.h"
 
 #include <QAbstractItemModel>
+#include <QByteArrayView>
+#include <QMetaProperty>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -10,6 +12,30 @@
 #include <QQmlListReference>
 
 namespace qtui::DelegateUtils {
+
+// True when the property at `propertyIndex` was declared in QML (a plain or
+// required `property` of the delegate file or one of its QML base files),
+// as opposed to a C++ property of the root type such as Text.text,
+// Rectangle.color or Item.enabled. Views publish model data only to the
+// former: the latter are the type's own API, usually carry a binding, and a
+// role that happens to share the name must not overwrite it.
+inline bool isDeclaredInQml(const QObject *object, int propertyIndex)
+{
+    const QMetaObject *meta = object->metaObject();
+    while (meta && propertyIndex < meta->propertyOffset()) meta = meta->superClass();
+    // Inline objects with declared members are named "<Type>_QML_<n>", file
+    // components "<Name>_QMLTYPE_<n>".
+    return meta && QByteArrayView(meta->className()).contains("_QML");
+}
+
+inline void setPropertyIfExists(QObject *object, const char *name, const QVariant &value)
+{
+    if (!object) return;
+    const int index = object->metaObject()->indexOfProperty(name);
+    if (index >= 0 && isDeclaredInQml(object, index))
+        object->metaObject()->property(index).write(object, value);
+}
+
 
 inline QQmlComponent *resolveDelegate(QQmlComponent *delegate,
                                       int row,
@@ -113,9 +139,12 @@ inline Item *createItem(QQmlComponent *component,
         const QMetaObject *metaObject = object->metaObject();
         for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it) {
             const int idx = metaObject->indexOfProperty(it.key().toUtf8().constData());
-            // Read-only properties (notably Item's "children" list) would make
+            // Only QML-declared properties (required or plain) receive model
+            // data: an initial property replaces the binding, so writing a
+            // C++ property such as Text.text would discard the delegate's own
+            // `text:` expression. Read-only ones (Item's "children") would make
             // setInitialProperties() warn for every delegate it creates.
-            if (idx >= 0 && metaObject->property(idx).isWritable())
+            if (idx >= 0 && metaObject->property(idx).isWritable() && isDeclaredInQml(object, idx))
                 filteredProperties.insert(it.key(), it.value());
         }
         component->setInitialProperties(object, filteredProperties);
@@ -181,10 +210,15 @@ inline void fetchMoreIfNeeded(QAbstractItemModel *model, const QModelIndex &pare
     fetching = false;
 }
 
-inline void setPropertyIfExists(QObject *object, const char *name, const QVariant &value)
+// TreeView's historical contract: a name the delegate does not declare is
+// published as a dynamic property; a declared one is written; a C++ property
+// of the root type is left alone.
+inline void setDelegateProperty(QObject *object, const char *name, const QVariant &value)
 {
-    if (object && object->metaObject()->indexOfProperty(name) >= 0)
-        object->setProperty(name, value);
+    if (!object) return;
+    const int index = object->metaObject()->indexOfProperty(name);
+    if (index < 0) object->setProperty(name, value);
+    else if (isDeclaredInQml(object, index)) object->metaObject()->property(index).write(object, value);
 }
 
 } // namespace qtui::DelegateUtils

@@ -142,6 +142,7 @@ private:
     Qt::Orientation m_orientation = Qt::Vertical;
     int m_spacing = 0;
     int m_currentIndex = -1;
+    int m_pendingCurrentIndex = -1;
     Color m_highlightColor = "default";
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters

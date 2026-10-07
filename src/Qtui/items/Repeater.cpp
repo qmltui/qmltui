@@ -1,5 +1,6 @@
 #include "Repeater.h"
 #include "DelegateUtils.h"
+#include "StandardRoles_p.h"
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QJSValue>
@@ -246,6 +247,13 @@ void Repeater::generateItems() {
                                     m_delegate, ctx, it.value(), val);
                                 setPropertyIfExists(item, it.value().toUtf8().constData(), val);
                             }
+                            QVariantMap standard;
+                            StandardRoles::apply(guardedModel, modelIndex, standard, true);
+                            for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+                                if (rowMap) rowMap->insert(it.key(), it.value());
+                                DelegateUtils::setContextProperty(m_delegate, ctx, it.key(), it.value());
+                                setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+                            }
                         }
                     }
                     markDirty();
@@ -301,6 +309,12 @@ void Repeater::generateItems() {
                         rowMap->insert(it.value(), val);
                         initialProps[it.value()] = val;
                     }
+                    QVariantMap standard;
+                    StandardRoles::apply(model, modelIndex, standard);
+                    for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+                        rowMap->insert(it.key(), it.value());
+                        initialProps[it.key()] = it.value();
+                    }
                     initialProps["model"] = QVariant::fromValue(rowMap);
                     initialProps["modelData"] = QVariant::fromValue(rowMap);
 
@@ -325,6 +339,10 @@ void Repeater::generateItems() {
                     if (item) {
                         for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
                             setPropertyIfExists(item, it.value().toUtf8().constData(), rowMap->value(it.value()));
+                        }
+                        for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+                            DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+                            setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
                         }
                         rowMap->setParent(item);
                         m_createdItems.append(item);
@@ -373,6 +391,12 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
             rowMap->insert(it.value(), val);
             initialProps[it.value()] = val;
         }
+        QVariantMap standard;
+        StandardRoles::apply(model, modelIndex, standard);
+        for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+            rowMap->insert(it.key(), it.value());
+            initialProps[it.key()] = it.value();
+        }
         initialProps["model"] = QVariant::fromValue(rowMap);
         initialProps["modelData"] = QVariant::fromValue(rowMap);
 
@@ -397,6 +421,10 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
         if (item) {
             for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
                 setPropertyIfExists(item, it.value().toUtf8().constData(), rowMap->value(it.value()));
+            }
+            for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+                DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+                setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
             }
             rowMap->setParent(item);
             m_createdItems.insert(i, item);

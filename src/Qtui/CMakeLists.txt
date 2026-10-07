@@ -116,6 +116,7 @@ qt_add_qml_module(QtuiCore
         items/Scrollback.h
         items/Scrollback.cpp
         items/DelegateUtils.h
+        items/StandardRoles_p.h
         items/Row.h
         items/Row.cpp
         items/Column.h

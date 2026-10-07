@@ -1,5 +1,6 @@
 #include "ListView.h"
 #include "DelegateUtils.h"
+#include "StandardRoles_p.h"
 #include <ColorMapper.h>
 #include <KeyEvent.h>
 #include <MouseEvent.h>
@@ -132,6 +133,9 @@ void ListView::setSpacing(int spacing) {
 
 void ListView::setCurrentIndex(int index) {
     const int maxIndex = m_modelCount - 1;
+    // `currentIndex: 0` is usually assigned before the `model` binding
+    // resolves; keep it until rows exist, as Qt Quick's ListView does.
+    m_pendingCurrentIndex = maxIndex < 0 && index >= 0 ? index : -1;
     const int normalized = index < 0 || maxIndex < 0
         ? -1 : (std::min)(index, maxIndex);
     if (m_currentIndex == normalized) return;
@@ -263,11 +267,10 @@ void ListView::recycleDelegateItem(Item *item) {
 void ListView::rebindDelegateItem(Item *item, int index) {
     if (!item || index < 0 || index >= m_modelCount) return;
 
+    // Bound delegates have no per-row context; the row map is parented to the
+    // item in both cases and required properties are written directly.
     QQmlContext *context = delegateContext(item);
-    if (!context) return;
-
-    QQmlPropertyMap *rowMap = qobject_cast<QQmlPropertyMap *>(
-        context->contextProperty("model").value<QObject *>());
+    QQmlPropertyMap *rowMap = item->findChild<QQmlPropertyMap *>(QString(), Qt::FindDirectChildrenOnly);
 
     QVariant rowValue;
     QVariantMap rowValues;
@@ -286,6 +289,9 @@ void ListView::rebindDelegateItem(Item *item, int index) {
             if (rowMap) rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
+        StandardRoles::apply(model, modelIndex, rowValues, true);
+        if (rowMap)
+            for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) rowMap->insert(it.key(), it.value());
     }
 
     QQmlComponent *component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
@@ -354,6 +360,8 @@ Item *ListView::createDelegateItem(int index)
             rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
+        StandardRoles::apply(model, modelIndex, rowValues);
+        for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) rowMap->insert(it.key(), it.value());
     }
 
     QQmlComponent *component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
@@ -535,10 +543,11 @@ void ListView::generateItems() {
                     || topLeft.parent() != m_rootIndex) return;
                 for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                     Item *item = m_createdItems.value(row, nullptr);
+                    if (!item) continue;
+                    // Bound delegates have no per-row context; the row map is
+                    // parented to the item in both cases.
                     QQmlContext *context = delegateContext(item);
-                    if (!item || !context) continue;
-                    auto *rowMap = qobject_cast<QQmlPropertyMap *>(
-                        context->contextProperty("model").value<QObject *>());
+                    auto *rowMap = item->findChild<QQmlPropertyMap *>(QString(), Qt::FindDirectChildrenOnly);
                     const QModelIndex modelIndex = guardedModel->index(row, 0, m_rootIndex);
                     for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
                         if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
@@ -547,6 +556,13 @@ void ListView::generateItems() {
                         if (rowMap) rowMap->insert(it.value(), value);
                         DelegateUtils::setContextProperty(m_delegate, context, it.value(), value);
                         setPropertyIfExists(item, it.value().toUtf8().constData(), value);
+                    }
+                    QVariantMap standard;
+                    StandardRoles::apply(guardedModel, modelIndex, standard, true);
+                    for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+                        if (rowMap) rowMap->insert(it.key(), it.value());
+                        DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+                        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
                     }
                 }
                 markDirty();
@@ -587,7 +603,11 @@ void ListView::generateItems() {
             }));
     }
 
-    if (m_currentIndex >= m_modelCount) {
+    if (m_pendingCurrentIndex >= 0 && m_modelCount > 0) {
+        m_currentIndex = (std::min)(m_pendingCurrentIndex, m_modelCount - 1);
+        m_pendingCurrentIndex = -1;
+        emit currentIndexChanged();
+    } else if (m_currentIndex >= m_modelCount) {
         m_currentIndex = m_modelCount - 1;
         emit currentIndexChanged();
     }

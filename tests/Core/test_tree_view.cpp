@@ -236,6 +236,33 @@ private slots:
         QCOMPARE(f.line(3), QString());
     }
 
+    // A Text root's own text binding is the delegate author's; TreeView must
+    // not overwrite it with the node label (it used to).
+    void textRootKeepsItsBinding()
+    {
+        auto model = makeTree(2, 1);
+        TreeFixture f;
+        QVERIFY2(f.create(model.get(), QStringLiteral(R"(
+            import Qtui
+            TreeView {
+                width: 40; height: 8; model: testModel
+                delegate: Text { required property string display; required property int depth
+                                 text: ">" + " ".repeat(depth) + display; color: "blue" }
+            }
+        )")), qPrintable(f.component.errorString()));
+        QCOMPARE(f.line(0), QStringLiteral(">group 0"));
+        f.tree->expand(0);
+        f.tree->setCurrentIndex(1);
+        f.paint();
+        QCOMPARE(f.line(1), QStringLiteral("> leaf 0.0"));
+        // Scrolling (position-only updates) and renames keep the binding too.
+        model->item(0)->child(0)->setText(QStringLiteral("renamed"));
+        f.paint();
+        QCOMPARE(f.line(1), QStringLiteral("> renamed"));
+        // Delegates without declared properties still get them dynamically.
+        QVERIFY(f.tree->findChildren<Item *>().first()->property("index").isValid());
+    }
+
     void resetCollapsesEverything()
     {
         auto model = makeTree(2, 1);

@@ -18,6 +18,7 @@
 #include <QSortFilterProxyModel>
 #include <QAbstractTableModel>
 #include <TextGridBuffer.h>
+#include <ColorMapper.h>
 #include "../TestPaint.h"
 #include <memory>
 #include <functional>
@@ -298,8 +299,14 @@ private slots:
         f.paint();
         QCOMPARE(cellAt(0, 0), QStringLiteral("cell 1"));
         QCOMPARE(cellAt(1, 0), QStringLiteral("cell 2"));
-        QCOMPARE(grid->findChildren<Item *>().size(), 5);
-        for (Item *item : grid->findChildren<Item *>())
+        // Released delegates stay pooled and hidden; the live ones match the model.
+        const auto visibleItems = [&] {
+            QList<Item *> live;
+            for (Item *item : grid->findChildren<Item *>()) if (item->visible()) live.append(item);
+            return live;
+        };
+        QCOMPARE(visibleItems().size(), 5);
+        for (Item *item : visibleItems())
             QCOMPARE(item->property("text").toString(),
                      QStringLiteral("cell %1").arg(item->property("index").toInt() + 1));
 
@@ -309,7 +316,7 @@ private slots:
 
         model.clear();
         f.paint();
-        QCOMPARE(grid->findChildren<Item *>().size(), 0);
+        QCOMPARE(visibleItems().size(), 0);
         QVERIFY(f.text().trimmed().isEmpty());
     }
 
@@ -535,6 +542,149 @@ private slots:
         if (modelKind == "batch") QVERIFY2(f.text().contains("row 0"), qPrintable(f.text()));
         else if (modelKind == "plainTable") QVERIFY2(f.text().contains("c0r0") && !f.text().contains("c0r1"), qPrintable(f.text()));
         else QVERIFY2(f.text().contains("only") && !f.text().contains(inserted), qPrintable(f.text()));
+    }
+
+    // Found by the standard_item_delegate example: with
+    // `pragma ComponentBehavior: Bound` delegates have no per-row context and
+    // ListView/GridView used to skip them on dataChanged.
+    void boundDelegatesFollowDataChanged_data()
+    {
+        QTest::addColumn<QString>("qml");
+        QTest::newRow("ListView") << QStringLiteral(R"(
+            pragma ComponentBehavior: Bound
+            import Qtui
+            ListView { width: 40; height: 8; model: testModel
+                delegate: Text { required property string display; text: display } }
+        )");
+        QTest::newRow("GridView") << QStringLiteral(R"(
+            pragma ComponentBehavior: Bound
+            import Qtui
+            GridView { width: 40; height: 8; cellWidth: 20; cellHeight: 1; model: testModel
+                delegate: Text { required property string display; text: display } }
+        )");
+    }
+    void boundDelegatesFollowDataChanged()
+    {
+        QFETCH(QString, qml);
+        QStandardItemModel model;
+        for (const char *label : {"alpha", "beta"}) model.appendRow(new QStandardItem(label));
+        ViewFixture f;
+        QVERIFY2(f.create(&model, qml), qPrintable(f.component.errorString()));
+        QVERIFY(f.text().contains("alpha"));
+        model.item(0)->setText(QStringLiteral("ALPHA"));
+        f.paint();
+        QVERIFY2(f.text().contains("ALPHA") && !f.text().contains("alpha"), qPrintable(f.text()));
+    }
+
+    // Found by the same example: `currentIndex: 0` is assigned before the
+    // `model` binding resolves and must survive until rows exist.
+    void listViewCurrentIndexBeforeModel()
+    {
+        QStandardItemModel model;
+        for (int i = 0; i < 5; ++i) model.appendRow(new QStandardItem(QStringLiteral("row %1").arg(i)));
+        ViewFixture f;
+        QVERIFY2(f.create(&model, QStringLiteral(R"(
+            import Qtui
+            ListView { width: 40; height: 8; currentIndex: 2; model: testModel
+                delegate: Text { required property string display; text: display } }
+        )")), qPrintable(f.component.errorString()));
+        auto *list = qobject_cast<ListView *>(f.root);
+        QVERIFY(list);
+        QCOMPARE(list->currentIndex(), 2);
+        // Out-of-range pending values clamp once rows exist.
+        ViewFixture g;
+        QVERIFY(g.create(&model, QStringLiteral(R"(
+            import Qtui
+            ListView { width: 40; height: 8; currentIndex: 9; model: testModel
+                delegate: Text { required property string display; text: display } }
+        )")));
+        QCOMPARE(qobject_cast<ListView *>(g.root)->currentIndex(), 4);
+    }
+
+    // Pooled delegates must show the row they were rebound to, also for
+    // bound components (no per-row context).
+    void reusedDelegatesShowTheirRow_data()
+    {
+        QTest::addColumn<QString>("qml");
+        for (const char *pragma : {"", "pragma ComponentBehavior: Bound\n"}) {
+            const QString tag = *pragma ? "bound" : "unbound";
+            QTest::newRow(qPrintable("ListView/" + tag)) << QStringLiteral(
+                "%1import Qtui\nListView { width: 40; height: 4; model: testModel; reuseItems: true\n"
+                "  delegate: Text { required property string display; text: display } }").arg(pragma);
+            QTest::newRow(qPrintable("GridView/" + tag)) << QStringLiteral(
+                "%1import Qtui\nGridView { width: 40; height: 4; cellWidth: 20; cellHeight: 1; model: testModel\n"
+                "  delegate: Text { required property string display; text: display } }").arg(pragma);
+        }
+    }
+    void reusedDelegatesShowTheirRow()
+    {
+        QFETCH(QString, qml);
+        QStandardItemModel model;
+        for (int i = 0; i < 200; ++i) model.appendRow(new QStandardItem(QStringLiteral("row %1").arg(i)));
+        ViewFixture f;
+        QVERIFY2(f.create(&model, qml, 40, 4), qPrintable(f.component.errorString()));
+        QVERIFY(f.text().contains("row 0"));
+        const int childrenBefore = f.root->findChildren<Item *>().size();
+        for (int y = 1; y <= 60; ++y) {
+            f.root->setProperty("contentY", y);
+            f.paint();
+        }
+        const bool grid = qml.contains("GridView");
+        // contentY 60: ListView shows rows 60..63, GridView rows 120..127.
+        QVERIFY2(f.text().contains(grid ? "row 120" : "row 60"), qPrintable(f.text()));
+        QVERIFY2(!f.text().contains("row 0 ") && !f.text().contains("row 5\n"), qPrintable(f.text()));
+        // Rendered rows must be exactly the model rows at that offset.
+        const QStringList lines = f.text().split('\n');
+        for (int line = 0; line < 4; ++line) {
+            const int expectedRow = grid ? 120 + line * 2 : 60 + line;
+            QVERIFY2(lines[line].startsWith(QStringLiteral("row %1").arg(expectedRow)), qPrintable(f.text()));
+        }
+        // Pool bounded: no growth in live children.
+        QVERIFY2(f.root->findChildren<Item *>().size() <= childrenBefore + 8,
+                 qPrintable(QString::number(f.root->findChildren<Item *>().size())));
+    }
+
+    // A role that shares its name with a C++ property of the delegate root
+    // (here "color" on Text) must not overwrite that property.
+    void rolesDoNotOverwriteBuiltInProperties_data()
+    {
+        QTest::addColumn<QString>("view");
+        QTest::newRow("ListView") << QStringLiteral("ListView { width: 40; height: 8; model: testModel; delegate: %1 }");
+        QTest::newRow("GridView") << QStringLiteral("GridView { width: 40; height: 8; cellWidth: 40; cellHeight: 1; model: testModel; delegate: %1 }");
+        QTest::newRow("Repeater") << QStringLiteral("Column { width: 40; height: 8; Repeater { model: testModel; delegate: %1 } }");
+        QTest::newRow("TableView") << QStringLiteral("TableView { width: 40; height: 8; model: testModel; columns: [{title: \"A\", width: 40}]; delegate: %1 }");
+        QTest::newRow("TreeView") << QStringLiteral("TreeView { width: 40; height: 8; model: testModel; delegate: %1 }");
+    }
+    void rolesDoNotOverwriteBuiltInProperties()
+    {
+        QFETCH(QString, view);
+        class ColorRoleModel final : public QAbstractListModel {
+        public:
+            int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 2; }
+            QVariant data(const QModelIndex &index, int role) const override
+            {
+                if (!index.isValid()) return {};
+                if (role == Qt::DisplayRole) return QStringLiteral("row %1").arg(index.row());
+                if (role == Qt::UserRole + 1) return QStringLiteral("red");
+                if (role == Qt::UserRole + 2) return QStringLiteral("clobbered");
+                return {};
+            }
+            QHash<int, QByteArray> roleNames() const override
+            {
+                return {{Qt::DisplayRole, "display"}, {Qt::UserRole + 1, "color"}, {Qt::UserRole + 2, "text"}};
+            }
+        } model;
+        ViewFixture f;
+        const QString qml = QStringLiteral("import Qtui\n")
+            + view.arg(QStringLiteral("Text { required property string display; text: display; color: \"blue\" }"));
+        QVERIFY2(f.create(&model, qml), qPrintable(f.component.errorString()));
+        // Header rows shift TableView content down by two lines.
+        const int y = view.startsWith("TableView") ? 2 : 0;
+        QString line;
+        for (int x = 0; x < 40; ++x) line += QString::fromUtf8(f.buffer.cellAt(x, y).character());
+        QVERIFY2(line.contains("row 0") && !line.contains("clobbered"), qPrintable(f.text()));
+        const int textX = line.indexOf("row 0");
+        QCOMPARE(f.buffer.cellAt(textX, y).fgColor, ColorMapper::fromString(QStringLiteral("blue"), 1));
     }
 
     void rootIndexSurvivesInsertAbove()

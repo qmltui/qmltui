@@ -1,8 +1,10 @@
 #include "GridView.h"
 #include "DelegateUtils.h"
+#include "StandardRoles_p.h"
 #include <QAbstractItemModel>
 #include <QJSValue>
 #include <QQmlContext>
+#include <QQmlListReference>
 #include <QQmlEngine>
 #include <QQmlPropertyMap>
 #include <algorithm>
@@ -102,6 +104,36 @@ void GridView::setCellWidth(int width) {
   markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
+void GridView::setReuseItems(bool reuse) {
+  if (m_reuseItems == reuse)
+    return;
+  m_reuseItems = reuse;
+  emit reuseItemsChanged();
+  if (!reuse) {
+    for (Item *item : std::as_const(m_reusePool)) {
+      item->setParentItem(nullptr);
+      delete item;
+    }
+    m_reusePool.clear();
+  }
+}
+
+// A delegate that scrolled out: pool it (hidden) or destroy it. Delegates
+// picked through `choices` are not pooled because the component may differ
+// per row.
+void GridView::releaseDelegateItem(Item *item) {
+  if (!item)
+    return;
+  const bool poolable = m_reuseItems && !QQmlListReference(m_delegate, "choices").isValid();
+  if (poolable) {
+    item->setVisible(false);
+    m_reusePool.append(item);
+    return;
+  }
+  item->setParentItem(nullptr);
+  delete item;
+}
+
 void GridView::setCellHeight(int height) {
   if (m_cellHeight == height)
     return;
@@ -119,6 +151,11 @@ void GridView::clearItems() {
     }
   }
   m_createdItems.clear();
+  for (Item *item : std::as_const(m_reusePool)) {
+    item->setParentItem(nullptr);
+    delete item;
+  }
+  m_reusePool.clear();
   m_materializedFirst = -1;
   m_materializedLast = -1;
 }
@@ -152,6 +189,48 @@ void GridView::reindexItem(Item *item, int index) {
   setPropertyIfExists(item, "index", index);
 }
 
+// Publishes row `index` to a delegate: on creation through initial
+// properties and a fresh context, on rebind by writing the existing row map,
+// context, and required properties in place.
+void GridView::bindDelegateItem(Item *item, int index, bool created) {
+  Q_UNUSED(created);
+  QVariant rowValue;
+  QVariantMap rowValues;
+  const bool countModel = m_listValues.isEmpty() && !m_objectModel;
+  QQmlPropertyMap *rowMap =
+      item->findChild<QQmlPropertyMap *>(QString(), Qt::FindDirectChildrenOnly);
+  if (!countModel && index < m_listValues.size()) {
+    rowValue = m_listValues.at(index);
+    QVariant normalized = rowValue;
+    if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
+      normalized = normalized.value<QJSValue>().toVariant();
+    if (normalized.canConvert<QVariantMap>())
+      rowValues = normalized.toMap();
+  } else if (auto *model =
+                 qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
+    const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
+    for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
+      rowValues.insert(it.value(), model->data(modelIndex, it.key()));
+    StandardRoles::apply(model, modelIndex, rowValues, true);
+    if (rowMap)
+      for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
+        rowMap->insert(it.key(), it.value());
+  }
+  QQmlContext *context = delegateContext(item);
+  DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+  setPropertyIfExists(item, "index", index);
+  if (!rowMap && !countModel) {
+    DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
+    DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
+    setPropertyIfExists(item, "model", rowValue);
+    setPropertyIfExists(item, "modelData", rowValue);
+  }
+  for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
+    DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+    setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+  }
+}
+
 Item *GridView::createDelegateItem(int index) {
   if (index < 0 || index >= m_modelCount)
     return nullptr;
@@ -176,6 +255,9 @@ Item *GridView::createDelegateItem(int index) {
       rowMap->insert(it.value(), value);
       rowValues.insert(it.value(), value);
     }
+    StandardRoles::apply(model, modelIndex, rowValues);
+    for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
+      rowMap->insert(it.key(), it.value());
   }
 
   QQmlComponent *component =
@@ -268,15 +350,18 @@ void GridView::rebuildViewport(bool force) {
     }
     Item *item = it.value();
     it = m_createdItems.erase(it);
-    if (item) {
-      item->setParentItem(nullptr);
-      delete item;
-    }
+    releaseDelegateItem(item);
   }
   for (int index = first; index <= last; ++index) {
-    if (!m_createdItems.contains(index)) {
-      if (Item *item = createDelegateItem(index))
-        m_createdItems.insert(index, item);
+    if (m_createdItems.contains(index))
+      continue;
+    if (!m_reusePool.isEmpty()) {
+      Item *item = m_reusePool.takeLast();
+      bindDelegateItem(item, index, false);
+      item->setVisible(true);
+      m_createdItems.insert(index, item);
+    } else if (Item *item = createDelegateItem(index)) {
+      m_createdItems.insert(index, item);
     }
   }
   m_materializedFirst = first;
@@ -346,11 +431,13 @@ void GridView::generateItems() {
             return;
           for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
             Item *item = m_createdItems.value(row, nullptr);
-            QQmlContext *context = delegateContext(item);
-            if (!item || !context)
+            if (!item)
               continue;
-            auto *rowMap = qobject_cast<QQmlPropertyMap *>(
-                context->contextProperty("model").value<QObject *>());
+            // Bound delegates have no per-row context; the row map is
+            // parented to the item in both cases.
+            QQmlContext *context = delegateContext(item);
+            auto *rowMap = item->findChild<QQmlPropertyMap *>(
+                QString(), Qt::FindDirectChildrenOnly);
             const QModelIndex index = guardedModel->index(row, 0, m_rootIndex);
             for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
               if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
@@ -362,6 +449,16 @@ void GridView::generateItems() {
                                                 it.value(), value);
               setPropertyIfExists(item, it.value().toUtf8().constData(),
                                   value);
+            }
+            QVariantMap standard;
+            StandardRoles::apply(guardedModel, index, standard, true);
+            for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
+              if (rowMap)
+                rowMap->insert(it.key(), it.value());
+              DelegateUtils::setContextProperty(m_delegate, context, it.key(),
+                                                it.value());
+              setPropertyIfExists(item, it.key().toUtf8().constData(),
+                                  it.value());
             }
           }
           markDirty();
@@ -445,10 +542,7 @@ void GridView::removeModelRows(int first, int last) {
   for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
     Item *item = it.value();
     if (it.key() >= first && it.key() <= last) {
-      if (item) {
-        item->setParentItem(nullptr);
-        delete item;
-      }
+      releaseDelegateItem(item);
       continue;
     }
     const int index = it.key() > last ? it.key() - count : it.key();

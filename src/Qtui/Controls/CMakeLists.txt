@@ -19,6 +19,7 @@ qt_add_qml_module(QtuiControls
         ProgressBar.qml
         RadioButton.qml
         Slider.qml
+        StandardItemDelegate.qml
         BusyIndicator.qml
         StackLayout.qml
         StackView.qml
@@ -62,6 +63,7 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ProgressBar.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/RadioButton.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Slider.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/StandardItemDelegate.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/BusyIndicator.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/StackLayout.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/StackView.qml

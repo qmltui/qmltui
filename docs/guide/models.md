@@ -22,13 +22,10 @@ view by model matrix), `tests/Core/test_tree_view.cpp`, and
 | `headerData()` drives titles and alignment | n/a | n/a | n/a | yes, when `columns` is unset | n/a | n/a |
 | Nested rows (tree models) | via `rootIndex` | via `rootIndex` | via `rootIndex` | top level only | yes | top level only |
 | Lazy population (`canFetchMore` / `fetchMore`) | on scroll | on scroll | eagerly, all pages | on selection scroll | on expand | when caught up |
-| Standard item roles (`ForegroundRole`, `CheckStateRole`, ...) | as plain values | as plain values | as plain values | as plain values | as plain values | as plain values |
+| Standard item roles (`ForegroundRole`, `CheckStateRole`, ...) | via `StandardItemDelegate` | via `StandardItemDelegate` | via `StandardItemDelegate` | built-in painter and `StandardItemDelegate` | built-in painter and `StandardItemDelegate` | as named values |
 
-"As plain values" means the role is exposed to delegates under the name the
-model gives it in `roleNames()`, and nothing else. The built-in painters of
-`TableView` and `TreeView` read `Qt::DisplayRole` only. Interpreting the
-standard styling roles is planned (see `docs/plans/07-model-view-completeness.md`,
-work package 4).
+Every view also exposes the standard styling roles and item flags to
+delegates under Widgets-style names; see "Standard item roles" below.
 
 ## Delegate properties
 
@@ -43,6 +40,11 @@ properties and as required properties:
 
 `TableView` cell delegates add `row`, `column`, `current`, and `selected`.
 `TreeView` adds `depth`, `expanded`, `hasChildren`, and `treeView`.
+
+These reach a delegate only through properties it declares in QML. A C++
+property of the root type, `Text.text`, `Rectangle.color`, `Item.enabled`, is
+never written, so a role named `color` cannot clobber a `Text` delegate's
+color binding; declare `required property string color` to receive it.
 
 ## Showing one level of a tree model
 
@@ -115,6 +117,68 @@ persistent indexes, so everything is collapsed after a reset. A
 `QSortFilterProxyModel` invalidates the indexes of rows it filters out, so a
 branch that is filtered away and later returns comes back collapsed.
 
+## Standard item roles
+
+Qt Widgets styles items through numeric roles that have no entry in
+`roleNames()`: `Qt::ForegroundRole`, `Qt::BackgroundRole`,
+`Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole`, plus the
+`Qt::ItemIsEnabled` and `Qt::ItemIsUserCheckable` flags. `QStyledItemDelegate`
+paints them; Qt Quick views ignore them. Qtui does what Widgets does.
+
+For every C++ model row, views add these delegate properties when the model
+has not claimed the name itself in `roleNames()`:
+
+| Name | Value | Source |
+| :--- | :--- | :--- |
+| `foreground`, `background` | color string such as `#ff0000` or `red`, empty when unset | `ForegroundRole`, `BackgroundRole` as `QColor`, `QBrush`, or string |
+| `textAlignment` | `left`, `center`, `right`, or empty | `TextAlignmentRole` |
+| `checkState` | `Qt.Unchecked`, `Qt.PartiallyChecked`, `Qt.Checked`, or `-1` when the item has no check state | `CheckStateRole` |
+| `decoration` | glyph string; images are dropped | `DecorationRole` when it is a string or character |
+| `enabled`, `checkable` | booleans | `flags()` |
+| `modelIndex` | the `QModelIndex`, for `setData()` calls from QML; present for checkable items | the view |
+
+A property is added when a delegate is created only if it carries a value:
+a set color, a non-left alignment, a check state, a glyph, a disabled or
+checkable item. Rows without styling cost nothing extra. When a row's data
+changes or a pooled delegate is rebound to another row, every name is
+published, including cleared ones, so read them with a fallback
+(`model.foreground || textColor`) rather than as required properties.
+
+`StandardItemDelegate` from `Qtui.Controls` renders them: decoration glyph,
+`[x]`, `[ ]`, or `[-]` for checkable items, colored and aligned text, dimmed
+text for disabled items, and reversed text for the current row. Its
+`toggle()` writes `Qt::CheckStateRole` back through the model's `setData()`,
+on Space when the delegate has focus and on mouse click.
+
+```qml
+import Qtui
+import Qtui.Controls
+
+ListView {
+    model: standardItemModel
+    delegate: StandardItemDelegate {}
+}
+```
+
+The built-in painters of `TableView` and `TreeView` apply the same roles, so
+`TableView { model: m }` without a delegate matches the delegate's look. The
+selected row keeps the view's selection colors.
+`examples/components/standard_item_delegate/` shows one styled
+`QStandardItemModel` in all three views, with Space toggling a check box
+through the model. When Qt Widgets is available it also builds
+`qtui_standard_item_delegate_widgets`, the same model in `QListView`,
+`QTableView`, and `QTreeView` with their default `QStyledItemDelegate`, for a
+side-by-side comparison (`QTUI_BUILD_WIDGETS_REFERENCE` turns it off).
+
+`QColor` and `QBrush` are decoded through their `QDataStream` form, which
+QtGui registers on the metatype, so QtuiCore still does not link QtGui. Only
+RGB colors decode; HSV, HSL, CMYK, and extended-RGB colors are treated as
+unset. Models that store colors as strings work in any process.
+
+`QStandardItemModel` does not name these roles either, so
+`setItemRoleNames()` is not required; a model that does name, for example,
+`foreground` keeps its own value under that name.
+
 ## Scrollback is append-only
 
 `Scrollback` renders each model row once into the terminal's scrollback and
@@ -126,10 +190,9 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
 ## What is deliberately not interpreted
 
 - `QIcon` and `QPixmap` in `Qt::DecorationRole`: terminals draw glyphs, not
-  images. A `QString` or `QChar` decoration will be drawn once work package 4
-  lands.
-- `QBrush` in `Qt::ForegroundRole` or `Qt::BackgroundRole`: Qtui does not link
-  QtGui. A `QColor` can be decoded through its string form when QtGui is in the
-  process; a brush cannot.
+  images. A `QString` or `QChar` decoration is drawn as a leading glyph.
+- Gradient and texture brushes: only a brush's solid color is used.
 - `Qt::FontRole`: font families and sizes have no terminal meaning. Use the
   `bold`, `italic`, and `underline` role names, or a delegate.
+- `Qt::ToolTipRole`, `Qt::StatusTipRole`, `Qt::WhatsThisRole`: exposed by name
+  as Qt does, not rendered.

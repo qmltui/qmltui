@@ -282,6 +282,20 @@ Core `Palette`, `TerminalPalette`, `ResolvedPalette`, `Item.palette`, and Contro
 `DarkPalette` are no longer provided. Replace earlier palette bindings with
 ordinary color bindings or application-defined components.
 
+### StandardItemDelegate
+
+`Qtui.Controls.StandardItemDelegate` is the terminal counterpart of Qt
+Widgets' `QStyledItemDelegate`: a delegate for any C++ model that renders the
+standard item roles, decoration glyph, check box, foreground and background
+colors, text alignment, and disabled state, plus reversed text for the current
+row. It works as the `delegate` of `ListView`, `GridView`, `Repeater`,
+`TableView`, and `TreeView`. `toggle()` flips `Qt::CheckStateRole` through
+`setData()`; `toggled(checkState)` reports it. `current` binds to
+`ListView.isCurrentItem` and is set by the other views. `textColor` styles
+rows without a foreground role. The [models guide](guide/models.md) lists the
+role names every view provides; see the
+[standard_item_delegate example](../examples/components/standard_item_delegate/Main.qml).
+
 ## Other core elements
 
 - `Terminal` derives from `Item` and owns the terminal session. `mode` is

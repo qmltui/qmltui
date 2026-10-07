@@ -230,25 +230,67 @@ gains a `TreeView` `dataChanged` case with a 10 000 node model.
 | WP1 header data | done | `TableView::refreshModelHeader`, tests in `test_table_view_hardening.cpp` |
 | WP2 diagnostics + `rootIndex` | done | `DelegateUtils::warnIfNested`, `rootIndex` on ListView/GridView/Repeater, `test_model_contracts.cpp` |
 | WP3 GridView viewport | done | `GridView::rebuildViewport`, `test_views_virtualization.cpp`, `benchmark_views.cpp` |
-| WP4 standard roles | not started | awaiting scope confirmation |
+| WP4 standard roles | done | `items/StandardRoles_p.h`, `Controls/StandardItemDelegate.qml`, `tests/Controls/test_standard_roles.cpp`, `examples/components/standard_item_delegate/` |
 | WP5 lazy fetch | done | `DelegateUtils::fetchMoreIfNeeded` in all six views, `examples/concepts/lazy_model/` |
 | WP6 TreeView incremental | done | `m_expandedIndexes`, `handleModelDataChanged`, `test_tree_view.cpp` |
 | WP7 matrix + docs | done | `TestModelContracts::matrix`, `docs/guide/models.md`, `qml_api.md`, `migration-0.4.md` |
 
+WP4 shipped as a hybrid rather than painter-only code: the C++ helper reads
+the numeric roles and flags, every view publishes them as delegate properties
+(`foreground`, `background`, `textAlignment`, `checkState`, `decoration`,
+`enabled`, `checkable`, `modelIndex`) when the model has not claimed the name,
+`StandardItemDelegate` renders them, and the TableView and TreeView built-in
+painters reuse the helper. `QColor` and `QBrush` are decoded from their
+`QDataStream` form, so QtuiCore still does not link QtGui; `QStandardItem`
+stores brushes, which is why both are handled.
+
+Cost of WP4, measured with `benchmark_views` on the Qt 6.8.6 Release scratch
+tree (same machine, two runs each): publishing the standard values as
+delegate properties is what costs, not reading the roles. Publishing all
+eight names for every row tripled GridView scrolling (257 ms to 912 ms per
+1,000 steps over 100k rows) and TreeView flattening (11 ms to 34 ms per 10k
+rows). Publishing only informative values on creation, computed without an
+intermediate map, brings those back to 270 to 290 ms and 13 to 17 ms, within
+run-to-run noise of the baseline; the residual is the five extra `data()`
+calls and `flags()` per node, which the Widgets item views pay as well.
+
 Findings while implementing, beyond the plan:
+
+- An example whose QML module lives in a shared static library (one module,
+  two executables) cannot find `Qtui.Controls` when launched from Qt Creator
+  or a shell: the executable references no Controls C++ symbol, the linker's
+  default `--as-needed` drops `libQtuiControls.so`, and with it the embedded
+  `Qtui.Controls` qmldir resource; only the scenario runner's
+  `QML2_IMPORT_PATH` hides this. Owning the module in each executable, as
+  `table_view` and `btop` do, makes Qt record the build tree's QML import path
+  for that executable and works on Qt 6.8 and 6.11: Qt writes a `qt.conf`
+  with `QmlImports` beside such executables (`_qt_internal_write_qmldir_part`,
+  driven by `DEPENDENCIES TARGET`), which `QLibraryInfo` reads from the
+  application directory. `lazy_model`, `standard_item_delegate`,
+  `cyber_audio`, and `custom_cpp_item` all use it now.
+
+- `ListView` and `GridView` ignored `dataChanged` for delegates declared under
+  `pragma ComponentBehavior: Bound`: the handler looked up the row map through
+  a per-row `QQmlContext` that bound components do not have. Found by the
+  `standard_item_delegate` example, fixed by finding the row map as the
+  delegate's child, covered by `TestModelContracts::boundDelegatesFollowDataChanged`.
+- `ListView { currentIndex: 0; model: m }` lost the index: the constant was
+  applied before the `model` binding resolved and clamped to `-1`. It is now
+  kept pending until rows exist, as Qt Quick does and as `TreeView` already
+  did; covered by `TestModelContracts::listViewCurrentIndexBeforeModel`.
 
 - `TreeView::expandToIndex()` inserted row-number keys (`"0/2"`) that never
   matched the `name#row` keys used by the flattener, so it never expanded a
   C++ model branch. Fixed by WP6's persistent-index state.
 - Delegate reuse across re-flattens already existed in `TreeView` through
   `persistentLookup`; WP6 item 4 needed no new code.
-- `TreeView` writes `text` and `display` onto the delegate root item
-  (`generateDelegateItems`, `updateDelegateItem`), so a `delegate: Text {
-  text: <binding> }` shows the bare node label until the binding re-evaluates.
-  Delegates that need a computed label must wrap the `Text` in an `Item`
-  (see `examples/concepts/lazy_model/Main.qml`). Not changed here because
-  JS-map trees rely on the implicit label; a follow-up should stop writing
-  to properties that carry a binding.
+- `TreeView` wrote `text` and `display` onto the delegate root item, so a
+  `delegate: Text { text: <binding> }` showed the bare node label. Fixed on
+  2026-09-11: all views write model data only to QML-declared delegate
+  properties (`DelegateUtils::isDeclaredInQml`), never to a C++ property of
+  the root type; TreeView keeps publishing undeclared names as dynamic
+  properties. Covered by `TestTreeView::textRootKeepsItsBinding` and
+  `TestModelContracts::rolesDoNotOverwriteBuiltInProperties`.
 - A `QSortFilterProxyModel` invalidates persistent indexes of filtered-out
   rows, so a branch filtered away and brought back is collapsed. This matches
   Qt Quick and is documented rather than worked around.

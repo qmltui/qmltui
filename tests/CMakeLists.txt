@@ -76,6 +76,7 @@ set_tests_properties(test_installed_custom_item_consumer PROPERTIES
 add_qtui_test(test_canvas Core/test_canvas.cpp)
 add_qtui_test(test_popup Controls/test_popup.cpp)
 add_qtui_test(test_indicators Controls/test_indicators.cpp)
+add_qtui_test(test_standard_roles Controls/test_standard_roles.cpp)
 add_qtui_test(test_image Image/test_image.cpp)
 
 add_executable(qtui_test_runner_fixture TestRunner/main.cpp)
@@ -414,6 +415,12 @@ endif()
 if(QTUI_BUILD_BENCHMARKS)
     add_executable(benchmark_table_view Core/benchmark_table_view.cpp)
     target_link_libraries(benchmark_table_view PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
+
+    # Per-phase cost of each model view (delegate creation, scroll, data
+    # change, idle frame) and memory per delegate. See docs/benchmarks/.
+    add_executable(benchmark_view_phases Core/benchmark_view_phases.cpp)
+    target_link_libraries(benchmark_view_phases PRIVATE
+ Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
     add_executable(benchmark_views Core/benchmark_views.cpp)
     target_link_libraries(benchmark_views PRIVATE

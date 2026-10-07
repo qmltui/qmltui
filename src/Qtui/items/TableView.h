@@ -141,6 +141,7 @@ private:
     int headerRows() const;
     int computeFirstVisibleRow() const;
     void layoutDelegates();
+    void maybeFetchMore();
     using Position = std::pair<int, int>;
     struct DelegateRecord {
         QPointer<Item> item;
@@ -172,6 +173,9 @@ private:
     void handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
                            const QList<int> &roles);
     QString cellText(int row, int col) const;
+    QVariant modelHeader(int column, int role) const;
+    void refreshModelHeader();
+    static QString alignmentName(const QVariant &alignment);
     void resolveColumns();
     int resolveColumnWidth(int column, const QVariantMap &descriptor);
     void callbackWarning(const QString &message, QSet<QString> &errors) const;
@@ -194,6 +198,8 @@ private:
     bool m_resetDelegates = false;
     bool m_structureDirty = false;
     bool m_geometryDirty = true;
+    bool m_modelProvidesHeader = false;
+    bool m_fetching = false;
     QHash<int, QByteArray> m_roleNames;
     QList<ColumnGeometry> m_geometry;
     mutable QSet<QString> m_widthErrors;

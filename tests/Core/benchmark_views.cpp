@@ -9,6 +9,7 @@
 #include <TreeView.h>
 #include <TableView.h>
 #include <ListView.h>
+#include <GridView.h>
 #include "../TestPaint.h"
 
 class CountModel final : public QAbstractListModel {
@@ -28,6 +29,8 @@ public:
     QHash<int, QByteArray> roleNames() const override {
         return {{Qt::DisplayRole, "display"}};
     }
+
+    void touch(int row) { emit dataChanged(index(row, 0), index(row, 0), {Qt::DisplayRole}); }
 
 private:
     int m_count;
@@ -160,12 +163,104 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
     return timer.elapsed();
 }
 
+// Plan 07 WP6: dataChanged on a visible node must not re-flatten a 10k node
+// tree or re-create delegates.
+static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int steps)
+{
+    CountModel model(rowCount);
+    engine.rootContext()->setContextProperty("benchmarkModel", &model);
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+
+        TreeView {
+            width: 80
+            height: 24
+            model: benchmarkModel
+            delegate: Text {
+                required property string display
+                text: display
+            }
+        }
+    )", QUrl());
+    if (!component.isReady()) {
+        qCritical().noquote() << component.errorString();
+        return -1;
+    }
+    std::unique_ptr<QObject> object(component.create());
+    auto *tree = qobject_cast<qtui::TreeView*>(object.get());
+    if (!tree) return -1;
+    qtui::TextGridBuffer buffer;
+    if (!buffer.resize(80, 24)) return -1;
+    qtui::testing::paintItem(tree, buffer, 0, 0);
+    const auto before = tree->childItems();
+
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < steps; ++i) {
+        model.touch(i % 24);
+        qtui::testing::paintItem(tree, buffer, 0, 0);
+    }
+    const qint64 elapsed = timer.elapsed();
+    if (tree->childItems() != before) {
+        qCritical("TreeView dataChanged re-created delegate items");
+        return -1;
+    }
+    return elapsed;
+}
+
+static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
+{
+    CountModel model(rowCount);
+    engine.rootContext()->setContextProperty("benchmarkModel", &model);
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+
+        GridView {
+            width: 80
+            height: 24
+            cellWidth: 20
+            cellHeight: 2
+            model: benchmarkModel
+            delegate: Text {
+                required property string display
+                text: display
+            }
+        }
+    )", QUrl());
+    if (!component.isReady()) {
+        qCritical().noquote() << component.errorString();
+        return -1;
+    }
+
+    QElapsedTimer timer;
+    timer.start();
+    std::unique_ptr<QObject> object(component.create());
+    auto *grid = qobject_cast<qtui::GridView*>(object.get());
+    if (!grid) return -1;
+    qtui::TextGridBuffer buffer;
+    if (!buffer.resize(80, 24)) return -1;
+    qtui::testing::paintItem(grid, buffer, 0, 0);
+    // 4 columns x 12 rows visible, one overscan row each side: at most 56 delegates.
+    if (grid->childItems().size() > 56 || buffer.cellAt(0, 0).character() != "0") {
+        qCritical("GridView benchmark created more delegates than the viewport needs");
+        return -1;
+    }
+    for (int i = 0; i < steps; ++i) {
+        grid->setContentY((i * 7) % grid->contentHeight());
+        qtui::testing::paintItem(grid, buffer, 0, 0);
+    }
+    return timer.elapsed();
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
     qtui::TreeView ensureModuleIsLinked;
     qtui::TableView ensureTableViewLinked;
     qtui::ListView ensureListViewLinked;
+    qtui::GridView ensureGridViewLinked;
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath()
                          + QStringLiteral("/../Qtui"));
@@ -188,5 +283,12 @@ int main(int argc, char **argv)
     qInfo() << "ListView 1,000 selection changes & render steps:" << listSelectMs << "ms"
             << "(" << (listSelectMs / 1000.0) << "ms per selection step)";
 
-    return (tree1kMs < 0 || tree10kMs < 0 || table1kMs < 0 || table10kMs < 0 || listSelectMs < 0) ? 1 : 0;
+    const qint64 treeChangeMs = measureTreeViewDataChanged(engine, 10'000, 1'000);
+    qInfo() << "TreeView 10k nodes: 1,000 dataChanged & render steps:" << treeChangeMs << "ms";
+
+    const qint64 gridScrollMs = measureGridViewScroll(engine, 100'000, 1'000);
+    qInfo() << "GridView 100k rows: creation + 1,000 scroll & render steps:" << gridScrollMs << "ms";
+
+    return (tree1kMs < 0 || tree10kMs < 0 || table1kMs < 0 || table10kMs < 0 || listSelectMs < 0
+            || gridScrollMs < 0 || treeChangeMs < 0) ? 1 : 0;
 }

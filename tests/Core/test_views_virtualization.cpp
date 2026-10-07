@@ -5,6 +5,7 @@
 #include <QQmlContext>
 #include <QAbstractListModel>
 #include <ListView.h>
+#include <GridView.h>
 #include <TableView.h>
 #include <TextGridBuffer.h>
 #include "../TestPaint.h"
@@ -42,6 +43,7 @@ private slots:
     void testListViewPooling();
     void testTableView2DVirtualization();
     void testTableViewDelegateChooser();
+    void testGridViewVirtualization();
 };
 
 void TestViewsVirtualization::testListViewPooling() {
@@ -183,4 +185,68 @@ void TestViewsVirtualization::testTableViewDelegateChooser() {
 }
 
 QTEST_MAIN(TestViewsVirtualization)
+void TestViewsVirtualization::testGridViewVirtualization() {
+    QQmlEngine engine;
+    TestCountModel model(100000);
+    engine.rootContext()->setContextProperty("testModel", &model);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+
+        GridView {
+            width: 80
+            height: 10
+            cellWidth: 20
+            cellHeight: 2
+            model: testModel
+            delegate: Text {
+                required property string display
+                text: display
+            }
+        }
+    )", QUrl());
+
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto *gridView = qobject_cast<GridView*>(object.get());
+    QVERIFY(gridView != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(80, 10);
+    paintItem(gridView, buffer, 0, 0);
+
+    // 4 columns x 5 visible rows, plus one overscan row above and below:
+    // at most 7 rows x 4 columns = 28 delegates for 100,000 model rows.
+    const int initialChildren = gridView->findChildren<Item*>().size();
+    QVERIFY2(initialChildren > 0 && initialChildren <= 28, qPrintable(QString::number(initialChildren)));
+    QCOMPARE(gridView->contentHeight(), 100000 / 4 * 2);
+
+    auto textAt = [&](int x, int y) {
+        QString line;
+        for (int i = 0; i < 20; ++i) line += QString::fromUtf8(buffer.cellAt(x + i, y).character());
+        return line.trimmed();
+    };
+    QCOMPARE(textAt(0, 0), QStringLiteral("Item 0"));
+    QCOMPARE(textAt(20, 0), QStringLiteral("Item 1"));
+    QCOMPARE(textAt(0, 2), QStringLiteral("Item 4"));
+
+    // Scrolling far down materialises that window and releases the old one.
+    gridView->setContentY(1000);
+    buffer.clear();
+    paintItem(gridView, buffer, 0, 0);
+    const int scrolledChildren = gridView->findChildren<Item*>().size();
+    QVERIFY2(scrolledChildren <= 28, qPrintable(QString::number(scrolledChildren)));
+    QCOMPARE(textAt(0, 0), QStringLiteral("Item 2000"));
+    QCOMPARE(textAt(60, 0), QStringLiteral("Item 2003"));
+
+    // A narrower view has fewer columns per row.
+    gridView->setContentY(0);
+    gridView->setWidth(40);
+    buffer.clear();
+    paintItem(gridView, buffer, 0, 0);
+    QCOMPARE(textAt(0, 2), QStringLiteral("Item 2"));
+    QCOMPARE(gridView->contentHeight(), 100000 / 2 * 2);
+}
+
 #include "test_views_virtualization.moc"

@@ -60,8 +60,17 @@ ListView::~ListView() {
     clearItems();
 }
 
+void ListView::setRootIndex(const QModelIndex &rootIndex) {
+    if (m_rootIndex == rootIndex) return;
+    m_rootIndex = rootIndex;
+    m_nestedWarned = false;
+    emit rootIndexChanged();
+    if (qobject_cast<QAbstractItemModel *>(m_objectModel.data())) generateItems();
+}
+
 void ListView::setModel(const QVariant& model) {
     if (m_model == model) return;
+    m_nestedWarned = false;
     disconnectModelSignals();
     if (m_objectModel) disconnect(m_objectModel, nullptr, this, nullptr);
     ++m_modelGeneration;
@@ -271,7 +280,7 @@ void ListView::rebindDelegateItem(Item *item, int index) {
         if (normalized.canConvert<QVariantMap>())
             rowValues = normalized.toMap();
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
-        const QModelIndex modelIndex = model->index(index, 0);
+        const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
             const QVariant value = model->data(modelIndex, it.key());
             if (rowMap) rowMap->insert(it.value(), value);
@@ -339,7 +348,7 @@ Item *ListView::createDelegateItem(int index)
             rowValues = normalized.toMap();
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
         rowMap = new QQmlPropertyMap(this);
-        const QModelIndex modelIndex = model->index(index, 0);
+        const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
             const QVariant value = model->data(modelIndex, it.key());
             rowMap->insert(it.value(), value);
@@ -400,8 +409,13 @@ Item *ListView::createDelegateItem(int index)
 
 void ListView::rebuildViewport(bool force)
 {
-    if (!DelegateUtils::isReady(m_delegate, this) || m_modelCount <= 0) {
+    if (!DelegateUtils::isReady(m_delegate, this)) {
         clearItems();
+        return;
+    }
+    if (m_modelCount <= 0) {
+        clearItems();
+        maybeFetchMore();
         return;
     }
 
@@ -455,6 +469,7 @@ void ListView::rebuildViewport(bool force)
     }
     m_materializedFirst = first;
     m_materializedLast = last;
+    maybeFetchMore();
 
     if (delegateStride() != previousStride) {
         updateContentExtent();
@@ -463,6 +478,14 @@ void ListView::rebuildViewport(bool force)
     }
     refreshDelegateStates();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+}
+
+void ListView::maybeFetchMore() {
+    auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data());
+    if (!model) return;
+    constexpr int overscanRows = 2;
+    DelegateUtils::fetchMoreIfNeeded(model, m_rootIndex, overscanRows, m_fetching,
+                                     [this] { return m_materializedLast; });
 }
 
 void ListView::generateItems() {
@@ -495,10 +518,11 @@ void ListView::generateItems() {
         }
         m_modelCount = m_listValues.size();
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
+        DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
         const QHash<int, QByteArray> roles = model->roleNames();
         for (auto it = roles.cbegin(); it != roles.cend(); ++it)
             m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
-        m_modelCount = (std::max)(0, model->rowCount());
+        m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
 
         const quint64 generation = m_modelGeneration;
         QPointer<QAbstractItemModel> guardedModel(model);
@@ -508,14 +532,14 @@ void ListView::generateItems() {
                                              const QVector<int> &changedRoles) {
                 if (!guardedModel || generation != m_modelGeneration
                     || guardedModel.data() != m_objectModel.data()
-                    || topLeft.parent().isValid()) return;
+                    || topLeft.parent() != m_rootIndex) return;
                 for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                     Item *item = m_createdItems.value(row, nullptr);
                     QQmlContext *context = delegateContext(item);
                     if (!item || !context) continue;
                     auto *rowMap = qobject_cast<QQmlPropertyMap *>(
                         context->contextProperty("model").value<QObject *>());
-                    const QModelIndex modelIndex = guardedModel->index(row, 0);
+                    const QModelIndex modelIndex = guardedModel->index(row, 0, m_rootIndex);
                     for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
                         if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
                             continue;
@@ -530,21 +554,25 @@ void ListView::generateItems() {
         m_modelConnections.append(connect(model, &QAbstractItemModel::rowsInserted, this,
             [this, guardedModel, generation](const QModelIndex &parent, int first, int last) {
                 if (!guardedModel || generation != m_modelGeneration
-                    || guardedModel.data() != m_objectModel.data() || parent.isValid()) return;
+                    || guardedModel.data() != m_objectModel.data() || parent != m_rootIndex) return;
                 insertModelRows(guardedModel, first, last, m_roleMap);
             }));
         m_modelConnections.append(connect(model, &QAbstractItemModel::rowsRemoved, this,
             [this, guardedModel, generation](const QModelIndex &parent, int first, int last) {
                 if (!guardedModel || generation != m_modelGeneration
-                    || guardedModel.data() != m_objectModel.data() || parent.isValid()) return;
+                    || guardedModel.data() != m_objectModel.data() || parent != m_rootIndex) return;
                 removeModelRows(first, last);
             }));
         m_modelConnections.append(connect(model, &QAbstractItemModel::rowsMoved, this,
             [this, guardedModel, generation](const QModelIndex &sourceParent, int first, int last,
                                              const QModelIndex &destinationParent, int destination) {
                 if (!guardedModel || generation != m_modelGeneration
-                    || guardedModel.data() != m_objectModel.data()
-                    || sourceParent.isValid() || destinationParent.isValid()) return;
+                    || guardedModel.data() != m_objectModel.data()) return;
+                if (sourceParent != m_rootIndex || destinationParent != m_rootIndex) {
+                    // A move into or out of the shown level changes the row set.
+                    if (sourceParent == m_rootIndex || destinationParent == m_rootIndex) generateItems();
+                    return;
+                }
                 moveModelRows(first, last, destination);
             }));
         m_modelConnections.append(connect(model, &QAbstractItemModel::layoutChanged, this,
@@ -575,7 +603,7 @@ void ListView::insertModelRows(QAbstractItemModel *model, int first, int last,
         m_currentIndex += last - first + 1;
         emit currentIndexChanged();
     }
-    m_modelCount = (std::max)(0, model->rowCount());
+    m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
 
     const int count = last - first + 1;
     QMap<int, Item*> newCreatedItems;
@@ -596,7 +624,7 @@ void ListView::insertModelRows(QAbstractItemModel *model, int first, int last,
 void ListView::removeModelRows(int first, int last) {
     const int oldCurrentIndex = m_currentIndex;
     if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
-        m_modelCount = (std::max)(0, model->rowCount());
+        m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
     else
         m_modelCount = (std::max)(0, m_modelCount - (last - first + 1));
     if (oldCurrentIndex > last)

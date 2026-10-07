@@ -6,6 +6,7 @@
 #include <QVariantMap>
 #include <QVariantList>
 #include <QSet>
+#include <QHash>
 #include <QString>
 #include <QJSValue>
 #include <QQmlComponent>
@@ -139,6 +140,13 @@ private:
 
     void flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
     void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
+    static void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node);
+    // True when rows under `parent` are part of the flattened list (the root
+    // level, or a visible node), so a structural change there is observable.
+    bool isLevelShown(const QModelIndex &parent) const;
+    void setNodeExpanded(const VisibleNode &node, bool expanded);
+    void handleModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    Item *delegateItemForRow(int row) const;
     void adjustScrollTop();
     void updateTree();
 
@@ -161,10 +169,15 @@ private:
     int m_delegateStartIndex = -1;
     int m_delegateCapacity = 0;
 
+    // JS map models are keyed by path; C++ models by persistent index, which
+    // survives renames, inserts above, sorting, and proxies.
     QSet<QString> m_expandedPaths;
     QSet<QString> m_collapsedPaths;
+    QSet<QPersistentModelIndex> m_expandedIndexes;
     QList<VisibleNode> m_visibleNodes;
+    QHash<QPersistentModelIndex, int> m_visibleLookup;
     bool m_treeDirty = true;
+    bool m_fetching = false;
     int m_selectedIndex = -1;
     int m_pendingCurrentIndex = -1;
     int m_scrollTop = 0;

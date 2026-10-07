@@ -2,6 +2,7 @@
 
 #include "Item.h"
 
+#include <QAbstractItemModel>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -144,6 +145,40 @@ inline Item *createItem(QQmlComponent *component,
     if (ownsContext)
         context->setParent(item);
     return item;
+}
+
+// Flat views show one level of a model. Warn once when the level shown has
+// nested rows that the view will silently skip.
+inline void warnIfNested(QAbstractItemModel *model, const QModelIndex &root, QObject *owner, bool &warned)
+{
+    if (warned || !model) return;
+    const QModelIndex first = model->index(0, 0, root);
+    if (!first.isValid() || !model->hasChildren(first)) return;
+    warned = true;
+    qmlWarning(owner) << owner->metaObject()->className()
+                      << ": model has nested rows; this view shows one level. "
+                         "Use TreeView, or set rootIndex to show a subtree.";
+}
+
+// Drives lazily populated models (canFetchMore/fetchMore). Keeps fetching
+// while the shown window still reaches the end of the loaded rows and the
+// model grows synchronously; an asynchronous model continues through its own
+// rowsInserted, which brings the caller back here. `fetching` is the caller's
+// re-entrancy guard, `lastShown()` the highest row index it currently shows
+// (-1 for none) and `threshold` how close to the end counts as "at the end".
+template <typename LastShownFn>
+inline void fetchMoreIfNeeded(QAbstractItemModel *model, const QModelIndex &parent,
+                              int threshold, bool &fetching, LastShownFn lastShown)
+{
+    if (!model || fetching) return;
+    fetching = true;
+    for (int guard = 0; guard < 4096; ++guard) {
+        const int count = model->rowCount(parent);
+        if (!model->canFetchMore(parent) || lastShown() + 1 + threshold < count) break;
+        model->fetchMore(parent);
+        if (model->rowCount(parent) == count) break;
+    }
+    fetching = false;
 }
 
 inline void setPropertyIfExists(QObject *object, const char *name, const QVariant &value)

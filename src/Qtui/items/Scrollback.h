@@ -88,6 +88,7 @@ private:
     QPointer<QQmlComponent> m_separator;
     int m_spacing = 0;
     bool m_reuseItems = true;
+    bool m_fetching = false;
     int m_consumedRowCount = 0;
     bool m_hasRenderedFirstItem = false;
 

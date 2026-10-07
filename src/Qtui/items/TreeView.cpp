@@ -42,6 +42,8 @@ void TreeView::setModel(const QVariant &model) {
     m_rootNodeMap.clear();
     m_expandedPaths.clear();
     m_collapsedPaths.clear();
+    m_expandedIndexes.clear();
+    m_visibleLookup.clear();
     m_rootIndex = QPersistentModelIndex();
     m_selectedIndex = -1;
     m_scrollTop = 0;
@@ -64,31 +66,33 @@ void TreeView::setModel(const QVariant &model) {
             emit currentItemDataChanged();
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this]() {
+        const auto invalidate = [this]() {
             m_treeDirty = true;
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        };
+        connect(m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this, invalidate]() {
+            // Persistent indexes are invalid after a reset; nothing is expanded.
+            m_expandedIndexes.clear();
+            invalidate();
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this, [this]() {
-            m_treeDirty = true;
-            emit currentItemDataChanged();
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+            handleModelDataChanged(topLeft, bottomRight);
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted, this, [this]() {
-            m_treeDirty = true;
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted, this,
+                [this, invalidate](const QModelIndex &parent) {
+            if (isLevelShown(parent)) invalidate();
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved, this, [this]() {
-            m_treeDirty = true;
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved, this,
+                [this, invalidate](const QModelIndex &parent) {
+            if (isLevelShown(parent)) invalidate();
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsMoved, this, [this]() {
-            m_treeDirty = true;
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        connect(m_cppModel.data(), &QAbstractItemModel::rowsMoved, this,
+                [this, invalidate](const QModelIndex &sourceParent, int, int,
+                                   const QModelIndex &destinationParent, int) {
+            if (isLevelShown(sourceParent) || isLevelShown(destinationParent)) invalidate();
         });
-        connect(m_cppModel.data(), &QAbstractItemModel::layoutChanged, this, [this]() {
-            m_treeDirty = true;
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
-        });
+        connect(m_cppModel.data(), &QAbstractItemModel::layoutChanged, this, invalidate);
     } else if (model.userType() == QMetaType::fromType<QJSValue>().id()) {
         m_rootNodeMap = model.value<QJSValue>().toVariant().toMap();
     } else if (model.canConvert<QVariantMap>()) {
@@ -259,11 +263,15 @@ void TreeView::expand(int index) {
     if (index >= 0 && index < m_visibleNodes.size()) {
         const VisibleNode &node = m_visibleNodes[index];
         if (node.hasChildren) {
-            m_expandedPaths.insert(node.key);
-            m_collapsedPaths.remove(node.key);
+            setNodeExpanded(node, true);
+            const QPersistentModelIndex modelIndex = node.modelIndex;
             m_treeDirty = true;
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
             updateTree();
+            // Lazily populated branches (QFileSystemModel style) load their
+            // children on first expansion; rowsInserted then rebuilds the tree.
+            if (m_cppModel && modelIndex.isValid() && m_cppModel->canFetchMore(modelIndex))
+                m_cppModel->fetchMore(modelIndex);
             emit expanded(index, 1);
         }
     }
@@ -274,8 +282,7 @@ void TreeView::collapse(int index) {
     if (index >= 0 && index < m_visibleNodes.size()) {
         const VisibleNode &node = m_visibleNodes[index];
         if (node.hasChildren) {
-            m_collapsedPaths.insert(node.key);
-            m_expandedPaths.remove(node.key);
+            setNodeExpanded(node, false);
             m_treeDirty = true;
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
             updateTree();
@@ -335,9 +342,8 @@ void TreeView::expandRecursively(int row, int requestedDepth)
             const int relativeDepth = node.depth - baseDepth;
             if (inSubtree && node.hasChildren
                 && (requestedDepth < 0 || relativeDepth < requestedDepth)
-                && !m_expandedPaths.contains(node.key)) {
-                m_expandedPaths.insert(node.key);
-                m_collapsedPaths.remove(node.key);
+                && !node.expanded) {
+                setNodeExpanded(node, true);
                 changed = true;
             }
         }
@@ -358,10 +364,8 @@ void TreeView::collapseRecursively(int row)
     if (row >= m_visibleNodes.size()) return;
     const QString baseKey = m_visibleNodes[row].key;
     for (const VisibleNode &node : std::as_const(m_visibleNodes)) {
-        if (node.key == baseKey || node.key.startsWith(baseKey + '/')) {
-            m_expandedPaths.remove(node.key);
-            m_collapsedPaths.insert(node.key);
-        }
+        if (node.key == baseKey || node.key.startsWith(baseKey + '/'))
+            setNodeExpanded(node, false);
     }
     m_treeDirty = true;
     updateTree();
@@ -372,16 +376,8 @@ void TreeView::collapseRecursively(int row)
 void TreeView::expandToIndex(const QModelIndex &index)
 {
     if (!m_cppModel || !index.isValid() || index.model() != m_cppModel) return;
-    QList<QModelIndex> chain;
     for (QModelIndex parent = index.parent(); parent.isValid(); parent = parent.parent())
-        chain.prepend(parent);
-    QString key;
-    for (const QModelIndex &ancestor : std::as_const(chain)) {
-        key = key.isEmpty() ? QString::number(ancestor.row())
-                            : key + '/' + QString::number(ancestor.row());
-        m_expandedPaths.insert(key);
-        m_collapsedPaths.remove(key);
-    }
+        m_expandedIndexes.insert(QPersistentModelIndex(parent));
     m_treeDirty = true;
     updateTree();
     for (int row = 0; row < m_visibleNodes.size(); ++row) {
@@ -429,15 +425,10 @@ void TreeView::expandAll() {
             for (int row = 0; row < rows; ++row) {
                 const QModelIndex index = m_cppModel->index(row, 0, parent);
                 if (!index.isValid()) continue;
-                QString name = m_cppModel->data(index, Qt::DisplayRole).toString();
-                if (name.isEmpty())
-                    name = QStringLiteral("Item %1").arg(row);
-                const QString segment = name + QLatin1Char('#') + QString::number(row);
-                const QString key = parentKey.isEmpty()
-                    ? segment : parentKey + QLatin1Char('/') + segment;
+                // Only rows that are already loaded; expandAll() never fetches.
                 if (m_cppModel->rowCount(index) > 0) {
-                    m_expandedPaths.insert(key);
-                    collectModelKeys(index, key);
+                    m_expandedIndexes.insert(QPersistentModelIndex(index));
+                    collectModelKeys(index, parentKey);
                 }
             }
         };
@@ -454,6 +445,7 @@ void TreeView::expandAll() {
 
 void TreeView::collapseAll() {
     m_expandedPaths.clear();
+    m_expandedIndexes.clear();
     QStringList keys;
     if (!m_rootNodeMap.isEmpty()) {
         collectAllKeys(m_rootNodeMap, "", keys);
@@ -533,53 +525,105 @@ void TreeView::flattenTree(const QVariantMap &map, const QString &parentPath, co
     }
 }
 
+void TreeView::fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node) {
+    QString name = model->data(index, Qt::DisplayRole).toString();
+    if (name.isEmpty()) name = QStringLiteral("Item %1").arg(index.row());
+    QVariantMap rawData;
+    const QHash<int, QByteArray> roles = model->roleNames();
+    for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+        rawData[QString::fromUtf8(it.value())] = model->data(index, it.key());
+    rawData[QStringLiteral("display")] = name;
+    rawData[QStringLiteral("text")] = name;
+    node.text = name;
+    node.rawData = rawData;
+    node.hasChildren = model->hasChildren(index) || model->rowCount(index) > 0;
+    node.modelIndex = index;
+}
+
 void TreeView::flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list) {
-    if (!model) return;
-
-    int rows = model->rowCount(parent);
-    QHash<int, QByteArray> roles = model->roleNames();
-
+    const int rows = model->rowCount(parent);
     for (int r = 0; r < rows; ++r) {
-        QModelIndex idx = model->index(r, 0, parent);
+        const QModelIndex idx = model->index(r, 0, parent);
         if (!idx.isValid()) continue;
 
-        QString name = model->data(idx, Qt::DisplayRole).toString();
-        if (name.isEmpty()) name = QString("Item %1").arg(r);
-
-        QString currentPath = parentPath.isEmpty() ? name : parentPath + "/" + name;
-        QString currentKey = parentKey.isEmpty() ? name + "#" + QString::number(r) : parentKey + "/" + name + "#" + QString::number(r);
-        bool hasChildren = model->hasChildren(idx) || (model->rowCount(idx) > 0);
-
-        bool expanded = false;
-        if (m_collapsedPaths.contains(currentKey)) {
-            expanded = false;
-        } else if (m_expandedPaths.contains(currentKey)) {
-            expanded = true;
-        }
-
-        QVariantMap rawData;
-        for (auto it = roles.begin(); it != roles.end(); ++it) {
-            rawData[QString::fromUtf8(it.value())] = model->data(idx, it.key());
-        }
-        rawData["display"] = name;
-        rawData["text"] = name;
-
         VisibleNode node;
-        node.text = name;
-        node.path = currentPath;
-        node.key = currentKey;
+        fillNodeFromModel(model, idx, node);
+        node.path = parentPath.isEmpty() ? node.text : parentPath + "/" + node.text;
+        node.key = parentKey.isEmpty() ? node.text + "#" + QString::number(r)
+                                       : parentKey + "/" + node.text + "#" + QString::number(r);
         node.depth = depth;
-        node.hasChildren = hasChildren;
-        node.expanded = expanded;
-        node.rawData = rawData;
-        node.modelIndex = idx;
-
+        node.expanded = node.hasChildren && m_expandedIndexes.contains(node.modelIndex);
         list.append(node);
 
-        if (hasChildren && expanded) {
-            flattenCppModel(model, idx, currentPath, currentKey, depth + 1, list);
-        }
+        if (node.expanded)
+            flattenCppModel(model, idx, node.path, node.key, depth + 1, list);
     }
+}
+
+bool TreeView::isLevelShown(const QModelIndex &parent) const {
+    if (parent == m_rootIndex) return true;
+    return parent.isValid() && m_visibleLookup.contains(QPersistentModelIndex(parent));
+}
+
+void TreeView::setNodeExpanded(const VisibleNode &node, bool expanded) {
+    if (node.modelIndex.isValid()) {
+        if (expanded) m_expandedIndexes.insert(node.modelIndex);
+        else m_expandedIndexes.remove(node.modelIndex);
+        return;
+    }
+    if (expanded) {
+        m_expandedPaths.insert(node.key);
+        m_collapsedPaths.remove(node.key);
+    } else {
+        m_collapsedPaths.insert(node.key);
+        m_expandedPaths.remove(node.key);
+    }
+}
+
+Item *TreeView::delegateItemForRow(int row) const {
+    const int slot = row - m_delegateStartIndex;
+    return m_delegateStartIndex >= 0 && slot >= 0 && slot < m_delegateItems.size()
+        ? m_delegateItems[slot] : nullptr;
+}
+
+void TreeView::handleModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+    if (!m_cppModel) return;
+    const auto invalidate = [this]() {
+        m_treeDirty = true;
+        markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    };
+    if (m_treeDirty) {
+        invalidate();
+        return;
+    }
+    // Refresh the affected visible nodes in place. Only a change that alters
+    // the shape of the tree (a leaf gaining children, or an expanded branch
+    // being renamed, which changes every descendant path) needs a re-flatten.
+    const QModelIndex parent = topLeft.parent();
+    bool touched = false;
+    for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+        const QModelIndex index = m_cppModel->index(row, 0, parent);
+        const int visibleRow = m_visibleLookup.value(QPersistentModelIndex(index), -1);
+        if (visibleRow < 0) continue;
+        VisibleNode &node = m_visibleNodes[visibleRow];
+        const bool hadChildren = node.hasChildren;
+        const QString oldText = node.text;
+        fillNodeFromModel(m_cppModel.data(), index, node);
+        node.expanded = node.hasChildren && m_expandedIndexes.contains(node.modelIndex);
+        const bool renamed = node.text != oldText;
+        if (hadChildren != node.hasChildren || (renamed && node.expanded)) {
+            invalidate();
+            return;
+        }
+        if (renamed) {
+            const int parentRow = m_visibleLookup.value(QPersistentModelIndex(parent), -1);
+            node.path = parentRow >= 0 ? m_visibleNodes[parentRow].path + "/" + node.text : node.text;
+        }
+        if (Item *item = delegateItemForRow(visibleRow)) updateDelegateItem(item, visibleRow);
+        if (visibleRow == m_selectedIndex) emit currentItemDataChanged();
+        touched = true;
+    }
+    if (touched) markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void TreeView::updateTree() {
@@ -607,6 +651,13 @@ void TreeView::updateTree() {
         QString rootKey = rootName + "#0";
         flattenTree(m_rootNodeMap, "", rootKey, 0, m_visibleNodes);
     }
+
+    m_visibleLookup.clear();
+    for (int row = 0; row < m_visibleNodes.size(); ++row)
+        if (m_visibleNodes[row].modelIndex.isValid())
+            m_visibleLookup.insert(m_visibleNodes[row].modelIndex, row);
+    for (auto it = m_expandedIndexes.begin(); it != m_expandedIndexes.end();)
+        it = it->isValid() ? std::next(it) : m_expandedIndexes.erase(it);
 
     m_selectedIndex = -1;
     for (int row = 0; row < m_visibleNodes.size(); ++row) {
@@ -886,6 +937,16 @@ void TreeView::updateLayout() {
     Item::updateLayout();
     updateTree();
     adjustScrollTop();
+    if (m_cppModel) {
+        // Like QTreeView, load the shown level of a lazily populated model
+        // until the viewport is filled. Branches fetch on expand() instead.
+        DelegateUtils::fetchMoreIfNeeded(m_cppModel.data(), m_rootIndex, 1, m_fetching, [this] {
+            updateTree();
+            return (std::min)(int(m_visibleNodes.size()) - 1, m_scrollTop + (std::max)(1, height()) - 1);
+        });
+        updateTree();
+        adjustScrollTop();
+    }
 
     const int expectedCapacity = (std::max)(0, height());
     if (m_delegate && (m_delegateStartIndex != m_scrollTop

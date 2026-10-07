@@ -4,8 +4,8 @@
 #include <QJSValue>
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QQmlProperty>
 #include <QQmlPropertyMap>
+#include <algorithm>
 #include <utility>
 
 namespace qtui {
@@ -18,13 +18,33 @@ static QQmlContext *delegateContext(Item *item) {
 
 using DelegateUtils::setPropertyIfExists;
 
-GridView::GridView(QObject *parent) : ScrollView(parent) {}
+GridView::GridView(QObject *parent) : ScrollView(parent) {
+  // Scrolling and resizing change the visible window; ask for a layout pass
+  // so rebuildViewport() runs before the next paint.
+  const auto requestViewport = [this]() {
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+  };
+  connect(this, &ScrollView::contentYChanged, this, requestViewport);
+  connect(this, &Item::heightChanged, this, requestViewport);
+  connect(this, &Item::widthChanged, this, requestViewport);
+}
 
 GridView::~GridView() { clearItems(); }
+
+void GridView::setRootIndex(const QModelIndex &rootIndex) {
+  if (m_rootIndex == rootIndex)
+    return;
+  m_rootIndex = rootIndex;
+  m_nestedWarned = false;
+  emit rootIndexChanged();
+  if (qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
+    generateItems();
+}
 
 void GridView::setModel(const QVariant &model) {
   if (m_model == model)
     return;
+  m_nestedWarned = false;
   disconnectModelSignals();
   if (m_objectModel)
     disconnect(m_objectModel, nullptr, this, nullptr);
@@ -36,7 +56,11 @@ void GridView::setModel(const QVariant &model) {
     connect(m_objectModel, &QObject::destroyed, this, [this]() {
       m_objectModel.clear();
       m_model.clear();
+      m_modelCount = 0;
+      m_listValues.clear();
+      m_roleMap.clear();
       clearItems();
+      setContentHeight(0);
       emit modelChanged();
     });
   }
@@ -54,6 +78,7 @@ void GridView::setDelegate(QQmlComponent *delegate) {
     connect(m_delegate, &QObject::destroyed, this, [this]() {
       m_delegate.clear();
       clearItems();
+      setContentHeight(0);
       emit delegateChanged();
     });
     connect(m_delegate, &QQmlComponent::statusChanged, this,
@@ -73,6 +98,7 @@ void GridView::setCellWidth(int width) {
     return;
   m_cellWidth = width;
   emit cellWidthChanged();
+  updateContentExtent();
   markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
@@ -81,17 +107,20 @@ void GridView::setCellHeight(int height) {
     return;
   m_cellHeight = height;
   emit cellHeightChanged();
+  updateContentExtent();
   markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
 void GridView::clearItems() {
-  for (Item *item : m_createdItems) {
+  for (Item *item : std::as_const(m_createdItems)) {
     if (item) {
       item->setParentItem(nullptr);
       delete item;
     }
   }
   m_createdItems.clear();
+  m_materializedFirst = -1;
+  m_materializedLast = -1;
 }
 
 void GridView::disconnectModelSignals() {
@@ -101,384 +130,368 @@ void GridView::disconnectModelSignals() {
   m_modelConnections.clear();
 }
 
-void GridView::generateItems() {
-  clearItems();
-  disconnectModelSignals();
-  if (!DelegateUtils::isReady(m_delegate, this))
-    return;
-
-  QQmlEngine *engine = qmlEngine(this);
-  if (!engine && m_delegate)
-    engine = m_delegate->engine();
-  if (!engine)
-    return;
-
-  Item *contentItem = this;
-
-  int count = 0;
-  if (m_model.canConvert<int>() &&
-      m_model.userType() != qMetaTypeId<QJSValue>()) {
-    count = std::clamp(m_model.toInt(), 0, 10000);
-    for (int i = 0; i < count; ++i) {
-      QQmlContext *context = DelegateUtils::createContext(m_delegate, this);
-      QVariantMap initialProps;
-      initialProps["index"] = i;
-
-      DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-      Item *item = DelegateUtils::createItem(m_delegate, initialProps, context,
-                                             contentItem, this);
-      if (item) {
-        setPropertyIfExists(item, "index", i);
-      }
-      if (item) {
-        m_createdItems.append(item);
-      } else {
-        m_createdItems.append(nullptr);
-      }
-    }
-  } else if (m_model.canConvert<QVariantList>() ||
-             m_model.userType() == qMetaTypeId<QJSValue>()) {
-    QVariantList list;
-    if (m_model.userType() == qMetaTypeId<QJSValue>()) {
-      QJSValue val = m_model.value<QJSValue>();
-      if (val.isArray()) {
-        int len = val.property("length").toInt();
-        for (int i = 0; i < len; ++i) {
-          list.append(val.property(i).toVariant());
-        }
-      }
-    } else if (m_model.canConvert<QVariantList>()) {
-      list = m_model.toList();
-    }
-
-    count = std::clamp(static_cast<int>(list.size()), 0, 10000);
-    for (int i = 0; i < count; ++i) {
-      QQmlContext *context = DelegateUtils::createContext(m_delegate, this);
-      QVariant itemVal = list.at(i);
-
-      QVariantMap initialProps;
-      initialProps["index"] = i;
-      initialProps["modelData"] = itemVal;
-      initialProps["model"] = itemVal;
-
-      DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-      DelegateUtils::setContextProperty(m_delegate, context, "modelData",
-                                        itemVal);
-      DelegateUtils::setContextProperty(m_delegate, context, "model", itemVal);
-
-      QVariant elem = itemVal;
-      if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
-        elem = elem.value<QJSValue>().toVariant();
-      }
-      if (elem.canConvert<QVariantMap>()) {
-        QVariantMap map = elem.toMap();
-        for (auto it = map.cbegin(); it != map.cend(); ++it) {
-          initialProps[it.key()] = it.value();
-          DelegateUtils::setContextProperty(m_delegate, context, it.key(),
-                                            it.value());
-        }
-      }
-
-      Item *item = DelegateUtils::createItem(m_delegate, initialProps, context,
-                                             contentItem, this);
-      if (item) {
-        setPropertyIfExists(item, "index", i);
-        setPropertyIfExists(item, "modelData", itemVal);
-        setPropertyIfExists(item, "model", itemVal);
-        if (elem.canConvert<QVariantMap>()) {
-          QVariantMap map = elem.toMap();
-          for (auto it = map.cbegin(); it != map.cend(); ++it) {
-            setPropertyIfExists(item, it.key().toUtf8().constData(),
-                                it.value());
-          }
-        }
-      }
-      if (item) {
-        m_createdItems.append(item);
-      } else {
-        m_createdItems.append(nullptr);
-      }
-    }
-  } else if (m_model.canConvert<QObject *>()) {
-    QObject *modelObj = m_model.value<QObject *>();
-    if (modelObj && modelObj->inherits("QAbstractItemModel")) {
-      QAbstractItemModel *model = qobject_cast<QAbstractItemModel *>(modelObj);
-      if (model) {
-        QHash<int, QString> roleMap;
-        const QHash<int, QByteArray> roles = model->roleNames();
-        for (auto it = roles.cbegin(); it != roles.cend(); ++it)
-          roleMap.insert(it.key(), QString::fromUtf8(it.value()));
-
-        const quint64 generation = m_modelGeneration;
-        QPointer<QAbstractItemModel> guardedModel(model);
-        m_modelConnections.append(connect(
-            model, &QAbstractItemModel::dataChanged, this,
-            [this, guardedModel, generation, roleMap](
-                const QModelIndex &topLeft, const QModelIndex &bottomRight,
-                const QList<int> &changedRoles) {
-              if (!guardedModel || generation != m_modelGeneration ||
-                  guardedModel.data() != m_objectModel.data())
-                return;
-              if (topLeft.parent().isValid())
-                return;
-              for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
-                if (row < 0 || row >= m_createdItems.size())
-                  continue;
-                Item *item = m_createdItems[row];
-                QQmlContext *context = delegateContext(item);
-                if (!context)
-                  continue;
-                const QVariant value = context->contextProperty("model");
-                QQmlPropertyMap *map =
-                    qobject_cast<QQmlPropertyMap *>(value.value<QObject *>());
-                const QModelIndex index = guardedModel->index(row, 0);
-                for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                  if (!changedRoles.isEmpty() &&
-                      !changedRoles.contains(it.key()))
-                    continue;
-                  QVariant val = guardedModel->data(index, it.key());
-                  if (map)
-                    map->insert(it.value(), val);
-                  DelegateUtils::setContextProperty(m_delegate, context,
-                                                    it.value(), val);
-                  setPropertyIfExists(item, it.value().toUtf8().constData(),
-                                      val);
-                }
-              }
-              markDirty();
-            }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::rowsInserted, this,
-                    [this, guardedModel, generation,
-                     roleMap](const QModelIndex &parent, int first, int last) {
-                      if (!guardedModel || generation != m_modelGeneration ||
-                          guardedModel.data() != m_objectModel.data())
-                        return;
-                      if (parent.isValid())
-                        return;
-                      insertModelRows(guardedModel, first, last, roleMap);
-                    }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::rowsRemoved, this,
-                    [this, guardedModel, generation](const QModelIndex &parent,
-                                                     int first, int last) {
-                      if (!guardedModel || generation != m_modelGeneration ||
-                          guardedModel.data() != m_objectModel.data())
-                        return;
-                      if (parent.isValid())
-                        return;
-                      removeModelRows(first, last);
-                    }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::rowsMoved, this,
-                    [this, guardedModel, generation](
-                        const QModelIndex &sourceParent, int first, int last,
-                        const QModelIndex &destinationParent, int destination) {
-                      if (!guardedModel || generation != m_modelGeneration ||
-                          guardedModel.data() != m_objectModel.data())
-                        return;
-                      if (sourceParent.isValid() || destinationParent.isValid())
-                        return;
-                      moveModelRows(first, last, destination);
-                    }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::layoutChanged, this,
-                    [this, guardedModel, generation]() {
-                      if (!guardedModel || generation != m_modelGeneration ||
-                          guardedModel.data() != m_objectModel.data())
-                        return;
-                      generateItems();
-                    }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::modelReset, this,
-                    [this, guardedModel, generation]() {
-                      if (!guardedModel || generation != m_modelGeneration ||
-                          guardedModel.data() != m_objectModel.data())
-                        return;
-                      generateItems();
-                    }));
-
-        int rowCount = std::max(0, model->rowCount());
-        for (int i = 0; i < rowCount; ++i) {
-          QQmlPropertyMap *rowMap = new QQmlPropertyMap(this);
-          const QModelIndex modelIndex = model->index(i, 0);
-          QVariantMap initialProps;
-          initialProps["index"] = i;
-          for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-            QVariant val = model->data(modelIndex, it.key());
-            rowMap->insert(it.value(), val);
-            initialProps[it.value()] = val;
-          }
-          initialProps["model"] = QVariant::fromValue(rowMap);
-          initialProps["modelData"] = QVariant::fromValue(rowMap);
-
-          QQmlContext *context = DelegateUtils::createContext(m_delegate, this);
-          DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-          DelegateUtils::setContextProperty(m_delegate, context, "model",
-                                            rowMap);
-          DelegateUtils::setContextProperty(m_delegate, context, "modelData",
-                                            rowMap);
-          for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-            DelegateUtils::setContextProperty(m_delegate, context, it.value(),
-                                              rowMap->value(it.value()));
-          }
-
-          Item *item = DelegateUtils::createItem(m_delegate, initialProps,
-                                                 context, contentItem, this);
-          if (item) {
-            setPropertyIfExists(item, "index", i);
-            setPropertyIfExists(item, "modelData", QVariant::fromValue(rowMap));
-            setPropertyIfExists(item, "model", QVariant::fromValue(rowMap));
-            for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-              setPropertyIfExists(item, it.value().toUtf8().constData(),
-                                  rowMap->value(it.value()));
-            }
-          }
-          if (item) {
-            rowMap->setParent(item);
-            m_createdItems.append(item);
-          } else {
-            delete rowMap;
-            m_createdItems.append(nullptr);
-          }
-        }
-      }
-    }
-  }
-  markDirty();
+int GridView::columnsPerRow() const {
+  return m_cellWidth > 0 ? std::max(1, width() / m_cellWidth) : 1;
 }
 
-void GridView::insertModelRows(QAbstractItemModel *model, int first, int last,
-                               const QHash<int, QString> &roleMap) {
-  if (!model || !m_delegate || first < 0 || first > last)
+void GridView::updateContentExtent() {
+  if (m_cellHeight <= 0 || m_modelCount <= 0) {
+    setContentHeight(0);
     return;
-  for (int row = first; row <= last; ++row) {
-    QQmlPropertyMap *rowMap = new QQmlPropertyMap(this);
-    const QModelIndex modelIndex = model->index(row, 0);
-    QVariantMap initialProps;
-    initialProps["index"] = row;
-    for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-      QVariant val = model->data(modelIndex, it.key());
-      rowMap->insert(it.value(), val);
-      initialProps[it.value()] = val;
+  }
+  const int columns = columnsPerRow();
+  const int rows = (m_modelCount + columns - 1) / columns;
+  setContentHeight(rows * m_cellHeight);
+}
+
+void GridView::reindexItem(Item *item, int index) {
+  if (!item)
+    return;
+  DelegateUtils::setContextProperty(m_delegate, delegateContext(item), "index",
+                                    index);
+  setPropertyIfExists(item, "index", index);
+}
+
+Item *GridView::createDelegateItem(int index) {
+  if (index < 0 || index >= m_modelCount)
+    return nullptr;
+
+  QVariant rowValue;
+  QVariantMap rowValues;
+  QQmlPropertyMap *rowMap = nullptr;
+  const bool countModel = m_listValues.isEmpty() && !m_objectModel;
+  if (!countModel && index < m_listValues.size()) {
+    rowValue = m_listValues.at(index);
+    QVariant normalized = rowValue;
+    if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
+      normalized = normalized.value<QJSValue>().toVariant();
+    if (normalized.canConvert<QVariantMap>())
+      rowValues = normalized.toMap();
+  } else if (auto *model =
+                 qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
+    rowMap = new QQmlPropertyMap(this);
+    const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
+    for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+      const QVariant value = model->data(modelIndex, it.key());
+      rowMap->insert(it.value(), value);
+      rowValues.insert(it.value(), value);
     }
+  }
+
+  QQmlComponent *component =
+      DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
+  if (!DelegateUtils::isReady(component, this)) {
+    delete rowMap;
+    return nullptr;
+  }
+  QQmlContext *context = DelegateUtils::createContext(component, this);
+  if (!context) {
+    delete rowMap;
+    return nullptr;
+  }
+
+  QVariantMap initialProps;
+  initialProps["index"] = index;
+  DelegateUtils::setContextProperty(component, context, "index", index);
+  if (rowMap) {
     initialProps["model"] = QVariant::fromValue(rowMap);
     initialProps["modelData"] = QVariant::fromValue(rowMap);
-
-    QQmlContext *context = DelegateUtils::createContext(m_delegate, this);
-    DelegateUtils::setContextProperty(m_delegate, context, "index", row);
-    DelegateUtils::setContextProperty(m_delegate, context, "model", rowMap);
-    DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowMap);
-    for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-      DelegateUtils::setContextProperty(m_delegate, context, it.value(),
-                                        rowMap->value(it.value()));
-    }
-
-    Item *item = DelegateUtils::createItem(m_delegate, initialProps, context,
-                                           this, this);
-    if (item) {
-      setPropertyIfExists(item, "index", row);
-      setPropertyIfExists(item, "modelData", QVariant::fromValue(rowMap));
-      setPropertyIfExists(item, "model", QVariant::fromValue(rowMap));
-      for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-        setPropertyIfExists(item, it.value().toUtf8().constData(),
-                            rowMap->value(it.value()));
-      }
-    }
-    if (item) {
-      rowMap->setParent(item);
-      m_createdItems.insert(row, item);
-    } else {
-      delete rowMap;
-      m_createdItems.insert(row, nullptr);
-    }
+    DelegateUtils::setContextProperty(component, context, "model", rowMap);
+    DelegateUtils::setContextProperty(component, context, "modelData", rowMap);
+  } else if (!countModel) {
+    initialProps["model"] = rowValue;
+    initialProps["modelData"] = rowValue;
+    DelegateUtils::setContextProperty(component, context, "model", rowValue);
+    DelegateUtils::setContextProperty(component, context, "modelData",
+                                      rowValue);
   }
-  for (int row = last + 1; row < m_createdItems.size(); ++row) {
-    if (QQmlContext *context = delegateContext(m_createdItems[row]))
-      DelegateUtils::setContextProperty(m_delegate, context, "index", row);
-    if (m_createdItems[row])
-      setPropertyIfExists(m_createdItems[row], "index", row);
+  for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
+    initialProps[it.key()] = it.value();
+    DelegateUtils::setContextProperty(component, context, it.key(),
+                                      it.value());
   }
-  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+
+  Item *item =
+      DelegateUtils::createItem(component, initialProps, context, this, this);
+  if (!item) {
+    delete rowMap;
+    return nullptr;
+  }
+  if (rowMap)
+    rowMap->setParent(item);
+  setPropertyIfExists(item, "index", index);
+  if (rowMap) {
+    setPropertyIfExists(item, "model", QVariant::fromValue(rowMap));
+    setPropertyIfExists(item, "modelData", QVariant::fromValue(rowMap));
+  } else if (!countModel) {
+    setPropertyIfExists(item, "model", rowValue);
+    setPropertyIfExists(item, "modelData", rowValue);
+  }
+  for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
+    setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+  return item;
 }
 
-void GridView::removeModelRows(int first, int last) {
-  for (int row = last; row >= first; --row) {
-    if (row < 0 || row >= m_createdItems.size())
+void GridView::rebuildViewport(bool force) {
+  if (!DelegateUtils::isReady(m_delegate, this)) {
+    clearItems();
+    return;
+  }
+  if (m_modelCount <= 0) {
+    clearItems();
+    maybeFetchMore();
+    return;
+  }
+
+  // Without cell geometry there is no viewport to compute; fall back to
+  // instantiating every row, as before virtualization.
+  int first = 0;
+  int last = m_modelCount - 1;
+  if (m_cellWidth > 0 && m_cellHeight > 0) {
+    const int columns = columnsPerRow();
+    const int viewportHeight =
+        std::max(1, height() - topPadding() - bottomPadding());
+    const int firstRow = std::max(0, contentY() / m_cellHeight);
+    const int lastRow = (contentY() + viewportHeight - 1) / m_cellHeight;
+    constexpr int overscanRows = 1;
+    first = std::max(0, (firstRow - overscanRows) * columns);
+    last = std::min(m_modelCount - 1, (lastRow + overscanRows + 1) * columns - 1);
+  }
+
+  if (!force && first == m_materializedFirst && last == m_materializedLast)
+    return;
+
+  for (auto it = m_createdItems.begin(); it != m_createdItems.end();) {
+    if (it.key() >= first && it.key() <= last) {
+      ++it;
       continue;
-    Item *item = m_createdItems.takeAt(row);
+    }
+    Item *item = it.value();
+    it = m_createdItems.erase(it);
     if (item) {
       item->setParentItem(nullptr);
       delete item;
     }
   }
-  for (int row = std::max(0, first); row < m_createdItems.size(); ++row) {
-    if (QQmlContext *context = delegateContext(m_createdItems[row]))
-      DelegateUtils::setContextProperty(m_delegate, context, "index", row);
-    if (m_createdItems[row])
-      setPropertyIfExists(m_createdItems[row], "index", row);
+  for (int index = first; index <= last; ++index) {
+    if (!m_createdItems.contains(index)) {
+      if (Item *item = createDelegateItem(index))
+        m_createdItems.insert(index, item);
+    }
   }
+  m_materializedFirst = first;
+  m_materializedLast = last;
+  maybeFetchMore();
   markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
-void GridView::moveModelRows(int first, int last, int destination) {
-  if (first < 0 || last < first || last >= m_createdItems.size())
+void GridView::maybeFetchMore() {
+  auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data());
+  if (!model)
     return;
-  QList<Item *> moved;
-  for (int row = first; row <= last; ++row)
-    moved.append(m_createdItems.takeAt(first));
-  int insertion =
-      destination > first ? destination - moved.size() : destination;
-  insertion = std::clamp(insertion, 0, static_cast<int>(m_createdItems.size()));
-  for (int index = 0; index < moved.size(); ++index)
-    m_createdItems.insert(insertion + index, moved[index]);
-  for (int row = 0; row < m_createdItems.size(); ++row) {
-    if (QQmlContext *context = delegateContext(m_createdItems[row]))
-      DelegateUtils::setContextProperty(m_delegate, context, "index", row);
-    if (m_createdItems[row])
-      setPropertyIfExists(m_createdItems[row], "index", row);
+  const int threshold = columnsPerRow(); // one overscan row
+  DelegateUtils::fetchMoreIfNeeded(model, m_rootIndex, threshold, m_fetching,
+                                   [this] { return m_materializedLast; });
+}
+
+void GridView::generateItems() {
+  clearItems();
+  disconnectModelSignals();
+  m_listValues.clear();
+  m_roleMap.clear();
+  m_modelCount = 0;
+  if (!DelegateUtils::isReady(m_delegate, this)) {
+    setContentHeight(0);
+    return;
   }
-  markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+
+  if (m_model.canConvert<int>() &&
+      m_model.userType() != qMetaTypeId<QJSValue>()) {
+    m_modelCount = std::clamp(m_model.toInt(), 0, 10000);
+  } else if (m_model.canConvert<QVariantList>() ||
+             m_model.userType() == qMetaTypeId<QJSValue>()) {
+    if (m_model.userType() == qMetaTypeId<QJSValue>()) {
+      const QJSValue value = m_model.value<QJSValue>();
+      if (value.isArray()) {
+        const int length =
+            std::clamp(value.property("length").toInt(), 0, 10000);
+        m_listValues.reserve(length);
+        for (int index = 0; index < length; ++index)
+          m_listValues.append(value.property(index).toVariant());
+      }
+    } else {
+      m_listValues = m_model.toList().mid(0, 10000);
+    }
+    m_modelCount = int(m_listValues.size());
+  } else if (auto *model =
+                 qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
+    DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
+    const QHash<int, QByteArray> roles = model->roleNames();
+    for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+      m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
+    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+
+    const quint64 generation = m_modelGeneration;
+    QPointer<QAbstractItemModel> guardedModel(model);
+    const auto live = [this, guardedModel, generation] {
+      return guardedModel && generation == m_modelGeneration &&
+             guardedModel.data() == m_objectModel.data();
+    };
+    m_modelConnections.append(connect(
+        model, &QAbstractItemModel::dataChanged, this,
+        [this, guardedModel, live](const QModelIndex &topLeft,
+                                   const QModelIndex &bottomRight,
+                                   const QList<int> &changedRoles) {
+          if (!live() || topLeft.parent() != m_rootIndex)
+            return;
+          for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+            Item *item = m_createdItems.value(row, nullptr);
+            QQmlContext *context = delegateContext(item);
+            if (!item || !context)
+              continue;
+            auto *rowMap = qobject_cast<QQmlPropertyMap *>(
+                context->contextProperty("model").value<QObject *>());
+            const QModelIndex index = guardedModel->index(row, 0, m_rootIndex);
+            for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+              if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
+                continue;
+              const QVariant value = guardedModel->data(index, it.key());
+              if (rowMap)
+                rowMap->insert(it.value(), value);
+              DelegateUtils::setContextProperty(m_delegate, context,
+                                                it.value(), value);
+              setPropertyIfExists(item, it.value().toUtf8().constData(),
+                                  value);
+            }
+          }
+          markDirty();
+        }));
+    m_modelConnections.append(connect(
+        model, &QAbstractItemModel::rowsInserted, this,
+        [this, guardedModel, live](const QModelIndex &parent, int first,
+                                   int last) {
+          if (!live() || parent != m_rootIndex)
+            return;
+          insertModelRows(guardedModel, first, last);
+        }));
+    m_modelConnections.append(connect(
+        model, &QAbstractItemModel::rowsRemoved, this,
+        [this, guardedModel, live](const QModelIndex &parent, int first,
+                                   int last) {
+          if (!live() || parent != m_rootIndex)
+            return;
+          removeModelRows(first, last);
+        }));
+    m_modelConnections.append(connect(
+        model, &QAbstractItemModel::rowsMoved, this,
+        [this, live](const QModelIndex &sourceParent, int, int,
+                     const QModelIndex &destinationParent, int) {
+          if (!live())
+            return;
+          // Any move touching the shown level changes the row order or set;
+          // rebuilding the window is cheap because it is bounded by the viewport.
+          if (sourceParent == m_rootIndex || destinationParent == m_rootIndex)
+            refreshFromModel();
+        }));
+    m_modelConnections.append(connect(model, &QAbstractItemModel::layoutChanged,
+                                      this, [this, live]() {
+                                        if (live())
+                                          refreshFromModel();
+                                      }));
+    m_modelConnections.append(connect(model, &QAbstractItemModel::modelReset,
+                                      this, [this, live]() {
+                                        if (live())
+                                          generateItems();
+                                      }));
+  }
+
+  updateContentExtent();
+  rebuildViewport(true);
+  markDirty();
+}
+
+void GridView::refreshFromModel() {
+  if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
+    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+  clearItems();
+  updateContentExtent();
+  rebuildViewport(true);
+}
+
+void GridView::insertModelRows(QAbstractItemModel *model, int first, int last) {
+  if (!model || !m_delegate || first < 0 || first > last)
+    return;
+  m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+  const int count = last - first + 1;
+  QMap<int, Item *> shifted;
+  for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
+    const int index = it.key() >= first ? it.key() + count : it.key();
+    if (index != it.key())
+      reindexItem(it.value(), index);
+    shifted.insert(index, it.value());
+  }
+  m_createdItems = std::move(shifted);
+  updateContentExtent();
+  rebuildViewport(true);
+}
+
+void GridView::removeModelRows(int first, int last) {
+  if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
+    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+  else
+    m_modelCount = std::max(0, m_modelCount - (last - first + 1));
+  const int count = last - first + 1;
+  QMap<int, Item *> shifted;
+  for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
+    Item *item = it.value();
+    if (it.key() >= first && it.key() <= last) {
+      if (item) {
+        item->setParentItem(nullptr);
+        delete item;
+      }
+      continue;
+    }
+    const int index = it.key() > last ? it.key() - count : it.key();
+    if (index != it.key())
+      reindexItem(item, index);
+    shifted.insert(index, item);
+  }
+  m_createdItems = std::move(shifted);
+  updateContentExtent();
+  rebuildViewport(true);
 }
 
 void GridView::layoutChildren() {
-  // ScrollView doesn't have layoutChildren.
   if (m_cellWidth <= 0 || m_cellHeight <= 0)
     return;
-
-  int columns = std::max(1, width() / m_cellWidth);
-
-  int index = 0;
-  for (Item *childItem : m_createdItems) {
-    if (childItem && childItem->visible()) {
-      int row = index / columns;
-      int col = index % columns;
-      childItem->setX(col * m_cellWidth);
-      childItem->setY(row * m_cellHeight);
-      index++;
-    }
+  const int columns = columnsPerRow();
+  for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
+    Item *childItem = it.value();
+    if (!childItem)
+      continue;
+    // Cells are addressed by model index so a hidden delegate keeps its slot,
+    // as in Qt Quick's GridView.
+    childItem->setX((it.key() % columns) * m_cellWidth);
+    childItem->setY((it.key() / columns) * m_cellHeight);
   }
-
-  int rows = (index + columns - 1) / columns;
-  setContentHeight(rows * m_cellHeight);
+  updateContentExtent();
 }
 
 int GridView::implicitWidth() const {
-  if (m_cellWidth > 0 && m_createdItems.count() > 0) {
+  if (m_cellWidth > 0 && m_modelCount > 0)
     return m_cellWidth + leftPadding() + rightPadding(); // At least 1 column
-  }
   return leftPadding() + rightPadding();
 }
 
 int GridView::implicitHeight() const {
-  if (m_cellHeight > 0 && m_createdItems.count() > 0) {
+  if (m_cellHeight > 0 && m_modelCount > 0)
     return m_cellHeight + topPadding() + bottomPadding(); // At least 1 row
-  }
   return topPadding() + bottomPadding();
 }
 
 void GridView::updateLayout() {
   ScrollView::updateLayout();
+  rebuildViewport();
   layoutChildren();
 }
 

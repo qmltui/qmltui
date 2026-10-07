@@ -22,8 +22,17 @@ Repeater::~Repeater() {
     clearItems();
 }
 
+void Repeater::setRootIndex(const QModelIndex &rootIndex) {
+    if (m_rootIndex == rootIndex) return;
+    m_rootIndex = rootIndex;
+    m_nestedWarned = false;
+    emit rootIndexChanged();
+    if (qobject_cast<QAbstractItemModel *>(m_objectModel.data())) generateItems();
+}
+
 void Repeater::setModel(const QVariant& model) {
     if (m_model == model) return;
+    m_nestedWarned = false;
     disconnectModelSignals();
     if (m_objectModel) disconnect(m_objectModel, nullptr, this, nullptr);
     ++m_modelGeneration;
@@ -204,6 +213,7 @@ void Repeater::generateItems() {
         if (modelObj && modelObj->inherits("QAbstractItemModel")) {
             QAbstractItemModel* model = qobject_cast<QAbstractItemModel*>(modelObj);
             if (model) {
+                DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
                 auto buildRoleMap = [](QAbstractItemModel* m) {
                     QHash<int, QString> roleMap;
                     const QHash<int, QByteArray> roles = m->roleNames();
@@ -218,7 +228,7 @@ void Repeater::generateItems() {
                 m_modelConnections.append(connect(model, &QAbstractItemModel::dataChanged, this, [this, guardedModel, generation, buildRoleMap](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &changedRoles) {
                     if (!guardedModel || generation != m_modelGeneration
                         || guardedModel.data() != m_objectModel.data()) return;
-                    if (topLeft.parent().isValid()) return; 
+                    if (topLeft.parent() != m_rootIndex) return;
                     const QHash<int, QString> roleMap = buildRoleMap(guardedModel);
                     int first = topLeft.row();
                     int last = bottomRight.row();
@@ -227,7 +237,7 @@ void Repeater::generateItems() {
                             QQmlPropertyMap* rowMap = m_rowMaps.at(row);
                             QQmlContext* ctx = (row < m_contexts.size()) ? m_contexts.at(row) : nullptr;
                             Item* item = (row < m_createdItems.size()) ? m_createdItems.at(row) : nullptr;
-                            const QModelIndex modelIndex = guardedModel->index(row, 0);
+                            const QModelIndex modelIndex = guardedModel->index(row, 0, m_rootIndex);
                             for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
                                 if (!changedRoles.isEmpty() && !changedRoles.contains(it.key())) continue;
                                 QVariant val = guardedModel->data(modelIndex, it.key());
@@ -244,14 +254,14 @@ void Repeater::generateItems() {
                 m_modelConnections.append(connect(model, &QAbstractItemModel::rowsInserted, this, [this, guardedModel, generation](const QModelIndex &parent, int first, int last) {
                     if (!guardedModel || generation != m_modelGeneration
                         || guardedModel.data() != m_objectModel.data()) return;
-                    if (parent.isValid()) return;
+                    if (parent != m_rootIndex) return;
                     onRowsInserted(guardedModel, first, last);
                 }));
                 m_modelConnections.append(connect(model, &QAbstractItemModel::rowsRemoved, this,
                         [this, guardedModel, generation](const QModelIndex &parent, int first, int last) {
                     if (!guardedModel || generation != m_modelGeneration
                         || guardedModel.data() != m_objectModel.data()) return;
-                    if (parent.isValid()) return;
+                    if (parent != m_rootIndex) return;
                     onRowsRemoved(first, last);
                 }));
                 m_modelConnections.append(connect(model, &QAbstractItemModel::rowsMoved, this,
@@ -259,7 +269,11 @@ void Repeater::generateItems() {
                                const QModelIndex &destinationParent, int destination) {
                     if (!guardedModel || generation != m_modelGeneration
                         || guardedModel.data() != m_objectModel.data()) return;
-                    if (sourceParent.isValid() || destinationParent.isValid()) return;
+                    if (sourceParent != m_rootIndex || destinationParent != m_rootIndex) {
+                        // A move into or out of the shown level changes the row set.
+                        if (sourceParent == m_rootIndex || destinationParent == m_rootIndex) generateItems();
+                        return;
+                    }
                     onRowsMoved(first, last, destination);
                 }));
                 m_modelConnections.append(connect(model, &QAbstractItemModel::layoutChanged, this,
@@ -276,10 +290,10 @@ void Repeater::generateItems() {
                 }));
 
                 const QHash<int, QString> roleMap = buildRoleMap(model);
-                int rowCount = std::max(0, model->rowCount());
+                int rowCount = std::max(0, model->rowCount(m_rootIndex));
                 for (int i = 0; i < rowCount; ++i) {
                     QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
-                    const QModelIndex modelIndex = model->index(i, 0);
+                    const QModelIndex modelIndex = model->index(i, 0, m_rootIndex);
                     QVariantMap initialProps;
                     initialProps["index"] = i;
                     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
@@ -327,6 +341,15 @@ void Repeater::generateItems() {
         }
     }
     parentVis->reorderChildItemsAfter(this, m_createdItems);
+    maybeFetchMore();
+}
+
+void Repeater::maybeFetchMore() {
+    auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data());
+    if (!model) return;
+    // A Repeater instantiates every row, so it also loads every row.
+    DelegateUtils::fetchMoreIfNeeded(model, m_rootIndex, 0, m_fetching,
+                                     [this] { return int(m_createdItems.size()) - 1; });
 }
 
 void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
@@ -342,7 +365,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
 
     for (int i = first; i <= last; ++i) {
         QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
-        const QModelIndex modelIndex = model->index(i, 0);
+        const QModelIndex modelIndex = model->index(i, 0, m_rootIndex);
         QVariantMap initialProps;
         initialProps["index"] = i;
         for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
@@ -395,6 +418,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
     
     parentVis->reorderChildItemsAfter(this, m_createdItems);
     markDirty();
+    maybeFetchMore();
 }
 
 void Repeater::onRowsRemoved(int first, int last) {

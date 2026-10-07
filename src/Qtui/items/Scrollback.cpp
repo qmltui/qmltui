@@ -272,6 +272,10 @@ void Scrollback::appendExistingRows() {
     if (m_consumedRowCount <= lastRow) {
         m_consumedRowCount = appendRows(m_consumedRowCount, lastRow);
     }
+    // Once caught up, ask a paged model for its next page; rowsInserted brings
+    // the new rows back through this function.
+    DelegateUtils::fetchMoreIfNeeded(m_model.data(), QModelIndex(), 0, m_fetching,
+                                     [this] { return m_consumedRowCount - 1; });
 }
 
 int Scrollback::appendRows(int first, int last) {

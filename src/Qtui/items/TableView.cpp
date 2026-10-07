@@ -75,6 +75,7 @@ void TableView::setColumns(const QVariantList &columns) {
     if (m_columns == normalized) return;
     m_columns = std::move(normalized);
     m_widthErrors.clear();
+    refreshModelHeader();
     if (!m_cppModel)
         for (auto &record : m_createdDelegateItems) record.allRolesDirty = true;
     setCurrentColumn(m_currentColumn);
@@ -119,6 +120,7 @@ void TableView::setModel(const QVariant &model) {
             m_cppModel.clear();
             m_modelVariant.clear();
             m_roleNames.clear();
+            m_modelProvidesHeader = false;
             clearSelection();
             generateDelegateItems();
             forceLayout();
@@ -132,8 +134,15 @@ void TableView::setModel(const QVariant &model) {
         connect(m_cppModel, &QAbstractItemModel::columnsRemoved, this, &TableView::handleStructureChanged);
         connect(m_cppModel, &QAbstractItemModel::columnsMoved, this, &TableView::handleStructureChanged);
         connect(m_cppModel, &QAbstractItemModel::layoutChanged, this, &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::headerDataChanged, this,
+                [this](Qt::Orientation orientation) {
+            if (orientation != Qt::Horizontal) return;
+            refreshModelHeader();
+            forceLayout();
+        });
         connect(m_cppModel, &QAbstractItemModel::modelReset, this, [this] {
             m_roleNames = m_cppModel->roleNames();
+            refreshModelHeader();
             m_structureDirty = true;
             if (m_selectedRow >= 0) {
                 if (rowCount() > 0) {
@@ -150,13 +159,45 @@ void TableView::setModel(const QVariant &model) {
             forceLayout();
         });
     }
+    refreshModelHeader();
     generateDelegateItems();
     forceLayout();
     emit modelChanged();
 }
 int TableView::rowCount() const { return m_cppModel ? m_cppModel->rowCount() : int(m_listModel.size()); }
-int TableView::columnCount() const { return m_columns.isEmpty() ? 5 : int(m_columns.size()); }
-int TableView::headerRows() const { return !m_columns.isEmpty() || m_columnWidthProvider.isCallable() ? 2 : 0; }
+int TableView::columnCount() const {
+    if (!m_columns.isEmpty()) return int(m_columns.size());
+    // Without column descriptors a C++ model defines its own column count;
+    // JS lists keep the historical default of five columns.
+    return m_cppModel ? (std::max)(1, m_cppModel->columnCount()) : 5;
+}
+int TableView::headerRows() const {
+    return !m_columns.isEmpty() || m_columnWidthProvider.isCallable() || m_modelProvidesHeader ? 2 : 0;
+}
+QVariant TableView::modelHeader(int column, int role) const {
+    return m_cppModel ? m_cppModel->headerData(column, Qt::Horizontal, role) : QVariant();
+}
+void TableView::refreshModelHeader() {
+    // QAbstractItemModel::headerData() falls back to the section number, so a
+    // model "provides" a header only when at least one section is a string.
+    bool provides = false;
+    if (m_cppModel && m_columns.isEmpty()) {
+        const int count = columnCount();
+        for (int column = 0; column < count && !provides; ++column) {
+            const QVariant title = modelHeader(column, Qt::DisplayRole);
+            provides = title.metaType() == QMetaType::fromType<QString>() && !title.toString().isEmpty();
+        }
+    }
+    m_modelProvidesHeader = provides;
+}
+QString TableView::alignmentName(const QVariant &alignment) {
+    if (!alignment.isValid() || !alignment.canConvert<int>()) return {};
+    const auto flags = Qt::Alignment(alignment.toInt());
+    if (flags & Qt::AlignRight) return QStringLiteral("right");
+    if (flags & Qt::AlignHCenter) return QStringLiteral("center");
+    if (flags & Qt::AlignLeft) return QStringLiteral("left");
+    return {};
+}
 QModelIndex TableView::sourceIndex(int row, int column) const {
     if (!m_cppModel || row < 0 || row >= rowCount()) return {};
     QModelIndex index = m_cppModel->index(row, column);
@@ -225,6 +266,7 @@ void TableView::synchronizeSelection() {
 }
 void TableView::handleStructureChanged() {
     m_structureDirty = true;
+    refreshModelHeader();
     synchronizeSelection();
     forceLayout();
 }
@@ -409,18 +451,34 @@ void TableView::resolveColumns() {
     if (width() <= 0 || height() <= 0) return;
     qint64 x = 0;
     bool overscan = false;
-    for (int column = 0; column < columnCount(); ++column) {
+    const int count = columnCount();
+    // A C++ model without descriptors or a width provider shares the width
+    // evenly; the last column absorbs the remainder.
+    const bool fillFromModel = m_columns.isEmpty() && m_cppModel && !m_columnWidthProvider.isCallable();
+    for (int column = 0; column < count; ++column) {
         const QVariant value = column < m_columns.size() ? unpack(m_columns[column]) : QVariant();
-        const QVariantMap descriptor = value.toMap();
+        QVariantMap descriptor = value.toMap();
+        if (fillFromModel) {
+            const int share = (std::max)(1, width() / count);
+            descriptor.insert(QStringLiteral("width"),
+                column == count - 1 ? (std::max)(1, width() - share * (count - 1)) : share);
+        }
         const int columnWidth = resolveColumnWidth(column, descriptor);
         if (columnWidth == 0) continue;
-        const QString defaultTitle = QStringLiteral("Col%1").arg(column + 1);
+        QString defaultTitle = QStringLiteral("Col%1").arg(column + 1);
+        if (m_modelProvidesHeader) {
+            const QVariant header = modelHeader(column, Qt::DisplayRole);
+            if (header.metaType() == QMetaType::fromType<QString>() && !header.toString().isEmpty())
+                defaultTitle = header.toString();
+        }
         const QString title = value.canConvert<QVariantMap>()
             ? descriptor.value(QStringLiteral("title"), defaultTitle).toString()
             : value.isValid() ? value.toString() : defaultTitle;
-        m_geometry.append({column, int(x), columnWidth, title,
-            descriptor.value(QStringLiteral("alignment"),
-                descriptor.value(QStringLiteral("align"), QStringLiteral("left"))).toString()});
+        QString alignment = descriptor.value(QStringLiteral("alignment"),
+            descriptor.value(QStringLiteral("align"))).toString();
+        if (alignment.isEmpty()) alignment = alignmentName(modelHeader(column, Qt::TextAlignmentRole));
+        if (alignment.isEmpty()) alignment = QStringLiteral("left");
+        m_geometry.append({column, int(x), columnWidth, title, alignment});
         if (overscan) break;
         x += columnWidth;
         if (x >= width()) {
@@ -583,6 +641,17 @@ void TableView::updateLayout() {
     resolveColumns();
     m_firstVisibleRow = computeFirstVisibleRow();
     layoutDelegates();
+    maybeFetchMore();
+}
+void TableView::maybeFetchMore() {
+    if (!m_cppModel) return;
+    // Rows the current layout shows or overscans, in both delegate and
+    // built-in painting modes.
+    const auto lastShown = [this] {
+        const int bodyHeight = (std::max)(0, height() - headerRows());
+        return (std::min)(rowCount() - 1, m_firstVisibleRow + bodyHeight + 1);
+    };
+    DelegateUtils::fetchMoreIfNeeded(m_cppModel.data(), QModelIndex(), 2, m_fetching, lastShown);
 }
 void TableView::layoutDelegates() {
     if (m_resetDelegates || (!m_delegate && !m_rowDelegate)) {

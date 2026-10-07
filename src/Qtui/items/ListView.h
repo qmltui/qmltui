@@ -4,6 +4,7 @@
 
 #include "ScrollView.h"
 #include <QVariant>
+#include <QPersistentModelIndex>
 #include <QQmlComponent>
 #include <QHash>
 #include <QMap>
@@ -55,6 +56,7 @@ class QTUI_CORE_EXPORT ListView : public ScrollView {
     Q_PROPERTY(qtui::Color highlightColor READ highlightColor WRITE setHighlightColor NOTIFY highlightColorChanged)
     Q_PROPERTY(qtui::Color highlightBackgroundColor READ highlightBackgroundColor WRITE setHighlightBackgroundColor NOTIFY highlightBackgroundColorChanged)
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
+    Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
 
 public:
     static ListViewAttached *qmlAttachedProperties(QObject *object);
@@ -64,6 +66,11 @@ public:
 
     QVariant model() const { return m_model; }
     void setModel(const QVariant& model);
+
+    // Parent index whose children the view shows; invalid means the top level,
+    // as with DelegateModel.rootIndex in Qt Quick.
+    QModelIndex rootIndex() const { return m_rootIndex; }
+    void setRootIndex(const QModelIndex &rootIndex);
 
     QQmlComponent* delegate() const { return m_delegate; }
     void setDelegate(QQmlComponent* delegate);
@@ -96,6 +103,7 @@ public:
 
 signals:
     void modelChanged();
+    void rootIndexChanged();
     void delegateChanged();
     void orientationChanged();
     void spacingChanged();
@@ -116,6 +124,7 @@ private:
     void recycleDelegateItem(Item *item);
     void rebindDelegateItem(Item *item, int index);
     void rebuildViewport(bool force = false);
+    void maybeFetchMore();
     void updateContentExtent();
     int delegateStride() const;
     void updateDelegateState(Item *item, int index);
@@ -152,6 +161,9 @@ private:
     int m_materializedLast = -1;
     QList<QMetaObject::Connection> m_modelConnections;
     quint64 m_modelGeneration = 0;
+    QPersistentModelIndex m_rootIndex;
+    bool m_nestedWarned = false;
+    bool m_fetching = false;
 };
 
 } // namespace qtui

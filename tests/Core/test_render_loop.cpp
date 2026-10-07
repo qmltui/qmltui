@@ -160,7 +160,7 @@ void TestRenderLoop::initTestCase()
 {
     // A test session keeps the engine from driving the real terminal; frames
     // still commit and the sequence still advances.
-    qputenv("QTUI_INSPECT", "1");
+    qputenv("QTUI_CAPTURE_AFTER_MS", "0");
     m_qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 }
 

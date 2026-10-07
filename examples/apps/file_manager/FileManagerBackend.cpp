@@ -59,7 +59,7 @@ FileManagerBackend::FileManagerBackend(QObject *parent)
 {
     const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_SCRIPT")
         || qEnvironmentVariableIsSet("QTUI_EVAL")
-        || qEnvironmentVariableIsSet("QTUI_INSPECT")
+        || qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS")
         || qEnvironmentVariableIsSet("QTUI_FM_MOCK");
 
     if (scenarioRequested && !qEnvironmentVariableIsSet("QTUI_FM_LIVE")) {

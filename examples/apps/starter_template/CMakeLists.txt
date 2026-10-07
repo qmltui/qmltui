@@ -66,13 +66,13 @@ install(TARGETS qtui_starter_template
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
-if(TARGET Qtui::Testing)
+if(TARGET Qtui::TestRunner)
     qt_add_executable(qtui_starter_template_test main_test.cpp)
     target_link_libraries(qtui_starter_template_test PRIVATE
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::Testing
+        Qtui::TestRunner
         qtui_starter_template_moduleplugin
     )
 
@@ -81,7 +81,7 @@ if(TARGET Qtui::Testing)
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::Testing
+        Qtui::TestRunner
         qtui_starter_template_moduleplugin
     )
 
@@ -90,7 +90,7 @@ if(TARGET Qtui::Testing)
     )
 
     if(QTUI_BUILD_TESTS AND NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+        include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
         qtui_add_scenario_test(
             NAME starter_template_setup
             TARGET qtui_starter_template_test

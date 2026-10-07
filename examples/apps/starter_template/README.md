@@ -62,7 +62,7 @@ scenario runner selects `mock`, while the latency benchmark selects `observe`.
 
 ## Testing
 
-`test_setup.js` is a scenario smoke test (see `Qtui::Testing`) covering the
+`test_setup.js` is a scenario smoke test (see `Qtui::TestRunner`) covering the
 network page, password entry, and page navigation:
 
 ```sh

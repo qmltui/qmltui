@@ -55,7 +55,7 @@ environment variables. Scenario runs default to the mock providers; set
 ctest --test-dir build -R device_cockpit_overview --output-on-failure
 
 # Ad hoc: capture one frame, or run any scenario file
-QTUI_INSPECT=1 ./build/examples/apps/device_cockpit/qtui_device_cockpit
+QTUI_CAPTURE_AFTER_MS=0 ./build/examples/apps/device_cockpit/qtui_device_cockpit
 QTUI_SCRIPT=examples/apps/device_cockpit/test_cockpit.js \
     ./build/examples/apps/device_cockpit/qtui_device_cockpit
 ```

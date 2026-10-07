@@ -2,12 +2,12 @@
 #include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[]) {
-    // Scenario runs (QTUI_SCRIPT/QTUI_EVAL/QTUI_INSPECT) default to the
+    // Scenario runs (QTUI_SCRIPT/QTUI_EVAL/QTUI_CAPTURE_AFTER_MS) default to the
     // deterministic mock providers; set QTUI_COCKPIT_MOCK=0 explicitly to run
     // a scenario against the live system.
     const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_SCRIPT")
         || qEnvironmentVariableIsSet("QTUI_EVAL")
-        || qEnvironmentVariableIsSet("QTUI_INSPECT");
+        || qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS");
     if (scenarioRequested && !qEnvironmentVariableIsSet("QTUI_COCKPIT_MOCK"))
         qputenv("QTUI_COCKPIT_MOCK", "1");
 

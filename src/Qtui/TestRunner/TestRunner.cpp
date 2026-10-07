@@ -6,22 +6,18 @@
 #include "TextGridBuffer.h"
 
 #include <QCoreApplication>
-#include <QColor>
 #include <QDeadlineTimer>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
-#include <QGuiApplication>
 #include <QHash>
-#include <QImage>
 #include <QJSValue>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QQmlEngine>
-#include <QPainter>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QTextStream>
@@ -159,12 +155,6 @@ bool parseMouseButton(const QString& name, int* button, QString* error)
     return false;
 }
 
-bool environmentFlagEnabled(const char* name)
-{
-    const QByteArray value = qgetenv(name).trimmed().toLower();
-    return !value.isEmpty() && value != "0" && value != "false" && value != "off";
-}
-
 QString absoluteOrResourcePath(const QString& path)
 {
     return path.startsWith(QLatin1String(":")) ? path : QFileInfo(path).absoluteFilePath();
@@ -172,13 +162,33 @@ QString absoluteOrResourcePath(const QString& path)
 
 QString rgbaString(uint32_t rgba)
 {
-    const QColor color = QColor::fromRgba(ColorMapper::toArgb(rgba));
+    const uint32_t argb = ColorMapper::toArgb(rgba);
     return QStringLiteral("#%1%2%3%4")
-        .arg(color.red(), 2, 16, QLatin1Char('0'))
-        .arg(color.green(), 2, 16, QLatin1Char('0'))
-        .arg(color.blue(), 2, 16, QLatin1Char('0'))
-        .arg(color.alpha(), 2, 16, QLatin1Char('0'))
+        .arg((argb >> 16) & 0xffU, 2, 16, QLatin1Char('0'))
+        .arg((argb >> 8) & 0xffU, 2, 16, QLatin1Char('0'))
+        .arg(argb & 0xffU, 2, 16, QLatin1Char('0'))
+        .arg((argb >> 24) & 0xffU, 2, 16, QLatin1Char('0'))
         .toUpper();
+}
+
+QString attributeNames(TextAttribute attributes)
+{
+    static const std::pair<TextAttribute, const char*> names[] = {
+        {TextAttribute::Bold, "bold"},
+        {TextAttribute::Dim, "dim"},
+        {TextAttribute::Italic, "italic"},
+        {TextAttribute::Underline, "underline"},
+        {TextAttribute::Reversed, "reverse"},
+        {TextAttribute::Blink, "blink"},
+        {TextAttribute::Conceal, "conceal"},
+        {TextAttribute::Strikethrough, "strikethrough"},
+    };
+    QStringList result;
+    for (const auto& [flag, name] : names) {
+        if (static_cast<uint8_t>(attributes) & static_cast<uint8_t>(flag))
+            result.append(QLatin1String(name));
+    }
+    return result.join(QLatin1Char(','));
 }
 
 bool parseRgbaString(const QString& text, uint32_t* rgba)
@@ -193,14 +203,17 @@ bool parseRgbaString(const QString& text, uint32_t* rgba)
             const int green = (encoded >> 16) & 0xff;
             const int blue = (encoded >> 8) & 0xff;
             const int alpha = encoded & 0xff;
-            *rgba = qRgba(red, green, blue, alpha);
+            *rgba = (static_cast<uint32_t>(alpha) << 24) | (static_cast<uint32_t>(red) << 16)
+                | (static_cast<uint32_t>(green) << 8) | static_cast<uint32_t>(blue);
             return true;
         }
     }
-    const QColor color(text);
+    // Named colors resolve the same way QML "color" strings do, so "red" matches
+    // a cell painted with color: "red" (an ANSI palette entry, not #FF0000).
+    const Color color = Color::fromString(text.trimmed());
     if (!color.isValid())
         return false;
-    *rgba = color.rgba();
+    *rgba = color.argb32();
     return true;
 }
 
@@ -223,21 +236,24 @@ TestRunner* TestRunner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* te
 
     QString scriptPath = QString::fromUtf8(qgetenv("QTUI_SCRIPT")).trimmed();
     const QString evalCode = QString::fromUtf8(qgetenv("QTUI_EVAL")).trimmed();
-    const bool inspect = environmentFlagEnabled("QTUI_INSPECT");
+    // Presence counts, not truthiness: QTUI_CAPTURE_AFTER_MS=0 is a request to
+    // capture the first committed frame.
+    const bool capture = !qgetenv("QTUI_CAPTURE_AFTER_MS").trimmed().isEmpty();
     const int requestCount = (scriptPath.isEmpty() ? 0 : 1)
-        + (evalCode.isEmpty() ? 0 : 1) + (inspect ? 1 : 0);
+        + (evalCode.isEmpty() ? 0 : 1) + (capture ? 1 : 0);
     if (requestCount == 0)
         return nullptr;
 
     QString configurationError;
     if (requestCount > 1) {
         configurationError = QStringLiteral(
-            "QTUI_SCRIPT, QTUI_EVAL, and QTUI_INSPECT are mutually exclusive");
+            "QTUI_SCRIPT, QTUI_EVAL, and QTUI_CAPTURE_AFTER_MS are mutually exclusive");
     }
 
     QString mode = QStringLiteral("script");
     QString temporaryScriptPath;
     QByteArray generatedScript;
+    int captureAfterMs = 0;
     if (!evalCode.isEmpty()) {
         mode = QStringLiteral("eval");
         if (!evalCode.contains(QLatin1String("main(")) && !evalCode.contains(QLatin1String("main ("))) {
@@ -245,13 +261,16 @@ TestRunner* TestRunner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* te
         } else {
             generatedScript = evalCode.toUtf8();
         }
-    } else if (inspect) {
-        mode = QStringLiteral("inspect");
-        generatedScript = QByteArrayLiteral("function main(terminal) {\n"
-                                            "    terminal.captureText('inspect.txt');\n");
-        if (environmentFlagEnabled("QTUI_INSPECT_IMAGE"))
-            generatedScript += QByteArrayLiteral("    terminal.captureImage('inspect.png');\n");
-        generatedScript += QByteArrayLiteral("}\n");
+    } else if (capture) {
+        mode = QStringLiteral("capture");
+        captureAfterMs = environmentInteger("QTUI_CAPTURE_AFTER_MS", 0, 0, maximumTimeoutMs,
+                                            &configurationError);
+        generatedScript = QByteArrayLiteral("function main(terminal) {\n");
+        if (captureAfterMs > 0)
+            generatedScript += QStringLiteral("    terminal.sleep(%1);\n").arg(captureAfterMs).toUtf8();
+        generatedScript += QByteArrayLiteral("    terminal.captureText('capture.txt');\n"
+                                             "    terminal.captureStyled('capture_styled.txt');\n"
+                                             "}\n");
     }
 
     if (!generatedScript.isEmpty() && configurationError.isEmpty()) {
@@ -286,6 +305,14 @@ TestRunner* TestRunner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* te
     const int operationTimeout = environmentInteger("QTUI_TEST_OPERATION_TIMEOUT_MS", 2000,
                                                      minimumTimeoutMs, maximumTimeoutMs,
                                                      &configurationError);
+    // Fail up front instead of letting the watchdog kill the sleep: the capture
+    // still needs one frame wait after the delay.
+    if (capture && configurationError.isEmpty()
+        && captureAfterMs + operationTimeout > scenarioTimeout) {
+        configurationError = QStringLiteral(
+            "QTUI_CAPTURE_AFTER_MS (%1) plus QTUI_TEST_OPERATION_TIMEOUT_MS (%2) must not exceed "
+            "QTUI_TEST_TIMEOUT_MS (%3)").arg(captureAfterMs).arg(operationTimeout).arg(scenarioTimeout);
+    }
     QString artifactDirectory = QString::fromUtf8(qgetenv("QTUI_TEST_ARTIFACT_DIR")).trimmed();
     if (artifactDirectory.isEmpty()) {
         artifactDirectory = QDir::temp().filePath(
@@ -456,9 +483,10 @@ bool TestRunner::installJavaScriptFacade()
     const methodNames = [
         "press", "typeText", "sleep", "waitForFrame", "waitForCondition",
         "waitForText", "expectText", "expectNoText", "captureText",
-        "captureImage", "frameText", "cell", "findText", "clickText",
+        "captureStyled", "frameText", "styledText", "cell", "findText", "clickText",
         "click", "doubleClick", "drag", "scroll", "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
+        "expectStyled",
         "expectRepaint", "frameCount", "frameStats", "injectText", "injectKey",
         "fail", "rootObject", "finish"
     ];
@@ -1062,7 +1090,30 @@ void TestRunner::expectSnapshot(const QString& snapshotRelativePath)
 {
     if (!ensureRunning("expectSnapshot") || !waitForNextFrame(m_operationTimeoutMs))
         return;
+    QString error;
+    const QString actualText = currentFrameText(&error);
+    if (!error.isEmpty()) {
+        failScenario(error);
+        return;
+    }
+    compareSnapshot(snapshotRelativePath, actualText);
+}
 
+void TestRunner::expectStyled(const QString& snapshotRelativePath)
+{
+    if (!ensureRunning("expectStyled") || !waitForNextFrame(m_operationTimeoutMs))
+        return;
+    QString error;
+    const QString actualText = currentStyledFrameText(&error);
+    if (!error.isEmpty()) {
+        failScenario(error);
+        return;
+    }
+    compareSnapshot(snapshotRelativePath, actualText);
+}
+
+void TestRunner::compareSnapshot(const QString& snapshotRelativePath, const QString& actualText)
+{
     const QString snapshotPath = resolveSnapshotPath(snapshotRelativePath);
     QFile snapshotFile(snapshotPath);
     if (!snapshotFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -1072,13 +1123,6 @@ void TestRunner::expectSnapshot(const QString& snapshotRelativePath)
     }
     const QString expectedText = QString::fromUtf8(snapshotFile.readAll());
     snapshotFile.close();
-
-    QString error;
-    const QString actualText = currentFrameText(&error);
-    if (!error.isEmpty()) {
-        failScenario(error);
-        return;
-    }
 
     if (actualText != expectedText) {
         // Derive the name from the whole relative path, not just the file name,
@@ -1309,6 +1353,42 @@ QString TestRunner::normalizedText(const TextGridBuffer& frame)
     return result;
 }
 
+QString TestRunner::formatStyledText(const TextGridBuffer& frame)
+{
+    QString result = normalizedText(frame);
+    result.append(QStringLiteral("--- styles\n"));
+    const auto sameStyle = [](const Cell& lhs, const Cell& rhs) {
+        return lhs.fgColor == rhs.fgColor && lhs.bgColor == rhs.bgColor
+            && lhs.attributes == rhs.attributes;
+    };
+    for (int row = 0; row < frame.height(); ++row) {
+        int column = 0;
+        while (column < frame.width()) {
+            const Cell& first = frame.cellAt(column, row);
+            int end = column + 1;
+            while (end < frame.width() && sameStyle(first, frame.cellAt(end, row)))
+                ++end;
+            // Runs that use the terminal defaults everywhere carry no information
+            // and would bury the interesting lines on themes without a background.
+            const bool isDefault = first.fgColor == 0 && first.bgColor == 0
+                && first.attributes == TextAttribute::None;
+            if (!isDefault) {
+                QString line = QStringLiteral("y=%1 x=%2-%3 fg=%4 bg=%5")
+                    .arg(row).arg(column).arg(end - 1)
+                    .arg(first.fgColor ? rgbaString(first.fgColor) : QStringLiteral("default"),
+                         first.bgColor ? rgbaString(first.bgColor) : QStringLiteral("default"));
+                const QString attributes = attributeNames(first.attributes);
+                if (!attributes.isEmpty())
+                    line += QLatin1Char(' ') + attributes;
+                result.append(line);
+                result.append(QLatin1Char('\n'));
+            }
+            column = end;
+        }
+    }
+    return result;
+}
+
 QList<TestRunner::TextMatch> TestRunner::textMatches(const TextGridBuffer& frame,
                                                      const QString& text) const
 {
@@ -1392,6 +1472,20 @@ QString TestRunner::currentFrameText(QString* error) const
         return {};
     }
     return normalizedText(*frame);
+}
+
+QString TestRunner::currentStyledFrameText(QString* error) const
+{
+    if (!m_terminalEngine) {
+        if (error) *error = QStringLiteral("TerminalEngine is no longer available");
+        return {};
+    }
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
+        if (error) *error = QStringLiteral("No committed frame buffer is available");
+        return {};
+    }
+    return formatStyledText(*frame);
 }
 
 QString TestRunner::resolveArtifactPath(const QString& relativePath, QString* error) const
@@ -1478,55 +1572,27 @@ void TestRunner::captureText(const QString& relativePath)
         failScenario(error);
 }
 
-void TestRunner::captureImage(const QString& relativePath)
+void TestRunner::captureStyled(const QString& relativePath)
 {
-    if (!ensureRunning("captureImage") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("captureStyled") || !waitForNextFrame(m_operationTimeoutMs))
         return;
-    if (!qobject_cast<QGuiApplication*>(qApp)) {
-        failScenario(QStringLiteral("Image capture requires QGuiApplication"));
-        return;
-    }
-
     QString error;
-    const QString path = resolveArtifactPath(relativePath, &error);
-    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
-    if (path.isEmpty() || !frame) {
-        failScenario(error.isEmpty() ? QStringLiteral("No committed frame buffer is available") : error);
-        return;
-    }
-    if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
-        failScenario(QStringLiteral("Cannot create artifact parent directory for %1").arg(path));
-        return;
-    }
+    const QString frame = currentStyledFrameText(&error);
+    if (error.isEmpty() && writeTextArtifact(relativePath, frame, &error))
+        m_capturePaths.append(QDir::cleanPath(relativePath));
+    if (!error.isEmpty())
+        failScenario(error);
+}
 
-    constexpr int cellWidth = 10;
-    constexpr int cellHeight = 20;
-    QImage image(frame->width() * cellWidth, frame->height() * cellHeight,
-                 QImage::Format_RGB32);
-    image.fill(QColor(QStringLiteral("#000000")));
-    QPainter painter(&image);
-    QFont font(QStringLiteral("Monospace"), 12);
-    font.setStyleHint(QFont::Monospace);
-    painter.setFont(font);
-    for (int row = 0; row < frame->height(); ++row) {
-        for (int column = 0; column < frame->width(); ++column) {
-            const Cell& cell = frame->cellAt(column, row);
-            const QRect rect(column * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            painter.fillRect(rect, cell.bgColor ? QColor::fromRgba(ColorMapper::toArgb(cell.bgColor))
-                                                : QColor(QStringLiteral("#0d1c2d")));
-            if (!cell.continuation) {
-                painter.setPen(cell.fgColor ? QColor::fromRgba(ColorMapper::toArgb(cell.fgColor))
-                                            : QColor(QStringLiteral("#d4e4fa")));
-                painter.drawText(rect, Qt::AlignCenter, QString::fromUtf8(cell.character()));
-            }
-        }
-    }
-    painter.end();
-    if (!image.save(path)) {
-        failScenario(QStringLiteral("Cannot save image artifact %1").arg(path));
-        return;
-    }
-    m_capturePaths.append(QDir(m_artifactDirectory).relativeFilePath(path));
+QString TestRunner::styledText()
+{
+    if (!ensureRunning("styledText"))
+        return {};
+    QString error;
+    const QString text = currentStyledFrameText(&error);
+    if (!error.isEmpty())
+        failScenario(error);
+    return text;
 }
 
 QString TestRunner::frameText()
@@ -1631,8 +1697,8 @@ bool TestRunner::writeFinalFrameArtifact(QString* error)
 
     if (m_state == State::Failed)
         m_finalFrameRelativePath = QStringLiteral("failure.txt");
-    else if (m_mode == QLatin1String("inspect"))
-        m_finalFrameRelativePath = QStringLiteral("inspect.txt");
+    else if (m_mode == QLatin1String("capture"))
+        m_finalFrameRelativePath = QStringLiteral("capture.txt");
     else
         m_finalFrameRelativePath = QStringLiteral("final.txt");
     return writeTextArtifact(m_finalFrameRelativePath, frame, error);

@@ -27,7 +27,7 @@ class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
 
-class QTUI_TESTING_EXPORT TestRunner final : public QObject {
+class QTUI_TESTRUNNER_EXPORT TestRunner final : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(TestRunner)
 
@@ -97,12 +97,19 @@ public:
     /// configured artifact directory.
     Q_INVOKABLE void captureText(const QString& relativePath);
 
-    /// Writes the next committed frame as an image beneath the configured artifact
-    /// directory. This operation requires a QGuiApplication.
-    Q_INVOKABLE void captureImage(const QString& relativePath);
+    /// Writes the next committed frame as styled text (see styledText())
+    /// beneath the configured artifact directory. Use it to record the baseline
+    /// for expectStyled().
+    Q_INVOKABLE void captureStyled(const QString& relativePath);
 
     /// Returns normalized text for the current committed frame without waiting.
     Q_INVOKABLE QString frameText();
+
+    /// Returns the current committed frame as normalized text followed by a
+    /// "--- styles" section with one line per run of adjacent cells that share
+    /// a non-default foreground, background, or attribute set. The result is
+    /// plain text, so snapshot diffs stay readable and platform independent.
+    Q_INVOKABLE QString styledText();
 
     /// Returns the rendered cell at (x, y), including colors and attributes.
     Q_INVOKABLE QVariantMap cell(int x, int y);
@@ -141,6 +148,10 @@ public:
 
     /// Compares the committed frame against a golden baseline text snapshot.
     Q_INVOKABLE void expectSnapshot(const QString& snapshotRelativePath);
+
+    /// Compares styledText() against a golden baseline, so colors and
+    /// attributes are verified in addition to the characters.
+    Q_INVOKABLE void expectStyled(const QString& snapshotRelativePath);
 
     /// Fails the scenario immediately with message.
     Q_INVOKABLE void fail(const QString& message);
@@ -195,7 +206,10 @@ private:
     int validateTimeout(int timeoutMs);
     bool ensureRunning(const char* operation);
     QString currentFrameText(QString* error = nullptr) const;
+    QString currentStyledFrameText(QString* error = nullptr) const;
     static QString normalizedText(const TextGridBuffer& frame);
+    static QString formatStyledText(const TextGridBuffer& frame);
+    void compareSnapshot(const QString& snapshotRelativePath, const QString& actualText);
     QList<TextMatch> textMatches(const TextGridBuffer& frame, const QString& text) const;
     bool installJavaScriptFacade();
     void completeCurrentOperation(const QString& status);

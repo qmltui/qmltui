@@ -1,6 +1,6 @@
 include(CTest)
 enable_testing()
-include("${Qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
 
 function(add_qtui_test test_name test_source)
     add_executable(${test_name} ${test_source})
@@ -31,8 +31,8 @@ add_qtui_test(test_terminal_capabilities Core/test_terminal_capabilities.cpp)
 add_qtui_test(test_color_depth Core/test_color_depth.cpp)
 add_qtui_test(test_terminal_backend Core/test_terminal_backend.cpp)
 add_qtui_test(test_terminal_colors Controls/test_terminal_colors.cpp)
-add_executable(qtui_terminal_colors_fixture Testing/main.cpp)
-target_link_libraries(qtui_terminal_colors_fixture PRIVATE Qtui::Core Qtui::Controls Qtui::Testing)
+add_executable(qtui_terminal_colors_fixture TestRunner/main.cpp)
+target_link_libraries(qtui_terminal_colors_fixture PRIVATE Qtui::Core Qtui::Controls Qtui::TestRunner)
 target_compile_definitions(qtui_terminal_colors_fixture PRIVATE
     QTUI_TEST_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/Controls/TerminalColorsFixture.qml"
 )
@@ -44,7 +44,7 @@ qtui_add_scenario_test(
     ROWS 12
     LABELS AgentSmoke
 )
-target_link_libraries(test_terminal_backend PRIVATE Qtui::Testing)
+target_link_libraries(test_terminal_backend PRIVATE Qtui::TestRunner)
 if(UNIX)
     add_qtui_test(test_terminal_device Core/test_terminal_device.cpp)
     set_tests_properties(test_terminal_device PROPERTIES TIMEOUT 20)
@@ -72,22 +72,22 @@ add_qtui_test(test_popup Controls/test_popup.cpp)
 add_qtui_test(test_indicators Controls/test_indicators.cpp)
 add_qtui_test(test_image Image/test_image.cpp)
 
-add_executable(qtui_test_runner_fixture Testing/main.cpp)
+add_executable(qtui_test_runner_fixture TestRunner/main.cpp)
 target_link_libraries(qtui_test_runner_fixture PRIVATE
     Qt6::Core
     Qt6::Qml
     Qtui::Core
-    Qtui::Testing
+    Qtui::TestRunner
 )
 target_compile_definitions(qtui_test_runner_fixture PRIVATE
-    QTUI_TEST_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/Testing/Fixture.qml"
+    QTUI_TEST_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/TestRunner/Fixture.qml"
 )
 qt_add_resources(qtui_test_runner_fixture embedded_test_runner_scenarios
     PREFIX "/qtui-tests"
-    BASE "${CMAKE_CURRENT_SOURCE_DIR}/Testing/scenarios"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/TestRunner/scenarios"
     FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Testing/scenarios/resource_snapshot.js"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Testing/scenarios/snapshots/fixture.txt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/TestRunner/scenarios/resource_snapshot.js"
+        "${CMAKE_CURRENT_SOURCE_DIR}/TestRunner/scenarios/snapshots/fixture.txt"
 )
 
 set(qtui_test_runner_artifacts
@@ -133,8 +133,8 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
 endfunction()
 
 function(add_qtui_environment_scenario test_name executable expected_exit)
-    cmake_parse_arguments(SCENARIO "INSPECT;INSPECT_IMAGE;CONFLICT"
-        "SCRIPT;EVAL_CODE;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT" "" ${ARGN})
+    cmake_parse_arguments(SCENARIO "CONFLICT"
+        "CAPTURE_AFTER_MS;SCRIPT;EVAL_CODE;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT" "" ${ARGN})
     set(command
         "${CMAKE_COMMAND}"
         "-DTEST_EXECUTABLE=$<TARGET_FILE:${executable}>"
@@ -148,22 +148,19 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
             "-DSCENARIO_SCRIPT=${SCENARIO_SCRIPT}"
             "-DEVAL_CODE=${SCENARIO_EVAL_CODE}"
         )
-    elseif(SCENARIO_INSPECT)
-        list(APPEND command "-DINSPECT_SCENARIO=ON")
-        if(SCENARIO_INSPECT_IMAGE)
-            list(APPEND command "-DINSPECT_IMAGE=ON")
-        endif()
+    elseif(DEFINED SCENARIO_CAPTURE_AFTER_MS)
+        list(APPEND command "-DCAPTURE_AFTER_MS=${SCENARIO_CAPTURE_AFTER_MS}")
     elseif(SCENARIO_EVAL_CODE)
         list(APPEND command "-DEVAL_CODE=${SCENARIO_EVAL_CODE}")
     else()
-        message(FATAL_ERROR "Environment scenario requires INSPECT or EVAL_CODE")
+        message(FATAL_ERROR "Environment scenario requires CAPTURE_AFTER_MS or EVAL_CODE")
     endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT)
         if(SCENARIO_${argument})
             list(APPEND command "-DEXPECT_${argument}=${SCENARIO_${argument}}")
         endif()
     endforeach()
-    list(APPEND command "-P" "${QTUI_TESTING_RUNNER_SCRIPT}")
+    list(APPEND command "-P" "${QTUI_TESTRUNNER_SCRIPT}")
     add_test(NAME ${test_name} COMMAND ${command})
     set_tests_properties(${test_name} PROPERTIES
         SKIP_RETURN_CODE 125
@@ -173,7 +170,7 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
 endfunction()
 
 set(qtui_test_runner_scenarios
-    "${CMAKE_CURRENT_SOURCE_DIR}/Testing/scenarios")
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestRunner/scenarios")
 
 add_qtui_runner_scenario(test_runner_fixture_success qtui_test_runner_fixture
     "${qtui_test_runner_scenarios}/success.js" 0
@@ -288,17 +285,34 @@ add_qtui_runner_scenario(test_runner_snapshot_mismatch qtui_test_runner_fixture
     ARTIFACT "snapshots/mismatch.diff"
     ARTIFACT_CONTENT "+++ actual"
 )
+add_qtui_runner_scenario(test_runner_styled_snapshot_success qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/styled_snapshot_success.js" 0
+    ARTIFACT "styled.txt"
+    ARTIFACT_CONTENT "--- styles"
+)
+add_qtui_runner_scenario(test_runner_styled_snapshot_mismatch qtui_test_runner_fixture
+    "${qtui_test_runner_scenarios}/styled_snapshot_mismatch.js" 1
+    FAILURE_PATTERN "Snapshot mismatch"
+    ARTIFACT "snapshots/mismatch_styled.diff"
+    ARTIFACT_CONTENT "fg=#7FDBCAFF"
+)
 
-add_qtui_environment_scenario(test_runner_inspect qtui_pos_cashier 0
-    INSPECT
-    ARTIFACT "inspect.txt"
+add_qtui_environment_scenario(test_runner_capture qtui_pos_cashier 0
+    CAPTURE_AFTER_MS 0
+    ARTIFACT "capture.txt"
     ARTIFACT_CONTENT "RapidPOS"
 )
-add_qtui_environment_scenario(test_runner_inspect_image_unsupported qtui_pos_cashier 1
-    INSPECT
-    INSPECT_IMAGE
-    FAILURE_PATTERN "Image capture requires QGuiApplication"
-    ARTIFACT "failure.txt"
+# The fixture flips its status 75 ms after start, so a 300 ms delay must observe
+# the settled frame, and the styled capture must be written alongside the text.
+add_qtui_environment_scenario(test_runner_capture_after qtui_test_runner_fixture 0
+    CAPTURE_AFTER_MS 300
+    ARTIFACT "capture_styled.txt"
+    ARTIFACT_CONTENT "STATUS: ASYNC READY"
+)
+add_qtui_environment_scenario(test_runner_capture_too_long qtui_test_runner_fixture 1
+    CAPTURE_AFTER_MS 9000
+    FAILURE_PATTERN "must not exceed QTUI_TEST_TIMEOUT_MS"
+    ARTIFACT "result.json"
 )
 add_qtui_runner_scenario(test_runner_fixture_missing_main qtui_test_runner_fixture
     "${qtui_test_runner_scenarios}/missing_main.js" 1

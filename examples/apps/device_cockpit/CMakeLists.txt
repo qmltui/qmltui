@@ -64,16 +64,16 @@ target_link_libraries(qtui_device_cockpit PRIVATE
 # Carries the scenario runner: the application executes QTUI_SCRIPT/QTUI_EVAL
 # scenarios (against the mock providers by default, see main.cpp) when those
 # variables are set in its environment.
-if(TARGET Qtui::Testing)
-    target_link_libraries(qtui_device_cockpit PRIVATE Qtui::Testing)
+if(TARGET Qtui::TestRunner)
+    target_link_libraries(qtui_device_cockpit PRIVATE Qtui::TestRunner)
 endif()
 
 if(QTUI_INSTALL_EXAMPLES)
     install(TARGETS qtui_device_cockpit RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endif()
 
-if(TARGET Qtui::Testing AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
     foreach(scenario overview network services logs)
         qtui_add_scenario_test(
             NAME device_cockpit_${scenario}

@@ -13,7 +13,7 @@ namespace qtui {
 // the extension point: output bytes are captured, input bytes and resizes are
 // injected by the test. Install it with TerminalBackend::setFactory() before
 // the Terminal under test completes.
-class QTUI_TESTING_EXPORT MemoryTerminalBackend final : public TerminalBackend {
+class QTUI_TESTRUNNER_EXPORT MemoryTerminalBackend final : public TerminalBackend {
     Q_OBJECT
 
 public:

@@ -24,5 +24,5 @@ Unlike traditional immediate-mode TUI libraries, Qtui uses a scene graph and ret
 Inspect initial frames or run scripted scenarios without launching full terminal emulators:
 
 ```bash
-QTUI_INSPECT=1 ./build/examples/apps/markdown_viewer/qtui_markdown_viewer
+QTUI_CAPTURE_AFTER_MS=0 ./build/examples/apps/markdown_viewer/qtui_markdown_viewer
 ```

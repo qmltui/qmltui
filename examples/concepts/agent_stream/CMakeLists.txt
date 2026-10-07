@@ -36,9 +36,9 @@ qt_add_qml_module(agent_stream_demo
 
 target_link_libraries(agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TerminalHost)
 
-if(TARGET Qtui::Testing)
-    target_link_libraries(agent_stream_demo PRIVATE Qtui::Testing)
-    include("${Qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+if(TARGET Qtui::TestRunner)
+    target_link_libraries(agent_stream_demo PRIVATE Qtui::TestRunner)
+    include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
     qtui_add_scenario_test(NAME agent_stream_modes TARGET agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_modes.js"
         COLUMNS 120 ROWS 35 LABELS AgentSmoke)

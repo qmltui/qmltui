@@ -206,7 +206,7 @@ install(FILES
 )
 
 if(QTUI_BUILD_TESTS OR QTUI_ENABLE_TEST_RUNNER OR QTUI_ENABLE_TEST_DRIVER)
-    add_subdirectory(Testing)
+    add_subdirectory(TestRunner)
 endif()
 
 add_subdirectory(Controls)

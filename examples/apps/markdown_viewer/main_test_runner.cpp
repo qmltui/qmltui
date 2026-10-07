@@ -7,7 +7,7 @@
 #include <QTimer>
 
 #include <Terminal.h>
-#include <Testing/TestRunner.h>
+#include <TestRunner/TestRunner.h>
 
 namespace {
 int environmentDimension(const char *name, int fallback) {
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     if (!terminal)
         return -1;
 
-    if (qEnvironmentVariableIsSet("QTUI_INSPECT") || qEnvironmentVariableIsSet("QTUI_EVAL")) {
+    if (qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QTUI_EVAL")) {
         if (qtui::TestRunner::startFromEnvironment(&engine, terminal))
             return app.exec();
     }

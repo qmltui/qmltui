@@ -13,6 +13,6 @@ qt_add_qml_module(qtui_snake_game
 
 target_link_libraries(qtui_snake_game PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Core)
 
-if(TARGET Qtui::Testing)
-    target_link_libraries(qtui_snake_game PRIVATE Qtui::Testing)
+if(TARGET Qtui::TestRunner)
+    target_link_libraries(qtui_snake_game PRIVATE Qtui::TestRunner)
 endif()

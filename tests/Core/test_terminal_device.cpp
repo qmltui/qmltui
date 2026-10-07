@@ -114,7 +114,7 @@ private slots:
 
 void TestTerminalDevice::initTestCase()
 {
-    qputenv("QTUI_INSPECT", "1");   // Terminal instances must not touch stdout
+    qputenv("QTUI_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
 }
 
 void TestTerminalDevice::testBlockingWriteUnchanged()

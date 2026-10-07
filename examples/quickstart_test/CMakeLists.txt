@@ -17,9 +17,9 @@ qt_add_qml_module(qtui_quickstart
 )
 target_link_libraries(qtui_quickstart PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
-if(TARGET Qtui::Testing)
-    include("${Qtui_SOURCE_DIR}/cmake/QtuiTesting.cmake")
-    # Same sources plus Qtui::Testing, whose auto-hook honours QTUI_SCRIPT.
+if(TARGET Qtui::TestRunner)
+    include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+    # Same sources plus Qtui::TestRunner, whose auto-hook honours QTUI_SCRIPT.
     qt_add_executable(qtui_quickstart_test "${quickstart_dir}/main.cpp")
     qt_add_qml_module(qtui_quickstart_test
         URI HelloQtui
@@ -30,7 +30,7 @@ if(TARGET Qtui::Testing)
  DEPENDENCIES TARGET Qtui::Core Qtui::Controls
     )
     target_link_libraries(qtui_quickstart_test PRIVATE
- Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Testing)
+ Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TestRunner)
 
     qtui_add_scenario_test(
         NAME quickstart_smoke

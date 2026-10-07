@@ -20,7 +20,7 @@ using qtui::testing::paintItem;
 class TestTerminalColors : public QObject {
     Q_OBJECT
 private slots:
-    void initTestCase() { qputenv("QTUI_INSPECT", "1"); }
+    void initTestCase() { qputenv("QTUI_CAPTURE_AFTER_MS", "0"); }
     void defaultInk_data();
     void defaultInk();
     void explicitColorsSurviveStates();

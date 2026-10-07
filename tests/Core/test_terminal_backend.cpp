@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include <Testing/MemoryTerminalBackend.h>
+#include <TestRunner/MemoryTerminalBackend.h>
 #include "Terminal.h"
 #include "TerminalBackend.h"
 #include "TerminalEngine.h"
@@ -70,7 +70,7 @@ private:
 
 void TestTerminalBackend::initTestCase()
 {
-    // No QTUI_INSPECT here: output must stay enabled so it reaches the backend.
+    // No test-session variable here: output must stay enabled so it reaches the backend.
     TerminalBackend::setFactory(&makeMemoryBackend);
 }
 

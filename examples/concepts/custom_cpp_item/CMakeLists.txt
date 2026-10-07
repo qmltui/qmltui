@@ -26,14 +26,14 @@ target_link_libraries(qtui_custom_item_demo PRIVATE
     qtui_custom_item_module
 )
 
-if(TARGET Qtui::Testing AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
     qt_add_executable(qtui_custom_item_demo_test main.cpp)
     target_link_libraries(qtui_custom_item_demo_test PRIVATE
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::Testing
+        Qtui::TestRunner
         qtui_custom_item_module
     )
     qtui_add_scenario_test(

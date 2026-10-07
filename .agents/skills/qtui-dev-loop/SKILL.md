@@ -1,6 +1,6 @@
 ---
 name: qtui-dev-loop
-description: Develop and verify changes to Qtui retained-mode terminal applications using focused Qt Test suites, TestRunner scenarios, and committed-frame artifacts. Use when implementing or testing Qtui C++, QML, examples, Testing integration, or Behavior-enabled applications; do not use for read-only QML review or generic Qt Quick projects.
+description: Develop and verify changes to Qtui retained-mode terminal applications using focused Qt Test suites, TestRunner scenarios, and committed-frame artifacts. Use when implementing or testing Qtui C++, QML, examples, TestRunner integration, or Behavior-enabled applications; do not use for read-only QML review or generic Qt Quick projects.
 ---
 
 # Qtui Development Loop
@@ -16,13 +16,13 @@ Qtui has two complementary test layers:
 
 - Use ordinary Qt Test executables for C++ units, model/layout/input contracts,
   and QML components that do not need a whole application session.
-- Use `qtui::TestRunner` from `Qtui::Testing` for application-level input,
+- Use `qtui::TestRunner` from `Qtui::TestRunner` for application-level input,
   rendering, asynchronous state, and terminal-grid assertions.
 
 Do not describe all repository tests as TestRunner tests. Before changing a
-scenario or Testing integration, read the authoritative
-[TestRunner API](../../../src/Qtui/Testing/doc/TestRunner.md),
-[`QtuiTesting.cmake`](../../../cmake/QtuiTesting.cmake), and one nearby working
+scenario or TestRunner integration, read the authoritative
+[TestRunner API](../../../src/Qtui/TestRunner/doc/TestRunner.md),
+[`QtuiTestRunner.cmake`](../../../cmake/QtuiTestRunner.cmake), and one nearby working
 example.
 
 ## Configure and Build
@@ -36,8 +36,8 @@ rtk cmake -S . -B build \
 rtk cmake --build build
 ```
 
-`QTUI_BUILD_TESTS=ON` builds `Qtui::Testing` and the repository test suites.
-Use `-DQTUI_ENABLE_TEST_RUNNER=ON` only when Testing must be built and installed
+`QTUI_BUILD_TESTS=ON` builds `Qtui::TestRunner` and the repository test suites.
+Use `-DQTUI_ENABLE_TEST_RUNNER=ON` only when TestRunner must be built and installed
 without the repository tests. Use `-DQTUI_BUILD_TERMINAL_HOST=ON` only for the
 optional PTY-backed `TerminalView` module.
 
@@ -77,15 +77,15 @@ a focused first pass.
 
 ## Integrate Application Scenarios
 
-For new applications, link `Qtui::Testing` only into a dedicated test
-executable. Some existing examples conditionally link Testing into their main
+For new applications, link `Qtui::TestRunner` only into a dedicated test
+executable. Some existing examples conditionally link TestRunner into their main
 executable; treat these as legacy integration patterns and do not copy them
-into production applications. Linking Testing installs the Terminal auto-hook
-that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_INSPECT`.
+into production applications. Linking TestRunner installs the Terminal auto-hook
+that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_CAPTURE_AFTER_MS`.
 
 Choose one integration pattern:
 
-- **External script:** the executable links `Qtui::Testing`; register it with
+- **External script:** the executable links `Qtui::TestRunner`; register it with
   `qtui_add_scenario_test(NAME ... TARGET ... SCRIPT ...)`. The helper sets a
   deterministic viewport and bounded timeouts, configures QML import paths,
   clears the scenario artifact directory, validates `result.json`, and adds the
@@ -100,7 +100,7 @@ Choose one integration pattern:
 
 `startFromEnvironment()` returns `nullptr` when no scenario mode is requested
 and schedules `start()` itself when it creates a runner. A directly constructed
-runner never starts automatically. The Testing auto-hook normally handles
+runner never starts automatically. The TestRunner auto-hook normally handles
 environment-driven startup; call `startFromEnvironment()` explicitly only when
 the executable needs to validate that a request was present or otherwise own
 that startup check.
@@ -108,7 +108,7 @@ that startup check.
 Minimal external-script registration:
 
 ```cmake
-target_link_libraries(my_app_test PRIVATE Qtui::Core Qtui::Testing)
+target_link_libraries(my_app_test PRIVATE Qtui::Core Qtui::TestRunner)
 
 qtui_add_scenario_test(
     NAME my_app_smoke
@@ -125,25 +125,33 @@ for explicitly constructed embedded runners. Use
 or
 [`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
 for dedicated test-only executables driven through the environment. Use
-[`tests/Testing`](../../../tests/Testing) for framework scenarios and failure
+[`tests/TestRunner`](../../../tests/TestRunner) for framework scenarios and failure
 contracts.
 
 ## Closed-Loop Inspection
 
 Environment modes are mutually exclusive: set exactly one of `QTUI_SCRIPT`,
-`QTUI_EVAL`, or `QTUI_INSPECT`. They work only when the executable contains
-`Qtui::Testing`. For reproducible direct runs, set both viewport dimensions and
+`QTUI_EVAL`, or `QTUI_CAPTURE_AFTER_MS`. They work only when the executable contains
+`Qtui::TestRunner`. For reproducible direct runs, set both viewport dimensions and
 an explicit artifact directory:
 
 ```bash
 rtk env \
-  QTUI_INSPECT=1 \
+  QTUI_CAPTURE_AFTER_MS=500 \
   QTUI_TEST_COLUMNS=80 \
   QTUI_TEST_ROWS=24 \
-  QTUI_TEST_ARTIFACT_DIR=/tmp/qtui-inspect \
+  QTUI_TEST_ARTIFACT_DIR=/tmp/qtui-capture \
   ./build/path/to/testing-linked-app
-rtk read /tmp/qtui-inspect/inspect.txt
-rtk json /tmp/qtui-inspect/result.json
+rtk read /tmp/qtui-capture/capture.txt
+rtk read /tmp/qtui-capture/capture_styled.txt
+rtk json /tmp/qtui-capture/result.json
+```
+
+`QTUI_CAPTURE_AFTER_MS` waits for the app to settle, then writes the frame as
+text and as a styled snapshot. Use `0` for the first committed frame; use a few
+hundred milliseconds when timers or models fill the screen after start.
+
+```bash
 ```
 
 Use inline evaluation for a short exploratory action sequence:
@@ -168,9 +176,10 @@ rtk env QTUI_TEST_EMBEDDED_SCENARIO=1 QTUI_TEST_LIVE=1 \
   ./build/path/to/embedded-test-runner
 ```
 
-`QTUI_INSPECT_IMAGE=1` and `terminal.captureImage()` rasterize the committed cell
-grid and require a `QGuiApplication`; normal text capture works with
-`QCoreApplication`. Prefer text artifacts unless an image materially helps.
+There is no image capture: `TestRunner` needs only `QCoreApplication`. For
+visual regressions use `terminal.captureStyled()` to record a baseline and
+`terminal.expectStyled()` to assert it; the styled format lists per-run
+colors and attributes as text, so diffs stay readable and platform independent.
 
 ## Write Reliable JavaScript Scenarios
 
@@ -185,9 +194,10 @@ Use the API documentation for exact signatures. Choose operations by intent:
 - Use `waitForText()`, `waitForRegex()`, or `waitForCondition()` for state that
   appears asynchronously. Use `expectText()`, `expectNoText()`,
   `expectRegex()`, `expectTextInRegion()`, and `expectStyle()` for assertions on
-  committed frames. `expectSnapshot()` compares the frame against a stored
-  snapshot file and writes a unified diff on mismatch. `fail()` aborts the
-  scenario with a message when a check cannot be expressed as an assertion.
+  committed frames. `expectSnapshot()` compares the frame text against a stored
+  snapshot file, `expectStyled()` also compares colors and attributes, and both
+  write a unified diff on mismatch. `fail()` aborts the scenario with a message
+  when a check cannot be expressed as an assertion.
 - `waitForFrame()` requests rendering. To prove that the application scheduled
   its own repaint, use `injectKey()` or `injectText()` followed by
   `expectRepaint()`; the regular input methods would consume that repaint.
@@ -221,8 +231,8 @@ callbacks passed to `waitForCondition()` must be synchronous and quick.
 ## Read Results and Hand Off
 
 Every requested runner session writes schema-v1 `result.json` atomically. A
-passing script writes `final.txt`, a failure writes `failure.txt`, and inspection
-uses `inspect.txt`; requested captures are listed in the result. Treat the
+passing script writes `final.txt`, a failure writes `failure.txt`, and capture
+mode uses `capture.txt`; requested captures are listed in the result. Treat the
 normalized text frame as the primary visual oracle and inspect the operation
 trace and failure message before changing code after a failure.
 

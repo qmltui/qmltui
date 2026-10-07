@@ -2,11 +2,11 @@
 #include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[]) {
-    // Automated scenario runs (QTUI_SCRIPT/QTUI_EVAL/QTUI_INSPECT) default to
+    // Automated scenario runs (QTUI_SCRIPT/QTUI_EVAL/QTUI_CAPTURE_AFTER_MS) default to
     // deterministic mock filesystem; set QTUI_FM_LIVE=1 explicitly to test live system.
     const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_SCRIPT")
         || qEnvironmentVariableIsSet("QTUI_EVAL")
-        || qEnvironmentVariableIsSet("QTUI_INSPECT");
+        || qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS");
 
     if (scenarioRequested && !qEnvironmentVariableIsSet("QTUI_FM_LIVE")) {
         qputenv("QTUI_FM_MOCK", "1");

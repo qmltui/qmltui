@@ -8,9 +8,9 @@ The class is intended for application-level automated tests. It operates on an e
 
 ## Project Structure and Dependencies
 
-The declaration is in `Testing/TestRunner.h` and the implementation is in `Testing/TestRunner.cpp`. `QtuiTesting` is available when either `QTUI_BUILD_TESTS` or `QTUI_ENABLE_TEST_RUNNER` is enabled. Consumers link against `Qtui::Testing`.
+The declaration is in `TestRunner/TestRunner.h` and the implementation is in `TestRunner/TestRunner.cpp`. `QtuiTestRunner` is available when either `QTUI_BUILD_TESTS` or `QTUI_ENABLE_TEST_RUNNER` is enabled. Consumers link against `Qtui::TestRunner`.
 
-Its public build dependencies are Qt 6 QML and `Qtui::Core`. Qt 6 GUI is a private dependency used for image artifact generation. The driver collaborates with these project types:
+Its only build dependencies are Qt 6 QML and `Qtui::Core`; a `QCoreApplication` is sufficient, and no Qt GUI module is needed. The driver collaborates with these project types:
 
 - `Terminal` identifies the UI under test.
 - `TerminalEngine` injects input, requests rendering, publishes committed-frame notifications, and provides the current frame.
@@ -84,13 +84,27 @@ Waits for the next committed frame and fails if its normalized text contains the
 
 Waits for the next committed frame and writes its normalized UTF-8 text beneath the configured artifact directory. Trailing spaces are removed from each row. `relativePath` must be a non-empty relative path contained by the artifact directory; absolute paths and parent traversal are rejected. Missing parent directories inside the artifact directory are created automatically.
 
-#### void captureImage(const QString &relativePath)
+#### void captureStyled(const QString &relativePath)
 
-Waits for the next committed frame and rasterizes it to an image beneath the configured artifact directory. The application must be a `QGuiApplication`; a `QCoreApplication` cannot capture images. The path containment rules are the same as for `captureText()`, and the image format is selected from the filename extension supported by Qt.
+Waits for the next committed frame and writes its styled text (the `styledText()` format) beneath the configured artifact directory, with the same path rules as `captureText()`. Run it once to record the baseline for `expectStyled()`, then copy the artifact next to the scenario.
 
 #### QString frameText()
 
 Returns normalized text for the current committed frame without requesting another render.
+
+#### QString styledText()
+
+Returns the normalized frame text followed by a `--- styles` section that records colors and attributes. Each line describes one run of adjacent cells on a row that share the same foreground, background, and attribute set; runs that use the terminal defaults for all three are omitted:
+
+```
+ STATUS: ASYNC READY
+--- styles
+y=3 x=0-0 fg=default bg=#101820FF
+y=3 x=1-19 fg=#7FDBCAFF bg=#101820FF bold
+y=3 x=20-79 fg=default bg=#101820FF
+```
+
+Colors are `#RRGGBBAA` after resolving ANSI palette entries to xterm's default RGB, or `default` for the terminal's own color. Attributes are a comma-separated subset of `bold`, `dim`, `italic`, `underline`, `reverse`, `blink`, `conceal`, and `strikethrough`. The output depends only on the committed cell grid, never on fonts or a display, so it is identical across platforms and CI.
 
 #### object cell(int x, int y)
 
@@ -138,7 +152,11 @@ Fails the scenario unless cell attributes at `(x, y)` match the properties speci
 
 #### void expectSnapshot(const QString &snapshotRelativePath)
 
-Compares the committed frame against a snapshot resolved relative to the scenario. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory. JavaScript usage: `terminal.expectSnapshot("snapshots/baseline.txt")`.
+Compares the committed frame's normalized text against a snapshot resolved relative to the scenario. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory. JavaScript usage: `terminal.expectSnapshot("snapshots/baseline.txt")`.
+
+#### void expectStyled(const QString &snapshotRelativePath)
+
+Like `expectSnapshot()`, but compares `styledText()`, so a color or attribute regression fails the scenario even when the characters are unchanged. The mismatch artifacts are the same, and the diff names the exact rows and columns whose style changed. Record the baseline with `captureStyled()`. JavaScript usage: `terminal.expectStyled("snapshots/baseline_styled.txt")`.
 
 #### void fail(const QString &message)
 
@@ -162,14 +180,13 @@ Construction does not start execution. Schedule `start()` after the application 
 
 #### static TestRunner *startFromEnvironment(QQmlEngine *qmlEngine, Terminal *terminal)
 
-Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_INSPECT` are mutually exclusive.
+Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_CAPTURE_AFTER_MS` are mutually exclusive.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `QTUI_SCRIPT` | None | Required filesystem scenario path. |
 | `QTUI_EVAL` | None | Inline JavaScript scenario; its temporary file is removed at completion. |
-| `QTUI_INSPECT` | Off | Capture the initial committed frame as `inspect.txt`. |
-| `QTUI_INSPECT_IMAGE` | Off | Explicitly request `inspect.png`; requires `QGuiApplication`. |
+| `QTUI_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QTUI_TEST_TIMEOUT_MS`. |
 | `QTUI_TEST_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. |
 | `QTUI_TEST_COLUMNS` | `80` | Test viewport columns, from 1 through 1,000. |
 | `QTUI_TEST_ROWS` | `24` | Test viewport rows, from 1 through 1,000. |
@@ -179,7 +196,7 @@ Creates and schedules a runner from environment variables. It returns `nullptr` 
 
 ## Structured results
 
-Every requested run atomically writes `result.json` with schema version `1`, status, exit code, mode, scenario, elapsed time, viewport, current operation, argument-free operation trace, and artifact paths. Successful scenarios write `final.txt`, failures write `failure.txt`, and inspection uses `inspect.txt`. Standard error prints one final summary with the absolute artifact directory.
+Every requested run atomically writes `result.json` with schema version `1`, status, exit code, mode, scenario, elapsed time, viewport, current operation, argument-free operation trace, and artifact paths. Successful scenarios write `final.txt`, failures write `failure.txt`, and capture mode uses `capture.txt`. Standard error prints one final summary with the absolute artifact directory.
 
 ## CMake integration
 
@@ -215,7 +232,7 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 #include <QTimer>
 #include <QQmlApplicationEngine>
 #include <Terminal.h>
-#include <Testing/TestRunner.h>
+#include <TestRunner/TestRunner.h>
 
 auto *terminal = qobject_cast<qtui::Terminal *>(engine.rootObjects().constFirst());
 auto *driver = new qtui::TestRunner(

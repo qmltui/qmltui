@@ -4,7 +4,7 @@
 #include <QUrl>
 
 #include <Terminal.h>
-#include <Testing/TestRunner.h>
+#include <TestRunner/TestRunner.h>
 
 int main(int argc, char* argv[])
 {

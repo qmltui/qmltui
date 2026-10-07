@@ -3,7 +3,7 @@ include(CMakeParseArguments)
 
 # Cached so every directory sees the path even though include_guard(GLOBAL)
 # skips repeated includes from other directories.
-set(QTUI_TESTING_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
+set(QTUI_TESTRUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
     CACHE INTERNAL "Path to the Qtui scenario runner script")
 
 function(qtui_add_scenario_test)
@@ -90,7 +90,7 @@ function(qtui_add_scenario_test)
     if(QTUI_SCENARIO_SYMLINK_TRAP)
         list(APPEND command "-DSYMLINK_TRAP=${QTUI_SCENARIO_SYMLINK_TRAP}")
     endif()
-    list(APPEND command "-P" "${QTUI_TESTING_RUNNER_SCRIPT}")
+    list(APPEND command "-P" "${QTUI_TESTRUNNER_SCRIPT}")
 
     add_test(NAME "${QTUI_SCENARIO_NAME}" COMMAND ${command})
     set(labels TestRunner)

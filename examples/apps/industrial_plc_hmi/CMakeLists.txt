@@ -41,6 +41,6 @@ target_link_libraries(qtui_industrial_plc_hmi PRIVATE
     Qtui::Controls
 )
 
-if(TARGET Qtui::Testing)
-    target_link_libraries(qtui_industrial_plc_hmi PRIVATE Qtui::Testing)
+if(TARGET Qtui::TestRunner)
+    target_link_libraries(qtui_industrial_plc_hmi PRIVATE Qtui::TestRunner)
 endif()

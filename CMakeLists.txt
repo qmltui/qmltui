@@ -6,7 +6,7 @@ option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_BUILD_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
-option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui Testing library" OFF)
+option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui TestRunner library" OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -153,7 +153,7 @@ install(EXPORT QtuiTargets
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfigVersion.cmake"
-    cmake/QtuiTesting.cmake
+    cmake/QtuiTestRunner.cmake
     cmake/RunQtuiScenario.cmake
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qtui"
 )

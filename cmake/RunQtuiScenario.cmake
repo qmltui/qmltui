@@ -11,12 +11,12 @@ if(CONFLICT_SCENARIO)
     endif()
     set(mode_count 1)
 else()
-    foreach(mode EMBEDDED_SCENARIO INSPECT_SCENARIO)
+    foreach(mode EMBEDDED_SCENARIO)
         if(${mode})
             math(EXPR mode_count "${mode_count} + 1")
         endif()
     endforeach()
-    foreach(value SCENARIO_SCRIPT EVAL_CODE)
+    foreach(value SCENARIO_SCRIPT EVAL_CODE CAPTURE_AFTER_MS)
         if(DEFINED ${value} AND NOT "${${value}}" STREQUAL "")
             math(EXPR mode_count "${mode_count} + 1")
         endif()
@@ -32,8 +32,7 @@ set(scenario_environment
     "QT_FORCE_STDERR_LOGGING=1"
     "--unset=QTUI_SCRIPT"
     "--unset=QTUI_EVAL"
-    "--unset=QTUI_INSPECT"
-    "--unset=QTUI_INSPECT_IMAGE"
+    "--unset=QTUI_CAPTURE_AFTER_MS"
     "--unset=QTUI_TEST_EMBEDDED_SCENARIO"
 )
 if(CONFLICT_SCENARIO)
@@ -43,11 +42,8 @@ if(CONFLICT_SCENARIO)
     )
 elseif(EMBEDDED_SCENARIO)
     list(APPEND scenario_environment "QTUI_TEST_EMBEDDED_SCENARIO=1")
-elseif(INSPECT_SCENARIO)
-    list(APPEND scenario_environment "QTUI_INSPECT=1")
-    if(INSPECT_IMAGE)
-        list(APPEND scenario_environment "QTUI_INSPECT_IMAGE=1")
-    endif()
+elseif(DEFINED CAPTURE_AFTER_MS AND NOT CAPTURE_AFTER_MS STREQUAL "")
+    list(APPEND scenario_environment "QTUI_CAPTURE_AFTER_MS=${CAPTURE_AFTER_MS}")
 elseif(DEFINED EVAL_CODE AND NOT EVAL_CODE STREQUAL "")
     list(APPEND scenario_environment "QTUI_EVAL=${EVAL_CODE}")
 else()
@@ -179,7 +175,7 @@ elseif(NOT EXPECT_EXIT EQUAL 0 AND NOT result_status STREQUAL "failed")
 endif()
 string(JSON result_mode GET "${result_json}" mode)
 string(JSON result_scenario GET "${result_json}" scenario)
-if(result_scenario MATCHES "/qtui-(eval|inspect)-[0-9]+\\.js$"
+if(result_scenario MATCHES "/qtui-(eval|capture)-[0-9]+\\.js$"
    AND EXISTS "${result_scenario}")
     message(FATAL_ERROR "Temporary ${result_mode} script was not removed: ${result_scenario}")
 endif()

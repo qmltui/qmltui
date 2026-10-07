@@ -35,16 +35,16 @@ target_link_libraries(qtui_file_manager PRIVATE
     Qtui::TerminalHost
 )
 
-if(TARGET Qtui::Testing)
-    target_link_libraries(qtui_file_manager PRIVATE Qtui::Testing)
+if(TARGET Qtui::TestRunner)
+    target_link_libraries(qtui_file_manager PRIVATE Qtui::TestRunner)
 endif()
 
 if(QTUI_INSTALL_EXAMPLES)
     install(TARGETS qtui_file_manager RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endif()
 
-if(TARGET Qtui::Testing AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTesting.cmake")
+if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
     # idle_budget asserts the application does not repaint while nothing changes.
     foreach(scenario navigation preview search actions idle_budget)
         qtui_add_scenario_test(

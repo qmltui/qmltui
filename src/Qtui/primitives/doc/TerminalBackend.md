@@ -83,7 +83,7 @@ qtui::TerminalBackend::setFactory([](int) {
 });
 ```
 
-`qtui::MemoryTerminalBackend` in `Qtui::Testing` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
+`qtui::MemoryTerminalBackend` in `Qtui::TestRunner` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
 
 This is a C++ extension point and may still change before 1.0, like custom items.
 

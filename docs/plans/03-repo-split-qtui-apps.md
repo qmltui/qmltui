@@ -29,16 +29,18 @@ pulls `industrial_plc_hmi` and `pos_cashier` in for tests. Keep
 Remove `add_subdirectory(apps)`. Keep `components`, `concepts`, and
 `quickstart`.
 
-### C. `tests/CMakeLists.txt`
+### C. `tests/`
 
-Two groups of tests currently depend on apps:
+The test tree mirrors `src/Qtui` since 2026-09-13: one CMake file per module
+under `tests/{Core,Controls,Image,TestRunner,TerminalHost}`, with the shared
+helpers in `tests/CMakeLists.txt`. Two groups of tests currently depend on apps:
 
-1. The capture scenario `test_runner_capture` runs
-   against `qtui_pos_cashier` and assert on the text "RapidPOS". Point them at
-   `qtui_test_runner_fixture` and assert on "TESTRUNNER FIXTURE" instead.
-2. The per-app scenario blocks from `if(TARGET qtui_pos_cashier)` through the
-   `qtui_twozero48` block (lines 297 to 356). Delete them. They are recreated in
-   `qtui-apps` (Section 3D).
+1. The capture scenario `test_runner_capture` in `tests/TestRunner/CMakeLists.txt`
+   runs against `qtui_pos_cashier` and asserts on the text "RapidPOS". Point it
+   at `qtui_test_runner_fixture` and assert on "TESTRUNNER FIXTURE" instead.
+2. The per-app scenarios, which are the whole of `tests/Examples/CMakeLists.txt`.
+   Delete that directory and its `add_subdirectory(Examples)` line. They are
+   recreated in `qtui-apps` (Section 3D).
 
 Add an in-tree Behavior test so the Behavior gate no longer depends on
 `industrial_plc_hmi`:

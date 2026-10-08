@@ -24,6 +24,9 @@ namespace {
 constexpr const char* kAltScreenOn = "\033[?1049h";
 constexpr const char* kAltScreenOff = "\033[?1049l";
 constexpr const char* kCursorShow = "\033[?25h";
+constexpr const char* kKeyboardQuery = "\033[?u";
+constexpr const char* kKeyboardPush = "\033[>1u";
+constexpr const char* kKeyboardPop = "\033[<u";
 
 class Child {
 public:
@@ -38,6 +41,7 @@ public:
         if (pid < 0) return false;
         if (pid == 0) {
             ::setenv("TERM", "xterm-256color", 1);
+            ::setenv("QTUI_QUERY_TIMEOUT_MS", "5000", 1);   // the test answers by hand
             for (const char* name : {"QTUI_SCRIPT", "QTUI_EVAL", "QTUI_CAPTURE_AFTER_MS",
                                      "QTUI_TEST_EMBEDDED_SCENARIO", "QTUI_TEST_LIVE"})
                 ::unsetenv(name);
@@ -65,6 +69,13 @@ public:
             output.append(buffer, static_cast<size_t>(count));
         }
         return true;
+    }
+
+    // Types bytes on the child's terminal, as a terminal replying to a query would.
+    bool type(const char* bytes)
+    {
+        const size_t size = std::strlen(bytes);
+        return ::write(master, bytes, size) == static_cast<ssize_t>(size);
     }
 
     void drain(int settleMs)
@@ -131,16 +142,26 @@ private slots:
         Child child;
         QVERIFY2(child.start(), "forkpty failed");
         QVERIFY2(child.readUntil(kAltScreenOn, 5000), "the fixture never entered the alternate screen");
+        // Answer the kitty keyboard query like a capable terminal; the engine
+        // then pushes the disambiguate flag on the alternate screen.
+        QVERIFY2(child.readUntil(kKeyboardQuery, 5000), "the fixture never queried the keyboard protocol");
+        QVERIFY(child.type("\033[?0u\033[?1c"));
+        QVERIFY2(child.readUntil(kKeyboardPush, 5000), "the keyboard mode was not pushed after the reply");
         child.drain(100);
         if (child.echo() != Child::Echo::Unknown)
             QCOMPARE(int(child.echo()), int(Child::Echo::Off));   // raw mode is on
 
-        // Ctrl+Z: the handler restores the terminal before yielding.
+        // Ctrl+Z: the handler pops the keyboard mode on the screen it was
+        // pushed on, then restores the terminal before yielding.
         child.output.clear();
         QCOMPARE(::kill(child.pid, SIGTSTP), 0);
         child.drain(200);
         QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos, "normal screen not restored on stop");
         QVERIFY2(child.output.find(kCursorShow) != std::string::npos, "cursor not shown on stop");
+        QVERIFY2(child.output.find(kKeyboardPop) != std::string::npos, "keyboard mode not popped on stop");
+        QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),
+                 "keyboard mode popped after leaving the alternate screen");
+        QCOMPARE(child.output.find(kKeyboardPop, child.output.find(kKeyboardPop) + 1), std::string::npos);
         if (child.echo() != Child::Echo::Unknown)
             QCOMPARE(int(child.echo()), int(Child::Echo::On));    // cooked again for the shell
 
@@ -148,6 +169,9 @@ private slots:
         child.output.clear();
         QCOMPARE(::kill(child.pid, SIGCONT), 0);
         QVERIFY2(child.readUntil(kAltScreenOn, 5000), "alternate screen not re-entered on resume");
+        QVERIFY2(child.readUntil(kKeyboardPush, 5000), "keyboard mode not pushed again on resume");
+        QVERIFY2(child.output.find(kAltScreenOn) < child.output.find(kKeyboardPush),
+                 "keyboard mode pushed before the alternate screen was re-entered");
         child.drain(100);
         if (child.echo() != Child::Echo::Unknown)
             QCOMPARE(int(child.echo()), int(Child::Echo::Off));
@@ -162,6 +186,8 @@ private slots:
         child.pid = -1;
         child.drain(100);
         QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos, "normal screen not restored on SIGTERM");
+        QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),
+                 "keyboard mode not popped before the normal screen on SIGTERM");
         QVERIFY2(child.output.find(kCursorShow) != std::string::npos, "cursor not shown on SIGTERM");
         if (child.echo() != Child::Echo::Unknown)
             QCOMPARE(int(child.echo()), int(Child::Echo::On));

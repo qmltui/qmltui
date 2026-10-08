@@ -53,6 +53,10 @@ public:
     // True when the terminal parser must be told the byte stream is UTF-8
     // (ESC % G) right after entering raw mode.
     virtual bool needsUtf8Designation() const { return false; }
+    // The engine has pushed a kitty keyboard mode on the current screen. A
+    // backend that restores the terminal out of band (POSIX signal handlers)
+    // must pop it before leaving the screen; everyone else can ignore this.
+    virtual void setKeyboardProtocolActive(bool) {}
 
     // Output --------------------------------------------------------------
     // Writes as much of [data + offset, data + size) as the terminal accepts

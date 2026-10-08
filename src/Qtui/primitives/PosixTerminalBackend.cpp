@@ -171,6 +171,9 @@ int SignalBridge::s_pipe[2] = {-1, -1};
 // modes and repaint.
 struct EmergencyState {
     volatile sig_atomic_t active = 0;
+    // A kitty keyboard mode is pushed on the current screen and must be
+    // popped before the reset sequence leaves it; stacks are per screen.
+    volatile sig_atomic_t keyboardProtocol = 0;
     int outputFd = -1;
     int inputFd = -1;
     termios original{};
@@ -184,6 +187,7 @@ EmergencyState g_emergency;
 constexpr char kResetSequence[] =
     "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
     "\033[?25h\033[0m\033]111\a\033[?1049l";
+constexpr char kKeyboardPopSequence[] = "\033[<u";
 
 constexpr int kFatalSignals[] = {SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT,
                                  SIGTERM, SIGHUP, SIGINT, SIGQUIT};
@@ -213,6 +217,12 @@ void restoreTerminalFromSignal()
 {
     if (!g_emergency.active)
         return;
+    if (g_emergency.keyboardProtocol) {
+        // Pop our own entry only, and only once: after a stop the engine
+        // pushes again on resume and re-arms this flag.
+        g_emergency.keyboardProtocol = 0;
+        writeFromSignal(g_emergency.outputFd, kKeyboardPopSequence, sizeof kKeyboardPopSequence - 1);
+    }
     writeFromSignal(g_emergency.outputFd, kResetSequence, sizeof kResetSequence - 1);
     ::tcsetattr(g_emergency.inputFd, TCSANOW, &g_emergency.original);
 }
@@ -283,6 +293,7 @@ void installEmergencyHandlers(int inputFd, int outputFd, const termios& original
 void uninstallEmergencyHandlers()
 {
     g_emergency.active = 0;
+    g_emergency.keyboardProtocol = 0;
     if (!g_handlersInstalled)
         return;
     for (size_t i = 0; i < std::size(kFatalSignals); ++i)
@@ -325,6 +336,12 @@ bool PosixTerminalBackend::enterRawMode()
         return false;
     installEmergencyHandlers(m_inputFd, m_outputFd, m_originalTermios, raw);
     return true;
+}
+
+void PosixTerminalBackend::setKeyboardProtocolActive(bool active)
+{
+    if (g_emergency.active && g_emergency.outputFd == m_outputFd)
+        g_emergency.keyboardProtocol = active ? 1 : 0;
 }
 
 bool PosixTerminalBackend::leaveRawMode()

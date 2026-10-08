@@ -108,15 +108,81 @@ bool looksLikeReply(unsigned char introducer, unsigned char first) {
     }
 }
 
-int xtermModifiers(const Sequence& sequence) {
+// The modifier field shared by xterm (1 + Shift/Alt/Ctrl bits) and the kitty
+// keyboard protocol, which extends it with Super (8), Hyper (16), Meta (32),
+// CapsLock (64) and NumLock (128). Super and Meta both map to Qt::MetaModifier;
+// Hyper and the lock bits have no Qt::KeyboardModifier and are dropped.
+int keyModifiers(const Sequence& sequence) {
     const int value = sequence.parameter(1, 0, 1);
-    if (value < 1 || value > 8) return 0;
+    if (value < 1) return 0;
     const int bits = value - 1;
     int modifiers = 0;
     if (bits & 1) modifiers |= Qt::ShiftModifier;
     if (bits & 2) modifiers |= Qt::AltModifier;
     if (bits & 4) modifiers |= Qt::ControlModifier;
+    if (bits & (8 | 32)) modifiers |= Qt::MetaModifier;
     return modifiers;
+}
+
+// Kitty event type, the sub-parameter of the modifier field: 1 press
+// (default), 2 repeat, 3 release. Anything else is unknown.
+enum class KeyEventType { Press, Repeat, Release, Unknown };
+
+KeyEventType keyEventType(const Sequence& sequence) {
+    switch (sequence.parameter(1, 1, 1)) {
+    case 1: return KeyEventType::Press;
+    case 2: return KeyEventType::Repeat;
+    case 3: return KeyEventType::Release;
+    default: return KeyEventType::Unknown;
+    }
+}
+
+bool isUnicodeScalar(int value) {
+    return value >= 0 && value <= 0x10FFFF && (value < 0xD800 || value > 0xDFFF);
+}
+
+// Kitty functional keys occupy the Unicode private-use range 57344..63743.
+// Keys without a Qt counterpart (media keys, the modifier keys themselves,
+// which only arrive under flag 8) return 0 and are consumed silently.
+struct FunctionalKey {
+    int key = 0;
+    char32_t text = 0;
+    bool keypad = false;
+};
+
+FunctionalKey kittyFunctionalKey(int codepoint) {
+    if (codepoint >= 57376 && codepoint <= 57398)
+        return {Qt::Key_F13 + (codepoint - 57376)};
+    if (codepoint >= 57399 && codepoint <= 57408)
+        return {Qt::Key_0 + (codepoint - 57399), static_cast<char32_t>(U'0' + (codepoint - 57399)), true};
+    switch (codepoint) {
+    case 57358: return {Qt::Key_CapsLock};
+    case 57359: return {Qt::Key_ScrollLock};
+    case 57360: return {Qt::Key_NumLock};
+    case 57361: return {Qt::Key_Print};
+    case 57362: return {Qt::Key_Pause};
+    case 57363: return {Qt::Key_Menu};
+    case 57409: return {Qt::Key_Period, U'.', true};
+    case 57410: return {Qt::Key_Slash, U'/', true};
+    case 57411: return {Qt::Key_Asterisk, U'*', true};
+    case 57412: return {Qt::Key_Minus, U'-', true};
+    case 57413: return {Qt::Key_Plus, U'+', true};
+    case 57414: return {Qt::Key_Enter, U'\n', true};
+    case 57415: return {Qt::Key_Equal, U'=', true};
+    case 57416: return {Qt::Key_Comma, U',', true};
+    case 57417: return {Qt::Key_Left, 0, true};
+    case 57418: return {Qt::Key_Right, 0, true};
+    case 57419: return {Qt::Key_Up, 0, true};
+    case 57420: return {Qt::Key_Down, 0, true};
+    case 57421: return {Qt::Key_PageUp, 0, true};
+    case 57422: return {Qt::Key_PageDown, 0, true};
+    case 57423: return {Qt::Key_Home, 0, true};
+    case 57424: return {Qt::Key_End, 0, true};
+    case 57425: return {Qt::Key_Insert, 0, true};
+    case 57426: return {Qt::Key_Delete, 0, true};
+    case 57427: return {Qt::Key_Clear, 0, true};
+    default: return {};
+    }
 }
 
 } // namespace
@@ -180,10 +246,16 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
             m_bracketedPaste = true;
             return;
         }
+        // Kitty event types apply to every key form once flag 2 is on; a
+        // release or an unknown type is consumed and never dispatched.
+        const KeyEventType eventType = keyEventType(sequence);
+        if (eventType == KeyEventType::Release || eventType == KeyEventType::Unknown) return;
+        if (sequence.kind == Sequence::Csi && final == 'u') {
+            if (dispatchKittyKey(sequence)) return;
+        }
         int key = 0;
-        int modifiers = xtermModifiers(sequence);
-        if (final == 'Z' || (final == 'u' && first == 9 && sequence.parameter(1) == 2)
-            || (final == '~' && first == 27 && sequence.parameter(1) == 2
+        int modifiers = keyModifiers(sequence);
+        if (final == 'Z' || (final == '~' && first == 27 && sequence.parameter(1) == 2
                 && sequence.parameter(2) == 9)) {
             key = Qt::Key_Backtab;
             modifiers = Qt::ShiftModifier;
@@ -213,6 +285,71 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
         }
     }
     if (m_replyCallback) m_replyCallback(sequence);
+}
+
+// CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u
+// The kitty keyboard protocol's key form. Returns false for a malformed
+// sequence so it reaches the reply callback rather than the text path.
+bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence) {
+    if (sequence.params.size() > 3) return false;
+    const int codepoint = sequence.parameter(0, 0, -1);
+    if (codepoint <= 0 || !isUnicodeScalar(codepoint)) return false;
+    int modifiers = keyModifiers(sequence);
+    const bool shortcut = modifiers & (Qt::ControlModifier | Qt::AltModifier);
+    int key = 0;
+    QString text;
+    switch (codepoint) {
+    case 27: key = Qt::Key_Escape; break;
+    case 13: key = Qt::Key_Return; text = QStringLiteral("\n"); break;
+    case 9:
+        key = (modifiers & Qt::ShiftModifier) ? Qt::Key_Backtab : Qt::Key_Tab;
+        break;
+    case 8:
+    case 127: key = Qt::Key_Backspace; break;
+    default:
+        if (codepoint >= 57344 && codepoint <= 63743) {
+            const FunctionalKey functional = kittyFunctionalKey(codepoint);
+            if (!functional.key) return true;   // media or modifier key: consumed
+            key = functional.key;
+            if (functional.keypad) modifiers |= Qt::KeypadModifier;
+            if (functional.text) text = QString::fromUcs4(&functional.text, 1);
+        } else if (codepoint < 32) {
+            return true;   // a C0 control has no key of its own; consumed
+        } else {
+            key = keyForCharacter(static_cast<char32_t>(codepoint));
+            const int shifted = sequence.parameter(0, 1, 0);
+            const char32_t character = static_cast<char32_t>(
+                (modifiers & Qt::ShiftModifier) && shifted >= 32 && isUnicodeScalar(shifted) ? shifted : codepoint);
+            text = QString::fromUcs4(&character, 1);
+        }
+    }
+    // Text the terminal reports explicitly (flag 16) wins; otherwise a
+    // Ctrl or Alt chord is a shortcut and must not insert its key as text,
+    // matching the legacy path where Ctrl+A arrives as a bare control byte.
+    if (sequence.params.size() == 3) {
+        QString reported;
+        for (int value : sequence.params[2]) {
+            if (value < 32 || value == 127 || !isUnicodeScalar(value)) continue;
+            const char32_t character = static_cast<char32_t>(value);
+            reported += QString::fromUcs4(&character, 1);
+        }
+        if (!reported.isEmpty()) text = reported;
+        else if (shortcut) text.clear();
+    } else if (shortcut) {
+        text.clear();
+    }
+    if (m_keyCallback) m_keyCallback(key, text, modifiers);
+    return true;
+}
+
+bool InputDecoder::hasPendingEscape() const {
+    return !m_bracketedPaste && !m_discardKind && m_buffer == "\033";
+}
+
+void InputDecoder::flushPendingEscape() {
+    if (!hasPendingEscape()) return;
+    m_buffer.clear();
+    if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
 }
 
 void InputDecoder::decode(const char* buffer, size_t size) {

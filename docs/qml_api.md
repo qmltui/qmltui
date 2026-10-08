@@ -307,9 +307,15 @@ role names every view provides; see the
 - Read-only `Terminal.capabilities` exposes `kittyKeyboard`, `kittyGraphics`,
   `cellPixelSize`, and `syncOutput`. An asynchronous startup probe refines these
   values without delaying the first frame; changes notify QML bindings.
-  These describe detected protocol support: Kitty keyboard mode and graphics
-  rendering are not enabled by detection alone. Graphics transport support does
-  not imply Unicode placeholder support. `cellPixelSize` is invalid when unknown.
+  When `kittyKeyboard` is true the engine has pushed the kitty keyboard
+  protocol's disambiguate flag for the session: Escape arrives immediately,
+  Ctrl and Alt chords carry their modifiers, and Ctrl+Enter, Shift+Enter and
+  Ctrl+Shift+letter reach `Keys.onPressed` as distinct events. On a legacy
+  terminal a lone Escape is delivered after a short window
+  (`QTUI_ESCAPE_TIMEOUT_MS`, default 50) and those chords collapse to their
+  unmodified keys. `QTUI_KITTY_KEYBOARD=0` keeps the legacy path on a terminal
+  that answers the query but misbehaves. Graphics transport support does not
+  imply Unicode placeholder support. `cellPixelSize` is invalid when unknown.
 - `Image.renderMode` selects how pixels reach the terminal: `HalfBlock` (default
   glyph rendering), `Braille`, `ASCII`, `Kitty` (true pixels via the kitty
   graphics protocol using Unicode placeholders), and `Auto`, the new default.

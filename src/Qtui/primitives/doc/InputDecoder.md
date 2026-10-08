@@ -36,6 +36,37 @@ wheel-delta fields while retaining `setMouseCallback` for compatibility.
 #### void decode(const char* buffer, size_t size)
 Appends raw incoming terminal bytes to the internal decoding buffer and triggers sequence parsing.
 
+#### bool hasPendingEscape() const / void flushPendingEscape()
+A lone ESC is held back because it may begin a sequence whose remaining bytes
+are still in flight. `TerminalEngine` runs a short timer after each read
+(`QTUI_ESCAPE_TIMEOUT_MS`, default 50 ms) and calls `flushPendingEscape()`
+when it expires with the ESC still alone, delivering `Qt::Key_Escape`. Nothing
+is pending inside a bracketed paste or a partial sequence. Terminals with the
+kitty disambiguate flag pushed report Escape as `CSI 27 u` and never need this.
+
+## 10. Kitty Keyboard Protocol
+
+`CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u`
+is decoded as a key. The first parameter is the code point (letters map through
+`keyForCharacter()`; 27, 13, 9 and 127 keep their legacy meaning as Escape,
+Return, Tab and Backspace; Shift+Tab becomes `Qt::Key_Backtab`). Code points
+in `57344..63743` map through a functional-key table: F13 to F35, the keypad
+(with `Qt::KeypadModifier`), CapsLock and the other lock and menu keys. Media
+keys and the modifier keys themselves are consumed without an event.
+
+The modifier field is one plus a bitfield: 1 Shift, 2 Alt, 4 Ctrl, 8 Super,
+16 Hyper, 32 Meta, 64 CapsLock, 128 NumLock. Super and Meta map to
+`Qt::MetaModifier`; Hyper and the lock bits are dropped. The same field is
+accepted on the legacy arrow, edit and function key forms. The event-type
+sub-parameter defaults to press; a repeat dispatches another press, a release
+or an unknown type is consumed without a key and without leaking bytes as text.
+
+Text follows the legacy path: a printable code point (the shifted one when
+Shift is held and the terminal reports it) becomes the key's text unless Ctrl
+or Alt is held, so `Ctrl+A` never inserts an `a`. Explicitly reported text
+(flag 16) wins when present. `CSI ? flags u` is a query reply, not a key, and
+reaches the reply callback.
+
 ## 11. Ownership and Lifecycle
 
 `InputDecoder` is owned by `TerminalEngine`.

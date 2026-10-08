@@ -88,6 +88,14 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_queryTimer.setSingleShot(true);
   connect(&m_queryTimer, &QTimer::timeout, this, &TerminalEngine::finishQueries);
   m_pixelQueryTimer.setSingleShot(true);
+  // A lone ESC that no further byte follows within this window is the
+  // Escape key. Terminals with the kitty flag pushed report Escape as
+  // CSI 27 u, so the timer only ever matters on legacy terminals.
+  m_escapeTimer.setSingleShot(true);
+  bool escapeValid = false;
+  const int escapeTimeout = qEnvironmentVariableIntValue("QTUI_ESCAPE_TIMEOUT_MS", &escapeValid);
+  m_escapeTimer.setInterval(escapeValid && escapeTimeout >= 0 ? escapeTimeout : 50);
+  connect(&m_escapeTimer, &QTimer::timeout, this, [this] { m_inputDecoder.flushPendingEscape(); });
   m_inputDecoder.setReplyCallback([this](const InputDecoder::ControlSequence& sequence) {
       handleReply(sequence);
   });
@@ -146,7 +154,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   // decoder and renderers never see platform details.
   TerminalBackend* backend = m_device.backend();
   connect(backend, &TerminalBackend::inputReceived, this, [this](const QByteArray& bytes) {
-      m_inputDecoder.decode(bytes.constData(), static_cast<size_t>(bytes.size()));
+      feedInput(bytes);
   });
   connect(backend, &TerminalBackend::resized, this, &TerminalEngine::readResizeSignal);
   connect(backend, &TerminalBackend::resumed, this, &TerminalEngine::handleResume);
@@ -168,6 +176,8 @@ void TerminalEngine::stop() {
   flushControlSequences();
   invalidateOutputSession();
   m_paceTimer.stop();
+  m_escapeTimer.stop();
+  popKittyKeyboard();
   if (m_terminalOutputEnabled) {
     if (m_capabilities.kittyGraphics)
         m_device.write("\033_Ga=d,d=A\033\\");   // delete every image this session uploaded
@@ -404,6 +414,8 @@ void TerminalEngine::handleResume() {
       m_renderer->start(m_rootWindow, m_device);   // alternate screen again, cleared
       m_renderer->discardCommittedState();
   }
+  m_kittyKeyboardPushed = false;   // the SIGTSTP handler popped it
+  updateKittyKeyboard();
   reapplyBackgroundColor();   // after the alternate screen is re-entered
   handleResize();   // the window may have been resized while stopped
   requestRender();
@@ -496,6 +508,7 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
     if (m_renderer == renderer) return;
     flushControlSequences();
     invalidateOutputSession();
+    popKittyKeyboard();
     if (m_renderer) {
         if (m_rendererStarted) {
             m_renderer->stop(m_rootWindow, m_device);
@@ -537,15 +550,45 @@ void TerminalEngine::setCapabilities(const TerminalCapabilities& capabilities) {
 }
 
 void TerminalEngine::applyCapabilities(const TerminalCapabilities& capabilities) {
-    if (m_capabilities == capabilities) return;
+    if (m_capabilities == capabilities) {
+        updateKittyKeyboard();
+        return;
+    }
     m_capabilities = capabilities;
     if (m_renderer) m_renderer->setCapabilities(m_capabilities);
+    updateKittyKeyboard();
     emit capabilitiesChanged();
     requestRender();
 }
 
+void TerminalEngine::updateKittyKeyboard() {
+    const bool wanted = m_capabilities.kittyKeyboard && m_rendererStarted
+        && m_terminalOutputEnabled && !m_stopped;
+    if (wanted == m_kittyKeyboardPushed) return;
+    if (!wanted) {
+        popKittyKeyboard();
+        return;
+    }
+    if (!m_device.write("\033[>1u")) return;
+    m_kittyKeyboardPushed = true;
+    if (TerminalBackend* backend = m_device.backend()) backend->setKeyboardProtocolActive(true);
+}
+
+void TerminalEngine::popKittyKeyboard() {
+    if (!m_kittyKeyboardPushed) return;
+    m_kittyKeyboardPushed = false;
+    if (TerminalBackend* backend = m_device.backend()) backend->setKeyboardProtocolActive(false);
+    if (m_terminalOutputEnabled) m_device.write("\033[<u");
+}
+
 void TerminalEngine::feedInput(QByteArrayView bytes) {
     m_inputDecoder.decode(bytes.constData(), static_cast<size_t>(bytes.size()));
+    scheduleEscapeFlush();
+}
+
+void TerminalEngine::scheduleEscapeFlush() {
+    if (m_inputDecoder.hasPendingEscape()) m_escapeTimer.start();
+    else m_escapeTimer.stop();
 }
 
 void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
@@ -553,6 +596,7 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
     return;
 
   flushControlSequences();   // needs the outgoing flag
+  popKittyKeyboard();        // likewise: the pop has to reach the terminal
   // Settle the flag before outputSessionInvalidated() fires so a slot that
   // enqueues cleanup sees the state its bytes will actually meet.
   m_terminalOutputEnabled = enabled;
@@ -624,6 +668,7 @@ void TerminalEngine::startRenderer() {
     }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;
+    updateKittyKeyboard();   // proven in an earlier session; the new screen has its own stack
     // Entering the alternate screen resets the background on some terminals
     // (Windows Terminal), so the OSC 11 sent before startup is lost on the
     // buffer the app actually draws on. Re-assert it now.
@@ -705,7 +750,7 @@ void TerminalEngine::finishQueries() {
     m_queriesPending = false;
     m_queryTimer.stop();
     TerminalCapabilities::applyEnvironmentOverrides(m_pendingCapabilities);
-    applyCapabilities(m_pendingCapabilities);
+    applyCapabilities(m_pendingCapabilities);   // also pushes the kitty keyboard mode
 }
 
 void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) {

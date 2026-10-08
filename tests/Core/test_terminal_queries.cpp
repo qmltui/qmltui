@@ -68,7 +68,7 @@ class TestTerminalQueries : public QObject {
 private slots:
     void init() {
         for (const char* name : {"QTUI_SYNC_OUTPUT", "QTUI_KITTY_KEYBOARD", "QTUI_KITTY_GRAPHICS",
-                                 "QTUI_QUERY_TIMEOUT_MS", "QTUI_TEST_EMBEDDED_SCENARIO",
+                                 "QTUI_QUERY_TIMEOUT_MS", "QTUI_ESCAPE_TIMEOUT_MS", "QTUI_TEST_EMBEDDED_SCENARIO",
                                  "TERM_PROGRAM", "TERM", "KITTY_WINDOW_ID", "KONSOLE_VERSION",
                                  "WEZTERM_EXECUTABLE", "GHOSTTY_RESOURCES_DIR"}) {
             saved.insert(name, qgetenv(name));
@@ -351,6 +351,218 @@ Terminal { color: "black"; Text { text: "x" } }
         QVERIFY(alt != std::string::npos);
         QVERIFY2(osc11After != std::string::npos,
                  "background not re-sent after entering the alternate screen");
+    }
+    // Kitty keyboard flag 1: pushed once the terminal has answered the query,
+    // on the screen the renderer draws on, and popped before that screen is
+    // left. Every pop below is checked against the alternate-screen exit that
+    // follows it, because the stacks are per screen.
+    void kittyKeyboardPushedAfterReplyAndPoppedOnStop() {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const auto& output = backend->output();
+        const auto npos = std::string::npos;
+        QVERIFY(output.find("\033[?u") != npos);
+        QCOMPARE(output.find("\033[>1u"), npos);
+        backend->feedInput("\033[?0u");            // zero flags is still a valid reply
+        QCOMPARE(output.find("\033[>1u"), npos);     // the window is still open
+        backend->feedInput("\033[?1c");
+        QVERIFY(engine->capabilities().kittyKeyboard);
+        const auto push = output.find("\033[>1u");
+        QVERIFY(push != npos);
+        QVERIFY(output.find("\033[?1049h") < push);
+        QCOMPARE(output.find("\033[>1u", push + 1), npos);
+        engine->stop();
+        const auto pop = output.find("\033[<u");
+        QVERIFY(pop != npos);
+        QVERIFY(pop > push);
+        QVERIFY(pop < output.find("\033[?1049l", push));
+        QCOMPARE(output.find("\033[<u", pop + 1), npos);
+    }
+    void kittyKeyboardNotPushedWithoutReply_data() {
+        QTest::addColumn<QByteArray>("override");
+        QTest::newRow("silent terminal") << QByteArray();
+        QTest::newRow("disabled by environment") << QByteArray("0");
+    }
+    void kittyKeyboardNotPushedWithoutReply() {
+        QFETCH(QByteArray, override);
+        qputenv("QTUI_QUERY_TIMEOUT_MS", "10");
+        if (!override.isNull()) qputenv("QTUI_KITTY_KEYBOARD", override);
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        if (override.isNull()) QTest::qWait(30);      // the terminal never answers
+        else backend->feedInput("\033[?0u\033[?1c");   // it answers, but the user said no
+        QVERIFY(!engine->capabilities().kittyKeyboard);
+        const auto& output = backend->output();
+        QCOMPARE(output.find("\033[>1u"), std::string::npos);
+        engine->stop();
+        QCOMPARE(output.find("\033[<u"), std::string::npos);
+    }
+    void stopDuringNegotiationNeverPushes() {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        engine->stop();
+        backend->feedInput("\033[?0u\033[?1c");         // the reply arrives late
+        QVERIFY(!engine->capabilities().kittyKeyboard);
+        QCOMPARE(backend->output().find("\033[>1u"), std::string::npos);
+        QCOMPARE(backend->output().find("\033[<u"), std::string::npos);
+    }
+    void kittyKeyboardFollowsOutputSession() {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        backend->feedInput("\033[?0u\033[?1c");
+        const auto& output = backend->output();
+        const auto npos = std::string::npos;
+        QVERIFY(output.find("\033[>1u") != npos);
+        // Output disabled: popped before the screen is left, nothing after.
+        backend->clearOutput();
+        engine->setTerminalOutputEnabled(false);
+        QVERIFY(output.find("\033[<u") != npos);
+        QVERIFY(output.find("\033[<u") < output.find("\033[?1049l"));
+        QCOMPARE(output.find("\033[>1u"), npos);
+        // Re-enabled: the capability was proven, so the new screen gets its
+        // own push right after it is entered, before the query round-trip.
+        backend->clearOutput();
+        engine->setTerminalOutputEnabled(true);
+        QTRY_VERIFY(output.find("\033[>1u") != npos);
+        QVERIFY(output.find("\033[?1049h") < output.find("\033[>1u"));
+        QCOMPARE(output.find("\033[<u"), npos);
+        // Renderer switch: pop on the alternate screen, push on the main one.
+        backend->clearOutput();
+        engine->setRenderer(new StreamRenderer);
+        QTRY_VERIFY(output.find("\033[>1u") != npos);
+        QVERIFY(output.find("\033[<u") < output.find("\033[?1049l"));
+        QVERIFY(output.find("\033[?1049l") < output.find("\033[>1u"));
+        QCOMPARE(output.find("\033[>1u", output.find("\033[>1u") + 1), npos);
+        // A programmatic override that withdraws the capability pops at once.
+        backend->clearOutput();
+        TerminalCapabilities withdrawn = engine->capabilities();
+        withdrawn.kittyKeyboard = false;
+        engine->setCapabilities(withdrawn);
+        QVERIFY(output.find("\033[<u") != npos);
+        QCOMPARE(output.find("\033[>1u"), npos);
+        backend->clearOutput();
+        engine->stop();
+        QCOMPARE(output.find("\033[<u"), npos);        // nothing left to pop
+    }
+    void kittyKeysReachQml() {
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+pragma ComponentBehavior: Bound
+import QtQml
+import Qtui
+Terminal {
+    id: root
+    focus: true
+    property int presses: 0
+    property string last: "none"
+    Keys.onPressed: event => {
+        root.presses++
+        root.last = "K" + event.key + " M" + event.modifiers + " T" + event.text.length
+        event.accepted = true
+    }
+    Text { text: root.last + " N" + root.presses }
+}
+)", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(object.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        QTRY_VERIFY(frameText(engine).contains("none N0"));
+        const QString ctrlShift = QString::number(int(Qt::ControlModifier | Qt::ShiftModifier));
+        backend->feedInput("\033[97:65:;6u");             // Ctrl+Shift+A
+        QTRY_VERIFY(frameText(engine).contains("K65 M" + ctrlShift + " T0 N1"));
+        backend->feedInput("\033[9;2u");                  // Shift+Tab keeps the Backtab convention
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Backtab))
+                                               + " M" + QString::number(int(Qt::ShiftModifier)) + " T0 N2"));
+        backend->feedInput("\033[13;5u");                 // Ctrl+Enter: no text
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Return))
+                                               + " M" + QString::number(int(Qt::ControlModifier)) + " T0 N3"));
+        backend->feedInput("\033[27u");                   // Escape, unambiguous and immediate
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Escape)) + " M0 T0 N4"));
+        backend->feedInput("\033[98;1:2u\033[98;1:3u");   // repeat dispatches, release does not
+        QTRY_VERIFY(frameText(engine).contains("K66 M0 T1 N5"));
+        QCOMPARE(terminal->property("presses").toInt(), 5);
+    }
+    void kittyEnterChordsDoNotInsertText() {
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+pragma ComponentBehavior: Bound
+import QtQml
+import Qtui
+Terminal {
+    id: root
+    property int accepts: 0
+    Column {
+        TextInput { id: input; width: 20; height: 1; focus: true; onAccepted: root.accepts++ }
+        Text { text: "LEN" + input.text.length + " ACC" + root.accepts + " [" + input.text + "]" }
+    }
+}
+)", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(object.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        QTRY_VERIFY(frameText(engine).contains("LEN0 ACC0 []"));
+        backend->feedInput("\033[13;5u");                 // Ctrl+Enter
+        QTRY_VERIFY(frameText(engine).contains("LEN0 ACC1 []"));
+        backend->feedInput("\033[13;2u");                 // Shift+Enter
+        QTRY_VERIFY(frameText(engine).contains("LEN0 ACC2 []"));
+        backend->feedInput("\033[97:65;2u\033[98u");      // Shift+A (with alternate key), b
+        QTRY_VERIFY(frameText(engine).contains("LEN2 ACC2 [Ab]"));
+        backend->feedInput("\033[97;5u");                 // Ctrl+A selects all, inserts nothing
+        backend->feedInput("\033[99;3u");                 // Alt+C inserts nothing either
+        QTRY_VERIFY(frameText(engine).contains("LEN2 ACC2 [Ab]"));
+        backend->feedInput("\033[57423u");                // keypad Home: cursor to the start
+        backend->feedInput("\033[57399u");                // keypad 0 is typing
+        QTRY_VERIFY2(frameText(engine).contains("LEN3 ACC2 [0Ab]"), qPrintable(frameText(engine)));
+    }
+    void loneEscapeIsDeliveredAfterTheTimeout() {
+        qputenv("QTUI_ESCAPE_TIMEOUT_MS", "10");
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+pragma ComponentBehavior: Bound
+import QtQml
+import Qtui
+Terminal {
+    id: root
+    focus: true
+    property int escapes: 0
+    property int ups: 0
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape) root.escapes++
+        if (event.key === Qt.Key_Up) root.ups++
+        event.accepted = true
+    }
+    Text { text: "ESC" + root.escapes + " UP" + root.ups }
+}
+)", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(object.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        QTRY_VERIFY(frameText(engine).contains("ESC0 UP0"));
+        backend->feedInput("\033");
+        QCOMPARE(terminal->property("escapes").toInt(), 0);   // held back for the window
+        QTRY_VERIFY(frameText(engine).contains("ESC1 UP0"));
+        // The rest of a split sequence arriving inside the window wins.
+        backend->feedInput("\033");
+        backend->feedInput("[A");
+        QTRY_VERIFY(frameText(engine).contains("ESC1 UP1"));
+        QTest::qWait(30);
+        QCOMPARE(terminal->property("escapes").toInt(), 1);
+        // A second lone ESC after the first was consumed still gets its own timer.
+        backend->feedInput("\033");
+        QTRY_VERIFY(frameText(engine).contains("ESC2 UP1"));
     }
     void disabledStartupDoesNotProbe() {
         qputenv("QTUI_TEST_EMBEDDED_SCENARIO", "1");

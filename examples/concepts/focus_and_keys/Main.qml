@@ -40,6 +40,9 @@ Terminal {
         Text {
             width: parent.width
             text: "Use Tab/Shift-Tab to cycle focus. Press 'q' or 'Escape' to quit."
+                  + (rootWindow.capabilities.kittyKeyboard
+                     ? "  Keyboard: kitty protocol (Ctrl+Enter and Shift+Enter are distinct)."
+                     : "  Keyboard: legacy (Ctrl+Enter and Shift+Enter arrive as Enter).")
             color: "gray"
         }
 
@@ -69,13 +72,23 @@ Terminal {
                         bold: true
                     }
                     Text {
-                        text: "Press Return or Space\nto test specific signals."
+                        text: "Press Return or Space\nto test specific signals.\n"
+                              + "Ctrl+Enter and Shift+Enter\nare told apart on kitty,\n"
+                              + "Ghostty, WezTerm and foot."
                         color: "silver"
                     }
                 }
 
+                // With the kitty keyboard protocol the modifiers survive; a
+                // legacy terminal sends the same bytes for all three chords
+                // and this handler sees a plain Return. Ghostty binds
+                // Ctrl+Enter to toggle_fullscreen by default, so the key never
+                // reaches the app there unless that binding is removed.
                 Keys.onReturnPressed: (event) => {
-                    logText.text = "Keys.onReturnPressed triggered on Item A!"
+                    const chord = (event.modifiers & Qt.ControlModifier) ? "Ctrl+Enter"
+                                : (event.modifiers & Qt.ShiftModifier) ? "Shift+Enter"
+                                : "Enter"
+                    logText.text = "Keys.onReturnPressed on Item A: " + chord
                     event.accepted = true
                 }
                 Keys.onSpacePressed: (event) => {

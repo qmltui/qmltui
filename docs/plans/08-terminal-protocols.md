@@ -44,10 +44,12 @@ reset renderer state; `setTerminalOutputEnabled(false)` emitted the
 invalidation before the flag flipped. `TestRunner.typeText()` now feeds bytes
 through the decoder instead of mirroring its table.
 
-Known gap carried into WP2: the decoder delivers a lone Escape only when a
-following byte arrives, on a real terminal as much as under test. The kitty
-disambiguate flag removes the ambiguity on capable terminals; legacy terminals
-need an Escape timeout, which WP2 should add alongside the push.
+The lone-Escape gap carried out of WP1 (Escape delivered only when a following
+byte arrived) is closed by WP2: `InputDecoder::hasPendingEscape()` and
+`flushPendingEscape()`, driven by a single-shot timer in the engine after each
+read (`QTUI_ESCAPE_TIMEOUT_MS`, default 50 ms). Nothing is pending inside a
+paste or a partial sequence, and the rest of a split sequence arriving inside
+the window still wins.
 
 Signal safety (the prerequisite) is implemented (2026-09-12):
 `PosixTerminalBackend` installs handlers for the fatal signals, SIGTERM/SIGHUP/
@@ -91,9 +93,44 @@ sixel is intended for FullScreen for now.
 The iTerm2 inline-image protocol is the remaining candidate and would follow
 the same seam (a detector, a `resolve()` case, an encoder).
 
-Keyboard mode activation and general Kitty key decoding (WP2) remain subsequent
-work. No real-terminal Kitty compatibility claim is established by the
-memory-backend tests; a manual check on kitty or Ghostty is still owed.
+WP2 kitty keyboard is implemented (2026-09-13), flag 1 only in the push/pop
+form. The engine owns the mode per output session: `updateKittyKeyboard()`
+pushes `CSI > 1 u` once the terminal has answered the query (any valid reply,
+including zero flags, unless `QTUI_KITTY_KEYBOARD=0`) and the renderer is on
+its screen; `popKittyKeyboard()` writes `CSI < u` before every screen exit
+(stop, output disabled, renderer switch) and when a programmatic override
+withdraws the capability. A proven capability survives renegotiation, so a new
+output session pushes right after entering its screen. The POSIX emergency
+handlers learn about the push through `TerminalBackend::setKeyboardProtocolActive()`
+(a `volatile sig_atomic_t`), pop before the reset sequence on SIGTSTP and the
+fatal signals, clear the flag so an entry is popped once, and `handleResume()`
+pushes again after the alternate screen is re-entered. Decoding covers the full
+`CSI u` grammar: sub-parameters, the extended modifier bitfield (Super and
+Meta to `Qt::MetaModifier`, Hyper and the lock bits dropped), event types
+(repeat dispatched, release consumed), the functional-key range (F13 to F35,
+keypad with `Qt::KeypadModifier`, lock keys), associated text, and the
+`CSI ? flags u` reply routed away from keys. Text synthesis follows the legacy
+rule: a Ctrl or Alt chord carries no text, so Ctrl+A selects all in `TextInput`
+without inserting, while Shift+Enter keeps Return's newline text, which
+`TextInput` handles before its insertion branch. Covered by `test_input_decoder`
+(one row per form, every split point), `test_terminal_queries` (push after
+reply, balanced pop before the alternate-screen exit, no push without a reply
+or with the override, stop during negotiation, output-session and renderer
+transitions, Ctrl+Shift+A, Shift+Tab, Ctrl+Enter and Shift+Enter through a
+committed QML frame, the Escape timeout) and `test_signal_safety` (pop precedes
+the reset on SIGTSTP and SIGTERM, push follows the alternate screen on
+SIGCONT, under a real pseudo-terminal). `examples/concepts/focus_and_keys`
+shows the detected keyboard mode and names the chord on Return.
+
+Real-terminal verification (2026-09-13): Ghostty 1.3.1 answers `CSI ? u`, the
+status line of `focus_and_keys` reports the kitty protocol, and Shift+Enter is
+logged as its own chord. Ctrl+Enter is consumed by Ghostty's default
+`ctrl+enter=toggle_fullscreen` binding before it is encoded, which is not a
+Qtui defect: run with `ghostty --keybind=ctrl+enter=unbind` (or unbind it in the
+Ghostty config) and Ctrl+Enter is logged as well. Any documentation that
+promises Ctrl+Enter in Ghostty should carry that caveat. Still owed: kitty
+itself, and Windows Terminal, where support depends on the emulator version and
+stays off until it replies.
 
 ## 2. Baseline (before WP1; verified on 2026-09-12)
 

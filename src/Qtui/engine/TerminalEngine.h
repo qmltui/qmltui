@@ -132,6 +132,14 @@ private:
     void finishQueries();
     bool canQueryTerminal() const;
     void applyCapabilities(const TerminalCapabilities& capabilities);
+    // Kitty keyboard flag 1 (disambiguate escape codes), push/pop form. The
+    // mode is owned per output session: pushed once the terminal has proven
+    // support and the renderer is on its screen, popped before that screen
+    // is left. Stacks are per screen, so the order relative to the renderer
+    // matters and an entry this session did not push is never popped.
+    void updateKittyKeyboard();
+    void popKittyKeyboard();
+    void scheduleEscapeFlush();
     void handleReply(const InputDecoder::ControlSequence& sequence);
     void invalidateOutputSession();
     void flushControlSequences();
@@ -149,6 +157,8 @@ private:
     bool m_queriesPending = false;
     bool m_queriesStarted = false;
     bool m_capabilitiesOverridden = false;
+    bool m_kittyKeyboardPushed = false;
+    QTimer m_escapeTimer;
     QByteArray m_controlSequences;
     QByteArray m_postControlSequences;
     quint64 m_outputSessionGeneration = 0;

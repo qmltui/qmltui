@@ -1,6 +1,7 @@
 #include <QTest>
 #include <QObject>
 #include <vector>
+#include <tuple>
 #include "InputDecoder.h"
 
 using namespace qtui;
@@ -28,6 +29,12 @@ private slots:
     void testPasteReplyIsolation();
     void testParameterDefaults();
     void testAltPrefixedKeysAreNotStrings();
+    void testKittyKeys_data();
+    void testKittyKeys();
+    void testKittyEventTypes();
+    void testKittyIgnoredKeys();
+    void testKittyQueryReplyIsNotAKey();
+    void testPendingEscapeFlush();
 };
 
 void TestInputDecoder::testAsciiKeys() {
@@ -371,7 +378,7 @@ void TestInputDecoder::testControlReplies() {
     const QList<QByteArray> replies = {
         "\033[?0u", "\033[?2026;2$y", "\033[6;20;10t",
         "\033_Gi=31;OK\033\\", "\033]11;rgb:00/00/00\a",
-        "\033P>|payload\aend\033\\", "\033[97:65:;6:1u"
+        "\033P>|payload\aend\033\\", "\033[?97:65:;6:1u"
     };
     for (const auto& bytes : replies) {
         for (qsizetype split = 1; split < bytes.size(); ++split) {
@@ -513,6 +520,165 @@ void TestInputDecoder::testParameterDefaults() {
     QCOMPARE(keys[1], qMakePair(int(Qt::Key_Left), int(Qt::ControlModifier)));
     QCOMPARE(keys[2], qMakePair(int(Qt::Key_F1), 0));
     QCOMPARE(keys[3], qMakePair(int(Qt::Key_Q), 0));
+}
+
+// One kitty CSI u form per row: the key, the text a TextInput would insert,
+// and the modifiers Qt Quick handlers see.
+void TestInputDecoder::testKittyKeys_data() {
+    QTest::addColumn<QByteArray>("bytes");
+    QTest::addColumn<int>("key");
+    QTest::addColumn<QString>("text");
+    QTest::addColumn<int>("modifiers");
+    const int shift = Qt::ShiftModifier, alt = Qt::AltModifier, ctrl = Qt::ControlModifier,
+              meta = Qt::MetaModifier, keypad = Qt::KeypadModifier;
+    QTest::newRow("escape") << QByteArray("\033[27u") << int(Qt::Key_Escape) << QString() << 0;
+    QTest::newRow("escape omitted mods") << QByteArray("\033[27;u") << int(Qt::Key_Escape) << QString() << 0;
+    QTest::newRow("enter") << QByteArray("\033[13u") << int(Qt::Key_Return) << QString("\n") << 0;
+    QTest::newRow("shift+enter") << QByteArray("\033[13;2u") << int(Qt::Key_Return) << QString("\n") << shift;
+    QTest::newRow("ctrl+enter") << QByteArray("\033[13;5u") << int(Qt::Key_Return) << QString() << ctrl;
+    QTest::newRow("tab") << QByteArray("\033[9u") << int(Qt::Key_Tab) << QString() << 0;
+    QTest::newRow("shift+tab") << QByteArray("\033[9;2u") << int(Qt::Key_Backtab) << QString() << shift;
+    QTest::newRow("ctrl+shift+tab") << QByteArray("\033[9;6u") << int(Qt::Key_Backtab) << QString() << (shift | ctrl);
+    QTest::newRow("backspace") << QByteArray("\033[127u") << int(Qt::Key_Backspace) << QString() << 0;
+    QTest::newRow("ctrl+backspace") << QByteArray("\033[127;5u") << int(Qt::Key_Backspace) << QString() << ctrl;
+    QTest::newRow("plain letter") << QByteArray("\033[97u") << int(Qt::Key_A) << QString("a") << 0;
+    QTest::newRow("shifted letter") << QByteArray("\033[97:65;2u") << int(Qt::Key_A) << QString("A") << shift;
+    QTest::newRow("ctrl+letter") << QByteArray("\033[97;5u") << int(Qt::Key_A) << QString() << ctrl;
+    QTest::newRow("ctrl+shift+letter") << QByteArray("\033[97:65:;6:1u") << int(Qt::Key_A) << QString() << (shift | ctrl);
+    QTest::newRow("alt+letter") << QByteArray("\033[120;3u") << int(Qt::Key_X) << QString() << alt;
+    QTest::newRow("ctrl+alt+digit") << QByteArray("\033[50;7u") << int(Qt::Key_2) << QString() << (ctrl | alt);
+    QTest::newRow("super+letter") << QByteArray("\033[97;9u") << int(Qt::Key_A) << QString("a") << meta;
+    QTest::newRow("meta+letter") << QByteArray("\033[97;33u") << int(Qt::Key_A) << QString("a") << meta;
+    QTest::newRow("capslock bit dropped") << QByteArray("\033[97;65u") << int(Qt::Key_A) << QString("a") << 0;
+    QTest::newRow("numlock+hyper dropped") << QByteArray("\033[97;145u") << int(Qt::Key_A) << QString("a") << 0;
+    QTest::newRow("space") << QByteArray("\033[32;2u") << int(Qt::Key_Space) << QString(" ") << shift;
+    QTest::newRow("non-ascii") << QByteArray("\033[233u") << 0xE9 << QString(QChar(0xE9)) << 0;
+    QTest::newRow("associated text") << QByteArray("\033[97;2;65u") << int(Qt::Key_A) << QString("A") << shift;
+    QTest::newRow("associated text filtered") << QByteArray("\033[97;1;7:65u") << int(Qt::Key_A) << QString("A") << 0;
+    QTest::newRow("repeat delivered") << QByteArray("\033[97;1:2u") << int(Qt::Key_A) << QString("a") << 0;
+    QTest::newRow("F13") << QByteArray("\033[57376u") << int(Qt::Key_F13) << QString() << 0;
+    QTest::newRow("F35") << QByteArray("\033[57398;2u") << int(Qt::Key_F35) << QString() << shift;
+    QTest::newRow("keypad 0") << QByteArray("\033[57399u") << int(Qt::Key_0) << QString("0") << keypad;
+    QTest::newRow("keypad 9") << QByteArray("\033[57408u") << int(Qt::Key_9) << QString("9") << keypad;
+    QTest::newRow("keypad enter") << QByteArray("\033[57414u") << int(Qt::Key_Enter) << QString("\n") << keypad;
+    QTest::newRow("keypad plus") << QByteArray("\033[57413u") << int(Qt::Key_Plus) << QString("+") << keypad;
+    QTest::newRow("keypad left") << QByteArray("\033[57417;5u") << int(Qt::Key_Left) << QString() << (keypad | ctrl);
+    QTest::newRow("capslock key") << QByteArray("\033[57358u") << int(Qt::Key_CapsLock) << QString() << 0;
+}
+
+void TestInputDecoder::testKittyKeys() {
+    QFETCH(QByteArray, bytes);
+    QFETCH(int, key);
+    QFETCH(QString, text);
+    QFETCH(int, modifiers);
+    for (qsizetype split = 1; split <= bytes.size(); ++split) {
+        InputDecoder decoder;
+        int replies = 0;
+        QList<std::tuple<int, QString, int>> keys;
+        decoder.setKeyCallback([&](int k, const QString& t, int m) { keys.append({k, t, m}); });
+        decoder.setReplyCallback([&](const InputDecoder::ControlSequence&) { ++replies; });
+        decoder.decode(bytes.data(), split);
+        decoder.decode(bytes.data() + split, bytes.size() - split);
+        QCOMPARE(replies, 0);
+        QCOMPARE(keys.size(), 1);
+        QCOMPARE(std::get<0>(keys[0]), key);
+        QCOMPARE(std::get<1>(keys[0]), text);
+        QCOMPARE(std::get<2>(keys[0]), modifiers);
+    }
+}
+
+void TestInputDecoder::testKittyEventTypes() {
+    InputDecoder decoder;
+    int replies = 0;
+    QList<QPair<int, int>> keys;
+    decoder.setKeyCallback([&](int key, const QString&, int mods) { keys.append({key, mods}); });
+    decoder.setReplyCallback([&](const InputDecoder::ControlSequence&) { ++replies; });
+    // press, repeat, release, unknown type; then the legacy forms with the
+    // same sub-parameter, which flag 2 attaches to every key.
+    const QByteArray bytes = "\033[97;1:1u\033[97;1:2u\033[97;1:3u\033[97;1:9u"
+                             "\033[1;2:1A\033[1;2:3A\033[3;5:2~\033[3;5:3~\033[97;65:3ub";
+    decoder.decode(bytes.data(), bytes.size());
+    QCOMPARE(replies, 0);
+    QCOMPARE(keys.size(), 5);
+    QCOMPARE(keys[0], qMakePair(int(Qt::Key_A), 0));
+    QCOMPARE(keys[1], qMakePair(int(Qt::Key_A), 0));
+    QCOMPARE(keys[2], qMakePair(int(Qt::Key_Up), int(Qt::ShiftModifier)));
+    QCOMPARE(keys[3], qMakePair(int(Qt::Key_Delete), int(Qt::ControlModifier)));
+    QCOMPARE(keys[4], qMakePair(int(Qt::Key_B), 0));   // the byte after a release is still typing
+}
+
+void TestInputDecoder::testKittyIgnoredKeys() {
+    InputDecoder decoder;
+    int replies = 0;
+    QList<int> keys;
+    QStringList texts;
+    decoder.setKeyCallback([&](int key, const QString& text, int) { keys.append(key); texts.append(text); });
+    decoder.setReplyCallback([&](const InputDecoder::ControlSequence&) { ++replies; });
+    // media key, left shift (flag 8 only), a C0 code point, an unassigned
+    // private-use value: all consumed without a key and without text.
+    const QByteArray consumed = "\033[57428u\033[57441u\033[1u\033[60000u";
+    decoder.decode(consumed.data(), consumed.size());
+    QCOMPARE(keys.size(), 0);
+    QCOMPARE(replies, 0);
+    // Malformed forms are not keys and never become text: they reach the
+    // reply callback like any other unhandled control.
+    const QByteArray malformed = "\033[u\033[0u\033[1114112u\033[55296u\033[97;1;65;1u";
+    decoder.decode(malformed.data(), malformed.size());
+    QCOMPARE(keys.size(), 0);
+    QCOMPARE(replies, 5);
+    decoder.decode("z", 1);
+    QCOMPARE(keys, QList<int>{Qt::Key_Z});
+    QCOMPARE(texts, QStringList{"z"});
+}
+
+void TestInputDecoder::testKittyQueryReplyIsNotAKey() {
+    InputDecoder decoder;
+    int keys = 0;
+    QList<int> flags;
+    decoder.setKeyCallback([&](int, const QString&, int) { ++keys; });
+    decoder.setReplyCallback([&](const InputDecoder::ControlSequence& sequence) {
+        QCOMPARE(sequence.privateMarker, '?');
+        QCOMPARE(sequence.finalByte, 'u');
+        flags.append(sequence.parameter(0));
+    });
+    const QByteArray bytes = "\033[?0u\033[?1u\033[?31u";
+    decoder.decode(bytes.data(), bytes.size());
+    QCOMPARE(keys, 0);
+    QCOMPARE(flags, (QList<int>{0, 1, 31}));
+}
+
+void TestInputDecoder::testPendingEscapeFlush() {
+    InputDecoder decoder;
+    QList<int> keys;
+    decoder.setKeyCallback([&](int key, const QString&, int) { keys.append(key); });
+    QVERIFY(!decoder.hasPendingEscape());
+    decoder.decode("\033", 1);
+    QVERIFY(decoder.hasPendingEscape());
+    QCOMPARE(keys.size(), 0);
+    decoder.flushPendingEscape();
+    QVERIFY(!decoder.hasPendingEscape());
+    QCOMPARE(keys, QList<int>{Qt::Key_Escape});
+    decoder.flushPendingEscape();   // nothing pending: no second Escape
+    QCOMPARE(keys.size(), 1);
+    // An ESC that a sequence start follows is not pending, and neither is
+    // one inside a paste or a partial sequence.
+    decoder.decode("\033[", 2);
+    QVERIFY(!decoder.hasPendingEscape());
+    decoder.decode("A", 1);
+    QCOMPARE(keys.last(), int(Qt::Key_Up));
+    decoder.decode("\033[200~\033", 7);
+    QVERIFY(!decoder.hasPendingEscape());
+    decoder.flushPendingEscape();
+    QCOMPARE(keys.size(), 2);
+    decoder.decode("x\033[201~", 7);
+    QCOMPARE(keys.size(), 3);   // the pasted ESC arrives inside the text, not as Escape
+    QCOMPARE(keys.last(), 0);
+    // Split delivery: ESC alone, then the rest, before any flush.
+    decoder.decode("\033", 1);
+    QVERIFY(decoder.hasPendingEscape());
+    decoder.decode("OP", 2);
+    QVERIFY(!decoder.hasPendingEscape());
+    QCOMPARE(keys.last(), int(Qt::Key_F1));
 }
 
 QTEST_MAIN(TestInputDecoder)

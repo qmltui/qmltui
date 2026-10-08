@@ -57,6 +57,14 @@ public:
 
     void decode(const char* buffer, size_t size);
 
+    // A lone ESC is held back because it may begin a sequence whose remaining
+    // bytes are still in flight. The owner runs a short timer after each read
+    // and, when it expires with the ESC still alone, delivers it as Escape.
+    // Terminals with the kitty disambiguate flag pushed never need this: they
+    // report Escape as CSI 27 u.
+    bool hasPendingEscape() const;
+    void flushPendingEscape();
+
     /// The Qt key code a keypress producing \a codepoint carries. Letters map to
     /// Qt::Key_A..Qt::Key_Z whatever their case; every other character carries
     /// its code point, which matches Qt::Key_0..Key_9 and ASCII punctuation.
@@ -71,6 +79,7 @@ public:
 private:
     void processBuffer();
     void dispatchSequence(const ControlSequence& sequence);
+    bool dispatchKittyKey(const ControlSequence& sequence);
 
     ReplyCallback m_replyCallback;
     int m_discardKind = 0; // 1: CSI/SS3, 2: APC/DCS, 3: OSC

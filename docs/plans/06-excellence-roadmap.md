@@ -155,6 +155,12 @@ foreign theme engine, and it is the single feature Textual users cite most.
 This keeps "no framework theme singleton" while giving applications one place
 to set colours.
 
+Noted but not admitted yet, carried over from the early missing-features list:
+drag and drop (no API for starting a drag, showing the dragged item, or drop
+targets), drop shadows drawn with background colours and block characters, and
+a wrapping or proportional layout in the spirit of CSS flexbox and grid beyond
+`Row`, `Column`, `GridLayout` and anchors.
+
 ---
 
 ## 8. Performance Under a Regression Gate

@@ -24,6 +24,9 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 | **07** | [Any `QAbstractItemModel` Renders Correctly](07-model-view-completeness.md) | `TableView` header data and real column count, `rootIndex` on flat views, `GridView` virtualization, standard Qt item roles in built-in painters, `canFetchMore`/`fetchMore`, incremental `TreeView` with stable expansion, `test_model_contracts` matrix and `docs/guide/models.md` | No |
 | **08** | [Terminal Protocols](08-terminal-protocols.md) | Control-sequence parser with sub-parameters and APC strings, capability queries with replies, raw-sequence hook on the engine, kitty keyboard protocol (disambiguate flag, push/pop tied to signal safety), kitty graphics in `Qtui.Image` via Unicode placeholders with `Auto` fallback to half-block. WP1 done; signal safety done; kitty graphics and sixel done; kitty keyboard done and verified on Ghostty 1.3.1 (2026-09-13) | No |
 
+The [stream mode decision](stream-mode-decision.md) predates this series and
+explains why there are two renderers.
+
 Plans 00 to 02 gate the first announcement. Plans 03 to 08 follow in the weeks
 after, each shippable on its own. Plan 07 shipped in full on 2026-09-12. Plan
 08 depends on the signal-safety item of Plan 06 and must not start before the

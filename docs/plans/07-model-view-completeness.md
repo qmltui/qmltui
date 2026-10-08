@@ -218,7 +218,7 @@ gains a `TreeView` `dataChanged` case with a 10 000 node model.
    `FontRole`).
 3. Update `docs/qml_api.md` entries for `TableView`, `TreeView`, `GridView`,
    `ListView`, `Repeater` with the new `rootIndex` property and header
-   behaviour; add a migration note to `docs/migration-0.4.md` for the
+   behaviour; add a migration note to `docs/migration/0.4.md` for the
    `TableView` default column count change (5 → `model->columnCount()`).
 
 ---
@@ -233,7 +233,7 @@ gains a `TreeView` `dataChanged` case with a 10 000 node model.
 | WP4 standard roles | done | `items/StandardRoles_p.h`, `Controls/StandardItemDelegate.qml`, `tests/Controls/test_standard_roles.cpp`, `examples/components/standard_item_delegate/` |
 | WP5 lazy fetch | done | `DelegateUtils::fetchMoreIfNeeded` in all six views, `examples/concepts/lazy_model/` |
 | WP6 TreeView incremental | done | `m_expandedIndexes`, `handleModelDataChanged`, `test_tree_view.cpp` |
-| WP7 matrix + docs | done | `TestModelContracts::matrix`, `docs/guide/models.md`, `qml_api.md`, `migration-0.4.md` |
+| WP7 matrix + docs | done | `TestModelContracts::matrix`, `docs/guide/models.md`, `qml_api.md`, `migration/0.4.md` |
 
 WP4 shipped as a hybrid rather than painter-only code: the C++ helper reads
 the numeric roles and flags, every view publishes them as delegate properties

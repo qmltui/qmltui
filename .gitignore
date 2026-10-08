@@ -12,7 +12,9 @@ build-*/
 
 # User settings and logs
 *.log
-/Screenshot *.png
+# Screenshots belong in docs/assets, never in the repository root.
+/*.png
+/*.jpg
 .qtcreator/
 .qmlls.ini
 *.qmlls.ini

@@ -1,7 +1,8 @@
-# Qtui Roadmap Notes
+# Stream Mode Decision (design notes, 2026-09)
 
-This file records product and architecture decisions that should not be lost while
-the core library is still being stabilized.
+Design notes written before the numbered plans, kept because they record why
+Qtui has two renderers. Stream mode has since shipped as `StreamRenderer` behind
+`Terminal.mode`; the current roadmap is [README.md](README.md).
 
 ## Target Use Case: Coding Agent TUI
 
@@ -23,7 +24,7 @@ The current library is a full-screen retained-mode terminal UI:
 - Items render into a fixed-size `TextGridBuffer`.
 - `TextGridBuffer::diff()` emits ANSI updates for changed cells.
 - `Terminal.mode` selects full-screen or inline presentation. The current
-  public contract is documented in [the QML API](qml_api.md#other-core-elements);
+  public contract is documented in [the QML API](../qml_api.md#other-core-elements);
   the stream roadmap below records the earlier design motivation.
 
 This model is useful for dashboards, forms, modal screens, focused widgets,

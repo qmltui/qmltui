@@ -80,6 +80,9 @@ or a decoded video frame:
   everything after the provider name, query included, so a counter in the
   query (`?frame=` + tick) asks C++ for a new picture. The provider receives
   the item's `renderSize` as the requested size and may render to it.
+  An `AsyncImageProvider` answers with an `ImageResponse` that finishes later;
+  the item shows its current picture while `status` is `Loading`, so frames
+  rendered on another thread arrive without flicker.
 
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown

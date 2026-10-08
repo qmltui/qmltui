@@ -22,6 +22,7 @@ private slots:
     void testAutoFitsLikeHalfBlock();
     void testSetImageFromMemory();
     void testImageProvider();
+    void testAsyncImageProvider();
     void testRenderASCII();
     void testRenderBraille();
     void testFillModeScaling();
@@ -273,6 +274,99 @@ Terminal {
     QVERIFY(!old);
     qtui::ImageProvider::remove(&qml, QStringLiteral("test"));
     QVERIFY(!qtui::ImageProvider::find(&qml, QStringLiteral("test")));
+}
+
+namespace {
+// An asynchronous provider the test completes by hand, so timing is explicit.
+class LaterResponse : public qtui::ImageResponse {
+public:
+    QImage img;
+    bool cancelled = false;
+    QImage image() const override { return img; }
+    void cancel() override { cancelled = true; }
+    void complete(const QImage& picture) { img = picture; emit finished(); }
+};
+class LaterProvider : public qtui::AsyncImageProvider {
+public:
+    QStringList ids;
+    QList<QPointer<LaterResponse>> responses;
+    qtui::ImageResponse* requestImageResponse(const QString& id, const QSize&) override {
+        ids.append(id);
+        if (id == QLatin1String("refuse")) return nullptr;
+        auto* response = new LaterResponse;
+        responses.append(response);
+        return response;
+    }
+};
+QImage solid(Qt::GlobalColor colour) {
+    QImage image(4, 4, QImage::Format_RGB32);
+    image.fill(colour);
+    return image;
+}
+}
+
+// The asynchronous shape: the item reports Loading and keeps its current
+// picture until the response finishes; a superseded response is cancelled and
+// ignored; a refused request or a null picture reports Error.
+void TestImage::testAsyncImageProvider() {
+    QQmlEngine qml;
+    auto* provider = new LaterProvider;
+    qtui::ImageProvider::add(&qml, QStringLiteral("later"), provider);
+    QQmlComponent component(&qml);
+    component.setData(R"(
+import QtQml
+import Qtui
+import Qtui.Image
+Terminal {
+    Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
+            source: "image://later/first" }
+}
+)", QUrl());
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object, qPrintable(component.errorString()));
+    auto* terminal = qobject_cast<qtui::Terminal*>(object.get());
+    auto* picture = terminal->findChild<qtui::Image*>("picture");
+    QVERIFY(picture);
+    QCOMPARE(picture->status(), qtui::Image::Status::Loading);
+    QCOMPARE(provider->ids, QStringList{"first"});
+    QCOMPARE(provider->responses.size(), 1);
+
+    provider->responses[0]->complete(solid(Qt::red));
+    QCOMPARE(picture->status(), qtui::Image::Status::Ready);
+    QCOMPARE(picture->sourceSize(), QSize(4, 4));
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(!provider->responses[0]);            // the item deleted the finished response
+
+    // A new request keeps the old picture on screen while it is pending.
+    picture->setSource(QUrl(QStringLiteral("image://later/second")));
+    QCOMPARE(picture->status(), qtui::Image::Status::Loading);
+    QVERIFY(!picture->image().isNull());
+    QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::red));
+
+    // Superseding it cancels the pending response, whose late finish is ignored.
+    picture->setSource(QUrl(QStringLiteral("image://later/third")));
+    QCOMPARE(provider->responses.size(), 3);
+    QVERIFY(provider->responses[1]->cancelled);
+    provider->responses[1]->complete(solid(Qt::green));
+    QCOMPARE(picture->status(), qtui::Image::Status::Loading);
+    QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::red));
+    provider->responses[2]->complete(solid(Qt::blue));
+    QCOMPARE(picture->status(), qtui::Image::Status::Ready);
+    QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::blue));
+
+    // Refused at once, and a null picture, both report Error.
+    picture->setSource(QUrl(QStringLiteral("image://later/refuse")));
+    QCOMPARE(picture->status(), qtui::Image::Status::Error);
+    picture->setSource(QUrl(QStringLiteral("image://later/fourth")));
+    provider->responses.last()->complete(QImage());
+    QCOMPARE(picture->status(), qtui::Image::Status::Error);
+
+    // Assigning a picture directly drops an outstanding request.
+    picture->setSource(QUrl(QStringLiteral("image://later/fifth")));
+    QPointer<LaterResponse> pending = provider->responses.last();
+    picture->setImage(solid(Qt::yellow));
+    QVERIFY(pending->cancelled);
+    QCOMPARE(picture->status(), qtui::Image::Status::Ready);
 }
 
 void TestImage::testRenderASCII() {

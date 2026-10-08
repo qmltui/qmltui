@@ -12,6 +12,8 @@
 
 namespace qtui {
 
+class ImageResponse;
+
 class QTUI_IMAGE_EXPORT Image : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -109,8 +111,11 @@ signals:
 private:
     void loadImage();
     // Loads an image:// source through the ImageProvider registered on this
-    // item's QML engine under the URL's host.
-    QImage loadFromProvider(const QUrl& url, bool* found) const;
+    // item's QML engine under the URL's host. Returns false when no provider
+    // exists; sets *pending when an asynchronous provider took the request.
+    QImage loadFromProvider(const QUrl& url, bool* found, bool* pending);
+    // Drops interest in an outstanding asynchronous response.
+    void cancelPendingResponse();
     // Installs a decoded picture (or a null one) as the source and publishes
     // the status, size and geometry changes it implies.
     void adoptImage(const QImage& image, Status statusIfNull);
@@ -152,6 +157,7 @@ private:
     mutable quint32 m_imageId = 0;
     mutable qint64 m_lastKittyKey = 0;
     mutable QSize m_lastKittyUpload;   // pixel size of the current upload
+    QPointer<ImageResponse> m_pendingResponse;
     mutable QPointer<Terminal> m_watchedTerminal;
     mutable QMetaObject::Connection m_capabilitiesConnection;
     mutable QSize m_lastKittyCells;

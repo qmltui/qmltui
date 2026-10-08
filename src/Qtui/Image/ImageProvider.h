@@ -46,4 +46,42 @@ public:
     static void remove(QQmlEngine* engine, const QString& id);
 };
 
+// A picture that arrives later, the shape of Qt Quick's QQuickImageResponse.
+// An AsyncImageProvider returns one per request and emits finished() on the
+// GUI thread once image() is valid (a null image means failure, see
+// errorString()). The requesting Image owns the response and deletes it after
+// finished(); if it loses interest first it calls cancel() and then deletes
+// it, so a late finished() is harmless. Rendering may happen on any thread;
+// only the object itself and its signal must live on the GUI thread.
+class QTUI_IMAGE_EXPORT ImageResponse : public QObject {
+    Q_OBJECT
+public:
+    explicit ImageResponse(QObject* parent = nullptr);
+    ~ImageResponse() override;
+
+    virtual QImage image() const = 0;
+    virtual QString errorString() const { return {}; }
+    virtual void cancel() {}
+
+signals:
+    void finished();
+};
+
+// A provider whose pictures are produced off the GUI thread. The Image keeps
+// showing its current picture while a request is pending (status Loading),
+// then adopts the response, so a live feed never flickers and a slow renderer
+// never stalls a frame. requestImage() is not used for this kind of provider.
+class QTUI_IMAGE_EXPORT AsyncImageProvider : public ImageProvider {
+    Q_OBJECT
+public:
+    explicit AsyncImageProvider(QObject* parent = nullptr);
+    ~AsyncImageProvider() override;
+
+    // Called on the GUI thread; return a response created on it. Returning
+    // null reports Error at once.
+    virtual ImageResponse* requestImageResponse(const QString& id, const QSize& requestedSize) = 0;
+
+    QImage requestImage(const QString&, QSize*, const QSize&) final { return QImage(); }
+};
+
 } // namespace qtui

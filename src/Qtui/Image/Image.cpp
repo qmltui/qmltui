@@ -144,7 +144,17 @@ QSize Image::renderSize() const {
 }
 
 Image::~Image() {
+    cancelPendingResponse();
     releaseKittyImage();
+}
+
+void Image::cancelPendingResponse() {
+    if (!m_pendingResponse) return;
+    ImageResponse* response = m_pendingResponse;
+    m_pendingResponse.clear();
+    disconnect(response, nullptr, this, nullptr);
+    response->cancel();
+    response->deleteLater();
 }
 
 void Image::releaseKittyImage() const {
@@ -165,6 +175,7 @@ void Image::setSource(const QUrl& source) {
 }
 
 void Image::setImage(const QImage& image) {
+    cancelPendingResponse();   // a picture assigned directly wins over one in flight
     releaseKittyImage();   // a new picture is a new upload
     if (!m_source.isEmpty()) {
         // The picture no longer comes from a URL.
@@ -190,8 +201,9 @@ void Image::adoptImage(const QImage& image, Status statusIfNull) {
     markDirty();
 }
 
-QImage Image::loadFromProvider(const QUrl& url, bool* found) const {
+QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
     *found = false;
+    *pending = false;
     QQmlEngine* engine = qmlEngine(this);
     if (!engine) return QImage();
     ImageProvider* provider = ImageProvider::find(engine, url.host());
@@ -203,6 +215,24 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found) const {
     if (url.hasQuery()) id += QLatin1Char('?') + url.query();
     if (url.hasFragment()) id += QLatin1Char('#') + url.fragment();
     // The pixel grid this item paints into, so a provider can render sharp.
+    if (auto* async = qobject_cast<AsyncImageProvider*>(provider)) {
+        ImageResponse* response = async->requestImageResponse(id, renderSize());
+        if (!response) return QImage();          // refused: Error
+        *pending = true;
+        m_pendingResponse = response;
+        // The current picture stays on screen until the new one arrives.
+        connect(response, &ImageResponse::finished, this, [this, response] {
+            if (response != m_pendingResponse) return;   // superseded meanwhile
+            m_pendingResponse.clear();
+            const QImage image = response->image();
+            if (image.isNull() && !response->errorString().isEmpty())
+                qWarning("Image: %s", qPrintable(response->errorString()));
+            response->deleteLater();
+            releaseKittyImage();
+            adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32), Status::Error);
+        });
+        return QImage();
+    }
     QSize natural;
     return provider->requestImage(id, &natural, renderSize());
 }
@@ -249,6 +279,7 @@ int Image::implicitHeight() const {
 
 void Image::loadImage() {
     if (m_source.isEmpty()) {
+        cancelPendingResponse();
         m_sourceImage = QImage();
         m_scaledImage = QImage();
         m_status = Status::Null;
@@ -260,13 +291,17 @@ void Image::loadImage() {
         return;
     }
 
+    cancelPendingResponse();
     m_status = Status::Loading;
     emit statusChanged();
 
     QImage loaded;
     if (m_source.scheme() == QLatin1String("image")) {
         bool found = false;
-        loaded = loadFromProvider(m_source, &found);
+        bool pending = false;
+        loaded = loadFromProvider(m_source, &found, &pending);
+        if (pending)
+            return;   // Loading until the response finishes; the old picture stays
         if (!found)
             qWarning("Image: no qtui::ImageProvider named \"%s\" on this engine",
                      qPrintable(m_source.host()));

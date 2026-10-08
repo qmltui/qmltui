@@ -11,6 +11,12 @@ QString registryName(const QString& id) { return QStringLiteral("qtui.imageProvi
 ImageProvider::ImageProvider(QObject* parent) : QObject(parent) {}
 ImageProvider::~ImageProvider() = default;
 
+ImageResponse::ImageResponse(QObject* parent) : QObject(parent) {}
+ImageResponse::~ImageResponse() = default;
+
+AsyncImageProvider::AsyncImageProvider(QObject* parent) : ImageProvider(parent) {}
+AsyncImageProvider::~AsyncImageProvider() = default;
+
 void ImageProvider::add(QQmlEngine* engine, const QString& id, ImageProvider* provider) {
     if (!engine || !provider) return;
     remove(engine, id);

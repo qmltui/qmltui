@@ -38,7 +38,8 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 Button is a [Rectangle](rectangle.md) with a centred [Text](text.md) label
 and a `MouseArea` filling it. While the button has active focus, Enter
 (`Qt.Key_Return`) and Space emit `clicked()` and accept the key event; the
-keyboard path does nothing when `enabled` is false. Pressing a mouse button on
+keyboard path does nothing when `enabled` is false, and neither does the
+mouse path; the engine also withholds keys and clicks from disabled items. Pressing a mouse button on
 the item gives it focus and sets `pressed`, releasing clears `pressed`, and a
 press-and-release inside the item emits `clicked()`. Tab and Shift+Tab move
 focus between focusable items, and Button is focusable whenever it is

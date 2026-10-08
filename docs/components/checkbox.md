@@ -44,7 +44,8 @@ vertically centred if the item is made taller.
 
 While the check box has active focus, Space and Enter (`Qt.Key_Return`) flip
 `checked`, emit `toggled()` with the new value and accept the key; the
-keyboard path does nothing when `enabled` is false. A mouse click anywhere on
+keyboard path does nothing when `enabled` is false, and neither does the
+mouse path; the engine also withholds keys and clicks from disabled items. A mouse click anywhere on
 the item gives it focus and toggles it the same way. Focus is shown by drawing
 both indicator and label bold; the default `Rectangle` border is not used, so
 the control occupies exactly one row. Tab and Shift+Tab move focus between

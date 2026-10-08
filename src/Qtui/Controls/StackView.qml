@@ -1,13 +1,21 @@
 import QtQml
 import Qtui
 
+// A stack of pages where only the top one is visible. push() accepts a QML
+// file URL, a Component, or an existing Item; pages the view created are
+// destroyed when popped, pages handed in as Items are only hidden.
 Item {
     id: stackViewRoot
 
     readonly property alias currentItem: containerItem.currentItem
-    readonly property int depth: stackItems.length
+    readonly property alias depth: d.depth
 
-    property var stackItems: []
+    QtObject {
+        id: d
+        property int depth: 0
+        property var pages: []     // Items, bottom first
+        property var owned: []     // true where this view created the page
+    }
 
     Item {
         id: containerItem
@@ -17,16 +25,19 @@ Item {
 
     function push(itemOrUrl, properties) {
         let newItem = null;
+        let created = false;
         if (typeof itemOrUrl === "string") {
             let component = Qt.createComponent(itemOrUrl);
             if (component.status === Component.Ready) {
                 newItem = component.createObject(containerItem, properties || {});
+                created = true;
             } else {
                 console.error("StackView.push failed to load QML:", itemOrUrl, component.errorString());
                 return null;
             }
         } else if (itemOrUrl instanceof Component) {
             newItem = itemOrUrl.createObject(containerItem, properties || {});
+            created = true;
         } else if (itemOrUrl instanceof Item) {
             newItem = itemOrUrl;
             newItem.parent = containerItem;
@@ -39,12 +50,13 @@ Item {
         newItem.width = stackViewRoot.width;
         newItem.height = stackViewRoot.height;
 
-        // Hide previous top item
         if (containerItem.currentItem) {
             containerItem.currentItem.visible = false;
         }
 
-        stackItems.push(newItem);
+        d.pages.push(newItem);
+        d.owned.push(created);
+        d.depth = d.pages.length;
         containerItem.currentItem = newItem;
         newItem.visible = true;
 
@@ -52,13 +64,16 @@ Item {
     }
 
     function pop() {
-        if (stackItems.length <= 1) return null;
+        if (d.pages.length <= 1) return null;
 
-        let popped = stackItems.pop();
+        let popped = d.pages.pop();
+        let created = d.owned.pop();
+        d.depth = d.pages.length;
         popped.visible = false;
-        popped.destroy();
+        if (created)
+            popped.destroy();
 
-        let prevItem = stackItems[stackItems.length - 1];
+        let prevItem = d.pages[d.pages.length - 1];
         containerItem.currentItem = prevItem;
         if (prevItem) {
             prevItem.x = 0;
@@ -72,11 +87,14 @@ Item {
     }
 
     function clear() {
-        while (stackItems.length > 0) {
-            let item = stackItems.pop();
+        while (d.pages.length > 0) {
+            let item = d.pages.pop();
+            let created = d.owned.pop();
             item.visible = false;
-            item.destroy();
+            if (created)
+                item.destroy();
         }
+        d.depth = 0;
         containerItem.currentItem = null;
     }
 

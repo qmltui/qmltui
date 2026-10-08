@@ -26,7 +26,7 @@ A one-row horizontal slider that selects a numeric value with the Left and Right
 | `value` | `real` | `0.0` | Holds the current value; user interaction keeps it between `from` and `to`, but a value assigned from code is not clamped. |
 | `from` | `real` | `0.0` | Holds the value at the left end of the track. |
 | `to` | `real` | `100.0` | Holds the value at the right end of the track. |
-| `stepSize` | `real` | `1.0` | Holds the amount added to or subtracted from `value` by the Right and Left keys. |
+| `stepSize` | `real` | `1.0` | Holds the amount added to or subtracted from `value` by the Right and Left keys, and the grid a mouse click snaps to. |
 | `textColor` | `rgba` | `"default"` | Holds the terminal colour of the track, handle and value readout, where `"default"` is the terminal's own foreground colour. |
 | `showValue` | `bool` | `true` | Holds whether the rounded value is drawn as `[N]` at the right edge, taking cells away from the track. |
 | `trackWidth` | `int` |  | Read-only. Holds the number of cells available to the track: `width` minus the readout width and one separating cell when `showValue` is true, never negative. |
@@ -45,18 +45,11 @@ choose the resolution, because `trackWidth` derives from `width`, and a
 
 While the slider has active focus, Left subtracts `stepSize` and Right adds
 it, clamping to `from` and `to`, and both keys are accepted. A mouse click
-gives the slider focus and moves `value` to the clicked cell, mapping `x` in
-`0..trackWidth` linearly onto `from..to` and rounding the result to a whole
-number; clicks on the readout beyond the track clamp to `to`. Only clicks
-are handled, not drags. Focus is shown by drawing the track bold; no border
-is drawn, and Tab and Shift+Tab move focus between focusable items. The
-slider is focusable whenever it is `enabled`.
-
-There is no `moved` or `valueModified` signal; bind to `value` or use
-`onValueChanged`, which also fires for changes made from code. Note that the
-mouse path rounds to integers regardless of `stepSize` and does not snap to
-the step grid, and that neither `value` nor `from`/`to` are validated, so keep
-`from < to` and set `value` inside the range.
+gives the slider focus and moves `value` to the clicked cell: `x` is mapped
+over the track onto the range, snapped to the nearest multiple of `stepSize`
+from `from`, and clamped to `from` and `to`, so a click on the readout beyond
+the track selects `to`. Only clicks are handled, not drags. A disabled slider
+ignores keys and clicks alike, and it is focusable only while `enabled`.
 
 ### Example
 

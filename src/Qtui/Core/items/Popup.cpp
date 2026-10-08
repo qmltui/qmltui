@@ -90,6 +90,12 @@ void Popup::open() {
 }
 
 void Popup::close() {
+    // Closing a popup that is not open must not touch focus: there is nothing
+    // to restore, and clearing focus would take it from whoever has it now.
+    if (!visible()) {
+        m_previousFocusItem.clear();
+        return;
+    }
     setVisible(false);
     if (Terminal *term = terminal()) {
         Item *target = m_previousFocusItem;

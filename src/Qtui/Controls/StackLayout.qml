@@ -1,6 +1,8 @@
 import QtQml
 import Qtui
 
+// Shows one child at a time, sized to fill the layout. count and the layout
+// follow the children list, so pages created after completion take part.
 Item {
     id: stackLayoutRoot
 
@@ -8,6 +10,7 @@ Item {
     readonly property int count: stackLayoutRoot.children.length
 
     onCurrentIndexChanged: updateVisibility()
+    onChildrenChanged: updateVisibility()
     Component.onCompleted: updateVisibility()
 
     function updateVisibility() {

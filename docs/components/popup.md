@@ -45,7 +45,7 @@ A rectangle drawn above all ordinary items that can trap input, dim the backgrou
 | Method | Description |
 | :--- | :--- |
 | `void open()` | Remembers the focused item, shows the popup or raises it if already visible, and moves focus to `initialFocusItem` or the first focusable descendant. |
-| `void close()` | Hides the popup and returns focus to the item focused before `open()` if it is still visible, enabled and focusable, otherwise clears focus. |
+| `void close()` | Hides the popup and returns focus to the item focused before `open()` if it is still visible, enabled and focusable, otherwise clears focus; a popup that is not open is left alone. |
 | `void accept()` | Emits `accepted()` and `finished(true)`, then calls `close()`. |
 | `void reject()` | Emits `rejected()` and `finished(false)`, then calls `close()`. |
 
@@ -80,7 +80,8 @@ bounds. A non-modal popup neither dims nor blocks input.
 
 `open()` records the currently focused item and moves focus into the popup;
 `close()` restores it if that item is still visible, enabled and focusable,
-and otherwise leaves nothing focused. Setting `visible` directly registers or
+and otherwise leaves nothing focused. Calling `close()` on a popup that is not
+open does nothing, so it never takes focus from another item. Setting `visible` directly registers or
 unregisters the popup and emits `opened()` or `closed()`, but does not move
 focus. Popup has no implicit size; give it `width` and `height` or anchors.
 [Dialog](dialog.md) is a Popup with a title, message and buttons, and

@@ -50,6 +50,8 @@ Rectangle {
     }
 
     Keys.onPressed: (event) => {
+        if (!control.enabled)
+            return
         if (event.key === Qt.Key_Left) {
             control.value = Math.max(control.from, control.value - control.stepSize)
             event.accepted = true
@@ -62,11 +64,17 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         onClicked: (event) => {
+            if (!control.enabled)
+                return
             control.focus = true
             if (control.trackWidth <= 0)
                 return
+            const range = Math.max(0.001, control.to - control.from)
             const pct = Math.min(1.0, Math.max(0.0, event.x / control.trackWidth))
-            control.value = Math.round(control.from + pct * (control.to - control.from))
+            const step = control.stepSize > 0 ? control.stepSize : 1
+            const raw = control.from + pct * range
+            control.value = Math.min(control.to, Math.max(control.from,
+                control.from + Math.round((raw - control.from) / step) * step))
         }
     }
 }

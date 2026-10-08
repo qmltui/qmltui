@@ -39,7 +39,6 @@ A focusable exclusive option drawn as `(*)` or `( )` that unchecks its [ButtonGr
 | Method | Description |
 | :--- | :--- |
 | `var toggle()` | Checks the button and emits `toggled(true)` if it is enabled and not already checked; it never unchecks. |
-| `var _uncheckGroup()` | Internal: sets `checked` to false on every other member of `buttonGroup.buttons`; called automatically when this button becomes checked. |
 
 ## Detailed Description
 
@@ -50,7 +49,8 @@ hidden when `text` is empty. The implicit size is the row's implicit size,
 one row high, and the row is vertically centred if the item is made taller.
 Focus is shown by drawing both indicator and label bold; no border is drawn.
 Tab and Shift+Tab move focus between focusable items, and RadioButton is
-focusable whenever it is `enabled`.
+focusable whenever it is `enabled`, and a disabled radio button ignores both
+keys and clicks.
 
 While the button has active focus, Space and Enter (`Qt.Key_Return`) call
 `toggle()` and accept the key; a mouse click anywhere on the item gives it

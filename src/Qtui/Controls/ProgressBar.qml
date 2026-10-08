@@ -15,8 +15,9 @@ Item {
     readonly property int barWidth: Math.max(0, width - (showBrackets ? 2 : 0) - (showPercentage ? 5 : 0))
     readonly property string percentageText: showPercentage ? (" " + String(Math.round(position * 100)).padStart(3, " ") + "%") : ""
 
-    // Style presets: "segmented" (▰▱), "pill" (▮▯), "dot" (●○), "block" (█░)
-    property string style: "segmented"
+    // Style presets: "block" (█░, the default), "segmented" (▰▱), "pill" (▮▯),
+    // "dot" (●○), "hash" (#-). fillCharacter/emptyCharacter override any preset.
+    property string style: "block"
     // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
     property rgba color: "default"
 
@@ -35,19 +36,21 @@ Item {
     // Effective filled character
     readonly property string effectiveFillChar: {
         if (fillCharacter && fillCharacter.length > 0) return fillCharacter;
-        if (control.style === "pill") return "█";
+        if (control.style === "segmented") return "▰";
+        if (control.style === "pill") return "▮";
         if (control.style === "dot") return "●";
         if (control.style === "hash") return "#";
-        return "█"; // default solid block (universal)
+        return "█"; // "block" and any unknown preset
     }
 
     // Effective empty character
     readonly property string effectiveEmptyChar: {
         if (emptyCharacter && emptyCharacter.length > 0) return emptyCharacter;
-        if (control.style === "pill") return "░";
+        if (control.style === "segmented") return "▱";
+        if (control.style === "pill") return "▯";
         if (control.style === "dot") return "○";
         if (control.style === "hash") return "-";
-        return "░"; // default light shade (universal)
+        return "░"; // "block" and any unknown preset
     }
 
     readonly property real position: {

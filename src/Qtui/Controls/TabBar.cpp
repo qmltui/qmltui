@@ -58,12 +58,24 @@ void TabBar::setTabs(const QVariant &tabs) {
     }
 
     emit tabsChanged();
+    // An index chosen before the tabs arrived (QML initialises properties in
+    // declaration order) takes effect now; a list that shrank clamps it.
+    if (!m_tabList.isEmpty()) {
+        const int clamped = std::clamp(m_currentIndex, 0, static_cast<int>(m_tabList.size()) - 1);
+        if (clamped != m_currentIndex) {
+            m_currentIndex = clamped;
+            emit currentIndexChanged();
+        }
+    }
     markDirty();
 }
 
 void TabBar::setCurrentIndex(int index) {
-    if (m_tabList.isEmpty()) return;
-    int clamped = std::clamp(index, 0, static_cast<int>(m_tabList.size()) - 1);
+    // Without tabs the index is kept as requested (never negative) and
+    // clamped once setTabs() knows the range.
+    const int clamped = m_tabList.isEmpty()
+        ? std::max(0, index)
+        : std::clamp(index, 0, static_cast<int>(m_tabList.size()) - 1);
     if (m_currentIndex == clamped) return;
     m_currentIndex = clamped;
     emit currentIndexChanged();

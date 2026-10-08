@@ -42,6 +42,8 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         onClicked: (event) => {
+            if (!control.enabled)
+                return
             control.focus = true
             control.checked = !control.checked
             control.toggled(control.checked)

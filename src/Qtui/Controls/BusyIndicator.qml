@@ -16,35 +16,36 @@ Text {
     property bool running: true
     property int interval: 100
 
-    property int _frameIndex: 0
-
-    readonly property list<string> _frames: {
-        if (style === BusyIndicator.Style.Line) {
-            return ["|", "/", "-", "\\"]
-        } else if (style === BusyIndicator.Style.Pipe) {
-            return ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
-        } else if (style === BusyIndicator.Style.Block) {
-            return ["▖", "▘", "▝", "▗"]
-        } else if (style === BusyIndicator.Style.Bounce) {
-            return ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
-        } else {
-            // Default Dots braille spinner
-            return ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    QtObject {
+        id: d
+        property int frameIndex: 0
+        readonly property list<string> frames: {
+            if (control.style === BusyIndicator.Style.Line) {
+                return ["|", "/", "-", "\\"]
+            } else if (control.style === BusyIndicator.Style.Pipe) {
+                return ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
+            } else if (control.style === BusyIndicator.Style.Block) {
+                return ["▖", "▘", "▝", "▗"]
+            } else if (control.style === BusyIndicator.Style.Bounce) {
+                return ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
+            } else {
+                // Default Dots braille spinner
+                return ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+            }
         }
     }
 
-    readonly property string _currentSymbol: _frames[_frameIndex % _frames.length]
-    text: _currentSymbol
+    text: d.frames[d.frameIndex % d.frames.length]
     color: "default"
     bold: true
 
     NumberAnimation {
-        target: control
-        property: "_frameIndex"
+        target: d
+        property: "frameIndex"
         running: control.running && control.visible
         from: 0
-        to: control._frames.length
-        duration: control.interval * control._frames.length
+        to: d.frames.length
+        duration: control.interval * d.frames.length
         loops: -1
     }
 }

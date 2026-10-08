@@ -17,13 +17,18 @@ Rectangle {
         }
     }
 
-    function _uncheckGroup() {
-        if (control.buttonGroup && control.buttonGroup.buttons) {
-            const groupButtons = control.buttonGroup.buttons
-            for (let i = 0; i < groupButtons.length; ++i) {
-                const b = groupButtons[i]
-                if (b !== control && b.checked !== undefined) {
-                    b.checked = false
+    QtObject {
+        id: d
+        // Exclusivity lives here rather than in ButtonGroup so it also applies
+        // to programmatic and initial checked: true.
+        function uncheckGroup() {
+            if (control.buttonGroup && control.buttonGroup.buttons) {
+                const groupButtons = control.buttonGroup.buttons
+                for (let i = 0; i < groupButtons.length; ++i) {
+                    const b = groupButtons[i]
+                    if (b !== control && b.checked !== undefined) {
+                        b.checked = false
+                    }
                 }
             }
         }
@@ -31,7 +36,7 @@ Rectangle {
 
     onCheckedChanged: {
         if (control.checked) {
-            control._uncheckGroup()
+            d.uncheckGroup()
         }
     }
 
@@ -67,6 +72,8 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         onClicked: (event) => {
+            if (!control.enabled)
+                return
             control.focus = true
             control.toggle()
         }

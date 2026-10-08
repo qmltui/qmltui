@@ -37,6 +37,8 @@ Rectangle {
         anchors.fill: parent
 
         onPressed: (event) => {
+            if (!control.enabled)
+                return
             control.focus = true
             control.pressed = true
         }
@@ -44,7 +46,8 @@ Rectangle {
             control.pressed = false
         }
         onClicked: (event) => {
-            control.clicked()
+            if (control.enabled)
+                control.clicked()
         }
     }
 }

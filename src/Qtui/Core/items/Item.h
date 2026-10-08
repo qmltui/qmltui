@@ -95,7 +95,7 @@ public:
   Q_PROPERTY(int bottomPadding READ bottomPadding WRITE setBottomPadding NOTIFY
                  bottomPaddingChanged)
   Q_PROPERTY(QQmlListProperty<QObject> data READ data)
-  Q_PROPERTY(QQmlListProperty<qtui::Item> children READ childrenProperty CONSTANT)
+  Q_PROPERTY(QQmlListProperty<qtui::Item> children READ childrenProperty NOTIFY childrenChanged)
   Q_PROPERTY(QQmlListProperty<qtui::State> states READ states)
   Q_PROPERTY(QQmlListProperty<qtui::Transition> transitions READ transitions)
   Q_PROPERTY(QString state READ state WRITE setState NOTIFY stateChanged)
@@ -205,6 +205,7 @@ public:
   void clearDirty() { clearDirty(DirtyFlags(DirtyFlag::SelfDirty) | DirtyFlag::DescendantDirty); }
 
 signals:
+  void childrenChanged();
   void xChanged();
   void yChanged();
   void zChanged();

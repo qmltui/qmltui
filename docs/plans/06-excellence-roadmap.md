@@ -208,48 +208,49 @@ to it; nothing else on the list offers QML, Qt models, or native C++.
 ## 11. Findings From the Reference Documentation Pass (2026-09-14)
 
 Writing the `docs/components` pages for `Qtui.Controls` against the source
-turned up the following. None is fixed yet; each page documents the actual
-behaviour. Triage into section 3 or 7 as they are taken.
+turned up the following. Items marked *fixed* were resolved the same day
+(commit noted in git history as "fix(controls)"); each page documents the
+current behaviour. Triage the rest into section 3 or 7 as they are taken.
 
 Inputs:
 
 - `Button.pressed` is set by the mouse only; keyboard activation never sets it.
-- The mouse path bypasses `enabled` in Button, CheckBox and Switch (the
-  keyboard path checks it); `Slider` checks `enabled` on neither path.
-- `Slider` mouse clicks ignore `stepSize` and round to integers; `value` is
-  not clamped when `from`/`to` change; the click handler uses `to - from` raw
-  where the track uses a guarded range.
-- `RadioButton._uncheckGroup()` and `BusyIndicator._frameIndex/_frames/_currentSymbol`
-  are exported as public API through the `.qmltypes` and appear in the tables.
+- *fixed* The mouse path bypassed `enabled` in Button, CheckBox and Switch and
+  `Slider` checked it on neither path; all five now guard both paths (the
+  engine already withheld input from disabled items, so this was latent).
+- *fixed* `Slider` mouse clicks now snap to `stepSize` and use the same
+  guarded range as the track. Still open: `value` is not clamped when
+  `from`/`to` change.
+- *fixed* `RadioButton._uncheckGroup()` and `BusyIndicator._frameIndex/_frames/_currentSymbol`
+  moved into private `QtObject`s and are no longer part of the type.
 - `ButtonGroup` does not reset `buttonGroup` on items removed from `buttons`.
 - `examples/components/slider` says "Mouse Drag" but only clicks are handled.
 
 Overlays and navigation:
 
-- `Popup::close()` on an already-closed popup clears terminal focus, because
-  the saved focus item is empty after the first close; `ToolTip` calls
-  `close()` unconditionally from its destructor and `bindTerminal()`.
+- *fixed* `Popup::close()` on a popup that is not open is now a no-op instead
+  of clearing terminal focus (ToolTip called it unconditionally).
 - `Popup.opened()` is not emitted when `open()` runs before the popup is in a
   Terminal, or when the popup is already visible.
 - `Popup.parentPopup` notifies through `ownerChanged` only; reparenting emits nothing.
 - `Popup.color` defaults to `"black"` while every other control uses `"default"`.
-- `StackView.depth` never updates: `push`/`pop`/`clear` mutate the array in
-  place. `pop()` destroys pages that were pushed as pre-existing Items.
-- `StackLayout.count` is frozen: `Item.children` is a `CONSTANT` property, so
-  `children.length` is read once; children added after completion are not
-  laid out until the next index or size change.
-- `TabBar.setCurrentIndex` is ignored while `tabs` is empty, so declaration
-  order in QML decides whether `currentIndex` sticks; `setTabs` does not
-  re-clamp; hit-testing and painting use `QString::length()` not display width.
+- *fixed* `StackView.depth` is now a counter maintained by `push`/`pop`/`clear`;
+  the page array is internal; `pop()` and `clear()` destroy only pages the
+  view created and hide pages pushed as existing Items.
+- *fixed* `Item.children` now notifies through `childrenChanged()` (Qt Quick
+  naming), so `StackLayout.count` follows and late children are laid out.
+- *fixed* `TabBar.setCurrentIndex` keeps the index while `tabs` is empty and
+  `setTabs` clamps it. Still open: hit-testing and painting use
+  `QString::length()` not display width.
 - `Toast` boxes are not clipped to the item; `Toast::onTick` is exported as a method.
 - `Panel` title overruns the border when wider than the panel.
 - `ToolTip` reserves multi-line height but `Text` does not soft-wrap.
 
 Indicators:
 
-- `ProgressBar.style` comment promises `"segmented"` (▰▱) and `"pill"` (▮▯)
-  glyphs; the code renders both as `█`/`░`. Only `"dot"` and the undocumented
-  `"hash"` differ.
+- *fixed* `ProgressBar.style` presets now render as promised: `"segmented"`
+  ▰▱, `"pill"` ▮▯, `"dot"` ●○, `"hash"` #-, and the default is named
+  `"block"` (█░), which keeps the previous default look.
 - `Sparkline` uses `to == 0.0` as the auto-scale sentinel, so a fixed range
   ending at 0 auto-scales; `to <= from` forces a range of 1 silently; left
   padding repeats the first value instead of leaving cells blank.

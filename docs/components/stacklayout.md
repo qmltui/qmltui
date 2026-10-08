@@ -24,13 +24,13 @@ A container that shows exactly one of its children at a time, chosen by index, a
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `currentIndex` | `int` | `0` | Holds the index of the visible child; an index outside the range of children hides every child. |
-| `count` | `int` |  | Read-only. Holds the number of children as read from the `children` list when the binding was first evaluated. |
+| `count` | `int` |  | Read-only. Holds the number of children; it follows the `children` list as children are added or removed. |
 
 ## Methods
 
 | Method | Description |
 | :--- | :--- |
-| `var updateVisibility()` | Reapplies visibility and geometry to all children; call it after adding or removing children dynamically. |
+| `var updateVisibility()` | Reapplies visibility and geometry to all children; the layout calls it itself when `currentIndex`, its size or its children change, so applications rarely need to. |
 
 ## Detailed Description
 
@@ -42,15 +42,12 @@ layout's own `width` and `height`. Hidden children keep whatever geometry
 they had. Because only the current child is shown and it always fills the
 layout, children can be declared with no geometry of their own.
 
-The layout has no implicit size and does not derive one from its children,
-so give it `width` and `height` or anchors. `currentIndex` is not clamped: a
-negative or too-large value leaves the layout empty, which can be used to
-show nothing. Children added after completion, for example from a
-[Repeater](repeater.md) or `createObject()`, are not laid out until the next
-index or size change; call `updateVisibility()` explicitly in that case.
-`count` reads `children.length`, but the `children` list is a constant
-property without change notification, so it reflects the child count at the
-time the binding was first evaluated.
+`count` and the layout follow the `children` list: a page created later, for
+example with `Component.createObject(layout)`, is counted and hidden or shown
+and sized according to `currentIndex` as soon as it is added, and a destroyed
+page is dropped. Bind `currentIndex` to a [TabBar](tabbar.md)'s
+`currentIndex` for tabbed pages; use [StackView](stackview.md) when pages are
+pushed and popped at run time instead of chosen by index.
 
 StackLayout switches pages instantly and does not move keyboard focus. It is
 the natural partner of [TabBar](tabbar.md), whose `currentIndex` can be

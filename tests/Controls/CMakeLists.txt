@@ -4,6 +4,7 @@ add_qtui_test(test_popup test_popup.cpp)
 add_qtui_test(test_indicators test_indicators.cpp)
 add_qtui_test(test_standard_roles test_standard_roles.cpp)
 add_qtui_test(test_terminal_colors test_terminal_colors.cpp)
+add_qtui_test(test_controls_behaviour test_controls_behaviour.cpp)
 
 # The colour fixture reuses the TestRunner fixture's main() with its own QML.
 add_executable(qtui_terminal_colors_fixture ../TestRunner/main.cpp)

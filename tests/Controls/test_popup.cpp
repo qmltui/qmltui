@@ -32,6 +32,7 @@ private slots:
     void testDynamicZAndPopupOrder();
     void testOwnedPopupCascade();
     void testAttachedToolTipOnFocus();
+    void testCloseWhenNotOpenKeepsFocus();
 };
 
 void TestPopup::testPopupRegistration() {
@@ -223,6 +224,29 @@ void TestPopup::testAttachedToolTipOnFocus() {
     delete target;
     QTRY_COMPARE(terminal->activePopups().size(), 0);
     QTRY_VERIFY(!terminal->hasMouseMotionRequests());
+}
+
+void TestPopup::testCloseWhenNotOpenKeepsFocus() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+    Item* field = new Item(&terminal);
+    field->setWidth(4);
+    field->setHeight(1);
+    field->setFocusable(true);
+    terminal.setFocusedItem(field);
+    QCOMPARE(terminal.focusedItem(), field);
+
+    Popup* popup = new Popup(&terminal);
+    popup->setWidth(10);
+    popup->setHeight(3);
+    popup->close();                       // never opened: nothing to restore
+    QCOMPARE(terminal.focusedItem(), field);
+
+    popup->open();
+    popup->close();
+    QCOMPARE(terminal.focusedItem(), field);   // restored once
+    popup->close();                            // second close is a no-op
+    QCOMPARE(terminal.focusedItem(), field);
 }
 
 QTEST_MAIN(TestPopup)

@@ -30,7 +30,7 @@ A one-row horizontal bar that fills from left to right as a value moves from `fr
 | `showPercentage` | `bool` | `false` | Whether a five-cell suffix such as ` 42%` is drawn after the bar, taking five cells from the bar width. |
 | `barWidth` | `int` |  | Read-only. Holds the number of cells left for the bar itself: the item width minus 2 for brackets and 5 for the percentage, never negative. |
 | `percentageText` | `string` |  | Read-only. Holds the percentage suffix, a space and a right-aligned integer padded to three cells followed by `%`, or the empty string when `showPercentage` is false. |
-| `style` | `string` | `"segmented"` | Holds the glyph preset: `"dot"` draws `●`/`○`, `"hash"` draws `#`/`-`, and every other value including `"segmented"` and `"pill"` draws `█`/`░`. |
+| `style` | `string` | `"block"` | Holds the glyph preset: `"block"` draws `█`/`░`, `"segmented"` draws `▰`/`▱`, `"pill"` draws `▮`/`▯`, `"dot"` draws `●`/`○`, `"hash"` draws `#`/`-`; an unknown value draws like `"block"`. |
 | `color` | `rgba` | `"default"` | Holds the colour of the bar, brackets and percentage when no gradient or thresholds are set, and of the empty portion and decorations when they are. |
 | `fillCharacter` | `string` | `""` | Holds a glyph drawn for each filled cell; when non-empty it overrides `style`. |
 | `emptyCharacter` | `string` | `""` | Holds a glyph drawn for each empty cell; when non-empty it overrides `style`. |

@@ -435,6 +435,7 @@ void Item::registerChildItem(Item* childItem) {
 
     scheduleChildGeometryInvalidation();
     applyPendingFocus();
+    emit childrenChanged();
 }
 
 void Item::reorderChildItemsAfter(Item* sibling, const QList<Item*>& items) {
@@ -462,6 +463,7 @@ void Item::unregisterChildItem(Item* childItem) {
         for (const QMetaObject::Connection &connection : connections)
             disconnect(connection);
         invalidateStackingOrder();
+        emit childrenChanged();
         // The child may be mid-destruction or mid-reparent and subclasses'
         // implicitWidth() overrides may still list it, so do not evaluate the
         // implicit size here: report unconditionally and make the next

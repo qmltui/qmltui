@@ -1,0 +1,237 @@
+// Behaviour of the QML-written controls that the reference pages state:
+// StackView depth and page ownership, StackLayout following its children,
+// TabBar's index surviving declaration order, disabled controls ignoring
+// input, Slider snapping clicks to stepSize, ProgressBar style glyphs, and
+// the internals of RadioButton and BusyIndicator staying off the public API.
+#include <QTest>
+#include <QPointer>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <memory>
+
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+
+using namespace qtui;
+
+namespace {
+QString frameText(TerminalEngine* engine) {
+    const auto frame = engine->currentFrame();
+    if (!frame) return {};
+    QString text;
+    for (int y = 0; y < frame->height(); ++y) {
+        for (int x = 0; x < frame->width(); ++x)
+            if (!frame->cellAt(x, y).continuation)
+                text += QString::fromUtf8(frame->cellAt(x, y).character().toByteArray());
+        text += '\n';
+    }
+    return text;
+}
+
+std::unique_ptr<QObject> load(QQmlEngine& qml, const char* source, Terminal** terminal) {
+    QQmlComponent component(&qml);
+    component.setData(QByteArray("import QtQml\nimport Qtui\nimport Qtui.Controls\n") + source, QUrl());
+    std::unique_ptr<QObject> object(component.create());
+    if (!object) qWarning() << component.errorString();
+    *terminal = qobject_cast<Terminal*>(object.get());
+    return object;
+}
+} // namespace
+
+class TestControlsBehaviour : public QObject {
+    Q_OBJECT
+private slots:
+    void stackViewDepthAndOwnership() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property Component page: Component { Rectangle { } }
+    Item { id: keeper; objectName: "keeper"; visible: false }
+    StackView { id: stack; objectName: "stack"; anchors.fill: parent }
+    function pushTwo() { stack.push(page); stack.push(page) }
+    function pushKeeper() { stack.push(keeper) }
+    function popOne() { stack.pop() }
+    function clearAll() { stack.clear() }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* stack = terminal->findChild<Item*>("stack");
+        QVERIFY(stack);
+        QCOMPARE(stack->property("depth").toInt(), 0);
+        QMetaObject::invokeMethod(terminal, "pushTwo");
+        QCOMPARE(stack->property("depth").toInt(), 2);
+        QMetaObject::invokeMethod(terminal, "popOne");
+        QCOMPARE(stack->property("depth").toInt(), 1);
+        QPointer<Item> keeper = terminal->findChild<Item*>("keeper");
+        QVERIFY(keeper);
+        QMetaObject::invokeMethod(terminal, "pushKeeper");
+        QCOMPARE(stack->property("depth").toInt(), 2);
+        QVERIFY(keeper->visible());
+        QMetaObject::invokeMethod(terminal, "popOne");
+        QCOMPARE(stack->property("depth").toInt(), 1);
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        QVERIFY2(keeper, "a page handed in as an Item must survive pop()");
+        QVERIFY(!keeper->visible());
+        QMetaObject::invokeMethod(terminal, "clearAll");
+        QCOMPARE(stack->property("depth").toInt(), 0);
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        QVERIFY(keeper);
+    }
+
+    void stackLayoutCountFollowsChildren() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property Component page: Component { Rectangle { objectName: "late" } }
+    StackLayout { id: layout; objectName: "layout"; width: 20; height: 5
+        Rectangle { objectName: "first" }
+        Rectangle { objectName: "second" }
+    }
+    function addPage() { page.createObject(layout) }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* layout = terminal->findChild<Item*>("layout");
+        QVERIFY(layout);
+        QCOMPARE(layout->property("count").toInt(), 2);
+        QMetaObject::invokeMethod(terminal, "addPage");
+        QCOMPARE(layout->property("count").toInt(), 3);
+        auto* late = terminal->findChild<Item*>("late");
+        QVERIFY(late);
+        QVERIFY(!late->visible());              // index 0 is current
+        layout->setProperty("currentIndex", 2);
+        QVERIFY(late->visible());
+        QCOMPARE(late->width(), 20);
+        QCOMPARE(late->height(), 5);
+        QVERIFY(!terminal->findChild<Item*>("first")->visible());
+    }
+
+    void tabBarIndexBeforeTabs() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    TabBar { objectName: "bar"; width: 40; height: 1; currentIndex: 2; tabs: ["A", "B", "C"] }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* bar = terminal->findChild<Item*>("bar");
+        QVERIFY(bar);
+        QCOMPARE(bar->property("currentIndex").toInt(), 2);
+        bar->setProperty("tabs", QVariantList{"A", "B"});
+        QCOMPARE(bar->property("currentIndex").toInt(), 1);   // clamped to the new range
+        bar->setProperty("tabs", QVariantList{});
+        bar->setProperty("currentIndex", 5);
+        bar->setProperty("tabs", QVariantList{"A", "B", "C"});
+        QCOMPARE(bar->property("currentIndex").toInt(), 2);
+    }
+
+    void disabledControlsIgnoreInput() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int clicks: 0
+    Button { objectName: "button"; x: 0; y: 0; text: "Go"; enabled: false; onClicked: root.clicks++ }
+    Slider { objectName: "slider"; x: 0; y: 4; width: 20; showValue: false; enabled: false; value: 50 }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 10));
+        engine->handleMouseInput(0, 2, 1, false);
+        engine->handleMouseInput(0, 2, 1, true);
+        QCOMPARE(terminal->property("clicks").toInt(), 0);
+        auto* slider = terminal->findChild<Item*>("slider");
+        engine->handleMouseInput(0, 2, 4, false);
+        engine->handleMouseInput(0, 2, 4, true);
+        QCOMPARE(slider->property("value").toDouble(), 50.0);
+        QVERIFY(!slider->focusable());
+    }
+
+    void sliderClickSnapsToStep() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Slider { objectName: "slider"; x: 0; y: 0; width: 20; showValue: false; from: 0; to: 100; stepSize: 10 }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 10));
+        auto* slider = terminal->findChild<Item*>("slider");
+        engine->handleMouseInput(0, 4, 0, false);     // 4 of 20 cells = 20%
+        engine->handleMouseInput(0, 4, 0, true);
+        QCOMPARE(slider->property("value").toDouble(), 20.0);
+        engine->handleMouseInput(0, 5, 0, false);     // 25% snaps to a step
+        engine->handleMouseInput(0, 5, 0, true);
+        QCOMPARE(slider->property("value").toDouble(), 30.0);
+        engine->handleMouseInput(0, 19, 0, false);    // never past `to`
+        engine->handleMouseInput(0, 19, 0, true);
+        QCOMPARE(slider->property("value").toDouble(), 100.0);
+    }
+
+    void progressBarStyles() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Column {
+        ProgressBar { width: 10; value: 0.5 }
+        ProgressBar { width: 10; value: 0.5; style: "segmented" }
+        ProgressBar { width: 10; value: 0.5; style: "pill" }
+        ProgressBar { width: 10; value: 0.5; style: "dot" }
+    }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(20, 6));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const QString text = frameText(engine);
+        QVERIFY2(text.contains(QStringLiteral("█████░░░░░")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("▰▰▰▰▰▱▱▱▱▱")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("▮▮▮▮▮▯▯▯▯▯")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("●●●●●○○○○○")), qPrintable(text));
+    }
+
+    void internalsAreNotPublic() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    ButtonGroup { id: group; buttons: [a, b] }
+    RadioButton { id: a; objectName: "a"; text: "A"; checked: true }
+    RadioButton { id: b; objectName: "b"; text: "B"; y: 1 }
+    BusyIndicator { id: busy; objectName: "busy"; y: 2; interval: 10 }
+    property bool radioHelperHidden: typeof a._uncheckGroup === "undefined"
+    property bool busyStateHidden: typeof busy._frameIndex === "undefined"
+                                && typeof busy._frames === "undefined"
+                                && typeof busy._currentSymbol === "undefined"
+    function checkB() { b.toggle() }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        QVERIFY(terminal->property("radioHelperHidden").toBool());
+        QVERIFY(terminal->property("busyStateHidden").toBool());
+        auto* a = terminal->findChild<Item*>("a");
+        auto* b = terminal->findChild<Item*>("b");
+        QMetaObject::invokeMethod(terminal, "checkB");
+        QVERIFY(b->property("checked").toBool());
+        QVERIFY(!a->property("checked").toBool());   // exclusivity still works
+        auto* busy = terminal->findChild<Item*>("busy");
+        const QString first = busy->property("text").toString();
+        QTRY_VERIFY(busy->property("text").toString() != first);   // still animates
+    }
+};
+
+QTEST_MAIN(TestControlsBehaviour)
+#include "test_controls_behaviour.moc"

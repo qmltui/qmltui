@@ -24,16 +24,15 @@ A navigation stack that shows only its topmost page and creates pages on demand 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `currentItem` | `alias` |  | Read-only. Holds the page on top of the stack, or `null` when the stack is empty. |
-| `depth` | `int` |  | Read-only. Holds the number of pages on the stack as reported by the `stackItems` array. |
-| `stackItems` | `var` | `[]` | Holds the JavaScript array of pages from bottom to top; it is managed by `push()`, `pop()` and `clear()`. |
+| `depth` | `int` |  | Read-only. Holds the number of pages on the stack; `push()`, `pop()` and `clear()` keep it current. |
 
 ## Methods
 
 | Method | Description |
 | :--- | :--- |
 | `var push(var itemOrUrl, var properties)` | Creates or adopts a page from a QML file URL string, a `Component` or an existing `Item`, applies `properties`, hides the previous top, and returns the new page or `null` on failure. |
-| `var pop()` | Destroys the top page and shows the one beneath it, returning that page; returns `null` without popping when the stack holds one page or none. |
-| `var clear()` | Destroys every page and sets `currentItem` to `null`. |
+| `var pop()` | Removes the top page, destroying it if the view created it and hiding it otherwise, and shows the one beneath, returning that page; returns `null` without popping when the stack holds one page or none. |
+| `var clear()` | Removes every page, destroying the ones the view created and hiding the rest, and sets `currentItem` to `null`. |
 
 ## Detailed Description
 
@@ -47,18 +46,19 @@ Each pushed page is moved to (0, 0) and resized to the view's `width` and
 `height`, and the view keeps the current page at that size when it is
 resized. The previous top page is hidden, not destroyed.
 
-`pop()` destroys the topmost page, including a page that was pushed as an
-existing item, and reveals and resizes the page below it. The bottom page can
+`pop()` removes the topmost page and reveals and resizes the page below it.
+A page the view created from a URL or a `Component` is destroyed; a page that
+was pushed as an existing `Item` is only hidden and stays owned by whoever
+created it. The bottom page can
 never be popped; call `clear()` to empty the stack entirely. Pages are
 switched instantly, with no transition, and StackView does not move keyboard
 focus; set `focus` on a control inside the new page if it should receive
 input.
 
-`depth` is bound to `stackItems.length`, but the methods modify the array in
-place, so the binding is not re-evaluated and `depth` does not update after
-the initial evaluation. Use [StackLayout](stacklayout.md) instead when all
-pages exist up front and are chosen by index, for example from a
-[TabBar](tabbar.md).
+`depth` follows the stack: every `push()`, `pop()` and `clear()` updates it,
+so bindings such as a "Back" button's `visible: stack.depth > 1` work. Use
+[StackLayout](stacklayout.md) instead when all pages exist up front and are
+chosen by index, for example from a [TabBar](tabbar.md).
 
 ### Example
 

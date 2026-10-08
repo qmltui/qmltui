@@ -28,7 +28,7 @@ A one-row strip of named tabs selected with the Left and Right keys or the mouse
 | `color` | `rgba` | `"default"` | Holds the background colour of unselected tabs and separators, where `"default"` is the terminal's own background. |
 | `textColor` | `rgba` | `"default"` | Holds the text colour of unselected tabs and separators, where `"default"` is the terminal's own foreground. |
 | `tabs` | `var` |  | Holds the tab labels as a JavaScript array of strings or a string list; other array elements are converted with their string form. |
-| `currentIndex` | `int` | `0` | Holds the index of the selected tab, clamped to the range of `tabs`; assignments made while `tabs` is empty are ignored. |
+| `currentIndex` | `int` | `0` | Holds the index of the selected tab, clamped to the range of `tabs`; a value set before `tabs` is assigned is kept and clamped once the tabs arrive, and a list that shrinks clamps it as well. |
 
 ## Detailed Description
 

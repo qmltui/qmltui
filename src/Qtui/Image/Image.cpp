@@ -1,7 +1,9 @@
 #include <Qtui/Image/Image.h>
+#include <Qtui/Image/ImageProvider.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Image/TerminalGraphics.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 #include <QDebug>
 #include <QDirIterator>
 #include <QFile>
@@ -112,6 +114,55 @@ void Image::setSource(const QUrl& source) {
     loadImage();
 }
 
+void Image::setImage(const QImage& image) {
+    releaseKittyImage();   // a new picture is a new upload
+    if (!m_source.isEmpty()) {
+        // The picture no longer comes from a URL.
+        m_source = QUrl();
+        emit sourceChanged();
+    }
+    adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32), Status::Null);
+}
+
+void Image::adoptImage(const QImage& image, Status statusIfNull) {
+    const QSize previousSize = m_sourceImage.size();
+    m_sourceImage = image;
+    m_scaledImage = QImage();
+    m_lastTargetSize = QSize();
+    m_status = image.isNull() ? statusIfNull : Status::Ready;
+    emit statusChanged();
+    emit imageChanged();
+    if (m_sourceImage.size() != previousSize) {
+        emit sourceSizeChanged();
+        emit implicitWidthChanged();
+        emit implicitHeightChanged();
+    }
+    markDirty();
+}
+
+QImage Image::loadFromProvider(const QUrl& url, bool* found) const {
+    *found = false;
+    QQmlEngine* engine = qmlEngine(this);
+    if (!engine) return QImage();
+    ImageProvider* provider = ImageProvider::find(engine, url.host());
+    if (!provider) return QImage();
+    *found = true;
+    // Qt Quick's id: everything after "image://host/", query and fragment included.
+    QString id = url.path();
+    if (id.startsWith(QLatin1Char('/'))) id.remove(0, 1);
+    if (url.hasQuery()) id += QLatin1Char('?') + url.query();
+    if (url.hasFragment()) id += QLatin1Char('#') + url.fragment();
+    // The pixel grid this item paints into, so a provider can render sharp.
+    QSize requested;
+    if (width() > 0 && height() > 0) {
+        const int rowsPerCell = m_renderMode == RenderMode::Braille ? 4 : m_renderMode == RenderMode::ASCII ? 1 : 2;
+        const int colsPerCell = m_renderMode == RenderMode::Braille ? 2 : 1;
+        requested = QSize(width() * colsPerCell, height() * rowsPerCell);
+    }
+    QSize natural;
+    return provider->requestImage(id, &natural, requested);
+}
+
 void Image::setFillMode(FillMode mode) {
     if (m_fillMode == mode) return;
     m_fillMode = mode;
@@ -167,24 +218,17 @@ void Image::loadImage() {
     m_status = Status::Loading;
     emit statusChanged();
 
-    QString path = resolvePath(m_source);
-
     QImage loaded;
-    if (loaded.load(path)) {
-        m_sourceImage = loaded.convertToFormat(QImage::Format_ARGB32);
-        m_status = Status::Ready;
-        m_lastTargetSize = QSize();
-        emit implicitWidthChanged();
-        emit implicitHeightChanged();
+    if (m_source.scheme() == QLatin1String("image")) {
+        bool found = false;
+        loaded = loadFromProvider(m_source, &found);
+        if (!found)
+            qWarning("Image: no qtui::ImageProvider named \"%s\" on this engine",
+                     qPrintable(m_source.host()));
     } else {
-        m_sourceImage = QImage();
-        m_scaledImage = QImage();
-        m_status = Status::Error;
+        loaded.load(resolvePath(m_source));
     }
-
-    emit statusChanged();
-    emit sourceSizeChanged();
-    markDirty();
+    adoptImage(loaded.isNull() ? QImage() : loaded.convertToFormat(QImage::Format_ARGB32), Status::Error);
 }
 
 void Image::updateScaledCache(RenderMode mode) const {

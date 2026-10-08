@@ -23,7 +23,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `source` | `url` |  | _TODO_ |
+| `source` | `url` |  | _TODO_ Also `image://<provider>/<id>`, served by a `qtui::ImageProvider` installed on the QML engine; changing the URL asks the provider again. Cleared when `image` is assigned. |
+| `image` | `QImage` | null | The picture itself. Assign a `QImage` from C++, or bind to a `QImage` property of a C++ object, to show pixels that never touch a file; `source` becomes empty. Reading returns whatever is shown, loaded or assigned; a null image clears the item. |
 | `fillMode` | `FillMode` |  | _TODO_ |
 | `renderMode` | `RenderMode` |  | _TODO_ |
 | `status` | `Status` |  | Read-only. _TODO_ |
@@ -64,6 +65,32 @@ _TODO_ one sentence. [More...](#detailed-description)
 ## Detailed Description
 
 _TODO_
+
+### Dynamic pictures from C++
+
+Two ways to show pixels the application produces itself, such as a spectrogram
+or a decoded video frame:
+
+- Assign `image`. Each assignment is one repaint, `source` is cleared, and a
+  frame of the same size does not disturb the layout. Bind it to a `QImage`
+  property of a C++ object to keep the QML declarative.
+- Point `source` at `image://<provider>/<id>` and install a
+  `qtui::ImageProvider` on the engine with `ImageProvider::add()`. The id is
+  everything after the provider name, query included, so a counter in the
+  query (`?frame=` + tick) asks C++ for a new picture. The provider receives
+  the item's current pixel grid as the requested size and may render to it.
+
+Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
+re-encodes the picture on every change, so a stream of frames is best shown
+with `Image.HalfBlock` or `Image.Braille`.
+
+```qml
+Image {
+    width: 40; height: 12
+    image: scope.frame          // a QImage property on a C++ object
+    renderMode: Image.Braille
+}
+```
 
 ### Example
 

@@ -1,5 +1,12 @@
 #include <QtTest/QtTest>
 #include <Qtui/Image/Image.h>
+#include <Qtui/Image/ImageProvider.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <QSignalSpy>
+#include <memory>
 #include <Qtui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QTemporaryFile>
@@ -13,6 +20,8 @@ private slots:
     void testLoadInvalidImage();
     void testRenderHalfBlock();
     void testAutoFitsLikeHalfBlock();
+    void testSetImageFromMemory();
+    void testImageProvider();
     void testRenderASCII();
     void testRenderBraille();
     void testFillModeScaling();
@@ -134,6 +143,136 @@ void TestImage::testAutoFitsLikeHalfBlock() {
     QVERIFY2(halfBlock.count(QStringLiteral("\u2580")) == 32, qPrintable(halfBlock));   // every cell painted
     QCOMPARE(automatic, halfBlock);
     QFile::remove(fileName);
+}
+
+// Shape 1: a QImage assigned from C++ renders like a loaded file, clears the
+// URL, and a null image clears the item.
+void TestImage::testSetImageFromMemory() {
+    QImage frame(2, 2, QImage::Format_RGB32);
+    frame.setPixelColor(0, 0, QColor(255, 0, 0));
+    frame.setPixelColor(1, 0, QColor(255, 0, 0));
+    frame.setPixelColor(0, 1, QColor(0, 0, 255));
+    frame.setPixelColor(1, 1, QColor(0, 0, 255));
+
+    qtui::Image img;
+    img.setRenderMode(qtui::Image::RenderMode::HalfBlock);
+    img.setWidth(2);
+    img.setHeight(1);
+    QSignalSpy imageChanged(&img, &qtui::Image::imageChanged);
+    QSignalSpy statusChanged(&img, &qtui::Image::statusChanged);
+    QSignalSpy sizeChanged(&img, &qtui::Image::sourceSizeChanged);
+
+    img.setImage(frame);
+    QCOMPARE(img.status(), qtui::Image::Status::Ready);
+    QCOMPARE(img.sourceSize(), QSize(2, 2));
+    QCOMPARE(img.image().size(), QSize(2, 2));
+    QVERIFY(img.source().isEmpty());
+    QCOMPARE(imageChanged.count(), 1);
+    QCOMPARE(statusChanged.count(), 1);
+    QCOMPARE(sizeChanged.count(), 1);
+
+    qtui::TextGridBuffer buffer;
+    buffer.resize(4, 4);
+    qtui::testing::paintItem(img, buffer, 0, 0);
+    const qtui::Cell& cell0 = buffer.cellAt(0, 0);
+    QCOMPARE(cell0.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
+    QCOMPARE(QColor::fromRgba(cell0.fgColor).red(), 255);
+    QCOMPARE(QColor::fromRgba(cell0.bgColor).blue(), 255);
+
+    // A second frame of the same size: repainted, no size notification.
+    frame.fill(Qt::green);
+    img.setImage(frame);
+    QCOMPARE(imageChanged.count(), 2);
+    QCOMPARE(sizeChanged.count(), 1);
+    qtui::testing::paintItem(img, buffer, 0, 0);
+    QCOMPARE(QColor::fromRgba(buffer.cellAt(0, 0).fgColor).green(), 255);
+
+    // A null image clears the item.
+    img.setImage(QImage());
+    QCOMPARE(img.status(), qtui::Image::Status::Null);
+    QVERIFY(img.image().isNull());
+    QCOMPARE(sizeChanged.count(), 2);
+}
+
+namespace {
+class SolidProvider : public qtui::ImageProvider {
+public:
+    QStringList ids;
+    QSize lastRequested;
+    QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override {
+        ids.append(id);
+        lastRequested = requestedSize;
+        if (!id.startsWith(QLatin1String("solid"))) return QImage();
+        QImage image(4, 4, QImage::Format_RGB32);
+        image.fill(id.contains(QLatin1String("blue")) ? Qt::blue : Qt::red);
+        *size = image.size();
+        return image;
+    }
+};
+}
+
+// Shape 2: an image:// URL resolves through the ImageProvider installed on
+// the item's engine; the id carries path and query; unknown ids and unknown
+// providers report Error without crashing.
+void TestImage::testImageProvider() {
+    QQmlEngine qml;
+    auto* provider = new SolidProvider;
+    qtui::ImageProvider::add(&qml, QStringLiteral("test"), provider);
+    QCOMPARE(qtui::ImageProvider::find(&qml, QStringLiteral("test")), provider);
+    QCOMPARE(provider->parent(), &qml);
+
+    QQmlComponent component(&qml);
+    component.setData(R"(
+import QtQml
+import Qtui
+import Qtui.Image
+Terminal {
+    Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
+            source: "image://test/solid?frame=1" }
+}
+)", QUrl());
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object, qPrintable(component.errorString()));
+    auto* terminal = qobject_cast<qtui::Terminal*>(object.get());
+    QVERIFY(terminal);
+    auto* picture = terminal->findChild<qtui::Image*>("picture");
+    QVERIFY(picture);
+    QCOMPARE(picture->status(), qtui::Image::Status::Ready);
+    QCOMPARE(picture->sourceSize(), QSize(4, 4));
+    QCOMPARE(provider->ids, QStringList{"solid?frame=1"});
+
+    auto* engine = terminal->engine();
+    engine->setTestViewportSize(QSize(10, 4));
+    QTRY_VERIFY(engine->frameSequence() > 0);
+    const auto frame = engine->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(QColor::fromRgba(frame->cellAt(0, 0).fgColor).red(), 255);
+
+    // A new URL asks the provider again; the picture follows.
+    picture->setSource(QUrl(QStringLiteral("image://test/solid-blue?frame=2")));
+    QCOMPARE(provider->ids.size(), 2);
+    QCOMPARE(provider->ids.last(), QStringLiteral("solid-blue?frame=2"));
+    QCOMPARE(provider->lastRequested, QSize(4, 4));      // 4 columns, 2 rows of half-blocks
+    const quint64 before = engine->frameSequence();
+    engine->requestRender();
+    QTRY_VERIFY(engine->frameSequence() > before);
+    QCOMPARE(QColor::fromRgba(engine->currentFrame()->cellAt(0, 0).fgColor).blue(), 255);
+
+    // Unknown id: the provider returns null, the item reports Error.
+    picture->setSource(QUrl(QStringLiteral("image://test/missing")));
+    QCOMPARE(picture->status(), qtui::Image::Status::Error);
+    // Unknown provider: Error as well, and a warning.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("no qtui::ImageProvider named \"nobody\""));
+    picture->setSource(QUrl(QStringLiteral("image://nobody/x")));
+    QCOMPARE(picture->status(), qtui::Image::Status::Error);
+
+    // Replacing a provider deletes the previous one.
+    QPointer<qtui::ImageProvider> old(provider);
+    qtui::ImageProvider::add(&qml, QStringLiteral("test"), new SolidProvider);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(!old);
+    qtui::ImageProvider::remove(&qml, QStringLiteral("test"));
+    QVERIFY(!qtui::ImageProvider::find(&qml, QStringLiteral("test")));
 }
 
 void TestImage::testRenderASCII() {

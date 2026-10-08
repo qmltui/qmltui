@@ -13,6 +13,11 @@ class QTUI_IMAGE_EXPORT Image : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QUrl source READ source WRITE setSource NOTIFY sourceChanged)
+    // The picture itself. Assign a QImage from C++ (or bind to a QImage
+    // property of a C++ object) to show pixels that never touch a file; the
+    // item then has no `source`. Reading returns whatever is shown, loaded or
+    // assigned. A null image clears the item.
+    Q_PROPERTY(QImage image READ image WRITE setImage NOTIFY imageChanged)
     Q_PROPERTY(FillMode fillMode READ fillMode WRITE setFillMode NOTIFY fillModeChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
@@ -54,6 +59,9 @@ public:
     QUrl source() const { return m_source; }
     void setSource(const QUrl& source);
 
+    QImage image() const { return m_sourceImage; }
+    void setImage(const QImage& image);
+
     FillMode fillMode() const { return m_fillMode; }
     void setFillMode(FillMode mode);
 
@@ -77,6 +85,7 @@ public:
 
 signals:
     void sourceChanged();
+    void imageChanged();
     void fillModeChanged();
     void renderModeChanged();
     void statusChanged();
@@ -86,6 +95,12 @@ signals:
 
 private:
     void loadImage();
+    // Loads an image:// source through the ImageProvider registered on this
+    // item's QML engine under the URL's host.
+    QImage loadFromProvider(const QUrl& url, bool* found) const;
+    // Installs a decoded picture (or a null one) as the source and publishes
+    // the status, size and geometry changes it implies.
+    void adoptImage(const QImage& image, Status statusIfNull);
     // Scales the source for the mode that will actually paint. The declared
     // mode may be Auto, Kitty or Sixel and fall back to HalfBlock; the cell
     // geometry (2 pixel rows per cell, 2x4 for Braille, 1x1 for ASCII) must

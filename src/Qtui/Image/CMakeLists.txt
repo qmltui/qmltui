@@ -3,6 +3,8 @@ qt_add_qml_module(QtuiImage
     SOURCES
         Image.h
         Image.cpp
+        ImageProvider.h
+        ImageProvider.cpp
         TerminalGraphics.h
         TerminalGraphics.cpp
     DEPENDENCIES TARGET QtuiCore
@@ -43,4 +45,4 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/QtuiImage.qmltypes"
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
 )
-qtui_install_headers(Qtui/Image FILES Image.h TerminalGraphics.h)
+qtui_install_headers(Qtui/Image FILES Image.h ImageProvider.h TerminalGraphics.h)

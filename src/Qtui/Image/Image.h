@@ -86,7 +86,11 @@ signals:
 
 private:
     void loadImage();
-    void updateScaledCache() const;
+    // Scales the source for the mode that will actually paint. The declared
+    // mode may be Auto, Kitty or Sixel and fall back to HalfBlock; the cell
+    // geometry (2 pixel rows per cell, 2x4 for Braille, 1x1 for ASCII) must
+    // follow the resolved mode or the picture is fitted to the wrong grid.
+    void updateScaledCache(RenderMode mode) const;
     // Emits transmission, placement and placeholder cells for the kitty
     // protocol; frees the previous upload when the source or geometry changes.
     void paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
@@ -107,6 +111,7 @@ private:
     // painting, so it is mutable.
     mutable QImage m_scaledImage;
     mutable QSize m_lastTargetSize;
+    mutable RenderMode m_lastRenderMode = RenderMode::HalfBlock;
     mutable FillMode m_lastFillMode = FillMode::Stretch;
     mutable bool m_lastSmooth = true;
 

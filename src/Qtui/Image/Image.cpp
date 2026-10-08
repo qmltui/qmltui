@@ -187,7 +187,7 @@ void Image::loadImage() {
     markDirty();
 }
 
-void Image::updateScaledCache() const {
+void Image::updateScaledCache(RenderMode mode) const {
     if (m_sourceImage.isNull()) return;
 
     int itemW = width();
@@ -197,30 +197,31 @@ void Image::updateScaledCache() const {
     int targetSubW = itemW;
     int targetSubH = itemH;
 
-    if (m_renderMode == RenderMode::HalfBlock) {
+    if (mode == RenderMode::HalfBlock) {
         targetSubW = itemW;
         targetSubH = itemH * 2;
-    } else if (m_renderMode == RenderMode::Braille) {
+    } else if (mode == RenderMode::Braille) {
         targetSubW = itemW * 2;
         targetSubH = itemH * 4;
-    } else if (m_renderMode == RenderMode::ASCII) {
+    } else if (mode == RenderMode::ASCII) {
         targetSubW = itemW;
         targetSubH = itemH;
     }
 
     QSize currentTargetSize(targetSubW, targetSubH);
     if (m_lastTargetSize == currentTargetSize && m_lastFillMode == m_fillMode &&
-        m_lastSmooth == m_smooth && !m_scaledImage.isNull()) {
+        m_lastSmooth == m_smooth && m_lastRenderMode == mode && !m_scaledImage.isNull()) {
         return;
     }
 
     m_lastTargetSize = currentTargetSize;
+    m_lastRenderMode = mode;
     m_lastFillMode = m_fillMode;
     m_lastSmooth = m_smooth;
 
     Qt::TransformationMode transMode = m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation;
 
-    if (m_renderMode == RenderMode::ASCII) {
+    if (mode == RenderMode::ASCII) {
         // Monospace cell aspect ratio correction (1 column : 2 rows visual ratio, cellAspect = 0.5)
         double srcAspect = static_cast<double>(m_sourceImage.width()) / std::max(1, m_sourceImage.height());
         
@@ -309,7 +310,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         mode = RenderMode::HalfBlock;
     }
 
-    updateScaledCache();
+    updateScaledCache(mode);
     if (m_scaledImage.isNull()) return;
 
     int subW = m_scaledImage.width();

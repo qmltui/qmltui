@@ -664,6 +664,22 @@ component catalog. Everything else moves below the fold or onto the site.
 
 ## 10. Verification
 
+Record (2026-09-14, commit b0bdb32 plus this note, before the `v0.4.0` tag):
+
+| Check | Result |
+| :--- | :--- |
+| Linux, Qt 6.8.6, Behavior ON, TestRunner ON, TerminalHost ON | 104 of 104 tests pass |
+| Linux, Qt 6.8.6, Behavior OFF, TestRunner ON | 92 of 92 tests pass |
+| Windows 11, MSVC 2022, Qt 6.8.3, Behavior OFF, native build via cmd.exe | 84 pass, 1 skipped (symlink trap) |
+| Quickstart standalone with `FETCHCONTENT_SOURCE_DIR_QTUI` override | configures, builds, renders "Welcome", runs until the 3 s timeout |
+| Stale root API names (`rendererMode`, `useAlternateScreen`, `fillTerminal`, `liveItem`, `StreamView`) | none outside `docs/plans` |
+| `import QtQml 2` | none outside `docs/plans` |
+| `label:` outside `StatusBadge` and `Panel` | 40 hits, all app-local property names (`Gauge.label`, key-map entries, settings rows), no stale control API |
+
+Not run: macOS (CI row only), the quickstart from the public tag (needs the tag
+and a public repository), and the hand run of the quickstart in Windows
+Terminal, a Linux terminal and Terminal.app (section 8 step 5).
+
 ```bash
 # Both Behavior trees green
 cmake -S . -B build -DQTUI_BUILD_TESTS=ON -DQTUI_BUILD_EXAMPLES=ON -DQTUI_ENABLE_BEHAVIOR=ON

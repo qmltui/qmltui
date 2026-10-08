@@ -27,7 +27,8 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 The [stream mode decision](stream-mode-decision.md) predates this series and
 explains why there are two renderers.
 
-Plans 00 to 02 gate the first announcement. Plans 03 to 08 follow in the weeks
+Plan 00 verification ran green on Linux (both Behavior trees) and Windows on
+2026-09-14; see its section 10. Plans 00 to 02 gate the first announcement. Plans 03 to 08 follow in the weeks
 after, each shippable on its own. Plan 07 shipped in full on 2026-09-12. Plan
 08 depends on the signal-safety item of Plan 06 and must not start before the
 tag: it touches the input decoder and the frame output path.

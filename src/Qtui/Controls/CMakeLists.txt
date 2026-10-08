@@ -11,6 +11,7 @@ qt_add_qml_module(QtuiControls
         ToolTip.h
         ToolTip.cpp
     QML_FILES
+        AbstractButton.qml
         Button.qml
         ButtonGroup.qml
         CheckBox.qml
@@ -54,10 +55,19 @@ install(TARGETS QtuiControlsplugin
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
 )
+if(qtui_controls_output_targets)   # static builds only, see Core
+    install(TARGETS ${qtui_controls_output_targets}
+        EXPORT QtuiTargets
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+endif()
 
 install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Controls/qmldir"
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Controls/QtuiControls.qmltypes"
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractButton.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Button.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/ButtonGroup.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/CheckBox.qml

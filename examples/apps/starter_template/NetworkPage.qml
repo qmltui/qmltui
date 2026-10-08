@@ -219,9 +219,13 @@ Rectangle {
                 spacing: 2
 
                 Button {
+                    background: Rectangle {
+                        color: "default"
+                        border.color: Theme.borderNormal
+                        border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                    }
                     text: WifiManager.scanning ? "Scanning..." : "[R] Rescan Now"
                     textColor: Theme.textPrimary
-                    border.color: Theme.borderNormal
                     enabled: !WifiManager.scanning
                     onClicked: {
                         WifiManager.scan();
@@ -229,9 +233,13 @@ Rectangle {
                 }
 
                 Button {
+                    background: Rectangle {
+                        color: "default"
+                        border.color: Theme.qtGreen
+                        border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                    }
                     text: "[Enter] Connect"
                     textColor: Theme.qtGreen
-                    border.color: Theme.qtGreen
                     onClicked: {
                         pwdInput.focus = true;
                     }
@@ -311,9 +319,13 @@ Rectangle {
                     spacing: 2
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: Theme.qtGreen
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: page.isConnecting ? "Connecting..." : Theme.check + " Connect [Enter]"
                         textColor: Theme.qtGreen
-                        border.color: Theme.qtGreen
                         enabled: !page.isConnecting && page.selectedSsid.length > 0
                         onClicked: {
                             page.doConnect();
@@ -603,9 +615,13 @@ Rectangle {
                     spacing: 2
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: Theme.statusError
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: Theme.cross + " Disconnect & Switch Network"
                         textColor: Theme.statusError
-                        border.color: Theme.statusError
                         onClicked: {
                             WifiManager.disconnectNetwork();
                         }

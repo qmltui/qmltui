@@ -336,8 +336,12 @@ Terminal {
                     spacing: 1
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: terminal1.activeFocus ? "#89dceb" : "gray"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Focus T1 ]"
-                        border.color: terminal1.activeFocus ? "#89dceb" : "gray"
                         onClicked: {
                             terminal1.focus = true
                             root.commandTarget = 0
@@ -346,8 +350,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: terminal2.activeFocus ? "#a6e3a1" : "gray"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Focus T2 ]"
-                        border.color: terminal2.activeFocus ? "#a6e3a1" : "gray"
                         onClicked: {
                             terminal2.focus = true
                             root.commandTarget = 1
@@ -356,8 +364,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#89dceb"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ T1 ➔ T2 ]"
-                        border.color: "#89dceb"
                         onClicked: {
                             terminal2.sendText("echo 'Data payload from Terminal 1 -> Terminal 2'\n")
                             root.logMessage = "[T1 ➔ T2] Transferred message payload to Terminal 2"
@@ -365,8 +377,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#a6e3a1"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ T2 ➔ T1 ]"
-                        border.color: "#a6e3a1"
                         onClicked: {
                             terminal1.sendText("echo 'Data payload from Terminal 2 -> Terminal 1'\n")
                             root.logMessage = "[T2 ➔ T1] Transferred message payload to Terminal 1"
@@ -374,8 +390,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#cba6f7"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Pipe T1 Env -> T2 ]"
-                        border.color: "#cba6f7"
                         onClicked: {
                             terminal1.sendText("echo '=== T1 Environment ==='; env | head -n 3\n")
                             terminal2.sendText("echo 'Received env trigger from T1'\n")
@@ -384,8 +404,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#f9e2af"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Sync PWD ]"
-                        border.color: "#f9e2af"
                         onClicked: {
                             terminal1.sendText("pwd\n")
                             terminal2.sendText("pwd\n")
@@ -394,8 +418,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#f38ba8"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Clear Both ]"
-                        border.color: "#f38ba8"
                         onClicked: {
                             terminal1.clearScrollback()
                             terminal2.clearScrollback()
@@ -471,8 +499,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: root.commandTarget === 0 ? "#89dceb" : "gray"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
-                        border.color: root.commandTarget === 0 ? "#89dceb" : "gray"
                         onClicked: {
                             root.commandTarget = 0
                             root.logMessage = "Dispatcher target set to Terminal 1"
@@ -480,8 +512,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: root.commandTarget === 1 ? "#a6e3a1" : "gray"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
-                        border.color: root.commandTarget === 1 ? "#a6e3a1" : "gray"
                         onClicked: {
                             root.commandTarget = 1
                             root.logMessage = "Dispatcher target set to Terminal 2"
@@ -489,8 +525,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: root.commandTarget === 2 ? "#cba6f7" : "gray"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
-                        border.color: root.commandTarget === 2 ? "#cba6f7" : "gray"
                         onClicked: {
                             root.commandTarget = 2
                             root.logMessage = "Dispatcher target set to Broadcast (Both terminals)"
@@ -498,8 +538,12 @@ Terminal {
                     }
 
                     Button {
+                        background: Rectangle {
+                            color: "default"
+                            border.color: "#f9e2af"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[ Dispatch ➔ ]"
-                        border.color: "#f9e2af"
                         onClicked: {
                             root.dispatchCommand()
                         }

@@ -100,7 +100,17 @@ QQmlListProperty<Item> Item::childrenProperty() {
 }
 
 void Item::setParentItem(Item *parentItem) {
-    if (this->parentItem() == parentItem) return;
+    if (this->parentItem() == parentItem) {
+        // An object QML created for an Item-typed property (Button.background,
+        // contentItem) already has this parent, but the ChildAdded event ran
+        // while it was still a bare QObject, so childEvent() could not see an
+        // Item. Assigning the parent again is how such a child is adopted.
+        if (parentItem && !parentItem->childItems().contains(this)) {
+            parentItem->registerChildItem(this);
+            markDirty();
+        }
+        return;
+    }
     setParent(parentItem);
     emit parentChanged();
     markDirty();

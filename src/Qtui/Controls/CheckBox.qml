@@ -1,52 +1,26 @@
 import QtQml
 import Qtui
 
-Rectangle {
+// A checkable control drawn as `[x]` or `[ ]` followed by its label, one row
+// high, bold while focused. Space or Enter while focused, or a click, toggles
+// it and emits toggled(checked) then clicked(). Programmatic changes to
+// `checked` emit neither.
+AbstractButton {
     id: control
-    property string text: ""
-    property bool checked: false
-    property rgba textColor: "default"
+    checkable: true
 
-    signal toggled(bool checked)
-
-    focusable: enabled
-    implicitWidth: contentRow.implicitWidth
-    implicitHeight: contentRow.implicitHeight
-    Row {
-        id: contentRow
+    contentItem: Row {
         spacing: 1
-        anchors.verticalCenter: parent.verticalCenter
-
         Text {
             text: control.checked ? "[x]" : "[ ]"
             color: control.textColor
-            bold: control.activeFocus
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
-
         Text {
             visible: control.text !== ""
             text: control.text
             color: control.textColor
-            bold: control.activeFocus
-        }
-    }
-
-    Keys.onPressed: (event) => {
-        if (control.enabled && (event.key === Qt.Key_Space || event.key === Qt.Key_Return)) {
-            control.checked = !control.checked
-            control.toggled(control.checked)
-            event.accepted = true
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: (event) => {
-            if (!control.enabled)
-                return
-            control.focus = true
-            control.checked = !control.checked
-            control.toggled(control.checked)
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
     }
 }

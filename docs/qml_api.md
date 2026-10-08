@@ -253,9 +253,12 @@ pragma ComponentBehavior: Bound
 import Qtui.Controls
 
 Button {
+    background: Rectangle {
+        color: "#202830"
+        border.color: "cyan"
+        border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+    }
     textColor: "#ffffff"
-    color: "#202830"
-    border.color: "cyan"
 }
 ```
 

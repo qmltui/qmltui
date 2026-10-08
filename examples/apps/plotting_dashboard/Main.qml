@@ -224,20 +224,26 @@ Terminal {
 
                 // Play / Pause Toggle
                 Button {
+                    background: Rectangle {
+                        color: "#21252b"
+                        border.color: "default"
+                        border.style: "none"
+                    }
                     width: parent.width
                     height: 3
-                    border.style: "none"
-                    color: "#21252b"
                     text: rootWindow.paused ? "▶ RESUME" : "⏸ PAUSE"
                     onClicked: rootWindow.paused = !rootWindow.paused
                 }
 
                 // Waveform type selector
                 Button {
+                    background: Rectangle {
+                        color: "#21252b"
+                        border.color: "default"
+                        border.style: "none"
+                    }
                     width: parent.width
                     height: 3
-                    border.style: "none"
-                    color: "#21252b"
                     text: "WAVE: " + rootWindow.waveType.toUpperCase()
                     onClicked: rootWindow.cycleWaveType()
                 }
@@ -248,18 +254,24 @@ Terminal {
                     height: 3
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "FREQ -"
                         onClicked: rootWindow.frequency = Math.max(0.5, rootWindow.frequency - 0.5)
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "FREQ +"
                         onClicked: rootWindow.frequency = Math.min(10.0, rootWindow.frequency + 0.5)
                     }
@@ -267,10 +279,13 @@ Terminal {
 
                 // Noise toggles
                 Button {
+                    background: Rectangle {
+                        color: "#21252b"
+                        border.color: "default"
+                        border.style: "none"
+                    }
                     width: parent.width
                     height: 3
-                    border.style: "none"
-                    color: "#21252b"
                     text: "NOISE: " + Math.round(rootWindow.noiseLevel * 100) + "%"
                     onClicked: rootWindow.cycleNoise()
                 }
@@ -296,18 +311,24 @@ Terminal {
                     height: 3
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "X-FREQ -"
                         onClicked: rootWindow.freqA = Math.max(1, rootWindow.freqA - 1)
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "X-FREQ +"
                         onClicked: rootWindow.freqA = Math.min(12, rootWindow.freqA + 1)
                     }
@@ -319,18 +340,24 @@ Terminal {
                     height: 3
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: Math.floor((parent.width - 1) / 2)
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "Y-FREQ -"
                         onClicked: rootWindow.freqB = Math.max(1, rootWindow.freqB - 1)
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#21252b"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                         height: 3
-                        border.style: "none"
-                        color: "#21252b"
                         text: "Y-FREQ +"
                         onClicked: rootWindow.freqB = Math.min(12, rootWindow.freqB + 1)
                     }

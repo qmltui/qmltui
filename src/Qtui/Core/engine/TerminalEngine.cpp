@@ -155,8 +155,6 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   connect(backend, &TerminalBackend::resumed, this, &TerminalEngine::handleResume);
   backend->startInput();
 
-  queryInitialBackgroundColor();
-
   requestRender();
 }
 
@@ -180,23 +178,13 @@ void TerminalEngine::stop() {
         m_device.write("\033_Ga=d,d=A\033\\");   // delete every image this session uploaded
     m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l");
   }
-  if (m_backgroundOsc11Active && m_terminalOutputEnabled) {
-    if (m_originalBackgroundColor.isValid()) {
-      m_device.write(osc11Sequence(m_originalBackgroundColor));
-    }
-    m_device.write(osc111Sequence());
-  }
   if (m_renderer && m_rendererStarted) {
       m_renderer->stop(m_rootWindow, m_device);
       m_rendererStarted = false;
   }
   if (m_backgroundOsc11Active) {
-      if (m_terminalOutputEnabled) {
-          if (m_originalBackgroundColor.isValid()) {
-              m_device.write(osc11Sequence(m_originalBackgroundColor));
-          }
+      if (m_terminalOutputEnabled)
           m_device.write(osc111Sequence());
-      }
       m_backgroundOsc11Active = false;
       m_appliedBackgroundColor = Color();
   }
@@ -339,12 +327,7 @@ void TerminalEngine::updateBackgroundColor() {
     const std::string osc11 = osc11Sequence(rootColor);
     if (!osc11.empty()) {
       if (!m_backgroundOsc11Active || m_appliedBackgroundColor != rootColor) {
-        const bool deferToAlternateScreen = m_renderer
-            && m_renderer->usesAlternateScreen(m_rootWindow)
-            && !m_rendererStarted;
-        if (!deferToAlternateScreen) {
-          m_device.write(osc11);
-        }
+        m_device.write(osc11);
         m_backgroundOsc11Active = true;
         m_appliedBackgroundColor = rootColor;
       }
@@ -354,9 +337,6 @@ void TerminalEngine::updateBackgroundColor() {
 
   if (m_backgroundOsc11Active) {
     if (m_terminalOutputEnabled) {
-      if (m_originalBackgroundColor.isValid()) {
-        m_device.write(osc11Sequence(m_originalBackgroundColor));
-      }
       m_device.write(osc111Sequence());
     }
     m_backgroundOsc11Active = false;
@@ -381,59 +361,7 @@ std::string TerminalEngine::osc11Sequence(const Color& color) {
 }
 
 std::string TerminalEngine::osc111Sequence() {
-  return "\033]111\a\033]111;\a\033]111;\033\\";
-}
-
-Color TerminalEngine::parseOsc11Color(QByteArrayView payload) {
-  if (!payload.startsWith("11;"))
-    return {};
-  QByteArrayView value = payload.sliced(3);
-  if (value.startsWith("rgb:")) {
-    const QByteArrayList parts = value.sliced(4).toByteArray().split('/');
-    if (parts.size() == 3) {
-      bool okR = false, okG = false, okB = false;
-      uint r = parts[0].toUInt(&okR, 16);
-      uint g = parts[1].toUInt(&okG, 16);
-      uint b = parts[2].toUInt(&okB, 16);
-      if (okR && okG && okB && !parts[0].isEmpty() && !parts[1].isEmpty() && !parts[2].isEmpty()) {
-        auto scaleTo8Bit = [](uint val, qsizetype len) -> uint8_t {
-          if (len >= 2)
-            return static_cast<uint8_t>(val >> ((len - 2) * 4));
-          return static_cast<uint8_t>((val << 4) | val);
-        };
-        const uint8_t r8 = scaleTo8Bit(r, parts[0].size());
-        const uint8_t g8 = scaleTo8Bit(g, parts[1].size());
-        const uint8_t b8 = scaleTo8Bit(b, parts[2].size());
-        return Color::fromArgb32(0xff000000U | (static_cast<quint32>(r8) << 16)
-                                             | (static_cast<quint32>(g8) << 8)
-                                             | static_cast<quint32>(b8));
-      }
-    }
-  } else if (value.startsWith('#')) {
-    const QByteArray hex = value.sliced(1).toByteArray();
-    if (hex.size() == 6) {
-      bool ok = false;
-      const uint rgb = hex.toUInt(&ok, 16);
-      if (ok)
-        return Color::fromArgb32(0xff000000U | rgb);
-    } else if (hex.size() == 12) {
-      bool okR = false, okG = false, okB = false;
-      const uint r = hex.first(4).toUInt(&okR, 16);
-      const uint g = hex.sliced(4, 4).toUInt(&okG, 16);
-      const uint b = hex.sliced(8, 4).toUInt(&okB, 16);
-      if (okR && okG && okB) {
-        return Color::fromArgb32(0xff000000U | ((r >> 8) << 16) | ((g >> 8) << 8) | (b >> 8));
-      }
-    }
-  }
-  return {};
-}
-
-void TerminalEngine::queryInitialBackgroundColor() {
-  if (m_initialBgQueried || !canQueryTerminal())
-    return;
-  m_initialBgQueried = true;
-  m_device.write("\033]11;?\033\\");
+  return "\033]111\a";
 }
 
 void TerminalEngine::handleResize() {
@@ -824,14 +752,6 @@ void TerminalEngine::finishQueries() {
 
 void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) {
     using Sequence = InputDecoder::ControlSequence;
-    if (sequence.kind == Sequence::Osc) {
-        if (sequence.payload.startsWith("11;")) {
-            const Color parsed = parseOsc11Color(sequence.payload);
-            if (parsed.isValid())
-                m_originalBackgroundColor = parsed;
-        }
-        return;
-    }
     const auto scalarParams = [&] {
         for (const auto& field : sequence.params)
             if (field.size() != 1 || field[0] < 0) return false;

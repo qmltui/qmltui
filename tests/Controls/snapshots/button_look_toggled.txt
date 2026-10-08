@@ -1,0 +1,16 @@
+
+ ┌─────────┐    ┌───────┐                 ┌─────┐
+ │ Focused │    │ Plain │      OneRow     │ Off │
+ └─────────┘    └───────┘                 └─────┘
+
+ [ ] Logging    [x] Verbose
+
+ ( ) Fast       (*) Safe     ( ) Slow
+
+ [ ON] Wi-Fi    [OFF] Bluetooth
+
+
+--- styles
+y=2 x=44-46 fg=default bg=default dim
+y=7 x=16-18 fg=default bg=default bold
+y=7 x=20-23 fg=default bg=default bold

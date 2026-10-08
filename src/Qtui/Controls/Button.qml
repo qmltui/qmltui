@@ -1,60 +1,30 @@
 import QtQml
 import Qtui
 
-// A focusable action using terminal colors. Set
-// textColor, color, or border.* on an instance to override them.
-Rectangle {
+// A push button: a bordered Rectangle background and a centred label.
+// Implicit size is the label plus 4 cells by 3 rows. The border is single,
+// double while focused, and dropped on a button shorter than 3 rows; the
+// label is bold while focused, hovered (hoverEnabled) or highlighted. Replace
+// `background` or `contentItem` to restyle; set `textColor` for the label.
+AbstractButton {
     id: control
-    property string text: ""
-    property bool pressed: false
-    property rgba textColor: "default"
-    // Opt in to hover feedback: the label is drawn bold while the pointer is
-    // over the button. Off by default, because it turns on the terminal's
-    // any-motion mouse reporting for the whole application.
-    property bool hoverEnabled: false
-    readonly property alias hovered: mouseArea.containsMouse
-    signal clicked()
 
-    focusable: enabled
-    implicitWidth: btnText.implicitWidth + 4
-    implicitHeight: 3
+    leftPadding: 2
+    rightPadding: 2
+    topPadding: 1
+    bottomPadding: 1
 
-    color: "default"
-    border.style: height >= 3 ? (activeFocus ? "double" : "single") : "none"
-    border.color: "default"
+    background: Rectangle {
+        color: "default"
+        border.color: "default"
+        border.style: control.height >= 3 ? (control.activeFocus ? "double" : "single") : "none"
+    }
 
-    Text {
-        id: btnText
-        anchors.centerIn: parent
+    contentItem: Text {
         text: control.text
         color: control.textColor
-        bold: control.activeFocus || control.hovered
-    }
-
-    Keys.onPressed: (event) => {
-        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Space)) {
-            control.clicked()
-            event.accepted = true
-        }
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: control.hoverEnabled
-
-        onPressed: (event) => {
-            if (!control.enabled)
-                return
-            control.focus = true
-            control.pressed = true
-        }
-        onReleased: (event) => {
-            control.pressed = false
-        }
-        onClicked: (event) => {
-            if (control.enabled)
-                control.clicked()
-        }
+        bold: control.activeFocus || control.hovered || control.highlighted
+        horizontalAlignment: Qt.AlignHCenter
+        verticalAlignment: Qt.AlignVCenter
     }
 }

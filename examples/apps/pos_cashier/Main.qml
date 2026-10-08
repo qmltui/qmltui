@@ -240,40 +240,52 @@ Terminal {
             x: 1; y: 1; spacing: 2
             Text { text: qsTr("👤 %1  📶 ONLINE  🕒 09:41 AM").arg(rootWindow.cashierName); color: "#D4E4FA" }
             Button {
+                background: Rectangle {
+                    color: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
+                    border.color: "default"
+                    border.style: rootWindow.state === "catalog" ? "double" : "single"
+                }
                 text: rootWindow.state === "catalog" ? "[ 1 CATALOG ]" : " 1 CATALOG "
-                color: rootWindow.state === "catalog" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "catalog" ? "#051424" : "#D4E4FA"
-                border.style: rootWindow.state === "catalog" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "catalog";
                 }
             }
             Button {
+                background: Rectangle {
+                    color: rootWindow.state === "cart" ? "#06BB63" : "#122131"
+                    border.color: "default"
+                    border.style: rootWindow.state === "cart" ? "double" : "single"
+                }
                 text: rootWindow.state === "cart" ? qsTr("[ 2 CART (%1) ]").arg(rootWindow.getItemCount()) : qsTr(" 2 CART (%1) ").arg(rootWindow.getItemCount())
-                color: rootWindow.state === "cart" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "cart" ? "#051424" : "#D4E4FA"
-                border.style: rootWindow.state === "cart" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state === "receipt") rootWindow.resetNewSale();
                     else rootWindow.state = "cart";
                 }
             }
             Button {
+                background: Rectangle {
+                    color: rootWindow.state === "payment" ? "#06BB63" : "#122131"
+                    border.color: "default"
+                    border.style: rootWindow.state === "payment" ? "double" : "single"
+                }
                 text: rootWindow.state === "payment" ? "[ 3 PAYMENT ]" : " 3 PAYMENT "
-                color: rootWindow.state === "payment" ? "#06BB63" : "#122131"
                 textColor: rootWindow.state === "payment" ? "#051424" : "#D4E4FA"
-                border.style: rootWindow.state === "payment" ? "double" : "single"
                 onClicked: {
                     if (rootWindow.state !== "receipt") rootWindow.goToCheckout();
                 }
             }
             Button {
+                background: Rectangle {
+                    color: "#06BB63"
+                    border.color: "default"
+                    border.style: "double"
+                }
                 visible: rootWindow.state === "receipt"
                 text: "[ 4 RECEIPT ]"
-                color: "#06BB63"
                 textColor: "#051424"
-                border.style: "double"
                 onClicked: rootWindow.state = "receipt"
             }
         }

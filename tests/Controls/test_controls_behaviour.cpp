@@ -3,6 +3,8 @@
 // TabBar's index surviving declaration order, disabled controls ignoring
 // input, Slider snapping clicks to stepSize, ProgressBar style glyphs, and
 // the internals of RadioButton and BusyIndicator staying off the public API.
+// Note: moc treats a # inside a raw string as a directive, so QML in this file
+// uses named colours, never "#rrggbb".
 #include <QTest>
 #include <QPointer>
 #include <QQmlComponent>
@@ -260,6 +262,96 @@ Terminal {
         engine->handleMouseInput(3, 2, 1, false, true);   // over the button that did not opt in
         QVERIFY(!hover->property("hovered").toBool());
         QVERIFY(!terminal->findChild<Item*>("plain")->property("hovered").toBool());
+    }
+
+    // AbstractButton template: custom items are adopted, laid out and sized.
+    void buttonCustomItems() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Button {
+        id: filled; objectName: "filled"; x: 0; y: 0; text: "Filled"
+        background: Rectangle { objectName: "bg"; color: "lime"; border.style: "none" }
+        contentItem: Text { objectName: "label"; text: filled.text; color: "black"
+                            horizontalAlignment: Qt.AlignHCenter; verticalAlignment: Qt.AlignVCenter }
+    }
+    Button { objectName: "wide"; x: 0; y: 4; width: 20; text: "Go" }
+    Button { objectName: "short"; x: 0; y: 8; height: 1; text: "Row" }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 10));
+        auto* filled = terminal->findChild<Item*>("filled");
+        auto* bg = terminal->findChild<Item*>("bg");
+        auto* label = terminal->findChild<Item*>("label");
+        QVERIFY(filled && bg && label);
+        QCOMPARE(bg->parentItem(), filled);                 // adopted as a visual child
+        QVERIFY(filled->childItems().contains(bg));
+        QCOMPARE(filled->width(), 6 + 4);                    // label + paddings, unchanged from before
+        QCOMPARE(filled->height(), 3);
+        QCOMPARE(QSize(bg->width(), bg->height()), QSize(10, 3));
+        QCOMPARE(QPoint(label->x(), label->y()), QPoint(2, 1));
+        QCOMPARE(QSize(label->width(), label->height()), QSize(6, 1));
+        QCOMPARE(bg->z(), -1.0);
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const QString text = frameText(engine);
+        QVERIFY2(text.contains("Filled"), qPrintable(text));
+        // The filled button's own rows carry no default border corner.
+        const QStringList rows = text.split('\n');
+        QVERIFY2(rows.size() > 2 && !rows[0].left(10).contains(QChar(0x250C))
+                 && !rows[2].left(10).contains(QChar(0x2514)), qPrintable(text));
+        auto* wide = terminal->findChild<Item*>("wide");
+        QCOMPARE(wide->property("availableWidth").toInt(), 16);
+        QVERIFY2(text.contains("│         Go       │") || text.contains(" Go "), qPrintable(text));
+        auto* shortButton = terminal->findChild<Item*>("short");
+        QCOMPARE(shortButton->property("availableHeight").toInt(), 0);
+        QVERIFY2(text.contains("Row"), qPrintable(text));      // centred despite no padded room
+    }
+
+    void abstractButtonStates() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int clicks: 0
+    property int toggles: 0
+    property bool lastState: false
+    Button { objectName: "toggle"; x: 0; y: 0; width: 10; height: 3; text: "Pin"; checkable: true
+        onClicked: root.clicks++
+        onToggled: checked => { root.toggles++; root.lastState = checked } }
+    Button { objectName: "styled"; x: 0; y: 4; width: 10; height: 3; text: "Down"; down: true }
+    RadioButton { id: a; objectName: "a"; x: 0; y: 8; text: "A"; checked: true }
+    ButtonGroup { buttons: [a] }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 12));
+        auto* toggle = terminal->findChild<Item*>("toggle");
+        engine->handleMouseInput(0, 2, 1, false);
+        QVERIFY(toggle->property("pressed").toBool());
+        QVERIFY(toggle->property("down").toBool());          // down follows pressed
+        engine->handleMouseInput(0, 2, 1, true);
+        QVERIFY(!toggle->property("pressed").toBool());
+        QVERIFY(toggle->property("checked").toBool());        // checkable: click toggled
+        QCOMPARE(terminal->property("toggles").toInt(), 1);
+        QVERIFY(terminal->property("lastState").toBool());
+        QCOMPARE(terminal->property("clicks").toInt(), 1);   // clicked() follows toggled()
+        toggle->setProperty("checked", false);               // assignment emits nothing
+        QCOMPARE(terminal->property("toggles").toInt(), 1);
+        QMetaObject::invokeMethod(toggle, "toggle");
+        QVERIFY(toggle->property("checked").toBool());
+        QCOMPARE(terminal->property("toggles").toInt(), 2);
+        QCOMPARE(terminal->property("clicks").toInt(), 1);   // toggle() alone does not click
+        auto* styled = terminal->findChild<Item*>("styled");
+        QVERIFY(styled->property("down").toBool());           // explicit down overrides the binding
+        QVERIFY(!styled->property("pressed").toBool());
+        auto* a = terminal->findChild<Item*>("a");
+        QMetaObject::invokeMethod(a, "toggle");
+        QVERIFY(a->property("checked").toBool());             // autoExclusive: stays checked
     }
 
     void internalsAreNotPublic() {

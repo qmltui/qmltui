@@ -1,0 +1,15 @@
+
+ ╔═════════╗    ┌───────┐                 ┌─────┐
+ ║ Focused ║    │ Plain │      OneRow     │ Off │
+ ╚═════════╝    └───────┘                 └─────┘
+
+ [x] Logging    [ ] Verbose
+
+ (*) Fast       ( ) Safe     ( ) Slow
+
+ [ ON] Wi-Fi    [OFF] Bluetooth
+
+
+--- styles
+y=2 x=3-9 fg=default bg=default bold
+y=2 x=44-46 fg=default bg=default dim

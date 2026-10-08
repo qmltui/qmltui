@@ -47,31 +47,43 @@ Item {
                 spacing: 1
 
                 Button {
+                    background: Rectangle {
+                        color: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.currentCategory === "ALL" ? "[ ALL ]" : "  ALL  "
-                    color: root.currentCategory === "ALL" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "ALL" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.categorySelected("ALL")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.currentCategory === "COFFEE" ? "[ COFFEE ]" : " COFFEE "
-                    color: root.currentCategory === "COFFEE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "COFFEE" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.categorySelected("COFFEE")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.currentCategory === "PASTRIES" ? "[ PASTRIES ]" : " PASTRIES "
-                    color: root.currentCategory === "PASTRIES" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "PASTRIES" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.categorySelected("PASTRIES")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.currentCategory === "TEA" ? "[ TEA ]" : " TEA "
-                    color: root.currentCategory === "TEA" ? "#06BB63" : "#1c2b3c"
                     textColor: root.currentCategory === "TEA" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.categorySelected("TEA")
                 }
             }
@@ -127,12 +139,15 @@ Item {
                         Text { width: parent ? Math.floor(parent.width * 0.16) : 0; text: prodRow.modelData ? prodRow.modelData.category : ""; color: "#FFB961" }
                         Text { width: parent ? Math.floor(parent.width * 0.14) : 0; text: prodRow.modelData ? "$" + prodRow.modelData.price.toFixed(2) : ""; color: "#4AE183"; bold: true }
                         Button {
+                            background: Rectangle {
+                                color: "#1c2b3c"
+                                border.color: "default"
+                                border.style: "none"
+                            }
                             height: 1
                             width: parent ? Math.floor(parent.width * 0.22) : 0
                             text: "+ ADD"
-                            color: "#1c2b3c"
                             textColor: "#4AE183"
-                            border.style: "none"
                             onClicked: {
                                 if (prodRow.modelData) {
                                     root.addItemRequested(prodRow.modelData);
@@ -185,17 +200,23 @@ Item {
                 Row {
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#06BB63"
+                            border.color: "default"
+                            border.style: "single"
+                        }
                         text: "[F12] PAY NOW"
-                        color: "#06BB63"
                         textColor: "#051424"
-                        border.style: "single"
                         onClicked: root.checkoutRequested()
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#1c2b3c"
+                            border.color: "default"
+                            border.style: "single"
+                        }
                         text: "[F4] VIEW CART"
-                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
-                        border.style: "single"
                         onClicked: root.viewCartRequested()
                     }
                 }

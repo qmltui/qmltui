@@ -1,21 +1,15 @@
 import QtQml
 import Qtui
 
-Rectangle {
+// One choice out of a group, drawn as `(*)` or `( )` followed by its label.
+// autoExclusive: activating a checked radio button keeps it checked. Put
+// the buttons of one choice in a ButtonGroup; checking one, by the user or
+// from code, unchecks the others.
+AbstractButton {
     id: control
-    property string text: ""
-    property bool checked: false
+    checkable: true
+    autoExclusive: true
     property ButtonGroup buttonGroup: null
-    property rgba textColor: "default"
-    
-    signal toggled(bool checked)
-
-    function toggle() {
-        if (control.enabled && !control.checked) {
-            control.checked = true
-            control.toggled(control.checked)
-        }
-    }
 
     QtObject {
         id: d
@@ -26,56 +20,30 @@ Rectangle {
                 const groupButtons = control.buttonGroup.buttons
                 for (let i = 0; i < groupButtons.length; ++i) {
                     const b = groupButtons[i]
-                    if (b !== control && b.checked !== undefined) {
+                    if (b !== control && b.checked !== undefined)
                         b.checked = false
-                    }
                 }
             }
         }
     }
 
     onCheckedChanged: {
-        if (control.checked) {
+        if (control.checked)
             d.uncheckGroup()
-        }
     }
 
-    focusable: enabled
-    implicitWidth: contentRow.implicitWidth
-    implicitHeight: contentRow.implicitHeight
-    Row {
-        id: contentRow
+    contentItem: Row {
         spacing: 1
-        anchors.verticalCenter: parent.verticalCenter
-
         Text {
             text: control.checked ? "(*)" : "( )"
             color: control.textColor
-            bold: control.activeFocus
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
-
         Text {
             visible: control.text !== ""
             text: control.text
             color: control.textColor
-            bold: control.activeFocus
-        }
-    }
-
-    Keys.onPressed: (event) => {
-        if (control.enabled && (event.key === Qt.Key_Space || event.key === Qt.Key_Return)) {
-            control.toggle()
-            event.accepted = true
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: (event) => {
-            if (!control.enabled)
-                return
-            control.focus = true
-            control.toggle()
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
     }
 }

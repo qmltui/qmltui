@@ -48,31 +48,43 @@ Item {
             Row {
                 spacing: 1
                 Button {
+                    background: Rectangle {
+                        color: root.paymentMethod === "CASH" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.paymentMethod === "CASH" ? "[✓ 💵 CASH]" : " 💵 CASH "
-                    color: root.paymentMethod === "CASH" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "CASH" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.paymentMethodSelected("CASH")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.paymentMethod === "CARD" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.paymentMethod === "CARD" ? "[✓ 💳 CARD]" : " 💳 CARD "
-                    color: root.paymentMethod === "CARD" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "CARD" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.paymentMethodSelected("CARD")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.paymentMethod === "MOBILE" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.paymentMethod === "MOBILE" ? "[✓ 📱 MOBILE]" : " 📱 MOBILE "
-                    color: root.paymentMethod === "MOBILE" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "MOBILE" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.paymentMethodSelected("MOBILE")
                 }
                 Button {
+                    background: Rectangle {
+                        color: root.paymentMethod === "SPLIT" ? "#06BB63" : "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: root.paymentMethod === "SPLIT" ? "[✓ 🔀 SPLIT]" : " 🔀 SPLIT "
-                    color: root.paymentMethod === "SPLIT" ? "#06BB63" : "#1c2b3c"
                     textColor: root.paymentMethod === "SPLIT" ? "#051424" : "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.paymentMethodSelected("SPLIT")
                 }
             }
@@ -94,20 +106,32 @@ Item {
                     }
                     Text { text: "  QUICK: "; color: "#80DEEA" }
                     Button {
+                        background: Rectangle {
+                            color: "#1c2b3c"
+                            border.color: "default"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[Exact]"
-                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged(root.totalAmount.toFixed(2))
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#1c2b3c"
+                            border.color: "default"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[$20]"
-                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged("20.00")
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#1c2b3c"
+                            border.color: "default"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                        }
                         text: "[$50]"
-                        color: "#1c2b3c"
                         textColor: "#D4E4FA"
                         onClicked: root.cashTenderedChanged("50.00")
                     }
@@ -146,17 +170,23 @@ Item {
             Row {
                 spacing: 2
                 Button {
+                    background: Rectangle {
+                        color: "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: "[ESC] BACK TO CART"
-                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.backToCartRequested()
                 }
                 Button {
+                    background: Rectangle {
+                        color: "#06BB63"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: "[ENTER] CONFIRM PAYMENT"
-                    color: "#06BB63"
                     textColor: "#051424"
-                    border.style: "single"
                     onClicked: root.confirmPaymentRequested()
                 }
             }

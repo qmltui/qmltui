@@ -3,8 +3,8 @@ title: Button
 kind: qml
 import: Qtui.Controls
 since: "0.4"
-inherits: Rectangle
-cpp: qtui::Rectangle
+inherits: AbstractButton
+cpp: qtui::Item
 category: inputs
 summary: A focusable, bordered action button that emits clicked() on Enter, Space or a mouse click
 ---
@@ -17,52 +17,53 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 | :--- | :--- |
 | **Import Statement** | `import Qtui.Controls` |
 | **Since** | Qtui 0.4 |
-| **Inherits** | [Rectangle](rectangle.md) |
+| **Inherits** | [AbstractButton](abstractbutton.md) |
 
-## Properties
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `text` | `string` | `""` | Holds the label drawn centred inside the button. |
-| `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the button; keyboard activation does not set it. |
-| `textColor` | `rgba` | `"default"` | Holds the terminal colour of the label, where `"default"` is the terminal's own foreground colour. |
-| `hoverEnabled` | `bool` | `false` | Whether the button tracks the pointer and shows `hovered` feedback; off by default because it enables any-motion mouse reporting for the whole application; it has no effect while [Terminal](terminal.md)`.mouseReporting` is false. |
-| `hovered` | `alias` |  | Read-only. True while `hoverEnabled` is set and the pointer is over the button; always false on terminals without motion reporting. |
-
-## Signals
-
-| Signal | Description |
-| :--- | :--- |
-| `clicked()` | Emitted when the button is activated with Enter or Space while focused, or when a mouse button is pressed and released inside it. |
+Button adds no members of its own; every property, signal and method is
+inherited from [AbstractButton](abstractbutton.md).
 
 ## Detailed Description
 
-Button is a [Rectangle](rectangle.md) with a centred [Text](text.md) label
-and a `MouseArea` filling it. While the button has active focus, Enter
-(`Qt.Key_Return`) and Space emit `clicked()` and accept the key event; the
-keyboard path does nothing when `enabled` is false, and neither does the
-mouse path; the engine also withholds keys and clicks from disabled items. Pressing a mouse button on
-the item gives it focus and sets `pressed`, releasing clears `pressed`, and a
-press-and-release inside the item emits `clicked()`. Tab and Shift+Tab move
-focus between focusable items, and Button is focusable whenever it is
-`enabled`.
+Button is an [AbstractButton](abstractbutton.md) with a bordered
+[Rectangle](rectangle.md) as `background` and a centred [Text](text.md) label
+as `contentItem`, with paddings of 2 cells horizontally and 1 row vertically
+so the implicit size is the label width plus 4 by 3 rows. Enter or Space while
+focused, or a mouse press and release inside it, emits `clicked()`; a press
+also gives the button focus and holds `pressed`. Nothing happens while
+`enabled` is false. Tab and Shift+Tab move focus between focusable items.
 
-Focus is shown by the border and the label: the border style is `"single"`
-normally and `"double"` while the button has active focus, and the label is
-drawn bold while focused. With `hoverEnabled` set the label is also bold
-while the pointer is over the button, so hover and focus stay distinguishable
-by the border on a three-row button. Hover is decoration only: keyboard
-focus reaches every state, and terminals or recordings without motion
-reporting simply never show it. The border is only drawn when `height` is at least 3
-cells; a shorter button has `border.style` `"none"`, so a one-line button
-shows focus through the bold label alone. `color`, `border.color` and
-`textColor` all default to `"default"`, the terminal's own colours, and can be
-overridden per instance or in a derived component.
+State shows in the border and the label. The border style is `"single"`, or
+`"double"` while the button has active focus, and it is dropped on a button
+shorter than 3 rows, where the label is centred on the single row and shows
+focus by boldness alone. The label is bold while the control has active focus, is `hovered`, or is `highlighted`.
+Hover is decoration only: keyboard focus reaches every state, and terminals or
+recordings without motion reporting never show it. `textColor`, the
+background colour and the border colour default to `"default"`, the terminal's
+own colours.
 
-The implicit size is the label's implicit width plus 4 cells (one border and
-one padding cell on each side) by 3 rows. Unlike [CheckBox](checkbox.md) and
-[Switch](switch.md), Button holds no state of its own beyond `pressed`; use
-`clicked()` to drive application state.
+To restyle a button, assign `background`, `contentItem`, or both; the button's
+properties are reachable through its `id`. Setting `color` or `border` on the
+Button itself is no longer possible, since those belonged to the Rectangle it
+used to be:
+
+```qml
+Button {
+    id: filled
+    text: "Filled"
+    background: Rectangle { color: "#65e6a0"; border.style: "none" }
+    contentItem: Text {
+        text: filled.text
+        color: "#0b0f14"
+        bold: filled.activeFocus
+        horizontalAlignment: Qt.AlignHCenter
+        verticalAlignment: Qt.AlignVCenter
+    }
+}
+```
+
+For a toggle use [CheckBox](checkbox.md) or [Switch](switch.md), for one
+choice out of several [RadioButton](radiobutton.md) with a
+[ButtonGroup](buttongroup.md).
 
 ### Example
 

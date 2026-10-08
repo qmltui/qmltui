@@ -9,9 +9,12 @@ Terminal {
     property bool alternate: false
 
     component AppButton: Button {
+        background: Rectangle {
+            color: "#202830"
+            border.color: "cyan"
+            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+        }
         textColor: root.alternate ? "#abcdef" : "#123456"
-        color: "#202830"
-        border.color: "cyan"
     }
 
     Button { id: plain; width: 14; height: 1; text: "Default" }

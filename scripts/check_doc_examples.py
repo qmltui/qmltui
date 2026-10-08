@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Compile and render every QML example in docs/components.
 
-Each ```qml fenced block becomes a Main.qml in its own directory and is run
+Each ```qml fenced block that is a complete file (it has an import line)
+becomes a Main.qml in its own directory and is run
 through qtui_doc_example_runner with QTUI_CAPTURE_AFTER_MS set, so the block
 has to parse, resolve every type it imports, build its item tree with a
 Terminal root, and commit a frame. The runner's result.json decides.
@@ -59,6 +60,7 @@ def main() -> int:
     failures: list[str] = []
     total = 0
     skipped = 0
+    fragments = 0
     for page in sorted(PAGES_DIR.glob("*.md")):
         if args.only and args.only not in page.stem:
             continue
@@ -69,6 +71,10 @@ def main() -> int:
             skipped += 1
             continue
         for index, match in enumerate(_BLOCK.finditer(text), start=1):
+            body = match.group(1)
+            if not re.search(r"^import\s", body, re.MULTILINE):
+                fragments += 1     # an illustrative snippet, not a complete file
+                continue
             total += 1
             name = f"{page.stem}-{index}"
             work = args.artifact_dir / name
@@ -96,6 +102,7 @@ def main() -> int:
         print(f"ERROR: {failure}")
     print(f"{total - len(failures)}/{total} documentation examples load and render"
           + (f"; {skipped} draft page(s) with _TODO_ skipped" if skipped else "")
+          + (f"; {fragments} snippet(s) without an import line not run" if fragments else "")
           + f" (artifacts under {args.artifact_dir})")
     return 1 if failures else 0
 

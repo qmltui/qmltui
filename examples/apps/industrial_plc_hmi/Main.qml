@@ -692,18 +692,26 @@ Terminal {
                             height: 3
                             spacing: 1
                             Button {
+                                background: Rectangle {
+                                    color: "#1e3a1e"
+                                    border.color: "default"
+                                    border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                                }
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
                                 text: "[S] START"
-                                color: "#1e3a1e"
                                 textColor: HmiTheme.textSuccess
                         onClicked: rootWindow.triggerStart()
                             }
                             Button {
+                                background: Rectangle {
+                                    color: "#3a1e1e"
+                                    border.color: "default"
+                                    border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                                }
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
                                 text: "[X] STOP"
-                                color: "#3a1e1e"
                                 textColor: HmiTheme.textDanger
                         onClicked: rootWindow.triggerStop()
                             }
@@ -714,18 +722,26 @@ Terminal {
                             height: 3
                             spacing: 1
                             Button {
+                                background: Rectangle {
+                                    color: "#3a301e"
+                                    border.color: "default"
+                                    border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                                }
                                 width: Math.floor((parent.width - 1) / 2)
                                 height: 3
                                 text: "[R] RESET"
-                                color: "#3a301e"
                                 textColor: HmiTheme.textWarning
                         onClicked: rootWindow.requestReset()
                             }
                             Button {
+                                background: Rectangle {
+                                    color: "#21252b"
+                                    border.color: "default"
+                                    border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                                }
                                 width: parent.width - Math.floor((parent.width - 1) / 2) - 1
                                 height: 3
                                 text: "[M] MAINT"
-                                color: "#21252b"
                                 textColor: HmiTheme.textHighlight
                         onClicked: rootWindow.requestMaintenance()
                             }

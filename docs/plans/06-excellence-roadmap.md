@@ -89,6 +89,12 @@ type in the shared subset passes it.
 
 ---
 
+Done 2026-09-15: `AbstractButton` (`background`, `contentItem`, `down`,
+`checkable`, `checked`, `autoExclusive`, `highlighted`, paddings) is the
+template behind Button, CheckBox, RadioButton and Switch, replacing their
+Rectangle roots; the default look is pinned by `test_button_look`. Slider and
+Panel keep their Rectangle roots for now.
+
 ## 4. Behavior: Own It or Design Around It
 
 Behavior is what makes QML animation declarative. Today it is optional, gated

@@ -411,10 +411,13 @@ Terminal {
                 }
 
                 Button {
+                    background: Rectangle {
+                        color: "#1d212a"
+                        border.color: "default"
+                        border.style: "none"
+                    }
                     width: sidebarColumn.width
                     height: 3
-                    border.style: "none"
-                    color: "#1d212a"
                     text: rootWindow.running ? "⏸ PAUSE MONITOR" : "▶ RESUME MONITOR"
                     onClicked: rootWindow.running = !rootWindow.running
                 }
@@ -424,10 +427,13 @@ Terminal {
                     height: 3
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#1d212a"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: Math.floor((sidebarColumn.width - 1) / 2)
                         height: 3
-                        border.style: "none"
-                        color: "#1d212a"
                         text: "⚡ SPIKE [S]"
                         onClicked: {
                             rootWindow.loadSpikeTicks = 20;
@@ -435,10 +441,13 @@ Terminal {
                         }
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#1d212a"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: sidebarColumn.width - Math.floor((sidebarColumn.width - 1) / 2) - 1
                         height: 3
-                        border.style: "none"
-                        color: "#1d212a"
                         text: "🌊 MEM [L]"
                         onClicked: {
                             rootWindow.memSurgeTicks = 25;
@@ -452,10 +461,13 @@ Terminal {
                     height: 3
                     spacing: 1
                     Button {
+                        background: Rectangle {
+                            color: "#1d212a"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: Math.floor((sidebarColumn.width - 1) / 2)
                         height: 3
-                        border.style: "none"
-                        color: "#1d212a"
                         text: "🚀 NET [N]"
                         onClicked: {
                             rootWindow.netBurstTicks = 20;
@@ -463,20 +475,26 @@ Terminal {
                         }
                     }
                     Button {
+                        background: Rectangle {
+                            color: "#1d212a"
+                            border.color: "default"
+                            border.style: "none"
+                        }
                         width: sidebarColumn.width - Math.floor((sidebarColumn.width - 1) / 2) - 1
                         height: 3
-                        border.style: "none"
-                        color: "#1d212a"
                         text: "🔄 RESET [R]"
                         onClicked: rootWindow.resetAll()
                     }
                 }
 
                 Button {
+                    background: Rectangle {
+                        color: "#1d212a"
+                        border.color: "default"
+                        border.style: "none"
+                    }
                     width: sidebarColumn.width
                     height: 3
-                    border.style: "none"
-                    color: "#1d212a"
                     text: "⏱️ INTERVAL: " + rootWindow.timerInterval + "ms"
                     onClicked: rootWindow.cycleSpeed()
                 }

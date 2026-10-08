@@ -51,24 +51,33 @@ Item {
             Row {
                 spacing: 1
                 Button {
+                    background: Rectangle {
+                        color: "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: "🖨️ PRINT"
-                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.receiptOptionClicked("PRINT")
                 }
                 Button {
+                    background: Rectangle {
+                        color: "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: "✉️ EMAIL"
-                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.receiptOptionClicked("EMAIL")
                 }
                 Button {
+                    background: Rectangle {
+                        color: "#1c2b3c"
+                        border.color: "default"
+                        border.style: "single"
+                    }
                     text: "💬 SMS"
-                    color: "#1c2b3c"
                     textColor: "#D4E4FA"
-                    border.style: "single"
                     onClicked: root.receiptOptionClicked("SMS")
                 }
             }
@@ -76,10 +85,13 @@ Item {
             Text { text: "──────────────────────────────────────────────────────────"; color: "#273647" }
 
             Button {
+                background: Rectangle {
+                    color: "#06BB63"
+                    border.color: "default"
+                    border.style: "single"
+                }
                 text: "[ENTER] START NEW SALE"
-                color: "#06BB63"
                 textColor: "#051424"
-                border.style: "single"
                 onClicked: root.newSaleRequested()
             }
         }

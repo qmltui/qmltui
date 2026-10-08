@@ -161,18 +161,26 @@ Rectangle {
             spacing: 1
 
             Button {
+                background: Rectangle {
+                    color: "default"
+                    border.color: "default"
+                    border.style: "none"
+                }
                 text: "<<"
                 implicitWidth: 4
                 implicitHeight: 1
-                border.style: "none"
                 onClicked: control.prevYear()
             }
 
             Button {
+                background: Rectangle {
+                    color: "default"
+                    border.color: "default"
+                    border.style: "none"
+                }
                 text: "<"
                 implicitWidth: 3
                 implicitHeight: 1
-                border.style: "none"
                 onClicked: control.prevMonth()
             }
 
@@ -185,18 +193,26 @@ Rectangle {
             }
 
             Button {
+                background: Rectangle {
+                    color: "default"
+                    border.color: "default"
+                    border.style: "none"
+                }
                 text: ">"
                 implicitWidth: 3
                 implicitHeight: 1
-                border.style: "none"
                 onClicked: control.nextMonth()
             }
 
             Button {
+                background: Rectangle {
+                    color: "default"
+                    border.color: "default"
+                    border.style: "none"
+                }
                 text: ">>"
                 implicitWidth: 4
                 implicitHeight: 1
-                border.style: "none"
                 onClicked: control.nextYear()
             }
         }

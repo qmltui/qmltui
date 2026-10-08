@@ -20,3 +20,18 @@ qtui_add_scenario_test(
     ROWS 12
     LABELS AgentSmoke
 )
+
+# The default look of the button-like controls, as styled snapshots.
+add_executable(qtui_button_look_fixture ../TestRunner/main.cpp)
+target_link_libraries(qtui_button_look_fixture PRIVATE Qtui::Core Qtui::Controls Qtui::TestRunner)
+target_compile_definitions(qtui_button_look_fixture PRIVATE
+    QTUI_TEST_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/ButtonLookFixture.qml"
+)
+qtui_add_scenario_test(
+    NAME test_button_look
+    TARGET qtui_button_look_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_button_look.js"
+    COLUMNS 60
+    ROWS 12
+    LABELS AgentSmoke
+)

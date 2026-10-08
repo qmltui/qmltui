@@ -73,10 +73,13 @@ Item {
                             width: parent ? Math.floor(parent.width * 0.34) : 0
                             spacing: 1
                             Button {
+                                background: Rectangle {
+                                    color: "#1c2b3c"
+                                    border.color: "default"
+                                    border.style: "none"
+                                }
                                 text: "-"
-                                color: "#1c2b3c"
                                 textColor: "#FFB961"
-                                border.style: "none"
                                 onClicked: {
                                     if (cRow.modelData) root.updateQtyRequested(cRow.modelData.sku, -1);
                                 }
@@ -87,10 +90,13 @@ Item {
                                 bold: true
                             }
                             Button {
+                                background: Rectangle {
+                                    color: "#1c2b3c"
+                                    border.color: "default"
+                                    border.style: "none"
+                                }
                                 text: "+"
-                                color: "#1c2b3c"
                                 textColor: "#4AE183"
-                                border.style: "none"
                                 onClicked: {
                                     if (cRow.modelData) root.updateQtyRequested(cRow.modelData.sku, 1);
                                 }
@@ -112,17 +118,23 @@ Item {
                 Row {
                     spacing: 2
                     Button {
+                        background: Rectangle {
+                            color: "#800000"
+                            border.color: "default"
+                            border.style: "single"
+                        }
                         text: "[F1] CLEAR SALE"
-                        color: "#800000"
                         textColor: "#FFFFFF"
-                        border.style: "single"
                         onClicked: root.clearCartRequested()
                     }
                     Button {
+                        background: Rectangle {
+                            color: root.discountRate > 0 ? "#FFB961" : "#1c2b3c"
+                            border.color: "default"
+                            border.style: "single"
+                        }
                         text: root.discountRate > 0 ? "[✓ 10% DISC]" : "[F2] 10% DISC"
-                        color: root.discountRate > 0 ? "#FFB961" : "#1c2b3c"
                         textColor: root.discountRate > 0 ? "#051424" : "#D4E4FA"
-                        border.style: "single"
                         onClicked: root.applyDiscountRequested(root.discountRate > 0 ? 0.0 : 0.10)
                     }
                 }

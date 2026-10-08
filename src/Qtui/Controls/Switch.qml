@@ -1,52 +1,25 @@
 import QtQml
 import Qtui
 
-Rectangle {
+// A checkable control drawn as `[ ON]` or `[OFF]` followed by its label;
+// both states are five cells wide so the label never shifts. Behaves like
+// CheckBox: Space, Enter or a click toggles it.
+AbstractButton {
     id: control
-    property string text: ""
-    property bool checked: false
-    property rgba textColor: "default"
-    
-    signal toggled(bool checked)
+    checkable: true
 
-    focusable: enabled
-    implicitWidth: contentRow.implicitWidth
-    implicitHeight: contentRow.implicitHeight
-    Row {
-        id: contentRow
+    contentItem: Row {
         spacing: 1
-        anchors.verticalCenter: parent.verticalCenter
-
         Text {
             text: control.checked ? "[ ON]" : "[OFF]"
             color: control.textColor
-            bold: control.activeFocus
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
-
         Text {
             visible: control.text !== ""
             text: control.text
             color: control.textColor
-            bold: control.activeFocus
-        }
-    }
-
-    Keys.onPressed: (event) => {
-        if (control.enabled && (event.key === Qt.Key_Space || event.key === Qt.Key_Return)) {
-            control.checked = !control.checked
-            control.toggled(control.checked)
-            event.accepted = true
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: (event) => {
-            if (!control.enabled)
-                return
-            control.focus = true
-            control.checked = !control.checked
-            control.toggled(control.checked)
+            bold: control.activeFocus || control.hovered || control.highlighted
         }
     }
 }

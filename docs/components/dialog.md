@@ -6,12 +6,12 @@ since: "0.4"
 inherits: Popup
 cpp: qtui::Popup
 category: overlays and navigation
-summary: _TODO_
+summary: A modal, centred message box with a title, a message and accept and reject buttons.
 ---
 
 # Dialog QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+A modal, centred message box with a title, a message and accept and reject buttons. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,17 +23,39 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `textColor` | `rgba` | `"default"` | _TODO_ |
-| `titleColor` | `rgba` |  | _TODO_ |
-| `title` | `string` | `""` | _TODO_ |
-| `message` | `string` | `""` | _TODO_ |
-| `acceptText` | `string` |  | _TODO_ |
-| `rejectText` | `string` |  | _TODO_ |
-| `showRejectButton` | `bool` | `true` | _TODO_ |
+| `textColor` | `rgba` | `"default"` | Holds the terminal colour of the message text, where `"default"` is the terminal's own foreground colour. |
+| `titleColor` | `rgba` |  | Holds the terminal colour of the bold title line; it follows `textColor` unless set explicitly. |
+| `title` | `string` | `""` | Holds the bold heading drawn on the first content row of the dialog. |
+| `message` | `string` | `""` | Holds the single-line body text drawn below the title. |
+| `acceptText` | `string` | `"OK"` | Holds the label of the accept button, which calls `accept()` when activated. |
+| `rejectText` | `string` | `"Cancel"` | Holds the label of the reject button, which calls `reject()` when activated. |
+| `showRejectButton` | `bool` | `true` | Holds whether the reject button is shown; set it to false for a single-button notice. |
 
 ## Detailed Description
 
-_TODO_
+Dialog is a preconfigured [Popup](popup.md): it is `modal`, dims the
+background, is anchored to the centre of its parent, and has a `"double"`
+border with `color`, `border.color` and `textColor` all set to `"default"`,
+the terminal's own colours. Its `closePolicy` is `Popup.CloseOnEscape` only,
+so Escape calls `reject()` but clicking outside the dialog does nothing.
+Open it with `open()` and react to `accepted()`, `rejected()` or
+`finished(bool)`, all of which are inherited from Popup and are followed by
+`close()`.
+
+The content is a [Column](column.md) at cell (2, 1) with one blank row between
+the title, the message and a [Row](row.md) of two [Button](button.md)s. The
+`initialFocusItem` is the accept button, so on `open()` focus moves there and
+Enter or Space activates it; Tab and Shift+Tab cycle focus between the two
+buttons only, because the popup is modal. Enter or Return that reaches the
+dialog itself without being consumed by a child triggers the accept button.
+Closing restores focus to the item that was focused before `open()`.
+
+The implicit size is the content's implicit width plus 4 cells, but at least
+32 cells wide, by the content height plus 2 rows; with a one-line title and
+message that is 9 rows. The message is not wrapped, so a long `message`
+widens the dialog rather than adding lines. Use [Popup](popup.md) directly
+when you need custom content or a non-modal overlay, and
+[Toast](toast.md) for notifications that need no answer.
 
 ### Example
 
@@ -43,8 +65,29 @@ import Qtui
 import Qtui.Controls
 
 Terminal {
-    Dialog {
+    Column {
         anchors.centerIn: parent
+        spacing: 1
+
+        Button {
+            text: "Delete file"
+            focus: true
+            onClicked: confirm.open()
+        }
+
+        Text {
+            id: status
+            text: "Ready."
+        }
+    }
+
+    Dialog {
+        id: confirm
+        title: "Confirm"
+        message: "Delete the file? This cannot be undone."
+        acceptText: "Delete"
+        onAccepted: Qt.quit()
+        onRejected: status.text = "Cancelled."
     }
 }
 ```

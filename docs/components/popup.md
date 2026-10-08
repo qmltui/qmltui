@@ -6,12 +6,12 @@ since: "0.4"
 inherits: Rectangle
 cpp: qtui::Popup
 category: overlays and navigation
-summary: _TODO_
+summary: A rectangle drawn above all ordinary items that can trap input, dim the background and restore focus when closed.
 ---
 
 # Popup QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+A rectangle drawn above all ordinary items that can trap input, dim the background and restore focus when closed. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,43 +23,68 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `modal` | `bool` |  | _TODO_ |
-| `dimBackground` | `bool` |  | _TODO_ |
-| `closePolicy` | `int` |  | _TODO_ |
-| `initialFocusItem` | `Item` |  | _TODO_ |
-| `owner` | `Item` |  | _TODO_ |
-| `parentPopup` | `Popup` |  | Read-only. _TODO_ |
+| `modal` | `bool` | `false` | Holds whether the popup blocks keyboard and mouse input to everything outside it while open. |
+| `dimBackground` | `bool` | `true` | Holds whether the whole frame beneath the popup is dimmed while it is open; it has an effect only when `modal` is also true. |
+| `closePolicy` | `int` | `Popup.CloseOnEscape \| Popup.CloseOnOutsideClick` | Holds a combination of `Popup.ClosePolicies` flags selecting which user actions call `reject()` automatically. |
+| `initialFocusItem` | `Item` | `null` | Holds the item that receives focus on `open()`; when unset, hidden, disabled or not focusable, the first focusable descendant is used instead. |
+| `owner` | `Item` | `null` | Holds the item this popup logically belongs to, used instead of the visual parent to find `parentPopup`. |
+| `parentPopup` | `Popup` |  | Read-only. Holds the nearest popup among the ancestors of `owner`, or of the visual parent when no owner is set. |
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `opened()` | _TODO_ |
-| `closed()` | _TODO_ |
-| `accepted()` | _TODO_ |
-| `rejected()` | _TODO_ |
-| `finished(bool accepted)` | _TODO_ |
+| `opened()` | Emitted when the popup becomes visible while attached to a [Terminal](terminal.md). |
+| `closed()` | Emitted when the popup becomes hidden while attached to a [Terminal](terminal.md). |
+| `accepted()` | Emitted by `accept()` before `finished(true)` and `close()`. |
+| `rejected()` | Emitted by `reject()`, including automatic closes from Escape or an outside click, before `finished(false)` and `close()`. |
+| `finished(bool accepted)` | Emitted after `accepted()` or `rejected()` with the outcome, before the popup closes. |
 
 ## Methods
 
 | Method | Description |
 | :--- | :--- |
-| `void open()` | _TODO_ |
-| `void close()` | _TODO_ |
-| `void accept()` | _TODO_ |
-| `void reject()` | _TODO_ |
+| `void open()` | Remembers the focused item, shows the popup or raises it if already visible, and moves focus to `initialFocusItem` or the first focusable descendant. |
+| `void close()` | Hides the popup and returns focus to the item focused before `open()` if it is still visible, enabled and focusable, otherwise clears focus. |
+| `void accept()` | Emits `accepted()` and `finished(true)`, then calls `close()`. |
+| `void reject()` | Emits `rejected()` and `finished(false)`, then calls `close()`. |
 
 ## Enumeration Popup.ClosePolicies
 
 | Value | Description |
 | :--- | :--- |
-| `Popup.NoAutoClose` | _TODO_ |
-| `Popup.CloseOnEscape` | _TODO_ |
-| `Popup.CloseOnOutsideClick` | _TODO_ |
+| `Popup.NoAutoClose` | The popup closes only through `close()`, `accept()`, `reject()` or `visible`. |
+| `Popup.CloseOnEscape` | Escape calls `reject()` on the topmost visible popup with this flag. |
+| `Popup.CloseOnOutsideClick` | A mouse press and release both outside the popup call `reject()`. |
 
 ## Detailed Description
 
-_TODO_
+Popup is a [Rectangle](rectangle.md) that starts hidden, with `color`
+`"black"`, and is painted by the [Terminal](terminal.md) after all ordinary
+items regardless of where it sits in the item tree. Visible popups are
+ordered by `z` and then by opening order, so calling `open()` on an already
+visible popup raises it. When a modal popup is open, it and every popup whose
+`parentPopup` chain leads to it are drawn above all other popups. Closing or
+destroying a popup also closes every visible popup that descends from it via
+`owner` or parenting.
+
+While a modal popup is open the background is dimmed if `dimBackground` is
+true, mouse events outside it are swallowed, and Tab and Shift+Tab cycle
+focus only among the popup's focusable descendants. Escape is offered first
+to the topmost popup in the modal group; if that popup has
+`Popup.CloseOnEscape` it is rejected, otherwise the key is dispatched to the
+focus chain inside the popup. Without a modal popup, Escape rejects the
+topmost visible popup that has `CloseOnEscape`, and `CloseOnOutsideClick`
+rejects a popup when a press and the following release both land outside its
+bounds. A non-modal popup neither dims nor blocks input.
+
+`open()` records the currently focused item and moves focus into the popup;
+`close()` restores it if that item is still visible, enabled and focusable,
+and otherwise leaves nothing focused. Setting `visible` directly registers or
+unregisters the popup and emits `opened()` or `closed()`, but does not move
+focus. Popup has no implicit size; give it `width` and `height` or anchors.
+[Dialog](dialog.md) is a Popup with a title, message and buttons, and
+[ToolTip](tooltip.md) creates a non-modal Popup internally.
 
 ### Example
 
@@ -69,6 +94,33 @@ import Qtui
 import Qtui.Controls
 
 Terminal {
-    // _TODO_ show Popup in use
+    Button {
+        anchors.centerIn: parent
+        text: "Show help"
+        focus: true
+        onClicked: help.open()
+    }
+
+    Popup {
+        id: help
+        anchors.centerIn: parent
+        width: 40
+        height: 7
+        modal: true
+        border.style: "double"
+        border.color: "yellow"
+
+        Text {
+            x: 2; y: 1
+            text: "Press Escape or click outside to close."
+            color: "white"
+        }
+
+        Button {
+            x: 2; y: 3
+            text: "Quit"
+            onClicked: Qt.quit()
+        }
+    }
 }
 ```

@@ -116,6 +116,7 @@ endif()
 
 add_subdirectory(Core)
 add_subdirectory(Controls)
+add_subdirectory(Docs)
 add_subdirectory(Image)
 add_subdirectory(TestRunner)
 if(QTUI_ENABLE_TERMINAL_HOST)

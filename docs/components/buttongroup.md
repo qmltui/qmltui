@@ -6,12 +6,12 @@ since: "0.4"
 inherits: QtObject
 cpp: 
 category: inputs
-summary: _TODO_
+summary: A non-visual object that links RadioButtons so that checking one unchecks the others
 ---
 
 # ButtonGroup QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+A non-visual object that links [RadioButton](radiobutton.md) items so that checking one unchecks the others. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,11 +23,25 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `buttons` | `list<QtObject>` |  | _TODO_ |
+| `buttons` | `list<QtObject>` |  | Holds the items that belong to the group; each item exposing a `buttonGroup` property has it set to this group when the list changes. |
 
 ## Detailed Description
 
-_TODO_
+ButtonGroup is a plain `QtObject`, not an item: it has no geometry, is not
+drawn and cannot be anchored or placed in a layout. Declare it anywhere in
+the object tree and assign the member items to `buttons`, typically as a list
+of ids. Whenever `buttons` changes, the group walks the list and assigns
+itself to the `buttonGroup` property of every member that has one, so the
+members do not need to set `buttonGroup` themselves. Members without a
+`buttonGroup` property, such as [Button](button.md) or
+[CheckBox](checkbox.md), are accepted but left untouched.
+
+The exclusivity logic lives in [RadioButton](radiobutton.md), not in the
+group: when a RadioButton becomes checked it iterates over
+`buttonGroup.buttons` and sets `checked` to false on every other member that
+has a `checked` property. ButtonGroup itself has no `checkedButton`
+property, no signals and no methods. Note that removing an item from
+`buttons` does not reset its `buttonGroup` back to `null`.
 
 ### Example
 
@@ -38,7 +52,25 @@ import Qtui.Controls
 
 Terminal {
     ButtonGroup {
+        buttons: [debugBuild, releaseBuild]
+    }
+
+    Column {
         anchors.centerIn: parent
+        spacing: 1
+
+        RadioButton {
+            id: debugBuild
+            text: "Debug"
+            checked: true
+            focus: true
+        }
+
+        RadioButton {
+            id: releaseBuild
+            text: "Release"
+            onToggled: checked => { if (checked) Qt.quit() }
+        }
     }
 }
 ```

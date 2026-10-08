@@ -291,6 +291,7 @@ _QML_PROPERTY = re.compile(
 _QML_SIGNAL = re.compile(r"^    signal (?P<name>\w+)(?:\((?P<params>[^)]*)\))?")
 _QML_FUNCTION = re.compile(r"^    function (?P<name>\w+)\((?P<params>[^)]*)\)")
 _QML_ROOT = re.compile(r"^(?P<type>[A-Z]\w*)\s*\{", re.MULTILINE)
+_QML_ENUM = re.compile(r"^    enum (?P<name>\w+)\s*\{(?P<body>[^}]*)\}", re.MULTILINE)
 
 
 def load_qml_file_types(module: str, qmldir_path: Path, source_dir: Path, known: dict) -> list[QmlType]:
@@ -319,11 +320,15 @@ def load_qml_file_types(module: str, qmldir_path: Path, source_dir: Path, known:
                     params = [(p.strip().split(":")[0].strip(), "var")
                               for p in (m.group("params") or "").split(",") if p.strip()]
                     methods.append(Member(name=m.group("name"), params=params, type="var"))
+            enums = [(m.group("name"), [v.strip().split("=")[0].strip()
+                                        for v in m.group("body").split(",") if v.strip()])
+                     for m in _QML_ENUM.finditer(text)]
             # A type written in QML has no class of its own; record the root
             # item's class so the page can say what it is underneath.
             cpp = f"qtui::{inherits}" if inherits in known.values() else ""
             types.append(QmlType(name=name, module=module, cpp=cpp, inherits=inherits,
-                                 item=True, properties=properties, signals=signals, methods=methods))
+                                 item=True, properties=properties, signals=signals, methods=methods,
+                                 enums=enums))
     return types
 
 

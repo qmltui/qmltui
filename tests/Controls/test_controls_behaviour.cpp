@@ -12,6 +12,7 @@
 #include <memory>
 
 #include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/primitives/Cell.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 
@@ -352,6 +353,42 @@ Terminal {
         auto* a = terminal->findChild<Item*>("a");
         QMetaObject::invokeMethod(a, "toggle");
         QVERIFY(a->property("checked").toBool());             // autoExclusive: stays checked
+    }
+
+    // A held mouse button shows as reverse video on the label; focus stays a
+    // double border, so the two never look alike.
+    void buttonPressFeedback() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Button { objectName: "go"; x: 0; y: 0; text: "Go" }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(20, 5));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        auto reversedAt = [&](int x, int y) {
+            const auto frame = engine->currentFrame();
+            return frame && (frame->cellAt(x, y).attributes & TextAttribute::Reversed) != TextAttribute::None;
+        };
+        auto cornerAt = [&](int x, int y) {
+            const auto frame = engine->currentFrame();
+            return frame ? QString::fromUtf8(frame->cellAt(x, y).character().toByteArray()) : QString();
+        };
+        QVERIFY(!reversedAt(2, 1));
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"┌"));      // unfocused: single border
+        quint64 seq = engine->frameSequence();
+        engine->handleMouseInput(0, 2, 1, false);           // press and hold
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QVERIFY2(reversedAt(2, 1), "label should be reversed while down");
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔"));      // the press also focused it
+        seq = engine->frameSequence();
+        engine->handleMouseInput(0, 2, 1, true);            // release
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QVERIFY2(!reversedAt(2, 1), "release must clear the press look");
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔"));      // focus remains, as a double border
     }
 
     void internalsAreNotPublic() {

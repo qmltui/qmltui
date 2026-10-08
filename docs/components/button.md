@@ -32,10 +32,13 @@ focused, or a mouse press and release inside it, emits `clicked()`; a press
 also gives the button focus and holds `pressed`. Nothing happens while
 `enabled` is false. Tab and Shift+Tab move focus between focusable items.
 
-State shows in the border and the label. The border style is `"single"`, or
-`"double"` while the button has active focus, and it is dropped on a button
-shorter than 3 rows, where the label is centred on the single row and shows
-focus by boldness alone. The label is bold while the control has active focus, is `hovered`, or is `highlighted`.
+State shows in the border and the label, and each state has its own look.
+The border style is `"single"`, or `"double"` while the button has active
+focus, and it is dropped on a button shorter than 3 rows, where the label is
+centred on the single row and shows focus by boldness alone. While `down`,
+that is while a mouse button is held on it, the label is drawn in reverse
+video, so a click flashes and the double border that remains afterwards is
+focus, which a click also gives the button. The label is bold while the control has active focus, is `hovered`, or is `highlighted`.
 Hover is decoration only: keyboard focus reaches every state, and terminals or
 recordings without motion reporting never show it. `textColor`, the
 background colour and the border colour default to `"default"`, the terminal's

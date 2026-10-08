@@ -41,6 +41,7 @@ Image { source: "image://frames/scope?frame=" + tick; renderMode: Image.Braille 
 ```
 
 Each change of `source` asks the provider again, so a counter in the query
-drives a live picture. For a picture the C++ side owns outright, assign
+drives a live picture. `examples/concepts/live_image` is a complete
+application doing exactly this next to an `Image.image` binding. For a picture the C++ side owns outright, assign
 `Image::setImage()` (the `image` property) instead; it needs no URL and no
 registry.

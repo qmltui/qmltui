@@ -82,7 +82,9 @@ or a decoded video frame:
 
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown
-with `Image.HalfBlock` or `Image.Braille`.
+with `Image.HalfBlock` or `Image.Braille`. `examples/concepts/live_image`
+shows both shapes side by side, a scope trace bound through `image` and a
+radar sweep served by a provider.
 
 ```qml
 Image {

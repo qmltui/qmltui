@@ -56,7 +56,7 @@ the Windows launch), `spaceship_game` (third game, untested).
 ### 11 concept examples (`examples/concepts/`)
 
 `agent_stream`, `anchors`, `animation`, `ansi_styling`, `color_type_resolution`,
-`cpp_only`, `custom_cpp_item`, `focus_and_keys`, `layouts`, `mouse_interaction`,
+`cpp_only`, `custom_cpp_item`, `focus_and_keys`, `layouts`, `live_image`, `mouse_interaction`,
 `state_transitions`. These back the guide pages in Plan 01.
 
 Any future inventory table is generated from the filesystem by

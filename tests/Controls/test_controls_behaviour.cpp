@@ -202,6 +202,66 @@ Terminal {
         QVERIFY2(text.contains(QStringLiteral("●●●●●○○○○○")), qPrintable(text));
     }
 
+    void mouseAreaHover() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    MouseArea { objectName: "area"; x: 2; y: 2; width: 4; height: 2; hoverEnabled: true
+        property int enters: 0
+        property int exits: 0
+        onEntered: enters++
+        onExited: exits++
+        Item { objectName: "inner"; width: 1; height: 1 }
+    }
+    MouseArea { objectName: "plain"; x: 10; y: 2; width: 4; height: 2 }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 10));
+        auto* area = terminal->findChild<Item*>("area");
+        auto* plain = terminal->findChild<Item*>("plain");
+        QVERIFY(terminal->hasMouseMotionRequests());
+        QVERIFY(!area->property("containsMouse").toBool());
+        engine->handleMouseInput(3, 2, 2, false, true);   // motion, no button, over the inner child
+        QVERIFY(area->property("containsMouse").toBool());
+        QCOMPARE(area->property("enters").toInt(), 1);
+        engine->handleMouseInput(3, 4, 3, false, true);   // still inside: no second entered()
+        QCOMPARE(area->property("enters").toInt(), 1);
+        engine->handleMouseInput(3, 11, 2, false, true);  // over the area without hover
+        QVERIFY(!area->property("containsMouse").toBool());
+        QCOMPARE(area->property("exits").toInt(), 1);
+        QVERIFY(!plain->property("containsMouse").toBool());
+        engine->handleMouseInput(3, 3, 3, false, true);
+        QVERIFY(area->property("containsMouse").toBool());
+        area->setProperty("hoverEnabled", false);         // opting out clears the state
+        QVERIFY(!area->property("containsMouse").toBool());
+        QCOMPARE(area->property("exits").toInt(), 2);
+        QVERIFY(!terminal->hasMouseMotionRequests());
+    }
+
+    void buttonHover() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Button { objectName: "plain"; x: 0; y: 0; text: "Go" }
+    Button { objectName: "hover"; x: 0; y: 4; text: "Go"; hoverEnabled: true }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 10));
+        auto* hover = terminal->findChild<Item*>("hover");
+        QVERIFY(terminal->hasMouseMotionRequests());     // the opt-in button asked for motion
+        engine->handleMouseInput(3, 2, 5, false, true);
+        QVERIFY(hover->property("hovered").toBool());
+        engine->handleMouseInput(3, 2, 1, false, true);   // over the button that did not opt in
+        QVERIFY(!hover->property("hovered").toBool());
+        QVERIFY(!terminal->findChild<Item*>("plain")->property("hovered").toBool());
+    }
+
     void internalsAreNotPublic() {
         QQmlEngine qml;
         Terminal* terminal = nullptr;

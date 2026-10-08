@@ -8,6 +8,11 @@ Rectangle {
     property string text: ""
     property bool pressed: false
     property rgba textColor: "default"
+    // Opt in to hover feedback: the label is drawn bold while the pointer is
+    // over the button. Off by default, because it turns on the terminal's
+    // any-motion mouse reporting for the whole application.
+    property bool hoverEnabled: false
+    readonly property alias hovered: mouseArea.containsMouse
     signal clicked()
 
     focusable: enabled
@@ -23,7 +28,7 @@ Rectangle {
         anchors.centerIn: parent
         text: control.text
         color: control.textColor
-        bold: control.activeFocus
+        bold: control.activeFocus || control.hovered
     }
 
     Keys.onPressed: (event) => {
@@ -34,7 +39,9 @@ Rectangle {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
+        hoverEnabled: control.hoverEnabled
 
         onPressed: (event) => {
             if (!control.enabled)

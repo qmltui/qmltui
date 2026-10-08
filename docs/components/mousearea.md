@@ -25,7 +25,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 | :--- | :--- | :--- | :--- |
 | `mouseX` | `int` |  | Read-only. _TODO_ |
 | `mouseY` | `int` |  | Read-only. _TODO_ |
-| `hoverEnabled` | `bool` |  | _TODO_ |
+| `hoverEnabled` | `bool` | `false` | Whether the area tracks the pointer without a button held: it asks the terminal for any-motion reporting, updates `mouseX`/`mouseY` on movement, and drives `containsMouse`. |
+| `containsMouse` | `bool` | `false` | Read-only. True while `hoverEnabled` is set and the pointer is over this area or one of its descendants; always false on a terminal that does not report motion. |
 
 ## Signals
 
@@ -34,6 +35,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 | `pressed(MouseEvent event)` | _TODO_ |
 | `released(MouseEvent event)` | _TODO_ |
 | `clicked(MouseEvent event)` | _TODO_ |
+| `entered()` | Emitted when `containsMouse` becomes true. |
+| `exited()` | Emitted when `containsMouse` becomes false, including when `hoverEnabled` is switched off or the area is hidden or disabled while hovered. |
 
 ## Detailed Description
 

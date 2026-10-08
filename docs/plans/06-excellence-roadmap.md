@@ -146,8 +146,10 @@ generating test.
 ## 7. Control Set Every Dashboard Needs
 
 Admit under the existing `Qtui.Controls` rule (needs engine knowledge or is
-universal): ComboBox, Menu, MenuBar, context menu, ScrollBar, SpinBox, and a
-public `hovered` property with `entered`/`exited` signals on `MouseArea`.
+universal): ComboBox, Menu, MenuBar, context menu, ScrollBar, SpinBox. Done
+2026-09-15: `MouseArea.containsMouse` with `entered`/`exited` (the Qt Quick
+names rather than `hovered`), and `Button.hoverEnabled`/`hovered` as the
+first control to use it; other controls can opt in the same way.
 
 Reconsider the no-palette stance. Qt Quick Controls has an inherited
 `palette`; an inherited `palette` property on `Item` is Qt Quick naming, not a

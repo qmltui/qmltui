@@ -22,18 +22,38 @@ Terminal {
         }
 
         Text {
+            text: "Tab moves focus, Enter or Space activates, the mouse clicks."
+            color: "gray"
+        }
+
+        Text {
             text: "──────────────────────────────────────────"
             color: "gray"
         }
 
+        // hoverEnabled is opt-in: it turns on the terminal's any-motion mouse
+        // reporting, so only enable it on buttons that benefit from it. The
+        // label is drawn bold while the pointer is over the button; the
+        // double border still marks keyboard focus.
         Button {
+            id: primary
             text: "[ Primary Action ]"
+            hoverEnabled: true
             onClicked: statusText.text = "Primary button clicked!"
         }
 
         Button {
+            id: secondary
             text: "[ Secondary Action ]"
+            hoverEnabled: true
             onClicked: statusText.text = "Secondary button clicked!"
+        }
+
+        Text {
+            text: primary.hovered ? "Hover: Primary Action"
+                 : secondary.hovered ? "Hover: Secondary Action"
+                 : "Hover: none (move the mouse over a button)"
+            color: "gray"
         }
 
         Text {

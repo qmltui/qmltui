@@ -5,6 +5,8 @@ namespace qtui {
 
 MouseArea::MouseArea(QObject *parent) : Item(parent) {
     connect(this, &Item::parentChanged, this, &MouseArea::updateMotionRegistration);
+    connect(this, &Item::visibleChanged, this, &MouseArea::updateContainsMouse);
+    connect(this, &Item::enabledChanged, this, &MouseArea::updateContainsMouse);
 }
 
 MouseArea::~MouseArea() {
@@ -22,11 +24,37 @@ void MouseArea::setHoverEnabled(bool enabled) {
 void MouseArea::updateMotionRegistration() {
     Terminal* requestedTerminal = m_hoverEnabled ? terminal() : nullptr;
     if (m_motionTerminal == requestedTerminal) return;
-    if (m_motionTerminal)
+    if (m_motionTerminal) {
         m_motionTerminal->setMouseMotionRequested(this, false);
+        disconnect(m_hoverConnection);
+    }
     m_motionTerminal = requestedTerminal;
-    if (m_motionTerminal)
+    if (m_motionTerminal) {
         m_motionTerminal->setMouseMotionRequested(this, true);
+        m_hoverConnection = connect(m_motionTerminal, &Terminal::hoveredItemChanged,
+                                    this, &MouseArea::updateContainsMouse);
+    }
+    updateContainsMouse();
+}
+
+// The router hit-tests the deepest item under the pointer and publishes it as
+// Terminal::hoveredItem; this area contains the mouse when that item is the
+// area itself or one of its descendants.
+void MouseArea::updateContainsMouse() {
+    bool inside = false;
+    if (m_hoverEnabled && m_motionTerminal && isEffectivelyVisible() && isEffectivelyEnabled()) {
+        for (Item* current = m_motionTerminal->hoveredItem(); current; current = current->parentItem()) {
+            if (current == this) {
+                inside = true;
+                break;
+            }
+        }
+    }
+    if (m_containsMouse == inside) return;
+    m_containsMouse = inside;
+    emit containsMouseChanged();
+    if (inside) emit entered();
+    else emit exited();
 }
 
 void MouseArea::setMousePosition(int x, int y) {

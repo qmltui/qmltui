@@ -26,6 +26,8 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 | `text` | `string` | `""` | Holds the label drawn centred inside the button. |
 | `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the button; keyboard activation does not set it. |
 | `textColor` | `rgba` | `"default"` | Holds the terminal colour of the label, where `"default"` is the terminal's own foreground colour. |
+| `hoverEnabled` | `bool` | `false` | Whether the button tracks the pointer and shows `hovered` feedback; off by default because it enables any-motion mouse reporting for the whole application. |
+| `hovered` | `alias` |  | Read-only. True while `hoverEnabled` is set and the pointer is over the button; always false on terminals without motion reporting. |
 
 ## Signals
 
@@ -47,7 +49,11 @@ focus between focusable items, and Button is focusable whenever it is
 
 Focus is shown by the border and the label: the border style is `"single"`
 normally and `"double"` while the button has active focus, and the label is
-drawn bold while focused. The border is only drawn when `height` is at least 3
+drawn bold while focused. With `hoverEnabled` set the label is also bold
+while the pointer is over the button, so hover and focus stay distinguishable
+by the border on a three-row button. Hover is decoration only: keyboard
+focus reaches every state, and terminals or recordings without motion
+reporting simply never show it. The border is only drawn when `height` is at least 3
 cells; a shorter button has `border.style` `"none"`, so a one-line button
 shows focus through the bold label alone. `color`, `border.color` and
 `textColor` all default to `"default"`, the terminal's own colours, and can be

@@ -99,6 +99,7 @@ public:
     QString title() const { return m_title; }
     static std::string titleSequence(const QString& text);
     void updateBackgroundColor();
+    void reapplyBackgroundColor();
     static std::string osc11Sequence(const Color& color);
     static std::string osc111Sequence();
     bool isBackgroundOsc11Active() const { return m_backgroundOsc11Active; }

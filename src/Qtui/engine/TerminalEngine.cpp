@@ -296,6 +296,13 @@ std::string TerminalEngine::titleSequence(const QString& text) {
   return "\033]0;" + text.toUtf8().toStdString() + "\a";
 }
 
+void TerminalEngine::reapplyBackgroundColor() {
+    // Force the next updateBackgroundColor() to write even if the colour is
+    // unchanged, because the terminal buffer was reset underneath us.
+    m_backgroundOsc11Active = false;
+    updateBackgroundColor();
+}
+
 void TerminalEngine::updateBackgroundColor() {
   if (m_stopped)
     return;
@@ -393,12 +400,11 @@ void TerminalEngine::handleResume() {
       m_device.write("\033[?1003h");
   if (!m_title.isEmpty())
       m_device.write(titleSequence(m_title));
-  if (m_backgroundOsc11Active)
-      m_device.write(osc11Sequence(m_appliedBackgroundColor));
   if (m_renderer && m_rendererStarted) {
       m_renderer->start(m_rootWindow, m_device);   // alternate screen again, cleared
       m_renderer->discardCommittedState();
   }
+  reapplyBackgroundColor();   // after the alternate screen is re-entered
   handleResize();   // the window may have been resized while stopped
   requestRender();
 }
@@ -618,6 +624,10 @@ void TerminalEngine::startRenderer() {
     }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;
+    // Entering the alternate screen resets the background on some terminals
+    // (Windows Terminal), so the OSC 11 sent before startup is lost on the
+    // buffer the app actually draws on. Re-assert it now.
+    reapplyBackgroundColor();
 }
 
 bool TerminalEngine::enqueueControlSequence(QByteArray bytes) {

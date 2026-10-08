@@ -330,6 +330,28 @@ Terminal {
         QVERIFY(!acceptedDuringDisable);           // the contract: false when output is off
         QVERIFY(engine->takeControlSequences().isEmpty());
     }
+    void backgroundFollowsAlternateScreen() {
+        // The alternate screen resets the background on some terminals, so the
+        // OSC 11 background must be (re)sent after entering it, not only before.
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+import QtQml
+import Qtui
+Terminal { color: "black"; Text { text: "x" } }
+)", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(object.get());
+        auto* engine = terminal->engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const std::string& out = backend->output();
+        const auto alt = out.find("\033[?1049h");
+        const auto osc11After = out.find("\033]11;#000000", alt);
+        QVERIFY(alt != std::string::npos);
+        QVERIFY2(osc11After != std::string::npos,
+                 "background not re-sent after entering the alternate screen");
+    }
     void disabledStartupDoesNotProbe() {
         qputenv("QTUI_TEST_EMBEDDED_SCENARIO", "1");
         Terminal terminal;

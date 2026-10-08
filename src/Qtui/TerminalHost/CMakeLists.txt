@@ -1,3 +1,7 @@
+# The embedded emulator comes from libvterm, system or fetched; see
+# cmake/QtuiLibvterm.cmake. Only this module needs it, so only this module asks.
+qtui_provide_libvterm()
+
 qt_add_qml_module(QtuiTerminalHost
     URI Qtui.TerminalHost
     SOURCES

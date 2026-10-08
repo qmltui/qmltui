@@ -216,6 +216,9 @@ private slots:
         QVERIFY(save != std::string::npos);
         QVERIFY(save < dcs);
         QVERIFY(dcs < restore);
+        // The image rectangle is cleared with blanks before the sixel, so
+        // frames do not accumulate under each other (sixel leaves unset pixels).
+        QVERIFY(out.find(std::string(6, ' '), save) < dcs);   // Image is 6 cells wide
         // The sixel lands inside the synchronized-output bracket, after cells.
         QVERIFY(out.find("\033[?2026h") < dcs);
         QVERIFY(dcs < out.rfind("\033[?2026l"));

@@ -614,13 +614,21 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     const QByteArray sixel = graphics::sixelEncode(scaled);
     if (sixel.isEmpty()) return;
 
-    // Position the cursor at the image origin, paint, and restore. DECSC/DECRC
-    // keep the renderer's own cursor bookkeeping untouched.
-    QByteArray positioned = "7";                                  // save cursor
-    positioned += "[" + QByteArray::number(originY + 1) + ';'
-                + QByteArray::number(originX + 1) + 'H';              // 1-based move
+    // Clear the whole item rectangle first. Sixel with P2=1 leaves unset
+    // pixels untouched, so without an explicit clear the previous frame's
+    // opaque pixels accumulate under the new one. Clearing the full item
+    // (not just the placement) also erases a larger previous frame when a
+    // mood change shrinks the placement. SGR is reset so blanks clear to the
+    // default background; the next frame's diff re-establishes style.
+    QByteArray positioned = "\033[0m\0337";            // default SGR, save cursor
+    const QByteArray blank(itemW, ' ');
+    for (int r = 0; r < itemH; ++r)
+        positioned += "\033[" + QByteArray::number(absY + 1 + r) + ';'
+                    + QByteArray::number(absX + 1) + 'H' + blank;
+    positioned += "\033[" + QByteArray::number(originY + 1) + ';'
+                + QByteArray::number(originX + 1) + 'H';    // move to the image origin
     positioned += sixel;
-    positioned += "8";                                            // restore cursor
+    positioned += "\0338";                               // restore cursor
     root->enqueuePostControlSequence(positioned);
 }
 

@@ -79,7 +79,9 @@ cursor-positioned sixel through a new post-diff control queue
 (`enqueuePostControlSequence`) drained by both renderers after the cell diff.
 `resolve()` prefers kitty, then sixel, then none, so `Auto` picks sixel on
 Windows Terminal and kitty elsewhere. Re-emit is keyed on source, geometry and
-output-session generation, so a resize, resume or renderer switch redraws it.
+output-session generation, so a resize, resume or renderer switch redraws it. Each re-emit first clears the item rectangle with blanks, because sixel with
+P2=1 leaves unset pixels untouched and transparent frames would otherwise
+accumulate under one another (found on Windows Terminal, 2026-09-13).
 Covered by `test_kitty_graphics` (sixel cases). Real-terminal verification (2026-09-13): kitty confirmed on Ghostty, sixel confirmed on Windows Terminal. Documented limitation: sixel
 paints at the cursor, so it is drawn after the cells and cannot sit under other
 cell content the way kitty placeholders can; it is meant for a dedicated image

@@ -25,6 +25,7 @@ private slots:
     void testDefaultsToTrueColor();
     void testColorTermAndDirect();
     void testIndexedFromTerm();
+    void testWindowsTerminalIsTrueColor();
     void testTermProgramTable();
     void testMonoFromNoColorAndDumb();
     void testOverrideWins();
@@ -60,6 +61,21 @@ void TestTerminalCapabilities::testIndexedFromTerm()
     QCOMPARE(TerminalCapabilities::detect(environmentWith({{"TERM", "xterm-256color"}})).colorDepth,
              ColorDepth::Indexed256);
     QCOMPARE(TerminalCapabilities::detect(environmentWith({{"TERM", "screen-256color"}})).colorDepth,
+             ColorDepth::Indexed256);
+}
+
+void TestTerminalCapabilities::testWindowsTerminalIsTrueColor()
+{
+    // Windows Terminal supports true colour even when TERM says 256; otherwise
+    // desaturated true colours quantise to grey.
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"TERM", "xterm-256color"}, {"WT_SESSION", "abc"}})).colorDepth,
+             ColorDepth::TrueColor);
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"TERM", "xterm-256color"}, {"WSL_DISTRO_NAME", "Ubuntu"}})).colorDepth,
+             ColorDepth::TrueColor);
+    // NO_COLOR and an explicit override still win over the Windows heuristic.
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"WT_SESSION", "abc"}, {"NO_COLOR", "1"}})).colorDepth,
+             ColorDepth::Mono);
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"WT_SESSION", "abc"}, {"QTUI_COLOR_DEPTH", "256"}})).colorDepth,
              ColorDepth::Indexed256);
 }
 

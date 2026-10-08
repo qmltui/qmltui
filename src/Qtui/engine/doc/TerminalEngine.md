@@ -125,6 +125,13 @@ and are applied to the detected defaults and again after replies, so they win
 over what the terminal claims: `QTUI_COLOR_DEPTH`, `QTUI_SYNC_OUTPUT`,
 `QTUI_KITTY_KEYBOARD` and `QTUI_KITTY_GRAPHICS`, where `0`, `false` and `off`
 disable.
+
+Colour depth is derived from `COLORTERM`, `TERM` and `TERM_PROGRAM`. Windows
+Terminal (detected by `WT_SESSION`/`WT_PROFILE_ID`, or `WSL_INTEROP`/
+`WSL_DISTRO_NAME` under WSL) is treated as true colour even when `TERM` only
+advertises 256, because otherwise desaturated true colours quantise to the
+256-cube grey ramp and warm tones render as grey. `QTUI_COLOR_DEPTH=256`
+overrides this.
 `setCapabilities()` is a deterministic programmatic override: it cancels pending
 negotiation and suppresses future probes for that engine. Protocol detection
 alone neither pushes keyboard modes nor uploads images.

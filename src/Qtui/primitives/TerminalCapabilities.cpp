@@ -58,6 +58,16 @@ TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment &env
         capabilities.colorDepth = ColorDepth::TrueColor;
     } else if (program == QLatin1String("apple_terminal")) {
         capabilities.colorDepth = ColorDepth::Indexed256;
+    } else if (environment.contains(QStringLiteral("WT_SESSION"))
+               || environment.contains(QStringLiteral("WT_PROFILE_ID"))
+               || environment.contains(QStringLiteral("WSL_INTEROP"))
+               || environment.contains(QStringLiteral("WSL_DISTRO_NAME"))) {
+        // Windows Terminal, natively or through WSL, supports 24-bit colour even
+        // when TERM only advertises 256 (the usual WSL default). Without this,
+        // desaturated true colours quantise to the 256-cube grey ramp and warm
+        // tones render as grey. Legacy conhost is rare now; QTUI_COLOR_DEPTH
+        // overrides if needed.
+        capabilities.colorDepth = ColorDepth::TrueColor;
     } else if (term.contains(QLatin1String("256color"))) {
         capabilities.colorDepth = ColorDepth::Indexed256;
     } else {

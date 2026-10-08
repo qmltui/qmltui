@@ -8,6 +8,18 @@ type. Both are generated from the single markdown source defined in Plan 01.
 
 ---
 
+## Implementation status
+
+Section 2 skeletons exist for all 71 exported QML types (2026-09-14), written
+by `scripts/component_docs.py generate` from the build's `.qmltypes` and
+`qmldir` metadata: frontmatter, the import/inherits table, and every
+property, signal, method, enum and attached property as table rows, with
+`_TODO_` where prose belongs. `scripts/component_docs.py check` runs as
+`test_component_docs`: a type without a page or a page whose member tables
+differ from the build fails the suite, and `--strict` will fail on remaining
+placeholders once the prose is written. Slugs are the lowercase type name
+(`tabbar.md`). Sections 3 to 5 are not started.
+
 ## 2. QML Type Page Template (`docs/components/<type>.md`)
 
 ```markdown

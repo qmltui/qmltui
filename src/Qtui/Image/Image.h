@@ -3,6 +3,9 @@
 #include <Qtui/Core/primitives/QtuiExport.h>
 
 #include <Qtui/Core/items/Item.h>
+#include <Qtui/Image/TerminalGraphics.h>
+#include <QMetaObject>
+#include <QPointer>
 #include <QImage>
 #include <QUrl>
 #include <QSize>
@@ -23,6 +26,13 @@ class QTUI_IMAGE_EXPORT Image : public Item {
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(QSize sourceSize READ sourceSize NOTIFY sourceSizeChanged)
     Q_PROPERTY(bool smooth READ smooth WRITE setSmooth NOTIFY smoothChanged)
+    // The pixel grid this item paints into, so a producer can draw frames at
+    // exactly the resolution the terminal will show: columns times rows times
+    // the cell's pixel size when kitty or sixel will be used, otherwise the
+    // glyph grid (1x2 per cell for half-block, 2x4 for Braille, 1x1 for
+    // ASCII). Invalid while the item has no size. Follows the item size, the
+    // render mode and the terminal's capabilities.
+    Q_PROPERTY(QSize renderSize READ renderSize NOTIFY renderSizeChanged)
     Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
 
 public:
@@ -75,6 +85,8 @@ public:
     bool smooth() const { return m_smooth; }
     void setSmooth(bool smooth);
 
+    QSize renderSize() const;
+
     Qt::Alignment alignment() const { return m_alignment; }
     void setAlignment(Qt::Alignment alignment);
 
@@ -92,6 +104,7 @@ signals:
     void sourceSizeChanged();
     void smoothChanged();
     void alignmentChanged();
+    void renderSizeChanged();
 
 private:
     void loadImage();
@@ -113,6 +126,11 @@ private:
     void paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
     // Frees the current kitty upload if the terminal is still reachable.
     void releaseKittyImage() const;
+    // The pixel protocol paint() will use for the current mode and terminal:
+    // None means a glyph mode (half-block, Braille or ASCII).
+    graphics::Protocol activeProtocol() const;
+    // Re-emits renderSizeChanged() when the terminal's capabilities change.
+    void watchCapabilities() const;
 
     QUrl m_source;
     FillMode m_fillMode = FillMode::Stretch;
@@ -134,6 +152,8 @@ private:
     mutable quint32 m_imageId = 0;
     mutable qint64 m_lastKittyKey = 0;
     mutable QSize m_lastKittyUpload;   // pixel size of the current upload
+    mutable QPointer<Terminal> m_watchedTerminal;
+    mutable QMetaObject::Connection m_capabilitiesConnection;
     mutable QSize m_lastKittyCells;
 
     // sixel state. m_lastSixelSignature encodes source, geometry and output

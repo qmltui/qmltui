@@ -29,6 +29,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | `renderMode` | `RenderMode` |  | _TODO_ |
 | `status` | `Status` |  | Read-only. _TODO_ |
 | `sourceSize` | `size` |  | Read-only. _TODO_ |
+| `renderSize` | `size` |  | Read-only. The pixel grid this item paints into: columns and rows times the cell's pixel size when kitty or sixel will draw, otherwise the glyph grid (1x2 per cell for half-block, 2x4 for Braille, 1x1 for ASCII). Produce frames at this size and they are shown without scaling; it follows the item size, `renderMode` and the terminal's capabilities. |
 | `smooth` | `bool` | `true` | Whether scaling the picture to the cell grid filters pixels; false picks the nearest pixel, which keeps hard edges in pixel art. With kitty, a source smaller than its placement is pre-scaled to the placement's pixel size so the terminal's own magnification cannot turn pixels into blocks; false uploads the source as is. |
 | `alignment` | `Qt::Alignment` |  | _TODO_ |
 
@@ -78,7 +79,7 @@ or a decoded video frame:
   `qtui::ImageProvider` on the engine with `ImageProvider::add()`. The id is
   everything after the provider name, query included, so a counter in the
   query (`?frame=` + tick) asks C++ for a new picture. The provider receives
-  the item's current pixel grid as the requested size and may render to it.
+  the item's `renderSize` as the requested size and may render to it.
 
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown

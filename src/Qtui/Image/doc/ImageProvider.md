@@ -12,7 +12,7 @@ that class's base for Qt Quick, so Qtui keeps its own registry on the QML engine
 
 | Function | Description |
 | :--- | :--- |
-| `virtual QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) = 0` | Returns the picture for `id`, everything after `image://<provider>/` including the query. `requestedSize` is the requesting item's pixel grid when it has a size, else invalid; set `*size` to the natural size if it differs. Return a null image for an unknown id; the item then reports `Error`. |
+| `virtual QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) = 0` | Returns the picture for `id`, everything after `image://<provider>/` including the query. `requestedSize` is the requesting item's `renderSize`, true pixels under kitty or sixel and the glyph grid otherwise, or invalid while the item has no size; render to it for a crisp result and set `*size` to the natural size if it differs. Return a null image for an unknown id; the item then reports `Error`. |
 | `static void add(QQmlEngine* engine, const QString& id, ImageProvider* provider)` | Registers the provider for every Image created by `engine`; the engine takes ownership. Adding again under the same id deletes the previous provider. |
 | `static ImageProvider* find(const QQmlEngine* engine, const QString& id)` | The provider registered as `id`, or null. |
 | `static void remove(QQmlEngine* engine, const QString& id)` | Removes and deletes the provider registered as `id`. |

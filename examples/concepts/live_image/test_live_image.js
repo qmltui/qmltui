@@ -1,12 +1,13 @@
 // Both pictures are alive: the bound QImage and the provider-served one change
-// as the tick advances, and pausing stops them.
+// as the tick advances, are drawn at the Image's renderSize, and pausing stops
+// them. Under the test backend no pixel protocol exists, so both are half-block.
 function main(terminal) {
     terminal.waitForText("Live Image: pictures from memory");
     terminal.waitForRegex("Tick [2-9]");
     terminal.expectText("image: feed.frame");
     terminal.expectText("source: image://frames/radar");
-    terminal.expectRegex("[⠁-⣿]");                 // the Braille panel has dots
-    terminal.expectText("▀");                       // the half-block panel has pixels
+    terminal.expectText("frames 34x22 px");            // 34 cells x 11 rows, two pixels per cell
+    terminal.expectText("\u2580");                     // half-block pixels on the page
     const early = terminal.frameText();
     terminal.captureText("live_image_early.txt");
     terminal.waitForRegex("Tick (1[0-9]|[6-9])");   // a few ticks later

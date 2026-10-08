@@ -15,6 +15,7 @@
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Image/Image.h>
 #include <Qtui/Image/TerminalGraphics.h>
+#include <QSignalSpy>
 #include <Qtui/Core/primitives/TextGridBuffer.h>
 
 using namespace qtui;
@@ -174,6 +175,39 @@ private slots:
         img->setSmooth(false);            // pixel art: let the terminal magnify the blocks
         QTRY_VERIFY(backend->output().find("\033_Gq=2,a=t") != std::string::npos);
         QCOMPARE(transmittedImage(backend->output()).size(), source);
+    }
+
+    // renderSize is the pixel grid the item paints into: true pixels when a
+    // protocol is active, the glyph grid otherwise; it follows mode, size and
+    // capabilities, and a provider receives it as the requested size.
+    void renderSizeFollowsProtocol() {
+        QQmlEngine qml;
+        std::unique_ptr<QObject> holder;
+        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());   // 10x20 px cells, 6x3 item, Auto
+        QVERIFY(terminal);
+        auto* img = terminal->findChild<Image*>("img");
+        QSignalSpy changed(img, &Image::renderSizeChanged);
+        QCOMPARE(img->renderSize(), QSize(60, 60));
+        img->setRenderMode(Image::RenderMode::Braille);
+        QCOMPARE(img->renderSize(), QSize(12, 12));
+        img->setRenderMode(Image::RenderMode::ASCII);
+        QCOMPARE(img->renderSize(), QSize(6, 3));
+        img->setRenderMode(Image::RenderMode::HalfBlock);
+        QCOMPARE(img->renderSize(), QSize(6, 6));
+        img->setRenderMode(Image::RenderMode::Kitty);
+        QCOMPARE(img->renderSize(), QSize(60, 60));
+        QCOMPARE(changed.count(), 4);
+        img->setWidth(8);
+        QCOMPARE(img->renderSize(), QSize(80, 60));
+        QCOMPARE(changed.count(), 5);
+        TerminalCapabilities none;
+        none.colorDepth = ColorDepth::TrueColor;
+        terminal->engine()->setCapabilities(none);      // the terminal lost its protocol
+        QCOMPARE(img->renderSize(), QSize(8, 6));        // Kitty falls back to half-block
+        QVERIFY(changed.count() >= 6);
+        terminal->engine()->setCapabilities(sixelCaps());
+        img->setRenderMode(Image::RenderMode::Auto);
+        QCOMPARE(img->renderSize(), QSize(80, 60));
     }
 
     void unchangedFrameResendsNothing() {

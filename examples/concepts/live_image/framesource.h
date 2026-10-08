@@ -15,6 +15,11 @@ class FrameSource : public QObject {
     Q_PROPERTY(int tick READ tick NOTIFY tickChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(int interval READ interval WRITE setInterval NOTIFY intervalChanged)
+    // The pixel size to draw at. Bind it to the showing Image's renderSize so
+    // every frame is produced at exactly the resolution the terminal shows:
+    // true pixels under kitty or sixel, the glyph grid otherwise. Falls back
+    // to 96x48 while invalid.
+    Q_PROPERTY(QSize frameSize READ frameSize WRITE setFrameSize NOTIFY frameSizeChanged)
 
 public:
     explicit FrameSource(QObject* parent = nullptr);
@@ -25,6 +30,8 @@ public:
     void setRunning(bool running);
     int interval() const { return m_timer.interval(); }
     void setInterval(int ms);
+    QSize frameSize() const { return m_frameSize; }
+    void setFrameSize(const QSize& size);
 
     // A scope trace: two sine waves phase-shifted by `tick`, on a 96x48 pixel
     // canvas. Public and static so the test can check determinism.
@@ -35,11 +42,15 @@ signals:
     void tickChanged();
     void runningChanged();
     void intervalChanged();
+    void frameSizeChanged();
 
 private:
     void advance();
 
+    QSize effectiveSize() const { return m_frameSize.isValid() && !m_frameSize.isEmpty() ? m_frameSize : QSize(96, 48); }
+
     QTimer m_timer;
     QImage m_frame;
+    QSize m_frameSize;
     int m_tick = 0;
 };

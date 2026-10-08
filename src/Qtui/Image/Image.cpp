@@ -91,7 +91,49 @@ static QString resolvePath(const QUrl& url) {
     return str;
 }
 
-Image::Image(QObject* parent) : Item(parent) {}
+Image::Image(QObject* parent) : Item(parent) {
+    connect(this, &Item::widthChanged, this, &Image::renderSizeChanged);
+    connect(this, &Item::heightChanged, this, &Image::renderSizeChanged);
+}
+
+graphics::Protocol Image::activeProtocol() const {
+    if (m_renderMode != RenderMode::Auto && m_renderMode != RenderMode::Kitty && m_renderMode != RenderMode::Sixel)
+        return graphics::Protocol::None;
+    const TerminalCapabilities caps = terminal() ? terminal()->capabilities() : TerminalCapabilities{};
+    const graphics::Protocol available = graphics::resolve(caps);
+    // Auto takes the best available; an explicit mode is honoured only when
+    // that protocol is the one available, else all fall back to HalfBlock.
+    if (m_renderMode == RenderMode::Auto) return available;
+    if (m_renderMode == RenderMode::Kitty && available == graphics::Protocol::Kitty) return available;
+    if (m_renderMode == RenderMode::Sixel && available == graphics::Protocol::Sixel) return available;
+    return graphics::Protocol::None;
+}
+
+void Image::watchCapabilities() const {
+    Terminal* root = terminal();
+    if (root == m_watchedTerminal) return;
+    if (m_capabilitiesConnection) disconnect(m_capabilitiesConnection);
+    m_watchedTerminal = root;
+    if (root)
+        m_capabilitiesConnection = connect(root, &Terminal::capabilitiesChanged, this, &Image::renderSizeChanged);
+}
+
+QSize Image::renderSize() const {
+    watchCapabilities();
+    const int w = width();
+    const int h = height();
+    if (w <= 0 || h <= 0) return QSize();
+    const graphics::Protocol protocol = activeProtocol();
+    if (protocol != graphics::Protocol::None) {
+        const QSize cell = terminal()->capabilities().cellPixelSize;
+        if (cell.isValid()) return QSize(w * cell.width(), h * cell.height());
+    }
+    switch (m_renderMode) {
+    case RenderMode::Braille: return QSize(w * 2, h * 4);
+    case RenderMode::ASCII: return QSize(w, h);
+    default: return QSize(w, h * 2);   // HalfBlock and every fallback
+    }
+}
 
 Image::~Image() {
     releaseKittyImage();
@@ -153,14 +195,8 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found) const {
     if (url.hasQuery()) id += QLatin1Char('?') + url.query();
     if (url.hasFragment()) id += QLatin1Char('#') + url.fragment();
     // The pixel grid this item paints into, so a provider can render sharp.
-    QSize requested;
-    if (width() > 0 && height() > 0) {
-        const int rowsPerCell = m_renderMode == RenderMode::Braille ? 4 : m_renderMode == RenderMode::ASCII ? 1 : 2;
-        const int colsPerCell = m_renderMode == RenderMode::Braille ? 2 : 1;
-        requested = QSize(width() * colsPerCell, height() * rowsPerCell);
-    }
     QSize natural;
-    return provider->requestImage(id, &natural, requested);
+    return provider->requestImage(id, &natural, renderSize());
 }
 
 void Image::setFillMode(FillMode mode) {
@@ -174,6 +210,7 @@ void Image::setRenderMode(RenderMode mode) {
     if (m_renderMode == mode) return;
     m_renderMode = mode;
     emit renderModeChanged();
+    emit renderSizeChanged();
     markDirty();
 }
 
@@ -332,17 +369,10 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     // Resolve the effective mode. Auto picks the best pixel protocol the
     // terminal supports; an explicit Kitty falls back when unsupported. Both
     // collapse to HalfBlock so tests and plain terminals are unaffected.
+    watchCapabilities();
     RenderMode mode = m_renderMode;
     if (mode == RenderMode::Auto || mode == RenderMode::Kitty || mode == RenderMode::Sixel) {
-        const TerminalCapabilities caps = terminal() ? terminal()->capabilities()
-                                                     : TerminalCapabilities{};
-        const graphics::Protocol available = graphics::resolve(caps);
-        // Auto takes the best available; an explicit mode is honoured only when
-        // that protocol is the one available, else all fall back to HalfBlock.
-        graphics::Protocol use = graphics::Protocol::None;
-        if (mode == RenderMode::Auto) use = available;
-        else if (mode == RenderMode::Kitty && available == graphics::Protocol::Kitty) use = available;
-        else if (mode == RenderMode::Sixel && available == graphics::Protocol::Sixel) use = available;
+        const graphics::Protocol use = activeProtocol();
         if (use == graphics::Protocol::Kitty) {
             paintKitty(buffer, absX, absY, clipRect);
             return;

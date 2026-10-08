@@ -12,7 +12,9 @@ QImage FrameProvider::requestImage(const QString& id, QSize* size, const QSize& 
     if (name != QLatin1String("radar"))
         return QImage();   // unknown picture: the Image reports Error
     const int tick = parameters.queryItemValue(QStringLiteral("tick")).toInt();
-    const QSize target = requestedSize.isValid() ? requestedSize : QSize(64, 32);
+    // requestedSize is the Image's renderSize: true pixels under kitty or
+    // sixel, the glyph grid otherwise, so the sweep is crisp either way.
+    const QSize target = requestedSize.isValid() ? requestedSize : QSize(256, 128);
     QImage image = paintRadar(tick, target);
     *size = image.size();
     return image;

@@ -43,6 +43,16 @@ quint32 nextImageId();
 // is separate so a resize re-places without re-uploading.
 QByteArray kittyTransmit(quint32 imageId, const QImage& image);
 
+// The pixel size to upload for a source shown in a placement of
+// `placementPixels` (cols x rows times the cell size, invalid when the cell
+// size is unknown). The terminal scales the stored image into the placement
+// with a filter of its own choosing, often nearest-neighbour, so a small
+// picture magnified onto a large placement comes out blocky. With `smooth`
+// the source is pre-scaled here to the placement size, never beyond
+// `maxEdge` per side; without it, or when shrinking or the cell size is
+// unknown, the source goes as is (capped at maxEdge) and the terminal scales.
+QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool smooth, int maxEdge = 2048);
+
 // A Unicode virtual placement of `imageId` sized to cols x rows cells. The
 // terminal scales the image into that rectangle; the placeholder cells select
 // which part shows where.

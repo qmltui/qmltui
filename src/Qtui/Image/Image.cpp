@@ -568,16 +568,22 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
         else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
     }
 
-    // Re-upload only when the source or the placement geometry changed. The
-    // terminal scales the stored image into the cols x rows placement.
+    // Re-upload only when the source, the placement geometry or the upload
+    // size changed. The terminal scales the stored image into the cols x rows
+    // placement; a small source is pre-scaled here when `smooth` is set so the
+    // magnification is filtered rather than blocky (see kittyUploadSize).
     const qint64 key = m_sourceImage.cacheKey();
-    if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells) {
+    const QSize cellPx = root->capabilities().cellPixelSize;
+    const QSize placementPx = cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
+    const QSize uploadSize = graphics::kittyUploadSize(m_sourceImage.size(), placementPx, m_smooth);
+    if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells
+        || uploadSize != m_lastKittyUpload) {
         if (m_imageId != 0)
             root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
         QImage upload = m_sourceImage;
-        constexpr int maxEdge = 2048;   // bound the payload; the terminal scales anyway
-        if (sw > maxEdge || sh > maxEdge)
-            upload = upload.scaled(QSize(maxEdge, maxEdge), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (uploadSize != m_sourceImage.size())
+            upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        m_lastKittyUpload = uploadSize;
         m_imageId = graphics::nextImageId();
         root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
         root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));

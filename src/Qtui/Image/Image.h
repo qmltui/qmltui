@@ -133,6 +133,7 @@ private:
     // kitty graphics state. m_imageId is 0 until the first upload.
     mutable quint32 m_imageId = 0;
     mutable qint64 m_lastKittyKey = 0;
+    mutable QSize m_lastKittyUpload;   // pixel size of the current upload
     mutable QSize m_lastKittyCells;
 
     // sixel state. m_lastSixelSignature encodes source, geometry and output

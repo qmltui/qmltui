@@ -14,6 +14,7 @@
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Image/Image.h>
+#include <Qtui/Image/TerminalGraphics.h>
 #include <Qtui/Core/primitives/TextGridBuffer.h>
 
 using namespace qtui;
@@ -85,6 +86,23 @@ Terminal {
     }
 
 private slots:
+    // Reassembles the PNG from the chunked transmit (`m=1` chunks then `m=0`)
+    // that follows the first transmit command in `out`.
+    static QImage transmittedImage(const std::string& out) {
+        size_t pos = out.find("\033_Gq=2,a=t");
+        QByteArray base64;
+        while (pos != std::string::npos) {
+            const size_t semicolon = out.find(';', pos);
+            const size_t end = out.find("\033\\", pos);
+            if (semicolon == std::string::npos || end == std::string::npos) break;
+            const std::string header = out.substr(pos, semicolon - pos);
+            base64 += QByteArray(out.data() + semicolon + 1, int(end - semicolon - 1));
+            if (header.find("m=1") == std::string::npos) break;   // last chunk
+            pos = out.find("\033_G", end);
+        }
+        return QImage::fromData(QByteArray::fromBase64(base64), "PNG");
+    }
+
     void initTestCase() {
         QVERIFY(dir.isValid());
         redPng = makePng(dir.path(), "red.png", Qt::red);
@@ -126,6 +144,36 @@ private slots:
         QCOMPARE(placeholderCellCount(engine, &fg), 18);   // 6x3 cells
         QCOMPARE(fg, 0xFF000000u | (id & 0xFFFFFFu));
         QVERIFY(place < out.find(std::string(kPlaceholderUtf8, 4)));  // cells after controls
+    }
+
+    // The upload is pre-scaled to the placement's pixel size when a small
+    // source would be magnified and `smooth` is set, so the terminal does not
+    // nearest-neighbour it into blocks; without `smooth` the source goes as is.
+    void magnifiedUploadIsPrescaledWhenSmooth() {
+        using graphics::kittyUploadSize;
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(220, 240), true), QSize(220, 240));
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(220, 240), false), QSize(60, 60));
+        QCOMPARE(kittyUploadSize(QSize(600, 600), QSize(220, 240), true), QSize(600, 600));   // shrinking: terminal scales
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(), true), QSize(60, 60));               // cell size unknown
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(4000, 4000), true), QSize(2048, 2048)); // capped
+        QCOMPARE(kittyUploadSize(QSize(3000, 1500), QSize(), true), QSize(2048, 1024));
+
+        QQmlEngine qml;
+        std::unique_ptr<QObject> holder;
+        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());   // 10x20 px cells, 6x3 item
+        QVERIFY(terminal);
+        auto* img = terminal->findChild<Image*>("img");
+        img->setSource(QUrl::fromLocalFile(redPng));
+        auto* engine = terminal->engine();
+        QTRY_VERIFY(placeholderCellCount(engine) > 0);
+        const QSize source = QImage(redPng).size();
+        QVERIFY(source.width() < 60);   // the fixture picture is small: this placement magnifies it
+        QCOMPARE(transmittedImage(backend->output()).size(), QSize(60, 60));   // 6 cols x 10 px, 3 rows x 20 px
+
+        backend->clearOutput();
+        img->setSmooth(false);            // pixel art: let the terminal magnify the blocks
+        QTRY_VERIFY(backend->output().find("\033_Gq=2,a=t") != std::string::npos);
+        QCOMPARE(transmittedImage(backend->output()).size(), source);
     }
 
     void unchangedFrameResendsNothing() {

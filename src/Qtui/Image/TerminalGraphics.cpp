@@ -70,6 +70,19 @@ quint32 nextImageId()
     return id == 0 ? 1u : id;
 }
 
+QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool smooth, int maxEdge)
+{
+    if (source.isEmpty()) return source;
+    QSize size = source;
+    const bool magnifies = placementPixels.isValid()
+        && (placementPixels.width() > source.width() || placementPixels.height() > source.height());
+    if (smooth && magnifies)
+        size = placementPixels;
+    if (size.width() > maxEdge || size.height() > maxEdge)
+        size = size.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio);
+    return size;
+}
+
 QByteArray kittyTransmit(quint32 imageId, const QImage& image)
 {
     QByteArray png;

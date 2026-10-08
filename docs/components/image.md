@@ -29,7 +29,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | `renderMode` | `RenderMode` |  | _TODO_ |
 | `status` | `Status` |  | Read-only. _TODO_ |
 | `sourceSize` | `size` |  | Read-only. _TODO_ |
-| `smooth` | `bool` |  | _TODO_ |
+| `smooth` | `bool` | `true` | Whether scaling the picture to the cell grid filters pixels; false picks the nearest pixel, which keeps hard edges in pixel art. With kitty, a source smaller than its placement is pre-scaled to the placement's pixel size so the terminal's own magnification cannot turn pixels into blocks; false uploads the source as is. |
 | `alignment` | `Qt::Alignment` |  | _TODO_ |
 
 ## Enumeration Image.FillMode

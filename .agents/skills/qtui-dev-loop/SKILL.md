@@ -38,7 +38,7 @@ rtk cmake --build build
 
 `QTUI_BUILD_TESTS=ON` builds `Qtui::TestRunner` and the repository test suites.
 Use `-DQTUI_ENABLE_TEST_RUNNER=ON` only when TestRunner must be built and installed
-without the repository tests. Use `-DQTUI_BUILD_TERMINAL_HOST=ON` only for the
+without the repository tests. Use `-DQTUI_ENABLE_TERMINAL_HOST=ON` only for the
 optional PTY-backed `TerminalView` module.
 
 Behavior and the Industrial PLC HMI require `-DQTUI_ENABLE_BEHAVIOR=ON` and

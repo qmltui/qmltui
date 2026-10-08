@@ -17,7 +17,7 @@
 - Build terminal interfaces from `QtQml` and Qtui modules. Do not add a
   `QtQuick` import or Qt Quick dependency to Qtui applications or modules.
 - Keep optional subsystems gated. `QTUI_ENABLE_BEHAVIOR=ON` requires
-  `Qt6::QmlPrivate`; `QTUI_BUILD_TERMINAL_HOST=ON` is the Unix PTY module and is
+  `Qt6::QmlPrivate`; `QTUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
   supported only on Linux and macOS.
 
 ## Build and Test Decisions

@@ -626,7 +626,7 @@ host needs it.
 - **Mouse reporting** works in Windows Terminal through the same SGR sequences
   once VT input is enabled. Verify, do not assume.
 - **`Qtui.TerminalHost`** (the embedded PTY module) is Unix only and stays
-  `QTUI_BUILD_TERMINAL_HOST=OFF` on Windows. ConPTY support is a separate,
+  `QTUI_ENABLE_TERMINAL_HOST=OFF` on Windows. ConPTY support is a separate,
   later plan.
 - **Sixel images** are not supported by Windows Terminal; `Qtui.Image` falls
   back to half-block rendering, which it already does when capabilities say so.

@@ -104,7 +104,7 @@ ctest --test-dir build --output-on-failure
 The experimental Unix PTY host is opt-in:
 
 ```sh
-cmake -S . -B build -DQTUI_BUILD_TERMINAL_HOST=ON
+cmake -S . -B build -DQTUI_ENABLE_TERMINAL_HOST=ON
 cmake --build build --target qtui_terminal_view
 ```
 
@@ -209,7 +209,7 @@ The installed QML modules are:
 - `Qtui`
 - `Qtui.Controls`
 - `Qtui.Image`
-- `Qtui.TerminalHost` when built with `QTUI_BUILD_TERMINAL_HOST=ON`
+- `Qtui.TerminalHost` when built with `QTUI_ENABLE_TERMINAL_HOST=ON`
 
 ## Supported public surface
 

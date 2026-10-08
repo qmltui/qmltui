@@ -116,7 +116,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
         errors.append(f"unexpected Common Type Map modules; missing={missing}, extra={extra}")
 
     behavior_enabled = cache_bool(build_dir, "QTUI_ENABLE_BEHAVIOR")
-    terminal_host_enabled = cache_bool(build_dir, "QTUI_BUILD_TERMINAL_HOST")
+    terminal_host_enabled = cache_bool(build_dir, "QTUI_ENABLE_TERMINAL_HOST")
     checked = 0
     for module, types in modules.items():
         relative_qmltypes = QMLTYPE_FILES.get(module)

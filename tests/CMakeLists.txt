@@ -418,7 +418,7 @@ if(TARGET qtui_twozero48)
 endif()
 
 
-if(QTUI_BUILD_TERMINAL_HOST)
+if(QTUI_ENABLE_TERMINAL_HOST)
     add_executable(test_terminal_host TerminalHost/test_terminal_host.cpp)
     target_link_libraries(test_terminal_host PRIVATE
         Qt6::Core Qt6::Test Qt6::Qml Qtui::TerminalHost qtui_libvterm

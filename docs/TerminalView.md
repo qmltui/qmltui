@@ -2,10 +2,10 @@
 
 `TerminalView` is an experimental QML item that hosts an external terminal
 application in a Unix pseudo-terminal. It is available only when Qtui is built
-with `QTUI_BUILD_TERMINAL_HOST=ON` and currently supports Linux and macOS.
+with `QTUI_ENABLE_TERMINAL_HOST=ON` and currently supports Linux and macOS.
 
 ```cmake
-set(QTUI_BUILD_TERMINAL_HOST ON)
+set(QTUI_ENABLE_TERMINAL_HOST ON)
 add_subdirectory(qtui)
 target_link_libraries(my_app PRIVATE Qtui::TerminalHost)
 ```

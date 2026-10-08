@@ -213,6 +213,6 @@ endif()
 
 add_subdirectory(Controls)
 add_subdirectory(Image)
-if(QTUI_BUILD_TERMINAL_HOST)
+if(QTUI_ENABLE_TERMINAL_HOST)
     add_subdirectory(TerminalHost)
 endif()

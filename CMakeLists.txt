@@ -3,9 +3,9 @@ project(Qtui VERSION 0.4.0 LANGUAGES CXX)
 
 option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
-option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" OFF)
+option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
-option(QTUI_BUILD_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
+option(QTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui TestRunner library" OFF)
 
 include(GNUInstallDirs)
@@ -52,9 +52,9 @@ else()
     FetchContent_MakeAvailable(utf8proc)
 endif()
 
-if(QTUI_BUILD_TERMINAL_HOST)
+if(QTUI_ENABLE_TERMINAL_HOST)
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux|Darwin")
-        message(FATAL_ERROR "QTUI_BUILD_TERMINAL_HOST currently supports only Linux and macOS")
+        message(FATAL_ERROR "QTUI_ENABLE_TERMINAL_HOST currently supports only Linux and macOS")
     endif()
 
     if(QTUI_USE_SYSTEM_LIBVTERM)

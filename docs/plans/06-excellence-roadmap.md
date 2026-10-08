@@ -247,6 +247,11 @@ Overlays and navigation:
 - `Toast` boxes are not clipped to the item; `Toast::onTick` is exported as a method.
 - `Panel` title overruns the border when wider than the panel.
 - `ToolTip` reserves multi-line height but `Text` does not soft-wrap.
+- *fixed* (2026-09-15) Hover requests bypassed `Terminal.mouseReporting`: a
+  hover-enabled area enabled any-motion reporting, and dropping the last
+  request re-enabled button-held motion, even with the switch off. The engine
+  now writes the whole mouse state from the switch plus the motion request in
+  one place (`applyMouseModes()`), covered by `test_mouse_modes`.
 
 Indicators:
 

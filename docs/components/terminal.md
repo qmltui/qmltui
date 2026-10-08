@@ -28,7 +28,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | `color` | `rgba` |  | _TODO_ |
 | `mode` | `Mode` |  | _TODO_ |
 | `clipboardMode` | `ClipboardMode` |  | _TODO_ |
-| `mouseReporting` | `bool` |  | _TODO_ |
+| `mouseReporting` | `bool` |  | Whether the application takes the mouse from the terminal: on in `FullScreen`, off in `Inline` unless set explicitly, in which case the value sticks across mode changes. Off means no clicks, drags, wheel or hover reach any item and the terminal keeps selection and scrollback; hover requests (`MouseArea.hoverEnabled`, `ToolTip`) only turn on motion reporting while this is true. |
 | `hoveredItem` | `Item` |  | Read-only. _TODO_ |
 | `terminalWidth` | `int` |  | Read-only. _TODO_ |
 | `terminalHeight` | `int` |  | Read-only. _TODO_ |

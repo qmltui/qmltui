@@ -102,8 +102,10 @@ public:
     void reapplyBackgroundColor();
     static std::string osc11Sequence(const Color& color);
     static std::string osc111Sequence();
+    static Color parseOsc11Color(QByteArrayView payload);
     bool isBackgroundOsc11Active() const { return m_backgroundOsc11Active; }
     Color appliedBackgroundColor() const { return m_appliedBackgroundColor; }
+    Color originalBackgroundColor() const { return m_originalBackgroundColor; }
 
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     // Raw terminal bytes, exactly as a backend delivers them. TestRunner feeds
@@ -144,8 +146,15 @@ private:
     void invalidateOutputSession();
     void flushControlSequences();
     void setMouseMotionReportingEnabled(bool enabled);
+    // Writes the complete mouse-tracking state from the two inputs: the root
+    // Terminal's mouseReporting switch and whether any item asked for
+    // any-motion (hover) reporting. Motion is only ever enabled under the
+    // switch; with reporting off nothing is tracked, whatever was requested.
+    void applyMouseModes();
+    bool mouseReportingWanted() const;
     void handleResize();
     void cycleFocus(bool forward, Item* scope = nullptr);
+    void queryInitialBackgroundColor();
     class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 
     TerminalDevice m_device;
@@ -187,6 +196,8 @@ private:
     bool m_stopped = false;
     bool m_backgroundOsc11Active = false;
     Color m_appliedBackgroundColor;
+    bool m_initialBgQueried = false;
+    Color m_originalBackgroundColor;
     std::unique_ptr<InputRouter> m_router;
 };
 

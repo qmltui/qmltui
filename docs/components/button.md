@@ -26,7 +26,7 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 | `text` | `string` | `""` | Holds the label drawn centred inside the button. |
 | `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the button; keyboard activation does not set it. |
 | `textColor` | `rgba` | `"default"` | Holds the terminal colour of the label, where `"default"` is the terminal's own foreground colour. |
-| `hoverEnabled` | `bool` | `false` | Whether the button tracks the pointer and shows `hovered` feedback; off by default because it enables any-motion mouse reporting for the whole application. |
+| `hoverEnabled` | `bool` | `false` | Whether the button tracks the pointer and shows `hovered` feedback; off by default because it enables any-motion mouse reporting for the whole application; it has no effect while [Terminal](terminal.md)`.mouseReporting` is false. |
 | `hovered` | `alias` |  | Read-only. True while `hoverEnabled` is set and the pointer is over the button; always false on terminals without motion reporting. |
 
 ## Signals

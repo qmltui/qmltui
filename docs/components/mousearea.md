@@ -25,7 +25,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | :--- | :--- | :--- | :--- |
 | `mouseX` | `int` |  | Read-only. _TODO_ |
 | `mouseY` | `int` |  | Read-only. _TODO_ |
-| `hoverEnabled` | `bool` | `false` | Whether the area tracks the pointer without a button held: it asks the terminal for any-motion reporting, updates `mouseX`/`mouseY` on movement, and drives `containsMouse`. |
+| `hoverEnabled` | `bool` | `false` | Whether the area tracks the pointer without a button held: it asks the terminal for any-motion reporting, updates `mouseX`/`mouseY` on movement, and drives `containsMouse`. The request takes effect only while [Terminal](terminal.md)`.mouseReporting` is true. |
 | `containsMouse` | `bool` | `false` | Read-only. True while `hoverEnabled` is set and the pointer is over this area or one of its descendants; always false on a terminal that does not report motion. |
 
 ## Signals

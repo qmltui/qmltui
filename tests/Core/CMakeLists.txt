@@ -27,6 +27,8 @@ if(UNIX)
 endif()
 
 add_qtui_test(test_terminal_framework test_terminal_framework.cpp)
+add_qtui_test(test_mouse_modes test_mouse_modes.cpp)
+target_link_libraries(test_mouse_modes PRIVATE Qtui::TestRunner)
 add_qtui_test(test_render_loop test_render_loop.cpp)
 add_qtui_test(test_input_router test_input_router.cpp)
 add_qtui_test(test_focus test_focus.cpp)

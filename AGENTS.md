@@ -4,7 +4,7 @@
 
 - Qtui is a C++20, Qt 6.8+ retained-mode terminal UI framework. Its runtime
   targets are Linux, macOS, and Windows Terminal. Platform code lives only in
-  `src/Qtui/primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
+  `src/Qtui/Core/primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.
   Legacy `conhost.exe` gets whatever its VT support allows and is not a target.
 - `Qtui.Controls` admits a type only if it needs engine knowledge an

@@ -8,7 +8,7 @@ and table models in `ListView` and `TableView`. It does not hold for tree
 models, lazily populated models, models that carry the standard Qt item roles,
 or models whose header data should drive the table columns.
 
-Everything in this plan is view-side work under `src/Qtui/items/`. No public
+Everything in this plan is view-side work under `src/Qtui/Core/items/`. No public
 QML API is removed. New properties follow Qt Quick names where an equivalent
 exists.
 

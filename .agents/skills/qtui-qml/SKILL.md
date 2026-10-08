@@ -12,7 +12,7 @@ repository. When a rule and an existing file disagree, match the file's style
 for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
-this document. Check `src/Qtui/items`, `src/Qtui/engine`, `src/Qtui/Controls`,
+this document. Check `src/Qtui/Core/items`, `src/Qtui/Core/engine`, `src/Qtui/Controls`,
 `src/Qtui/Image`, `src/Qtui/TerminalHost`, and `docs/qml_api.md`
 before using a type or property you have not seen in a nearby file.
 
@@ -234,7 +234,7 @@ knowledge an application cannot reproduce in QML, or is universal in terminal
 toolkits. Status badges, calendars, and banner text are recipes under
 `examples/components/`, not library types; copy them into your module.
 
-**`import Qtui`** (C++ in `src/Qtui/items` and `src/Qtui/engine`)
+**`import Qtui`** (C++ in `src/Qtui/Core/items` and `src/Qtui/Core/engine`)
 `Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
 `TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `LogView`,
 `Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,

@@ -1,6 +1,10 @@
-#include <Color.h>
-#include <Item.h>
-#include <TextGridBuffer.h>
+// The generated list of every header this Qtui configuration installs; the
+// custom item below then exercises three of them.
+#include QTUI_PUBLIC_HEADERS
+
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 class CustomItem final : public qtui::Item
 {

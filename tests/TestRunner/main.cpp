@@ -3,8 +3,8 @@
 #include <QQmlApplicationEngine>
 #include <QUrl>
 
-#include <Terminal.h>
-#include <TestRunner/TestRunner.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/TestRunner/TestRunner.h>
 
 int main(int argc, char* argv[])
 {

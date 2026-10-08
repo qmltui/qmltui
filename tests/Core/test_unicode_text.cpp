@@ -4,7 +4,7 @@
 #include <QTest>
 #include <QVector>
 
-#include "UnicodeText.h"
+#include <Qtui/Core/primitives/UnicodeText.h>
 
 using namespace qtui;
 

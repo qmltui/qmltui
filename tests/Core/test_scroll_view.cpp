@@ -1,14 +1,14 @@
 #include <QTest>
 #include <QObject>
-#include "ScrollView.h"
-#include "KeyEvent.h"
-#include "MouseEvent.h"
-#include "Terminal.h"
-#include "MouseArea.h"
+#include <Qtui/Core/items/ScrollView.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/MouseArea.h>
 
 class TestScrollView;
 
-#include "TerminalEngine.h"
+#include <Qtui/Core/engine/TerminalEngine.h>
 
 using namespace qtui;
 

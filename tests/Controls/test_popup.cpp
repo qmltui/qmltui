@@ -10,13 +10,13 @@
 #include <iostream>
 #include <memory>
 
-#include "Terminal.h"
-#include "Popup.h"
-#include "MouseArea.h"
-#include "KeyEvent.h"
-#include "MouseEvent.h"
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Popup.h>
+#include <Qtui/Core/items/MouseArea.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
 
-#include "TerminalEngine.h"
+#include <Qtui/Core/engine/TerminalEngine.h>
 #undef private
 
 using namespace qtui;

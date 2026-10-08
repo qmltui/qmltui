@@ -7,7 +7,7 @@
 #include <QQmlEngine>
 #include <QQmlError>
 
-#include "Color.h"
+#include <Qtui/Core/primitives/Color.h>
 
 #include <memory>
 

@@ -2,7 +2,7 @@
 #include <QProcessEnvironment>
 #include <QTest>
 
-#include "TerminalCapabilities.h"
+#include <Qtui/Core/primitives/TerminalCapabilities.h>
 
 using namespace qtui;
 

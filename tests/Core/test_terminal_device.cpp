@@ -15,14 +15,14 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "Color.h"
-#include "FrameRenderer.h"
-#include "StreamRenderer.h"
-#include "Terminal.h"
-#include "TerminalCapabilities.h"
-#include "TerminalDevice.h"
-#include "TerminalEngine.h"
-#include "Scrollback.h"
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/engine/FrameRenderer.h>
+#include <Qtui/Core/engine/StreamRenderer.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/primitives/TerminalCapabilities.h>
+#include <Qtui/Core/primitives/TerminalDevice.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Core/items/Scrollback.h>
 
 using namespace qtui;
 

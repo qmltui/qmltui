@@ -41,7 +41,7 @@ Procedure:
    `src/Qtui/Extras/*.qml` and compare against the matching Qt Quick Controls
    type. Record each deviation in a table in the PR description.
 2. Rename in the control, then update `examples/`, `tests/`, and every markdown
-   under `src/Qtui/*/doc/` and `docs/` in the same commit. No deprecation
+   under `src/Qtui/**/doc/` and `docs/` in the same commit. No deprecation
    aliases: there are no users yet.
 3. Run the full suite in both Behavior trees (see `AGENTS.md`).
 
@@ -225,7 +225,7 @@ mode itself does not select a page or establish a focus-restoration policy.
 | `Terminal.border` | Removed |
 | `fillTerminal`, explicit root dimensions | Remove `fillTerminal`; move fixed-size geometry to an inner item |
 
-Files to update: `src/Qtui/items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
+Files to update: `src/Qtui/Core/items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
 `Scrollback`), `engine/TerminalEngine.cpp` and renderers (mode transitions and
 separate scrollback output),
 `examples/concepts/agent_stream/Main.qml`, every example root that sets
@@ -685,6 +685,6 @@ ctest --test-dir build-win -C Release --output-on-failure
 rg -n 'rendererMode|useAlternateScreen|fillTerminal|liveItem|StreamView' src examples docs tests -g '!docs/plans/**'
 
 # No stale names remain
-grep -rn 'label:' examples docs src/Qtui/*/doc | grep -v 'StatusBadge\|Panel' || echo "clean"
+grep -rn 'label:' examples docs src/Qtui/*/doc src/Qtui/Core/*/doc | grep -v 'StatusBadge\|Panel' || echo "clean"
 grep -rln 'import QtQml 2' examples src tests docs || echo "clean"
 ```

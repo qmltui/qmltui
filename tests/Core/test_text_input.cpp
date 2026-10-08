@@ -4,11 +4,11 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <memory>
-#include "TextInput.h"
-#include "KeyEvent.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/items/TextInput.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include "ColorMapper.h"
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 using namespace qtui;
 using qtui::testing::paintItem;

@@ -1,0 +1,213 @@
+include("${Qtui_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
+
+# The library backing the QML module
+set(qtui_behavior_sources)
+if(QTUI_ENABLE_BEHAVIOR)
+    list(APPEND qtui_behavior_sources
+        engine/Behavior.h
+        engine/Behavior.cpp
+    )
+endif()
+
+# One terminal backend per platform behind primitives/TerminalBackend.h.
+set(qtui_platform_sources)
+if(WIN32)
+    list(APPEND qtui_platform_sources
+        primitives/Win32ConsoleBackend.h
+        primitives/Win32ConsoleBackend.cpp
+    )
+else()
+    list(APPEND qtui_platform_sources
+        primitives/PosixTerminalBackend.h
+        primitives/PosixTerminalBackend.cpp
+    )
+endif()
+
+qt_add_qml_module(QtuiCore
+    URI Qtui
+    SOURCES
+        primitives/Color.h
+        primitives/Color.cpp
+        primitives/QtuiExport.h
+        primitives/QtuiGlobal.h
+        primitives/QtuiGlobal.cpp
+        primitives/ColorMapper.h
+        primitives/ColorMapper.cpp
+        primitives/InputDecoder.cpp
+        primitives/Cell.h
+        primitives/Cell.cpp
+        primitives/UnicodeText.h
+        primitives/UnicodeText.cpp
+        primitives/TextGridBuffer.h
+        primitives/TextGridBuffer.cpp
+        primitives/TextGridBufferAnsi.cpp
+        primitives/AnsiEncoder_p.h
+        primitives/TerminalCapabilities.h
+        primitives/TerminalCapabilities.cpp
+        primitives/TerminalBackend.h
+        primitives/TerminalBackend.cpp
+        ${qtui_platform_sources}
+        primitives/TerminalDevice.h
+        primitives/TerminalDevice.cpp
+        engine/TerminalEngine.h
+        engine/TerminalEngine.cpp
+        engine/TerminalMessageRouter_p.h
+        engine/TerminalMessageRouter.cpp
+        engine/InputRouter_p.h
+        engine/InputRouter.cpp
+        engine/InputScope.h
+        engine/FocusManager.h
+        engine/FocusManager.cpp
+        engine/Renderer.h
+        engine/RenderPhase_p.h
+        engine/RenderPhase.cpp
+        engine/ItemPaintTraversal_p.h
+        engine/FrameRenderer.h
+        engine/FrameRenderer.cpp
+        engine/StreamRenderer.h
+        engine/StreamRenderer.cpp
+        engine/Shortcut.h
+        engine/Shortcut.cpp
+        engine/KeyEvent.h
+        engine/MouseEvent.h
+        engine/Keys.h
+        engine/Animation.h
+        engine/Animation.cpp
+        engine/State.h
+        engine/State.cpp
+        engine/Transition.h
+        engine/Transition.cpp
+        items/Item.h
+        items/Item.cpp
+        items/Canvas.h
+        items/Canvas.cpp
+        items/Rectangle.h
+        items/Rectangle.cpp
+        items/Anchors.h
+        items/Anchors.cpp
+        items/AnchorLine.h
+        items/Border.h
+        items/Border.cpp
+        items/TextInput.h
+        items/TextInput.cpp
+        items/TextEditorState.h
+        items/TextEditorState.cpp
+        items/TextArea.h
+        items/TextArea.cpp
+        items/LogView.h
+        items/LogView.cpp
+        items/ScrollView.h
+        items/ScrollView.cpp
+        items/GridLayout.h
+        items/GridLayout.cpp
+        items/Terminal.h
+        items/Terminal.cpp
+        items/Popup.h
+        items/Popup.cpp
+        items/Text.h
+        items/Text.cpp
+        items/GradientStop.h
+        items/GradientStop.cpp
+        items/Gradient.h
+        items/Gradient.cpp
+        items/Scrollback.h
+        items/Scrollback.cpp
+        items/DelegateUtils.h
+        items/StandardRoles_p.h
+        items/Row.h
+        items/Row.cpp
+        items/Column.h
+        items/Column.cpp
+        items/Layout.h
+        items/Layout.cpp
+        items/LinearLayout.h
+        items/LinearLayout.cpp
+        items/MouseArea.h
+        items/MouseArea.cpp
+        items/Repeater.h
+        items/Repeater.cpp
+        items/Loader.h
+        items/Loader.cpp
+        items/ListView.h
+        items/ListView.cpp
+        items/GridView.h
+        items/GridView.cpp
+        items/Paragraph.h
+        items/Paragraph.cpp
+        items/TableView.h
+        items/TableView.cpp
+        items/TreeView.h
+        items/TreeView.cpp
+        ${qtui_behavior_sources}
+)
+
+# Headers are reached as <Qtui/Core/<layer>/Name.h> from the src/ root in the
+# build tree and from the include root once installed. The private entries
+# serve the generated QML type registrations, which include each registered
+# header by its bare file name and need its directory on the include path.
+target_include_directories(QtuiCore
+    PUBLIC
+        $<BUILD_INTERFACE:${Qtui_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/primitives
+        ${CMAKE_CURRENT_SOURCE_DIR}/engine
+        ${CMAKE_CURRENT_SOURCE_DIR}/items
+)
+
+target_link_libraries(QtuiCore PUBLIC
+    Qt6::Qml
+)
+
+target_link_libraries(QtuiCore PRIVATE
+    utf8proc
+)
+if(QTUI_ENABLE_BEHAVIOR)
+    target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
+    target_compile_definitions(QtuiCore PRIVATE QTUI_ENABLE_BEHAVIOR)
+endif()
+
+target_compile_definitions(QtuiCore PRIVATE QTUI_CORE_LIBRARY)
+add_library(Qtui::Core ALIAS QtuiCore)
+set_target_properties(QtuiCore PROPERTIES EXPORT_NAME Core)
+set_target_properties(QtuiCoreplugin PROPERTIES
+    EXPORT_NAME CorePlugin
+    INSTALL_RPATH "$ORIGIN/../../.."
+)
+install(TARGETS QtuiCore
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+install(TARGETS QtuiCoreplugin
+    EXPORT QtuiTargets
+    LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+    RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+)
+
+install(FILES
+    "${QT_QML_OUTPUT_DIRECTORY}/Qtui/qmldir"
+    "${QT_QML_OUTPUT_DIRECTORY}/Qtui/QtuiCore.qmltypes"
+    DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
+)
+# The public C++ surface. Everything a listed header includes must be listed
+# too; qtui_check_public_headers() enforces it at configure time.
+qtui_install_headers(Qtui/Core/items FILES
+    items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h
+    items/TableView.h items/TreeView.h items/Terminal.h items/Rectangle.h
+    items/Gradient.h items/GradientStop.h items/Canvas.h items/Popup.h
+)
+qtui_install_headers(Qtui/Core/primitives FILES
+    primitives/QtuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h
+    primitives/UnicodeText.h primitives/TerminalCapabilities.h
+    # The application-provided backend extension point (TerminalBackend::setFactory).
+    primitives/TerminalBackend.h
+    # Pulled in by the installed item headers, so it has to ship with them.
+    primitives/ColorMapper.h
+)
+qtui_install_headers(Qtui/Core/engine FILES
+    engine/KeyEvent.h engine/MouseEvent.h
+    # Popup implements this interface.
+    engine/InputScope.h
+)

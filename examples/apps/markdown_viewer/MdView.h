@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Item.h>
+#include <Qtui/Core/items/Item.h>
 #include <QPointer>
 #include <QtQml/qqmlregistration.h>
 

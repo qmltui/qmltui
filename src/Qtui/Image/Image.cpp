@@ -1,7 +1,7 @@
-#include "Image.h"
-#include "Terminal.h"
-#include "TerminalEngine.h"
-#include "TerminalGraphics.h"
+#include <Qtui/Image/Image.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Image/TerminalGraphics.h>
 #include <QDebug>
 #include <QDirIterator>
 #include <QFile>

@@ -1,6 +1,6 @@
 #include <QtTest/QtTest>
-#include "Image.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Image/Image.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QTemporaryFile>
 

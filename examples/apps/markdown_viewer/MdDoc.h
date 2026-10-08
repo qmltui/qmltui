@@ -7,7 +7,7 @@
 #include <QSharedPointer>
 #include <QPointer>
 #include <QtQml/qqmlregistration.h>
-#include <Cell.h>
+#include <Qtui/Core/primitives/Cell.h>
 
 #include "MdRole.h"
 #include "MdDocStyle.h"

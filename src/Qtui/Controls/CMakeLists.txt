@@ -29,9 +29,12 @@ qt_add_qml_module(QtuiControls
 
 target_compile_definitions(QtuiControls PRIVATE QTUI_CONTROLS_LIBRARY)
 add_library(Qtui::Controls ALIAS QtuiControls)
-target_include_directories(QtuiControls PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/controls>
+target_include_directories(QtuiControls
+    PUBLIC
+        $<BUILD_INTERFACE:${Qtui_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 target_link_libraries(QtuiControls PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 set_target_properties(QtuiControls PROPERTIES EXPORT_NAME Controls)
@@ -70,7 +73,4 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Switch.qml
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Controls"
 )
-install(FILES
-    Sparkline.h TabBar.h Toast.h ToolTip.h
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/controls"
-)
+qtui_install_headers(Qtui/Controls FILES Sparkline.h TabBar.h Toast.h ToolTip.h)

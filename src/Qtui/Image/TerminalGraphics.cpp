@@ -1,4 +1,4 @@
-#include "TerminalGraphics.h"
+#include <Qtui/Image/TerminalGraphics.h>
 
 #include <QBuffer>
 #include <atomic>

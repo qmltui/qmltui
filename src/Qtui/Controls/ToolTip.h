@@ -1,9 +1,9 @@
 #pragma once
 
-#include <QtuiExport.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
 
 #include <QObject>
-#include <Color.h>
+#include <Qtui/Core/primitives/Color.h>
 #include <QQmlEngine>
 #include <QPointer>
 #include <QTimer>

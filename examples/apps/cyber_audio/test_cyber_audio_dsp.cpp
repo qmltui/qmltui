@@ -11,8 +11,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
-#include "Canvas.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/items/Canvas.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 #include <cmath>
 #include <numbers>

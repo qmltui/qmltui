@@ -1,7 +1,7 @@
-#include "TabBar.h"
-#include <ColorMapper.h>
-#include <KeyEvent.h>
-#include <MouseEvent.h>
+#include <Qtui/Controls/TabBar.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
 #include <algorithm>
 
 namespace qtui {

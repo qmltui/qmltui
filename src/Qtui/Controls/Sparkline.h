@@ -1,12 +1,12 @@
 #pragma once
 
-#include <QtuiExport.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
 
-#include <Item.h>
+#include <Qtui/Core/items/Item.h>
 #include <QVariantList>
 #include <QString>
 #include <QJSValue>
-#include <ColorMapper.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 namespace qtui {
 

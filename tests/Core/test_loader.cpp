@@ -8,9 +8,9 @@
 
 #include <memory>
 
-#include "Item.h"
-#include "Loader.h"
-#include "Text.h"
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/items/Loader.h>
+#include <Qtui/Core/items/Text.h>
 
 using namespace qtui;
 

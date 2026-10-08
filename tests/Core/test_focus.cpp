@@ -1,6 +1,6 @@
 #include <QTest>
-#include "Terminal.h"
-#include "TerminalEngine.h"
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
 
 using namespace qtui;
 

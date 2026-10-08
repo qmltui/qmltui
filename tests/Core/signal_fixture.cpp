@@ -2,7 +2,7 @@
 // platform backend, no TestRunner, no handlers of its own. The test drives it
 // through a pseudo-terminal and job-control signals.
 #include <QCoreApplication>
-#include <Terminal.h>
+#include <Qtui/Core/items/Terminal.h>
 
 int main(int argc, char* argv[])
 {

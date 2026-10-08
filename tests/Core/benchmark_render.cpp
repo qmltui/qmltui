@@ -26,12 +26,12 @@
 #include <memory>
 #include <vector>
 
-#include <Canvas.h>
-#include <Color.h>
-#include <Item.h>
-#include <ListView.h>
-#include <Sparkline.h>
-#include <TableView.h>
+#include <Qtui/Core/items/Canvas.h>
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/items/ListView.h>
+#include <Qtui/Controls/Sparkline.h>
+#include <Qtui/Core/items/TableView.h>
 #include "../TestPaint.h"
 
 namespace {

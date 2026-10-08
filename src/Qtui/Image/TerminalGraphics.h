@@ -12,9 +12,9 @@
 // Everything else, the Auto render mode and the capability plumbing, already
 // accounts for more than one protocol.
 
-#include "Item.h"                 // ClipRect
-#include "TextGridBuffer.h"
-#include "TerminalCapabilities.h"
+#include <Qtui/Core/items/Item.h>                 // ClipRect
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/primitives/TerminalCapabilities.h>
 
 #include <QByteArray>
 #include <QImage>

@@ -4,11 +4,11 @@
 #include <QQmlComponent>
 #include <QSignalSpy>
 #include <memory>
-#include "Canvas.h"
-#include "Terminal.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/items/Canvas.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include "ColorMapper.h"
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 
 

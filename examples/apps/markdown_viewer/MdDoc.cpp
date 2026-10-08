@@ -7,7 +7,7 @@
 #include <QUrl>
 #include <algorithm>
 
-#include <UnicodeText.h>
+#include <Qtui/Core/primitives/UnicodeText.h>
 #include <parser.h>
 
 namespace qtui {

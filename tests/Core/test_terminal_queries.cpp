@@ -2,10 +2,10 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
-#include <TestRunner/MemoryTerminalBackend.h>
-#include "Terminal.h"
-#include "TerminalEngine.h"
-#include "StreamRenderer.h"
+#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Core/engine/StreamRenderer.h>
 
 using namespace qtui;
 

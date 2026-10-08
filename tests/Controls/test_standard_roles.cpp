@@ -10,11 +10,11 @@
 #include <QStandardItemModel>
 #include <QAbstractListModel>
 #include <QColor>
-#include <ListView.h>
-#include <TableView.h>
-#include <TreeView.h>
-#include <TextGridBuffer.h>
-#include <ColorMapper.h>
+#include <Qtui/Core/items/ListView.h>
+#include <Qtui/Core/items/TableView.h>
+#include <Qtui/Core/items/TreeView.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 #include "../TestPaint.h"
 #include <memory>
 

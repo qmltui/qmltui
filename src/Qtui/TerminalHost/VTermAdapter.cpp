@@ -1,4 +1,4 @@
-#include "VTermAdapter.h"
+#include <Qtui/TerminalHost/VTermAdapter.h>
 
 #include <Qt>
 

@@ -9,22 +9,22 @@
 #include <algorithm>
 #include <memory>
 
-#include "UnicodeText.h"
-#include "TextGridBuffer.h"
-#include "Terminal.h"
-#include "Popup.h"
-#include "MouseArea.h"
-#include "TextArea.h"
-#include "LogView.h"
-#include "Scrollback.h"
-#include "LinearLayout.h"
-#include "Layout.h"
-#include "KeyEvent.h"
-#include "ListView.h"
-#include "TreeView.h"
+#include <Qtui/Core/primitives/UnicodeText.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Popup.h>
+#include <Qtui/Core/items/MouseArea.h>
+#include <Qtui/Core/items/TextArea.h>
+#include <Qtui/Core/items/LogView.h>
+#include <Qtui/Core/items/Scrollback.h>
+#include <Qtui/Core/items/LinearLayout.h>
+#include <Qtui/Core/items/Layout.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/items/ListView.h>
+#include <Qtui/Core/items/TreeView.h>
 #include "../TestPaint.h"
 
-#include "TerminalEngine.h"
+#include <Qtui/Core/engine/TerminalEngine.h>
 #undef private
 
 using namespace qtui;

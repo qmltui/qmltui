@@ -10,10 +10,10 @@
 
 #include <memory>
 
-#include <TestRunner/MemoryTerminalBackend.h>
-#include "Terminal.h"
-#include "TerminalBackend.h"
-#include "TerminalEngine.h"
+#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/primitives/TerminalBackend.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
 
 using namespace qtui;
 

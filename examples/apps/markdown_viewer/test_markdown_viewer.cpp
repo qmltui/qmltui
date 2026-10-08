@@ -6,9 +6,9 @@
 #include <QTextStream>
 #include <QUrl>
 
-#include <TextGridBuffer.h>
-#include <UnicodeText.h>
-#include <ItemPaintTraversal_p.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/primitives/UnicodeText.h>
+#include <Qtui/Core/engine/ItemPaintTraversal_p.h>
 
 #include "MdDoc.h"
 #include "MdDocStyle.h"

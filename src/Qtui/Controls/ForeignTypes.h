@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QtQml/qqml.h>
-#include <Popup.h>
+#include <Qtui/Core/items/Popup.h>
 
 namespace qtui {
 

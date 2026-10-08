@@ -1,9 +1,9 @@
-#include "ToolTip.h"
-#include "Item.h"
-#include "Terminal.h"
-#include "Popup.h"
-#include "Text.h"
-#include "UnicodeText.h"
+#include <Qtui/Controls/ToolTip.h>
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Popup.h>
+#include <Qtui/Core/items/Text.h>
+#include <Qtui/Core/primitives/UnicodeText.h>
 #include <algorithm>
 
 namespace qtui::controls {

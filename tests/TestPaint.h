@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ItemPaintTraversal_p.h"
+#include <Qtui/Core/engine/ItemPaintTraversal_p.h>
 
 namespace qtui::testing {
 

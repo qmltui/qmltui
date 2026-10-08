@@ -1,15 +1,15 @@
 #include <QtTest>
-#include "items/Terminal.h"
-#include "items/Item.h"
-#include "items/MouseArea.h"
-#include "items/Popup.h"
-#include "items/ScrollView.h"
-#include "engine/InputRouter_p.h"
-#include "engine/FocusManager.h"
-#include "engine/KeyEvent.h"
-#include "engine/MouseEvent.h"
-#include "engine/Keys.h"
-#include "engine/TerminalEngine.h"
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/items/MouseArea.h>
+#include <Qtui/Core/items/Popup.h>
+#include <Qtui/Core/items/ScrollView.h>
+#include <Qtui/Core/engine/InputRouter_p.h>
+#include <Qtui/Core/engine/FocusManager.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
+#include <Qtui/Core/engine/Keys.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
 
 using namespace qtui;
 

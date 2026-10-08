@@ -4,9 +4,9 @@
 #include <QStandardItemModel>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <TableView.h>
-#include <KeyEvent.h>
-#include <MouseEvent.h>
+#include <Qtui/Core/items/TableView.h>
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
 #include "../TestPaint.h"
 #include <memory>
 #include <limits>

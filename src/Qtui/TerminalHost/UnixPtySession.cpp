@@ -1,4 +1,4 @@
-#include "UnixPtySession.h"
+#include <Qtui/TerminalHost/UnixPtySession.h>
 
 #include <QSocketNotifier>
 

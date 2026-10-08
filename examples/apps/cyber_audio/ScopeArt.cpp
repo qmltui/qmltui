@@ -1,7 +1,7 @@
 #include "ScopeArt.h"
 
-#include "Color.h"
-#include "ColorMapper.h"
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 #include <algorithm>
 #include <cmath>

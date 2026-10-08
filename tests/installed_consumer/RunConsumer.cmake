@@ -37,6 +37,7 @@ execute_process(
             # PATH (WSL exposes Windows installations, for example).
             "-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};${consumer_qt_prefix}"
             "-DQt6_DIR=${Qt6_DIR}"
+            "-DQTUI_PUBLIC_HEADERS=${QTUI_BUILD_DIR}/qtui_public_headers.h"
     RESULT_VARIABLE configure_result
     OUTPUT_VARIABLE configure_output
     ERROR_VARIABLE configure_error

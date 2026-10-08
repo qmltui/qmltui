@@ -1,11 +1,11 @@
 #include <QTest>
 #include <QObject>
-#include "TextGridBuffer.h"
-#include "Text.h"
-#include "Color.h"
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/items/Text.h>
+#include <Qtui/Core/primitives/Color.h>
 #include "../TestPaint.h"
 #include <QString>
-#include "ColorMapper.h"
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 #include <limits>
 

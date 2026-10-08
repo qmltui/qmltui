@@ -4,9 +4,9 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 
-#include "TerminalView.h"
-#include "UnixPtySession.h"
-#include "VTermAdapter.h"
+#include <Qtui/TerminalHost/TerminalView.h>
+#include <Qtui/TerminalHost/UnixPtySession.h>
+#include <Qtui/TerminalHost/VTermAdapter.h>
 #include "../TestPaint.h"
 
 using namespace qtui;

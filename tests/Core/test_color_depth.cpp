@@ -3,9 +3,9 @@
 #include <QTest>
 #include <string>
 
-#include "ColorMapper.h"
-#include "AnsiEncoder_p.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qtui/Core/primitives/AnsiEncoder_p.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 using namespace qtui;
 

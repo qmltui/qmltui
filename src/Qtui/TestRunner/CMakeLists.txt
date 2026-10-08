@@ -10,8 +10,8 @@ add_library(Qtui::TestRunner ALIAS QtuiTestRunner)
 set_target_properties(QtuiTestRunner PROPERTIES EXPORT_NAME TestRunner)
 
 target_include_directories(QtuiTestRunner PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui>
+    $<BUILD_INTERFACE:${Qtui_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(QtuiTestRunner PUBLIC
@@ -41,14 +41,12 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
-if(QTUI_ENABLE_TEST_RUNNER OR QTUI_ENABLE_TEST_DRIVER)
+if(QTUI_ENABLE_TEST_RUNNER)
     install(TARGETS QtuiTestRunner
         EXPORT QtuiTargets
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
-    install(FILES TestRunner.h MemoryTerminalBackend.h
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/TestRunner"
-    )
+    qtui_install_headers(Qtui/TestRunner FILES TestRunner.h MemoryTerminalBackend.h)
 endif()

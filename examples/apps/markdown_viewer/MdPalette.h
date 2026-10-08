@@ -2,7 +2,7 @@
 
 #include <QMetaType>
 #include <QtQml/qqmlregistration.h>
-#include <ColorMapper.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 
 #include "MdRole.h"
 

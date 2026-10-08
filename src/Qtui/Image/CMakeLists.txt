@@ -11,9 +11,12 @@ qt_add_qml_module(QtuiImage
 target_compile_definitions(QtuiImage PRIVATE QTUI_IMAGE_LIBRARY)
 add_library(Qtui::Image ALIAS QtuiImage)
 
-target_include_directories(QtuiImage PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/image>
+target_include_directories(QtuiImage
+    PUBLIC
+        $<BUILD_INTERFACE:${Qtui_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 
 target_link_libraries(QtuiImage PUBLIC Qtui::Core Qt6::Gui PRIVATE Qt6::Core Qt6::Qml)
@@ -40,8 +43,4 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/QtuiImage.qmltypes"
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
 )
-install(FILES
-    Image.h
-    TerminalGraphics.h
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/image"
-)
+qtui_install_headers(Qtui/Image FILES Image.h TerminalGraphics.h)

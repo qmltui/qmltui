@@ -1,7 +1,7 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Animation.h>
+#include <Qtui/Core/engine/Animation.h>
 #include "../TestPaint.h"
 #include <memory>
 

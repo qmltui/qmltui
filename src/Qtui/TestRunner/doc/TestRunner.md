@@ -231,8 +231,8 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 ```cpp
 #include <QTimer>
 #include <QQmlApplicationEngine>
-#include <Terminal.h>
-#include <TestRunner/TestRunner.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/TestRunner/TestRunner.h>
 
 auto *terminal = qobject_cast<qtui::Terminal *>(engine.rootObjects().constFirst());
 auto *driver = new qtui::TestRunner(

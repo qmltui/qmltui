@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QtuiExport.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
 
-#include <Item.h>
+#include <Qtui/Core/items/Item.h>
 
-#include <Color.h>
+#include <Qtui/Core/primitives/Color.h>
 #include <QQmlParserStatus>
 #include <QStringList>
 #include <QVariantMap>

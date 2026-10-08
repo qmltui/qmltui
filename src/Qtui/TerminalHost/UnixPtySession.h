@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtuiExport.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
 
 #include <QByteArray>
 #include <QObject>

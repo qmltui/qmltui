@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Item.h>
-#include <Color.h>
-#include <TextGridBuffer.h>
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 #include <QAbstractTableModel>
 #include <QElapsedTimer>

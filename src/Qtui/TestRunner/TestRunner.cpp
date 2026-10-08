@@ -1,9 +1,9 @@
-#include "TestRunner.h"
-#include <ColorMapper.h>
+#include <Qtui/TestRunner/TestRunner.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 
-#include "Terminal.h"
-#include "TerminalEngine.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 #include <QCoreApplication>
 #include <QDeadlineTimer>

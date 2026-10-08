@@ -4,13 +4,13 @@
 #include <QVariantList>
 #include <algorithm>
 
-#include "Terminal.h"
-#include "Column.h"
-#include "Row.h"
-#include "Text.h"
-#include "TextInput.h"
-#include "TableView.h"
-#include "Shortcut.h"
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Column.h>
+#include <Qtui/Core/items/Row.h>
+#include <Qtui/Core/items/Text.h>
+#include <Qtui/Core/items/TextInput.h>
+#include <Qtui/Core/items/TableView.h>
+#include <Qtui/Core/engine/Shortcut.h>
 
 using namespace qtui;
 

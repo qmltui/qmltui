@@ -12,14 +12,14 @@
 #include <QTest>
 #include <memory>
 
-#include "Color.h"
-#include "GridView.h"
-#include "ListView.h"
-#include "TableView.h"
-#include "Terminal.h"
-#include "TerminalEngine.h"
-#include "TextGridBuffer.h"
-#include "TreeView.h"
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Core/items/GridView.h>
+#include <Qtui/Core/items/ListView.h>
+#include <Qtui/Core/items/TableView.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/items/TreeView.h>
 
 using namespace qtui;
 

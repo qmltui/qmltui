@@ -11,9 +11,12 @@ qt_add_qml_module(QtuiTerminalHost
         TARGET QtuiCore
 )
 
-target_include_directories(QtuiTerminalHost PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qtui/terminalhost>
+target_include_directories(QtuiTerminalHost
+    PUBLIC
+        $<BUILD_INTERFACE:${Qtui_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 
 target_link_libraries(QtuiTerminalHost
@@ -44,7 +47,7 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/TerminalHost/QtuiTerminalHost.qmltypes"
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/TerminalHost"
 )
-install(FILES TerminalView.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtui/terminalhost")
+qtui_install_headers(Qtui/TerminalHost FILES TerminalView.h)
 install(FILES "${PROJECT_SOURCE_DIR}/docs/third-party/libvterm-LICENSE"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/Qtui/third-party"
 )

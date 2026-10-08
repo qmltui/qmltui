@@ -1,5 +1,5 @@
-#include "Sparkline.h"
-#include <ColorMapper.h>
+#include <Qtui/Controls/Sparkline.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 #include <algorithm>
 #include <cmath>
 

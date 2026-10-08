@@ -10,11 +10,11 @@
 #include <QImage>
 #include <QRegularExpression>
 
-#include <TestRunner/MemoryTerminalBackend.h>
-#include "Terminal.h"
-#include "TerminalEngine.h"
-#include "Image.h"
-#include "TextGridBuffer.h"
+#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Image/Image.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 
 using namespace qtui;
 

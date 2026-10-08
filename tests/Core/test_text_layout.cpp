@@ -8,10 +8,10 @@
 #include <QTest>
 #include <functional>
 #include <memory>
-#include "Color.h"
+#include <Qtui/Core/primitives/Color.h>
 
-#include "Text.h"
-#include "TextGridBuffer.h"
+#include <Qtui/Core/items/Text.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
 using namespace qtui;

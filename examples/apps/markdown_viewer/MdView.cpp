@@ -1,7 +1,7 @@
 #include "MdView.h"
 
-#include <MouseEvent.h>
-#include <UnicodeText.h>
+#include <Qtui/Core/engine/MouseEvent.h>
+#include <Qtui/Core/primitives/UnicodeText.h>
 #include <algorithm>
 
 namespace qtui {

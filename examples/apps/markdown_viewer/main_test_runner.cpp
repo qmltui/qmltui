@@ -6,8 +6,8 @@
 #include <QSize>
 #include <QTimer>
 
-#include <Terminal.h>
-#include <TestRunner/TestRunner.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/TestRunner/TestRunner.h>
 
 namespace {
 int environmentDimension(const char *name, int fallback) {

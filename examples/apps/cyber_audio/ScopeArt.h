@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Canvas.h"
+#include <Qtui/Core/items/Canvas.h>
 
 #include <QList>
 #include <QQmlEngine>

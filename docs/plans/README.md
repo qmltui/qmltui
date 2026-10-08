@@ -60,7 +60,7 @@ graph TB
         Quick["examples/quickstart (compiled in CI)"]
         Comp["examples/components (31)"]
         Conc["examples/concepts (11)"]
-        Docs["docs/components, docs/guide, src/Qtui/*/doc (single source)"]
+        Docs["docs/components, docs/guide, src/Qtui/**/doc (single source)"]
         Tests["tests/ (self-contained, test_behavior)"]
         QCH["qtui.qch (release asset)"]
     end

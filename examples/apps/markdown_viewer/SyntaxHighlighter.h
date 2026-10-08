@@ -2,7 +2,7 @@
 
 #include <QString>
 #include <QList>
-#include <Cell.h>
+#include <Qtui/Core/primitives/Cell.h>
 
 #include "MdRole.h"
 

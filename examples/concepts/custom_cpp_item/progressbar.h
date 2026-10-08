@@ -1,5 +1,5 @@
 #pragma once
-#include <Rectangle.h>
+#include <Qtui/Core/items/Rectangle.h>
 
 namespace qtui {
 

@@ -2,7 +2,7 @@
 #include <QObject>
 #include <vector>
 #include <tuple>
-#include "InputDecoder.h"
+#include <Qtui/Core/primitives/InputDecoder.h>
 
 using namespace qtui;
 

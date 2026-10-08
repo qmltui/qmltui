@@ -1,5 +1,5 @@
 #include "BigText.h"
-#include <ColorMapper.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 #include <QChar>
 #include <array>
 #include <cctype>

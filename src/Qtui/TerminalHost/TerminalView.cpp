@@ -1,10 +1,10 @@
-#include "TerminalView.h"
+#include <Qtui/TerminalHost/TerminalView.h>
 
-#include "../engine/KeyEvent.h"
-#include "../engine/MouseEvent.h"
-#include "../items/Terminal.h"
-#include "UnixPtySession.h"
-#include "VTermAdapter.h"
+#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qtui/Core/engine/MouseEvent.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/TerminalHost/UnixPtySession.h>
+#include <Qtui/TerminalHost/VTermAdapter.h>
 
 #include <QFile>
 #include <QProcessEnvironment>

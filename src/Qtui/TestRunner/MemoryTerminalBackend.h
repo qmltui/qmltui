@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QtuiExport.h>
-#include <TerminalBackend.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
+#include <Qtui/Core/primitives/TerminalBackend.h>
 
 #include <QByteArray>
 #include <QSize>

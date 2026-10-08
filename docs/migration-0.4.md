@@ -69,7 +69,7 @@ in the same committed frame.
 ## Terminal colour depth and encoder
 
 Frames are now encoded for the detected colour depth (`TerminalCapabilities`,
-installed header `qtui/primitives/TerminalCapabilities.h`). A terminal with
+installed header `<Qtui/Core/primitives/TerminalCapabilities.h>`). A terminal with
 `TERM` containing `256color` and no `COLORTERM` receives 256-colour SGR
 sequences instead of 24-bit ones; set `QTUI_COLOR_DEPTH=truecolor` to force the
 old output. `TextGridBuffer::diff()` gained overloads that append into a
@@ -115,6 +115,27 @@ it materializes the rows inside the viewport plus one row of overscan and
 addresses cells by model index, so an invisible delegate keeps its slot rather
 than compacting the grid. Code that counted `GridView` children to learn the
 model size must read the model instead.
+
+## Include paths
+
+Qtui headers are now included by their path under a single root, in the build
+tree and in an installed tree alike:
+
+```cpp
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/primitives/Color.h>
+#include <Qtui/Controls/Sparkline.h>
+#include <Qtui/Image/Image.h>
+#include <Qtui/TestRunner/TestRunner.h>
+```
+
+The previous flat forms (`<Item.h>`, `<Color.h>`, `<TestRunner/TestRunner.h>`)
+no longer resolve, and headers install to `include/Qtui/...` instead of
+`include/qtui/{items,primitives,engine,...}`. The Core library's sources moved
+from `src/Qtui/{items,engine,primitives}` to `src/Qtui/Core/`, so every
+exported library now owns one directory under `src/Qtui/`. `TerminalBackend.h`
+and `InputScope.h` are installed now; both were reachable from installed headers
+before without being shipped.
 
 ## Build integration
 

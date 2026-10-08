@@ -1,5 +1,5 @@
-#include "Toast.h"
-#include <ColorMapper.h>
+#include <Qtui/Controls/Toast.h>
+#include <Qtui/Core/primitives/ColorMapper.h>
 #include <algorithm>
 
 namespace qtui {

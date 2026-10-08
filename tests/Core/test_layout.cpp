@@ -1,15 +1,15 @@
 #include <QTest>
 #include <QObject>
 #include <QSignalSpy>
-#include "Row.h"
-#include "Column.h"
-#include "GridLayout.h"
-#include "Layout.h"
-#include "ScrollView.h"
-#include "Text.h"
-#include "TextGridBuffer.h"
-#include "State.h"
-#include "Transition.h"
+#include <Qtui/Core/items/Row.h>
+#include <Qtui/Core/items/Column.h>
+#include <Qtui/Core/items/GridLayout.h>
+#include <Qtui/Core/items/Layout.h>
+#include <Qtui/Core/items/ScrollView.h>
+#include <Qtui/Core/items/Text.h>
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/engine/State.h>
+#include <Qtui/Core/engine/Transition.h>
 #include "../TestPaint.h"
 
 using namespace qtui;

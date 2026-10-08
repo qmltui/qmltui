@@ -2,9 +2,9 @@
 
 #include <QTest>
 #include <QString>
-#include "TextGridBuffer.h"
-#include "Terminal.h"
-#include "Item.h"
+#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/items/Item.h>
 
 namespace qtui {
 namespace test {

@@ -42,7 +42,7 @@ them in:
 ```
 
 `scripts/sync-content.mjs` copies `docs/components/*.md`, `docs/guide/*.md`,
-`src/Qtui/*/doc/*.md`, and `examples/quickstart/*` into
+`src/Qtui/**/doc/*.md`, and `examples/quickstart/*` into
 `website/src/content/` (gitignored), rewriting relative links. Markdown files
 carry frontmatter (`title`, `import`, `since`, `inherits`, `category`) that the
 catalog page reads.

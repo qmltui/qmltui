@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QtuiExport.h>
+#include <Qtui/Core/primitives/QtuiExport.h>
 
-#include "Item.h"
+#include <Qtui/Core/items/Item.h>
 #include <QImage>
 #include <QUrl>
 #include <QSize>

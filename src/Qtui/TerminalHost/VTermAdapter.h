@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../items/Item.h"
-#include "../primitives/Color.h"
+#include <Qtui/Core/items/Item.h>
+#include <Qtui/Core/primitives/Color.h>
 
 #include <QByteArray>
 #include <QString>

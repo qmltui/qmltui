@@ -26,7 +26,7 @@ dependency. `AGENTS.md` forbids it.
 ```qml
 // Qtui modules
 import Qtui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
-import Qtui.Controls        // Palette, Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
+import Qtui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
 import Qtui.Image           // Image
 import Qtui.TerminalHost    // TerminalView (PTY, Linux/macOS only, optional build)
 
@@ -246,10 +246,11 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `Behavior` is available only with `QTUI_ENABLE_BEHAVIOR=ON`.
 
 **`import Qtui.Controls`** (QML and C++ in `src/Qtui/Controls`)
-`Palette` (singleton), `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`,
-`Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`,
-`StackLayout`, `Panel`, `Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is
-attached-only.
+`Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`,
+`ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `StackLayout`, `Panel`,
+`Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
+no palette singleton: colours are set per item, and an inherited palette
+property is a Plan 06 section 7 proposal, not a shipped type.
 
 **`import Qtui.Image`**
 `Image`.

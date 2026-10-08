@@ -29,4 +29,8 @@ function(qtui_provide_utf8proc)
         GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(utf8proc)
+    # utf8proc is plain C. A consumer that ran qt_standard_project_setup() before
+    # fetching Qtui has CMAKE_AUTOMOC on, which would add a C++ moc stub to this
+    # target and compile it with utf8proc's -std=c99 (clang rejects that).
+    set_target_properties(utf8proc PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 endfunction()

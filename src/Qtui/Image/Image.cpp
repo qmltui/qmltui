@@ -125,8 +125,16 @@ QSize Image::renderSize() const {
     if (w <= 0 || h <= 0) return QSize();
     const graphics::Protocol protocol = activeProtocol();
     if (protocol != graphics::Protocol::None) {
+        // A frame beyond 4096 px a side is never useful in a terminal; clamp
+        // uniformly so a producer's aspect ratio survives an odd cell size.
         const QSize cell = terminal()->capabilities().cellPixelSize;
-        if (cell.isValid()) return QSize(w * cell.width(), h * cell.height());
+        if (cell.isValid() && !cell.isEmpty()) {
+            QSize pixels(w * cell.width(), h * cell.height());
+            constexpr int maxEdge = 4096;
+            if (pixels.width() > maxEdge || pixels.height() > maxEdge)
+                pixels = pixels.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio);
+            return pixels;
+        }
     }
     switch (m_renderMode) {
     case RenderMode::Braille: return QSize(w * 2, h * 4);

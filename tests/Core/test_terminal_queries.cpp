@@ -134,6 +134,10 @@ Terminal {
         backend->feedInput("\033[6;24;12t");
         QCOMPARE(engine->capabilities().cellPixelSize, QSize(12, 24));
         QCOMPARE(changed.count(), 2);
+        // A window size mistaken for a cell size is not believed.
+        backend->setSize(QSize(41, 5));
+        backend->feedInput("\033[6;1080;1920t");
+        QCOMPARE(engine->capabilities().cellPixelSize, QSize(12, 24));
     }
     void syncStatuses_data() {
         QTest::addColumn<int>("status");

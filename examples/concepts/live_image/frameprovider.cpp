@@ -14,7 +14,9 @@ QImage FrameProvider::requestImage(const QString& id, QSize* size, const QSize& 
     const int tick = parameters.queryItemValue(QStringLiteral("tick")).toInt();
     // requestedSize is the Image's renderSize: true pixels under kitty or
     // sixel, the glyph grid otherwise, so the sweep is crisp either way.
-    const QSize target = requestedSize.isValid() ? requestedSize : QSize(256, 128);
+    const bool usable = requestedSize.isValid() && !requestedSize.isEmpty()
+        && requestedSize.width() <= 4096 && requestedSize.height() <= 4096;
+    const QSize target = usable ? requestedSize : QSize(256, 128);
     QImage image = paintRadar(tick, target);
     *size = image.size();
     return image;

@@ -208,6 +208,11 @@ private slots:
         terminal->engine()->setCapabilities(sixelCaps());
         img->setRenderMode(Image::RenderMode::Auto);
         QCOMPARE(img->renderSize(), QSize(80, 60));
+        TerminalCapabilities huge = kittyCaps();
+        huge.cellPixelSize = QSize(1920, 1080);          // a window size, not a cell size
+        terminal->engine()->setCapabilities(huge);
+        const QSize clamped = img->renderSize();
+        QVERIFY(clamped.width() <= 4096 && clamped.height() <= 4096 && !clamped.isEmpty());
     }
 
     void unchangedFrameResendsNothing() {

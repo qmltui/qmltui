@@ -47,7 +47,11 @@ signals:
 private:
     void advance();
 
-    QSize effectiveSize() const { return m_frameSize.isValid() && !m_frameSize.isEmpty() ? m_frameSize : QSize(96, 48); }
+    QSize effectiveSize() const {
+        const bool usable = m_frameSize.isValid() && !m_frameSize.isEmpty()
+            && m_frameSize.width() <= 4096 && m_frameSize.height() <= 4096;
+        return usable ? m_frameSize : QSize(96, 48);
+    }
 
     QTimer m_timer;
     QImage m_frame;

@@ -770,10 +770,15 @@ void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) 
             finishQueries();
             return;
         }
+        // CSI 6 ; height ; width t answers the cell-size query. A cell is a
+        // few dozen pixels a side; a terminal that answers with its window
+        // size (or anything past 256 px) is not describing a cell, and
+        // believing it would make every pixel placement gigantic.
         if (sequence.privateMarker == 0 && sequence.intermediates.isEmpty()
             && sequence.finalByte == 't' && sequence.params.size() == 3
             && sequence.parameter(0) == 6 && sequence.parameter(1) > 0
-            && sequence.parameter(2) > 0) {
+            && sequence.parameter(2) > 0 && sequence.parameter(1) <= 256
+            && sequence.parameter(2) <= 256) {
             const QSize pixels(sequence.parameter(2), sequence.parameter(1));
             if (m_queriesPending) m_pendingCapabilities.cellPixelSize = pixels;
             else if (m_pixelQueryTimer.isActive()) {

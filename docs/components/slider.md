@@ -50,6 +50,10 @@ over the track onto the range, snapped to the nearest multiple of `stepSize`
 from `from`, and clamped to `from` and `to`, so a click on the readout beyond
 the track selects `to`. Only clicks are handled, not drags. A disabled slider
 ignores keys and clicks alike, and it is focusable only while `enabled`.
+Focus is visible in the drawing: the track is a heavy line (`━`) with a bold
+handle while the slider has active focus and a light line (`─`) otherwise,
+and the readout is drawn bold in reverse video while focused, so even a
+slider too narrow to show a track reveals where focus is.
 
 ### Example
 

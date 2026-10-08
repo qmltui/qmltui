@@ -26,12 +26,16 @@ Rectangle {
             const pct = Math.min(1.0, Math.max(0.0, (control.value - control.from) / range))
             const handlePos = Math.round(pct * (tw - 1))
             
+            // Focus is visible in the track itself: a heavy line while the
+            // slider has active focus, a light one otherwise. Bold alone is
+            // invisible on box-drawing glyphs in most terminals.
+            const track = control.activeFocus ? "━" : "─"
             let str = ""
             for (let i = 0; i < tw; ++i) {
                 if (i === handlePos) {
                     str += "●"
                 } else {
-                    str += "─"
+                    str += track
                 }
             }
             return str
@@ -47,6 +51,10 @@ Rectangle {
         anchors.right: parent.right
         text: "[" + Math.round(control.value) + "]"
         color: control.textColor
+        // The readout inverts while focused, so a one-row slider shows focus
+        // even when its track is too short to read.
+        bold: control.activeFocus
+        reversed: control.activeFocus
     }
 
     Keys.onPressed: (event) => {

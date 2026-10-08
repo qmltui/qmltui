@@ -391,6 +391,35 @@ Terminal {
         QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔"));      // focus remains, as a double border
     }
 
+    // Focus on a Slider is visible: heavy track, inverted readout.
+    void sliderFocusLook() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Slider { objectName: "a"; x: 0; y: 0; width: 12; value: 50; focus: true }
+    Slider { objectName: "b"; x: 0; y: 2; width: 12; value: 50 }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(20, 4));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const QStringList rows = frameText(engine).split('\n');
+        QVERIFY(rows.size() > 2);
+        QVERIFY2(rows[0].contains(QChar(0x2501)) && !rows[0].contains(QChar(0x2500)), qPrintable(rows[0]));  // heavy track
+        QVERIFY2(rows[2].contains(QChar(0x2500)) && !rows[2].contains(QChar(0x2501)), qPrintable(rows[2]));  // light track
+        const auto frame = engine->currentFrame();
+        QVERIFY(frame);
+        const int readout = rows[0].indexOf('[');
+        QVERIFY(readout > 0);
+        QVERIFY((frame->cellAt(readout, 0).attributes & TextAttribute::Reversed) != TextAttribute::None);
+        QVERIFY((frame->cellAt(readout, 2).attributes & TextAttribute::Reversed) == TextAttribute::None);
+        terminal->findChild<Item*>("b")->setFocus(true);   // focus moves, so does the look
+        QTRY_VERIFY(frameText(engine).split('\n')[2].contains(QChar(0x2501)));
+        QVERIFY(frameText(engine).split('\n')[0].contains(QChar(0x2500)));
+    }
+
     void internalsAreNotPublic() {
         QQmlEngine qml;
         Terminal* terminal = nullptr;

@@ -26,6 +26,7 @@ private slots:
     void testHorizontalGradient();
     void testGradientWithBorder();
     void testGradientUpdate();
+    void testBorderStyles();
     void testQmlIntegration();
 };
 
@@ -168,6 +169,50 @@ void TestRectangle::testGradientUpdate() {
 
     gradient->setOffset(0.5);
     QCOMPARE(spy.count(), 2);
+}
+
+void TestRectangle::testBorderStyles() {
+    struct StyleCase {
+        const char *styleName;
+        QByteArrayView tl, tr, bl, br, hz, vt;
+    };
+
+    const StyleCase cases[] = {
+        {"single",  QByteArrayView("┌"), QByteArrayView("┐"), QByteArrayView("└"), QByteArrayView("┘"), QByteArrayView("─"), QByteArrayView("│")},
+        {"double",  QByteArrayView("╔"), QByteArrayView("╗"), QByteArrayView("╚"), QByteArrayView("╝"), QByteArrayView("═"), QByteArrayView("║")},
+        {"ascii",   QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("-"), QByteArrayView("|")},
+        {"rounded", QByteArrayView("╭"), QByteArrayView("╮"), QByteArrayView("╰"), QByteArrayView("╯"), QByteArrayView("─"), QByteArrayView("│")},
+    };
+
+    for (const auto &c : cases) {
+        Rectangle rect;
+        rect.setWidth(4);
+        rect.setHeight(3);
+        rect.border()->setStyle(QString::fromLatin1(c.styleName));
+        rect.border()->setColor("#ffffff");
+
+        TextGridBuffer buffer = paintRect(rect, 4, 3);
+
+        // Four corners
+        QCOMPARE(buffer.cellAt(0, 0).character(), c.tl);
+        QCOMPARE(buffer.cellAt(3, 0).character(), c.tr);
+        QCOMPARE(buffer.cellAt(0, 2).character(), c.bl);
+        QCOMPARE(buffer.cellAt(3, 2).character(), c.br);
+
+        // Horizontal edges
+        QCOMPARE(buffer.cellAt(1, 0).character(), c.hz);
+        QCOMPARE(buffer.cellAt(2, 0).character(), c.hz);
+        QCOMPARE(buffer.cellAt(1, 2).character(), c.hz);
+        QCOMPARE(buffer.cellAt(2, 2).character(), c.hz);
+
+        // Vertical edges
+        QCOMPARE(buffer.cellAt(0, 1).character(), c.vt);
+        QCOMPARE(buffer.cellAt(3, 1).character(), c.vt);
+
+        // Interior remains blank
+        QCOMPARE(buffer.cellAt(1, 1).character(), QByteArrayView(" "));
+        QCOMPARE(buffer.cellAt(2, 1).character(), QByteArrayView(" "));
+    }
 }
 
 void TestRectangle::testQmlIntegration() {

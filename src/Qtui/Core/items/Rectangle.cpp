@@ -126,6 +126,11 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
       br = "+";
       hz = "-";
       vt = "|";
+    } else if (m_border.style() == "rounded") {
+      tl = "╭";
+      tr = "╮";
+      bl = "╰";
+      br = "╯";
     }
 
     // Measure the six glyphs once instead of per border cell.

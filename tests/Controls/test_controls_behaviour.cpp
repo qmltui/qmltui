@@ -449,6 +449,54 @@ Terminal {
         const QString first = busy->property("text").toString();
         QTRY_VERIFY(busy->property("text").toString() != first);   // still animates
     }
+
+    void panelBorderSlotsAndAlignment() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    Panel {
+        id: p1
+        objectName: "p1"
+        x: 0; y: 0; width: 30; height: 3
+        border.style: "rounded"
+        title: "Speed"
+        titleBadge: "[active]"
+        titleTrailing: "0.0 km/h"
+        footer: "0"
+        footerTrailing: "250"
+    }
+    Panel {
+        id: p2
+        objectName: "p2"
+        x: 0; y: 4; width: 25; height: 3
+        border.style: "rounded"
+        title: "LongTitle"
+        titleAlignment: Qt.AlignHCenter
+        titleTrailing: "Right"
+    }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 8));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const QStringList rows = frameText(engine).split('\n');
+        QVERIFY(rows.size() >= 7);
+
+        // p1 top row: rounded corners, title, badge, trailing
+        QCOMPARE(rows[0], QString::fromUtf8("╭─ Speed [active]  0.0 km/h ─╮"));
+        // p1 middle row: rounded vertical borders
+        QCOMPARE(rows[1], QString::fromUtf8("│                            │"));
+        // p1 bottom row: rounded corners, footer, footerTrailing (total 30 chars)
+        QCOMPARE(rows[2], QString::fromUtf8("╰─ 0 ────────────────── 250 ─╯"));
+
+        // p2 top row: centered title clamped to avoid colliding with trailing text
+        // Ideal center for 11 chars in width 25 is x=7, but trailing starts at x=16,
+        // so title is clamped to x=5:
+        QCOMPARE(rows[4].left(25), QString::fromUtf8("╭──── LongTitle  Right ─╮"));
+    }
 };
 
 QTEST_MAIN(TestControlsBehaviour)

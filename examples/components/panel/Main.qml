@@ -16,18 +16,20 @@ Terminal {
         width: 80
         height: 24
 
-
-        // Left Panel
+        // Left Panel (Rounded with badge and footer)
         Panel {
             x: 2
             y: 2
-            width: 30
+            width: 32
             height: 10
-            title: "Left Aligned"
-            titleAlignment: Qt.AlignLeft
+            title: "System"
+            titleBadge: "[ACTIVE]"
+            titleBadgeColor: "green"
             titleColor: "cyan"
             border.color: "blue"
-            border.style: "double"
+            border.style: "rounded"
+            footer: "[h] Help"
+            footerColor: "gray"
 
             Text {
                 anchors.centerIn: parent
@@ -36,17 +38,21 @@ Terminal {
             }
         }
 
-        // Center Panel
+        // Center Panel (Single with centered title, trailing metric, and footers)
         Panel {
-            x: 35
+            x: 36
             y: 2
-            width: 30
+            width: 32
             height: 10
-            title: "Center Aligned"
+            title: "Metrics"
             titleAlignment: Qt.AlignHCenter
+            titleTrailing: "60 FPS"
+            titleTrailingColor: "magenta"
             titleColor: "yellow"
             border.color: "green"
             border.style: "single"
+            footer: "Load: 12%"
+            footerTrailing: "RAM: 45%"
 
             Text {
                 anchors.centerIn: parent
@@ -55,17 +61,24 @@ Terminal {
             }
         }
 
-        // Right Panel
+        // Bottom Panel (Full-width rounded with title, badge, trailing header, and dual footers)
         Panel {
             x: 2
             y: 13
-            width: 63
+            width: 66
             height: 10
-            title: "Right Aligned"
-            titleAlignment: Qt.AlignRight
+            title: "Diagnostic Log"
+            titleAlignment: Qt.AlignLeft
+            titleBadge: "[6 active]"
+            titleBadgeColor: "yellow"
+            titleTrailing: "v1.0.0"
+            titleTrailingColor: "gray"
             titleColor: "magenta"
             border.color: "red"
-            border.style: "double"
+            border.style: "rounded"
+            footer: "[q] Quit"
+            footerTrailing: "Status: OK"
+            footerTrailingColor: "green"
 
             Text {
                 anchors.centerIn: parent

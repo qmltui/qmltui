@@ -60,6 +60,11 @@ CATEGORIES = {
 }
 CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name in names}
 
+# Types that exist only when a build option is on. Their pages are kept in
+# every tree; check() reads the option from CMakeCache.txt and does not treat
+# such a page as an orphan when the option is off.
+OPTIONAL_TYPES = {"Behavior": "QTUI_ENABLE_BEHAVIOR"}
+
 # Qt/C++ spellings shown as QML types in the tables.
 QML_TYPE_NAMES = {
     "QString": "string", "QStringList": "list<string>", "bool": "bool", "int": "int",
@@ -466,8 +471,20 @@ def _section_rows(text: str, heading: str) -> set[str]:
     return names
 
 
+def _cache_option(build_dir: Path, name: str) -> bool | None:
+    cache = build_dir / "CMakeCache.txt"
+    if not cache.is_file():
+        return None
+    for line in cache.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if line.startswith(name + ":"):
+            return line.split("=", 1)[1].strip().upper() in ("ON", "TRUE", "1", "YES")
+    return None
+
+
 def check(build_dir: Path, strict: bool) -> int:
     types, skipped = load_types(build_dir)
+    disabled_types = {slug.lower() for slug, option in OPTIONAL_TYPES.items()
+                      if _cache_option(build_dir, option) is False}
     errors: list[str] = []
     todo_total = 0
     by_slug = {t.slug: t for t in types}
@@ -508,7 +525,7 @@ def check(build_dir: Path, strict: bool) -> int:
             for line in fm.group(1).splitlines():
                 if line.startswith("import:"):
                     module = line.split(":", 1)[1].strip()
-        if module in skipped:
+        if module in skipped or page.stem in disabled_types:
             continue
         errors.append(f"{page.name}: no exported QML type has this name"
                       + (f" (modules not built here: {', '.join(skipped)})" if skipped else ""))
@@ -516,7 +533,8 @@ def check(build_dir: Path, strict: bool) -> int:
         print(f"ERROR: {line}")
     covered = sum(1 for t in types if t.page.is_file())
     print(f"{covered}/{len(types)} exported types have a page; {todo_total} _TODO_ placeholder(s) left"
-          + (f"; modules not built here: {', '.join(skipped)}" if skipped else ""))
+          + (f"; modules not built here: {', '.join(skipped)}" if skipped else "")
+          + (f"; types disabled in this build: {', '.join(sorted(disabled_types))}" if disabled_types else ""))
     if strict and todo_total:
         print("ERROR: --strict: placeholders remain")
         return 1

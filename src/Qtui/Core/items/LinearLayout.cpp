@@ -84,6 +84,7 @@ void LinearLayout::layoutChildren() {
         if (totalStretch == 0) break;
 
         bool changed = false;
+        int remainingStretch = totalStretch;
         for (int i = 0; i < children.size() && remaining != 0; ++i) {
             LayoutAttached *info = layoutInfo(children[i]);
             const bool fill = m_direction == Horizontal ? info->fillWidth : info->fillHeight;
@@ -93,12 +94,13 @@ void LinearLayout::layoutChildren() {
                 continue;
             const int stretch = std::max(1, m_direction == Horizontal
                 ? info->horizontalStretch : info->verticalStretch);
-            int delta = std::max(1, std::abs(remaining) * stretch / totalStretch);
+            int delta = std::max(1, std::abs(remaining) * stretch / remainingStretch);
             delta = std::min(delta, std::abs(limit - sizes[i]));
             delta = std::min(delta, std::abs(remaining));
             if (remaining < 0) delta = -delta;
             sizes[i] += delta;
             remaining -= delta;
+            remainingStretch -= stretch;
             changed = true;
         }
         if (!changed) break;

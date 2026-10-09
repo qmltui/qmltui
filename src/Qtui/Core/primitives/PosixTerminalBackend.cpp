@@ -186,7 +186,7 @@ EmergencyState g_emergency;
 // screen. Unknown sequences are ignored by terminals that lack a mode.
 constexpr char kResetSequence[] =
     "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
-    "\033[?25h\033[0m\033]111\a\033[?1049l";
+    "\033[?25h\033[0m\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
 constexpr char kKeyboardPopSequence[] = "\033[<u";
 
 constexpr int kFatalSignals[] = {SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT,

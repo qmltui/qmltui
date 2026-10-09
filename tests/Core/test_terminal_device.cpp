@@ -497,8 +497,10 @@ void TestTerminalDevice::testOsc11BackgroundOutput()
     // Setting color again and stopping writes OSC 111 on exit
     terminal.setColor(Color("#abcdef"));
     (void)readAvailable(pipe.readEnd);
+    engine->feedInput("\033]11;rgb:1313/1313/1313\033\\");
     engine->stop();
     const std::string stopOutput = readAvailable(pipe.readEnd);
+    QVERIFY(stopOutput.find("\033]11;#131313\a") != std::string::npos);
     QVERIFY(stopOutput.find("\033]111\a") != std::string::npos);
 }
 

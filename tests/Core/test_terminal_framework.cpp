@@ -420,6 +420,8 @@ void TestTerminalFramework::responsiveLayout() {
     buffer.resize(10, 2);
     paintItem(layout, buffer, 0, 0);
     QCOMPARE(first.width() + second.width(), 10);
+    QCOMPARE(first.width(), 5);
+    QCOMPARE(second.width(), 5);
     QCOMPARE(second.x(), first.width());
 }
 
@@ -1146,7 +1148,15 @@ void TestTerminalFramework::terminalBackgroundColor()
     QCOMPARE(TerminalEngine::osc11Sequence(Color("blue")), std::string("\033]11;#0000ff\a"));
     QCOMPARE(TerminalEngine::osc11Sequence(Color("transparent")), std::string());
     QCOMPARE(TerminalEngine::osc11Sequence(Color()), std::string());
-    QCOMPARE(TerminalEngine::osc111Sequence(), std::string("\033]111\a"));
+    QCOMPARE(TerminalEngine::osc111Sequence(), std::string("\033]111\a\033]111;\a\033]111;\033\\"));
+
+    // Test OSC 11 reply color parsing (X11 rgb:rrrr/gggg/bbbb, rgb:rr/gg/bb, #rrggbb)
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:1313/1313/1313"), Color("#131313"));
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:2828/2a2a/3636"), Color("#282a36"));
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:ff/00/00"), Color("#ff0000"));
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;#abcdef"), Color("#abcdef"));
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;invalid"), Color());
+    QCOMPARE(TerminalEngine::parseOsc11Color("10;rgb:1212/1212/1212"), Color());
 
     // 2. Test Terminal engine tracking with enabled terminal output
     Terminal terminal;
@@ -1155,6 +1165,11 @@ void TestTerminalFramework::terminalBackgroundColor()
 
     QCOMPARE(engine->isBackgroundOsc11Active(), false);
     QCOMPARE(engine->appliedBackgroundColor(), Color());
+    QCOMPARE(engine->originalBackgroundColor(), Color());
+
+    // Feeding an OSC 11 response records the original terminal background color
+    engine->feedInput("\033]11;rgb:1313/1313/1313\033\\");
+    QCOMPARE(engine->originalBackgroundColor(), Color("#131313"));
 
     // Setting an opaque color in FullScreen mode activates OSC 11 tracking
     terminal.setColor(Color("#282a36"));

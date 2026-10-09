@@ -29,6 +29,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `currentRow` | `int` |  | Read-only. _TODO_ |
 | `currentColumn` | `int` |  | _TODO_ |
 | `alternatingRows` | `bool` |  | _TODO_ |
+| `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
 | `headerColor` | `rgba` |  | _TODO_ |
 | `headerBackgroundColor` | `rgba` |  | _TODO_ |
 | `selectionColor` | `rgba` |  | _TODO_ |
@@ -36,6 +37,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `textColor` | `rgba` |  | _TODO_ |
 | `rowBackgroundColor` | `rgba` |  | _TODO_ |
 | `alternatingRowBackgroundColor` | `rgba` |  | _TODO_ |
+| `gridColor` | `rgba` |  | Color used for borders and grid lines; falls back to `textColor`. |
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |

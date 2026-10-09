@@ -27,6 +27,7 @@ class QTUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(int currentRow READ selectedRow NOTIFY selectedRowChanged)
     Q_PROPERTY(int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
     Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY alternatingRowsChanged)
+    Q_PROPERTY(bool stretchLastColumn READ stretchLastColumn WRITE setStretchLastColumn NOTIFY stretchLastColumnChanged)
 
     Q_PROPERTY(qtui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
     Q_PROPERTY(qtui::Color headerBackgroundColor READ headerBackgroundColor WRITE setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
@@ -35,6 +36,7 @@ class QTUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qtui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
     Q_PROPERTY(qtui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
+    Q_PROPERTY(qtui::Color gridColor READ gridColor WRITE setGridColor NOTIFY gridColorChanged)
 
     Q_PROPERTY(bool showColumnGrid READ showColumnGrid WRITE setShowColumnGrid NOTIFY showColumnGridChanged)
     Q_PROPERTY(bool showRowGrid READ showRowGrid WRITE setShowRowGrid NOTIFY showRowGridChanged)
@@ -65,6 +67,9 @@ public:
     bool alternatingRows() const { return m_alternatingRows; }
     void setAlternatingRows(bool alt);
 
+    bool stretchLastColumn() const { return m_stretchLastColumn; }
+    void setStretchLastColumn(bool stretch);
+
     Q_INVOKABLE void forceLayout();
 
     Color headerColor() const { return m_headerColor; }
@@ -87,6 +92,9 @@ public:
 
     Color alternatingRowBackgroundColor() const { return m_alternatingRowBackgroundColor; }
     void setAlternatingRowBackgroundColor(Color color);
+
+    Color gridColor() const { return m_gridColor; }
+    void setGridColor(Color color);
 
     bool showColumnGrid() const { return m_showColumnGrid; }
     void setShowColumnGrid(bool show);
@@ -122,6 +130,7 @@ signals:
     void selectedRowChanged();
     void currentColumnChanged();
     void alternatingRowsChanged();
+    void stretchLastColumnChanged();
 
     void headerColorChanged();
     void headerBackgroundColorChanged();
@@ -130,6 +139,7 @@ signals:
     void textColorChanged();
     void rowBackgroundColorChanged();
     void alternatingRowBackgroundColorChanged();
+    void gridColorChanged();
 
     void showColumnGridChanged();
     void showRowGridChanged();
@@ -229,6 +239,7 @@ private:
     int m_currentColumn = -1;
     int m_firstVisibleRow = 0;
     bool m_alternatingRows = false;
+    bool m_stretchLastColumn = false;
 
     QPersistentModelIndex m_currentIndex;
     bool m_resetDelegates = false;
@@ -263,6 +274,9 @@ private:
 
     Color m_alternatingRowBackgroundColor = "default";
     uint32_t m_resolvedAltRowBackgroundColor = 0;
+
+    Color m_gridColor;
+    uint32_t m_resolvedGridColor = 0;
 
     bool m_showColumnGrid = false;
     bool m_showRowGrid = false;

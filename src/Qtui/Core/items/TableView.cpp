@@ -297,6 +297,12 @@ void TableView::setAlternatingRows(bool alternating) {
     emit alternatingRowsChanged();
     markDirty();
 }
+void TableView::setStretchLastColumn(bool stretch) {
+    if (m_stretchLastColumn == stretch) return;
+    m_stretchLastColumn = stretch;
+    emit stretchLastColumnChanged();
+    forceLayout();
+}
 void TableView::setHeaderColor(Color color) {
     if (m_headerColor == color) return;
     m_headerColor = color;
@@ -350,6 +356,14 @@ void TableView::setAlternatingRowBackgroundColor(Color color) {
     m_alternatingRowBackgroundColor = color;
     m_resolvedAltRowBackgroundColor = ColorMapper::fromString(m_alternatingRowBackgroundColor, 0);
     emit alternatingRowBackgroundColorChanged();
+    markDirty();
+}
+
+void TableView::setGridColor(Color color) {
+    if (m_gridColor == color) return;
+    m_gridColor = color;
+    m_resolvedGridColor = ColorMapper::fromString(m_gridColor, 0);
+    emit gridColorChanged();
     markDirty();
 }
 
@@ -565,13 +579,34 @@ void TableView::resolveColumns() {
             descriptor.insert(QStringLiteral("width"),
                 column == count - 1 ? (std::max)(1, contentWidth - share * (count - 1)) : share);
         }
-        const int columnWidth = resolveColumnWidth(column, descriptor);
+        int columnWidth = resolveColumnWidth(column, descriptor);
         if (columnWidth == 0) continue;
         if (m_showColumnGrid && !m_geometry.isEmpty()) {
             if (x + 1 < view.right()) m_separators.append(int(x));
             ++x;
         }
         if (x > (std::numeric_limits<int>::max)()) break;
+
+        const bool shouldStretch = (m_stretchLastColumn && column == count - 1)
+            || descriptor.value(QStringLiteral("stretch")).toBool();
+        if (shouldStretch) {
+            int subsequentWidth = 0;
+            for (int next = column + 1; next < count; ++next) {
+                const QVariant nextVal = next < m_columns.size() ? unpack(m_columns[next]) : QVariant();
+                const QVariantMap nextDesc = nextVal.toMap();
+                const int nextW = resolveColumnWidth(next, nextDesc);
+                if (nextW > 0) {
+                    subsequentWidth += nextW;
+                    if (m_showColumnGrid) subsequentWidth += 1;
+                }
+            }
+            const int available = int(view.right() - x - subsequentWidth);
+            if (descriptor.contains(QStringLiteral("width"))) {
+                if (available > columnWidth) columnWidth = available;
+            } else {
+                columnWidth = (std::max)(1, available);
+            }
+        }
         QString defaultTitle = QStringLiteral("Col%1").arg(column + 1);
         if (m_modelProvidesHeader) {
             const QVariant header = modelHeader(column, Qt::DisplayRole);
@@ -896,6 +931,13 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         return (std::max)(0, (std::min)(geometry.width, clip.x + clip.width - absX - geometry.x));
     };
     if (headerRows()) {
+        const uint32_t headerBg = m_resolvedHeaderBackgroundColor;
+        if (headerBg != 0) {
+            const int begin = (std::max)(clip.x, absX + view.left);
+            const int end = (std::min)(clip.x + clip.width, absX + view.right());
+            for (int x = begin; x < end; ++x)
+                buffer.writeText(x, absY + view.top, QStringLiteral(" "), m_resolvedHeaderColor, headerBg, TextAttribute::Bold);
+        }
         for (const auto &geometry : m_geometry) {
             if (geometry.x >= view.right()) break;
             write(absX + geometry.x, absY + view.top,
@@ -915,14 +957,14 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         const TextAttribute attributes = (selected ? TextAttribute::Bold : TextAttribute::None)
             | (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
                    ? TextAttribute::Reversed : TextAttribute::None);
+        if (selected || bg != 0) {
+            const int begin = (std::max)(clip.x, absX + view.left);
+            const int end = (std::min)(clip.x + clip.width, absX + view.right());
+            for (int x = begin; x < end; ++x)
+                buffer.writeText(x, y, QStringLiteral(" "), fg, bg, attributes);
+        }
         for (const auto &geometry : m_geometry) {
             if (geometry.x >= view.right()) break;
-            if (selected || bg != 0) {
-                const int begin = (std::max)(clip.x, absX + geometry.x);
-                const int end = absX + geometry.x + visibleWidth(geometry);
-                for (int x = begin; x < end; ++x)
-                    buffer.writeText(x, y, QStringLiteral(" "), fg, bg, attributes);
-            }
             if (m_delegate || m_rowDelegate) continue;
             QString value = cellText(row, geometry.column);
             QString alignment = geometry.alignment;
@@ -984,6 +1026,7 @@ void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const C
     const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
         .intersected({absX, absY, width(), height()});
     if (clip.width == 0 || clip.height == 0) return;
+    const uint32_t gridFg = m_gridColor.isValid() ? m_resolvedGridColor : m_resolvedTextColor;
     const auto put = [&](int x, int y, GridGlyph glyph) {
         if (clip.contains(absX + x, absY + y)) {
             const int cellX = absX + x;
@@ -994,9 +1037,8 @@ void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const C
                 lead + int(buffer.cellAt(lead, cellY).displayWidth));
             for (int part = lead; part < end; ++part)
                 if (part != cellX)
-                    buffer.writeText(part, cellY, QStringLiteral(" "), m_resolvedTextColor);
-            buffer.writeText(cellX, cellY, QString(glyphs[glyph]), m_resolvedTextColor);
-            buffer.cellAt(absX + x, absY + y).bgColor = 0;
+                    buffer.writeText(part, cellY, QStringLiteral(" "), gridFg);
+            buffer.writeText(cellX, cellY, QString(glyphs[glyph]), gridFg);
         }
     };
     const auto horizontal = [&](int y, int left, int right, GridGlyph junction) {

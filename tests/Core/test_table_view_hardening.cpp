@@ -143,7 +143,7 @@ private slots:
         QCOMPARE(f.line(0).left(16), header + "    TAIL");
         QCOMPARE(f.line(1).left(16), grid ? QString::fromUtf8("───────┼────────") : QString::fromUtf8("────────────────"));
         QCOMPARE(f.line(2).left(16), body + "   12 ms");
-        QCOMPARE(f.buffer.cellAt(7, 0).bgColor, grid ? 0u : 0xff224466u);
+        QCOMPARE(f.buffer.cellAt(7, 0).bgColor, 0xff224466u);
         QCOMPARE(f.buffer.cellAt(7, 2).bgColor, grid ? 0u : 0xff446688u);
         // Clipping does not change the logical content width.
         f.table->setWidth(8);
@@ -908,6 +908,88 @@ private slots:
         QCOMPARE(f2.line(4).left(11), QStringLiteral("├────┼────┤"));
         QCOMPARE(f2.line(5).left(11), QStringLiteral("│    │    │"));
         QCOMPARE(f2.line(6).left(11), QStringLiteral("└────┴────┘"));
+    }
+
+    void stretchLastColumn() {
+        TableFixture f;
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("A1")), new QStandardItem(QStringLiteral("B1"))});
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "stretchLastColumn: true; showColumnGrid: true; showOuterBorder: false; "
+            "columns: [{title: 'COL1', width: 8}, {title: 'COL2', width: 6}]")));
+        f.table->setWidth(30);
+        f.table->setHeight(5);
+        f.paint();
+
+        // COL1 is width 8 (x: 0..7). Separator is at x=8.
+        // Available width for COL2 is 30 - 8 - 1 = 21.
+        // Line 0 is header: COL1(8) + │(1) + COL2 padded to 21
+        QCOMPARE(f.line(0).left(30), QString::fromUtf8("COL1    │COL2                 "));
+        // Line 1 is divider: 8 '─' + '┼' + 21 '─'
+        QCOMPARE(f.line(1).left(30), QString::fromUtf8("────────┼─────────────────────"));
+        // Line 2 is row 0: A1(8) + │(1) + B1 padded to 21
+        QCOMPARE(f.line(2).left(30), QString::fromUtf8("A1      │B1                   "));
+    }
+
+    void columnDescriptorStretch() {
+        TableFixture f;
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("A")), new QStandardItem(QStringLiteral("B")), new QStandardItem(QStringLiteral("C"))});
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "showColumnGrid: true; showOuterBorder: false; "
+            "columns: [{title: 'A', width: 4}, {title: 'B', stretch: true}, {title: 'C', width: 5}]")));
+        f.table->setWidth(25);
+        f.table->setHeight(5);
+        f.paint();
+
+        // A is width 4 (x: 0..3). Separator at x=4.
+        // C is width 5. Separator before C is 1.
+        // So B starts at x=5, available space is 25 - 5 - (5 + 1) = 14.
+        // Separator after B is at x=19. C is at x=20..24.
+        QCOMPARE(f.line(0).left(25), QString::fromUtf8("A   │B             │C    "));
+        QCOMPARE(f.line(1).left(25), QString::fromUtf8("────┼──────────────┼─────"));
+        QCOMPARE(f.line(2).left(25), QString::fromUtf8("A   │B             │C    "));
+    }
+
+    void gridColorOption() {
+        TableFixture f;
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "showColumnGrid: true; showOuterBorder: true; textColor: '#00ff00'; gridColor: '#ff0000'; "
+            "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
+        f.table->setWidth(13);
+        f.table->setHeight(5);
+        f.paint();
+
+        // Border at (0, 0) should have gridColor #ff0000
+        QCOMPARE(f.buffer.cellAt(0, 0).fgColor, 0xffff0000u);
+        // Separator at (6, 1) in header line should have gridColor #ff0000
+        QCOMPARE(f.buffer.cellAt(6, 1).fgColor, 0xffff0000u);
+        // Data text at (1, 3) ('v') should have textColor #00ff00
+        QCOMPARE(f.buffer.cellAt(1, 3).fgColor, 0xff00ff00u);
+    }
+
+    void continuousRowAndHeaderBackground() {
+        TableFixture f;
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "showColumnGrid: true; showOuterBorder: true; "
+            "headerBackgroundColor: '#224466'; rowBackgroundColor: '#335577'; "
+            "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
+        f.table->setWidth(20); // wider than 5+5+3 = 13
+        f.table->setHeight(5);
+        f.paint();
+
+        // Header line is y=1. Check interior x from 1 to 18 (width 20, inset 1):
+        for (int x = 1; x < 19; ++x) {
+            QCOMPARE(f.buffer.cellAt(x, 1).bgColor, 0xff224466u);
+        }
+        // Body row 0 is y=3. Check interior x from 1 to 18:
+        for (int x = 1; x < 19; ++x) {
+            QCOMPARE(f.buffer.cellAt(x, 3).bgColor, 0xff335577u);
+        }
     }
 };
 

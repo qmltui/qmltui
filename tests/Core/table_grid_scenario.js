@@ -10,7 +10,7 @@ function main(terminal) {
     terminal.expectTextInRegion(1, 3, 17, 1, "API users write");
     terminal.expectTextInRegion(1, 7, 17, 1, "Commits");
     terminal.expectStyle(2, 7, {foreground: "#00FF00FF", background: "#102030FF", bold: true});
-    terminal.expectStyle(18, 7, {character: "│", foreground: "default", background: "default", bold: false});
+    terminal.expectStyle(18, 7, {character: "│", foreground: "default", background: "#102030FF", bold: false});
     terminal.captureStyled("paged_styled.txt");
     terminal.press("g");
     terminal.expectTextInRegion(1, 3, 17, 1, "Approach");

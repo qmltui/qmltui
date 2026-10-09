@@ -497,9 +497,21 @@ def check(build_dir: Path, strict: bool) -> int:
                 errors.append(f"{t.slug}.md: {heading[:-1].lower()} `{extra}` is on the page but not in the build")
         todo_total += text.count("_TODO_")
     for page in sorted(PAGES_DIR.glob("*.md")) if PAGES_DIR.is_dir() else []:
-        if page.stem not in by_slug and page.stem != "index":
-            errors.append(f"{page.name}: no exported QML type has this name"
-                          + (f" (modules not built here: {', '.join(skipped)})" if skipped else ""))
+        if page.stem in by_slug or page.stem == "index":
+            continue
+        # A page for a module this build did not produce (TerminalHost is
+        # optional) cannot be checked here; its own frontmatter says which
+        # module it belongs to, and that is enough to leave it alone.
+        fm = _FRONTMATTER.match(page.read_text(encoding="utf-8"))
+        module = ""
+        if fm:
+            for line in fm.group(1).splitlines():
+                if line.startswith("import:"):
+                    module = line.split(":", 1)[1].strip()
+        if module in skipped:
+            continue
+        errors.append(f"{page.name}: no exported QML type has this name"
+                      + (f" (modules not built here: {', '.join(skipped)})" if skipped else ""))
     for line in errors:
         print(f"ERROR: {line}")
     covered = sum(1 for t in types if t.page.is_file())

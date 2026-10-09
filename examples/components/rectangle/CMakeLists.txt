@@ -7,8 +7,7 @@ qt_add_qml_module(qtui_rectangle
         Main.qml
     DEPENDENCIES
         TARGET Qtui::Core
-        TARGET Qtui::Core
 )
 
-target_link_libraries(qtui_rectangle PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Core)
+target_link_libraries(qtui_rectangle PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 

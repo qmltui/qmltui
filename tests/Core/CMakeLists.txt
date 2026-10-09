@@ -74,6 +74,7 @@ if(QTUI_BUILD_BENCHMARKS)
 endif()
 
 add_qtui_test(test_span test_span.cpp)
+add_qtui_test(test_rectangle test_rectangle.cpp)
 add_executable(qtui_span_fixture span_fixture.cpp)
 target_link_libraries(qtui_span_fixture PRIVATE Qtui::Core Qtui::TestRunner)
 qtui_add_scenario_test(

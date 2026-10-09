@@ -25,6 +25,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | :--- | :--- | :--- | :--- |
 | `color` | `rgba` |  | _TODO_ |
 | `border` | `Border` |  | Read-only. _TODO_ |
+| `gradient` | `Gradient` |  | _TODO_ |
 
 ## Detailed Description
 

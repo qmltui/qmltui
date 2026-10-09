@@ -25,6 +25,14 @@ _TODO_ one sentence. [More...](#detailed-description)
 | :--- | :--- | :--- | :--- |
 | `stops` | `list<GradientStop>` |  | Read-only. _TODO_ |
 | `offset` | `real` |  | _TODO_ |
+| `orientation` | `Orientation` | `Gradient.Vertical` | _TODO_ |
+
+## Enumeration Gradient.Orientation
+
+| Value | Description |
+| :--- | :--- |
+| `Gradient.Vertical` | Vertical gradient orientation (top to bottom). |
+| `Gradient.Horizontal` | Horizontal gradient orientation (left to right). |
 
 ## Signals
 

@@ -1,4 +1,5 @@
 #include <Qtui/Core/items/Rectangle.h>
+#include <Qtui/Core/items/Gradient.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
 
 namespace qtui {
@@ -13,6 +14,20 @@ void Rectangle::setColor(Color color) {
   m_color = color;
   m_resolvedBackgroundColor = ColorMapper::fromString(m_color, 0x00000000);
   emit colorChanged();
+  markDirty();
+}
+
+void Rectangle::setGradient(Gradient *gradient) {
+  if (m_gradient == gradient)
+    return;
+  if (m_gradient) {
+    disconnect(m_gradient, nullptr, this, nullptr);
+  }
+  m_gradient = gradient;
+  if (m_gradient) {
+    connect(m_gradient, &Gradient::updated, this, [this]() { markDirty(); });
+  }
+  emit gradientChanged();
   markDirty();
 }
 
@@ -52,8 +67,12 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
   int w = width();
   int h = height();
 
-  // Render background if specified and not transparent
-  if ((m_resolvedBackgroundColor >> 24) != 0) {
+  const bool hasGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
+  const bool hasSolidBg = ((m_resolvedBackgroundColor >> 24) != 0);
+
+  // Render background if specified via gradient or solid color
+  if (hasGradient || hasSolidBg) {
+    const bool isHorizontal = (m_gradient && m_gradient->orientation() == Gradient::Horizontal);
     for (int dy = 0; dy < h; ++dy) {
       int cy = absY + dy;
       for (int dx = 0; dx < w; ++dx) {
@@ -62,7 +81,17 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
           if (cx >= 0 && cx < buffer.width() && cy >= 0 &&
               cy < buffer.height()) {
             Cell &cell = buffer.cellAt(cx, cy);
-            cell.bgColor = m_resolvedBackgroundColor;
+            if (hasGradient) {
+              qreal t = 0.0;
+              if (isHorizontal) {
+                t = (w > 1) ? static_cast<qreal>(dx) / (w - 1) : 0.0;
+              } else {
+                t = (h > 1) ? static_cast<qreal>(dy) / (h - 1) : 0.0;
+              }
+              cell.bgColor = m_gradient->colorAt(t);
+            } else {
+              cell.bgColor = m_resolvedBackgroundColor;
+            }
             cell.setCharacter(" ");
             cell.displayWidth = 1;
             cell.continuation = false;

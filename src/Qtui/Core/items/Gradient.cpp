@@ -17,35 +17,50 @@ QQmlListProperty<GradientStop> Gradient::stops() {
 
 void Gradient::appendStop(QQmlListProperty<GradientStop>* list, GradientStop* stop) {
     auto* self = static_cast<Gradient*>(list->object);
+    if (self) self->addStop(stop);
+}
+
+void Gradient::addStop(GradientStop* stop) {
     if (!stop) return;
-    self->m_stops.append(stop);
-    connect(stop, &GradientStop::updated, self, &Gradient::updated);
-    emit self->updated();
+    m_stops.append(stop);
+    connect(stop, &GradientStop::updated, this, &Gradient::updated);
+    emit updated();
 }
 
 qsizetype Gradient::countStops(QQmlListProperty<GradientStop>* list) {
     auto* self = static_cast<Gradient*>(list->object);
-    return self->m_stops.size();
+    return self ? self->m_stops.size() : 0;
 }
 
 GradientStop* Gradient::stopAt(QQmlListProperty<GradientStop>* list, qsizetype index) {
     auto* self = static_cast<Gradient*>(list->object);
-    return self->m_stops.at(index);
+    return self ? self->m_stops.at(index) : nullptr;
 }
 
 void Gradient::clearStops(QQmlListProperty<GradientStop>* list) {
     auto* self = static_cast<Gradient*>(list->object);
-    for (auto* stop : self->m_stops) {
-        disconnect(stop, &GradientStop::updated, self, &Gradient::updated);
+    if (self) self->clearStops();
+}
+
+void Gradient::clearStops() {
+    for (auto* stop : m_stops) {
+        disconnect(stop, &GradientStop::updated, this, &Gradient::updated);
     }
-    self->m_stops.clear();
-    emit self->updated();
+    m_stops.clear();
+    emit updated();
 }
 
 void Gradient::setOffset(qreal offset) {
     if (qFuzzyCompare(m_offset, offset)) return;
     m_offset = offset;
     emit offsetChanged();
+    emit updated();
+}
+
+void Gradient::setOrientation(Orientation orientation) {
+    if (m_orientation == orientation) return;
+    m_orientation = orientation;
+    emit orientationChanged();
     emit updated();
 }
 

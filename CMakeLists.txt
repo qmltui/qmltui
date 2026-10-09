@@ -7,6 +7,14 @@ option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui TestRunner library" OFF)
+option(QTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid Qtui Commercial License" OFF)
+
+if(QTUI_COMMERCIAL_LICENSE)
+    message(STATUS "Qtui: Building under Commercial License terms.")
+    add_compile_definitions(QTUI_IS_COMMERCIAL=1)
+else()
+    message(STATUS "Qtui: Building under LGPLv3 / GPLv3 terms.")
+endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

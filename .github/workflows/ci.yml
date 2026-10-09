@@ -106,3 +106,10 @@ jobs:
             echo "hello_qtui exited early with code $code"; cat run.log; exit 1
           fi
           grep -q "Welcome" run.log || { echo "no rendered frame in output"; cat run.log | head -c 2000; exit 1; }
+
+  reuse:
+    name: REUSE licensing compliance
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: fsfe/reuse-action@v5

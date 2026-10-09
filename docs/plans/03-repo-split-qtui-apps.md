@@ -183,6 +183,26 @@ Windows. A newcomer clicks "Use this template" and has a buildable, tested app
 in under a minute. This is the single highest-leverage onboarding feature in
 this plan.
 
+### G. License
+
+Both new repositories are `BSD-3-Clause`, following Qt's convention for
+examples and Plan 00 section 8. A newcomer who clicks "Use this template"
+must have nothing to read before shipping. Concretely:
+
+- One `LICENSE` file (BSD-3-Clause) at the root of `qtui-apps` and of
+  `qtui-starter`; SPDX header `BSD-3-Clause` on every source file; `reuse lint`
+  in each CI.
+- No contributor agreement. BSD code does not need to be relicensable.
+- One sentence in each `README.md`, after the run command: "These apps are
+  BSD-3-Clause. Qtui itself is LGPLv3, GPLv3, or commercial; see the Qtui
+  repository." The apps link Qtui through `FetchContent`, so a reader must not
+  infer Qtui's terms from the apps' license.
+- The `FetchContent` build of Qtui inside `qtui-apps` links the Qtui libraries
+  as shared objects (the default). The starter template must not switch to a
+  static Qtui build silently, since that changes the user's LGPL obligations
+  without telling them. If a static option is offered, the README says what it
+  means.
+
 ---
 
 ## 4. Verification

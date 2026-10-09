@@ -227,3 +227,14 @@ them. Escape-sequence interpretation requires an explicit ANSI text format.
 See [QML API](docs/qml_api.md), [models in views](docs/guide/models.md),
 [architecture](docs/architecture.md), and [custom items](docs/custom_items.md). Breaking stabilization changes are listed
 in the [0.3 migration notes](docs/migration/0.3.md).
+
+## License
+
+Qtui is available under the LGPLv3 and GPLv3, or under a commercial license
+for teams that cannot meet those terms (static linking on devices, closed
+distribution, WebAssembly). Examples and the starter template are
+BSD-3-Clause; documentation is CC-BY-4.0. The license of a file follows from
+its path, see [LICENSE.md](LICENSE.md). Commercial licensing: contact the
+copyright holder through the project page.
+
+Qtui is an independent project and not a product of The Qt Company.

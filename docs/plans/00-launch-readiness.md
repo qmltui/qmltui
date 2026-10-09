@@ -641,7 +641,106 @@ host needs it.
 - The README and the site quickstart list Windows alongside Linux and macOS
   with the MSVC and MinGW commands that CI runs.
 
-## 8. Tag and Release
+## 8. Licensing
+
+Status on 2026-09-14: executed in the tree (uncommitted at the time of
+writing) with the defaults listed under "Open decisions" below: licensor
+"Yosri Ayed", copyright assignment CLA, no LGPL for WebAssembly, docs
+CC-BY-4.0. `reuse lint` passes. Still to do before the repository is made
+public: a lawyer's read of `CLA.md`, and the CLA bot on GitHub.
+
+### The model
+
+Qtui mirrors Qt: **LGPLv3, GPLv3, or a commercial license**, chosen by the
+user. Qtui is the personal project of its copyright holder and not a Qt
+Company product; the commercial license is sold by the copyright holder.
+
+Why this and not MIT, which the tree said until 2026-09-14:
+
+- Nothing has been published, so the change is one commit with no released
+  MIT versions to honour.
+- The strict choice is the reversible one. A sole copyright holder can relax
+  to MIT later. Nothing already released under MIT can be taken back.
+- The commercial driver is embedded static linking (the tree already carries
+  `cmake/armv6-toolchain.cmake`). LGPL obliges a device vendor to ship
+  relinkable object files; the commercial license removes that.
+- The target reader is a Qt developer who already lives with exactly these
+  terms.
+
+### What is licensed how
+
+| Path | License | Note |
+| :--- | :--- | :--- |
+| `src/Qtui/**` (Core, Controls, Extras, Canvas, Image, TerminalHost, TestRunner) | `LicenseRef-Qtui-Commercial OR LGPL-3.0-only OR GPL-3.0-only` | One rule for all library code, TestRunner included |
+| `examples/**`, `qtui-starter` (Plan 03) | `BSD-3-Clause` | Qt's convention for examples. The goal is "copy three files" with nothing to read first |
+| `cmake/**`, `scripts/**`, `.github/**` | `BSD-3-Clause` | Build glue, as in Qt |
+| `docs/**` | `CC-BY-4.0` | Open decision 4 below |
+| Fetched third parties: utf8proc, libvterm | MIT (upstream) | Recorded in `THIRD-PARTY.md`; nothing to relicense |
+| WebAssembly builds of Qtui | GPLv3 or commercial only | Mirrors Qt's own rule for wasm; see Plan 05 section 7. Open decision 3 |
+
+### Files and mechanics
+
+Follow the REUSE specification so the state is machine-checkable with
+`reuse lint`:
+
+1. `LICENSES/LGPL-3.0-only.txt`, `LICENSES/GPL-3.0-only.txt`,
+   `LICENSES/BSD-3-Clause.txt`, `LICENSES/CC-BY-4.0.txt`, and
+   `LICENSES/LicenseRef-Qtui-Commercial.txt` (a short pointer: "Commercial
+   licenses are available from `<licensor>`; contact `<contact>`").
+2. Replace the root `LICENSE` (MIT) with `LICENSE.md`: the table above in
+   prose plus a link to `LICENSES/`.
+3. No per-file headers. The license of a file follows from its path through
+   `REUSE.toml` at the root (one `[[annotations]]` table per path group,
+   `precedence = "override"`). Decided 2026-09-14: a 657-file header diff buys
+   only that a file copied out of the tree carries its own notice, which is
+   not a legal requirement. `CONTRIBUTING.md` tells contributors to extend
+   `REUSE.toml` rather than add headers.
+4. `THIRD-PARTY.md`: utf8proc and libvterm, with upstream license text and the
+   pinned versions from `cmake/QtuiUtf8proc.cmake` and `cmake/QtuiLibvterm.cmake`.
+5. `CONTRIBUTING.md` plus a contributor agreement (`CLA.md`). Every
+   contribution must be relicensable by the copyright holder or the commercial
+   option dies with the first merged external PR. Enforce with a CLA bot on
+   GitHub before the repository flips public. Form is open decision 2.
+6. README license section, in the rewrite (section 10):
+
+   > Qtui is available under the LGPLv3 and GPLv3, or under a commercial
+   > license for teams that cannot meet those terms (static linking on
+   > devices, closed distribution, WebAssembly). Examples and the starter
+   > template are BSD-3-Clause; documentation is CC-BY-4.0. The license of a
+   > file follows from its path, see LICENSE.md. Commercial licensing:
+   > `<contact>`.
+
+   No price is published at launch. The first real inquiries set it.
+7. CI: a `reuse lint` job in `ci.yml`, required to pass.
+
+### Acceptance
+
+- `reuse lint` passes on the tree.
+- No file still says MIT, including `LICENSE`, `CMakeLists.txt` metadata,
+  and the QML module descriptions.
+- README carries the license section verbatim.
+- `CLA.md` is committed, reviewed by a lawyer, and the CLA bot is active
+  before the repository is public.
+- Plan 03 and Plan 05 carry their license notes (apps repository BSD-3-Clause;
+  playground notices and source offer).
+
+### Open decisions
+
+1. **Licensor entity.** Personal name or a company. Decides `<licensor>` in
+   every header and in the commercial license text. A personal name works for
+   the first sales and can be assigned to a company later in one step.
+2. **Contributor agreement form.** Copyright assignment (recommended: keeps
+   relicensing unconditional) or a broad license grant (friendlier to
+   contributors, weaker for the commercial branch).
+3. **LGPL for WebAssembly.** Exclude it, as Qt does (recommended: static
+   linking makes LGPL relinking impractical and Qt already forces GPL or
+   commercial on the same binary), or allow it.
+4. **Documentation license.** CC-BY-4.0 (recommended, simplest for a website
+   that reuses the same markdown) or the same triple as the code.
+
+---
+
+## 9. Tag and Release
 
 1. Confirm `project(Qtui VERSION 0.4.0 ...)` matches the tag.
 2. `git tag -a v0.4.0 -m "Qtui 0.4.0"` and push the tag.
@@ -653,7 +752,7 @@ host needs it.
 
 ---
 
-## 9. README Rewrite
+## 10. README Rewrite
 
 The README is the second thing a newcomer sees after the site. Replace the top
 of `README.md` with, in this order: one hero cast (from Plan 02), a two-sentence
@@ -662,7 +761,7 @@ component catalog. Everything else moves below the fold or onto the site.
 
 ---
 
-## 10. Verification
+## 11. Verification
 
 Record (2026-09-14, commit b0bdb32 plus this note, before the `v0.4.0` tag):
 
@@ -678,7 +777,7 @@ Record (2026-09-14, commit b0bdb32 plus this note, before the `v0.4.0` tag):
 
 Not run: macOS (CI row only), the quickstart from the public tag (needs the tag
 and a public repository), and the hand run of the quickstart in Windows
-Terminal, a Linux terminal and Terminal.app (section 8 step 5).
+Terminal, a Linux terminal and Terminal.app (section 9 step 5).
 
 ```bash
 # Both Behavior trees green

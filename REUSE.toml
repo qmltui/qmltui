@@ -1,0 +1,31 @@
+# Licensing map for the Qtui repository, in REUSE.toml form (https://reuse.software).
+# Source files carry no per-file header; the license of a file is decided by its
+# path below. Later tables win over earlier ones for the same file. Full license
+# texts are in LICENSES/. Summary for humans: LICENSE.md.
+
+version = 1
+SPDX-PackageName = "Qtui"
+SPDX-PackageSupplier = "Yosri Ayed"
+SPDX-PackageDownloadLocation = "https://github.com/yosriayed/Qtui"
+
+# Library code: LGPLv3, GPLv3, or a commercial license, at the user's choice.
+[[annotations]]
+path = ["src/**", "tests/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Yosri Ayed"
+SPDX-License-Identifier = "LicenseRef-Qtui-Commercial OR LGPL-3.0-only OR GPL-3.0-only"
+
+# Examples and build glue: BSD-3-Clause, so they can be copied without conditions.
+[[annotations]]
+path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", "CMakeLists.txt", ".gitignore", "REUSE.toml"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Yosri Ayed"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+# Documentation, including the markdown reference pages that live next to the
+# code under src/**/doc/ and the notices in this directory.
+[[annotations]]
+path = ["docs/**", "**/*.md", "**/doc/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Yosri Ayed"
+SPDX-License-Identifier = "CC-BY-4.0"

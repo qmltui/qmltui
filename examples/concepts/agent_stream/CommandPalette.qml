@@ -27,7 +27,6 @@ Column {
         { "cmd": "/diff",   "desc": "Inspect side-by-side patch diff (F3)" },
         { "cmd": "/cost",   "desc": "Session token metrics & capacity" },
         { "cmd": "/doctor", "desc": "Run system environment diagnostics" },
-        { "cmd": "/shell",  "desc": "Toggle background shell (Ctrl+T)" },
         { "cmd": "/clear",  "desc": "Clear terminal history" },
         { "cmd": "/quit",   "desc": "Exit studio session" }
     ]

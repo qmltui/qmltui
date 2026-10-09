@@ -34,7 +34,6 @@ Column {
 
     signal requestSubmitted(string text)
     signal permissionChosen(int index)
-    signal toggleShellModeRequested
     signal openModelPickerRequested
     signal openDiffInspectorRequested
 
@@ -74,7 +73,7 @@ Column {
             bold: true
         }
         Text {
-            text: " · [F2] model · [F3] diff · [Ctrl+T] shell"
+            text: " · [F2] model · [F3] diff"
             color: theme.amber
         }
     }
@@ -138,7 +137,7 @@ Column {
                 id: inputField
                 width: parent.width - 4
                 color: "white"
-                placeholderText: "Ask anything, type / for commands, F2: model, F3: diff, Ctrl+T: shell..."
+                placeholderText: "Ask anything, type / for commands, F2: model, F3: diff..."
                 placeholderColor: theme.muted
                 cursorBlinking: false
                 cursorShape: TextInput.Block
@@ -205,13 +204,7 @@ Column {
                         }
                     }
 
-                    if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_T || event.key === Qt.Key_B)) {
-                        promptBar.toggleShellModeRequested();
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_F1) {
-                        promptBar.toggleShellModeRequested();
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_F2) {
+                    if (event.key === Qt.Key_F2) {
                         promptBar.openModelPickerRequested();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_F3) {

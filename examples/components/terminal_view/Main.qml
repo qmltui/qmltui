@@ -7,6 +7,8 @@ import Qtui.TerminalHost
 
 Terminal {
     id: root
+    mode: Terminal.FullScreen
+    title: "TerminalView — dual shell workflow"
     color: "#0d0e15"
 
     // Selected target for command dispatcher: 0 = Term 1, 1 = Term 2, 2 = Both (Broadcast)

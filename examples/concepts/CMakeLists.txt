@@ -1,7 +1,5 @@
 
-if(QTUI_ENABLE_TERMINAL_HOST)
-    add_subdirectory(agent_stream)
-endif()
+add_subdirectory(agent_stream)
 add_subdirectory(anchors)
 add_subdirectory(inline_repl)
 add_subdirectory(animation)

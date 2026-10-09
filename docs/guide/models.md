@@ -190,7 +190,7 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
 ## What is deliberately not interpreted
 
 - `QIcon` and `QPixmap` in `Qt::DecorationRole`: terminals draw glyphs, not
-  images. A `QString` or `QChar` decoration is drawn as a leading glyph.
+  images. A `QString` or `QChar` decoration is drawn as a leading glyph. Although it is possible to add this in the future using the Image QML type in Kitty/Sixel-capable terminals.
 - Gradient and texture brushes: only a brush's solid color is used.
 - `Qt::FontRole`: font families and sizes have no terminal meaning. Use the
   `bold`, `italic`, and `underline` role names, or a delegate.

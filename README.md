@@ -112,6 +112,15 @@ This adds the `Qtui.TerminalHost` QML module and `Qtui::TerminalHost` CMake
 target on Linux and macOS. See [TerminalView](docs/TerminalView.md) for its API,
 security defaults, offline libvterm setup, and current compatibility limits.
 
+The examples keep inline agent output and hosted shells separate:
+
+- `qtui_agent_stream_demo` (`examples/concepts/agent_stream`) demonstrates an
+  inline agent session with scrollback, prompts, and permission decisions. It
+  does not require TerminalHost.
+- `qtui_terminal_view` (`examples/components/terminal_view`) demonstrates two
+  interactive shells and a command dispatcher in full-screen mode. It requires
+  `QTUI_ENABLE_TERMINAL_HOST=ON`; press Ctrl+Q to quit.
+
 Benchmarks are available with `-DQTUI_BUILD_BENCHMARKS=ON`: `benchmark_views`
 records 1,000- and 10,000-row view creation time, and `benchmark_render`
 records per-frame paint and diff cost for representative scenes at 80x24 and

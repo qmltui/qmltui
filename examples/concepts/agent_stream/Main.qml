@@ -28,12 +28,8 @@ Terminal {
         PermissionState
     }
 
-    mode: shellMode ? Terminal.FullScreen : Terminal.Inline
+    mode: Terminal.Inline
     title: {
-        if (root.shellMode) {
-            const prog = (fullScreenShell && fullScreenShell.shellProgram) ? fullScreenShell.shellProgram : "bash";
-            return "🐚 Qt AI Studio [SHELL: " + prog + "] · " + root.activeModel + " (" + root.sessionCostStr + ")";
-        }
         if (root.awaitingPermission) {
             return "⚠️ [ACTION REQUIRED] " + root.currentToolName + "(" + root.currentToolTarget + ") — Qt AI Studio";
         }
@@ -57,7 +53,6 @@ Terminal {
     property int spinnerIndex: 0
     property int elapsedDeciseconds: 0
     property bool sessionAlwaysAllow: false
-    property bool shellMode: false
     property string activeModel: "claude-3-7-sonnet"
     property string sessionCostStr: "$0.014"
     property int totalTokens: 1420
@@ -71,9 +66,9 @@ Terminal {
     property var inputHistory: []
     property int historyIndex: -1
 
-    readonly property bool ready: agentState === Main.ReadyState && !shellMode
-    readonly property bool working: agentState === Main.WorkingState && !shellMode
-    readonly property bool awaitingPermission: agentState === Main.PermissionState && !shellMode
+    readonly property bool ready: agentState === Main.ReadyState
+    readonly property bool working: agentState === Main.WorkingState
+    readonly property bool awaitingPermission: agentState === Main.PermissionState
     readonly property var spinnerFrames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     readonly property string elapsedTimeStr: (elapsedDeciseconds / 10).toFixed(1) + "s"
@@ -96,34 +91,13 @@ Terminal {
         });
     }
 
-    function toggleShellMode() {
-        shellMode = !shellMode;
-        if (shellMode) {
-            fullScreenShell.focusShell();
-        } else {
-            promptBar.focusPrompt();
-        }
-    }
-
-    function exitShellMode() {
-        if (shellMode) {
-            shellMode = false;
-            promptBar.focusPrompt();
-        }
-    }
-
     function handleSlashCommand(cmd) {
         const trimmed = cmd.trim();
         const parts = trimmed.split(" ");
         const mainCmd = parts[0].toLowerCase();
 
         if (mainCmd === "/help") {
-            addMessage(Main.SystemMessage, "Commands & Workflows:\n" + "  Ctrl+T, F1    Toggle persistent background terminal shell (TerminalView)\n" + "  /demo [1-4]   Execute agent workflows (1: Refactor, 2: Swarm, 3: Patch, 4: Tree)\n" + "  /swarm        Show subagent swarm status (TableView)\n" + "  /tree         Inspect repository workspace hierarchy (TreeView)\n" + "  /cost         Show session token metrics and capacity (ProgressBar & Sparkline)\n" + "  /model        Toggle active neural model (Claude 3.7 / GPT-4.5 / Gemini 2.0)\n" + "  /doctor       Run system environment diagnostics\n" + "  /clear        Clear terminal history\n" + "  /exit, /quit  Exit studio session\n\n" + "Keys: Ctrl+T (toggle shell), Enter (submit), 1-4 (select), Ctrl+C (abort), Q/Esc (quit)", "Help & Workflows");
-            return;
-        }
-
-        if (mainCmd === "/term" || mainCmd === "/shell" || mainCmd === "/bash") {
-            toggleShellMode();
+            addMessage(Main.SystemMessage, "Commands & Workflows:\n" + "  /demo [1-4]   Execute agent workflows (1: Refactor, 2: Swarm, 3: Patch, 4: Tree)\n" + "  /swarm        Show subagent swarm status (TableView)\n" + "  /tree         Inspect repository workspace hierarchy (TreeView)\n" + "  /cost         Show session token metrics and capacity (ProgressBar & Sparkline)\n" + "  /model        Toggle active neural model (Claude 3.7 / GPT-4.5 / Gemini 2.0)\n" + "  /doctor       Run system environment diagnostics\n" + "  /clear        Clear terminal history\n" + "  /exit, /quit  Exit studio session\n\n" + "Keys: Enter (submit), 1-4 (select), Ctrl+C (abort), Ctrl+Q (quit), Esc (close or quit)", "Help & Workflows");
             return;
         }
 
@@ -153,7 +127,7 @@ Terminal {
         }
 
         if (mainCmd === "/doctor") {
-            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TerminalView, TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "Diagnostics");
+            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "Diagnostics");
             return;
         }
 
@@ -235,16 +209,6 @@ Terminal {
         historyIndex = inputHistory.length;
         promptBar.inputText = "";
 
-        if (query === "!" || query === "/term" || query === "/shell" || query === "/bash") {
-            toggleShellMode();
-            return;
-        }
-
-        if (query.startsWith("!")) {
-            toggleShellMode();
-            return;
-        }
-
         const lower = query.toLowerCase();
         if (lower.indexOf("swarm") !== -1 || lower.indexOf("audit") !== -1 || lower.indexOf("subagent") !== -1) {
             startScenario(2, query);
@@ -301,17 +265,6 @@ Terminal {
     }
 
     Keys.onPressed: event => {
-        // Handle Ctrl+T, Ctrl+B, or F1 to toggle shell mode
-        if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_T || event.key === Qt.Key_B)) {
-            root.toggleShellMode();
-            event.accepted = true;
-            return;
-        }
-        if (event.key === Qt.Key_F1) {
-            root.toggleShellMode();
-            event.accepted = true;
-            return;
-        }
         if (event.key === Qt.Key_F2) {
             modelModal.open();
             event.accepted = true;
@@ -532,10 +485,9 @@ Terminal {
         }
     }
 
-    // Pinned Bottom Bar Component (Studio Mode)
+    // Pinned inline prompt
     PinnedPromptBar {
         id: promptBar
-        visible: !root.shellMode
         ready: root.ready
         working: root.working
         awaitingPermission: root.awaitingPermission
@@ -552,20 +504,8 @@ Terminal {
 
         onRequestSubmitted: text => root.submitRequest(text)
         onPermissionChosen: index => root.choosePermission(index)
-        onToggleShellModeRequested: () => root.toggleShellMode()
         onOpenModelPickerRequested: () => modelModal.open()
         onOpenDiffInspectorRequested: () => diffInspector.open()
-    }
-
-    // Full Screen Persistent Terminal Session
-    FullScreenShell {
-        id: fullScreenShell
-        x: 0
-        y: 0
-        width: root.terminalWidth
-        height: root.terminalHeight
-        visible: root.shellMode
-        onReturnToStudioRequested: () => root.exitShellMode()
     }
 
     // Interactive Neural Model Picker Dialog (F2 / /model)
@@ -649,9 +589,9 @@ Terminal {
                     }
                 } else if (root.agentStep === 6) {
                     root.currentToolName = "Bash";
-                    root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build agent_stream_demo\"", "Bash");
+                    root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build qtui_agent_stream_demo\"", "Bash");
                 } else if (root.agentStep === 7) {
-                    root.addMessage(Main.ToolResultMessage, "Built target agent_stream_demo (exit 0, 0.28s)");
+                    root.addMessage(Main.ToolResultMessage, "Built target qtui_agent_stream_demo (exit 0, 0.28s)");
                 } else if (root.agentStep === 8) {
                     root.currentToolName = "CTest";
                     root.addMessage(Main.ToolCallMessage, "command=\"ctest --test-dir build -R agent_stream\"", "CTest");
@@ -730,7 +670,7 @@ Terminal {
                 } else if (root.agentStep === 1) {
                     root.addMessage(Main.RepoTreeMessage, "", "~/Qtui Workspace");
                 } else {
-                    root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: StreamRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Interactive shell: Press Ctrl+T to toggle persistent live /bin/bash terminal", "Agent", "1.2k tokens · 0.9s");
+                    root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: StreamRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Inline session: agent output stays in terminal scrollback", "Agent", "1.2k tokens · 0.9s");
                     toast.notify("Workspace tree indexed", "info");
                     root.agentState = Main.ReadyState;
                     agentTimer.stop();

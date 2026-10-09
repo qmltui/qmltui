@@ -13,13 +13,17 @@ function main(terminal) {
     terminal.expectStyle(18, 7, {character: "│", foreground: "default", background: "#102030FF", bold: false});
     terminal.captureStyled("paged_styled.txt");
     terminal.press("g");
-    terminal.expectTextInRegion(1, 3, 17, 1, "Approach");
-    terminal.expectTextInRegion(1, 6, 17, 1, "Commits");
+    // Toggling the row grid grows the capacity. The viewport is remembered
+    // now rather than derived from the selection, so it stays where PageDown
+    // left it instead of snapping back to pin the selection to the last line;
+    // dropping the dividers just packs the same rows tighter.
+    terminal.expectTextInRegion(1, 3, 17, 1, "API users write");
+    terminal.expectTextInRegion(1, 5, 17, 1, "Commits");
     terminal.press("c");
     terminal.expectStyle(18, 3, {character: " "})
-    terminal.expectStyle(19, 3, {character: "U"});
+    terminal.expectStyle(19, 3, {character: "D"});   // "Declarative", the row the view is on
     terminal.press("b");
-    terminal.expectTextInRegion(1, 2, 17, 1, "Approach");
+    terminal.expectTextInRegion(1, 2, 17, 1, "API users write");
     terminal.captureText("compact.txt");
     terminal.press("b"); terminal.press("c"); terminal.press("g"); terminal.press("w");
     terminal.expectSnapshot("table_grid_snapshot.txt");

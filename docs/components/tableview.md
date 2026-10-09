@@ -110,8 +110,15 @@ column, and never cover structural lines.
 Header content clicks emit `headerClicked`. Data content clicks select and
 activate the corresponding model row. Borders, separators, header underlines,
 and empty body space are not activation targets. Up/Down move one row;
-PageUp/PageDown move by the number of visible data rows. Resizing and grid
-changes keep the selected row visible whenever a row fits.
+PageUp/PageDown move by the number of visible data rows.
+
+The viewport is remembered rather than derived from the selection: moving the
+selection within the visible rows does not scroll, and the view moves only far
+enough to bring the selection back into range when it would fall outside. A
+view that has not been scrolled stays at the top, so rows inserted above it
+become visible instead of pushing it down; once scrolled, the top line keeps
+showing the same row even as rows are added or removed above it. Resizing and
+grid changes keep the selected row visible whenever a row fits.
 
 This API replaces `showGrid` with `showColumnGrid`; there is no compatibility
 alias in QML or C++. Widths no longer include separators, and the view no longer

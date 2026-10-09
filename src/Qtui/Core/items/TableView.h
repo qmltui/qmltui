@@ -180,6 +180,11 @@ private:
     };
     ViewGeometry viewGeometry() const;
     int computeFirstVisibleRow() const;
+    // Recovers m_firstVisibleRow from m_topIndex after a structural change.
+    void synchronizeViewport();
+    // Back to the top: a replaced or reset model makes the old offset
+    // meaningless, which the derived version handled for free.
+    void resetViewport();
     void layoutDelegates();
     void maybeFetchMore();
     using Position = std::pair<int, int>;
@@ -242,6 +247,13 @@ private:
     bool m_stretchLastColumn = false;
 
     QPersistentModelIndex m_currentIndex;
+
+    // Anchors the top visible row to a model row rather than an index, the
+    // same way m_currentIndex anchors the selection. Rows removed from or
+    // inserted above the viewport renumber everything below them, and Qt
+    // shifts a persistent index across that for free; without it a scrolled
+    // view walks forward through the data every time the model changes.
+    QPersistentModelIndex m_topIndex;
     bool m_resetDelegates = false;
     bool m_structureDirty = false;
     bool m_geometryDirty = true;

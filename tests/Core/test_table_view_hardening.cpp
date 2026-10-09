@@ -323,8 +323,11 @@ private slots:
         QVERIFY(!empty.isAccepted());
         f.table->setShowRowGrid(false);
         f.paint();
-        QCOMPARE(f.line(3).left(9), QStringLiteral("│2  │2  │"));
-        QCOMPARE(f.line(6).left(9), QStringLiteral("│5  │5  │"));
+        // Capacity grows from two rows to four. The selection is still inside
+        // the window, so the window does not move -- it reveals two more rows
+        // below rather than sliding up to pin the selection to the last line.
+        QCOMPARE(f.line(3).left(9), QStringLiteral("│4  │4  │"));
+        QCOMPARE(f.line(6).left(9), QStringLiteral("│7  │7  │"));
         KeyEvent up(Qt::Key_PageUp, QString());
         f.table->keyPressEvent(&up);
         QCOMPARE(f.table->selectedRow(), 1);
@@ -386,6 +389,102 @@ private slots:
                 QCOMPARE(f.buffer.cellAt(x, 3).displayWidth, 1);
             }
         }
+    }
+
+    // The viewport is remembered, not derived from the selection. Deriving it
+    // pinned the selected row to the last visible line once you scrolled past
+    // one page, so every Up press dragged the whole view along with it.
+    //
+    // No column descriptors means no header row, so a height-7 view with an
+    // outer border has five body lines at y = 1..5.
+    void gridScrollsOnlyAtTheEdges() {
+        CountingTableList model;
+        TableFixture f;
+        QVERIFY(f.createBody(&model, "showOuterBorder: true; " + textDelegate));
+        f.table->setWidth(6);
+        f.table->setHeight(7);
+        f.table->setSelectedRow(10);
+        f.paint();
+        // Arriving from above, the selection lands on the last line.
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│6   │"));
+        QCOMPARE(f.line(5).left(6), QStringLiteral("│10  │"));
+
+        // Four presses walk the cursor to the top line without moving the view.
+        KeyEvent up(Qt::Key_Up, QString());
+        for (int i = 0; i < 4; ++i) f.table->keyPressEvent(&up);
+        QCOMPARE(f.table->selectedRow(), 6);
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│6   │"));
+
+        // The fifth is at the edge: the view scrolls by exactly one row and
+        // the selection stays on the top line.
+        f.table->keyPressEvent(&up);
+        QCOMPARE(f.table->selectedRow(), 5);
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│5   │"));
+        QCOMPARE(f.line(5).left(6), QStringLiteral("│9   │"));
+
+        // Symmetrically downwards: inside the window nothing moves.
+        KeyEvent down(Qt::Key_Down, QString());
+        for (int i = 0; i < 4; ++i) f.table->keyPressEvent(&down);
+        QCOMPARE(f.table->selectedRow(), 9);
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│5   │"));
+        f.table->keyPressEvent(&down);
+        f.paint();
+        QCOMPARE(f.table->selectedRow(), 10);
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│6   │"));
+    }
+
+    // Rows leaving the front of the model renumber everything after them. The
+    // viewport is anchored to a persistent index so it keeps the same content
+    // on the top line rather than the same row number -- without it a ring
+    // buffer evicting from the front walks the view forward on every batch.
+    void gridScrolledViewportSurvivesFrontEviction() {
+        QStandardItemModel model;
+        for (int i = 0; i < 40; ++i)
+            model.appendRow(new QStandardItem(QString::number(i)));
+
+        TableFixture f;
+        QVERIFY(f.createBody(&model, "showOuterBorder: true; " + textDelegate));
+        f.table->setWidth(6);
+        f.table->setHeight(7);
+        f.table->setSelectedRow(20);
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│16  │"));
+
+        // Evict five rows from the front, as a full ring does on every batch.
+        model.removeRows(0, 5);
+        f.paint();
+        // Same content on the top line, five rows lower in the numbering.
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│16  │"));
+        QCOMPARE(f.table->selectedRow(), 15);
+
+        // Inserting above a scrolled view holds content still too.
+        model.insertRow(0, new QStandardItem(QStringLiteral("x")));
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│16  │"));
+    }
+
+    // A replaced or reset model makes the remembered offset meaningless.
+    void gridResetReturnsToTheTop() {
+        QStandardItemModel model;
+        for (int i = 0; i < 40; ++i)
+            model.appendRow(new QStandardItem(QString::number(i)));
+
+        TableFixture f;
+        QVERIFY(f.createBody(&model, "showOuterBorder: true; " + textDelegate));
+        f.table->setWidth(6);
+        f.table->setHeight(7);
+        f.table->setSelectedRow(30);
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│26  │"));
+
+        model.clear();
+        for (int i = 0; i < 40; ++i)
+            model.appendRow(new QStandardItem(QStringLiteral("n") + QString::number(i)));
+        f.paint();
+        QCOMPARE(f.line(1).left(6), QStringLiteral("│n0  │"));
     }
 
     void gridModelMutations() {

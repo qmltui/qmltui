@@ -104,6 +104,10 @@ void TableView::setColumns(const QVariantList &columns) {
     emit columnsChanged();
     forceLayout();
 }
+void TableView::resetViewport() {
+    m_firstVisibleRow = 0;
+    m_topIndex = QPersistentModelIndex();
+}
 void TableView::clearSelection() {
     const Position previous{m_selectedRow, m_currentColumn};
     const bool rowChanged = m_selectedRow != -1;
@@ -125,6 +129,7 @@ void TableView::setModel(const QVariant &model) {
     if (model.metaType() == QMetaType::fromType<QJSValue>()) m_listModel = unpack(model).toList();
     else if (model.canConvert<QVariantList>()) m_listModel = model.toList();
     else m_cppModel = qobject_cast<QAbstractItemModel *>(model.value<QObject *>());
+    resetViewport();
     if (m_selectedRow >= 0) {
         if (rowCount() > 0) {
             const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
@@ -143,6 +148,7 @@ void TableView::setModel(const QVariant &model) {
             m_modelVariant.clear();
             m_roleNames.clear();
             m_modelProvidesHeader = false;
+            resetViewport();
             clearSelection();
             updateImplicitWidth();
             generateDelegateItems();
@@ -167,6 +173,7 @@ void TableView::setModel(const QVariant &model) {
             m_roleNames = m_cppModel->roleNames();
             refreshModelHeader();
             m_structureDirty = true;
+            resetViewport();
             if (m_selectedRow >= 0) {
                 if (rowCount() > 0) {
                     const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
@@ -288,6 +295,9 @@ void TableView::handleStructureChanged() {
     m_structureDirty = true;
     updateImplicitWidth();
     refreshModelHeader();
+    // Before the selection: synchronizeSelection() returns early when nothing
+    // is selected, and the viewport still has to be fixed up in that case.
+    synchronizeViewport();
     synchronizeSelection();
     forceLayout();
 }
@@ -807,13 +817,45 @@ TableView::ViewGeometry TableView::viewGeometry() const {
 int TableView::computeFirstVisibleRow() const {
     const int visibleRows = viewGeometry().capacity;
     if (visibleRows == 0) return 0;
-    const int first = m_selectedRow >= visibleRows ? m_selectedRow - visibleRows + 1 : 0;
-    return std::clamp(first, 0, (std::max)(0, rowCount() - visibleRows));
+    const int maxFirst = (std::max)(0, rowCount() - visibleRows);
+
+    // The viewport is remembered, not derived from the selection. Deriving it
+    // pinned the selected row to the last visible line the moment you scrolled
+    // past one page, so every Up press dragged the whole view instead of
+    // moving the cursor inside it. Same rule as TreeView::adjustScrollTop():
+    // move only when the selection would fall outside the window.
+    int first = std::clamp(m_firstVisibleRow, 0, maxFirst);
+    if (m_selectedRow >= 0) {
+        if (m_selectedRow < first) {
+            first = m_selectedRow;
+        } else if (m_selectedRow >= first + visibleRows) {
+            first = m_selectedRow - visibleRows + 1;
+        }
+    }
+    return std::clamp(first, 0, maxFirst);
+}
+void TableView::synchronizeViewport() {
+    // Rows removed from or inserted above the viewport renumber everything
+    // after them. Qt shifts a persistent index across that, so the anchor
+    // keeps the same *content* on the top line instead of the same row
+    // number. Without it a trace ring evicting from the front scrolls the
+    // view forward on every batch.
+    if (!m_cppModel) return;
+    // Sticky at the top. A view that has not been scrolled should reveal rows
+    // inserted above it, not be pushed down past them -- holding content
+    // still is only what you want once the user has chosen a position.
+    if (m_firstVisibleRow > 0 && m_topIndex.isValid() && !m_topIndex.parent().isValid()) {
+        m_firstVisibleRow = m_topIndex.row();
+    }
+    m_firstVisibleRow = std::clamp(m_firstVisibleRow, 0,
+                                   (std::max)(0, rowCount() - viewGeometry().capacity));
 }
 void TableView::updateLayout() {
     Item::updateLayout();
     resolveColumns();
     m_firstVisibleRow = computeFirstVisibleRow();
+    m_topIndex = m_cppModel ? QPersistentModelIndex(sourceIndex(m_firstVisibleRow, 0))
+                            : QPersistentModelIndex();
     layoutDelegates();
     maybeFetchMore();
 }
@@ -1136,7 +1178,9 @@ void TableView::mousePressEvent(MouseEvent *event) {
     }
     const int relativeY = event->y() - view.bodyTop;
     if (relativeY < 0 || relativeY % view.stride != 0) return;
-    const int row = computeFirstVisibleRow() + relativeY / view.stride;
+    // m_firstVisibleRow, not a fresh compute: the two agreed while the
+    // function was pure, and would not now that it carries state.
+    const int row = m_firstVisibleRow + relativeY / view.stride;
     if (row >= 0 && row < rowCount()) {
         setFocus(true);
         setCurrentColumn(column);

@@ -23,7 +23,7 @@ class QTUI_CORE_EXPORT Loader : public Item, public QQmlParserStatus {
     Q_PROPERTY(QUrl source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(QQmlComponent* sourceComponent READ sourceComponent
                WRITE setSourceComponent NOTIFY sourceComponentChanged)
-    Q_PROPERTY(qtui::Item* item READ item NOTIFY itemChanged)
+    Q_PROPERTY(QObject* item READ item NOTIFY itemChanged)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
     Q_PROPERTY(bool asynchronous READ asynchronous WRITE setAsynchronous
@@ -51,7 +51,7 @@ public:
     QQmlComponent *sourceComponent() const { return m_sourceComponent; }
     void setSourceComponent(QQmlComponent *component);
 
-    Item *item() const { return m_item; }
+    QObject *item() const { return m_item; }
     Status status() const { return m_status; }
     qreal progress() const { return m_progress; }
 
@@ -86,6 +86,7 @@ private:
     void clearItem();
     void clearUrlComponent();
     void disconnectComponent();
+    Item *loadedVisualItem() const;
     void syncImplicitSize();
     void syncItemSize();
     void setStatus(Status status);
@@ -98,7 +99,7 @@ private:
     QUrl m_source;
     QPointer<QQmlComponent> m_sourceComponent;
     QPointer<QQmlComponent> m_urlComponent;
-    QPointer<Item> m_item;
+    QPointer<QObject> m_item;
     Status m_status = Null;
     qreal m_progress = 0.0;
     QString m_errorString;

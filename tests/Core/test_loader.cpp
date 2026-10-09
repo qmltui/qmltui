@@ -20,6 +20,8 @@ class TestLoader : public QObject {
 private slots:
     void loadsInlineComponent();
     void loadsRelativeUrl();
+    void loadsNonVisualObject();
+    void leavesNonVisualObjectUnsized();
     void activeControlsLifetime();
     void replacingComponentDestroysItem();
     void followsLoadedImplicitSize();
@@ -53,7 +55,9 @@ void TestLoader::loadsInlineComponent() {
     QCOMPARE(loader->status(), Loader::Ready);
     QVERIFY(loader->item());
     QCOMPARE(loader->item()->objectName(), QStringLiteral("content"));
-    QCOMPARE(loader->item()->parentItem(), loader);
+    auto *content = qobject_cast<Item *>(loader->item());
+    QVERIFY(content);
+    QCOMPARE(content->parentItem(), loader);
     QCOMPARE(loader->implicitWidth(), 6);
     QCOMPARE(loader->implicitHeight(), 1);
 }
@@ -90,6 +94,78 @@ void TestLoader::loadsRelativeUrl() {
     QCOMPARE(loader->implicitWidth(), 9);
 }
 
+void TestLoader::loadsNonVisualObject() {
+    QQmlEngine engine;
+    addQtuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+        import QtQml
+        Loader {
+            sourceComponent: QtObject {
+                objectName: "theme"
+                property string accent: "cyan"
+            }
+        }
+    )", QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto *loader = qobject_cast<Loader *>(object.get());
+    QVERIFY(loader);
+    QCOMPARE(loader->status(), Loader::Ready);
+    QVERIFY(loader->errorString().isEmpty());
+
+    QObject *loadedObject = loader->item();
+    QVERIFY(loadedObject);
+    QCOMPARE(loadedObject->objectName(), QStringLiteral("theme"));
+    QVERIFY(!qobject_cast<Item *>(loadedObject));
+    QCOMPARE(loadedObject->property("accent").toString(), QStringLiteral("cyan"));
+
+    // The object is owned by the loader but is not part of its visual tree.
+    QCOMPARE(loadedObject->parent(), loader);
+    QVERIFY(loader->childItems().isEmpty());
+
+    // No sizing rule applies to a non-visual source.
+    QCOMPARE(loader->implicitWidth(), 0);
+    QCOMPARE(loader->implicitHeight(), 0);
+
+    QPointer<QObject> tracked = loadedObject;
+    loader->setActive(false);
+    QCOMPARE(loader->status(), Loader::Null);
+    QVERIFY(!loader->item());
+    QVERIFY(tracked.isNull());
+}
+
+void TestLoader::leavesNonVisualObjectUnsized() {
+    QQmlEngine engine;
+    addQtuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        QtObject { objectName: "controller" }
+    )", QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    Loader loader;
+    loader.setWidth(20);
+    loader.setHeight(7);
+    loader.setSourceComponent(&component);
+
+    QCOMPARE(loader.status(), Loader::Ready);
+    QVERIFY(loader.item());
+    QCOMPARE(loader.width(), 20);
+    QCOMPARE(loader.height(), 7);
+    QCOMPARE(loader.implicitWidth(), 0);
+    QCOMPARE(loader.implicitHeight(), 0);
+
+    // Resizing after loading must not reach a non-visual object either.
+    loader.setWidth(30);
+    QCOMPARE(loader.item()->objectName(), QStringLiteral("controller"));
+}
+
 void TestLoader::activeControlsLifetime() {
     QQmlEngine engine;
     addQtuiImportPath(engine);
@@ -116,7 +192,7 @@ void TestLoader::activeControlsLifetime() {
     QVERIFY(loader->item());
     QCOMPARE(loadedSpy.size(), 1);
 
-    QPointer<Item> loadedItem = loader->item();
+    QPointer<QObject> loadedItem = loader->item();
     loader->setActive(false);
     QCOMPARE(loader->status(), Loader::Null);
     QVERIFY(!loader->item());
@@ -144,7 +220,7 @@ void TestLoader::replacingComponentDestroysItem() {
     Loader loader;
     loader.setSourceComponent(&first);
     QCOMPARE(loader.status(), Loader::Ready);
-    QPointer<Item> firstItem = loader.item();
+    QPointer<QObject> firstItem = loader.item();
 
     loader.setSourceComponent(&second);
     QVERIFY(firstItem.isNull());
@@ -169,8 +245,10 @@ void TestLoader::followsLoadedImplicitSize() {
     QCOMPARE(loader.implicitWidth(), 3);
     QCOMPARE(loader.implicitHeight(), 2);
 
-    loader.item()->setImplicitWidth(8);
-    loader.item()->setImplicitHeight(5);
+    auto *loadedItem = qobject_cast<Item *>(loader.item());
+    QVERIFY(loadedItem);
+    loadedItem->setImplicitWidth(8);
+    loadedItem->setImplicitHeight(5);
     QCOMPARE(loader.implicitWidth(), 8);
     QCOMPARE(loader.implicitHeight(), 5);
 }
@@ -191,9 +269,10 @@ void TestLoader::propagatesExplicitSize() {
     loader.setHeight(7);
     loader.setSourceComponent(&component);
 
-    QVERIFY(loader.item());
-    QCOMPARE(loader.item()->width(), 20);
-    QCOMPARE(loader.item()->height(), 7);
+    auto *loadedItem = qobject_cast<Item *>(loader.item());
+    QVERIFY(loadedItem);
+    QCOMPARE(loadedItem->width(), 20);
+    QCOMPARE(loadedItem->height(), 7);
     QCOMPARE(loader.implicitWidth(), 3);
     QCOMPARE(loader.implicitHeight(), 2);
 }

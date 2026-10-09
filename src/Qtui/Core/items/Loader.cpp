@@ -119,14 +119,16 @@ void Loader::setAsynchronous(bool asynchronous) {
 
 void Loader::setWidth(int width) {
     Item::setWidth(width);
-    if (m_item && width >= 0)
-        m_item->setWidth(width);
+    if (width < 0) return;
+    if (Item *loadedItem = loadedVisualItem())
+        loadedItem->setWidth(width);
 }
 
 void Loader::setHeight(int height) {
     Item::setHeight(height);
-    if (m_item && height >= 0)
-        m_item->setHeight(height);
+    if (height < 0) return;
+    if (Item *loadedItem = loadedVisualItem())
+        loadedItem->setHeight(height);
 }
 
 QQmlComponent *Loader::effectiveComponent() const {
@@ -243,31 +245,38 @@ void Loader::createItem() {
         context = qmlContext(this);
 
     QObject *object = component->create(context);
-    Item *loadedItem = qobject_cast<Item *>(object);
-    if (!loadedItem) {
-        delete object;
+    if (!object) {
         QString error = componentErrors(component);
         if (error.isEmpty())
-            error = QStringLiteral("Loader source must create a qtui::Item");
+            error = QStringLiteral("Loader could not create the source component");
         setErrorString(error);
         qmlWarning(this) << error;
         setStatus(Error);
         return;
     }
 
-    m_item = loadedItem;
-    loadedItem->setParentItem(this);
-    loadedItem->setX(0);
-    loadedItem->setY(0);
+    m_item = object;
+
+    if (Item *loadedItem = qobject_cast<Item *>(object)) {
+        loadedItem->setParentItem(this);
+        loadedItem->setX(0);
+        loadedItem->setY(0);
+
+        m_itemConnections.append(connect(
+            loadedItem, &Item::implicitWidthChanged,
+            this, [this]() { syncImplicitSize(); }));
+        m_itemConnections.append(connect(
+            loadedItem, &Item::implicitHeightChanged,
+            this, [this]() { syncImplicitSize(); }));
+    } else {
+        // A non-visual object only needs lifetime ownership: no sizing
+        // rule applies, so the loader keeps its own zero implicit size.
+        object->setParent(this);
+    }
+    QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
 
     m_itemConnections.append(connect(
-        loadedItem, &Item::implicitWidthChanged,
-        this, [this]() { syncImplicitSize(); }));
-    m_itemConnections.append(connect(
-        loadedItem, &Item::implicitHeightChanged,
-        this, [this]() { syncImplicitSize(); }));
-    m_itemConnections.append(connect(
-        loadedItem, &QObject::destroyed,
+        object, &QObject::destroyed,
         this, [this]() {
             m_item.clear();
             m_itemConnections.clear();
@@ -295,13 +304,15 @@ void Loader::clearItem() {
         disconnect(connection);
     m_itemConnections.clear();
 
-    Item *oldItem = m_item.data();
+    QObject *oldItem = m_item.data();
     m_item.clear();
-    oldItem->setParentItem(nullptr);
-    delete oldItem;
+    if (Item *oldVisualItem = qobject_cast<Item *>(oldItem))
+        oldVisualItem->setParentItem(nullptr);
 
     syncImplicitSize();
     emit itemChanged();
+
+    delete oldItem;
 }
 
 void Loader::clearUrlComponent() {
@@ -317,17 +328,23 @@ void Loader::disconnectComponent() {
     m_componentConnections.clear();
 }
 
+Item *Loader::loadedVisualItem() const {
+    return qobject_cast<Item *>(m_item.data());
+}
+
 void Loader::syncImplicitSize() {
-    setImplicitWidth(m_item ? m_item->implicitWidth() : 0);
-    setImplicitHeight(m_item ? m_item->implicitHeight() : 0);
+    Item *loadedItem = loadedVisualItem();
+    setImplicitWidth(loadedItem ? loadedItem->implicitWidth() : 0);
+    setImplicitHeight(loadedItem ? loadedItem->implicitHeight() : 0);
 }
 
 void Loader::syncItemSize() {
-    if (!m_item) return;
+    Item *loadedItem = loadedVisualItem();
+    if (!loadedItem) return;
     if (m_width >= 0)
-        m_item->setWidth(m_width);
+        loadedItem->setWidth(m_width);
     if (m_height >= 0)
-        m_item->setHeight(m_height);
+        loadedItem->setHeight(m_height);
 }
 
 void Loader::setStatus(Status status) {

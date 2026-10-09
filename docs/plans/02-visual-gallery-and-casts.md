@@ -17,9 +17,9 @@ The earlier plan listed 17 apps including `agent_demo`, which does not exist,
 and a `GridView` component, which does not exist, while omitting `Calendar`.
 The corrected and trimmed inventory:
 
-### 8 showcase apps (`examples/apps/`, moving to `qtui-apps` in Plan 03)
+### 9 showcase apps (`examples/apps/`, moving to `qtui-apps` in Plan 03)
 
-The tree holds 16 apps today. Eight are kept, each telling a story no other
+The tree holds 16 apps today. Nine are kept, each telling a story no other
 app tells. The rest are deleted before launch; git history keeps them.
 
 | Story | App | Highlights | Tests today |
@@ -32,6 +32,7 @@ app tells. The rest are deleted before launch; git history keeps them.
 | Business forms | `pos_cashier` | Cart, checkout, dialogs | 1 |
 | Animation and timers | `snake_game` | AI autopilot, Canvas | 2 |
 | State transitions | `twozero48` | Tile merge animation | 1 |
+| Component catalog | `gallery` | Every `Qtui` and `Qtui.Controls` type, live, with a QML snippet; the wasm playground's first preset | 1 |
 
 `starter_template` is not a showcase app. It becomes the `qtui-starter`
 template repository (Plan 03) and is slimmed from about 2200 lines to a few
@@ -184,7 +185,7 @@ free-text match on name and summary.
 
 ## 5. Showcase Page
 
-Grid of the eight apps, one story each, filterable by category. Each card: cast, name, highlights, and a
+Grid of the nine apps, one story each, filterable by category. Each card: cast, name, highlights, and a
 copy-button with the run commands. Until Plan 03 lands, commands point at the
 in-tree build path. After Plan 03, at the `qtui-apps` path:
 

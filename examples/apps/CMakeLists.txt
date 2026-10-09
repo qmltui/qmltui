@@ -1,3 +1,4 @@
+add_subdirectory(gallery)
 add_subdirectory(container_fleet)
 if(QTUI_ENABLE_BEHAVIOR)
     add_subdirectory(industrial_plc_hmi)

@@ -27,7 +27,7 @@
 #define CYBER_CLOSE close
 #endif
 
-// Command-line handling shared by the production and the TestRunner-linked executable.
+// Command-line handling shared by the production and the Runner-linked executable.
 struct StartupOptions {
     QStringList inputs;     // files, directories or URLs
     bool mic = false;

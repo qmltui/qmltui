@@ -10,7 +10,7 @@ Unlike traditional immediate-mode TUI libraries, Qtui uses a scene graph and ret
 2. **Layout Engine**: Automatic declarative positioning with `Row`, `Column`, `GridLayout`, and `Anchors`.
 3. **QML Declarative Bindings**: Full reactive properties and signal-slot mechanisms.
 4. **Behavior on Properties**: Smooth animated value transitions in terminals.
-5. **Testing Framework**: Native `TestRunner` closed-loop automation engine.
+5. **Automation & Testing**: Native `Runner` closed-loop automation engine.
 
 ## Core QML Modules
 

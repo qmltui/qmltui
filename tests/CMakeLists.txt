@@ -1,9 +1,9 @@
 include(CTest)
 enable_testing()
-include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+include("${Qtui_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
 # One directory per library, mirroring src/Qtui: Core, Controls, Image,
-# TestRunner and TerminalHost each register their own tests. Examples/ holds
+# Runner and TerminalHost each register their own tests. Examples/ holds
 # the scenario runs against the example applications, and the installed
 # consumer below is a separate CMake project built against an install tree.
 # The helpers here are shared by every subdirectory.
@@ -24,10 +24,11 @@ function(add_qtui_test test_name test_source)
     )
 endfunction()
 
-set(qtui_test_runner_artifacts
-    "${CMAKE_CURRENT_BINARY_DIR}/TestRunnerArtifacts")
+set(qtui_runner_artifacts
+    "${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts")
+set(qtui_test_runner_artifacts "${qtui_runner_artifacts}")
 
-# A TestRunner scenario driven by a script (or an embedded resource), with
+# A Runner scenario driven by a script (or an embedded resource), with
 # bounded timeouts and the artifact checks the runner contract promises.
 function(add_qtui_runner_scenario test_name executable script expected_exit)
     cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL"
@@ -43,7 +44,7 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
         NAME ${test_name}
         TARGET ${executable}
         EXPECTED_EXIT ${expected_exit}
-        ARTIFACT_DIR "${qtui_test_runner_artifacts}/${test_name}"
+        ARTIFACT_DIR "${qtui_runner_artifacts}/${test_name}"
         OPERATION_TIMEOUT_MS ${SCENARIO_OPERATION_TIMEOUT_MS}
         SCENARIO_TIMEOUT_MS ${SCENARIO_SCENARIO_TIMEOUT_MS}
     )
@@ -65,10 +66,10 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
             list(APPEND arguments ${argument} "${SCENARIO_${argument}}")
         endif()
     endforeach()
-    qtui_add_scenario_test(${arguments})
+    qtui_add_scenario(${arguments})
 endfunction()
 
-# A TestRunner session requested through the environment (QTUI_CAPTURE_AFTER_MS,
+# A Runner session requested through the environment (QTUI_CAPTURE_AFTER_MS,
 # QTUI_EVAL, or a deliberate conflict between modes).
 function(add_qtui_environment_scenario test_name executable expected_exit)
     cmake_parse_arguments(SCENARIO "CONFLICT"
@@ -76,7 +77,7 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
     set(command
         "${CMAKE_COMMAND}"
         "-DTEST_EXECUTABLE=$<TARGET_FILE:${executable}>"
-        "-DARTIFACT_DIR=${qtui_test_runner_artifacts}/${test_name}"
+        "-DARTIFACT_DIR=${qtui_runner_artifacts}/${test_name}"
         "-DEXPECT_EXIT=${expected_exit}"
         "-DQML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
     )
@@ -98,12 +99,12 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
             list(APPEND command "-DEXPECT_${argument}=${SCENARIO_${argument}}")
         endif()
     endforeach()
-    list(APPEND command "-P" "${QTUI_TESTRUNNER_SCRIPT}")
+    list(APPEND command "-P" "${QTUI_RUNNER_SCRIPT}")
     add_test(NAME ${test_name} COMMAND ${command})
     set_tests_properties(${test_name} PROPERTIES
         SKIP_RETURN_CODE 125
         TIMEOUT 15
-        LABELS "TestRunner;AgentSmoke"
+        LABELS "Runner;AgentSmoke"
     )
 endfunction()
 
@@ -123,7 +124,7 @@ add_subdirectory(Docs)
 if(QTUI_ENABLE_IMAGE)
     add_subdirectory(Image)
 endif()
-add_subdirectory(TestRunner)
+add_subdirectory(Runner)
 if(QTUI_ENABLE_TERMINAL_HOST)
     add_subdirectory(TerminalHost)
 endif()

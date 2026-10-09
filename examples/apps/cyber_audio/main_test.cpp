@@ -1,4 +1,4 @@
-// TestRunner-linked entry point. Linking Qtui::TestRunner installs the Terminal auto-hook
+// Runner-linked entry point. Linking Qtui::Runner installs the Terminal auto-hook
 // that honours QTUI_SCRIPT / QTUI_EVAL / QTUI_CAPTURE_AFTER_MS. Scenario runs pass no
 // arguments, so without inputs the deterministic demo source is selected; manual
 // QTUI_EVAL runs can still pass files or --mic to exercise the real backends.

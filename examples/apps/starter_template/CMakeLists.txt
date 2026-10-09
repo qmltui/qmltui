@@ -73,19 +73,19 @@ install(TARGETS qtui_starter_template
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
-if(TARGET Qtui::TestRunner)
+if(TARGET Qtui::Runner)
     starter_template_add_executable(qtui_starter_template_test StarterTemplateAppTest main_test.cpp)
-    target_link_libraries(qtui_starter_template_test PRIVATE Qtui::TestRunner)
+    target_link_libraries(qtui_starter_template_test PRIVATE Qtui::Runner)
 
     starter_template_add_executable(qtui_starter_template_benchmark StarterTemplateAppBenchmark main_benchmark.cpp)
-    target_link_libraries(qtui_starter_template_benchmark PRIVATE Qtui::TestRunner)
+    target_link_libraries(qtui_starter_template_benchmark PRIVATE Qtui::Runner)
 
     install(TARGETS qtui_starter_template_benchmark
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 
     if(QTUI_BUILD_TESTS AND NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         qtui_add_scenario_test(
             NAME starter_template_setup
             TARGET qtui_starter_template_test

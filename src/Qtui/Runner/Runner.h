@@ -27,17 +27,17 @@ class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
 
-class QTUI_TESTRUNNER_EXPORT TestRunner final : public QObject {
+class QTUI_RUNNER_EXPORT Runner final : public QObject {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(TestRunner)
+    Q_DISABLE_COPY_MOVE(Runner)
 
 public:
-    TestRunner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
-               QString artifactDirectory, QSize viewport, int operationTimeoutMs,
-               int scenarioTimeoutMs, QString configurationError);
-    ~TestRunner() override;
+    Runner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
+           QString artifactDirectory, QSize viewport, int operationTimeoutMs,
+           int scenarioTimeoutMs, QString configurationError);
+    ~Runner() override;
 
-    static TestRunner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);
+    static Runner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);
 
     void start();
 

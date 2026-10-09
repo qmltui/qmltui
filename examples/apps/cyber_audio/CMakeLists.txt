@@ -67,12 +67,12 @@ endif()
 
 cyber_audio_add_executable(qtui_cyber_audio CyberAudio main.cpp)
 
-if(TARGET Qtui::TestRunner)
+if(TARGET Qtui::Runner)
     cyber_audio_add_executable(qtui_cyber_audio_test CyberAudioTest main_test.cpp)
-    target_link_libraries(qtui_cyber_audio_test PRIVATE Qtui::TestRunner)
+    target_link_libraries(qtui_cyber_audio_test PRIVATE Qtui::Runner)
 
     if(QTUI_BUILD_TESTS)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         qtui_add_scenario_test(
             NAME cyber_audio_demo_smoke
             TARGET qtui_cyber_audio_test

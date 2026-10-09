@@ -9,13 +9,13 @@ target_link_libraries(qtui_terminal_view PRIVATE
     Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TerminalHost
 )
 
-if(TARGET Qtui::TestRunner)
+if(TARGET Qtui::Runner)
     qt_add_executable(qtui_terminal_view_test main.cpp)
     target_link_libraries(qtui_terminal_view_test PRIVATE
-        Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TerminalHost Qtui::TestRunner)
+        Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TerminalHost Qtui::Runner)
     target_compile_definitions(qtui_terminal_view_test PRIVATE
         QTUI_TERMINAL_VIEW_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/Main.qml")
-    include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+    include("${Qtui_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qtui_add_scenario_test(NAME terminal_view_smoke TARGET qtui_terminal_view_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_terminal_view.js"
         COLUMNS 160 ROWS 40 LABELS AgentSmoke)

@@ -1,14 +1,14 @@
-# TestRunner
+# Runner
 
 ## Class Overview
 
-`qtui::TestRunner` turns a running Qtui `Terminal` application into a bounded JavaScript-driven test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a test driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
+`qtui::Runner` turns a running Qtui `Terminal` application into a bounded JavaScript-driven automation and test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
 
-The class is intended for application-level automated tests. It operates on an explicitly supplied `Terminal`, so applications with multiple terminals do not rely on global target selection.
+The class is intended for application-level automated scenarios, agent harnesses, and tests. It operates on an explicitly supplied `Terminal`, so applications with multiple terminals do not rely on global target selection.
 
 ## Project Structure and Dependencies
 
-The declaration is in `TestRunner/TestRunner.h` and the implementation is in `TestRunner/TestRunner.cpp`. `QtuiTestRunner` is available when either `QTUI_BUILD_TESTS` or `QTUI_ENABLE_TEST_RUNNER` is enabled. Consumers link against `Qtui::TestRunner`.
+The declaration is in `Runner/Runner.h` and the implementation is in `Runner/Runner.cpp`. `QtuiRunner` is available when either `QTUI_BUILD_TESTS` or `QTUI_ENABLE_RUNNER` is enabled. Consumers link against `Qtui::Runner`.
 
 Its only build dependencies are Qt 6 QML and `Qtui::Core`; a `QCoreApplication` is sufficient, and no Qt GUI module is needed. The driver collaborates with these project types:
 
@@ -18,7 +18,7 @@ Its only build dependencies are Qt 6 QML and `Qtui::Core`; a `QCoreApplication` 
 
 ## Class Hierarchy and Role
 
-`TestRunner` derives directly from `QObject`. `QObject` provides parent-based ownership, signal delivery, timers, and the meta-object data required to expose `Q_INVOKABLE` methods to JavaScript. The class is `final`, and copying and moving are disabled.
+`Runner` derives directly from `QObject`. `QObject` provides parent-based ownership, signal delivery, timers, and the meta-object data required to expose `Q_INVOKABLE` methods to JavaScript. The class is `final`, and copying and moving are disabled.
 
 ## Signals
 
@@ -164,21 +164,21 @@ Fails the scenario immediately with `message`. An empty message is replaced with
 
 #### void finish()
 
-Marks the scenario as finishing. Calling `terminal.finish()` explicitly is optional: if a script or Promise returns normally without uncaught errors or failed assertions, `TestRunner` will automatically auto-finish the scenario successfully.
+Marks the scenario as finishing. Calling `terminal.finish()` explicitly is optional: if a script or Promise returns normally without uncaught errors or failed assertions, `Runner` will automatically auto-finish the scenario successfully.
 
 ## Asynchronous & Promise Integration
 
-`TestRunner` supports asynchronous scenario scripts returning JavaScript `Promise` objects. When a scenario script evaluates to a Promise (or returns a Promise from its entry point), `TestRunner` registers resolution and rejection handlers. The scenario will remain active while Qt event loop processing continues, and will automatically pass upon Promise resolution or fail upon Promise rejection (or scenario watchdog timeout).
+`Runner` supports asynchronous scenario scripts returning JavaScript `Promise` objects. When a scenario script evaluates to a Promise (or returns a Promise from its entry point), `Runner` registers resolution and rejection handlers. The scenario will remain active while Qt event loop processing continues, and will automatically pass upon Promise resolution or fail upon Promise rejection (or scenario watchdog timeout).
 
 ## Public Methods
 
-#### TestRunner(QQmlEngine *qmlEngine, Terminal *terminal, QString scriptPath, QString artifactDirectory, QSize viewport, int operationTimeoutMs, int scenarioTimeoutMs, QString configurationError)
+#### Runner(QQmlEngine *qmlEngine, Terminal *terminal, QString scriptPath, QString artifactDirectory, QSize viewport, int operationTimeoutMs, int scenarioTimeoutMs, QString configurationError)
 
 Constructs the driver with an explicit QML engine and terminal. `scriptPath` may be a filesystem path or a Qt resource path such as `:/qt/qml/MyApplication/test_scenario.js`. `artifactDirectory` is the root for captures and failure diagnostics. `viewport` is applied immediately so the terminal's first queued frame already uses the deterministic test size. Operation and scenario timeouts must be between 1 and 30,000 milliseconds. A non-empty `configurationError` makes `start()` fail before loading the scenario.
 
 Construction does not start execution. Schedule `start()` after the application has loaded its root `Terminal`.
 
-#### static TestRunner *startFromEnvironment(QQmlEngine *qmlEngine, Terminal *terminal)
+#### static Runner *startFromEnvironment(QQmlEngine *qmlEngine, Terminal *terminal)
 
 Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_CAPTURE_AFTER_MS` are mutually exclusive.
 
@@ -186,13 +186,13 @@ Creates and schedules a runner from environment variables. It returns `nullptr` 
 |----------|---------|-------------|
 | `QTUI_SCRIPT` | None | Required filesystem scenario path. |
 | `QTUI_EVAL` | None | Inline JavaScript scenario; its temporary file is removed at completion. |
-| `QTUI_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QTUI_TEST_TIMEOUT_MS`. |
-| `QTUI_TEST_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. |
-| `QTUI_TEST_COLUMNS` | `80` | Test viewport columns, from 1 through 1,000. |
-| `QTUI_TEST_ROWS` | `24` | Test viewport rows, from 1 through 1,000. |
-| `QTUI_TEST_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. |
-| `QTUI_TEST_TIMEOUT_MS` | `10000` | Overall scenario watchdog, from 1 through 30,000 milliseconds. |
-| `QTUI_TEST_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. |
+| `QTUI_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QTUI_RUNNER_TIMEOUT_MS`. |
+| `QTUI_RUNNER_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. (Fallback: `QTUI_TEST_ARTIFACT_DIR`) |
+| `QTUI_RUNNER_COLUMNS` | `80` | Viewport columns, from 1 through 1,000. (Fallback: `QTUI_TEST_COLUMNS`) |
+| `QTUI_RUNNER_ROWS` | `24` | Viewport rows, from 1 through 1,000. (Fallback: `QTUI_TEST_ROWS`) |
+| `QTUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. (Fallback: `QTUI_TEST_OPERATION_TIMEOUT_MS`) |
+| `QTUI_RUNNER_TIMEOUT_MS` | `10000` | Overall scenario watchdog, from 1 through 30,000 milliseconds. (Fallback: `QTUI_TEST_TIMEOUT_MS`) |
+| `QTUI_RUNNER_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. (Fallback: `QTUI_TEST_LIVE`) |
 
 ## Structured results
 
@@ -200,11 +200,11 @@ Every requested run atomically writes `result.json` with schema version `1`, sta
 
 ## CMake integration
 
-Installed consumers can register scenarios with `qtui_add_scenario_test(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, and explicit `LIVE` output. Automated runs are quiet by default.
+Installed consumers can register scenarios with `qtui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, and explicit `LIVE` output. Automated runs are quiet by default.
 
 #### void start()
 
-Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, and invokes its `function main(terminal)` entry point. Call it once, normally through `QTimer::singleShot(0, driver, &TestRunner::start)`.
+Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, and invokes its `function main(terminal)` entry point. Call it once, normally through `QTimer::singleShot(0, driver, &Runner::start)`.
 
 ## Ownership and Lifecycle
 
@@ -214,11 +214,11 @@ Every instance uses `QCoreApplication::instance()` as its QObject parent and is 
 
 ## Thread Safety
 
-`TestRunner` is GUI-thread only. It enters bounded nested Qt event loops to keep QML timers, rendering, and signals active during waits. Calls from worker threads or concurrent calls are unsupported. Nested wait operations are explicitly rejected.
+`Runner` is GUI-thread only. It enters bounded nested Qt event loops to keep QML timers, rendering, and signals active during waits. Calls from worker threads or concurrent calls are unsupported. Nested wait operations are explicitly rejected.
 
 ## JavaScript Exposure
 
-`TestRunner` is not registered as a constructible QML type. At scenario startup, the driver wraps itself in a JavaScript facade and passes it as the `terminal` argument to `function main(terminal)`. The global namespace remains clean, and the script can call all `Q_INVOKABLE` methods on `terminal` without owning the C++ object.
+`Runner` is not registered as a constructible QML type. At scenario startup, the driver wraps itself in a JavaScript facade and passes it as the `terminal` argument to `function main(terminal)`. The global namespace remains clean, and the script can call all `Q_INVOKABLE` methods on `terminal` without owning the C++ object.
 
 Scenario callbacks passed to `waitForCondition()` run in the same JavaScript engine and may close over ordinary scenario variables. They should be fast and side-effect-free so rendering and timers continue to make progress.
 
@@ -232,16 +232,13 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 #include <QTimer>
 #include <QQmlApplicationEngine>
 #include <Qtui/Core/items/Terminal.h>
-#include <Qtui/TestRunner/TestRunner.h>
+#include <Qtui/Runner/Runner.h>
 
 auto *terminal = qobject_cast<qtui::Terminal *>(engine.rootObjects().constFirst());
-auto *driver = new qtui::TestRunner(
+auto *driver = new qtui::Runner(
     &engine, terminal,
     QStringLiteral(":/qt/qml/MyApplication/test_scenario.js"),
     QStringLiteral("/tmp/test-artifacts"), QSize(80, 24),
     1500, 8000, QString());
-QTimer::singleShot(0, driver, &qtui::TestRunner::start);
+QTimer::singleShot(0, driver, &qtui::Runner::start);
 ```
-
----
-AI assistance has been used to create this output.

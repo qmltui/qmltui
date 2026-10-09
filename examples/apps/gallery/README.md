@@ -35,8 +35,8 @@ page follows it. See `docs/guide/webassembly.md`.
 
 ## Tests
 
-`test_gallery.js` is the TestRunner scenario (`ctest -R gallery_smoke` in a
-tree with `QTUI_ENABLE_TEST_RUNNER=ON`): it walks the grid with the keyboard,
+`test_gallery.js` is the Runner scenario (`ctest -R gallery_smoke` in a
+tree with `QTUI_ENABLE_RUNNER=ON`): it walks the grid with the keyboard,
 opens the Button demo and activates a button, clicks the Slider tile, checks
 Escape closes a Dialog before leaving its page, types into a TextInput, opens
 every example once so a broken file fails the build, and finally round-trips

@@ -10,7 +10,7 @@
 #include <QImage>
 #include <QRegularExpression>
 
-#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Runner/MemoryTerminalBackend.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Image/Image.h>

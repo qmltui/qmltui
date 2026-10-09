@@ -7,7 +7,7 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Runner/MemoryTerminalBackend.h>
 #include <Qtui/Core/items/Item.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>

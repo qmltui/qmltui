@@ -20,8 +20,8 @@ qt_add_qml_module(qtui_image_demo
 
 target_link_libraries(qtui_image_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image)
 
-if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qt_add_executable(qtui_image_demo_test main_test.cpp)
     qt_add_qml_module(qtui_image_demo_test
         URI ImageDemoTest
@@ -36,7 +36,7 @@ if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
             Qtui::Image
     )
     target_link_libraries(qtui_image_demo_test PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image Qtui::TestRunner)
+        Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image Qtui::Runner)
     qtui_add_scenario_test(
         NAME image_demo_render_modes
         TARGET qtui_image_demo_test

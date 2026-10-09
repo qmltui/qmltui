@@ -108,7 +108,7 @@ public:
     Color originalBackgroundColor() const { return m_originalBackgroundColor; }
 
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
-    // Raw terminal bytes, exactly as a backend delivers them. TestRunner feeds
+    // Raw terminal bytes, exactly as a backend delivers them. Runner feeds
     // scripted typing here so it takes the same decoder path as a real keyboard.
     void feedInput(QByteArrayView bytes);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,

@@ -11,10 +11,10 @@
 
 namespace qtui {
 
-static Terminal::TestRunnerHook s_testRunnerHook = nullptr;
+static Terminal::RunnerHook s_runnerHook = nullptr;
 
-void Terminal::registerTestRunnerHook(TestRunnerHook hook) {
-    s_testRunnerHook = hook;
+void Terminal::registerRunnerHook(RunnerHook hook) {
+    s_runnerHook = hook;
 }
 
 void Terminal::componentComplete() {
@@ -23,9 +23,9 @@ void Terminal::componentComplete() {
     // Children complete before the root; honour any `focus: true` that was set
     // while the tree was still being assembled.
     applyPendingFocus();
-    if (s_testRunnerHook) {
+    if (s_runnerHook) {
         if (QQmlEngine* engine = qmlEngine(this)) {
-            s_testRunnerHook(engine, this);
+            s_runnerHook(engine, this);
         }
     }
 }

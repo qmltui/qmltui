@@ -15,8 +15,8 @@ qt_add_qml_module(qtui_pos_cashier
 
 target_link_libraries(qtui_pos_cashier PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
-if(TARGET Qtui::TestRunner)
-    target_link_libraries(qtui_pos_cashier PRIVATE Qtui::TestRunner)
+if(TARGET Qtui::Runner)
+    target_link_libraries(qtui_pos_cashier PRIVATE Qtui::Runner)
 endif()
 
 if(QTUI_INSTALL_EXAMPLES)

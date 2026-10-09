@@ -7,13 +7,20 @@
 #include <QTimer>
 
 #include <Qtui/Core/items/Terminal.h>
-#include <Qtui/TestRunner/TestRunner.h>
+#include <Qtui/Runner/Runner.h>
 
 namespace {
-int environmentDimension(const char *name, int fallback) {
+int environmentDimension(const char *name, const char *fallbackName, int fallback) {
     bool ok = false;
-    const int value = qEnvironmentVariableIntValue(name, &ok);
-    return ok && value > 0 ? value : fallback;
+    int value = qEnvironmentVariableIntValue(name, &ok);
+    if (ok && value > 0)
+        return value;
+    if (fallbackName) {
+        value = qEnvironmentVariableIntValue(fallbackName, &ok);
+        if (ok && value > 0)
+            return value;
+    }
+    return fallback;
 }
 }
 
@@ -21,7 +28,7 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Qtui Markdown Viewer Test Runner"));
+    parser.setApplicationDescription(QStringLiteral("Qtui Markdown Viewer Runner"));
     parser.addHelpOption();
     QCommandLineOption scenarioOption(
         {QStringLiteral("s"), QStringLiteral("scenario")},
@@ -48,20 +55,22 @@ int main(int argc, char *argv[]) {
         return -1;
 
     if (qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QTUI_EVAL")) {
-        if (qtui::TestRunner::startFromEnvironment(&engine, terminal))
+        if (qtui::Runner::startFromEnvironment(&engine, terminal))
             return app.exec();
     }
 
-    QString artifacts = QString::fromUtf8(qgetenv("QTUI_TEST_ARTIFACT_DIR")).trimmed();
+    QString artifacts = QString::fromUtf8(qgetenv("QTUI_RUNNER_ARTIFACT_DIR")).trimmed();
+    if (artifacts.isEmpty())
+        artifacts = QString::fromUtf8(qgetenv("QTUI_TEST_ARTIFACT_DIR")).trimmed();
     if (artifacts.isEmpty())
         artifacts = QDir::temp().filePath(QStringLiteral("qtui-markdown-viewer-artifacts"));
 
-    const QSize viewport(environmentDimension("QTUI_TEST_COLUMNS", 100),
-                         environmentDimension("QTUI_TEST_ROWS", 32));
-    auto *runner = new qtui::TestRunner(
+    const QSize viewport(environmentDimension("QTUI_RUNNER_COLUMNS", "QTUI_TEST_COLUMNS", 100),
+                         environmentDimension("QTUI_RUNNER_ROWS", "QTUI_TEST_ROWS", 32));
+    auto *runner = new qtui::Runner(
         &engine, terminal,
         script,
         artifacts, viewport, 2000, 15000, QString());
-    QTimer::singleShot(0, runner, &qtui::TestRunner::start);
+    QTimer::singleShot(0, runner, &qtui::Runner::start);
     return app.exec();
 }

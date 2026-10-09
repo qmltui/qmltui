@@ -11,8 +11,8 @@ qt_add_qml_module(qtui_lazy_model
 )
 target_link_libraries(qtui_lazy_model PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
-if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qt_add_executable(qtui_lazy_model_test main_test.cpp)
     qt_add_qml_module(qtui_lazy_model_test
         URI LazyModelTest
@@ -21,7 +21,7 @@ if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
         SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp
         DEPENDENCIES TARGET Qtui::Core
     )
-    target_link_libraries(qtui_lazy_model_test PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::TestRunner)
+    target_link_libraries(qtui_lazy_model_test PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Runner)
     qtui_add_scenario_test(
         NAME lazy_model_smoke
         TARGET qtui_lazy_model_test

@@ -38,9 +38,9 @@ this safe for multiple simultaneous `TerminalEngine` instances.
 logging policy. Fatal Qt messages are forwarded immediately because Qt aborts
 after their handler returns.
 
-## Agent testing feedback loop
+## Agent feedback loop & automation
 
-The optional `Qtui::TestRunner` library attaches a `TestRunner` to an explicit
+The optional `Qtui::Runner` library attaches a `Runner` to an explicit
 `Terminal`. Automated sessions suppress terminal-device output while retaining
 normal frame commits, input dispatch, QML timers, and render-failure signals.
 Each run writes an atomic schema-versioned result, a normalized final frame,

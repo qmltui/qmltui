@@ -1,6 +1,6 @@
 ---
 name: qtui-dev-loop
-description: Develop and verify changes to Qtui retained-mode terminal applications using focused Qt Test suites, TestRunner scenarios, and committed-frame artifacts. Use when implementing or testing Qtui C++, QML, examples, TestRunner integration, or Behavior-enabled applications; do not use for read-only QML review or generic Qt Quick projects.
+description: Develop and verify changes to Qtui retained-mode terminal applications using focused Qt Test suites, Runner scenarios, and committed-frame artifacts. Use when implementing or testing Qtui C++, QML, examples, Runner integration, or Behavior-enabled applications; do not use for read-only QML review or generic Qt Quick projects.
 ---
 
 # Qtui Development Loop
@@ -16,13 +16,13 @@ Qtui has two complementary test layers:
 
 - Use ordinary Qt Test executables for C++ units, model/layout/input contracts,
   and QML components that do not need a whole application session.
-- Use `qtui::TestRunner` from `Qtui::TestRunner` for application-level input,
+- Use `qtui::Runner` from `Qtui::Runner` for application-level input,
   rendering, asynchronous state, and terminal-grid assertions.
 
-Do not describe all repository tests as TestRunner tests. Before changing a
-scenario or TestRunner integration, read the authoritative
-[TestRunner API](../../../src/Qtui/TestRunner/doc/TestRunner.md),
-[`QtuiTestRunner.cmake`](../../../cmake/QtuiTestRunner.cmake), and one nearby working
+Do not describe all repository tests as Runner tests. Before changing a
+scenario or Runner integration, read the authoritative
+[Runner API](../../../src/Qtui/Runner/doc/Runner.md),
+[`QtuiRunner.cmake`](../../../cmake/QtuiRunner.cmake), and one nearby working
 example.
 
 ## Configure and Build
@@ -36,8 +36,8 @@ rtk cmake -S . -B build \
 rtk cmake --build build
 ```
 
-`QTUI_BUILD_TESTS=ON` builds `Qtui::TestRunner` and the repository test suites.
-Use `-DQTUI_ENABLE_TEST_RUNNER=ON` only when TestRunner must be built and installed
+`QTUI_BUILD_TESTS=ON` builds `Qtui::Runner` and the repository test suites.
+Use `-DQTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
 without the repository tests. Use `-DQTUI_ENABLE_TERMINAL_HOST=ON` only for the
 optional PTY-backed `TerminalView` module.
 
@@ -77,30 +77,30 @@ a focused first pass.
 
 ## Integrate Application Scenarios
 
-For new applications, link `Qtui::TestRunner` only into a dedicated test
-executable. Some existing examples conditionally link TestRunner into their main
+For new applications, link `Qtui::Runner` only into a dedicated test
+executable. Some existing examples conditionally link Runner into their main
 executable; treat these as legacy integration patterns and do not copy them
-into production applications. Linking TestRunner installs the Terminal auto-hook
+into production applications. Linking Runner installs the Terminal auto-hook
 that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_CAPTURE_AFTER_MS`.
 
 Choose one integration pattern:
 
-- **External script:** the executable links `Qtui::TestRunner`; register it with
-  `qtui_add_scenario_test(NAME ... TARGET ... SCRIPT ...)`. The helper sets a
+- **External script:** the executable links `Qtui::Runner`; register it with
+  `qtui_add_scenario(NAME ... TARGET ... SCRIPT ...)`. The helper sets a
   deterministic viewport and bounded timeouts, configures QML import paths,
   clears the scenario artifact directory, validates `result.json`, and adds the
-  `TestRunner` label. Add `LIVE` only for a scenario that must render to a
+  `Runner` label. Add `LIVE` only for a scenario that must render to a
   real terminal; automated suites should stay quiet.
 - **Embedded resource:** add the script and snapshots to a QML/resource module,
-  construct `TestRunner` with the explicit `QQmlEngine`, root `Terminal`,
+  construct `Runner` with the explicit `QQmlEngine`, root `Terminal`,
   resource path, artifact directory, viewport, and timeouts, then schedule
   `start()` with `QTimer::singleShot(0, ...)`. Register the dedicated executable
-  with `qtui_add_scenario_test(... EMBEDDED ...)` so automated runs are quiet
+  with `qtui_add_scenario(... EMBEDDED ...)` so automated runs are quiet
   and receive the same result validation.
 
 `startFromEnvironment()` returns `nullptr` when no scenario mode is requested
 and schedules `start()` itself when it creates a runner. A directly constructed
-runner never starts automatically. The TestRunner auto-hook normally handles
+runner never starts automatically. The Runner auto-hook normally handles
 environment-driven startup; call `startFromEnvironment()` explicitly only when
 the executable needs to validate that a request was present or otherwise own
 that startup check.
@@ -108,9 +108,9 @@ that startup check.
 Minimal external-script registration:
 
 ```cmake
-target_link_libraries(my_app_test PRIVATE Qtui::Core Qtui::TestRunner)
+target_link_libraries(my_app_test PRIVATE Qtui::Core Qtui::Runner)
 
-qtui_add_scenario_test(
+qtui_add_scenario(
     NAME my_app_smoke
     TARGET my_app_test
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
@@ -125,14 +125,14 @@ for explicitly constructed embedded runners. Use
 or
 [`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
 for dedicated test-only executables driven through the environment. Use
-[`tests/TestRunner`](../../../tests/TestRunner) for framework scenarios and failure
+[`tests/Runner`](../../../tests/Runner) for framework scenarios and failure
 contracts.
 
 ## Closed-Loop Inspection
 
 Environment modes are mutually exclusive: set exactly one of `QTUI_SCRIPT`,
 `QTUI_EVAL`, or `QTUI_CAPTURE_AFTER_MS`. They work only when the executable contains
-`Qtui::TestRunner`. For reproducible direct runs, set both viewport dimensions and
+`Qtui::Runner`. For reproducible direct runs, set both viewport dimensions and
 an explicit artifact directory:
 
 ```bash
@@ -176,7 +176,7 @@ rtk env QTUI_TEST_EMBEDDED_SCENARIO=1 QTUI_TEST_LIVE=1 \
   ./build/path/to/embedded-test-runner
 ```
 
-There is no image capture: `TestRunner` needs only `QCoreApplication`. For
+There is no image capture: `Runner` needs only `QCoreApplication`. For
 visual regressions use `terminal.captureStyled()` to record a baseline and
 `terminal.expectStyled()` to assert it; the styled format lists per-run
 colors and attributes as text, so diffs stay readable and platform independent.

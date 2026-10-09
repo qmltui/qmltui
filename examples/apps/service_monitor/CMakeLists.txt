@@ -14,8 +14,8 @@ target_link_libraries(qtui_service_monitor PRIVATE
     Qtui::Core
 )
 
-if(TARGET Qtui::TestRunner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
     qt_add_executable(qtui_service_monitor_test main_test.cpp)
 
@@ -31,7 +31,7 @@ if(TARGET Qtui::TestRunner)
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::TestRunner
+        Qtui::Runner
     )
 
     qtui_add_scenario_test(

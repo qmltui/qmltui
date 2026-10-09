@@ -1,4 +1,4 @@
-// Demo-mode smoke scenario (120x36). The TestRunner-linked executable selects the
+// Demo-mode smoke scenario (120x36). The Runner-linked executable selects the
 // procedural demo source when no media is given (the production binary starts idle),
 // so this runs identically with and without Qt Multimedia. The microphone key is deliberately never pressed: whether
 // an input device exists differs between CI and developer machines.

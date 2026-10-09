@@ -35,15 +35,15 @@
   broader configured suite after changes to Core, public APIs, QML modules, or
   CMake integration.
 - Use Qt Test executables for C++ units and component contracts. Use
-  `Qtui::TestRunner`/`TestRunner` for whole-application input and committed terminal
+  `Qtui::Runner`/`Runner` for whole-application input and committed terminal
   frames. A visible-behavior test must assert the rendered frame, not only a QML
   property.
 - For Behavior or feature-gating changes, validate separate Behavior-enabled
   and Behavior-disabled build trees. Do not expect the Industrial PLC target in
   a disabled tree.
-- For detailed TestRunner scenarios, artifacts, inspection, and live rendering,
+- For detailed Runner scenarios, artifacts, inspection, and live rendering,
   follow `.agents/skills/qtui-dev-loop/SKILL.md` and the authoritative
-  `src/Qtui/TestRunner/doc/TestRunner.md`.
+  `src/Qtui/Runner/doc/Runner.md`.
 
 ## QML Application Behavior
 
@@ -55,8 +55,8 @@
   accepted. Preserve contextual Escape behavior: close a modal, cancel an
   operation, or clear input first, and quit only when nothing consumes Escape.
 - Keep production startup independent from test scenarios unless an
-  environment-driven TestRunner hook is an intentional feature. Prefer a separate
-  TestRunner-linked executable for application scenarios.
+  environment-driven Runner hook is an intentional feature. Prefer a separate
+  Runner-linked executable for application scenarios.
 
 ## Handoff
 

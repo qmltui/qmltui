@@ -6,8 +6,8 @@
 include("${Qtui_SOURCE_DIR}/cmake/QtuiPublicHeaders.cmake")
 
 add_subdirectory(Core)
-if(QTUI_BUILD_TESTS OR QTUI_ENABLE_TEST_RUNNER)
-    add_subdirectory(TestRunner)
+if(QTUI_BUILD_TESTS OR QTUI_ENABLE_RUNNER)
+    add_subdirectory(Runner)
 endif()
 add_subdirectory(Controls)
 if(QTUI_ENABLE_IMAGE)

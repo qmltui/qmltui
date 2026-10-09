@@ -1,4 +1,4 @@
-// Loads one QML file whose root is a Terminal and hands it to TestRunner's
+// Loads one QML file whose root is a Terminal and hands it to Runner's
 // environment-driven startup. scripts/check_doc_examples.py runs every ```qml
 // block from docs/components through it with QTUI_CAPTURE_AFTER_MS set, so a
 // documentation example that fails to load or render fails the suite.
@@ -8,7 +8,7 @@
 #include <QUrl>
 
 #include <Qtui/Core/items/Terminal.h>
-#include <Qtui/TestRunner/TestRunner.h>
+#include <Qtui/Runner/Runner.h>
 
 int main(int argc, char* argv[])
 {
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
         qCritical() << "the example's root object is not a Terminal";
         return 4;
     }
-    if (!qtui::TestRunner::startFromEnvironment(&engine, terminal)) {
+    if (!qtui::Runner::startFromEnvironment(&engine, terminal)) {
         qCritical() << "set QTUI_CAPTURE_AFTER_MS (or QTUI_SCRIPT / QTUI_EVAL)";
         return 2;
     }

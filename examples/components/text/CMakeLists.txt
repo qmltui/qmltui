@@ -12,8 +12,8 @@ qt_add_qml_module(qtui_text
 target_link_libraries(qtui_text PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
 
-if(TARGET Qtui::TestRunner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qt_add_executable(qtui_text_test main_test.cpp)
     qt_add_qml_module(qtui_text_test
         URI TextDemoTest
@@ -21,7 +21,7 @@ if(TARGET Qtui::TestRunner)
         QML_FILES Main.qml
         DEPENDENCIES TARGET Qtui::Core
     )
-    target_link_libraries(qtui_text_test PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::TestRunner)
+    target_link_libraries(qtui_text_test PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Runner)
     qtui_add_scenario_test(
         NAME text_demo_spans
         TARGET qtui_text_test

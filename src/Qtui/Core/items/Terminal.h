@@ -42,8 +42,8 @@ public:
   };
   Q_ENUM(ClipboardMode)
 
-  using TestRunnerHook = void (*)(QQmlEngine*, Terminal*);
-  static void registerTestRunnerHook(TestRunnerHook hook);
+  using RunnerHook = void (*)(QQmlEngine*, Terminal*);
+  static void registerRunnerHook(RunnerHook hook);
 
   explicit Terminal(QObject *parent = nullptr);
   ~Terminal() override;

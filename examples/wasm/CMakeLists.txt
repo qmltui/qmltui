@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 
-# Only what the browser can run. TestRunner owns a std::thread and the kit is
+# Only what the browser can run. Runner owns a std::thread and the kit is
 # single-threaded; TerminalHost is a Unix PTY. Behavior is on: the wasm kit
 # ships Qt6QmlPrivate, and the gallery has a Behavior tile. Qtui.Image is on
 # too for the Image tile; it adds Qt Gui to the download (see playground/).

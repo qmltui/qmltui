@@ -4,7 +4,7 @@
 
 `MemoryTerminalBackend` is an in-memory [`TerminalBackend`](../../primitives/doc/TerminalBackend.md). It captures every byte the engine writes and lets a test inject input bytes and terminal resizes, so the whole path from `TerminalEngine` through `InputDecoder` to QML key handlers can be exercised without a pipe, a pseudo terminal, or a console. It is also the reference implementation of the application-facing backend extension point.
 
-- **Header**: `#include <TestRunner/MemoryTerminalBackend.h>` (target `Qtui::TestRunner`)
+- **Header**: `#include <Qtui/Runner/MemoryTerminalBackend.h>` (target `Qtui::Runner`)
 - **Inherits**: `qtui::TerminalBackend`
 
 ## 9. Public Methods

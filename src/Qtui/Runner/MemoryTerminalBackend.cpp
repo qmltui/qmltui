@@ -1,4 +1,4 @@
-#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Runner/MemoryTerminalBackend.h>
 
 namespace qtui {
 

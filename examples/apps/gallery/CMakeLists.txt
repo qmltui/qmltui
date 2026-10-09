@@ -59,12 +59,12 @@ if(COMMAND qtui_wasm_app)   # browser build, see examples/wasm and docs/guide/we
     qtui_wasm_app(qtui_gallery)
 endif()
 
-if(TARGET Qtui::TestRunner)
+if(TARGET Qtui::Runner)
     gallery_add_executable(qtui_gallery_test GalleryTest main_test.cpp)
-    target_link_libraries(qtui_gallery_test PRIVATE Qtui::TestRunner)
+    target_link_libraries(qtui_gallery_test PRIVATE Qtui::Runner)
 
     if(QTUI_BUILD_TESTS)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         qtui_add_scenario_test(
             NAME gallery_smoke
             TARGET qtui_gallery_test

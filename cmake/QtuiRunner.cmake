@@ -3,10 +3,12 @@ include(CMakeParseArguments)
 
 # Cached so every directory sees the path even though include_guard(GLOBAL)
 # skips repeated includes from other directories.
-set(QTUI_TESTRUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
+set(QTUI_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
     CACHE INTERNAL "Path to the Qtui scenario runner script")
+set(QTUI_TESTRUNNER_SCRIPT "${QTUI_RUNNER_SCRIPT}"
+    CACHE INTERNAL "Legacy path to the Qtui scenario runner script")
 
-function(qtui_add_scenario_test)
+function(qtui_add_scenario)
     cmake_parse_arguments(QTUI_SCENARIO
         "EMBEDDED;LIVE"
         "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP"
@@ -15,7 +17,7 @@ function(qtui_add_scenario_test)
     )
 
     if(NOT QTUI_SCENARIO_NAME OR NOT QTUI_SCENARIO_TARGET)
-        message(FATAL_ERROR "qtui_add_scenario_test requires NAME and TARGET")
+        message(FATAL_ERROR "qtui_add_scenario requires NAME and TARGET")
     endif()
     if(NOT TARGET "${QTUI_SCENARIO_TARGET}")
         message(FATAL_ERROR "Unknown scenario TARGET: ${QTUI_SCENARIO_TARGET}")
@@ -41,7 +43,7 @@ function(qtui_add_scenario_test)
     endforeach()
     if(NOT QTUI_SCENARIO_ARTIFACT_DIR)
         set(QTUI_SCENARIO_ARTIFACT_DIR
-            "${CMAKE_CURRENT_BINARY_DIR}/TestRunnerArtifacts/${QTUI_SCENARIO_NAME}")
+            "${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts/${QTUI_SCENARIO_NAME}")
     endif()
     if(NOT QTUI_SCENARIO_QML_IMPORT_PATH)
         # In Qtui's own build tree the modules live in the build output dir; for
@@ -90,10 +92,10 @@ function(qtui_add_scenario_test)
     if(QTUI_SCENARIO_SYMLINK_TRAP)
         list(APPEND command "-DSYMLINK_TRAP=${QTUI_SCENARIO_SYMLINK_TRAP}")
     endif()
-    list(APPEND command "-P" "${QTUI_TESTRUNNER_SCRIPT}")
+    list(APPEND command "-P" "${QTUI_RUNNER_SCRIPT}")
 
     add_test(NAME "${QTUI_SCENARIO_NAME}" COMMAND ${command})
-    set(labels TestRunner)
+    set(labels Runner)
     list(APPEND labels ${QTUI_SCENARIO_LABELS})
     list(REMOVE_DUPLICATES labels)
     set_tests_properties("${QTUI_SCENARIO_NAME}" PROPERTIES
@@ -101,4 +103,8 @@ function(qtui_add_scenario_test)
         TIMEOUT ${ctest_timeout}
         LABELS "${labels}"
     )
+endfunction()
+
+function(qtui_add_scenario_test)
+    qtui_add_scenario(${ARGN})
 endfunction()

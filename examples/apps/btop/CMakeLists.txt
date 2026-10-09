@@ -25,8 +25,8 @@ target_link_libraries(qtui_btop PRIVATE
     Qtui::Controls
 )
 
-if(TARGET Qtui::TestRunner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
     qt_add_executable(qtui_btop_test
         main_test.cpp
@@ -48,7 +48,7 @@ if(TARGET Qtui::TestRunner)
         Qtui::Core
         Qtui::Controls
         Qtui::Controls
-        Qtui::TestRunner
+        Qtui::Runner
     )
 
     qtui_add_scenario_test(

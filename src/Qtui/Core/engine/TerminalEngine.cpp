@@ -43,6 +43,7 @@ static bool environmentRequestsTestSession() {
   return !qgetenv("QTUI_SCRIPT").trimmed().isEmpty()
       || !qgetenv("QTUI_EVAL").trimmed().isEmpty()
       || !qgetenv("QTUI_CAPTURE_AFTER_MS").trimmed().isEmpty()
+      || environmentFlagEnabled("QTUI_RUNNER_EMBEDDED_SCENARIO")
       || environmentFlagEnabled("QTUI_TEST_EMBEDDED_SCENARIO");
 }
 
@@ -50,6 +51,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
     : QObject(parent), m_rootWindow(rootWindow), m_router(std::make_unique<InputRouter>(rootWindow)) {
   TerminalMessageRouter::registerEngine();
   m_terminalOutputEnabled = !environmentRequestsTestSession()
+      || environmentFlagEnabled("QTUI_RUNNER_LIVE")
       || environmentFlagEnabled("QTUI_TEST_LIVE");
   m_frameStatsLogging = environmentFlagEnabled("QTUI_FRAME_STATS");
   if (m_frameStatsLogging)

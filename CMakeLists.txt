@@ -7,7 +7,7 @@ option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
 option(QTUI_ENABLE_IMAGE     "Build the optional Qtui Image module (requires Qt Gui and Network)" ON)
 option(QTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
-option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui TestRunner library" OFF)
+option(QTUI_ENABLE_RUNNER "Build and install the optional Qtui Runner library" OFF)
 option(QTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid Qtui Commercial License" OFF)
 
 if(QTUI_COMMERCIAL_LICENSE)
@@ -115,7 +115,7 @@ install(EXPORT QtuiTargets
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfigVersion.cmake"
-    cmake/QtuiTestRunner.cmake
+    cmake/QtuiRunner.cmake
     cmake/RunQtuiScenario.cmake
     cmake/QtuiWasm.cmake
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qtui"

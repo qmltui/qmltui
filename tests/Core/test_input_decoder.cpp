@@ -60,7 +60,7 @@ void TestInputDecoder::testAsciiKeys() {
 }
 
 void TestInputDecoder::testPrintableKeyCodes() {
-    // The contract TestRunner::typeText() relies on: a keypress of any printable
+    // The contract Runner::typeText() relies on: a keypress of any printable
     // character carries the key code Qt Quick handlers compare against.
     QCOMPARE(InputDecoder::keyForCharacter(U'a'), static_cast<int>(Qt::Key_A));
     QCOMPARE(InputDecoder::keyForCharacter(U'Z'), static_cast<int>(Qt::Key_Z));

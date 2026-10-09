@@ -121,7 +121,7 @@ main.cpp / main_test.cpp ──cliOptions──▶ Main.qml ──▶ AudioEngin
   off. Toggling a panel animates the others into the freed space through the
   `spectrumShare` transition; accent colors
   switch instantly.
-- The production binary does not link `Qtui::TestRunner` and starts idle without media;
+- The production binary does not link `Qtui::Runner` and starts idle without media;
   `qtui_cyber_audio_test` links it and defaults to the demo source so scenarios are
   deterministic (`--idle` opts out).
 
@@ -135,7 +135,7 @@ ctest --test-dir build -R 'cyber_audio' --output-on-failure
 
 - `cyber_audio_dsp`: Qt Test for band geometry, FFT, tone detection, RMS, the demo
   synth, playlist scanning and the engine's demo/pause behaviour.
-- `cyber_audio_demo_smoke`: TestRunner scenario against committed frames in demo mode.
+- `cyber_audio_demo_smoke`: Runner scenario against committed frames in demo mode.
 
 To inspect real playback without a terminal session, generate a WAV and run the test
 binary with `QTUI_EVAL`:

@@ -2,7 +2,7 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
-#include <Qtui/TestRunner/MemoryTerminalBackend.h>
+#include <Qtui/Runner/MemoryTerminalBackend.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Core/engine/StreamRenderer.h>

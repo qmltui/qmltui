@@ -5,7 +5,7 @@
 # render a frame fails test_component_doc_examples.
 
 add_executable(qtui_doc_example_runner main.cpp)
-set(qtui_doc_example_runner_libs Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TestRunner)
+set(qtui_doc_example_runner_libs Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Runner)
 if(QTUI_ENABLE_IMAGE)
     list(APPEND qtui_doc_example_runner_libs Qtui::Image)
 endif()

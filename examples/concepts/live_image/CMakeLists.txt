@@ -13,8 +13,8 @@ qt_add_qml_module(qtui_live_image
 )
 target_link_libraries(qtui_live_image PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image)
 
-if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qt_add_executable(qtui_live_image_test main_test.cpp)
     qt_add_qml_module(qtui_live_image_test
         URI LiveImageTest
@@ -23,7 +23,7 @@ if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
         QML_FILES Main.qml
         DEPENDENCIES TARGET Qtui::Core TARGET Qtui::Controls TARGET Qtui::Image
     )
-    target_link_libraries(qtui_live_image_test PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image Qtui::TestRunner)
+    target_link_libraries(qtui_live_image_test PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image Qtui::Runner)
     qtui_add_scenario_test(
         NAME live_image_smoke
         TARGET qtui_live_image_test

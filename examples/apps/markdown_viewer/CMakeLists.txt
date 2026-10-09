@@ -84,13 +84,13 @@ if(QTUI_INSTALL_EXAMPLES)
     install(TARGETS qtui_markdown_viewer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endif()
 
-if(TARGET Qtui::TestRunner)
+if(TARGET Qtui::Runner)
     qt_add_executable(qtui_markdown_viewer_test_runner main_test_runner.cpp)
     target_link_libraries(qtui_markdown_viewer_test_runner PRIVATE
         Qt6::Core
         Qt6::Qml
         Qtui::Core
-        Qtui::TestRunner
+        Qtui::Runner
         qtui_markdown_viewer_moduleplugin
     )
 
@@ -99,7 +99,7 @@ if(TARGET Qtui::TestRunner)
             add_test(NAME ${name} COMMAND
                 "${CMAKE_COMMAND}"
                 "-DTEST_EXECUTABLE=$<TARGET_FILE:qtui_markdown_viewer_test_runner>"
-                "-DARTIFACT_DIR=${CMAKE_CURRENT_BINARY_DIR}/TestRunnerArtifacts/${name}"
+                "-DARTIFACT_DIR=${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts/${name}"
                 "-DEXPECT_EXIT=0"
                 "-DPROCESS_TIMEOUT=20"
                 "-DCOLUMNS=${columns}"
@@ -112,7 +112,7 @@ if(TARGET Qtui::TestRunner)
             )
             set_tests_properties(${name} PROPERTIES
                 TIMEOUT 23
-                LABELS "TestRunner;AgentSmoke"
+                LABELS "Runner;AgentSmoke"
             )
         endfunction()
         add_markdown_viewer_scenario(markdown_viewer_scenario_wide 100 32)

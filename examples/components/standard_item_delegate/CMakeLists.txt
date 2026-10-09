@@ -16,8 +16,8 @@ qt_add_qml_module(qtui_standard_item_delegate
 target_link_libraries(qtui_standard_item_delegate PRIVATE
     Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls)
 
-if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
+if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
+    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qt_add_executable(qtui_standard_item_delegate_test main_test.cpp)
     qt_add_qml_module(qtui_standard_item_delegate_test
         URI StandardItemDelegateTest
@@ -27,7 +27,7 @@ if(TARGET Qtui::TestRunner AND QTUI_BUILD_TESTS)
         DEPENDENCIES TARGET Qtui::Core Qtui::Controls
     )
     target_link_libraries(qtui_standard_item_delegate_test PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::TestRunner)
+        Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Runner)
     qtui_add_scenario_test(
         NAME standard_item_delegate_smoke
         TARGET qtui_standard_item_delegate_test

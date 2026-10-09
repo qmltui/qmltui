@@ -14,8 +14,8 @@ qt_add_qml_module(qtui_container_fleet
 
 target_link_libraries(qtui_container_fleet PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
-if(TARGET Qtui::TestRunner)
-    target_link_libraries(qtui_container_fleet PRIVATE Qtui::TestRunner)
+if(TARGET Qtui::Runner)
+    target_link_libraries(qtui_container_fleet PRIVATE Qtui::Runner)
 endif()
 
 if(QTUI_INSTALL_EXAMPLES)

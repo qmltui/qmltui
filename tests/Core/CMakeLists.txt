@@ -6,9 +6,9 @@ add_qtui_test(test_unicode_text test_unicode_text.cpp)
 add_qtui_test(test_color_depth test_color_depth.cpp)
 add_qtui_test(test_terminal_capabilities test_terminal_capabilities.cpp)
 add_qtui_test(test_terminal_backend test_terminal_backend.cpp)
-target_link_libraries(test_terminal_backend PRIVATE Qtui::TestRunner)
+target_link_libraries(test_terminal_backend PRIVATE Qtui::Runner)
 add_qtui_test(test_terminal_queries test_terminal_queries.cpp)
-target_link_libraries(test_terminal_queries PRIVATE Qtui::TestRunner)
+target_link_libraries(test_terminal_queries PRIVATE Qtui::Runner)
 if(UNIX)
     add_qtui_test(test_terminal_device test_terminal_device.cpp)
     set_tests_properties(test_terminal_device PROPERTIES TIMEOUT 20)
@@ -28,7 +28,7 @@ endif()
 
 add_qtui_test(test_terminal_framework test_terminal_framework.cpp)
 add_qtui_test(test_mouse_modes test_mouse_modes.cpp)
-target_link_libraries(test_mouse_modes PRIVATE Qtui::TestRunner)
+target_link_libraries(test_mouse_modes PRIVATE Qtui::Runner)
 add_qtui_test(test_render_loop test_render_loop.cpp)
 add_qtui_test(test_input_router test_input_router.cpp)
 add_qtui_test(test_focus test_focus.cpp)
@@ -76,8 +76,8 @@ endif()
 add_qtui_test(test_span test_span.cpp)
 add_qtui_test(test_rectangle test_rectangle.cpp)
 add_executable(qtui_span_fixture span_fixture.cpp)
-target_link_libraries(qtui_span_fixture PRIVATE Qtui::Core Qtui::TestRunner)
-qtui_add_scenario_test(
+target_link_libraries(qtui_span_fixture PRIVATE Qtui::Core Qtui::Runner)
+qtui_add_scenario(
     NAME test_span_scenario
     TARGET qtui_span_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/span_scenario.js"
@@ -86,8 +86,8 @@ qtui_add_scenario_test(
 )
 
 add_executable(qtui_table_grid_fixture table_grid_fixture.cpp)
-target_link_libraries(qtui_table_grid_fixture PRIVATE Qtui::Core Qtui::TestRunner)
-qtui_add_scenario_test(
+target_link_libraries(qtui_table_grid_fixture PRIVATE Qtui::Core Qtui::Runner)
+qtui_add_scenario(
     NAME tableview_box_grid
     TARGET qtui_table_grid_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/table_grid_scenario.js"
@@ -96,8 +96,8 @@ qtui_add_scenario_test(
 )
 
 add_executable(qtui_process_table_fixture process_table_fixture.cpp)
-target_link_libraries(qtui_process_table_fixture PRIVATE Qtui::Core Qtui::TestRunner)
-qtui_add_scenario_test(
+target_link_libraries(qtui_process_table_fixture PRIVATE Qtui::Core Qtui::Runner)
+qtui_add_scenario(
     NAME process_table_scenario
     TARGET qtui_process_table_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/process_table_scenario.js"

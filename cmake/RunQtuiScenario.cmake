@@ -34,6 +34,7 @@ set(scenario_environment
     "--unset=QTUI_EVAL"
     "--unset=QTUI_CAPTURE_AFTER_MS"
     "--unset=QTUI_TEST_EMBEDDED_SCENARIO"
+    "--unset=QTUI_RUNNER_EMBEDDED_SCENARIO"
 )
 if(CONFLICT_SCENARIO)
     list(APPEND scenario_environment
@@ -41,7 +42,10 @@ if(CONFLICT_SCENARIO)
         "QTUI_EVAL=${EVAL_CODE}"
     )
 elseif(EMBEDDED_SCENARIO)
-    list(APPEND scenario_environment "QTUI_TEST_EMBEDDED_SCENARIO=1")
+    list(APPEND scenario_environment
+        "QTUI_RUNNER_EMBEDDED_SCENARIO=1"
+        "QTUI_TEST_EMBEDDED_SCENARIO=1"
+    )
 elseif(DEFINED CAPTURE_AFTER_MS AND NOT CAPTURE_AFTER_MS STREQUAL "")
     list(APPEND scenario_environment "QTUI_CAPTURE_AFTER_MS=${CAPTURE_AFTER_MS}")
 elseif(DEFINED EVAL_CODE AND NOT EVAL_CODE STREQUAL "")
@@ -114,6 +118,12 @@ endif()
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E env
         ${scenario_environment}
+        "QTUI_RUNNER_ARTIFACT_DIR=${ARTIFACT_DIR}"
+        "QTUI_RUNNER_COLUMNS=${COLUMNS}"
+        "QTUI_RUNNER_ROWS=${ROWS}"
+        "QTUI_RUNNER_TIMEOUT_MS=${SCENARIO_TIMEOUT_MS}"
+        "QTUI_RUNNER_OPERATION_TIMEOUT_MS=${OPERATION_TIMEOUT_MS}"
+        "QTUI_RUNNER_LIVE=${live_value}"
         "QTUI_TEST_ARTIFACT_DIR=${ARTIFACT_DIR}"
         "QTUI_TEST_COLUMNS=${COLUMNS}"
         "QTUI_TEST_ROWS=${ROWS}"
@@ -161,7 +171,7 @@ endif()
 file(READ "${result_file}" result_json)
 string(JSON schema_version ERROR_VARIABLE json_error GET "${result_json}" schemaVersion)
 if(json_error OR NOT schema_version EQUAL 1)
-    message(FATAL_ERROR "Invalid TestRunner result schema: ${json_error}")
+    message(FATAL_ERROR "Invalid Runner result schema: ${json_error}")
 endif()
 string(JSON result_exit GET "${result_json}" exitCode)
 if(NOT "${result_exit}" STREQUAL "${EXPECT_EXIT}")

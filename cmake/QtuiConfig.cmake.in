@@ -16,4 +16,4 @@ if(@QTUI_ENABLE_IMAGE@)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/QtuiTargets.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/QtuiTestRunner.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/QtuiRunner.cmake")

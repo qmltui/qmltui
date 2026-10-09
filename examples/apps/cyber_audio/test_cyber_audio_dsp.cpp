@@ -74,6 +74,7 @@ private slots:
     void engineStepsScopeLowPass();
     void correlationTracksStereoWidth();
     void shapesDrawIntoBrailleCanvas();
+    void nebulaRespondsToSpectralChanges();
 };
 
 void TestCyberAudioDsp::bandEdgesAreLogSpaced()
@@ -544,6 +545,69 @@ void TestCyberAudioDsp::shapesDrawIntoBrailleCanvas()
         glow->setSamples(sine);
     cols = paintedColumns(canvas, buf);
     QVERIFY(cols.front() && cols.back());
+}
+
+void TestCyberAudioDsp::nebulaRespondsToSpectralChanges()
+{
+    // Identical elapsed time and starting state isolate music response from
+    // free-running motion. A modest 3.6 dB change must alter visible geometry.
+    const auto render = [](int changedBand) {
+        qtui::Canvas canvas;
+        canvas.setWidth(100);
+        canvas.setHeight(28);
+        auto* nebula = new NeonNebula(&canvas);
+        nebula->setParentItem(&canvas);
+        QVariantList bands(24, 0.5);
+        for (int tick = 0; tick < 90; ++tick)
+            nebula->advance(bands);
+        if (changedBand >= 0)
+            for (int i = changedBand; i < changedBand + 7; ++i)
+                bands[i] = 0.56;
+        for (int tick = 0; tick < 3; ++tick)
+            nebula->advance(bands);
+        qtui::TextGridBuffer buf;
+        paintedColumns(canvas, buf);
+        QList<QByteArray> cells;
+        for (int y = 0; y < canvas.height(); ++y)
+            for (int x = 0; x < canvas.width(); ++x)
+                cells.append(buf.cellAt(x, y).character().toByteArray());
+        return cells;
+    };
+    const auto unchanged = render(-1);
+    const auto bass = render(0);
+    const auto treble = render(17);
+    const auto changedFraction = [](const auto& a, const auto& b) {
+        int changed = 0;
+        int occupied = 0;
+        for (qsizetype i = 0; i < a.size(); ++i) {
+            if ((a[i] != " " && !a[i].isEmpty()) || (b[i] != " " && !b[i].isEmpty())) {
+                ++occupied;
+                changed += a[i] != b[i];
+            }
+        }
+        return occupied ? double(changed) / occupied : 0.0;
+    };
+    QVERIFY2(changedFraction(unchanged, bass) > 0.25, "Bass attack barely changed the rendered artwork");
+    QVERIFY2(changedFraction(unchanged, treble) > 0.25, "Treble attack barely changed the rendered artwork");
+    QVERIFY2(changedFraction(bass, treble) > 0.25, "Different frequency content should produce different shapes");
+
+    qtui::Canvas canvas;
+    canvas.setWidth(80);
+    canvas.setHeight(24);
+    auto* nebula = new NeonNebula(&canvas);
+    nebula->setParentItem(&canvas);
+    nebula->advance(QVariantList(24, 0.8));
+    for (int tick = 0; tick < 600; ++tick)
+        nebula->advance(QVariantList(24, 0.0));
+    qtui::TextGridBuffer before, after;
+    paintedColumns(canvas, before);
+    // Repainting alone cannot advance the animation; silence must also settle.
+    for (int tick = 0; tick < 10; ++tick)
+        nebula->advance(QVariantList(24, 0.0));
+    paintedColumns(canvas, after);
+    for (int y = 0; y < canvas.height(); ++y)
+        for (int x = 0; x < canvas.width(); ++x)
+            QCOMPARE(before.cellAt(x, y).character().toByteArray(), after.cellAt(x, y).character().toByteArray());
 }
 
 QTEST_GUILESS_MAIN(TestCyberAudioDsp)

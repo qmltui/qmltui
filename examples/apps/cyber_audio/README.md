@@ -44,11 +44,12 @@ source are hidden. Visible panels and the active source are highlighted.
 | `N` / `P` | Next / previous track (also returns from MIC or DEMO to the playlist) |
 | `+` / `-` | Volume in 5 % steps (file source) |
 | `1` / `2` / `3` | Toggle the equalizer, the oscilloscope and the VU meters; the remaining panels grow into the freed space |
-| `V` | Cycle the oscilloscope art: stereo traces → phosphor persistence → ridge plot |
+| `V` | Cycle the oscilloscope art: stereo traces → phosphor persistence → ridge plot → neon nebula |
 | `[` / `]` | Scope low-pass filter: `[` lowers the cutoff (off → 8 kHz → 4 kHz → 2 kHz → 1 kHz → 600 → 300 → 150 Hz), `]` raises it back to off |
+| `F` | Toggle immersive Neon Nebula; Escape returns to the previous dashboard |
 | `A` | Blend: where lines share a cell, average their colors instead of letting the top one win |
 | `M` | Switch to the microphone |
-| `Q` / `Esc` | Quit |
+| `Q` / `Esc` | Quit (Escape leaves immersive art first) |
 
 ## What is on screen
 
@@ -73,6 +74,21 @@ source are hidden. Visible panels and the active source are highlighted.
   off by default) removes high-frequency detail so the bass and low-mid shape stands out;
   the panel title shows the current cutoff. The FFT for the equalizer always uses the
   unfiltered signal.
+
+### Neon Nebula
+
+Press **F** for a full-area cyan and magenta ribbon field, or cycle **V** to
+Nebula inside the scope panel. Bass expands the curling arms, mids bend their
+shape, and treble brightens drifting particles. Changes relative to the recent
+spectrum deform individual sections of the arms; audio attacks expand the field
+and accelerate its flow, including during file and microphone playback. Quiet
+passages settle and Space freezes/resumes the artwork. F or Escape restores the previous dashboard layout.
+The scope low-pass filter does not affect Nebula: it uses the unfiltered spectrum.
+
+`NeonNebula` in `ScopeArt.h/.cpp` draws directly into the Braille canvas. Each
+audio-engine update (about 33 ms) advances the visual only while it is visible and playback is active. A slow spectral baseline exposes changes in
+compressed music, and a short positive spectral-flux envelope highlights attacks.
+Drawing uses deterministic particles and bounded work, with no accumulated frame history or per-dot JavaScript.
 
 ## Architecture
 

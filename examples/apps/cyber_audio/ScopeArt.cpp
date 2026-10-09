@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <utility>
 
 using qtui::CanvasPainter;
 
@@ -270,5 +271,130 @@ void RidgePlot::draw(CanvasPainter& painter) const
             skyline[size_t(x)] = std::min(skyline[size_t(x)], yLo);
             prevY = py;
         }
+    }
+}
+
+
+NeonNebula::NeonNebula(QObject* parent)
+    : qtui::CanvasShape(parent)
+{
+}
+
+void NeonNebula::setSparkColor(const QString& color)
+{
+    if (m_sparkColor == color)
+        return;
+    m_sparkColor = color;
+    emit sparkColorChanged();
+    requestRepaint(this);
+}
+
+void NeonNebula::advance(const QVariantList& bands)
+{
+    // bandLevels are already attack/release-smoothed, dB-mapped values. Retain
+    // their changes relative to a ~1 s baseline instead of smoothing them again.
+    // This also reveals attacks in compressed recordings with steady loudness.
+    std::array<double, 24> levels{};
+    double flux = 0.0;
+    for (size_t i = 0; i < levels.size(); ++i) {
+        const double value = i < size_t(bands.size()) ? bands[qsizetype(i)].toDouble() : 0.0;
+        levels[i] = std::isfinite(value) ? std::clamp(value, 0.0, 1.0) : 0.0;
+        flux += std::max(0.0, levels[i] - m_previous[i]);
+        m_previous[i] = levels[i];
+        const double change = std::clamp((levels[i] - m_average[i]) * 8.0, -1.0, 1.0);
+        m_response[i] += (change - m_response[i]) * 0.70;
+        m_average[i] += (levels[i] - m_average[i]) * 0.025;
+    }
+    const auto energy = [&](int first, int last) {
+        double sum = 0.0;
+        for (int i = first; i < last; ++i)
+            sum += levels[size_t(i)] * levels[size_t(i)];
+        return std::sqrt(sum / (last - first));
+    };
+    m_bass = energy(0, 7);
+    m_mid = energy(7, 17);
+    m_treble = energy(17, 24);
+    // Positive spectral flux is an onset envelope, not a tempo/beat estimate.
+    m_pulse = std::max(m_pulse * 0.78, std::min(1.0, flux * 18.0 / levels.size()));
+    // Sustained sound carries the field forward; attacks accelerate it. Silence
+    // stops motion once the short onset envelope has decayed.
+    if (m_pulse < 0.001)
+        m_pulse = 0.0;
+    m_phase += 0.055 * (m_bass + m_mid + m_treble) + 0.10 * m_pulse;
+    requestRepaint(this);
+}
+
+void NeonNebula::draw(CanvasPainter& painter) const
+{
+    const int pw = painter.pixelWidth();
+    const int ph = painter.pixelHeight();
+    if (pw < 4 || ph < 4)
+        return;
+    const uint32_t ink = resolvedColor(painter);
+    const uint32_t spark = argbFromString(m_sparkColor, ink);
+    const uint32_t shadow = mixColor(0xFF000000u, ink, 0.22);
+    const double energy = std::clamp(m_bass + m_mid, 0.0, 1.0);
+    const double spread = 0.55 + m_bass * 0.25 + m_pulse * 0.20;
+    const int steps = std::clamp(pw * 2, 80, 800);
+
+    // Two curling arms share a central knot. Offsetting the curves along their
+    // normals produces a ribbon, not a stack of sine-wave scope traces.
+    const auto point = [&](double t, double strand) {
+        // Each part of the arm responds to its own spectral neighborhood.
+        const double band = std::abs(t) * (m_response.size() - 1);
+        const size_t first = std::min(size_t(band), m_response.size() - 2);
+        const double blend = band - first;
+        const double response = m_response[first] * (1.0 - blend)
+                              + m_response[first + 1] * blend;
+        const double angle = (3.2 + m_mid * 1.4) * std::abs(t) + m_phase * 0.45
+                           + 0.55 * response
+                           + m_mid * 0.45 * std::sin(t * 7.0 - m_phase * 1.7);
+        const double radius = t * spread * (0.90 + 0.10 * response);
+        const double offset = strand * (0.006 + 0.012 * std::abs(t))
+                            * (0.65 + m_treble * 0.65 + m_pulse * 0.45);
+        const double x = radius * std::cos(angle) + offset * std::cos(angle + 1.57);
+        const double y = radius * std::sin(angle) + offset * std::sin(angle + 1.57);
+        return std::pair<int, int>{
+            int(std::lround(pw * (0.5 + x * 0.46))),
+            int(std::lround(ph * (0.5 + y * 0.43)))};
+    };
+
+    // Dim outer strands first, bright inner strands last. Color resolution is
+    // still per terminal cell; no framebuffer feedback or unbounded history.
+    for (int layer = 8; layer >= 0; --layer) {
+        for (int side : {-1, 1}) {
+            if (layer == 0 && side == 1)
+                continue;
+            const double strand = layer * side;
+            const double brightness = (1.0 - layer / 11.0) * (0.20 + 0.55 * energy + 0.25 * m_pulse);
+            const uint32_t hue = side == 1 && layer > 5 ? spark : ink;
+            const uint32_t lineInk = mixColor(shadow, hue, brightness);
+            auto previous = point(-1.0, strand);
+            for (int i = 1; i <= steps; ++i) {
+                const double t = -1.0 + 2.0 * i / steps;
+                const auto current = point(t, strand);
+                // Outer strands dissolve into dots rather than solid slabs.
+                if (layer < 2)
+                    bresenham(painter, previous.first, previous.second,
+                              current.first, current.second, lineInk);
+                else if ((i + layer) % 3 == 0)
+                    painter.setPixelColorHex(current.first, current.second, lineInk);
+                previous = current;
+            }
+        }
+    }
+
+    // Deterministic drifting motes: no random state in draw(), and a fixed cap
+    // on work regardless of playback duration or terminal size.
+    const int particles = std::clamp(pw * ph / 100, 12, 160);
+    for (int i = 0; i < particles; ++i) {
+        const double seed = i * 2.3999632297;
+        const double drift = m_phase * (0.65 + (i % 5) * 0.08);
+        const double x = 0.5 + (0.32 + 0.14 * m_pulse) * std::sin(seed + drift);
+        const double y = 0.5 + (0.30 + 0.13 * m_pulse) * std::sin(seed * 1.73 - drift);
+        const double twinkle = 0.5 + 0.5 * std::sin(seed * 3.0 + m_phase * 2.0);
+        const double brightness = 0.10 + twinkle * (0.15 + m_treble * 0.75);
+        painter.setPixelColorHex(int(x * (pw - 1)), int(y * (ph - 1)),
+                                 mixColor(shadow, i % 4 == 0 ? spark : ink, brightness));
     }
 }

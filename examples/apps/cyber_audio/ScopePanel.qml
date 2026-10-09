@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import Qtui
+import QtQml
 import Qtui.Controls
 
 // Lower panel: stereo VU deck on the left, Braille oscilloscope on the right. Either
@@ -13,18 +14,19 @@ Panel {
     property bool blendOverlaps: false             // Canvas.CellColorMode.Average on shared cells
     property bool showScope: true
     property bool showVu: true
-    property int scopeArt: 0                       // 0 traces, 1 persistence, 2 ridge
+    property int scopeArt: 0                       // 0 traces, 1 persistence, 2 ridge, 3 nebula
 
     readonly property string artTitle: {
         switch (scopeArt) {
         case 1: return "PHOSPHOR SCOPE"
         case 2: return "RIDGE PLOT"
+        case 3: return "NEON NEBULA"
         default: return "BRAILLE OSCILLOSCOPE"
         }
     }
 
     color: Theme.panel
-    title: showScope ? artTitle + " · LP " + engine.scopeLowPassLabel : "STEREO VU METERS"
+    title: showScope ? artTitle + (scopeArt === 3 ? "" : " · LP " + engine.scopeLowPassLabel) : "STEREO VU METERS"
     titleColor: Theme.subtle
     border.color: Theme.frame
 
@@ -93,6 +95,20 @@ Panel {
             renderMode: Canvas.RenderMode.Braille
             cellColorMode: panel.blendOverlaps ? Canvas.CellColorMode.Average : Canvas.CellColorMode.LastDot
             color: panel.accentColor
+
+            NeonNebula {
+                id: nebula
+                visible: panel.scopeArt === 3
+                color: Theme.accent
+                sparkColor: Theme.scopeRight
+            }
+            Connections {
+                target: panel.engine
+                function onLevelsChanged() {
+                    if (panel.visible && panel.showScope && panel.scopeArt === 3 && panel.engine.playing)
+                        nebula.advance(panel.engine.bandLevels)
+                }
+            }
 
             // 0: plain stereo traces
             WaveformTrace {

@@ -4,8 +4,10 @@
 
 #include <QList>
 #include <QQmlEngine>
+#include <QVariantList>
 
 #include <deque>
+#include <array>
 
 // Artistic waveform renderers for a Braille Canvas. Like WaveformTrace they are
 // CanvasShapes: QML binds the sample arrays and all drawing runs in C++.
@@ -87,4 +89,34 @@ private:
     int m_depth = 24;
     qreal m_amplitude = 0.9;
     QString m_fadeColor = QStringLiteral("#1e293b");
+};
+
+// Audio-driven ribbon field. Simulation advances explicitly at the audio/UI cadence;
+// drawing is pure so extra committed frames never change the animation.
+class NeonNebula : public qtui::CanvasShape
+{
+    Q_OBJECT
+    QML_ELEMENT
+    Q_PROPERTY(QString sparkColor READ sparkColor WRITE setSparkColor NOTIFY sparkColorChanged)
+
+public:
+    explicit NeonNebula(QObject* parent = nullptr);
+    QString sparkColor() const { return m_sparkColor; }
+    void setSparkColor(const QString& color);
+    Q_INVOKABLE void advance(const QVariantList& bands);
+    void draw(qtui::CanvasPainter& painter) const override;
+
+signals:
+    void sparkColorChanged();
+
+private:
+    std::array<double, 24> m_average{};
+    std::array<double, 24> m_previous{};
+    std::array<double, 24> m_response{};
+    double m_pulse = 0.0;
+    double m_phase = 0.0;
+    double m_bass = 0.0;
+    double m_mid = 0.0;
+    double m_treble = 0.0;
+    QString m_sparkColor;
 };

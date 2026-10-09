@@ -39,7 +39,10 @@ Terminal {
         let handled = true
         switch (event.key) {
         case Qt.Key_Escape:
-            Qt.quit()
+            if (root.immersive)
+                root.immersive = false
+            else
+                Qt.quit()
             break
         case Qt.Key_Space:
             engine.togglePlayback()
@@ -58,7 +61,8 @@ Terminal {
             case "2": root.showScope = !root.showScope; break
             case "3": root.showVu = !root.showVu; break
             case "a": root.blendOverlaps = !root.blendOverlaps; break
-            case "v": root.scopeArt = (root.scopeArt + 1) % 3; break
+            case "v": root.scopeArt = (root.scopeArt + 1) % 4; root.immersive = false; break
+            case "f": root.immersive = !root.immersive; break
             case "[": engine.stepScopeLowPass(-1); break
             case "]": engine.stepScopeLowPass(1); break
             case "n": engine.next(); break
@@ -76,6 +80,7 @@ Terminal {
     // ==========================================
     // WIDGET TOGGLES & ACCENTS
     // ==========================================
+    property bool immersive: false
     property bool showEqualizer: true
     property bool showScope: true
     property bool showVu: true
@@ -83,7 +88,7 @@ Terminal {
 
     // Oscilloscope cells shared by both traces: average the colors (A) or let left win.
     property bool blendOverlaps: false
-    // Oscilloscope rendering: 0 stereo traces, 1 phosphor persistence, 2 ridge plot.
+    // Oscilloscope rendering: 0 traces, 1 persistence, 2 ridge, 3 nebula.
     property int scopeArt: 0
 
     // Share of the main area given to the equalizer panel (0..1). Driven by the layout
@@ -100,7 +105,7 @@ Terminal {
                                         : engine.source === AudioEngine.Idle ? Theme.muted
                                         : root.accentColor
 
-    state: root.showEqualizer && root.showLowerPanel ? "both"
+    state: root.immersive ? "lower" : root.showEqualizer && root.showLowerPanel ? "both"
          : root.showEqualizer ? "equalizer"
          : root.showLowerPanel ? "lower" : "none"
 
@@ -168,7 +173,8 @@ Terminal {
         showScope: root.showScope
         showVu: root.showVu
         blendOverlaps: root.blendOverlaps
-        scopeArt: root.scopeArt
+        scopeArt: root.immersive ? 3 : root.scopeArt
+        immersive: root.immersive
     }
 
     // The visible panels share the remaining height according to spectrumShare.
@@ -185,13 +191,13 @@ Terminal {
         readonly property int spectrumHeight: {
             const share = Math.max(0, Math.min(1, root.spectrumShare))
             let h = Math.round(height * share)
-            if (root.showEqualizer && root.showLowerPanel)
+            if (!root.immersive && root.showEqualizer && root.showLowerPanel)
                 h = Math.max(minSpectrumHeight, Math.min(height - minLowerHeight, h))
             return Math.max(0, Math.min(height, h))
         }
 
         SpectrumPanel {
-            visible: root.showEqualizer
+            visible: !root.immersive && root.showEqualizer
             width: parent.width
             height: mainArea.spectrumHeight
             engine: engine
@@ -200,20 +206,20 @@ Terminal {
         }
 
         ScopePanel {
-            visible: root.showLowerPanel
+            visible: root.immersive || root.showLowerPanel
             width: parent.width
-            height: mainArea.height - (root.showEqualizer ? mainArea.spectrumHeight : 0)
+            height: mainArea.height - (!root.immersive && root.showEqualizer ? mainArea.spectrumHeight : 0)
             engine: engine
             accentColor: root.scopeAccent
             secondaryColor: root.secondaryColor
             blendOverlaps: root.blendOverlaps
-            scopeArt: root.scopeArt
-            showScope: root.showScope
-            showVu: root.showVu
+            scopeArt: root.immersive ? 3 : root.scopeArt
+            showScope: root.immersive || root.showScope
+            showVu: !root.immersive && root.showVu
         }
 
         Text {
-            visible: !root.showEqualizer && !root.showLowerPanel
+            visible: !root.immersive && !root.showEqualizer && !root.showLowerPanel
             x: Math.max(0, Math.floor((mainArea.width - text.length) / 2))
             y: Math.floor(mainArea.height / 2)
             text: "All panels hidden · 1 equalizer · 2 oscilloscope · 3 VU meters"

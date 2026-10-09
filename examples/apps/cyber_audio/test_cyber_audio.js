@@ -91,7 +91,7 @@ function main(terminal) {
     terminal.sleep(120);
     terminal.expectText("LP off");
 
-    // V cycles the oscilloscope art: trace -> glow -> ridge -> trace
+    // V cycles the oscilloscope art: trace -> glow -> ridge -> nebula -> trace
     terminal.typeText("v");
     terminal.sleep(150);
     terminal.expectText("PHOSPHOR SCOPE");
@@ -99,6 +99,11 @@ function main(terminal) {
     terminal.sleep(600);                       // let the ridge history fill
     terminal.expectText("RIDGE PLOT");
     terminal.captureText("cyber_audio/ridge.txt");
+    terminal.typeText("v");
+    terminal.sleep(300);
+    terminal.expectText("NEON NEBULA");
+    terminal.expectRegex("[⠁-⣿]");
+    terminal.captureText("cyber_audio/nebula_panel.txt");
     terminal.typeText("v");
     terminal.sleep(150);
     terminal.expectText("BRAILLE OSCILLOSCOPE");
@@ -110,5 +115,34 @@ function main(terminal) {
     terminal.typeText("a");
     terminal.sleep(120);
 
+    // Immersive art preserves the dashboard toggles and freezes on pause.
+    terminal.typeText("f");
+    terminal.sleep(450);
+    terminal.expectText("NEON NEBULA");
+    terminal.expectNoText("24-BAND NEON EQUALIZER");
+    terminal.expectNoText("STEREO VU");
+    terminal.expectRegex("[⠁-⣿]");
+    const artRows = () => terminal.frameText().split("\n").filter(row => /[\u2801-\u28ff]/.test(row)).join("\n");
+    const moving = artRows();
+    terminal.sleep(300);
+    if (artRows() === moving)
+        terminal.fail("Nebula did not animate during playback");
+    terminal.press("Space");
+    terminal.sleep(150);
+    const paused = artRows();
+    terminal.sleep(200);
+    if (!paused || artRows() !== paused)
+        terminal.fail("Nebula did not freeze on pause");
+    terminal.captureText("cyber_audio/nebula.txt");
+    terminal.captureStyled("cyber_audio/nebula_styled.txt");
+    terminal.press("Space");
+    terminal.sleep(150);
+    if (artRows() === paused)
+        terminal.fail("Nebula did not resume");
+    terminal.press("Escape");
+    terminal.sleep(450);
+    terminal.expectText("24-BAND NEON EQUALIZER");
+    terminal.expectText("BRAILLE OSCILLOSCOPE");
+    terminal.expectText("STEREO VU");
     terminal.captureText("cyber_audio/final.txt");
 }

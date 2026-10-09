@@ -12,6 +12,7 @@ Rectangle {
     property bool showVu: true
     property int scopeArt: 0
     property bool blendOverlaps: false
+    property bool immersive: false
 
     // Wide labels need ~128 cells with every hint shown; compact ~109; tiny drops the
     // secondary hints so the essentials still fit an 80-column terminal.
@@ -52,39 +53,42 @@ Rectangle {
             activeColor: bar.accentColor
         }
         KeyHint {
+            visible: !bar.immersive
             key: "1"
             label: "EQ"
             active: bar.showEqualizer
             activeColor: bar.accentColor
         }
         KeyHint {
+            visible: !bar.immersive
             key: "2"
             label: "Scope"
             active: bar.showScope
             activeColor: Theme.scopeAccent
         }
         KeyHint {
+            visible: !bar.immersive
             key: "3"
             label: "VU"
             active: bar.showVu
             activeColor: Theme.vuLow
         }
         KeyHint {
-            visible: bar.showScope
+            visible: !bar.immersive && bar.showScope
             key: "V"
-            label: ["Trace", "Glow", "Ridge"][bar.scopeArt]
+            label: ["Trace", "Glow", "Ridge", "Nebula"][bar.scopeArt]
             active: bar.scopeArt !== 0
             activeColor: Theme.scopeAccent
         }
         KeyHint {
-            visible: !bar.tiny
+            visible: !bar.tiny && !bar.immersive
             key: "[ ]"
             label: bar.compact ? "LP" : "Filter"
             active: bar.engine.scopeLowPassHz > 0
             activeColor: Theme.scopeAccent
         }
         KeyHint {
-            visible: !bar.tiny
+            visible: !bar.tiny && !bar.immersive
             key: "A"
             label: "Blend"
             active: bar.blendOverlaps
@@ -96,6 +100,12 @@ Rectangle {
             label: "Mic"
             active: bar.micSource
             activeColor: Theme.micSource
+        }
+        KeyHint {
+            key: "F"
+            label: bar.immersive ? "Back" : "Art"
+            active: bar.immersive
+            activeColor: bar.accentColor
         }
         KeyHint {
             key: "Q"

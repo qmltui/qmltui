@@ -63,7 +63,10 @@ CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name
 # Types that exist only when a build option is on. Their pages are kept in
 # every tree; check() reads the option from CMakeCache.txt and does not treat
 # such a page as an orphan when the option is off.
-OPTIONAL_TYPES = {"Behavior": "QTUI_ENABLE_BEHAVIOR"}
+OPTIONAL_TYPES = {
+    "Behavior": "QTUI_ENABLE_BEHAVIOR",
+    "Image": "QTUI_ENABLE_IMAGE",
+}
 
 # Qt/C++ spellings shown as QML types in the tables.
 QML_TYPE_NAMES = {

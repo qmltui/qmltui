@@ -9,8 +9,11 @@
 set(Qtui_QML_IMPORT_PATH "@PACKAGE_QTUI_INSTALL_QMLDIR@")
 
 include(CMakeFindDependencyMacro)
-# Gui is reached by Qtui::Image (QImage in its public interface).
-find_dependency(Qt6 6.8 COMPONENTS Core Qml Gui)
+find_dependency(Qt6 6.8 COMPONENTS Core Qml)
+if(@QTUI_ENABLE_IMAGE@)
+    # Gui is reached by Qtui::Image (QImage in its public interface).
+    find_dependency(Qt6 6.8 COMPONENTS Gui)
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/QtuiTargets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/QtuiTestRunner.cmake")

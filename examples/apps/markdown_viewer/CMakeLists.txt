@@ -1,3 +1,4 @@
+find_package(Qt6 REQUIRED COMPONENTS Gui)
 include(FetchContent)
 
 set(BUILD_MD4QT_TESTS OFF CACHE BOOL "" FORCE)

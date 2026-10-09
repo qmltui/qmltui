@@ -8,12 +8,15 @@ include("${Qtui_SOURCE_DIR}/cmake/QtuiTestRunner.cmake")
 # consumer below is a separate CMake project built against an install tree.
 # The helpers here are shared by every subdirectory.
 
-# A Qt Test executable. Every test links the three always-built libraries so
-# a Core test can instantiate a control or an image without ceremony.
+# A Qt Test executable. Every test links the core libraries so a Core test can
+# instantiate controls without ceremony; Image is linked when enabled.
 function(add_qtui_test test_name test_source)
     add_executable(${test_name} ${test_source})
-    target_link_libraries(${test_name} PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls Qtui::Image)
+    set(qtui_test_libraries Qt6::Core Qt6::Gui Qt6::Test Qtui::Core Qtui::Controls)
+    if(QTUI_ENABLE_IMAGE)
+        list(APPEND qtui_test_libraries Qtui::Image)
+    endif()
+    target_link_libraries(${test_name} PRIVATE ${qtui_test_libraries})
     target_compile_definitions(${test_name} PRIVATE QTUI_SOURCE_DIR="${Qtui_SOURCE_DIR}")
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
@@ -117,7 +120,9 @@ endif()
 add_subdirectory(Core)
 add_subdirectory(Controls)
 add_subdirectory(Docs)
-add_subdirectory(Image)
+if(QTUI_ENABLE_IMAGE)
+    add_subdirectory(Image)
+endif()
 add_subdirectory(TestRunner)
 if(QTUI_ENABLE_TERMINAL_HOST)
     add_subdirectory(TerminalHost)

@@ -75,6 +75,11 @@ def main() -> int:
             if not re.search(r"^import\s", body, re.MULTILINE):
                 fragments += 1     # an illustrative snippet, not a complete file
                 continue
+            # If the snippet imports a Qtui module not built here, skip it.
+            imports = re.findall(r"^import\s+([A-Za-z0-9_.]+)", body, re.MULTILINE)
+            if any(imp.startswith("Qtui") and not args.qml_import_path.joinpath(*imp.split(".")).joinpath("qmldir").is_file() for imp in imports):
+                skipped += 1
+                continue
             total += 1
             name = f"{page.stem}-{index}"
             work = args.artifact_dir / name

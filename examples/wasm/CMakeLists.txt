@@ -49,7 +49,7 @@ file(GLOB gallery_examples CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../app
 if(NOT QTUI_ENABLE_BEHAVIOR)
     list(FILTER gallery_examples EXCLUDE REGEX "/Behavior\\.qml$")
 endif()
-if(NOT QTUI_WASM_PLAYGROUND_IMAGE)
+if(NOT QTUI_WASM_PLAYGROUND_IMAGE OR NOT QTUI_ENABLE_IMAGE)
     list(FILTER gallery_examples EXCLUDE REGEX "/Image\\.qml$")
 endif()
 set(example_index "")

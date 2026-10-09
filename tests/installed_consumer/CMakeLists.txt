@@ -24,5 +24,7 @@ target_link_libraries(qtui_installed_custom_item_consumer PRIVATE
     Qt6::Qml
     Qtui::Core
     Qtui::Controls
-    Qtui::Image
 )
+if(TARGET Qtui::Image)
+    target_link_libraries(qtui_installed_custom_item_consumer PRIVATE Qtui::Image)
+endif()

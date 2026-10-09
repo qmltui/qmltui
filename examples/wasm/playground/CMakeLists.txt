@@ -4,7 +4,7 @@ option(QTUI_WASM_PLAYGROUND_IMAGE "Link Qtui.Image into the playground binary" O
 
 set(playground_imports "import QtQml\nimport QtQml.Models\nimport Qtui\nimport Qtui.Controls\n")
 set(playground_modules Qtui::Core Qtui::Controls)
-if(QTUI_WASM_PLAYGROUND_IMAGE)
+if(QTUI_WASM_PLAYGROUND_IMAGE AND TARGET Qtui::Image)
     string(APPEND playground_imports "import Qtui.Image\n")
     list(APPEND playground_modules Qtui::Image)
 endif()

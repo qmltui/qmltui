@@ -5,8 +5,11 @@
 # render a frame fails test_component_doc_examples.
 
 add_executable(qtui_doc_example_runner main.cpp)
-target_link_libraries(qtui_doc_example_runner PRIVATE
-    Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image Qtui::TestRunner)
+set(qtui_doc_example_runner_libs Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::TestRunner)
+if(QTUI_ENABLE_IMAGE)
+    list(APPEND qtui_doc_example_runner_libs Qtui::Image)
+endif()
+target_link_libraries(qtui_doc_example_runner PRIVATE ${qtui_doc_example_runner_libs})
 
 if(Python3_Interpreter_FOUND)
     add_test(NAME test_component_doc_examples

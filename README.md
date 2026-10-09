@@ -88,6 +88,10 @@ The complete runnable application and its rendered-frame smoke test are in
 - Qt 6.8 with Core and Qml development packages
 - A C++20 compiler
 
+The optional `Qtui.Image` module requires Qt Gui and Network development packages.
+It is enabled by default (`-DQTUI_ENABLE_IMAGE=ON`); disable it with `-DQTUI_ENABLE_IMAGE=OFF`
+for a minimal terminal-only setup without GUI or network dependencies.
+
 The optional `Behavior on property` feature uses a private Qt QML interface.
 Enable it with `-DQTUI_ENABLE_BEHAVIOR=ON`; that configuration additionally
 requires the Qt QmlPrivate development package and is tied more closely to the

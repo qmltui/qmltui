@@ -5,6 +5,7 @@ option(QTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
 option(QTUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
+option(QTUI_ENABLE_IMAGE     "Build the optional Qtui Image module (requires Qt Gui and Network)" ON)
 option(QTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QTUI_ENABLE_TEST_RUNNER "Build and install the optional Qtui TestRunner library" OFF)
 option(QTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid Qtui Commercial License" OFF)
@@ -45,11 +46,16 @@ qtui_provide_utf8proc()   # Qtui::Core links it; TerminalHost provides libvterm 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(qt_required_components Core Qml Gui Network)   # Network: Qtui.Image fetches http(s) sources
+set(qt_required_components Core Qml)
+
+if(QTUI_ENABLE_IMAGE)
+    list(APPEND qt_required_components Gui Network)   # Network: Qtui.Image fetches http(s) sources; Gui: QImage
+endif()
 
 if(QTUI_BUILD_TESTS)
-    list(APPEND qt_required_components Test)
+    list(APPEND qt_required_components Test Gui)   # Gui: QStandardItemModel in TableView/TreeView unit tests
 endif()
+list(REMOVE_DUPLICATES qt_required_components)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
 

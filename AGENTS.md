@@ -18,7 +18,8 @@
   `QtQuick` import or Qt Quick dependency to Qtui applications or modules.
 - Keep optional subsystems gated. `QTUI_ENABLE_BEHAVIOR=ON` requires
   `Qt6::QmlPrivate`; `QTUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
-  supported only on Linux and macOS.
+  supported only on Linux and macOS; `QTUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
+  and `Qt6::Network`.
 
 ## Build and Test Decisions
 

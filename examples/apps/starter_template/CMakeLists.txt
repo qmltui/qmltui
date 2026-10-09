@@ -11,6 +11,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     include(GNUInstallDirs)
     qt_standard_project_setup()
 endif()
+find_package(Qt6 REQUIRED COMPONENTS Network)
 
 set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 

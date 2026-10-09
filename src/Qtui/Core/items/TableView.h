@@ -36,7 +36,10 @@ class QTUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(qtui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
     Q_PROPERTY(qtui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
 
-    Q_PROPERTY(bool showGrid READ showGrid WRITE setShowGrid NOTIFY showGridChanged)
+    Q_PROPERTY(bool showColumnGrid READ showColumnGrid WRITE setShowColumnGrid NOTIFY showColumnGridChanged)
+    Q_PROPERTY(bool showRowGrid READ showRowGrid WRITE setShowRowGrid NOTIFY showRowGridChanged)
+    Q_PROPERTY(bool showOuterBorder READ showOuterBorder WRITE setShowOuterBorder NOTIFY showOuterBorderChanged)
+    Q_PROPERTY(QString gridStyle READ gridStyle WRITE setGridStyle NOTIFY gridStyleChanged)
 
     Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider NOTIFY columnWidthProviderChanged)
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
@@ -85,8 +88,16 @@ public:
     Color alternatingRowBackgroundColor() const { return m_alternatingRowBackgroundColor; }
     void setAlternatingRowBackgroundColor(Color color);
 
-    bool showGrid() const { return m_showGrid; }
-    void setShowGrid(bool show);
+    bool showColumnGrid() const { return m_showColumnGrid; }
+    void setShowColumnGrid(bool show);
+
+    bool showRowGrid() const { return m_showRowGrid; }
+    void setShowRowGrid(bool show);
+    bool showOuterBorder() const { return m_showOuterBorder; }
+    void setShowOuterBorder(bool show);
+
+    QString gridStyle() const { return m_gridStyle; }
+    void setGridStyle(const QString &style);
 
 
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
@@ -103,6 +114,7 @@ public:
     void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent *event) override;
     void mousePressEvent(MouseEvent *event) override;
+    int implicitWidth() const override;
 
 signals:
     void columnsChanged();
@@ -119,7 +131,10 @@ signals:
     void rowBackgroundColorChanged();
     void alternatingRowBackgroundColorChanged();
 
-    void showGridChanged();
+    void showColumnGridChanged();
+    void showRowGridChanged();
+    void showOuterBorderChanged();
+    void gridStyleChanged();
     void columnWidthProviderChanged();
     void cellFormatChanged();
     void delegateChanged();
@@ -132,6 +147,8 @@ protected:
     // Computes the scroll offset and creates, positions and shows delegate
     // items. Runs in the layout pass, never from paint().
     void updateLayout() override;
+    void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
+                      const ClipRect &clipRect) const override;
 
 private:
     ClipRect clipRectForChildren(int absX, int absY,
@@ -139,12 +156,26 @@ private:
     int rowCount() const;
     int columnCount() const;
     int headerRows() const;
+    struct ViewGeometry {
+        int left;
+        int top;
+        int width;
+        int height;
+        int bodyTop;
+        int bodyHeight;
+        int stride;
+        int capacity;
+        int right() const { return left + width; }
+        int bottom() const { return top + height; }
+    };
+    ViewGeometry viewGeometry() const;
     int computeFirstVisibleRow() const;
     void layoutDelegates();
     void maybeFetchMore();
     using Position = std::pair<int, int>;
     struct DelegateRecord {
         QPointer<Item> item;
+        QPointer<Item> container;
         QPointer<QQmlComponent> component;
         QPersistentModelIndex source;
         QVariantMap values;
@@ -162,6 +193,9 @@ private:
         int width;
         QString title;
         QString alignment;
+        int leftPadding = 0;
+        int rightPadding = 0;
+        QString headerAlignment;
     };
     QModelIndex sourceIndex(int row, int column) const;
     void updateDelegate(DelegateRecord &record, int row, int column);
@@ -178,12 +212,14 @@ private:
     static QString alignmentName(const QVariant &alignment);
     void resolveColumns();
     int resolveColumnWidth(int column, const QVariantMap &descriptor);
+    void updateImplicitWidth();
     void callbackWarning(const QString &message, QSet<QString> &errors) const;
 
     void clearDelegateItems();
     void generateDelegateItems();
     static void destroyDelegate(DelegateRecord &record);
 
+    int m_calculatedImplicitWidth = 0;
     QVariantList m_columns;
     QVariant m_modelVariant;
     QVariantList m_listModel;
@@ -202,6 +238,7 @@ private:
     bool m_fetching = false;
     QHash<int, QByteArray> m_roleNames;
     QList<ColumnGeometry> m_geometry;
+    QList<int> m_separators;
     mutable QSet<QString> m_widthErrors;
     mutable QSet<QString> m_formatErrors;
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
@@ -227,7 +264,10 @@ private:
     Color m_alternatingRowBackgroundColor = "default";
     uint32_t m_resolvedAltRowBackgroundColor = 0;
 
-    bool m_showGrid = false;
+    bool m_showColumnGrid = false;
+    bool m_showRowGrid = false;
+    bool m_showOuterBorder = false;
+    QString m_gridStyle = QStringLiteral("single");
 
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;

@@ -64,17 +64,18 @@ QVariant ProcessTableModel::headerData(int section, Qt::Orientation orientation,
 }
 
 QVariantList ProcessTableModel::columnDefinitions() const {
+    // Content widths exclude the ten separator cells.
     return QVariantList{
-        QVariantMap{{"title", "PID"}, {"width", 6}},
-        QVariantMap{{"title", "USER"}, {"width", 7}},
-        QVariantMap{{"title", "PR"}, {"width", 4}},
-        QVariantMap{{"title", "NI"}, {"width", 4}},
-        QVariantMap{{"title", "VIRT"}, {"width", 7}},
-        QVariantMap{{"title", "RES"}, {"width", 7}},
-        QVariantMap{{"title", "SHR"}, {"width", 7}},
-        QVariantMap{{"title", "%CPU"}, {"width", 6}},
-        QVariantMap{{"title", "%MEM"}, {"width", 6}},
-        QVariantMap{{"title", "TIME+"}, {"width", 9}},
+        QVariantMap{{"title", "PID"}, {"width", 5}},
+        QVariantMap{{"title", "USER"}, {"width", 6}},
+        QVariantMap{{"title", "PR"}, {"width", 3}},
+        QVariantMap{{"title", "NI"}, {"width", 3}},
+        QVariantMap{{"title", "VIRT"}, {"width", 6}},
+        QVariantMap{{"title", "RES"}, {"width", 6}},
+        QVariantMap{{"title", "SHR"}, {"width", 6}},
+        QVariantMap{{"title", "%CPU"}, {"width", 5}},
+        QVariantMap{{"title", "%MEM"}, {"width", 5}},
+        QVariantMap{{"title", "TIME+"}, {"width", 8}},
         QVariantMap{{"title", "COMMAND"}, {"width", 16}}
     };
 }

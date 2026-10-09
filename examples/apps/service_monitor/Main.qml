@@ -30,7 +30,7 @@ Terminal {
             width: parent.width
             height: parent.height - 4
             alternatingRows: true
-            showGrid: true
+            showColumnGrid: true
 
             columns: [
                 { title: qsTr("SERVICE"), width: 24 },

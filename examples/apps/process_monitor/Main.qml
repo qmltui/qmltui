@@ -53,7 +53,7 @@ Terminal {
             selectionColor: "white"
             selectionBackgroundColor: "blue"
             alternatingRows: true
-            showGrid: true
+            showColumnGrid: true
 
             columns: processModel.columnDefinitions()
             model: processModel

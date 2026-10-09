@@ -158,7 +158,12 @@ Panel {
 Non-Rectangle types, including `Paragraph`, `TableView`, `TreeView`,
 `Sparkline`, and `TabBar`, do not expose `border`, `borderStyle`,
 or `borderColor`. Wrap one in a `Rectangle` or `Panel` and inset it by one cell
-when a border is needed:
+when a decorative border is needed. For a connected table frame, use
+`TableView.showOuterBorder` with `showColumnGrid` and `showRowGrid`; these
+independent switches default to `false`. Its `gridStyle` is `"single"`,
+`"double"`, or `"ascii"`. Column widths include padding but exclude separator
+cells. `headerAlign` overrides heading alignment without changing body text.
+TableView does not expose the Rectangle `border` group:
 
 ```qml
 Rectangle {
@@ -272,8 +277,9 @@ Before finishing a Qtui QML file:
 6. Model delegates declare `required property` for the roles they read.
 7. Inline roots set `mode: Terminal.Inline`; visible children have a finite
    content height. `Scrollback` has no geometry.
-8. Borders are configured only on `Rectangle` or Rectangle-derived controls;
-   borderless types are wrapped when needed.
+8. Grouped `border` belongs to `Rectangle` and its derived controls. TableView
+   uses `showOuterBorder`, `showColumnGrid`, `showRowGrid`, and `gridStyle` for
+   connected table lines; wrap other borderless types when needed.
 9. A reachable keyboard quit path exists and does not fire while a text input
    has focus.
 10. Visible behaviour is verified against the committed terminal frame using the

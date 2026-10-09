@@ -47,23 +47,24 @@ Terminal {
         }
         Text { x: 1; y: 5; width: 76; text: processes.sortLabel; color: "yellow" }
 
-        Rectangle {
-            x: 1; y: 7; width: 76; height: 12
-            border.style: "single"
-            border.color: "cyan"
+        Row {
+            x: 1; y: 7
+            spacing: 1
+
             TableView {
                 id: table
                 objectName: "table"
                 focus: true
-                anchors.fill: parent
-                anchors.margins: 1
+                height: 12
+                showOuterBorder: true
                 alternatingRows: true
-                showGrid: true
+                showColumnGrid: true
+                gridStyle: "double"
                 columns: [
-                    { title: "PID", width: 8 },
-                    { title: "PROCESS NAME", width: 24 },
-                    { title: "CPU%", width: 12, align: "right" },
-                    { title: "STATUS", width: 16, align: "center" }
+                    { title: "PID", width: 8, padding: 1 },
+                    { title: "PROCESS NAME", width: 18, padding: 1 },
+                    { title: "CPU%", width: 7, align: "right", padding: 1 },
+                    { title: "STATUS", width: 11, align: "center", padding: 1 }
                 ]
                 model: processes
                 onHeaderClicked: (column) => processes.headerClicked(column)
@@ -74,11 +75,46 @@ Terminal {
                     return { text: value }
                 }
             }
+
+            TableView {
+                id: servicesTable
+                objectName: "servicesTable"
+                height: 12
+                showOuterBorder: true
+                alternatingRows: true
+                showColumnGrid: true
+                gridStyle: "single"
+                columns: [
+                    { title: "PORT", width: 6, align: "right", padding: 1 },
+                    { title: "SERVICE", width: 13, padding: 1 },
+                    { title: "STATE", width: 5, align: "center", padding: 1 }
+                ]
+                model: [
+                    ["22", "sshd", "UP"],
+                    ["80", "nginx", "UP"],
+                    ["443", "https", "UP"],
+                    ["3306", "mysqld", "UP"],
+                    ["5432", "postgres", "UP"],
+                    ["6379", "redis", "UP"],
+                    ["8080", "node", "UP"],
+                    ["9090", "prom", "UP"]
+                ]
+                cellFormat: (row, column, value) => {
+                    if (column === 2)
+                        return { text: value, color: "green" }
+                    return { text: value }
+                }
+                onRowActivated: (row) => {
+                    const rowData = model[row]
+                    statusText.text = qsTr("Listening: %1 on port %2").arg(rowData[1]).arg(rowData[0])
+                }
+            }
         }
+
         Text {
             id: statusText
             x: 1; y: 20; width: 76
-            text: qsTr("Select a process")
+            text: qsTr("Select a process or service")
             color: "cyan"
         }
         Text {

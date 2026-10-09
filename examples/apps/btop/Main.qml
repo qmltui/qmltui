@@ -286,7 +286,7 @@ Terminal {
                     rowBackgroundColor: root.panelColor
                     alternatingRowBackgroundColor: "#101411"
                     alternatingRows: true
-                    showGrid: false
+                    showColumnGrid: false
                     cellFormat: (row, column, value) => {
                         if (column === 1)
                             return { text: value, color: root.greenColor }

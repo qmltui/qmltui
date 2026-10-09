@@ -28,7 +28,7 @@ Column {
         height: 5
         headerColor: "#38bdf8"
         headerBackgroundColor: "transparent"
-        showGrid: false
+        showColumnGrid: false
         alternatingRows: false
 
         columns: [

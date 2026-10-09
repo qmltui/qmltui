@@ -502,8 +502,12 @@ private slots:
         buffer.resize(30, 6);
         paintItem(table, buffer, 0, 0);
 
-        const QList<Item *> cells =
-            table.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+        const auto delegates = [&table] {
+            QList<Item *> items;
+            for (Item *container : table.childItems()) items.append(container->childItems());
+            return items;
+        };
+        const QList<Item *> cells = delegates();
         QCOMPARE(cells.size(), 4);
         Item *currentCell = nullptr;
         for (Item *cell : cells) {
@@ -537,8 +541,7 @@ private slots:
         table.setDelegate(nullptr);
         table.setRowDelegate(&rowComponent);
         paintItem(table, buffer, 0, 0);
-        const QList<Item *> rows =
-            table.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item *> rows = delegates();
         QCOMPARE(rows.size(), 2);
         for (Item *row : rows)
             QCOMPARE(row->property("index").toInt(), row->property("row").toInt());

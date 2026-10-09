@@ -7,12 +7,18 @@
 #include <Qtui/Core/primitives/UnicodeText.h>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQmlInfo>
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
 namespace qtui {
 namespace {
+enum GridGlyph {
+    Horizontal, Vertical, TopLeft, TopRight, BottomLeft, BottomRight,
+    TopTee, BottomTee, LeftTee, RightTee, Cross
+};
+
 QQmlContext *delegateContext(Item *item) {
     return item ? item->findChild<QQmlContext *>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
 }
@@ -20,22 +26,31 @@ QVariant unpack(QVariant value) {
     return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant() : value;
 }
 // Compute alignment against the logical width, but allocate only the visible prefix.
-QString alignedPrefix(const QString &text, int width, int visibleWidth, const QString &alignment) {
+QString alignedPrefix(const QString &text, int width, int visibleWidth, const QString &alignment,
+                      int leftPadding = 0, int rightPadding = 0) {
     if (width <= 0 || visibleWidth <= 0) return {};
+    int leftPad = (std::max)(0, leftPadding);
+    int rightPad = (std::max)(0, rightPadding);
+    if (leftPad > width) leftPad = width;
+    if (rightPad > width - leftPad) rightPad = width - leftPad;
+    const int innerWidth = width - leftPad - rightPad;
+
     int used = 0;
     GraphemeIterator measure(text);
     GraphemeRef cluster;
     while (measure.next(cluster)) {
-        if (cluster.width > width - used) break;
+        if (cluster.width > innerWidth - used) break;
         used += cluster.width;
     }
-    const int padding = width - used;
-    const int left = alignment == "right" ? padding : alignment == "center" ? padding / 2 : 0;
+    const int extraSpace = innerWidth - used;
+    const int alignOffset = alignment == "right" ? extraSpace : alignment == "center" ? extraSpace / 2 : 0;
+    const int left = leftPad + alignOffset;
+
     QString result((std::min)(left, visibleWidth), QLatin1Char(' '));
     int position = left;
     GraphemeIterator draw(text);
     while (position < visibleWidth && draw.next(cluster)) {
-        if (cluster.width > width - position || cluster.width > visibleWidth - position) break;
+        if (cluster.width > width - rightPad - position || cluster.width > visibleWidth - position) break;
         result.append(cluster.utf16);
         position += cluster.width;
     }
@@ -46,11 +61,14 @@ QString alignedPrefix(const QString &text, int width, int visibleWidth, const QS
 
 TableView::TableView(QObject *parent) : Item(parent) {
     setFocusable(true);
-    setImplicitWidth(40);
-    setImplicitHeight(10);
     connect(this, &Item::widthChanged, this, &TableView::forceLayout);
     connect(this, &Item::heightChanged, this, &TableView::forceLayout);
     forceLayout();
+}
+int TableView::implicitWidth() const {
+    if (m_implicitWidth > 0)
+        return m_implicitWidth;
+    return m_calculatedImplicitWidth;
 }
 TableView::~TableView() { clearDelegateItems(); }
 void TableView::destroyDelegate(DelegateRecord &record) {
@@ -58,6 +76,8 @@ void TableView::destroyDelegate(DelegateRecord &record) {
         record.item->setParentItem(nullptr);
         delete record.item.data();
     }
+    delete record.container.data();
+    record.container.clear();
     record.item.clear();
     record.component.clear();
 }
@@ -76,6 +96,7 @@ void TableView::setColumns(const QVariantList &columns) {
     if (m_columns == normalized) return;
     m_columns = std::move(normalized);
     m_widthErrors.clear();
+    updateImplicitWidth();
     refreshModelHeader();
     if (!m_cppModel)
         for (auto &record : m_createdDelegateItems) record.allRolesDirty = true;
@@ -123,6 +144,7 @@ void TableView::setModel(const QVariant &model) {
             m_roleNames.clear();
             m_modelProvidesHeader = false;
             clearSelection();
+            updateImplicitWidth();
             generateDelegateItems();
             forceLayout();
             emit modelChanged();
@@ -156,10 +178,12 @@ void TableView::setModel(const QVariant &model) {
                     clearSelection();
                 }
             }
+            updateImplicitWidth();
             generateDelegateItems();
             forceLayout();
         });
     }
+    updateImplicitWidth();
     refreshModelHeader();
     generateDelegateItems();
     forceLayout();
@@ -262,6 +286,7 @@ void TableView::synchronizeSelection() {
 }
 void TableView::handleStructureChanged() {
     m_structureDirty = true;
+    updateImplicitWidth();
     refreshModelHeader();
     synchronizeSelection();
     forceLayout();
@@ -328,10 +353,38 @@ void TableView::setAlternatingRowBackgroundColor(Color color) {
     markDirty();
 }
 
-void TableView::setShowGrid(bool show) {
-    if (m_showGrid == show) return;
-    m_showGrid = show;
-    emit showGridChanged();
+void TableView::setShowColumnGrid(bool show) {
+    if (m_showColumnGrid == show) return;
+    m_showColumnGrid = show;
+    emit showColumnGridChanged();
+    updateImplicitWidth();
+    forceLayout();
+}
+
+void TableView::setShowRowGrid(bool show) {
+    if (m_showRowGrid == show) return;
+    m_showRowGrid = show;
+    emit showRowGridChanged();
+    forceLayout();
+}
+
+void TableView::setShowOuterBorder(bool show) {
+    if (m_showOuterBorder == show) return;
+    m_showOuterBorder = show;
+    emit showOuterBorderChanged();
+    updateImplicitWidth();
+    forceLayout();
+}
+
+void TableView::setGridStyle(const QString &style) {
+    if (style != QLatin1String("single") && style != QLatin1String("double")
+        && style != QLatin1String("ascii")) {
+        qmlWarning(this) << "Unsupported TableView gridStyle:" << style;
+        return;
+    }
+    if (m_gridStyle == style) return;
+    m_gridStyle = style;
+    emit gridStyleChanged();
     markDirty();
 }
 
@@ -345,6 +398,7 @@ void TableView::setColumnWidthProvider(const QJSValue &provider) {
     m_columnWidthProvider = provider;
     m_widthErrors.clear();
     emit columnWidthProviderChanged();
+    updateImplicitWidth();
     forceLayout();
 }
 void TableView::setCellFormat(const QJSValue &format) {
@@ -440,27 +494,84 @@ int TableView::resolveColumnWidth(int column, const QVariantMap &descriptor) {
     callbackWarning(QStringLiteral("Invalid TableView column width; using 12"), m_widthErrors);
     return 12;
 }
+void TableView::updateImplicitWidth() {
+    int total = 0;
+    int visibleColumns = 0;
+
+    const auto validWidth = [](double value) {
+        return std::isfinite(value) && value >= 0 && std::floor(value) == value
+            && value <= (std::numeric_limits<int>::max)();
+    };
+
+    if (!m_columns.isEmpty()) {
+        const int count = int(m_columns.size());
+        for (int column = 0; column < count; ++column) {
+            const QVariant value = unpack(m_columns[column]);
+            const QVariantMap descriptor = value.toMap();
+            bool converted = false;
+            const double width = descriptor.value(QStringLiteral("width"), 12).toDouble(&converted);
+            const int colWidth = (converted && validWidth(width)) ? int(width) : 12;
+            if (colWidth <= 0) continue;
+            total += colWidth;
+            ++visibleColumns;
+        }
+    } else if (m_cppModel) {
+        const int count = (std::max)(0, m_cppModel->columnCount());
+        visibleColumns = count;
+        total = count * 12;
+    } else if (!m_listModel.isEmpty()) {
+        const int count = columnCount();
+        visibleColumns = count;
+        total = count * 12;
+    }
+
+    if (visibleColumns > 0) {
+        if (m_showColumnGrid && visibleColumns > 1) {
+            total += (visibleColumns - 1);
+        }
+        if (m_showOuterBorder) {
+            total += 2;
+        }
+    }
+
+    if (total != m_calculatedImplicitWidth) {
+        m_calculatedImplicitWidth = total;
+        emit implicitWidthChanged();
+        if (m_width < 0) {
+            emit widthChanged();
+            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+        }
+    }
+}
 void TableView::resolveColumns() {
     if (!m_geometryDirty) return;
     m_geometryDirty = false;
     m_geometry.clear();
-    if (width() <= 0 || height() <= 0) return;
-    qint64 x = 0;
+    m_separators.clear();
+    const auto view = viewGeometry();
+    if (view.width <= 0 || view.height <= 0) return;
+    qint64 x = view.left;
     bool overscan = false;
     const int count = columnCount();
     // A C++ model without descriptors or a width provider shares the width
     // evenly; the last column absorbs the remainder.
     const bool fillFromModel = m_columns.isEmpty() && m_cppModel && !m_columnWidthProvider.isCallable();
+    const int contentWidth = (std::max)(0, view.width - (m_showColumnGrid ? count - 1 : 0));
     for (int column = 0; column < count; ++column) {
         const QVariant value = column < m_columns.size() ? unpack(m_columns[column]) : QVariant();
         QVariantMap descriptor = value.toMap();
         if (fillFromModel) {
-            const int share = (std::max)(1, width() / count);
+            const int share = (std::max)(1, contentWidth / count);
             descriptor.insert(QStringLiteral("width"),
-                column == count - 1 ? (std::max)(1, width() - share * (count - 1)) : share);
+                column == count - 1 ? (std::max)(1, contentWidth - share * (count - 1)) : share);
         }
         const int columnWidth = resolveColumnWidth(column, descriptor);
         if (columnWidth == 0) continue;
+        if (m_showColumnGrid && !m_geometry.isEmpty()) {
+            if (x + 1 < view.right()) m_separators.append(int(x));
+            ++x;
+        }
+        if (x > (std::numeric_limits<int>::max)()) break;
         QString defaultTitle = QStringLiteral("Col%1").arg(column + 1);
         if (m_modelProvidesHeader) {
             const QVariant header = modelHeader(column, Qt::DisplayRole);
@@ -474,10 +585,22 @@ void TableView::resolveColumns() {
             descriptor.value(QStringLiteral("align"))).toString();
         if (alignment.isEmpty()) alignment = alignmentName(modelHeader(column, Qt::TextAlignmentRole));
         if (alignment.isEmpty()) alignment = QStringLiteral("left");
-        m_geometry.append({column, int(x), columnWidth, title, alignment});
+        int leftPadding = 0;
+        int rightPadding = 0;
+        if (descriptor.contains(QStringLiteral("padding"))) {
+            leftPadding = rightPadding = descriptor.value(QStringLiteral("padding")).toInt();
+        }
+        if (descriptor.contains(QStringLiteral("leftPadding"))) {
+            leftPadding = descriptor.value(QStringLiteral("leftPadding")).toInt();
+        }
+        if (descriptor.contains(QStringLiteral("rightPadding"))) {
+            rightPadding = descriptor.value(QStringLiteral("rightPadding")).toInt();
+        }
+        m_geometry.append({column, int(x), columnWidth, title, alignment, leftPadding, rightPadding,
+                           descriptor.value(QStringLiteral("headerAlign"), alignment).toString()});
         if (overscan) break;
         x += columnWidth;
-        if (x >= width()) {
+        if (x >= view.right()) {
             if (x > (std::numeric_limits<int>::max)()) break;
             overscan = true;
         }
@@ -604,7 +727,14 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
         if (QQmlContext *context = DelegateUtils::createContext(component, this)) {
             for (auto it = initial.cbegin(); it != initial.cend(); ++it)
                 DelegateUtils::setContextProperty(component, context, it.key(), it.value());
-            record.item = DelegateUtils::createItem(component, initial, context, this, this);
+            record.container = new Item(this);
+            record.container->setParentItem(this);
+            record.container->setClip(true);
+            record.item = DelegateUtils::createItem(component, initial, context, record.container, this);
+            if (!record.item) {
+                delete record.container.data();
+                record.container.clear();
+            }
             record.component = component;
             if (record.item && record.item->height() <= 0) record.item->setHeight(1);
         }
@@ -628,8 +758,20 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
     record.modelData = modelData;
     record.loaded = true;
 }
+TableView::ViewGeometry TableView::viewGeometry() const {
+    const int inset = m_showOuterBorder ? 1 : 0;
+    const int innerWidth = (std::max)(0, width() - 2 * inset);
+    const int innerHeight = (std::max)(0, height() - 2 * inset);
+    const int header = (std::min)(headerRows(), innerHeight);
+    const int body = innerHeight - header;
+    const int capacity = m_showRowGrid ? body / 2 + body % 2 : body;
+    return {inset, inset, innerWidth, innerHeight, inset + header, body,
+            m_showRowGrid ? 2 : 1, innerWidth > 0 ? capacity : 0};
+}
+
 int TableView::computeFirstVisibleRow() const {
-    const int visibleRows = (std::max)(1, height() - headerRows());
+    const int visibleRows = viewGeometry().capacity;
+    if (visibleRows == 0) return 0;
     const int first = m_selectedRow >= visibleRows ? m_selectedRow - visibleRows + 1 : 0;
     return std::clamp(first, 0, (std::max)(0, rowCount() - visibleRows));
 }
@@ -641,12 +783,12 @@ void TableView::updateLayout() {
     maybeFetchMore();
 }
 void TableView::maybeFetchMore() {
-    if (!m_cppModel) return;
+    if (!m_cppModel || viewGeometry().capacity == 0) return;
     // Rows the current layout shows or overscans, in both delegate and
     // built-in painting modes.
     const auto lastShown = [this] {
-        const int bodyHeight = (std::max)(0, height() - headerRows());
-        return (std::min)(rowCount() - 1, m_firstVisibleRow + bodyHeight + 1);
+        return int((std::min)(qint64(rowCount()) - 1,
+            qint64(m_firstVisibleRow) + viewGeometry().capacity + 1));
     };
     DelegateUtils::fetchMoreIfNeeded(m_cppModel.data(), QModelIndex(), 2, m_fetching, lastShown);
 }
@@ -677,15 +819,16 @@ void TableView::layoutDelegates() {
         m_structureDirty = false;
     }
     QHash<Position, ColumnGeometry> wanted;
-    const int bodyHeight = (std::max)(0, height() - headerRows());
-    if (width() > 0 && bodyHeight > 0) {
+    const auto view = viewGeometry();
+    const int bodyHeight = view.capacity;
+    if (bodyHeight > 0) {
         const int first = (std::max)(0, m_firstVisibleRow - 2);
         const int last = int((std::min)(qint64(rowCount()) - 1, qint64(m_firstVisibleRow) + bodyHeight + 1));
         for (int row = first; row <= last; ++row) {
             if (m_delegate) {
                 for (const auto &geometry : std::as_const(m_geometry))
                     wanted.insert({row, geometry.column}, geometry);
-            } else wanted.insert({row, 0}, {0, 0, width(), {}, {}});
+            } else wanted.insert({row, 0}, {0, view.left, view.width, {}, {}});
         }
     }
     for (auto it = m_createdDelegateItems.begin(); it != m_createdDelegateItems.end();) {
@@ -708,11 +851,17 @@ void TableView::layoutDelegates() {
         if (record.item) {
             const auto &geometry = it.value();
             const bool visible = row >= m_firstVisibleRow && qint64(row) < qint64(m_firstVisibleRow) + bodyHeight
-                && geometry.x < width();
+                && geometry.x < view.right();
             // Hidden overscan items need no potentially huge absolute origin.
-            record.item->setX(visible ? geometry.x : 0);
-            record.item->setY(headerRows() + row - m_firstVisibleRow);
+            record.container->setX(visible ? geometry.x : 0);
+            record.container->setY(visible ? view.bodyTop + (row - m_firstVisibleRow) * view.stride : 0);
+            record.container->setWidth((std::max)(0, (std::min)(geometry.width, view.right() - geometry.x)));
+            record.container->setHeight(1);
+            record.container->setVisible(visible);
+            record.item->setX(0);
+            record.item->setY(0);
             record.item->setWidth(geometry.width);
+            record.item->setHeight(1);
             record.item->setVisible(visible);
         }
     }
@@ -720,30 +869,45 @@ void TableView::layoutDelegates() {
 }
 
 void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
-    Q_UNUSED(clipRect);
-    if (!m_visible || width() <= 0 || height() <= 0) return;
-    if (headerRows()) {
-        for (const auto &geometry : std::as_const(m_geometry)) {
-            if (geometry.x >= width()) break;
-            const bool separator = m_showGrid && geometry.column < columnCount() - 1
-                && geometry.width < width() - geometry.x;
-            const int textWidth = geometry.width - int(separator);
-            const int visibleWidth = (std::min)(textWidth, width() - geometry.x);
-            buffer.writeText(absX + geometry.x, absY,
-                alignedPrefix(geometry.title, textWidth, visibleWidth, geometry.alignment),
-                m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
-            if (separator)
-                buffer.writeText(absX + geometry.x + geometry.width - 1, absY, QStringLiteral("|"),
-                    m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
+    if (!m_visible) return;
+    const auto view = viewGeometry();
+    const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
+        .intersected({absX + view.left, absY + view.top, view.width, view.height});
+    if (clip.width == 0 || clip.height == 0) return;
+    const auto write = [&](int x, int y, const QString &text, uint32_t fg, uint32_t bg,
+                           TextAttribute attributes) {
+        if (y < clip.y || y >= clip.y + clip.height) return;
+        // alignedPrefix already clips the right edge; only a clipped left edge
+        // needs grapheme-by-grapheme handling.
+        if (x >= clip.x) {
+            buffer.writeText(x, y, text, fg, bg, attributes);
+            return;
         }
-        if (height() > 1)
-            buffer.drawLine(absX, absY + 1, absX + width() - 1, absY + 1, "─", m_resolvedHeaderColor);
+        GraphemeIterator it(text);
+        GraphemeRef cluster;
+        while (it.next(cluster)) {
+            if (x >= clip.x + clip.width) break;
+            if (clip.contains(x, y) && clip.contains(x + (std::max)(1, cluster.width) - 1, y))
+                buffer.writeText(x, y, QString(cluster.utf16), fg, bg, attributes);
+            x += cluster.width;
+        }
+    };
+    const auto visibleWidth = [&](const ColumnGeometry &geometry) {
+        return (std::max)(0, (std::min)(geometry.width, clip.x + clip.width - absX - geometry.x));
+    };
+    if (headerRows()) {
+        for (const auto &geometry : m_geometry) {
+            if (geometry.x >= view.right()) break;
+            write(absX + geometry.x, absY + view.top,
+                alignedPrefix(geometry.title, geometry.width, visibleWidth(geometry),
+                              geometry.headerAlignment, geometry.leftPadding, geometry.rightPadding),
+                m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
+        }
     }
-    if (m_delegate || m_rowDelegate) return;
-    const int bodyHeight = (std::max)(0, height() - headerRows());
-    for (int r = 0; r < bodyHeight && qint64(m_firstVisibleRow) + r < rowCount(); ++r) {
+    for (int r = 0; r < view.capacity && qint64(m_firstVisibleRow) + r < rowCount(); ++r) {
         const int row = m_firstVisibleRow + r;
-        const int y = absY + headerRows() + r;
+        const int y = absY + view.bodyTop + r * view.stride;
+        if (y < clip.y || y >= clip.y + clip.height) continue;
         const bool selected = row == m_selectedRow;
         const uint32_t bg = selected ? m_resolvedSelectionBackgroundColor :
             m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor : m_resolvedRowBackgroundColor;
@@ -751,15 +915,19 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         const TextAttribute attributes = (selected ? TextAttribute::Bold : TextAttribute::None)
             | (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
                    ? TextAttribute::Reversed : TextAttribute::None);
-        if (selected || bg != 0) {
-            buffer.fillRect(absX, y, width(), 1, " ", fg, bg);
-            for (int x = 0; x < width(); ++x)
-                if (Cell* cell = buffer.tryCellAt(absX + x, y)) cell->attributes = attributes;
-        }
-        for (const auto &geometry : std::as_const(m_geometry)) {
-            if (geometry.x >= width()) break;
+        for (const auto &geometry : m_geometry) {
+            if (geometry.x >= view.right()) break;
+            if (selected || bg != 0) {
+                const int begin = (std::max)(clip.x, absX + geometry.x);
+                const int end = absX + geometry.x + visibleWidth(geometry);
+                for (int x = begin; x < end; ++x)
+                    buffer.writeText(x, y, QStringLiteral(" "), fg, bg, attributes);
+            }
+            if (m_delegate || m_rowDelegate) continue;
             QString value = cellText(row, geometry.column);
             QString alignment = geometry.alignment;
+            int cellLeftPadding = geometry.leftPadding;
+            int cellRightPadding = geometry.rightPadding;
             uint32_t cellFg = fg;
             uint32_t cellBg = bg;
             TextAttribute cellAttributes = attributes;
@@ -788,27 +956,113 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                         if (result.hasProperty("backgroundColor")) cellBg = ColorMapper::fromString(result.property("backgroundColor").toString(), cellBg);
                         if (result.property("bold").toBool()) cellAttributes = cellAttributes | TextAttribute::Bold;
                         if (result.hasProperty("align")) alignment = result.property("align").toString();
+                        if (result.hasProperty("padding")) {
+                            cellLeftPadding = cellRightPadding = result.property("padding").toInt();
+                        }
+                        if (result.hasProperty("leftPadding")) {
+                            cellLeftPadding = result.property("leftPadding").toInt();
+                        }
+                        if (result.hasProperty("rightPadding")) {
+                            cellRightPadding = result.property("rightPadding").toInt();
+                        }
                     }
                 }
             }
-            const bool separator = m_showGrid && geometry.column < columnCount() - 1
-                && geometry.width < width() - geometry.x;
-            const int textWidth = geometry.width - int(separator);
-            const int visibleWidth = (std::min)(textWidth, width() - geometry.x);
-            buffer.writeText(absX + geometry.x, y,
-                alignedPrefix(value, textWidth, visibleWidth, alignment), cellFg, cellBg, cellAttributes);
-            if (separator)
-                buffer.writeText(absX + geometry.x + geometry.width - 1, y, QStringLiteral("|"),
-                    cellFg, cellBg, cellAttributes);
+            write(absX + geometry.x, y,
+                alignedPrefix(value, geometry.width, visibleWidth(geometry), alignment,
+                              cellLeftPadding, cellRightPadding), cellFg, cellBg, cellAttributes);
         }
     }
 }
-ClipRect TableView::clipRectForChildren(int absX, int absY, const ClipRect &clipRect) const {
-    return clipRect.intersected({absX, absY + headerRows(), (std::max)(0, width()),
-                                (std::max)(0, height() - headerRows())});
+
+void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+    if (!m_visible || width() <= 0 || height() <= 0) return;
+    // Order: horizontal, vertical, corners, top/bottom/left/right tees, cross.
+    const QString glyphs = m_gridStyle == QLatin1String("double") ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
+        : m_gridStyle == QLatin1String("ascii") ? QStringLiteral("-|+++++++++")
+        : QStringLiteral("─│┌┐└┘┬┴├┤┼");
+    const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
+        .intersected({absX, absY, width(), height()});
+    if (clip.width == 0 || clip.height == 0) return;
+    const auto put = [&](int x, int y, GridGlyph glyph) {
+        if (clip.contains(absX + x, absY + y)) {
+            const int cellX = absX + x;
+            const int cellY = absY + y;
+            int lead = cellX;
+            while (lead > clip.x && buffer.cellAt(lead, cellY).continuation) --lead;
+            const int end = (std::min)(clip.x + clip.width,
+                lead + int(buffer.cellAt(lead, cellY).displayWidth));
+            for (int part = lead; part < end; ++part)
+                if (part != cellX)
+                    buffer.writeText(part, cellY, QStringLiteral(" "), m_resolvedTextColor);
+            buffer.writeText(cellX, cellY, QString(glyphs[glyph]), m_resolvedTextColor);
+            buffer.cellAt(absX + x, absY + y).bgColor = 0;
+        }
+    };
+    const auto horizontal = [&](int y, int left, int right, GridGlyph junction) {
+        const int begin = (std::max)(left, clip.x - absX);
+        const int end = (std::min)(right, clip.x + clip.width - absX);
+        for (int x = begin; x < end; ++x) put(x, y, Horizontal);
+        for (int x : m_separators) put(x, y, junction);
+    };
+    if (m_showOuterBorder && (width() == 1 || height() == 1)) {
+        if (width() == 1 && height() == 1) put(0, 0, Cross);
+        else if (height() == 1) horizontal(0, 0, width(), Horizontal);
+        else for (int y = (std::max)(0, clip.y - absY);
+                  y < (std::min)(height(), clip.y + clip.height - absY); ++y) put(0, y, Vertical);
+        return;
+    }
+    const auto view = viewGeometry();
+    const auto verticals = [&](int y) {
+        for (int x : m_separators) put(x, y, Vertical);
+    };
+    if (m_showOuterBorder) {
+        horizontal(0, view.left, view.right(), TopTee);
+        horizontal(height() - 1, view.left, view.right(), BottomTee);
+        put(0, 0, TopLeft); put(width() - 1, 0, TopRight);
+        put(0, height() - 1, BottomLeft); put(width() - 1, height() - 1, BottomRight);
+        for (int y = (std::max)(1, clip.y - absY);
+             y < (std::min)(height() - 1, clip.y + clip.height - absY); ++y) {
+            put(0, y, Vertical); put(width() - 1, y, Vertical);
+        }
+    }
+    const auto divider = [&](int y) {
+        horizontal(y, view.left, view.right(), Cross);
+        if (m_showOuterBorder) { put(0, y, LeftTee); put(width() - 1, y, RightTee); }
+    };
+    if (headerRows() && view.height > 0) {
+        verticals(view.top);
+        if (view.height > 1) divider(view.top + 1);
+    }
+    if (m_showRowGrid) {
+        for (int r = 0; r < view.capacity; ++r) {
+            const int y = view.bodyTop + r * view.stride;
+            if (y < view.bodyTop + view.bodyHeight)
+                verticals(y);
+            if (r + 1 < view.capacity) {
+                const int divY = y + 1;
+                if (divY < view.bodyTop + view.bodyHeight)
+                    divider(divY);
+            }
+        }
+        // Dividers only sit between rows, so the last covered line is the last
+        // row itself; any body lines after it still carry the column separators.
+        const int lastCovered = view.bodyTop + (view.capacity > 0 ? (view.capacity - 1) * view.stride : -1);
+        for (int y = lastCovered + 1; y < view.bodyTop + view.bodyHeight; ++y)
+            verticals(y);
+    } else {
+        for (int y = view.bodyTop; y < view.bodyTop + view.bodyHeight; ++y)
+            verticals(y);
+    }
 }
+
+ClipRect TableView::clipRectForChildren(int absX, int absY, const ClipRect &clipRect) const {
+    const auto view = viewGeometry();
+    return clipRect.intersected({absX + view.left, absY + view.bodyTop, view.width, view.bodyHeight});
+}
+
 void TableView::keyPressEvent(KeyEvent *event) {
-    const int page = (std::max)(1, height() - headerRows());
+    const int page = (std::max)(1, viewGeometry().capacity);
     if (event->key() == Qt::Key_Up) setSelectedRow(m_selectedRow - 1);
     else if (event->key() == Qt::Key_Down) setSelectedRow(m_selectedRow + 1);
     else if (event->key() == Qt::Key_PageUp) setSelectedRow(m_selectedRow - page);
@@ -822,9 +1076,9 @@ void TableView::keyPressEvent(KeyEvent *event) {
     event->setAccepted(true);
 }
 void TableView::mousePressEvent(MouseEvent *event) {
-    if (event->button() != 0 || event->x() < 0 || event->x() >= width()
-        || event->y() < 0 || event->y() >= height()) return;
-    setFocus(true);
+    const auto view = viewGeometry();
+    if (event->button() != 0 || event->x() < view.left || event->x() >= view.right()
+        || event->y() < view.top || event->y() >= view.bottom()) return;
     int column = -1;
     for (const auto &geometry : std::as_const(m_geometry))
         if (event->x() >= geometry.x && qint64(event->x()) < qint64(geometry.x) + geometry.width) {
@@ -832,14 +1086,17 @@ void TableView::mousePressEvent(MouseEvent *event) {
             break;
         }
     if (column < 0) return;
-    if (headerRows() && event->y() == 0) {
+    if (headerRows() && event->y() == view.top) {
+        setFocus(true);
         emit headerClicked(column);
         event->setAccepted(true);
         return;
     }
-    if (event->y() < headerRows()) return;
-    const int row = computeFirstVisibleRow() + event->y() - headerRows();
+    const int relativeY = event->y() - view.bodyTop;
+    if (relativeY < 0 || relativeY % view.stride != 0) return;
+    const int row = computeFirstVisibleRow() + relativeY / view.stride;
     if (row >= 0 && row < rowCount()) {
+        setFocus(true);
         setCurrentColumn(column);
         setSelectedRow(row);
         emit rowActivated(row);

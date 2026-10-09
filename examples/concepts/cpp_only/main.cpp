@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     auto *table = new TableView(rootLayout);
     table->setWidth(60);
     table->setHeight(9);
-    table->setShowGrid(true);
+    table->setShowColumnGrid(true);
     table->setAlternatingRows(true);
     table->setHeaderColor(Color::fromString(QStringLiteral("#58a6ff")));
     table->setHeaderBackgroundColor(Color::fromString(QStringLiteral("#161b22")));

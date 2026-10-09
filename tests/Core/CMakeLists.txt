@@ -84,3 +84,23 @@ qtui_add_scenario_test(
     COLUMNS 30 ROWS 5
     LABELS AgentSmoke
 )
+
+add_executable(qtui_table_grid_fixture table_grid_fixture.cpp)
+target_link_libraries(qtui_table_grid_fixture PRIVATE Qtui::Core Qtui::TestRunner)
+qtui_add_scenario_test(
+    NAME tableview_box_grid
+    TARGET qtui_table_grid_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/table_grid_scenario.js"
+    COLUMNS 164 ROWS 25
+    LABELS AgentSmoke
+)
+
+add_executable(qtui_process_table_fixture process_table_fixture.cpp)
+target_link_libraries(qtui_process_table_fixture PRIVATE Qtui::Core Qtui::TestRunner)
+qtui_add_scenario_test(
+    NAME process_table_scenario
+    TARGET qtui_process_table_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/process_table_scenario.js"
+    COLUMNS 80 ROWS 24
+    LABELS AgentSmoke
+)

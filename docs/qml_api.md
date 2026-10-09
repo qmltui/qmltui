@@ -93,6 +93,13 @@ See the [ListView example](../examples/components/list_view/Main.qml).
 
 ## TableView
 
+Grid controls are `showColumnGrid`, `showRowGrid`, and `showOuterBorder`, all
+`false` by default. Enable all three for connected box-art tables. `gridStyle`
+is `"single"`, `"double"`, or `"ascii"`. Column widths include padding and exclude
+separators; `headerAlign` can override header alignment independently of cells.
+`showGrid` has been removed. See [TableView](components/tableview.md) for sizing,
+clipping, and input details.
+
 `delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
 `selected` identify the represented cell. Qtui's `columns` descriptors continue
 to provide terminal column titles, keys, widths, and alignment.

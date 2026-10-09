@@ -292,7 +292,7 @@ Item {
         width: root.width - Math.floor(root.width / 2)
         height: root.height
         alternatingRows: true
-        showGrid: true
+        showColumnGrid: true
         columns: [
             { title: "PID", width: 8 },
             { title: "NAME", width: 18 },

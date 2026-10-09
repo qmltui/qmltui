@@ -143,7 +143,7 @@ Terminal {
                 focus: true
                 anchors.fill: parent
                 anchors.margins: 1
-                showGrid: true
+                showColumnGrid: true
                 headerColor: root.colorAccentCyan
                 headerBackgroundColor: "#181825"
                 selectionColor: root.colorAccentYellow

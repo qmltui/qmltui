@@ -110,6 +110,7 @@ private slots:
     void testDestructorUsesBoundedShutdown();
     void testScrollbackAcrossModes();
     void testOsc11BackgroundOutput();
+    void testResizeRepaint();
 };
 
 void TestTerminalDevice::initTestCase()
@@ -502,6 +503,71 @@ void TestTerminalDevice::testOsc11BackgroundOutput()
     const std::string stopOutput = readAvailable(pipe.readEnd);
     QVERIFY(stopOutput.find("\033]11;#131313\a") != std::string::npos);
     QVERIFY(stopOutput.find("\033]111\a") != std::string::npos);
+}
+
+void TestTerminalDevice::testResizeRepaint()
+{
+    Terminal terminal;
+    terminal.setColor(Color("#123456"));
+    terminal.engine()->setTestViewportSize(QSize(8, 1));
+
+    Pipe pipe;
+    QVERIFY(pipe.open());
+    TerminalDevice device(pipe.writeEnd);
+    FrameRenderer renderer;
+    renderer.setOutputEnabled(true);
+    renderer.resize(8, 1);
+    renderer.start(&terminal, device);
+    (void)readAvailable(pipe.readEnd); // discard clear-screen prologue
+
+    // Initial frame renders content and clear prologue
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    std::string frame = readAvailable(pipe.readEnd);
+    QVERIFY(!frame.empty());
+    QVERIFY(frame.find("\033[2J\033[H") != std::string::npos);
+
+    // Second render with unchanged scene writes nothing
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    QVERIFY(readAvailable(pipe.readEnd).empty());
+    QCOMPARE(renderer.lastFrameStats().diffBytes, qint64(0));
+
+    // Resizing to identical dimensions must not clear buffer or trigger repaint
+    renderer.resize(8, 1);
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    QVERIFY(readAvailable(pipe.readEnd).empty());
+    QCOMPARE(renderer.lastFrameStats().diffBytes, qint64(0));
+
+    // Resizing to new dimensions must emit clear sequence and redraw frame
+    renderer.resize(12, 1);
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    frame = readAvailable(pipe.readEnd);
+    QVERIFY(!frame.empty());
+    QVERIFY(frame.find("\033[2J\033[H") != std::string::npos);
+    QVERIFY(frame.find("48;2;18;52;86") != std::string::npos);
+
+    // Resizing with an empty scene must still emit the clear sequence
+    Terminal emptyTerminal;
+    emptyTerminal.engine()->setTestViewportSize(QSize(10, 2));
+    FrameRenderer blankRenderer;
+    blankRenderer.setOutputEnabled(true);
+    blankRenderer.resize(10, 2);
+    blankRenderer.start(&emptyTerminal, device);
+    (void)readAvailable(pipe.readEnd);
+
+    QVERIFY(blankRenderer.renderFrame(&emptyTerminal, device));
+    frame = readAvailable(pipe.readEnd);
+    QVERIFY(frame.find("\033[2J\033[H") != std::string::npos);
+
+    // Unchanged blank frame writes nothing
+    QVERIFY(blankRenderer.renderFrame(&emptyTerminal, device));
+    QVERIFY(readAvailable(pipe.readEnd).empty());
+
+    // Resizing blank frame to new size must emit clear sequence
+    blankRenderer.resize(14, 2);
+    QVERIFY(blankRenderer.renderFrame(&emptyTerminal, device));
+    frame = readAvailable(pipe.readEnd);
+    QVERIFY(!frame.empty());
+    QVERIFY(frame.find("\033[2J\033[H") != std::string::npos);
 }
 
 QTEST_MAIN(TestTerminalDevice)

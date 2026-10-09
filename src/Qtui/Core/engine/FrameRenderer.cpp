@@ -25,8 +25,11 @@ void FrameRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 void FrameRenderer::resize(int width, int height) {
+    if (m_currentBuffer.width() == width && m_currentBuffer.height() == height)
+        return;
     m_currentBuffer.resize(width, height);
     m_nextBuffer.resize(width, height);
+    m_repaintAll = true;
 }
 
 bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
@@ -47,6 +50,7 @@ bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     m_ansi.clear();
     if (synchronize)
         m_ansi += "\033[?2026h";
+    const bool repaintingAll = m_repaintAll;
     if (m_repaintAll) {
         // The screen content is unknown: clear it and diff against blank.
         m_repaintAll = false;
@@ -61,7 +65,7 @@ bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     // Cursor-painted graphics (sixel) go on top of the cells just written.
     const QByteArray postControls = rootWindow->takePostControlSequences();
     if (outputEnabled()) m_ansi.append(postControls.constData(), postControls.size());
-    if (m_ansi.size() == prefixSize)
+    if (!repaintingAll && m_ansi.size() == prefixSize)
         m_ansi.clear();          // nothing changed: write nothing at all
     else if (synchronize)
         m_ansi += "\033[?2026l";

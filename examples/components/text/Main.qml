@@ -1,27 +1,33 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import Qtui
 
 Terminal {
     id: rootWindow
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_Q) || event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
+    property bool alternateStyle: false
+    property bool showSpans: true
+    property real gradientOffset: 0.0
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
+            Qt.quit();
+        } else if (event.key === Qt.Key_S) {
+            rootWindow.alternateStyle = !rootWindow.alternateStyle;
+        } else if (event.key === Qt.Key_T) {
+            rootWindow.showSpans = !rootWindow.showSpans;
+        } else {
+            return;
         }
+        event.accepted = true;
     }
 
-    color: "green"
     Rectangle {
         anchors.fill: parent
         border.style: "single"
         border.color: "yellow"
     }
 
-    // Animation offset property
-    property real gradientOffset: 0.0
-
-    // Loop the offset from 0.0 to 1.0 infinitely
     NumberAnimation {
         target: rootWindow
         property: "gradientOffset"
@@ -32,92 +38,122 @@ Terminal {
         running: true
     }
 
-    Rectangle {
+    Column {
         anchors.fill: parent
-        anchors.topMargin: 1
-        anchors.leftMargin: 2
-        anchors.bottomMargin: 1
-        anchors.rightMargin: 2
-        color: "#111111"
-        border.style: "double"
-        border.color: "gray"
+        anchors.margins: 2
+        spacing: 1
 
-        Column {
-            anchors.fill: parent
-            anchors.margins: 1
-            spacing: 1
+        Text {
+            text: "Text: styled spans, Unicode & gradients"
+            color: "cyan"
+            bold: true
+        }
 
-            Text {
-                text: "🚀 Emoji & Animation Support in Qtui 🌟"
-                color: "cyan"
-                bold: true
-            }
+        Text {
+            text: "Emojis:  😀 😎 🚀 🎉 🎯 🍕\nFlags:   🇺🇸 🇫🇷 🇩🇪 🇯🇵 🇨🇦 🇧🇷\nHands:   1️⃣ 2️⃣ 👍 👍🏽 👏"
+        }
 
-            Text {
-                text: "Standard emojis:   😀 😎 🚀 🎉 🎯 🍕"
-            }
+        // Object literals and the factory produce the same span value type.
+        Text {
+            spans: [
+                {
+                    text: "Inline: ",
+                    dim: true
+                },
+                Qtui.span(" READY ", {
+                    color: "#001b10",
+                    backgroundColor: "#65e6a0",
+                    bold: true
+                }),
+                {
+                    text: "  warning",
+                    color: "yellow",
+                    underline: true
+                },
+                {
+                    text: "  error",
+                    color: "red",
+                    reversed: true
+                }
+            ]
+        }
 
-            Text {
-                text: "Country Flags:     🇺🇸 🇫🇷 🇩🇪 🇯🇵 🇨🇦 🇧🇷"
-            }
+        // A newline starts a line; adjacent spans continue on that line.
+        Text {
+            spans: [
+                {
+                    text: "Status: ",
+                    dim: true
+                },
+                Qtui.span("Active\n", {
+                    color: "green",
+                    bold: true
+                }),
+                {
+                    text: "Workers: ",
+                    dim: true
+                },
+                {
+                    text: "4",
+                    bold: true
+                }
+            ]
+        }
 
-            Text {
-                text: "Keycaps & Hands:   1️⃣ 2️⃣ 👍 👍🏽 👏"
-            }
+        Text {
+            color: rootWindow.alternateStyle ? "#ffb86c" : "#8be9fd"
+            bold: rootWindow.alternateStyle
+            text: "Fallback text: press T to restore spans"
+            spans: rootWindow.showSpans ? [
+                {
+                    text: "Inherited"
+                },
+                {
+                    text: " | explicit green",
+                    color: "green",
+                    bold: false
+                },
+                {
+                    text: " | terminal default",
+                    color: "default",
+                    bold: false
+                }
+            ] : []
+        }
 
-            // Animated Gradient Text component using declarative Qt Quick-style Gradient API
-            Text {
-                width: parent.width
-                bold: true
-                text: "MOVING COLOR GRADIENT TEXT DEMO WITH TRUECOLOR ANSI"
-                gradient: Gradient {
-                    offset: rootWindow.gradientOffset
-                    GradientStop { position: 0.0; color: "magenta" }
-                    GradientStop { position: 0.33; color: "cyan" }
-                    GradientStop { position: 0.66; color: "yellow" }
-                    GradientStop { position: 1.0; color: "magenta" }
+        Text {
+            width: parent.width
+            bold: true
+            text: "MOVING COLOR GRADIENT TEXT DEMO"
+            gradient: Gradient {
+                offset: rootWindow.gradientOffset
+                GradientStop {
+                    position: 0.0
+                    color: "magenta"
+                }
+                GradientStop {
+                    position: 0.33
+                    color: "cyan"
+                }
+                GradientStop {
+                    position: 0.66
+                    color: "yellow"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "magenta"
                 }
             }
+        }
 
-            // Multiline ASCII Art Section (Auto-calculates width & height)
-            Text {
-                bold: true
-                color: "yellow"
-                text: "Multiline ASCII Art (Auto-sized):"
-            }
+        Text {
+            color: "orange"
+            text: "  /\\_/\\\n ( o.o )   Auto-sized ASCII cat\n  > ^ <    Three explicit lines"
+        }
 
-            // ASCII Art Card: Column automatically computes size from Text, Rectangle fills parent
-            Column {
-                padding: 1
-
-                Rectangle {
-                    anchors.fill: parent
-                    border.style: "single"
-                    border.color: "magenta"
-                    color: "#1e1e2e"
-                    z: -1
-                }
-
-                Text {
-                    color: "orange"
-                    text: `  /\\_/\\   
- ( o.o )   Auto-sized ASCII Cat
-  > ^ <    Calculates 3 lines height automatically`
-                }
-            }
-
-            Text {
-                color: "brightGreen"
-                text: ` _____ _   _ _____ 
-|  _  | |_| |_   _|
-| | | |  _  | | |  
-\\_\\_\\_|_| |_| |_|  `
-            }
-
-            Text {
-                text: "Press 'q' or 'Escape' to quit."
-                color: "gray"
-            }
+        Text {
+            text: "S: change base style  T: toggle spans  Q / Esc: quit"
+            dim: true
         }
     }
 }

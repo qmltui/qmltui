@@ -72,3 +72,14 @@ if(QTUI_BUILD_BENCHMARKS)
         ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
     )
 endif()
+
+add_qtui_test(test_span test_span.cpp)
+add_executable(qtui_span_fixture span_fixture.cpp)
+target_link_libraries(qtui_span_fixture PRIVATE Qtui::Core Qtui::TestRunner)
+qtui_add_scenario_test(
+    NAME test_span_scenario
+    TARGET qtui_span_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/span_scenario.js"
+    COLUMNS 30 ROWS 5
+    LABELS AgentSmoke
+)

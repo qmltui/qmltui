@@ -125,6 +125,15 @@ Text::Text(QObject *parent) : Item(parent) {
 
 Text::~Text() = default;
 
+void Text::setSpans(const QList<Span> &spans) {
+    if (m_spans == spans) return;
+    m_spans = spans;
+    invalidateLayout();
+    updateImplicitSize();
+    emit spansChanged();
+    markDirty();
+}
+
 void Text::setText(const QString& text) {
     if (m_text == text) return;
     m_text = text;
@@ -237,11 +246,7 @@ int Text::parseLine(const QString &line, std::vector<GlyphEntry> *entries,
     TextStyle baseStyle;
     baseStyle.fgColor = m_resolvedColor;
     baseStyle.bgColor = 0x00000000;
-    if (m_dim) baseStyle.attributes = baseStyle.attributes | TextAttribute::Dim;
-    if (m_bold) baseStyle.attributes = baseStyle.attributes | TextAttribute::Bold;
-    if (m_italic) baseStyle.attributes = baseStyle.attributes | TextAttribute::Italic;
-    if (m_underline) baseStyle.attributes = baseStyle.attributes | TextAttribute::Underline;
-    if (m_reversed) baseStyle.attributes = baseStyle.attributes | TextAttribute::Reversed;
+    baseStyle.attributes = baseAttributes();
 
     const bool parseAnsi = m_textFormat == AutoText || m_textFormat == AnsiText;
     const bool parseHtml = m_textFormat == AutoText || m_textFormat == RichText;
@@ -280,42 +285,96 @@ int Text::parseLine(const QString &line, std::vector<GlyphEntry> *entries,
         GraphemeRef cluster;
         if (!iterator.next(cluster))
             break;
-        const int advance = std::max(0, cluster.width);
-        int cellWidth = advance;
-        if (advance == 0) {
-            GraphemeIterator sanitized(cluster.utf16, /*sanitizeControls=*/true);
-            GraphemeRef part;
-            cellWidth = 0;
-            while (sanitized.next(part))
-                cellWidth += part.width;
-        }
-
-        if (entries) {
-            GlyphEntry entry;
-            entry.fgColor = currentStyle.fgColor;
-            entry.bgColor = currentStyle.bgColor;
-            entry.attributes = currentStyle.attributes;
-            entry.advance = static_cast<uint8_t>(std::min(advance, 255));
-            entry.cellWidth = static_cast<uint8_t>(std::min(cellWidth, 255));
-            entry.glyphOffset = static_cast<uint32_t>(bytes->size());
-            char encoded[64];
-            const int length = UnicodeText::encodeUtf8(cluster.utf16, encoded, sizeof encoded,
-                                                       /*sanitizeControls=*/true);
-            if (length >= 0) {
-                bytes->append(encoded, length);
-                entry.glyphLength = static_cast<uint32_t>(length);
-            } else {
-                const QByteArray fallback = UnicodeText::toUtf8(cluster.utf16, true);
-                bytes->append(fallback);
-                entry.glyphLength = static_cast<uint32_t>(fallback.size());
-            }
-            entries->push_back(entry);
-        }
-
-        visualWidth += advance;
+        visualWidth += appendGrapheme(cluster, currentStyle.fgColor, currentStyle.bgColor,
+                                      currentStyle.attributes, entries, bytes);
         i += cluster.utf16Length();
     }
     return visualWidth;
+}
+
+TextAttribute Text::baseAttributes() const {
+    TextAttribute attributes = TextAttribute::None;
+    if (m_dim) attributes = attributes | TextAttribute::Dim;
+    if (m_bold) attributes = attributes | TextAttribute::Bold;
+    if (m_italic) attributes = attributes | TextAttribute::Italic;
+    if (m_underline) attributes = attributes | TextAttribute::Underline;
+    if (m_reversed) attributes = attributes | TextAttribute::Reversed;
+    return attributes;
+}
+
+int Text::appendGrapheme(const GraphemeRef &cluster, uint32_t fg, uint32_t bg,
+                         TextAttribute attributes, std::vector<GlyphEntry> *entries,
+                         QByteArray *bytes) {
+    const int advance = std::max(0, cluster.width);
+    int cellWidth = advance;
+    if (advance == 0) {
+        GraphemeIterator sanitized(cluster.utf16, /*sanitizeControls=*/true);
+        GraphemeRef part;
+        cellWidth = 0;
+        while (sanitized.next(part))
+            cellWidth += part.width;
+    }
+
+    if (entries) {
+        GlyphEntry entry;
+        entry.fgColor = fg;
+        entry.bgColor = bg;
+        entry.attributes = attributes;
+        entry.advance = static_cast<uint8_t>(std::min(advance, 255));
+        entry.cellWidth = static_cast<uint8_t>(std::min(cellWidth, 255));
+        entry.glyphOffset = static_cast<uint32_t>(bytes->size());
+        char encoded[64];
+        const int length = UnicodeText::encodeUtf8(cluster.utf16, encoded, sizeof encoded,
+                                                   /*sanitizeControls=*/true);
+        if (length >= 0) {
+            bytes->append(encoded, length);
+            entry.glyphLength = static_cast<uint32_t>(length);
+        } else {
+            const QByteArray fallback = UnicodeText::toUtf8(cluster.utf16, true);
+            bytes->append(fallback);
+            entry.glyphLength = static_cast<uint32_t>(fallback.size());
+        }
+        entries->push_back(entry);
+    }
+
+    return advance;
+}
+
+void Text::layoutSpans() const {
+    // Segment the whole logical line so a style boundary never breaks a grapheme.
+    QString content;
+    QList<qsizetype> ends;
+    ends.reserve(m_spans.size());
+    for (const Span &span : m_spans) {
+        content += span.text();
+        ends.append(content.size());
+    }
+    const QStringView view(content);
+    qsizetype spanIndex = 0;
+    qsizetype lineStart = 0;
+    const TextAttribute base = baseAttributes();
+    do {
+        qsizetype lineEnd = content.indexOf(u'\n', lineStart);
+        if (lineEnd < 0) lineEnd = content.size();
+        LineLayout line;
+        line.firstGlyph = static_cast<int>(m_glyphs.size());
+        GraphemeIterator iterator(view.mid(lineStart, lineEnd - lineStart));
+        GraphemeRef cluster;
+        qsizetype offset = lineStart;
+        while (iterator.next(cluster)) {
+            while (spanIndex + 1 < ends.size() && offset >= ends[spanIndex])
+                ++spanIndex;
+            const Span &span = m_spans[spanIndex];
+            line.visualWidth += appendGrapheme(cluster,
+                span.color().isValid() ? span.color().argb32() : m_resolvedColor,
+                span.backgroundColor().isValid() ? span.backgroundColor().argb32() : 0,
+                span.resolveAttributes(base), &m_glyphs, &m_glyphBytes);
+            offset += cluster.utf16Length();
+        }
+        line.glyphCount = static_cast<int>(m_glyphs.size()) - line.firstGlyph;
+        m_lines.push_back(line);
+        lineStart = lineEnd + 1;
+    } while (lineStart <= content.size());
 }
 
 void Text::ensureLayout() const {
@@ -323,6 +382,12 @@ void Text::ensureLayout() const {
     m_glyphs.clear();
     m_lines.clear();
     m_glyphBytes.clear();
+
+    if (!m_spans.isEmpty()) {
+        layoutSpans();
+        m_layoutDirty = false;
+        return;
+    }
 
     const QStringList lines = m_text.split('\n');
     m_lines.reserve(static_cast<size_t>(lines.size()));
@@ -363,7 +428,7 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
     const char *glyphBytes = m_glyphBytes.constData();
 
     for (const LineLayout &line : m_lines) {
-        if (currentY >= absY + tp && currentY < absY + height() - bp && currentY >= 0 && currentY < buffer.height()) {
+        if (line.glyphCount > 0 && currentY >= absY + tp && currentY < absY + height() - bp && currentY >= 0 && currentY < buffer.height()) {
             const int visLen = line.visualWidth;
             int lineStartX = leftLimit;
             if (m_horizontalAlignment & Qt::AlignRight) {
@@ -384,7 +449,8 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
                 }
 
                 if (cx >= leftLimit && cx + entry->advance <= rightLimit &&
-                    clipRect.contains(cx, currentY)) {
+                    clipRect.contains(cx, currentY) &&
+                    clipRect.contains(cx + (std::max)(1, int(entry->cellWidth)) - 1, currentY)) {
                     buffer.setGrapheme(cx, currentY,
                                        QByteArrayView(glyphBytes + entry->glyphOffset, entry->glyphLength),
                                        entry->cellWidth, charFgColor, entry->bgColor, entry->attributes

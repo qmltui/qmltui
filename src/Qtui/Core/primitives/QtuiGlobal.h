@@ -4,6 +4,8 @@
 
 #include <Qtui/Core/primitives/Color.h>
 
+#include <Qtui/Core/primitives/Span.h>
+#include <QVariantMap>
 #include <QObject>
 
 #include <QtQml/qqmlregistration.h>
@@ -21,6 +23,9 @@ public:
         : QObject(parent)
     {
     }
+
+    Q_INVOKABLE qtui::Span span(const QString &text) const;
+    Q_INVOKABLE qtui::Span span(const QString &text, const QVariantMap &options) const;
 
     Q_INVOKABLE Color rgba(qreal red, qreal green, qreal blue,
                            qreal alpha) const;

@@ -363,3 +363,13 @@ role names every view provides; see the
 `Qtui.Controls` contains the controls a user operates or reads as finished
 widgets, including `TabBar`, `Toast`, `Sparkline`, and `Popup`. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,
 and `BigText` are recipes under `examples/components/`.
+
+## Styled text spans
+
+`Text.spans` accepts a `list<span>` built from object literals or
+`Qtui.span(text, options)`. Nonempty spans take precedence over `text`; clearing
+the list restores it. Content is literal, and newlines create explicit lines
+without automatic wrapping. Omitted style inherits, explicit boolean values
+override, and `color: "default"` requests the terminal foreground. See
+[Text](components/text.md) and [span](components/span.md) for the complete
+layout, inheritance, and C++ contracts.

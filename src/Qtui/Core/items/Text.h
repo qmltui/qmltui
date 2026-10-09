@@ -4,6 +4,9 @@
 
 #include <Qtui/Core/items/Item.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qtui/Core/primitives/Span.h>
+#include <Qtui/Core/primitives/UnicodeText.h>
+#include <QList>
 #include <QByteArray>
 #include <QString>
 #include <vector>
@@ -16,6 +19,7 @@ class QTUI_CORE_EXPORT Text : public Item {
     Q_OBJECT
     QML_ELEMENT
 
+    Q_PROPERTY(QList<qtui::Span> spans READ spans WRITE setSpans NOTIFY spansChanged)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
@@ -39,6 +43,9 @@ public:
 
     explicit Text(QObject *parent = nullptr);
     ~Text() override;
+
+    QList<Span> spans() const { return m_spans; }
+    void setSpans(const QList<Span> &spans);
 
     QString text() const { return m_text; }
     void setText(const QString& text);
@@ -77,6 +84,7 @@ public:
     void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
+    void spansChanged();
     void textChanged();
     void colorChanged();
     void boldChanged();
@@ -110,10 +118,16 @@ private:
     // and returns its visual width.
     int parseLine(const QString &line, std::vector<GlyphEntry> *entries,
                   QByteArray *bytes) const;
+    TextAttribute baseAttributes() const;
+    static int appendGrapheme(const GraphemeRef &cluster, uint32_t fg, uint32_t bg,
+                              TextAttribute attributes, std::vector<GlyphEntry> *entries,
+                              QByteArray *bytes);
+    void layoutSpans() const;
     void ensureLayout() const;
     void invalidateLayout() { m_layoutDirty = true; }
     void updateImplicitSize();
 
+    QList<Span> m_spans;
     QString m_text;
     mutable std::vector<GlyphEntry> m_glyphs;
     mutable std::vector<LineLayout> m_lines;

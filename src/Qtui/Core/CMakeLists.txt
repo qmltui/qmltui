@@ -32,6 +32,8 @@ qt_add_qml_module(QtuiCore
     URI Qtui
     OUTPUT_TARGETS qtui_core_output_targets
     SOURCES
+        primitives/Span.h
+        primitives/Span.cpp
         primitives/Color.h
         primitives/Color.cpp
         primitives/QtuiExport.h
@@ -220,11 +222,13 @@ install(FILES
 # The public C++ surface. Everything a listed header includes must be listed
 # too; qtui_check_public_headers() enforces it at configure time.
 qtui_install_headers(Qtui/Core/items FILES
+    items/Text.h
     items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h
     items/TableView.h items/TreeView.h items/Terminal.h items/Rectangle.h
     items/Gradient.h items/GradientStop.h items/Canvas.h items/Popup.h
 )
 qtui_install_headers(Qtui/Core/primitives FILES
+    primitives/Span.h primitives/QtuiGlobal.h
     primitives/QtuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h
     primitives/UnicodeText.h primitives/TerminalCapabilities.h
     # The application-provided backend extension point (TerminalBackend::setFactory).

@@ -32,6 +32,12 @@ class QTUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(qtui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
     Q_PROPERTY(qtui::Color headerBackgroundColor READ headerBackgroundColor WRITE setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
     Q_PROPERTY(qtui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
+    // Keep the model's own foreground and background on the selected row,
+    // letting the selection show through the background alone. A table whose
+    // cells carry meaning in their colour -- a diff, a heat map, a byte that
+    // just changed -- otherwise loses exactly the row being inspected.
+    Q_PROPERTY(bool selectionKeepsCellColors READ selectionKeepsCellColors
+               WRITE setSelectionKeepsCellColors NOTIFY selectionKeepsCellColorsChanged)
     Q_PROPERTY(qtui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     Q_PROPERTY(qtui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qtui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
@@ -80,6 +86,8 @@ public:
 
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
+    bool selectionKeepsCellColors() const { return m_selectionKeepsCellColors; }
+    void setSelectionKeepsCellColors(bool keep);
 
     Color selectionBackgroundColor() const { return m_selectionBackgroundColor; }
     void setSelectionBackgroundColor(Color color);
@@ -135,6 +143,7 @@ signals:
     void headerColorChanged();
     void headerBackgroundColorChanged();
     void selectionColorChanged();
+    void selectionKeepsCellColorsChanged();
     void selectionBackgroundColorChanged();
     void textColorChanged();
     void rowBackgroundColorChanged();
@@ -243,6 +252,7 @@ private:
     int m_selectedRow = -1;
     int m_currentColumn = -1;
     int m_firstVisibleRow = 0;
+    bool m_selectionKeepsCellColors = false;
     bool m_alternatingRows = false;
     bool m_stretchLastColumn = false;
 

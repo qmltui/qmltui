@@ -391,6 +391,48 @@ private slots:
         }
     }
 
+    // A selected row used to be painted entirely in the selection colours,
+    // discarding whatever the model said about the cell. In a table whose
+    // colours carry meaning -- a byte that just changed, a diff, a heat map --
+    // that loses the information on exactly the row being inspected.
+    //
+    // No delegate here: delegates render as QML items and never reach the
+    // built-in painter where the standard item roles are applied.
+    void gridSelectionCanKeepCellColors() {
+        QStandardItemModel model;
+        for (int i = 0; i < 3; ++i) {
+            auto *item = new QStandardItem(QString::number(i));
+            item->setData(QColor(QStringLiteral("#00ff88")), Qt::ForegroundRole);
+            model.appendRow(item);
+        }
+
+        TableFixture f;
+        QVERIFY(f.createBody(&model, "showOuterBorder: true; selectionColor: \"#ffffff\""));
+        f.table->setWidth(6);
+        f.table->setHeight(7);
+        f.table->setSelectedRow(1);
+        f.paint();
+
+        const auto glyph = [&f](int y) {
+            for (int x = 0; x < 6; ++x) {
+                const QByteArrayView c = f.buffer.cellAt(x, y).character();
+                if (c != QByteArrayView("│") && c != QByteArrayView(" ")) {
+                    return f.buffer.cellAt(x, y).fgColor;
+                }
+            }
+            return 0u;
+        };
+
+        // Off by default: nothing changes for anyone who has not asked.
+        QCOMPARE(glyph(2), 0xffffffffu);        // selected row, selection colour
+        QCOMPARE(glyph(1), 0xff00ff88u);        // unselected row keeps its own
+
+        f.table->setSelectionKeepsCellColors(true);
+        f.paint();
+        QCOMPARE(glyph(2), 0xff00ff88u);        // now the selected row keeps it too
+        QCOMPARE(glyph(1), 0xff00ff88u);
+    }
+
     // The viewport is remembered, not derived from the selection. Deriving it
     // pinned the selected row to the last visible line once you scrolled past
     // one page, so every Up press dragged the whole view along with it.

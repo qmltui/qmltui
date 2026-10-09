@@ -301,6 +301,12 @@ void TableView::handleStructureChanged() {
     synchronizeSelection();
     forceLayout();
 }
+void TableView::setSelectionKeepsCellColors(bool keep) {
+    if (m_selectionKeepsCellColors == keep) return;
+    m_selectionKeepsCellColors = keep;
+    emit selectionKeepsCellColorsChanged();
+    markDirty(DirtyFlag::SelfDirty);
+}
 void TableView::setAlternatingRows(bool alternating) {
     if (m_alternatingRows == alternating) return;
     m_alternatingRows = alternating;
@@ -1019,8 +1025,10 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                 // Standard item roles, as QStyledItemDelegate would paint them.
                 const QVariantMap standard = StandardRoles::read(m_cppModel.data(), sourceIndex(row, geometry.column));
                 value = StandardRoles::prefix(standard) + value;
-                if (!selected) {
+                if (!selected || m_selectionKeepsCellColors) {
                     cellFg = StandardRoles::color(standard, "foreground", cellFg);
+                    // Where the cell supplies no background of its own the
+                    // selection's shows through, which is what marks the row.
                     cellBg = StandardRoles::color(standard, "background", cellBg);
                 }
                 const QString cellAlignment = standard.value(QStringLiteral("textAlignment")).toString();

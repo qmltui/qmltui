@@ -33,6 +33,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `headerColor` | `rgba` |  | _TODO_ |
 | `headerBackgroundColor` | `rgba` |  | _TODO_ |
 | `selectionColor` | `rgba` |  | _TODO_ |
+| `selectionKeepsCellColors` | bool | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
 | `selectionBackgroundColor` | `rgba` |  | _TODO_ |
 | `textColor` | `rgba` |  | _TODO_ |
 | `rowBackgroundColor` | `rgba` |  | _TODO_ |

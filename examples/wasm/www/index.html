@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Qtui gallery</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; grid-template-rows: 2.6rem minmax(0, 1fr) 7rem; height: 100vh; overflow: hidden;
+         background: #0d1117; color: #c9d1d9; font: 14px system-ui, sans-serif; }
+  header { display: flex; gap: .8rem; align-items: center; padding: 0 1rem; border-bottom: 1px solid #30363d; }
+  header h1 { font-size: 1rem; margin: 0; font-weight: 600; }
+  button { background: #161b22; color: inherit; border: 1px solid #30363d; padding: .25rem .6rem; border-radius: 4px; }
+  button:hover { border-color: #58a6ff; cursor: pointer; }
+  label, #focus { font-size: .85rem; color: #8b949e; }
+  #focus b { color: #d2a8ff; }
+  #status { margin-left: auto; color: #8b949e; font-size: .85rem; }
+  /* Both panes take their height from the grid row, never from their content:
+     xterm's fit addon sizes the terminal from the container, so the container
+     must not size itself from the terminal. */
+  main { display: grid; grid-template-columns: minmax(320px, 45%) minmax(0, 1fr); min-height: 0; overflow: hidden; }
+  body.editor-hidden main { grid-template-columns: minmax(0, 1fr); }
+  body.editor-hidden #editor { display: none; }
+  #editor { min-height: 0; height: 100%; overflow: hidden; border-right: 1px solid #30363d; }
+  #editor .cm-editor { height: 100%; font-size: 13px; }
+  #editor .cm-scroller { overflow: auto; }
+  #terminal { min-height: 0; height: 100%; overflow: hidden; padding: .4rem; box-sizing: border-box; }
+  footer { border-top: 1px solid #30363d; overflow: auto; }
+  #problems { list-style: none; margin: 0; padding: .3rem 1rem; font: 12px ui-monospace, monospace; }
+  #problems li.error { color: #ff7b72; }
+  #problems li.warning { color: #d29922; }
+  footer p { margin: 0; padding: .3rem 1rem; font-size: .75rem; color: #8b949e; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Qtui gallery</h1>
+  <span id="focus"><b id="focusId">pick a component</b> <button id="wholeFile" title="Edit gallery.qml, the grid itself">launcher</button></span>
+  <button id="run" title="Ctrl+Enter">Run</button>
+  <label><input type="checkbox" id="autorun" checked> run on edit</label>
+  <button id="share">Share</button>
+  <button id="toggleEditor" title="Hide or show the code editor">hide editor</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div id="editor"></div>
+  <div id="terminal"></div>
+</main>
+<footer>
+  <ul id="problems"></ul>
+  <p>Open a component in the gallery on the right (arrows and Enter, or a click) and its file appears on the left:
+     a complete Qtui app, imports and Terminal root included. Edit it and the gallery re-runs with that component open. Escape returns to the grid.
+     Runtime: Qt for WebAssembly, GPLv3 (Qt is GPLv3 or commercial only in the browser). Qtui itself is LGPLv3, GPLv3, or commercial.</p>
+</footer>
+<!-- One exact version per package, and esm.sh's external mode (the * prefix)
+     keeps every inter-package import bare so this map resolves them all to the
+     same URL. Without it CodeMirror loads twice and its extensions stop composing. -->
+<script type="importmap">
+{ "imports": {
+  "codemirror":                 "https://esm.sh/*codemirror@6.0.2",
+  "@codemirror/state":          "https://esm.sh/*@codemirror/state@6.7.4",
+  "@codemirror/view":           "https://esm.sh/*@codemirror/view@6.43.11",
+  "@codemirror/language":       "https://esm.sh/*@codemirror/language@6.12.4",
+  "@codemirror/commands":       "https://esm.sh/*@codemirror/commands@6.11.0",
+  "@codemirror/search":         "https://esm.sh/*@codemirror/search@6.7.2",
+  "@codemirror/autocomplete":   "https://esm.sh/*@codemirror/autocomplete@6.20.3",
+  "@codemirror/lint":           "https://esm.sh/*@codemirror/lint@6.9.7",
+  "@codemirror/lang-javascript":"https://esm.sh/*@codemirror/lang-javascript@6.2.5",
+  "@codemirror/theme-one-dark": "https://esm.sh/*@codemirror/theme-one-dark@6.1.3",
+  "@lezer/common":              "https://esm.sh/*@lezer/common@1.5.2",
+  "@lezer/highlight":           "https://esm.sh/*@lezer/highlight@1.2.3",
+  "@lezer/lr":                  "https://esm.sh/*@lezer/lr@1.4.10",
+  "@lezer/javascript":          "https://esm.sh/*@lezer/javascript@1.5.4",
+  "style-mod":                  "https://esm.sh/*style-mod@4.1.3",
+  "w3c-keyname":                "https://esm.sh/*w3c-keyname@2.2.8",
+  "crelt":                      "https://esm.sh/*crelt@1.0.7",
+  "@marijn/find-cluster-break": "https://esm.sh/*@marijn/find-cluster-break@1.0.4"
+} }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode-graphemes@0.4.0/lib/addon-unicode-graphemes.min.js"></script>
+<script src="qtui_playground.js"></script>
+<script type="module" src="qtui-playground.js"></script>
+</body>
+</html>

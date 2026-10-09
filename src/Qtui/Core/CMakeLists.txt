@@ -16,6 +16,11 @@ if(WIN32)
         primitives/Win32ConsoleBackend.h
         primitives/Win32ConsoleBackend.cpp
     )
+elseif(EMSCRIPTEN)
+    list(APPEND qtui_platform_sources
+        primitives/WasmTerminalBackend.h
+        primitives/WasmTerminalBackend.cpp
+    )
 else()
     list(APPEND qtui_platform_sources
         primitives/PosixTerminalBackend.h
@@ -25,6 +30,7 @@ endif()
 
 qt_add_qml_module(QtuiCore
     URI Qtui
+    OUTPUT_TARGETS qtui_core_output_targets
     SOURCES
         primitives/Color.h
         primitives/Color.cpp
@@ -162,6 +168,15 @@ target_link_libraries(QtuiCore PUBLIC
 target_link_libraries(QtuiCore PRIVATE
     utf8proc
 )
+# A static Qtui (WebAssembly) carries utf8proc in its link interface, so the
+# export set must include it. Shared builds keep it private.
+get_target_property(qtui_core_library_type QtuiCore TYPE)
+if(qtui_core_library_type STREQUAL "STATIC_LIBRARY" AND NOT QTUI_USE_SYSTEM_UTF8PROC)
+    install(TARGETS utf8proc
+        EXPORT QtuiTargets
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+endif()
 if(QTUI_ENABLE_BEHAVIOR)
     target_link_libraries(QtuiCore PRIVATE Qt6::QmlPrivate)
     target_compile_definitions(QtuiCore PRIVATE QTUI_ENABLE_BEHAVIOR)
@@ -185,6 +200,17 @@ install(TARGETS QtuiCoreplugin
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui"
 )
+# Static builds (WebAssembly) add resource and plugin-init object libraries to
+# the module's link interface; the export set must carry them too. Empty on
+# shared builds.
+if(qtui_core_output_targets)
+    install(TARGETS ${qtui_core_output_targets}
+        EXPORT QtuiTargets
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+endif()
 
 install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/qmldir"

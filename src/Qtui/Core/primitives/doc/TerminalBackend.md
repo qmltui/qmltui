@@ -8,13 +8,14 @@
 | :--- | :--- | :--- |
 | `PosixTerminalBackend` | Linux, macOS, other POSIX | `termios` raw mode on standard input, `write(2)` and `poll(2)` on the output descriptor, a `QSocketNotifier` on standard input, a process-wide `SIGWINCH` self-pipe bridge |
 | `Win32ConsoleBackend` | Windows (Windows Terminal, VT-capable conhost) | `SetConsoleMode` with `ENABLE_VIRTUAL_TERMINAL_INPUT`, `ENABLE_WINDOW_INPUT`, and `ENABLE_VIRTUAL_TERMINAL_PROCESSING`; UTF-8 code pages; `WriteFile`; `ReadConsoleInputW` driven by a `QWinEventNotifier` on the console input handle |
+| `WasmTerminalBackend` | Qt for WebAssembly (any browser, xterm.js on the page) | Output bytes through the `Module.qtuiOnOutput` JS callback (`EM_JS`), key bytes and geometry through the embind entry points `qtuiFeedInput` / `qtuiResize`; sets `TERM`/`COLORTERM` when the environment is empty; synchronous output |
 
 Input is always delivered as raw VT byte sequences, so `InputDecoder` needs no platform knowledge. On Windows the console itself performs that translation once virtual-terminal input is enabled.
 
 ## 2. Project Structure and Dependencies
 
 - **Header**: `src/Qtui/Core/primitives/TerminalBackend.h`, installed as `<Qtui/Core/primitives/TerminalBackend.h>`
-- **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}` (selected in `src/Qtui/CMakeLists.txt` by `WIN32`)
+- **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/Qtui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
 - **Factory**: `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` in `TerminalBackend.cpp`
 - **Dependencies**: QtCore only. Platform headers are confined to the implementation files; `<windows.h>` never reaches a public header.
 
@@ -73,7 +74,7 @@ Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIG
 
 ## 14. Application-provided backends
 
-`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, a WebAssembly bridge, or an in-memory backend in tests.
+`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/guide/webassembly.md](../../../../../docs/guide/webassembly.md).
 
 ```cpp
 #include <Qtui/Core/primitives/TerminalBackend.h>

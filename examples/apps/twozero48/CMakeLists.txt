@@ -13,3 +13,7 @@ target_link_libraries(qtui_twozero48 PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui:
 if(TARGET Qtui::TestRunner)
     target_link_libraries(qtui_twozero48 PRIVATE Qtui::TestRunner)
 endif()
+
+if(COMMAND qtui_wasm_app)   # browser build, see examples/wasm and docs/guide/webassembly.md
+    qtui_wasm_app(qtui_twozero48)
+endif()

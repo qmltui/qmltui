@@ -24,6 +24,9 @@ namespace qtui {
 //   Win32ConsoleBackend   console modes with virtual-terminal input and output,
 //                         WriteFile, and ReadConsoleInputW driven by a
 //                         QWinEventNotifier on the console input handle.
+//   WasmTerminalBackend   Qt for WebAssembly: bytes out through a JS callback,
+//                         key bytes and geometry in through embind entry
+//                         points, driven by an xterm.js instance on the page.
 //
 // Input is always delivered as raw VT byte sequences through inputReceived(),
 // so InputDecoder needs no platform knowledge. Geometry changes arrive through

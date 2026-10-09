@@ -63,6 +63,10 @@ endif()
 
 qt_standard_project_setup(REQUIRES 6.8)
 
+if(EMSCRIPTEN)
+    include(cmake/QtuiWasm.cmake)
+endif()
+
 if(QTUI_BUILD_TESTS)
     include(CTest)
     enable_testing()
@@ -107,5 +111,6 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QtuiConfigVersion.cmake"
     cmake/QtuiTestRunner.cmake
     cmake/RunQtuiScenario.cmake
+    cmake/QtuiWasm.cmake
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qtui"
 )

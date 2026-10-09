@@ -8,11 +8,14 @@ qt_add_qml_module(qtui_snake_game
 
     DEPENDENCIES
         TARGET Qtui::Core
-        TARGET Qtui::Core
 )
 
-target_link_libraries(qtui_snake_game PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Core)
+target_link_libraries(qtui_snake_game PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
 if(TARGET Qtui::TestRunner)
     target_link_libraries(qtui_snake_game PRIVATE Qtui::TestRunner)
+endif()
+
+if(COMMAND qtui_wasm_app)   # browser build, see examples/wasm and docs/guide/webassembly.md
+    qtui_wasm_app(qtui_snake_game)
 endif()

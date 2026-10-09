@@ -1,7 +1,9 @@
 #include <Qtui/Core/primitives/TerminalBackend.h>
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <Qtui/Core/primitives/Win32ConsoleBackend.h>
+#elif defined(__EMSCRIPTEN__)
+#include <Qtui/Core/primitives/WasmTerminalBackend.h>
 #else
 #include <Qtui/Core/primitives/PosixTerminalBackend.h>
 #endif
@@ -36,8 +38,11 @@ std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd)
         if (std::unique_ptr<TerminalBackend> backend = factory(outputFd))
             return backend;
     }
-#ifdef _WIN32
+#if defined(_WIN32)
     return std::make_unique<Win32ConsoleBackend>(outputFd);
+#elif defined(__EMSCRIPTEN__)
+    Q_UNUSED(outputFd);   // the browser has no descriptors; output goes to the page
+    return std::make_unique<WasmTerminalBackend>();
 #else
     return std::make_unique<PosixTerminalBackend>(outputFd);
 #endif

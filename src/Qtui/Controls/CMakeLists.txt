@@ -1,5 +1,6 @@
 qt_add_qml_module(QtuiControls
     URI Qtui.Controls
+    OUTPUT_TARGETS qtui_controls_output_targets
     SOURCES
         ForeignTypes.h
         Sparkline.h

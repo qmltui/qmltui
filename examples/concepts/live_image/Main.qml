@@ -31,20 +31,28 @@ Terminal {
     FrameSource { id: feed; interval: 100; frameSize: scope.renderSize }
 
     Column {
-        x: 2
-        y: 1
+        anchors.fill: parent
+        anchors.leftMargin: 2
+        anchors.rightMargin: 2
+        anchors.topMargin: 1
+        anchors.bottomMargin: 1
         spacing: 1
+
         Text { text: "Live Image: pictures from memory"; color: "#7ee0ff"; bold: true }
         Text {
             text: "Space pauses, Q quits.  Tick " + feed.tick + (feed.running ? "" : "  (paused)")
                 + "   frames " + scope.renderSize.width + "x" + scope.renderSize.height + " px"
             color: "#6e7b8b"
         }
-        Row {
+        RowLayout {
+            width: parent.width
+            height: Math.max(6, parent.height - 7)
             spacing: 2
+
             Panel {
-                width: 36
-                height: 14
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredWidth: 0
                 title: "image: feed.frame"
                 Image {
                     id: scope
@@ -57,8 +65,9 @@ Terminal {
                 }
             }
             Panel {
-                width: 36
-                height: 14
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredWidth: 0
                 title: "source: image://frames/radar"
                 Image {
                     anchors.fill: parent
@@ -73,7 +82,6 @@ Terminal {
             }
         }
         Text {
-            width: 74
             text: "Left: FrameSource (C++) redraws a QImage on a timer at scope.renderSize; QML binds Image.image.\n"
                 + "Right: FrameProvider (C++) registered as \"frames\"; the query carries the tick, the request the size."
             color: "#6e7b8b"

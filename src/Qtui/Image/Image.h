@@ -10,6 +10,8 @@
 #include <QUrl>
 #include <QSize>
 
+class QNetworkReply;
+
 namespace qtui {
 
 class ImageResponse;
@@ -26,6 +28,9 @@ class QTUI_IMAGE_EXPORT Image : public Item {
     Q_PROPERTY(FillMode fillMode READ fillMode WRITE setFillMode NOTIFY fillModeChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
+    // How much of a remote (http, https) source has arrived, 0.0 to 1.0; 1.0
+    // once any picture is ready, 0.0 while nothing is shown.
+    Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
     Q_PROPERTY(QSize sourceSize READ sourceSize NOTIFY sourceSizeChanged)
     Q_PROPERTY(bool smooth READ smooth WRITE setSmooth NOTIFY smoothChanged)
     // The pixel grid this item paints into, so a producer can draw frames at
@@ -81,6 +86,7 @@ public:
     void setRenderMode(RenderMode mode);
 
     Status status() const { return m_status; }
+    qreal progress() const { return m_progress; }
 
     QSize sourceSize() const { return m_sourceImage.size(); }
 
@@ -103,6 +109,7 @@ signals:
     void fillModeChanged();
     void renderModeChanged();
     void statusChanged();
+    void progressChanged();
     void sourceSizeChanged();
     void smoothChanged();
     void alignmentChanged();
@@ -116,6 +123,15 @@ private:
     QImage loadFromProvider(const QUrl& url, bool* found, bool* pending);
     // Drops interest in an outstanding asynchronous response.
     void cancelPendingResponse();
+    // Fetches an http(s) source through the QML engine's network access
+    // manager (a shared one without an engine). Loading until the reply
+    // finishes; the current picture stays on screen meanwhile. Decoded
+    // pictures are cached by URL so a relayout or a second item does not
+    // refetch.
+    void loadFromNetwork(const QUrl& url);
+    // Aborts and forgets an outstanding download.
+    void cancelPendingReply();
+    void setProgress(qreal progress);
     // Installs a decoded picture (or a null one) as the source and publishes
     // the status, size and geometry changes it implies.
     void adoptImage(const QImage& image, Status statusIfNull);
@@ -158,6 +174,8 @@ private:
     mutable qint64 m_lastKittyKey = 0;
     mutable QSize m_lastKittyUpload;   // pixel size of the current upload
     QPointer<ImageResponse> m_pendingResponse;
+    QPointer<QNetworkReply> m_reply;
+    qreal m_progress = 0.0;
     mutable QPointer<Terminal> m_watchedTerminal;
     mutable QMetaObject::Connection m_capabilitiesConnection;
     mutable QSize m_lastKittyCells;

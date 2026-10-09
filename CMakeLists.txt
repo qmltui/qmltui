@@ -45,7 +45,7 @@ qtui_provide_utf8proc()   # Qtui::Core links it; TerminalHost provides libvterm 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(qt_required_components Core Qml Gui)
+set(qt_required_components Core Qml Gui Network)   # Network: Qtui.Image fetches http(s) sources
 
 if(QTUI_BUILD_TESTS)
     list(APPEND qt_required_components Test)

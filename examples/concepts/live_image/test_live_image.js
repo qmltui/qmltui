@@ -6,7 +6,7 @@ function main(terminal) {
     terminal.waitForRegex("Tick [2-9]");
     terminal.expectText("image: feed.frame");
     terminal.expectText("source: image://frames/radar");
-    terminal.expectText("frames 34x22 px");            // 34 cells x 11 rows, two pixels per cell
+    terminal.expectText("frames 35x24 px");            // 35 cells x 12 rows, two pixels per cell
     terminal.expectText("\u2580");                     // half-block pixels on the page
     const early = terminal.frameText();
     terminal.captureText("live_image_early.txt");

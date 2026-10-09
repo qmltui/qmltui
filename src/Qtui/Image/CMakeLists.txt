@@ -1,5 +1,6 @@
 qt_add_qml_module(QtuiImage
     URI Qtui.Image
+    OUTPUT_TARGETS qtui_image_output_targets
     SOURCES
         Image.h
         Image.cpp
@@ -21,7 +22,7 @@ target_include_directories(QtuiImage
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 
-target_link_libraries(QtuiImage PUBLIC Qtui::Core Qt6::Gui PRIVATE Qt6::Core Qt6::Qml)
+target_link_libraries(QtuiImage PUBLIC Qtui::Core Qt6::Gui PRIVATE Qt6::Core Qt6::Qml Qt6::Network)
 
 set_target_properties(QtuiImage PROPERTIES EXPORT_NAME Image)
 set_target_properties(QtuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)
@@ -40,6 +41,14 @@ install(TARGETS QtuiImageplugin
     LIBRARY DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
     RUNTIME DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
 )
+if(qtui_image_output_targets)   # static builds only, see Core
+    install(TARGETS ${qtui_image_output_targets}
+        EXPORT QtuiTargets
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+endif()
 install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/qmldir"
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/QtuiImage.qmltypes"

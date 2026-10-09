@@ -6,9 +6,16 @@
 #include <Qtui/Core/primitives/ColorMapper.h>
 #include <QDebug>
 #include <QDirIterator>
+#include <algorithm>
+#include <QBuffer>
+#include <QCache>
+#include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QPainter>
 #include <cmath>
 
@@ -17,12 +24,67 @@ namespace qtui {
 static const char* ASCII_RAMP = " .:-=+*#%@";
 static const int ASCII_RAMP_LEN = 10;
 
+// The Image transparency rule (docs/components/image.md, "Transparency").
+// Returns the colour a source pixel shows once drawn into a cell, or 0 for
+// "draws nothing". Zero alpha leaves the cell untouched. Partial alpha is
+// composited source-over onto the background the cell already holds and the
+// result is stored opaque, because a cell has no alpha channel. `behind` is 0
+// when that background is the terminal default, whose real colour is unknown:
+// then only pixels at least half opaque are drawn, unblended, the same cut the
+// sixel encoder applies. QRgb and cell colours share the 0xAARRGGBB layout.
+static uint32_t compositeOver(QRgb pixel, uint32_t behind)
+{
+    const int alpha = qAlpha(pixel);
+    if (alpha == 0) return 0;
+    if (alpha == 255) return pixel;
+    if (behind == 0) return alpha >= 128 ? (0xFF000000u | (pixel & 0x00FFFFFFu)) : 0;
+    const int inverse = 255 - alpha;
+    const auto mix = [&](int source, int destination) {
+        return (source * alpha + destination * inverse + 127) / 255;
+    };
+    return qRgb(mix(qRed(pixel), qRed(behind)),
+                mix(qGreen(pixel), qGreen(behind)),
+                mix(qBlue(pixel), qBlue(behind)));
+}
+
+// RGB of the background a cell holds, or 0 for the terminal default. ANSI
+// palette entries resolve to xterm's default palette, the same approximation
+// the encoder uses when it quantises.
+static uint32_t cellBackgroundRgb(uint32_t bgColor)
+{
+    if ((bgColor >> 24) == 0) return 0;
+    return 0xFF000000u | (ColorMapper::toArgb(bgColor) & 0x00FFFFFFu);
+}
+
 static constexpr uint8_t brailleBit(int dotX, int dotY) {
     constexpr uint8_t masks[2][4] = {
         { 0x01, 0x02, 0x04, 0x40 },
         { 0x08, 0x10, 0x20, 0x80 }
     };
     return masks[dotX & 1][dotY & 3];
+}
+
+// Sources fetched over the network rather than read from a file or resource.
+static bool isRemote(const QUrl& url) {
+    const QString scheme = url.scheme();
+    return scheme == QLatin1String("http") || scheme == QLatin1String("https") || scheme == QLatin1String("ftp");
+}
+
+// Decoded remote pictures by URL, so a grid of the same thumbnail, a relayout
+// or a re-created item does not download again. Costed in bytes.
+static QCache<QString, QImage>& remoteCache() {
+    static QCache<QString, QImage> cache(32 * 1024 * 1024);
+    return cache;
+}
+
+// The engine's manager when the item was created by QML (so cookies, proxies
+// and a redirect policy set there apply), else one shared by every Image
+// created from C++.
+static QNetworkAccessManager* networkManager(QObject* item) {
+    if (QQmlEngine* engine = qmlEngine(item))
+        return engine->networkAccessManager();
+    static QNetworkAccessManager* shared = new QNetworkAccessManager(QCoreApplication::instance());
+    return shared;
 }
 
 static QString resolvePath(const QUrl& url) {
@@ -145,7 +207,63 @@ QSize Image::renderSize() const {
 
 Image::~Image() {
     cancelPendingResponse();
+    cancelPendingReply();
     releaseKittyImage();
+}
+
+void Image::cancelPendingReply() {
+    if (!m_reply) return;
+    QNetworkReply* reply = m_reply;
+    m_reply.clear();
+    disconnect(reply, nullptr, this, nullptr);   // abort() emits finished() synchronously
+    reply->abort();
+    reply->deleteLater();
+}
+
+void Image::setProgress(qreal progress) {
+    progress = std::clamp(progress, 0.0, 1.0);
+    if (qFuzzyCompare(m_progress + 1.0, progress + 1.0)) return;
+    m_progress = progress;
+    emit progressChanged();
+}
+
+void Image::loadFromNetwork(const QUrl& url) {
+    setProgress(0.0);
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Qtui.Image"));
+    QNetworkReply* reply = networkManager(this)->get(request);
+    m_reply = reply;
+    connect(reply, &QNetworkReply::downloadProgress, this, [this, reply](qint64 received, qint64 total) {
+        if (reply != m_reply) return;
+        if (total > 0) setProgress(static_cast<qreal>(received) / static_cast<qreal>(total));
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
+        if (reply != m_reply) {   // superseded meanwhile
+            reply->deleteLater();
+            return;
+        }
+        m_reply.clear();
+        reply->deleteLater();
+        QImage image;
+        if (reply->error() == QNetworkReply::NoError) {
+            QBuffer buffer;
+            buffer.setData(reply->readAll());
+            buffer.open(QIODevice::ReadOnly);
+            QImageReader reader(&buffer);
+            image = reader.read();
+            if (image.isNull()) {
+                qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reader.errorString()));
+            } else {
+                image = image.convertToFormat(QImage::Format_ARGB32);
+                remoteCache().insert(url.toString(), new QImage(image), static_cast<qsizetype>(image.sizeInBytes()));
+            }
+        } else {
+            qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reply->errorString()));
+        }
+        releaseKittyImage();
+        adoptImage(image, Status::Error);
+    });
 }
 
 void Image::cancelPendingResponse() {
@@ -176,6 +294,7 @@ void Image::setSource(const QUrl& source) {
 
 void Image::setImage(const QImage& image) {
     cancelPendingResponse();   // a picture assigned directly wins over one in flight
+    cancelPendingReply();
     releaseKittyImage();   // a new picture is a new upload
     if (!m_source.isEmpty()) {
         // The picture no longer comes from a URL.
@@ -191,6 +310,7 @@ void Image::adoptImage(const QImage& image, Status statusIfNull) {
     m_scaledImage = QImage();
     m_lastTargetSize = QSize();
     m_status = image.isNull() ? statusIfNull : Status::Ready;
+    setProgress(image.isNull() ? 0.0 : 1.0);
     emit statusChanged();
     emit imageChanged();
     if (m_sourceImage.size() != previousSize) {
@@ -280,6 +400,8 @@ int Image::implicitHeight() const {
 void Image::loadImage() {
     if (m_source.isEmpty()) {
         cancelPendingResponse();
+        cancelPendingReply();
+        setProgress(0.0);
         m_sourceImage = QImage();
         m_scaledImage = QImage();
         m_status = Status::Null;
@@ -292,11 +414,19 @@ void Image::loadImage() {
     }
 
     cancelPendingResponse();
+    cancelPendingReply();
     m_status = Status::Loading;
     emit statusChanged();
 
     QImage loaded;
-    if (m_source.scheme() == QLatin1String("image")) {
+    if (isRemote(m_source)) {
+        if (const QImage* cached = remoteCache().object(m_source.toString())) {
+            loaded = *cached;
+        } else {
+            loadFromNetwork(m_source);
+            return;   // Loading until the reply finishes; the old picture stays
+        }
+    } else if (m_source.scheme() == QLatin1String("image")) {
         bool found = false;
         bool pending = false;
         loaded = loadFromProvider(m_source, &found, &pending);
@@ -465,30 +595,33 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 int botPy = cy * 2 + 1 - offsetY;
                 int px = cx - offsetX;
 
-                QColor topColor = (px >= 0 && px < subW && topPy >= 0 && topPy < subH)
-                                      ? m_scaledImage.pixelColor(px, topPy)
-                                      : QColor(0, 0, 0, 0);
-
-                QColor botColor = (px >= 0 && px < subW && botPy >= 0 && botPy < subH)
-                                      ? m_scaledImage.pixelColor(px, botPy)
-                                      : QColor(0, 0, 0, 0);
-
-                if (topColor.alpha() < 10 && botColor.alpha() < 10)
-                    continue;
+                const QRgb top = (px >= 0 && px < subW && topPy >= 0 && topPy < subH)
+                                     ? m_scaledImage.pixel(px, topPy) : 0u;
+                const QRgb bot = (px >= 0 && px < subW && botPy >= 0 && botPy < subH)
+                                     ? m_scaledImage.pixel(px, botPy) : 0u;
 
                 Cell *targetCell = buffer.tryCellAt(targetX, targetY);
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
+                const uint32_t behind = cellBackgroundRgb(cell.bgColor);
+                const uint32_t topShown = compositeOver(top, behind);
+                const uint32_t botShown = compositeOver(bot, behind);
+                if (topShown == 0 && botShown == 0)
+                    continue;   // both halves clear: the cell keeps its glyph and colours
+
                 cell.displayWidth = 1;
                 cell.continuation = false;
-                cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
-
-                if (topColor.alpha() >= 10) {
-                    cell.fgColor = topColor.rgba();
-                }
-                if (botColor.alpha() >= 10) {
-                    cell.bgColor = botColor.rgba();
+                // The glyph covers only the painted half, so a clear half shows
+                // the background behind the image rather than a stale foreground.
+                if (topShown == 0) {
+                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
+                    cell.fgColor = botShown;
+                } else {
+                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
+                    cell.fgColor = topShown;
+                    if (botShown != 0)
+                        cell.bgColor = botShown;
                 }
             }
         }
@@ -525,22 +658,24 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 if (px < 0 || px >= subW || py < 0 || py >= subH)
                     continue;
 
-                QColor col = m_scaledImage.pixelColor(px, py);
-                if (col.alpha() < 10)
-                    continue;
-
-                int brightness = qGray(col.rgb());
-                int rampIndex = (brightness * (ASCII_RAMP_LEN - 1)) / 255;
-
                 Cell *targetCell = buffer.tryCellAt(targetX, targetY);
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
+                // Glyph and colour both follow the composited pixel, so a faint
+                // pixel over a dark background reads as a faint glyph.
+                const uint32_t shown = compositeOver(m_scaledImage.pixel(px, py),
+                                                     cellBackgroundRgb(cell.bgColor));
+                if (shown == 0)
+                    continue;
+
+                const int brightness = qGray(shown);
+                const int rampIndex = (brightness * (ASCII_RAMP_LEN - 1)) / 255;
                 cell.displayWidth = 1;
                 cell.continuation = false;
-                char asciiChar[2] = { ASCII_RAMP[rampIndex], '\0' };
+                const char asciiChar[2] = { ASCII_RAMP[rampIndex], '\0' };
                 cell.setCharacter(asciiChar);
-                cell.fgColor = col.rgba();
+                cell.fgColor = shown;
             }
         }
     } else if (mode == RenderMode::Braille) {
@@ -571,6 +706,11 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 if (!clipRect.contains(targetX, targetY))
                     continue;
 
+                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell)
+                    continue;
+                const uint32_t behind = cellBackgroundRgb(targetCell->bgColor);
+
                 uint8_t cellValue = 0;
                 uint32_t lastRgb = 0xFFFFFFFF;
 
@@ -578,20 +718,19 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                     for (int dotX = 0; dotX < 2; ++dotX) {
                         int px = cx * 2 + dotX - offsetX;
                         int py = cy * 4 + dotY - offsetY;
-                        if (px >= 0 && px < subW && py >= 0 && py < subH) {
-                            QColor col = m_scaledImage.pixelColor(px, py);
-                            if (col.alpha() >= 10 && qGray(col.rgb()) > 50) {
-                                cellValue |= brailleBit(dotX, dotY);
-                                lastRgb = col.rgba();
-                            }
+                        if (px < 0 || px >= subW || py < 0 || py >= subH)
+                            continue;
+                        // A dot is set when the composited pixel clears the dark
+                        // cut-off, so a faint pixel over a dark background stays off.
+                        const uint32_t shown = compositeOver(m_scaledImage.pixel(px, py), behind);
+                        if (shown != 0 && qGray(shown) > 50) {
+                            cellValue |= brailleBit(dotX, dotY);
+                            lastRgb = shown;
                         }
                     }
                 }
 
                 if (cellValue > 0) {
-                    Cell *targetCell = buffer.tryCellAt(targetX, targetY);
-                    if (!targetCell)
-                        continue;
                     Cell& cell = *targetCell;
                     cell.displayWidth = 1;
                     cell.continuation = false;

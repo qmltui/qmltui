@@ -156,7 +156,7 @@ Terminal {
                 }
             }
 
-            Rectangle {
+            Panel {
                 id: processPanel
 
                 clip: true
@@ -168,32 +168,25 @@ Terminal {
                        : root.sidePanelsVisible ? Math.floor(parent.width * 0.55)
                        : parent.width
                 color: root.panelColor
-                border.style: "single"
+                border.style: "rounded"
                 border.color: root.borderColor
+
+                title: qsTr("4proc  PROCESSES")
+                titleColor: root.pinkColor
+                titleTrailing: qsTr("sort: %1  total: %2").arg(systemModel.sortMode)
+                                  .arg(systemModel.totalProcesses)
+                titleTrailingColor: root.yellowColor
+                footer: qsTr("↑↓ select  Enter inspect")
+                footerColor: root.mutedColor
+                footerTrailing: qsTr("%1/%2").arg(Math.max(0, processTable.selectedRow + 1))
+                                      .arg(systemModel.totalProcesses)
+                footerTrailingColor: root.textColor
 
                 Behavior on width {
                     NumberAnimation {
                         duration: 150
                         easing: Easing.InOutQuad
                     }
-                }
-
-                Text {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.leftMargin: 2
-                    text: qsTr("4proc  PROCESSES")
-                    color: root.pinkColor
-                    bold: true
-                }
-
-                Text {
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    anchors.rightMargin: 2
-                    text: qsTr("sort: %1  total: %2").arg(systemModel.sortMode)
-                              .arg(systemModel.totalProcesses)
-                    color: root.yellowColor
                 }
 
                 Item {
@@ -256,7 +249,8 @@ Terminal {
                     id: processTable
 
                     anchors.top: processSummary.bottom
-                    anchors.bottom: processFooter.top
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 1
                     anchors.left: parent.left
                     anchors.leftMargin: 1
                     anchors.right: parent.right
@@ -301,25 +295,6 @@ Terminal {
                         return { text: value, color: root.textColor }
                     }
                 }
-
-                Text {
-                    id: processFooter
-
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.leftMargin: 2
-                    text: qsTr("↑↓ select  Enter inspect")
-                    color: root.mutedColor
-                }
-
-                Text {
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    anchors.rightMargin: 2
-                    text: qsTr("%1/%2").arg(Math.max(0, processTable.selectedRow + 1))
-                              .arg(systemModel.totalProcesses)
-                    color: root.textColor
-                }
             }
 
             Item {
@@ -333,7 +308,7 @@ Terminal {
                 anchors.left: processPanel.right
                 anchors.right: parent.right
 
-                Rectangle {
+                Panel {
                     id: networkPanel
 
                     clip: true
@@ -346,32 +321,19 @@ Terminal {
                               ? Math.max(8, Math.floor(parent.height * 0.36))
                               : parent.height
                     color: root.panelColor
-                    border.style: "single"
+                    border.style: "rounded"
                     border.color: root.borderColor
+
+                    title: qsTr("3net  NETWORK")
+                    titleColor: root.purpleColor
+                    titleTrailing: systemModel.networkInterface
+                    titleTrailingColor: root.textColor
 
                     Behavior on height {
                         NumberAnimation {
                             duration: 150
                             easing: Easing.InOutQuad
                         }
-                    }
-
-                    Text {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.leftMargin: 2
-                        text: qsTr("3net  NETWORK")
-                        color: root.purpleColor
-                        bold: true
-                    }
-
-                    Text {
-                        anchors.top: parent.top
-                        anchors.right: parent.right
-                        anchors.rightMargin: 2
-                        text: systemModel.networkInterface
-                        color: root.textColor
-                        bold: true
                     }
 
                     Text {
@@ -421,7 +383,7 @@ Terminal {
                     }
                 }
 
-                Rectangle {
+                Panel {
                     id: memoryPanel
 
                     clip: true
@@ -432,17 +394,11 @@ Terminal {
                     anchors.left: parent.left
                     width: Math.floor(parent.width * 0.55)
                     color: root.panelColor
-                    border.style: "single"
+                    border.style: "rounded"
                     border.color: root.borderColor
 
-                    Text {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.leftMargin: 2
-                        text: qsTr("2mem  MEMORY")
-                        color: root.pinkColor
-                        bold: true
-                    }
+                    title: qsTr("2mem  MEMORY")
+                    titleColor: root.pinkColor
 
                     Column {
                         anchors.top: parent.top
@@ -508,7 +464,7 @@ Terminal {
                     }
                 }
 
-                Rectangle {
+                Panel {
                     clip: true
                     visible: height > 0 && (root.memoryPanelVisible
                              || (root.networkPanelVisible && networkPanel.height < parent.height))
@@ -517,17 +473,11 @@ Terminal {
                     anchors.left: memoryPanel.right
                     anchors.right: parent.right
                     color: root.panelColor
-                    border.style: "single"
+                    border.style: "rounded"
                     border.color: root.borderColor
 
-                    Text {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.leftMargin: 2
-                        text: qsTr("disks")
-                        color: root.purpleColor
-                        bold: true
-                    }
+                    title: qsTr("disks")
+                    titleColor: root.purpleColor
 
                     Column {
                         anchors.top: parent.top
@@ -607,13 +557,14 @@ Terminal {
             anchors.left: parent.left
             anchors.right: parent.right
             color: root.panelColor
-            border.style: "single"
+            border.style: "rounded"
             border.color: root.borderColor
 
             Text {
                 anchors.top: parent.top
                 anchors.left: parent.left
-                text: qsTr("╭─┐¹cpu┌──┐menu┌┐preset *┌")
+                anchors.leftMargin: 2
+                text: qsTr("┐¹cpu┌──┐menu┌┐preset *┌")
                 color: root.greenColor
                 bold: true
             }
@@ -628,7 +579,8 @@ Terminal {
             Text {
                 anchors.top: parent.top
                 anchors.right: parent.right
-                text: qsTr("┐- %1ms +┌─╮").arg(systemModel.refreshInterval)
+                anchors.rightMargin: 2
+                text: qsTr("┐- %1ms +┌").arg(systemModel.refreshInterval)
                 color: root.cyanColor
             }
 
@@ -670,13 +622,14 @@ Terminal {
                 height: Math.min(parent.height - 2,
                                  Math.max(6, Math.min(systemModel.coreUsage.length, 16) + 4))
                 color: root.panelColor
-                border.style: "single"
+                border.style: "rounded"
                 border.color: root.borderColor
 
                 Text {
                     anchors.top: parent.top
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("╭─┐%1┌┐%2┌╮")
+                    anchors.left: parent.left
+                    anchors.leftMargin: 2
+                    text: qsTr("┐%1┌┐%2┌")
                           .arg(systemModel.cpuNameText.slice(
                                    0, Math.max(4, corePanel.width - systemModel.cpuFrequencyText.length - 7)))
                           .arg(systemModel.cpuFrequencyText)
@@ -774,48 +727,6 @@ Terminal {
                     text: qsTr("LAV: %1").arg(systemModel.loadAverageText)
                     color: root.textColor
                 }
-
-                Text {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    text: "╭"
-                    color: root.borderColor
-                }
-
-                Text {
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    text: "╮"
-                    color: root.borderColor
-                }
-
-                Text {
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    text: "╰"
-                    color: root.borderColor
-                }
-
-                Text {
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    text: "╯"
-                    color: root.borderColor
-                }
-            }
-
-            Text {
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                text: "╰"
-                color: root.borderColor
-            }
-
-            Text {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                text: "╯"
-                color: root.borderColor
             }
         }
     }

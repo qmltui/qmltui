@@ -1,3 +1,6 @@
+if(QTUI_ENABLE_IMAGE)
+    add_subdirectory(animated_sprite)
+endif()
 add_subdirectory(big_text)
 add_subdirectory(button)
 add_subdirectory(canvas)

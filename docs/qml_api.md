@@ -338,6 +338,13 @@ role names every view provides; see the
   item is destroyed, or the session ends. Sixel paints at the cursor rather than
   into cells, so it is drawn after the cell diff and cannot sit under other cell
   content the way kitty placeholders can; use it for a dedicated image region.
+- `Image.sourceClipRect` shows one region of the source, cropped before any
+  scaling, so a sprite sheet or icon atlas is decoded once and each item crops
+  its own tile. `AnimatedSprite` (also `Qtui.Image`) is Image plus a frame
+  clock: it plays a frame grid out of one sheet by driving that clip, with the
+  Qt Quick AnimatedSprite property set (`frameCount`, `frameWidth`/`frameHeight`,
+  `frameX`/`frameY`, `frameRate`/`frameDuration`, `loops`, `reverse`,
+  `finishBehavior`).
 - All visible children render in ordinary stacking order in both modes. Use
   layouts to arrange them; overlapping children are not automatically stacked
   vertically or treated as pages. Visibility and focus remain application state.

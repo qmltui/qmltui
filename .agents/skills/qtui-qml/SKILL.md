@@ -27,7 +27,7 @@ dependency. `AGENTS.md` forbids it.
 // Qtui modules
 import Qtui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
 import Qtui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
-import Qtui.Image           // Image
+import Qtui.Image           // Image, AnimatedSprite
 import Qtui.TerminalHost    // TerminalView (PTY, Linux/macOS only, optional build)
 
 // Qt foundational modules
@@ -258,7 +258,7 @@ no palette singleton: colours are set per item, and an inherited palette
 property is a Plan 06 section 7 proposal, not a shipped type.
 
 **`import Qtui.Image`**
-`Image`.
+`Image`, `AnimatedSprite`.
 
 **`import Qtui.TerminalHost`**
 `TerminalView`.

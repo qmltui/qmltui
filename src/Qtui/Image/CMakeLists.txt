@@ -2,6 +2,8 @@ qt_add_qml_module(QtuiImage
     URI Qtui.Image
     OUTPUT_TARGETS qtui_image_output_targets
     SOURCES
+        AnimatedSprite.h
+        AnimatedSprite.cpp
         Image.h
         Image.cpp
         ImageProvider.h
@@ -54,4 +56,4 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/Qtui/Image/QtuiImage.qmltypes"
     DESTINATION "${QTUI_INSTALL_QMLDIR}/Qtui/Image"
 )
-qtui_install_headers(Qtui/Image FILES Image.h ImageProvider.h TerminalGraphics.h)
+qtui_install_headers(Qtui/Image FILES AnimatedSprite.h Image.h ImageProvider.h TerminalGraphics.h)

@@ -50,7 +50,9 @@ the target, containing a bold [Text](text.md) inset by one cell. Its width is
 the text's display width plus 2, capped at 40 cells or half the terminal
 width, whichever is smaller. It is placed directly below the target, clamped
 to the terminal horizontally, and flipped above the target if it would run
-past the bottom row. Opening the popup takes focus only if the popup has a
+past the bottom row. While visible it follows the target: layout running
+after the tip opened (a pinned tip shows before Row or Column have placed the
+target) or the target or an ancestor moving repositions the tip. Opening the popup takes focus only if the popup has a
 focusable child, which the tip does not, so the target keeps focus. The tip
 hides after `timeout` milliseconds unless `timeout` is 0.
 

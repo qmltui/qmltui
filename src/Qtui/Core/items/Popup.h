@@ -85,6 +85,7 @@ private:
     int m_closePolicy = CloseOnEscape | CloseOnOutsideClick;
     QPointer<Item> m_initialFocusItem;
     QPointer<Item> m_previousFocusItem;
+    bool m_tookFocus = false;
     QPointer<Item> m_owner;
     quint64 m_openSerial = 0;
 };

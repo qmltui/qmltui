@@ -60,6 +60,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | Signal | Description |
 | :--- | :--- |
 | `dirty()` | _TODO_ |
+| `ancestryChanged()` | The item or an ancestor was attached to or detached from a parent, so the item's root [Terminal](terminal.md) may have changed. Unlike `parentChanged`, an ancestor's reparenting — a `Repeater` or `Loader` inserting finished content — reaches every item of the moved subtree. Emitted on each item; connect on the item whose Terminal-derived state needs refreshing. |
 
 ## Detailed Description
 

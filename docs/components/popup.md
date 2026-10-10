@@ -44,8 +44,8 @@ A rectangle drawn above all ordinary items that can trap input, dim the backgrou
 
 | Method | Description |
 | :--- | :--- |
-| `void open()` | Remembers the focused item, shows the popup or raises it if already visible, and moves focus to `initialFocusItem` or the first focusable descendant. |
-| `void close()` | Hides the popup and returns focus to the item focused before `open()` if it is still visible, enabled and focusable, otherwise clears focus; a popup that is not open is left alone. |
+| `void open()` | Shows the popup or raises it if already visible; when there is something to focus (`initialFocusItem`, a focusable descendant) or the popup is modal, remembers the focused item and moves focus. |
+| `void close()` | Hides the popup; when `open()` took focus and focus is still inside the popup (or cleared), returns it to the item focused before `open()` if that is still visible, enabled and focusable, otherwise clears focus. A popup that never took focus, or whose focus moved elsewhere, leaves focus alone; so does closing a popup that is not open. |
 | `void accept()` | Emits `accepted()` and `finished(true)`, then calls `close()`. |
 | `void reject()` | Emits `rejected()` and `finished(false)`, then calls `close()`. |
 
@@ -78,9 +78,14 @@ topmost visible popup that has `CloseOnEscape`, and `CloseOnOutsideClick`
 rejects a popup when a press and the following release both land outside its
 bounds. A non-modal popup neither dims nor blocks input.
 
-`open()` records the currently focused item and moves focus into the popup;
-`close()` restores it if that item is still visible, enabled and focusable,
-and otherwise leaves nothing focused. Calling `close()` on a popup that is not
+`open()` moves focus into the popup only when there is something to focus —
+`initialFocusItem`, a focusable descendant, or `null` for a modal popup with
+neither — and records the item focused just before opening. `close()` restores
+that item if the popup took focus and focus is still inside the popup or was
+cleared while it was open; a popup that never took focus (a tooltip), or whose
+focus the user has since moved elsewhere, leaves focus untouched. The recorded
+item is restored only if it is still visible, enabled and focusable, otherwise
+nothing is focused. Calling `close()` on a popup that is not
 open does nothing, so it never takes focus from another item. Setting `visible` directly registers or
 unregisters the popup and emits `opened()` or `closed()`, but does not move
 focus. Popup has no implicit size; give it `width` and `height` or anchors.

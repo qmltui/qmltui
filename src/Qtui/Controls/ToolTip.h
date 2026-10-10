@@ -60,7 +60,10 @@ private:
     Color m_color = "default";
     Color m_textColor = "default";
     void bindTerminal();
+    void trackAncestryGeometry();
     void updateAutomaticVisibility();
+    void updatePosition();
+    void reposition();
     void showNow();
     void updateAppearance();
     void hide();
@@ -68,6 +71,7 @@ private:
 
     QPointer<qtui::Item> m_target;
     QPointer<qtui::Terminal> m_terminal;
+    QList<QMetaObject::Connection> m_geometryConnections;
     QPointer<qtui::Popup> m_popup;
     QPointer<qtui::Text> m_label;
     QString m_text;

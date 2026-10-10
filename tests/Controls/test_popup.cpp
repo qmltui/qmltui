@@ -33,6 +33,9 @@ private slots:
     void testOwnedPopupCascade();
     void testAttachedToolTipOnFocus();
     void testCloseWhenNotOpenKeepsFocus();
+    void testCloseWithoutTakingFocusLeavesFocusAlone();
+    void testModalRestoresFocusClearedDuringOpen();
+    void testAttachedToolTipFollowsTarget();
 };
 
 void TestPopup::testPopupRegistration() {
@@ -247,6 +250,88 @@ void TestPopup::testCloseWhenNotOpenKeepsFocus() {
     QCOMPARE(terminal.focusedItem(), field);   // restored once
     popup->close();                            // second close is a no-op
     QCOMPARE(terminal.focusedItem(), field);
+}
+
+// A popup with nothing to focus (a tooltip) must not touch focus: neither
+// when it opens nor when it closes, even if focus moved while it was open.
+void TestPopup::testCloseWithoutTakingFocusLeavesFocusAlone() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+    Item* first = new Item(&terminal);
+    first->setFocusable(true);
+    Item* second = new Item(&terminal);
+    second->setFocusable(true);
+    terminal.setFocusedItem(first);
+
+    Popup* popup = new Popup(&terminal);
+    popup->setModal(false);
+    popup->open();
+    QCOMPARE(terminal.focusedItem(), first);    // opening took nothing
+
+    terminal.setFocusedItem(second);
+    popup->close();
+    QCOMPARE(terminal.focusedItem(), second);   // closing must not yank it back
+}
+
+// An application binding reacting to the popup's `visible` may clear the
+// focused item during open(); close() must still restore the pre-open focus.
+void TestPopup::testModalRestoresFocusClearedDuringOpen() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+    Item* field = new Item(&terminal);
+    field->setFocusable(true);
+    terminal.setFocusedItem(field);
+
+    Popup* popup = new Popup(&terminal);
+    popup->setModal(true);
+    connect(popup, &Item::visibleChanged, &terminal, [&]() {
+        if (popup->visible())
+            terminal.setFocusedItem(nullptr);
+    });
+    popup->open();
+    QCOMPARE(terminal.focusedItem(), nullptr);
+    popup->close();
+    QCOMPARE(terminal.focusedItem(), field);
+}
+
+// The tip must follow its target: a pinned tip opens before Row/Column have
+// placed the target, and the target may move while the tip is visible.
+void TestPopup::testAttachedToolTipFollowsTarget() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import Qtui
+        import Qtui.Controls
+        Terminal {
+            width: 40; height: 10
+            Item {
+                id: target
+                objectName: "target"
+                x: 5; y: 2; width: 4; height: 1
+                ToolTip.text: "Tip"
+                ToolTip.visible: true
+                ToolTip.timeout: 0
+            }
+        }
+    )", QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto *terminal = qobject_cast<Terminal*>(object.get());
+    QVERIFY(terminal);
+    terminal->engine()->setTestViewportSize(QSize(40, 10));
+    auto *target = terminal->findChild<Item*>(QStringLiteral("target"));
+    QVERIFY(target);
+    QTRY_COMPARE(terminal->activePopups().size(), 1);
+    Popup *tip = terminal->activePopups().first();
+    QCOMPARE(tip->x(), 5);
+    QCOMPARE(tip->y(), 3);
+
+    target->setX(20);
+    target->setY(6);
+    QCOMPARE(tip->x(), 20);
+    QCOMPARE(tip->y(), 7);
 }
 
 QTEST_MAIN(TestPopup)

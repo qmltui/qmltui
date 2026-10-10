@@ -215,6 +215,12 @@ signals:
   void implicitHeightChanged();
   void visibleChanged();
   void parentChanged();
+  // The item or an ancestor was attached to or detached from a parent, so the
+  // resolved terminal() may have changed. Unlike parentChanged, an ancestor's
+  // reparenting (a Repeater or Loader inserting finished content) reaches the
+  // whole subtree. Emitted per item; connect on the item whose terminal-derived
+  // state (hover registration, tool tips) needs refreshing.
+  void ancestryChanged();
   void enabledChanged();
   void focusChanged();
   void activeFocusChanged();
@@ -239,6 +245,8 @@ private:
   void scheduleChildGeometryInvalidation();
   void registerChildItem(Item* childItem);
   void unregisterChildItem(Item* childItem);
+  // Emits ancestryChanged() on this item and every visual descendant.
+  void notifySubtreeAncestryChanged();
   void reorderChildItemsAfter(Item* sibling, const QList<Item*>& items);
   static void appendData(QQmlListProperty<QObject> *list, QObject *item);
   static qsizetype dataCount(QQmlListProperty<QObject> *list);

@@ -31,6 +31,9 @@ ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*
         connect(m_target, &Item::activeFocusChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_target, &Item::visibleChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_target, &Item::parentChanged, this, &ToolTip::bindTerminal);
+        // Reaches the target when an ancestor is reparented (a Repeater
+        // inserting its delegate), which parentChanged does not report.
+        connect(m_target, &Item::ancestryChanged, this, &ToolTip::bindTerminal);
     }
     bindTerminal();
 }
@@ -45,8 +48,11 @@ ToolTip::~ToolTip() {
 }
 
 void ToolTip::bindTerminal() {
+    // The ancestor chain may change without the terminal changing (an item
+    // moved between containers), so re-track it before the early return.
+    trackAncestryGeometry();
     Terminal *terminal = m_target ? m_target->terminal() : nullptr;
-    if (m_terminal == terminal) return;
+    if (m_terminal == terminal) { updatePosition(); return; }
     if (m_terminal && !m_text.isEmpty())
         m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
@@ -60,10 +66,31 @@ void ToolTip::bindTerminal() {
     if (m_terminal) {
         connect(m_terminal, &Terminal::hoveredItemChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_terminal, &Terminal::focusedItemChanged, this, &ToolTip::updateAutomaticVisibility);
+        connect(m_terminal, &Terminal::terminalSizeChanged, this, &ToolTip::updatePosition);
         if (!m_text.isEmpty())
             m_terminal->setMouseMotionRequested(this, true);
     }
     updateAutomaticVisibility();
+}
+
+// A visible tip must follow its target: the target's own geometry and the
+// position of every ancestor decide the absolute anchor, and a tip pinned
+// with `visible: true` opens before Row/Column have placed the target at all.
+void ToolTip::trackAncestryGeometry() {
+    for (const auto &connection : std::as_const(m_geometryConnections))
+        disconnect(connection);
+    m_geometryConnections.clear();
+    if (!m_target) return;
+    m_geometryConnections.append(connect(m_target, &Item::widthChanged, this, &ToolTip::updatePosition));
+    m_geometryConnections.append(connect(m_target, &Item::heightChanged, this, &ToolTip::updatePosition));
+    for (Item *item = m_target; item; item = item->parentItem()) {
+        m_geometryConnections.append(connect(item, &Item::xChanged, this, &ToolTip::updatePosition));
+        m_geometryConnections.append(connect(item, &Item::yChanged, this, &ToolTip::updatePosition));
+    }
+}
+
+void ToolTip::updatePosition() {
+    if (visible()) reposition();
 }
 
 void ToolTip::setText(const QString &text) {
@@ -135,6 +162,16 @@ void ToolTip::showNow() {
         m_label->setY(0);
     }
     updateAppearance();
+    reposition();
+    if (!wasVisible) {
+        m_popup->open();
+        emit visibleChanged();
+    }
+    if (m_timeout > 0) m_timeoutTimer.start(m_timeout);
+}
+
+void ToolTip::reposition() {
+    if (!m_target || !m_terminal || !m_popup || !m_label) return;
     const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
     const int displayWidth = UnicodeText::displayWidth(m_text);
     const int textWidth = std::max(1, std::min(maxTextWidth, displayWidth));
@@ -151,11 +188,6 @@ void ToolTip::showNow() {
     if (y + m_popup->height() > m_terminal->height()) y = targetPos.y() - m_popup->height();
     m_popup->setX(x);
     m_popup->setY(std::max(0, y));
-    if (!wasVisible) {
-        m_popup->open();
-        emit visibleChanged();
-    }
-    if (m_timeout > 0) m_timeoutTimer.start(m_timeout);
 }
 
 void ToolTip::updateAppearance() {

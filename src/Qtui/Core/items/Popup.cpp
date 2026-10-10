@@ -74,8 +74,12 @@ bool Popup::isDescendantOfScope(const InputScope* other) const {
 }
 
 void Popup::open() {
+    // Snapshot focus before becoming visible: opening may already move it
+    // (an application binding reacting to `visible` can clear the focused
+    // item), and close() must restore what the user had before the popup.
+    Item *previousFocus = nullptr;
     if (Terminal *term = terminal())
-        m_previousFocusItem = term->focusedItem();
+        previousFocus = term->focusedItem();
     if (visible()) {
         if (Terminal *term = terminal()) term->registerPopup(this);
     } else {
@@ -88,8 +92,13 @@ void Popup::open() {
             term->findFocusableItems(this, focusable);
             target = focusable.isEmpty() ? nullptr : focusable.first();
         }
-        if (target || m_modal)
+        // A popup with nothing to focus (a tooltip) must leave focus alone,
+        // both now and when it closes.
+        if (target || m_modal) {
+            m_previousFocusItem = previousFocus;
+            m_tookFocus = true;
             term->setFocusedItem(target);
+        }
     }
 }
 
@@ -101,13 +110,23 @@ void Popup::close() {
         return;
     }
     setVisible(false);
-    if (Terminal *term = terminal()) {
-        Item *target = m_previousFocusItem;
-        if (target && target->visible() && target->isEffectivelyEnabled() && target->focusable())
-            term->setFocusedItem(target);
-        else
-            term->setFocusedItem(nullptr);
+    // Restore focus only when this popup took it and still holds it; when the
+    // popup never took focus, or focus has since moved elsewhere, closing must
+    // not yank it back.
+    if (Terminal *term = terminal(); term && m_tookFocus) {
+        Item *focused = term->focusedItem();
+        bool focusInsidePopup = focused == nullptr;
+        for (Item *item = focused; item && !focusInsidePopup; item = item->parentItem())
+            focusInsidePopup = item == this;
+        if (focusInsidePopup) {
+            Item *target = m_previousFocusItem;
+            if (target && target->visible() && target->isEffectivelyEnabled() && target->focusable())
+                term->setFocusedItem(target);
+            else
+                term->setFocusedItem(nullptr);
+        }
     }
+    m_tookFocus = false;
     m_previousFocusItem.clear();
 }
 

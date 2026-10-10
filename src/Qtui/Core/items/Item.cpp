@@ -113,6 +113,11 @@ void Item::setParentItem(Item *parentItem) {
     }
     setParent(parentItem);
     emit parentChanged();
+    // On attach registerChildItem already notified (via ChildAdded); this is
+    // the path that reaches the subtree on a detach, where ChildRemoved fires
+    // while the old parent is still in place and terminal() would resolve to
+    // the tree the child just left.
+    notifySubtreeAncestryChanged();
     markDirty();
 }
 
@@ -445,7 +450,15 @@ void Item::registerChildItem(Item* childItem) {
 
     scheduleChildGeometryInvalidation();
     applyPendingFocus();
+    childItem->notifySubtreeAncestryChanged();
     emit childrenChanged();
+}
+
+void Item::notifySubtreeAncestryChanged() {
+    emit ancestryChanged();
+    const QList<Item*> children = m_visualChildren;
+    for (Item* child : children)
+        if (child) child->notifySubtreeAncestryChanged();
 }
 
 void Item::reorderChildItemsAfter(Item* sibling, const QList<Item*>& items) {

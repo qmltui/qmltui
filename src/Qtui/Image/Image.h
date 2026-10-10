@@ -9,6 +9,7 @@
 #include <QImage>
 #include <QUrl>
 #include <QSize>
+#include <QRect>
 
 class QNetworkReply;
 
@@ -28,6 +29,9 @@ class QTUI_IMAGE_EXPORT Image : public Item {
     Q_PROPERTY(FillMode fillMode READ fillMode WRITE setFillMode NOTIFY fillModeChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
+    // Keep the previous picture visible during an asynchronous source change.
+    // Opt-in, matching Qt Quick Image; useful for live image providers.
+    Q_PROPERTY(bool retainWhileLoading READ retainWhileLoading WRITE setRetainWhileLoading NOTIFY retainWhileLoadingChanged)
     // How much of a remote (http, https) source has arrived, 0.0 to 1.0; 1.0
     // once any picture is ready, 0.0 while nothing is shown.
     Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
@@ -86,6 +90,8 @@ public:
     void setRenderMode(RenderMode mode);
 
     Status status() const { return m_status; }
+    bool retainWhileLoading() const { return m_retainWhileLoading; }
+    void setRetainWhileLoading(bool retain);
     qreal progress() const { return m_progress; }
 
     QSize sourceSize() const { return m_sourceImage.size(); }
@@ -109,6 +115,7 @@ signals:
     void fillModeChanged();
     void renderModeChanged();
     void statusChanged();
+    void retainWhileLoadingChanged();
     void progressChanged();
     void sourceSizeChanged();
     void smoothChanged();
@@ -125,7 +132,7 @@ private:
     void cancelPendingResponse();
     // Fetches an http(s) source through the QML engine's network access
     // manager (a shared one without an engine). Loading until the reply
-    // finishes; the current picture stays on screen meanwhile. Decoded
+    // finishes; retainWhileLoading can keep the current picture meanwhile. Decoded
     // pictures are cached by URL so a relayout or a second item does not
     // refetch.
     void loadFromNetwork(const QUrl& url);
@@ -141,12 +148,14 @@ private:
     // follow the resolved mode or the picture is fitted to the wrong grid.
     void updateScaledCache(RenderMode mode) const;
     // Emits transmission, placement and placeholder cells for the kitty
-    // protocol; frees the previous upload when the source or geometry changes.
+    // protocol; replaces pixels under the same id when the source changes.
     void paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
     // Reserves the image cells and enqueues a positioned sixel after the diff.
     void paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
     // Frees the current kitty upload if the terminal is still reachable.
     void releaseKittyImage() const;
+    // Erases the persisted sixel when the picture is discarded.
+    void releaseSixelImage() const;
     // The pixel protocol paint() will use for the current mode and terminal:
     // None means a glyph mode (half-block, Braille or ASCII).
     graphics::Protocol activeProtocol() const;
@@ -157,6 +166,7 @@ private:
     FillMode m_fillMode = FillMode::Stretch;
     RenderMode m_renderMode = RenderMode::Auto;
     Status m_status = Status::Null;
+    bool m_retainWhileLoading = false;
     bool m_smooth = true;
     Qt::Alignment m_alignment = Qt::AlignCenter;
 
@@ -173,6 +183,7 @@ private:
     mutable quint32 m_imageId = 0;
     mutable qint64 m_lastKittyKey = 0;
     mutable QSize m_lastKittyUpload;   // pixel size of the current upload
+    mutable quint64 m_lastKittySession = 0;
     QPointer<ImageResponse> m_pendingResponse;
     QPointer<QNetworkReply> m_reply;
     qreal m_progress = 0.0;
@@ -185,6 +196,7 @@ private:
     mutable qint64 m_lastSixelKey = 0;
     mutable QSize m_lastSixelCells;
     mutable quint64 m_lastSixelSession = 0;
+    mutable QRect m_lastSixelRect;
 };
 
 } // namespace qtui

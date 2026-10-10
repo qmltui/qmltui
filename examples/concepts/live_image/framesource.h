@@ -54,6 +54,7 @@ private:
     }
 
     QTimer m_timer;
+    QTimer m_resizeTimer;
     QImage m_frame;
     QSize m_frameSize;
     int m_tick = 0;

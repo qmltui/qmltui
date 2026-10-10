@@ -7,6 +7,12 @@
 FrameSource::FrameSource(QObject* parent) : QObject(parent) {
     m_timer.setInterval(100);
     connect(&m_timer, &QTimer::timeout, this, &FrameSource::advance);
+    m_resizeTimer.setSingleShot(true);
+    m_resizeTimer.setInterval(16);
+    connect(&m_resizeTimer, &QTimer::timeout, this, [this] {
+        m_frame = paintTrace(m_tick, effectiveSize());
+        emit frameChanged();
+    });
     m_frame = paintTrace(0);
     m_timer.start();
 }
@@ -27,11 +33,13 @@ void FrameSource::setFrameSize(const QSize& size) {
     if (size == m_frameSize) return;
     m_frameSize = size;
     emit frameSizeChanged();
-    m_frame = paintTrace(m_tick, effectiveSize());   // redraw at the new resolution at once
-    emit frameChanged();
+    // Width and height can change several times during one relayout. Paint
+    // only the latest size, at most once per display interval, even paused.
+    if (!m_resizeTimer.isActive()) m_resizeTimer.start();
 }
 
 void FrameSource::advance() {
+    m_resizeTimer.stop(); // this tick already paints at the latest size
     ++m_tick;
     m_frame = paintTrace(m_tick, effectiveSize());
     emit tickChanged();
@@ -39,7 +47,9 @@ void FrameSource::advance() {
 }
 
 QImage FrameSource::paintTrace(int tick, const QSize& size) {
-    QImage image(size, QImage::Format_ARGB32);
+    // The canvas is opaque. RGB32 uses QPainter's fast raster path rather
+    // than the costly straight-alpha path for antialiased thick strokes.
+    QImage image(size, QImage::Format_RGB32);
     image.fill(QColor(11, 15, 20));
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing, size.height() > 64);   // smooth only where pixels are real
@@ -53,10 +63,18 @@ QImage FrameSource::paintTrace(int tick, const QSize& size) {
     const int stroke = std::max(1, size.height() / 24);
     auto trace = [&](QColor colour, double frequency, double amplitude, double shift) {
         QPainterPath path;
-        for (int x = 0; x < size.width(); ++x) {
+        // Linear interpolation of A*sin(w*t) has error <= A*w*w/(8*N*N).
+        // Keep it below 1/4 pixel, instead of stroking one segment per column
+        // even when a large terminal needs only a few hundred curve samples.
+        const double pixelAmplitude = amplitude * std::max(0.0, size.height() / 2.0 - 2);
+        const int segments = std::clamp(
+            int(std::ceil(2 * M_PI * frequency * std::sqrt(pixelAmplitude / 2))),
+            1, std::max(1, size.width() - 1));
+        for (int point = 0; point <= segments; ++point) {
+            const double x = (size.width() - 1) * double(point) / segments;
             const double t = x / double(size.width()) * 2 * M_PI * frequency + phase + shift;
             const double y = size.height() / 2.0 - std::sin(t) * amplitude * (size.height() / 2.0 - 2);
-            if (x == 0) path.moveTo(x, y); else path.lineTo(x, y);
+            if (point == 0) path.moveTo(x, y); else path.lineTo(x, y);
         }
         painter.setPen(QPen(colour, stroke));
         painter.drawPath(path);

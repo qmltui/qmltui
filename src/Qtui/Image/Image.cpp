@@ -187,11 +187,13 @@ QSize Image::renderSize() const {
     if (w <= 0 || h <= 0) return QSize();
     const graphics::Protocol protocol = activeProtocol();
     if (protocol != graphics::Protocol::None) {
-        // A frame beyond 4096 px a side is never useful in a terminal; clamp
-        // uniformly so a producer's aspect ratio survives an odd cell size.
+        // Match the upload limit so live producers don't paint pixels that
+        // will immediately be scaled away. Preserve the pixel aspect ratio.
         const QSize cell = terminal()->capabilities().cellPixelSize;
         if (cell.isValid() && !cell.isEmpty()) {
             QSize pixels(w * cell.width(), h * cell.height());
+            if (protocol == graphics::Protocol::Kitty)
+                return graphics::kittyUploadSize(pixels, pixels, false);
             constexpr int maxEdge = 4096;
             if (pixels.width() > maxEdge || pixels.height() > maxEdge)
                 pixels = pixels.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio);
@@ -261,7 +263,6 @@ void Image::loadFromNetwork(const QUrl& url) {
         } else {
             qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reply->errorString()));
         }
-        releaseKittyImage();
         adoptImage(image, Status::Error);
     });
 }
@@ -284,9 +285,25 @@ void Image::releaseKittyImage() const {
     m_lastKittyCells = QSize();
 }
 
+void Image::releaseSixelImage() const {
+    if (m_lastSixelRect.isEmpty()) return;
+    if (Terminal* root = terminal()) {
+        // Sixels persist outside the cell buffer. Erase before the next cell
+        // diff so underlying content can be painted back over these blanks.
+        QByteArray clear = "\033[0m\0337";
+        const QByteArray blank(m_lastSixelRect.width(), ' ');
+        for (int y = m_lastSixelRect.top(); y <= m_lastSixelRect.bottom(); ++y)
+            clear += "\033[" + QByteArray::number(y + 1) + ';'
+                   + QByteArray::number(m_lastSixelRect.left() + 1) + 'H' + blank;
+        clear += "\0338";
+        root->enqueueControlSequence(clear);
+    }
+    m_lastSixelRect = QRect();
+    m_lastSixelKey = 0;
+}
+
 void Image::setSource(const QUrl& source) {
     if (m_source == source) return;
-    releaseKittyImage();   // the old upload no longer describes this item
     m_source = source;
     emit sourceChanged();
     loadImage();
@@ -295,7 +312,6 @@ void Image::setSource(const QUrl& source) {
 void Image::setImage(const QImage& image) {
     cancelPendingResponse();   // a picture assigned directly wins over one in flight
     cancelPendingReply();
-    releaseKittyImage();   // a new picture is a new upload
     if (!m_source.isEmpty()) {
         // The picture no longer comes from a URL.
         m_source = QUrl();
@@ -305,6 +321,10 @@ void Image::setImage(const QImage& image) {
 }
 
 void Image::adoptImage(const QImage& image, Status statusIfNull) {
+    // Keep a stable Kitty id across frames: replacing its pixels and virtual
+    // placement leaves the placeholder cells unchanged. Clearing still frees it.
+    if (image.isNull()) releaseKittyImage();
+    if (image.isNull()) releaseSixelImage();
     const QSize previousSize = m_sourceImage.size();
     m_sourceImage = image;
     m_scaledImage = QImage();
@@ -340,7 +360,7 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
         if (!response) return QImage();          // refused: Error
         *pending = true;
         m_pendingResponse = response;
-        // The current picture stays on screen until the new one arrives.
+        // With retainWhileLoading the current picture stays until this arrives.
         connect(response, &ImageResponse::finished, this, [this, response] {
             if (response != m_pendingResponse) return;   // superseded meanwhile
             m_pendingResponse.clear();
@@ -348,7 +368,6 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
             if (image.isNull() && !response->errorString().isEmpty())
                 qWarning("Image: %s", qPrintable(response->errorString()));
             response->deleteLater();
-            releaseKittyImage();
             adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32), Status::Error);
         });
         return QImage();
@@ -379,6 +398,14 @@ void Image::setSmooth(bool smooth) {
     markDirty();
 }
 
+void Image::setRetainWhileLoading(bool retain) {
+    if (m_retainWhileLoading == retain) return;
+    m_retainWhileLoading = retain;
+    if (!retain && m_status == Status::Loading && !m_sourceImage.isNull())
+        adoptImage(QImage(), Status::Loading);
+    emit retainWhileLoadingChanged();
+}
+
 void Image::setAlignment(Qt::Alignment alignment) {
     if (m_alignment == alignment) return;
     m_alignment = alignment;
@@ -401,6 +428,8 @@ void Image::loadImage() {
     if (m_source.isEmpty()) {
         cancelPendingResponse();
         cancelPendingReply();
+        releaseKittyImage();
+        releaseSixelImage();
         setProgress(0.0);
         m_sourceImage = QImage();
         m_scaledImage = QImage();
@@ -423,15 +452,18 @@ void Image::loadImage() {
         if (const QImage* cached = remoteCache().object(m_source.toString())) {
             loaded = *cached;
         } else {
+            if (!m_retainWhileLoading) adoptImage(QImage(), Status::Loading);
             loadFromNetwork(m_source);
-            return;   // Loading until the reply finishes; the old picture stays
+            return;   // Loading until the reply finishes
         }
     } else if (m_source.scheme() == QLatin1String("image")) {
         bool found = false;
         bool pending = false;
         loaded = loadFromProvider(m_source, &found, &pending);
-        if (pending)
-            return;   // Loading until the response finishes; the old picture stays
+        if (pending) {
+            if (!m_retainWhileLoading) adoptImage(QImage(), Status::Loading);
+            return;   // Loading until the response finishes
+        }
         if (!found)
             qWarning("Image: no qtui::ImageProvider named \"%s\" on this engine",
                      qPrintable(m_source.host()));
@@ -532,7 +564,8 @@ void Image::updateScaledCache(RenderMode mode) const {
 }
 
 void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (!visible() || m_status != Status::Ready || m_sourceImage.isNull())
+    // Loading a new frame must not blank the previously committed picture.
+    if (!visible() || m_sourceImage.isNull())
         return;
 
     int itemW = width();
@@ -788,19 +821,21 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     const QSize cellPx = root->capabilities().cellPixelSize;
     const QSize placementPx = cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
     const QSize uploadSize = graphics::kittyUploadSize(m_sourceImage.size(), placementPx, m_smooth);
+    const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
     if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells
-        || uploadSize != m_lastKittyUpload) {
-        if (m_imageId != 0)
-            root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
+        || uploadSize != m_lastKittyUpload || session != m_lastKittySession) {
         QImage upload = m_sourceImage;
         if (uploadSize != m_sourceImage.size())
             upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         m_lastKittyUpload = uploadSize;
-        m_imageId = graphics::nextImageId();
+        if (m_imageId == 0) m_imageId = graphics::nextImageId();
+        // Re-transmitting the same id replaces its data and removes its old
+        // placements. Recreate the virtual placement without rewriting cells.
         root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
         root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
         m_lastKittyKey = key;
         m_lastKittyCells = QSize(cols, rows);
+        m_lastKittySession = session;
     }
 
     graphics::writeKittyPlaceholders(buffer, originX, originY, cols, rows, m_imageId, clipRect);
@@ -893,6 +928,7 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     positioned += sixel;
     positioned += "\0338";                               // restore cursor
     root->enqueuePostControlSequence(positioned);
+    m_lastSixelRect = QRect(absX, absY, itemW, itemH);
 }
 
 } // namespace qtui

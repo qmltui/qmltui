@@ -1,7 +1,7 @@
 // Kitty graphics output from the Image item, verified through the memory
 // backend: transmission and placement precede the placeholder cells, the
-// cells carry the image id in their foreground, a source change frees the old
-// upload, an unchanged frame re-sends nothing, and Auto falls back to
+// cells carry the image id in their foreground, source changes reuse that id,
+// an unchanged frame re-sends nothing, and Auto falls back to
 // half-block on a terminal without the protocol.
 #include <QTest>
 #include <QQmlComponent>
@@ -9,11 +9,13 @@
 #include <QTemporaryDir>
 #include <QImage>
 #include <QRegularExpression>
+#include <QtEndian>
 
 #include <Qtui/Runner/MemoryTerminalBackend.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Image/Image.h>
+#include <Qtui/Image/ImageProvider.h>
 #include <Qtui/Image/TerminalGraphics.h>
 #include <QSignalSpy>
 #include <Qtui/Core/primitives/TextGridBuffer.h>
@@ -46,6 +48,24 @@ QString makePng(const QString& dir, const QString& name, QColor color) {
     image.save(path, "PNG");
     return path;
 }
+
+// Hold each replacement until the test has inspected intervening frames.
+class PendingResponse : public ImageResponse {
+public:
+    QImage image() const override { return m_image; }
+    void complete(const QImage& image) { m_image = image; emit finished(); }
+private:
+    QImage m_image;
+};
+
+class PendingProvider : public AsyncImageProvider {
+public:
+    QPointer<PendingResponse> pending;
+    ImageResponse* requestImageResponse(const QString&, const QSize&) override {
+        pending = new PendingResponse;
+        return pending;
+    }
+};
 }
 
 class TestKittyGraphics : public QObject {
@@ -87,21 +107,59 @@ Terminal {
     }
 
 private slots:
-    // Reassembles the PNG from the chunked transmit (`m=1` chunks then `m=0`)
+    // Reassembles compressed RGBA from the transmit (`m=1` chunks then `m=0`)
     // that follows the first transmit command in `out`.
     static QImage transmittedImage(const std::string& out) {
         size_t pos = out.find("\033_Gq=2,a=t");
+        if (pos == std::string::npos) return {};
+        const QRegularExpression dimensions("s=(\\d+),v=(\\d+)");
+        const auto match = dimensions.match(QString::fromStdString(out.substr(pos, out.find(';', pos) - pos)));
+        if (!match.hasMatch()) return {};
+        const int width = match.captured(1).toInt();
+        const int height = match.captured(2).toInt();
         QByteArray base64;
         while (pos != std::string::npos) {
             const size_t semicolon = out.find(';', pos);
             const size_t end = out.find("\033\\", pos);
             if (semicolon == std::string::npos || end == std::string::npos) break;
+            if (end - semicolon - 1 > 4096) return {};
             const std::string header = out.substr(pos, semicolon - pos);
             base64 += QByteArray(out.data() + semicolon + 1, int(end - semicolon - 1));
             if (header.find("m=1") == std::string::npos) break;   // last chunk
             pos = out.find("\033_G", end);
         }
-        return QImage::fromData(QByteArray::fromBase64(base64), "PNG");
+        QByteArray compressed(4, '\0');
+        qToBigEndian<quint32>(width * height * 4, compressed.data());
+        compressed += QByteArray::fromBase64(base64);
+        const QByteArray pixels = qUncompress(compressed);
+        if (pixels.size() != qsizetype(width) * height * 4) return {};
+        return QImage(reinterpret_cast<const uchar*>(pixels.constData()), width, height,
+                      QImage::Format_RGBA8888).copy();
+    }
+
+    void transmissionPreservesPixelsAndChunks() {
+        QVERIFY(graphics::kittyTransmit(1, QImage()).isEmpty());
+        QImage source(127, 65, QImage::Format_ARGB32);
+        quint32 random = 12345;
+        for (int y = 0; y < source.height(); ++y)
+            for (int x = 0; x < source.width(); ++x) {
+                random = random * 1664525u + 1013904223u;
+                source.setPixel(x, y, random); // distinct channels, including partial alpha
+            }
+        const QByteArray encoded = graphics::kittyTransmit(42, source);
+        QVERIFY(encoded.startsWith("\033_Gq=2,a=t,f=32,o=z,t=d,i=42,s=127,v=65,m=1;"));
+        QVERIFY(encoded.contains("\033_Gm=0;"));
+        QCOMPARE(transmittedImage(encoded.toStdString()).convertToFormat(QImage::Format_ARGB32), source);
+
+        // Byte-order conversion and externally supplied scanline padding.
+        const QImage rgba = source.convertToFormat(QImage::Format_RGBA8888);
+        const int stride = source.width() * 4 + 12;
+        QByteArray storage(stride * source.height(), '\x55');
+        for (int y = 0; y < source.height(); ++y)
+            memcpy(storage.data() + stride * y, rgba.constScanLine(y), source.width() * 4);
+        const QImage padded(reinterpret_cast<const uchar*>(storage.constData()),
+                            source.width(), source.height(), stride, QImage::Format_RGBA8888);
+        QCOMPARE(transmittedImage(graphics::kittyTransmit(43, padded).toStdString()), rgba);
     }
 
     void initTestCase() {
@@ -130,7 +188,7 @@ private slots:
         QTRY_VERIFY(placeholderCellCount(engine) > 0);
 
         const std::string& out = backend->output();
-        const auto transmit = out.find("\033_Gq=2,a=t,f=100,t=d,i=");
+        const auto transmit = out.find("\033_Gq=2,a=t,f=32,o=z,t=d,i=");
         const auto place = out.find("\033_Ga=p,U=1,q=2,i=");
         QVERIFY(transmit != std::string::npos);
         QVERIFY(place != std::string::npos);
@@ -212,7 +270,8 @@ private slots:
         huge.cellPixelSize = QSize(1920, 1080);          // a window size, not a cell size
         terminal->engine()->setCapabilities(huge);
         const QSize clamped = img->renderSize();
-        QVERIFY(clamped.width() <= 4096 && clamped.height() <= 4096 && !clamped.isEmpty());
+        QCOMPARE(clamped, graphics::kittyUploadSize(QSize(8 * 1920, 3 * 1080), QSize(), false));
+        QVERIFY(clamped.width() <= 2048 && clamped.height() <= 2048);
     }
 
     void unchangedFrameResendsNothing() {
@@ -230,7 +289,7 @@ private slots:
         QVERIFY(backend->output().find("\033_G") == std::string::npos);
     }
 
-    void sourceChangeFreesOldUpload() {
+    void sourceChangeReusesUploadId() {
         QQmlEngine qml;
         std::unique_ptr<QObject> holder;
         Terminal* terminal = buildTerminal(qml, holder, kittyCaps());
@@ -246,8 +305,198 @@ private slots:
         img->setSource(QUrl::fromLocalFile(bluePng));
         QTRY_VERIFY(backend->output().find("\033_Ga=p") != std::string::npos);
         const std::string& out = backend->output();
-        QVERIFY(out.find("\033_Ga=d,d=I,q=2,i=" + std::to_string(firstId)) != std::string::npos);
+        QVERIFY(out.find("\033_Ga=d") == std::string::npos);
         QVERIFY(out.find("\033_Gq=2,a=t") != std::string::npos);  // re-uploaded
+        QCOMPARE(transmittedImage(out).pixelColor(0, 0), QColor(Qt::blue));
+        uint32_t colour = 0;
+        QCOMPARE(placeholderCellCount(engine, &colour), 18);
+        QCOMPARE(colour & 0xFFFFFFu, firstId);
+        QVERIFY(out.find(std::string(kPlaceholderUtf8, 4)) == std::string::npos);
+    }
+
+    void largeLiveFramesKeepPlaceholderCells() {
+        QQmlEngine qml;
+        std::unique_ptr<QObject> holder;
+        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());
+        QVERIFY(terminal);
+        auto* img = terminal->findChild<Image*>("img");
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(240, 72));
+        img->setWidth(230);
+        img->setHeight(60);
+        QCOMPARE(img->renderSize(), QSize(2048, 1068));
+        QImage pixels(img->renderSize(), QImage::Format_RGB32);
+        pixels.fill(Qt::red);
+        img->setImage(pixels);
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        uint32_t firstColour = 0;
+        QCOMPARE(placeholderCellCount(engine, &firstColour), 230 * 60);
+        const auto firstFrame = engine->currentFrame();
+
+        for (Qt::GlobalColor colour : {Qt::blue, Qt::green, Qt::red}) {
+            backend->clearOutput();
+            pixels.fill(colour);
+            const auto before = engine->frameSequence();
+            img->setImage(pixels);
+            QTRY_VERIFY(engine->frameSequence() > before);
+            const auto& out = backend->output();
+            const QImage transmitted = transmittedImage(out);
+            QCOMPARE(transmitted.size(), img->renderSize());
+            QCOMPARE(transmitted.pixelColor(0, 0), QColor(colour));
+            QCOMPARE(engine->currentFrame()->toAnsiString(), firstFrame->toAnsiString());
+            QVERIFY(out.find(std::string(kPlaceholderUtf8, 4)) == std::string::npos);
+            QVERIFY(out.find("\033_Ga=d") == std::string::npos);
+            QVERIFY(out.find("\033_Ga=p,U=1,q=2,i=" + std::to_string(firstColour & 0xFFFFFFu)) != std::string::npos);
+        }
+
+        // A new output session must still upload the image and reconstruct
+        // the placeholders, even though the pixels and id haven't changed.
+        backend->clearOutput();
+        const auto before = engine->frameSequence();
+        engine->setTerminalOutputEnabled(false);
+        engine->setTerminalOutputEnabled(true);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QCOMPARE(transmittedImage(backend->output()).pixelColor(0, 0), QColor(Qt::red));
+        uint32_t afterReset = 0;
+        QCOMPARE(placeholderCellCount(engine, &afterReset), 230 * 60);
+        QCOMPARE(afterReset, firstColour);
+    }
+
+    void pendingReplacementRetention_data() {
+        QTest::addColumn<int>("protocol");
+        QTest::addColumn<bool>("retain");
+        QTest::newRow("kitty-retain") << 1 << true;
+        QTest::newRow("kitty-clear") << 1 << false;
+        QTest::newRow("sixel-retain") << 2 << true;
+        QTest::newRow("sixel-clear") << 2 << false;
+        QTest::newRow("half-block-retain") << 0 << true;
+        QTest::newRow("half-block-clear") << 0 << false;
+    }
+
+    void pendingReplacementRetention() {
+        QFETCH(int, protocol);
+        QFETCH(bool, retain);
+        const bool kitty = protocol == 1;
+        const bool sixel = protocol == 2;
+        QQmlEngine qml;
+        auto* provider = new PendingProvider;
+        ImageProvider::add(&qml, QStringLiteral("pending"), provider);
+        std::unique_ptr<QObject> holder;
+        TerminalCapabilities caps;
+        caps.colorDepth = ColorDepth::TrueColor;
+        Terminal* terminal = buildTerminal(qml, holder, kitty ? kittyCaps() : sixel ? sixelCaps() : caps);
+        QVERIFY(terminal);
+        auto* img = terminal->findChild<Image*>("img");
+        QVERIFY(!img->retainWhileLoading());
+        img->setRetainWhileLoading(retain);
+        auto* engine = terminal->engine();
+        img->setSource(QUrl::fromLocalFile(redPng));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const auto original = engine->currentFrame();
+        QVERIFY(original);
+        if (kitty) {
+            QCOMPARE(placeholderCellCount(engine), 18);
+            QCOMPARE(transmittedImage(backend->output()).pixelColor(0, 0), QColor(Qt::red));
+        } else if (sixel) {
+            QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+        } else {
+            QCOMPARE(original->cellAt(0, 0).fgColor, uint32_t(qRgb(255, 0, 0)));
+        }
+
+        // A slow response spans several commits; newer requests can also
+        // supersede it. Each commit either retains the image or clears it.
+        for (int request = 0; request < 3; ++request) {
+            backend->clearOutput();
+            img->setSource(QUrl(QStringLiteral("image://pending/%1").arg(request)));
+            QCOMPARE(img->status(), Image::Status::Loading);
+            const auto before = engine->frameSequence();
+            engine->requestRender();
+            QTRY_VERIFY(engine->frameSequence() > before);
+            if (retain) {
+                QCOMPARE(engine->currentFrame()->toAnsiString(), original->toAnsiString());
+                // Retaining cells is insufficient if the upload was deleted.
+                QVERIFY(backend->output().find("\033_G") == std::string::npos);
+                QVERIFY(backend->output().find("\033[0m\0337") == std::string::npos);
+            } else {
+                QVERIFY(img->image().isNull());
+                QCOMPARE(placeholderCellCount(engine), 0);
+                QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+                if (kitty && request == 0)
+                    QVERIFY(backend->output().find("\033_Ga=d,d=I") != std::string::npos);
+                if (sixel && request == 0)
+                    QVERIFY(backend->output().find("\033[0m\0337\033[1;1H      ") != std::string::npos);
+            }
+        }
+
+        backend->clearOutput();
+        auto before = engine->frameSequence();
+        provider->pending->complete(QImage(bluePng));
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QCOMPARE(img->status(), Image::Status::Ready);
+        if (kitty) {
+            QCOMPARE(placeholderCellCount(engine), 18);
+            QCOMPARE(transmittedImage(backend->output()).pixelColor(0, 0), QColor(Qt::blue));
+            if (retain) {
+                QVERIFY(backend->output().find("\033_Ga=d,d=I") == std::string::npos);
+                QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor, original->cellAt(0, 0).fgColor);
+            }
+        } else if (sixel) {
+            QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+        } else {
+            QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor, uint32_t(qRgb(0, 0, 255)));
+        }
+
+        // Clearing or failing a pending source still removes the old image.
+        for (bool clear : {true, false}) {
+            img->setSource(QUrl::fromLocalFile(redPng));
+            before = engine->frameSequence();
+            engine->requestRender();
+            QTRY_VERIFY(engine->frameSequence() > before);
+            backend->clearOutput();
+            img->setSource(QUrl(QStringLiteral("image://pending/final")));
+            before = engine->frameSequence();
+            if (clear) img->setSource(QUrl());
+            else provider->pending->complete(QImage());
+            QTRY_VERIFY(engine->frameSequence() > before);
+            QCOMPARE(img->status(), clear ? Image::Status::Null : Image::Status::Error);
+            QCOMPARE(placeholderCellCount(engine), 0);
+            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+            if (kitty)
+                QVERIFY(backend->output().find("\033_Ga=d,d=I") != std::string::npos);
+            if (sixel)
+                QVERIFY(backend->output().find("\033[0m\0337\033[1;1H      ") != std::string::npos);
+        }
+
+        if (retain) {
+            // Changing the policy mid-request discards the retained image,
+            // without restarting the request or resurrecting discarded pixels.
+            img->setSource(QUrl::fromLocalFile(redPng));
+            before = engine->frameSequence();
+            engine->requestRender();
+            QTRY_VERIFY(engine->frameSequence() > before);
+            img->setSource(QUrl(QStringLiteral("image://pending/toggle")));
+            const auto pending = provider->pending;
+            QSignalSpy changed(img, &Image::retainWhileLoadingChanged);
+            before = engine->frameSequence();
+            img->setRetainWhileLoading(false);
+            img->setRetainWhileLoading(false);
+            QCOMPARE(changed.count(), 1);
+            QTRY_VERIFY(engine->frameSequence() > before);
+            QCOMPARE(img->status(), Image::Status::Loading);
+            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+            QCOMPARE(placeholderCellCount(engine), 0);
+            img->setRetainWhileLoading(true);
+            QCOMPARE(changed.count(), 2);
+            QVERIFY(img->image().isNull());
+            QCOMPARE(provider->pending, pending);
+            before = engine->frameSequence();
+            pending->complete(QImage(bluePng));
+            QTRY_VERIFY(engine->frameSequence() > before);
+            QCOMPARE(img->status(), Image::Status::Ready);
+            if (kitty) QCOMPARE(placeholderCellCount(engine), 18);
+            else if (!sixel)
+                QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor, uint32_t(qRgb(0, 0, 255)));
+        }
     }
 
     void engineStopFreesAllImages() {

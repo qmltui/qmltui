@@ -76,6 +76,7 @@ Terminal {
                     // A new URL per tick asks the provider again; it receives
                     // this item's renderSize and renders to it.
                     source: "image://frames/radar?tick=" + feed.tick
+                    retainWhileLoading: true
                     fillMode: Image.Stretch
                     renderMode: Image.Auto
                 }

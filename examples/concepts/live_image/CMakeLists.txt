@@ -32,4 +32,18 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
         ROWS 24
         LABELS AgentSmoke
     )
+    qtui_add_scenario_test(
+        NAME live_image_large
+        TARGET qtui_live_image_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_live_image.js"
+        COLUMNS 240
+        ROWS 72
+        LABELS AgentSmoke
+    )
+endif()
+
+if(QTUI_BUILD_TESTS)
+    qt_add_executable(test_live_image_source test_framesource.cpp framesource.cpp framesource.h)
+    target_link_libraries(test_live_image_source PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Test)
+    add_test(NAME live_image_source COMMAND test_live_image_source)
 endif()

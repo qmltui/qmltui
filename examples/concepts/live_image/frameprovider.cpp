@@ -74,7 +74,7 @@ qtui::ImageResponse* RadarProvider::requestImageResponse(const QString& id, cons
 }
 
 QImage RadarProvider::paintRadar(int tick, const QSize& size) {
-    QImage image(size, QImage::Format_ARGB32);
+    QImage image(size, QImage::Format_RGB32); // opaque canvas, fast QPainter blending
     image.fill(QColor(11, 15, 20));
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing, true);

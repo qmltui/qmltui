@@ -1,6 +1,5 @@
 #include <Qtui/Image/TerminalGraphics.h>
 
-#include <QBuffer>
 #include <atomic>
 #include <vector>
 
@@ -85,14 +84,27 @@ QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool sm
 
 QByteArray kittyTransmit(quint32 imageId, const QImage& image)
 {
-    QByteArray png;
-    {
-        QBuffer buffer(&png);
-        buffer.open(QIODevice::WriteOnly);
-        if (!image.save(&buffer, "PNG"))
-            return {};
+    if (image.isNull()) return {};
+    // PNG's per-row filter selection is expensive for live, full-resolution
+    // frames. Kitty also accepts lossless zlib-compressed RGBA directly.
+    // RGBA8888 fixes the byte order independently of the host's endianness.
+    const QImage rgba = image.convertToFormat(QImage::Format_RGBA8888);
+    const qsizetype rowBytes = qsizetype(rgba.width()) * 4;
+    QByteArray pixels;
+    if (rgba.bytesPerLine() == rowBytes) {
+        pixels = QByteArray::fromRawData(reinterpret_cast<const char*>(rgba.constBits()),
+                                        rgba.sizeInBytes());
+    } else {
+        // Externally backed QImages can have padding even in RGBA8888.
+        pixels.reserve(rowBytes * rgba.height());
+        for (int y = 0; y < rgba.height(); ++y)
+            pixels.append(reinterpret_cast<const char*>(rgba.constScanLine(y)), rowBytes);
     }
-    const QByteArray payload = png.toBase64();
+    // qCompress prefixes the zlib stream with a Qt-specific four-byte length.
+    // Only the zlib stream belongs on the wire. Level 1 favours frame latency.
+    const QByteArray compressed = qCompress(pixels, 1);
+    const QByteArray payload = QByteArray::fromRawData(compressed.constData() + 4,
+                                                     compressed.size() - 4).toBase64();
 
     QByteArray out;
     constexpr int chunkSize = 4096;
@@ -103,8 +115,10 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image)
         const bool last = (i == chunks - 1);
         out += "\033_G";
         if (i == 0) {
-            // f=100 PNG, t=d direct payload, a=t transmit only, q=2 no reply.
-            out += "q=2,a=t,f=100,t=d,i=" + QByteArray::number(imageId);
+            // f=32 RGBA, o=z zlib, t=d direct, a=t transmit only, q=2 no reply.
+            out += "q=2,a=t,f=32,o=z,t=d,i=" + QByteArray::number(imageId);
+            out += ",s=" + QByteArray::number(rgba.width())
+                 + ",v=" + QByteArray::number(rgba.height());
             out += ",m=";
             out += last ? '0' : '1';
         } else {

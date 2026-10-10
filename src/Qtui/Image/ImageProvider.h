@@ -67,10 +67,10 @@ signals:
     void finished();
 };
 
-// A provider whose pictures are produced off the GUI thread. The Image keeps
-// showing its current picture while a request is pending (status Loading),
-// then adopts the response, so a live feed never flickers and a slow renderer
-// never stalls a frame. requestImage() is not used for this kind of provider.
+// A provider whose pictures are produced off the GUI thread. With
+// retainWhileLoading enabled, Image keeps showing its current picture while
+// a request is pending (status Loading), then adopts the response, avoiding
+// flicker. requestImage() is not used for this kind of provider.
 class QTUI_IMAGE_EXPORT AsyncImageProvider : public ImageProvider {
     Q_OBJECT
 public:

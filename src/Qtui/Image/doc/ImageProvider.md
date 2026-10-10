@@ -45,10 +45,11 @@ Image { source: "image://frames/scope?frame=" + tick; renderMode: Image.Braille 
 Subclass `AsyncImageProvider` instead when the picture is expensive to make.
 `requestImageResponse(id, requestedSize)` returns an `ImageResponse` created
 on the GUI thread; the picture may be produced anywhere, and the response
-emits `finished()` on the GUI thread once `image()` is valid. The Image keeps
-showing its current picture while the response is pending (`status` is
-`Loading`), then adopts the new one, so a live feed never flickers and a slow
-renderer never stalls a frame. A response the item no longer wants receives
+emits `finished()` on the GUI thread once `image()` is valid. Enable
+`retainWhileLoading` on the Image to keep showing its current picture while
+the response is pending (`status` is `Loading`), then adopt the new one without
+flicker. By default the old picture is discarded while loading.
+A response the item no longer wants receives
 `cancel()` and is deleted; a late `finished()` after that is ignored.
 Returning null from `requestImageResponse()` reports `Error` at once, as does
 a finished response whose `image()` is null (its `errorString()` is logged).

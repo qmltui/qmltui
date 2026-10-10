@@ -28,9 +28,10 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 | `fillMode` | `FillMode` | `Image.Stretch` | How the picture is fitted into the item's cell rectangle. |
 | `renderMode` | `RenderMode` | `Image.Auto` | How pixels become terminal output: a pixel protocol when the terminal has one, otherwise a glyph approximation. |
 | `status` | `Status` | `Image.Null` | Read-only. Whether the picture loaded. |
+| `retainWhileLoading` | `bool` | `false` | Keep the previous picture visible while a new remote or asynchronous provider source loads. Set to `true` for live feeds to avoid blank frames. Clearing the source or a failed load still clears the picture. Disabling it during a pending load discards the retained picture; enabling it cannot restore a picture already discarded. |
 | `progress` | `real` | `0.0` | Read-only. How much of a remote source has arrived, `0.0` to `1.0`; `1.0` once any picture is ready and `0.0` while nothing is shown. Local and resource pictures jump straight to `1.0`. |
 | `sourceSize` | `size` | `0x0` | Read-only. The picture's size in pixels before scaling. |
-| `renderSize` | `size` |  | Read-only. The pixel grid this item paints into: columns and rows times the cell's pixel size when kitty or sixel will draw, otherwise the glyph grid (1x2 per cell for half-block, 2x4 for Braille, 1x1 for ASCII). Produce frames at this size and they are shown without scaling; it follows the item size, `renderMode` and the terminal's capabilities. |
+| `renderSize` | `size` |  | Read-only. The pixel grid this item paints into: columns and rows times the cell's pixel size when kitty or sixel will draw, otherwise the glyph grid (1x2 per cell for half-block, 2x4 for Braille, 1x1 for ASCII). Kitty limits each side to 2048 pixels, preserving the aspect ratio, matching its upload limit so producers avoid rendering pixels that would be discarded. It follows the item size, `renderMode` and the terminal's capabilities. |
 | `smooth` | `bool` | `true` | Filter the picture when scaling instead of picking the nearest pixel. With kitty, a source smaller than its placement is pre-scaled to the placement's pixel size so the terminal's own magnification cannot turn pixels into blocks; false uploads the source as is, which suits pixel art. |
 | `alignment` | `Qt::Alignment` | `Qt.AlignCenter` | Where a picture smaller than the item sits inside it. |
 
@@ -61,7 +62,7 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 | :--- | :--- |
 | `Image.Null` | No `source` is set. |
 | `Image.Ready` | The picture loaded and paints. |
-| `Image.Loading` | The picture is being read or downloaded. Local reads are synchronous, so for them this is only observable from a `status` binding during the change; a remote source stays here until its reply arrives, keeping the previous picture on screen. |
+| `Image.Loading` | The picture is being read or downloaded. Local reads are synchronous, so for them this is only observable from a `status` binding during the change. Remote and asynchronous provider sources stay here until the reply arrives; the previous picture stays visible only with `retainWhileLoading: true`. |
 | `Image.Error` | The `source` could not be read or decoded. Nothing paints. |
 
 ## Detailed Description
@@ -109,7 +110,7 @@ xterm default RGB. When the cell still has the terminal's default background,
 its real colour is unknown, so pixels at least half opaque are drawn unblended
 and fainter pixels are left alone.
 
-Pixel protocols keep the same contract by other means. Kitty uploads the PNG
+Pixel protocols keep the same contract by other means. Kitty uploads lossless RGBA
 with its alpha channel and the terminal composites it. Sixel has no alpha, so
 pixels at least half opaque are drawn and the rest are not.
 
@@ -127,8 +128,8 @@ or a decoded video frame:
   query (`?frame=` + tick) asks C++ for a new picture. The provider receives
   the item's `renderSize` as the requested size and may render to it. An
   `AsyncImageProvider` answers with an `ImageResponse` that finishes later;
-  the item shows its current picture while `status` is `Loading`, so frames
-  rendered on another thread arrive without flicker.
+  set `retainWhileLoading: true` to show the current picture while `status`
+  is `Loading`, so frames rendered on another thread arrive without flicker.
 
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown

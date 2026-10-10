@@ -38,8 +38,8 @@ quint32 nextImageId();
 
 // --- kitty graphics encoders. Each returns a complete APC byte sequence. ---
 
-// Uploads `image` as PNG under `imageId`, chunked at the protocol's 4096-byte
-// base64 limit, with responses suppressed. Creates the image only; placement
+// Uploads `image` as zlib-compressed RGBA under `imageId`, chunked at the
+// protocol's 4096-byte base64 limit, with responses suppressed. Creates the image only; placement
 // is separate so a resize re-places without re-uploading.
 QByteArray kittyTransmit(quint32 imageId, const QImage& image);
 

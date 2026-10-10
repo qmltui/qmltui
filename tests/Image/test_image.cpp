@@ -32,6 +32,7 @@ private slots:
     void testRenderBraille();
     void testFillModeScaling();
     void testQrcResourceUrl();
+    void testRemoteUrl_data();
     void testRemoteUrl();
     void testTransparencyOverKnownBackground();
     void testTransparencyOverUnknownBackground();
@@ -77,6 +78,7 @@ void TestImage::testInitialState() {
     QCOMPARE(img.renderMode(), qtui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
     QCOMPARE(img.smooth(), true);
     QCOMPARE(img.source().isEmpty(), true);
+    QCOMPARE(img.retainWhileLoading(), false);
 }
 
 void TestImage::testLoadValidImage() {
@@ -360,6 +362,7 @@ import Qtui
 import Qtui.Image
 Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
+            retainWhileLoading: true
             source: "image://later/first" }
 }
 )", QUrl());
@@ -686,7 +689,14 @@ public:
 // reply is in flight, Ready with the decoded picture afterwards, Error on a
 // 404. A second item with the same URL is served from the cache without a
 // request, and a superseded download is ignored.
+void TestImage::testRemoteUrl_data() {
+    QTest::addColumn<bool>("retain");
+    QTest::newRow("clear-while-loading") << false;
+    QTest::newRow("retain-while-loading") << true;
+}
+
 void TestImage::testRemoteUrl() {
+    QFETCH(bool, retain);
     PictureServer server;
     QQmlEngine qml;
     QQmlComponent component(&qml);
@@ -705,6 +715,7 @@ Terminal {
     auto* picture = terminal->findChild<qtui::Image*>("picture");
     auto* second = terminal->findChild<qtui::Image*>("second");
     QVERIFY(picture && second);
+    picture->setRetainWhileLoading(retain);
 
     QSignalSpy progress(picture, &qtui::Image::progressChanged);
     picture->setSource(QUrl(server.url("/picture.png")));
@@ -726,7 +737,7 @@ Terminal {
     QTest::ignoreMessage(QtWarningMsg, QRegularExpression("Image: http://127\\.0\\.0\\.1:\\d+/missing\\.png: .*"));
     picture->setSource(QUrl(server.url("/missing.png")));
     QCOMPARE(picture->status(), qtui::Image::Status::Loading);
-    QVERIFY(!picture->image().isNull());   // the old picture stays until the reply
+    QCOMPARE(picture->image().isNull(), !retain);
     QTRY_COMPARE(picture->status(), qtui::Image::Status::Error);
     QVERIFY(picture->image().isNull());
     QCOMPARE(picture->progress(), 0.0);

@@ -22,7 +22,7 @@ function main(terminal) {
     terminal.press("Space");
     terminal.waitForText("(paused)");
     const paused = terminal.frameText();
-    terminal.sleep(350);
+    terminal.sleep(350);   // wall time: the asynchronous C++ provider must get a chance to tick
     terminal.waitForFrame();
     if (terminal.frameText() !== paused)
         terminal.fail("paused pictures must not change");

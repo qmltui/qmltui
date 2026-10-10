@@ -177,22 +177,43 @@ rtk env QTUI_TEST_EMBEDDED_SCENARIO=1 QTUI_TEST_LIVE=1 \
 ```
 
 There is no image capture: `Runner` needs only `QCoreApplication`. For
-visual regressions use `terminal.captureStyled()` to record a baseline and
-`terminal.expectStyled()` to assert it; the styled format lists per-run
-colors and attributes as text, so diffs stay readable and platform independent.
+visual regressions assert with `terminal.expectStyled()`; the styled format
+lists per-run colors and attributes as text, so diffs stay readable and
+platform independent. Record or refresh baselines with
+`QTUI_UPDATE_SNAPSHOTS=1 ctest -R <test>` — every rewritten file is listed in
+the summary and in `result.json` — instead of hand-copying `captureStyled()`
+artifacts.
 
 ## Write Reliable JavaScript Scenarios
 
 Every test scenario script must define an entry point: `function main(terminal) { ... }`.
-Use the API documentation for exact signatures. Choose operations by intent:
+A scenario ending in `.mjs` is an ECMAScript module instead: it must
+`export function main(terminal)` and may `import` shared helpers with relative
+paths (see `examples/apps/device_cockpit/lib/cockpit.mjs`). Start the entry
+point with `/** @param {Terminal} terminal */` — the repository's
+`jsconfig.json` plus `src/Qtui/Runner/qtui-runner.d.ts` then give editor
+autocomplete and hover documentation for the whole facade (scenarios are plain
+JavaScript; TypeScript annotations are a syntax error). Use the API
+documentation for exact signatures. Choose operations by intent:
 
 - `press()` and `typeText()` inject input and wait for the resulting committed
-  frame. Mouse operations include `clickText()`, `click()`, `doubleClick()`,
-  `drag()`, and `scroll()`.
+  frame; `paste()` delivers one bracketed paste. Mouse operations include
+  `clickText()`, `click()`, `doubleClick()`, `mouseDown()`/`mouseUp()`,
+  `hover()`, `drag()`, and `scroll()`. `resize()` changes the viewport at
+  runtime. Optional parameters may be one trailing options object
+  (`click(x, y, { button: "right" })`); unknown keys fail the scenario.
 - Prefer `findText()` and `clickText()` when a rendered label is stable. Use
   coordinates and `cell()` for grid geometry, wide-character, or style checks.
-- Use `waitForText()`, `waitForRegex()`, or `waitForCondition()` for state that
-  appears asynchronously. Use `expectText()`, `expectNoText()`,
+  Scope assertions with `region(x, y, w, h)` or `item(objectName)` instead of
+  whole-frame substring matching when the target is one component.
+- Never `sleep()` for state that a wait can observe: use `waitForText()`,
+  `waitForRegex()`, or `waitForCondition()` for state that appears
+  asynchronously. When the behavior under test is Qtui or QML time — timers,
+  animations, tooltip delays, blink — register the scenario with
+  `CLOCK VIRTUAL` and step time with `advanceTime()`; a `sleep()` is then
+  instant. A remaining wall-clock `sleep()` must name its wall-time source
+  (an application C++ `QTimer`, a worker thread) in a comment.
+- Use `expectText()`, `expectNoText()`,
   `expectRegex()`, `expectTextInRegion()`, and `expectStyle()` for assertions on
   committed frames. `expectSnapshot()` compares the frame text against a stored
   snapshot file, `expectStyled()` also compares colors and attributes, and both

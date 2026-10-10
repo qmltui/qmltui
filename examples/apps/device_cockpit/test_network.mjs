@@ -1,7 +1,9 @@
 // Network page scenario, run against the mock providers.
+import { waitForShell, confirmDialog } from "./lib/cockpit.mjs";
 
-function main(terminal) {
-    terminal.waitForText("DEVICE COCKPIT")
+/** @param {Terminal} terminal */
+export function main(terminal) {
+    waitForShell(terminal)
     terminal.press("F2")
     terminal.waitForCondition((frameText) =>
         frameText.includes("INTERFACES")
@@ -33,8 +35,7 @@ function main(terminal) {
 
     // Cancelling the DHCP confirmation leaves the static config in place.
     terminal.press("D")
-    terminal.waitForText("Request a DHCP lease on eth0?")
-    terminal.press("N")
+    confirmDialog(terminal, "Request a DHCP lease on eth0?", "N")
     terminal.waitForText("10.0.0.5/16")
     terminal.finish()
 }

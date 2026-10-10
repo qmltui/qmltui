@@ -1,7 +1,9 @@
 // Logs page scenario, run against the mock providers.
+import { waitForShell } from "./lib/cockpit.mjs";
 
-function main(terminal) {
-    terminal.waitForText("DEVICE COCKPIT")
+/** @param {Terminal} terminal */
+export function main(terminal) {
+    waitForShell(terminal)
     terminal.press("F4")
     terminal.waitForCondition((frameText) =>
         frameText.includes("LIVE JOURNAL")

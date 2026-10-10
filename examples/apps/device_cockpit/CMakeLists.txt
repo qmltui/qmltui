@@ -74,11 +74,12 @@ endif()
 
 if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
     include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    foreach(scenario overview network services logs)
+    # Module scenarios (.mjs): shared navigation lives in lib/cockpit.mjs.
+    foreach(scenario overview network services logs resize)
         qtui_add_scenario_test(
             NAME device_cockpit_${scenario}
             TARGET qtui_device_cockpit
-            SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_${scenario}.js"
+            SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_${scenario}.mjs"
             COLUMNS 100
             ROWS 30
             LABELS AgentSmoke

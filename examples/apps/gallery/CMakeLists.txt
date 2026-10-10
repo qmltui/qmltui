@@ -65,12 +65,15 @@ if(TARGET Qtui::Runner)
 
     if(QTUI_BUILD_TESTS)
         include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
+        # Gallery pages animate on QML Timers and Qtui animations: the tour
+        # runs on the virtual clock, so its per-page settling is instant.
         qtui_add_scenario_test(
             NAME gallery_smoke
             TARGET qtui_gallery_test
             SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery.js"
             COLUMNS 100
             ROWS 30
+            CLOCK VIRTUAL
             ARTIFACT "gallery/grid.txt"
             ARTIFACT_CONTENT "Qtui Gallery"
             LABELS AgentSmoke

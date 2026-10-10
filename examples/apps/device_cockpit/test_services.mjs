@@ -1,7 +1,9 @@
 // Services page scenario, run against the mock providers.
+import { waitForShell, confirmDialog } from "./lib/cockpit.mjs";
 
-function main(terminal) {
-    terminal.waitForText("DEVICE COCKPIT")
+/** @param {Terminal} terminal */
+export function main(terminal) {
+    waitForShell(terminal)
     terminal.press("F3")
     terminal.waitForCondition((frameText) =>
         frameText.includes("device-agent.service")
@@ -20,8 +22,7 @@ function main(terminal) {
     // Stop the selected unit through the confirmation dialog.
     terminal.press("Down")
     terminal.press("X")
-    terminal.waitForText("Stop sshd.service?")
-    terminal.press("Y")
+    confirmDialog(terminal, "Stop sshd.service?", "Y")
     terminal.waitForText("stop succeeded", 3000)
     terminal.waitForCondition((frameText) =>
         frameText.includes("inactive") && frameText.includes("dead"), 3000)
@@ -31,8 +32,7 @@ function main(terminal) {
     // The provider replaces its QVariantList after stopping; select the refreshed row.
     terminal.press("Down")
     terminal.press("S")
-    terminal.waitForText("Start sshd.service?")
-    terminal.press("N")
+    confirmDialog(terminal, "Start sshd.service?", "N")
     terminal.expectNoText("CONFIRM")
     terminal.finish()
 }

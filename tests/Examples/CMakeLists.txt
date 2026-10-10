@@ -10,14 +10,17 @@ if(TARGET qtui_pos_cashier)
     )
 endif()
 if(TARGET qtui_snake_game)
+    # The game ticks on QML Timers, so the whole run is virtual time.
     add_qtui_runner_scenario(test_runner_snake qtui_snake_game
         "${Qtui_SOURCE_DIR}/examples/apps/snake_game/test_snake.js" 0
+        CLOCK VIRTUAL
         ARTIFACT "snake/paused.txt"
         ARTIFACT_CONTENT "PAUSED"
     )
     add_qtui_runner_scenario(test_runner_snake_ai qtui_snake_game
         "${Qtui_SOURCE_DIR}/examples/apps/snake_game/test_snake_ai.js" 0
         FULL
+        CLOCK VIRTUAL
         SCENARIO_TIMEOUT_MS 15000
         ARTIFACT "snake/ai_gameplay.txt"
         ARTIFACT_CONTENT "SCORE"
@@ -45,6 +48,8 @@ if(TARGET qtui_sql_studio)
     )
 endif()
 if(TARGET qtui_industrial_plc_hmi)
+    # Stays on the real clock: the scenario waits on simulation state with
+    # waitForCondition(), which does not advance virtual time.
     add_qtui_runner_scenario(test_runner_plc qtui_industrial_plc_hmi
         "${Qtui_SOURCE_DIR}/examples/apps/industrial_plc_hmi/test_plc.js" 0
         FULL

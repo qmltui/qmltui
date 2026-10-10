@@ -365,7 +365,12 @@ role names every view provides; see the
 - `Loader` creates one `Qtui.Item` from `source` or `sourceComponent`.
 - `Row` and `Column` lay out children with integer spacing.
 - `Text`, `TextInput`, and `TextArea` provide terminal text rendering and input.
-- `MouseArea` provides click, wheel, hover, and drag input.
+- `MouseArea` provides click, wheel, hover, and drag input with the Qt Quick
+  vocabulary: `acceptedButtons` (default `Qt.LeftButton`), the `pressed` bool
+  alongside the signal, `pressedButtons`, `containsPress` for press feedback
+  that needs no motion reporting, and an `onWheel` that consumes the event
+  only while a handler is connected. `MouseEvent.button` carries Qt values
+  (`Qt.LeftButton`, ...); the raw terminal code is `nativeButton`.
 
 `Qtui.Controls` contains the controls a user operates or reads as finished
 widgets, including `TabBar`, `Toast`, `Sparkline`, and `Popup`. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,

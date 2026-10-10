@@ -112,6 +112,73 @@ Terminal {
         area->setProperty("hoverEnabled", false);
         QCOMPARE(count(out, "h"), size_t(0));   // no mode enabled at all
     }
+
+    // A Repeater parents its finished delegate after creation, so the area's
+    // own parentChanged fired while the delegate was still detached. The
+    // registration must follow the ancestor's attach (Item::ancestryChanged),
+    // or hover never works inside delegates.
+    void hoverRegistersInsideRepeaterDelegates() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Row {
+        Repeater {
+            model: 1
+            delegate: Rectangle {
+                required property int index
+                width: 6; height: 1
+                MouseArea { objectName: "area"; anchors.fill: parent; hoverEnabled: true }
+            }
+        }
+    }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* area = terminal->findChild<Item*>("area");
+        QVERIFY(area);
+        QVERIFY(terminal->isMouseMotionRequester(area));
+        const auto& out = backend->output();
+        QVERIFY(out.find(kMotion) != std::string::npos);
+
+        // The router publishing the area as hovered must reach containsMouse.
+        terminal->setHoveredItem(area);
+        QCOMPARE(area->property("containsMouse").toBool(), true);
+        terminal->setHoveredItem(nullptr);
+        QCOMPARE(area->property("containsMouse").toBool(), false);
+
+        // Detaching the delegate subtree drops the request again.
+        area->parentItem()->setParentItem(nullptr);
+        QVERIFY(!terminal->hasMouseMotionRequests());
+    }
+
+    // ToolTip binds its terminal the same way and had the same hole.
+    void toolTipRegistersInsideRepeaterDelegates() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        QQmlComponent component(&qml);
+        component.setData(QByteArray(
+            "import QtQml\nimport Qtui\nimport Qtui.Controls\n"
+            R"(
+Terminal {
+    Row {
+        Repeater {
+            model: 1
+            delegate: Rectangle {
+                required property int index
+                width: 6; height: 1
+                ToolTip.text: "hint"
+            }
+        }
+    }
+}
+)"), QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        if (!object) qWarning() << component.errorString();
+        terminal = qobject_cast<Terminal*>(object.get());
+        QVERIFY(terminal);
+        QVERIFY(terminal->hasMouseMotionRequests());
+    }
 };
 
 QTEST_MAIN(TestMouseModes)

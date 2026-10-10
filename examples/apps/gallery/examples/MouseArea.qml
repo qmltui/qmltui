@@ -24,21 +24,23 @@ Terminal {
             id: pad
             width: 50
             height: 7
-            color: area.pressedNow ? "#7c2d12" : "#1c1917"
+            color: area.containsPress ? "#7c2d12" : "#1c1917"
             border.style: "single"
             border.color: "#f97316"
             MouseArea {
                 id: area
-                property bool pressedNow: false
                 anchors.fill: parent
                 hoverEnabled: true
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onMouseXChanged: x => { mouseDemo.last = "x at " + x; }
                 onMouseYChanged: y=> { mouseDemo.last = "y at " + y;  }
-                onPressed: event => { pressedNow = true; event.accepted = true }
-                onReleased: event => { pressedNow = false; event.accepted = true }
-                onClicked: event => { mouseDemo.last = "click at (" + event.x + ", " + event.y + ") button " + event.button; event.accepted = true }
+                onClicked: event => {
+                    const name = event.button === Qt.RightButton ? "right" : "left";
+                    mouseDemo.last = name + " click at (" + event.x + ", " + event.y + ")";
+                    event.accepted = true;
+                }
             }
-            Text { anchors.centerIn: parent; text: area.pressedNow ? "pressed" : "hover " + area.mouseX + ", " + area.mouseY; color: "#f97316" }
+            Text { anchors.centerIn: parent; text: area.pressed ? "pressed" : "hover " + area.mouseX + ", " + area.mouseY; color: "#f97316" }
         }
         Text { text: "Last: " + mouseDemo.last; color: "#f97316" }
     }

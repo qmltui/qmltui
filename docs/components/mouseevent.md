@@ -27,12 +27,13 @@ _TODO_ one sentence. [More...](#detailed-description)
 | `type` | `Type` |  | Read-only. _TODO_ |
 | `x` | `int` |  | Read-only. _TODO_ |
 | `y` | `int` |  | Read-only. _TODO_ |
-| `button` | `int` |  | Read-only. _TODO_ |
+| `button` | `Qt::MouseButton` |  | Read-only. The button as a Qt value: compare against `Qt.LeftButton`, `Qt.MiddleButton`, `Qt.RightButton`. `Qt.NoButton` for a wheel event and for motion without a button held. |
+| `nativeButton` | `int` |  | Read-only. The terminal's own button code (SGR low bits: 0 left, 1 middle, 2 right, 3 none), for forwarding to another terminal. |
 | `modifiers` | `int` |  | Read-only. _TODO_ |
 | `motion` | `bool` |  | Read-only. _TODO_ |
 | `wheelDeltaX` | `int` |  | Read-only. _TODO_ |
 | `wheelDeltaY` | `int` |  | Read-only. _TODO_ |
-| `accepted` | `bool` |  | _TODO_ |
+| `accepted` | `bool` | `false` | Whether a handler consumed the event. An unaccepted event bubbles to the parent item; set it to `false` in a handler to pass the event on. |
 
 ## Enumeration MouseEvent.Type
 

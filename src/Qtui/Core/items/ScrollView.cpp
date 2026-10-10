@@ -90,11 +90,11 @@ void ScrollView::mousePressEvent(MouseEvent* event) {
     if (focusable() && !focus()) {
         setFocus(true);
     }
-    if (event->button() == MouseWheelUp) {
+    if (event->nativeButton() == MouseWheelUp) {
         // Scroll Up
         setContentY(m_contentY - 1);
         event->setAccepted(true);
-    } else if (event->button() == MouseWheelDown) {
+    } else if (event->nativeButton() == MouseWheelDown) {
         // Scroll Down
         setContentY(m_contentY + 1);
         event->setAccepted(true);

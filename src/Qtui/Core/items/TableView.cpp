@@ -1250,7 +1250,7 @@ void TableView::keyPressEvent(KeyEvent *event) {
 }
 void TableView::mousePressEvent(MouseEvent *event) {
     const auto view = viewGeometry();
-    if (event->button() != 0 || event->x() < view.left || event->x() >= view.right()
+    if (event->button() != Qt::LeftButton || event->x() < view.left || event->x() >= view.right()
         || event->y() < view.top || event->y() >= view.bottom()) return;
     int column = -1;
     for (const auto &geometry : std::as_const(m_geometry))

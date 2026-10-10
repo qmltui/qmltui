@@ -435,7 +435,7 @@ void TerminalView::mousePressEvent(MouseEvent *event) {
 
   if (m_processState == Running && m_adapter->mouseReporting()) {
     m_adapter->sendMouseMove(event->y(), event->x(), event->modifiers());
-    m_adapter->sendMouseButton(event->button(), true, event->modifiers());
+    m_adapter->sendMouseButton(event->nativeButton(), true, event->modifiers());
     event->setAccepted(true);
   }
 }
@@ -443,7 +443,7 @@ void TerminalView::mousePressEvent(MouseEvent *event) {
 void TerminalView::mouseReleaseEvent(MouseEvent *event) {
   if (event && m_processState == Running && m_adapter->mouseReporting()) {
     m_adapter->sendMouseMove(event->y(), event->x(), event->modifiers());
-    m_adapter->sendMouseButton(event->button(), false, event->modifiers());
+    m_adapter->sendMouseButton(event->nativeButton(), false, event->modifiers());
     event->setAccepted(true);
   }
 }

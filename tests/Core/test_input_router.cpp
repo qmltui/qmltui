@@ -30,6 +30,9 @@ private slots:
     void testHiddenAncestorRejectsFocusAndKeys();
     void testHiddenAncestorInvalidatesMouseGrab();
     void testMouseAreaClickOnlyOnReleaseInside();
+    void testAcceptedButtonsAndQtButtonValues();
+    void testPressedPropertyAndContainsPress();
+    void testWheelSignalConsumesOnlyWhenConnected();
     void testLegacyWheelEventsNotSwallowedByMouseArea();
     void testModalPopupDiscardsStaleBackgroundGrab();
     void testTopmostPopupDismissalOrder();
@@ -65,7 +68,7 @@ void TestInputRouter::testImplicitMouseGrab() {
     });
 
     // 1. Press inside MouseArea at screen (7, 7) -> local (2, 2)
-    router.routeMouse(1, 7, 7, false, false);
+    router.routeMouse(0, 7, 7, false, false);
     QCOMPARE(pressCount, 1);
     QCOMPARE(lastMouseX, 2);
     QCOMPARE(lastMouseY, 2);
@@ -78,7 +81,7 @@ void TestInputRouter::testImplicitMouseGrab() {
     QCOMPARE(ma.mouseY(), 20);
 
     // 3. Release mouse at screen (30, 30) -> local (25, 25)
-    router.routeMouse(1, 30, 30, true, false);
+    router.routeMouse(0, 30, 30, true, false);
     QCOMPARE(releaseCount, 1);
     QCOMPARE(lastMouseX, 25);
     QCOMPARE(lastMouseY, 25);
@@ -102,15 +105,15 @@ void TestInputRouter::testPressArmedPopupDismissal() {
 
     // Case 1: Press inside popup (15, 15) -> drag outside (5, 5) -> release outside (5, 5)
     // Should NOT close the popup because the press did not start outside.
-    router.routeMouse(1, 15, 15, false, false);
+    router.routeMouse(0, 15, 15, false, false);
     router.routeMouse(0, 5, 5, false, true);
-    router.routeMouse(1, 5, 5, true, false);
+    router.routeMouse(0, 5, 5, true, false);
     QCOMPARE(popup.visible(), true);
 
     // Case 2: Press outside popup (5, 5) -> release outside popup (5, 5)
     // Should close the popup
-    router.routeMouse(1, 5, 5, false, false);
-    router.routeMouse(1, 5, 5, true, false);
+    router.routeMouse(0, 5, 5, false, false);
+    router.routeMouse(0, 5, 5, true, false);
     QCOMPARE(popup.visible(), false);
 }
 
@@ -184,14 +187,14 @@ void TestInputRouter::testChildMouseEventFilter() {
     InputRouter router(&terminal);
 
     // Mouse press inside child at (7, 7)
-    router.routeMouse(1, 7, 7, false, false);
+    router.routeMouse(0, 7, 7, false, false);
 
     QCOMPARE(parent.filterCalled, true);
     QCOMPARE(parent.filteredChild, static_cast<Item*>(&child));
     QCOMPARE(parent.lastType, MouseEvent::Type::Press);
     QCOMPARE(childPressed, false); // Filter intercepted and accepted event
 
-    router.routeMouse(1, 7, 7, true, false);
+    router.routeMouse(0, 7, 7, true, false);
     QCOMPARE(parent.lastType, MouseEvent::Type::Release);
 }
 
@@ -403,6 +406,94 @@ void TestInputRouter::testMouseAreaClickOnlyOnReleaseInside() {
 
     QCOMPARE(releases, 1);
     QCOMPARE(clicks, 0); // Click MUST NOT be emitted when released outside
+}
+
+// acceptedButtons defaults to Qt.LeftButton, as in Qt Quick; other buttons
+// leave the event for items behind, and delivered events carry Qt values.
+void TestInputRouter::testAcceptedButtonsAndQtButtonValues() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
+
+    MouseArea behind(&terminal);
+    behind.setWidth(20); behind.setHeight(10);
+    behind.setAcceptedButtons(Qt::RightButton);
+    Qt::MouseButton behindButton = Qt::NoButton;
+    connect(&behind, &MouseArea::pressed, [&](MouseEvent *ev) { behindButton = ev->button(); });
+
+    MouseArea front(&behind);
+    front.setWidth(20); front.setHeight(10);
+    Qt::MouseButton frontButton = Qt::NoButton;
+    connect(&front, &MouseArea::pressed, [&](MouseEvent *ev) { frontButton = ev->button(); });
+
+    InputRouter router(&terminal);
+
+    // Native 2 is the right button: the front area (left only) lets it
+    // through to the right-accepting area behind it.
+    router.routeMouse(2, 5, 5, false, false);
+    QCOMPARE(frontButton, Qt::NoButton);
+    QCOMPARE(behindButton, Qt::RightButton);
+    router.routeMouse(2, 5, 5, true, false);
+
+    // Native 0 is the left button and stops at the front area.
+    router.routeMouse(0, 5, 5, false, false);
+    QCOMPARE(frontButton, Qt::LeftButton);
+    router.routeMouse(0, 5, 5, true, false);
+}
+
+void TestInputRouter::testPressedPropertyAndContainsPress() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
+
+    MouseArea ma(&terminal);
+    ma.setX(5); ma.setY(5); ma.setWidth(10); ma.setHeight(5);
+
+    InputRouter router(&terminal);
+    QCOMPARE(ma.isPressed(), false);
+
+    router.routeMouse(0, 7, 7, false, false);
+    QCOMPARE(ma.isPressed(), true);
+    QCOMPARE(ma.pressedButtons(), Qt::MouseButtons(Qt::LeftButton));
+    QCOMPARE(ma.containsPress(), true);
+
+    // Button-held motion out of the area: still pressed, no longer inside.
+    router.routeMouse(0, 30, 20, false, true);
+    QCOMPARE(ma.isPressed(), true);
+    QCOMPARE(ma.containsPress(), false);
+
+    // Back inside, then release: everything ends.
+    router.routeMouse(0, 8, 6, false, true);
+    QCOMPARE(ma.containsPress(), true);
+    router.routeMouse(0, 8, 6, true, false);
+    QCOMPARE(ma.isPressed(), false);
+    QCOMPARE(ma.containsPress(), false);
+
+    // Hiding a pressed area ends the press: no release will be delivered.
+    router.routeMouse(0, 7, 7, false, false);
+    QCOMPARE(ma.isPressed(), true);
+    ma.setVisible(false);
+    QCOMPARE(ma.isPressed(), false);
+    QCOMPARE(ma.containsPress(), false);
+}
+
+void TestInputRouter::testWheelSignalConsumesOnlyWhenConnected() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+
+    ScrollView* view = new ScrollView(&terminal);
+    view->setWidth(20); view->setHeight(5);
+    view->setContentHeight(50);
+
+    MouseArea* area = new MouseArea(view);
+    area->setWidth(20); area->setHeight(5);
+
+    InputRouter router(&terminal);
+
+    // A handler takes the wheel; the view behind must not scroll.
+    int wheelDeltaY = 0;
+    connect(area, &MouseArea::wheel, [&](MouseEvent *ev) { wheelDeltaY = ev->wheelDeltaY(); });
+    router.routeMouse(1, 2, 2, false, false, 0, 0, -1);
+    QCOMPARE(wheelDeltaY, -1);
+    QCOMPARE(view->contentY(), 0);
 }
 
 void TestInputRouter::testLegacyWheelEventsNotSwallowedByMouseArea() {

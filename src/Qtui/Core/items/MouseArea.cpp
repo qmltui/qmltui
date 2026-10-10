@@ -1,12 +1,19 @@
 #include <Qtui/Core/items/MouseArea.h>
 #include <Qtui/Core/items/Terminal.h>
+#include <QMetaMethod>
 
 namespace qtui {
 
 MouseArea::MouseArea(QObject *parent) : Item(parent) {
     connect(this, &Item::parentChanged, this, &MouseArea::updateMotionRegistration);
+    // An ancestor's reparenting (a Repeater inserting its finished delegate)
+    // changes the resolved terminal without this item's own parentChanged
+    // firing; without this the motion registration is missed for good.
+    connect(this, &Item::ancestryChanged, this, &MouseArea::updateMotionRegistration);
     connect(this, &Item::visibleChanged, this, &MouseArea::updateContainsMouse);
     connect(this, &Item::enabledChanged, this, &MouseArea::updateContainsMouse);
+    connect(this, &Item::visibleChanged, this, &MouseArea::resetPressWhenInert);
+    connect(this, &Item::enabledChanged, this, &MouseArea::resetPressWhenInert);
 }
 
 MouseArea::~MouseArea() {
@@ -74,20 +81,56 @@ void MouseArea::setMousePosition(int x, int y) {
     }
 }
 
+void MouseArea::setAcceptedButtons(Qt::MouseButtons buttons) {
+    if (m_acceptedButtons == buttons) return;
+    m_acceptedButtons = buttons;
+    emit acceptedButtonsChanged();
+}
+
+void MouseArea::setPressedButtons(Qt::MouseButtons buttons) {
+    if (m_pressedButtons == buttons) return;
+    const bool wasPressed = isPressed();
+    m_pressedButtons = buttons;
+    emit pressedButtonsChanged();
+    if (wasPressed != isPressed()) emit pressedChanged();
+}
+
+void MouseArea::updateContainsPress(bool inside) {
+    const bool value = isPressed() && inside;
+    if (m_containsPress == value) return;
+    m_containsPress = value;
+    emit containsPressChanged();
+}
+
+void MouseArea::resetPressWhenInert() {
+    if (isEffectivelyVisible() && isEffectivelyEnabled()) return;
+    setPressedButtons(Qt::NoButton);
+    updateContainsPress(false);
+}
+
 void MouseArea::mousePressEvent(MouseEvent *event) {
-    if (event->button() < 0 || event->button() > 2) {
-        return;
+    if (!(m_acceptedButtons & event->button())) {
+        return;   // not ours: the event stays unaccepted for items behind
     }
     setMousePosition(event->x(), event->y());
+    setPressedButtons(m_pressedButtons | event->button());
+    updateContainsPress(true);   // a press is hit-tested, so it is inside
     emit pressed(event);
     event->setAccepted(true);
 }
 
 void MouseArea::mouseReleaseEvent(MouseEvent *event) {
-    if (event->button() < 0 || event->button() > 2) {
+    const Qt::MouseButton button = event->button();
+    // A legacy release reports no button; it ends whatever press is held.
+    const bool endsPress = button == Qt::NoButton ? isPressed()
+                                                  : m_pressedButtons.testFlag(button);
+    if (!endsPress && !(m_acceptedButtons & button)) {
         return;
     }
     setMousePosition(event->x(), event->y());
+    setPressedButtons(button == Qt::NoButton ? Qt::MouseButtons(Qt::NoButton)
+                                             : m_pressedButtons & ~Qt::MouseButtons(button));
+    if (!isPressed()) updateContainsPress(false);
     emit released(event);
     if (event->x() >= 0 && event->x() < width() &&
         event->y() >= 0 && event->y() < height()) {
@@ -97,10 +140,26 @@ void MouseArea::mouseReleaseEvent(MouseEvent *event) {
 }
 
 void MouseArea::mouseMoveEvent(MouseEvent *event) {
-    const bool buttonMotion = event->isMotion() && ((event->button() & 3) != 3);
+    const bool buttonMotion = event->isMotion() && event->button() != Qt::NoButton;
     if (!event->isMotion() || buttonMotion || m_hoverEnabled) {
         setMousePosition(event->x(), event->y());
     }
+    if (isPressed()) {
+        updateContainsPress(event->x() >= 0 && event->x() < width() &&
+                            event->y() >= 0 && event->y() < height());
+    }
+}
+
+void MouseArea::wheelEvent(MouseEvent *event) {
+    static const QMetaMethod wheelSignal = QMetaMethod::fromSignal(&MouseArea::wheel);
+    if (!isSignalConnected(wheelSignal)) {
+        return;   // no handler: a scrolling container behind keeps the event
+    }
+    setMousePosition(event->x(), event->y());
+    // Accepted up front, as in Qt Quick; a handler can set accepted = false
+    // to let the event through after inspecting it.
+    event->setAccepted(true);
+    emit wheel(event);
 }
 
 } // namespace qtui

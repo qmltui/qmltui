@@ -1,7 +1,7 @@
-# Dynamic pictures from C++: Image.image bound to a QImage property, and an
-# image:// URL served by a qtui::ImageProvider. Each executable owns the QML
-# module so it runs from a shell without an import-path environment variable.
-set(live_image_sources framesource.h framesource.cpp frameprovider.h frameprovider.cpp)
+# Dynamic pictures from C++: an image:// URL served asynchronously by a
+# qtui::AsyncImageProvider. Each executable owns the QML module so it runs
+# from a shell without an import-path environment variable.
+set(live_image_sources frameprovider.h frameprovider.cpp)
 
 qt_add_executable(qtui_live_image main.cpp)
 qt_add_qml_module(qtui_live_image
@@ -43,7 +43,7 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
 endif()
 
 if(QTUI_BUILD_TESTS)
-    qt_add_executable(test_live_image_source test_framesource.cpp framesource.cpp framesource.h)
-    target_link_libraries(test_live_image_source PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Test)
-    add_test(NAME live_image_source COMMAND test_live_image_source)
+    qt_add_executable(test_live_image_provider test_frameprovider.cpp frameprovider.cpp frameprovider.h)
+    target_link_libraries(test_live_image_provider PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Test Qtui::Image)
+    add_test(NAME live_image_provider COMMAND test_live_image_provider)
 endif()

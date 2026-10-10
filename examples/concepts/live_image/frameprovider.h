@@ -6,11 +6,11 @@
 
 class RadarRenderer;
 
-// Shape 2 of a dynamic picture, asynchronous: the QML side addresses the
-// provider by URL, `Image { source: "image://frames/radar?tick=" + n }`, and
-// every new URL becomes a request. The sweep is painted on a dedicated render
-// thread; retainWhileLoading on the Image keeps the previous sweep visible
-// until the new one is ready.
+// A dynamic picture, asynchronous: the QML side addresses the provider by
+// URL, `Image { source: "image://frames/radar?tick=" + n }`, and every new URL
+// becomes a request. The sweep is painted on a dedicated render thread;
+// retainWhileLoading on the Image keeps the previous sweep visible until the
+// new one is ready.
 class RadarProvider : public qtui::AsyncImageProvider {
     Q_OBJECT
 public:

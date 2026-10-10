@@ -1,13 +1,12 @@
-// Both pictures are alive: the bound QImage and the provider-served one change
-// as the tick advances, are drawn at the Image's renderSize, and pausing stops
-// them. Under the test backend no pixel protocol exists, so both are half-block.
+// The radar sweep served by an asynchronous provider changes as the tick
+// advances, is drawn at the Image's renderSize, and pausing stops it.
+// Under the test backend no pixel protocol exists, so it renders in half-block.
 function main(terminal) {
     terminal.waitForText("Live Image: pictures from memory");
     terminal.waitForRegex("Tick [2-9]");
-    terminal.expectText("image: feed.frame");
     terminal.expectText("source: image://frames/radar");
     const root = terminal.rootObject();
-    const imageColumns = Math.floor((root.width - 10) / 2);
+    const imageColumns = root.width - 6;
     const imageRows = root.height - 12;
     terminal.expectText("frames " + imageColumns + "x" + (imageRows * 2) + " px");
     terminal.expectText("\u2580");                     // half-block pixels on the page

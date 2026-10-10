@@ -220,9 +220,10 @@ private:
         int leftPadding = 0;
         int rightPadding = 0;
         QString headerAlignment;
-        // Styling the column declares for itself, resolved once here rather
-        // than per cell. hasForeground/hasBackground tell "not set" apart from
-        // "set to the value that happens to be 0".
+        // Styling the column declares for itself. Resolved once here rather
+        // than per cell, so a column with a fixed ink costs nothing to paint.
+        // hasForeground/hasBackground distinguish "not set" from "set to the
+        // value that happens to be 0".
         uint32_t foreground = 0;
         uint32_t background = 0;
         bool hasForeground = false;
@@ -239,6 +240,7 @@ private:
                            const QList<int> &roles);
     QString cellText(int row, int col) const;
     QVariant modelHeader(int column, int role) const;
+    void refreshModelRoles();
     void refreshModelHeader();
     static QString alignmentName(const QVariant &alignment);
     void resolveColumns();
@@ -277,6 +279,12 @@ private:
     bool m_modelProvidesHeader = false;
     bool m_fetching = false;
     QHash<int, QByteArray> m_roleNames;
+    // Role names as QStrings and the standard names the model claims, both
+    // resolved when the model is set. updateDelegate() runs for every visible
+    // cell of every frame, so neither is rebuilt there.
+    QHash<int, QString> m_roleNameStrings;
+    // A NumericItemRoles claim mask; see NumericItemRoles_p.h.
+    quint16 m_claimedNames = 0;
     QList<ColumnGeometry> m_geometry;
     QList<int> m_separators;
     mutable QSet<QString> m_widthErrors;

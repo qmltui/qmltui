@@ -113,6 +113,106 @@ class TestTableViewHardening : public QObject
 {
     Q_OBJECT
 private slots:
+    void modelResetRefreshesRoleNamesAndClaims() {
+        class ResetRolesModel : public QAbstractListModel {
+        public:
+            int generation = 0;
+            int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 1; }
+            QHash<int, QByteArray> roleNames() const override {
+                QHash<int, QByteArray> names{{Qt::UserRole + generation, "display"}};
+                if (generation == 1) names.insert(Qt::UserRole + 10, "foreground");
+                return names;
+            }
+            QVariant data(const QModelIndex &, int role) const override {
+                if (role == Qt::UserRole + generation) return QStringLiteral("value%1").arg(generation);
+                if (role == Qt::UserRole + 10) return QStringLiteral("#00ffff");
+                if (role == Qt::ForegroundRole) return QStringLiteral("#ff0000");
+                return {};
+            }
+            void reset() { beginResetModel(); ++generation; endResetModel(); }
+        } model;
+        TableFixture f;
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "columns: [{title:'A',width:12}]; delegate: Text { "
+            "required property string display; required property string foreground; "
+            "text: display; color: foreground }")));
+        QVERIFY(f.line(2).startsWith("value0"));
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xffff0000u);
+        model.reset();
+        f.paint();
+        QVERIFY(f.line(2).startsWith("value1"));
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xff00ffffu);
+        model.reset();
+        f.paint();
+        QVERIFY(f.line(2).startsWith("value2"));
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xffff0000u);
+    }
+
+    void builtInPainterSkipsOverriddenColors() {
+        class StyledModel : public QAbstractTableModel {
+        public:
+            mutable QHash<int, int> reads;
+            QString foreground = QStringLiteral("#ff0000");
+            int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 1; }
+            int columnCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 4; }
+            Qt::ItemFlags flags(const QModelIndex &) const override { return Qt::ItemIsUserCheckable; }
+            QVariant data(const QModelIndex &, int role) const override {
+                ++reads[role];
+                switch (role) {
+                case Qt::DisplayRole: return QStringLiteral("v");
+                case Qt::ForegroundRole: return foreground;
+                case Qt::BackgroundRole: return QStringLiteral("#00ff00");
+                case Qt::TextAlignmentRole: return int(Qt::AlignRight);
+                case Qt::CheckStateRole: return int(Qt::Checked);
+                case Qt::DecorationRole: return QStringLiteral("*");
+                default: return {};
+                }
+            }
+        } model;
+        TableFixture f;
+        QVERIFY(f.createBody(&model, QStringLiteral(
+            "selectionColor: '#ffffff'; selectionBackgroundColor: '#222222'; "
+            "columns: [{title:'A',width:10,color:'#00ffff'},"
+            "{title:'B',width:10,background:'#0000ff'},"
+            "{title:'C',width:10,color:'#00ffff',background:'#0000ff'},"
+            "{title:'D',width:10}]")));
+        f.table->setSelectedRow(-1);
+        const auto paint = [&] { model.reads.clear(); f.paint(); };
+        paint();
+        QCOMPARE(model.reads.value(Qt::ForegroundRole), 2);
+        QCOMPARE(model.reads.value(Qt::BackgroundRole), 2);
+        QCOMPARE(f.line(2), QStringLiteral("   * [x] v   * [x] v   * [x] v   * [x] v"));
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xff00ffffu);
+        QCOMPARE(f.buffer.cellAt(0, 2).bgColor, 0xff00ff00u);
+        QCOMPARE(f.buffer.cellAt(10, 2).fgColor, 0xffff0000u);
+        QCOMPARE(f.buffer.cellAt(10, 2).bgColor, 0xff0000ffu);
+        QCOMPARE(f.buffer.cellAt(20, 2).fgColor, 0xff00ffffu);
+        QCOMPARE(f.buffer.cellAt(20, 2).bgColor, 0xff0000ffu);
+        QCOMPARE(f.buffer.cellAt(30, 2).fgColor, 0xffff0000u);
+        QCOMPARE(f.buffer.cellAt(30, 2).bgColor, 0xff00ff00u);
+        QVERIFY((f.buffer.cellAt(39, 2).attributes & TextAttribute::Dim) != TextAttribute::None);
+
+        // Time-dependent colors, like CAN byte age, must be read on every paint.
+        model.foreground = QStringLiteral("#ffff00");
+        paint();
+        QCOMPARE(f.buffer.cellAt(30, 2).fgColor, 0xffffff00u);
+
+        f.table->setSelectedRow(0);
+        paint();
+        QCOMPARE(model.reads.value(Qt::ForegroundRole), 0);
+        QCOMPARE(model.reads.value(Qt::BackgroundRole), 0);
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xffffffffu);
+        QCOMPARE(f.buffer.cellAt(0, 2).bgColor, 0xff222222u);
+
+        f.table->setSelectionKeepsCellColors(true);
+        paint();
+        QCOMPARE(model.reads.value(Qt::ForegroundRole), 2);
+        QCOMPARE(model.reads.value(Qt::BackgroundRole), 2);
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xff00ffffu);
+        QCOMPARE(f.buffer.cellAt(30, 2).fgColor, 0xffffff00u);
+        QCOMPARE(f.buffer.cellAt(30, 2).bgColor, 0xff00ff00u);
+    }
+
     // A column can state its own ink, so the view decides how a column looks
     // without the model carrying Qt::ForegroundRole for every cell.
     void columnDeclaresItsOwnInk() {

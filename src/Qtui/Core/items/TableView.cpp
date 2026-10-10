@@ -126,6 +126,8 @@ void TableView::setModel(const QVariant &model) {
     m_listModel.clear();
     m_cppModel.clear();
     m_roleNames.clear();
+    m_roleNameStrings.clear();
+    m_claimedNames = 0;
     if (model.metaType() == QMetaType::fromType<QJSValue>()) m_listModel = unpack(model).toList();
     else if (model.canConvert<QVariantList>()) m_listModel = model.toList();
     else m_cppModel = qobject_cast<QAbstractItemModel *>(model.value<QObject *>());
@@ -142,11 +144,13 @@ void TableView::setModel(const QVariant &model) {
         }
     }
     if (m_cppModel) {
-        m_roleNames = m_cppModel->roleNames();
+        refreshModelRoles();
         connect(m_cppModel, &QObject::destroyed, this, [this] {
             m_cppModel.clear();
             m_modelVariant.clear();
             m_roleNames.clear();
+            m_roleNameStrings.clear();
+            m_claimedNames = 0;
             m_modelProvidesHeader = false;
             resetViewport();
             clearSelection();
@@ -170,7 +174,7 @@ void TableView::setModel(const QVariant &model) {
             forceLayout();
         });
         connect(m_cppModel, &QAbstractItemModel::modelReset, this, [this] {
-            m_roleNames = m_cppModel->roleNames();
+            refreshModelRoles();
             refreshModelHeader();
             m_structureDirty = true;
             resetViewport();
@@ -208,6 +212,14 @@ int TableView::headerRows() const {
 }
 QVariant TableView::modelHeader(int column, int role) const {
     return m_cppModel ? m_cppModel->headerData(column, Qt::Horizontal, role) : QVariant();
+}
+void TableView::refreshModelRoles() {
+    m_roleNames = m_cppModel->roleNames();
+    m_roleNameStrings.clear();
+    m_roleNameStrings.reserve(m_roleNames.size());
+    for (auto it = m_roleNames.cbegin(); it != m_roleNames.cend(); ++it)
+        m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
+    m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
 }
 void TableView::refreshModelHeader() {
     // QAbstractItemModel::headerData() falls back to the section number, so a
@@ -748,10 +760,10 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
                 return fetched.value(role);
             };
             if (allRolesDirty || !record.loaded) values.clear();
-            for (auto it = m_roleNames.cbegin(); it != m_roleNames.cend(); ++it)
+            for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it)
                 if (allRolesDirty || !record.loaded || dirtyRoles.contains(it.key()))
-                    values.insert(QString::fromUtf8(it.value()), readRole(it.key()));
-            NumericItemRoles::apply(m_cppModel.data(), record.source, values, true);
+                    values.insert(it.value(), readRole(it.key()));
+            NumericItemRoles::apply(m_cppModel.data(), record.source, values, true, m_claimedNames);
             modelData = m_roleNames.isEmpty() ? readRole(Qt::DisplayRole) : QVariant(values);
         } else {
             const QVariant value = row >= 0 && row < m_listModel.size() ? unpack(m_listModel[row]) : QVariant();
@@ -1019,7 +1031,9 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         for (const auto &geometry : m_geometry) {
             if (geometry.x >= view.right()) break;
             if (m_delegate || m_rowDelegate) continue;
-            QString value = cellText(row, geometry.column);
+            const QModelIndex index = sourceIndex(row, geometry.column);
+            QString value = m_cppModel ? m_cppModel->data(index, Qt::DisplayRole).toString()
+                                      : cellText(row, geometry.column);
             QString alignment = geometry.alignment;
             int cellLeftPadding = geometry.leftPadding;
             int cellRightPadding = geometry.rightPadding;
@@ -1036,19 +1050,14 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             }
             if (m_cppModel) {
                 // Standard item roles, as QStyledItemDelegate would paint them.
-                const QVariantMap standard = NumericItemRoles::read(m_cppModel.data(), sourceIndex(row, geometry.column));
-                value = NumericItemRoles::prefix(standard) + value;
-                if (keepCellColors) {
-                    if (!geometry.hasForeground)
-                        cellFg = NumericItemRoles::color(standard, "foreground", cellFg);
-                    // Where the cell supplies no background of its own the
-                    // selection's shows through, which is what marks the row.
-                    if (!geometry.hasBackground)
-                        cellBg = NumericItemRoles::color(standard, "background", cellBg);
-                }
-                const QString cellAlignment = standard.value(QStringLiteral("textAlignment")).toString();
-                if (!cellAlignment.isEmpty()) alignment = cellAlignment;
-                if (!NumericItemRoles::enabled(standard)) cellAttributes = cellAttributes | TextAttribute::Dim;
+                const auto standard = NumericItemRoles::readForPaint(m_cppModel.data(), index,
+                    cellFg, cellBg, keepCellColors && !geometry.hasForeground,
+                    keepCellColors && !geometry.hasBackground);
+                if (!standard.prefix.isEmpty()) value.prepend(standard.prefix);
+                cellFg = standard.foreground;
+                cellBg = standard.background;
+                if (!standard.alignment.isEmpty()) alignment = standard.alignment;
+                if (!standard.enabled) cellAttributes = cellAttributes | TextAttribute::Dim;
             }
             if (m_cellFormat.isCallable()) {
                 const QJSValue result = m_cellFormat.call({row, geometry.column, value});

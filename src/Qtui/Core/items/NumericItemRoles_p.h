@@ -80,22 +80,79 @@ inline QString decorationGlyph(const QVariant &decoration)
     return {};
 }
 
-// Every standard value for one index, keyed by the names delegates see.
-inline QVariantMap read(const QAbstractItemModel *model, const QModelIndex &index)
+// Built-in painters need only these values, not a delegate's property map or
+// modelIndex. Read live on each paint so time-dependent model colors stay fresh.
+struct PaintData {
+    uint32_t foreground;
+    uint32_t background;
+    QString alignment;
+    QString prefix;
+    bool enabled = true;
+};
+
+inline PaintData readForPaint(const QAbstractItemModel *model, const QModelIndex &index,
+                             uint32_t foreground, uint32_t background,
+                             bool readForeground, bool readBackground)
 {
-    QVariantMap values;
+    PaintData values{foreground, background, {}, {}};
     if (!model || !index.isValid()) return values;
-    values.insert(QStringLiteral("foreground"), colorString(model->data(index, Qt::ForegroundRole)));
-    values.insert(QStringLiteral("background"), colorString(model->data(index, Qt::BackgroundRole)));
-    values.insert(QStringLiteral("textAlignment"), alignmentName(model->data(index, Qt::TextAlignmentRole)));
+    const auto color = [&](int role, uint32_t fallback) {
+        const QString text = colorString(model->data(index, role));
+        return text.isEmpty() ? fallback : ColorMapper::fromString(text, fallback);
+    };
+    if (readForeground) values.foreground = color(Qt::ForegroundRole, foreground);
+    if (readBackground) values.background = color(Qt::BackgroundRole, background);
+    values.alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
     const QVariant check = model->data(index, Qt::CheckStateRole);
-    values.insert(QStringLiteral("checkState"), check.isValid() && check.canConvert<int>() ? check.toInt() : -1);
-    values.insert(QStringLiteral("decoration"), decorationGlyph(model->data(index, Qt::DecorationRole)));
-    const Qt::ItemFlags flags = model->flags(index);
-    values.insert(QStringLiteral("enabled"), flags.testFlag(Qt::ItemIsEnabled));
-    values.insert(QStringLiteral("checkable"), flags.testFlag(Qt::ItemIsUserCheckable));
-    values.insert(QStringLiteral("modelIndex"), QVariant::fromValue(QModelIndex(index)));
+    const QString glyph = decorationGlyph(model->data(index, Qt::DecorationRole));
+    if (!glyph.isEmpty()) values.prefix = glyph + QLatin1Char(' ');
+    if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
+        const int state = check.toInt();
+        values.prefix += state == Qt::Checked ? QStringLiteral("[x] ")
+                       : state == Qt::PartiallyChecked ? QStringLiteral("[-] ") : QStringLiteral("[ ] ");
+    }
+    values.enabled = model->flags(index).testFlag(Qt::ItemIsEnabled);
     return values;
+}
+
+// Which of the standard names a model already publishes through roleNames().
+//
+// apply() resolved this for every index: a virtual roleNames() call, a hash
+// copy, and a string comparison of each standard key against every published
+// name, on a path that runs for every visible cell of every frame. A view that
+// holds a model for a while resolves it once instead and passes it in.
+//
+// A plain bit mask rather than a struct, so a public header can cache one
+// without including this private header.
+enum ClaimedName : quint16 {
+    ClaimsNothing     = 0,
+    ClaimsForeground  = 1u << 0,
+    ClaimsBackground  = 1u << 1,
+    ClaimsAlignment   = 1u << 2,
+    ClaimsCheckState  = 1u << 3,
+    ClaimsDecoration  = 1u << 4,
+    ClaimsEnabled     = 1u << 5,
+    ClaimsCheckable   = 1u << 6,
+    ClaimsModelIndex  = 1u << 7,
+};
+
+inline quint16 claimedNames(const QAbstractItemModel *model)
+{
+    if (!model) return ClaimsNothing;
+    quint16 claimed = ClaimsNothing;
+    const QHash<int, QByteArray> names = model->roleNames();
+    for (auto it = names.cbegin(); it != names.cend(); ++it) {
+        const QByteArray &name = it.value();
+        if (name == "foreground") claimed |= ClaimsForeground;
+        else if (name == "background") claimed |= ClaimsBackground;
+        else if (name == "textAlignment") claimed |= ClaimsAlignment;
+        else if (name == "checkState") claimed |= ClaimsCheckState;
+        else if (name == "decoration") claimed |= ClaimsDecoration;
+        else if (name == "enabled") claimed |= ClaimsEnabled;
+        else if (name == "checkable") claimed |= ClaimsCheckable;
+        else if (name == "modelIndex") claimed |= ClaimsModelIndex;
+    }
+    return claimed;
 }
 
 // Adds (or refreshes) the standard values in a delegate's role map, leaving
@@ -106,36 +163,39 @@ inline QVariantMap read(const QAbstractItemModel *model, const QModelIndex &inde
 // rebind an existing delegate pass includeUnset so a cleared style is
 // published as cleared.
 inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVariantMap &values,
-                  bool includeUnset = false)
+                  bool includeUnset, quint16 claimed)
 {
     if (!model || !index.isValid()) return;
-    // roleNames() is an implicitly shared hash of a handful of entries; compare
-    // against it directly rather than building a set per row.
-    const QHash<int, QByteArray> names = model->roleNames();
-    const auto put = [&](const char *key, const QVariant &value, bool unset) {
+    const auto put = [&](const QString &name, quint16 claim, const QVariant &value, bool unset) {
         if (!includeUnset && unset) return;
-        const QString name = QLatin1String(key);
-        for (auto it = names.cbegin(); it != names.cend(); ++it)
-            if (name == QLatin1String(it.value())) return;
+        if (claimed & claim) return;
         values.insert(name, value);
     };
     const QString foreground = colorString(model->data(index, Qt::ForegroundRole));
-    put("foreground", foreground, foreground.isEmpty());
+    put(QStringLiteral("foreground"), ClaimsForeground, foreground, foreground.isEmpty());
     const QString background = colorString(model->data(index, Qt::BackgroundRole));
-    put("background", background, background.isEmpty());
+    put(QStringLiteral("background"), ClaimsBackground, background, background.isEmpty());
     const QString alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
-    put("textAlignment", alignment, alignment.isEmpty());
+    put(QStringLiteral("textAlignment"), ClaimsAlignment, alignment, alignment.isEmpty());
     const QVariant check = model->data(index, Qt::CheckStateRole);
     const int checkState = check.isValid() && check.canConvert<int>() ? check.toInt() : -1;
-    put("checkState", checkState, checkState < 0);
+    put(QStringLiteral("checkState"), ClaimsCheckState, checkState, checkState < 0);
     const QString glyph = decorationGlyph(model->data(index, Qt::DecorationRole));
-    put("decoration", glyph, glyph.isEmpty());
+    put(QStringLiteral("decoration"), ClaimsDecoration, glyph, glyph.isEmpty());
     const Qt::ItemFlags flags = model->flags(index);
     const bool enabled = flags.testFlag(Qt::ItemIsEnabled);
     const bool checkable = flags.testFlag(Qt::ItemIsUserCheckable);
-    put("enabled", enabled, enabled);
-    put("checkable", checkable, !checkable);
-    put("modelIndex", QVariant::fromValue(QModelIndex(index)), !checkable);
+    put(QStringLiteral("enabled"), ClaimsEnabled, enabled, enabled);
+    put(QStringLiteral("checkable"), ClaimsCheckable, checkable, !checkable);
+    put(QStringLiteral("modelIndex"), ClaimsModelIndex,
+        QVariant::fromValue(QModelIndex(index)), !checkable);
+}
+
+// For callers with nowhere to cache the mask; resolves it per call, as before.
+inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVariantMap &values,
+                  bool includeUnset = false)
+{
+    apply(model, index, values, includeUnset, claimedNames(model));
 }
 
 // "[x] " / "[ ] " / "[-] " and the decoration glyph, for built-in painters.

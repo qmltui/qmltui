@@ -31,8 +31,9 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 | `retainWhileLoading` | `bool` | `false` | Keep the previous picture visible while a new remote or asynchronous provider source loads. Set to `true` for live feeds to avoid blank frames. Clearing the source or a failed load still clears the picture. Disabling it during a pending load discards the retained picture; enabling it cannot restore a picture already discarded. |
 | `progress` | `real` | `0.0` | Read-only. How much of a remote source has arrived, `0.0` to `1.0`; `1.0` once any picture is ready and `0.0` while nothing is shown. Local and resource pictures jump straight to `1.0`. |
 | `sourceSize` | `size` | `0x0` | Read-only. The picture's size in pixels before scaling. |
+| `sourceClipRect` | `rect` | null | The sub-rectangle of the source, in source pixels, that the item shows; null shows the whole picture. The clip crops before any scaling, so `fillMode`, `alignment` and the pixel protocols see only that region, and the implicit size follows the clip while `sourceSize` keeps reporting the full picture. Parts outside the picture are cut off; a clip entirely outside draws nothing. The cropped region is cached, so animating the clip over a sprite sheet re-scales only one frame per change. |
 | `renderSize` | `size` |  | Read-only. The pixel grid this item paints into: columns and rows times the cell's pixel size when kitty or sixel will draw, otherwise the glyph grid (1x2 per cell for half-block, 2x4 for Braille, 1x1 for ASCII). Kitty limits each side to 2048 pixels, preserving the aspect ratio, matching its upload limit so producers avoid rendering pixels that would be discarded. It follows the item size, `renderMode` and the terminal's capabilities. |
-| `smooth` | `bool` | `true` | Filter the picture when scaling instead of picking the nearest pixel. With kitty, a source smaller than its placement is pre-scaled to the placement's pixel size so the terminal's own magnification cannot turn pixels into blocks; false uploads the source as is, which suits pixel art. |
+| `smooth` | `bool` | `false` | Use nearest-neighbour sampling for crisp edges by default. Set to `true` to filter neighbouring pixels when scaling. With kitty, `true` also pre-scales a source smaller than its placement to the placement's pixel size; `false` leaves magnification to the terminal. |
 | `alignment` | `Qt::Alignment` | `Qt.AlignCenter` | Where a picture smaller than the item sits inside it. |
 
 ## Enumeration Image.FillMode
@@ -82,6 +83,19 @@ committed-frame tests see.
 The item repaints when the source, the geometry, or any rendering property
 changes. Scaling is cached between frames, so a static picture costs nothing
 after the first paint.
+
+### Scaling and sharpness
+
+Images default to `smooth: false`. Half-block rendering samples the nearest
+source pixel for each half-cell, preserving opaque edge colours without adding
+intermediate shades during resizing. This also applies when `Auto`, `Kitty`,
+or `Sixel` falls back to half-block rendering.
+
+Set `smooth: true` to restore filtered scaling, for example for photographs.
+Filtering blends neighbouring pixels and can make edges look softer on the
+coarse half-block grid. Nearest-neighbour sampling can look more jagged and
+does not remove softened edges already present in the source image;
+partially transparent pixels still blend with the background as described below.
 
 ### Transparency
 
@@ -134,8 +148,23 @@ or a decoded video frame:
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown
 with `Image.HalfBlock` or `Image.Braille`. `examples/concepts/live_image`
-shows both shapes side by side, a scope trace bound through `image` and a
-radar sweep served by a provider.
+renders a live radar sweep served by an asynchronous provider.
+
+### Sprite sheets
+
+`sourceClipRect` shows one region of a larger picture, so a sheet of frames or
+an icon atlas is decoded once and each item crops its own tile:
+
+```qml
+Image {
+    source: "icons.png"
+    sourceClipRect: Qt.rect(32, 0, 16, 16)   // the second 16x16 icon
+}
+```
+
+Moving the clip is how frames animate: only the cropped region is re-scaled,
+the sheet itself is not touched again. For a frame grid played on a clock, use
+[AnimatedSprite](animatedsprite.md), which drives `sourceClipRect` itself.
 
 ```qml
 Image {

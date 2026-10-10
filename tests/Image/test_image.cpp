@@ -24,6 +24,8 @@ private slots:
     void testLoadValidImage();
     void testLoadInvalidImage();
     void testRenderHalfBlock();
+    void testHalfBlockSampling_data();
+    void testHalfBlockSampling();
     void testAutoFitsLikeHalfBlock();
     void testSetImageFromMemory();
     void testImageProvider();
@@ -31,6 +33,8 @@ private slots:
     void testRenderASCII();
     void testRenderBraille();
     void testFillModeScaling();
+    void testSourceClipRect();
+    void testSourceClipRectOutside();
     void testQrcResourceUrl();
     void testRemoteUrl_data();
     void testRemoteUrl();
@@ -76,7 +80,7 @@ void TestImage::testInitialState() {
     QCOMPARE(img.status(), qtui::Image::Status::Null);
     QCOMPARE(img.fillMode(), qtui::Image::FillMode::Stretch);
     QCOMPARE(img.renderMode(), qtui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
-    QCOMPARE(img.smooth(), true);
+    QCOMPARE(img.smooth(), false);
     QCOMPARE(img.source().isEmpty(), true);
     QCOMPARE(img.retainWhileLoading(), false);
 }
@@ -145,6 +149,64 @@ void TestImage::testRenderHalfBlock() {
     QCOMPARE(QColor::fromRgba(cell0.bgColor).blue(), 255);
 
     QFile::remove(fileName);
+}
+
+void TestImage::testHalfBlockSampling_data() {
+    QTest::addColumn<QSize>("cells");
+    QTest::addColumn<qtui::Image::RenderMode>("mode");
+    QTest::newRow("half-block-smaller") << QSize(7, 2) << qtui::Image::RenderMode::HalfBlock;
+    QTest::newRow("half-block-larger") << QSize(17, 5) << qtui::Image::RenderMode::HalfBlock;
+    QTest::newRow("auto-smaller") << QSize(7, 2) << qtui::Image::RenderMode::Auto;
+    QTest::newRow("auto-larger") << QSize(17, 5) << qtui::Image::RenderMode::Auto;
+    QTest::newRow("kitty-fallback") << QSize(7, 2) << qtui::Image::RenderMode::Kitty;
+    QTest::newRow("sixel-fallback") << QSize(7, 2) << qtui::Image::RenderMode::Sixel;
+    QTest::newRow("native-size") << QSize(10, 3) << qtui::Image::RenderMode::HalfBlock;
+}
+
+void TestImage::testHalfBlockSampling() {
+    QFETCH(QSize, cells);
+    QFETCH(qtui::Image::RenderMode, mode);
+    // An opaque black/white edge contains no intermediate shades to begin
+    // with. Any grey in the rendered cells must come from resampling.
+    QImage source(10, 6, QImage::Format_RGB32);
+    for (int y = 0; y < source.height(); ++y)
+        for (int x = 0; x < source.width(); ++x)
+            source.setPixel(x, y, x < 5 ? qRgb(0, 0, 0) : qRgb(255, 255, 255));
+    qtui::Image img;
+    img.setImage(source);
+    img.setRenderMode(mode);
+    img.setWidth(cells.width());
+    img.setHeight(cells.height());
+    auto render = [&] {
+        qtui::TextGridBuffer frame;
+        frame.resize(cells.width(), cells.height());
+        qtui::testing::paintItem(img, frame, 0, 0);
+        return frame;
+    };
+    auto blendedHalves = [](const qtui::TextGridBuffer& frame) {
+        int count = 0;
+        for (int y = 0; y < frame.height(); ++y) {
+            for (int x = 0; x < frame.width(); ++x) {
+                const auto& cell = frame.cellAt(x, y);
+                for (uint32_t colour : {cell.fgColor, cell.bgColor})
+                    if (colour != qRgb(0, 0, 0) && colour != qRgb(255, 255, 255)) ++count;
+            }
+        }
+        return count;
+    };
+
+    // The default must preserve the source palette at any output size.
+    QVERIFY(!img.smooth());
+    const auto sharp = render();
+    QCOMPARE(blendedHalves(sharp), 0);
+    QCOMPARE(sharp.cellAt(0, 0).fgColor, qRgb(0, 0, 0));
+    QCOMPARE(sharp.cellAt(cells.width() - 1, 0).fgColor, qRgb(255, 255, 255));
+    img.setSmooth(true);
+    const auto filtered = render();
+    const bool resized = QSize(cells.width(), cells.height() * 2) != source.size();
+    QCOMPARE(blendedHalves(filtered) > 0, resized);
+    img.setSmooth(false);
+    QCOMPARE(render().toAnsiString(), sharp.toAnsiString()); // changing sampling invalidates the cache
 }
 
 // Auto resolves to HalfBlock on a terminal without kitty or sixel; the picture
@@ -490,6 +552,74 @@ void TestImage::testFillModeScaling() {
     QCOMPARE(img.status(), qtui::Image::Status::Ready);
 
     QFile::remove(fileName);
+}
+
+void TestImage::testSourceClipRect() {
+    // 4x4 quadrants: top-left red, top-right green, bottom-left blue,
+    // bottom-right yellow, each 2x2.
+    QImage sheet(4, 4, QImage::Format_ARGB32);
+    for (int y = 0; y < 4; ++y)
+        for (int x = 0; x < 4; ++x)
+            sheet.setPixel(x, y, y < 2 ? (x < 2 ? qRgb(255, 0, 0) : qRgb(0, 255, 0))
+                                       : (x < 2 ? qRgb(0, 0, 255) : qRgb(255, 255, 0)));
+
+    qtui::Image img;
+    img.setImage(sheet);
+    QCOMPARE(img.sourceClipRect(), QRect());
+    QCOMPARE(img.implicitWidth(), 4);
+
+    QSignalSpy clipSpy(&img, &qtui::Image::sourceClipRectChanged);
+    img.setSourceClipRect(QRect(2, 2, 2, 2));   // the yellow quadrant
+    QCOMPARE(clipSpy.count(), 1);
+    // The implicit size follows the clip; sourceSize keeps the full picture.
+    QCOMPARE(img.implicitWidth(), 2);
+    QCOMPARE(img.implicitHeight(), 1);
+    QCOMPARE(img.sourceSize(), QSize(4, 4));
+
+    img.setRenderMode(qtui::Image::RenderMode::HalfBlock);
+    img.setWidth(2);
+    img.setHeight(1);
+    qtui::TextGridBuffer buffer;
+    buffer.resize(4, 4);
+    qtui::testing::paintItem(img, buffer, 0, 0);
+    for (int x = 0; x < 2; ++x) {
+        const qtui::Cell& cell = buffer.cellAt(x, 0);
+        QCOMPARE(cell.fgColor, 0xFFFFFF00u);   // both halves yellow
+        QCOMPARE(cell.bgColor, 0xFFFFFF00u);
+    }
+
+    // A clip reaching outside the picture is cut to it: the same quadrant.
+    img.setSourceClipRect(QRect(2, 2, 4, 4));
+    qtui::TextGridBuffer buffer2;
+    buffer2.resize(4, 4);
+    qtui::testing::paintItem(img, buffer2, 0, 0);
+    QCOMPARE(buffer2.cellAt(0, 0).fgColor, 0xFFFFFF00u);
+
+    img.resetSourceClipRect();
+    QCOMPARE(img.sourceClipRect(), QRect());
+    QCOMPARE(img.implicitWidth(), 4);
+}
+
+void TestImage::testSourceClipRectOutside() {
+    QImage sheet(4, 4, QImage::Format_ARGB32);
+    sheet.fill(QColor(255, 0, 0));
+
+    qtui::Image img;
+    img.setImage(sheet);
+    img.setRenderMode(qtui::Image::RenderMode::HalfBlock);
+    img.setSourceClipRect(QRect(10, 10, 2, 2));   // entirely outside
+    img.setWidth(2);
+    img.setHeight(1);
+
+    qtui::TextGridBuffer buffer;
+    buffer.resize(4, 4);
+    primeCell(buffer.cellAt(0, 0), 0xFF123456u);
+    qtui::testing::paintItem(img, buffer, 0, 0);
+
+    // Nothing to show: the cell keeps its glyph and colours.
+    const qtui::Cell& cell = buffer.cellAt(0, 0);
+    QCOMPARE(cell.character().toByteArray(), QByteArray("X"));
+    QCOMPARE(cell.bgColor, 0xFF123456u);
 }
 
 void TestImage::testQrcResourceUrl() {

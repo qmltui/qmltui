@@ -58,6 +58,6 @@ a finished response whose `image()` is null (its `errorString()` is logged).
 
 Each change of `source` asks the provider again, so a counter in the query
 drives a live picture. `examples/concepts/live_image` is a complete
-application doing exactly this next to an `Image.image` binding. For a picture the C++ side owns outright, assign
+application doing exactly this. For a picture the C++ side owns outright, assign
 `Image::setImage()` (the `image` property) instead; it needs no URL and no
 registry.

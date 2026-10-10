@@ -71,6 +71,9 @@ Terminal {
         } else if (event.key === Qt.Key_3) {
             root.setImage("map.png");
             event.accepted = true;
+        } else if (event.key === Qt.Key_4) {
+            root.setImage("antigravity.png");
+            event.accepted = true;
         }
     }
 
@@ -117,6 +120,7 @@ Terminal {
                 source: root.imageSource
                 fillMode: Image.PreserveAspectFit
                 renderMode: root.modes[root.modeIndex].mode
+                smooth: true
             }
         }
 

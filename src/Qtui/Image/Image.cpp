@@ -329,6 +329,9 @@ void Image::adoptImage(const QImage& image, Status statusIfNull) {
     m_sourceImage = image;
     m_scaledImage = QImage();
     m_lastTargetSize = QSize();
+    m_clippedImage = QImage();
+    m_clippedSourceKey = 0;
+    m_clippedForRect = QRect();
     m_status = image.isNull() ? statusIfNull : Status::Ready;
     setProgress(image.isNull() ? 0.0 : 1.0);
     emit statusChanged();
@@ -376,6 +379,30 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
     return provider->requestImage(id, &natural, renderSize());
 }
 
+const QImage& Image::effectiveImage() const {
+    if (m_sourceClipRect.isNull() || m_sourceImage.isNull())
+        return m_sourceImage;
+    const QRect bounded = m_sourceClipRect.intersected(m_sourceImage.rect());
+    const qint64 key = m_sourceImage.cacheKey();
+    if (key != m_clippedSourceKey || bounded != m_clippedForRect) {
+        m_clippedImage = bounded.isEmpty() ? QImage() : m_sourceImage.copy(bounded);
+        m_clippedSourceKey = key;
+        m_clippedForRect = bounded;
+    }
+    return m_clippedImage;
+}
+
+void Image::setSourceClipRect(const QRect& rect) {
+    if (m_sourceClipRect == rect) return;
+    m_sourceClipRect = rect;
+    m_scaledImage = QImage();
+    m_lastTargetSize = QSize();
+    emit sourceClipRectChanged();
+    emit implicitWidthChanged();
+    emit implicitHeightChanged();
+    markDirty();
+}
+
 void Image::setFillMode(FillMode mode) {
     if (m_fillMode == mode) return;
     m_fillMode = mode;
@@ -414,14 +441,16 @@ void Image::setAlignment(Qt::Alignment alignment) {
 }
 
 int Image::implicitWidth() const {
-    if (m_sourceImage.isNull()) return m_implicitWidth;
-    return m_sourceImage.width();
+    const QImage& source = effectiveImage();
+    if (source.isNull()) return m_implicitWidth;
+    return source.width();
 }
 
 int Image::implicitHeight() const {
-    if (m_sourceImage.isNull()) return m_implicitHeight;
+    const QImage& source = effectiveImage();
+    if (source.isNull()) return m_implicitHeight;
     // For HalfBlock mode (default), 1 character cell is 2 vertical subpixels.
-    return (m_sourceImage.height() + 1) / 2;
+    return (source.height() + 1) / 2;
 }
 
 void Image::loadImage() {
@@ -474,7 +503,8 @@ void Image::loadImage() {
 }
 
 void Image::updateScaledCache(RenderMode mode) const {
-    if (m_sourceImage.isNull()) return;
+    const QImage& source = effectiveImage();
+    if (source.isNull()) return;
 
     int itemW = width();
     int itemH = height();
@@ -509,10 +539,10 @@ void Image::updateScaledCache(RenderMode mode) const {
 
     if (mode == RenderMode::ASCII) {
         // Monospace cell aspect ratio correction (1 column : 2 rows visual ratio, cellAspect = 0.5)
-        double srcAspect = static_cast<double>(m_sourceImage.width()) / std::max(1, m_sourceImage.height());
-        
+        double srcAspect = static_cast<double>(source.width()) / std::max(1, source.height());
+
         if (m_fillMode == FillMode::Stretch) {
-            m_scaledImage = m_sourceImage.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
+            m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectFit) {
             // Visual aspect fit: cols / (rows * 2.0) = srcAspect  =>  cols = rows * 2.0 * srcAspect
             int fitW = targetSubW;
@@ -523,7 +553,7 @@ void Image::updateScaledCache(RenderMode mode) const {
             }
             fitW = std::clamp(fitW, 1, targetSubW);
             fitH = std::clamp(fitH, 1, targetSubH);
-            m_scaledImage = m_sourceImage.scaled(QSize(fitW, fitH), Qt::IgnoreAspectRatio, transMode);
+            m_scaledImage = source.scaled(QSize(fitW, fitH), Qt::IgnoreAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectCrop) {
             int cropW = targetSubW;
             int cropH = std::round(targetSubW / (srcAspect * 2.0));
@@ -531,32 +561,32 @@ void Image::updateScaledCache(RenderMode mode) const {
                 cropH = targetSubH;
                 cropW = std::round(targetSubH * srcAspect * 2.0);
             }
-            QImage scaledTemp = m_sourceImage.scaled(QSize(cropW, cropH), Qt::IgnoreAspectRatio, transMode);
+            QImage scaledTemp = source.scaled(QSize(cropW, cropH), Qt::IgnoreAspectRatio, transMode);
             int startX = (scaledTemp.width() - targetSubW) / 2;
             int startY = (scaledTemp.height() - targetSubH) / 2;
             m_scaledImage = scaledTemp.copy(std::max(0, startX), std::max(0, startY), targetSubW, targetSubH);
         } else {
-            m_scaledImage = m_sourceImage.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
+            m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
         }
     } else {
         if (m_fillMode == FillMode::Stretch) {
-            m_scaledImage = m_sourceImage.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
+            m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectFit) {
-            m_scaledImage = m_sourceImage.scaled(currentTargetSize, Qt::KeepAspectRatio, transMode);
+            m_scaledImage = source.scaled(currentTargetSize, Qt::KeepAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectCrop) {
-            QImage expanded = m_sourceImage.scaled(currentTargetSize, Qt::KeepAspectRatioByExpanding, transMode);
+            QImage expanded = source.scaled(currentTargetSize, Qt::KeepAspectRatioByExpanding, transMode);
             int cropX = (expanded.width() - targetSubW) / 2;
             int cropY = (expanded.height() - targetSubH) / 2;
             m_scaledImage = expanded.copy(cropX, cropY, targetSubW, targetSubH);
         } else if (m_fillMode == FillMode::Pad) {
-            m_scaledImage = m_sourceImage;
+            m_scaledImage = source;
         } else if (m_fillMode == FillMode::Tile) {
             m_scaledImage = QImage(currentTargetSize, QImage::Format_ARGB32);
             m_scaledImage.fill(Qt::transparent);
             QPainter p(&m_scaledImage);
-            for (int y = 0; y < targetSubH; y += m_sourceImage.height()) {
-                for (int x = 0; x < targetSubW; x += m_sourceImage.width()) {
-                    p.drawImage(x, y, m_sourceImage);
+            for (int y = 0; y < targetSubH; y += source.height()) {
+                for (int x = 0; x < targetSubW; x += source.width()) {
+                    p.drawImage(x, y, source);
                 }
             }
         }
@@ -565,7 +595,7 @@ void Image::updateScaledCache(RenderMode mode) const {
 
 void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     // Loading a new frame must not blank the previously committed picture.
-    if (!visible() || m_sourceImage.isNull())
+    if (!visible() || effectiveImage().isNull())
         return;
 
     int itemW = width();
@@ -782,10 +812,11 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     if (!root) return;
     const int itemW = width();
     const int itemH = height();
-    if (itemW <= 0 || itemH <= 0 || m_sourceImage.isNull()) return;
+    const QImage& source = effectiveImage();
+    if (itemW <= 0 || itemH <= 0 || source.isNull()) return;
 
-    const int sw = m_sourceImage.width();
-    const int sh = m_sourceImage.height();
+    const int sw = source.width();
+    const int sh = source.height();
     if (sw <= 0 || sh <= 0) return;
 
     // Placement rectangle in cells. Stretch fills the item; PreserveAspectFit
@@ -817,20 +848,20 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     // size changed. The terminal scales the stored image into the cols x rows
     // placement; a small source is pre-scaled here when `smooth` is set so the
     // magnification is filtered rather than blocky (see kittyUploadSize).
-    const qint64 key = m_sourceImage.cacheKey();
+    const qint64 key = source.cacheKey();
     const QSize cellPx = root->capabilities().cellPixelSize;
     const QSize placementPx = cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
-    const QSize uploadSize = graphics::kittyUploadSize(m_sourceImage.size(), placementPx, m_smooth);
+    const QSize uploadSize = graphics::kittyUploadSize(source.size(), placementPx, m_smooth);
     const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
     if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells
         || uploadSize != m_lastKittyUpload || session != m_lastKittySession) {
-        QImage upload = m_sourceImage;
-        if (uploadSize != m_sourceImage.size())
+        QImage upload = source;
+        if (uploadSize != source.size())
             upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         m_lastKittyUpload = uploadSize;
         if (m_imageId == 0) m_imageId = graphics::nextImageId();
-        // Re-transmitting the same id replaces its data and removes its old
-        // placements. Recreate the virtual placement without rewriting cells.
+        // Replace the image data and its named virtual placement. Some
+        // terminals retain placements across uploads, so both ids stay fixed.
         root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
         root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
         m_lastKittyKey = key;
@@ -846,9 +877,10 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     if (!root) return;
     const int itemW = width();
     const int itemH = height();
-    if (itemW <= 0 || itemH <= 0 || m_sourceImage.isNull()) return;
-    const int sw = m_sourceImage.width();
-    const int sh = m_sourceImage.height();
+    const QImage& source = effectiveImage();
+    if (itemW <= 0 || itemH <= 0 || source.isNull()) return;
+    const int sw = source.width();
+    const int sh = source.height();
     if (sw <= 0 || sh <= 0) return;
 
     // Sixel needs real pixel dimensions. Use the reported cell size, or a
@@ -898,7 +930,7 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     // changed. A new session means the screen was cleared (resize, resume,
     // renderer switch), so the persisted sixel is gone and must be re-sent.
     const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
-    const qint64 key = m_sourceImage.cacheKey();
+    const qint64 key = source.cacheKey();
     if (key == m_lastSixelKey && QSize(cols, rows) == m_lastSixelCells
         && session == m_lastSixelSession)
         return;
@@ -906,7 +938,7 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     m_lastSixelCells = QSize(cols, rows);
     m_lastSixelSession = session;
 
-    QImage scaled = m_sourceImage.scaled(QSize(cols * cw, rows * ch),
+    QImage scaled = source.scaled(QSize(cols * cw, rows * ch),
                                          Qt::IgnoreAspectRatio,
                                          m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
     const QByteArray sixel = graphics::sixelEncode(scaled);

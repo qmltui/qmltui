@@ -36,6 +36,15 @@ class QTUI_IMAGE_EXPORT Image : public Item {
     // once any picture is ready, 0.0 while nothing is shown.
     Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
     Q_PROPERTY(QSize sourceSize READ sourceSize NOTIFY sourceSizeChanged)
+    // The sub-rectangle of the source, in source pixels, that this item shows.
+    // A null rectangle (the default) shows the whole picture. The clip crops
+    // before any scaling, so fillMode, alignment and the pixel protocols see
+    // only the clipped region; the implicit size follows the clip while
+    // sourceSize keeps reporting the full picture. Out-of-bounds parts are
+    // cut off; a clip entirely outside the picture draws nothing.
+    Q_PROPERTY(QRect sourceClipRect READ sourceClipRect WRITE setSourceClipRect RESET resetSourceClipRect NOTIFY sourceClipRectChanged)
+    // Nearest-neighbour sampling by default keeps cell-sized edges crisp.
+    // Opt in to filtering when softer transitions are wanted.
     Q_PROPERTY(bool smooth READ smooth WRITE setSmooth NOTIFY smoothChanged)
     // The pixel grid this item paints into, so a producer can draw frames at
     // exactly the resolution the terminal will show: columns times rows times
@@ -96,6 +105,10 @@ public:
 
     QSize sourceSize() const { return m_sourceImage.size(); }
 
+    QRect sourceClipRect() const { return m_sourceClipRect; }
+    void setSourceClipRect(const QRect& rect);
+    void resetSourceClipRect() { setSourceClipRect(QRect()); }
+
     bool smooth() const { return m_smooth; }
     void setSmooth(bool smooth);
 
@@ -118,6 +131,7 @@ signals:
     void retainWhileLoadingChanged();
     void progressChanged();
     void sourceSizeChanged();
+    void sourceClipRectChanged();
     void smoothChanged();
     void alignmentChanged();
     void renderSizeChanged();
@@ -161,23 +175,32 @@ private:
     graphics::Protocol activeProtocol() const;
     // Re-emits renderSizeChanged() when the terminal's capabilities change.
     void watchCapabilities() const;
+    // The picture the paint paths consume: the source itself, or, with a
+    // sourceClipRect, a cached copy of the clipped region. Null when the clip
+    // falls entirely outside the picture.
+    const QImage& effectiveImage() const;
 
     QUrl m_source;
     FillMode m_fillMode = FillMode::Stretch;
     RenderMode m_renderMode = RenderMode::Auto;
     Status m_status = Status::Null;
     bool m_retainWhileLoading = false;
-    bool m_smooth = true;
+    bool m_smooth = false;
     Qt::Alignment m_alignment = Qt::AlignCenter;
 
     QImage m_sourceImage;
+    QRect m_sourceClipRect;
+    // Copy of the clipped region, refreshed lazily by effectiveImage().
+    mutable QImage m_clippedImage;
+    mutable qint64 m_clippedSourceKey = 0;
+    mutable QRect m_clippedForRect;
     // Scaled copy of the source for the current size: a cache refreshed while
     // painting, so it is mutable.
     mutable QImage m_scaledImage;
     mutable QSize m_lastTargetSize;
     mutable RenderMode m_lastRenderMode = RenderMode::HalfBlock;
     mutable FillMode m_lastFillMode = FillMode::Stretch;
-    mutable bool m_lastSmooth = true;
+    mutable bool m_lastSmooth = false;
 
     // kitty graphics state. m_imageId is 0 until the first upload.
     mutable quint32 m_imageId = 0;

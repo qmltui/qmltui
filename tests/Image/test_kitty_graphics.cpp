@@ -228,6 +228,12 @@ private slots:
         QTRY_VERIFY(placeholderCellCount(engine) > 0);
         const QSize source = QImage(redPng).size();
         QVERIFY(source.width() < 60);   // the fixture picture is small: this placement magnifies it
+        QCOMPARE(img->smooth(), false);
+        QCOMPARE(transmittedImage(backend->output()).size(), source);
+
+        backend->clearOutput();
+        img->setSmooth(true);
+        QTRY_VERIFY(backend->output().find("\033_Gq=2,a=t") != std::string::npos);
         QCOMPARE(transmittedImage(backend->output()).size(), QSize(60, 60));   // 6 cols x 10 px, 3 rows x 20 px
 
         backend->clearOutput();

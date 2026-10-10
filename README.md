@@ -239,7 +239,9 @@ them. Escape-sequence interpretation requires an explicit ANSI text format.
 
 See [QML API](docs/qml_api.md), [models in views](docs/guide/models.md),
 [Qtui in the browser](docs/guide/webassembly.md),
-[architecture](docs/architecture.md), and [custom items](docs/custom_items.md). Breaking stabilization changes are listed
+[architecture](docs/architecture.md),
+[why declarative bindings](docs/guide/why-declarative-bindings.md), and
+[custom items](docs/custom_items.md). Breaking stabilization changes are listed
 in the [0.3 migration notes](docs/migration/0.3.md).
 
 ## License

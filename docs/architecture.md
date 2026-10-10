@@ -1,6 +1,6 @@
 # Architecture
 
-Qtui provides a retained-mode layout and rendering tree for terminal applications, heavily inspired by Qt Quick and QML. It translates QML item trees into terminal ANSI escape codes and translates terminal input into standard Qt-like events.
+Qtui provides a retained-mode layout and rendering tree for terminal applications, heavily inspired by Qt Quick and QML. It translates QML item trees into terminal ANSI escape codes and translates terminal input into standard Qt-like events. For the rationale behind retained mode and property bindings versus immediate-mode terminal frameworks, see [why declarative bindings](guide/why-declarative-bindings.md).
 
 ## Core Loop
 The execution is driven by standard Qt event loops (usually `QCoreApplication`). The `TerminalEngine` is responsible for bridging the gap between the event loop and the terminal.

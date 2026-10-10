@@ -339,7 +339,10 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
 void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
-    if ((m_background >> 24) == 0) return;
+    // Nothing is behind the root, so a terminal-default background has nothing
+    // to occlude: skipping the fill leaves the cells at their default and emits
+    // fewer bytes for the same picture.
+    if (m_background == 0 || ColorMapper::isTransparent(m_background)) return;
     const int right = std::min(buffer.width(), absX + width());
     const int bottom = std::min(buffer.height(), absY + height());
     for (int y = std::max(0, absY); y < bottom; ++y) {

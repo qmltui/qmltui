@@ -22,6 +22,8 @@ class TestRectangle : public QObject {
     Q_OBJECT
 private slots:
     void testSolidColor();
+    void testDefaultColorPaintsAndOccludes();
+    void testTransparentColorDoesNotPaint();
     void testVerticalGradient();
     void testHorizontalGradient();
     void testGradientWithBorder();
@@ -29,6 +31,63 @@ private slots:
     void testBorderStyles();
     void testQmlIntegration();
 };
+
+// "default" and "transparent" both reach the terminal as its own colour, but
+// only "default" is painted, and so only "default" hides what is behind it.
+// This is what lets a popup follow the terminal background while still
+// occluding the content it covers.
+void TestRectangle::testDefaultColorPaintsAndOccludes() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(4, 1));
+    for (int x = 0; x < 4; ++x) {
+        Cell &cell = buffer.cellAt(x, 0);
+        cell.setCharacter("#");
+        cell.setBackground(Color("navy"));
+    }
+
+    Rectangle rect;
+    rect.setWidth(4);
+    rect.setHeight(1);
+    rect.setColor(Color("default"));
+    QVERIFY(!rect.color().isTransparent());
+    QCOMPARE(rect.color().argb32(), 0x00000000U);
+
+    testing::paintItem(rect, buffer, 0, 0);
+    for (int x = 0; x < 4; ++x) {
+        const Cell &cell = buffer.cellAt(x, 0);
+        QCOMPARE(cell.character().toByteArray(), QByteArray(" "));  // covered
+        QCOMPARE(cell.bgColor, 0x00000000U);                        // SGR 49
+    }
+}
+
+void TestRectangle::testTransparentColorDoesNotPaint() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(4, 1));
+    for (int x = 0; x < 4; ++x) {
+        Cell &cell = buffer.cellAt(x, 0);
+        cell.setCharacter("#");
+        cell.setBackground(Color("navy"));
+    }
+
+    Rectangle rect;
+    rect.setWidth(4);
+    rect.setHeight(1);
+    rect.setColor(Color("transparent"));
+    QVERIFY(rect.color().isTransparent());
+
+    testing::paintItem(rect, buffer, 0, 0);
+    for (int x = 0; x < 4; ++x)
+        QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("#"));
+
+    // A Rectangle with no colour set behaves the same way.
+    Rectangle unset;
+    unset.setWidth(4);
+    unset.setHeight(1);
+    QVERIFY(unset.color().isTransparent());
+    testing::paintItem(unset, buffer, 0, 0);
+    for (int x = 0; x < 4; ++x)
+        QCOMPARE(buffer.cellAt(x, 0).character().toByteArray(), QByteArray("#"));
+}
 
 void TestRectangle::testSolidColor() {
     Rectangle rect;

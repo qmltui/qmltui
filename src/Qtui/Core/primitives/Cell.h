@@ -79,8 +79,8 @@ struct Cell {
     void clearCharacter() noexcept { setCharacter(QByteArrayView()); }
     bool hasCharacter() const noexcept { return m_glyphLength != 0; }
 
-    void setForeground(Color color) { fgColor = color.argb32(); }
-    void setBackground(Color color) { bgColor = color.argb32(); }
+    void setForeground(Color color) { fgColor = color.paintedArgb32(); }
+    void setBackground(Color color) { bgColor = color.paintedArgb32(); }
     Color foreground() const { return Color::fromArgb32(fgColor); }
     Color background() const { return Color::fromArgb32(bgColor); }
 

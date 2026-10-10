@@ -44,7 +44,7 @@ signals:
 
 private:
     Color m_color = "transparent";
-    uint32_t m_resolvedBackgroundColor = 0x00000000;
+    uint32_t m_resolvedBackgroundColor = Color::TransparentTag;
     Border m_border;
     Gradient* m_gradient = nullptr;
 };

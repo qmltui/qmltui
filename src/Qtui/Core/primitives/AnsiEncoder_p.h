@@ -21,12 +21,16 @@ inline void appendInt(std::string &out, int value)
     out.append(digits, static_cast<size_t>(result.ptr - digits));
 }
 
-// Alpha 0 means "terminal default"; otherwise force alpha FF so equal RGB
-// values compare equal regardless of the source alpha.
+// Alpha 0 means "terminal default". Color::TransparentTag reaches the encoder
+// only on a cell some painter wrote anyway, and the terminal has no way to
+// render "nothing", so it normalizes to the default too. Otherwise force alpha
+// FF so equal RGB values compare equal regardless of the source alpha.
 inline uint32_t normalizedColor(uint32_t color)
 {
     if (ColorMapper::isAnsiIndex(color))
         return Color::AnsiTag | ColorMapper::ansiIndex(color);   // keep the index, never RGB
+    if (ColorMapper::isTransparent(color))
+        return 0u;                                               // SGR 39 / 49
     return (color >> 24) != 0 ? (0xFF000000u | (color & 0x00FFFFFFu)) : 0u;
 }
 

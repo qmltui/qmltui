@@ -12,7 +12,7 @@ void Rectangle::setColor(Color color) {
   if (m_color == color)
     return;
   m_color = color;
-  m_resolvedBackgroundColor = ColorMapper::fromString(m_color, 0x00000000);
+  m_resolvedBackgroundColor = ColorMapper::fromString(m_color, Color::TransparentTag);
   emit colorChanged();
   markDirty();
 }
@@ -68,7 +68,10 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
   int h = height();
 
   const bool hasGradient = (m_gradient && !m_gradient->stopsList().isEmpty());
-  const bool hasSolidBg = ((m_resolvedBackgroundColor >> 24) != 0);
+  // Anything but explicit transparency is painted, including the terminal's
+  // own default colour: a surface has to be written in order to occlude what
+  // it covers, even when the terminal is the one choosing the colour.
+  const bool hasSolidBg = !ColorMapper::isTransparent(m_resolvedBackgroundColor);
 
   // Render background if specified via gradient or solid color
   if (hasGradient || hasSolidBg) {

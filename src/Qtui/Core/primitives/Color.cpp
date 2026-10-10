@@ -83,10 +83,13 @@ const char *const ansiCanonicalNames[16] = {
 const QHash<QString, quint32> &namedColors()
 {
     static const QHash<QString, quint32> colors {
-        // Alpha 0 is "let the terminal decide": the encoder emits SGR 39 for a
-        // foreground and SGR 49 for a background. Both names are the same value;
-        // "default" is the honest spelling when the role is a text colour.
-        {QStringLiteral("transparent"), 0x00000000U},
+        // These two differ only in whether the cell is painted. "default" is
+        // alpha 0: the cell is written and the terminal picks the colour
+        // (SGR 39 for a foreground, SGR 49 for a background), so the surface
+        // still occludes what it covers. "transparent" is tagged: nothing is
+        // written at all and whatever is behind shows through. A popup wants
+        // "default"; a Rectangle with no colour set wants "transparent".
+        {QStringLiteral("transparent"), Color::TransparentTag},
         {QStringLiteral("default"), 0x00000000U},
         {QStringLiteral("orange"), 0xffffa500U},
         {QStringLiteral("pink"), 0xffffc0cbU},
@@ -307,6 +310,9 @@ Color Color::toRgb() const
 {
     if (isAnsiIndex())
         return fromArgb32(ansiPaletteRgb[m_argb & 0x0FU]);
+    // Transparency has no RGB; it reads as fully unset.
+    if (isTransparent())
+        return fromArgb32(0x00000000U);
     return *this;
 }
 
@@ -316,6 +322,12 @@ QString Color::toString() const
         return {};
     if (isAnsiIndex())
         return QLatin1String(ansiCanonicalNames[m_argb & 0x0FU]);
+    if (isTransparent())
+        return QStringLiteral("transparent");
+    // Alpha 0 with no RGB is the terminal's own colour, and "default" is the
+    // spelling that parses back to it; "#00000000" would not.
+    if (m_argb == 0)
+        return QStringLiteral("default");
     if ((m_argb >> 24) == 0xffU)
         return QStringLiteral("#%1").arg(m_argb & 0x00ffffffU, 6, 16, QLatin1Char('0'));
     return QStringLiteral("#%1").arg(m_argb, 8, 16, QLatin1Char('0'));

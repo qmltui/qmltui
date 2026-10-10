@@ -20,6 +20,15 @@ public:
     // ANSI-indexed values (Color::AnsiTag in the alpha byte) carry a palette
     // index, not RGB. These helpers let RGB consumers resolve them.
     static bool isAnsiIndex(uint32_t argb) { return (argb >> 24) == 0x01U; }
+    // Color::TransparentTag: paint nothing, as opposed to alpha 0, which is
+    // the terminal's own default colour and is painted.
+    static bool isTransparent(uint32_t argb) { return (argb >> 24) == 0x04U; }
+    // Color::paintedArgb32() for a raw value: transparency has no painted
+    // representation and reads as the terminal default.
+    static uint32_t toPaintedColor(uint32_t argb)
+    {
+        return isTransparent(argb) ? 0x00000000U : argb;
+    }
     static uint8_t ansiIndex(uint32_t argb) { return static_cast<uint8_t>(argb & 0x0FU); }
     // Literal RGB (xterm default palette for indices); identity otherwise.
     static uint32_t toArgb(uint32_t argb) { return Color::fromArgb32(argb).toRgb().argb32(); }

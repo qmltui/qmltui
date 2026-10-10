@@ -286,6 +286,32 @@ void TestColorDepth::testAnsiNamesParseToIndices()
         QCOMPARE(byIndex.ansiIndex(), index);
         QCOMPARE(Color(byIndex.toString()).ansiIndex(), index);
     }
+    // "default" is alpha 0, the terminal's own colour for the role it fills.
+    // "transparent" is tagged instead, so a painter can tell "paint with the
+    // terminal default" apart from "paint nothing"; it normalizes back to the
+    // default the moment anything is actually painted with it.
+    QCOMPARE(Color("default").argb32(), 0x00000000U);
+    QVERIFY(!Color("default").isTransparent());
+    QVERIFY(Color("transparent").isTransparent());
+    QVERIFY(Color("transparent").argb32() != 0x00000000U);
+    QCOMPARE(Color("transparent").paintedArgb32(), 0x00000000U);
+    QCOMPARE(Color("default").paintedArgb32(), 0x00000000U);
+    QCOMPARE(Color("default").toString(), QStringLiteral("default"));
+    QCOMPARE(Color("transparent").toString(), QStringLiteral("transparent"));
+    QVERIFY(!Color("default").isAnsiIndex());
+    QVERIFY(!Color("transparent").isAnsiIndex());
+
+    // Neither is literal RGB, and both read as fully unset.
+    QCOMPARE(Color("transparent").toRgb().argb32(), 0x00000000U);
+    QCOMPARE(Color("default").toRgb().argb32(), 0x00000000U);
+
+    // A cell cannot hold "paint nothing": storing it yields the default.
+    Cell probe;
+    probe.setBackground(Color("transparent"));
+    QCOMPARE(probe.bgColor, 0x00000000U);
+    probe.setForeground(Color("transparent"));
+    QCOMPARE(probe.fgColor, 0x00000000U);
+
     QVERIFY(!Color("#ff0000").isAnsiIndex());             // hex stays literal RGB
     QVERIFY(!Color("transparent").isAnsiIndex());
     QVERIFY(!Color("orange").isAnsiIndex());              // not a palette entry

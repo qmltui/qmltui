@@ -81,7 +81,8 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
 }
 
 void CanvasPainter::setPixelColor(int x, int y, Color color) {
-    setPixelColorHex(x, y, ColorMapper::fromString(color, m_canvas.m_resolvedColor));
+    setPixelColorHex(x, y, ColorMapper::toPaintedColor(
+        ColorMapper::fromString(color, m_canvas.m_resolvedColor)));
 }
 
 void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
@@ -129,7 +130,8 @@ CanvasPainter Canvas::painter() const {
 void Canvas::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(color, 0xFFFFFFFF);
+    m_resolvedColor = ColorMapper::toPaintedColor(
+        ColorMapper::fromString(color, 0xFFFFFFFF));
     emit colorChanged();
     markDirty();
 }
@@ -137,7 +139,9 @@ void Canvas::setColor(Color color) {
 void Canvas::setFillColor(Color color) {
     if (m_fillColor == color) return;
     m_fillColor = color;
-    m_resolvedFillColor = ColorMapper::fromString(color, 0x00000000);
+    // A transparent fill means no ink, which the canvas already spells 0.
+    m_resolvedFillColor = ColorMapper::toPaintedColor(
+        ColorMapper::fromString(color, 0x00000000));
     emit fillColorChanged();
     markDirty();
 }
@@ -345,7 +349,8 @@ void Canvas::resizeBuffer() const {
 void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(color, 0xFFFFFFFF);
+    m_resolvedColor = ColorMapper::toPaintedColor(
+        ColorMapper::fromString(color, 0xFFFFFFFF));
     m_hasCustomColor = true;
     emit colorChanged();
     if (parentItem()) parentItem()->markDirty();

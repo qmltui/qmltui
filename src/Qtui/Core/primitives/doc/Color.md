@@ -45,4 +45,43 @@ under the prefix; use them without it.
 
 SVG names that are not an exact palette match, such as `orange`, stay literal
 RGB. `toString()` reports a palette color by its canonical CSS name (index 9 is
-`red`) and any other color as hex.
+`red`), `default` and `transparent` by name, and any other color as hex.
+
+## `default` versus `transparent`
+
+Both end up as the terminal's own color — the encoder emits SGR 39 for a
+foreground and SGR 49 for a background, so the role decides which. They differ
+in whether the cell is painted at all:
+
+| Value | Painted? | Use it for |
+|---|---|---|
+| `"default"` | Yes | A surface that should follow the terminal's own color *and* hide what it covers, such as a popup or a dialog. |
+| `"transparent"` | No | Letting whatever is behind show through. This is a `Rectangle`'s color when none is set. |
+
+A `Rectangle` whose color is `"default"` fills its area, so it occludes the
+content beneath it while the terminal still chooses the shade. One whose color
+is `"transparent"` writes nothing at all. `Popup` uses `"default"`, which is
+why a popup follows the terminal background instead of a hard-coded color.
+
+`Color::isTransparent()` distinguishes the two. Transparency is an instruction
+to the painter rather than a color, so it has no representation in a cell:
+`Color::paintedArgb32()`, and every path that writes a cell, turns it into the
+terminal default.
+
+Use `Qtui.rgba(red, green, blue, alpha)` in QML to construct a color from
+normalized channels. Finite channel values are clamped to `0.0` through `1.0`.
+
+```qml
+import QtQml
+import Qtui
+
+QtObject {
+    property rgba accent: Qtui.rgba(0.2, 0.4, 0.6, 1.0)
+}
+```
+
+The equivalent C++ factory is `Color::fromRgba()`. Use `isValid()`, `argb32()`,
+the normalized `red()`/`green()`/`blue()`/`alpha()` channels, and `toString()`
+to inspect a color. `Cell::setForeground()`/`setBackground()` and the
+`TextGridBuffer` drawing helpers accept `Color` directly. `ColorMapper` remains
+an internal compatibility helper and is not part of the installed API.

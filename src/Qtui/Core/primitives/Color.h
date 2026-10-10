@@ -29,6 +29,18 @@ public:
     // these entries; hex values are always literal RGB.
     static constexpr quint32 AnsiTag = 0x01000000U;
 
+    // Alpha 0 is the terminal's own colour for whatever role the value fills:
+    // the encoder emits SGR 39 for a foreground and SGR 49 for a background.
+    // "default" is that value, and is the honest spelling for it.
+    //
+    // "transparent" is not a colour but the absence of one: a painter must
+    // leave those cells alone so that whatever is behind shows through. It is
+    // tagged rather than sharing alpha 0, because a surface that wants the
+    // terminal's background still has to be painted in order to occlude what
+    // it covers. Anything that reaches the terminal normalizes back to the
+    // default, so the tag never appears in the output.
+    static constexpr quint32 TransparentTag = 0x04000000U;
+
     constexpr Color() = default;
     Q_INVOKABLE Color(const QString &value);
     Color(const char *value);
@@ -41,7 +53,18 @@ public:
     {
         return Color(AnsiTag | static_cast<quint32>(index & 0x0F), true);
     }
+    static constexpr Color transparent() { return Color(TransparentTag, true); }
     constexpr bool isAnsiIndex() const { return m_valid && (m_argb >> 24) == 0x01U; }
+    // True when nothing should be painted at all, as opposed to painting with
+    // the terminal's default colour.
+    constexpr bool isTransparent() const { return m_valid && (m_argb >> 24) == 0x04U; }
+    // The value to store once something is being painted. Transparency is an
+    // instruction to the painter, not a colour, and has no cell representation:
+    // a painted cell that was asked for it shows the terminal default.
+    constexpr quint32 paintedArgb32() const
+    {
+        return isTransparent() ? 0x00000000U : m_argb;
+    }
     constexpr int ansiIndex() const { return isAnsiIndex() ? static_cast<int>(m_argb & 0x0FU) : -1; }
     // The literal RGB this color has under xterm's default palette; identity for RGB colors.
     Color toRgb() const;

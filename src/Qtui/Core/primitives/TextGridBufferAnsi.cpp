@@ -14,7 +14,10 @@ namespace {
 // stand in for a run of these.
 inline bool isDefaultBlank(const Cell &cell)
 {
-    if (cell.continuation || (cell.bgColor >> 24) != 0 || cell.attributes != TextAttribute::None)
+    // A never-painted cell carries the transparent tag and shows the terminal
+    // default, exactly like an alpha-0 one, so both count as blank here.
+    const bool defaultBg = cell.bgColor == 0 || ColorMapper::isTransparent(cell.bgColor);
+    if (cell.continuation || !defaultBg || cell.attributes != TextAttribute::None)
         return false;
     const QByteArrayView glyph = cell.character();
     return glyph.isEmpty() || glyph == " ";

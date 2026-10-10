@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "lib": ["es2020"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "checkJs": false,
+        "noEmit": true
+    },
+    "include": [
+        "src/Qtui/Runner/qtui-runner.d.ts",
+        "tests/**/*.js",
+        "tests/**/*.mjs",
+        "examples/**/*.js",
+        "examples/**/*.mjs"
+    ],
+    "exclude": [
+        "build*",
+        "examples/wasm/www",
+        "examples/wasm/playground"
+    ]
+}

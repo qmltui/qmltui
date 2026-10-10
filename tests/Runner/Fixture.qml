@@ -7,6 +7,39 @@ Terminal {
     color: "#101820"
 
     property string fixtureStatus: "READY"
+    property bool hoverProbe: false
+    property string mouseLog: "NONE"
+    property int dragTicks: 0
+    property int tickCount: 0
+    property bool ticking: false
+
+    // Virtual-clock probes: a repeating QML Timer counter and a Qtui
+    // animation, both armed on demand so real-clock scenarios stay still.
+    Timer {
+        interval: 100
+        repeat: true
+        running: root.ticking
+        onTriggered: root.tickCount++
+    }
+
+    Rectangle {
+        id: bar
+        objectName: "bar"
+        x: 40
+        y: 20
+        width: 4
+        height: 1
+        color: "#e06c75"
+    }
+
+    NumberAnimation {
+        id: grow
+        target: bar
+        property: "width"
+        from: 4
+        to: 24
+        duration: 400
+    }
 
     Timer {
         interval: 75
@@ -23,6 +56,7 @@ Terminal {
     }
 
     Text {
+        objectName: "statusText"
         x: 1
         y: 3
         text: "STATUS: " + root.fixtureStatus
@@ -68,6 +102,77 @@ Terminal {
 
     Text {
         x: 1
+        y: 13
+        text: "SIZE: " + root.width + "x" + root.height
+        color: "#ffffff"
+    }
+
+    // Anchored to the right edge, so a resize() must move it.
+    Text {
+        x: root.width - 5
+        y: 1
+        text: "EDGE"
+        color: "#ffffff"
+    }
+
+    // Mouse probe: press, release, hover entry, and held-motion ticks land in
+    // the MOUSE line. hoverEnabled starts off so scenarios can verify that a
+    // hover is dropped exactly like a terminal that never sends motion.
+    MouseArea {
+        id: probeArea
+        objectName: "probeArea"
+        x: 60
+        y: 15
+        width: 12
+        height: 3
+        hoverEnabled: root.hoverProbe
+        onPressed: (event) => root.mouseLog = "DOWN " + mouseX + "," + mouseY
+        onReleased: (event) => root.mouseLog = "UP " + mouseX + "," + mouseY
+        onEntered: root.mouseLog = "ENTER"
+        onMouseXChanged: if (pressed) root.dragTicks = root.dragTicks + 1
+    }
+
+    Text {
+        x: 1
+        y: 15
+        text: "MOUSE: " + root.mouseLog
+        color: "#ffffff"
+    }
+
+    Text {
+        x: 1
+        y: 17
+        text: "DRAG TICKS: " + root.dragTicks
+        color: "#ffffff"
+    }
+
+    Text {
+        x: 1
+        y: 19
+        text: "TICKS: " + root.tickCount
+        color: "#ffffff"
+    }
+
+    // Straddles the right edge on purpose: itemRect() must clip it.
+    Text {
+        objectName: "clippedMarker"
+        x: root.width - 2
+        y: 21
+        text: "CLIP"
+        color: "#ffffff"
+    }
+
+    Text {
+        objectName: "hiddenMarker"
+        visible: false
+        x: 1
+        y: 22
+        text: "HIDDEN"
+        color: "#ffffff"
+    }
+
+    Text {
+        x: 1
         y: 23
         text: "."
         color: "#ffffff"
@@ -81,6 +186,19 @@ Terminal {
         }
         if (event.key === Qt.Key_K) {
             root.fixtureStatus = "KEY K"
+            event.accepted = true
+        }
+        if (event.key === Qt.Key_H) {
+            root.hoverProbe = true
+            root.fixtureStatus = "HOVER ARMED"
+            event.accepted = true
+        }
+        if (event.key === Qt.Key_T) {
+            root.ticking = !root.ticking
+            event.accepted = true
+        }
+        if (event.key === Qt.Key_A) {
+            grow.start()
             event.accepted = true
         }
         // Reached through typeText(): scripted typing must carry the same key

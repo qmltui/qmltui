@@ -1,7 +1,9 @@
 #include <Qtui/Runner/Runner.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
 
+#include <Qtui/Core/items/Item.h>
 #include <Qtui/Core/items/Terminal.h>
+#include <Qtui/Core/engine/Clock_p.h>
 #include <Qtui/Core/engine/TerminalEngine.h>
 #include <Qtui/Core/primitives/TextGridBuffer.h>
 
@@ -20,16 +22,94 @@
 #include <QQmlEngine>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QTextBoundaryFinder>
 #include <QTextStream>
 
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <utility>
 
 namespace qtui {
+
+// Exposes the runner's internal callbacks — Promise resolution in async
+// scenarios and the structured operation trace — to the JavaScript facade
+// without making them Q_INVOKABLE on the exported Runner class.
+class RunnerBridge final : public QObject {
+    Q_OBJECT
+
+public:
+    explicit RunnerBridge(Runner* runner)
+        : QObject(runner)
+        , m_runner(runner)
+    {
+    }
+
+    Q_INVOKABLE void onPromiseResolved() { m_runner->onPromiseResolved(); }
+    Q_INVOKABLE void onPromiseRejected(const QString& error) { m_runner->onPromiseRejected(error); }
+    Q_INVOKABLE void beginOperation(const QString& name, const QString& stack)
+    {
+        m_runner->beginOperation(name, stack);
+    }
+    Q_INVOKABLE void endOperation() { m_runner->endOperation(); }
+
+private:
+    Runner* const m_runner;
+};
+
+// The scenario watchdog is a QTimer, so it cannot fire while synchronous
+// JavaScript never yields to the event loop. This thread interrupts the JS
+// engine after the deadline instead, so a runaway loop still fails with a
+// diagnosis rather than hanging.
+class RunnerHardWatchdog final {
+public:
+    RunnerHardWatchdog(QPointer<QQmlEngine> engine, std::chrono::milliseconds deadline)
+    {
+        m_thread = std::thread([this, engine, deadline] {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            if (m_wake.wait_for(lock, deadline, [this] { return m_finished; }))
+                return; // scenario finished in time
+            m_interrupted = true;
+            lock.unlock();
+            // Documented as thread safe, and intended for exactly this case.
+            if (engine)
+                engine->setInterrupted(true);
+        });
+    }
+
+    ~RunnerHardWatchdog() { stop(); }
+
+    /// Signals the thread, joins it, and reports whether it interrupted the
+    /// JavaScript engine before the scenario finished.
+    bool stop()
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_finished = true;
+        }
+        m_wake.notify_all();
+        if (m_thread.joinable())
+            m_thread.join();
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_interrupted;
+    }
+
+private:
+    std::thread m_thread;
+    std::mutex m_mutex;
+    std::condition_variable m_wake;
+    bool m_finished = false;
+    bool m_interrupted = false;
+};
 
 namespace {
 
 constexpr int minimumTimeoutMs = 1;
 constexpr int maximumTimeoutMs = 30000;
+// A single wait longer than 30 s is a scenario bug, but a long walkthrough is
+// not: the whole-scenario watchdog accepts up to five minutes.
+constexpr int maximumScenarioTimeoutMs = 300000;
 constexpr int conditionPollIntervalMs = 10;
 
 static QByteArray getEnvRunner(const char* runnerName, const char* testName = nullptr)
@@ -169,9 +249,43 @@ bool parseMouseButton(const QString& name, int* button, QString* error)
     return false;
 }
 
+// Appended to wait-timeout diagnostics: under the virtual clock, application
+// time cannot pass on its own, which is the usual reason such a wait expires.
+QString pausedClockHint()
+{
+    return Clock::isVirtual()
+        ? QStringLiteral(" (the virtual clock is paused; advance it with advanceTime())")
+        : QString();
+}
+
 QString absoluteOrResourcePath(const QString& path)
 {
     return path.startsWith(QLatin1String(":")) ? path : QFileInfo(path).absoluteFilePath();
+}
+
+bool isSingleGrapheme(const QString& text)
+{
+    if (text.isEmpty())
+        return false;
+    QTextBoundaryFinder finder(QTextBoundaryFinder::Grapheme, text);
+    finder.setPosition(0);
+    return finder.toNextBoundary() == text.size();
+}
+
+// Depth-first search for the first visible item with the given objectName.
+// A hidden subtree cannot contribute cells to the frame, so it is skipped.
+Item* findVisibleItem(Item* item, const QString& objectName)
+{
+    if (!item || !item->visible())
+        return nullptr;
+    if (item->objectName() == objectName)
+        return item;
+    const QList<Item*>& children = item->childItems();
+    for (Item* child : children) {
+        if (Item* match = findVisibleItem(child, objectName))
+            return match;
+    }
+    return nullptr;
 }
 
 QString rgbaString(uint32_t rgba)
@@ -316,7 +430,7 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
     }
 
     const int scenarioTimeout = environmentInteger("QTUI_RUNNER_TIMEOUT_MS", "QTUI_TEST_TIMEOUT_MS", 10000,
-                                                    minimumTimeoutMs, maximumTimeoutMs,
+                                                    minimumTimeoutMs, maximumScenarioTimeoutMs,
                                                     &configurationError);
     const int operationTimeout = environmentInteger("QTUI_RUNNER_OPERATION_TIMEOUT_MS", "QTUI_TEST_OPERATION_TIMEOUT_MS", 2000,
                                                      minimumTimeoutMs, maximumTimeoutMs,
@@ -376,12 +490,14 @@ Runner::Runner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
 Runner::~Runner()
 {
     // A joinable std::thread would terminate the process on destruction.
-    stopHardWatchdog();
+    (void)stopHardWatchdog();
 }
 
 void Runner::start()
 {
     m_elapsed.start();
+    const QByteArray updateSnapshots = qgetenv("QTUI_UPDATE_SNAPSHOTS").trimmed();
+    m_updateSnapshots = !updateSnapshots.isEmpty() && updateSnapshots != "0";
     if (!QDir().mkpath(m_artifactDirectory)) {
         m_configurationError = QStringLiteral("Cannot create artifact directory %1")
             .arg(m_artifactDirectory);
@@ -396,21 +512,26 @@ void Runner::start()
         return;
     }
 
-    QFile scriptFile(m_scriptPath);
-    if (!scriptFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        failScenario(QStringLiteral("Cannot open scenario %1: %2")
-                         .arg(m_scriptPath, scriptFile.errorString()), false);
-        return;
+    const bool moduleScenario = m_scriptPath.endsWith(QLatin1String(".mjs"));
+    QByteArray scriptBytes;
+    {
+        QFile scriptFile(m_scriptPath);
+        if (!scriptFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            failScenario(QStringLiteral("Cannot open scenario %1: %2")
+                             .arg(m_scriptPath, scriptFile.errorString()), false);
+            return;
+        }
+        if (!moduleScenario) {
+            scriptBytes = scriptFile.readAll();
+            if (scriptFile.error() != QFileDevice::NoError) {
+                failScenario(QStringLiteral("Cannot read scenario %1: %2")
+                                 .arg(m_scriptPath, scriptFile.errorString()), false);
+                return;
+            }
+        }
+        // A synchronous scenario finishes inside evaluate() below and removes a
+        // temporary script; Windows refuses to delete a file that is still open.
     }
-    const QByteArray scriptBytes = scriptFile.readAll();
-    if (scriptFile.error() != QFileDevice::NoError) {
-        failScenario(QStringLiteral("Cannot read scenario %1: %2")
-                         .arg(m_scriptPath, scriptFile.errorString()), false);
-        return;
-    }
-    // A synchronous scenario finishes inside evaluate() below and removes a
-    // temporary script; Windows refuses to delete a file that is still open.
-    scriptFile.close();
 
     connect(m_qmlEngine, &QObject::destroyed, this, [this] {
         failScenario(QStringLiteral("QQmlEngine was destroyed during the scenario"), false);
@@ -431,30 +552,52 @@ void Runner::start()
 
     m_evaluating = true;
     startHardWatchdog();
-    const QJSValue evalResult = m_qmlEngine->evaluate(QString::fromUtf8(scriptBytes), m_scriptPath);
-    if (evalResult.isError()) {
-        stopHardWatchdog();
-        m_evaluating = false;
-        failScenario(formatJsError(evalResult), false);
-        return;
-    }
-
-    QJSValue mainFunc = m_qmlEngine->globalObject().property(QStringLiteral("main"));
-    if (!mainFunc.isCallable()) {
-        stopHardWatchdog();
-        m_evaluating = false;
-        failScenario(QStringLiteral("Scenario must define a function main(terminal)"), false);
-        return;
+    QJSValue mainFunc;
+    if (moduleScenario) {
+        // An .mjs scenario is an ECMAScript module: it must export
+        // function main(terminal) and may import sibling helper modules.
+        const QJSValue moduleNamespace = m_qmlEngine->importModule(m_scriptPath);
+        if (moduleNamespace.isError()) {
+            stopHardWatchdog();
+            m_evaluating = false;
+            failScenario(formatJsError(moduleNamespace), false);
+            return;
+        }
+        mainFunc = moduleNamespace.property(QStringLiteral("main"));
+        if (!mainFunc.isCallable()) {
+            stopHardWatchdog();
+            m_evaluating = false;
+            failScenario(QStringLiteral(
+                "Module scenario must export a function main(terminal)"), false);
+            return;
+        }
+    } else {
+        // A classic script is evaluated inside a function scope, so its
+        // top-level declarations stay out of the application's JavaScript
+        // globals. The prefix adds no newline and the suffix starts with one,
+        // so reported line numbers do not move.
+        const QString wrappedSource = QStringLiteral("(function() { ")
+            + QString::fromUtf8(scriptBytes)
+            + QStringLiteral("\nreturn typeof main === \"function\" ? main : undefined; })()");
+        const QJSValue evalResult = m_qmlEngine->evaluate(wrappedSource, m_scriptPath);
+        if (evalResult.isError()) {
+            stopHardWatchdog();
+            m_evaluating = false;
+            failScenario(formatJsError(evalResult), false);
+            return;
+        }
+        mainFunc = evalResult;
+        if (!mainFunc.isCallable()) {
+            stopHardWatchdog();
+            m_evaluating = false;
+            failScenario(QStringLiteral("Scenario must define a function main(terminal)"), false);
+            return;
+        }
     }
 
     const QJSValue result = mainFunc.call({ m_terminalFacade });
-    m_qmlEngine->globalObject().deleteProperty(QStringLiteral("main"));
 
-    const bool interrupted = [this] {
-        std::lock_guard<std::mutex> lock(m_hardWatchdogMutex);
-        return m_scenarioInterrupted;
-    }();
-    stopHardWatchdog();
+    const bool interrupted = stopHardWatchdog();
     m_evaluating = false;
 
     if (interrupted) {
@@ -473,12 +616,12 @@ void Runner::start()
 
     if (result.isObject() && result.property(QStringLiteral("then")).isCallable()) {
         QJSValue promiseHandler = m_qmlEngine->evaluate(QStringLiteral(
-            "(function(promise, nativeRunner) {"
-            "  promise.then(function() { nativeRunner.onPromiseResolved(); })"
-            "         .catch(function(err) { nativeRunner.onPromiseRejected(err ? String(err) : 'Promise rejected'); });"
+            "(function(promise, bridge) {"
+            "  promise.then(function() { bridge.onPromiseResolved(); })"
+            "         .catch(function(err) { bridge.onPromiseRejected(err ? String(err) : 'Promise rejected'); });"
             "})"
         ));
-        promiseHandler.call({result, m_qmlEngine->newQObject(this)});
+        promiseHandler.call({result, m_qmlEngine->newQObject(m_bridge)});
         return;
     }
 
@@ -492,37 +635,225 @@ void Runner::start()
 
 bool Runner::installJavaScriptFacade()
 {
+    if (!m_bridge)
+        m_bridge = new RunnerBridge(this);
     const QJSValue nativeRunner = m_qmlEngine->newQObject(this);
+    const QJSValue bridge = m_qmlEngine->newQObject(m_bridge);
     m_qmlEngine->globalObject().setProperty(QStringLiteral("__QtuiRunnerNative"), nativeRunner);
+    m_qmlEngine->globalObject().setProperty(QStringLiteral("__QtuiRunnerBridge"), bridge);
     const QString facadeSource = QStringLiteral(R"JS(
-(function(nativeRunner) {
+(function(nativeRunner, bridge) {
+    const opTimeout = @OPERATION_TIMEOUT@;
     const methodNames = [
-        "press", "typeText", "sleep", "waitForFrame", "waitForCondition",
+        "press", "typeText", "paste", "sleep", "waitForFrame", "waitForCondition",
         "waitForText", "expectText", "expectNoText", "captureText",
         "captureStyled", "frameText", "styledText", "cell", "findText", "clickText",
-        "click", "doubleClick", "drag", "scroll", "waitForRegex",
+        "click", "doubleClick", "drag", "scroll", "hover", "mouseDown", "mouseUp",
+        "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
-        "expectStyled",
-        "expectRepaint", "frameCount", "frameStats", "injectText", "injectKey",
+        "expectStyled", "expectRegionSnapshot", "regionText", "itemRect", "waitForItem",
+        "expectRepaint", "frameCount", "frameStats",
+        "injectText", "injectKey", "injectPaste",
+        "resize", "size", "advanceTime", "now",
         "fail", "rootObject", "finish"
     ];
+    const isPlainObject = function(value) {
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+    };
+    // Optional parameters may be given positionally or as one trailing options
+    // object; an unknown option key fails the scenario so a typo cannot pass
+    // silently. Methods without an entry pass their arguments through.
+    const signatures = {
+        press:        { required: 1, optional: [["modifiers", []]] },
+        injectKey:    { required: 1, optional: [["modifiers", []]] },
+        hover:        { required: 2, optional: [["modifiers", []]] },
+        click:        { required: 2, optional: [["button", "left"], ["modifiers", []]] },
+        doubleClick:  { required: 2, optional: [["button", "left"], ["modifiers", []]] },
+        mouseDown:    { required: 2, optional: [["button", "left"], ["modifiers", []]] },
+        mouseUp:      { required: 2, optional: [["button", "left"], ["modifiers", []]] },
+        drag:         { required: 4, optional: [["button", "left"], ["modifiers", []]] },
+        scroll:       { required: 4, optional: [["modifiers", []]] },
+        clickText:    { required: 1,
+                        optional: [["occurrence", 0], ["button", "left"], ["modifiers", []]] },
+        waitForFrame: { required: 0, optional: [["timeout", 2000]] },
+        expectRepaint:{ required: 0, optional: [["timeout", 2000]] },
+        waitForText:  { required: 1, optional: [["timeout", 2000]] },
+        waitForRegex: { required: 1, optional: [["timeout", 2000]] },
+        waitForCondition: { required: 1, optional: [["timeout", 2000]] },
+        waitForItem:  { required: 1, optional: [["timeout", 2000]] },
+        expectText:   { required: 1, optional: [["timeout", -1]] },
+        expectNoText: { required: 1, optional: [["timeout", -1]] },
+        expectRegex:  { required: 1, optional: [["timeout", -1]] },
+        expectTextInRegion: { required: 5, optional: [["timeout", -1]] },
+        expectStyle:  { required: 3, optional: [["timeout", -1]] },
+        expectSnapshot: { required: 1, optional: [["timeout", -1]] },
+        expectStyled: { required: 1, optional: [["timeout", -1]] },
+        expectRegionSnapshot: { required: 5, optional: [["timeout", -1]] }
+    };
+    const rejectUnknownOptions = function(name, options, allowed) {
+        for (const key in options) {
+            if (allowed.indexOf(key) < 0) {
+                nativeRunner.fail("Unknown option \"" + key + "\" for " + name
+                                  + "(); allowed: " + allowed.join(", "));
+            }
+        }
+    };
+    const buildArguments = function(name, args) {
+        const signature = signatures[name];
+        if (!signature)
+            return args;
+        let options = null;
+        if (args.length > signature.required && isPlainObject(args[args.length - 1])) {
+            options = args[args.length - 1];
+            args = args.slice(0, args.length - 1);
+            if (args.length > signature.required) {
+                nativeRunner.fail(name + "() takes either positional optional arguments "
+                                  + "or an options object, not both");
+            }
+        }
+        const call = args.slice(0, signature.required);
+        if (options) {
+            rejectUnknownOptions(name, options, signature.optional.map(function(entry) {
+                return entry[0];
+            }));
+            signature.optional.forEach(function(entry) {
+                call.push(Object.prototype.hasOwnProperty.call(options, entry[0])
+                          ? options[entry[0]] : entry[1]);
+            });
+        } else {
+            signature.optional.forEach(function(entry, index) {
+                const position = signature.required + index;
+                call.push(position < args.length ? args[position] : entry[1]);
+            });
+        }
+        return call;
+    };
     const facade = {};
     methodNames.forEach(function(name) {
         facade[name] = function() {
-            nativeRunner.beginOperation(name, String(new Error().stack || ""));
-            const result = nativeRunner[name].apply(nativeRunner, arguments);
+            bridge.beginOperation(name, String(new Error().stack || ""));
+            const args = buildArguments(name, Array.prototype.slice.call(arguments));
+            const result = nativeRunner[name].apply(nativeRunner, args);
             // Skipped when the call throws, so a failing operation stays open
             // and is the one blamed in the result.
-            nativeRunner.endOperation();
+            bridge.endOperation();
             return result;
         };
     });
+
+    // Scoped locators. Each composite records one operation and reaches the
+    // native primitives directly, so the trace shows region.waitForText, not
+    // the polling underneath it.
+    const composite = function(name, body) {
+        bridge.beginOperation(name, String(new Error().stack || ""));
+        const result = body();
+        bridge.endOperation();
+        return result;
+    };
+    const optionValue = function(name, options, key, fallback) {
+        if (options === undefined || options === null)
+            return fallback;
+        if (!isPlainObject(options))
+            nativeRunner.fail(name + "() options must be an object");
+        return Object.prototype.hasOwnProperty.call(options, key) ? options[key] : fallback;
+    };
+    const makeRegion = function(x, y, width, height) {
+        const bounds = "[" + x + "," + y + "," + width + "," + height + "]";
+        const matchesInside = function(text) {
+            return nativeRunner.findText(text).filter(function(match) {
+                return match.y >= y && match.y < y + height
+                    && match.x >= x && match.x + match.width <= x + width;
+            });
+        };
+        const region = { x: x, y: y, width: width, height: height };
+        region.text = function() {
+            return composite("region.text", function() {
+                return nativeRunner.regionText(x, y, width, height);
+            });
+        };
+        region.findText = function(text) {
+            return composite("region.findText", function() { return matchesInside(text); });
+        };
+        region.expectText = function(text, options) {
+            composite("region.expectText", function() {
+                rejectUnknownOptions("region.expectText", options || {}, ["timeout"]);
+                nativeRunner.expectTextInRegion(x, y, width, height, text,
+                                                optionValue("region.expectText", options, "timeout", -1));
+            });
+        };
+        region.expectNoText = function(text, options) {
+            composite("region.expectNoText", function() {
+                rejectUnknownOptions("region.expectNoText", options || {}, ["timeout"]);
+                nativeRunner.waitForFrame(
+                    optionValue("region.expectNoText", options, "timeout", opTimeout));
+                if (nativeRunner.regionText(x, y, width, height).includes(text)) {
+                    nativeRunner.fail("Expected region " + bounds
+                                      + " not to contain \"" + text + "\"");
+                }
+            });
+        };
+        region.waitForText = function(text, options) {
+            composite("region.waitForText", function() {
+                rejectUnknownOptions("region.waitForText", options || {}, ["timeout"]);
+                nativeRunner.waitForCondition(function() {
+                    return nativeRunner.regionText(x, y, width, height).includes(text);
+                }, optionValue("region.waitForText", options, "timeout", 2000));
+            });
+        };
+        region.expectSnapshot = function(path, options) {
+            composite("region.expectSnapshot", function() {
+                rejectUnknownOptions("region.expectSnapshot", options || {}, ["timeout"]);
+                nativeRunner.expectRegionSnapshot(x, y, width, height, path,
+                                                  optionValue("region.expectSnapshot", options, "timeout", -1));
+            });
+        };
+        region.clickText = function(text, options) {
+            composite("region.clickText", function() {
+                rejectUnknownOptions("region.clickText", options || {},
+                                     ["occurrence", "button", "modifiers"]);
+                const matches = matchesInside(text);
+                const occurrence = optionValue("region.clickText", options, "occurrence", 0);
+                if (occurrence < 0 || occurrence >= matches.length) {
+                    nativeRunner.fail("Text \"" + text + "\" occurrence " + occurrence
+                                      + " was not found in region " + bounds
+                                      + " (" + matches.length + " matches)");
+                }
+                const match = matches[occurrence];
+                nativeRunner.click(match.x + Math.floor(Math.max(0, match.width - 1) / 2),
+                                   match.y,
+                                   optionValue("region.clickText", options, "button", "left"),
+                                   optionValue("region.clickText", options, "modifiers", []));
+            });
+        };
+        region.click = function(options) {
+            composite("region.click", function() {
+                rejectUnknownOptions("region.click", options || {}, ["button", "modifiers"]);
+                nativeRunner.click(x + Math.floor((width - 1) / 2),
+                                   y + Math.floor((height - 1) / 2),
+                                   optionValue("region.click", options, "button", "left"),
+                                   optionValue("region.click", options, "modifiers", []));
+            });
+        };
+        return region;
+    };
+    facade.region = function(x, y, width, height) {
+        return makeRegion(x, y, width, height);
+    };
+    facade.item = function(objectName) {
+        const rect = facade.itemRect(objectName);
+        const region = makeRegion(rect.x, rect.y, rect.width, rect.height);
+        region.objectName = objectName;
+        return region;
+    };
     delete this.__QtuiRunnerNative;
+    delete this.__QtuiRunnerBridge;
     return facade;
-})(__QtuiRunnerNative);
+})(__QtuiRunnerNative, __QtuiRunnerBridge);
 )JS");
-    m_terminalFacade = m_qmlEngine->evaluate(facadeSource,
-                                             QStringLiteral("qtui-runner-facade.js"));
+    m_terminalFacade = m_qmlEngine->evaluate(
+        QString(facadeSource).replace(QLatin1String("@OPERATION_TIMEOUT@"),
+                                      QString::number(m_operationTimeoutMs)),
+        QStringLiteral("qtui-runner-facade.js"));
     if (m_terminalFacade.isError()) {
         failScenario(QStringLiteral("Cannot install Terminal JavaScript facade: %1")
                          .arg(formatJsError(m_terminalFacade)), false);
@@ -562,38 +893,25 @@ void Runner::beginOperation(const QString& name, const QString& stack)
 
 void Runner::startHardWatchdog()
 {
-    if (m_hardWatchdog.joinable() || !m_qmlEngine)
+    if (m_hardWatchdog || !m_qmlEngine)
         return;
     // Give the event-loop watchdog a chance to report first: it produces a much
     // better message ("Timed out after N ms waiting for ...") and only fails to
     // fire when JavaScript never yields.
-    const auto deadline = std::chrono::milliseconds(m_scenarioTimeoutMs + 1000);
-    QPointer<QQmlEngine> engine = m_qmlEngine;
-    m_hardWatchdog = std::thread([this, engine, deadline] {
-        std::unique_lock<std::mutex> lock(m_hardWatchdogMutex);
-        if (m_hardWatchdogWake.wait_for(lock, deadline,
-                                        [this] { return m_hardWatchdogFinished; })) {
-            return; // scenario finished in time
-        }
-        m_scenarioInterrupted = true;
-        lock.unlock();
-        // Documented as thread safe, and intended for exactly this case.
-        if (engine)
-            engine->setInterrupted(true);
-    });
+    m_hardWatchdog = std::make_unique<RunnerHardWatchdog>(
+        m_qmlEngine, std::chrono::milliseconds(m_scenarioTimeoutMs + 1000));
 }
 
-void Runner::stopHardWatchdog()
+bool Runner::stopHardWatchdog()
 {
-    {
-        std::lock_guard<std::mutex> lock(m_hardWatchdogMutex);
-        m_hardWatchdogFinished = true;
+    bool interrupted = false;
+    if (m_hardWatchdog) {
+        interrupted = m_hardWatchdog->stop();
+        m_hardWatchdog.reset();
     }
-    m_hardWatchdogWake.notify_all();
-    if (m_hardWatchdog.joinable())
-        m_hardWatchdog.join();
     if (m_qmlEngine && m_qmlEngine->isInterrupted())
         m_qmlEngine->setInterrupted(false);
+    return interrupted;
 }
 
 void Runner::endOperation()
@@ -637,6 +955,15 @@ int Runner::validateTimeout(int timeoutMs)
     return 0;
 }
 
+int Runner::resolveExpectTimeout(int timeoutMs)
+{
+    // expect* assertions default to the configured operation timeout; an
+    // explicit timeout overrides it for one call.
+    if (timeoutMs < 0)
+        return m_operationTimeoutMs;
+    return validateTimeout(timeoutMs);
+}
+
 bool Runner::waitForNextFrame(int timeoutMs, bool requestRender)
 {
     if (!m_terminalEngine)
@@ -677,12 +1004,13 @@ bool Runner::waitForNextFrame(int timeoutMs, bool requestRender)
     if (m_state == State::Failed)
         return false;
     if (!received) {
-        failScenario(requestRender
-                         ? QStringLiteral("Timed out after %1 ms waiting for a committed frame")
-                               .arg(timeoutMs)
-                         : QStringLiteral("Timed out after %1 ms waiting for the application to "
-                                          "schedule a repaint")
-                               .arg(timeoutMs));
+        failScenario((requestRender
+                          ? QStringLiteral("Timed out after %1 ms waiting for a committed frame")
+                                .arg(timeoutMs)
+                          : QStringLiteral("Timed out after %1 ms waiting for the application to "
+                                           "schedule a repaint")
+                                .arg(timeoutMs))
+                     + pausedClockHint());
         return false;
     }
     return true;
@@ -743,7 +1071,7 @@ bool Runner::waitForTextCondition(const QString& text, bool shouldContain, int t
     }
     if (!matched) {
         failScenario(QStringLiteral("Timed out after %1 ms waiting for text \"%2\"")
-                         .arg(timeoutMs).arg(text));
+                         .arg(timeoutMs).arg(text) + pausedClockHint());
         return false;
     }
     return true;
@@ -767,6 +1095,21 @@ void Runner::sendKey(const char* operation, const QString& key,
 
     ParsedKey parsed;
     if (!parseKey(key, &parsed)) {
+        // Any single grapheme a terminal sends as text is a valid key: route
+        // it through the input decoder like typed text. Modifier combinations
+        // have no byte representation for arbitrary text, so they are invalid.
+        const QString trimmed = key.trimmed();
+        if (isSingleGrapheme(trimmed)) {
+            if (!modifiers.isEmpty()) {
+                failScenario(QStringLiteral(
+                    "Modifiers are not supported with the text key \"%1\"").arg(trimmed));
+                return;
+            }
+            m_terminalEngine->feedInput(trimmed.toUtf8());
+            if (awaitFrame)
+                (void)waitForNextFrame(m_operationTimeoutMs);
+            return;
+        }
         failScenario(QStringLiteral("Unknown or unsupported key: %1").arg(key));
         return;
     }
@@ -823,21 +1166,57 @@ void Runner::sendText(const char* operation, const QString& text, bool awaitFram
         (void)waitForNextFrame(m_operationTimeoutMs);
 }
 
+void Runner::paste(const QString& text)
+{
+    sendPaste("paste", text, /*awaitFrame=*/true);
+}
+
+void Runner::injectPaste(const QString& text)
+{
+    sendPaste("injectPaste", text, /*awaitFrame=*/false);
+}
+
+void Runner::sendPaste(const char* operation, const QString& text, bool awaitFrame)
+{
+    if (!ensureRunning(operation))
+        return;
+    if (text.isEmpty()) {
+        failScenario(QStringLiteral("terminal.%1() requires non-empty text")
+                         .arg(QLatin1String(operation)));
+        return;
+    }
+    // The decoder frames the bytes exactly as a terminal in bracketed-paste
+    // mode delivers them, so newlines and tabs reach TextInput::paste()
+    // untranslated instead of acting as Return and Tab keys.
+    m_terminalEngine->feedInput(QByteArrayLiteral("\x1b[200~") + text.toUtf8()
+                                + QByteArrayLiteral("\x1b[201~"));
+    if (awaitFrame)
+        (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+bool Runner::parseMouseArguments(const QString& button, const QStringList& modifiers,
+                                 int* parsedButton, Qt::KeyboardModifiers* parsedModifiers)
+{
+    QString error;
+    if (!parseMouseButton(button, parsedButton, &error)) {
+        failScenario(error);
+        return false;
+    }
+    if (!parseModifiers(modifiers, parsedModifiers, &error)) {
+        failScenario(QStringLiteral("Unknown modifier: %1").arg(error));
+        return false;
+    }
+    return true;
+}
+
 void Runner::click(int x, int y, const QString& button, const QStringList& modifiers)
 {
     if (!ensureRunning("click"))
         return;
     int b = 0;
-    QString error;
-    if (!parseMouseButton(button, &b, &error)) {
-        failScenario(error);
-        return;
-    }
     Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
-    if (!parseModifiers(modifiers, &parsedModifiers, &error)) {
-        failScenario(error);
+    if (!parseMouseArguments(button, modifiers, &b, &parsedModifiers))
         return;
-    }
     m_terminalEngine->handleMouseInput(b, x, y, false, false, parsedModifiers);
     m_terminalEngine->handleMouseInput(b, x, y, true, false, parsedModifiers);
     (void)waitForNextFrame(m_operationTimeoutMs);
@@ -848,19 +1227,56 @@ void Runner::doubleClick(int x, int y, const QString& button, const QStringList&
     if (!ensureRunning("doubleClick"))
         return;
     int b = 0;
-    QString error;
-    if (!parseMouseButton(button, &b, &error)) {
-        failScenario(error);
-        return;
-    }
     Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
-    if (!parseModifiers(modifiers, &parsedModifiers, &error)) {
-        failScenario(error);
+    if (!parseMouseArguments(button, modifiers, &b, &parsedModifiers))
         return;
-    }
     m_terminalEngine->handleMouseInput(b, x, y, false, false, parsedModifiers);
     m_terminalEngine->handleMouseInput(b, x, y, true, false, parsedModifiers);
     m_terminalEngine->handleMouseInput(b, x, y, false, false, parsedModifiers);
+    m_terminalEngine->handleMouseInput(b, x, y, true, false, parsedModifiers);
+    (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+void Runner::hover(int x, int y, const QStringList& modifiers)
+{
+    if (!ensureRunning("hover"))
+        return;
+    Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
+    QString invalidModifier;
+    if (!parseModifiers(modifiers, &parsedModifiers, &invalidModifier)) {
+        failScenario(QStringLiteral("Unknown modifier: %1").arg(invalidModifier));
+        return;
+    }
+    // A terminal sends motion without a button only under any-motion
+    // reporting. When the application never enabled it, the event does not
+    // exist; the frame wait still runs so timing matches the delivered case.
+    if (m_terminalEngine->mouseMotionReporting()) {
+        // SGR button code 3 is "no button" in a motion report.
+        m_terminalEngine->handleMouseInput(3, x, y, false, true, parsedModifiers);
+    }
+    (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+void Runner::mouseDown(int x, int y, const QString& button, const QStringList& modifiers)
+{
+    if (!ensureRunning("mouseDown"))
+        return;
+    int b = 0;
+    Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
+    if (!parseMouseArguments(button, modifiers, &b, &parsedModifiers))
+        return;
+    m_terminalEngine->handleMouseInput(b, x, y, false, false, parsedModifiers);
+    (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+void Runner::mouseUp(int x, int y, const QString& button, const QStringList& modifiers)
+{
+    if (!ensureRunning("mouseUp"))
+        return;
+    int b = 0;
+    Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
+    if (!parseMouseArguments(button, modifiers, &b, &parsedModifiers))
+        return;
     m_terminalEngine->handleMouseInput(b, x, y, true, false, parsedModifiers);
     (void)waitForNextFrame(m_operationTimeoutMs);
 }
@@ -870,18 +1286,19 @@ void Runner::drag(int startX, int startY, int endX, int endY, const QString& but
     if (!ensureRunning("drag"))
         return;
     int b = 0;
-    QString error;
-    if (!parseMouseButton(button, &b, &error)) {
-        failScenario(error);
-        return;
-    }
     Qt::KeyboardModifiers parsedModifiers = Qt::NoModifier;
-    if (!parseModifiers(modifiers, &parsedModifiers, &error)) {
-        failScenario(error);
+    if (!parseMouseArguments(button, modifiers, &b, &parsedModifiers))
         return;
-    }
     m_terminalEngine->handleMouseInput(b, startX, startY, false, false, parsedModifiers);
-    m_terminalEngine->handleMouseInput(b, endX, endY, false, true, parsedModifiers);
+    // Button-held motion is reported cell by cell under mode 1002; walk the
+    // path so drag handlers see the same intermediate positions a user
+    // produces instead of one jump to the end.
+    const int steps = qMax(qAbs(endX - startX), qAbs(endY - startY));
+    for (int step = 1; step <= steps; ++step) {
+        const int x = startX + ((endX - startX) * step) / qMax(1, steps);
+        const int y = startY + ((endY - startY) * step) / qMax(1, steps);
+        m_terminalEngine->handleMouseInput(b, x, y, false, true, parsedModifiers);
+    }
     m_terminalEngine->handleMouseInput(b, endX, endY, true, false, parsedModifiers);
     (void)waitForNextFrame(m_operationTimeoutMs);
 }
@@ -954,13 +1371,13 @@ void Runner::waitForRegex(const QString& pattern, int timeoutMs)
         return;
     if (!matched) {
         failScenario(QStringLiteral("Timed out after %1 ms waiting for regex pattern \"%2\"")
-                         .arg(validated).arg(pattern));
+                         .arg(validated).arg(pattern) + pausedClockHint());
     }
 }
 
-void Runner::expectRegex(const QString& pattern)
+void Runner::expectRegex(const QString& pattern, int timeoutMs)
 {
-    if (!ensureRunning("expectRegex") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectRegex") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     const QRegularExpression re(pattern);
     if (!re.isValid()) {
@@ -975,9 +1392,10 @@ void Runner::expectRegex(const QString& pattern)
         failScenario(QStringLiteral("Expected frame to match regex \"%1\"").arg(pattern));
 }
 
-void Runner::expectTextInRegion(int x, int y, int width, int height, const QString& text)
+void Runner::expectTextInRegion(int x, int y, int width, int height, const QString& text,
+                                int timeoutMs)
 {
-    if (!ensureRunning("expectTextInRegion") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectTextInRegion") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     if (!m_terminalEngine) {
         failScenario(QStringLiteral("TerminalEngine is no longer available"));
@@ -1012,9 +1430,9 @@ void Runner::expectTextInRegion(int x, int y, int width, int height, const QStri
     }
 }
 
-void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle)
+void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeoutMs)
 {
-    if (!ensureRunning("expectStyle") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectStyle") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     if (!m_terminalEngine) {
         failScenario(QStringLiteral("TerminalEngine is no longer available"));
@@ -1090,6 +1508,14 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle)
         if (!expectedStyle.hasProperty(property))
             return true;
         const QString expectedText = expectedStyle.property(property).toString();
+        if (expectedText.trimmed() == QLatin1String("default")) {
+            if (actual != 0) {
+                failScenario(QStringLiteral("Cell at (%1,%2) %3 expected default but got %4")
+                                 .arg(x).arg(y).arg(property, rgbaString(actual)));
+                return false;
+            }
+            return true;
+        }
         uint32_t expectedRgba = 0;
         if (!parseRgbaString(expectedText, &expectedRgba)) {
             failScenario(QStringLiteral("Cell style %1 is not a valid color: %2")
@@ -1109,9 +1535,9 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle)
     }
 }
 
-void Runner::expectSnapshot(const QString& snapshotRelativePath)
+void Runner::expectSnapshot(const QString& snapshotRelativePath, int timeoutMs)
 {
-    if (!ensureRunning("expectSnapshot") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectSnapshot") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     QString error;
     const QString actualText = currentFrameText(&error);
@@ -1122,9 +1548,9 @@ void Runner::expectSnapshot(const QString& snapshotRelativePath)
     compareSnapshot(snapshotRelativePath, actualText);
 }
 
-void Runner::expectStyled(const QString& snapshotRelativePath)
+void Runner::expectStyled(const QString& snapshotRelativePath, int timeoutMs)
 {
-    if (!ensureRunning("expectStyled") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectStyled") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     QString error;
     const QString actualText = currentStyledFrameText(&error);
@@ -1139,52 +1565,101 @@ void Runner::compareSnapshot(const QString& snapshotRelativePath, const QString&
 {
     const QString snapshotPath = resolveSnapshotPath(snapshotRelativePath);
     QFile snapshotFile(snapshotPath);
-    if (!snapshotFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        failScenario(QStringLiteral("Cannot open snapshot file %1: %2")
-                         .arg(snapshotPath, snapshotFile.errorString()));
-        return;
-    }
-    const QString expectedText = QString::fromUtf8(snapshotFile.readAll());
-    snapshotFile.close();
-
-    if (actualText != expectedText) {
-        // Derive the name from the whole relative path, not just the file name,
-        // so two snapshots called a/frame.txt and b/frame.txt do not overwrite
-        // each other's .actual.txt / .diff artifacts. The conventional
-        // "snapshots/" prefix is dropped because the artifacts already live
-        // under snapshots/.
-        QString baseName = snapshotRelativePath;
-        if (baseName.startsWith(QLatin1String("snapshots/")))
-            baseName = baseName.mid(QStringLiteral("snapshots/").size());
-        if (const int dot = baseName.lastIndexOf(QLatin1Char('.')); dot > 0)
-            baseName.truncate(dot);
-        baseName.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]+")),
-                         QStringLiteral("_"));
-        baseName = baseName.mid(0, 120);
-        if (baseName.isEmpty())
-            baseName = QStringLiteral("snapshot");
-        const QString actualArtifactPath = QStringLiteral("snapshots/%1.actual.txt").arg(baseName);
-        const QString diffArtifactPath = QStringLiteral("snapshots/%1.diff").arg(baseName);
-        QString writeError;
-        if (!writeTextArtifact(actualArtifactPath, actualText, &writeError)
-            || !writeTextArtifact(diffArtifactPath,
-                                  unifiedTextDiff(snapshotPath, expectedText, actualText),
-                                  &writeError)) {
-            failScenario(writeError);
+    const bool baselineExists = snapshotFile.exists();
+    QString expectedText;
+    if (baselineExists) {
+        if (!snapshotFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            failScenario(QStringLiteral("Cannot open snapshot file %1: %2")
+                             .arg(snapshotPath, snapshotFile.errorString()));
             return;
         }
-        m_capturePaths.append(actualArtifactPath);
-        m_capturePaths.append(diffArtifactPath);
-        failScenario(QStringLiteral(
-            "Snapshot mismatch for %1 (actual: %2, diff: %3)")
-                         .arg(snapshotPath, actualArtifactPath, diffArtifactPath));
+        expectedText = QString::fromUtf8(snapshotFile.readAll());
+        snapshotFile.close();
+        if (actualText == expectedText)
+            return;
     }
+
+    // Derive the name from the whole relative path, not just the file name,
+    // so two snapshots called a/frame.txt and b/frame.txt do not overwrite
+    // each other's .actual.txt / .diff artifacts. The conventional
+    // "snapshots/" prefix is dropped because the artifacts already live
+    // under snapshots/.
+    QString baseName = snapshotRelativePath;
+    if (baseName.startsWith(QLatin1String("snapshots/")))
+        baseName = baseName.mid(QStringLiteral("snapshots/").size());
+    if (const int dot = baseName.lastIndexOf(QLatin1Char('.')); dot > 0)
+        baseName.truncate(dot);
+    baseName.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]+")),
+                     QStringLiteral("_"));
+    baseName = baseName.mid(0, 120);
+    if (baseName.isEmpty())
+        baseName = QStringLiteral("snapshot");
+    const QString actualArtifactPath = QStringLiteral("snapshots/%1.actual.txt").arg(baseName);
+    const QString diffArtifactPath = QStringLiteral("snapshots/%1.diff").arg(baseName);
+
+    if (m_updateSnapshots) {
+        // A Qt resource cannot be written back; record the frame where the
+        // developer can copy it from and name the file it belongs in.
+        if (snapshotPath.startsWith(QLatin1Char(':'))) {
+            QString writeError;
+            if (writeTextArtifact(actualArtifactPath, actualText, &writeError))
+                m_capturePaths.append(actualArtifactPath);
+            failScenario(QStringLiteral(
+                "QTUI_UPDATE_SNAPSHOTS cannot update resource snapshot %1; "
+                "the actual frame was written to %2")
+                             .arg(snapshotPath, actualArtifactPath));
+            return;
+        }
+        QString writeError;
+        if (!QDir().mkpath(QFileInfo(snapshotPath).absolutePath())) {
+            failScenario(QStringLiteral("Cannot create snapshot directory for %1")
+                             .arg(snapshotPath));
+            return;
+        }
+        QSaveFile baseline(snapshotPath);
+        const QByteArray bytes = actualText.toUtf8();
+        if (!baseline.open(QIODevice::WriteOnly | QIODevice::Text)
+            || baseline.write(bytes) != bytes.size() || !baseline.commit()) {
+            failScenario(QStringLiteral("Cannot update snapshot %1: %2")
+                             .arg(snapshotPath, baseline.errorString()));
+            return;
+        }
+        m_updatedSnapshots.append(snapshotPath);
+        return;
+    }
+
+    if (!baselineExists) {
+        failScenario(QStringLiteral(
+            "Missing snapshot baseline %1; run with QTUI_UPDATE_SNAPSHOTS=1 to record it")
+                         .arg(snapshotPath));
+        return;
+    }
+
+    QString writeError;
+    if (!writeTextArtifact(actualArtifactPath, actualText, &writeError)
+        || !writeTextArtifact(diffArtifactPath,
+                              unifiedTextDiff(snapshotPath, expectedText, actualText),
+                              &writeError)) {
+        failScenario(writeError);
+        return;
+    }
+    m_capturePaths.append(actualArtifactPath);
+    m_capturePaths.append(diffArtifactPath);
+    failScenario(QStringLiteral(
+        "Snapshot mismatch for %1 (actual: %2, diff: %3)")
+                     .arg(snapshotPath, actualArtifactPath, diffArtifactPath));
 }
 
 void Runner::sleep(int durationMs)
 {
     if (!ensureRunning("sleep"))
         return;
+    // Under the virtual clock a sleep means "let this much application time
+    // pass", so existing scenarios run instantly without edits.
+    if (Clock::isVirtual()) {
+        advanceVirtualTime("sleep", durationMs);
+        return;
+    }
     const int validated = validateTimeout(durationMs);
     if (!validated)
         return;
@@ -1202,6 +1677,59 @@ void Runner::sleep(int durationMs)
     timer.start(validated);
     loop.exec();
     m_activeLoop = nullptr;
+}
+
+void Runner::advanceTime(int durationMs)
+{
+    if (!ensureRunning("advanceTime"))
+        return;
+    if (!Clock::isVirtual()) {
+        failScenario(QStringLiteral(
+            "advanceTime() requires the virtual clock; run with QTUI_RUNNER_CLOCK=virtual "
+            "or qtui_add_scenario(... CLOCK VIRTUAL)"));
+        return;
+    }
+    advanceVirtualTime("advanceTime", durationMs);
+}
+
+void Runner::advanceVirtualTime(const char* operation, int durationMs)
+{
+    Q_UNUSED(operation);
+    const int validated = validateTimeout(durationMs);
+    if (!validated)
+        return;
+    if (m_activeLoop) {
+        failScenario(QStringLiteral("Nested wait operations are not supported"));
+        return;
+    }
+
+    Clock* clock = Clock::instance();
+    const qint64 target = clock->elapsed() + validated;
+    while (clock->elapsed() < target) {
+        // Step at most 16 ms — the animation tick — or to the next Qtui timer
+        // deadline when that is sooner, so timers fire at their exact time.
+        qint64 next = qMin(clock->elapsed() + 16, target);
+        const qint64 deadline = clock->nextTimerDeadline();
+        if (deadline > clock->elapsed() && deadline < next)
+            next = deadline;
+        clock->advanceTo(next);
+        // Timer handlers queue renders and deferred deletions; deliver them
+        // now. A step that invalidated nothing commits no frame.
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        if (m_state != State::Running)
+            return;
+    }
+}
+
+double Runner::now() const
+{
+    return static_cast<double>(Clock::instance()->elapsed());
+}
+
+void Runner::useVirtualClock()
+{
+    Clock::setVirtual();
 }
 
 void Runner::waitForFrame(int timeoutMs)
@@ -1224,6 +1752,56 @@ void Runner::expectRepaint(int timeoutMs)
     // call the pending render *is* the repaint the application scheduled, and
     // consuming it would make this assertion vacuous.
     (void)waitForNextFrame(validated, /*requestRender=*/false);
+}
+
+void Runner::resize(int columns, int rows)
+{
+    if (!ensureRunning("resize"))
+        return;
+    if (columns < 1 || columns > 1000 || rows < 1 || rows > 1000) {
+        failScenario(QStringLiteral(
+            "resize() requires columns and rows between 1 and 1000, got %1x%2")
+                         .arg(columns).arg(rows));
+        return;
+    }
+
+    const auto frameMatches = [&] {
+        const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+        return frame && frame->width() == columns && frame->height() == rows;
+    };
+
+    m_terminalEngine->setTestViewportSize(QSize(columns, rows));
+    // The next committed frame is normally already at the new size, but a
+    // render requested before the resize may still land first; keep waiting
+    // until the dimensions match, bounded by the operation timeout.
+    QDeadlineTimer deadline(m_operationTimeoutMs);
+    while (!frameMatches()) {
+        if (deadline.hasExpired()) {
+            const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+            failScenario(QStringLiteral(
+                "Timed out after %1 ms waiting for a %2x%3 frame (still %4x%5)")
+                             .arg(m_operationTimeoutMs).arg(columns).arg(rows)
+                             .arg(frame ? frame->width() : 0)
+                             .arg(frame ? frame->height() : 0));
+            return;
+        }
+        const int remaining = static_cast<int>(qMax<qint64>(1, deadline.remainingTime()));
+        if (!waitForNextFrame(remaining))
+            return;
+    }
+}
+
+QVariantMap Runner::size()
+{
+    if (!ensureRunning("size") || !m_terminalEngine)
+        return {};
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
+        failScenario(QStringLiteral("No committed frame buffer is available"));
+        return {};
+    }
+    return {{QStringLiteral("columns"), frame->width()},
+            {QStringLiteral("rows"), frame->height()}};
 }
 
 int Runner::frameCount() const
@@ -1320,7 +1898,8 @@ void Runner::waitForCondition(const QJSValue& condition, int timeoutMs)
 
     if (m_state == State::Failed || matched)
         return;
-    failScenario(QStringLiteral("Timed out after %1 ms waiting for condition").arg(validated));
+    failScenario(QStringLiteral("Timed out after %1 ms waiting for condition").arg(validated)
+                 + pausedClockHint());
 }
 
 void Runner::waitForText(const QString& text, int timeoutMs)
@@ -1332,9 +1911,9 @@ void Runner::waitForText(const QString& text, int timeoutMs)
         (void)waitForTextCondition(text, true, validated);
 }
 
-void Runner::expectText(const QString& text)
+void Runner::expectText(const QString& text, int timeoutMs)
 {
-    if (!ensureRunning("expectText") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectText") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     QString error;
     const QString frame = currentFrameText(&error);
@@ -1344,9 +1923,9 @@ void Runner::expectText(const QString& text)
         failScenario(QStringLiteral("Expected frame to contain \"%1\"").arg(text));
 }
 
-void Runner::expectNoText(const QString& text)
+void Runner::expectNoText(const QString& text, int timeoutMs)
 {
-    if (!ensureRunning("expectNoText") || !waitForNextFrame(m_operationTimeoutMs))
+    if (!ensureRunning("expectNoText") || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     QString error;
     const QString frame = currentFrameText(&error);
@@ -1650,14 +2229,23 @@ QVariantMap Runner::cell(int x, int y)
     attributes.insert(QStringLiteral("italic"), hasAttribute(TextAttribute::Italic));
     attributes.insert(QStringLiteral("underline"), hasAttribute(TextAttribute::Underline));
     attributes.insert(QStringLiteral("reversed"), hasAttribute(TextAttribute::Reversed));
+    attributes.insert(QStringLiteral("blink"), hasAttribute(TextAttribute::Blink));
+    attributes.insert(QStringLiteral("conceal"), hasAttribute(TextAttribute::Conceal));
+    attributes.insert(QStringLiteral("strikethrough"),
+                      hasAttribute(TextAttribute::Strikethrough));
 
     QVariantMap result;
     result.insert(QStringLiteral("x"), x);
     result.insert(QStringLiteral("y"), y);
     result.insert(QStringLiteral("character"), QString::fromUtf8(renderedCell.character()));
     result.insert(QStringLiteral("continuation"), renderedCell.continuation);
-    result.insert(QStringLiteral("foreground"), rgbaString(renderedCell.fgColor));
-    result.insert(QStringLiteral("background"), rgbaString(renderedCell.bgColor));
+    // "default" mirrors styledText(): the cell uses the terminal's own color.
+    result.insert(QStringLiteral("foreground"),
+                  renderedCell.fgColor ? rgbaString(renderedCell.fgColor)
+                                       : QStringLiteral("default"));
+    result.insert(QStringLiteral("background"),
+                  renderedCell.bgColor ? rgbaString(renderedCell.bgColor)
+                                       : QStringLiteral("default"));
     result.insert(QStringLiteral("attributes"), attributes);
     return result;
 }
@@ -1683,6 +2271,158 @@ QVariantList Runner::findText(const QString& text)
                                   {QStringLiteral("width"), match.width}});
     }
     return result;
+}
+
+QString Runner::regionText(int x, int y, int width, int height)
+{
+    if (!ensureRunning("regionText") || !m_terminalEngine)
+        return {};
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame) {
+        failScenario(QStringLiteral("No committed frame buffer is available"));
+        return {};
+    }
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > frame->width()
+        || y + height > frame->height()) {
+        failScenario(QStringLiteral("Region bounds [%1,%2,%3,%4] out of frame size %5x%6")
+                         .arg(x).arg(y).arg(width).arg(height)
+                         .arg(frame->width()).arg(frame->height()));
+        return {};
+    }
+
+    QString result;
+    for (int row = y; row < y + height; ++row) {
+        QString line;
+        for (int column = x; column < x + width; ++column) {
+            const Cell& cell = frame->cellAt(column, row);
+            if (cell.continuation)
+                continue;
+            line.append(cell.character().isEmpty() ? QStringLiteral(" ")
+                                                   : QString::fromUtf8(cell.character()));
+        }
+        while (line.endsWith(QLatin1Char(' ')))
+            line.chop(1);
+        result.append(line);
+        result.append(QLatin1Char('\n'));
+    }
+    return result;
+}
+
+bool Runner::locateItem(const QString& objectName, QRect* outRect, QString* error) const
+{
+    if (objectName.trimmed().isEmpty()) {
+        *error = QStringLiteral("itemRect() requires a non-empty objectName");
+        return false;
+    }
+    if (!m_terminal || !m_terminalEngine) {
+        *error = QStringLiteral("Target Terminal is no longer available");
+        return false;
+    }
+    Item* item = findVisibleItem(m_terminal, objectName);
+    if (!item) {
+        *error = QStringLiteral("No visible item with objectName \"%1\"").arg(objectName);
+        return false;
+    }
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
+        *error = QStringLiteral("No committed frame buffer is available");
+        return false;
+    }
+    const QPoint origin = item->absolutePosition();
+    const QRect clipped = QRect(origin, QSize(item->width(), item->height()))
+        & QRect(0, 0, frame->width(), frame->height());
+    if (clipped.isEmpty()) {
+        *error = QStringLiteral("Item \"%1\" lies outside the %2x%3 viewport")
+                     .arg(objectName).arg(frame->width()).arg(frame->height());
+        return false;
+    }
+    *outRect = clipped;
+    return true;
+}
+
+QVariantMap Runner::itemRect(const QString& objectName)
+{
+    if (!ensureRunning("itemRect"))
+        return {};
+    QRect rect;
+    QString error;
+    if (!locateItem(objectName, &rect, &error)) {
+        failScenario(error);
+        return {};
+    }
+    return {{QStringLiteral("x"), rect.x()},
+            {QStringLiteral("y"), rect.y()},
+            {QStringLiteral("width"), rect.width()},
+            {QStringLiteral("height"), rect.height()}};
+}
+
+void Runner::waitForItem(const QString& objectName, int timeoutMs)
+{
+    if (!ensureRunning("waitForItem"))
+        return;
+    const int validated = validateTimeout(timeoutMs);
+    if (!validated)
+        return;
+
+    QRect rect;
+    QString error;
+    if (locateItem(objectName, &rect, &error))
+        return;
+
+    if (m_activeLoop) {
+        failScenario(QStringLiteral("Nested wait operations are not supported"));
+        return;
+    }
+
+    bool matched = false;
+    QEventLoop loop;
+    QTimer pollTimer;
+    pollTimer.setTimerType(Qt::PreciseTimer);
+    pollTimer.setInterval(conditionPollIntervalMs);
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    // Visibility is QML state that normally arrives with a frame, but poll as
+    // well so a change that failed to invalidate anything is still seen.
+    const auto evaluate = [&] {
+        QString pollError;
+        if (locateItem(objectName, &rect, &pollError)) {
+            matched = true;
+            loop.quit();
+        }
+    };
+    const QMetaObject::Connection frameConnection = connect(
+        m_terminalEngine, &TerminalEngine::frameRendered, &loop,
+        [&](quint64) { evaluate(); });
+    connect(&pollTimer, &QTimer::timeout, &loop, evaluate);
+    connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    m_activeLoop = &loop;
+    pollTimer.start();
+    timeout.start(validated);
+    m_terminalEngine->requestRender();
+    loop.exec();
+    m_activeLoop = nullptr;
+    disconnect(frameConnection);
+
+    if (m_state == State::Failed)
+        return;
+    if (!matched) {
+        failScenario(QStringLiteral(
+            "Timed out after %1 ms waiting for item \"%2\" (%3)")
+                         .arg(validated).arg(objectName, error) + pausedClockHint());
+    }
+}
+
+void Runner::expectRegionSnapshot(int x, int y, int width, int height,
+                                  const QString& snapshotRelativePath, int timeoutMs)
+{
+    if (!ensureRunning("expectRegionSnapshot")
+        || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
+        return;
+    const QString actualText = regionText(x, y, width, height);
+    if (m_state == State::Failed)
+        return;
+    compareSnapshot(snapshotRelativePath, actualText);
 }
 
 void Runner::clickText(const QString& text, int occurrence, const QString& button,
@@ -1752,19 +2492,36 @@ bool Runner::writeResultArtifact(int exitCode, QString* error)
 
     QJsonObject viewport{{QStringLiteral("columns"), m_viewport.width()},
                          {QStringLiteral("rows"), m_viewport.height()}};
+    // "viewport" keeps the initial size the scenario was configured with;
+    // "finalViewport" records where resize() calls left it.
+    QJsonValue finalViewport = QJsonValue(QJsonValue::Null);
+    if (m_terminalEngine) {
+        if (const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+            frame && frame->width() > 0 && frame->height() > 0) {
+            finalViewport = QJsonObject{{QStringLiteral("columns"), frame->width()},
+                                        {QStringLiteral("rows"), frame->height()}};
+        }
+    }
     QJsonArray captures;
     m_capturePaths.removeDuplicates();
     for (const QString& capture : std::as_const(m_capturePaths))
         captures.append(capture);
+    QJsonArray updatedSnapshots;
+    m_updatedSnapshots.removeDuplicates();
+    for (const QString& snapshot : std::as_const(m_updatedSnapshots))
+        updatedSnapshots.append(snapshot);
     QJsonObject artifacts{{QStringLiteral("directory"), m_artifactDirectory},
                           {QStringLiteral("result"), QStringLiteral("result.json")},
-                          {QStringLiteral("captures"), captures}};
+                          {QStringLiteral("captures"), captures},
+                          {QStringLiteral("updatedSnapshots"), updatedSnapshots}};
     artifacts.insert(QStringLiteral("finalFrame"),
                      m_finalFrameRelativePath.isEmpty()
                          ? QJsonValue(QJsonValue::Null)
                          : QJsonValue(m_finalFrameRelativePath));
 
-    QJsonObject root{{QStringLiteral("schemaVersion"), 1},
+    QJsonObject root{{QStringLiteral("clock"), Clock::isVirtual()
+                          ? QStringLiteral("virtual") : QStringLiteral("real")},
+                     {QStringLiteral("schemaVersion"), 1},
                      {QStringLiteral("status"), exitCode == 0
                           ? QStringLiteral("passed") : QStringLiteral("failed")},
                      {QStringLiteral("exitCode"), exitCode},
@@ -1773,9 +2530,12 @@ bool Runner::writeResultArtifact(int exitCode, QString* error)
                      {QStringLiteral("message"), m_message},
                      {QStringLiteral("elapsedMs"), m_elapsed.isValid() ? m_elapsed.elapsed() : 0},
                      {QStringLiteral("viewport"), viewport},
+                     {QStringLiteral("finalViewport"), finalViewport},
                      {QStringLiteral("operations"), operations},
                      {QStringLiteral("artifacts"), artifacts},
                      {QStringLiteral("frameStats"), QJsonObject::fromVariantMap(frameStats())}};
+    if (Clock::isVirtual())
+        root.insert(QStringLiteral("virtualTimeMs"), Clock::instance()->elapsed());
     root.insert(QStringLiteral("operation"),
                 m_currentOperation >= 0 && m_currentOperation < m_operations.size()
                     ? QJsonValue(operationObject(m_operations.at(m_currentOperation)))
@@ -1864,13 +2624,18 @@ void Runner::scheduleExit(int exitCode)
             m_message = artifactError;
     }
 
-    const QString summary = exitCode == 0
+    QString summary = exitCode == 0
         ? QStringLiteral("[Test] PASSED in %1 ms; artifacts: %2")
               .arg(m_elapsed.isValid() ? m_elapsed.elapsed() : 0)
               .arg(m_artifactDirectory)
         : QStringLiteral("[Test] FAILED: %1; artifacts: %2")
               .arg(m_message.isEmpty() ? QStringLiteral("Scenario failed") : m_message,
                    m_artifactDirectory);
+    // A rewritten baseline must never be silent: name every file that changed.
+    if (!m_updatedSnapshots.isEmpty()) {
+        summary += QStringLiteral("; updated snapshots: %1")
+                       .arg(m_updatedSnapshots.join(QStringLiteral(", ")));
+    }
     if (exitCode == 0)
         qInfo().noquote() << summary;
     else
@@ -1893,3 +2658,5 @@ QString Runner::formatJsError(const QJSValue& error) const
 }
 
 } // namespace qtui
+
+#include "Runner.moc"

@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <QJSValue>
 #include <QPointer>
+#include <QRect>
 #include <QSize>
 #include <QString>
 #include <QStringList>
@@ -14,15 +15,15 @@
 #include <QVariantMap>
 #include <QVector>
 
-#include <condition_variable>
-#include <mutex>
-#include <thread>
+#include <memory>
 
 class QEventLoop;
 class QQmlEngine;
 
 namespace qtui {
 
+class RunnerBridge;
+class RunnerHardWatchdog;
 class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
@@ -39,19 +40,36 @@ public:
 
     static Runner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);
 
+    /// Selects the virtual clock for the whole process, as QTUI_RUNNER_CLOCK=virtual
+    /// does. Call it before loading QML; once any Qtui timer or animation
+    /// exists the process aborts with a diagnostic instead of mixing timelines.
+    static void useVirtualClock();
+
     void start();
 
     /// Sends one key with optional Shift, Ctrl, Alt, or Meta modifiers and waits
     /// for the resulting frame to be committed.
     Q_INVOKABLE void press(const QString& key, const QStringList& modifiers = {});
 
-    /// Sends non-empty text as one text-input event and waits for the resulting
-    /// frame to be committed.
+    /// Feeds non-empty text through the input decoder — one key event per
+    /// character, as a real keyboard would produce — and waits once for the
+    /// resulting frame to be committed.
     Q_INVOKABLE void typeText(const QString& text);
 
     /// Processes Qt events for durationMs without blocking application timers or
-    /// rendering. The duration must be between 1 and 30000 milliseconds.
+    /// rendering. The duration must be between 1 and 30000 milliseconds. Under
+    /// the virtual clock this is advanceTime(durationMs).
     Q_INVOKABLE void sleep(int durationMs);
+
+    /// Virtual clock only: advances Qtui time by durationMs in steps of at
+    /// most 16 ms (or to the next timer deadline when that is sooner), firing
+    /// Qtui timers, animations, and QML Timers, and committing frames for
+    /// whatever they invalidated. Nothing scheduled means no frame.
+    Q_INVOKABLE void advanceTime(int durationMs);
+
+    /// Milliseconds on the Qtui clock: virtual time under the virtual clock,
+    /// wall time since process start otherwise.
+    Q_INVOKABLE double now() const;
 
     /// Waits for a committed frame newer than the current frame.
     Q_INVOKABLE void waitForFrame(int timeoutMs = 2000);
@@ -59,6 +77,14 @@ public:
     /// Sends text without waiting for a frame, so a following expectRepaint()
     /// can observe whether the application scheduled the repaint itself.
     Q_INVOKABLE void injectText(const QString& text);
+
+    /// Sends non-empty text as one bracketed paste through the input decoder
+    /// and waits for the resulting committed frame. Newlines and tabs inside
+    /// the paste arrive untranslated, exactly as a terminal delivers them.
+    Q_INVOKABLE void paste(const QString& text);
+
+    /// paste() without the implicit frame wait, for use with expectRepaint().
+    Q_INVOKABLE void injectPaste(const QString& text);
 
     /// press() without the implicit frame wait, for use with expectRepaint().
     Q_INVOKABLE void injectKey(const QString& key, const QStringList& modifiers = {});
@@ -68,6 +94,13 @@ public:
     /// change actually invalidated the scene rather than only that the scene
     /// paints correctly when a render is forced.
     Q_INVOKABLE void expectRepaint(int timeoutMs = 2000);
+
+    /// Resizes the test viewport to columns x rows (each 1 through 1000) and
+    /// waits until a frame with the new dimensions is committed.
+    Q_INVOKABLE void resize(int columns, int rows);
+
+    /// Returns {columns, rows} of the current committed frame.
+    Q_INVOKABLE QVariantMap size();
 
     /// Sequence number of the most recently committed frame. Use it to assert
     /// that an interaction did not cause any repaint at all.
@@ -87,11 +120,12 @@ public:
     /// Waits until the committed terminal frame contains text.
     Q_INVOKABLE void waitForText(const QString& text, int timeoutMs = 2000);
 
-    /// Fails unless the next committed terminal frame contains text.
-    Q_INVOKABLE void expectText(const QString& text);
+    /// Fails unless the next committed terminal frame contains text. A
+    /// negative timeout means the configured operation timeout.
+    Q_INVOKABLE void expectText(const QString& text, int timeoutMs = -1);
 
     /// Fails unless the next committed terminal frame does not contain text.
-    Q_INVOKABLE void expectNoText(const QString& text);
+    Q_INVOKABLE void expectNoText(const QString& text, int timeoutMs = -1);
 
     /// Writes the next committed frame as normalized UTF-8 text beneath the
     /// configured artifact directory.
@@ -117,6 +151,26 @@ public:
     /// Returns every visible single-row occurrence of text in row-major order.
     Q_INVOKABLE QVariantList findText(const QString& text);
 
+    /// Returns normalized text for the sub-grid [x, y, width, height] of the
+    /// current committed frame, without waiting. Trailing spaces are trimmed
+    /// from each row. Bounds outside the frame fail the scenario.
+    Q_INVOKABLE QString regionText(int x, int y, int width, int height);
+
+    /// Returns {x, y, width, height} in terminal cells of the first visible
+    /// item with the given objectName, clipped to the viewport. A missing,
+    /// hidden, or fully off-screen item fails the scenario.
+    Q_INVOKABLE QVariantMap itemRect(const QString& objectName);
+
+    /// Waits until an item with the given objectName is visible inside the
+    /// committed viewport.
+    Q_INVOKABLE void waitForItem(const QString& objectName, int timeoutMs = 2000);
+
+    /// Compares the region's normalized text against a golden baseline, with
+    /// the same artifacts and update mode as expectSnapshot().
+    Q_INVOKABLE void expectRegionSnapshot(int x, int y, int width, int height,
+                                          const QString& snapshotRelativePath,
+                                          int timeoutMs = -1);
+
     /// Clicks the center of a rendered text match and waits for the resulting frame.
     Q_INVOKABLE void clickText(const QString& text, int occurrence = 0,
                                const QString& button = QStringLiteral("left"),
@@ -124,6 +178,17 @@ public:
 
     /// Sends a mouse click at (x, y) with optional button ("left", "middle", "right") and modifiers.
     Q_INVOKABLE void click(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
+
+    /// Moves the mouse to (x, y) with no button held. The event is delivered
+    /// only while the application has hover (any-motion) reporting enabled,
+    /// exactly as a real terminal sends it; otherwise it is dropped.
+    Q_INVOKABLE void hover(int x, int y, const QStringList& modifiers = {});
+
+    /// Presses a mouse button at (x, y) without releasing it.
+    Q_INVOKABLE void mouseDown(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
+
+    /// Releases a mouse button at (x, y).
+    Q_INVOKABLE void mouseUp(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
     /// Sends a double click at (x, y) with optional button and modifiers.
     Q_INVOKABLE void doubleClick(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
@@ -138,20 +203,22 @@ public:
     Q_INVOKABLE void waitForRegex(const QString& pattern, int timeoutMs = 2000);
 
     /// Fails unless the next committed frame matches the regex pattern.
-    Q_INVOKABLE void expectRegex(const QString& pattern);
+    Q_INVOKABLE void expectRegex(const QString& pattern, int timeoutMs = -1);
 
     /// Fails unless the specified sub-region contains text.
-    Q_INVOKABLE void expectTextInRegion(int x, int y, int width, int height, const QString& text);
+    Q_INVOKABLE void expectTextInRegion(int x, int y, int width, int height,
+                                        const QString& text, int timeoutMs = -1);
 
     /// Fails unless cell attributes at (x, y) match expectedStyle properties.
-    Q_INVOKABLE void expectStyle(int x, int y, const QJSValue& expectedStyle);
+    Q_INVOKABLE void expectStyle(int x, int y, const QJSValue& expectedStyle,
+                                 int timeoutMs = -1);
 
     /// Compares the committed frame against a golden baseline text snapshot.
-    Q_INVOKABLE void expectSnapshot(const QString& snapshotRelativePath);
+    Q_INVOKABLE void expectSnapshot(const QString& snapshotRelativePath, int timeoutMs = -1);
 
     /// Compares styledText() against a golden baseline, so colors and
     /// attributes are verified in addition to the characters.
-    Q_INVOKABLE void expectStyled(const QString& snapshotRelativePath);
+    Q_INVOKABLE void expectStyled(const QString& snapshotRelativePath, int timeoutMs = -1);
 
     /// Fails the scenario immediately with message.
     Q_INVOKABLE void fail(const QString& message);
@@ -162,18 +229,19 @@ public:
     /// Marks the scenario successful after the JavaScript file returns normally.
     Q_INVOKABLE void finish();
 
-    /// Internal callbacks for Promise resolution and rejection in async scenarios.
-    Q_INVOKABLE void onPromiseResolved();
-    Q_INVOKABLE void onPromiseRejected(const QString& error);
-
-    /// Internal entry point used by the JavaScript facade for structured traces.
-    Q_INVOKABLE void beginOperation(const QString& name, const QString& stack);
-    Q_INVOKABLE void endOperation();
-
 signals:
     void finished(int exitCode);
 
 private:
+    // Internal callbacks reached only through the RunnerBridge facade helper:
+    // Promise resolution and rejection in async scenarios, and the structured
+    // operation trace.
+    friend class RunnerBridge;
+    void onPromiseResolved();
+    void onPromiseRejected(const QString& error);
+    void beginOperation(const QString& name, const QString& stack);
+    void endOperation();
+
     enum class State {
         Starting,
         Running,
@@ -200,11 +268,17 @@ private:
     };
 
     bool waitForNextFrame(int timeoutMs, bool requestRender = true);
+    void advanceVirtualTime(const char* operation, int durationMs);
     void sendText(const char* operation, const QString& text, bool awaitFrame);
+    void sendPaste(const char* operation, const QString& text, bool awaitFrame);
     void sendKey(const char* operation, const QString& key,
                  const QStringList& modifiers, bool awaitFrame);
     bool waitForTextCondition(const QString& text, bool shouldContain, int timeoutMs);
     int validateTimeout(int timeoutMs);
+    int resolveExpectTimeout(int timeoutMs);
+    bool parseMouseArguments(const QString& button, const QStringList& modifiers,
+                             int* parsedButton, Qt::KeyboardModifiers* parsedModifiers);
+    bool locateItem(const QString& objectName, QRect* outRect, QString* error) const;
     bool ensureRunning(const char* operation);
     QString currentFrameText(QString* error = nullptr) const;
     QString currentStyledFrameText(QString* error = nullptr) const;
@@ -227,7 +301,7 @@ private:
     void scheduleExit(int exitCode);
     QString formatJsError(const QJSValue& error) const;
     void startHardWatchdog();
-    void stopHardWatchdog();
+    bool stopHardWatchdog();
 
     QPointer<QQmlEngine> m_qmlEngine;
     QPointer<Terminal> m_terminal;
@@ -243,6 +317,8 @@ private:
     QString m_message;
     QString m_finalFrameRelativePath;
     QStringList m_capturePaths;
+    QStringList m_updatedSnapshots;
+    bool m_updateSnapshots = false;
     QVector<OperationRecord> m_operations;
     int m_currentOperation = -1;
     QElapsedTimer m_elapsed;
@@ -250,17 +326,15 @@ private:
     QEventLoop* m_activeLoop = nullptr;
     State m_state = State::Starting;
     QJSValue m_terminalFacade;
+    QObject* m_bridge = nullptr;
     bool m_evaluating = false;
     bool m_exitScheduled = false;
 
     // m_watchdog is a QTimer, so it cannot fire while a scenario blocks inside
-    // synchronous JavaScript. This thread interrupts the JS engine instead, so
-    // a runaway loop still fails with a diagnosis rather than hanging.
-    std::thread m_hardWatchdog;
-    std::mutex m_hardWatchdogMutex;
-    std::condition_variable m_hardWatchdogWake;
-    bool m_hardWatchdogFinished = false;
-    bool m_scenarioInterrupted = false;
+    // synchronous JavaScript. This helper thread interrupts the JS engine
+    // instead, so a runaway loop still fails with a diagnosis rather than
+    // hanging.
+    std::unique_ptr<RunnerHardWatchdog> m_hardWatchdog;
 };
 
 } // namespace qtui

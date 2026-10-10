@@ -75,6 +75,30 @@ else()
     set(live_value 0)
 endif()
 
+if(DEFINED CLOCK AND NOT "${CLOCK}" STREQUAL "")
+    list(APPEND scenario_environment "QTUI_RUNNER_CLOCK=${CLOCK}")
+else()
+    # A globally exported QTUI_RUNNER_CLOCK must not silently flip scenarios
+    # that were written for the real clock.
+    list(APPEND scenario_environment "--unset=QTUI_RUNNER_CLOCK")
+endif()
+
+# Snapshot update mode: force it on or off for this test; otherwise the
+# executable inherits QTUI_UPDATE_SNAPSHOTS from the caller's environment.
+if(UPDATE_SNAPSHOTS)
+    list(APPEND scenario_environment "QTUI_UPDATE_SNAPSHOTS=1")
+elseif(NO_UPDATE_SNAPSHOTS)
+    list(APPEND scenario_environment "--unset=QTUI_UPDATE_SNAPSHOTS")
+endif()
+
+# A seeded baseline makes the update path deterministic on every run: the
+# stale seed is copied over the recorded baseline before the process starts.
+if(DEFINED SNAPSHOT_SEED_SOURCE AND NOT "${SNAPSHOT_SEED_SOURCE}" STREQUAL "")
+    get_filename_component(seed_parent "${SNAPSHOT_SEED_DEST}" DIRECTORY)
+    file(MAKE_DIRECTORY "${seed_parent}")
+    file(COPY_FILE "${SNAPSHOT_SEED_SOURCE}" "${SNAPSHOT_SEED_DEST}")
+endif()
+
 file(REMOVE_RECURSE "${ARTIFACT_DIR}")
 file(MAKE_DIRECTORY "${ARTIFACT_DIR}")
 if(DEFINED FORBIDDEN_ARTIFACT)
@@ -207,4 +231,28 @@ endif()
 
 if(DEFINED FORBIDDEN_ARTIFACT AND EXISTS "${FORBIDDEN_ARTIFACT}")
     message(FATAL_ERROR "Forbidden artifact escaped its directory: ${FORBIDDEN_ARTIFACT}")
+endif()
+
+if(DEFINED EXPECT_UPDATED_SNAPSHOT)
+    if(NOT EXISTS "${EXPECT_UPDATED_SNAPSHOT}")
+        message(FATAL_ERROR
+            "Update mode did not write the snapshot baseline: ${EXPECT_UPDATED_SNAPSHOT}")
+    endif()
+    if(DEFINED EXPECT_UPDATED_SNAPSHOT_CONTENT)
+        file(READ "${EXPECT_UPDATED_SNAPSHOT}" updated_contents)
+        string(FIND "${updated_contents}" "${EXPECT_UPDATED_SNAPSHOT_CONTENT}" updated_position)
+        if(updated_position EQUAL -1)
+            message(FATAL_ERROR
+                "Updated snapshot ${EXPECT_UPDATED_SNAPSHOT} did not contain: "
+                "${EXPECT_UPDATED_SNAPSHOT_CONTENT}")
+        endif()
+    endif()
+    string(JSON updated_count LENGTH "${result_json}" artifacts updatedSnapshots)
+    if(updated_count EQUAL 0)
+        message(FATAL_ERROR "result.json artifacts.updatedSnapshots is empty")
+    endif()
+    string(FIND "${output}" "updated snapshots:" updated_summary_position)
+    if(updated_summary_position EQUAL -1)
+        message(FATAL_ERROR "Runner summary did not list the updated snapshots")
+    endif()
 endif()

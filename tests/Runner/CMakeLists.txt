@@ -1,6 +1,8 @@
 # Tests for Qtui::Runner: the fixture application and one scenario per
 # runner contract (success, timeouts, artifacts, snapshots, environment modes).
 
+add_qtui_test(test_runner_declarations test_runner_declarations.cpp)
+
 add_executable(qtui_runner_fixture main.cpp)
 target_link_libraries(qtui_runner_fixture PRIVATE
     Qt6::Core
@@ -17,6 +19,8 @@ qt_add_resources(qtui_runner_fixture embedded_runner_scenarios
     FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/resource_snapshot.js"
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/snapshots/fixture.txt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/module_main.mjs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/lib/module_helpers.mjs"
 )
 
 set(qtui_runner_scenarios
@@ -145,6 +149,136 @@ add_qtui_runner_scenario(test_runner_styled_snapshot_mismatch qtui_runner_fixtur
     FAILURE_PATTERN "Snapshot mismatch"
     ARTIFACT "snapshots/mismatch_styled.diff"
     ARTIFACT_CONTENT "fg=#7FDBCAFF"
+)
+
+# Snapshot update mode. The scenario runs from a build-tree copy: the record
+# test seeds a stale baseline next to it, rewrites it under
+# QTUI_UPDATE_SNAPSHOTS=1, and the verify test then passes against the freshly
+# recorded file without update mode.
+set(qtui_runner_update_dir "${CMAKE_CURRENT_BINARY_DIR}/snapshot_update")
+file(COPY "${qtui_runner_scenarios}/snapshot_update.js"
+    DESTINATION "${qtui_runner_update_dir}")
+add_qtui_runner_scenario(test_runner_snapshot_update_record qtui_runner_fixture
+    "${qtui_runner_update_dir}/snapshot_update.js" 0
+    UPDATE_SNAPSHOTS
+    SNAPSHOT_SEED_SOURCE "${qtui_runner_scenarios}/snapshots/stale_seed.txt"
+    SNAPSHOT_SEED_DEST "${qtui_runner_update_dir}/snapshots/updated_baseline.txt"
+    EXPECT_UPDATED_SNAPSHOT "${qtui_runner_update_dir}/snapshots/updated_baseline.txt"
+    EXPECT_UPDATED_SNAPSHOT_CONTENT "TESTRUNNER FIXTURE"
+)
+add_qtui_runner_scenario(test_runner_snapshot_update_verify qtui_runner_fixture
+    "${qtui_runner_update_dir}/snapshot_update.js" 0
+    NO_UPDATE_SNAPSHOTS
+)
+set_tests_properties(test_runner_snapshot_update_record PROPERTIES
+    FIXTURES_SETUP qtui_snapshot_update)
+set_tests_properties(test_runner_snapshot_update_verify PROPERTIES
+    FIXTURES_REQUIRED qtui_snapshot_update)
+# The virtual clock: deterministic timers, animations, and frame discipline.
+add_qtui_runner_scenario(test_runner_virtual_clock qtui_runner_fixture
+    "${qtui_runner_scenarios}/virtual_clock.js" 0
+    CLOCK VIRTUAL
+    ARTIFACT "virtual_clock.txt"
+    ARTIFACT_CONTENT "TICKS: 5"
+)
+add_qtui_runner_scenario(test_runner_virtual_clock_hint qtui_runner_fixture
+    "${qtui_runner_scenarios}/virtual_clock_hint.js" 1
+    CLOCK VIRTUAL
+    FAILURE_PATTERN "advance it with advanceTime()"
+    ARTIFACT "failure.txt"
+)
+add_qtui_runner_scenario(test_runner_advance_time_real_clock qtui_runner_fixture
+    "${qtui_runner_scenarios}/advance_time_real.js" 1
+    FAILURE_PATTERN "requires the virtual clock"
+    ARTIFACT "failure.txt"
+)
+
+# Module scenarios and scope hygiene.
+add_qtui_runner_scenario(test_runner_module_main qtui_runner_fixture
+    "${qtui_runner_scenarios}/module_main.mjs" 0
+    ARTIFACT "module_main.txt"
+    ARTIFACT_CONTENT "INPUT: modules work"
+)
+# Modules also load from Qt resources, including their relative imports.
+add_qtui_runner_scenario(test_runner_module_resource qtui_runner_fixture
+    ":/qtui-tests/module_main.mjs" 0
+    ARTIFACT "module_main.txt"
+    ARTIFACT_CONTENT "INPUT: modules work"
+)
+add_qtui_runner_scenario(test_runner_module_no_main qtui_runner_fixture
+    "${qtui_runner_scenarios}/module_no_main.mjs" 1
+    FAILURE_PATTERN "Module scenario must export a function main(terminal)"
+)
+add_qtui_runner_scenario(test_runner_clean_globals qtui_runner_fixture
+    "${qtui_runner_scenarios}/clean_globals.js" 0
+)
+add_qtui_runner_scenario(test_runner_error_line qtui_runner_fixture
+    "${qtui_runner_scenarios}/error_line.js" 1
+    FAILURE_PATTERN "error_line.js:7"
+    ARTIFACT "failure.txt"
+)
+
+# Input completeness: hover gating, mouseDown/mouseUp, drag motion, paste,
+# and single-grapheme text keys.
+add_qtui_runner_scenario(test_runner_input_extended qtui_runner_fixture
+    "${qtui_runner_scenarios}/input_extended.js" 0
+    ARTIFACT "input_extended.txt"
+    ARTIFACT_CONTENT "INPUT: line1 line2 tabé世"
+)
+
+# Options objects and scoped locators.
+add_qtui_runner_scenario(test_runner_locators qtui_runner_fixture
+    "${qtui_runner_scenarios}/locators.js" 0
+)
+add_qtui_runner_scenario(test_runner_options_unknown qtui_runner_fixture
+    "${qtui_runner_scenarios}/options_unknown.js" 1
+    FAILURE_PATTERN "Unknown option \"timout\" for waitForText()"
+    ARTIFACT "failure.txt"
+)
+add_qtui_runner_scenario(test_runner_item_missing qtui_runner_fixture
+    "${qtui_runner_scenarios}/item_missing.js" 1
+    FAILURE_PATTERN "No visible item with objectName"
+    ARTIFACT "failure.txt"
+)
+
+# Runtime viewport changes.
+add_qtui_runner_scenario(test_runner_resize qtui_runner_fixture
+    "${qtui_runner_scenarios}/resize.js" 0
+    ARTIFACT "resize.txt"
+    ARTIFACT_CONTENT "SIZE: 120x40"
+)
+add_qtui_runner_scenario(test_runner_resize_invalid qtui_runner_fixture
+    "${qtui_runner_scenarios}/resize_invalid.js" 1
+    FAILURE_PATTERN "columns and rows between 1 and 1000"
+    ARTIFACT "failure.txt"
+)
+
+# The watchdog accepts up to five minutes for a whole scenario; the
+# per-operation limit stays at 30 s.
+add_qtui_runner_scenario(test_runner_scenario_timeout_max qtui_runner_fixture
+    "${qtui_runner_scenarios}/success.js" 0
+    SCENARIO_TIMEOUT_MS 300000
+    PROCESS_TIMEOUT 30
+)
+add_qtui_runner_scenario(test_runner_scenario_timeout_too_long qtui_runner_fixture
+    "${qtui_runner_scenarios}/success.js" 1
+    SCENARIO_TIMEOUT_MS 300001
+    PROCESS_TIMEOUT 30
+    FAILURE_PATTERN "between 1 and 300000"
+)
+
+add_qtui_runner_scenario(test_runner_snapshot_missing qtui_runner_fixture
+    "${qtui_runner_scenarios}/snapshot_missing.js" 1
+    NO_UPDATE_SNAPSHOTS
+    FAILURE_PATTERN "QTUI_UPDATE_SNAPSHOTS=1 to record it"
+    ARTIFACT "failure.txt"
+)
+add_qtui_runner_scenario(test_runner_snapshot_update_resource qtui_runner_fixture
+    "${qtui_runner_scenarios}/snapshot_update_resource.js" 1
+    UPDATE_SNAPSHOTS
+    FAILURE_PATTERN "cannot update resource snapshot"
+    ARTIFACT "snapshots/_qtui-tests_resource_snapshot.actual.txt"
+    ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
 )
 
 add_qtui_environment_scenario(test_runner_capture qtui_pos_cashier 0

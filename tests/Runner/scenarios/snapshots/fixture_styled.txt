@@ -1,5 +1,5 @@
 
- TESTRUNNER FIXTURE
+ TESTRUNNER FIXTURE                                                        EDGE
 
  STATUS: ASYNC READY
 
@@ -11,22 +11,24 @@
 
  DUPLICATE
  DUPLICATE
+ SIZE: 80x24
 
+ MOUSE: NONE
 
+ DRAG TICKS: 0
 
+ TICKS: 0
 
-
-
-
-
-
+                                                                              CL
 
  .
 --- styles
 y=0 x=0-79 fg=default bg=#101820FF
 y=1 x=0-0 fg=default bg=#101820FF
 y=1 x=1-18 fg=#FFFFFFFF bg=#101820FF
-y=1 x=19-79 fg=default bg=#101820FF
+y=1 x=19-74 fg=default bg=#101820FF
+y=1 x=75-78 fg=#FFFFFFFF bg=#101820FF
+y=1 x=79-79 fg=default bg=#101820FF
 y=2 x=0-79 fg=default bg=#101820FF
 y=3 x=0-0 fg=default bg=#101820FF
 y=3 x=1-19 fg=#7FDBCAFF bg=#101820FF
@@ -50,15 +52,26 @@ y=11 x=10-79 fg=default bg=#101820FF
 y=12 x=0-0 fg=default bg=#101820FF
 y=12 x=1-9 fg=#FFFFFFFF bg=#101820FF
 y=12 x=10-79 fg=default bg=#101820FF
-y=13 x=0-79 fg=default bg=#101820FF
+y=13 x=0-0 fg=default bg=#101820FF
+y=13 x=1-11 fg=#FFFFFFFF bg=#101820FF
+y=13 x=12-79 fg=default bg=#101820FF
 y=14 x=0-79 fg=default bg=#101820FF
-y=15 x=0-79 fg=default bg=#101820FF
+y=15 x=0-0 fg=default bg=#101820FF
+y=15 x=1-11 fg=#FFFFFFFF bg=#101820FF
+y=15 x=12-79 fg=default bg=#101820FF
 y=16 x=0-79 fg=default bg=#101820FF
-y=17 x=0-79 fg=default bg=#101820FF
+y=17 x=0-0 fg=default bg=#101820FF
+y=17 x=1-13 fg=#FFFFFFFF bg=#101820FF
+y=17 x=14-79 fg=default bg=#101820FF
 y=18 x=0-79 fg=default bg=#101820FF
-y=19 x=0-79 fg=default bg=#101820FF
-y=20 x=0-79 fg=default bg=#101820FF
-y=21 x=0-79 fg=default bg=#101820FF
+y=19 x=0-0 fg=default bg=#101820FF
+y=19 x=1-8 fg=#FFFFFFFF bg=#101820FF
+y=19 x=9-79 fg=default bg=#101820FF
+y=20 x=0-39 fg=default bg=#101820FF
+y=20 x=40-43 fg=default bg=#E06C75FF
+y=20 x=44-79 fg=default bg=#101820FF
+y=21 x=0-77 fg=default bg=#101820FF
+y=21 x=78-79 fg=#FFFFFFFF bg=#101820FF
 y=22 x=0-79 fg=default bg=#101820FF
 y=23 x=0-0 fg=default bg=#101820FF
 y=23 x=1-1 fg=#FFFFFFFF bg=#101820FF

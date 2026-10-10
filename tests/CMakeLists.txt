@@ -31,8 +31,8 @@ set(qtui_test_runner_artifacts "${qtui_runner_artifacts}")
 # A Runner scenario driven by a script (or an embedded resource), with
 # bounded timeouts and the artifact checks the runner contract promises.
 function(add_qtui_runner_scenario test_name executable script expected_exit)
-    cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL"
-        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS"
+    cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
+        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK"
         "" ${ARGN})
     if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
         set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
@@ -61,7 +61,15 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
     else()
         list(APPEND arguments LABELS AgentSmoke)
     endif()
-    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT PROCESS_TIMEOUT SYMLINK_TRAP)
+    if(SCENARIO_UPDATE_SNAPSHOTS)
+        list(APPEND arguments UPDATE_SNAPSHOTS)
+    endif()
+    if(SCENARIO_NO_UPDATE_SNAPSHOTS)
+        list(APPEND arguments NO_UPDATE_SNAPSHOTS)
+    endif()
+    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT
+            PROCESS_TIMEOUT SYMLINK_TRAP SNAPSHOT_SEED_SOURCE SNAPSHOT_SEED_DEST
+            EXPECT_UPDATED_SNAPSHOT EXPECT_UPDATED_SNAPSHOT_CONTENT CLOCK)
         if(NOT "${SCENARIO_${argument}}" STREQUAL "")
             list(APPEND arguments ${argument} "${SCENARIO_${argument}}")
         endif()

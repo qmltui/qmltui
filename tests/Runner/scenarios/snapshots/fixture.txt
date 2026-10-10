@@ -1,5 +1,5 @@
 
- TESTRUNNER FIXTURE
+ TESTRUNNER FIXTURE                                                        EDGE
 
  STATUS: ASYNC READY
 
@@ -11,14 +11,14 @@
 
  DUPLICATE
  DUPLICATE
+ SIZE: 80x24
 
+ MOUSE: NONE
 
+ DRAG TICKS: 0
 
+ TICKS: 0
 
-
-
-
-
-
+                                                                              CL
 
  .

@@ -38,5 +38,27 @@ function main(terminal) {
     terminal.typeText("selector");
     terminal.waitForText("INPUT: selector");
 
+    // cell() reports the full attribute set and uses "default" for the
+    // terminal's own color, exactly like styledText().
+    const attributeCell = terminal.cell(1, 1);
+    for (const name of ["bold", "dim", "italic", "underline", "reversed",
+                        "blink", "conceal", "strikethrough"]) {
+        if (typeof attributeCell.attributes[name] !== "boolean")
+            terminal.fail("cell() attribute " + name + " is not a boolean");
+        if (attributeCell.attributes[name] !== false)
+            terminal.fail("cell() attribute " + name + " expected false");
+    }
+    const plainCell = terminal.cell(30, 20);
+    if (plainCell.foreground !== "default")
+        terminal.fail("cell() foreground expected \"default\" but got " + plainCell.foreground);
+    terminal.expectStyle(30, 20, { foreground: "default" });
+
+    // The internal bridge callbacks must not leak onto the scenario facade.
+    for (const name of ["beginOperation", "endOperation",
+                        "onPromiseResolved", "onPromiseRejected"]) {
+        if (terminal[name] !== undefined)
+            terminal.fail("Internal method leaked onto the facade: " + name);
+    }
+
     terminal.captureText("extended_features.txt");
 }

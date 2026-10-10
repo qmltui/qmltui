@@ -10,8 +10,8 @@ set(QTUI_TESTRUNNER_SCRIPT "${QTUI_RUNNER_SCRIPT}"
 
 function(qtui_add_scenario)
     cmake_parse_arguments(QTUI_SCENARIO
-        "EMBEDDED;LIVE"
-        "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP"
+        "EMBEDDED;LIVE;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
+        "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK"
         "LABELS"
         ${ARGN}
     )
@@ -79,6 +79,45 @@ function(qtui_add_scenario)
     endif()
     if(QTUI_SCENARIO_LIVE)
         list(APPEND command "-DLIVE_SCENARIO=ON")
+    endif()
+    # QTUI_UPDATE_SNAPSHOTS is inherited from the caller's environment by
+    # default, so `QTUI_UPDATE_SNAPSHOTS=1 ctest -R <name>` rewrites baselines.
+    # UPDATE_SNAPSHOTS forces it on for a specific test; NO_UPDATE_SNAPSHOTS
+    # forces it off so a verifying or negative test stays deterministic even
+    # under a global update run.
+    if(QTUI_SCENARIO_UPDATE_SNAPSHOTS AND QTUI_SCENARIO_NO_UPDATE_SNAPSHOTS)
+        message(FATAL_ERROR "Use at most one of UPDATE_SNAPSHOTS and NO_UPDATE_SNAPSHOTS")
+    endif()
+    if(QTUI_SCENARIO_UPDATE_SNAPSHOTS)
+        list(APPEND command "-DUPDATE_SNAPSHOTS=ON")
+    elseif(QTUI_SCENARIO_NO_UPDATE_SNAPSHOTS)
+        list(APPEND command "-DNO_UPDATE_SNAPSHOTS=ON")
+    endif()
+    if(QTUI_SCENARIO_SNAPSHOT_SEED_SOURCE OR QTUI_SCENARIO_SNAPSHOT_SEED_DEST)
+        if(NOT QTUI_SCENARIO_SNAPSHOT_SEED_SOURCE OR NOT QTUI_SCENARIO_SNAPSHOT_SEED_DEST)
+            message(FATAL_ERROR
+                "SNAPSHOT_SEED_SOURCE and SNAPSHOT_SEED_DEST must be used together")
+        endif()
+        list(APPEND command
+            "-DSNAPSHOT_SEED_SOURCE=${QTUI_SCENARIO_SNAPSHOT_SEED_SOURCE}"
+            "-DSNAPSHOT_SEED_DEST=${QTUI_SCENARIO_SNAPSHOT_SEED_DEST}")
+    endif()
+    if(QTUI_SCENARIO_EXPECT_UPDATED_SNAPSHOT)
+        list(APPEND command
+            "-DEXPECT_UPDATED_SNAPSHOT=${QTUI_SCENARIO_EXPECT_UPDATED_SNAPSHOT}")
+    endif()
+    if(QTUI_SCENARIO_EXPECT_UPDATED_SNAPSHOT_CONTENT)
+        list(APPEND command
+            "-DEXPECT_UPDATED_SNAPSHOT_CONTENT=${QTUI_SCENARIO_EXPECT_UPDATED_SNAPSHOT_CONTENT}")
+    endif()
+    # CLOCK VIRTUAL runs the scenario on the Qtui virtual clock: application
+    # time advances only through terminal.advanceTime() and terminal.sleep().
+    if(QTUI_SCENARIO_CLOCK)
+        string(TOLOWER "${QTUI_SCENARIO_CLOCK}" scenario_clock)
+        if(NOT scenario_clock MATCHES "^(real|virtual)$")
+            message(FATAL_ERROR "CLOCK must be REAL or VIRTUAL, got '${QTUI_SCENARIO_CLOCK}'")
+        endif()
+        list(APPEND command "-DCLOCK=${scenario_clock}")
     endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT)
         if(NOT "${QTUI_SCENARIO_${argument}}" STREQUAL "")

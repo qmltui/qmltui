@@ -49,4 +49,8 @@ if(QTUI_ENABLE_RUNNER)
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
     qtui_install_headers(Qtui/Runner FILES Runner.h MemoryTerminalBackend.h)
+    # Editor completion for scenario authors: referenced from a jsconfig.json,
+    # not compiled, so it is not part of the public-header check.
+    install(FILES qtui-runner.d.ts
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Qtui/Runner")
 endif()

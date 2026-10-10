@@ -55,7 +55,8 @@ QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool sm
 
 // A Unicode virtual placement of `imageId` sized to cols x rows cells. The
 // terminal scales the image into that rectangle; the placeholder cells select
-// which part shows where.
+// which part shows where. Reuses placement id 1 so resizing replaces the
+// existing geometry even on terminals that retain placements across uploads.
 QByteArray kittyPlacement(quint32 imageId, int cols, int rows);
 
 // --- sixel encoder. Paints at the cursor, so the caller positions it. ---

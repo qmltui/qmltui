@@ -134,8 +134,13 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image)
 
 QByteArray kittyPlacement(quint32 imageId, int cols, int rows)
 {
+    // A nonzero placement id replaces the same placement on every update.
+    // Ghostty 1.3.1 retains placements when image data is replaced; leaving
+    // p unspecified accumulates unnamed placements with stale resize geometry.
+    // Each image owns just one virtual placement, so placeholders can select
+    // it without an explicit placement id in their underline colour.
     return "\033_Ga=p,U=1,q=2,i=" + QByteArray::number(imageId)
-         + ",c=" + QByteArray::number(cols)
+         + ",p=1,c=" + QByteArray::number(cols)
          + ",r=" + QByteArray::number(rows) + "\033\\";
 }
 

@@ -9,6 +9,7 @@
 #include <QTemporaryDir>
 #include <QImage>
 #include <QRegularExpression>
+#include <QMap>
 #include <QtEndian>
 
 #include <Qtui/Runner/MemoryTerminalBackend.h>
@@ -195,7 +196,7 @@ private slots:
         QVERIFY(transmit < place);   // upload before placement
 
         // The placement id matches the id carried by the placeholder cells.
-        const QRegularExpression re("\\033_Ga=p,U=1,q=2,i=(\\d+),c=6,r=3");
+        const QRegularExpression re("\\033_Ga=p,U=1,q=2,i=(\\d+),p=1,c=6,r=3");
         const auto m = re.match(QString::fromLatin1(out.data(), int(out.size())));
         QVERIFY2(m.hasMatch(), "placement not found with the expected cols/rows");
         const uint32_t id = m.captured(1).toUInt();
@@ -360,6 +361,55 @@ private slots:
         uint32_t afterReset = 0;
         QCOMPARE(placeholderCellCount(engine, &afterReset), 230 * 60);
         QCOMPARE(afterReset, firstColour);
+    }
+
+    void resizedLiveImageReplacesVirtualPlacement() {
+        QQmlEngine qml;
+        std::unique_ptr<QObject> holder;
+        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());
+        QVERIFY(terminal);
+        auto* img = terminal->findChild<Image*>("img");
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(250, 72));
+
+        // Ghostty retains placements across same-id image uploads. Model that
+        // lifetime: unnamed placements accumulate, while a named one replaces
+        // the geometry for its (image id, placement id) pair.
+        QMap<QPair<quint32, quint32>, QSize> placements;
+        quint32 unnamedId = 0;
+        quint32 imageId = 0;
+        quint32 placementId = 0;
+        const QRegularExpression command(
+            "\\033_Ga=p,U=1,q=2,i=(\\d+)(?:,p=(\\d+))?,c=(\\d+),r=(\\d+)");
+        for (QSize size : {QSize(6, 3), QSize(240, 60), QSize(240, 60), QSize(80, 24)}) {
+            backend->clearOutput();
+            const auto before = engine->frameSequence();
+            img->setWidth(size.width());
+            img->setHeight(size.height());
+            QImage pixels(img->renderSize(), QImage::Format_RGB32);
+            pixels.fill(Qt::green);
+            img->setImage(pixels);
+            QTRY_VERIFY(engine->frameSequence() > before);
+
+            uint32_t foreground = 0;
+            QCOMPARE(placeholderCellCount(engine, &foreground), size.width() * size.height());
+            const auto match = command.match(QString::fromStdString(backend->output()));
+            QVERIFY(match.hasMatch());
+            const quint32 id = match.captured(1).toUInt();
+            const quint32 pid = match.captured(2).toUInt();
+            const QSize placed(match.captured(3).toInt(), match.captured(4).toInt());
+            placements.insert(qMakePair(id, pid ? pid : ++unnamedId), placed);
+            QVERIFY2(pid != 0, "Unnamed placements retain obsolete image geometry in Ghostty");
+            if (imageId == 0) {
+                imageId = id;
+                placementId = pid;
+            }
+            QCOMPARE(id, imageId);
+            QCOMPARE(pid, placementId);
+            QCOMPARE(foreground & 0xFFFFFFu, imageId);
+            QCOMPARE(placements.size(), 1);
+            QCOMPARE(placements.first(), size);
+        }
     }
 
     void pendingReplacementRetention_data() {

@@ -647,8 +647,13 @@ void TableView::resolveColumns() {
         if (descriptor.contains(QStringLiteral("rightPadding"))) {
             rightPadding = descriptor.value(QStringLiteral("rightPadding")).toInt();
         }
+        const QString columnColor = descriptor.value(QStringLiteral("color")).toString();
+        const QString columnBackground = descriptor.value(QStringLiteral("background")).toString();
         m_geometry.append({column, int(x), columnWidth, title, alignment, leftPadding, rightPadding,
-                           descriptor.value(QStringLiteral("headerAlign"), alignment).toString()});
+                           descriptor.value(QStringLiteral("headerAlign"), alignment).toString(),
+                           columnColor.isEmpty() ? 0u : ColorMapper::fromString(columnColor, 0u),
+                           columnBackground.isEmpty() ? 0u : ColorMapper::fromString(columnBackground, 0u),
+                           !columnColor.isEmpty(), !columnBackground.isEmpty()});
         if (overscan) break;
         x += columnWidth;
         if (x >= view.right()) {
@@ -1021,15 +1026,25 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             uint32_t cellFg = fg;
             uint32_t cellBg = bg;
             TextAttribute cellAttributes = attributes;
+            // A column that declares its own ink wins over the model's
+            // Qt::ForegroundRole: the role is the compatibility path for models
+            // ported from widgets, and an explicit view-side rule outranks it.
+            const bool keepCellColors = !selected || m_selectionKeepsCellColors;
+            if (keepCellColors) {
+                if (geometry.hasForeground) cellFg = geometry.foreground;
+                if (geometry.hasBackground) cellBg = geometry.background;
+            }
             if (m_cppModel) {
                 // Standard item roles, as QStyledItemDelegate would paint them.
                 const QVariantMap standard = NumericItemRoles::read(m_cppModel.data(), sourceIndex(row, geometry.column));
                 value = NumericItemRoles::prefix(standard) + value;
-                if (!selected || m_selectionKeepsCellColors) {
-                    cellFg = NumericItemRoles::color(standard, "foreground", cellFg);
+                if (keepCellColors) {
+                    if (!geometry.hasForeground)
+                        cellFg = NumericItemRoles::color(standard, "foreground", cellFg);
                     // Where the cell supplies no background of its own the
                     // selection's shows through, which is what marks the row.
-                    cellBg = NumericItemRoles::color(standard, "background", cellBg);
+                    if (!geometry.hasBackground)
+                        cellBg = NumericItemRoles::color(standard, "background", cellBg);
                 }
                 const QString cellAlignment = standard.value(QStringLiteral("textAlignment")).toString();
                 if (!cellAlignment.isEmpty()) alignment = cellAlignment;

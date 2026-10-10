@@ -220,6 +220,13 @@ private:
         int leftPadding = 0;
         int rightPadding = 0;
         QString headerAlignment;
+        // Styling the column declares for itself, resolved once here rather
+        // than per cell. hasForeground/hasBackground tell "not set" apart from
+        // "set to the value that happens to be 0".
+        uint32_t foreground = 0;
+        uint32_t background = 0;
+        bool hasForeground = false;
+        bool hasBackground = false;
     };
     QModelIndex sourceIndex(int row, int column) const;
     void updateDelegate(DelegateRecord &record, int row, int column);

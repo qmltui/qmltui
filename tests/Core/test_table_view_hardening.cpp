@@ -113,6 +113,24 @@ class TestTableViewHardening : public QObject
 {
     Q_OBJECT
 private slots:
+    // A column can state its own ink, so the view decides how a column looks
+    // without the model carrying Qt::ForegroundRole for every cell.
+    void columnDeclaresItsOwnInk() {
+        CountingTableList model;
+        model.count = 3;
+        TableFixture f;
+        QVERIFY(f.createBody(&model,
+            QStringLiteral("textColor: '#cccccc'; headerColor: '#ffffff'; "
+                           "columns: [{title:'A',width:12,color:'#ff00ff'},"
+                           "{title:'B',width:12,background:'#003366'},"
+                           "{title:'C',width:12}]")));
+        // Row 0 of the body is the selected row, whose own colours win unless
+        // the view opts into keeping cell colours; check an unselected one.
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFFFF00FFU);   // column A's ink
+        QCOMPARE(f.buffer.cellAt(12, 2).bgColor, 0xFF003366U);  // column B's fill
+        QCOMPARE(f.buffer.cellAt(24, 2).fgColor, 0xFFCCCCCCU);  // C falls back to textColor
+    }
+
     void alignedGridCells_data() {
         QTest::addColumn<bool>("grid");
         QTest::addColumn<QString>("alignment");

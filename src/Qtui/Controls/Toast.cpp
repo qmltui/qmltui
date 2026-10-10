@@ -1,4 +1,5 @@
 #include <Qtui/Controls/Toast.h>
+#include <Qtui/Core/engine/Clock_p.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
 #include <algorithm>
 
@@ -22,13 +23,14 @@ Toast::Toast(QObject *parent) : Item(parent) {
     setImplicitWidth(30);
     setImplicitHeight(10);
 
-    connect(&m_timer, &QTimer::timeout, this, &Toast::onTick);
-    m_timer.setInterval(100);
+    m_timer = new ClockTimer(this);
+    connect(m_timer, &ClockTimer::timeout, this, &Toast::onTick);
+    m_timer->setInterval(100);
 }
 
 void Toast::showToast(const QString &title, const QString &message, const QString &type, int timeoutMs) {
     m_toasts.append(ToastItem{ title, message, type, (std::max)(100, timeoutMs) });
-    if (!m_timer.isActive()) m_timer.start();
+    if (!m_timer->isActive()) m_timer->start();
     markDirty();
 }
 
@@ -80,7 +82,7 @@ void Toast::setPosition(const QString &pos) {
 
 void Toast::onTick() {
     if (m_toasts.isEmpty()) {
-        m_timer.stop();
+        m_timer->stop();
         return;
     }
 
@@ -93,7 +95,7 @@ void Toast::onTick() {
         }
     }
     if (changed) markDirty();
-    if (m_toasts.isEmpty()) m_timer.stop();
+    if (m_toasts.isEmpty()) m_timer->stop();
 }
 
 void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {

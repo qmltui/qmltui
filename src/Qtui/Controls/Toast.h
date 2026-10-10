@@ -3,7 +3,7 @@
 #include <Qtui/Core/primitives/QtuiExport.h>
 
 #include <Qtui/Core/items/Item.h>
-#include <QTimer>
+namespace qtui { class ClockTimer; }
 #include <QList>
 #include <QString>
 #include <Qtui/Core/primitives/ColorMapper.h>
@@ -81,7 +81,8 @@ private:
     Color m_color = "default";
     Color m_textColor = "default";
     QList<ToastItem> m_toasts;
-    QTimer m_timer;
+    // On the Qtui Clock so toast lifetimes are steppable in tests.
+    ClockTimer* m_timer = nullptr;
 
     Color m_infoColor = "default";
     // Resolved caches mirror the Color members: an ANSI-named default must not be

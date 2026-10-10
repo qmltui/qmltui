@@ -57,6 +57,8 @@ qt_add_qml_module(QtuiCore
         ${qtui_platform_sources}
         primitives/TerminalDevice.h
         primitives/TerminalDevice.cpp
+        engine/Clock_p.h
+        engine/Clock.cpp
         engine/TerminalEngine.h
         engine/TerminalEngine.cpp
         engine/TerminalMessageRouter_p.h

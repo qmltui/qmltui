@@ -1,4 +1,5 @@
 #include <Qtui/Controls/ToolTip.h>
+#include <Qtui/Core/engine/Clock_p.h>
 #include <Qtui/Core/items/Item.h>
 #include <Qtui/Core/items/Terminal.h>
 #include <Qtui/Core/items/Popup.h>
@@ -23,10 +24,12 @@ void ToolTip::setTextColor(Color color) {
 
 
 ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*>(target)) {
-    m_delayTimer.setSingleShot(true);
-    m_timeoutTimer.setSingleShot(true);
-    connect(&m_delayTimer, &QTimer::timeout, this, &ToolTip::showNow);
-    connect(&m_timeoutTimer, &QTimer::timeout, this, &ToolTip::hide);
+    m_delayTimer = new ClockTimer(this);
+    m_timeoutTimer = new ClockTimer(this);
+    m_delayTimer->setSingleShot(true);
+    m_timeoutTimer->setSingleShot(true);
+    connect(m_delayTimer, &ClockTimer::timeout, this, &ToolTip::showNow);
+    connect(m_timeoutTimer, &ClockTimer::timeout, this, &ToolTip::hide);
     if (m_target) {
         connect(m_target, &Item::activeFocusChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_target, &Item::visibleChanged, this, &ToolTip::updateAutomaticVisibility);
@@ -142,12 +145,12 @@ bool ToolTip::targetIsActive() const {
 void ToolTip::updateAutomaticVisibility() {
     if (m_explicitVisible) { showNow(); return; }
     if (!targetIsActive() || m_text.isEmpty()) { hide(); return; }
-    if (visible() || m_delayTimer.isActive()) return;
-    m_delayTimer.start(m_delay);
+    if (visible() || m_delayTimer->isActive()) return;
+    m_delayTimer->start(m_delay);
 }
 
 void ToolTip::showNow() {
-    m_delayTimer.stop();
+    m_delayTimer->stop();
     if (!m_target || !m_terminal || m_text.isEmpty()) return;
     const bool wasVisible = visible();
     if (!m_popup) {
@@ -167,7 +170,7 @@ void ToolTip::showNow() {
         m_popup->open();
         emit visibleChanged();
     }
-    if (m_timeout > 0) m_timeoutTimer.start(m_timeout);
+    if (m_timeout > 0) m_timeoutTimer->start(m_timeout);
 }
 
 void ToolTip::reposition() {
@@ -197,8 +200,8 @@ void ToolTip::updateAppearance() {
 }
 
 void ToolTip::hide() {
-    m_delayTimer.stop();
-    m_timeoutTimer.stop();
+    m_delayTimer->stop();
+    m_timeoutTimer->stop();
     if (!visible()) return;
     m_popup->close();
     emit visibleChanged();

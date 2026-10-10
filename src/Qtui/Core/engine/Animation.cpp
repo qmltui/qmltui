@@ -1,4 +1,5 @@
 #include <Qtui/Core/engine/Animation.h>
+#include <Qtui/Core/engine/Clock_p.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
 #include <Qtui/Core/primitives/Color.h>
 #include <cmath>
@@ -354,7 +355,8 @@ void ColorAnimation::writeValue(const QVariant& value) {
 // ==========================================
 
 AnimationManager::AnimationManager(QObject* parent) : QObject(parent) {
-    connect(&m_timer, &QTimer::timeout, this, &AnimationManager::handleTick);
+    m_timer = new ClockTimer(this);
+    connect(m_timer, &ClockTimer::timeout, this, &AnimationManager::handleTick);
 }
 
 AnimationManager* AnimationManager::instance() {
@@ -367,22 +369,22 @@ void AnimationManager::registerAnimation(Animation* anim) {
     if (!m_animations.contains(anim)) {
         m_animations.append(anim);
     }
-    if (!m_timer.isActive()) {
-        m_time.start();
+    if (!m_timer->isActive()) {
+        m_timeOriginMs = Clock::instance()->elapsed();
         m_lastTickTime = 0;
-        m_timer.start(16); // ~60 FPS
+        m_timer->start(16); // ~60 FPS
     }
 }
 
 void AnimationManager::unregisterAnimation(Animation* anim) {
     m_animations.removeOne(anim);
     if (m_animations.isEmpty()) {
-        m_timer.stop();
+        m_timer->stop();
     }
 }
 
 void AnimationManager::handleTick() {
-    qint64 current = m_time.elapsed();
+    qint64 current = Clock::instance()->elapsed() - m_timeOriginMs;
     qint64 delta = current - m_lastTickTime;
     m_lastTickTime = current;
 

@@ -1,4 +1,5 @@
 #include <Qtui/Core/items/TextInput.h>
+#include <Qtui/Core/engine/Clock_p.h>
 
 #include <Qtui/Core/engine/KeyEvent.h>
 #include <Qtui/Core/engine/MouseEvent.h>
@@ -19,7 +20,8 @@ TextInput::TextInput(QObject *parent) : Item(parent) {
     connect(this, &Item::paddingChanged, this, &TextInput::ensureCursorVisible);
     connect(this, &Item::paddingChanged, this, &TextInput::updateImplicitWidth);
 
-    connect(&m_blinkTimer, &QTimer::timeout, this, [this]() {
+    m_blinkTimer = new ClockTimer(this);
+    connect(m_blinkTimer, &ClockTimer::timeout, this, [this]() {
         m_blinkState = !m_blinkState;
         markDirty();
     });
@@ -35,9 +37,9 @@ TextInput::~TextInput() = default;
 void TextInput::resetBlinkTimer() {
     m_blinkState = true;
     if (activeFocus() && m_cursorBlinking && m_cursorBlinkRate > 0) {
-        m_blinkTimer.start(m_cursorBlinkRate);
+        m_blinkTimer->start(m_cursorBlinkRate);
     } else {
-        m_blinkTimer.stop();
+        m_blinkTimer->stop();
     }
 }
 

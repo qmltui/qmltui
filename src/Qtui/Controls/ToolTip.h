@@ -6,7 +6,7 @@
 #include <Qtui/Core/primitives/Color.h>
 #include <QQmlEngine>
 #include <QPointer>
-#include <QTimer>
+namespace qtui { class ClockTimer; }
 
 namespace qtui { class Item; class Terminal; class Popup; class Text; }
 
@@ -75,8 +75,9 @@ private:
     QPointer<qtui::Popup> m_popup;
     QPointer<qtui::Text> m_label;
     QString m_text;
-    QTimer m_delayTimer;
-    QTimer m_timeoutTimer;
+    // On the Qtui Clock so delay and timeout are steppable in tests.
+    ClockTimer* m_delayTimer = nullptr;
+    ClockTimer* m_timeoutTimer = nullptr;
     int m_delay = 700;
     int m_timeout = 5000;
     qreal m_z = 1000;

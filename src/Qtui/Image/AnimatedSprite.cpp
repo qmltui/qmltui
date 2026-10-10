@@ -1,4 +1,5 @@
 #include <Qtui/Image/AnimatedSprite.h>
+#include <Qtui/Core/engine/Clock_p.h>
 
 #include <QDebug>
 #include <algorithm>
@@ -7,7 +8,8 @@
 namespace qtui {
 
 AnimatedSprite::AnimatedSprite(QObject* parent) : Image(parent) {
-    connect(&m_timer, &QTimer::timeout, this, [this] { step(1); });
+    m_timer = new ClockTimer(this);
+    connect(m_timer, &ClockTimer::timeout, this, [this] { step(1); });
     // The sheet decides derived frame sizes and row wrapping, so the clip can
     // only be placed once the picture is in (and again when it is replaced).
     connect(this, &Image::imageChanged, this, &AnimatedSprite::applyFrame);
@@ -90,10 +92,10 @@ void AnimatedSprite::updateTimer() {
         interval = m_frameDuration;
     const bool active = m_running && !m_paused && visible() && m_frameCount > 1 && interval > 0;
     if (active) {
-        m_timer.start(interval);
+        m_timer->start(interval);
         return;
     }
-    m_timer.stop();
+    m_timer->stop();
     if (m_running && !m_paused && m_frameCount > 1 && interval <= 0 && !m_warnedNoDuration) {
         m_warnedNoDuration = true;
         qWarning("AnimatedSprite: set frameRate or frameDuration, the animation cannot advance without one");

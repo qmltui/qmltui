@@ -1,4 +1,5 @@
 #include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qtui/Core/engine/Clock_p.h>
 #include <Qtui/Core/primitives/InputDecoder.h>
 #include <Qtui/Core/engine/Renderer.h>
 #include <Qtui/Core/engine/FrameRenderer.h>
@@ -93,11 +94,12 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   // A lone ESC that no further byte follows within this window is the
   // Escape key. Terminals with the kitty flag pushed report Escape as
   // CSI 27 u, so the timer only ever matters on legacy terminals.
-  m_escapeTimer.setSingleShot(true);
+  m_escapeTimer = new ClockTimer(this);
+  m_escapeTimer->setSingleShot(true);
   bool escapeValid = false;
   const int escapeTimeout = qEnvironmentVariableIntValue("QTUI_ESCAPE_TIMEOUT_MS", &escapeValid);
-  m_escapeTimer.setInterval(escapeValid && escapeTimeout >= 0 ? escapeTimeout : 50);
-  connect(&m_escapeTimer, &QTimer::timeout, this, [this] { m_inputDecoder.flushPendingEscape(); });
+  m_escapeTimer->setInterval(escapeValid && escapeTimeout >= 0 ? escapeTimeout : 50);
+  connect(m_escapeTimer, &ClockTimer::timeout, this, [this] { m_inputDecoder.flushPendingEscape(); });
   m_inputDecoder.setReplyCallback([this](const InputDecoder::ControlSequence& sequence) {
       handleReply(sequence);
   });
@@ -175,7 +177,7 @@ void TerminalEngine::stop() {
   flushControlSequences();
   invalidateOutputSession();
   m_paceTimer.stop();
-  m_escapeTimer.stop();
+  m_escapeTimer->stop();
   popKittyKeyboard();
   if (m_terminalOutputEnabled) {
     if (m_capabilities.kittyGraphics)
@@ -224,7 +226,9 @@ void TerminalEngine::requestRender() {
   if (m_stopped) return;
   if (m_renderPending.exchange(true))
     return;
-  if (QThread::currentThread() == thread() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
+  // Frame pacing is wall-clock; under the virtual clock a requested render
+  // must never be withheld by a paused timeline.
+  if (!Clock::isVirtual() && QThread::currentThread() == thread() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
     const qint64 sinceCommit = m_lastCommit.elapsed();
     if (sinceCommit < m_frameIntervalMs) {
       m_paceTimer.start(static_cast<int>(m_frameIntervalMs - sinceCommit));
@@ -659,8 +663,8 @@ void TerminalEngine::feedInput(QByteArrayView bytes) {
 }
 
 void TerminalEngine::scheduleEscapeFlush() {
-    if (m_inputDecoder.hasPendingEscape()) m_escapeTimer.start();
-    else m_escapeTimer.stop();
+    if (m_inputDecoder.hasPendingEscape()) m_escapeTimer->start();
+    else m_escapeTimer->stop();
 }
 
 void TerminalEngine::setTerminalOutputEnabled(bool enabled) {

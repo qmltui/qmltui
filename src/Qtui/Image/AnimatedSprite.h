@@ -4,7 +4,7 @@
 
 #include <Qtui/Image/Image.h>
 #include <QRect>
-#include <QTimer>
+namespace qtui { class ClockTimer; }
 
 namespace qtui {
 
@@ -121,7 +121,8 @@ private:
     // The first frame of a run: 0 forward, the last frame in reverse.
     int initialFrame() const;
 
-    QTimer m_timer;
+    // On the Qtui Clock so frame stepping is deterministic in tests.
+    ClockTimer* m_timer = nullptr;
     int m_frameCount = 1;
     int m_frameWidth = 0;
     int m_frameHeight = 0;

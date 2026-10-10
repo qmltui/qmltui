@@ -140,6 +140,8 @@ protected:
     void writeValue(const QVariant& value) override;
 };
 
+class ClockTimer;
+
 class QTUI_CORE_EXPORT AnimationManager : public QObject {
     Q_OBJECT
 public:
@@ -155,10 +157,12 @@ private:
     explicit AnimationManager(QObject* parent = nullptr);
     ~AnimationManager() override = default;
 
-    QTimer m_timer;
+    // On the Qtui Clock, so a virtual-clock scenario can step animations
+    // deterministically while real mode keeps plain QTimer behaviour.
+    ClockTimer* m_timer = nullptr;
     QList<Animation*> m_animations;
     qint64 m_lastTickTime = 0;
-    QElapsedTimer m_time;
+    qint64 m_timeOriginMs = 0;
 };
 
 } // namespace qtui

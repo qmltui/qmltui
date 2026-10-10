@@ -113,6 +113,10 @@ public:
     void feedInput(QByteArrayView bytes);
     void handleMouseInput(int button, int x, int y, bool release, bool motion = false,
                           int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
+    // Whether a terminal in the current mode would deliver any-motion (hover)
+    // events. Runner mirrors this so scripted hover matches what a real
+    // terminal can send.
+    bool mouseMotionReporting() const { return m_mouseMotionReportingEnabled; }
 
 signals:
     void frameRendered(quint64 sequence);
@@ -167,7 +171,9 @@ private:
     bool m_queriesStarted = false;
     bool m_capabilitiesOverridden = false;
     bool m_kittyKeyboardPushed = false;
-    QTimer m_escapeTimer;
+    // On the Qtui Clock: the lone-Escape flush is a time-semantic behaviour a
+    // virtual-clock scenario must be able to step deterministically.
+    class ClockTimer* m_escapeTimer = nullptr;
     QByteArray m_controlSequences;
     QByteArray m_postControlSequences;
     quint64 m_outputSessionGeneration = 0;

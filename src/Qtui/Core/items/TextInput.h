@@ -6,7 +6,7 @@
 #include <Qtui/Core/items/TextEditorState.h>
 #include <QRegularExpression>
 #include <QString>
-#include <QTimer>
+namespace qtui { class ClockTimer; }
 #include <Qtui/Core/primitives/ColorMapper.h>
 
 namespace qtui {
@@ -210,7 +210,8 @@ private:
     int m_cursorBlinkRate = 500;
     bool m_cursorVisible = true;
     QString m_cursorDelegate;
-    QTimer m_blinkTimer;
+    // On the Qtui Clock so cursor blink is steppable in tests.
+    ClockTimer* m_blinkTimer = nullptr;
     bool m_blinkState = true;
 
     Color m_selectionColor;

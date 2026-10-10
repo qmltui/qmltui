@@ -1,6 +1,6 @@
 #include <Qtui/Core/items/GridView.h>
 #include <Qtui/Core/items/DelegateUtils.h>
-#include <Qtui/Core/items/StandardRoles_p.h>
+#include <Qtui/Core/items/NumericItemRoles_p.h>
 #include <QAbstractItemModel>
 #include <QJSValue>
 #include <QQmlContext>
@@ -211,7 +211,7 @@ void GridView::bindDelegateItem(Item *item, int index, bool created) {
     const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
     for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
       rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-    StandardRoles::apply(model, modelIndex, rowValues, true);
+    NumericItemRoles::apply(model, modelIndex, rowValues, true);
     if (rowMap)
       for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
         rowMap->insert(it.key(), it.value());
@@ -255,7 +255,7 @@ Item *GridView::createDelegateItem(int index) {
       rowMap->insert(it.value(), value);
       rowValues.insert(it.value(), value);
     }
-    StandardRoles::apply(model, modelIndex, rowValues);
+    NumericItemRoles::apply(model, modelIndex, rowValues);
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
       rowMap->insert(it.key(), it.value());
   }
@@ -451,7 +451,7 @@ void GridView::generateItems() {
                                   value);
             }
             QVariantMap standard;
-            StandardRoles::apply(guardedModel, index, standard, true);
+            NumericItemRoles::apply(guardedModel, index, standard, true);
             for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
               if (rowMap)
                 rowMap->insert(it.key(), it.value());

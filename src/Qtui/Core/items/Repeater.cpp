@@ -1,6 +1,6 @@
 #include <Qtui/Core/items/Repeater.h>
 #include <Qtui/Core/items/DelegateUtils.h>
-#include <Qtui/Core/items/StandardRoles_p.h>
+#include <Qtui/Core/items/NumericItemRoles_p.h>
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QJSValue>
@@ -248,7 +248,7 @@ void Repeater::generateItems() {
                                 setPropertyIfExists(item, it.value().toUtf8().constData(), val);
                             }
                             QVariantMap standard;
-                            StandardRoles::apply(guardedModel, modelIndex, standard, true);
+                            NumericItemRoles::apply(guardedModel, modelIndex, standard, true);
                             for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
                                 if (rowMap) rowMap->insert(it.key(), it.value());
                                 DelegateUtils::setContextProperty(m_delegate, ctx, it.key(), it.value());
@@ -310,7 +310,7 @@ void Repeater::generateItems() {
                         initialProps[it.value()] = val;
                     }
                     QVariantMap standard;
-                    StandardRoles::apply(model, modelIndex, standard);
+                    NumericItemRoles::apply(model, modelIndex, standard);
                     for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
                         rowMap->insert(it.key(), it.value());
                         initialProps[it.key()] = it.value();
@@ -392,7 +392,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
             initialProps[it.value()] = val;
         }
         QVariantMap standard;
-        StandardRoles::apply(model, modelIndex, standard);
+        NumericItemRoles::apply(model, modelIndex, standard);
         for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
             rowMap->insert(it.key(), it.value());
             initialProps[it.key()] = it.value();

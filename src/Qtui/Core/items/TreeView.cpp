@@ -1,6 +1,6 @@
 #include <Qtui/Core/items/TreeView.h>
 #include <Qtui/Core/items/DelegateUtils.h>
-#include <Qtui/Core/items/StandardRoles_p.h>
+#include <Qtui/Core/items/NumericItemRoles_p.h>
 #include <QMetaProperty>
 #include <Qtui/Core/primitives/ColorMapper.h>
 #include <Qtui/Core/engine/KeyEvent.h>
@@ -550,7 +550,7 @@ void TreeView::fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &i
         rawData[QString::fromUtf8(it.value())] = model->data(index, it.key());
     rawData[QStringLiteral("display")] = name;
     rawData[QStringLiteral("text")] = name;
-    StandardRoles::apply(model, index, rawData, includeUnsetRoles);
+    NumericItemRoles::apply(model, index, rawData, includeUnsetRoles);
     node.text = name;
     node.rawData = rawData;
     node.hasChildren = model->hasChildren(index) || model->rowCount(index) > 0;
@@ -1096,12 +1096,12 @@ void TreeView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect 
         QString indent = QString(node.depth * 2, ' ');
         QString prefix = node.hasChildren ? (node.expanded ? m_expandedIcon : m_collapsedIcon) : "    ";
         // Standard item roles (check box, decoration glyph, colors, disabled).
-        QString label = indent + prefix + StandardRoles::prefix(node.rawData) + node.text;
+        QString label = indent + prefix + NumericItemRoles::prefix(node.rawData) + node.text;
         if (!isSelected) {
-            fg = StandardRoles::color(node.rawData, "foreground", fg);
-            bg = StandardRoles::color(node.rawData, "background", bg);
+            fg = NumericItemRoles::color(node.rawData, "foreground", fg);
+            bg = NumericItemRoles::color(node.rawData, "background", bg);
         }
-        if (!StandardRoles::enabled(node.rawData)) attr = attr | TextAttribute::Dim;
+        if (!NumericItemRoles::enabled(node.rawData)) attr = attr | TextAttribute::Dim;
 
         buffer.writeText(startX, rowY, label.left(availW), fg, bg, attr);
     }

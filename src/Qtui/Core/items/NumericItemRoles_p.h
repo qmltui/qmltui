@@ -14,7 +14,7 @@
 #include <QVariantMap>
 #include <Qtui/Core/primitives/ColorMapper.h>
 
-namespace qtui::StandardRoles {
+namespace qtui::NumericItemRoles {
 
 // QColor and QBrush cannot be named here (no QtGui), but QtGui registers
 // their QDataStream operators on the metatype, and that format is stable. A
@@ -164,4 +164,4 @@ inline bool enabled(const QVariantMap &values)
     return values.value(QStringLiteral("enabled"), true).toBool();
 }
 
-} // namespace qtui::StandardRoles
+} // namespace qtui::NumericItemRoles

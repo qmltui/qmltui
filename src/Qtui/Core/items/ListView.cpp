@@ -1,6 +1,6 @@
 #include <Qtui/Core/items/ListView.h>
 #include <Qtui/Core/items/DelegateUtils.h>
-#include <Qtui/Core/items/StandardRoles_p.h>
+#include <Qtui/Core/items/NumericItemRoles_p.h>
 #include <Qtui/Core/primitives/ColorMapper.h>
 #include <Qtui/Core/engine/KeyEvent.h>
 #include <Qtui/Core/engine/MouseEvent.h>
@@ -289,7 +289,7 @@ void ListView::rebindDelegateItem(Item *item, int index) {
             if (rowMap) rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
-        StandardRoles::apply(model, modelIndex, rowValues, true);
+        NumericItemRoles::apply(model, modelIndex, rowValues, true);
         if (rowMap)
             for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) rowMap->insert(it.key(), it.value());
     }
@@ -360,7 +360,7 @@ Item *ListView::createDelegateItem(int index)
             rowMap->insert(it.value(), value);
             rowValues.insert(it.value(), value);
         }
-        StandardRoles::apply(model, modelIndex, rowValues);
+        NumericItemRoles::apply(model, modelIndex, rowValues);
         for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) rowMap->insert(it.key(), it.value());
     }
 
@@ -558,7 +558,7 @@ void ListView::generateItems() {
                         setPropertyIfExists(item, it.value().toUtf8().constData(), value);
                     }
                     QVariantMap standard;
-                    StandardRoles::apply(guardedModel, modelIndex, standard, true);
+                    NumericItemRoles::apply(guardedModel, modelIndex, standard, true);
                     for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
                         if (rowMap) rowMap->insert(it.key(), it.value());
                         DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());

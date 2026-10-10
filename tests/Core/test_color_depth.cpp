@@ -216,6 +216,76 @@ void TestColorDepth::testAnsiNamesParseToIndices()
     QCOMPARE(red.toRgb().argb32(), 0xFFFF0000U);          // xterm default for index 9
     QCOMPARE(Color("gray").ansiIndex(), 8);
     QCOMPARE(Color("ansi:3").ansiIndex(), 3);
+
+    // The two namespaces use different naming authorities on purpose: a bare
+    // word is the CSS colour of that name, mapped to the palette slot whose
+    // default xterm RGB it equals, while "ansi:" spells ANSI's own numbering.
+    // CSS red is #ff0000, which is index 9; ANSI red is SGR 31, which is 1.
+    QCOMPARE(Color("red").ansiIndex(), 9);
+    QCOMPARE(Color("ansi:red").ansiIndex(), 1);
+    QCOMPARE(Color("white").ansiIndex(), 15);
+    QCOMPARE(Color("ansi:white").ansiIndex(), 7);
+
+    // Under "ansi:", the eight colour words are SGR 30-37.
+    QCOMPARE(Color("ansi:black").ansiIndex(), 0);
+    QCOMPARE(Color("ansi:green").ansiIndex(), 2);
+    QCOMPARE(Color("ansi:yellow").ansiIndex(), 3);
+    QCOMPARE(Color("ansi:blue").ansiIndex(), 4);
+    QCOMPARE(Color("ansi:magenta").ansiIndex(), 5);
+    QCOMPARE(Color("ansi:cyan").ansiIndex(), 6);
+
+    // "bright" moves them to SGR 90-97.
+    QCOMPARE(Color("ansi:brightblack").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:brightred").ansiIndex(), 9);
+    QCOMPARE(Color("ansi:brightgreen").ansiIndex(), 10);
+    QCOMPARE(Color("ansi:brightyellow").ansiIndex(), 11);
+    QCOMPARE(Color("ansi:brightblue").ansiIndex(), 12);
+    QCOMPARE(Color("ansi:brightmagenta").ansiIndex(), 13);
+    QCOMPARE(Color("ansi:brightcyan").ansiIndex(), 14);
+    QCOMPARE(Color("ansi:brightwhite").ansiIndex(), 15);
+
+    // "dark" is a synonym of the base word, and the grays name 7 and 8.
+    QCOMPARE(Color("ansi:darkred").ansiIndex(), 1);
+    QCOMPARE(Color("ansi:darkgreen").ansiIndex(), 2);
+    QCOMPARE(Color("ansi:darkyellow").ansiIndex(), 3);
+    QCOMPARE(Color("ansi:darkblue").ansiIndex(), 4);
+    QCOMPARE(Color("ansi:darkmagenta").ansiIndex(), 5);
+    QCOMPARE(Color("ansi:darkcyan").ansiIndex(), 6);
+    QCOMPARE(Color("ansi:lightgray").ansiIndex(), 7);
+    QCOMPARE(Color("ansi:lightgrey").ansiIndex(), 7);
+    QCOMPARE(Color("ansi:gray").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:grey").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:darkgray").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:darkgrey").ansiIndex(), 8);
+
+    // Dashes, underscores and spaces are ignored in the suffix.
+    QCOMPARE(Color("ansi:dark-gray").ansiIndex(), 8);
+    QCOMPARE(Color("ansi:bright-red").ansiIndex(), 9);
+    QCOMPARE(Color("ansi:bright_red").ansiIndex(), 9);
+    QCOMPARE(Color("ansi:BRIGHT-RED").ansiIndex(), 9);
+
+    // CSS-only words are not ANSI names. They are rejected under the prefix
+    // rather than silently resolved, and keep working without it.
+    for (const char *cssOnly : {"maroon", "olive", "navy", "purple", "teal",
+                                "silver", "lime", "fuchsia", "aqua"}) {
+        QVERIFY2(!Color(QStringLiteral("ansi:") + QLatin1String(cssOnly)).isValid(),
+                 cssOnly);
+        QVERIFY2(Color(QLatin1String(cssOnly)).isAnsiIndex(), cssOnly);
+    }
+
+    // Out-of-range indices and unknown words stay invalid.
+    QVERIFY(!Color("ansi:16").isValid());
+    QVERIFY(!Color("ansi:-1").isValid());
+    QVERIFY(!Color("ansi:").isValid());
+    QVERIFY(!Color("ansi:nosuch").isValid());
+
+    // Every ansi: name round-trips: toString() gives a spelling that parses
+    // back to the same index.
+    for (int index = 0; index < 16; ++index) {
+        const Color byIndex = Color(QStringLiteral("ansi:%1").arg(index));
+        QCOMPARE(byIndex.ansiIndex(), index);
+        QCOMPARE(Color(byIndex.toString()).ansiIndex(), index);
+    }
     QVERIFY(!Color("#ff0000").isAnsiIndex());             // hex stays literal RGB
     QVERIFY(!Color("transparent").isAnsiIndex());
     QVERIFY(!Color("orange").isAnsiIndex());              // not a palette entry

@@ -37,6 +37,44 @@ const QHash<QString, int> &ansiNamedColors()
     return names;
 }
 
+// Names recognized under the "ansi:" prefix. This namespace follows ANSI's own
+// numbering, not CSS: the eight colour words are SGR 30-37 (indices 0-7) and a
+// "bright" prefix moves them to SGR 90-97 (indices 8-15). That is deliberately
+// not the same authority as ansiNamedColors() above, where "red" is CSS red and
+// so lands on index 9. CSS-only words (maroon, olive, navy, purple, teal,
+// silver, lime, fuchsia, aqua) are not ANSI names and are rejected here; they
+// already work without the prefix.
+const QHash<QString, int> &ansiSemanticNames()
+{
+    static const QHash<QString, int> names {
+        // Standard (0-7): SGR 30-37. "dark" is accepted as a synonym of the
+        // base word for people coming from Windows console naming.
+        {QStringLiteral("black"), 0},
+        {QStringLiteral("red"), 1},         {QStringLiteral("darkred"), 1},
+        {QStringLiteral("green"), 2},       {QStringLiteral("darkgreen"), 2},
+        {QStringLiteral("yellow"), 3},      {QStringLiteral("darkyellow"), 3},
+        {QStringLiteral("blue"), 4},        {QStringLiteral("darkblue"), 4},
+        {QStringLiteral("magenta"), 5},     {QStringLiteral("darkmagenta"), 5},
+        {QStringLiteral("cyan"), 6},        {QStringLiteral("darkcyan"), 6},
+        {QStringLiteral("white"), 7},       {QStringLiteral("lightgray"), 7},
+        {QStringLiteral("lightgrey"), 7},
+
+        // Bright (8-15): SGR 90-97. Index 8 is ANSI's "bright black"; the gray
+        // spellings are accepted for it because that is what it renders as.
+        {QStringLiteral("brightblack"), 8}, {QStringLiteral("gray"), 8},
+        {QStringLiteral("grey"), 8},        {QStringLiteral("darkgray"), 8},
+        {QStringLiteral("darkgrey"), 8},
+        {QStringLiteral("brightred"), 9},
+        {QStringLiteral("brightgreen"), 10},
+        {QStringLiteral("brightyellow"), 11},
+        {QStringLiteral("brightblue"), 12},
+        {QStringLiteral("brightmagenta"), 13},
+        {QStringLiteral("brightcyan"), 14},
+        {QStringLiteral("brightwhite"), 15},
+    };
+    return names;
+}
+
 const char *const ansiCanonicalNames[16] = {
     "black", "maroon", "green", "olive", "navy", "purple", "teal", "silver",
     "gray", "red", "lime", "yellow", "blue", "magenta", "cyan", "white",
@@ -245,9 +283,18 @@ Color Color::fromString(const QString &value)
 
     const QString lower = text.toLower();
     if (lower.startsWith(QLatin1String("ansi:"))) {
+        QString suffix = lower.mid(5);
         bool ok = false;
-        const int index = lower.mid(5).toInt(&ok);
-        return ok && index >= 0 && index < 16 ? fromAnsiIndex(index) : Color();
+        const int index = suffix.toInt(&ok);
+        if (ok && index >= 0 && index < 16)
+            return fromAnsiIndex(index);
+        suffix.remove(QLatin1Char('-'))
+              .remove(QLatin1Char('_'))
+              .remove(QLatin1Char(' '));
+        const auto it = ansiSemanticNames().constFind(suffix);
+        if (it != ansiSemanticNames().cend())
+            return fromAnsiIndex(it.value());
+        return {};
     }
     const auto ansi = ansiNamedColors().constFind(lower);
     if (ansi != ansiNamedColors().cend())

@@ -9,6 +9,7 @@
 #include <QPointer>
 #include <QPersistentModelIndex>
 #include <QJSValue>
+#include <optional>
 #include <QQmlComponent>
 #include <QHash>
 #include <QSet>
@@ -228,6 +229,11 @@ private:
         uint32_t background = 0;
         bool hasForeground = false;
         bool hasBackground = false;
+        // A column whose colour depends on the row supplies a function
+        // instead of a value. It is called per cell, so only the columns
+        // that need it pay anything.
+        QJSValue foregroundFn;
+        QJSValue backgroundFn;
     };
     QModelIndex sourceIndex(int row, int column) const;
     void updateDelegate(DelegateRecord &record, int row, int column);
@@ -241,6 +247,12 @@ private:
     QString cellText(int row, int col) const;
     QVariant modelHeader(int column, int role) const;
     void refreshModelRoles();
+    // Calls a column's colour function for one cell and parses what it
+    // returns. Empty when the function returns nothing or fails, which leaves
+    // the cell to the model's role: a view can decide some rows and defer on
+    // the rest.
+    std::optional<uint32_t> columnColor(const QJSValue &callback, int row, int column,
+                                        const QString &text) const;
     void refreshModelHeader();
     static QString alignmentName(const QVariant &alignment);
     void resolveColumns();
@@ -288,6 +300,10 @@ private:
     QList<ColumnGeometry> m_geometry;
     QList<int> m_separators;
     mutable QSet<QString> m_widthErrors;
+    // Colour strings a column function returned, already parsed. Callbacks
+    // return a handful of distinct colours across thousands of cells.
+    mutable QHash<QString, uint32_t> m_columnColorCache;
+    mutable QSet<QString> m_columnColorErrors;
     mutable QSet<QString> m_formatErrors;
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 

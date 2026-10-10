@@ -150,7 +150,7 @@ void TableView::setModel(const QVariant &model) {
             m_modelVariant.clear();
             m_roleNames.clear();
             m_roleNameStrings.clear();
-            m_claimedNames = 0;
+                    m_claimedNames = 0;
             m_modelProvidesHeader = false;
             resetViewport();
             clearSelection();
@@ -220,6 +220,8 @@ void TableView::refreshModelRoles() {
     for (auto it = m_roleNames.cbegin(); it != m_roleNames.cend(); ++it)
         m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
     m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
+    // Roles beyond the ones QAbstractItemModel supplies by default, which is
+    // what a model actually meant to publish to QML.
 }
 void TableView::refreshModelHeader() {
     // QAbstractItemModel::headerData() falls back to the section number, so a
@@ -511,6 +513,33 @@ void TableView::callbackWarning(const QString &message, QSet<QString> &errors) c
         qmlWarning(this) << message;
     }
 }
+std::optional<uint32_t> TableView::columnColor(const QJSValue &callback, int row, int column,
+                                               const QString &text) const {
+    if (!callback.isCallable()) return std::nullopt;
+
+    // Scalars, deliberately: the same (row, column, value) the cellFormat hook
+    // takes. Handing the function an object of role values instead cost more
+    // than the call itself, and a function that wants model data can ask the
+    // model, which QML already has.
+    const QJSValue result = callback.call({QJSValue(row), QJSValue(column), QJSValue(text)});
+    if (result.isError()) {
+        callbackWarning(QStringLiteral("column colour: ") + result.toString()
+                        + QLatin1Char('\n') + result.property("stack").toString(),
+                        m_columnColorErrors);
+        return std::nullopt;
+    }
+    if (result.isUndefined() || result.isNull()) return std::nullopt;
+    const QString name = result.toString();
+    if (name.isEmpty()) return std::nullopt;
+    const auto cached = m_columnColorCache.constFind(name);
+    if (cached != m_columnColorCache.cend()) return cached.value();
+    const uint32_t parsed = ColorMapper::fromString(name, 0u);
+    // A function that returns a new colour every cell must not grow this
+    // without bound; the cache is an optimisation, not a record.
+    if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
+    m_columnColorCache.insert(name, parsed);
+    return parsed;
+}
 int TableView::resolveColumnWidth(int column, const QVariantMap &descriptor) {
     const auto valid = [](double value) {
         return std::isfinite(value) && value >= 0 && std::floor(value) == value
@@ -659,13 +688,22 @@ void TableView::resolveColumns() {
         if (descriptor.contains(QStringLiteral("rightPadding"))) {
             rightPadding = descriptor.value(QStringLiteral("rightPadding")).toInt();
         }
-        const QString columnColor = descriptor.value(QStringLiteral("color")).toString();
-        const QString columnBackground = descriptor.value(QStringLiteral("background")).toString();
+        const auto columnStyle = [&](const char *key) {
+            const QVariant entry = descriptor.value(QLatin1String(key));
+            QJSValue callable;
+            if (entry.metaType() == QMetaType::fromType<QJSValue>()) {
+                const QJSValue value = entry.value<QJSValue>();
+                if (value.isCallable()) callable = value;
+            }
+            const QString text = callable.isCallable() ? QString() : entry.toString();
+            return std::make_tuple(text.isEmpty() ? 0u : ColorMapper::fromString(text, 0u),
+                                   !text.isEmpty(), callable);
+        };
+        const auto [columnFg, hasColumnFg, columnFgFn] = columnStyle("color");
+        const auto [columnBg, hasColumnBg, columnBgFn] = columnStyle("background");
         m_geometry.append({column, int(x), columnWidth, title, alignment, leftPadding, rightPadding,
                            descriptor.value(QStringLiteral("headerAlign"), alignment).toString(),
-                           columnColor.isEmpty() ? 0u : ColorMapper::fromString(columnColor, 0u),
-                           columnBackground.isEmpty() ? 0u : ColorMapper::fromString(columnBackground, 0u),
-                           !columnColor.isEmpty(), !columnBackground.isEmpty()});
+                           columnFg, columnBg, hasColumnFg, hasColumnBg, columnFgFn, columnBgFn});
         if (overscan) break;
         x += columnWidth;
         if (x >= view.right()) {
@@ -1044,15 +1082,34 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             // Qt::ForegroundRole: the role is the compatibility path for models
             // ported from widgets, and an explicit view-side rule outranks it.
             const bool keepCellColors = !selected || m_selectionKeepsCellColors;
+            // Whether the column actually supplied a colour for this cell, as
+            // opposed to merely offering a function: a function that returns
+            // nothing defers to the model's role.
+            bool columnGaveFg = false;
+            bool columnGaveBg = false;
             if (keepCellColors) {
-                if (geometry.hasForeground) cellFg = geometry.foreground;
-                if (geometry.hasBackground) cellBg = geometry.background;
+                if (geometry.hasForeground) {
+                    cellFg = geometry.foreground;
+                    columnGaveFg = true;
+                } else if (const auto ink = columnColor(geometry.foregroundFn, row,
+                                                        geometry.column, value)) {
+                    cellFg = *ink;
+                    columnGaveFg = true;
+                }
+                if (geometry.hasBackground) {
+                    cellBg = geometry.background;
+                    columnGaveBg = true;
+                } else if (const auto fill = columnColor(geometry.backgroundFn, row,
+                                                         geometry.column, value)) {
+                    cellBg = *fill;
+                    columnGaveBg = true;
+                }
             }
             if (m_cppModel) {
                 // Standard item roles, as QStyledItemDelegate would paint them.
                 const auto standard = NumericItemRoles::readForPaint(m_cppModel.data(), index,
-                    cellFg, cellBg, keepCellColors && !geometry.hasForeground,
-                    keepCellColors && !geometry.hasBackground);
+                    cellFg, cellBg, keepCellColors && !columnGaveFg,
+                    keepCellColors && !columnGaveBg);
                 if (!standard.prefix.isEmpty()) value.prepend(standard.prefix);
                 cellFg = standard.foreground;
                 cellBg = standard.background;

@@ -13,6 +13,19 @@
 
 using namespace qtui;
 
+// Answers Qt::ForegroundRole, so a column function can be shown deferring to it.
+class ColoredRows final : public QAbstractListModel
+{
+public:
+    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 4; }
+    QVariant data(const QModelIndex &index, int role) const override {
+        if (!index.isValid()) return {};
+        if (role == Qt::DisplayRole) return QString::number(index.row());
+        if (role == Qt::ForegroundRole) return QStringLiteral("#abcdef");
+        return {};
+    }
+};
+
 class CountingTableList final : public QAbstractListModel
 {
 public:
@@ -224,11 +237,45 @@ private slots:
                            "columns: [{title:'A',width:12,color:'#ff00ff'},"
                            "{title:'B',width:12,background:'#003366'},"
                            "{title:'C',width:12}]")));
-        // Row 0 of the body is the selected row, whose own colours win unless
-        // the view opts into keeping cell colours; check an unselected one.
+        // The header is two rows, a title and a rule, so the body starts at y=2.
         QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFFFF00FFU);   // column A's ink
         QCOMPARE(f.buffer.cellAt(12, 2).bgColor, 0xFF003366U);  // column B's fill
         QCOMPARE(f.buffer.cellAt(24, 2).fgColor, 0xFFCCCCCCU);  // C falls back to textColor
+    }
+
+    // A column whose ink depends on the row supplies a function instead of a
+    // value. It answers from model data, so the model can return data and
+    // leave the colour to the view.
+    void columnColourFunctionSeesTheRow() {
+        CountingTableList model;
+        model.count = 4;
+        model.first = QStringLiteral("old");
+        TableFixture f;
+        QVERIFY(f.createBody(&model,
+            QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
+                           "columns: [{title:'A',width:12,"
+                           "color: (row, column, value) => value === 'old' ? '#0000ff' "
+                           ": row % 2 ? '#ff0000' : '#00ff00'},"
+                           "{title:'B',width:12}]")));
+        // The body starts at y=2, under the two header rows.
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFF0000FFU);   // row 0, by its text
+        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFFFF0000U);   // row 1, odd
+        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFF00FF00U);   // row 2, even
+        // A column that declares nothing is untouched.
+        QCOMPARE(f.buffer.cellAt(12, 3).fgColor, 0xFFCCCCCCU);
+    }
+
+    // A function that returns nothing leaves the cell to the model's role, so
+    // a view can override some rows and defer on the rest.
+    void columnColourFunctionMayDeferToTheModel() {
+        ColoredRows model;
+        TableFixture f;
+        QVERIFY(f.createBody(&model,
+            QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
+                           "columns: [{title:'A',width:12,"
+                           "color: (row) => row === 1 ? '#00ff00' : undefined}]")));
+        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFF00FF00U);   // row 1: the view decides
+        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFFABCDEFU);   // row 2: the model still does
     }
 
     void alignedGridCells_data() {

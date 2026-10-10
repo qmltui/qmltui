@@ -20,7 +20,11 @@ class TestLayout : public QObject {
 
 private slots:
     void testRowLayout();
+    void testRowKeepsChildY();
+    void testRowPaintsChildAtItsY();
     void testColumnLayout();
+    void testColumnKeepsChildX();
+    void testColumnPaintsChildAtItsX();
     void testGridLayout();
     void testDirtyFlagsBubbling();
     void testAnchorInvalidationWithoutRender();
@@ -61,6 +65,58 @@ void TestLayout::testRowLayout() {
     QCOMPARE(row.implicitHeight(), 1 + 1 + 2); // top + bottom + max_height
 }
 
+void TestLayout::testRowKeepsChildY() {
+    // Like Qt Quick's Row, only x belongs to the layout: a child's own y is
+    // kept as an offset from the top padding.
+    Row row;
+    row.setPadding(2);
+
+    Item* plain = new Item(&row);
+    plain->setWidth(1); plain->setHeight(4);
+    Item* shifted = new Item(&row);
+    shifted->setWidth(1); shifted->setHeight(4);
+    shifted->setY(3);
+
+    TextGridBuffer buffer;
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(plain->y(), 2);
+    QCOMPARE(shifted->y(), 2 + 3);
+
+    // Re-running the layout must not add the padding again.
+    plain->setWidth(2);
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(shifted->y(), 2 + 3);
+
+    // A later y assignment (a re-evaluated binding) is still offset.
+    shifted->setY(6);
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(shifted->y(), 2 + 6);
+
+    // Hiding and showing keeps the same offset.
+    shifted->setVisible(false);
+    paintItem(row, buffer, 0, 0);
+    shifted->setVisible(true);
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(shifted->y(), 2 + 6);
+}
+
+void TestLayout::testRowPaintsChildAtItsY() {
+    TextGridBuffer buffer;
+    buffer.resize(20, 8);
+
+    Row row;
+    Item* tall = new Item(&row);
+    tall->setWidth(2); tall->setHeight(5);
+    Text* centred = new Text(&row);
+    centred->setText("XY");
+    centred->setY((tall->height() - centred->height()) / 2);
+
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(2, 2).character().toByteArray(), QByteArray("X"));
+    QCOMPARE(buffer.cellAt(3, 2).character().toByteArray(), QByteArray("Y"));
+    QVERIFY(buffer.cellAt(2, 0).character().toByteArray() != QByteArray("X"));
+}
+
 void TestLayout::testColumnLayout() {
     Column col;
     col.setSpacing(1);
@@ -86,6 +142,58 @@ void TestLayout::testColumnLayout() {
 
     QCOMPARE(col.implicitHeight(), 2 + 2 + 3 + 4 + 1); // top + bottom + h1 + h2 + spacing
     QCOMPARE(col.implicitWidth(), 2 + 2 + 5); // left + right + max_width
+}
+
+void TestLayout::testColumnKeepsChildX() {
+    // Like Qt Quick's Column, only y belongs to the layout: a child's own x
+    // is kept as an offset from the left padding.
+    Column col;
+    col.setPadding(2);
+
+    Item* plain = new Item(&col);
+    plain->setWidth(4); plain->setHeight(1);
+    Item* shifted = new Item(&col);
+    shifted->setWidth(4); shifted->setHeight(1);
+    shifted->setX(3);
+
+    TextGridBuffer buffer;
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(plain->x(), 2);
+    QCOMPARE(shifted->x(), 2 + 3);
+
+    // Re-running the layout must not add the padding again.
+    plain->setHeight(2);
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(shifted->x(), 2 + 3);
+
+    // A later x assignment (a re-evaluated binding) is still offset.
+    shifted->setX(6);
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(shifted->x(), 2 + 6);
+
+    // Hiding and showing keeps the same offset.
+    shifted->setVisible(false);
+    paintItem(col, buffer, 0, 0);
+    shifted->setVisible(true);
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(shifted->x(), 2 + 6);
+}
+
+void TestLayout::testColumnPaintsChildAtItsX() {
+    TextGridBuffer buffer;
+    buffer.resize(20, 4);
+
+    Column col;
+    Text* wide = new Text(&col);
+    wide->setText("abcdefgh");
+    Text* centred = new Text(&col);
+    centred->setText("XY");
+    centred->setX((col.implicitWidth() - centred->width()) / 2);
+
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(3, 1).character().toByteArray(), QByteArray("X"));
+    QCOMPARE(buffer.cellAt(4, 1).character().toByteArray(), QByteArray("Y"));
+    QVERIFY(buffer.cellAt(0, 1).character().toByteArray() != QByteArray("X"));
 }
 
 void TestLayout::testGridLayout() {

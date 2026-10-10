@@ -4,6 +4,8 @@
 
 #include <Qtui/Core/items/Item.h>
 
+#include <QHash>
+
 namespace qtui {
 
 class QTUI_CORE_EXPORT Row : public Item {
@@ -28,6 +30,18 @@ signals:
     void spacingChanged();
 
 private:
+    // Like Qt Quick's Row, only x is owned by the layout. A child's y is its
+    // own offset from the top padding, so the layout remembers that offset
+    // and re-adds the padding instead of overwriting y.
+    struct Placement {
+        int ownY = 0;
+        QMetaObject::Connection yChanged;
+        QMetaObject::Connection destroyed;
+    };
+    Placement track(Item *childItem);
+
+    QHash<const QObject*, Placement> m_placements;
+    bool m_positioning = false;
     int m_spacing = 0;
 };
 

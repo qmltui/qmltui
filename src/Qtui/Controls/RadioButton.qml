@@ -2,6 +2,8 @@ import QtQml
 import Qtui
 
 // One choice out of a group, drawn as `(*)` or `( )` followed by its label.
+// The indicator is drawn in reverse video while the control has active focus;
+// indicator and label are bold while focused, hovered or highlighted.
 // autoExclusive: activating a checked radio button keeps it checked. Put
 // the buttons of one choice in a ButtonGroup; checking one, by the user or
 // from code, unchecks the others.
@@ -38,6 +40,7 @@ AbstractButton {
             text: control.checked ? "(*)" : "( )"
             color: control.textColor
             bold: control.activeFocus || control.hovered || control.highlighted
+            reversed: control.activeFocus
         }
         Text {
             visible: control.text !== ""

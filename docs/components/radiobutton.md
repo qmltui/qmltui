@@ -36,7 +36,9 @@ RadioButton is a checkable, `autoExclusive`
 [Text](text.md) items: the indicator, `(*)` when `checked` and `( )`
 otherwise, and the label one cell to its right, hidden when `text` is empty.
 It has no `background` and no paddings, so it occupies one row at its
-implicit size. Indicator and label are bold while the control has active focus, is `hovered`, or is `highlighted`.
+implicit size. Indicator and label are bold while the control has active focus,
+is `hovered`, or is `highlighted`; the indicator is additionally drawn in reverse
+video while the control has active focus.
 
 Space or Enter while focused, or a click, calls `toggle()`. Because the
 button is `autoExclusive`, `toggle()` checks an unchecked button and emits

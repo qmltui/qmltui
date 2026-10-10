@@ -30,7 +30,9 @@ is a `Row` of two [Text](text.md) items: the indicator, `[ ON]` when
 `checked` and `[OFF]` otherwise, both five cells wide so the label never
 shifts, and the label one cell to its right, hidden when `text` is empty. It
 has no `background` and no paddings, so it occupies one row at its implicit
-size. Indicator and label are bold while the control has active focus, is `hovered`, or is `highlighted`.
+size. Indicator and label are bold while the control has active focus, is
+`hovered`, or is `highlighted`; the indicator is additionally drawn in reverse
+video while the control has active focus.
 
 It behaves exactly like [CheckBox](checkbox.md): Space, Enter or a click calls
 `toggle()`, emitting `toggled()` with the new value and then `clicked()`;

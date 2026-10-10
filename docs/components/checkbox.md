@@ -31,7 +31,10 @@ when `checked` and `[ ]` otherwise, and the label one cell to its right. The
 label is hidden when `text` is empty, so a bare indicator is 3 cells wide. It
 has no `background`, no paddings and no border, so it occupies exactly one
 row at its implicit size and centres the row when made taller. Indicator and
-label are bold while the control has active focus, is `hovered`, or is `highlighted`.
+label are bold while the control has active focus, is `hovered`, or is `highlighted`;
+the indicator is additionally drawn in reverse video while the control has active
+focus, so the focused control stays visible on terminals whose bold face barely
+differs from the regular one.
 
 Space or Enter while focused, or a mouse click anywhere on the item, calls
 `toggle()`, which flips `checked` and emits `toggled()` with the new value,

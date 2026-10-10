@@ -23,7 +23,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, width, align, headerAlign, padding, leftPadding, rightPadding }`. |
+| `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, width, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
 | `model` | `var` |  | _TODO_ |
 | `selectedRow` | `int` |  | _TODO_ |
 | `currentRow` | `int` |  | Read-only. _TODO_ |
@@ -82,6 +82,39 @@ interior width after reserving separator cells.
 `align` sets cell and header alignment (`"left"`, `"center"`, or `"right"`).
 `headerAlign` overrides only the heading, allowing centered headings over
 left-aligned data. Padding remains inside the content width.
+
+### Column colours
+
+`color` and `background` let the view say how a column looks, instead of the
+model carrying `Qt::ForegroundRole` for every cell. Either takes a colour:
+
+```qml
+columns: [
+    { title: "Time", width: 14, color: "#8a94a6" },
+    { title: "Rate", width: 8, align: "right", color: "#ffb86c" },
+]
+```
+
+A column that states a colour uses it for every cell and the matching role is
+not read at all, so this costs nothing per cell.
+
+Either may instead be a function, called per cell as `(row, column, value)` and
+returning a colour, for a column whose ink depends on the row:
+
+```qml
+{ title: "Time", width: 14,
+  color: (row) => model.isError(row) ? "#dc4c4c" : "#8a94a6" }
+```
+
+A function that returns nothing leaves the cell to the model's role, so a view
+can decide some rows and defer on the rest. Returned colours are parsed once
+and reused, so repeating a handful of values across many cells is cheap.
+
+A column colour wins over `Qt::ForegroundRole` and `Qt::BackgroundRole`: those
+roles are the compatibility path for models ported from Qt Widgets, and an
+explicit view-side rule outranks them. `cellFormat` still runs afterwards and
+overrides both. Neither applies to a selected row unless
+`selectionKeepsCellColors` is set.
 
 A frame reserves one line at the top and bottom. A header reserves two interior
 lines. Data rows are one line tall, with one extra line **between** visible rows

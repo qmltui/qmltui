@@ -1,10 +1,9 @@
 # Licensing
 
-Qamui is available under the **GNU Lesser General Public License v3**, the
-**GNU General Public License v3**, or a **commercial license**, at your
-choice. Examples, the starter template, and the build glue are
-**BSD-3-Clause** so they can be copied into your own project without
-conditions. Documentation is **CC-BY-4.0**.
+Qamui is available under the **GNU Lesser General Public License v3** or the
+**GNU General Public License v3**, at your choice. Examples, the starter
+template, and the build glue are **BSD-3-Clause** so they can be copied into
+your own project without conditions. Documentation is **CC-BY-4.0**.
 
 The license of a file is decided by its path. There are no per-file headers;
 the machine-readable map is [`REUSE.toml`](REUSE.toml) and the full license
@@ -12,31 +11,38 @@ texts are in [`LICENSES/`](LICENSES/).
 
 | Path | License |
 | :--- | :--- |
-| `src/` (Core, Controls, Extras, Canvas, Image, TerminalHost, Runner) and `tests/` | `LicenseRef-Qamui-Commercial OR LGPL-3.0-only OR GPL-3.0-only` |
+| `src/` (Core, Controls, Extras, Canvas, Image, TerminalHost, Runner) and `tests/` | `LGPL-3.0-only OR GPL-3.0-only` |
 | `examples/` | `BSD-3-Clause` |
 | `cmake/`, `scripts/`, `.github/`, root `CMakeLists.txt` | `BSD-3-Clause` |
 | `docs/`, every `*.md`, the `doc/` directories under `src/` | `CC-BY-4.0` |
 | Third-party code fetched at build time (utf8proc, libvterm) | MIT, see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
 
-## Which license applies to you
+## Open-Source Licensing Options
 
-- **LGPLv3**: link Qamui as shared libraries, keep Qamui's source and your
-  changes to it available, and let your users relink against a modified
-  Qamui. Your own application code stays under your own terms.
-- **GPLv3**: your whole application is GPLv3. Required if you link Qamui
-  statically and do not want the LGPL relinking obligation, or when you build
-  for WebAssembly, where Qt itself is available only under GPLv3 or a
-  commercial license.
-- **Commercial**: none of the above obligations. Contact the copyright
-  holder through <https://github.com/qamui-dev/qamui>.
+- **LGPL-3.0-only**: Link Qamui as shared libraries (or provide relinking
+  mechanisms for static binaries), keep modifications to Qamui available under
+  LGPLv3. Application code remains under your own terms.
+- **GPL-3.0-only**: Application and combined works are distributed under GPLv3.
 
-Qamui's WebAssembly builds are offered under GPLv3 or the commercial license
-only, mirroring Qt for WebAssembly.
+Separate commercial terms are available upon inquiry for organizations unable to
+meet those obligations. Contact the copyright holder through the project
+repository at <https://github.com/qamui-dev/qamui>.
+
+## Dependencies and WebAssembly
+
+Qt and third-party dependencies remain subject to their own licenses (see
+[`THIRD-PARTY.md`](THIRD-PARTY.md) and <https://www.qt.io/licensing>).
+
+When building for WebAssembly, open-source Qt is available under GPLv3 or
+commercial terms only. While Qamui's source remains `LGPL-3.0-only OR GPL-3.0-only`,
+linking against open-source Qt for WebAssembly produces a combined binary
+subject to the GPLv3.
 
 ## Contributing
 
 Contributions require the contributor agreement in [`CLA.md`](CLA.md), so that
-Qamui can keep being offered under all three licenses. See
+the copyright holder retains the right to offer separate commercial terms upon
+inquiry while guaranteeing the open-source promise. See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Qamui is an independent project of its copyright holder. It is not a product of

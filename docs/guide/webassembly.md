@@ -4,12 +4,13 @@ A Qamui app compiles to WebAssembly and runs inside [xterm.js](https://xtermjs.o
 on a web page. Nothing in the app changes: the same `main.cpp`, the same QML.
 What changes is the terminal backend, which talks to the page instead of a tty.
 
-**License first.** Qt for WebAssembly is available under the GPLv3 or a
-commercial Qt license only, and wasm builds link Qt statically. Every Qamui
-WebAssembly binary is therefore a GPLv3 combined work unless you hold
-commercial licenses for both Qt and Qamui. Qamui's own wasm builds follow the
-same rule: GPLv3 or commercial, no LGPL. See [LICENSE.md](../../LICENSE.md).
-Desktop builds are not affected; they link Qt dynamically under the LGPLv3.
+**License notes.** Qt for WebAssembly is distributed by The Qt Company under
+the GPLv3 or a commercial Qt license, and wasm builds link Qt statically. While
+Qamui source code is licensed under `LGPL-3.0-only OR GPL-3.0-only`, combining
+Qamui with open-source Qt for WebAssembly results in a combined binary governed
+by the GPLv3 unless you hold a commercial license for Qt and separate
+commercial terms for Qamui. See [LICENSE.md](../../LICENSE.md). Desktop builds
+are not affected; they link Qt dynamically under the LGPLv3.
 
 ## Prerequisites
 

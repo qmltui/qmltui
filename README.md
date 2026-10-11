@@ -253,11 +253,13 @@ in the [0.3 migration notes](docs/migration/0.3.md).
 
 ## License
 
-Qamui is available under the LGPLv3 and GPLv3, or under a commercial license
-for teams that cannot meet those terms (static linking on devices, closed
-distribution, WebAssembly). Examples and the starter template are
-BSD-3-Clause; documentation is CC-BY-4.0. The license of a file follows from
-its path, see [LICENSE.md](LICENSE.md). Commercial licensing: contact the
-copyright holder through the project page.
+Qamui is available under **LGPL-3.0-only OR GPL-3.0-only**. Examples and the
+starter template are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See
+[LICENSE.md](LICENSE.md).
 
-Qamui is an independent project and not a product of The Qt Company.
+Separate commercial terms are available upon inquiry for organizations unable
+to meet those obligations. Contact through the project repository at
+<https://github.com/qamui-dev/qamui>.
+
+Qamui is an independent project and not a product of The Qt Company. Qt and
+third-party dependencies remain subject to their own licenses.

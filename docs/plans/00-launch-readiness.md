@@ -671,12 +671,12 @@ Why this and not MIT, which the tree said until 2026-09-14:
 
 | Path | License | Note |
 | :--- | :--- | :--- |
-| `src/Qamui/**` (Core, Controls, Extras, Canvas, Image, TerminalHost, TestRunner) | `LicenseRef-Qamui-Commercial OR LGPL-3.0-only OR GPL-3.0-only` | One rule for all library code, TestRunner included |
+| `src/Qamui/**` (Core, Controls, Extras, Canvas, Image, TerminalHost, TestRunner) | `LGPL-3.0-only OR GPL-3.0-only` | One rule for all library code, TestRunner included |
 | `examples/**`, `qamui-starter` (Plan 03) | `BSD-3-Clause` | Qt's convention for examples. The goal is "copy three files" with nothing to read first |
 | `cmake/**`, `scripts/**`, `.github/**` | `BSD-3-Clause` | Build glue, as in Qt |
 | `docs/**` | `CC-BY-4.0` | Open decision 4 below |
 | Fetched third parties: utf8proc, libvterm | MIT (upstream) | Recorded in `THIRD-PARTY.md`; nothing to relicense |
-| WebAssembly builds of Qamui | GPLv3 or commercial only | Mirrors Qt's own rule for wasm; see Plan 05 section 7. Open decision 3 |
+| WebAssembly builds of Qamui | Source LGPL/GPL; Qt wasm binary GPLv3 or commercial | Mirrors Qt's own rule for wasm; see Plan 05 section 7. Open decision 3 |
 
 ### Files and mechanics
 
@@ -684,9 +684,8 @@ Follow the REUSE specification so the state is machine-checkable with
 `reuse lint`:
 
 1. `LICENSES/LGPL-3.0-only.txt`, `LICENSES/GPL-3.0-only.txt`,
-   `LICENSES/BSD-3-Clause.txt`, `LICENSES/CC-BY-4.0.txt`, and
-   `LICENSES/LicenseRef-Qamui-Commercial.txt` (a short pointer: "Commercial
-   licenses are available from `<licensor>`; contact `<contact>`").
+   `LICENSES/BSD-3-Clause.txt`, and `LICENSES/CC-BY-4.0.txt`. Separate
+   commercial terms are available upon inquiry.
 2. Replace the root `LICENSE` (MIT) with `LICENSE.md`: the table above in
    prose plus a link to `LICENSES/`.
 3. No per-file headers. The license of a file follows from its path through

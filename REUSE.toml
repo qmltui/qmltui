@@ -8,12 +8,12 @@ SPDX-PackageName = "Qamui"
 SPDX-PackageSupplier = "Yosri Ayed"
 SPDX-PackageDownloadLocation = "https://github.com/qamui-dev/qamui"
 
-# Library code: LGPLv3, GPLv3, or a commercial license, at the user's choice.
+# Library code: LGPLv3 or GPLv3, at the user's choice.
 [[annotations]]
 path = ["src/**", "tests/**"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
-SPDX-License-Identifier = "LicenseRef-Qamui-Commercial OR LGPL-3.0-only OR GPL-3.0-only"
+SPDX-License-Identifier = "LGPL-3.0-only OR GPL-3.0-only"
 
 # Examples and build glue: BSD-3-Clause, so they can be copied without conditions.
 [[annotations]]

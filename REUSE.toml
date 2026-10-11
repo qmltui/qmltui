@@ -17,7 +17,7 @@ SPDX-License-Identifier = "LicenseRef-Qamui-Commercial OR LGPL-3.0-only OR GPL-3
 
 # Examples and build glue: BSD-3-Clause, so they can be copied without conditions.
 [[annotations]]
-path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", "CMakeLists.txt", ".gitignore", "REUSE.toml"]
+path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", "CMakeLists.txt", "jsconfig.json", ".gitignore", "REUSE.toml"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "BSD-3-Clause"

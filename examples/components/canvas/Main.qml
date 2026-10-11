@@ -1,5 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQml
-import QtQml.Models 2.15
+import QtQml.Models
 import Qamui
 
 Terminal {
@@ -11,11 +12,13 @@ Terminal {
     property bool showCube: true
     property bool showSine: true
     property bool showRadar: true
+    property bool halfBlockMode: false
+    property bool averageColorMode: true
 
     property double angleX: 0.0
     property double angleY: 0.0
 
-    // Explicit key handling to quit, as per project rules (.agents/AGENTS.md)
+    // Explicit key handling to quit and toggle features (.agents/AGENTS.md)
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit()
@@ -42,10 +45,20 @@ Terminal {
             event.accepted = true
             return
         }
+        if (event.key === Qt.Key_M) {
+            rootWindow.halfBlockMode = !rootWindow.halfBlockMode
+            event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_C) {
+            rootWindow.averageColorMode = !rootWindow.averageColorMode
+            event.accepted = true
+            return
+        }
     }
 
     // 3D vertices of a cube
-    property var vertices: [
+    readonly property var vertices: [
         {x: -1.0, y: -1.0, z: -1.0},
         {x:  1.0, y: -1.0, z: -1.0},
         {x:  1.0, y:  1.0, z: -1.0},
@@ -57,7 +70,7 @@ Terminal {
     ]
 
     // 12 edges connecting vertices
-    property var edges: [
+    readonly property var edges: [
         {v1: 0, v2: 1}, {v1: 1, v2: 2}, {v1: 2, v2: 3}, {v1: 3, v2: 0},
         {v1: 4, v2: 5}, {v1: 5, v2: 6}, {v1: 6, v2: 7}, {v1: 7, v2: 4},
         {v1: 0, v2: 4}, {v1: 1, v2: 5}, {v1: 2, v2: 6}, {v1: 3, v2: 7}
@@ -90,8 +103,8 @@ Terminal {
             let sinY = Math.sin(rootWindow.angleY)
             let cosY = Math.cos(rootWindow.angleY)
 
-            let w = cubeCanvas.pixelWidth
-            let h = cubeCanvas.pixelHeight
+            let w = mainCanvas.pixelWidth
+            let h = mainCanvas.pixelHeight
             if (w <= 0 || h <= 0) return
 
             let cx = w / 2
@@ -135,7 +148,7 @@ Terminal {
         }
     }
 
-    function getSinePoints(w, h, time) {
+    function getSinePoints(w: int, h: int, time: real): var {
         if (w <= 0 || h <= 0) return []
         let pts = []
         let midY = h / 2
@@ -170,7 +183,7 @@ Terminal {
             width: parent.width
             height: parent.height - 4
 
-            // Shared Viewport Container: All 3 Canvases occupy this exact space!
+            // Viewport Container: Single Canvas host for all shapes
             Rectangle {
                 id: canvasContainer
                 width: parent.width - 32
@@ -179,21 +192,23 @@ Terminal {
                 border.color: "#334155"
 
                 // ----------------------------------------------------
-                // Canvas 1: Cyan Phosphor 3D Wireframe Cube (#00F0FF)
+                // Single Canvas with Per-Shape Colors & Compositing
                 // ----------------------------------------------------
                 Canvas {
-                    id: cubeCanvas
+                    id: mainCanvas
                     anchors.fill: parent
-                    color: "#00f0ff"
-                    renderMode: Canvas.Braille
-                    visible: rootWindow.showCube
+                    renderMode: rootWindow.halfBlockMode ? Canvas.HalfBlock : Canvas.Braille
+                    cellColorMode: rootWindow.averageColorMode ? Canvas.Average : Canvas.LastDot
 
+                    // Layer 1: Cyan Phosphor 3D Wireframe Cube (#00F0FF)
                     Repeater {
                         model: orbitModel
                         delegate: Point {
                             required property var modelData
                             x: modelData.x
                             y: modelData.y
+                            color: "#00f0ff"
+                            visible: rootWindow.showCube
                         }
                     }
 
@@ -205,60 +220,48 @@ Terminal {
                             y1: modelData.y1
                             x2: modelData.x2
                             y2: modelData.y2
+                            color: "#00f0ff"
+                            visible: rootWindow.showCube
                         }
                     }
-                }
 
-                // ----------------------------------------------------
-                // Canvas 2: Green Phosphor Dynamic Sine Wave (#00FF66)
-                // Shares the exact same space as Canvas 1!
-                // ----------------------------------------------------
-                Canvas {
-                    id: sineCanvas
-                    anchors.fill: parent
-                    color: "#00ff66"
-                    renderMode: Canvas.Braille
-                    visible: rootWindow.showSine
-
+                    // Layer 2: Green Phosphor Dynamic Sine Wave (#00FF66)
                     Polygon {
+                        color: "#00ff66"
                         closed: false
-                        points: rootWindow.getSinePoints(sineCanvas.pixelWidth, sineCanvas.pixelHeight, rootWindow.animTime)
+                        visible: rootWindow.showSine
+                        points: rootWindow.getSinePoints(mainCanvas.pixelWidth, mainCanvas.pixelHeight, rootWindow.animTime)
                     }
-                }
 
-                // ----------------------------------------------------
-                // Canvas 3: Yellow Radar Tracker & Target (#FFB000)
-                // Shares the exact same space as Canvas 1 & 2!
-                // ----------------------------------------------------
-                Canvas {
-                    id: radarCanvas
-                    anchors.fill: parent
-                    color: "#ffb000"
-                    renderMode: Canvas.Braille
-                    visible: rootWindow.showRadar
-
-                    property int rx: Math.floor(pixelWidth / 2 + Math.cos(rootWindow.animTime * 1.5) * (pixelWidth * 0.35))
-                    property int ry: Math.floor(pixelHeight / 2 + Math.sin(rootWindow.animTime * 1.5) * (pixelHeight * 0.35))
+                    // Layer 3: Yellow Radar Tracker & Target (#FFB000)
+                    readonly property int rx: Math.floor(pixelWidth / 2 + Math.cos(rootWindow.animTime * 1.5) * (pixelWidth * 0.35))
+                    readonly property int ry: Math.floor(pixelHeight / 2 + Math.sin(rootWindow.animTime * 1.5) * (pixelHeight * 0.35))
 
                     Circle {
-                        cx: radarCanvas.rx
-                        cy: radarCanvas.ry
-                        radius: Math.max(4, Math.floor(Math.min(radarCanvas.pixelWidth, radarCanvas.pixelHeight) * 0.12 + Math.sin(rootWindow.animTime * 3) * 2))
+                        cx: mainCanvas.rx
+                        cy: mainCanvas.ry
+                        radius: Math.max(4, Math.floor(Math.min(mainCanvas.pixelWidth, mainCanvas.pixelHeight) * 0.12 + Math.sin(rootWindow.animTime * 3) * 2))
                         fill: false
+                        color: "#ffb000"
+                        visible: rootWindow.showRadar
                     }
 
                     Line {
-                        x1: Math.max(0, radarCanvas.rx - 8)
-                        y1: radarCanvas.ry
-                        x2: Math.min(radarCanvas.pixelWidth - 1, radarCanvas.rx + 8)
-                        y2: radarCanvas.ry
+                        x1: Math.max(0, mainCanvas.rx - 8)
+                        y1: mainCanvas.ry
+                        x2: Math.min(mainCanvas.pixelWidth - 1, mainCanvas.rx + 8)
+                        y2: mainCanvas.ry
+                        color: "#ffb000"
+                        visible: rootWindow.showRadar
                     }
 
                     Line {
-                        x1: radarCanvas.rx
-                        y1: Math.max(0, radarCanvas.ry - 6)
-                        x2: radarCanvas.rx
-                        y2: Math.min(radarCanvas.pixelHeight - 1, radarCanvas.ry + 6)
+                        x1: mainCanvas.rx
+                        y1: Math.max(0, mainCanvas.ry - 6)
+                        x2: mainCanvas.rx
+                        y2: Math.min(mainCanvas.pixelHeight - 1, mainCanvas.ry + 6)
+                        color: "#ffb000"
+                        visible: rootWindow.showRadar
                     }
                 }
             }
@@ -308,33 +311,47 @@ Terminal {
                     }
 
                     Text {
+                        text: "ENGINE SETTINGS"
+                        color: "#e2e8f0"
+                        bold: true
+                    }
+                    Text {
+                        text: "[M] Mode: " + (rootWindow.halfBlockMode ? "HalfBlock" : "Braille")
+                        color: "#38bdf8"
+                    }
+                    Text {
+                        text: "[C] Color: " + (rootWindow.averageColorMode ? "Average" : "LastDot")
+                        color: "#a78bfa"
+                    }
+
+                    Text {
                         text: "HOW IT WORKS"
                         color: "#e2e8f0"
                         bold: true
                     }
                     Text {
-                        text: "3 separate Canvases"
+                        text: "Single Canvas host"
                         color: "#cbd5e1"
                     }
                     Text {
-                        text: "share the exact same"
+                        text: "with 3 shape layers."
                         color: "#cbd5e1"
                     }
                     Text {
-                        text: "parent coordinates."
+                        text: "Shapes have distinct"
                         color: "#cbd5e1"
                     }
                     Text {
-                        text: "Empty dots transparent,"
-                        color: "#94a3b8"
+                        text: "colors; dots merge"
+                        color: "#cbd5e1"
                     }
                     Text {
-                        text: "rendering multi-color"
-                        color: "#94a3b8"
+                        text: "via bitwise OR in"
+                        color: "#cbd5e1"
                     }
                     Text {
-                        text: "Braille graphics!"
-                        color: "#94a3b8"
+                        text: "overlapping cells."
+                        color: "#cbd5e1"
                     }
                 }
             }
@@ -348,7 +365,7 @@ Terminal {
 
             Text {
                 anchors.fill: parent
-                text: " Controls: [1] Toggle 3D Cube | [2] Toggle Sine | [3] Toggle Radar | [Space] Pause | [Q/Esc] Quit"
+                text: " [1] Cube | [2] Sine | [3] Radar | [M] Mode | [C] Color | [Space] Pause | [Q/Esc] Quit"
                 color: "#f1f5f9"
             }
         }

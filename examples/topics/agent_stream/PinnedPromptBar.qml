@@ -102,6 +102,7 @@ Column {
 
     // Ready Prompt Area (with Autocomplete Popup)
     Column {
+        id: promptArea
         visible: !promptBar.modalActive && promptBar.ready
         width: parent.width
         spacing: 0
@@ -141,7 +142,8 @@ Column {
                 placeholderColor: theme.muted
                 cursorBlinking: false
                 cursorShape: TextInput.Block
-                focus: promptBar.ready && !promptBar.modalActive
+                // Request focus only after the containing prompt becomes visible.
+                focus: promptArea.visible
                 onTextChanged: {
                     promptBar.userNavigated = false;
                     if (inputField.text.startsWith("/")) {

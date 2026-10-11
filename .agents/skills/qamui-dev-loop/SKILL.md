@@ -77,11 +77,12 @@ a focused first pass.
 
 ## Integrate Application Scenarios
 
-For new applications, link `Qamui::Runner` only into a dedicated test
-executable. Some existing examples conditionally link Runner into their main
-executable; treat these as legacy integration patterns and do not copy them
-into production applications. Linking Runner installs the Terminal auto-hook
-that honors `QAMUI_RUNNER_SCRIPT`, `QAMUI_RUNNER_EVAL`, and `QAMUI_RUNNER_CAPTURE_AFTER_MS`.
+Examples and applications conditionally link `Qamui::Runner` into their normal
+executable with `if(TARGET Qamui::Runner)`. Register scenarios against that same
+target; do not duplicate the executable or its QML module. Linking Runner
+installs the Terminal auto-hook that honors `QAMUI_RUNNER_SCRIPT`,
+`QAMUI_RUNNER_EVAL`, and `QAMUI_RUNNER_CAPTURE_AFTER_MS`. Normal startup does not
+start a scenario. Production builds disable both tests and Runner.
 
 Choose one integration pattern:
 
@@ -109,22 +110,23 @@ that startup check.
 Minimal external-script registration:
 
 ```cmake
-target_link_libraries(my_app_test PRIVATE Qamui::Core Qamui::Runner)
-
-qamui_add_scenario(
-    NAME my_app_smoke
-    TARGET my_app_test
-    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
-    LABELS AgentSmoke
-)
+if(TARGET Qamui::Runner)
+    target_link_libraries(my_app PRIVATE Qamui::Runner)
+    qamui_add_scenario(
+        NAME my_app_smoke
+        TARGET my_app
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
+        LABELS AgentSmoke
+    )
+endif()
 ```
 
-The test executable normally compiles the application's own `main.cpp` and
-module URI; only the module's `OUTPUT_DIRECTORY` differs, so the two
-`qt_add_qml_module` calls do not collide on disk. Do not copy `main.cpp` into a
-`main_test.cpp` or invent a `<Uri>Test` module for that. Use
+Use
 [`examples/components/animated_sprite/CMakeLists.txt`](../../../examples/components/animated_sprite/CMakeLists.txt)
-as the reference for that shared-main pattern. Use [`tests/Runner/main.cpp`](../../../tests/Runner/main.cpp) for explicitly
+as the reference for this shared-target pattern. C++-created Terminals need an
+explicit environment hook, as shown in
+[`examples/topics/cpp_only/main.cpp`](../../../examples/topics/cpp_only/main.cpp).
+Use [`tests/Runner/main.cpp`](../../../tests/Runner/main.cpp) for explicitly
 constructed embedded runners and framework scenarios and failure contracts.
 
 ## Closed-Loop Inspection

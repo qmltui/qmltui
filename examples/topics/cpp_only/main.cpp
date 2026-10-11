@@ -1,18 +1,34 @@
-// Entry point of the C++-only Qamui example. There is no QML engine: the whole
-// interface is built in ServiceDashboard.cpp from Qamui's C++ items.
-
+// The interface is built entirely from Qamui's C++ items.
 #include "ServiceDashboard.h"
 
 #include <QCoreApplication>
+
+#ifdef QAMUI_CPP_ONLY_RUNNER
+#include <Qamui/Runner/Runner.h>
+#include <QQmlEngine>
+#include <memory>
+#endif
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    // A root Terminal takes over the screen when the event loop starts and
-    // restores it when the object is destroyed.
     ServiceDashboard dashboard;
-    dashboard.setLiveTelemetry(true);
-
+    bool scenarioRequested = false;
+#ifdef QAMUI_CPP_ONLY_RUNNER
+    // Only automation needs a script engine; ordinary startup stays C++ only.
+    std::unique_ptr<QQmlEngine> scriptEngine;
+    for (const char *name : {"QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL",
+                             "QAMUI_RUNNER_CAPTURE_AFTER_MS"}) {
+        scenarioRequested |= !qgetenv(name).trimmed().isEmpty();
+    }
+    if (scenarioRequested) {
+        scriptEngine = std::make_unique<QQmlEngine>();
+        QJSEngine::setObjectOwnership(&dashboard, QJSEngine::CppOwnership);
+        qamui::Runner::startFromEnvironment(scriptEngine.get(), &dashboard);
+    }
+#endif
+    // Scenarios advance telemetry explicitly through rootObject().tick().
+    dashboard.setLiveTelemetry(!scenarioRequested);
     return app.exec();
 }

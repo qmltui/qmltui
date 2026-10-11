@@ -1,5 +1,5 @@
 # A Qamui application without QML. Qamui::Core links Qt6::Qml for its type
-# registrations, but this executable never creates a QML or JavaScript engine.
+# registrations. A JavaScript engine is created only for requested Runner sessions.
 qt_add_executable(qamui_cpp_only_demo
     main.cpp
     ServiceDashboard.h
@@ -11,28 +11,14 @@ target_link_libraries(qamui_cpp_only_demo PRIVATE
     Qamui::Core
 )
 
-# The scenario executable constructs the Runner itself because the auto-hook
-# only fires for a Terminal created by a QML engine. Same application code,
-# telemetry driven by the script.
-if(TARGET Qamui::Runner AND QAMUI_BUILD_TESTS)
-    qt_add_executable(qamui_cpp_only_demo_test
-        main_test.cpp
-        ServiceDashboard.h
-        ServiceDashboard.cpp
-    )
-    target_compile_definitions(qamui_cpp_only_demo_test PRIVATE
-        QAMUI_CPP_ONLY_SCENARIO="${CMAKE_CURRENT_SOURCE_DIR}/test_cpp_only.js"
-    )
-    target_link_libraries(qamui_cpp_only_demo_test PRIVATE
-        Qt6::Core
-        Qt6::Qml
-        Qamui::Core
-        Qamui::Runner
-    )
-    qamui_add_scenario_test(
+# A C++-created Terminal needs an explicit environment-driven Runner hook.
+if(TARGET Qamui::Runner)
+    target_link_libraries(qamui_cpp_only_demo PRIVATE Qamui::Runner)
+    target_compile_definitions(qamui_cpp_only_demo PRIVATE QAMUI_CPP_ONLY_RUNNER)
+    qamui_add_scenario(
         NAME cpp_only_dashboard
-        TARGET qamui_cpp_only_demo_test
-        EMBEDDED
+        TARGET qamui_cpp_only_demo
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_cpp_only.js"
         LABELS AgentSmoke
     )
 endif()

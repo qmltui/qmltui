@@ -377,6 +377,27 @@ A scenario ending in `.mjs` is an ECMAScript module: it must `export function ma
 
 The helpers live in `cmake/QamuiRunner.cmake` and are defined wherever the `Qamui::Runner` target is: `find_package(Qamui)` includes the module from the installed package, and an `add_subdirectory` or `FetchContent` build defines it while configuring the Runner library, before any consumer directory is processed. Nothing needs to `include()` the file by hand. Consumers register scenarios with `qamui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default. `qamui_scenario_editor_support()` materializes editor completion for the consumer's scenario files (see Scenario Files).
 
+Examples and applications use their normal executable for scenarios. After defining
+the application and its QML module, conditionally link Runner and register a script:
+
+```cmake
+if(TARGET Qamui::Runner)
+    target_link_libraries(my_app PRIVATE Qamui::Runner)
+    qamui_add_scenario(
+        NAME my_app_smoke
+        TARGET my_app
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
+        COLUMNS 80 ROWS 24
+    )
+endif()
+```
+
+There is no second executable or QML module. Linking Runner installs an automatic
+hook for QML-created Terminals; ordinary startup runs no scenario unless a Runner
+environment mode is requested. C++-created Terminals must explicitly call
+`Runner::startFromEnvironment()` with a script engine. For production builds,
+disable both `QAMUI_BUILD_TESTS` and `QAMUI_ENABLE_RUNNER` to omit Runner.
+
 #### void start()
 
 Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, and invokes its `function main(terminal)` entry point. Call it once, normally through `QTimer::singleShot(0, driver, &Runner::start)`.

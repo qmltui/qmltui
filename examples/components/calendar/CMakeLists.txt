@@ -15,32 +15,11 @@ target_link_libraries(qamui_calendar_demo PRIVATE Qt6::Core Qt6::Qml Qamui::Core
 
 if(TARGET Qamui::Runner)
 
-    qt_add_executable(qamui_calendar_demo_test main.cpp)
+    target_link_libraries(qamui_calendar_demo PRIVATE Qamui::Runner)
 
-    qt_add_qml_module(qamui_calendar_demo_test
-        URI CalendarDemo
-        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/CalendarDemo"
-        VERSION 1.0
-        QML_FILES
-        Calendar.qml
-        StatusBadge.qml
-            Main.qml
-        DEPENDENCIES
- TARGET Qamui::Core Qamui::Controls
-    )
-
-    target_link_libraries(qamui_calendar_demo_test PRIVATE
-        Qt6::Core
-        Qt6::Qml
-        Qamui::Core
-        Qamui::Controls
-        Qamui::Controls
-        Qamui::Runner
-    )
-
-    qamui_add_scenario_test(
+    qamui_add_scenario(
         NAME calendar_smoke
-        TARGET qamui_calendar_demo_test
+        TARGET qamui_calendar_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_calendar.js"
         COLUMNS 80
         ROWS 24

@@ -81,6 +81,7 @@ qt_add_qml_module(QamuiCore
         engine/KeyEvent.h
         engine/MouseEvent.h
         engine/Keys.h
+        engine/Keys.cpp
         engine/Animation.h
         engine/Animation.cpp
         engine/State.h

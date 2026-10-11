@@ -47,39 +47,11 @@ target_link_libraries(qamui_branding_logos_demo PRIVATE
     Qamui::Image
 )
 
-if(TARGET Qamui::Runner AND QAMUI_BUILD_TESTS)
-    qt_add_executable(qamui_branding_logos_demo_test
-        main.cpp
-        BrandingCatalog.h
-        BrandingCatalog.cpp
-    )
-    qt_add_qml_module(qamui_branding_logos_demo_test
-        URI BrandingLogosDemo
-        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/BrandingLogosDemo"
-        VERSION 1.0
-        QML_FILES
-            Main.qml
-        DEPENDENCIES TARGET
-            Qamui::Core
-            Qamui::Controls
-            Qamui::Image
-    )
-    qt_add_resources(qamui_branding_logos_demo_test "branding"
-        PREFIX "/branding"
-        FILES ${BRANDING_FILES}
-    )
-    target_link_libraries(qamui_branding_logos_demo_test PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Qml
-        Qamui::Core
-        Qamui::Controls
-        Qamui::Image
-        Qamui::Runner
-    )
+if(TARGET Qamui::Runner)
+    target_link_libraries(qamui_branding_logos_demo PRIVATE Qamui::Runner)
     qamui_add_scenario(
         NAME branding_logos_smoke
-        TARGET qamui_branding_logos_demo_test
+        TARGET qamui_branding_logos_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 100
         ROWS 30

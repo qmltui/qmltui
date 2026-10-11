@@ -1,7 +1,7 @@
 # C++ only
 
 A filterable service list built from Qamui's C++ items. No QML file and no QML
-engine: `QCoreApplication`, a `Terminal` subclass, and one `QProperty` binding.
+engine during normal startup: `QCoreApplication`, a `Terminal` subclass, and one `QProperty` binding.
 
 ```text
  SERVICE MONITOR  ·  C++ only, no QML engine
@@ -34,6 +34,8 @@ cmake --build build --target qamui_cpp_only_demo
 ctest --test-dir build -R '^cpp_only_dashboard$' --output-on-failure
 ```
 
-`main_test.cpp` constructs the `Runner` itself because the auto-hook only
-starts for a `Terminal` loaded by QML. The scenario drives telemetry through
+When Runner is available, the same executable supports environment-driven
+scenarios. `main.cpp` creates a script engine and calls `startFromEnvironment()`
+only when a Runner session is requested, because the automatic hook requires a
+QML-created Terminal. The scenario drives telemetry through
 `terminal.rootObject().tick()`.

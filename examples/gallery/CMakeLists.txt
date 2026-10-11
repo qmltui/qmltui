@@ -19,12 +19,6 @@ set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../components/image")
 set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../components/animated_sprite")
 
 function(gallery_add_executable target uri main_source)
-    # An optional fourth argument gives the module its own output directory, so
-    # a second executable can compile the same URI without colliding on disk.
-    set(module_output_directory)
-    if(ARGC GREATER 3)
-        set(module_output_directory OUTPUT_DIRECTORY "${ARGV3}")
-    endif()
     qt_add_executable(${target} ${main_source})
     set(gallery_dependencies TARGET Qamui::Core TARGET Qamui::Controls)
     set(gallery_link_libraries Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
@@ -34,7 +28,6 @@ function(gallery_add_executable target uri main_source)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
-        ${module_output_directory}
         VERSION 1.0
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES ${gallery_qml_files}
@@ -74,32 +67,26 @@ if(COMMAND qamui_wasm_app)   # browser build, see examples/wasm and docs/topics/
 endif()
 
 if(TARGET Qamui::Runner)
-    gallery_add_executable(qamui_gallery_test Gallery main.cpp
-        "${CMAKE_CURRENT_BINARY_DIR}/qml_test/Gallery")
-    target_link_libraries(qamui_gallery_test PRIVATE Qamui::Runner)
+    target_link_libraries(qamui_gallery PRIVATE Qamui::Runner)
 
-    if(QAMUI_BUILD_TESTS)
-        # Gallery pages animate on QML Timers and Qamui animations: the tour
-        # runs on the virtual clock, so its per-page settling is instant.
-        qamui_add_scenario_test(
-            NAME gallery_smoke
-            TARGET qamui_gallery_test
-            SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery.js"
-            COLUMNS 100
-            ROWS 30
-            CLOCK VIRTUAL
-            ARTIFACT "gallery/grid.txt"
-            ARTIFACT_CONTENT "Qamui Gallery"
-            LABELS AgentSmoke
-        )
-    endif()
-endif()
+    # Gallery pages animate on QML Timers and Qamui animations: the tour
+    # runs on the virtual clock, so its per-page settling is instant.
+    qamui_add_scenario(
+        NAME gallery_smoke
+        TARGET qamui_gallery
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery.js"
+        COLUMNS 100
+        ROWS 30
+        CLOCK VIRTUAL
+        ARTIFACT "gallery/grid.txt"
+        ARTIFACT_CONTENT "Qamui Gallery"
+        LABELS AgentSmoke
+    )
 
-if(TARGET qamui_gallery_test AND QAMUI_BUILD_TESTS)
-    qamui_add_scenario(NAME gallery_idle_budget TARGET qamui_gallery_test
+    qamui_add_scenario(NAME gallery_idle_budget TARGET qamui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_idle_budget.js"
         COLUMNS 100 ROWS 30 LABELS AgentSmoke)
-    qamui_add_scenario(NAME gallery_tour TARGET qamui_gallery_test
+    qamui_add_scenario(NAME gallery_tour TARGET qamui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery_tour.js"
         COLUMNS 100 ROWS 30 CLOCK VIRTUAL RECORD gallery-tour.cast LABELS Cast)
 endif()

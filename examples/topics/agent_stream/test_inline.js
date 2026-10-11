@@ -1,3 +1,5 @@
+
+/** @param {Terminal} terminal */
 function main(terminal) {
     terminal.expectText("Ask anything")
     terminal.expectNoText("shell")
@@ -24,6 +26,10 @@ function main(terminal) {
     terminal.captureText("model.txt")
     terminal.press("Escape")
     terminal.expectText("Ask anything")
+
+    console.log("Waiting for the agent to be ready...")
+
+    terminal.sleep(3000)
 
     terminal.typeText("/demo 1")
     terminal.press("Enter")

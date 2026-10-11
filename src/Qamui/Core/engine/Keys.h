@@ -25,10 +25,7 @@ public:
 
     explicit Keys(QObject *parent = nullptr) : QObject(parent), m_priority(BeforeItem) {}
 
-    static Keys *qmlAttachedProperties(QObject *object) {
-        // Create or find the attached Keys object for this target object
-        return new Keys(object);
-    }
+    static Keys *qmlAttachedProperties(QObject *object);
 
     Priority priority() const { return m_priority; }
     void setPriority(Priority priority) {

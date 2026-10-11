@@ -12,7 +12,7 @@ starts another with a full repaint. See the [Runner API](../cpp-classes/runner.m
 Build and run:
 
 ```sh
-cmake --build build-qamui --target qamui_gallery_test
+cmake --build build-qamui --target qamui_gallery
 scripts/update_casts.sh build-qamui --gallery
 ```
 

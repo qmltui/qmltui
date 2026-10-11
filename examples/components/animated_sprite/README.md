@@ -30,7 +30,7 @@ AnimatedSprite {
 Build with `QAMUI_ENABLE_IMAGE=ON` and examples enabled:
 
 ```sh
-cmake --build build --target qamui_animated_sprite_demo qamui_animated_sprite_demo_test
+cmake --build build --target qamui_animated_sprite_demo
 ./build/examples/components/animated_sprite/qamui_animated_sprite_demo
 ctest --test-dir build -R '^animated_sprite_demo$' --output-on-failure
 ```

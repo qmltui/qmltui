@@ -219,7 +219,6 @@ void Canvas::requestPaint() {
 
 void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!visible()) return;
-    Q_UNUSED(clipRect);
 
     resizeBuffer();
     CanvasPainter surface = painter();
@@ -251,6 +250,8 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
+                if (!clipRect.contains(absX + x, absY + y))
+                    continue;
                 const uint8_t cellValue = m_cells[static_cast<size_t>(y * width() + x)];
                 if (cellValue == 0)
                     continue;
@@ -280,6 +281,8 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
         const int h = height();
         for (int cellY = 0; cellY < h; ++cellY) {
             for (int cellX = 0; cellX < w; ++cellX) {
+                if (!clipRect.contains(absX + cellX, absY + cellY))
+                    continue;
                 const int topY = cellY * 2;
                 const int bottomY = cellY * 2 + 1;
 
@@ -495,7 +498,8 @@ void Circle::draw(CanvasPainter& painter) const {
     const int centery = cy();
     int x = r;
     int y = 0;
-    int err = 0;
+    // Midpoint decision between the next vertical and diagonal pixel steps.
+    int err = 1 - r;
 
     auto drawPoints = [&](int pcx, int pcy, int px, int py) {
         if (m_fill) {
@@ -522,10 +526,11 @@ void Circle::draw(CanvasPainter& painter) const {
     while (x >= y) {
         drawPoints(centerx, centery, x, y);
         y += 1;
-        err += 1 + 2 * y;
-        if (2 * (err - x) + 1 > 0) {
+        if (err < 0) {
+            err += 2 * y + 1;
+        } else {
             x -= 1;
-            err += 1 - 2 * x;
+            err += 2 * (y - x) + 1;
         }
     }
 }

@@ -4,6 +4,7 @@
 #include <QQmlComponent>
 #include <QSignalSpy>
 #include <memory>
+#include <cmath>
 #include <Qamui/Core/items/Canvas.h>
 #include <Qamui/Core/items/Terminal.h>
 #include <Qamui/Core/primitives/TextGridBuffer.h>
@@ -30,6 +31,8 @@ private slots:
     void testHalfBlockDemoRendering();
     void testShapesDoNotInvalidateWhilePainting();
     void testRequestPaint();
+    void testCircleGeometry_data();
+    void testCircleGeometry();
 };
 
 
@@ -430,6 +433,64 @@ void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
     QCOMPARE(dirtySpy.count(), 1);
 }
 
+void TestCanvas::testCircleGeometry_data() {
+    QTest::addColumn<int>("radius");
+    QTest::addColumn<bool>("filled");
+    for (int radius : {1, 2, 7, 14, 25}) {
+        for (bool filled : {false, true}) {
+            QTest::newRow(qPrintable(QStringLiteral("r%1-%2").arg(radius)
+                .arg(filled ? "filled" : "outline"))) << radius << filled;
+        }
+    }
+}
+
+void TestCanvas::testCircleGeometry() {
+    QFETCH(int, radius);
+    QFETCH(bool, filled);
+    const int center = radius + 2;
+    const int diameter = 2 * center + 1;
+    Canvas canvas;
+    canvas.setWidth((diameter + 1) / 2);
+    canvas.setHeight((diameter + 3) / 4);
+    Circle circle(&canvas);
+    circle.setCx(center);
+    circle.setCy(center);
+    circle.setRadius(radius);
+    circle.setFill(filled);
+    TextGridBuffer buffer;
+    buffer.resize(canvas.width(), canvas.height());
+    paintItem(canvas, buffer, 0, 0);
+
+    // Inspect rendered braille dots, with a geometric oracle independent of
+    // the rasterizer's stepping algorithm.
+    const auto inkAt = [&](int dx, int dy) {
+        const int x = center + dx;
+        const int y = center + dy;
+        const auto text = QString::fromUtf8(buffer.cellAt(x / 2, y / 4).character().toByteArray());
+        const ushort ch = text.isEmpty() ? 0 : text.at(0).unicode();
+        constexpr int bits[2][4] = {{0, 1, 2, 6}, {3, 4, 5, 7}};
+        return ch >= 0x2800 && ch <= 0x28ff
+            && ((ch - 0x2800) & (1 << bits[x % 2][y % 4])) != 0;
+    };
+    for (int y = -radius - 1; y <= radius + 1; ++y) {
+        int rowDots = 0;
+        for (int x = -radius - 1; x <= radius + 1; ++x) {
+            const bool ink = inkAt(x, y);
+            const double distance = std::hypot(x, y);
+            QCOMPARE(ink, inkAt(-x, y));
+            QCOMPARE(ink, inkAt(x, -y));
+            QCOMPARE(ink, inkAt(y, x));
+            if (distance < radius - 0.5)
+                QCOMPARE(ink, filled);
+            if (distance > radius + 0.5)
+                QVERIFY(!ink);
+            rowDots += ink;
+        }
+        if (std::abs(y) <= radius)
+            QVERIFY(rowDots > 0);
+    }
+}
+
 void TestCanvas::testRequestPaint() {
     Canvas canvas;
     QSignalSpy dirtySpy(&canvas, &Item::dirty);
@@ -440,4 +501,3 @@ void TestCanvas::testRequestPaint() {
 
 QTEST_MAIN(TestCanvas)
 #include "test_canvas.moc"
-

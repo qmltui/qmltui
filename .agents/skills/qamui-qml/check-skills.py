@@ -19,7 +19,7 @@ SKILL_PATHS = (
 EXAMPLE_TARGETS = (
     (
         "examples/components/animated_sprite/main.cpp",
-        "qamui_animated_sprite_demo_test",
+        "qamui_animated_sprite_demo",
         "examples/components/animated_sprite/CMakeLists.txt",
     ),
     (

@@ -1,10 +1,10 @@
 #include "MdView.h"
 
-#include <Qtui/Core/engine/MouseEvent.h>
-#include <Qtui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/primitives/UnicodeText.h>
 #include <algorithm>
 
-namespace qtui {
+namespace qamui {
 
 MdView::MdView(QObject *parent) : Item(parent) {
     setImplicitWidth(80);
@@ -353,4 +353,4 @@ void MdView::wheelEvent(MouseEvent *event) {
     }
 }
 
-} // namespace qtui
+} // namespace qamui

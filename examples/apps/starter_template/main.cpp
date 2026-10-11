@@ -6,10 +6,10 @@
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
-    QLockFile instanceLock(QStringLiteral("/run/qtui_starter_template.lock"));
+    QLockFile instanceLock(QStringLiteral("/run/qamui_starter_template.lock"));
     instanceLock.setStaleLockTime(0);
     if (!instanceLock.tryLock()) {
-        QTextStream(stderr) << "qtui_starter_template is already running\n";
+        QTextStream(stderr) << "qamui_starter_template is already running\n";
         return 2;
     }
 

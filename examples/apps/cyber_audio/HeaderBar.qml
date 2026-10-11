@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import Qtui
+import Qamui
 
 // One-row header: app name, source badge, track, title, layout / play state, volume.
 Rectangle {

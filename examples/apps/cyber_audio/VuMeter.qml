@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 // One VU channel: "L  -6.0 dB" caption over a threshold-colored bar. Two rows tall.
 Column {

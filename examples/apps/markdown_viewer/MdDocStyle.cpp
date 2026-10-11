@@ -1,6 +1,6 @@
 #include "MdDocStyle.h"
 
-namespace qtui {
+namespace qamui {
 
 MdDocStyle::MdDocStyle(QObject *parent)
     : QObject(parent) {
@@ -120,4 +120,4 @@ void MdDocStyle::setTaskListUnchecked(const QString &marker) {
     emit styleChanged();
 }
 
-} // namespace qtui
+} // namespace qamui

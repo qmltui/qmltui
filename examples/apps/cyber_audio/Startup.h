@@ -40,7 +40,7 @@ inline StartupOptions parseStartupOptions(const QCoreApplication& app)
 {
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("Qtui cyber_audio: terminal spectrum visualizer and audio player.\n"
+        QStringLiteral("Qamui cyber_audio: terminal spectrum visualizer and audio player.\n"
                        "Give audio files, directories or URLs to play them; use --mic for live input."));
     parser.addHelpOption();
     parser.addVersionOption();
@@ -82,7 +82,7 @@ inline QVariantMap toVariantMap(const StartupOptions& options)
 }
 
 // Third-party libraries used by Qt Multimedia (libav, PipeWire, PulseAudio) print
-// straight to the stderr file descriptor, bypassing Qt logging and therefore Qtui's
+// straight to the stderr file descriptor, bypassing Qt logging and therefore Qamui's
 // message buffering. Any such line would corrupt the alternate-screen frame, so the
 // descriptor is parked in a log file while the UI runs and restored afterwards.
 class StderrRedirect
@@ -109,7 +109,7 @@ public:
         CYBER_CLOSE(m_saved);
         const qint64 size = QFileInfo(m_path).size();
         if (size > 0)
-            std::fprintf(stderr, "qtui_cyber_audio: %lld bytes of library diagnostics in %s\n",
+            std::fprintf(stderr, "qamui_cyber_audio: %lld bytes of library diagnostics in %s\n",
                          static_cast<long long>(size), qPrintable(m_path));
         else
             QFile::remove(m_path);

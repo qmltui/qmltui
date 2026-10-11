@@ -1,14 +1,14 @@
 #pragma once
-#include <Qtui/Core/items/Rectangle.h>
+#include <Qamui/Core/items/Rectangle.h>
 
-namespace qtui {
+namespace qamui {
 
 class ProgressBar : public Rectangle {
     Q_OBJECT
     QML_ELEMENT
 
     Q_PROPERTY(double value READ value WRITE setValue NOTIFY valueChanged)
-    Q_PROPERTY(qtui::Color barColor READ barColor WRITE setBarColor NOTIFY barColorChanged)
+    Q_PROPERTY(qamui::Color barColor READ barColor WRITE setBarColor NOTIFY barColorChanged)
 
 public:
     explicit ProgressBar(QObject *parent = nullptr);
@@ -32,4 +32,4 @@ private:
     uint32_t m_resolvedBarColor = 0xFF00FF00;
 };
 
-} // namespace qtui
+} // namespace qamui

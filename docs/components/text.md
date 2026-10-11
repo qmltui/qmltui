@@ -1,10 +1,10 @@
 ---
 title: Text
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: Item
-cpp: qtui::Text
+cpp: qamui::Text
 category: display
 summary: Displays terminal text with inline styling and explicit line breaks.
 ---
@@ -15,8 +15,8 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -76,7 +76,7 @@ at paint time, including to spans that explicitly set `dim: false`.
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     Text {
@@ -84,7 +84,7 @@ Terminal {
         bold: true
         spans: [
             { text: "Status: ", dim: true, bold: false },
-            Qtui.span("Active\n", { color: "green" }),
+            Qamui.span("Active\n", { color: "green" }),
             { text: "Workers: 4" }
         ]
     }
@@ -100,13 +100,13 @@ Terminal {
 ### C++
 
 ```cpp
-#include <Qtui/Core/items/Text.h>
+#include <Qamui/Core/items/Text.h>
 
-qtui::Span label(QStringLiteral("Status: "));
+qamui::Span label(QStringLiteral("Status: "));
 label.setBold(false);
 label.setDim(true);
-qtui::Text text;
-text.setSpans({label, qtui::Span(QStringLiteral("Active"), qtui::Color("green"))});
+qamui::Text text;
+text.setSpans({label, qamui::Span(QStringLiteral("Active"), qamui::Color("green"))});
 ```
 
 Spans have value semantics without per-span QObject allocation. Strings,

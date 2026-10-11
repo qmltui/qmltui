@@ -7,10 +7,10 @@
 #include <QUrl>
 #include <algorithm>
 
-#include <Qtui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/primitives/UnicodeText.h>
 #include <parser.h>
 
-namespace qtui {
+namespace qamui {
 
 namespace {
 MdRole headingRole(int level) {
@@ -1077,4 +1077,4 @@ void MdDoc::rebuildLinks() {
     }
 }
 
-} // namespace qtui
+} // namespace qamui

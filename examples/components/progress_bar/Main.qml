@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root
@@ -38,7 +38,7 @@ Terminal {
             spacing: 1
 
             Text {
-                text: "📊 Qtui.Controls ProgressBar Showcase"
+                text: "📊 Qamui.Controls ProgressBar Showcase"
                 color: "#38bdf8"
                 bold: true
             }

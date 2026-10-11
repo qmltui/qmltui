@@ -1,6 +1,6 @@
 # Architecture
 
-Qtui provides a retained-mode layout and rendering tree for terminal applications, heavily inspired by Qt Quick and QML. It translates QML item trees into terminal ANSI escape codes and translates terminal input into standard Qt-like events. For the rationale behind retained mode and property bindings versus immediate-mode terminal frameworks, see [why declarative bindings](guide/why-declarative-bindings.md).
+Qamui provides a retained-mode layout and rendering tree for terminal applications, heavily inspired by Qt Quick and QML. It translates QML item trees into terminal ANSI escape codes and translates terminal input into standard Qt-like events. For the rationale behind retained mode and property bindings versus immediate-mode terminal frameworks, see [why declarative bindings](guide/why-declarative-bindings.md).
 
 ## Core Loop
 The execution is driven by standard Qt event loops (usually `QCoreApplication`). The `TerminalEngine` is responsible for bridging the gap between the event loop and the terminal.
@@ -40,7 +40,7 @@ after their handler returns.
 
 ## Agent feedback loop & automation
 
-The optional `Qtui::Runner` library attaches a `Runner` to an explicit
+The optional `Qamui::Runner` library attaches a `Runner` to an explicit
 `Terminal`. Automated sessions suppress terminal-device output while retaining
 normal frame commits, input dispatch, QML timers, and render-failure signals.
 Each run writes an atomic schema-versioned result, a normalized final frame,
@@ -54,5 +54,5 @@ The `TerminalDevice` handles reading raw bytes and forwards them to the `Termina
 `InputDecoder` processes these byte streams (often UTF-8 and ANSI escape sequences) to deduce mouse events, standard keypresses, and complex multi-key combinations. It translates these into `KeyEvent` and `MouseEvent` objects, which are routed to the focused item.
 
 ## Node Graph
-The visual node graph consists of elements inheriting from `qtui::Item`. 
+The visual node graph consists of elements inheriting from `qamui::Item`.
 Each `Item` corresponds to a declarative block in QML. Items manage their relative x/y positions, implicit width/height, and arbitrary children. State changes mark the tree as "dirty", prompting the `TerminalEngine` to schedule an asynchronous re-render in the main Qt event loop.

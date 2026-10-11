@@ -1,4 +1,4 @@
-# Welcome to Qtui Markdown Viewer
+# Welcome to Qamui Markdown Viewer
 
 A high-performance retained-mode **terminal Markdown renderer** built with **Qt 6** and KDE's [md4qt](https://github.com/KDE/md4qt) parser library.
 
@@ -37,7 +37,7 @@ A high-performance retained-mode **terminal Markdown renderer** built with **Qt 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.loadFromModule("Qtui.Examples.MarkdownViewer", "Main");
+    engine.loadFromModule("Qamui.Examples.MarkdownViewer", "Main");
     return app.exec();
 }
 ```
@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Examples.MarkdownViewer 1.0
+import Qamui
+import Qamui.Examples.MarkdownViewer 1.0
 
 Terminal {
     id: root

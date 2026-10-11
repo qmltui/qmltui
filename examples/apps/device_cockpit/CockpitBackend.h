@@ -9,7 +9,7 @@
 #include <QQmlEngine>
 
 // Root of the provider layer. Chooses mock or live implementations once at
-// startup (QTUI_COCKPIT_MOCK=1 selects the mocks) and hands them to QML.
+// startup (QAMUI_COCKPIT_MOCK=1 selects the mocks) and hands them to QML.
 class CockpitBackend : public QObject {
     Q_OBJECT
     QML_ELEMENT

@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
-import Qtui.Image
+import Qamui
+import Qamui.Controls
+import Qamui.Image
 
-// Image: pixels as cells. One tile of the Qtui gallery (examples/apps/gallery)
+// Image: pixels as cells. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own. The picture ships inside the binary as a
 // resource, so the same file works in a terminal and in the browser.
 Terminal {

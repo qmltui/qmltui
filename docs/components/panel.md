@@ -1,10 +1,10 @@
 ---
 title: Panel
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: Rectangle
-cpp: qtui::Rectangle
+cpp: qamui::Rectangle
 category: overlays and navigation
 summary: A bordered rectangle with optional title, badge, trailing text, and footer drawn into its borders.
 ---
@@ -15,8 +15,8 @@ A bordered rectangle with optional title, badge, trailing text, and footer drawn
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Rectangle](rectangle.md) |
 
 ## Properties
@@ -69,8 +69,8 @@ Panel to get a titled frame.
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     Panel {

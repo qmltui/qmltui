@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qtui
+import Qamui
 import QtQml
-import Qtui.Controls
+import Qamui.Controls
 
 // Lower panel: stereo VU deck on the left, Braille oscilloscope on the right. Either
 // half can be hidden; the oscilloscope takes the full width when the VU deck is off.

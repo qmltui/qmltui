@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace qtui {
+namespace qamui {
 
 enum class MdRole : uint8_t {
     Transparent,
@@ -34,4 +34,4 @@ enum class MdRole : uint8_t {
     SyntaxSymbol
 };
 
-} // namespace qtui
+} // namespace qamui

@@ -1,7 +1,7 @@
 #include "progressbar.h"
 #include <algorithm>
 
-namespace qtui {
+namespace qamui {
 
 ProgressBar::ProgressBar(QObject *parent) : Rectangle(parent) {
     setImplicitWidth(20);
@@ -72,4 +72,4 @@ void ProgressBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRe
     }
 }
 
-} // namespace qtui
+} // namespace qamui

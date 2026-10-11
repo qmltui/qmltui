@@ -1,16 +1,16 @@
 #include <QTest>
 #include <QObject>
-#include <Qtui/Core/items/ScrollView.h>
-#include <Qtui/Core/engine/KeyEvent.h>
-#include <Qtui/Core/engine/MouseEvent.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/items/MouseArea.h>
+#include <Qamui/Core/items/ScrollView.h>
+#include <Qamui/Core/engine/KeyEvent.h>
+#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/items/MouseArea.h>
 
 class TestScrollView;
 
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 
-using namespace qtui;
+using namespace qamui;
 
 class TestScrollView : public QObject {
     Q_OBJECT

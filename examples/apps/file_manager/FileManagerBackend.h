@@ -9,7 +9,7 @@
 #include <QQmlEngine>
 #include <QMap>
 
-namespace qtui::examples {
+namespace qamui::examples {
 
 struct MockItem {
     QString name;
@@ -174,4 +174,4 @@ private:
     QMap<QString, MockItem> m_mockFs;
 };
 
-} // namespace qtui::examples
+} // namespace qamui::examples

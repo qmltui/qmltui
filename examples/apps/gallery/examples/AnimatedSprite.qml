@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
-import Qtui.Image
+import Qamui
+import Qamui.Controls
+import Qamui.Image
 
-// AnimatedSprite: Image plus a frame clock. One tile of the Qtui gallery
+// AnimatedSprite: Image plus a frame clock. One tile of the Qamui gallery
 // (examples/apps/gallery) and a complete app on its own. The qami sheet is an
 // 8x9 grid of 105x114 px cells and every animation is a run of cells in one
 // row, so picking an animation is only new frameX/frameY/frameCount values.

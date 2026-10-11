@@ -16,11 +16,11 @@
 #include <QQmlEngine>
 #include <QTextStream>
 #include <memory>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/GridView.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/TreeView.h>
-#include <Qtui/Core/items/Repeater.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/GridView.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/items/Repeater.h>
 #include "../TestPaint.h"
 #ifdef __linux__
 #include <sys/prctl.h>
@@ -69,7 +69,7 @@ QString viewQml(const QString &view, const QString &delegateName, bool bound)
     else
         body = QStringLiteral("TreeView { width: 80; height: 24; model: benchmarkModel; delegate: %1 }");
     return (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString())
-        + QStringLiteral("import Qtui\nimport Qtui.Controls\n") + body.arg(delegate);
+        + QStringLiteral("import Qamui\nimport Qamui.Controls\n") + body.arg(delegate);
 }
 
 qint64 residentBytes()
@@ -106,30 +106,30 @@ Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateNa
         qCritical().noquote() << component.errorString();
         return result;
     }
-    qtui::TextGridBuffer buffer;
+    qamui::TextGridBuffer buffer;
     buffer.resize(80, 24);
 
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<qtui::Item *>(object.get());
+    auto *root = qobject_cast<qamui::Item *>(object.get());
     if (!root) return result;
-    qtui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
+    qamui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     result.createUs = timer.nsecsElapsed() / 1000.0;
     result.delegatesCreated = int(root->childItems().size());
     result.perDelegateUs = result.delegatesCreated ? result.createUs / result.delegatesCreated : 0;
 
     const auto step = [&](int i) {
-        if (auto *list = qobject_cast<qtui::ListView *>(root)) list->setContentY(i);
-        else if (auto *grid = qobject_cast<qtui::GridView *>(root)) grid->setContentY(i);
-        else if (auto *table = qobject_cast<qtui::TableView *>(root)) table->setSelectedRow(24 + i);
-        else if (auto *tree = qobject_cast<qtui::TreeView *>(root)) tree->setCurrentIndex(24 + i);
+        if (auto *list = qobject_cast<qamui::ListView *>(root)) list->setContentY(i);
+        else if (auto *grid = qobject_cast<qamui::GridView *>(root)) grid->setContentY(i);
+        else if (auto *table = qobject_cast<qamui::TableView *>(root)) table->setSelectedRow(24 + i);
+        else if (auto *tree = qobject_cast<qamui::TreeView *>(root)) tree->setCurrentIndex(24 + i);
     };
     model.reads = 0;
     timer.restart();
     for (int i = 1; i <= steps; ++i) {
         step(i);
-        qtui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
+        qamui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     }
     result.scrollUs = timer.nsecsElapsed() / 1000.0 / steps;
     result.readsPerScrollStep = model.reads / steps;
@@ -137,15 +137,15 @@ Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateNa
     timer.restart();
     for (int i = 0; i < steps; ++i) {
         model.touch(steps + 5 + (i % 10)); // a visible row after the scroll
-        qtui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
+        qamui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     }
     result.changeUs = timer.nsecsElapsed() / 1000.0 / steps;
 
     timer.restart();
-    for (int i = 0; i < steps; ++i) qtui::ItemPaintTraversal::layoutSubtree(root);
+    for (int i = 0; i < steps; ++i) qamui::ItemPaintTraversal::layoutSubtree(root);
     result.idleLayoutUs = timer.nsecsElapsed() / 1000.0 / steps;
     timer.restart();
-    for (int i = 0; i < steps; ++i) qtui::ItemPaintTraversal::paintSubtree(root, buffer, 0, 0);
+    for (int i = 0; i < steps; ++i) qamui::ItemPaintTraversal::paintSubtree(root, buffer, 0, 0);
     result.idlePaintUs = timer.nsecsElapsed() / 1000.0 / steps;
     return result;
 }
@@ -156,7 +156,7 @@ double bytesPerDelegate(QQmlEngine &engine, const QString &delegateName, int cou
     CountModel model(count);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
-    component.setData((QStringLiteral("import Qtui\nimport Qtui.Controls\n"
+    component.setData((QStringLiteral("import Qamui\nimport Qamui.Controls\n"
                                       "Column { width: 80; Repeater { model: benchmarkModel; delegate: %1 } }")
                            .arg(delegates.value(delegateName))).toUtf8(), QUrl());
     if (!component.isReady()) {
@@ -166,7 +166,7 @@ double bytesPerDelegate(QQmlEngine &engine, const QString &delegateName, int cou
     const qint64 before = residentBytes();
     std::unique_ptr<QObject> object(component.create());
     const qint64 after = residentBytes();
-    const int created = int(qobject_cast<qtui::Item *>(object.get())->childItems().size());
+    const int created = int(qobject_cast<qamui::Item *>(object.get())->childItems().size());
     return created > 0 ? double(after - before) / created : -1;
 }
 
@@ -175,7 +175,7 @@ double bytesPerDelegate(QQmlEngine &engine, const QString &delegateName, int cou
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
-    qtui::ListView linkList; qtui::GridView linkGrid; qtui::TableView linkTable; qtui::TreeView linkTree; qtui::Repeater linkRepeater;
+    qamui::ListView linkList; qamui::GridView linkGrid; qamui::TableView linkTable; qamui::TreeView linkTree; qamui::Repeater linkRepeater;
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../qml"));
     const QStringList args = application.arguments();
@@ -191,18 +191,18 @@ int main(int argc, char **argv)
         component.setData(viewQml(args[2], args[3], false).toUtf8(), QUrl());
         if (!component.isReady()) { qCritical().noquote() << component.errorString(); return 1; }
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<qtui::Item *>(object.get());
-        qtui::TextGridBuffer buffer;
+        auto *root = qobject_cast<qamui::Item *>(object.get());
+        qamui::TextGridBuffer buffer;
         buffer.resize(80, 24);
         QElapsedTimer clock;
         clock.start();
         const qint64 seconds = args[4].toLongLong();
         for (int i = 1; clock.elapsed() < seconds * 1000; ++i) {
-            if (auto *list = qobject_cast<qtui::ListView *>(root)) list->setContentY(i % 90000);
-            else if (auto *grid = qobject_cast<qtui::GridView *>(root)) grid->setContentY(i % 20000);
-            else if (auto *table = qobject_cast<qtui::TableView *>(root)) table->setSelectedRow(24 + i % 90000);
-            else if (auto *tree = qobject_cast<qtui::TreeView *>(root)) tree->setCurrentIndex(24 + i % 90000);
-            qtui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
+            if (auto *list = qobject_cast<qamui::ListView *>(root)) list->setContentY(i % 90000);
+            else if (auto *grid = qobject_cast<qamui::GridView *>(root)) grid->setContentY(i % 20000);
+            else if (auto *table = qobject_cast<qamui::TableView *>(root)) table->setSelectedRow(24 + i % 90000);
+            else if (auto *tree = qobject_cast<qamui::TreeView *>(root)) tree->setCurrentIndex(24 + i % 90000);
+            qamui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
         }
         return 0;
     }

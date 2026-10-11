@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 // 24-band equalizer. Each row is a single Text covering every band, rendered at
 // 1/8-cell resolution with peak-hold caps; bar width adapts to the panel width.

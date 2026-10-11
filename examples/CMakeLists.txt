@@ -1,4 +1,4 @@
-option(QTUI_INSTALL_EXAMPLES "Install example executables" OFF)
+option(QAMUI_INSTALL_EXAMPLES "Install example executables" OFF)
 
 add_subdirectory(quickstart_test)
 add_subdirectory(components)

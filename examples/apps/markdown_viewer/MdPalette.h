@@ -2,11 +2,11 @@
 
 #include <QMetaType>
 #include <QtQml/qqmlregistration.h>
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 
 #include "MdRole.h"
 
-namespace qtui {
+namespace qamui {
 
 class MdPalette {
     Q_GADGET
@@ -143,6 +143,6 @@ public:
     QString m_activeMatchFg = "#1a1b26";
 };
 
-} // namespace qtui
+} // namespace qamui
 
-Q_DECLARE_METATYPE(qtui::MdPalette)
+Q_DECLARE_METATYPE(qamui::MdPalette)

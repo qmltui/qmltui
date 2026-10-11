@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Examples.MarkdownViewer 1.0
+import Qamui
+import Qamui.Examples.MarkdownViewer 1.0
 
 Terminal {
     id: root
@@ -23,7 +23,7 @@ Terminal {
     property string currentStyleName: "modern"
     property bool editorOpen: false
 
-    readonly property var sampleFiles: [":/qt/qml/Qtui/Examples/MarkdownViewer/resources/modern_showcase.md", ":/qt/qml/Qtui/Examples/MarkdownViewer/resources/welcome.md", ":/qt/qml/Qtui/Examples/MarkdownViewer/resources/qtui_guide.md", ":/qt/qml/Qtui/Examples/MarkdownViewer/resources/cheatsheet.md", ":/qt/qml/Qtui/Examples/MarkdownViewer/resources/edge_cases.md"]
+    readonly property var sampleFiles: [":/qt/qml/Qamui/Examples/MarkdownViewer/resources/modern_showcase.md", ":/qt/qml/Qamui/Examples/MarkdownViewer/resources/welcome.md", ":/qt/qml/Qamui/Examples/MarkdownViewer/resources/qamui_guide.md", ":/qt/qml/Qamui/Examples/MarkdownViewer/resources/cheatsheet.md", ":/qt/qml/Qamui/Examples/MarkdownViewer/resources/edge_cases.md"]
 
     ModernDocStyle {
         id: modernDocStyle

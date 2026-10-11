@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Examples.MarkdownViewer 1.0
+import Qamui
+import Qamui.Examples.MarkdownViewer 1.0
 
 Rectangle {
     id: editor

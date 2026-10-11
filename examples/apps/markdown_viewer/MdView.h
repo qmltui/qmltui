@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qtui/Core/items/Item.h>
+#include <Qamui/Core/items/Item.h>
 #include <QPointer>
 #include <QtQml/qqmlregistration.h>
 
@@ -8,21 +8,21 @@
 #include "MdPalette.h"
 #include "MdViewStyle.h"
 
-namespace qtui {
+namespace qamui {
 
 class MdView : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(qtui::MdDoc* document READ document WRITE setDocument NOTIFY documentChanged)
+    Q_PROPERTY(qamui::MdDoc* document READ document WRITE setDocument NOTIFY documentChanged)
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
     Q_PROPERTY(int contentHeight READ contentHeight NOTIFY contentHeightChanged)
     Q_PROPERTY(QString searchQuery READ searchQuery WRITE setSearchQuery NOTIFY searchQueryChanged)
     Q_PROPERTY(int activeMatchIndex READ activeMatchIndex WRITE setActiveMatchIndex NOTIFY activeMatchIndexChanged)
 
     // View Style & Direct Palette Overrides
-    Q_PROPERTY(qtui::MdViewStyle* style READ style WRITE setStyle NOTIFY styleChanged)
-    Q_PROPERTY(qtui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
+    Q_PROPERTY(qamui::MdViewStyle* style READ style WRITE setStyle NOTIFY styleChanged)
+    Q_PROPERTY(qamui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
 
     Q_PROPERTY(bool showLineNumbers READ showLineNumbers WRITE setShowLineNumbers NOTIFY showLineNumbersChanged)
     Q_PROPERTY(QString renderStyle READ renderStyle WRITE setRenderStyle NOTIFY renderStyleChanged)
@@ -102,4 +102,4 @@ private:
     bool m_updatingDimensions = false;
 };
 
-} // namespace qtui
+} // namespace qamui

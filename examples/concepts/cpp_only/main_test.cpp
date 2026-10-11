@@ -7,7 +7,7 @@
 
 #include "ServiceDashboard.h"
 
-#include <Qtui/Runner/Runner.h>
+#include <Qamui/Runner/Runner.h>
 
 #include <QCoreApplication>
 #include <QDir>
@@ -29,7 +29,7 @@ int environmentInteger(const char *name, int fallback)
 int main(int argc, char *argv[])
 {
     // Before any Terminal exists: the run stays off the real terminal.
-    qtui::Runner::useEmbeddedScenario();
+    qamui::Runner::useEmbeddedScenario();
 
     QCoreApplication app(argc, argv);
 
@@ -41,21 +41,21 @@ int main(int argc, char *argv[])
     QQmlEngine scriptEngine;
     QJSEngine::setObjectOwnership(&dashboard, QJSEngine::CppOwnership);
 
-    QString script = QString::fromUtf8(qgetenv("QTUI_RUNNER_SCRIPT")).trimmed();
+    QString script = QString::fromUtf8(qgetenv("QAMUI_RUNNER_SCRIPT")).trimmed();
     if (script.isEmpty())
-        script = QStringLiteral(QTUI_CPP_ONLY_SCENARIO);
+        script = QStringLiteral(QAMUI_CPP_ONLY_SCENARIO);
 
-    QString artifacts = QString::fromUtf8(qgetenv("QTUI_RUNNER_ARTIFACT_DIR")).trimmed();
+    QString artifacts = QString::fromUtf8(qgetenv("QAMUI_RUNNER_ARTIFACT_DIR")).trimmed();
     if (artifacts.isEmpty())
-        artifacts = QDir::temp().filePath(QStringLiteral("qtui-cpp-only-artifacts"));
+        artifacts = QDir::temp().filePath(QStringLiteral("qamui-cpp-only-artifacts"));
 
-    const QSize viewport(environmentInteger("QTUI_RUNNER_COLUMNS", 80),
-                         environmentInteger("QTUI_RUNNER_ROWS", 24));
+    const QSize viewport(environmentInteger("QAMUI_RUNNER_COLUMNS", 80),
+                         environmentInteger("QAMUI_RUNNER_ROWS", 24));
 
-    auto *runner = new qtui::Runner(&scriptEngine, &dashboard, script, artifacts, viewport,
-                                    environmentInteger("QTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000),
-                                    environmentInteger("QTUI_RUNNER_TIMEOUT_MS", 10000),
+    auto *runner = new qamui::Runner(&scriptEngine, &dashboard, script, artifacts, viewport,
+                                    environmentInteger("QAMUI_RUNNER_OPERATION_TIMEOUT_MS", 2000),
+                                    environmentInteger("QAMUI_RUNNER_TIMEOUT_MS", 10000),
                                     QString());
-    QTimer::singleShot(0, runner, &qtui::Runner::start);
+    QTimer::singleShot(0, runner, &qamui::Runner::start);
     return app.exec();
 }

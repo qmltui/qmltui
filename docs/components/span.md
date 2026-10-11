@@ -1,10 +1,10 @@
 ---
 title: span
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: 
-cpp: qtui::Span
+cpp: qamui::Span
 category: core
 summary: A literal text run with optional style overrides.
 ---
@@ -15,10 +15,10 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Object literal or `Qtui.span()` |
+| **Instantiation** | Object literal or `Qamui.span()` |
 
 ## Properties
 
@@ -36,8 +36,8 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 ## Detailed Description
 
 Use spans through [Text.spans](text.md). Create them with JavaScript object
-literals or the [Qtui.span()](qtui.md) factory. Both accept color strings and
-Qtui `rgba` values. Attribute omission is distinct from explicit `false`.
+literals or the [Qamui.span()](qamui.md) factory. Both accept color strings and
+Qamui `rgba` values. Attribute omission is distinct from explicit `false`.
 
 In C++, `hasBold()` (and the corresponding methods for other attributes)
 reports whether an override exists. A boolean getter alone does not report

@@ -1,10 +1,10 @@
 ---
 title: Loader
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: Item
-cpp: qtui::Loader
+cpp: qamui::Loader
 category: layout
 summary: _TODO_
 ---
@@ -15,8 +15,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -55,7 +55,7 @@ _TODO_
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     Loader {

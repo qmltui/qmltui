@@ -2,13 +2,13 @@
 #include <QSignalSpy>
 #include <QQmlEngine>
 #include <QQmlComponent>
-#include <Qtui/Core/items/Rectangle.h>
-#include <Qtui/Core/items/Gradient.h>
-#include <Qtui/Core/items/GradientStop.h>
+#include <Qamui/Core/items/Rectangle.h>
+#include <Qamui/Core/items/Gradient.h>
+#include <Qamui/Core/items/GradientStop.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qtui;
+using namespace qamui;
 
 static TextGridBuffer paintRect(Rectangle &rect, int width = 10, int height = 5)
 {
@@ -279,7 +279,7 @@ void TestRectangle::testQmlIntegration() {
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
-        import Qtui
+        import Qamui
         Rectangle {
             width: 8
             height: 4

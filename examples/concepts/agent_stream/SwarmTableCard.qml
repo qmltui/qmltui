@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Column {
     id: swarmCard
@@ -39,7 +39,7 @@ Column {
         ]
 
         model: swarmCard.tableModel ? swarmCard.tableModel : [
-            ["MemoryAuditor", "src/Qtui/engine/", "Pass", "0 leaks (checked 18)"],
+            ["MemoryAuditor", "src/Qamui/engine/", "Pass", "0 leaks (checked 18)"],
             ["QmlProfiler", "examples/agent/", "Pass", "0 binding loops"],
             ["RaceVerifier", "Terminal.cpp", "Pass", "Thread-affinity safe"]
         ]

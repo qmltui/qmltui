@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     engine.loadData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             Text {
                 id: label
@@ -16,7 +16,7 @@ int main(int argc, char **argv)
                 color: "#00ffff"
                 bold: true
                 spans: [ { text: "Status: ", bold: false, dim: true },
-                         Qtui.span("Active\n", { color: "#00ff00" }),
+                         Qamui.span("Active\n", { color: "#00ff00" }),
                          { text: "Workers: 4" } ]
             }
             Keys.onPressed: event => {

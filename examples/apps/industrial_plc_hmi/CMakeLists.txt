@@ -15,9 +15,9 @@ set(plc_qml_files
     SettingsView.qml
 )
 
-qt_add_executable(qtui_industrial_plc_hmi main.cpp)
+qt_add_executable(qamui_industrial_plc_hmi main.cpp)
 
-qt_add_qml_module(qtui_industrial_plc_hmi
+qt_add_qml_module(qamui_industrial_plc_hmi
     URI IndustrialPlcHmi
     VERSION 1.0
     QML_FILES ${plc_qml_files}
@@ -26,21 +26,21 @@ qt_add_qml_module(qtui_industrial_plc_hmi
         test_plc.js
 
     DEPENDENCIES
-        TARGET Qtui::Core
-        TARGET Qtui::Controls
-        TARGET Qtui::Core
-        TARGET Qtui::Controls
+        TARGET Qamui::Core
+        TARGET Qamui::Controls
+        TARGET Qamui::Core
+        TARGET Qamui::Controls
 )
 
-target_link_libraries(qtui_industrial_plc_hmi PRIVATE
+target_link_libraries(qamui_industrial_plc_hmi PRIVATE
     Qt6::Core
     Qt6::Qml
-    Qtui::Core
-    Qtui::Controls
-    Qtui::Core
-    Qtui::Controls
+    Qamui::Core
+    Qamui::Controls
+    Qamui::Core
+    Qamui::Controls
 )
 
-if(TARGET Qtui::Runner)
-    target_link_libraries(qtui_industrial_plc_hmi PRIVATE Qtui::Runner)
+if(TARGET Qamui::Runner)
+    target_link_libraries(qamui_industrial_plc_hmi PRIVATE Qamui::Runner)
 endif()

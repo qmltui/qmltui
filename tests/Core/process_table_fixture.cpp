@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     engine.loadData(QByteArray(R"QML(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qtui
+        import Qamui
 
         Terminal {
             id: root
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
                     ]
                     model: [
                         [1, "systemd", "0.1", "sleeping"],
-                        [412, "qtui_gallery", "3.4", "running"],
+                        [412, "qamui_gallery", "3.4", "running"],
                         [977, "sshd", "0.0", "sleeping"],
                         [1820, "postgres", "12.8", "running"],
                         [2201, "node", "41.2", "running"],

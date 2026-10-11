@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qtui.Controls
+import Qamui.Controls
 import QtQml
-import Qtui
+import Qamui
 
 
 Terminal {

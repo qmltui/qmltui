@@ -66,7 +66,7 @@ function main(terminal) {
 
     // 7. Sample document cycling and link hit-testing
     terminal.press("o");
-    terminal.waitForText("Welcome to Qtui Markdown Viewer");
+    terminal.waitForText("Welcome to Qamui Markdown Viewer");
     terminal.clickText("md4qt");
     terminal.expectText("Activated Link: https://github.com/KDE/md4qt");
 

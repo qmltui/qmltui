@@ -1,5 +1,5 @@
 #include "BtopModel.h"
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 
 #include <QDir>
 #include <QFile>
@@ -38,7 +38,7 @@ constexpr int kHistoryLength = 120;
 constexpr int kMaximumVisibleProcesses = 256;
 } // namespace
 
-using namespace qtui;
+using namespace qamui;
 
 QHash<uid_t, QString> BtopModel::s_uidCache;
 

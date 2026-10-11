@@ -41,7 +41,7 @@ Developers use `Enemy` to render varying enemy ship types in game models.
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Enemy {
     type: 1

@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 
 Terminal {
@@ -46,7 +46,7 @@ Terminal {
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
                 BigText {
-                    text: "QTUI 2026"
+                    text: "QAMUI 2026"
                     color: "cyan"
                     anchors.horizontalCenter: parent.horizontalCenter
                 }

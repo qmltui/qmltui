@@ -1,4 +1,4 @@
-if(NOT DEFINED QTUI_BUILD_DIR OR NOT DEFINED CONSUMER_SOURCE_DIR
+if(NOT DEFINED QAMUI_BUILD_DIR OR NOT DEFINED CONSUMER_SOURCE_DIR
    OR NOT DEFINED CONSUMER_BINARY_DIR OR NOT DEFINED INSTALL_PREFIX)
     message(FATAL_ERROR "Installed consumer paths were not provided")
 endif()
@@ -18,14 +18,14 @@ if(DEFINED CONSUMER_BUILD_TYPE AND NOT "${CONSUMER_BUILD_TYPE}" STREQUAL "")
 endif()
 
 execute_process(
-    COMMAND "${CMAKE_COMMAND}" --install "${QTUI_BUILD_DIR}"
+    COMMAND "${CMAKE_COMMAND}" --install "${QAMUI_BUILD_DIR}"
             --prefix "${INSTALL_PREFIX}"
     RESULT_VARIABLE install_result
     OUTPUT_VARIABLE install_output
     ERROR_VARIABLE install_error
 )
 if(NOT install_result EQUAL 0)
-    message(FATAL_ERROR "Qtui install failed:\n${install_output}\n${install_error}")
+    message(FATAL_ERROR "Qamui install failed:\n${install_output}\n${install_error}")
 endif()
 
 execute_process(
@@ -33,11 +33,11 @@ execute_process(
             -S "${CONSUMER_SOURCE_DIR}"
             -B "${CONSUMER_BINARY_DIR}"
             ${consumer_generator_args}
-            # The Qt that built Qtui must win over any other Qt reachable from
+            # The Qt that built Qamui must win over any other Qt reachable from
             # PATH (WSL exposes Windows installations, for example).
             "-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};${consumer_qt_prefix}"
             "-DQt6_DIR=${Qt6_DIR}"
-            "-DQTUI_PUBLIC_HEADERS=${QTUI_BUILD_DIR}/qtui_public_headers.h"
+            "-DQAMUI_PUBLIC_HEADERS=${QAMUI_BUILD_DIR}/qamui_public_headers.h"
     RESULT_VARIABLE configure_result
     OUTPUT_VARIABLE configure_output
     ERROR_VARIABLE configure_error
@@ -60,10 +60,10 @@ get_filename_component(qt_prefix "${Qt6_DIR}/../../.." ABSOLUTE)
 set(runtime_library_path
     "${INSTALL_PREFIX}/lib:${qt_prefix}/lib:$ENV{LD_LIBRARY_PATH}")
 
-set(consumer_executable "${CONSUMER_BINARY_DIR}/qtui_installed_custom_item_consumer")
+set(consumer_executable "${CONSUMER_BINARY_DIR}/qamui_installed_custom_item_consumer")
 if(WIN32)
     string(APPEND consumer_executable ".exe")
-    # DLLs are found through PATH on Windows; Qtui installs its runtime next to
+    # DLLs are found through PATH on Windows; Qamui installs its runtime next to
     # the QML modules. Set the environment directly: a PATH value holds
     # semicolons, which CMake would otherwise treat as list separators.
     file(GLOB_RECURSE consumer_dll_paths "${INSTALL_PREFIX}/*.dll")

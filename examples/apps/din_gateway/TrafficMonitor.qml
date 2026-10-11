@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
+import Qamui
 import DinGatewayApp
 
 Rectangle {

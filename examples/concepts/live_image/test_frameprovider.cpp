@@ -24,7 +24,7 @@ private slots:
 
         auto* response = provider.requestImageResponse(QStringLiteral("radar?tick=2"), QSize(80, 40));
         QVERIFY(response);
-        QSignalSpy finished(response, &qtui::ImageResponse::finished);
+        QSignalSpy finished(response, &qamui::ImageResponse::finished);
         QVERIFY(finished.wait(1000));
         QCOMPARE(response->image().size(), QSize(80, 40));
         QVERIFY(!response->image().isNull());

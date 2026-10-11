@@ -1,10 +1,10 @@
 ---
 title: NumberAnimation
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: PropertyAnimation
-cpp: qtui::NumberAnimation
+cpp: qamui::NumberAnimation
 category: animation and state
 summary: _TODO_
 ---
@@ -15,8 +15,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [PropertyAnimation](propertyanimation.md) |
 
 ## Detailed Description
@@ -27,7 +27,7 @@ _TODO_
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     // _TODO_ show NumberAnimation in use

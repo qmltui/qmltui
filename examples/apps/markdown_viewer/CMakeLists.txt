@@ -14,10 +14,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(md4qt)
 
-qt_add_library(qtui_markdown_viewer_module STATIC)
+qt_add_library(qamui_markdown_viewer_module STATIC)
 
-qt_add_qml_module(qtui_markdown_viewer_module
-    URI Qtui.Examples.MarkdownViewer
+qt_add_qml_module(qamui_markdown_viewer_module
+    URI Qamui.Examples.MarkdownViewer
     VERSION 1.0
     SOURCES
         MdRole.h
@@ -46,59 +46,59 @@ qt_add_qml_module(qtui_markdown_viewer_module
     RESOURCES
         resources/modern_showcase.md
         resources/welcome.md
-        resources/qtui_guide.md
+        resources/qamui_guide.md
         resources/cheatsheet.md
         resources/edge_cases.md
         test_markdown_viewer.js
     DEPENDENCIES
-        TARGET Qtui::Core
-        TARGET Qtui::Controls
-        TARGET Qtui::Controls
+        TARGET Qamui::Core
+        TARGET Qamui::Controls
+        TARGET Qamui::Controls
 )
 
-target_include_directories(qtui_markdown_viewer_module
+target_include_directories(qamui_markdown_viewer_module
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${md4qt_SOURCE_DIR}/src ${md4qt_SOURCE_DIR}
 )
 
-target_compile_definitions(qtui_markdown_viewer_module PRIVATE MD4QT_QT_SUPPORT)
+target_compile_definitions(qamui_markdown_viewer_module PRIVATE MD4QT_QT_SUPPORT)
 
-target_link_libraries(qtui_markdown_viewer_module PRIVATE
+target_link_libraries(qamui_markdown_viewer_module PRIVATE
     Qt6::Core
     Qt6::Qml
     Qt6::Gui
-    Qtui::Core
-    Qtui::Controls
-    Qtui::Controls
+    Qamui::Core
+    Qamui::Controls
+    Qamui::Controls
     md4qt::md4qt
 )
 
-qt_add_executable(qtui_markdown_viewer main.cpp)
-target_link_libraries(qtui_markdown_viewer PRIVATE
+qt_add_executable(qamui_markdown_viewer main.cpp)
+target_link_libraries(qamui_markdown_viewer PRIVATE
     Qt6::Core
     Qt6::Qml
-    qtui_markdown_viewer_moduleplugin
+    qamui_markdown_viewer_moduleplugin
 )
 
-if(QTUI_INSTALL_EXAMPLES)
-    install(TARGETS qtui_markdown_viewer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(QAMUI_INSTALL_EXAMPLES)
+    install(TARGETS qamui_markdown_viewer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endif()
 
-if(TARGET Qtui::Runner)
-    qt_add_executable(qtui_markdown_viewer_test_runner main_test_runner.cpp)
-    target_link_libraries(qtui_markdown_viewer_test_runner PRIVATE
+if(TARGET Qamui::Runner)
+    qt_add_executable(qamui_markdown_viewer_test_runner main_test_runner.cpp)
+    target_link_libraries(qamui_markdown_viewer_test_runner PRIVATE
         Qt6::Core
         Qt6::Qml
-        Qtui::Core
-        Qtui::Runner
-        qtui_markdown_viewer_moduleplugin
+        Qamui::Core
+        Qamui::Runner
+        qamui_markdown_viewer_moduleplugin
     )
 
-    if(QTUI_BUILD_TESTS)
+    if(QAMUI_BUILD_TESTS)
         function(add_markdown_viewer_scenario name columns rows)
             add_test(NAME ${name} COMMAND
                 "${CMAKE_COMMAND}"
-                "-DTEST_EXECUTABLE=$<TARGET_FILE:qtui_markdown_viewer_test_runner>"
+                "-DTEST_EXECUTABLE=$<TARGET_FILE:qamui_markdown_viewer_test_runner>"
                 "-DARTIFACT_DIR=${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts/${name}"
                 "-DEXPECT_EXIT=0"
                 "-DPROCESS_TIMEOUT=20"
@@ -108,7 +108,7 @@ if(TARGET Qtui::Runner)
                 "-DSCENARIO_TIMEOUT_MS=15000"
                 "-DQML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
                 "-DEMBEDDED_SCENARIO=ON"
-                "-P" "${PROJECT_SOURCE_DIR}/cmake/RunQtuiScenario.cmake"
+                "-P" "${PROJECT_SOURCE_DIR}/cmake/RunQamuiScenario.cmake"
             )
             set_tests_properties(${name} PROPERTIES
                 TIMEOUT 23
@@ -120,13 +120,13 @@ if(TARGET Qtui::Runner)
     endif()
 endif()
 
-if(QTUI_BUILD_TESTS)
+if(QAMUI_BUILD_TESTS)
     qt_add_executable(test_markdown_viewer_document test_markdown_viewer.cpp)
     target_link_libraries(test_markdown_viewer_document PRIVATE
         Qt6::Core
         Qt6::Test
-        Qtui::Core
-        qtui_markdown_viewer_module
+        Qamui::Core
+        qamui_markdown_viewer_module
     )
     add_test(NAME markdown_viewer_document COMMAND test_markdown_viewer_document)
     set_tests_properties(markdown_viewer_document PROPERTIES LABELS AgentSmoke)

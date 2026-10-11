@@ -1,4 +1,4 @@
-# Qtui 0.4 acceptance checks
+# Qamui 0.4 acceptance checks
 
 ## Scope and method
 

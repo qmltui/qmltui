@@ -7,7 +7,7 @@
 #include <QQmlEngine>
 #include <QQmlError>
 
-#include <Qtui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/Color.h>
 
 #include <memory>
 
@@ -21,15 +21,15 @@ QString errorText(const QQmlComponent &component)
     return messages.join(QLatin1Char('\n'));
 }
 
-bool verifyQtuiRgba(QQmlEngine &engine)
+bool verifyQamuiRgba(QQmlEngine &engine)
 {
     QQmlComponent component(&engine);
     component.setData(R"qml(
         import QtQml
-        import Qtui
+        import Qamui
 
         QtObject {
-            property rgba accent: Qtui.rgba(0.2, 0.4, 0.6, 1.0)
+            property rgba accent: Qamui.rgba(0.2, 0.4, 0.6, 1.0)
         }
     )qml", QUrl());
 
@@ -48,16 +48,16 @@ bool verifyQtuiRgba(QQmlEngine &engine)
 
     const QMetaProperty property = object->metaObject()->property(index);
     const QVariant value = property.read(object.get());
-    const qtui::Color color = value.value<qtui::Color>();
+    const qamui::Color color = value.value<qamui::Color>();
     qInfo().noquote()
         << "property rgba accent"
         << "declared type:" << property.typeName()
         << "stored type:" << value.metaType().name()
         << "value:" << color.toString();
 
-    return QByteArray(property.typeName()) == "qtui::Color"
-        && QByteArray(value.metaType().name()) == "qtui::Color"
-        && color == qtui::Color("#336699");
+    return QByteArray(property.typeName()) == "qamui::Color"
+        && QByteArray(value.metaType().name()) == "qamui::Color"
+        && color == qamui::Color("#336699");
 }
 
 bool verifyBuiltinColorIsUnavailable(QQmlEngine &engine)
@@ -65,7 +65,7 @@ bool verifyBuiltinColorIsUnavailable(QQmlEngine &engine)
     QQmlComponent component(&engine);
     component.setData(R"qml(
         import QtQml
-        import Qtui
+        import Qamui
 
         QtObject {
             property color accent: "#336699"
@@ -87,9 +87,9 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QQmlEngine engine;
-    engine.addImportPath(QStringLiteral(QTUI_QML_IMPORT_PATH));
+    engine.addImportPath(QStringLiteral(QAMUI_QML_IMPORT_PATH));
 
-    const bool qtuiRgbaWorks = verifyQtuiRgba(engine);
+    const bool qamuiRgbaWorks = verifyQamuiRgba(engine);
     const bool builtinColorIsUnavailable = verifyBuiltinColorIsUnavailable(engine);
-    return qtuiRgbaWorks && builtinColorIsUnavailable ? 0 : 1;
+    return qamuiRgbaWorks && builtinColorIsUnavailable ? 0 : 1;
 }

@@ -3,11 +3,11 @@
 #include <QTest>
 #include <string>
 
-#include <Qtui/Core/primitives/ColorMapper.h>
-#include <Qtui/Core/primitives/AnsiEncoder_p.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/AnsiEncoder_p.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 

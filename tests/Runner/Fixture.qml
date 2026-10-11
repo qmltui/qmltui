@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: root
@@ -13,7 +13,7 @@ Terminal {
     property int tickCount: 0
     property bool ticking: false
 
-    // Virtual-clock probes: a repeating QML Timer counter and a Qtui
+    // Virtual-clock probes: a repeating QML Timer counter and a Qamui
     // animation, both armed on demand so real-clock scenarios stay still.
     Timer {
         interval: 100

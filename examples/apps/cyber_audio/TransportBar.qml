@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 // One-row transport strip: seek bar for files, status text otherwise, errors in red.
 Rectangle {

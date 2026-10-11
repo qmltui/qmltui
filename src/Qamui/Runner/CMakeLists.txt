@@ -1,0 +1,67 @@
+add_library(QamuiRunner
+    Runner.h
+    Runner.cpp
+    MemoryTerminalBackend.h
+    MemoryTerminalBackend.cpp
+)
+
+# Configuring the Runner target is what makes the scenario helpers
+# (qamui_add_scenario, qamui_add_scenario_test, qamui_scenario_editor_support)
+# available: CMake functions are global once defined, and this directory is
+# processed before examples/, tests/ and any FetchContent/add_subdirectory
+# consumer's own directories. No other CMakeLists.txt in the tree includes the
+# module; installed consumers get it from QamuiConfig.cmake. The editor-support
+# helper also needs the source location of the scenario API declarations.
+include("${PROJECT_SOURCE_DIR}/cmake/QamuiRunner.cmake")
+set(QAMUI_RUNNER_DECLARATIONS "${CMAKE_CURRENT_SOURCE_DIR}/qamui-runner.d.ts"
+    CACHE INTERNAL "Source location of the Runner scenario API declarations")
+
+target_compile_definitions(QamuiRunner PRIVATE QAMUI_RUNNER_LIBRARY)
+add_library(Qamui::Runner ALIAS QamuiRunner)
+set_target_properties(QamuiRunner PROPERTIES EXPORT_NAME Runner)
+
+target_include_directories(QamuiRunner PUBLIC
+    $<BUILD_INTERFACE:${Qamui_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_link_libraries(QamuiRunner PUBLIC
+    Qt6::Qml
+    Qamui::Core
+)
+
+# The auto-hook (Runner.cpp's file-scope RunnerAutoHook) sits in a
+# translation unit that nothing references, so the linker drops it from the
+# static archive unless the archive is force-loaded. Reference the namespaced
+# target: it is an ALIAS in this build tree and an IMPORTED target for
+# find_package() consumers, so the expression resolves in both. Using the
+# unnamespaced name here would export a build-tree target name and break
+# every consumer at generate time.
+if(MSVC)
+    target_link_options(QamuiRunner INTERFACE
+        $<$<LINK_LANGUAGE:CXX>:/WHOLEARCHIVE:$<TARGET_FILE:Qamui::Runner>>
+    )
+elseif(APPLE)
+    # ld64 has no --whole-archive; -force_load takes the archive path directly.
+    target_link_options(QamuiRunner INTERFACE
+        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,-force_load,$<TARGET_FILE:Qamui::Runner>>
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_options(QamuiRunner INTERFACE
+        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,--whole-archive $<TARGET_FILE:Qamui::Runner> -Wl,--no-whole-archive>
+    )
+endif()
+
+if(QAMUI_ENABLE_RUNNER)
+    install(TARGETS QamuiRunner
+        EXPORT QamuiTargets
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+    qamui_install_headers(Qamui/Runner FILES Runner.h MemoryTerminalBackend.h)
+    # Editor completion for scenario authors: referenced from a jsconfig.json,
+    # not compiled, so it is not part of the public-header check.
+    install(FILES qamui-runner.d.ts
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Qamui/Runner")
+endif()

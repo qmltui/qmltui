@@ -1,10 +1,10 @@
 ---
 title: Layout
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: 
-cpp: qtui::Layout
+cpp: qamui::Layout
 category: layout
 summary: _TODO_
 ---
@@ -15,8 +15,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -48,7 +48,7 @@ _TODO_
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     // _TODO_ show Layout in use

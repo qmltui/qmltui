@@ -22,7 +22,7 @@ to the code:
 
 | Content | Source location | Who writes it |
 | :--- | :--- | :--- |
-| C++ class reference | `src/Qtui/<module>/doc/*.md` (already exists) | Library authors |
+| C++ class reference | `src/Qamui/<module>/doc/*.md` (already exists) | Library authors |
 | QML type reference | `docs/components/<type>.md` (new, one per type, Plan 04 template) | Library authors |
 | Guides | `docs/guide/*.md` (new; absorbs `architecture.md`, `custom_items.md`, `qml_api.md`) | Library authors |
 | Quickstart | `examples/quickstart/` (Plan 00) | CI-compiled code |
@@ -42,7 +42,7 @@ them in:
 ```
 
 `scripts/sync-content.mjs` copies `docs/components/*.md`, `docs/guide/*.md`,
-`src/Qtui/**/doc/*.md`, and `examples/quickstart/*` into
+`src/Qamui/**/doc/*.md`, and `examples/quickstart/*` into
 `website/src/content/` (gitignored), rewriting relative links. Markdown files
 carry frontmatter (`title`, `import`, `since`, `inherits`, `category`) that the
 catalog page reads.
@@ -96,10 +96,10 @@ markdown file, so adding a component doc never requires touching the site.
    ```bash
    cmake -S . -B build
    cmake --build build
-   ./build/hello_qtui
+   ./build/hello_qamui
    ```
 
-4. "Why Qtui": three short columns. Declarative QML vs immediate-mode Ratatui.
+4. "Why Qamui": three short columns. Declarative QML vs immediate-mode Ratatui.
    Real `QAbstractItemModel` views. Headless `TestRunner` for CI.
 5. Component catalog preview: six cards linking to `/components`.
 6. Showcase preview: four app casts linking to `/showcase`.
@@ -111,13 +111,13 @@ markdown file, so adding a component doc never requires touching the site.
 | Slug | Content | Source today |
 | :--- | :--- | :--- |
 | `quickstart` | The three files, the three commands, what to try next | New |
-| `why-qtui` | Positioning vs Ratatui, Textual, ncurses; when not to use it | New |
+| `why-qamui` | Positioning vs Ratatui, Textual, ncurses; when not to use it | New |
 | `concepts` | Retained mode, cell grid, frame commit, Frame vs Stream renderer | `docs/architecture.md` |
 | `layouts` | Anchors, Row, Column, ScrollView, integer geometry | `examples/concepts/layouts`, `anchors` |
 | `focus-and-keys` | Focus chain, `Keys`, the quit path | `examples/concepts/focus_and_keys` |
 | `cpp-models` | Feeding views from `QAbstractItemModel` | `docs/qml_api.md` |
-| `custom-items` | Subclassing `qtui::Item`, `paint()`, `CanvasPainter` | `docs/custom_items.md` |
-| `testing` | TestRunner scenarios, snapshots, CTest integration | `src/Qtui/TestRunner/doc/TestRunner.md` |
+| `custom-items` | Subclassing `qamui::Item`, `paint()`, `CanvasPainter` | `docs/custom_items.md` |
+| `testing` | TestRunner scenarios, snapshots, CTest integration | `src/Qamui/TestRunner/doc/TestRunner.md` |
 | `qt-creator` | F1 help, QML completion, kit setup | Plan 04 |
 
 Each guide page ends with a link to the concept example that demonstrates it.
@@ -137,7 +137,7 @@ on:
     paths:
       - 'website/**'
       - 'docs/**'
-      - 'src/Qtui/**/doc/**'
+      - 'src/Qamui/**/doc/**'
       - 'examples/quickstart/**'
   workflow_dispatch:
 

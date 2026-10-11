@@ -3,17 +3,17 @@
 A skinnable maintenance and commissioning console for headless embedded Linux
 devices, rendered over the serial console or SSH. Think "BIOS setup screen for
 your product": network configuration, service health, live logs, firmware
-update, and bus diagnostics — declarative QML on top of Qtui, with real Qt
+update, and bus diagnostics — declarative QML on top of Qamui, with real Qt
 backends (QtDBus, QtSerialBus) instead of shell scripts and `dialog(1)`.
 
-It starts life as an in-tree Qtui app (this directory) and is structured so it
+It starts life as an in-tree Qamui app (this directory) and is structured so it
 can graduate to its own repository once the page API settles.
 
 ## Why this app
 
 - Every embedded product team hand-rolls this UI today, badly.
 - No existing TUI framework has native D-Bus, CAN, and Modbus access; Qt does.
-- It exercises and showcases Qtui exactly where it beats ratatui/Textual:
+- It exercises and showcases Qamui exactly where it beats ratatui/Textual:
   model/view over live system data, retained-mode updates over a serial line,
   and agent-testable scenarios in CI without hardware.
 - It reuses proven patterns from `din_gateway` and `system_dashboard`.
@@ -39,7 +39,7 @@ Three layers, strictly separated so pages are testable without a device:
 
 ### Shell
 
-- `Terminal` root in frame renderer mode; `TabBar` (Qtui.Controls) or a
+- `Terminal` root in frame renderer mode; `TabBar` (Qamui.Controls) or a
   custom nav rail for page switching, `StackLayout` hosting pages.
 - Header: product name, hostname, clock, connection badge. Footer: active
   keybindings for the focused page (each page exposes a `keyHints` list).
@@ -61,10 +61,10 @@ deferred until at least two products consume the cockpit.
 
 One C++ interface per domain with two implementations: the real backend and a
 mock that ships in-tree and drives CI and demos. Selection via
-`QTUI_COCKPIT_MOCK=1` (same pattern the din_gateway backend simulates, made
+`QAMUI_COCKPIT_MOCK=1` (same pattern the din_gateway backend simulates, made
 explicit). Big or fast-changing collections are `QAbstractListModel`s with
 role-scoped `dataChanged`, not `QVariantList` snapshots — that is what makes
-Qtui's views cheap over a 115200-baud serial line.
+Qamui's views cheap over a 115200-baud serial line.
 
 | Provider | Real backend | Notes |
 | --- | --- | --- |
@@ -85,11 +85,11 @@ M2+; the D-Bus backends already go through the system bus, so the seam exists.
 
 - systemd unit running the cockpit on `ttyS0`/`tty1` as the getty alternative
   (`TTYPath=`, `StandardInput=tty`, `Restart=always`).
-- Desktop quickstart: `QTUI_COCKPIT_MOCK=1 ./device_cockpit` in any terminal.
+- Desktop quickstart: `QAMUI_COCKPIT_MOCK=1 ./device_cockpit` in any terminal.
 
 ### Testing
 
-Every page ships a `qtui_add_scenario_test` scenario running against the mock
+Every page ships a `qamui_add_scenario_test` scenario running against the mock
 providers: navigate to the page, assert rendered values from known mock data,
 drive one interaction (e.g. restart a service, apply a static IP), assert the
 toast and resulting state. Real-backend smoke tests are manual/on-target only.
@@ -105,7 +105,7 @@ backend is read-only until the NetworkManager backend lands. On-target
 validation on embedded targets is pending a device run.
 
 1. **Shell**: navigation, header, footer keybar, theme, toasts. Keyboard-first
-   (tab/arrow navigation, single-key page switching); mouse works where Qtui
+   (tab/arrow navigation, single-key page switching); mouse works where Qamui
    gives it for free.
 2. **Overview page**: `ProgressBar`/`Sparkline` for CPU, memory, temperature;
    uptime, disk usage bars, per-interface network badges.

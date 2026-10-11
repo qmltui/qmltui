@@ -1,4 +1,4 @@
-// Runs a real Qtui process under a pseudo-terminal and checks that the
+// Runs a real Qamui process under a pseudo-terminal and checks that the
 // terminal is restored on Ctrl+Z, taken back on fg, and restored again when
 // the process is killed. The memory backend cannot cover this: the point is
 // what reaches the real descriptor and what the tty's modes are afterwards.
@@ -41,11 +41,11 @@ public:
         if (pid < 0) return false;
         if (pid == 0) {
             ::setenv("TERM", "xterm-256color", 1);
-            ::setenv("QTUI_QUERY_TIMEOUT_MS", "5000", 1);   // the test answers by hand
-            for (const char* name : {"QTUI_RUNNER_SCRIPT", "QTUI_RUNNER_EVAL", "QTUI_RUNNER_CAPTURE_AFTER_MS",
-                                     "QTUI_RUNNER_EMBEDDED_SCENARIO", "QTUI_RUNNER_LIVE"})
+            ::setenv("QAMUI_QUERY_TIMEOUT_MS", "5000", 1);   // the test answers by hand
+            for (const char* name : {"QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL", "QAMUI_RUNNER_CAPTURE_AFTER_MS",
+                                     "QAMUI_RUNNER_EMBEDDED_SCENARIO", "QAMUI_RUNNER_LIVE"})
                 ::unsetenv(name);
-            ::execl(QTUI_SIGNAL_FIXTURE, QTUI_SIGNAL_FIXTURE, nullptr);
+            ::execl(QAMUI_SIGNAL_FIXTURE, QAMUI_SIGNAL_FIXTURE, nullptr);
             ::_exit(127);
         }
         return true;

@@ -1,7 +1,7 @@
 import QtQml
-import Qtui
-import Qtui.Controls
-import Qtui.Examples.DeviceCockpit
+import Qamui
+import Qamui.Controls
+import Qamui.Examples.DeviceCockpit
 
 // Static IPv4 editor. Tab cycles the fields, Enter applies, Esc cancels.
 Popup {

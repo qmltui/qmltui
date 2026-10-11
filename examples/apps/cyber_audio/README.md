@@ -1,6 +1,6 @@
 # Cyberpunk Audio Visualizer & Player (`cyber_audio`)
 
-A terminal spectrum visualizer and audio player built on Qtui. It analyzes real audio
+A terminal spectrum visualizer and audio player built on Qamui. It analyzes real audio
 with an FFT in C++ and renders a 24-band neon equalizer, stereo VU meters and a Braille
 oscilloscope that fill the whole terminal. Three sources feed the same display:
 
@@ -19,14 +19,14 @@ configure output.
 ## Usage
 
 ```bash
-qtui_cyber_audio [--mic | --demo] [--volume <0-100>] [media...]
+qamui_cyber_audio [--mic | --demo] [--volume <0-100>] [media...]
 
-qtui_cyber_audio ~/Music/album/            # play a directory (recursive, sorted)
-qtui_cyber_audio track.flac other.mp3      # explicit playlist
-qtui_cyber_audio https://host/stream.mp3   # URLs are passed to QMediaPlayer
-qtui_cyber_audio --mic                     # live microphone visualizer
-qtui_cyber_audio --demo                    # procedural showcase, no audio needed
-qtui_cyber_audio                           # idle: press M or restart with media
+qamui_cyber_audio ~/Music/album/            # play a directory (recursive, sorted)
+qamui_cyber_audio track.flac other.mp3      # explicit playlist
+qamui_cyber_audio https://host/stream.mp3   # URLs are passed to QMediaPlayer
+qamui_cyber_audio --mic                     # live microphone visualizer
+qamui_cyber_audio --demo                    # procedural showcase, no audio needed
+qamui_cyber_audio                           # idle: press M or restart with media
 ```
 
 Directories are scanned for `mp3 flac wav ogg oga opus m4a aac wma aiff aif`. Files
@@ -108,7 +108,7 @@ main.cpp / main_test.cpp ──cliOptions──▶ Main.qml ──▶ AudioEngin
   the `WaveformTrace` shape; `KeyMapBar` reuses `KeyHint`. Colors and text helpers live in the
   `Theme` singleton. App-specific components take the engine as a `required property`;
   `KeyHint`, `VuMeter`, `WaveformTrace` and `Theme` do not know about it and can be
-  copied into other Qtui projects.
+  copied into other Qamui projects.
 - `SpectrumAnalyzer` (`SpectrumAnalyzer.h/.cpp`) is plain C++ with no Qt Multimedia
   dependency, so it is unit tested directly.
 - `AudioEngine` ticks every 33 ms. Decoded PCM is queued and consumed one tick's worth
@@ -117,19 +117,19 @@ main.cpp / main_test.cpp ──cliOptions──▶ Main.qml ──▶ AudioEngin
   level property notifies through a single `levelsChanged()` per tick.
 - Multimedia code is compiled only when `CYBER_AUDIO_HAVE_MULTIMEDIA` is 1. Backends
   are created lazily on first use, so demo runs never touch the audio system.
-- The example does not use `Behavior`, so it builds with `QTUI_ENABLE_BEHAVIOR` on or
+- The example does not use `Behavior`, so it builds with `QAMUI_ENABLE_BEHAVIOR` on or
   off. Toggling a panel animates the others into the freed space through the
   `spectrumShare` transition; accent colors
   switch instantly.
-- The production binary does not link `Qtui::Runner` and starts idle without media;
-  `qtui_cyber_audio_test` links it and defaults to the demo source so scenarios are
+- The production binary does not link `Qamui::Runner` and starts idle without media;
+  `qamui_cyber_audio_test` links it and defaults to the demo source so scenarios are
   deterministic (`--idle` opts out).
 
 ## Building and testing
 
 ```bash
-cmake -S . -B build -DQTUI_BUILD_TESTS=ON -DQTUI_BUILD_EXAMPLES=ON
-cmake --build build --target qtui_cyber_audio qtui_cyber_audio_test test_cyber_audio_dsp
+cmake -S . -B build -DQAMUI_BUILD_TESTS=ON -DQAMUI_BUILD_EXAMPLES=ON
+cmake --build build --target qamui_cyber_audio qamui_cyber_audio_test test_cyber_audio_dsp
 ctest --test-dir build -R 'cyber_audio' --output-on-failure
 ```
 
@@ -138,12 +138,12 @@ ctest --test-dir build -R 'cyber_audio' --output-on-failure
 - `cyber_audio_demo_smoke`: Runner scenario against committed frames in demo mode.
 
 To inspect real playback without a terminal session, generate a WAV and run the test
-binary with `QTUI_RUNNER_EVAL`:
+binary with `QAMUI_RUNNER_EVAL`:
 
 ```bash
-QTUI_RUNNER_EVAL="terminal.waitForText('FILE'); terminal.sleep(1500); terminal.captureText('play.txt');" \
-QTUI_RUNNER_COLUMNS=120 QTUI_RUNNER_ROWS=36 QTUI_RUNNER_ARTIFACT_DIR=/tmp/cyber \
-./build/examples/apps/cyber_audio/qtui_cyber_audio_test tone.wav
+QAMUI_RUNNER_EVAL="terminal.waitForText('FILE'); terminal.sleep(1500); terminal.captureText('play.txt');" \
+QAMUI_RUNNER_COLUMNS=120 QAMUI_RUNNER_ROWS=36 QAMUI_RUNNER_ARTIFACT_DIR=/tmp/cyber \
+./build/examples/apps/cyber_audio/qamui_cyber_audio_test tone.wav
 ```
 
 ## Troubleshooting
@@ -151,8 +151,8 @@ QTUI_RUNNER_COLUMNS=120 QTUI_RUNNER_ROWS=36 QTUI_RUNNER_ARTIFACT_DIR=/tmp/cyber 
 - **No sound but the bars move:** the analysis reads the decoded PCM independently of
   the output device. Check the default audio output (PulseAudio / PipeWire).
 - **Flat bars and "No audio data received":** either the audio device is held by another
-  player (a second `qtui_cyber_audio` instance under WSLg receives no decoded PCM until the
+  player (a second `qamui_cyber_audio` instance under WSLg receives no decoded PCM until the
   first one quits), or the Qt Multimedia FFmpeg backend is missing; `QAudioBufferOutput` is
   served only by that backend.
-- **Qt Multimedia warnings after exit:** Qtui buffers Qt log messages while the
+- **Qt Multimedia warnings after exit:** Qamui buffers Qt log messages while the
   alternate screen is active and prints them when the application ends.

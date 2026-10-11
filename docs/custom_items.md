@@ -1,16 +1,16 @@
 # Creating Custom Items
 
-You can extend Qtui by creating custom C++ classes that inherit from `qtui::Item` and registering them with the QML engine. 
+You can extend Qamui by creating custom C++ classes that inherit from `qamui::Item` and registering them with the QML engine.
 
 ## 1. Class Definition
-Inherit from `qtui::Item`. Ensure you have the `Q_OBJECT` and `QML_ELEMENT` macros for QML integration.
+Inherit from `qamui::Item`. Ensure you have the `Q_OBJECT` and `QML_ELEMENT` macros for QML integration.
 If your item has custom properties, define them using `Q_PROPERTY`.
 
 ```cpp
 #pragma once
-#include <Qtui/Core/items/Item.h>
+#include <Qamui/Core/items/Item.h>
 
-namespace qtui {
+namespace qamui {
 
 class CustomBlock : public Item {
     Q_OBJECT
@@ -76,7 +76,7 @@ itself marks it `LayoutDirty` automatically.
 `paint()` and `paintOverlay()` are `const`: they write cells and nothing else.
 Keep lazily computed layout caches in `mutable` members. Invalidations that
 still reach the tree while painting (through pointers to other items) are
-retained but do not schedule a frame; run with `QTUI_DEBUG_PAINT_DIRTY=1` to
+retained but do not schedule a frame; run with `QAMUI_DEBUG_PAINT_DIRTY=1` to
 have each offending item reported once.
 
 Override the optional protected `paintOverlay()` hook only for content that

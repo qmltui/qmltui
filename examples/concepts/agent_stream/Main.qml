@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQml
 import QtQml.Models
 import Qt.labs.qmlmodels
-import Qtui
+import Qamui
 
 Terminal {
     id: root
@@ -107,7 +107,7 @@ Terminal {
         }
 
         if (mainCmd === "/tree") {
-            addMessage(Main.RepoTreeMessage, "", "~/Qtui Workspace");
+            addMessage(Main.RepoTreeMessage, "", "~/Qamui Workspace");
             return;
         }
 
@@ -127,7 +127,7 @@ Terminal {
         }
 
         if (mainCmd === "/doctor") {
-            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qtui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "Diagnostics");
+            addMessage(Main.SystemMessage, "System Status:\n" + "  ✓ Repository:   ~/Qamui (branch: main*)\n" + "  ✓ Runtime:      C++20 & Qt 6.11.1\n" + "  ✓ Stream:       Zero-Copy Atomic Buffer\n" + "  ✓ Components:   TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "  ✓ Status:       All systems nominal", "Diagnostics");
             return;
         }
 
@@ -563,18 +563,18 @@ Terminal {
                     root.addMessage(Main.ThoughtMessage, "Analyzing StreamRenderer buffer logic to eliminate resize flicker and clamp bounds.", "0.8s");
                 } else if (root.agentStep === 1) {
                     root.currentToolName = "Grep";
-                    root.addMessage(Main.ToolCallMessage, "query=\"promptRowToAnsi\", path=\"src/Qtui/engine/\"", "Grep");
+                    root.addMessage(Main.ToolCallMessage, "query=\"promptRowToAnsi\", path=\"src/Qamui/engine/\"", "Grep");
                 } else if (root.agentStep === 2) {
                     root.addMessage(Main.ToolResultMessage, "Found 3 matches across 2 files (StreamRenderer.h, StreamRenderer.cpp)");
                 } else if (root.agentStep === 3) {
                     root.currentToolName = "ViewFile";
-                    root.addMessage(Main.ToolCallMessage, "path=\"src/Qtui/engine/StreamRenderer.cpp\", lines=70-105", "ViewFile");
+                    root.addMessage(Main.ToolCallMessage, "path=\"src/Qamui/engine/StreamRenderer.cpp\", lines=70-105", "ViewFile");
                 } else if (root.agentStep === 4) {
                     root.addMessage(Main.ToolResultMessage, "Read 35 lines from StreamRenderer.cpp");
                 } else if (root.agentStep === 5) {
-                    root.currentDiffFile = "src/Qtui/engine/StreamRenderer.cpp";
+                    root.currentDiffFile = "src/Qamui/engine/StreamRenderer.cpp";
                     root.currentToolName = "EditFile";
-                    root.currentToolTarget = "src/Qtui/engine/StreamRenderer.cpp";
+                    root.currentToolTarget = "src/Qamui/engine/StreamRenderer.cpp";
                     root.currentToolAction = "Clamp safeHeight and emit atomic buffer flush (+3, -1 lines)";
 
                     root.addMessage(Main.DiffMessage, "", root.currentDiffFile);
@@ -589,9 +589,9 @@ Terminal {
                     }
                 } else if (root.agentStep === 6) {
                     root.currentToolName = "Bash";
-                    root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build qtui_agent_stream_demo\"", "Bash");
+                    root.addMessage(Main.ToolCallMessage, "command=\"ninja -C build qamui_agent_stream_demo\"", "Bash");
                 } else if (root.agentStep === 7) {
-                    root.addMessage(Main.ToolResultMessage, "Built target qtui_agent_stream_demo (exit 0, 0.28s)");
+                    root.addMessage(Main.ToolResultMessage, "Built target qamui_agent_stream_demo (exit 0, 0.28s)");
                 } else if (root.agentStep === 8) {
                     root.currentToolName = "CTest";
                     root.addMessage(Main.ToolCallMessage, "command=\"ctest --test-dir build -R agent_stream\"", "CTest");
@@ -612,7 +612,7 @@ Terminal {
                     root.addMessage(Main.ThoughtMessage, "Spawning 3 parallel subagent workers (Memory, QML bindings, Concurrency).", "0.6s");
                 } else if (root.agentStep === 1) {
                     root.currentToolName = "Subagent(MemoryAuditor)";
-                    root.addMessage(Main.ToolCallMessage, "scope=\"src/Qtui/engine/\", check=\"leaks\"", "Subagent");
+                    root.addMessage(Main.ToolCallMessage, "scope=\"src/Qamui/engine/\", check=\"leaks\"", "Subagent");
                 } else if (root.agentStep === 2) {
                     root.addMessage(Main.ToolResultMessage, "MemoryAuditor: 0 heap leaks, 0 use-after-free conditions (checked 18 classes)");
                 } else if (root.agentStep === 3) {
@@ -642,9 +642,9 @@ Terminal {
                     root.addMessage(Main.ToolResultMessage, "Identified edge case in wide-character column clipping");
                 } else if (root.agentStep === 3) {
                     root.currentToolName = "SecurityPatch";
-                    root.currentToolTarget = "src/Qtui/engine/TextGridBuffer.cpp";
+                    root.currentToolTarget = "src/Qamui/engine/TextGridBuffer.cpp";
                     root.currentToolAction = "Add displayWidth boundary clamp (+4, -1 lines)";
-                    root.addMessage(Main.DiffMessage, "", "src/Qtui/engine/TextGridBuffer.cpp");
+                    root.addMessage(Main.DiffMessage, "", "src/Qamui/engine/TextGridBuffer.cpp");
 
                     if (!root.sessionAlwaysAllow) {
                         root.permissionIndex = 0;
@@ -668,7 +668,7 @@ Terminal {
                     root.currentToolName = "RepoIndexer";
                     root.addMessage(Main.ThoughtMessage, "Scanning repository workspace hierarchy and file layout...", "0.4s");
                 } else if (root.agentStep === 1) {
-                    root.addMessage(Main.RepoTreeMessage, "", "~/Qtui Workspace");
+                    root.addMessage(Main.RepoTreeMessage, "", "~/Qamui Workspace");
                 } else {
                     root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: StreamRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Inline session: agent output stays in terminal scrollback", "Agent", "1.2k tokens · 0.9s");
                     toast.notify("Workspace tree indexed", "info");

@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Column {
     id: treeCard
@@ -15,7 +15,7 @@ Column {
             bold: true
         }
         Text {
-            text: " " + (treeCard.title || "~/Qtui")
+            text: " " + (treeCard.title || "~/Qamui")
             color: "white"
             bold: true
         }
@@ -30,11 +30,11 @@ Column {
 
         Component.onCompleted: {
             repoTreeView.rootNode = {
-                "text": "Qtui (Repository Root)",
+                "text": "Qamui (Repository Root)",
                 "expanded": true,
                 "children": [
                     {
-                        "text": "src/Qtui/engine",
+                        "text": "src/Qamui/engine",
                         "expanded": true,
                         "children": [
                             { "text": "StreamRenderer.cpp [Optimized]", "expanded": false },

@@ -11,12 +11,12 @@
 #include <QQmlEngine>
 #include <memory>
 
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/primitives/Cell.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/primitives/Cell.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 QString frameText(TerminalEngine* engine) {
@@ -34,7 +34,7 @@ QString frameText(TerminalEngine* engine) {
 
 std::unique_ptr<QObject> load(QQmlEngine& qml, const char* source, Terminal** terminal) {
     QQmlComponent component(&qml);
-    component.setData(QByteArray("import QtQml\nimport Qtui\nimport Qtui.Controls\n") + source, QUrl());
+    component.setData(QByteArray("import QtQml\nimport Qamui\nimport Qamui.Controls\n") + source, QUrl());
     std::unique_ptr<QObject> object(component.create());
     if (!object) qWarning() << component.errorString();
     *terminal = qobject_cast<Terminal*>(object.get());

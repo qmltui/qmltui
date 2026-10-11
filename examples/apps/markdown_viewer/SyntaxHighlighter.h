@@ -2,11 +2,11 @@
 
 #include <QString>
 #include <QList>
-#include <Qtui/Core/primitives/Cell.h>
+#include <Qamui/Core/primitives/Cell.h>
 
 #include "MdRole.h"
 
-namespace qtui {
+namespace qamui {
 
 struct StyledSpan {
     QString text;
@@ -42,4 +42,4 @@ private:
     static bool isType(const QString &word, Language lang);
 };
 
-} // namespace qtui
+} // namespace qamui

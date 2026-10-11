@@ -1,9 +1,9 @@
-// Boot to Qtui device setup smoke scenario.
+// Boot to Qamui device setup smoke scenario.
 
 // Boots into the network page with brand header and tab bar.
 function main(terminal) {
     terminal.waitForCondition((frameText) =>
-        frameText.includes("Boot to Qtui")
+        frameText.includes("Boot to Qamui")
         && frameText.includes("[F1] Network")
         && frameText.includes("Wi-Fi Authentication")
         && frameText.includes("Remote Access")

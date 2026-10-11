@@ -49,7 +49,7 @@ Developers use `Gauge` in monitoring dashboards to display live sensor values li
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 Gauge {

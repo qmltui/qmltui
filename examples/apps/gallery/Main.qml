@@ -1,16 +1,16 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// Qtui Gallery: a full-screen grid of component tiles. Arrow keys (or hjkl)
+// Qamui Gallery: a full-screen grid of component tiles. Arrow keys (or hjkl)
 // move the selection, Enter or Space opens the selected component's demo,
 // and a mouse click opens a tile directly. Escape leaves a demo; in the grid
 // Escape or Q quits.
 //
 // Every demo is a complete standalone app under examples/, each with its own
 // imports and Terminal root. This launcher receives their text through the
-// qtuiExampleSources context property (main.cpp reads the resources, the web
+// qamuiExampleSources context property (main.cpp reads the resources, the web
 // page passes what its editor holds), swaps the root Terminal for an Item, and
 // instantiates the result inside the demo panel. The web page shows the same
 // text in its editor, so what is read is what runs.
@@ -18,7 +18,7 @@ Terminal {
     id: root
     // The title names the open example so a host can follow along: the wasm
     // page listens to xterm's title event and puts that file into its editor.
-    title: showingDemo && current ? "Qtui Gallery · " + current.file : "Qtui Gallery"
+    title: showingDemo && current ? "Qamui Gallery · " + current.file : "Qamui Gallery"
     color: "#0b0f14"
 
     // Palette
@@ -46,10 +46,10 @@ Terminal {
     readonly property int gridOffsetX: Math.max(0, Math.floor((grid.width - (columns * (tileWidth + gap) - gap)) / 2))
 
     // The example files: { "Button.qml": "<source>", ... } as a JSON string.
-    readonly property var sources: typeof qtuiExampleSources === "string" ? JSON.parse(qtuiExampleSources) : ({})
-    // A host that edits the code itself (the wasm page) sets qtuiGalleryPage:
+    readonly property var sources: typeof qamuiExampleSources === "string" ? JSON.parse(qamuiExampleSources) : ({})
+    // A host that edits the code itself (the wasm page) sets qamuiGalleryPage:
     // the file to open at startup, "" for the grid.
-    readonly property bool hostedByEditor: typeof qtuiGalleryPage === "string"
+    readonly property bool hostedByEditor: typeof qamuiGalleryPage === "string"
 
     // The running demo, created from its file's text, and any error doing so.
     property Item demoItem: null
@@ -58,7 +58,7 @@ Terminal {
     // One entry per tile: name, module badge, a one-line blurb, a glyph
     // preview drawn in the accent colour, and the example file. Only entries
     // whose file the host provided are shown, so a build without Behavior or
-    // Qtui.Image simply has fewer tiles.
+    // Qamui.Image simply has fewer tiles.
     readonly property var catalog: allEntries.filter(entry => entry.file in sources)
     readonly property var allEntries: [
         { name: "Button", badge: "Controls", accent: "#65e6a0", preview: "[ Primary ]  [ Cancel ]",
@@ -301,7 +301,7 @@ Terminal {
     Component.onCompleted: {
         if (!hostedByEditor)
             return
-        const index = catalog.findIndex(entry => entry.file === qtuiGalleryPage)
+        const index = catalog.findIndex(entry => entry.file === qamuiGalleryPage)
         if (index >= 0) {
             currentIndex = index
             openCurrent()
@@ -352,7 +352,7 @@ Terminal {
         Text {
             x: 2; y: 0
             visible: !root.showingDemo
-            text: "Qtui Gallery"
+            text: "Qamui Gallery"
             bold: true
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -367,7 +367,7 @@ Terminal {
             anchors.right: scrollInfo.left
             anchors.rightMargin: 2
             visible: !root.showingDemo
-            text: root.catalog.length + " components from Qtui and Qtui.Controls, rendered in text cells"
+            text: root.catalog.length + " components from Qamui and Qamui.Controls, rendered in text cells"
             color: root.mutedColor
         }
         Text {

@@ -5,10 +5,10 @@ find_package(Qt6 OPTIONAL_COMPONENTS Multimedia QUIET)
 set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 # Each executable owns the QML module (as table_view does) so Qt writes the
-# build tree's QML import path into a qt.conf beside it and `import Qtui.Controls`
+# build tree's QML import path into a qt.conf beside it and `import Qamui.Controls`
 # resolves when the binary is launched from Qt Creator or a shell. A shared
 # static module library would not get that treatment, and since no C++ symbol
-# of Qtui::Controls is referenced the linker drops the library that carries
+# of Qamui::Controls is referenced the linker drops the library that carries
 # the module's qmldir.
 set(cyber_audio_sources
     AudioEngine.h
@@ -53,11 +53,11 @@ function(cyber_audio_add_executable target uri main_source)
         SOURCES ${cyber_audio_sources}
         QML_FILES ${cyber_audio_qml_files}
         DEPENDENCIES
-            TARGET Qtui::Core
-            TARGET Qtui::Controls
+            TARGET Qamui::Core
+            TARGET Qamui::Controls
     )
     target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(${target} PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
+    target_link_libraries(${target} PRIVATE Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
     if(TARGET Qt6::Multimedia)
         target_link_libraries(${target} PRIVATE Qt6::Multimedia)
         target_compile_definitions(${target} PRIVATE CYBER_AUDIO_HAVE_MULTIMEDIA=1)
@@ -72,17 +72,17 @@ else()
     message(STATUS "cyber_audio: Qt Multimedia not found, demo source only")
 endif()
 
-cyber_audio_add_executable(qtui_cyber_audio CyberAudio main.cpp)
+cyber_audio_add_executable(qamui_cyber_audio CyberAudio main.cpp)
 
-if(TARGET Qtui::Runner)
-    cyber_audio_add_executable(qtui_cyber_audio_test CyberAudio main_test.cpp
+if(TARGET Qamui::Runner)
+    cyber_audio_add_executable(qamui_cyber_audio_test CyberAudio main_test.cpp
         "${CMAKE_CURRENT_BINARY_DIR}/qml_test/CyberAudio")
-    target_link_libraries(qtui_cyber_audio_test PRIVATE Qtui::Runner)
+    target_link_libraries(qamui_cyber_audio_test PRIVATE Qamui::Runner)
 
-    if(QTUI_BUILD_TESTS)
-        qtui_add_scenario_test(
+    if(QAMUI_BUILD_TESTS)
+        qamui_add_scenario_test(
             NAME cyber_audio_demo_smoke
-            TARGET qtui_cyber_audio_test
+            TARGET qamui_cyber_audio_test
             SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_cyber_audio.js"
             COLUMNS 120
             ROWS 36
@@ -93,14 +93,14 @@ if(TARGET Qtui::Runner)
     endif()
 endif()
 
-if(QTUI_BUILD_TESTS)
+if(QAMUI_BUILD_TESTS)
     qt_add_executable(test_cyber_audio_dsp test_cyber_audio_dsp.cpp ${cyber_audio_sources})
     target_include_directories(test_cyber_audio_dsp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(test_cyber_audio_dsp PRIVATE
         Qt6::Core
         Qt6::Qml
         Qt6::Test
-        Qtui::Core
+        Qamui::Core
     )
     if(TARGET Qt6::Multimedia)
         target_link_libraries(test_cyber_audio_dsp PRIVATE Qt6::Multimedia)

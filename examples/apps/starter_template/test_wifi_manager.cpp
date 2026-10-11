@@ -19,18 +19,18 @@ private slots:
 
 void TestWifiManager::mockBackendIsDeterministic()
 {
-    qputenv("QTUI_STARTER_BACKEND", "mock");
+    qputenv("QAMUI_STARTER_BACKEND", "mock");
     WifiManager manager;
 
     QCOMPARE(manager.networks().size(), 2);
-    QCOMPARE(manager.networks().at(0).toMap().value("ssid").toString(), QStringLiteral("Qtui Lab"));
+    QCOMPARE(manager.networks().at(0).toMap().value("ssid").toString(), QStringLiteral("Qamui Lab"));
     QVERIFY(!manager.scanning());
     QVERIFY(!manager.connected());
 }
 
 void TestWifiManager::observeBackendRejectsMutations()
 {
-    qputenv("QTUI_STARTER_BACKEND", "observe");
+    qputenv("QAMUI_STARTER_BACKEND", "observe");
     WifiManager manager;
     QSignalSpy connectionResult(&manager, &WifiManager::connectionResult);
 
@@ -59,7 +59,7 @@ void TestWifiManager::statusCommandDoesNotBlockTimers()
 
     const QByteArray previousPath = qgetenv("PATH");
     qputenv("PATH", tools.path().toUtf8());
-    qputenv("QTUI_STARTER_BACKEND", "observe");
+    qputenv("QAMUI_STARTER_BACKEND", "observe");
 
     bool timerFired = false;
     QElapsedTimer elapsed;

@@ -22,7 +22,7 @@ concurrency:
 jobs:
   linux:
     name: linux / Behavior ${{ matrix.behavior }}
-    # A self-hosted Linux runner provides QTUI_QT_LINUX (the Qt prefix) in
+    # A self-hosted Linux runner provides QAMUI_QT_LINUX (the Qt prefix) in
     # its .env file; Ninja and CMake come from the machine.
     runs-on: [self-hosted, linux]
     strategy:
@@ -36,11 +36,11 @@ jobs:
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$QTUI_QT_LINUX"
-          -DQTUI_BUILD_TESTS=ON
-          -DQTUI_BUILD_EXAMPLES=ON
-          -DQTUI_ENABLE_TEST_RUNNER=ON
-          -DQTUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
+          -DCMAKE_PREFIX_PATH="$QAMUI_QT_LINUX"
+          -DQAMUI_BUILD_TESTS=ON
+          -DQAMUI_BUILD_EXAMPLES=ON
+          -DQAMUI_ENABLE_TEST_RUNNER=ON
+          -DQAMUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -50,7 +50,7 @@ jobs:
 
   windows:
     name: windows / Behavior ON
-    # A self-hosted Windows runner provides QTUI_QT_WINDOWS (the msvc2022_64
+    # A self-hosted Windows runner provides QAMUI_QT_WINDOWS (the msvc2022_64
     # prefix) in its .env file and has Visual Studio 2022 installed. Behavior
     # gating is exercised on Linux; one Windows configuration is enough.
     runs-on: [self-hosted, windows]
@@ -65,10 +65,10 @@ jobs:
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$env:QTUI_QT_WINDOWS"
-          -DQTUI_BUILD_TESTS=ON
-          -DQTUI_BUILD_EXAMPLES=ON
-          -DQTUI_ENABLE_TEST_RUNNER=ON
+          -DCMAKE_PREFIX_PATH="$env:QAMUI_QT_WINDOWS"
+          -DQAMUI_BUILD_TESTS=ON
+          -DQAMUI_BUILD_EXAMPLES=ON
+          -DQAMUI_ENABLE_TEST_RUNNER=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -79,7 +79,7 @@ jobs:
           # DLLs are found through PATH on Windows: Qt's bin plus every build
           # directory that holds one.
           $dllDirs = Get-ChildItem -Path build -Recurse -Filter *.dll | ForEach-Object { $_.DirectoryName } | Sort-Object -Unique
-          $env:PATH = "$env:QTUI_QT_WINDOWS\bin;" + ($dllDirs -join ';') + ";$env:PATH"
+          $env:PATH = "$env:QAMUI_QT_WINDOWS\bin;" + ($dllDirs -join ';') + ";$env:PATH"
           $env:QML2_IMPORT_PATH = "$PWD\build\qml"
           $env:QML_IMPORT_PATH = "$PWD\build\qml"
           $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -106,10 +106,10 @@ jobs:
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DQTUI_BUILD_TESTS=ON
-          -DQTUI_BUILD_EXAMPLES=ON
-          -DQTUI_ENABLE_TEST_RUNNER=ON
-          -DQTUI_ENABLE_BEHAVIOR=ON
+          -DQAMUI_BUILD_TESTS=ON
+          -DQAMUI_BUILD_EXAMPLES=ON
+          -DQAMUI_ENABLE_TEST_RUNNER=ON
+          -DQAMUI_ENABLE_BEHAVIOR=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -124,13 +124,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure exactly as a newcomer would, against this tree
-        # FETCHCONTENT_SOURCE_DIR_QTUI is CMake's standard override for a
+        # FETCHCONTENT_SOURCE_DIR_QAMUI is CMake's standard override for a
         # declared dependency; the quickstart files themselves are unchanged.
         run: >
           cmake -S examples/quickstart -B build-qs -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$QTUI_QT_LINUX"
-          -DFETCHCONTENT_SOURCE_DIR_QTUI=${{ github.workspace }}
+          -DCMAKE_PREFIX_PATH="$QAMUI_QT_LINUX"
+          -DFETCHCONTENT_SOURCE_DIR_QAMUI=${{ github.workspace }}
 
       - name: Build
         run: cmake --build build-qs --parallel 4
@@ -140,11 +140,11 @@ jobs:
         # the timeout kills it (exit 124). Any crash or QML load error exits early.
         run: |
           set +e
-          timeout 3 ./build-qs/hello_qtui < /dev/null > run.log 2>&1
+          timeout 3 ./build-qs/hello_qamui < /dev/null > run.log 2>&1
           code=$?
           set -e
           if [ "$code" -ne 124 ]; then
-            echo "hello_qtui exited early with code $code"; cat run.log; exit 1
+            echo "hello_qamui exited early with code $code"; cat run.log; exit 1
           fi
           grep -q "Welcome" run.log || { echo "no rendered frame in output"; cat run.log | head -c 2000; exit 1; }
 

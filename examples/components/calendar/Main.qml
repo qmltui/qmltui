@@ -1,10 +1,10 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root
-    title: "Qtui Year Calendar & Day Planner"
+    title: "Qamui Year Calendar & Day Planner"
 
     property int currentYear: 2026
     property date todayDate: new Date()
@@ -92,7 +92,7 @@ Terminal {
         map[tomorrowKey] = [
             "Architecture sync with core team"
         ]
-        map["2026-08-18"] = ["Qtui v2.0 Release Meeting"]
+        map["2026-08-18"] = ["Qamui v2.0 Release Meeting"]
         map["2026-08-25"] = ["Performance profiling & benchmark"]
         map["2026-09-01"] = ["Monthly roadmap alignment"]
         map["2026-09-06"] = [

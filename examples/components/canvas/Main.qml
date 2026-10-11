@@ -1,6 +1,6 @@
 import QtQml
 import QtQml.Models 2.15
-import Qtui
+import Qamui
 
 Terminal {
     id: rootWindow
@@ -159,7 +159,7 @@ Terminal {
 
             Text {
                 anchors.fill: parent
-                text: " Multi-Color Overlapping Braille Canvas Demo (Qtui)"
+                text: " Multi-Color Overlapping Braille Canvas Demo (Qamui)"
                 color: "#f8fafc"
                 bold: true
             }

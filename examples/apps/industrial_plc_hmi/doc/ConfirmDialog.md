@@ -53,7 +53,7 @@ Developers use `ConfirmDialog` to prevent accidental operator triggers.
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 ConfirmDialog {

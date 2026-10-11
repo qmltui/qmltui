@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import Qtui
+import Qamui
 
 // A footer key chip: reversed key cap followed by its action label.
 Row {

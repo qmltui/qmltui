@@ -6,8 +6,8 @@
 #include <QSize>
 #include <QTimer>
 
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Runner/Runner.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Runner/Runner.h>
 
 namespace {
 int environmentDimension(const char *name, int fallback) {
@@ -21,52 +21,52 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Qtui Markdown Viewer Runner"));
+    parser.setApplicationDescription(QStringLiteral("Qamui Markdown Viewer Runner"));
     parser.addHelpOption();
     QCommandLineOption scenarioOption(
         {QStringLiteral("s"), QStringLiteral("scenario")},
         QStringLiteral("Scenario JavaScript file to execute."),
         QStringLiteral("file"),
-        QStringLiteral(":/qt/qml/Qtui/Examples/MarkdownViewer/test_markdown_viewer.js"));
+        QStringLiteral(":/qt/qml/Qamui/Examples/MarkdownViewer/test_markdown_viewer.js"));
     parser.addOption(scenarioOption);
     parser.process(app);
 
     QString script = parser.value(scenarioOption);
     if (script.isEmpty())
-        script = QStringLiteral(":/qt/qml/Qtui/Examples/MarkdownViewer/test_markdown_viewer.js");
+        script = QStringLiteral(":/qt/qml/Qamui/Examples/MarkdownViewer/test_markdown_viewer.js");
 
-    if (qEnvironmentVariableIsSet("QTUI_RUNNER_SCRIPT"))
-        script = QString::fromUtf8(qgetenv("QTUI_RUNNER_SCRIPT"));
+    if (qEnvironmentVariableIsSet("QAMUI_RUNNER_SCRIPT"))
+        script = QString::fromUtf8(qgetenv("QAMUI_RUNNER_SCRIPT"));
 
     // Before QML loads: the Terminal created below stays quiet even when no
-    // QTUI_RUNNER_* variable announced a scenario (QTUI_RUNNER_LIVE=1 still
+    // QAMUI_RUNNER_* variable announced a scenario (QAMUI_RUNNER_LIVE=1 still
     // renders to the terminal).
-    qtui::Runner::useEmbeddedScenario();
+    qamui::Runner::useEmbeddedScenario();
 
     QQmlApplicationEngine engine;
-    engine.loadFromModule("Qtui.Examples.MarkdownViewer", "Main");
+    engine.loadFromModule("Qamui.Examples.MarkdownViewer", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
 
-    auto *terminal = qobject_cast<qtui::Terminal *>(engine.rootObjects().constFirst());
+    auto *terminal = qobject_cast<qamui::Terminal *>(engine.rootObjects().constFirst());
     if (!terminal)
         return -1;
 
-    if (qEnvironmentVariableIsSet("QTUI_RUNNER_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QTUI_RUNNER_EVAL")) {
-        if (qtui::Runner::startFromEnvironment(&engine, terminal))
+    if (qEnvironmentVariableIsSet("QAMUI_RUNNER_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QAMUI_RUNNER_EVAL")) {
+        if (qamui::Runner::startFromEnvironment(&engine, terminal))
             return app.exec();
     }
 
-    QString artifacts = QString::fromUtf8(qgetenv("QTUI_RUNNER_ARTIFACT_DIR")).trimmed();
+    QString artifacts = QString::fromUtf8(qgetenv("QAMUI_RUNNER_ARTIFACT_DIR")).trimmed();
     if (artifacts.isEmpty())
-        artifacts = QDir::temp().filePath(QStringLiteral("qtui-markdown-viewer-artifacts"));
+        artifacts = QDir::temp().filePath(QStringLiteral("qamui-markdown-viewer-artifacts"));
 
-    const QSize viewport(environmentDimension("QTUI_RUNNER_COLUMNS", 100),
-                         environmentDimension("QTUI_RUNNER_ROWS", 32));
-    auto *runner = new qtui::Runner(
+    const QSize viewport(environmentDimension("QAMUI_RUNNER_COLUMNS", 100),
+                         environmentDimension("QAMUI_RUNNER_ROWS", 32));
+    auto *runner = new qamui::Runner(
         &engine, terminal,
         script,
         artifacts, viewport, 2000, 15000, QString());
-    QTimer::singleShot(0, runner, &qtui::Runner::start);
+    QTimer::singleShot(0, runner, &qamui::Runner::start);
     return app.exec();
 }

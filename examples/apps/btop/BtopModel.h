@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/primitives/Color.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 
 #include <QAbstractTableModel>
 #include <QElapsedTimer>
@@ -26,14 +26,14 @@ struct BtopProcessRow
     quint64 cpuTicks = 0;
 };
 
-class BtopCpuGraph : public qtui::Item
+class BtopCpuGraph : public qamui::Item
 {
     Q_OBJECT
     QML_ELEMENT
 
     Q_PROPERTY(QVariantList values READ values WRITE setValues NOTIFY valuesChanged)
-    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qamui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
     explicit BtopCpuGraph(QObject *parent = nullptr);
@@ -41,13 +41,13 @@ public:
     QVariantList values() const { return m_values; }
     void setValues(const QVariantList &values);
 
-    qtui::Color color() const { return m_color; }
-    void setColor(qtui::Color color);
+    qamui::Color color() const { return m_color; }
+    void setColor(qamui::Color color);
 
-    qtui::Color backgroundColor() const { return m_backgroundColor; }
-    void setBackgroundColor(qtui::Color color);
+    qamui::Color backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(qamui::Color color);
 
-    void paint(qtui::TextGridBuffer &buffer, int absX, int absY, const qtui::ClipRect &clipRect) const override;
+    void paint(qamui::TextGridBuffer &buffer, int absX, int absY, const qamui::ClipRect &clipRect) const override;
 
 signals:
     void valuesChanged();
@@ -56,9 +56,9 @@ signals:
 
 private:
     QVariantList m_values;
-    qtui::Color m_color = QStringLiteral("white");
+    qamui::Color m_color = QStringLiteral("white");
     uint32_t m_resolvedColor = 0xFFFFFFFF;
-    qtui::Color m_backgroundColor;
+    qamui::Color m_backgroundColor;
     uint32_t m_resolvedBackgroundColor = 0x00000000;
 };
 

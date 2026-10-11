@@ -1,8 +1,8 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// The tooltip delay and timeout run on the Qtui clock, so a virtual-clock
+// The tooltip delay and timeout run on the Qamui clock, so a virtual-clock
 // scenario can step to one millisecond before the tooltip appears and then
 // across its timeout.
 Terminal {

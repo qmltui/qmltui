@@ -12,16 +12,16 @@
 #include <QTest>
 #include <memory>
 
-#include <Qtui/Core/primitives/Color.h>
-#include <Qtui/Core/items/GridView.h>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/items/TreeView.h>
+#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/items/GridView.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/TreeView.h>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -115,7 +115,7 @@ QString frameText(TerminalEngine *engine)
 
 // Waits for startup frames, then verifies no frame is committed while idle and
 // that the last frame raised no invalidation from paint().
-#define QTUI_VERIFY_IDLE(engine) \
+#define QAMUI_VERIFY_IDLE(engine) \
     do { \
         QTest::qWait(120); \
         const quint64 settled = (engine)->frameSequence(); \
@@ -126,7 +126,7 @@ QString frameText(TerminalEngine *engine)
     } while (false)
 
 // Runs `mutation` and verifies it costs exactly one frame.
-#define QTUI_VERIFY_ONE_FRAME(engine, mutation) \
+#define QAMUI_VERIFY_ONE_FRAME(engine, mutation) \
     do { \
         const quint64 beforeMutation = (engine)->frameSequence(); \
         mutation; \
@@ -160,7 +160,7 @@ void TestRenderLoop::initTestCase()
 {
     // A test session keeps the engine from driving the real terminal; frames
     // still commit and the sequence still advances.
-    qputenv("QTUI_RUNNER_CAPTURE_AFTER_MS", "0");
+    qputenv("QAMUI_RUNNER_CAPTURE_AFTER_MS", "0");
     m_qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 }
 
@@ -168,7 +168,7 @@ void TestRenderLoop::terminalModesAndVisibleChildren()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             mode: Terminal.Inline
             Text { text: "FIRST" }
@@ -177,36 +177,36 @@ void TestRenderLoop::terminalModesAndVisibleChildren()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QCOMPARE(session.engine->currentFrame()->height(), 3);
     QVERIFY(frameText(session.engine).contains("FIRST"));
     QVERIFY(frameText(session.engine).contains("SECOND"));
     auto* second = session.terminal->findChild<Item*>("second");
     auto* overlay = session.terminal->findChild<Item*>("overlay");
     QVERIFY(second && overlay);
-    QTUI_VERIFY_ONE_FRAME(session.engine, second->setY(4));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, second->setY(4));
     QCOMPARE(session.engine->currentFrame()->height(), 5);
-    QTUI_VERIFY_ONE_FRAME(session.engine, second->setVisible(false));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, second->setVisible(false));
     QCOMPARE(session.engine->currentFrame()->height(), 1);
-    QTUI_VERIFY_ONE_FRAME(session.engine, overlay->setVisible(true));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, overlay->setVisible(true));
     QVERIFY(frameText(session.engine).contains("OVERLAY"));
     QVERIFY(!frameText(session.engine).contains("FIRST"));
-    QTUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::FullScreen));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::FullScreen));
     QCOMPARE(session.engine->currentFrame()->height(), session.engine->terminalHeight());
     QVERIFY(frameText(session.engine).contains("OVERLAY"));
     QVERIFY(!second->visible());
-    QTUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::Inline));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::Inline));
     QCOMPARE(session.engine->currentFrame()->height(), 1);
-    QTUI_VERIFY_ONE_FRAME(session.engine, delete overlay);
+    QAMUI_VERIFY_ONE_FRAME(session.engine, delete overlay);
     QVERIFY(frameText(session.engine).contains("FIRST"));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::tableViewWithDelegateStaysIdle()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             TableView {
                 objectName: "table"
@@ -223,15 +223,15 @@ void TestRenderLoop::tableViewWithDelegateStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("a1")));
 
     auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
     QVERIFY(table);
     const int delegates = table->findChildren<Item *>().size();
-    QTUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(2));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(2));
     QCOMPARE(table->findChildren<Item *>().size(), delegates);   // no teardown on selection
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
@@ -240,7 +240,7 @@ void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             TableView {
                 objectName: "table"
@@ -255,18 +255,18 @@ void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("beta")));
 
     auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
     QVERIFY(table);
     const QList<Item *> before = table->findChildren<Item *>();
-    QTUI_VERIFY_ONE_FRAME(session.engine, model.setText(1, QStringLiteral("delta")));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, model.setText(1, QStringLiteral("delta")));
     const QString text = frameText(session.engine);
     QVERIFY2(text.contains(QStringLiteral("delta")), qPrintable(text));
     QVERIFY(!text.contains(QStringLiteral("beta")));
     QCOMPARE(table->findChildren<Item *>(), before);   // same delegate instances
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
@@ -274,7 +274,7 @@ void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
     Session session = createSession(m_qmlEngine, R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             TableView {
                 objectName: "table"
@@ -289,11 +289,11 @@ void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
     QVERIFY(table);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("alpha   beta")));
-    QTUI_VERIFY_ONE_FRAME(session.engine,
+    QAMUI_VERIFY_ONE_FRAME(session.engine,
         table->setColumnWidthProvider(m_qmlEngine.evaluate("(function(column) { return 12; })")));
     const auto frame = session.engine->currentFrame();
     QVERIFY(frame);
@@ -312,13 +312,13 @@ void TestRenderLoop::streamPromptUsesCompletedLayout()
     QTRY_COMPARE(engine->frameSequence(), quint64(1));
     QCOMPARE(engine->currentFrame()->height(), 3);
     QVERIFY(frameText(engine).contains(QStringLiteral("PROMPT 3")));
-    QTUI_VERIFY_ONE_FRAME(engine, prompt->setRows(5));
+    QAMUI_VERIFY_ONE_FRAME(engine, prompt->setRows(5));
     QCOMPARE(engine->currentFrame()->height(), 5);
     QVERIFY(frameText(engine).contains(QStringLiteral("PROMPT 5")));
-    QTUI_VERIFY_ONE_FRAME(engine, prompt->setRows(2));
+    QAMUI_VERIFY_ONE_FRAME(engine, prompt->setRows(2));
     QCOMPARE(engine->currentFrame()->height(), 2);
     QVERIFY(!frameText(engine).contains(QStringLiteral("PROMPT 3")));
-    QTUI_VERIFY_IDLE(engine);
+    QAMUI_VERIFY_IDLE(engine);
 
 }
 
@@ -326,7 +326,7 @@ void TestRenderLoop::tableViewWithCellFormatStaysIdle()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             TableView {
                 objectName: "table"
@@ -339,11 +339,11 @@ void TestRenderLoop::tableViewWithCellFormatStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
     QVERIFY(table);
-    QTUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(1));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(1));
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::listViewStaysIdle()
@@ -352,7 +352,7 @@ void TestRenderLoop::listViewStaysIdle()
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             ListView {
                 objectName: "list"
@@ -369,14 +369,14 @@ void TestRenderLoop::listViewStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     auto *list = session.terminal->findChild<ListView *>(QStringLiteral("list"));
     QVERIFY(list);
-    QTUI_VERIFY_ONE_FRAME(session.engine, list->setContentY(40));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, list->setContentY(40));
     QVERIFY(frameText(session.engine).contains(QStringLiteral("Row 45")));
-    QTUI_VERIFY_IDLE(session.engine);
-    QTUI_VERIFY_ONE_FRAME(session.engine, list->setCurrentIndex(42));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_ONE_FRAME(session.engine, list->setCurrentIndex(42));
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::gridViewStaysIdle()
@@ -385,7 +385,7 @@ void TestRenderLoop::gridViewStaysIdle()
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             GridView {
                 objectName: "grid"
@@ -401,12 +401,12 @@ void TestRenderLoop::gridViewStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("G7")));
     auto *grid = session.terminal->findChild<GridView *>(QStringLiteral("grid"));
     QVERIFY(grid);
-    QTUI_VERIFY_ONE_FRAME(session.engine, grid->setCellWidth(16));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_ONE_FRAME(session.engine, grid->setCellWidth(16));
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::treeViewStaysIdle()
@@ -415,7 +415,7 @@ void TestRenderLoop::treeViewStaysIdle()
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             TreeView {
                 objectName: "tree"
@@ -434,19 +434,19 @@ void TestRenderLoop::treeViewStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("Node 3")));
     auto *tree = session.terminal->findChild<TreeView *>(QStringLiteral("tree"));
     QVERIFY(tree);
-    QTUI_VERIFY_ONE_FRAME(session.engine, tree->setProperty("currentIndex", 5));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_ONE_FRAME(session.engine, tree->setProperty("currentIndex", 5));
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::canvasWithShapesStaysIdle()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             Canvas {
                 objectName: "canvas"
@@ -458,25 +458,25 @@ void TestRenderLoop::canvasWithShapesStaysIdle()
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     auto *canvas = session.terminal->findChild<Item *>(QStringLiteral("canvas"));
     QVERIFY(canvas);
-    QTUI_VERIFY_ONE_FRAME(session.engine,
+    QAMUI_VERIFY_ONE_FRAME(session.engine,
                           canvas->setProperty("color", QVariant::fromValue(Color("red"))));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
 }
 
 void TestRenderLoop::framePacingCoalescesBursts()
 {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
-        import Qtui
+        import Qamui
         Terminal {
             Text { objectName: "label"; text: "0" }
         }
     )");
     QVERIFY(session.engine);
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     QCOMPARE(session.engine->maxFrameRate(), 0);   // test sessions are uncapped
 
     auto *label = session.terminal->findChild<Item *>(QStringLiteral("label"));
@@ -512,7 +512,7 @@ void TestRenderLoop::framePacingCoalescesBursts()
     QVERIFY2(capped >= 1 && capped <= std::max<quint64>(6, maxCapped),
              qPrintable(QStringLiteral("%1 frames in %2 ms").arg(capped).arg(burstMs)));
     QVERIFY(frameText(session.engine).contains(QStringLiteral("40")));
-    QTUI_VERIFY_IDLE(session.engine);
+    QAMUI_VERIFY_IDLE(session.engine);
     session.engine->setMaxFrameRate(0);
 }
 

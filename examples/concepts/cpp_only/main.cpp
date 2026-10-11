@@ -1,5 +1,5 @@
-// Entry point of the C++-only Qtui example. There is no QML engine: the whole
-// interface is built in ServiceDashboard.cpp from Qtui's C++ items.
+// Entry point of the C++-only Qamui example. There is no QML engine: the whole
+// interface is built in ServiceDashboard.cpp from Qamui's C++ items.
 
 #include "ServiceDashboard.h"
 

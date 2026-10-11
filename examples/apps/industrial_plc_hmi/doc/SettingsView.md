@@ -50,7 +50,7 @@ Developers use `SettingsView` for setpoint configuration screens.
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 SettingsView {

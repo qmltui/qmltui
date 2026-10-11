@@ -1,29 +1,29 @@
 # QML API reference
 
-Qtui 0.3 provides a terminal-rendered, Qt Quick-style QML API. Its core
+Qamui 0.3 provides a terminal-rendered, Qt Quick-style QML API. Its core
 model/view/delegate names and delegate contracts are source-compatible with the
-documented Qt Quick subset below. Qtui remains a terminal toolkit: geometry is
-cell-based, delegates must derive from `Qtui.Item`, and APIs tied to the Qt Quick
+documented Qt Quick subset below. Qamui remains a terminal toolkit: geometry is
+cell-based, delegates must derive from `Qamui.Item`, and APIs tied to the Qt Quick
 scene graph are intentionally not implemented.
 
 ## Color values
 
-Qtui provides its own QtGui-free `rgba` value type. Use the `Qtui` singleton
+Qamui provides its own QtGui-free `rgba` value type. Use the `Qamui` singleton
 to construct a value from normalized red, green, blue, and alpha channels:
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 QtObject {
-    property rgba accent: Qtui.rgba(0.2, 0.4, 0.6, 1.0)
+    property rgba accent: Qamui.rgba(0.2, 0.4, 0.6, 1.0)
 }
 ```
 
-This property contains a `qtui::Color`, not a `QColor`. The built-in QML
+This property contains a `qamui::Color`, not a `QColor`. The built-in QML
 `color` type and `Qt.rgba()` belong to QtGui and are unavailable in a
-QtCore/QtQml-only Qtui application. String literals remain supported for Qtui
-properties whose declared C++ type is `qtui::Color`.
+QtCore/QtQml-only Qamui application. String literals remain supported for Qamui
+properties whose declared C++ type is `qamui::Color`.
 
 Two kinds of string are accepted, and they behave differently on screen:
 
@@ -42,7 +42,7 @@ Two kinds of string are accepted, and they behave differently on screen:
 All views accept ready inline components and components that become ready
 asynchronously. Delegate creation preserves the component's lexical QML context,
 including `pragma ComponentBehavior: Bound`. A delegate root that is not a
-`Qtui.Item`, or a component that enters the error state, is rejected with a QML
+`Qamui.Item`, or a component that enters the error state, is rejected with a QML
 warning instead of being partially installed.
 
 For map and `QAbstractItemModel` data, named roles are available both as required
@@ -50,7 +50,7 @@ delegate properties and through `model`. `modelData` contains the row or cell
 value described in the table below. `dataChanged` updates only the roles named by
 the model when the model supplies such a list.
 
-| Type | Standard delegate properties | `modelData` | Qtui-specific behavior |
+| Type | Standard delegate properties | `modelData` | Qamui-specific behavior |
 | --- | --- | --- | --- |
 | `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting; `rootIndex` selects the level of a tree model |
 | `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight`; only the viewport's cells are instantiated; `rootIndex` as ListView |
@@ -101,12 +101,12 @@ separators; `headerAlign` can override header alignment independently of cells.
 clipping, and input details.
 
 `delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
-`selected` identify the represented cell. Qtui's `columns` descriptors continue
+`selected` identify the represented cell. Qamui's `columns` descriptors continue
 to provide terminal column titles, keys, widths, and alignment.
 
-`rowDelegate` retains the deprecated Qtui 0.1 row-scoped delegate contract for
+`rowDelegate` retains the deprecated Qamui 0.1 row-scoped delegate contract for
 migration; it remains supported with no scheduled removal release. When both properties are set, `delegate` wins and
-Qtui emits a warning.
+Qamui emits a warning.
 
 Selection properties are `currentRow` (read-only alias of `selectedRow`),
 `selectedRow`, and `currentColumn`. See the
@@ -129,7 +129,7 @@ a visual column number is not necessarily a source-model column number.
 Qt 6.10+ also supplies `SortFilterProxyModel`, `RoleSorter`, and filters through
 `import QtQml.Models`; that native QML API is a technology preview. It requires
 a `QAbstractItemModel` source, not a JavaScript array. It is optional and does
-not change Qtui's Qt 6.8 requirement or require a `QtQuick` import. Qtui does not
+not change Qamui's Qt 6.8 requirement or require a `QtQuick` import. Qamui does not
 provide a competing proxy wrapper.
 
 `selectedRow`, delegate `row`/`column`, and `rowActivated(row)` use the supplied
@@ -236,7 +236,7 @@ See the [TreeView example](../examples/components/tree_view/Main.qml).
   `pragma ComponentBehavior: Bound`.
 
 The 0.3 public contract is the API subset documented here, not every Qt
-Quick view feature. Qtui does not currently expose scene-graph transitions,
+Quick view feature. Qamui does not currently expose scene-graph transitions,
 flick physics, reuse-pool callbacks, selection models, or the complete Qt Quick
 positioning and item-lookup API.
 
@@ -257,7 +257,7 @@ QML components for application-wide styling:
 ```qml
 // AppButton.qml
 pragma ComponentBehavior: Bound
-import Qtui.Controls
+import Qamui.Controls
 
 Button {
     background: Rectangle {
@@ -297,7 +297,7 @@ ordinary color bindings or application-defined components.
 
 ### StandardItemDelegate
 
-`Qtui.Controls.StandardItemDelegate` is the terminal counterpart of Qt
+`Qamui.Controls.StandardItemDelegate` is the terminal counterpart of Qt
 Widgets' `QStyledItemDelegate`: a delegate for any C++ model that renders the
 standard item roles, decoration glyph, check box, foreground and background
 colors, text alignment, and disabled state, plus reversed text for the current
@@ -322,8 +322,8 @@ role names every view provides; see the
   Ctrl and Alt chords carry their modifiers, and Ctrl+Enter, Shift+Enter and
   Ctrl+Shift+letter reach `Keys.onPressed` as distinct events. On a legacy
   terminal a lone Escape is delivered after a short window
-  (`QTUI_ESCAPE_TIMEOUT_MS`, default 50) and those chords collapse to their
-  unmodified keys. `QTUI_KITTY_KEYBOARD=0` keeps the legacy path on a terminal
+  (`QAMUI_ESCAPE_TIMEOUT_MS`, default 50) and those chords collapse to their
+  unmodified keys. `QAMUI_KITTY_KEYBOARD=0` keeps the legacy path on a terminal
   that answers the query but misbehaves. Graphics transport support does not
   imply Unicode placeholder support. `cellPixelSize` is invalid when unknown.
 - `Image.renderMode` selects how pixels reach the terminal: `HalfBlock` (default
@@ -340,7 +340,7 @@ role names every view provides; see the
   content the way kitty placeholders can; use it for a dedicated image region.
 - `Image.sourceClipRect` shows one region of the source, cropped before any
   scaling, so a sprite sheet or icon atlas is decoded once and each item crops
-  its own tile. `AnimatedSprite` (also `Qtui.Image`) is Image plus a frame
+  its own tile. `AnimatedSprite` (also `Qamui.Image`) is Image plus a frame
   clock: it plays a frame grid out of one sheet by driving that clip, with the
   Qt Quick AnimatedSprite property set (`frameCount`, `frameWidth`/`frameHeight`,
   `frameX`/`frameY`, `frameRate`/`frameDuration`, `loops`, `reverse`,
@@ -369,7 +369,7 @@ role names every view provides; see the
 - `Item` is the visual base type and provides cell geometry, visibility, focus,
   clipping, anchors, and stacking order.
 - `ScrollView` provides cell-based scrolling for content larger than its bounds.
-- `Loader` creates one `Qtui.Item` from `source` or `sourceComponent`.
+- `Loader` creates one `Qamui.Item` from `source` or `sourceComponent`.
 - `Row` and `Column` lay out children with integer spacing.
 - `Text`, `TextInput`, and `TextArea` provide terminal text rendering and input.
 - `MouseArea` provides click, wheel, hover, and drag input with the Qt Quick
@@ -379,14 +379,14 @@ role names every view provides; see the
   only while a handler is connected. `MouseEvent.button` carries Qt values
   (`Qt.LeftButton`, ...); the raw terminal code is `nativeButton`.
 
-`Qtui.Controls` contains the controls a user operates or reads as finished
-widgets, including `TabBar`, `Toast`, `Sparkline`, and `Popup`. `Canvas` and its shapes are part of `Qtui`. `StatusBadge`, `Calendar`,
+`Qamui.Controls` contains the controls a user operates or reads as finished
+widgets, including `TabBar`, `Toast`, `Sparkline`, and `Popup`. `Canvas` and its shapes are part of `Qamui`. `StatusBadge`, `Calendar`,
 and `BigText` are recipes under `examples/components/`.
 
 ## Styled text spans
 
 `Text.spans` accepts a `list<span>` built from object literals or
-`Qtui.span(text, options)`. Nonempty spans take precedence over `text`; clearing
+`Qamui.span(text, options)`. Nonempty spans take precedence over `text`; clearing
 the list restores it. Content is literal, and newlines create explicit lines
 without automatic wrapping. Omitted style inherits, explicit boolean values
 override, and `color: "default"` requests the terminal foreground. See

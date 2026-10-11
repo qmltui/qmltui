@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """QML type reference pages, generated from and checked against the build.
 
-Every exported Qtui QML type has one page, ``docs/components/<slug>.md``, in the
+Every exported Qamui QML type has one page, ``docs/components/<slug>.md``, in the
 Plan 04 template. The build's ``.qmltypes`` files (C++ types) and ``qmldir``
 files (types written in QML) are the source of what exists: type names, what a
 type inherits, and every property, signal, method, enum and attached property.
@@ -31,17 +31,17 @@ PAGES_DIR = REPO_ROOT / "docs/components"
 
 # Module URI -> (qmltypes relative to the build's qml/ root, QML source dir)
 MODULES = {
-    "Qtui": ("Qtui/QtuiCore.qmltypes", None),
-    "Qtui.Controls": ("Qtui/Controls/QtuiControls.qmltypes", "src/Qtui/Controls"),
-    "Qtui.Image": ("Qtui/Image/QtuiImage.qmltypes", None),
-    "Qtui.TerminalHost": ("Qtui/TerminalHost/QtuiTerminalHost.qmltypes", None),
+    "Qamui": ("Qamui/QamuiCore.qmltypes", None),
+    "Qamui.Controls": ("Qamui/Controls/QamuiControls.qmltypes", "src/Qamui/Controls"),
+    "Qamui.Image": ("Qamui/Image/QamuiImage.qmltypes", None),
+    "Qamui.TerminalHost": ("Qamui/TerminalHost/QamuiTerminalHost.qmltypes", None),
 }
 
 # Catalog category per type; anything unlisted lands in "other" and check()
 # reports it so the table stays deliberate.
 CATEGORIES = {
     "core": ["Item", "Terminal", "Rectangle", "Border", "Gradient", "GradientStop",
-             "Scrollback", "Qtui", "rgba", "terminalCapabilities", "AnchorLine", "Anchors"],
+             "Scrollback", "Qamui", "rgba", "terminalCapabilities", "AnchorLine", "Anchors"],
     "layout": ["Row", "Column", "RowLayout", "ColumnLayout", "GridLayout", "Layout",
                "StackLayout", "Repeater", "Loader"],
     "data views": ["ListView", "GridView", "TableView", "TreeView", "ScrollView", "LogView",
@@ -64,8 +64,8 @@ CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name
 # every tree; check() reads the option from CMakeCache.txt and does not treat
 # such a page as an orphan when the option is off.
 OPTIONAL_TYPES = {
-    "Behavior": "QTUI_ENABLE_BEHAVIOR",
-    "Image": "QTUI_ENABLE_IMAGE",
+    "Behavior": "QAMUI_ENABLE_BEHAVIOR",
+    "Image": "QAMUI_ENABLE_IMAGE",
 }
 
 # Qt/C++ spellings shown as QML types in the tables.
@@ -74,7 +74,7 @@ QML_TYPE_NAMES = {
     "double": "real", "qreal": "real", "float": "real", "QVariant": "var",
     "QVariantList": "list<var>", "QVariantMap": "var", "QJSValue": "var",
     "QSize": "size", "QPoint": "point", "QRect": "rect", "QUrl": "url",
-    "QColor": "color", "qtui::Color": "rgba", "qtui::TerminalCapabilities": "terminalCapabilities",
+    "QColor": "color", "qamui::Color": "rgba", "qamui::TerminalCapabilities": "terminalCapabilities",
     "QObject": "QtObject", "QAbstractItemModel": "model", "QQmlComponent": "Component",
     "void": "void",
 }
@@ -211,8 +211,8 @@ def qml_type_name(cpp: str, pointer: bool = False, is_list: bool = False, known:
     name = cpp
     if name in QML_TYPE_NAMES:
         name = QML_TYPE_NAMES[name]
-    elif name.startswith("qtui::"):
-        short = name[len("qtui::"):]
+    elif name.startswith("qamui::"):
+        short = name[len("qamui::"):]
         name = known.get(short, short) if known else short
     if is_list:
         name = f"list<{name}>"
@@ -254,7 +254,7 @@ def load_cpp_types(module: str, qmltypes_path: Path) -> tuple[list[QmlType], dic
     exported = {}
     for cpp, c in components.items():
         for export in c.props.get("exports", []):
-            exported[cpp[len("qtui::"):] if cpp.startswith("qtui::") else cpp] = export.split("/")[-1].split(" ")[0]
+            exported[cpp[len("qamui::"):] if cpp.startswith("qamui::") else cpp] = export.split("/")[-1].split(" ")[0]
     types = []
     for cpp, c in components.items():
         exports = c.props.get("exports", [])
@@ -262,7 +262,7 @@ def load_cpp_types(module: str, qmltypes_path: Path) -> tuple[list[QmlType], dic
             continue
         name = exports[0].split("/")[-1].split(" ")[0]
         proto = c.props.get("prototype", "")
-        proto_short = proto[len("qtui::"):] if proto.startswith("qtui::") else proto
+        proto_short = proto[len("qamui::"):] if proto.startswith("qamui::") else proto
         inherits = exported.get(proto_short, "")
         if not inherits and proto_short in ("QObject", ""):
             inherits = ""
@@ -271,7 +271,7 @@ def load_cpp_types(module: str, qmltypes_path: Path) -> tuple[list[QmlType], dic
         item = False
         walk = c
         while walk is not None:
-            if walk.props["name"] == "qtui::Item":
+            if walk.props["name"] == "qamui::Item":
                 item = True
                 break
             walk = components.get(walk.props.get("prototype", ""))
@@ -333,7 +333,7 @@ def load_qml_file_types(module: str, qmldir_path: Path, source_dir: Path, known:
                      for m in _QML_ENUM.finditer(text)]
             # A type written in QML has no class of its own; record the root
             # item's class so the page can say what it is underneath.
-            cpp = f"qtui::{inherits}" if inherits in known.values() else ""
+            cpp = f"qamui::{inherits}" if inherits in known.values() else ""
             types.append(QmlType(name=name, module=module, cpp=cpp, inherits=inherits,
                                  item=True, properties=properties, signals=signals, methods=methods,
                                  enums=enums))
@@ -390,7 +390,7 @@ def render_page(t: QmlType, slugs: set[str]) -> str:
         "| | |",
         "| :--- | :--- |",
         f"| **Import Statement** | `import {t.module}` |",
-        "| **Since** | Qtui 0.4 |",
+        "| **Since** | Qamui 0.4 |",
         f"| **Inherits** | {_link(t.inherits, slugs)} |",
     ]
     if t.singleton:
@@ -426,8 +426,8 @@ def render_page(t: QmlType, slugs: set[str]) -> str:
               [f"| `{t.name}.{v}` | _TODO_ |" for v in values])
 
     lines += ["## Detailed Description", "", "_TODO_", "", "### Example", "", "```qml",
-              "import QtQml", "import Qtui"]
-    if t.module != "Qtui":
+              "import QtQml", "import Qamui"]
+    if t.module != "Qamui":
         lines.append(f"import {t.module}")
     lines.append("")
     if t.name == "Terminal":

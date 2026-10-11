@@ -1,12 +1,12 @@
-# Starter Template — Boot to Qtui Device Setup
+# Starter Template — Boot to Qamui Device Setup
 
 A Boot to Qt style device setup application for embedded Linux, rendered
 entirely in the terminal. It gets the board on the network so you can deploy
-and iterate on your own Qtui applications, and doubles as a starting point
+and iterate on your own Qamui applications, and doubles as a starting point
 for writing them.
 
 ```
-┌ Qt  Boot to Qtui · Device Setup · hostname ── [ 📶 SSID ]  12:34 ┐
+┌ Qt  Boot to Qamui · Device Setup · hostname ── [ 📶 SSID ]  12:34 ┐
 │ [F1] Network │ [F2] About                                        │
 ├───────────────────────────────┬──────────────────────────────────┤
 │ 📶 Wireless Networks          │ 🔐 Wi-Fi Authentication          │
@@ -34,18 +34,18 @@ navy) shared by all pages.
 
 ## Building
 
-Configured as part of the Qtui examples, or standalone:
+Configured as part of the Qamui examples, or standalone:
 
 ```sh
-cmake -B build -DCMAKE_PREFIX_PATH=<qtui-install-prefix>
+cmake -B build -DCMAKE_PREFIX_PATH=<qamui-install-prefix>
 cmake --build build
-./build/qtui_starter_template
+./build/qamui_starter_template
 ```
 
 Only one production instance should run at a time. The executable holds
-`/run/qtui_starter_template.lock` and exits with status 2 when the boot
+`/run/qamui_starter_template.lock` and exits with status 2 when the boot
 service already owns it. For development over SSH, use the separately
-packaged `qtui_starter_template_benchmark`; it observes network state and
+packaged `qamui_starter_template_benchmark`; it observes network state and
 does not scan, associate, or request address changes.
 
 ## Network ownership
@@ -57,12 +57,12 @@ routes; after association the starter only asks `networkctl` to reconfigure
 the interface.
 
 The implementation also provides deterministic development backends through
-`QTUI_STARTER_BACKEND=mock|observe|live`. Production defaults to `live`; the
+`QAMUI_STARTER_BACKEND=mock|observe|live`. Production defaults to `live`; the
 scenario runner selects `mock`, while the latency benchmark selects `observe`.
 
 ## Testing
 
-`test_setup.js` is a scenario smoke test (see `Qtui::Runner`) covering the
+`test_setup.js` is a scenario smoke test (see `Qamui::Runner`) covering the
 network page, password entry, and page navigation:
 
 ```sh

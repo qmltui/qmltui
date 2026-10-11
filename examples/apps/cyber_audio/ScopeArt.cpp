@@ -1,18 +1,18 @@
 #include "ScopeArt.h"
 
-#include <Qtui/Core/primitives/Color.h>
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 
 #include <algorithm>
 #include <cmath>
 #include <vector>
 #include <utility>
 
-using qtui::CanvasPainter;
+using qamui::CanvasPainter;
 
 namespace {
 
-void requestRepaint(qtui::Item* shape)
+void requestRepaint(qamui::Item* shape)
 {
     if (shape->parentItem())
         shape->parentItem()->markDirty();
@@ -39,8 +39,8 @@ void bresenham(CanvasPainter& painter, int x0, int y0, int x1, int y1, uint32_t 
 // to RGB first). Alpha comes from `to` so a transparent fade color still draws.
 uint32_t mixColor(uint32_t from, uint32_t to, double t)
 {
-    from = qtui::ColorMapper::toArgb(from);
-    to = qtui::ColorMapper::toArgb(to);
+    from = qamui::ColorMapper::toArgb(from);
+    to = qamui::ColorMapper::toArgb(to);
     const auto ch = [&](int shift) {
         const int a = (from >> shift) & 0xFF;
         const int b = (to >> shift) & 0xFF;
@@ -51,7 +51,7 @@ uint32_t mixColor(uint32_t from, uint32_t to, double t)
 
 uint32_t argbFromString(const QString& text, uint32_t fallback)
 {
-    const qtui::Color c = qtui::Color::fromString(text);
+    const qamui::Color c = qamui::Color::fromString(text);
     return c.isValid() ? c.argb32() : fallback;
 }
 
@@ -98,7 +98,7 @@ void drawPolyline(CanvasPainter& painter, const QList<double>& s, int x0, int x1
 // ---------------------------------------------------------------------------
 
 PersistenceTrace::PersistenceTrace(QObject* parent)
-    : qtui::CanvasShape(parent)
+    : qamui::CanvasShape(parent)
 {
 }
 
@@ -174,7 +174,7 @@ void PersistenceTrace::draw(CanvasPainter& painter) const
 // ---------------------------------------------------------------------------
 
 RidgePlot::RidgePlot(QObject* parent)
-    : qtui::CanvasShape(parent)
+    : qamui::CanvasShape(parent)
 {
 }
 
@@ -276,7 +276,7 @@ void RidgePlot::draw(CanvasPainter& painter) const
 
 
 NeonNebula::NeonNebula(QObject* parent)
-    : qtui::CanvasShape(parent)
+    : qamui::CanvasShape(parent)
 {
 }
 

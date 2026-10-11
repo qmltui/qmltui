@@ -11,7 +11,7 @@
 #include <QStandardPaths>
 #include <algorithm>
 
-namespace qtui::examples {
+namespace qamui::examples {
 
 namespace {
 QStringList wrapTextLine(const QString &rawLine, int maxW) {
@@ -57,12 +57,12 @@ QStringList wrapTextLine(const QString &rawLine, int maxW) {
 FileManagerBackend::FileManagerBackend(QObject *parent)
     : QObject(parent)
 {
-    const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_RUNNER_SCRIPT")
-        || qEnvironmentVariableIsSet("QTUI_RUNNER_EVAL")
-        || qEnvironmentVariableIsSet("QTUI_RUNNER_CAPTURE_AFTER_MS")
-        || qEnvironmentVariableIsSet("QTUI_FM_MOCK");
+    const bool scenarioRequested = qEnvironmentVariableIsSet("QAMUI_RUNNER_SCRIPT")
+        || qEnvironmentVariableIsSet("QAMUI_RUNNER_EVAL")
+        || qEnvironmentVariableIsSet("QAMUI_RUNNER_CAPTURE_AFTER_MS")
+        || qEnvironmentVariableIsSet("QAMUI_FM_MOCK");
 
-    if (scenarioRequested && !qEnvironmentVariableIsSet("QTUI_FM_LIVE")) {
+    if (scenarioRequested && !qEnvironmentVariableIsSet("QAMUI_FM_LIVE")) {
         m_useMock = true;
     }
 
@@ -134,7 +134,7 @@ void FileManagerBackend::initMockFileSystem()
     addFile(QStringLiteral("/workspace/README.md"), QStringLiteral("README.md"),
             QStringLiteral("# Yazi-Style Terminal File Manager\n\n"
                            "A fast, asynchronous, 3-column Miller column file manager\n"
-                           "built with pure QML and Qtui.\n\n"
+                           "built with pure QML and Qamui.\n\n"
                            "## Features\n"
                            "- 3-Column Miller layout (Parent, Current, Preview)\n"
                            "- Vim-style keybindings (h/j/k/l, Space, /, d, r, y, p)\n"
@@ -157,9 +157,9 @@ void FileManagerBackend::initMockFileSystem()
                            "set(CMAKE_CXX_STANDARD 20)\n"
                            "set(CMAKE_CXX_STANDARD_REQUIRED ON)\n\n"
                            "find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)\n"
-                           "find_package(Qtui REQUIRED)\n\n"
-                           "qt_add_executable(qtui_file_manager main.cpp)\n"
-                           "target_link_libraries(qtui_file_manager PRIVATE Qt6::Core Qtui::Core)"),
+                           "find_package(Qamui REQUIRED)\n\n"
+                           "qt_add_executable(qamui_file_manager main.cpp)\n"
+                           "target_link_libraries(qamui_file_manager PRIVATE Qt6::Core Qamui::Core)"),
             QStringLiteral("text/x-cmake"));
 
     addFile(QStringLiteral("/workspace/package.json"), QStringLiteral("package.json"),
@@ -169,17 +169,17 @@ void FileManagerBackend::initMockFileSystem()
                            "  \"description\": \"Retained-mode terminal file manager\",\n"
                            "  \"main\": \"Main.qml\",\n"
                            "  \"scripts\": {\n"
-                           "    \"start\": \"./build/qtui_file_manager\",\n"
+                           "    \"start\": \"./build/qamui_file_manager\",\n"
                            "    \"test\": \"ctest --test-dir build\"\n"
                            "  },\n"
-                           "  \"author\": \"Qtui Team\",\n"
+                           "  \"author\": \"Qamui Team\",\n"
                            "  \"license\": \"MIT\"\n"
                            "}"),
             QStringLiteral("application/json"));
 
     addFile(QStringLiteral("/workspace/LICENSE"), QStringLiteral("LICENSE"),
             QStringLiteral("MIT License\n\n"
-                           "Copyright (c) 2026 Qtui Contributors\n\n"
+                           "Copyright (c) 2026 Qamui Contributors\n\n"
                            "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
                            "of this software and associated documentation files (the \"Software\"), to deal\n"
                            "in the Software without restriction..."),
@@ -196,7 +196,7 @@ void FileManagerBackend::initMockFileSystem()
     addFile(QStringLiteral("/workspace/docs/architecture.md"), QStringLiteral("architecture.md"),
             QStringLiteral("# Architecture Overview\n\n"
                            "1. **Core Engine**: C++20 backend with reactive properties.\n"
-                           "2. **Declarative UI**: Pure QML frontend utilizing Qtui.\n"
+                           "2. **Declarative UI**: Pure QML frontend utilizing Qamui.\n"
                            "3. **Miller Navigation**: 3 synchronized reactive viewports."),
             QStringLiteral("text/markdown"));
 
@@ -210,7 +210,7 @@ void FileManagerBackend::initMockFileSystem()
     addFile(QStringLiteral("/workspace/docs/user_guide.txt"), QStringLiteral("user_guide.txt"),
             QStringLiteral("YAZI FILE MANAGER USER MANUAL\n"
                            "============================\n"
-                           "Welcome to the Qtui terminal file manager."),
+                           "Welcome to the Qamui terminal file manager."),
             QStringLiteral("text/plain"));
 
     // Files in /workspace/src
@@ -220,7 +220,7 @@ void FileManagerBackend::initMockFileSystem()
                            "int main(int argc, char *argv[]) {\n"
                            "    QCoreApplication app(argc, argv);\n"
                            "    QQmlApplicationEngine engine;\n"
-                           "    engine.loadFromModule(\"Qtui.Examples.FileManager\", \"Main\");\n"
+                           "    engine.loadFromModule(\"Qamui.Examples.FileManager\", \"Main\");\n"
                            "    return app.exec();\n"
                            "}"),
             QStringLiteral("text/x-c++src"));
@@ -255,7 +255,7 @@ void FileManagerBackend::initMockFileSystem()
             QStringLiteral("#!/usr/bin/env python3\n"
                            "import sys, os\n\n"
                            "def deploy():\n"
-                           "    print('Deploying Qtui application...')\n\n"
+                           "    print('Deploying Qamui application...')\n\n"
                            "if __name__ == '__main__':\n"
                            "    deploy()"),
             QStringLiteral("text/x-python"));
@@ -1113,4 +1113,4 @@ void FileManagerBackend::showToast(const QString &msg)
     emit statusMessageChanged();
 }
 
-} // namespace qtui::examples
+} // namespace qamui::examples

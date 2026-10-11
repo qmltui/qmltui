@@ -1,19 +1,19 @@
 #include <QTest>
 #include <QObject>
 #include <QSignalSpy>
-#include <Qtui/Core/items/Row.h>
-#include <Qtui/Core/items/Column.h>
-#include <Qtui/Core/items/GridLayout.h>
-#include <Qtui/Core/items/Layout.h>
-#include <Qtui/Core/items/ScrollView.h>
-#include <Qtui/Core/items/Text.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/engine/State.h>
-#include <Qtui/Core/engine/Transition.h>
+#include <Qamui/Core/items/Row.h>
+#include <Qamui/Core/items/Column.h>
+#include <Qamui/Core/items/GridLayout.h>
+#include <Qamui/Core/items/Layout.h>
+#include <Qamui/Core/items/ScrollView.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/engine/State.h>
+#include <Qamui/Core/engine/Transition.h>
 #include "../TestPaint.h"
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 class TestLayout : public QObject {
     Q_OBJECT

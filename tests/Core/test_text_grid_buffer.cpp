@@ -1,16 +1,16 @@
 #include <QTest>
 #include <QObject>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/items/Text.h>
-#include <Qtui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/primitives/Color.h>
 #include "../TestPaint.h"
 #include <QString>
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 
 #include <limits>
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 class TestTextGridBuffer : public QObject {
     Q_OBJECT

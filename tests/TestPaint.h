@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Qtui/Core/engine/ItemPaintTraversal_p.h>
+#include <Qamui/Core/engine/ItemPaintTraversal_p.h>
 
-namespace qtui::testing {
+namespace qamui::testing {
 
 // Renders one frame the way the engine does: layout pass, then paint pass.
 inline void paintItem(Item &item, TextGridBuffer &buffer,
@@ -19,4 +19,4 @@ inline void paintItem(Item *item, TextGridBuffer &buffer,
     ItemPaintTraversal::renderSubtree(item, buffer, absX, absY, clipRect);
 }
 
-} // namespace qtui::testing
+} // namespace qamui::testing

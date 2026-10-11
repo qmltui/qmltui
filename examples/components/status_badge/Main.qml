@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     Keys.onPressed: (event) => {
@@ -22,7 +22,7 @@ Terminal {
             spacing: 1
 
             Text {
-                text: "Qtui StatusBadge Component Demo"
+                text: "Qamui StatusBadge Component Demo"
                 color: "cyan"
                 bold: true
             }

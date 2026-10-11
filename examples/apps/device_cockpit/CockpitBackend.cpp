@@ -12,7 +12,7 @@
 CockpitBackend::CockpitBackend(QObject *parent)
     : QObject(parent),
       m_productName(QStringLiteral("DEVICE COCKPIT")),
-      m_mockMode(qEnvironmentVariableIntValue("QTUI_COCKPIT_MOCK") == 1) {
+      m_mockMode(qEnvironmentVariableIntValue("QAMUI_COCKPIT_MOCK") == 1) {
     if (m_mockMode) {
         m_systemInfo = new MockSystemInfoProvider(this);
         m_services = new MockServiceProvider(this);

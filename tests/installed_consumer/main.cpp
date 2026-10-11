@@ -1,34 +1,34 @@
-// The generated list of every header this Qtui configuration installs; the
+// The generated list of every header this Qamui configuration installs; the
 // custom item below then exercises three of them.
-#include QTUI_PUBLIC_HEADERS
+#include QAMUI_PUBLIC_HEADERS
 
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/primitives/Color.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 
-class CustomItem final : public qtui::Item
+class CustomItem final : public qamui::Item
 {
 public:
     using Item::Item;
 
-    void paintForTest(qtui::TextGridBuffer &buffer, int absX, int absY)
+    void paintForTest(qamui::TextGridBuffer &buffer, int absX, int absY)
     {
         paint(buffer, absX, absY, {});
     }
 
 protected:
-    void paint(qtui::TextGridBuffer &buffer, int absX, int absY,
-               const qtui::ClipRect &) const override {
-        if (qtui::Cell *cell = buffer.tryCellAt(absX, absY)) {
+    void paint(qamui::TextGridBuffer &buffer, int absX, int absY,
+               const qamui::ClipRect &) const override {
+        if (qamui::Cell *cell = buffer.tryCellAt(absX, absY)) {
             cell->setCharacter("X");
-            cell->setForeground(qtui::Color("tomato"));
+            cell->setForeground(qamui::Color("tomato"));
         }
     }
 };
 
 int main()
 {
-    qtui::TextGridBuffer buffer;
+    qamui::TextGridBuffer buffer;
     if (!buffer.resize(1, 1))
         return 1;
 
@@ -37,10 +37,10 @@ int main()
     item.setHeight(1);
     item.paintForTest(buffer, 0, 0);
 
-    const qtui::Cell *cell = buffer.tryCellAt(0, 0);
+    const qamui::Cell *cell = buffer.tryCellAt(0, 0);
     if (!cell || cell->character() != "X")
         return 2;
-    if (cell->foreground() != qtui::Color("tomato"))
+    if (cell->foreground() != qamui::Color("tomato"))
         return 3;
     return 0;
 }

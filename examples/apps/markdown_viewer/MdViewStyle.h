@@ -6,13 +6,13 @@
 
 #include "MdPalette.h"
 
-namespace qtui {
+namespace qamui {
 
 class MdViewStyle : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(qtui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
+    Q_PROPERTY(qamui::MdPalette palette READ palette WRITE setPalette NOTIFY paletteChanged)
     Q_PROPERTY(bool showLineNumbers READ showLineNumbers WRITE setShowLineNumbers NOTIFY showLineNumbersChanged)
 
 public:
@@ -35,4 +35,4 @@ private:
     bool m_showLineNumbers = false;
 };
 
-} // namespace qtui
+} // namespace qamui

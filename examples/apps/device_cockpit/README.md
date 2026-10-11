@@ -8,14 +8,14 @@ mock provider (for tests and demos) and a live one.
 
 ## Run it
 
-From the Qtui build tree, in any terminal:
+From the Qamui build tree, in any terminal:
 
 ```sh
 # Simulated device (no root, deterministic values)
-QTUI_COCKPIT_MOCK=1 ./build/examples/apps/device_cockpit/qtui_device_cockpit
+QAMUI_COCKPIT_MOCK=1 ./build/examples/apps/device_cockpit/qamui_device_cockpit
 
 # Live system (reads /proc, /sys, mounts, and network interfaces)
-./build/examples/apps/device_cockpit/qtui_device_cockpit
+./build/examples/apps/device_cockpit/qamui_device_cockpit
 ```
 
 Keys: `F1`–`F4` (or `1`–`4`) switch pages, `Q` quits.
@@ -23,7 +23,7 @@ Keys: `F1`–`F4` (or `1`–`4`) switch pages, `Q` quits.
 ## Structure
 
 - `CockpitBackend` — QML singleton; picks mock or live providers once at
-  startup (`QTUI_COCKPIT_MOCK=1` selects the mocks).
+  startup (`QAMUI_COCKPIT_MOCK=1` selects the mocks).
 - Provider interfaces the pages bind to, each with a deterministic mock and a
   live implementation:
   - `SystemInfoProvider` — `/proc`, `/sys`, mounts, interfaces (Overview).
@@ -46,18 +46,18 @@ Keys: `F1`–`F4` (or `1`–`4`) switch pages, `Q` quits.
 
 ## Test
 
-The application executable carries the scenario runner when Qtui is built
-with `QTUI_BUILD_TESTS=ON`, so it is driven directly through the `QTUI_*`
+The application executable carries the scenario runner when Qamui is built
+with `QAMUI_BUILD_TESTS=ON`, so it is driven directly through the `QAMUI_*`
 environment variables. Scenario runs default to the mock providers; set
-`QTUI_COCKPIT_MOCK=0` to run one against the live system.
+`QAMUI_COCKPIT_MOCK=0` to run one against the live system.
 
 ```sh
 ctest --test-dir build -R device_cockpit_overview --output-on-failure
 
 # Ad hoc: capture one frame, or run any scenario file
-QTUI_RUNNER_CAPTURE_AFTER_MS=0 ./build/examples/apps/device_cockpit/qtui_device_cockpit
-QTUI_RUNNER_SCRIPT=examples/apps/device_cockpit/test_cockpit.js \
-    ./build/examples/apps/device_cockpit/qtui_device_cockpit
+QAMUI_RUNNER_CAPTURE_AFTER_MS=0 ./build/examples/apps/device_cockpit/qamui_device_cockpit
+QAMUI_RUNNER_SCRIPT=examples/apps/device_cockpit/test_cockpit.js \
+    ./build/examples/apps/device_cockpit/qamui_device_cockpit
 ```
 
 The scenario asserts the rendered mock values and page switching without any
@@ -69,10 +69,10 @@ The application can run on any Linux systemd console or serial port:
 
 - To run on a physical console (`tty1`):
   ```sh
-  ./qtui_device_cockpit
+  ./qamui_device_cockpit
   ```
 - To run as a service replacing a serial getty (e.g. `ttyS0` or `ttyLP0`):
   ```sh
   systemctl disable serial-getty@ttyS0.service
-  # Launch qtui_device_cockpit on the designated TTY
+  # Launch qamui_device_cockpit on the designated TTY
   ```

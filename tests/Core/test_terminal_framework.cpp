@@ -9,26 +9,26 @@
 #include <algorithm>
 #include <memory>
 
-#include <Qtui/Core/primitives/UnicodeText.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/items/Popup.h>
-#include <Qtui/Core/items/MouseArea.h>
-#include <Qtui/Core/items/TextArea.h>
-#include <Qtui/Core/items/LogView.h>
-#include <Qtui/Core/items/Scrollback.h>
-#include <Qtui/Core/items/LinearLayout.h>
-#include <Qtui/Core/items/Layout.h>
-#include <Qtui/Core/engine/KeyEvent.h>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/TreeView.h>
+#include <Qamui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/items/MouseArea.h>
+#include <Qamui/Core/items/TextArea.h>
+#include <Qamui/Core/items/LogView.h>
+#include <Qamui/Core/items/Scrollback.h>
+#include <Qamui/Core/items/LinearLayout.h>
+#include <Qamui/Core/items/Layout.h>
+#include <Qamui/Core/engine/KeyEvent.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/TreeView.h>
 #include "../TestPaint.h"
 
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 #undef private
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 namespace {
 
@@ -177,10 +177,10 @@ private slots:
 };
 
 void TestTerminalFramework::testSessionOutputModeTransitions() {
-    const QByteArray previousScript = qgetenv("QTUI_RUNNER_SCRIPT");
-    const QByteArray previousLive = qgetenv("QTUI_RUNNER_LIVE");
-    qputenv("QTUI_RUNNER_SCRIPT", QByteArrayLiteral("quiet-test.js"));
-    qunsetenv("QTUI_RUNNER_LIVE");
+    const QByteArray previousScript = qgetenv("QAMUI_RUNNER_SCRIPT");
+    const QByteArray previousLive = qgetenv("QAMUI_RUNNER_LIVE");
+    qputenv("QAMUI_RUNNER_SCRIPT", QByteArrayLiteral("quiet-test.js"));
+    qunsetenv("QAMUI_RUNNER_LIVE");
 
     bool quietByDefault = false;
     bool enabledOnRequest = false;
@@ -196,13 +196,13 @@ void TestTerminalFramework::testSessionOutputModeTransitions() {
     }
 
     if (previousScript.isNull())
-        qunsetenv("QTUI_RUNNER_SCRIPT");
+        qunsetenv("QAMUI_RUNNER_SCRIPT");
     else
-        qputenv("QTUI_RUNNER_SCRIPT", previousScript);
+        qputenv("QAMUI_RUNNER_SCRIPT", previousScript);
     if (previousLive.isNull())
-        qunsetenv("QTUI_RUNNER_LIVE");
+        qunsetenv("QAMUI_RUNNER_LIVE");
     else
-        qputenv("QTUI_RUNNER_LIVE", previousLive);
+        qputenv("QAMUI_RUNNER_LIVE", previousLive);
 
     QVERIFY(quietByDefault);
     QVERIFY(enabledOnRequest);
@@ -296,8 +296,8 @@ void TestTerminalFramework::dialogDefaultAndCancelActions() {
     qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
-        import Qtui
-        import Qtui.Controls
+        import Qamui
+        import Qamui.Controls
         Terminal {
             width: 40
             height: 12
@@ -468,7 +468,7 @@ void TestTerminalFramework::treeDelegateIdentity() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         
         TreeView {
             width: 30
@@ -535,7 +535,7 @@ void TestTerminalFramework::listModelMutationContract() {
 
     QQmlComponent delegate(&engine);
     delegate.setData(R"(
-        import Qtui
+        import Qamui
         Item {
             required property int index
             required property string display
@@ -591,7 +591,7 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
 
     QQmlComponent delegate(&engine);
     delegate.setData(R"(
-        import Qtui
+        import Qamui
         Item {
             required property int index
             required property string display
@@ -655,7 +655,7 @@ void TestTerminalFramework::scrollbackDelegateContract() {
     QQmlComponent validDelegate(&engine);
     validDelegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             required property int index
             required property var model
@@ -683,7 +683,7 @@ void TestTerminalFramework::scrollbackDelegateContract() {
 
     QTest::ignoreMessage(
         QtWarningMsg,
-        QRegularExpression(QStringLiteral(".*Delegate root must derive from Qtui.Item.*")));
+        QRegularExpression(QStringLiteral(".*Delegate root must derive from Qamui.Item.*")));
     scrollback.setDelegate(&invalidDelegate);
     scrollback.setModel(&model);
     QVERIFY(recorder.indexes.isEmpty());
@@ -706,7 +706,7 @@ void TestTerminalFramework::scrollbackDelegateReuse() {
     QQmlComponent delegate(&engine);
     delegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             required property int index
             required property string display
@@ -764,7 +764,7 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     QQmlComponent itemDelegate(&engine);
     itemDelegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             width: 5
             height: 1
@@ -777,7 +777,7 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     QQmlComponent sepDelegate(&engine);
     sepDelegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             width: 5
             height: 1
@@ -801,7 +801,7 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     QQmlComponent overrideDelegate(&engine);
     overrideDelegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             width: 5
             height: 1
@@ -833,7 +833,7 @@ void TestTerminalFramework::scrollbackImperativeMethods() {
     QQmlComponent delegate(&engine);
     delegate.setData(R"(
         import QtQml
-        import Qtui
+        import Qamui
         Item {
             width: 10
             height: 1
@@ -915,7 +915,7 @@ void TestTerminalFramework::keyHandlingImprovements() {
     qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Terminal {
             id: root
             width: 40
@@ -1042,9 +1042,9 @@ void TestTerminalFramework::keyHandlingImprovements() {
 void TestTerminalFramework::alternateScreenDefersMessages()
 {
     ScopedMessageCapture capture;
-    const QString deferred = QStringLiteral("qtui-deferred-message");
-    const QString afterStop = QStringLiteral("qtui-message-after-stop");
-    const QString afterDestroy = QStringLiteral("qtui-message-after-destroy");
+    const QString deferred = QStringLiteral("qamui-deferred-message");
+    const QString afterStop = QStringLiteral("qamui-message-after-stop");
+    const QString afterDestroy = QStringLiteral("qamui-message-after-destroy");
 
     {
         Terminal terminal;
@@ -1068,7 +1068,7 @@ void TestTerminalFramework::alternateScreenDefersMessages()
 void TestTerminalFramework::nestedAlternateScreensDelayFlush()
 {
     ScopedMessageCapture capture;
-    const QString deferred = QStringLiteral("qtui-nested-deferred-message");
+    const QString deferred = QStringLiteral("qamui-nested-deferred-message");
 
     Terminal first;
     Terminal second;
@@ -1090,7 +1090,7 @@ void TestTerminalFramework::nestedAlternateScreensDelayFlush()
 void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
 {
     ScopedMessageCapture capture;
-    const QString immediate = QStringLiteral("qtui-immediate-message");
+    const QString immediate = QStringLiteral("qamui-immediate-message");
 
     Terminal terminal;
     terminal.setMode(Terminal::Mode::Inline);
@@ -1124,17 +1124,17 @@ void TestTerminalFramework::terminalTitle()
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
         import QtQuick
-        import Qtui
+        import Qamui
 
         Terminal {
-            property string appName: "Qtui"
+            property string appName: "Qamui"
             title: appName + " - Dashboard"
         }
     )", QUrl());
 
     auto* root = qobject_cast<Terminal*>(component.create());
     QVERIFY(root);
-    QCOMPARE(root->title(), QStringLiteral("Qtui - Dashboard"));
+    QCOMPARE(root->title(), QStringLiteral("Qamui - Dashboard"));
 
     root->setProperty("appName", QStringLiteral("SuperApp"));
     QCOMPARE(root->title(), QStringLiteral("SuperApp - Dashboard"));
@@ -1209,7 +1209,7 @@ void TestTerminalFramework::terminalBackgroundColor()
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
         import QtQuick
-        import Qtui
+        import Qamui
 
         Terminal {
             id: root

@@ -8,11 +8,11 @@
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
-    app.setApplicationName("qtui_markdown_viewer");
+    app.setApplicationName("qamui_markdown_viewer");
     app.setApplicationVersion("1.0");
 
     QCommandLineParser parser;
-    parser.setApplicationDescription("Qtui Terminal Markdown Viewer powered by KDE md4qt");
+    parser.setApplicationDescription("Qamui Terminal Markdown Viewer powered by KDE md4qt");
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument("file", "Markdown file to open (optional)");
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
         engine.rootContext()->setContextProperty("initialCliFile", QString());
     }
 
-    engine.loadFromModule("Qtui.Examples.MarkdownViewer", "Main");
+    engine.loadFromModule("Qamui.Examples.MarkdownViewer", "Main");
 
     if (engine.rootObjects().isEmpty())
         return -1;

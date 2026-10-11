@@ -1,10 +1,10 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// Behavior: animate a property whenever it changes. One tile of the Qtui
+// Behavior: animate a property whenever it changes. One tile of the Qamui
 // gallery (examples/apps/gallery) and a complete app on its own. Needs a build
-// with QTUI_ENABLE_BEHAVIOR=ON; the gallery hides this tile otherwise.
+// with QAMUI_ENABLE_BEHAVIOR=ON; the gallery hides this tile otherwise.
 Terminal {
     id: root
     color: "#0b0f14"

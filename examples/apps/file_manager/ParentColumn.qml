@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
+import Qamui
 
 Rectangle {
     id: root

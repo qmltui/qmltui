@@ -1,6 +1,6 @@
 # AnimatedSprite Example
 
-Demonstrates `Qtui.Image.AnimatedSprite` using the classic 4-frame loading animation from the Qt Quick documentation.
+Demonstrates `Qamui.Image.AnimatedSprite` using the classic 4-frame loading animation from the Qt Quick documentation.
 
 The sprite sheet (`loading.png`, 256×64) contains 4 square frames of 64×64 pixels showing animated progress dots.
 
@@ -27,11 +27,11 @@ AnimatedSprite {
 
 ## Building and Running
 
-Build with `QTUI_ENABLE_IMAGE=ON` and examples enabled:
+Build with `QAMUI_ENABLE_IMAGE=ON` and examples enabled:
 
 ```sh
-rtk cmake --build build --target qtui_animated_sprite_demo qtui_animated_sprite_demo_test
-./build/examples/components/animated_sprite/qtui_animated_sprite_demo
+rtk cmake --build build --target qamui_animated_sprite_demo qamui_animated_sprite_demo_test
+./build/examples/components/animated_sprite/qamui_animated_sprite_demo
 rtk ctest --test-dir build -R '^animated_sprite_demo$' --output-on-failure
 ```
 

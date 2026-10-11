@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Column {
     id: toolResultCard

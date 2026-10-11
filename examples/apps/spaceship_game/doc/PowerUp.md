@@ -40,7 +40,7 @@ Developers use `PowerUp` to render falling power-up item delegates.
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 PowerUp {
     type: "fire"

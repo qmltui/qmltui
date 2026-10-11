@@ -1,17 +1,17 @@
 #include <QtTest>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/items/MouseArea.h>
-#include <Qtui/Core/items/Popup.h>
-#include <Qtui/Core/items/ScrollView.h>
-#include <Qtui/Core/engine/InputRouter_p.h>
-#include <Qtui/Core/engine/FocusManager.h>
-#include <Qtui/Core/engine/KeyEvent.h>
-#include <Qtui/Core/engine/MouseEvent.h>
-#include <Qtui/Core/engine/Keys.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/items/MouseArea.h>
+#include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/items/ScrollView.h>
+#include <Qamui/Core/engine/InputRouter_p.h>
+#include <Qamui/Core/engine/FocusManager.h>
+#include <Qamui/Core/engine/KeyEvent.h>
+#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/engine/Keys.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 
-using namespace qtui;
+using namespace qamui;
 
 class TestInputRouter : public QObject {
     Q_OBJECT

@@ -8,12 +8,12 @@
 #include <QQmlContext>
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
-#include <Qtui/Core/items/TreeView.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -30,7 +30,7 @@ std::unique_ptr<QStandardItemModel> makeTree(int groups, int leaves)
 }
 
 const QString delegateQml = QStringLiteral(R"(
-    import Qtui
+    import Qamui
     TreeView {
         width: 40; height: 8
         model: testModel
@@ -45,7 +45,7 @@ const QString delegateQml = QStringLiteral(R"(
     }
 )");
 const QString builtinQml = QStringLiteral(R"(
-    import Qtui
+    import Qamui
     TreeView { width: 40; height: 8; model: testModel }
 )");
 
@@ -243,7 +243,7 @@ private slots:
         auto model = makeTree(2, 1);
         TreeFixture f;
         QVERIFY2(f.create(model.get(), QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TreeView {
                 width: 40; height: 8; model: testModel
                 delegate: Text { required property string display; required property int depth

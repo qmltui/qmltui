@@ -1,10 +1,10 @@
 ---
 title: ProgressBar
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: Item
-cpp: qtui::Item
+cpp: qamui::Item
 category: display
 summary: A one-row horizontal bar that fills from left to right as a value moves from `from` to `to`.
 ---
@@ -15,8 +15,8 @@ A one-row horizontal bar that fills from left to right as a value moves from `fr
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -74,8 +74,8 @@ stops takes precedence over thresholds.
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root

@@ -12,7 +12,7 @@
 WifiManager::WifiManager(QObject *parent)
     : QObject(parent)
 {
-    const QByteArray requestedBackend = qgetenv("QTUI_STARTER_BACKEND").trimmed().toLower();
+    const QByteArray requestedBackend = qgetenv("QAMUI_STARTER_BACKEND").trimmed().toLower();
     if (requestedBackend == "observe")
         m_backendMode = BackendMode::Observe;
     else if (requestedBackend == "mock")
@@ -34,7 +34,7 @@ WifiManager::WifiManager(QObject *parent)
 
     if (m_backendMode == BackendMode::Mock) {
         m_networks = {
-            QVariantMap{{"ssid", "Qtui Lab"}, {"signal", 88}, {"frequency", 5180},
+            QVariantMap{{"ssid", "Qamui Lab"}, {"signal", 88}, {"frequency", 5180},
                         {"security", "WPA2"}, {"connected", false}},
             QVariantMap{{"ssid", "Device Setup"}, {"signal", 64}, {"frequency", 2412},
                         {"security", "WPA2"}, {"connected", false}}
@@ -198,7 +198,7 @@ void WifiManager::prepareWifiStack(std::function<void(bool)> callback)
 
 void WifiManager::applyWifiPowerPolicy()
 {
-    if (qEnvironmentVariableIntValue("QTUI_WIFI_LOW_LATENCY") != 1)
+    if (qEnvironmentVariableIntValue("QAMUI_WIFI_LOW_LATENCY") != 1)
         return;
     runCommand("iw", {"dev", m_interface, "set", "power_save", "off"}, 1000,
                [this](int exitCode, const QString &, const QString &error) {
@@ -738,9 +738,9 @@ void WifiManager::updateSystemDiagnostics()
 bool WifiManager::asciiConsole() const
 {
     // Emoji only render on real terminal emulators; the framebuffer and
-    // serial consoles use fixed fonts without them. QTUI_SIMPLE_GLYPHS=1/0
+    // serial consoles use fixed fonts without them. QAMUI_SIMPLE_GLYPHS=1/0
     // forces either mode.
-    const QByteArray forced = qgetenv("QTUI_SIMPLE_GLYPHS");
+    const QByteArray forced = qgetenv("QAMUI_SIMPLE_GLYPHS");
     if (!forced.isEmpty())
         return forced != "0";
     const QByteArray term = qgetenv("TERM");

@@ -1,10 +1,10 @@
 ---
 title: MouseArea
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: Item
-cpp: qtui::MouseArea
+cpp: qamui::MouseArea
 category: input events
 summary: An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the wheel.
 ---
@@ -15,8 +15,8 @@ An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the w
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -45,14 +45,14 @@ An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the w
 
 ## Detailed Description
 
-MouseArea makes a region of the cell grid clickable. Like every Qtui item its
+MouseArea makes a region of the cell grid clickable. Like every Qamui item its
 geometry is integer cells; `mouseX`/`mouseY` are cell coordinates relative to
 the area. Event handlers receive a [MouseEvent](mouseevent.md) whose `button`
 holds Qt values, so Qt Quick idioms carry over:
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: root
@@ -110,5 +110,5 @@ Deliberately absent: `cursorShape` (there is no pointer to shape),
 `doubleClicked` and `pressAndHold` (planned; synthesize with a `Timer` for
 now), `positionChanged` (bind to `mouseX`/`mouseY` changes), the `drag`
 attached group (build drags from `pressed` plus `mouseX`/`mouseY`),
-`propagateComposedEvents`/`preventStealing` (Qtui's propagation is the plain
+`propagateComposedEvents`/`preventStealing` (Qamui's propagation is the plain
 unaccepted-events-bubble model), and `scrollGestureEnabled` (no gestures).

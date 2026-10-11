@@ -7,12 +7,12 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qtui/Runner/MemoryTerminalBackend.h>
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Runner/MemoryTerminalBackend.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 MemoryTerminalBackend* backend = nullptr;
@@ -22,7 +22,7 @@ constexpr const char* kMotion = "\033[?1000h\033[?1002h\033[?1006h\033[?1003h";
 
 std::unique_ptr<QObject> load(QQmlEngine& qml, const char* source, Terminal** terminal) {
     QQmlComponent component(&qml);
-    component.setData(QByteArray("import QtQml\nimport Qtui\n") + source, QUrl());
+    component.setData(QByteArray("import QtQml\nimport Qamui\n") + source, QUrl());
     std::unique_ptr<QObject> object(component.create());
     if (!object) qWarning() << component.errorString();
     *terminal = qobject_cast<Terminal*>(object.get());
@@ -158,7 +158,7 @@ Terminal {
         Terminal* terminal = nullptr;
         QQmlComponent component(&qml);
         component.setData(QByteArray(
-            "import QtQml\nimport Qtui\nimport Qtui.Controls\n"
+            "import QtQml\nimport Qamui\nimport Qamui.Controls\n"
             R"(
 Terminal {
     Row {

@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: root

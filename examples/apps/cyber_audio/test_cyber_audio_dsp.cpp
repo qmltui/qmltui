@@ -11,8 +11,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
-#include <Qtui/Core/items/Canvas.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Canvas.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 
 #include <cmath>
 #include <numbers>
@@ -478,10 +478,10 @@ void TestCyberAudioDsp::correlationTracksStereoWidth()
 namespace {
 
 // Paints the canvas and returns, per column, whether any Braille dot was drawn.
-std::vector<bool> paintedColumns(qtui::Canvas& canvas, qtui::TextGridBuffer& buf)
+std::vector<bool> paintedColumns(qamui::Canvas& canvas, qamui::TextGridBuffer& buf)
 {
     buf.resize(canvas.width(), canvas.height());
-    const qtui::ClipRect clip{ 0, 0, canvas.width(), canvas.height() };
+    const qamui::ClipRect clip{ 0, 0, canvas.width(), canvas.height() };
     canvas.paint(buf, 0, 0, clip);
     std::vector<bool> columns(size_t(canvas.width()), false);
     for (int y = 0; y < canvas.height(); ++y)
@@ -496,8 +496,8 @@ std::vector<bool> paintedColumns(qtui::Canvas& canvas, qtui::TextGridBuffer& buf
 
 void TestCyberAudioDsp::shapesDrawIntoBrailleCanvas()
 {
-    qtui::Canvas canvas;
-    canvas.setRenderMode(qtui::Canvas::RenderMode::Braille);
+    qamui::Canvas canvas;
+    canvas.setRenderMode(qamui::Canvas::RenderMode::Braille);
     canvas.setWidth(40);
     canvas.setHeight(10);
     canvas.setColor("white");
@@ -510,7 +510,7 @@ void TestCyberAudioDsp::shapesDrawIntoBrailleCanvas()
     auto* trace = new WaveformTrace(&canvas);
     trace->setParentItem(&canvas);
     trace->setSamples(sine);
-    qtui::TextGridBuffer buf;
+    qamui::TextGridBuffer buf;
     auto cols = paintedColumns(canvas, buf);
     QVERIFY(cols.front());
     QVERIFY(cols.back());
@@ -552,7 +552,7 @@ void TestCyberAudioDsp::nebulaRespondsToSpectralChanges()
     // Identical elapsed time and starting state isolate music response from
     // free-running motion. A modest 3.6 dB change must alter visible geometry.
     const auto render = [](int changedBand) {
-        qtui::Canvas canvas;
+        qamui::Canvas canvas;
         canvas.setWidth(100);
         canvas.setHeight(28);
         auto* nebula = new NeonNebula(&canvas);
@@ -565,7 +565,7 @@ void TestCyberAudioDsp::nebulaRespondsToSpectralChanges()
                 bands[i] = 0.56;
         for (int tick = 0; tick < 3; ++tick)
             nebula->advance(bands);
-        qtui::TextGridBuffer buf;
+        qamui::TextGridBuffer buf;
         paintedColumns(canvas, buf);
         QList<QByteArray> cells;
         for (int y = 0; y < canvas.height(); ++y)
@@ -591,7 +591,7 @@ void TestCyberAudioDsp::nebulaRespondsToSpectralChanges()
     QVERIFY2(changedFraction(unchanged, treble) > 0.25, "Treble attack barely changed the rendered artwork");
     QVERIFY2(changedFraction(bass, treble) > 0.25, "Different frequency content should produce different shapes");
 
-    qtui::Canvas canvas;
+    qamui::Canvas canvas;
     canvas.setWidth(80);
     canvas.setHeight(24);
     auto* nebula = new NeonNebula(&canvas);
@@ -599,7 +599,7 @@ void TestCyberAudioDsp::nebulaRespondsToSpectralChanges()
     nebula->advance(QVariantList(24, 0.8));
     for (int tick = 0; tick < 600; ++tick)
         nebula->advance(QVariantList(24, 0.0));
-    qtui::TextGridBuffer before, after;
+    qamui::TextGridBuffer before, after;
     paintedColumns(canvas, before);
     // Repainting alone cannot advance the animation; silence must also settle.
     for (int tick = 0; tick < 10; ++tick)

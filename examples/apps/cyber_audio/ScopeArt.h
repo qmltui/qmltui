@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qtui/Core/items/Canvas.h>
+#include <Qamui/Core/items/Canvas.h>
 
 #include <QList>
 #include <QQmlEngine>
@@ -15,7 +15,7 @@
 // Phosphor persistence: keeps the last `depth` traces and draws them oldest first,
 // fading from `fadeColor` to `color`, so fast material leaves glowing trails like an
 // analog CRT scope.
-class PersistenceTrace : public qtui::CanvasShape
+class PersistenceTrace : public qamui::CanvasShape
 {
     Q_OBJECT
     QML_ELEMENT
@@ -36,7 +36,7 @@ public:
     QString fadeColor() const { return m_fadeColor; }
     void setFadeColor(const QString& color);
 
-    void draw(qtui::CanvasPainter& painter) const override;
+    void draw(qamui::CanvasPainter& painter) const override;
 
 signals:
     void samplesChanged();
@@ -55,7 +55,7 @@ private:
 // each on a baseline a little higher than the newer one, with nearer lines hiding
 // what lies behind them. Uses the rectified signal so every line rises from its
 // baseline.
-class RidgePlot : public qtui::CanvasShape
+class RidgePlot : public qamui::CanvasShape
 {
     Q_OBJECT
     QML_ELEMENT
@@ -76,7 +76,7 @@ public:
     QString fadeColor() const { return m_fadeColor; }
     void setFadeColor(const QString& color);
 
-    void draw(qtui::CanvasPainter& painter) const override;
+    void draw(qamui::CanvasPainter& painter) const override;
 
 signals:
     void samplesChanged();
@@ -93,7 +93,7 @@ private:
 
 // Audio-driven ribbon field. Simulation advances explicitly at the audio/UI cadence;
 // drawing is pure so extra committed frames never change the animation.
-class NeonNebula : public qtui::CanvasShape
+class NeonNebula : public qamui::CanvasShape
 {
     Q_OBJECT
     QML_ELEMENT
@@ -104,7 +104,7 @@ public:
     QString sparkColor() const { return m_sparkColor; }
     void setSparkColor(const QString& color);
     Q_INVOKABLE void advance(const QVariantList& bands);
-    void draw(qtui::CanvasPainter& painter) const override;
+    void draw(qamui::CanvasPainter& painter) const override;
 
 signals:
     void sparkColorChanged();

@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Column {
     id: banner
@@ -21,7 +21,7 @@ Column {
             variant: "subtle"
         }
         Text {
-            text: " · " + banner.activeModel + " · ~/Qtui"
+            text: " · " + banner.activeModel + " · ~/Qamui"
             color: "#94a3b8"
         }
     }

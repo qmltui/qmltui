@@ -1,16 +1,16 @@
-# Qtui Gallery: one self-contained Main.qml, so the wasm playground can load it
+# Qamui Gallery: one self-contained Main.qml, so the wasm playground can load it
 # as a preset and the browser demo page can run it as an app.
 set(gallery_qml_files Main.qml)
 # The demos: complete standalone apps the launcher instantiates from their
 # text (see Main.qml). Plain resources, not QML module files, so their names
-# (Button.qml, ...) never shadow the Qtui.Controls types they demonstrate.
+# (Button.qml, ...) never shadow the Qamui.Controls types they demonstrate.
 file(GLOB gallery_example_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.qml")
-# Behavior needs QTUI_ENABLE_BEHAVIOR; without it the tile is left out and the
+# Behavior needs QAMUI_ENABLE_BEHAVIOR; without it the tile is left out and the
 # catalog hides the entry (Main.qml filters on the files it was given).
-if(NOT QTUI_ENABLE_BEHAVIOR)
+if(NOT QAMUI_ENABLE_BEHAVIOR)
     list(FILTER gallery_example_files EXCLUDE REGEX "/Behavior\\.qml$")
 endif()
-if(NOT QTUI_ENABLE_IMAGE)
+if(NOT QAMUI_ENABLE_IMAGE)
     list(FILTER gallery_example_files EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
 # The Image tile's picture and the AnimatedSprite tile's sheet, shared with
@@ -26,11 +26,11 @@ function(gallery_add_executable target uri main_source)
         set(module_output_directory OUTPUT_DIRECTORY "${ARGV3}")
     endif()
     qt_add_executable(${target} ${main_source})
-    set(gallery_dependencies TARGET Qtui::Core TARGET Qtui::Controls)
-    set(gallery_link_libraries Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
-    if(QTUI_ENABLE_IMAGE)
-        list(APPEND gallery_dependencies TARGET Qtui::Image)
-        list(APPEND gallery_link_libraries Qtui::Image)
+    set(gallery_dependencies TARGET Qamui::Core TARGET Qamui::Controls)
+    set(gallery_link_libraries Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
+    if(QAMUI_ENABLE_IMAGE)
+        list(APPEND gallery_dependencies TARGET Qamui::Image)
+        list(APPEND gallery_link_libraries Qamui::Image)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
@@ -45,7 +45,7 @@ function(gallery_add_executable target uri main_source)
         BASE "${CMAKE_CURRENT_SOURCE_DIR}/examples"
         FILES ${gallery_example_files}
     )
-    if(QTUI_ENABLE_IMAGE)
+    if(QAMUI_ENABLE_IMAGE)
         qt_add_resources(${target} "${target}_assets"
             PREFIX "/gallery/assets"
             BASE "${gallery_asset_dir}"
@@ -59,37 +59,37 @@ function(gallery_add_executable target uri main_source)
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})
     foreach(plugin_target IN ITEMS
-            QtuiCoreplugin QtuiControlsplugin QtuiImageplugin
-            Qtui::CorePlugin Qtui::ControlsPlugin Qtui::ImagePlugin)
+            QamuiCoreplugin QamuiControlsplugin QamuiImageplugin
+            Qamui::CorePlugin Qamui::ControlsPlugin Qamui::ImagePlugin)
         if(TARGET ${plugin_target})
             add_dependencies(${target} ${plugin_target})
         endif()
     endforeach()
 endfunction()
 
-gallery_add_executable(qtui_gallery Gallery main.cpp)
+gallery_add_executable(qamui_gallery Gallery main.cpp)
 
-if(COMMAND qtui_wasm_app)   # browser build, see examples/wasm and docs/guide/webassembly.md
-    qtui_wasm_app(qtui_gallery)
+if(COMMAND qamui_wasm_app)   # browser build, see examples/wasm and docs/guide/webassembly.md
+    qamui_wasm_app(qamui_gallery)
 endif()
 
-if(TARGET Qtui::Runner)
-    gallery_add_executable(qtui_gallery_test Gallery main.cpp
+if(TARGET Qamui::Runner)
+    gallery_add_executable(qamui_gallery_test Gallery main.cpp
         "${CMAKE_CURRENT_BINARY_DIR}/qml_test/Gallery")
-    target_link_libraries(qtui_gallery_test PRIVATE Qtui::Runner)
+    target_link_libraries(qamui_gallery_test PRIVATE Qamui::Runner)
 
-    if(QTUI_BUILD_TESTS)
-        # Gallery pages animate on QML Timers and Qtui animations: the tour
+    if(QAMUI_BUILD_TESTS)
+        # Gallery pages animate on QML Timers and Qamui animations: the tour
         # runs on the virtual clock, so its per-page settling is instant.
-        qtui_add_scenario_test(
+        qamui_add_scenario_test(
             NAME gallery_smoke
-            TARGET qtui_gallery_test
+            TARGET qamui_gallery_test
             SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery.js"
             COLUMNS 100
             ROWS 30
             CLOCK VIRTUAL
             ARTIFACT "gallery/grid.txt"
-            ARTIFACT_CONTENT "Qtui Gallery"
+            ARTIFACT_CONTENT "Qamui Gallery"
             LABELS AgentSmoke
         )
     endif()

@@ -6,7 +6,7 @@ function main(terminal) {
     terminal.expectText("STATE");
 
     terminal.expectText("systemd");
-    terminal.expectText("qtui_gallery");
+    terminal.expectText("qamui_gallery");
     terminal.expectText("sshd");
     terminal.expectText("postgres");
     terminal.expectText("node");
@@ -21,7 +21,7 @@ function main(terminal) {
     terminal.press("DOWN");
     terminal.press("DOWN");
     terminal.press("ENTER");
-    terminal.expectText("Activated row 1: qtui_gallery");
+    terminal.expectText("Activated row 1: qamui_gallery");
 
     terminal.captureText("activated_table_grid.txt");
 }

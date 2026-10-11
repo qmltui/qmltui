@@ -1,7 +1,7 @@
 # Stream Mode Decision (design notes, 2026-09)
 
 Design notes written before the numbered plans, kept because they record why
-Qtui has two renderers. Stream mode has since shipped as `StreamRenderer` behind
+Qamui has two renderers. Stream mode has since shipped as `StreamRenderer` behind
 `Terminal.mode`; the current roadmap is [README.md](README.md).
 
 ## Target Use Case: Coding Agent TUI

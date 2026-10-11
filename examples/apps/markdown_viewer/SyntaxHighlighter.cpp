@@ -2,7 +2,7 @@
 #include <QSet>
 #include <QRegularExpression>
 
-namespace qtui {
+namespace qamui {
 
 SyntaxHighlighter::Language SyntaxHighlighter::detectLanguage(const QString &langTag) {
     QString tag = langTag.trimmed().toLower();
@@ -324,4 +324,4 @@ QList<StyledSpan> SyntaxHighlighter::highlightLine(const QString &line, Language
     return spans;
 }
 
-} // namespace qtui
+} // namespace qamui

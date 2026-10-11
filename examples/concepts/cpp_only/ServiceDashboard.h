@@ -1,16 +1,16 @@
 #pragma once
 
-// A small Qtui application without QML: a filterable list of services with
-// live latencies, built from Qtui's C++ items.
+// A small Qamui application without QML: a filterable list of services with
+// live latencies, built from Qamui's C++ items.
 
-#include <Qtui/Core/items/Terminal.h>
+#include <Qamui/Core/items/Terminal.h>
 
 #include <QList>
 #include <QProperty>
 #include <QString>
 #include <QTimer>
 
-namespace qtui {
+namespace qamui {
 class Column;
 class KeyEvent;
 class TextInput;
@@ -24,7 +24,7 @@ struct ServiceEntry {
 
 // The root Terminal is the last stop for keyboard events, so subclassing it is
 // the C++ counterpart of `Keys.onPressed` on a QML root.
-class ServiceDashboard : public qtui::Terminal {
+class ServiceDashboard : public qamui::Terminal {
     Q_OBJECT
 public:
     explicit ServiceDashboard(QObject *parent = nullptr);
@@ -37,7 +37,7 @@ public:
 
 protected:
     // Receives only the keys the focused widget declined.
-    void keyPressEvent(qtui::KeyEvent *event) override;
+    void keyPressEvent(qamui::KeyEvent *event) override;
 
 private:
     void rebuildRows();
@@ -49,8 +49,8 @@ private:
     QProperty<QList<ServiceEntry>> m_visibleServices;
     QPropertyNotifier m_rowsNotifier;
 
-    qtui::TextInput *m_filter = nullptr;
-    qtui::Column *m_rows = nullptr;
+    qamui::TextInput *m_filter = nullptr;
+    qamui::Column *m_rows = nullptr;
     QTimer m_telemetry;
     int m_samples = 0;
 };

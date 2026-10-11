@@ -1,5 +1,5 @@
 import QtQml
-import Qtui.Examples.MarkdownViewer 1.0
+import Qamui.Examples.MarkdownViewer 1.0
 
 MdDocStyle {
     id: root

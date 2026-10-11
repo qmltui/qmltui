@@ -1,10 +1,10 @@
 ---
 title: Border
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: 
-cpp: qtui::Border
+cpp: qamui::Border
 category: core
 summary: Grouped property configuring the border style and colour of a Rectangle.
 ---
@@ -15,8 +15,8 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -43,7 +43,7 @@ Supported styles are:
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     Rectangle {

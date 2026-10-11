@@ -1,10 +1,10 @@
 ---
 title: AnimatedSprite
 kind: qml
-import: Qtui.Image
+import: Qamui.Image
 since: "0.5"
 inherits: Image
-cpp: qtui::AnimatedSprite
+cpp: qamui::AnimatedSprite
 category: display
 summary: Plays a frame-grid animation from a single sprite sheet.
 ---
@@ -15,8 +15,8 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Image` |
-| **Since** | Qtui 0.5 |
+| **Import Statement** | `import Qamui.Image` |
+| **Since** | Qamui 0.5 |
 | **Inherits** | [Image](image.md) |
 
 ## Properties
@@ -88,8 +88,8 @@ The classic 4-frame loading animation from the Qt Quick documentation:
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Image
+import Qamui
+import Qamui.Image
 
 Terminal {
     id: root

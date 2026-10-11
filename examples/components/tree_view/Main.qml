@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
+import Qamui
 
 
 Terminal {
@@ -48,7 +48,7 @@ Terminal {
                     anchors.margins: 1
 
                     rootNode: {
-                        "text": "qtui (Workspace Root)",
+                        "text": "qamui (Workspace Root)",
                         "expanded": true,
                         "children": [
                             {

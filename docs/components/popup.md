@@ -1,10 +1,10 @@
 ---
 title: Popup
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: Rectangle
-cpp: qtui::Popup
+cpp: qamui::Popup
 category: overlays and navigation
 summary: A rectangle drawn above all ordinary items that can trap input, dim the background and restore focus when closed.
 ---
@@ -15,8 +15,8 @@ A rectangle drawn above all ordinary items that can trap input, dim the backgrou
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Rectangle](rectangle.md) |
 
 ## Properties
@@ -96,8 +96,8 @@ focus. Popup has no implicit size; give it `width` and `height` or anchors.
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     Button {

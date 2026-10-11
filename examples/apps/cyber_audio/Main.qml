@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 // Composition root: owns the AudioEngine, the keyboard map and the widget toggles, and
 // arranges the HeaderBar / TransportBar / SpectrumPanel / ScopePanel / KeyMapBar.
@@ -96,7 +96,7 @@ Terminal {
     property real spectrumShare: 0.55
 
     // Plain bindings on purpose: a `Behavior on` a bound string property does not apply
-    // the new value in Qtui (verified 2026-09).
+    // the new value in Qamui (verified 2026-09).
     readonly property string accentColor: Theme.accent
     readonly property string secondaryColor: Theme.secondary
     readonly property string scopeAccent: Theme.scopeAccent

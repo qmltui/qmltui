@@ -1,6 +1,6 @@
-qt_add_executable(qtui_animated_sprite_demo main.cpp)
+qt_add_executable(qamui_animated_sprite_demo main.cpp)
 
-qt_add_qml_module(qtui_animated_sprite_demo
+qt_add_qml_module(qamui_animated_sprite_demo
     URI AnimatedSpriteDemo
     VERSION 1.0
     QML_FILES
@@ -8,15 +8,15 @@ qt_add_qml_module(qtui_animated_sprite_demo
     RESOURCES
         loading.png
     DEPENDENCIES TARGET
-        Qtui::Core
-        Qtui::Image
+        Qamui::Core
+        Qamui::Image
 )
 
-target_link_libraries(qtui_animated_sprite_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Image)
+target_link_libraries(qamui_animated_sprite_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qamui::Core Qamui::Image)
 
-if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
-    qt_add_executable(qtui_animated_sprite_demo_test main.cpp)
-    qt_add_qml_module(qtui_animated_sprite_demo_test
+if(TARGET Qamui::Runner AND QAMUI_BUILD_TESTS)
+    qt_add_executable(qamui_animated_sprite_demo_test main.cpp)
+    qt_add_qml_module(qamui_animated_sprite_demo_test
         URI AnimatedSpriteDemo
         OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/AnimatedSpriteDemo"
         VERSION 1.0
@@ -24,14 +24,14 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
         RESOURCES
             loading.png
         DEPENDENCIES TARGET
-            Qtui::Core
-            Qtui::Image
+            Qamui::Core
+            Qamui::Image
     )
-    target_link_libraries(qtui_animated_sprite_demo_test PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Image Qtui::Runner)
-    qtui_add_scenario_test(
+    target_link_libraries(qamui_animated_sprite_demo_test PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Qml Qamui::Core Qamui::Image Qamui::Runner)
+    qamui_add_scenario_test(
         NAME animated_sprite_demo
-        TARGET qtui_animated_sprite_demo_test
+        TARGET qamui_animated_sprite_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_animated_sprite_demo.js"
         COLUMNS 80
         ROWS 24

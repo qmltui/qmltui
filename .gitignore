@@ -20,3 +20,6 @@ build-*/
 *.qmlls.ini
 layers/
 *:Zone.Identifier
+
+# Python bytecode
+__pycache__/

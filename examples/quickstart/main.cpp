@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.loadFromModule("HelloQtui", "Main");
+    engine.loadFromModule("HelloQamui", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
     return app.exec();

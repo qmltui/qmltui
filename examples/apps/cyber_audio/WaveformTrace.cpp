@@ -4,7 +4,7 @@
 #include <cmath>
 
 WaveformTrace::WaveformTrace(QObject* parent)
-    : qtui::CanvasShape(parent)
+    : qamui::CanvasShape(parent)
 {
 }
 
@@ -45,7 +45,7 @@ void WaveformTrace::requestRepaint()
 
 namespace {
 
-void bresenham(qtui::CanvasPainter& painter, int x0, int y0, int x1, int y1, uint32_t ink)
+void bresenham(qamui::CanvasPainter& painter, int x0, int y0, int x1, int y1, uint32_t ink)
 {
     const int dx = std::abs(x1 - x0);
     const int dy = -std::abs(y1 - y0);
@@ -64,7 +64,7 @@ void bresenham(qtui::CanvasPainter& painter, int x0, int y0, int x1, int y1, uin
 
 } // namespace
 
-void WaveformTrace::draw(qtui::CanvasPainter& painter) const
+void WaveformTrace::draw(qamui::CanvasPainter& painter) const
 {
     const int pw = painter.pixelWidth();
     const int ph = painter.pixelHeight();

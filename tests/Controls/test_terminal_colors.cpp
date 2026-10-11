@@ -3,24 +3,24 @@
 #include <QQmlEngine>
 #include <QStandardItemModel>
 #include <memory>
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/items/Text.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/TreeView.h>
-#include <Qtui/Controls/Toast.h>
-#include <Qtui/Controls/TabBar.h>
-#include <Qtui/Controls/ToolTip.h>
-#include <Qtui/Core/items/Popup.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Controls/Toast.h>
+#include <Qamui/Controls/TabBar.h>
+#include <Qamui/Controls/ToolTip.h>
+#include <Qamui/Core/items/Popup.h>
 #include "../TestPaint.h"
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 class TestTerminalColors : public QObject {
     Q_OBJECT
 private slots:
-    void initTestCase() { qputenv("QTUI_RUNNER_CAPTURE_AFTER_MS", "0"); }
+    void initTestCase() { qputenv("QAMUI_RUNNER_CAPTURE_AFTER_MS", "0"); }
     void defaultInk_data();
     void defaultInk();
     void explicitColorsSurviveStates();
@@ -30,7 +30,7 @@ private:
     QQmlEngine engine;
     std::unique_ptr<Item> load(const QByteArray& body) {
         QQmlComponent component(&engine);
-        component.setData("import QtQml\nimport Qtui\nimport Qtui.Controls\n" + body, QUrl());
+        component.setData("import QtQml\nimport Qamui\nimport Qamui.Controls\n" + body, QUrl());
         if (component.isError()) qWarning().noquote() << component.errorString();
         return std::unique_ptr<Item>(qobject_cast<Item*>(component.create()));
     }

@@ -1,10 +1,10 @@
 // ClockTimer semantics on the virtual clock: deadline ordering, single-shot
 // versus repeating, and mutation from inside a timeout handler.
-#include <Qtui/Core/engine/Clock_p.h>
+#include <Qamui/Core/engine/Clock_p.h>
 
 #include <QtTest/QtTest>
 
-using namespace qtui;
+using namespace qamui;
 
 class TestClockVirtual : public QObject {
     Q_OBJECT
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 {
     // Selected before the QCoreApplication exists, exactly as the Runner's
     // startup hook does it.
-    qputenv("QTUI_RUNNER_CLOCK", "virtual");
+    qputenv("QAMUI_RUNNER_CLOCK", "virtual");
     QCoreApplication app(argc, argv);
     TestClockVirtual test;
     return QTest::qExec(&test, argc, argv);

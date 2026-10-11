@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: root
@@ -17,7 +17,7 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "Qtui ScrollView Component Example (Use Up/Down/PageUp/PageDown/Wheel to scroll)"
+            text: "Qamui ScrollView Component Example (Use Up/Down/PageUp/PageDown/Wheel to scroll)"
             color: "cyan"
         }
 

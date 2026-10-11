@@ -12,8 +12,8 @@ int main(int argc, char *argv[]) {
     QQmlEngine engine;
     
     // Load the QML file
-#ifdef QTUI_AGENT_STREAM_SOURCE
-    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QTUI_AGENT_STREAM_SOURCE)));
+#ifdef QAMUI_AGENT_STREAM_SOURCE
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QAMUI_AGENT_STREAM_SOURCE)));
 #else
     QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qt/qml/AgentStreamDemo/Main.qml")));
 #endif

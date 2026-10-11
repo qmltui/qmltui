@@ -8,11 +8,11 @@
 
 #include <memory>
 
-#include <Qtui/Core/items/Item.h>
-#include <Qtui/Core/items/Loader.h>
-#include <Qtui/Core/items/Text.h>
+#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/items/Loader.h>
+#include <Qamui/Core/items/Text.h>
 
-using namespace qtui;
+using namespace qamui;
 
 class TestLoader : public QObject {
     Q_OBJECT
@@ -28,18 +28,18 @@ private slots:
     void propagatesExplicitSize();
 };
 
-static void addQtuiImportPath(QQmlEngine &engine) {
+static void addQamuiImportPath(QQmlEngine &engine) {
     engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../Qtui"));
+                         + QStringLiteral("/../Qamui"));
 }
 
 void TestLoader::loadsInlineComponent() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Loader {
             sourceComponent: Text {
                 objectName: "content"
@@ -69,18 +69,18 @@ void TestLoader::loadsRelativeUrl() {
     QFile sourceFile(directory.filePath(QStringLiteral("Loaded.qml")));
     QVERIFY(sourceFile.open(QIODevice::WriteOnly));
     const QByteArray sourceData = R"(
-        import Qtui
+        import Qamui
         Item { objectName: "urlContent"; implicitWidth: 9 }
     )";
     QCOMPARE(sourceFile.write(sourceData), sourceData.size());
     sourceFile.close();
 
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Loader { source: "Loaded.qml" }
     )", QUrl::fromLocalFile(directory.filePath(QStringLiteral("Host.qml"))));
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
@@ -96,11 +96,11 @@ void TestLoader::loadsRelativeUrl() {
 
 void TestLoader::loadsNonVisualObject() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         import QtQml
         Loader {
             sourceComponent: QtObject {
@@ -140,7 +140,7 @@ void TestLoader::loadsNonVisualObject() {
 
 void TestLoader::leavesNonVisualObjectUnsized() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
@@ -168,11 +168,11 @@ void TestLoader::leavesNonVisualObjectUnsized() {
 
 void TestLoader::activeControlsLifetime() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Loader {
             active: false
             sourceComponent: Item { implicitWidth: 4; implicitHeight: 2 }
@@ -201,18 +201,18 @@ void TestLoader::activeControlsLifetime() {
 
 void TestLoader::replacingComponentDestroysItem() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent first(&engine);
     first.setData(R"(
-        import Qtui
+        import Qamui
         Item { objectName: "first" }
     )", QUrl());
     QVERIFY2(first.isReady(), qPrintable(first.errorString()));
 
     QQmlComponent second(&engine);
     second.setData(R"(
-        import Qtui
+        import Qamui
         Item { objectName: "second" }
     )", QUrl());
     QVERIFY2(second.isReady(), qPrintable(second.errorString()));
@@ -231,11 +231,11 @@ void TestLoader::replacingComponentDestroysItem() {
 
 void TestLoader::followsLoadedImplicitSize() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Item { implicitWidth: 3; implicitHeight: 2 }
     )", QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
@@ -255,11 +255,11 @@ void TestLoader::followsLoadedImplicitSize() {
 
 void TestLoader::propagatesExplicitSize() {
     QQmlEngine engine;
-    addQtuiImportPath(engine);
+    addQamuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Item { implicitWidth: 3; implicitHeight: 2 }
     )", QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));

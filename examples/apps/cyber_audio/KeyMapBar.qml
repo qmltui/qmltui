@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import Qtui
+import Qamui
 
 // One-row footer listing the active shortcuts. Hints that do not apply to the current
 // source are hidden; narrow terminals get a compact variant.

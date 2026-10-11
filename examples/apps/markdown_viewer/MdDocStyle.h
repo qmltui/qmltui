@@ -4,7 +4,7 @@
 #include <QString>
 #include <QtQml/qqmlregistration.h>
 
-namespace qtui {
+namespace qamui {
 
 class MdDocStyle : public QObject {
     Q_OBJECT
@@ -139,4 +139,4 @@ private:
     QString m_taskListUnchecked = QStringLiteral("[ ] ");
 };
 
-} // namespace qtui
+} // namespace qamui

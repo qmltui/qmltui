@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Column {
     id: promptBar
@@ -64,7 +64,7 @@ Column {
             bold: true
         }
         Text {
-            text: "· ~/Qtui ·"
+            text: "· ~/Qamui ·"
             color: theme.muted
         }
         Text {

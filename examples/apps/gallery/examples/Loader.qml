@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// Loader: Create, swap on demand. One tile of the Qtui gallery (examples/apps/gallery)
+// Loader: Create, swap on demand. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

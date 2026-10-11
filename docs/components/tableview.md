@@ -1,10 +1,10 @@
 ---
 title: TableView
 kind: qml
-import: Qtui
+import: Qamui
 since: "0.4"
 inherits: Item
-cpp: qtui::TableView
+cpp: qamui::TableView
 category: data views
 summary: Virtualized table with connected borders and configurable row and column grids.
 ---
@@ -15,8 +15,8 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -163,7 +163,7 @@ has a built-in `40×10` implicit size.
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     TableView {

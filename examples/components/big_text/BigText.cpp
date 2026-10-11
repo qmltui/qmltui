@@ -1,10 +1,10 @@
 #include "BigText.h"
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 #include <QChar>
 #include <array>
 #include <cctype>
 
-namespace qtui {
+namespace qamui {
 
 // 3x3 3-line tall ASCII block font matrix definitions
 struct FontGlyph {
@@ -113,4 +113,4 @@ void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &
     }
 }
 
-} // namespace qtui
+} // namespace qamui

@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 import ContainerFleetApp
 
 Terminal {
@@ -29,7 +29,7 @@ Terminal {
     readonly property string colorAccentYellow: "#f9e2af"
     readonly property string colorAccentPurple: "#cba6f7"
 
-    // MANDATORY QTUI RULE: Explicit key handling for Q/Escape to quit
+    // MANDATORY QAMUI RULE: Explicit key handling for Q/Escape to quit
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Q || (event.key === Qt.Key_Escape && searchInput.text === "")) {
             Qt.quit()

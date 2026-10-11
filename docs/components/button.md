@@ -1,10 +1,10 @@
 ---
 title: Button
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qtui::Item
+cpp: qamui::Item
 category: inputs
 summary: A focusable, bordered action button that emits clicked() on Enter, Space or a mouse click
 ---
@@ -15,8 +15,8 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [AbstractButton](abstractbutton.md) |
 
 Button adds no members of its own; every property, signal and method is
@@ -72,8 +72,8 @@ choice out of several [RadioButton](radiobutton.md) with a
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     Keys.onPressed: event => {

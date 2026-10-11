@@ -1,11 +1,11 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root
 
-    title: "Boot to Qtui — Device Setup"
+    title: "Boot to Qamui — Device Setup"
     color: Theme.bgMain
     focus: true
 
@@ -83,7 +83,7 @@ Terminal {
             }
 
             Text {
-                text: "Boot to Qtui · Device Setup"
+                text: "Boot to Qamui · Device Setup"
                 color: Theme.textPrimary
                 bold: true
             }

@@ -1,6 +1,6 @@
 # Yazi-Style Terminal File Manager
 
-A modern, fast, 3-column Miller column terminal file manager written in C++20 and pure Qtui/QML. Inspired by [Yazi](https://github.com/sxyazi/yazi), it features reactive directory navigation, real-time syntax-previewed text inspection, directory subtree exploration, metadata cards, and Vim keybindings.
+A modern, fast, 3-column Miller column terminal file manager written in C++20 and pure Qamui/QML. Inspired by [Yazi](https://github.com/sxyazi/yazi), it features reactive directory navigation, real-time syntax-previewed text inspection, directory subtree exploration, metadata cards, and Vim keybindings.
 
 ## Architecture
 
@@ -14,7 +14,7 @@ A modern, fast, 3-column Miller column terminal file manager written in C++20 an
 - **Modern Qt 6.8+ Core Backend**:
   - Uses `QDirListing` for low-overhead C++20 range-based directory entry streaming.
   - Uses `QStorageInfo` for real-time filesystem capacity and mount point metrics.
-- **Top Header Bar**: User@host badge, path breadcrumbs (`~ ❯ projects ❯ Qtui`), drive usage, and mode badges (`NORMAL`, `SELECT`, `FILTER`).
+- **Top Header Bar**: User@host badge, path breadcrumbs (`~ ❯ projects ❯ Qamui`), drive usage, and mode badges (`NORMAL`, `SELECT`, `FILTER`).
 - **Bottom Status Bar**: File permissions/owner, toast notifications, selection count, sorting mode indicator, cursor position, and quick shortcuts cheatsheet.
 - **Interactive Modals**:
   - **Live Filter**: Instant substring filtering with `/` or `f`.
@@ -48,11 +48,11 @@ A modern, fast, 3-column Miller column terminal file manager written in C++20 an
 
 ```bash
 # Build
-rtk cmake -S . -B build -DQTUI_BUILD_EXAMPLES=ON -DQTUI_BUILD_TESTS=ON
-rtk cmake --build build --target qtui_file_manager
+rtk cmake -S . -B build -DQAMUI_BUILD_EXAMPLES=ON -DQAMUI_BUILD_TESTS=ON
+rtk cmake --build build --target qamui_file_manager
 
 # Run live
-./build/examples/apps/file_manager/qtui_file_manager
+./build/examples/apps/file_manager/qamui_file_manager
 
 # Run automated scenarios
 rtk ctest --test-dir build -R '^file_manager_' --output-on-failure

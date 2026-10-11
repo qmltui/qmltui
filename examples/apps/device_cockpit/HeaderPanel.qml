@@ -1,7 +1,7 @@
 import QtQml
-import Qtui
-import Qtui.Controls
-import Qtui.Examples.DeviceCockpit
+import Qamui
+import Qamui.Controls
+import Qamui.Examples.DeviceCockpit
 
 Rectangle {
     id: header

@@ -10,15 +10,15 @@
 #include <QStandardItemModel>
 #include <QAbstractListModel>
 #include <QColor>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/TreeView.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -116,7 +116,7 @@ private slots:
         auto model = styledModel();
         Fixture f;
         QVERIFY2(f.create(model.get(), QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TableView { width: 20; height: 8; model: testModel; columns: [{title: "Name", width: 20}] }
         )")), qPrintable(f.component.errorString()));
         // Header occupies two rows.
@@ -145,7 +145,7 @@ private slots:
         auto model = styledModel();
         Fixture f;
         QVERIFY2(f.create(model.get(), QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TreeView { width: 20; height: 8; model: testModel; currentIndex: -1 }
         )")), qPrintable(f.component.errorString()));
         // The first node is current by default and drawn with selection colors.
@@ -166,8 +166,8 @@ private slots:
         auto model = styledModel();
         Fixture f;
         QVERIFY2(f.create(model.get(), QStringLiteral(R"(
-            import Qtui
-            import Qtui.Controls
+            import Qamui
+            import Qamui.Controls
             ListView { width: 20; height: 8; model: testModel; delegate: StandardItemDelegate {} }
         )")), qPrintable(f.component.errorString()));
         QCOMPARE(f.line(0), QStringLiteral("               alpha"));
@@ -210,7 +210,7 @@ private slots:
         PlainStyledModel model;
         Fixture f;
         QVERIFY2(f.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TableView { width: 20; height: 8; model: testModel; columns: [{title: "Name", width: 20}] }
         )")), qPrintable(f.component.errorString()));
         // "[x] row 0" centered in 20 cells.
@@ -241,7 +241,7 @@ private slots:
         } model;
         Fixture f;
         QVERIFY2(f.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             ListView {
                 width: 20; height: 8; model: testModel
                 delegate: Text { required property string foreground; text: foreground }

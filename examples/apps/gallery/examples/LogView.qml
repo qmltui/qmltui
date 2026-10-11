@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
-// LogView: Append-only tail log. One tile of the Qtui gallery (examples/apps/gallery)
+// LogView: Append-only tail log. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

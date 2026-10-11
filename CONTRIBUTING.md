@@ -1,11 +1,11 @@
-# Contributing to Qtui
+# Contributing to Qamui
 
 Thank you for considering a contribution. Two things before the first pull
 request.
 
 ## Licensing and the contributor agreement
 
-Qtui is offered under the LGPLv3, GPLv3, or a commercial license (see
+Qamui is offered under the LGPLv3, GPLv3, or a commercial license (see
 [LICENSE.md](LICENSE.md)). To keep all three available, every contribution to
 `src/` or `tests/` needs the contributor agreement in [CLA.md](CLA.md). A
 check on the pull request asks you to accept it once; later pull requests are
@@ -31,5 +31,5 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Pull requests must keep both Behavior trees green (`QTUI_ENABLE_BEHAVIOR` ON
+Pull requests must keep both Behavior trees green (`QAMUI_ENABLE_BEHAVIOR` ON
 and OFF), which CI checks on Linux, macOS, and Windows.

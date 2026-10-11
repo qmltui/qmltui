@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-An in-browser, fully interactive Qtui app at `/playground`, compiled with Qt
+An in-browser, fully interactive Qamui app at `/playground`, compiled with Qt
 for WebAssembly and rendered in `xterm.js`. This is a real engineering project,
 not a wiring step, and it is explicitly **not** a launch dependency. Casts
 (Plan 02) cover "see it" on day one. A broken live demo does more damage than
@@ -25,11 +25,11 @@ interface. What actually blocked a browser build, all found and fixed on
 
 | Blocker | Fix |
 | :--- | :--- |
-| No `EMSCRIPTEN` branch anywhere; Core compiled `PosixTerminalBackend` under Emscripten | `WasmTerminalBackend` selected in `TerminalBackend.cpp` and `src/Qtui/Core/CMakeLists.txt` |
+| No `EMSCRIPTEN` branch anywhere; Core compiled `PosixTerminalBackend` under Emscripten | `WasmTerminalBackend` selected in `TerminalBackend.cpp` and `src/Qamui/Core/CMakeLists.txt` |
 | `TestRunner` owns a `std::thread` watchdog; the wasm kit has no threads; both games link TestRunner whenever the target exists | Wrapper project forces tests, TestRunner, and benchmarks off |
 | `examples/apps/CMakeLists.txt` adds 14 apps unconditionally (QProcess, DBus, `/proc`, md4qt) | Wrapper project adds only the two games |
-| Static `qt_add_qml_module` creates resource and plugin-init object libraries, and utf8proc joins Core's link interface; `install(EXPORT QtuiTargets)` rejected both | `OUTPUT_TARGETS` installed into the export set in Core, Controls, Image; utf8proc exported when Core is static |
-| A consumer that runs `qt_standard_project_setup()` before fetching Qtui turns AUTOMOC on for utf8proc, whose `-std=c99` then hits a C++ moc stub (GCC warns, clang errors) | `AUTOMOC OFF` on the utf8proc target in `cmake/QtuiUtf8proc.cmake` |
+| Static `qt_add_qml_module` creates resource and plugin-init object libraries, and utf8proc joins Core's link interface; `install(EXPORT QamuiTargets)` rejected both | `OUTPUT_TARGETS` installed into the export set in Core, Controls, Image; utf8proc exported when Core is static |
+| A consumer that runs `qt_standard_project_setup()` before fetching Qamui turns AUTOMOC on for utf8proc, whose `-std=c99` then hits a C++ moc stub (GCC warns, clang errors) | `AUTOMOC OFF` on the utf8proc target in `cmake/QamuiUtf8proc.cmake` |
 | Emscripten's environment is empty, so capability detection saw no `TERM` | Backend sets `TERM` and `COLORTERM` when unset |
 
 Additionally, Emscripten's `Module.print` is line-buffered and useless for a
@@ -42,7 +42,7 @@ bypasses both and travels as bytes.
 
 ### A. `WasmTerminalBackend` in Core
 
-`src/Qtui/Core/primitives/WasmTerminalBackend.{h,cpp}`, compiled only under
+`src/Qamui/Core/primitives/WasmTerminalBackend.{h,cpp}`, compiled only under
 Emscripten, about the size of `MemoryTerminalBackend`:
 
 ```cpp
@@ -71,8 +71,8 @@ mirrors a tested one. The browser run in Section 6 is the test.
 Output, C++ to JS, bytes, copied out of the heap before handing over:
 
 ```cpp
-EM_JS(void, qtui_wasm_js_output, (const char* data, int length), {
-    if (Module['qtuiOnOutput']) Module['qtuiOnOutput'](HEAPU8.slice(data, data + length));
+EM_JS(void, qamui_wasm_js_output, (const char* data, int length), {
+    if (Module['qamuiOnOutput']) Module['qamuiOnOutput'](HEAPU8.slice(data, data + length));
 });
 ```
 
@@ -81,9 +81,9 @@ arrives as raw `std::string` bytes, so NUL survives and there is no UTF-16
 length confusion:
 
 ```cpp
-EMSCRIPTEN_BINDINGS(qtui_wasm_bridge) {
-    emscripten::function("qtuiFeedInput", &feedInput);   // (const std::string&)
-    emscripten::function("qtuiResize", &resize);         // (int cols, int rows)
+EMSCRIPTEN_BINDINGS(qamui_wasm_bridge) {
+    emscripten::function("qamuiFeedInput", &feedInput);   // (const std::string&)
+    emscripten::function("qamuiResize", &resize);         // (int cols, int rows)
 }
 ```
 
@@ -106,9 +106,9 @@ cmake --build build-wasm --parallel
 cmake --build build-wasm --target serve
 ```
 
-`cmake/QtuiWasm.cmake` (included by the root under `EMSCRIPTEN`) provides
-`qtui_wasm_app(target)`, which sets `NO_WASM_DEFAULT_FILES` and a shared
-output directory, and `qtui_wasm_add_demo_page()`. Qt's own finalizer already
+`cmake/QamuiWasm.cmake` (included by the root under `EMSCRIPTEN`) provides
+`qamui_wasm_app(target)`, which sets `NO_WASM_DEFAULT_FILES` and a shared
+output directory, and `qamui_wasm_add_demo_page()`. Qt's own finalizer already
 sets `MODULARIZE`, `EXPORT_NAME=<target>_entry`, embind, the exported runtime
 methods, and memory; the earlier snippet here would have clobbered them and
 wrongly added `EXPORT_ES6`. Static QML plugins link automatically through the
@@ -118,9 +118,9 @@ only the gallery runtime and page (Section 4).
 
 ### D. The page
 
-`examples/wasm/www/index.html` with `qtui-playground.js`: plain HTML and an
+`examples/wasm/www/index.html` with `qamui-playground.js`: plain HTML and an
 ES module, xterm.js 5.5 with the fit and grapheme addons from jsdelivr,
-CodeMirror from esm.sh. The terminal wiring (`noInitialRun`, `qtuiResize`
+CodeMirror from esm.sh. The terminal wiring (`noInitialRun`, `qamuiResize`
 before `callMain`, `TextEncoder` on `onData`, `onBinary`, `onResize`,
 `onAbort`) is the reference for the website component. The first version was
 a separate app-selector page with fixed game binaries; it went when the
@@ -130,36 +130,36 @@ gallery replaced it.
 
 Added 2026-09-14 after the games worked: a generic binary,
 `examples/wasm/playground/main.cpp`, holds a bare `QQmlEngine` and exposes
-`qtuiLoadQml(source, fileName)` and `qtuiSetContextProperty(name, value)`
+`qamuiLoadQml(source, fileName)` and `qamuiSetContextProperty(name, value)`
 through embind. Each edit re-instantiates the root and errors return as JSON
 with line and column. The source it runs is the gallery (`gallery.qml`); the
 editor shows the open tile's block of it (Section 4). Sharing is the deflated
 whole file in the URL hash. `Qt.quit()` is caught on the engine's `quit` signal
-and released with `deleteLater()`, so the runtime survives it. `Qtui.Image`
-is opt-in (`QTUI_WASM_PLAYGROUND_IMAGE`) because Qt Gui doubles the download.
+and released with `deleteLater()`, so the runtime survives it. `Qamui.Image`
+is opt-in (`QAMUI_WASM_PLAYGROUND_IMAGE`) because Qt Gui doubles the download.
 The editor completes QML from `types.json`, generated at build time by
 `scripts/qml_type_index.py` from the same qmltypes the reference docs use
-(112 types); `qtui-completion.js` supplies cursor context (enclosing type,
+(112 types); `qamui-completion.js` supplies cursor context (enclosing type,
 ids, `Name.` access, value position). Real type inference would need the QML
 language server; the wasm kit ships QmlDom and QmlCompiler but not QmlLS, so
 that stays a later spike.
 This is the shape of the public `/playground` route: the website component
-should wrap `index.html` and `qtui-playground.js`.
+should wrap `index.html` and `qamui-playground.js`.
 
 ---
 
 ## 4. Scope
 
 As of 2026-09-15 the browser build is the component gallery and nothing else.
-`examples/wasm` builds one runtime (`qtui_playground.wasm`, a bare
-`QQmlEngine` behind `qtuiLoadQml`, `qtuiCheckQml` and
-`qtuiSetContextProperty`) and one page, `index.html`. The gallery is a
+`examples/wasm` builds one runtime (`qamui_playground.wasm`, a bare
+`QQmlEngine` behind `qamuiLoadQml`, `qamuiCheckQml` and
+`qamuiSetContextProperty`) and one page, `index.html`. The gallery is a
 launcher (`examples/apps/gallery/Main.qml`) plus 36 standalone example files
 (`examples/apps/gallery/examples/*.qml`, each a complete app with imports and
 a `Terminal` root). The launcher instantiates an example from its text after
 swapping the root for an `Item`; the page shows the same text in CodeMirror
 when a tile is open, compiles edits, and re-runs the gallery with the tile
-open (`qtuiGalleryPage`). Escape returns to the grid and empties the editor.
+open (`qamuiGalleryPage`). Escape returns to the grid and empties the editor.
 The launcher announces the open file through its terminal title, which
 xterm.js exposes as `onTitleChange`, so the app side needs no bridge code of
 its own. `InlineMode.qml` (`mode: Terminal.Inline` at the root) makes the
@@ -174,7 +174,7 @@ painting under the next one.
 Dropped on 2026-09-15: the fixed `snake_game` and `twozero48` binaries, the
 app selector page, and the 37 single-file presets. Each was a second way to
 show what the gallery already shows, and each cost a full download. Their
-`qtui_wasm_app()` calls remain in the apps' CMake so any of them can be built
+`qamui_wasm_app()` calls remain in the apps' CMake so any of them can be built
 standalone again by adding it to a wrapper project.
 
 Deferred: `btop` and every app that needs DBus, PTYs, processes, or the
@@ -183,12 +183,12 @@ filesystem.
 Known issue found while driving the gallery with Playwright (headless Firefox,
 2026-09-14): under rapid synthetic input the engine intermittently stops
 committing frames (about 2 runs in 6; input is still processed, xterm's write
-queue is empty, and the next bridge call such as a key or `qtuiResize`
+queue is empty, and the next bridge call such as a key or `qamuiResize`
 releases the pending frame). Pumping posted events after each bridge call did
 not help, and adding logging to `requestRender()` makes it vanish, so the
 suspect is a timing race in Qt's WebAssembly timer multiplexing
 (`QEventDispatcherWasm::updateNativeTimer`), not the renderer. Not seen with
-human-speed typing; a JS-side heartbeat (periodic `qtuiResize` no-op or a
+human-speed typing; a JS-side heartbeat (periodic `qamuiResize` no-op or a
 timer that asks the engine to repaint) would be the cheap workaround if it
 shows up for users.
 
@@ -198,7 +198,7 @@ shows up for users.
 
 Done 2026-09-14:
 
-1. `WasmTerminalBackend` on the Plan 00 seam; `cmake/QtuiWasm.cmake`; the
+1. `WasmTerminalBackend` on the Plan 00 seam; `cmake/QamuiWasm.cmake`; the
    static-build export fixes; `examples/wasm/` wrapper, apps page, and the
    live QML playground (binary, editor page, presets).
 2. `docs/guide/webassembly.md` with exact versions, commands, and measured
@@ -238,7 +238,7 @@ Local run, verified 2026-09-14 in headless Firefox 141 (Playwright) against
   `id.` members, `onClicked` for a Button, type names at top level and as
   children, `Timer.interval` from QtQml.
 - Sizes: 8.3 MB raw, 1.83 MB Brotli, 2.66 MB gzip per game; the playground
-  binary is 8.5 MB, 1.86 MB, 2.70 MB without `Qtui.Image` (15.3 MB and
+  binary is 8.5 MB, 1.86 MB, 2.70 MB without `Qamui.Image` (15.3 MB and
   3.75 MB Brotli with it). The 6 MB budget holds with room to spare.
 - Native suite unchanged: 93 of 94 on the Qt 6.11.1 tree, the one failure
   (`test_component_docs`, pages for modules that tree does not build) predates
@@ -258,26 +258,26 @@ Qt for WebAssembly is offered under **GPLv3 or a commercial license only**;
 there is no LGPL option (see the License section of the Qt for WebAssembly
 page). WebAssembly builds link Qt statically, so every playground artifact is
 a combined work with Qt and is distributed under GPLv3. This is the only place
-where Qtui distributes a GPL binary; desktop users link Qt dynamically under
+where Qamui distributes a GPL binary; desktop users link Qt dynamically under
 LGPLv3.
 
-Qtui mirrors this rule for its own WebAssembly builds: GPLv3 or commercial,
+Qamui mirrors this rule for its own WebAssembly builds: GPLv3 or commercial,
 no LGPL (Plan 00 section 8, open decision 3). Either way the playground binary
-is GPLv3; the rule only matters for third parties shipping Qtui in the
+is GPLv3; the rule only matters for third parties shipping Qamui in the
 browser.
 
 ### What the playground must carry
 
 1. **A notices page**, linked from `/playground`, listing per shipped binary:
-   Qt (GPLv3), Qtui (GPLv3 for this build), utf8proc (MIT), libvterm (MIT,
-   only if `Qtui.TerminalHost` is linked into that app), and `xterm.js` (MIT).
+   Qt (GPLv3), Qamui (GPLv3 for this build), utf8proc (MIT), libvterm (MIT,
+   only if `Qamui.TerminalHost` is linked into that app), and `xterm.js` (MIT).
 2. **A corresponding-source offer.** Each `.wasm` is built from a release tag
    by the dedicated workflow in Section 5 and uploaded to that GitHub release
    next to the source archive. The notices page names the tag and the commit
    for every binary served. The repository must be public before the first
    upload.
 3. **One line on the playground page**: "The demo binaries are GPLv3 because
-   Qt for WebAssembly is GPLv3 or commercial only. The Qtui library is
+   Qt for WebAssembly is GPLv3 or commercial only. The Qamui library is
    LGPLv3, GPLv3, or commercial." Without it a visitor reads the GPL notice and
    assumes it applies to the library.
 4. **Build with the open-source Qt for WebAssembly kit.** The GPL grant only

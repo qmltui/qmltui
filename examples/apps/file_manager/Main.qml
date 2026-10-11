@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
-import Qtui.TerminalHost
-import Qtui.Examples.FileManager
+import Qamui
+import Qamui.TerminalHost
+import Qamui.Examples.FileManager
 
 Terminal {
     id: root
@@ -32,7 +32,7 @@ Terminal {
         return Theme.badgeNormal;
     }
 
-    // MANDATORY QTUI RULE: Explicit key handling for Q/Escape and contextual actions
+    // MANDATORY QAMUI RULE: Explicit key handling for Q/Escape and contextual actions
     Keys.onPressed: (event) => {
         // If embedded editor is open, let TerminalView handle all keys
         if (root.isEditorOpen) {

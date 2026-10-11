@@ -1,6 +1,6 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root
@@ -17,7 +17,7 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "Qtui Switch Component Example"
+            text: "Qamui Switch Component Example"
             color: "cyan"
         }
 

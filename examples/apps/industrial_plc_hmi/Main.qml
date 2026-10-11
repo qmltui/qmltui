@@ -1,7 +1,7 @@
 import QtQml
 import QtQml.Models
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 import IndustrialPlcHmi
 
 Terminal {

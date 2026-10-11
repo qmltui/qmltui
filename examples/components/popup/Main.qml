@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
-import Qtui.Controls
+import Qamui.Controls
 Terminal {
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
@@ -28,7 +28,7 @@ Terminal {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 4
-            text: "<font color='cyan'>Qtui Popup & Z-Index Demo</font>"
+            text: "<font color='cyan'>Qamui Popup & Z-Index Demo</font>"
             textFormat: Text.RichText
         }
 

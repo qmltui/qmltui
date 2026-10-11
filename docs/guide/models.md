@@ -1,6 +1,6 @@
-# Models in Qtui Views
+# Models in Qamui Views
 
-Qtui views accept the same model kinds as Qt Quick: an integer count, a
+Qamui views accept the same model kinds as Qt Quick: an integer count, a
 JavaScript array or list of maps, and any `QAbstractItemModel`, including
 `QStandardItemModel`, `QStringListModel`, proxies such as
 `QSortFilterProxyModel`, and your own list, table, or tree models. This page
@@ -52,7 +52,7 @@ color binding; declare `required property string color` to receive it.
 model they show the top level and emit one warning:
 
 ```
-qtui::ListView: model has nested rows; this view shows one level.
+qamui::ListView: model has nested rows; this view shows one level.
 Use TreeView, or set rootIndex to show a subtree.
 ```
 
@@ -123,7 +123,7 @@ Qt Widgets styles items through numeric roles that have no entry in
 `roleNames()`: `Qt::ForegroundRole`, `Qt::BackgroundRole`,
 `Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole`, plus the
 `Qt::ItemIsEnabled` and `Qt::ItemIsUserCheckable` flags. `QStyledItemDelegate`
-paints them; Qt Quick views ignore them. Qtui does what Widgets does.
+paints them; Qt Quick views ignore them. Qamui does what Widgets does.
 
 For every C++ model row, views add these delegate properties when the model
 has not claimed the name itself in `roleNames()`:
@@ -144,15 +144,15 @@ changes or a pooled delegate is rebound to another row, every name is
 published, including cleared ones, so read them with a fallback
 (`model.foreground || textColor`) rather than as required properties.
 
-`StandardItemDelegate` from `Qtui.Controls` renders them: decoration glyph,
+`StandardItemDelegate` from `Qamui.Controls` renders them: decoration glyph,
 `[x]`, `[ ]`, or `[-]` for checkable items, colored and aligned text, dimmed
 text for disabled items, and reversed text for the current row. Its
 `toggle()` writes `Qt::CheckStateRole` back through the model's `setData()`,
 on Space when the delegate has focus and on mouse click.
 
 ```qml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 ListView {
     model: standardItemModel
@@ -166,12 +166,12 @@ selected row keeps the view's selection colors.
 `examples/components/standard_item_delegate/` shows one styled
 `QStandardItemModel` in all three views, with Space toggling a check box
 through the model. When Qt Widgets is available it also builds
-`qtui_standard_item_delegate_widgets`, the same model in `QListView`,
+`qamui_standard_item_delegate_widgets`, the same model in `QListView`,
 `QTableView`, and `QTreeView` with their default `QStyledItemDelegate`, for a
-side-by-side comparison (`QTUI_BUILD_WIDGETS_REFERENCE` turns it off).
+side-by-side comparison (`QAMUI_BUILD_WIDGETS_REFERENCE` turns it off).
 
 `QColor` and `QBrush` are decoded through their `QDataStream` form, which
-QtGui registers on the metatype, so QtuiCore still does not link QtGui. Only
+QtGui registers on the metatype, so QamuiCore still does not link QtGui. Only
 RGB colors decode; HSV, HSL, CMYK, and extended-RGB colors are treated as
 unset. Models that store colors as strings work in any process.
 

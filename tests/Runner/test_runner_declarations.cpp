@@ -1,4 +1,4 @@
-// The TypeScript declarations (qtui-runner.d.ts) drive editor completion for
+// The TypeScript declarations (qamui-runner.d.ts) drive editor completion for
 // scenario authors; this test fails when a facade method exists that the
 // declarations do not mention, so the two cannot drift apart silently.
 #include <QFile>
@@ -22,10 +22,10 @@ static QString readAll(const QString& path)
 
 void TestRunnerDeclarations::everyFacadeMethodIsDeclared()
 {
-    const QString sourceDir = QStringLiteral(QTUI_SOURCE_DIR);
-    const QString runnerSource = readAll(sourceDir + QStringLiteral("/src/Qtui/Runner/Runner.cpp"));
+    const QString sourceDir = QStringLiteral(QAMUI_SOURCE_DIR);
+    const QString runnerSource = readAll(sourceDir + QStringLiteral("/src/Qamui/Runner/Runner.cpp"));
     QVERIFY(!runnerSource.isEmpty());
-    const QString declarations = readAll(sourceDir + QStringLiteral("/src/Qtui/Runner/qtui-runner.d.ts"));
+    const QString declarations = readAll(sourceDir + QStringLiteral("/src/Qamui/Runner/qamui-runner.d.ts"));
     QVERIFY(!declarations.isEmpty());
 
     // The facade's methodNames array is the authoritative list of what a
@@ -53,7 +53,7 @@ void TestRunnerDeclarations::everyFacadeMethodIsDeclared()
             missing.append(name);
     }
     QVERIFY2(missing.isEmpty(),
-             qPrintable(QStringLiteral("Facade methods missing from qtui-runner.d.ts: %1")
+             qPrintable(QStringLiteral("Facade methods missing from qamui-runner.d.ts: %1")
                             .arg(missing.join(QStringLiteral(", ")))));
 }
 

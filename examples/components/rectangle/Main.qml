@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: root
@@ -60,7 +60,7 @@ Terminal {
 
             Text {
                 anchors.centerIn: parent
-                text: "✨ Qtui Rectangle Showcase — Borders, Colors & Animated Gradients ✨"
+                text: "✨ Qamui Rectangle Showcase — Borders, Colors & Animated Gradients ✨"
                 bold: true
                 color: "white"
             }

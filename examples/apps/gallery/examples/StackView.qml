@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// StackView: Push and pop pages. One tile of the Qtui gallery (examples/apps/gallery)
+// StackView: Push and pop pages. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

@@ -44,7 +44,7 @@ Developers use `DiagnosticsView` for low-level system troubleshooting and I/O ch
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 DiagnosticsView {

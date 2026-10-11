@@ -1,10 +1,10 @@
 ---
 title: Switch
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qtui::Item
+cpp: qamui::Item
 category: inputs
 summary: A focusable on/off toggle drawn as [ ON] or [OFF] followed by a label
 ---
@@ -15,8 +15,8 @@ A focusable on/off toggle drawn as `[ ON]` or `[OFF]` followed by a label. [More
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [AbstractButton](abstractbutton.md) |
 
 Switch adds no members of its own: `checked`, `text`, `textColor`,
@@ -43,8 +43,8 @@ reads as on or off rather than as a ticked item.
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     Keys.onPressed: event => {

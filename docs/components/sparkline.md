@@ -1,10 +1,10 @@
 ---
 title: Sparkline
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: Item
-cpp: qtui::Sparkline
+cpp: qamui::Sparkline
 category: display
 summary: A compact chart that draws a series of numbers as one block glyph per column, scaled to the item's height.
 ---
@@ -15,8 +15,8 @@ A compact chart that draws a series of numbers as one block glyph per column, sc
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -58,8 +58,8 @@ Sparkline has no border; wrap it in a [Rectangle](rectangle.md) or
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     id: root

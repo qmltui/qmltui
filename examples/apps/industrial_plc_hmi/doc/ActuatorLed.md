@@ -46,7 +46,7 @@ Developers use `ActuatorLed` in control panels and status views to give operator
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 ActuatorLed {

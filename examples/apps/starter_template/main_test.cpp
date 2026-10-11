@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    qputenv("QTUI_STARTER_BACKEND", "mock");
+    qputenv("QAMUI_STARTER_BACKEND", "mock");
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
     engine.loadFromModule("StarterTemplateApp", "Main");

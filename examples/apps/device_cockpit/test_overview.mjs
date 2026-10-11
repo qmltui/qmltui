@@ -1,5 +1,5 @@
 // Overview smoke scenario, run against the mock providers
-// (main.cpp defaults scenario runs to QTUI_COCKPIT_MOCK=1).
+// (main.cpp defaults scenario runs to QAMUI_COCKPIT_MOCK=1).
 
 // Shell and overview render with the mock identity.
 import { waitForShell, openPage } from "./lib/cockpit.mjs";

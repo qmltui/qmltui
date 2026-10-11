@@ -6,9 +6,9 @@
 #include <QTextStream>
 #include <QUrl>
 
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/primitives/UnicodeText.h>
-#include <Qtui/Core/engine/ItemPaintTraversal_p.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/engine/ItemPaintTraversal_p.h>
 
 #include "MdDoc.h"
 #include "MdDocStyle.h"
@@ -18,7 +18,7 @@
 #include "MdViewStyle.h"
 #include "SyntaxHighlighter.h"
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 QString renderedText(const MdDoc &document) {

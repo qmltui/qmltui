@@ -27,7 +27,7 @@ class WifiManager : public QObject {
     Q_PROPERTY(QStringList logs READ logs NOTIFY logsChanged)
     Q_PROPERTY(QVariantList networks READ networks NOTIFY networksChanged)
 
-    // Multi-Interface Network Diagnostics ("Boot to Qtui")
+    // Multi-Interface Network Diagnostics ("Boot to Qamui")
     Q_PROPERTY(QVariantList allInterfaces READ allInterfaces NOTIFY interfacesChanged)
     Q_PROPERTY(QString hostname READ hostname NOTIFY systemInfoChanged)
     Q_PROPERTY(QString uptime READ uptime NOTIFY systemInfoChanged)

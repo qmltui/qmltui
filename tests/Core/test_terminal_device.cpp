@@ -15,16 +15,16 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <Qtui/Core/primitives/Color.h>
-#include <Qtui/Core/engine/FrameRenderer.h>
-#include <Qtui/Core/engine/StreamRenderer.h>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/primitives/TerminalCapabilities.h>
-#include <Qtui/Core/primitives/TerminalDevice.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
-#include <Qtui/Core/items/Scrollback.h>
+#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/engine/FrameRenderer.h>
+#include <Qamui/Core/engine/StreamRenderer.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/primitives/TerminalCapabilities.h>
+#include <Qamui/Core/primitives/TerminalDevice.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/items/Scrollback.h>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -115,7 +115,7 @@ private slots:
 
 void TestTerminalDevice::initTestCase()
 {
-    qputenv("QTUI_RUNNER_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
+    qputenv("QAMUI_RUNNER_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
 }
 
 void TestTerminalDevice::testBlockingWriteUnchanged()

@@ -12,12 +12,12 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("qtui_cyber_audio"));
+    app.setApplicationName(QStringLiteral("qamui_cyber_audio"));
     app.setApplicationVersion(QStringLiteral("1.0"));
 
     StartupOptions options = parseStartupOptions(app);
     if (!AudioEngine::multimediaAvailable() && (!options.inputs.isEmpty() || options.mic)) {
-        std::fprintf(stderr, "qtui_cyber_audio: built without Qt Multimedia; no audio source available "
+        std::fprintf(stderr, "qamui_cyber_audio: built without Qt Multimedia; no audio source available "
                              "(use --demo for the showcase).\n");
         options.inputs.clear();
         options.mic = false;
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     if (engine.rootObjects().isEmpty())
         return -1;
     const int result = app.exec();
-    // Restore stderr before the QML engine (and Qtui's buffered Qt messages) go away.
+    // Restore stderr before the QML engine (and Qamui's buffered Qt messages) go away.
     quietStderr.reset();
     return result;
 }

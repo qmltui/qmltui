@@ -1,26 +1,26 @@
 #include <QtTest/QtTest>
-#include <Qtui/Controls/Sparkline.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/TreeView.h>
-#include <Qtui/Core/items/Repeater.h>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/GridView.h>
-#include <Qtui/Controls/Toast.h>
-#include <Qtui/Controls/TabBar.h>
-#include <Qtui/Core/items/Gradient.h>
-#include <Qtui/Core/items/GradientStop.h>
-#include <Qtui/Core/items/Paragraph.h>
-#include <Qtui/Core/items/Rectangle.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/engine/MouseEvent.h>
-#include <Qtui/Core/engine/KeyEvent.h>
+#include <Qamui/Controls/Sparkline.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/items/Repeater.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/GridView.h>
+#include <Qamui/Controls/Toast.h>
+#include <Qamui/Controls/TabBar.h>
+#include <Qamui/Core/items/Gradient.h>
+#include <Qamui/Core/items/GradientStop.h>
+#include <Qamui/Core/items/Paragraph.h>
+#include <Qamui/Core/items/Rectangle.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/engine/KeyEvent.h>
 #include <QQmlEngine>
 #include <QQmlComponent>
 #include <QAbstractItemModel>
 #include "../TestPaint.h"
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 class HierarchicalTestModel : public QAbstractItemModel {
     Q_OBJECT
@@ -282,7 +282,7 @@ private slots:
         Paragraph p;
         p.setWidth(20);
         p.setHeight(5);
-        p.setText("Qtui is a modern reactive QML Terminal UI framework.");
+        p.setText("Qamui is a modern reactive QML Terminal UI framework.");
 
         TextGridBuffer buffer;
         buffer.resize(20, 5);
@@ -292,12 +292,12 @@ private slots:
     void testRequiredProperties() {
         QQmlEngine engine;
         engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-        engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+        engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
 
         QQmlComponent component(&engine);
         component.setData(QByteArray(
             "import QtQuick\n"
-            "import Qtui\n"
+            "import Qamui\n"
             ""
             "Item {\n"
             "    required property int index\n"
@@ -368,7 +368,7 @@ private slots:
         QQmlComponent treeComp(&engine);
         treeComp.setData(QByteArray(
             "import QtQuick\n"
-            "import Qtui\n"
+            "import Qamui\n"
             ""
             "Item {\n"
             "    required property int index\n"
@@ -405,7 +405,7 @@ private slots:
         QQmlComponent component(&engine);
         component.setData(R"(
             pragma ComponentBehavior: Bound
-            import Qtui
+            import Qamui
 
             ListView {
                 id: view
@@ -467,7 +467,7 @@ private slots:
 
         QQmlComponent cellComponent(&engine);
         cellComponent.setData(R"(
-            import Qtui
+            import Qamui
             Item {
                 required property int index
                 required property int row
@@ -528,7 +528,7 @@ private slots:
 
         QQmlComponent rowComponent(&engine);
         rowComponent.setData(R"(
-            import Qtui
+            import Qamui
             Item {
                 required property int index
                 required property int row
@@ -553,7 +553,7 @@ private slots:
 
         QQmlComponent component(&engine);
         component.setData(R"(
-            import Qtui
+            import Qamui
             Item {
                 required property var treeView
                 required property bool isTreeNode
@@ -627,7 +627,7 @@ private slots:
         QQmlComponent component(&engine);
         component.setData(R"(
             pragma ComponentBehavior: Bound
-            import Qtui
+            import Qamui
 
             Item {
                 id: root

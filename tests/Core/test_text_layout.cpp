@@ -8,14 +8,14 @@
 #include <QTest>
 #include <functional>
 #include <memory>
-#include <Qtui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/Color.h>
 
-#include <Qtui/Core/items/Text.h>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
-using namespace qtui;
-using qtui::testing::paintItem;
+using namespace qamui;
+using qamui::testing::paintItem;
 
 namespace {
 
@@ -185,7 +185,7 @@ void TestTextLayout::testGradientPerColumn()
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
+        import Qamui
         Text {
             text: "ABCD"
             gradient: Gradient {

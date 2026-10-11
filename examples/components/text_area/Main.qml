@@ -1,5 +1,5 @@
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: rootWindow
@@ -86,7 +86,7 @@ Terminal {
                         focusable: true
                         placeholderText: "Type your notes or multi-line text here..."
                         color: "#f8fafc"
-                        text: "Welcome to Qtui TextArea!\nThis control supports multi-line text editing in terminal UI.\nFeel free to type, add line breaks with Enter, or move around with arrow keys."
+                        text: "Welcome to Qamui TextArea!\nThis control supports multi-line text editing in terminal UI.\nFeel free to type, add line breaks with Enter, or move around with arrow keys."
 
                         onTextChanged: {
                             rootWindow.lastAction = "Editable TextArea updated (" + text.length + " chars)"
@@ -173,7 +173,7 @@ Terminal {
                         readOnly: true
                         color: "#38bdf8"
                         text: "# System Configuration File\n" +
-                              "server_name: \"qtui-terminal-demo\"\n" +
+                              "server_name: \"qamui-terminal-demo\"\n" +
                               "max_connections: 1024\n" +
                               "timeout_ms: 5000\n" +
                               "render_engine: \"TuiTextGridBuffer\"\n" +

@@ -1,6 +1,6 @@
 # Branding Proposals: Qami vs Qamui
 
-This directory contains visual and text branding explorations for renaming the project from **Qtui** to either **Qami** or **Qamui**.
+This directory contains visual and text branding explorations for renaming the project from **Qamui** to either **Qami** or **Qamui**.
 
 ---
 

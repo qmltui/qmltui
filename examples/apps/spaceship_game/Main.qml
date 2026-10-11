@@ -1,6 +1,6 @@
 import QtQml
 import QtQml.Models
-import Qtui
+import Qamui
 
 Terminal {
     id: rootWindow

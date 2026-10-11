@@ -10,16 +10,16 @@
 #include <iostream>
 #include <memory>
 
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/items/Popup.h>
-#include <Qtui/Core/items/MouseArea.h>
-#include <Qtui/Core/engine/KeyEvent.h>
-#include <Qtui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/items/MouseArea.h>
+#include <Qamui/Core/engine/KeyEvent.h>
+#include <Qamui/Core/engine/MouseEvent.h>
 
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 #undef private
 
-using namespace qtui;
+using namespace qamui;
 
 class TestPopup : public QObject {
     Q_OBJECT
@@ -198,11 +198,11 @@ void TestPopup::testOwnedPopupCascade() {
 void TestPopup::testAttachedToolTipOnFocus() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
-        import Qtui.Controls
+        import Qamui
+        import Qamui.Controls
         Terminal {
             width: 40; height: 10
             Item {
@@ -299,11 +299,11 @@ void TestPopup::testModalRestoresFocusClearedDuringOpen() {
 void TestPopup::testAttachedToolTipFollowsTarget() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qtui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qtui
-        import Qtui.Controls
+        import Qamui
+        import Qamui.Controls
         Terminal {
             width: 40; height: 10
             Item {

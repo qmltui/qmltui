@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 // One QStandardItemModel, styled the Qt Widgets way, shown by three views:
 // a ListView with StandardItemDelegate, and TableView and TreeView with

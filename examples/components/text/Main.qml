@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 Terminal {
     id: rootWindow
@@ -60,7 +60,7 @@ Terminal {
                     text: "Inline: ",
                     dim: true
                 },
-                Qtui.span(" READY ", {
+                Qamui.span(" READY ", {
                     color: "#001b10",
                     backgroundColor: "#65e6a0",
                     bold: true
@@ -85,7 +85,7 @@ Terminal {
                     text: "Status: ",
                     dim: true
                 },
-                Qtui.span("Active\n", {
+                Qamui.span("Active\n", {
                     color: "green",
                     bold: true
                 }),

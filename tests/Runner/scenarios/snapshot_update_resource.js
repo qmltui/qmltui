@@ -2,5 +2,5 @@
 // the actual frame in the artifact directory instead.
 function main(terminal) {
     terminal.waitForText("TESTRUNNER FIXTURE");
-    terminal.expectSnapshot(":/qtui-tests/resource_snapshot.js");
+    terminal.expectSnapshot(":/qamui-tests/resource_snapshot.js");
 }

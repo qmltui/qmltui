@@ -1,7 +1,7 @@
 
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.waitForText("Qtui.Image");
+    terminal.waitForText("Qamui.Image");
     // No kitty graphics under the headless test backend, so Auto reports the
     // half-block fallback and cycling modes updates the status line.
     terminal.waitForText("half-block fallback");

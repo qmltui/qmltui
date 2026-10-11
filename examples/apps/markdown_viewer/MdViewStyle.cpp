@@ -1,6 +1,6 @@
 #include "MdViewStyle.h"
 
-namespace qtui {
+namespace qamui {
 
 MdViewStyle::MdViewStyle(QObject *parent)
     : QObject(parent) {
@@ -22,4 +22,4 @@ void MdViewStyle::setShowLineNumbers(bool show) {
     emit styleChanged();
 }
 
-} // namespace qtui
+} // namespace qamui

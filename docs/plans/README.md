@@ -1,11 +1,11 @@
-# Qtui Launch Roadmap
+# Qamui Launch Roadmap
 
 Nothing is published yet. That is the one advantage this roadmap is built
 around: every rough edge can still be fixed before a newcomer ever sees it, and
 the first public impression can be made deliberately.
 
 Goal: a Qt developer lands on the site, watches a terminal app run, copies
-three files, and has their own Qtui app running in five minutes. Then they find
+three files, and has their own Qamui app running in five minutes. Then they find
 a component catalog, a showcase, and Qt Creator help that all look and behave
 like the rest of Qt. That developer is as likely to be on Windows as on
 Linux, so Windows Terminal is a launch platform, not an afterthought.
@@ -17,13 +17,13 @@ Linux, so Windows Terminal is a launch platform, not an afterthought.
 | **00** | [Launch Readiness](00-launch-readiness.md) | Qt Quick naming pass (`label` to `text`, versionless imports), root redesign (one `Terminal`, explicit `FullScreen`/`Inline` mode, ordinary visible children, separate `Scrollback` output), compiled `examples/quickstart/`, `TerminalBackend` seam with POSIX and Win32 console backends, Windows Terminal support, CI on Linux, macOS, and Windows, licensing decision (LGPLv3/GPLv3/commercial, REUSE-compliant SPDX pass, contributor agreement), `v0.4.0` tag, README rewrite | Yes |
 | **01** | [Documentation Portal](01-docs-portal.md) | SvelteKit site in `website/`, single markdown source next to the code, quickstart above the fold, working Pages deploy | Yes |
 | **02** | [Visual Gallery and Casts](02-visual-gallery-and-casts.md) | One recording pipeline for 8 apps and 31 components, SVG stills, hero cast, filterable showcase, generated inventory | Yes |
-| **03** | [Repo Split: `qtui-apps`](03-repo-split-qtui-apps.md) | Apps consume Qtui via `FetchContent`, in-tree `test_behavior`, `qtui-starter` template repository | No |
-| **04** | [Qt Docs Conventions and Qt Creator](04-qt-docs-standards-qch.md) | Qt-style type pages with compiled examples, `qtui.qch` release asset, `qmlls` completion guide | No |
+| **03** | [Repo Split: `qamui-apps`](03-repo-split-qamui-apps.md) | Apps consume Qamui via `FetchContent`, in-tree `test_behavior`, `qamui-starter` template repository | No |
+| **04** | [Qt Docs Conventions and Qt Creator](04-qt-docs-standards-qch.md) | Qt-style type pages with compiled examples, `qamui.qch` release asset, `qmlls` completion guide | No |
 | **05** | [WebAssembly Playground](05-wasm-playground.md) | `WasmTerminalBackend` on the Plan 00 seam, static Emscripten build (`examples/wasm`), byte-safe `xterm.js` bridge, local pages for `snake_game` and `twozero48` and a live QML editor with 37 example presets, `docs/guide/webassembly.md`. Engineering done 2026-09-14; `/playground` route and `btop` wait for Plan 01 | No |
 | **06** | [From Solid to Excellent](06-excellence-roadmap.md) | Qt Quick conformance suite, Behavior decision and Qt version matrix, kitty keyboard and signal safety, docs generated from test frames, missing controls and inherited palette, benchmark regression gate, known defects list (2026-09-10) | No |
 | **07** | [Any `QAbstractItemModel` Renders Correctly](07-model-view-completeness.md) | `TableView` header data and real column count, `rootIndex` on flat views, `GridView` virtualization, standard Qt item roles in built-in painters, `canFetchMore`/`fetchMore`, incremental `TreeView` with stable expansion, `test_model_contracts` matrix and `docs/guide/models.md` | No |
-| **08** | [Terminal Protocols](08-terminal-protocols.md) | Control-sequence parser with sub-parameters and APC strings, capability queries with replies, raw-sequence hook on the engine, kitty keyboard protocol (disambiguate flag, push/pop tied to signal safety), kitty graphics in `Qtui.Image` via Unicode placeholders with `Auto` fallback to half-block. WP1 done; signal safety done; kitty graphics and sixel done; kitty keyboard done and verified on Ghostty 1.3.1 (2026-09-13) | No |
-| **09** | [Runner Completeness](09-runner-completeness.md) | Documentation and API hygiene, `resize()`, paste/hover/press-and-hold input, options objects with `region()`/`item()` locators, snapshot update mode, `.mjs` module scenarios with clean globals, 5-minute scenario watchdog, opt-in virtual clock driving Qtui timers, animations and QML `Timer`, `sleep()` audit. All nine work packages implemented 2026-09-26 (Windows and wasm not yet exercised) | No |
+| **08** | [Terminal Protocols](08-terminal-protocols.md) | Control-sequence parser with sub-parameters and APC strings, capability queries with replies, raw-sequence hook on the engine, kitty keyboard protocol (disambiguate flag, push/pop tied to signal safety), kitty graphics in `Qamui.Image` via Unicode placeholders with `Auto` fallback to half-block. WP1 done; signal safety done; kitty graphics and sixel done; kitty keyboard done and verified on Ghostty 1.3.1 (2026-09-13) | No |
+| **09** | [Runner Completeness](09-runner-completeness.md) | Documentation and API hygiene, `resize()`, paste/hover/press-and-hold input, options objects with `region()`/`item()` locators, snapshot update mode, `.mjs` module scenarios with clean globals, 5-minute scenario watchdog, opt-in virtual clock driving Qamui timers, animations and QML `Timer`, `sleep()` audit. All nine work packages implemented 2026-09-26 (Windows and wasm not yet exercised) | No |
 
 The [stream mode decision](stream-mode-decision.md) predates this series and
 explains why there are two renderers.
@@ -41,14 +41,14 @@ Verified against the tree on 2026-09-07:
 - Version `0.4.0`, Qt 6.8 minimum, no git tags yet, no `.github/workflows/`.
 - `LICENSE` says MIT. Nothing has been published under it; Plan 00 section 8
   replaces it with LGPLv3/GPLv3/commercial before the repository goes public.
-- Exported CMake targets: `Qtui::Core`, `Qtui::Controls`, `Qtui::Extras`,
-  `Qtui::TestRunner`; QML modules `Qtui`, `Qtui.Controls`, `Qtui.Extras`,
-  `Qtui.Canvas`, `Qtui.Image`, `Qtui.TerminalHost`. `find_package(Qtui)` is
+- Exported CMake targets: `Qamui::Core`, `Qamui::Controls`, `Qamui::Extras`,
+  `Qamui::TestRunner`; QML modules `Qamui`, `Qamui.Controls`, `Qamui.Extras`,
+  `Qamui.Canvas`, `Qamui.Image`, `Qamui.TerminalHost`. `find_package(Qamui)` is
   supported via installed config files.
 - 16 apps in `examples/apps/` today, trimmed to 8 for launch (Plan 02), each
   telling a story no other app tells. 31 components in `examples/components/`,
   11 concepts in `examples/concepts/`. Inventories are generated, not typed.
-- `TestRunner` captures text and styled frames with `QTUI_CAPTURE_AFTER_MS`;
+- `TestRunner` captures text and styled frames with `QAMUI_CAPTURE_AFTER_MS`;
   it has no image capture. Stills therefore derive from casts.
 - Terminal I/O is POSIX (`termios`, `QSocketNotifier` on stdin, `SIGWINCH`)
   behind about a dozen `#ifdef _WIN32` blocks. Windows output already enables
@@ -60,21 +60,21 @@ Verified against the tree on 2026-09-07:
 
 ```mermaid
 graph TB
-    subgraph "Qtui (core repository)"
-        Engine["Qtui::Core, Controls, Extras"]
+    subgraph "Qamui (core repository)"
+        Engine["Qamui::Core, Controls, Extras"]
         Backends["TerminalBackend: Posix, Win32Console, (Wasm)"]
         Backends --> Engine
         Quick["examples/quickstart (compiled in CI)"]
         Comp["examples/components (31)"]
         Conc["examples/concepts (11)"]
-        Docs["docs/components, docs/guide, src/Qtui/**/doc (single source)"]
+        Docs["docs/components, docs/guide, src/Qamui/**/doc (single source)"]
         Tests["tests/ (self-contained, test_behavior)"]
-        QCH["qtui.qch (release asset)"]
+        QCH["qamui.qch (release asset)"]
     end
 
-    subgraph "qtui-apps"
+    subgraph "qamui-apps"
         Apps["8 showcase apps"]
-        Starter["qtui-starter (template repo)"]
+        Starter["qamui-starter (template repo)"]
     end
 
     subgraph "website/ (SvelteKit, GitHub Pages)"

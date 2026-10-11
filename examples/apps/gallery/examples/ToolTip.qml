@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
-// ToolTip: Attached hover/focus tip. One tile of the Qtui gallery (examples/apps/gallery)
+// ToolTip: Attached hover/focus tip. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

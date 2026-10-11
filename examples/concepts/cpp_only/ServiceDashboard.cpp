@@ -1,17 +1,17 @@
 #include "ServiceDashboard.h"
 
-#include <Qtui/Core/engine/KeyEvent.h>
-#include <Qtui/Core/items/Column.h>
-#include <Qtui/Core/items/Row.h>
-#include <Qtui/Core/items/Text.h>
-#include <Qtui/Core/items/TextInput.h>
+#include <Qamui/Core/engine/KeyEvent.h>
+#include <Qamui/Core/items/Column.h>
+#include <Qamui/Core/items/Row.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/items/TextInput.h>
 
 #include <QBindable>
 #include <QCoreApplication>
 
 #include <algorithm>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -46,7 +46,7 @@ void addRow(Column *column, const ServiceEntry &service)
 ServiceDashboard::ServiceDashboard(QObject *parent)
     : Terminal(parent)
 {
-    setTitle(QStringLiteral("Qtui C++ Service Dashboard"));
+    setTitle(QStringLiteral("Qamui C++ Service Dashboard"));
     setColor(Color("#0d1117"));
 
     m_services = QList<ServiceEntry>{

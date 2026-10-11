@@ -1,6 +1,6 @@
-qt_add_executable(qtui_spaceship_game main.cpp)
+qt_add_executable(qamui_spaceship_game main.cpp)
 
-qt_add_qml_module(qtui_spaceship_game
+qt_add_qml_module(qamui_spaceship_game
     URI SpaceshipGame
     VERSION 1.0
     QML_FILES
@@ -11,7 +11,7 @@ qt_add_qml_module(qtui_spaceship_game
         PowerUp.qml
         Star.qml
 
-    DEPENDENCIES TARGET Qtui::Core
+    DEPENDENCIES TARGET Qamui::Core
 )
 
-target_link_libraries(qtui_spaceship_game PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
+target_link_libraries(qamui_spaceship_game PRIVATE Qt6::Core Qt6::Qml Qamui::Core)

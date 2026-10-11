@@ -4,8 +4,8 @@
 int main(int argc, char* argv[]) {
     QCoreApplication application(argc, argv);
     QQmlApplicationEngine engine;
-#ifdef QTUI_TERMINAL_VIEW_SOURCE
-    engine.load(QUrl::fromLocalFile(QStringLiteral(QTUI_TERMINAL_VIEW_SOURCE)));
+#ifdef QAMUI_TERMINAL_VIEW_SOURCE
+    engine.load(QUrl::fromLocalFile(QStringLiteral(QAMUI_TERMINAL_VIEW_SOURCE)));
 #else
     engine.loadFromModule("TerminalViewDemo", "Main");
 #endif

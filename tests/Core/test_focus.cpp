@@ -1,8 +1,8 @@
 #include <QTest>
-#include <Qtui/Core/items/Terminal.h>
-#include <Qtui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/engine/TerminalEngine.h>
 
-using namespace qtui;
+using namespace qamui;
 
 class TestFocus : public QObject {
     Q_OBJECT

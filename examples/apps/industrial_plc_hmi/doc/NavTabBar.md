@@ -42,7 +42,7 @@ Developers use `NavTabBar` to implement function-key tabbed view navigation.
 
 ```qml
 import QtQml
-import Qtui
+import Qamui
 import IndustrialPlcHmi 1.0
 
 NavTabBar {

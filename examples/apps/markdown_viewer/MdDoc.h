@@ -7,7 +7,7 @@
 #include <QSharedPointer>
 #include <QPointer>
 #include <QtQml/qqmlregistration.h>
-#include <Qtui/Core/primitives/Cell.h>
+#include <Qamui/Core/primitives/Cell.h>
 
 #include "MdRole.h"
 #include "MdDocStyle.h"
@@ -26,7 +26,7 @@ class ListItem;
 class Table;
 }
 
-namespace qtui {
+namespace qamui {
 
 struct FormattedSegment {
     QString text;
@@ -85,7 +85,7 @@ class MdDoc : public QObject {
     Q_PROPERTY(QVariantList tableOfContents READ tableOfContents NOTIFY parsedChanged)
     Q_PROPERTY(QVariantList links READ links NOTIFY parsedChanged)
     Q_PROPERTY(int wrapWidth READ wrapWidth WRITE setWrapWidth NOTIFY wrapWidthChanged)
-    Q_PROPERTY(qtui::MdDocStyle* style READ style WRITE setStyle NOTIFY styleChanged)
+    Q_PROPERTY(qamui::MdDocStyle* style READ style WRITE setStyle NOTIFY styleChanged)
     Q_PROPERTY(QString renderStyle READ renderStyle WRITE setRenderStyle NOTIFY renderStyleChanged)
     Q_PROPERTY(QString codeBlockStyle READ codeBlockStyle WRITE setCodeBlockStyle NOTIFY codeBlockStyleChanged)
     Q_PROPERTY(QString tableStyle READ tableStyle WRITE setTableStyle NOTIFY tableStyleChanged)
@@ -199,4 +199,4 @@ private:
     int m_tableCount = 0;
 };
 
-} // namespace qtui
+} // namespace qamui

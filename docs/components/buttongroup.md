@@ -1,7 +1,7 @@
 ---
 title: ButtonGroup
 kind: qml
-import: Qtui.Controls
+import: Qamui.Controls
 since: "0.4"
 inherits: QtObject
 cpp: 
@@ -15,8 +15,8 @@ A non-visual object that links [RadioButton](radiobutton.md) items so that check
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.Controls` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.Controls` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | `QtObject` |
 
 ## Properties
@@ -47,8 +47,8 @@ property, no signals and no methods. Note that removing an item from
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Terminal {
     ButtonGroup {

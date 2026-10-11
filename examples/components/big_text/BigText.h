@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Qtui/Core/items/Item.h>
+#include <Qamui/Core/items/Item.h>
 #include <QString>
 
-namespace qtui {
+namespace qamui {
 
 // Recipe: a custom C++ item that paints banner text. Lives with the example,
 // not in the library; copy it into your own QML module.
@@ -12,8 +12,8 @@ class BigText : public Item {
     QML_ELEMENT
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
-    Q_PROPERTY(qtui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qtui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qamui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
     explicit BigText(QObject *parent = nullptr);
@@ -45,4 +45,4 @@ private:
     uint32_t m_resolvedBackgroundColor = 0x00000000;
 };
 
-} // namespace qtui
+} // namespace qamui

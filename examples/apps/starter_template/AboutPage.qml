@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Rectangle {
     id: page
@@ -24,7 +24,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: 1
-            text: "BOOT TO QTUI"
+            text: "BOOT TO QAMUI"
             color: Theme.qtGreen
             bold: true
         }
@@ -101,9 +101,9 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { label: "Application", value: "Boot to Qtui Setup 1.0" },
+                    { label: "Application", value: "Boot to Qamui Setup 1.0" },
                     { label: "Qt", value: WifiManager.qtVersion },
-                    { label: "UI Toolkit", value: "Qtui (terminal rendering)" },
+                    { label: "UI Toolkit", value: "Qamui (terminal rendering)" },
                 ]
 
                 Row {

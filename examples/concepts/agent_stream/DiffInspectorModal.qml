@@ -1,13 +1,13 @@
 import QtQml
-import Qtui
-import Qtui.Controls
+import Qamui
+import Qamui.Controls
 
 Popup {
     id: diffModal
 
     Theme { id: theme }
 
-    property string targetFile: "src/Qtui/engine/StreamRenderer.cpp"
+    property string targetFile: "src/Qamui/engine/StreamRenderer.cpp"
 
     width: parent ? parent.width : 78
     height: 13

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qtui/Core/items/Canvas.h>
+#include <Qamui/Core/items/Canvas.h>
 
 #include <QList>
 #include <QQmlEngine>
@@ -13,7 +13,7 @@
 //       renderMode: Canvas.RenderMode.Braille
 //       WaveformTrace { samples: engine.waveformLeft; color: "#ffb700" }
 //   }
-class WaveformTrace : public qtui::CanvasShape
+class WaveformTrace : public qamui::CanvasShape
 {
     Q_OBJECT
     QML_ELEMENT
@@ -35,7 +35,7 @@ public:
     qreal silenceThreshold() const { return m_silenceThreshold; }
     void setSilenceThreshold(qreal threshold);
 
-    void draw(qtui::CanvasPainter& painter) const override;
+    void draw(qamui::CanvasPainter& painter) const override;
 
 signals:
     void samplesChanged();

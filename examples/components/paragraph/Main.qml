@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qtui
+import Qamui
 
 
 Terminal {
@@ -43,7 +43,7 @@ Terminal {
                     color: "default"
                     wrapMode: true
                     textFormat: Paragraph.RichText
-                    text: "<b>Qtui Framework</b>: Build <font color='cyan'><b>high-performance</b></font> terminal applications powered by <b>Qt 6</b>.\n\nUseful Links:\n• <a href='https://qt.io'>Qt Official Documentation</a>\n• [Qtui GitHub Repository](https://github.com/yosriayed/qtui)\n• <a href='https://doc.qt.io/qt-6/'>Qt 6 QML Reference Manual</a>\n\nClick any link to activate!"
+                    text: "<b>Qamui Framework</b>: Build <font color='cyan'><b>high-performance</b></font> terminal applications powered by <b>Qt 6</b>.\n\nUseful Links:\n• <a href='https://qt.io'>Qt Official Documentation</a>\n• [Qamui GitHub Repository](https://github.com/qamui-dev/qamui)\n• <a href='https://doc.qt.io/qt-6/'>Qt 6 QML Reference Manual</a>\n\nClick any link to activate!"
 
                     onLinkActivated: (url) => {
                         statusText.text = "Activated Hyperlink: " + url

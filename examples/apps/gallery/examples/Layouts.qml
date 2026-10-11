@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qtui
+import Qamui
 
-// Layouts: Row, Column, GridLayout. One tile of the Qtui gallery (examples/apps/gallery)
+// Layouts: Row, Column, GridLayout. One tile of the Qamui gallery (examples/apps/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

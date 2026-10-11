@@ -8,22 +8,22 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QStandardItemModel>
-#include <Qtui/Core/items/ListView.h>
-#include <Qtui/Core/items/GridView.h>
-#include <Qtui/Core/items/Repeater.h>
-#include <Qtui/Core/items/TableView.h>
-#include <Qtui/Core/items/TreeView.h>
+#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/items/GridView.h>
+#include <Qamui/Core/items/Repeater.h>
+#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/items/TreeView.h>
 #include <QAbstractListModel>
 #include <QStringListModel>
 #include <QSortFilterProxyModel>
 #include <QAbstractTableModel>
-#include <Qtui/Core/primitives/TextGridBuffer.h>
-#include <Qtui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/primitives/ColorMapper.h>
 #include "../TestPaint.h"
 #include <memory>
 #include <functional>
 
-using namespace qtui;
+using namespace qamui;
 
 namespace {
 
@@ -144,7 +144,7 @@ struct ViewFixture {
 };
 
 const QString listQml = QStringLiteral(R"(
-    import Qtui
+    import Qamui
     ListView {
         width: 40; height: 8
         model: testModel
@@ -152,7 +152,7 @@ const QString listQml = QStringLiteral(R"(
     }
 )");
 const QString gridQml = QStringLiteral(R"(
-    import Qtui
+    import Qamui
     GridView {
         width: 40; height: 8; cellWidth: 20; cellHeight: 1
         model: testModel
@@ -160,7 +160,7 @@ const QString gridQml = QStringLiteral(R"(
     }
 )");
 const QString repeaterQml = QStringLiteral(R"(
-    import Qtui
+    import Qamui
     Column {
         width: 40; height: 8
         Repeater {
@@ -364,7 +364,7 @@ private slots:
         BatchModel model(500, 50);
         ViewFixture f;
         QVERIFY2(f.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TableView { width: 40; height: 8; model: testModel; columns: [{title: "Row", width: 40}] }
         )")), qPrintable(f.component.errorString()));
         QCOMPARE(model.fetches, 1);
@@ -395,7 +395,7 @@ private slots:
         LazyTreeModel model;
         ViewFixture f;
         QVERIFY2(f.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             TreeView {
                 width: 40; height: 8; model: testModel
                 delegate: Text { required property string display; required property int depth; text: display }
@@ -502,15 +502,15 @@ private slots:
             "delegate: Text { required property var model; required property int index; text: model.display }");
         QString qml;
         if (view == "ListView")
-            qml = QStringLiteral("import Qtui\nListView { width: 40; height: 8; model: testModel; %1 }").arg(delegate);
+            qml = QStringLiteral("import Qamui\nListView { width: 40; height: 8; model: testModel; %1 }").arg(delegate);
         else if (view == "GridView")
-            qml = QStringLiteral("import Qtui\nGridView { width: 40; height: 8; cellWidth: 20; cellHeight: 1; model: testModel; %1 }").arg(delegate);
+            qml = QStringLiteral("import Qamui\nGridView { width: 40; height: 8; cellWidth: 20; cellHeight: 1; model: testModel; %1 }").arg(delegate);
         else if (view == "Repeater")
-            qml = QStringLiteral("import Qtui\nColumn { width: 40; height: 8; Repeater { model: testModel; %1 } }").arg(delegate);
+            qml = QStringLiteral("import Qamui\nColumn { width: 40; height: 8; Repeater { model: testModel; %1 } }").arg(delegate);
         else if (view == "TableView")
-            qml = QStringLiteral("import Qtui\nTableView { width: 40; height: 8; model: testModel }");
+            qml = QStringLiteral("import Qamui\nTableView { width: 40; height: 8; model: testModel }");
         else
-            qml = QStringLiteral("import Qtui\nTreeView { width: 40; height: 8; model: testModel }");
+            qml = QStringLiteral("import Qamui\nTreeView { width: 40; height: 8; model: testModel }");
 
         ViewFixture f;
         const bool flatViewOnTree = modelKind == "standardTree" && view != "TreeView" && view != "TableView";
@@ -552,13 +552,13 @@ private slots:
         QTest::addColumn<QString>("qml");
         QTest::newRow("ListView") << QStringLiteral(R"(
             pragma ComponentBehavior: Bound
-            import Qtui
+            import Qamui
             ListView { width: 40; height: 8; model: testModel
                 delegate: Text { required property string display; text: display } }
         )");
         QTest::newRow("GridView") << QStringLiteral(R"(
             pragma ComponentBehavior: Bound
-            import Qtui
+            import Qamui
             GridView { width: 40; height: 8; cellWidth: 20; cellHeight: 1; model: testModel
                 delegate: Text { required property string display; text: display } }
         )");
@@ -584,7 +584,7 @@ private slots:
         for (int i = 0; i < 5; ++i) model.appendRow(new QStandardItem(QStringLiteral("row %1").arg(i)));
         ViewFixture f;
         QVERIFY2(f.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             ListView { width: 40; height: 8; currentIndex: 2; model: testModel
                 delegate: Text { required property string display; text: display } }
         )")), qPrintable(f.component.errorString()));
@@ -594,7 +594,7 @@ private slots:
         // Out-of-range pending values clamp once rows exist.
         ViewFixture g;
         QVERIFY(g.create(&model, QStringLiteral(R"(
-            import Qtui
+            import Qamui
             ListView { width: 40; height: 8; currentIndex: 9; model: testModel
                 delegate: Text { required property string display; text: display } }
         )")));
@@ -609,10 +609,10 @@ private slots:
         for (const char *pragma : {"", "pragma ComponentBehavior: Bound\n"}) {
             const QString tag = *pragma ? "bound" : "unbound";
             QTest::newRow(qPrintable("ListView/" + tag)) << QStringLiteral(
-                "%1import Qtui\nListView { width: 40; height: 4; model: testModel; reuseItems: true\n"
+                "%1import Qamui\nListView { width: 40; height: 4; model: testModel; reuseItems: true\n"
                 "  delegate: Text { required property string display; text: display } }").arg(pragma);
             QTest::newRow(qPrintable("GridView/" + tag)) << QStringLiteral(
-                "%1import Qtui\nGridView { width: 40; height: 4; cellWidth: 20; cellHeight: 1; model: testModel\n"
+                "%1import Qamui\nGridView { width: 40; height: 4; cellWidth: 20; cellHeight: 1; model: testModel\n"
                 "  delegate: Text { required property string display; text: display } }").arg(pragma);
         }
     }
@@ -675,7 +675,7 @@ private slots:
             }
         } model;
         ViewFixture f;
-        const QString qml = QStringLiteral("import Qtui\n")
+        const QString qml = QStringLiteral("import Qamui\n")
             + view.arg(QStringLiteral("Text { required property string display; text: display; color: \"blue\" }"));
         QVERIFY2(f.create(&model, qml), qPrintable(f.component.errorString()));
         // Header rows shift TableView content down by two lines.

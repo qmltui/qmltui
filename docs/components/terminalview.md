@@ -1,10 +1,10 @@
 ---
 title: TerminalView
 kind: qml
-import: Qtui.TerminalHost
+import: Qamui.TerminalHost
 since: "0.4"
 inherits: Item
-cpp: qtui::TerminalView
+cpp: qamui::TerminalView
 category: display
 summary: _TODO_
 ---
@@ -15,8 +15,8 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qtui.TerminalHost` |
-| **Since** | Qtui 0.4 |
+| **Import Statement** | `import Qamui.TerminalHost` |
+| **Since** | Qamui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -87,8 +87,8 @@ _TODO_
 
 ```qml
 import QtQml
-import Qtui
-import Qtui.TerminalHost
+import Qamui
+import Qamui.TerminalHost
 
 Terminal {
     // _TODO_ show TerminalView in use

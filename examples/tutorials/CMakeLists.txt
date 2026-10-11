@@ -1,0 +1,6 @@
+add_subdirectory(01_first_terminal)
+add_subdirectory(02_layout_and_text)
+add_subdirectory(03_input_and_focus)
+add_subdirectory(04_models_and_views)
+add_subdirectory(05_controls_and_styling)
+add_subdirectory(06_testing_with_runner)

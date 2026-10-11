@@ -266,8 +266,6 @@ int main(int argc, char **argv)
                          + QStringLiteral("/../Qamui"));
     engine.addImportPath(QCoreApplication::applicationDirPath()
                          + QStringLiteral("/.."));
-    engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../examples/apps/container_fleet"));
 
     const qint64 tree1kMs = measureCreation(engine, 1'000);
     const qint64 tree10kMs = measureCreation(engine, 10'000);

@@ -1,0 +1,24 @@
+
+  Settings ready
+
+  [ ] Logging
+
+  Logging disabled
+
+  [OFF] Notifications
+
+  ──────────●────────────── [40]
+
+  ████████████░░░░░░░░░░░░░░░░░░
+
+  Volume: 40%
+
+  ┌────────────────┐
+  │ Apply settings │
+  └────────────────┘
+
+
+
+
+
+

@@ -9,7 +9,7 @@ qt_add_qml_module(qamui_image_demo
         demo_image.png
         panda.png
         map.png
-        
+
     DEPENDENCIES TARGET
         Qamui::Core
         Qamui::Controls

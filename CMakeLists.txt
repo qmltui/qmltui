@@ -83,13 +83,7 @@ add_subdirectory(src/Qamui)
 # Example executable to test the library
 if(QAMUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
-elseif(QAMUI_BUILD_TESTS)
-    if(QAMUI_ENABLE_BEHAVIOR)
-        add_subdirectory(examples/apps/industrial_plc_hmi
-            examples/apps/industrial_plc_hmi)
-    endif()
-    add_subdirectory(examples/apps/pos_cashier
-        examples/apps/pos_cashier)
+
 endif()
 
 if(QAMUI_BUILD_TESTS)

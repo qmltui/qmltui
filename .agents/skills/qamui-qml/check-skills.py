@@ -18,21 +18,17 @@ SKILL_PATHS = (
 )
 EXAMPLE_TARGETS = (
     (
-        "examples/apps/markdown_viewer/main_test_runner.cpp",
-        "qamui_markdown_viewer_test_runner",
-        "examples/apps/markdown_viewer/CMakeLists.txt",
-    ),
-    (
         "examples/components/animated_sprite/main.cpp",
         "qamui_animated_sprite_demo_test",
         "examples/components/animated_sprite/CMakeLists.txt",
     ),
     (
-        "examples/apps/starter_template/main_test.cpp",
-        "qamui_starter_template_test",
-        "examples/apps/starter_template/CMakeLists.txt",
+        "tests/Runner/main.cpp",
+        "qamui_runner_fixture",
+        "tests/Runner/CMakeLists.txt",
     ),
 )
+
 QMLTYPE_FILES = {
     "Qamui": "qml/Qamui/QamuiCore.qmltypes",
     "Qamui.Controls": "qml/Qamui/Controls/QamuiControls.qmltypes",

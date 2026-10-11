@@ -30,9 +30,9 @@ AnimatedSprite {
 Build with `QAMUI_ENABLE_IMAGE=ON` and examples enabled:
 
 ```sh
-rtk cmake --build build --target qamui_animated_sprite_demo qamui_animated_sprite_demo_test
+cmake --build build --target qamui_animated_sprite_demo qamui_animated_sprite_demo_test
 ./build/examples/components/animated_sprite/qamui_animated_sprite_demo
-rtk ctest --test-dir build -R '^animated_sprite_demo$' --output-on-failure
+ctest --test-dir build -R '^animated_sprite_demo$' --output-on-failure
 ```
 
 The scenario test (`test_animated_sprite_demo.js`) verifies deterministic frame progression under virtual time, pause/resume toggling, reverse playback, and half-block glyph rendering.

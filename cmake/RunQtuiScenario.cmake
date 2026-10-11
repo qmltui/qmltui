@@ -30,28 +30,24 @@ set(scenario_environment
     # Windows routes qWarning() to the debugger when no console is attached;
     # the failure-pattern checks below need it on stderr.
     "QT_FORCE_STDERR_LOGGING=1"
-    "--unset=QTUI_SCRIPT"
-    "--unset=QTUI_EVAL"
-    "--unset=QTUI_CAPTURE_AFTER_MS"
-    "--unset=QTUI_TEST_EMBEDDED_SCENARIO"
+    "--unset=QTUI_RUNNER_SCRIPT"
+    "--unset=QTUI_RUNNER_EVAL"
+    "--unset=QTUI_RUNNER_CAPTURE_AFTER_MS"
     "--unset=QTUI_RUNNER_EMBEDDED_SCENARIO"
 )
 if(CONFLICT_SCENARIO)
     list(APPEND scenario_environment
-        "QTUI_SCRIPT=${SCENARIO_SCRIPT}"
-        "QTUI_EVAL=${EVAL_CODE}"
+        "QTUI_RUNNER_SCRIPT=${SCENARIO_SCRIPT}"
+        "QTUI_RUNNER_EVAL=${EVAL_CODE}"
     )
 elseif(EMBEDDED_SCENARIO)
-    list(APPEND scenario_environment
-        "QTUI_RUNNER_EMBEDDED_SCENARIO=1"
-        "QTUI_TEST_EMBEDDED_SCENARIO=1"
-    )
+    list(APPEND scenario_environment "QTUI_RUNNER_EMBEDDED_SCENARIO=1")
 elseif(DEFINED CAPTURE_AFTER_MS AND NOT CAPTURE_AFTER_MS STREQUAL "")
-    list(APPEND scenario_environment "QTUI_CAPTURE_AFTER_MS=${CAPTURE_AFTER_MS}")
+    list(APPEND scenario_environment "QTUI_RUNNER_CAPTURE_AFTER_MS=${CAPTURE_AFTER_MS}")
 elseif(DEFINED EVAL_CODE AND NOT EVAL_CODE STREQUAL "")
-    list(APPEND scenario_environment "QTUI_EVAL=${EVAL_CODE}")
+    list(APPEND scenario_environment "QTUI_RUNNER_EVAL=${EVAL_CODE}")
 else()
-    list(APPEND scenario_environment "QTUI_SCRIPT=${SCENARIO_SCRIPT}")
+    list(APPEND scenario_environment "QTUI_RUNNER_SCRIPT=${SCENARIO_SCRIPT}")
 endif()
 
 if(NOT DEFINED COLUMNS)
@@ -84,11 +80,11 @@ else()
 endif()
 
 # Snapshot update mode: force it on or off for this test; otherwise the
-# executable inherits QTUI_UPDATE_SNAPSHOTS from the caller's environment.
+# executable inherits QTUI_RUNNER_UPDATE_SNAPSHOTS from the caller's environment.
 if(UPDATE_SNAPSHOTS)
-    list(APPEND scenario_environment "QTUI_UPDATE_SNAPSHOTS=1")
+    list(APPEND scenario_environment "QTUI_RUNNER_UPDATE_SNAPSHOTS=1")
 elseif(NO_UPDATE_SNAPSHOTS)
-    list(APPEND scenario_environment "--unset=QTUI_UPDATE_SNAPSHOTS")
+    list(APPEND scenario_environment "--unset=QTUI_RUNNER_UPDATE_SNAPSHOTS")
 endif()
 
 # A seeded baseline makes the update path deterministic on every run: the
@@ -148,14 +144,8 @@ execute_process(
         "QTUI_RUNNER_TIMEOUT_MS=${SCENARIO_TIMEOUT_MS}"
         "QTUI_RUNNER_OPERATION_TIMEOUT_MS=${OPERATION_TIMEOUT_MS}"
         "QTUI_RUNNER_LIVE=${live_value}"
-        "QTUI_TEST_ARTIFACT_DIR=${ARTIFACT_DIR}"
-        "QTUI_TEST_COLUMNS=${COLUMNS}"
-        "QTUI_TEST_ROWS=${ROWS}"
-        "QTUI_TEST_TIMEOUT_MS=${SCENARIO_TIMEOUT_MS}"
-        "QTUI_TEST_OPERATION_TIMEOUT_MS=${OPERATION_TIMEOUT_MS}"
-        "QTUI_TEST_LIVE=${live_value}"
         ${import_path_environment}
-        "${TEST_EXECUTABLE}"
+        "${TEST_EXECUTABLE}" ${TEST_ARGUMENTS}
     RESULT_VARIABLE result
     OUTPUT_VARIABLE stdout
     ERROR_VARIABLE stderr

@@ -61,7 +61,7 @@ target_link_libraries(qtui_device_cockpit PRIVATE
     Qtui::Controls
 )
 
-# Carries the scenario runner: the application executes QTUI_SCRIPT/QTUI_EVAL
+# Carries the scenario runner: the application executes QTUI_RUNNER_SCRIPT/QTUI_RUNNER_EVAL
 # scenarios (against the mock providers by default, see main.cpp) when those
 # variables are set in its environment.
 if(TARGET Qtui::Runner)
@@ -73,7 +73,6 @@ if(QTUI_INSTALL_EXAMPLES)
 endif()
 
 if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     # Module scenarios (.mjs): shared navigation lives in lib/cockpit.mjs.
     foreach(scenario overview network services logs resize)
         qtui_add_scenario_test(

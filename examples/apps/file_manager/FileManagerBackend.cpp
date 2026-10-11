@@ -57,9 +57,9 @@ QStringList wrapTextLine(const QString &rawLine, int maxW) {
 FileManagerBackend::FileManagerBackend(QObject *parent)
     : QObject(parent)
 {
-    const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_SCRIPT")
-        || qEnvironmentVariableIsSet("QTUI_EVAL")
-        || qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS")
+    const bool scenarioRequested = qEnvironmentVariableIsSet("QTUI_RUNNER_SCRIPT")
+        || qEnvironmentVariableIsSet("QTUI_RUNNER_EVAL")
+        || qEnvironmentVariableIsSet("QTUI_RUNNER_CAPTURE_AFTER_MS")
         || qEnvironmentVariableIsSet("QTUI_FM_MOCK");
 
     if (scenarioRequested && !qEnvironmentVariableIsSet("QTUI_FM_LIVE")) {

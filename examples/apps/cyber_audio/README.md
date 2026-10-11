@@ -138,11 +138,11 @@ ctest --test-dir build -R 'cyber_audio' --output-on-failure
 - `cyber_audio_demo_smoke`: Runner scenario against committed frames in demo mode.
 
 To inspect real playback without a terminal session, generate a WAV and run the test
-binary with `QTUI_EVAL`:
+binary with `QTUI_RUNNER_EVAL`:
 
 ```bash
-QTUI_EVAL="terminal.waitForText('FILE'); terminal.sleep(1500); terminal.captureText('play.txt');" \
-QTUI_TEST_COLUMNS=120 QTUI_TEST_ROWS=36 QTUI_TEST_ARTIFACT_DIR=/tmp/cyber \
+QTUI_RUNNER_EVAL="terminal.waitForText('FILE'); terminal.sleep(1500); terminal.captureText('play.txt');" \
+QTUI_RUNNER_COLUMNS=120 QTUI_RUNNER_ROWS=36 QTUI_RUNNER_ARTIFACT_DIR=/tmp/cyber \
 ./build/examples/apps/cyber_audio/qtui_cyber_audio_test tone.wav
 ```
 

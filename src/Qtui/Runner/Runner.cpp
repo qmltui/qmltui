@@ -112,24 +112,10 @@ constexpr int maximumTimeoutMs = 30000;
 constexpr int maximumScenarioTimeoutMs = 300000;
 constexpr int conditionPollIntervalMs = 10;
 
-static QByteArray getEnvRunner(const char* runnerName, const char* testName = nullptr)
+int environmentInteger(const char* name, int fallback, int minimum, int maximum, QString* error)
 {
-    QByteArray val = qgetenv(runnerName);
-    if (val.isEmpty() && testName)
-        val = qgetenv(testName);
-    return val;
-}
-
-int environmentInteger(const char* runnerName, const char* testName, int fallback, int minimum, int maximum,
-                       QString* error)
-{
-    QByteArray value = qgetenv(runnerName);
-    const char* usedName = runnerName;
-    if (value.isEmpty() && testName) {
-        value = qgetenv(testName);
-        if (!value.isEmpty())
-            usedName = testName;
-    }
+    const QByteArray value = qgetenv(name);
+    const char* usedName = name;
     if (value.isEmpty())
         return fallback;
 
@@ -362,11 +348,11 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
     if (s_activeRunner)
         return s_activeRunner.data();
 
-    QString scriptPath = QString::fromUtf8(qgetenv("QTUI_SCRIPT")).trimmed();
-    const QString evalCode = QString::fromUtf8(qgetenv("QTUI_EVAL")).trimmed();
-    // Presence counts, not truthiness: QTUI_CAPTURE_AFTER_MS=0 is a request to
+    QString scriptPath = QString::fromUtf8(qgetenv("QTUI_RUNNER_SCRIPT")).trimmed();
+    const QString evalCode = QString::fromUtf8(qgetenv("QTUI_RUNNER_EVAL")).trimmed();
+    // Presence counts, not truthiness: QTUI_RUNNER_CAPTURE_AFTER_MS=0 is a request to
     // capture the first committed frame.
-    const bool capture = !qgetenv("QTUI_CAPTURE_AFTER_MS").trimmed().isEmpty();
+    const bool capture = !qgetenv("QTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty();
     const int requestCount = (scriptPath.isEmpty() ? 0 : 1)
         + (evalCode.isEmpty() ? 0 : 1) + (capture ? 1 : 0);
     if (requestCount == 0)
@@ -375,7 +361,7 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
     QString configurationError;
     if (requestCount > 1) {
         configurationError = QStringLiteral(
-            "QTUI_SCRIPT, QTUI_EVAL, and QTUI_CAPTURE_AFTER_MS are mutually exclusive");
+            "QTUI_RUNNER_SCRIPT, QTUI_RUNNER_EVAL, and QTUI_RUNNER_CAPTURE_AFTER_MS are mutually exclusive");
     }
 
     QString mode = QStringLiteral("script");
@@ -391,7 +377,7 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
         }
     } else if (capture) {
         mode = QStringLiteral("capture");
-        captureAfterMs = environmentInteger("QTUI_CAPTURE_AFTER_MS", nullptr, 0, 0, maximumTimeoutMs,
+        captureAfterMs = environmentInteger("QTUI_RUNNER_CAPTURE_AFTER_MS", 0, 0, maximumTimeoutMs,
                                             &configurationError);
         generatedScript = QByteArrayLiteral("function main(terminal) {\n");
         if (captureAfterMs > 0)
@@ -417,22 +403,18 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
     }
 
     QSize viewport;
-    const bool hasColumns = !qgetenv("QTUI_RUNNER_COLUMNS").trimmed().isEmpty()
-                         || !qgetenv("QTUI_TEST_COLUMNS").trimmed().isEmpty();
-    const bool hasRows = !qgetenv("QTUI_RUNNER_ROWS").trimmed().isEmpty()
-                      || !qgetenv("QTUI_TEST_ROWS").trimmed().isEmpty();
+    const bool hasColumns = !qgetenv("QTUI_RUNNER_COLUMNS").trimmed().isEmpty();
+    const bool hasRows = !qgetenv("QTUI_RUNNER_ROWS").trimmed().isEmpty();
     if (hasColumns || hasRows) {
-        const int columns = environmentInteger("QTUI_RUNNER_COLUMNS", "QTUI_TEST_COLUMNS", 80, 1, 1000,
-                                               &configurationError);
-        const int rows = environmentInteger("QTUI_RUNNER_ROWS", "QTUI_TEST_ROWS", 24, 1, 1000,
-                                            &configurationError);
+        const int columns = environmentInteger("QTUI_RUNNER_COLUMNS", 80, 1, 1000, &configurationError);
+        const int rows = environmentInteger("QTUI_RUNNER_ROWS", 24, 1, 1000, &configurationError);
         viewport = QSize(columns, rows);
     }
 
-    const int scenarioTimeout = environmentInteger("QTUI_RUNNER_TIMEOUT_MS", "QTUI_TEST_TIMEOUT_MS", 10000,
+    const int scenarioTimeout = environmentInteger("QTUI_RUNNER_TIMEOUT_MS", 10000,
                                                     minimumTimeoutMs, maximumScenarioTimeoutMs,
                                                     &configurationError);
-    const int operationTimeout = environmentInteger("QTUI_RUNNER_OPERATION_TIMEOUT_MS", "QTUI_TEST_OPERATION_TIMEOUT_MS", 2000,
+    const int operationTimeout = environmentInteger("QTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000,
                                                      minimumTimeoutMs, maximumTimeoutMs,
                                                      &configurationError);
     // Fail up front instead of letting the watchdog kill the sleep: the capture
@@ -440,10 +422,10 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
     if (capture && configurationError.isEmpty()
         && captureAfterMs + operationTimeout > scenarioTimeout) {
         configurationError = QStringLiteral(
-            "QTUI_CAPTURE_AFTER_MS (%1) plus QTUI_RUNNER_OPERATION_TIMEOUT_MS (%2) must not exceed "
+            "QTUI_RUNNER_CAPTURE_AFTER_MS (%1) plus QTUI_RUNNER_OPERATION_TIMEOUT_MS (%2) must not exceed "
             "QTUI_RUNNER_TIMEOUT_MS (%3)").arg(captureAfterMs).arg(operationTimeout).arg(scenarioTimeout);
     }
-    QString artifactDirectory = QString::fromUtf8(getEnvRunner("QTUI_RUNNER_ARTIFACT_DIR", "QTUI_TEST_ARTIFACT_DIR")).trimmed();
+    QString artifactDirectory = QString::fromUtf8(qgetenv("QTUI_RUNNER_ARTIFACT_DIR")).trimmed();
     if (artifactDirectory.isEmpty()) {
         artifactDirectory = QDir::temp().filePath(
             QStringLiteral("qtui-runner-%1").arg(QCoreApplication::applicationPid()));
@@ -479,6 +461,11 @@ Runner::Runner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
     // paint that frame before overlaying the smaller test viewport.
     if (m_terminalEngine && m_viewport.isValid() && !m_viewport.isEmpty())
         m_terminalEngine->setTestViewportSize(m_viewport);
+    // A Runner attached to the engine is a test session even when nothing in
+    // the environment announced one: no-op for environment-requested runs and
+    // after useEmbeddedScenario(), quiet from here on otherwise.
+    if (m_terminalEngine)
+        m_terminalEngine->beginTestSession();
 
     m_watchdog.setSingleShot(true);
     connect(&m_watchdog, &QTimer::timeout, this, [this] {
@@ -493,11 +480,33 @@ Runner::~Runner()
     (void)stopHardWatchdog();
 }
 
+void Runner::useEmbeddedScenario(bool liveOutput)
+{
+    TerminalEngine::requestTestSession(liveOutput);
+}
+
+void Runner::setLiveOutput(bool live)
+{
+    if (m_terminalEngine)
+        m_terminalEngine->setLiveOutput(live);
+}
+
+void Runner::setUpdateSnapshots(bool update)
+{
+    m_updateSnapshotsOverride = update;
+}
+
 void Runner::start()
 {
     m_elapsed.start();
-    const QByteArray updateSnapshots = qgetenv("QTUI_UPDATE_SNAPSHOTS").trimmed();
-    m_updateSnapshots = !updateSnapshots.isEmpty() && updateSnapshots != "0";
+    if (m_updateSnapshotsOverride.has_value()) {
+        m_updateSnapshots = *m_updateSnapshotsOverride;
+    } else {
+        // Inherited from the environment so `QTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest`
+        // also refreshes baselines of embedded runs.
+        const QByteArray updateSnapshots = qgetenv("QTUI_RUNNER_UPDATE_SNAPSHOTS").trimmed();
+        m_updateSnapshots = !updateSnapshots.isEmpty() && updateSnapshots != "0";
+    }
     if (!QDir().mkpath(m_artifactDirectory)) {
         m_configurationError = QStringLiteral("Cannot create artifact directory %1")
             .arg(m_artifactDirectory);
@@ -1605,7 +1614,7 @@ void Runner::compareSnapshot(const QString& snapshotRelativePath, const QString&
             if (writeTextArtifact(actualArtifactPath, actualText, &writeError))
                 m_capturePaths.append(actualArtifactPath);
             failScenario(QStringLiteral(
-                "QTUI_UPDATE_SNAPSHOTS cannot update resource snapshot %1; "
+                "Snapshot update mode cannot update resource snapshot %1; "
                 "the actual frame was written to %2")
                              .arg(snapshotPath, actualArtifactPath));
             return;
@@ -1630,7 +1639,7 @@ void Runner::compareSnapshot(const QString& snapshotRelativePath, const QString&
 
     if (!baselineExists) {
         failScenario(QStringLiteral(
-            "Missing snapshot baseline %1; run with QTUI_UPDATE_SNAPSHOTS=1 to record it")
+            "Missing snapshot baseline %1; run with QTUI_RUNNER_UPDATE_SNAPSHOTS=1 to record it")
                          .arg(snapshotPath));
         return;
     }

@@ -5,10 +5,13 @@ add_library(QtuiRunner
     MemoryTerminalBackend.cpp
 )
 
-# The scenario helpers (qtui_add_scenario, qtui_scenario_editor_support) must
-# be available to FetchContent/add_subdirectory consumers even when nothing in
-# this build includes them, and the editor-support helper needs the source
-# location of the scenario API declarations.
+# Configuring the Runner target is what makes the scenario helpers
+# (qtui_add_scenario, qtui_add_scenario_test, qtui_scenario_editor_support)
+# available: CMake functions are global once defined, and this directory is
+# processed before examples/, tests/ and any FetchContent/add_subdirectory
+# consumer's own directories. No other CMakeLists.txt in the tree includes the
+# module; installed consumers get it from QtuiConfig.cmake. The editor-support
+# helper also needs the source location of the scenario API declarations.
 include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 set(QTUI_RUNNER_DECLARATIONS "${CMAKE_CURRENT_SOURCE_DIR}/qtui-runner.d.ts"
     CACHE INTERNAL "Source location of the Runner scenario API declarations")

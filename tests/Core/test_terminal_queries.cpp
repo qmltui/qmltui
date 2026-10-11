@@ -68,7 +68,8 @@ class TestTerminalQueries : public QObject {
 private slots:
     void init() {
         for (const char* name : {"QTUI_SYNC_OUTPUT", "QTUI_KITTY_KEYBOARD", "QTUI_KITTY_GRAPHICS",
-                                 "QTUI_QUERY_TIMEOUT_MS", "QTUI_ESCAPE_TIMEOUT_MS", "QTUI_TEST_EMBEDDED_SCENARIO",
+                                 "QTUI_QUERY_TIMEOUT_MS", "QTUI_ESCAPE_TIMEOUT_MS", "QTUI_RUNNER_EMBEDDED_SCENARIO",
+                                 "QTUI_RUNNER_LIVE",
                                  "TERM_PROGRAM", "TERM", "KITTY_WINDOW_ID", "KONSOLE_VERSION",
                                  "WEZTERM_EXECUTABLE", "GHOSTTY_RESOURCES_DIR"}) {
             saved.insert(name, qgetenv(name));
@@ -569,13 +570,50 @@ Terminal {
         QTRY_VERIFY(frameText(engine).contains("ESC2 UP1"));
     }
     void disabledStartupDoesNotProbe() {
-        qputenv("QTUI_TEST_EMBEDDED_SCENARIO", "1");
+        qputenv("QTUI_RUNNER_EMBEDDED_SCENARIO", "1");
         Terminal terminal;
         auto* engine = terminal.engine();
+        QVERIFY(engine->testSession());
+        QVERIFY(!engine->liveOutput());
         QTRY_VERIFY(engine->frameSequence() > 0);
         QVERIFY(backend->output().empty());
         QVERIFY(!engine->enqueueControlSequence("ignored"));
         QVERIFY(engine->takeControlSequences().isEmpty());
+    }
+    // The programmatic twin of QTUI_RUNNER_EMBEDDED_SCENARIO / QTUI_RUNNER_LIVE:
+    // a test session begun after construction silences output and frame
+    // pacing, and live output toggles rendering back on and off.
+    void testSessionApiControlsOutput() {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QVERIFY(!engine->testSession());
+        QVERIFY(engine->terminalOutputEnabled());
+        QCOMPARE(engine->maxFrameRate(), 60);
+
+        engine->beginTestSession();
+        QVERIFY(engine->testSession());
+        QVERIFY(!engine->terminalOutputEnabled());
+        QCOMPARE(engine->maxFrameRate(), 0);
+        backend->clearOutput();
+        engine->requestRender();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const quint64 quietFrame = engine->frameSequence();
+        QVERIFY(backend->output().empty());
+
+        engine->setLiveOutput(true);
+        QVERIFY(engine->liveOutput());
+        QVERIFY(engine->terminalOutputEnabled());
+        QTRY_VERIFY(engine->frameSequence() > quietFrame);
+        QVERIFY(!backend->output().empty());
+
+        engine->setLiveOutput(false);
+        QVERIFY(!engine->terminalOutputEnabled());
+        // Live output is only meaningful inside a test session.
+        Terminal plain;
+        plain.engine()->setLiveOutput(true);
+        QVERIFY(plain.engine()->terminalOutputEnabled());
+        plain.engine()->setLiveOutput(false);
+        QVERIFY(plain.engine()->terminalOutputEnabled());
     }
 private:
     QHash<QByteArray, QByteArray> saved;

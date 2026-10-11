@@ -3,16 +3,14 @@ include(CMakeParseArguments)
 
 # Cached so every directory sees the path even though include_guard(GLOBAL)
 # skips repeated includes from other directories.
-set(QTUI_RUNNER_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
-    CACHE INTERNAL "Path to the Qtui scenario runner script")
-set(QTUI_TESTRUNNER_SCRIPT "${QTUI_RUNNER_SCRIPT}"
-    CACHE INTERNAL "Legacy path to the Qtui scenario runner script")
+set(QTUI_RUNNER_SCENARIO_DRIVER "${CMAKE_CURRENT_LIST_DIR}/RunQtuiScenario.cmake"
+    CACHE INTERNAL "Path to the CMake script that launches and validates one Runner scenario")
 
 function(qtui_add_scenario)
     cmake_parse_arguments(QTUI_SCENARIO
         "EMBEDDED;LIVE;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
         "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK"
-        "LABELS"
+        "LABELS;ARGUMENTS"
         ${ARGN}
     )
 
@@ -80,8 +78,8 @@ function(qtui_add_scenario)
     if(QTUI_SCENARIO_LIVE)
         list(APPEND command "-DLIVE_SCENARIO=ON")
     endif()
-    # QTUI_UPDATE_SNAPSHOTS is inherited from the caller's environment by
-    # default, so `QTUI_UPDATE_SNAPSHOTS=1 ctest -R <name>` rewrites baselines.
+    # QTUI_RUNNER_UPDATE_SNAPSHOTS is inherited from the caller's environment by
+    # default, so `QTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <name>` rewrites baselines.
     # UPDATE_SNAPSHOTS forces it on for a specific test; NO_UPDATE_SNAPSHOTS
     # forces it off so a verifying or negative test stays deterministic even
     # under a global update run.
@@ -131,7 +129,15 @@ function(qtui_add_scenario)
     if(QTUI_SCENARIO_SYMLINK_TRAP)
         list(APPEND command "-DSYMLINK_TRAP=${QTUI_SCENARIO_SYMLINK_TRAP}")
     endif()
-    list(APPEND command "-P" "${QTUI_RUNNER_SCRIPT}")
+    # ARGUMENTS are appended to the executable's command line, for a harness
+    # that selects its scenario or options from argv rather than the environment.
+    if(QTUI_SCENARIO_ARGUMENTS)
+        # Escaped so the list survives as one -D value and reappears as a
+        # list inside the driver script.
+        string(REPLACE ";" "\\;" scenario_arguments "${QTUI_SCENARIO_ARGUMENTS}")
+        list(APPEND command "-DTEST_ARGUMENTS=${scenario_arguments}")
+    endif()
+    list(APPEND command "-P" "${QTUI_RUNNER_SCENARIO_DRIVER}")
 
     add_test(NAME "${QTUI_SCENARIO_NAME}" COMMAND ${command})
     set(labels Runner)

@@ -19,6 +19,12 @@ set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/image")
 set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/animated_sprite")
 
 function(gallery_add_executable target uri main_source)
+    # An optional fourth argument gives the module its own output directory, so
+    # a second executable can compile the same URI without colliding on disk.
+    set(module_output_directory)
+    if(ARGC GREATER 3)
+        set(module_output_directory OUTPUT_DIRECTORY "${ARGV3}")
+    endif()
     qt_add_executable(${target} ${main_source})
     set(gallery_dependencies TARGET Qtui::Core TARGET Qtui::Controls)
     set(gallery_link_libraries Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
@@ -28,6 +34,7 @@ function(gallery_add_executable target uri main_source)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
+        ${module_output_directory}
         VERSION 1.0
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES ${gallery_qml_files}
@@ -67,11 +74,11 @@ if(COMMAND qtui_wasm_app)   # browser build, see examples/wasm and docs/guide/we
 endif()
 
 if(TARGET Qtui::Runner)
-    gallery_add_executable(qtui_gallery_test GalleryTest main_test.cpp)
+    gallery_add_executable(qtui_gallery_test Gallery main.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/qml_test/Gallery")
     target_link_libraries(qtui_gallery_test PRIVATE Qtui::Runner)
 
     if(QTUI_BUILD_TESTS)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         # Gallery pages animate on QML Timers and Qtui animations: the tour
         # runs on the virtual clock, so its per-page settling is instant.
         qtui_add_scenario_test(

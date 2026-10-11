@@ -36,9 +36,16 @@ set(starter_template_qml_files
 
 # Adds an executable that compiles the module under its own URI.
 function(starter_template_add_executable target uri main_source)
+    # An optional fourth argument gives the module its own output directory, so
+    # a second executable can compile the same URI without colliding on disk.
+    set(module_output_directory)
+    if(ARGC GREATER 3)
+        set(module_output_directory OUTPUT_DIRECTORY "${ARGV3}")
+    endif()
     qt_add_executable(${target} ${main_source})
     qt_add_qml_module(${target}
         URI ${uri}
+        ${module_output_directory}
         VERSION 1.0
         RESOURCE_PREFIX "/qt/qml"
         SOURCES ${starter_template_sources}
@@ -74,10 +81,12 @@ install(TARGETS qtui_starter_template
 )
 
 if(TARGET Qtui::Runner)
-    starter_template_add_executable(qtui_starter_template_test StarterTemplateAppTest main_test.cpp)
+    starter_template_add_executable(qtui_starter_template_test StarterTemplateApp main_test.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/qml_test/StarterTemplateApp")
     target_link_libraries(qtui_starter_template_test PRIVATE Qtui::Runner)
 
-    starter_template_add_executable(qtui_starter_template_benchmark StarterTemplateAppBenchmark main_benchmark.cpp)
+    starter_template_add_executable(qtui_starter_template_benchmark StarterTemplateApp main_benchmark.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/qml_benchmark/StarterTemplateApp")
     target_link_libraries(qtui_starter_template_benchmark PRIVATE Qtui::Runner)
 
     install(TARGETS qtui_starter_template_benchmark
@@ -85,7 +94,6 @@ if(TARGET Qtui::Runner)
     )
 
     if(QTUI_BUILD_TESTS AND NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         qtui_add_scenario_test(
             NAME starter_template_setup
             TARGET qtui_starter_template_test

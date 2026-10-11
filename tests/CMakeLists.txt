@@ -1,6 +1,5 @@
 include(CTest)
 enable_testing()
-include("${Qtui_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
 # One directory per library, mirroring src/Qtui: Core, Controls, Image,
 # Runner and TerminalHost each register their own tests. Examples/ holds
@@ -33,7 +32,7 @@ set(qtui_test_runner_artifacts "${qtui_runner_artifacts}")
 function(add_qtui_runner_scenario test_name executable script expected_exit)
     cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
         "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK"
-        "" ${ARGN})
+        "ARGUMENTS" ${ARGN})
     if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
         set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
     endif()
@@ -67,6 +66,9 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
     if(SCENARIO_NO_UPDATE_SNAPSHOTS)
         list(APPEND arguments NO_UPDATE_SNAPSHOTS)
     endif()
+    if(SCENARIO_ARGUMENTS)
+        list(APPEND arguments ARGUMENTS ${SCENARIO_ARGUMENTS})
+    endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT
             PROCESS_TIMEOUT SYMLINK_TRAP SNAPSHOT_SEED_SOURCE SNAPSHOT_SEED_DEST
             EXPECT_UPDATED_SNAPSHOT EXPECT_UPDATED_SNAPSHOT_CONTENT CLOCK)
@@ -77,8 +79,8 @@ function(add_qtui_runner_scenario test_name executable script expected_exit)
     qtui_add_scenario(${arguments})
 endfunction()
 
-# A Runner session requested through the environment (QTUI_CAPTURE_AFTER_MS,
-# QTUI_EVAL, or a deliberate conflict between modes).
+# A Runner session requested through the environment (QTUI_RUNNER_CAPTURE_AFTER_MS,
+# QTUI_RUNNER_EVAL, or a deliberate conflict between modes).
 function(add_qtui_environment_scenario test_name executable expected_exit)
     cmake_parse_arguments(SCENARIO "CONFLICT"
         "CAPTURE_AFTER_MS;SCRIPT;EVAL_CODE;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT" "" ${ARGN})
@@ -107,7 +109,7 @@ function(add_qtui_environment_scenario test_name executable expected_exit)
             list(APPEND command "-DEXPECT_${argument}=${SCENARIO_${argument}}")
         endif()
     endforeach()
-    list(APPEND command "-P" "${QTUI_RUNNER_SCRIPT}")
+    list(APPEND command "-P" "${QTUI_RUNNER_SCENARIO_DRIVER}")
     add_test(NAME ${test_name} COMMAND ${command})
     set_tests_properties(${test_name} PROPERTIES
         SKIP_RETURN_CODE 125

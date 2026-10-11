@@ -1,6 +1,6 @@
 // Loads one QML file whose root is a Terminal and hands it to Runner's
 // environment-driven startup. scripts/check_doc_examples.py runs every ```qml
-// block from docs/components through it with QTUI_CAPTURE_AFTER_MS set, so a
+// block from docs/components through it with QTUI_RUNNER_CAPTURE_AFTER_MS set, so a
 // documentation example that fails to load or render fails the suite.
 #include <QCoreApplication>
 #include <QDebug>
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
         return 4;
     }
     if (!qtui::Runner::startFromEnvironment(&engine, terminal)) {
-        qCritical() << "set QTUI_CAPTURE_AFTER_MS (or QTUI_SCRIPT / QTUI_EVAL)";
+        qCritical() << "set QTUI_RUNNER_CAPTURE_AFTER_MS (or QTUI_RUNNER_SCRIPT / QTUI_RUNNER_EVAL)";
         return 2;
     }
     return app.exec();

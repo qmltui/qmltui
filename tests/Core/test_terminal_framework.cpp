@@ -177,10 +177,10 @@ private slots:
 };
 
 void TestTerminalFramework::testSessionOutputModeTransitions() {
-    const QByteArray previousScript = qgetenv("QTUI_SCRIPT");
-    const QByteArray previousLive = qgetenv("QTUI_TEST_LIVE");
-    qputenv("QTUI_SCRIPT", QByteArrayLiteral("quiet-test.js"));
-    qunsetenv("QTUI_TEST_LIVE");
+    const QByteArray previousScript = qgetenv("QTUI_RUNNER_SCRIPT");
+    const QByteArray previousLive = qgetenv("QTUI_RUNNER_LIVE");
+    qputenv("QTUI_RUNNER_SCRIPT", QByteArrayLiteral("quiet-test.js"));
+    qunsetenv("QTUI_RUNNER_LIVE");
 
     bool quietByDefault = false;
     bool enabledOnRequest = false;
@@ -196,13 +196,13 @@ void TestTerminalFramework::testSessionOutputModeTransitions() {
     }
 
     if (previousScript.isNull())
-        qunsetenv("QTUI_SCRIPT");
+        qunsetenv("QTUI_RUNNER_SCRIPT");
     else
-        qputenv("QTUI_SCRIPT", previousScript);
+        qputenv("QTUI_RUNNER_SCRIPT", previousScript);
     if (previousLive.isNull())
-        qunsetenv("QTUI_TEST_LIVE");
+        qunsetenv("QTUI_RUNNER_LIVE");
     else
-        qputenv("QTUI_TEST_LIVE", previousLive);
+        qputenv("QTUI_RUNNER_LIVE", previousLive);
 
     QVERIFY(quietByDefault);
     QVERIFY(enabledOnRequest);

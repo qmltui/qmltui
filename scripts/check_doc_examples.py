@@ -3,7 +3,7 @@
 
 Each ```qml fenced block that is a complete file (it has an import line)
 becomes a Main.qml in its own directory and is run
-through qtui_doc_example_runner with QTUI_CAPTURE_AFTER_MS set, so the block
+through qtui_doc_example_runner with QTUI_RUNNER_CAPTURE_AFTER_MS set, so the block
 has to parse, resolve every type it imports, build its item tree with a
 Terminal root, and commit a frame. The runner's result.json decides.
 
@@ -47,14 +47,14 @@ def main() -> int:
 
     env = dict(os.environ)
     env.update({
-        "QTUI_CAPTURE_AFTER_MS": str(args.capture_after_ms),
-        "QTUI_TEST_COLUMNS": "80",
-        "QTUI_TEST_ROWS": "24",
+        "QTUI_RUNNER_CAPTURE_AFTER_MS": str(args.capture_after_ms),
+        "QTUI_RUNNER_COLUMNS": "80",
+        "QTUI_RUNNER_ROWS": "24",
         "QML_IMPORT_PATH": str(args.qml_import_path),
         "QML2_IMPORT_PATH": str(args.qml_import_path),
         "QT_FORCE_STDERR_LOGGING": "1",
     })
-    for name in ("QTUI_SCRIPT", "QTUI_EVAL", "QTUI_TEST_LIVE", "QTUI_TEST_EMBEDDED_SCENARIO"):
+    for name in ("QTUI_RUNNER_SCRIPT", "QTUI_RUNNER_EVAL", "QTUI_RUNNER_LIVE", "QTUI_RUNNER_EMBEDDED_SCENARIO"):
         env.pop(name, None)
 
     failures: list[str] = []
@@ -86,7 +86,7 @@ def main() -> int:
             work.mkdir()
             main_qml = work / "Main.qml"
             main_qml.write_text(match.group(1), encoding="utf-8")
-            env["QTUI_TEST_ARTIFACT_DIR"] = str(work)
+            env["QTUI_RUNNER_ARTIFACT_DIR"] = str(work)
             try:
                 run = subprocess.run([str(args.runner), str(main_qml)], env=env,
                                      capture_output=True, text=True, timeout=30)

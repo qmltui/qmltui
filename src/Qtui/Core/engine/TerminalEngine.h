@@ -73,6 +73,24 @@ public:
     void setCapabilities(const TerminalCapabilities& capabilities);
     void setTerminalOutputEnabled(bool enabled);
     bool terminalOutputEnabled() const { return m_terminalOutputEnabled; }
+
+    // A scenario driver (qtui::Runner) owns this engine: terminal output stays
+    // off unless live output is requested, and frame pacing is disabled so
+    // timing assertions measure the framework. The constructor enters the
+    // session itself when the environment announces one (QTUI_RUNNER_SCRIPT,
+    // _EVAL, _CAPTURE_AFTER_MS or _EMBEDDED_SCENARIO); a Runner constructed
+    // after QML loaded calls beginTestSession() from its constructor.
+    void beginTestSession();
+    bool testSession() const { return m_testSession; }
+    // Renders a test session to the real terminal, as QTUI_RUNNER_LIVE=1 does.
+    // Outside a test session output is on regardless.
+    void setLiveOutput(bool live);
+    bool liveOutput() const { return m_liveOutput; }
+    // Process-wide request for engines created later, so a directly
+    // constructed Runner is quiet from the very first byte: call it before the
+    // root Terminal exists. Equivalent to QTUI_RUNNER_EMBEDDED_SCENARIO=1 (and
+    // QTUI_RUNNER_LIVE=1 when liveOutput is true); a live request sticks.
+    static void requestTestSession(bool liveOutput = false);
     void stop();
     bool enqueueControlSequence(QByteArray bytes);
     QByteArray takeControlSequences();
@@ -130,6 +148,7 @@ private slots:
     void renderFrame();
 
 private:
+    void applyOutputPolicy();
     friend class ::TestScrollView;
     friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
 
@@ -181,6 +200,9 @@ private:
     bool m_rendererStarted = false;
     bool m_alternateScreenMessageSession = false;
     bool m_terminalOutputEnabled = true;
+    bool m_testSession = false;
+    bool m_liveOutput = false;
+    bool m_maxFrameRateFromEnvironment = false;
     bool m_mouseMotionReportingEnabled = false;
     QPointer<Terminal> m_rootWindow;
     

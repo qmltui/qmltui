@@ -14,12 +14,12 @@ qt_add_qml_module(qtui_calendar
 target_link_libraries(qtui_calendar PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Controls)
 
 if(TARGET Qtui::Runner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
-    qt_add_executable(qtui_calendar_test main_test.cpp)
+    qt_add_executable(qtui_calendar_test main.cpp)
 
     qt_add_qml_module(qtui_calendar_test
-        URI CalendarDemoTest
+        URI CalendarDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/CalendarDemo"
         VERSION 1.0
         QML_FILES
         Calendar.qml

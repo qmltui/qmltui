@@ -39,7 +39,6 @@ if(TARGET Qtui::Runner)
         Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls Qtui::Runner)
     target_compile_definitions(qtui_agent_stream_demo_test PRIVATE
         QTUI_AGENT_STREAM_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/Main.qml")
-    include("${Qtui_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     qtui_add_scenario_test(NAME agent_stream_inline TARGET qtui_agent_stream_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_inline.js"
         COLUMNS 120 ROWS 35 LABELS AgentSmoke)

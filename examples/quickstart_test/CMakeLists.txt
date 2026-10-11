@@ -18,8 +18,7 @@ qt_add_qml_module(qtui_quickstart
 target_link_libraries(qtui_quickstart PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
 if(TARGET Qtui::Runner)
-    include("${Qtui_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    # Same sources plus Qtui::Runner, whose auto-hook honours QTUI_SCRIPT.
+    # Same sources plus Qtui::Runner, whose auto-hook honours QTUI_RUNNER_SCRIPT.
     qt_add_executable(qtui_quickstart_test "${quickstart_dir}/main.cpp")
     qt_add_qml_module(qtui_quickstart_test
         URI HelloQtui

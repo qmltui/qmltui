@@ -37,7 +37,7 @@ qtui::TerminalBackend::setFactory([](int) {
     g_backend = backend.get();
     return backend;
 });
-// ... create the Terminal from QML with output enabled (no QTUI_SCRIPT, QTUI_EVAL, or QTUI_CAPTURE_AFTER_MS in the environment) ...
+// ... create the Terminal from QML with output enabled (no QTUI_RUNNER_SCRIPT, QTUI_RUNNER_EVAL, or QTUI_RUNNER_CAPTURE_AFTER_MS in the environment) ...
 g_backend->feedInput("q");            // reaches Keys.onPressed
 g_backend->setSize(QSize(120, 40));   // Terminal.terminalWidth becomes 120
 QVERIFY(g_backend->output().find("\033[") != std::string::npos);

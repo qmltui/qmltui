@@ -26,19 +26,19 @@ target_link_libraries(qtui_btop PRIVATE
 )
 
 if(TARGET Qtui::Runner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
     qt_add_executable(qtui_btop_test
-        main_test.cpp
+        main.cpp
         ${btop_sources}
     )
 
     qt_add_qml_module(qtui_btop_test
-        URI BtopDemoTest
+        URI BtopDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/BtopDemo"
         VERSION 1.0
         QML_FILES Main.qml
         DEPENDENCIES
- TARGET Qtui::Core Qtui::Controls
+        TARGET Qtui::Core Qtui::Controls
     )
 
     target_link_libraries(qtui_btop_test PRIVATE
@@ -68,5 +68,6 @@ if(TARGET Qtui::Runner)
         COLUMNS 132
         ROWS 42
         LABELS AgentSmoke
+        LIVE
     )
 endif()

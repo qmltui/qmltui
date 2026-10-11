@@ -38,9 +38,16 @@ set(cyber_audio_qml_files
 
 # Adds an executable that compiles the module under its own URI.
 function(cyber_audio_add_executable target uri main_source)
+    # An optional fourth argument gives the module its own output directory, so
+    # a second executable can compile the same URI without colliding on disk.
+    set(module_output_directory)
+    if(ARGC GREATER 3)
+        set(module_output_directory OUTPUT_DIRECTORY "${ARGV3}")
+    endif()
     qt_add_executable(${target} ${main_source})
     qt_add_qml_module(${target}
         URI ${uri}
+        ${module_output_directory}
         VERSION 1.0
         RESOURCE_PREFIX "/qt/qml"
         SOURCES ${cyber_audio_sources}
@@ -68,11 +75,11 @@ endif()
 cyber_audio_add_executable(qtui_cyber_audio CyberAudio main.cpp)
 
 if(TARGET Qtui::Runner)
-    cyber_audio_add_executable(qtui_cyber_audio_test CyberAudioTest main_test.cpp)
+    cyber_audio_add_executable(qtui_cyber_audio_test CyberAudio main_test.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/qml_test/CyberAudio")
     target_link_libraries(qtui_cyber_audio_test PRIVATE Qtui::Runner)
 
     if(QTUI_BUILD_TESTS)
-        include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
         qtui_add_scenario_test(
             NAME cyber_audio_demo_smoke
             TARGET qtui_cyber_audio_test

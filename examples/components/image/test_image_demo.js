@@ -1,3 +1,5 @@
+
+/** @param {Terminal} terminal */
 function main(terminal) {
     terminal.waitForText("Qtui.Image");
     // No kitty graphics under the headless test backend, so Auto reports the
@@ -15,7 +17,6 @@ function main(terminal) {
 
     terminal.press("2");
     terminal.waitForText("Image: demo_image.png");
-    terminal.captureText("image_demo/ascii_demo.txt");
 
     terminal.finish();
 }

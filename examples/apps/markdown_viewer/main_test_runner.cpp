@@ -10,17 +10,10 @@
 #include <Qtui/Runner/Runner.h>
 
 namespace {
-int environmentDimension(const char *name, const char *fallbackName, int fallback) {
+int environmentDimension(const char *name, int fallback) {
     bool ok = false;
-    int value = qEnvironmentVariableIntValue(name, &ok);
-    if (ok && value > 0)
-        return value;
-    if (fallbackName) {
-        value = qEnvironmentVariableIntValue(fallbackName, &ok);
-        if (ok && value > 0)
-            return value;
-    }
-    return fallback;
+    const int value = qEnvironmentVariableIntValue(name, &ok);
+    return (ok && value > 0) ? value : fallback;
 }
 }
 
@@ -42,8 +35,13 @@ int main(int argc, char *argv[]) {
     if (script.isEmpty())
         script = QStringLiteral(":/qt/qml/Qtui/Examples/MarkdownViewer/test_markdown_viewer.js");
 
-    if (qEnvironmentVariableIsSet("QTUI_SCRIPT"))
-        script = QString::fromUtf8(qgetenv("QTUI_SCRIPT"));
+    if (qEnvironmentVariableIsSet("QTUI_RUNNER_SCRIPT"))
+        script = QString::fromUtf8(qgetenv("QTUI_RUNNER_SCRIPT"));
+
+    // Before QML loads: the Terminal created below stays quiet even when no
+    // QTUI_RUNNER_* variable announced a scenario (QTUI_RUNNER_LIVE=1 still
+    // renders to the terminal).
+    qtui::Runner::useEmbeddedScenario();
 
     QQmlApplicationEngine engine;
     engine.loadFromModule("Qtui.Examples.MarkdownViewer", "Main");
@@ -54,19 +52,17 @@ int main(int argc, char *argv[]) {
     if (!terminal)
         return -1;
 
-    if (qEnvironmentVariableIsSet("QTUI_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QTUI_EVAL")) {
+    if (qEnvironmentVariableIsSet("QTUI_RUNNER_CAPTURE_AFTER_MS") || qEnvironmentVariableIsSet("QTUI_RUNNER_EVAL")) {
         if (qtui::Runner::startFromEnvironment(&engine, terminal))
             return app.exec();
     }
 
     QString artifacts = QString::fromUtf8(qgetenv("QTUI_RUNNER_ARTIFACT_DIR")).trimmed();
     if (artifacts.isEmpty())
-        artifacts = QString::fromUtf8(qgetenv("QTUI_TEST_ARTIFACT_DIR")).trimmed();
-    if (artifacts.isEmpty())
         artifacts = QDir::temp().filePath(QStringLiteral("qtui-markdown-viewer-artifacts"));
 
-    const QSize viewport(environmentDimension("QTUI_RUNNER_COLUMNS", "QTUI_TEST_COLUMNS", 100),
-                         environmentDimension("QTUI_RUNNER_ROWS", "QTUI_TEST_ROWS", 32));
+    const QSize viewport(environmentDimension("QTUI_RUNNER_COLUMNS", 100),
+                         environmentDimension("QTUI_RUNNER_ROWS", 32));
     auto *runner = new qtui::Runner(
         &engine, terminal,
         script,

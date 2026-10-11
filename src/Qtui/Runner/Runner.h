@@ -16,6 +16,7 @@
 #include <QVector>
 
 #include <memory>
+#include <optional>
 
 class QEventLoop;
 class QQmlEngine;
@@ -44,6 +45,24 @@ public:
     /// does. Call it before loading QML; once any Qtui timer or animation
     /// exists the process aborts with a diagnostic instead of mixing timelines.
     static void useVirtualClock();
+
+    /// Marks this process as a scenario run driven by a directly constructed
+    /// Runner, as QTUI_RUNNER_EMBEDDED_SCENARIO=1 does: every Terminal created
+    /// afterwards stays quiet (no ANSI output, no frame pacing) unless
+    /// liveOutput is true or QTUI_RUNNER_LIVE is set. Call it before loading
+    /// QML, like useVirtualClock(). A Runner constructed without it still
+    /// silences its engine, but only from its construction on; the terminal's
+    /// startup sequences have been written by then.
+    static void useEmbeddedScenario(bool liveOutput = false);
+
+    /// Renders the scenario to the real terminal instead of committing frames
+    /// quietly, as QTUI_RUNNER_LIVE=1 does. Takes effect immediately.
+    void setLiveOutput(bool live);
+
+    /// Rewrites snapshot baselines instead of failing on a mismatch, as
+    /// QTUI_RUNNER_UPDATE_SNAPSHOTS=1 does. An explicit value wins over the
+    /// environment. Call it before start().
+    void setUpdateSnapshots(bool update);
 
     void start();
 
@@ -319,6 +338,7 @@ private:
     QStringList m_capturePaths;
     QStringList m_updatedSnapshots;
     bool m_updateSnapshots = false;
+    std::optional<bool> m_updateSnapshotsOverride;
     QVector<OperationRecord> m_operations;
     int m_currentOperation = -1;
     QElapsedTimer m_elapsed;

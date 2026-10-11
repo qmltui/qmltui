@@ -239,7 +239,7 @@ interface Terminal {
                 timeoutMs?: number): void;
     expectStyle(x: number, y: number, expectedStyle: QtuiStyleExpectation,
                 options?: QtuiTimeoutOptions): void;
-    /** Compares the frame text against a golden baseline (QTUI_UPDATE_SNAPSHOTS rewrites it). */
+    /** Compares the frame text against a golden baseline (QTUI_RUNNER_UPDATE_SNAPSHOTS rewrites it). */
     expectSnapshot(snapshotRelativePath: string, timeoutMs?: number): void;
     expectSnapshot(snapshotRelativePath: string, options?: QtuiTimeoutOptions): void;
     /** Like expectSnapshot(), but compares styledText(): colors and attributes too. */

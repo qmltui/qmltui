@@ -15,12 +15,12 @@ target_link_libraries(qtui_service_monitor PRIVATE
 )
 
 if(TARGET Qtui::Runner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
 
-    qt_add_executable(qtui_service_monitor_test main_test.cpp)
+    qt_add_executable(qtui_service_monitor_test main.cpp)
 
     qt_add_qml_module(qtui_service_monitor_test
-        URI ServiceMonitorTest
+        URI ServiceMonitor
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/ServiceMonitor"
         VERSION 1.0
         QML_FILES Main.qml
         DEPENDENCIES

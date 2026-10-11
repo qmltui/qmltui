@@ -14,10 +14,10 @@ qt_add_qml_module(qtui_live_image
 target_link_libraries(qtui_live_image PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qtui::Core Qtui::Controls Qtui::Image)
 
 if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    qt_add_executable(qtui_live_image_test main_test.cpp)
+    qt_add_executable(qtui_live_image_test main.cpp)
     qt_add_qml_module(qtui_live_image_test
-        URI LiveImageTest
+        URI LiveImageDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/LiveImageDemo"
         VERSION 1.0
         SOURCES ${live_image_sources}
         QML_FILES Main.qml

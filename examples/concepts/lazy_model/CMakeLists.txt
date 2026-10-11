@@ -12,10 +12,10 @@ qt_add_qml_module(qtui_lazy_model
 target_link_libraries(qtui_lazy_model PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
 if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    qt_add_executable(qtui_lazy_model_test main_test.cpp)
+    qt_add_executable(qtui_lazy_model_test main.cpp)
     qt_add_qml_module(qtui_lazy_model_test
-        URI LazyModelTest
+        URI LazyModelDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/LazyModelDemo"
         VERSION 1.0
         QML_FILES Main.qml
         SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp

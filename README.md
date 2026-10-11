@@ -159,10 +159,12 @@ while more than `QTUI_OUTPUT_QUEUE_LIMIT` bytes (default 262144) are queued.
 
 Enable `Qtui::Runner` with `QTUI_BUILD_TESTS=ON` in-tree or
 `QTUI_ENABLE_RUNNER=ON` for installation. Runner-enabled applications can
-run scenarios through `QTUI_SCRIPT`, inline actions through `QTUI_EVAL`, or
-capture one frame with `QTUI_CAPTURE_AFTER_MS=<delay>`. Runs are quiet by default and write
+run scenarios through `QTUI_RUNNER_SCRIPT`, inline actions through `QTUI_RUNNER_EVAL`, or
+capture one frame with `QTUI_RUNNER_CAPTURE_AFTER_MS=<delay>`. Runs are quiet by default and write
 `result.json` plus a normalized final frame beneath
-`QTUI_RUNNER_ARTIFACT_DIR` (or `QTUI_TEST_ARTIFACT_DIR`); set `QTUI_RUNNER_LIVE=1` for interactive rendering.
+`QTUI_RUNNER_ARTIFACT_DIR`; set `QTUI_RUNNER_LIVE=1` for interactive rendering.
+A harness that constructs `qtui::Runner` itself uses `Runner::useEmbeddedScenario()`,
+`setLiveOutput()`, and `setUpdateSnapshots()` instead of those variables.
 
 Installed CMake consumers can register a scenario with:
 
@@ -185,7 +187,7 @@ qtui_add_scenario(
 `Qtui_QML_IMPORT_PATH`, which `find_package(Qtui)` sets to the installed import
 root; pass `QML_IMPORT_PATH` explicitly to override it. Link `Qtui::Runner`
 only into a dedicated test or harness executable — an application carrying the runner executes
-the scenario named by `QTUI_SCRIPT`/`QTUI_EVAL` if those variables are set in
+the scenario named by `QTUI_RUNNER_SCRIPT`/`QTUI_RUNNER_EVAL` if those variables are set in
 its environment. See `examples/apps/industrial_plc_hmi` for that split.
 
 JavaScript scenarios can inspect cells, find rendered text, click it without

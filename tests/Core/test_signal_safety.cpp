@@ -42,8 +42,8 @@ public:
         if (pid == 0) {
             ::setenv("TERM", "xterm-256color", 1);
             ::setenv("QTUI_QUERY_TIMEOUT_MS", "5000", 1);   // the test answers by hand
-            for (const char* name : {"QTUI_SCRIPT", "QTUI_EVAL", "QTUI_CAPTURE_AFTER_MS",
-                                     "QTUI_TEST_EMBEDDED_SCENARIO", "QTUI_TEST_LIVE"})
+            for (const char* name : {"QTUI_RUNNER_SCRIPT", "QTUI_RUNNER_EVAL", "QTUI_RUNNER_CAPTURE_AFTER_MS",
+                                     "QTUI_RUNNER_EMBEDDED_SCENARIO", "QTUI_RUNNER_LIVE"})
                 ::unsetenv(name);
             ::execl(QTUI_SIGNAL_FIXTURE, QTUI_SIGNAL_FIXTURE, nullptr);
             ::_exit(127);

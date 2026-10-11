@@ -1,3 +1,5 @@
+
+/** @param {Terminal} terminal */
 function main(terminal) {
     terminal.waitForText("DOCKER FLEET MONITOR");
     terminal.captureText("fleet/all.txt");
@@ -14,4 +16,5 @@ function main(terminal) {
     terminal.waitForFrame();
     terminal.captureText("fleet/logs.txt");
     terminal.finish();
+
 }

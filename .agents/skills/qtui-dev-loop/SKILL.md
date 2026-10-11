@@ -81,7 +81,7 @@ For new applications, link `Qtui::Runner` only into a dedicated test
 executable. Some existing examples conditionally link Runner into their main
 executable; treat these as legacy integration patterns and do not copy them
 into production applications. Linking Runner installs the Terminal auto-hook
-that honors `QTUI_SCRIPT`, `QTUI_EVAL`, and `QTUI_CAPTURE_AFTER_MS`.
+that honors `QTUI_RUNNER_SCRIPT`, `QTUI_RUNNER_EVAL`, and `QTUI_RUNNER_CAPTURE_AFTER_MS`.
 
 Choose one integration pattern:
 
@@ -92,9 +92,10 @@ Choose one integration pattern:
   `Runner` label. Add `LIVE` only for a scenario that must render to a
   real terminal; automated suites should stay quiet.
 - **Embedded resource:** add the script and snapshots to a QML/resource module,
-  construct `Runner` with the explicit `QQmlEngine`, root `Terminal`,
-  resource path, artifact directory, viewport, and timeouts, then schedule
-  `start()` with `QTimer::singleShot(0, ...)`. Register the dedicated executable
+  call `qtui::Runner::useEmbeddedScenario()` before loading QML, construct
+  `Runner` with the explicit `QQmlEngine`, root `Terminal`, resource path,
+  artifact directory, viewport, and timeouts, then schedule `start()` with
+  `QTimer::singleShot(0, ...)`. Register the dedicated executable
   with `qtui_add_scenario(... EMBEDDED ...)` so automated runs are quiet
   and receive the same result validation.
 
@@ -118,36 +119,40 @@ qtui_add_scenario(
 )
 ```
 
-Use
+The test executable normally compiles the application's own `main.cpp` and
+module URI; only the module's `OUTPUT_DIRECTORY` differs, so the two
+`qt_add_qml_module` calls do not collide on disk. Do not copy `main.cpp` into a
+`main_test.cpp` or invent a `<Uri>Test` module for that. Use
+[`examples/components/animated_sprite/CMakeLists.txt`](../../../examples/components/animated_sprite/CMakeLists.txt)
+as the reference for that shared-main pattern. Use
+[`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
+when the test binary genuinely needs different startup (there, a mock backend
+and no single-instance lock). Use
 [`examples/apps/markdown_viewer/main_test_runner.cpp`](../../../examples/apps/markdown_viewer/main_test_runner.cpp)
 for explicitly constructed embedded runners. Use
-[`examples/apps/service_monitor/main_test.cpp`](../../../examples/apps/service_monitor/main_test.cpp)
-or
-[`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
-for dedicated test-only executables driven through the environment. Use
 [`tests/Runner`](../../../tests/Runner) for framework scenarios and failure
 contracts.
 
 ## Closed-Loop Inspection
 
-Environment modes are mutually exclusive: set exactly one of `QTUI_SCRIPT`,
-`QTUI_EVAL`, or `QTUI_CAPTURE_AFTER_MS`. They work only when the executable contains
+Environment modes are mutually exclusive: set exactly one of `QTUI_RUNNER_SCRIPT`,
+`QTUI_RUNNER_EVAL`, or `QTUI_RUNNER_CAPTURE_AFTER_MS`. They work only when the executable contains
 `Qtui::Runner`. For reproducible direct runs, set both viewport dimensions and
 an explicit artifact directory:
 
 ```bash
 rtk env \
-  QTUI_CAPTURE_AFTER_MS=500 \
-  QTUI_TEST_COLUMNS=80 \
-  QTUI_TEST_ROWS=24 \
-  QTUI_TEST_ARTIFACT_DIR=/tmp/qtui-capture \
+  QTUI_RUNNER_CAPTURE_AFTER_MS=500 \
+  QTUI_RUNNER_COLUMNS=80 \
+  QTUI_RUNNER_ROWS=24 \
+  QTUI_RUNNER_ARTIFACT_DIR=/tmp/qtui-capture \
   ./build/path/to/testing-linked-app
 rtk read /tmp/qtui-capture/capture.txt
 rtk read /tmp/qtui-capture/capture_styled.txt
 rtk json /tmp/qtui-capture/result.json
 ```
 
-`QTUI_CAPTURE_AFTER_MS` waits for the app to settle, then writes the frame as
+`QTUI_RUNNER_CAPTURE_AFTER_MS` waits for the app to settle, then writes the frame as
 text and as a styled snapshot. Use `0` for the first committed frame; use a few
 hundred milliseconds when timers or models fill the screen after start.
 
@@ -158,29 +163,32 @@ Use inline evaluation for a short exploratory action sequence:
 
 ```bash
 rtk env \
-  QTUI_EVAL="terminal.clickText('Pay'); terminal.captureText('after-pay.txt');" \
-  QTUI_TEST_COLUMNS=80 \
-  QTUI_TEST_ROWS=24 \
-  QTUI_TEST_ARTIFACT_DIR=/tmp/qtui-eval \
+  QTUI_RUNNER_EVAL="terminal.clickText('Pay'); terminal.captureText('after-pay.txt');" \
+  QTUI_RUNNER_COLUMNS=80 \
+  QTUI_RUNNER_ROWS=24 \
+  QTUI_RUNNER_ARTIFACT_DIR=/tmp/qtui-eval \
   ./build/path/to/testing-linked-app
 rtk read /tmp/qtui-eval/after-pay.txt
 ```
 
 Runs requested through the environment are quiet by default. Add
-`QTUI_TEST_LIVE=1` only for a human watching a real terminal; automated checks
-should normally inspect artifacts. For a directly constructed embedded runner,
-also set `QTUI_TEST_EMBEDDED_SCENARIO=1` to select quiet/live terminal behavior:
+`QTUI_RUNNER_LIVE=1` only for a human watching a real terminal; automated checks
+should normally inspect artifacts. A directly constructed embedded runner calls
+`qtui::Runner::useEmbeddedScenario()` before QML loads to get the same quiet
+terminal (pass `true` for live output, or call `setLiveOutput()` on the runner);
+`setUpdateSnapshots()` replaces `QTUI_RUNNER_UPDATE_SNAPSHOTS` for that runner.
+The variables still work for such a binary and `QTUI_RUNNER_LIVE=1` overrides a
+quiet default at run time:
 
 ```bash
-rtk env QTUI_TEST_EMBEDDED_SCENARIO=1 QTUI_TEST_LIVE=1 \
-  ./build/path/to/embedded-test-runner
+rtk env QTUI_RUNNER_LIVE=1 ./build/path/to/embedded-test-runner
 ```
 
 There is no image capture: `Runner` needs only `QCoreApplication`. For
 visual regressions assert with `terminal.expectStyled()`; the styled format
 lists per-run colors and attributes as text, so diffs stay readable and
 platform independent. Record or refresh baselines with
-`QTUI_UPDATE_SNAPSHOTS=1 ctest -R <test>` — every rewritten file is listed in
+`QTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>` — every rewritten file is listed in
 the summary and in `result.json` — instead of hand-copying `captureStyled()`
 artifacts.
 

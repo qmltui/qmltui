@@ -45,7 +45,9 @@ qt_add_resources(qtui_runner_fixture embedded_runner_scenarios
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/scenarios"
     FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/resource_snapshot.js"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/resource_snapshot_stale.js"
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/snapshots/fixture.txt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/snapshots/stale_seed.txt"
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/module_main.mjs"
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/lib/module_helpers.mjs"
 )
@@ -160,6 +162,45 @@ add_qtui_runner_scenario(test_runner_snapshot_resource qtui_runner_fixture
     "" 0
     EMBEDDED
 )
+# The embedded C++ API. The fixture drops the QTUI_RUNNER_EMBEDDED_SCENARIO
+# and QTUI_RUNNER_LIVE hints the driver set, so the quiet run below rests on
+# Runner::useEmbeddedScenario() alone and the live runs on its liveOutput
+# argument or on setLiveOutput() after construction.
+add_qtui_runner_scenario(test_runner_embedded_api qtui_runner_fixture
+    "" 0
+    EMBEDDED
+    ARGUMENTS --embedded
+)
+add_qtui_runner_scenario(test_runner_embedded_api_live qtui_runner_fixture
+    "" 0
+    EMBEDDED LIVE
+    ARGUMENTS --embedded --live
+)
+add_qtui_runner_scenario(test_runner_embedded_api_live_after_construction qtui_runner_fixture
+    "" 0
+    EMBEDDED LIVE
+    ARGUMENTS --embedded --live-after-construction
+)
+# setUpdateSnapshots() wins over QTUI_RUNNER_UPDATE_SNAPSHOTS in both
+# directions, observed on a resource baseline that never matches: update mode
+# fails with the resource diagnostic, normal mode with a plain mismatch.
+add_qtui_runner_scenario(test_runner_embedded_api_update_snapshots qtui_runner_fixture
+    "" 1
+    EMBEDDED NO_UPDATE_SNAPSHOTS
+    ARGUMENTS --embedded --update-snapshots
+        "--scenario=:/qtui-tests/resource_snapshot_stale.js"
+    FAILURE_PATTERN "cannot update resource snapshot"
+    ARTIFACT "snapshots/stale_seed.actual.txt"
+    ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
+)
+add_qtui_runner_scenario(test_runner_embedded_api_no_update_snapshots qtui_runner_fixture
+    "" 1
+    EMBEDDED UPDATE_SNAPSHOTS
+    ARGUMENTS --embedded --no-update-snapshots
+        "--scenario=:/qtui-tests/resource_snapshot_stale.js"
+    FAILURE_PATTERN "Snapshot mismatch"
+    ARTIFACT "snapshots/stale_seed.diff"
+)
 add_qtui_runner_scenario(test_runner_snapshot_mismatch qtui_runner_fixture
     "${qtui_runner_scenarios}/snapshot_mismatch.js" 1
     FAILURE_PATTERN "Snapshot mismatch"
@@ -180,7 +221,7 @@ add_qtui_runner_scenario(test_runner_styled_snapshot_mismatch qtui_runner_fixtur
 
 # Snapshot update mode. The scenario runs from a build-tree copy: the record
 # test seeds a stale baseline next to it, rewrites it under
-# QTUI_UPDATE_SNAPSHOTS=1, and the verify test then passes against the freshly
+# QTUI_RUNNER_UPDATE_SNAPSHOTS=1, and the verify test then passes against the freshly
 # recorded file without update mode.
 set(qtui_runner_update_dir "${CMAKE_CURRENT_BINARY_DIR}/snapshot_update")
 file(COPY "${qtui_runner_scenarios}/snapshot_update.js"
@@ -297,7 +338,7 @@ add_qtui_runner_scenario(test_runner_scenario_timeout_too_long qtui_runner_fixtu
 add_qtui_runner_scenario(test_runner_snapshot_missing qtui_runner_fixture
     "${qtui_runner_scenarios}/snapshot_missing.js" 1
     NO_UPDATE_SNAPSHOTS
-    FAILURE_PATTERN "QTUI_UPDATE_SNAPSHOTS=1 to record it"
+    FAILURE_PATTERN "QTUI_RUNNER_UPDATE_SNAPSHOTS=1 to record it"
     ARTIFACT "failure.txt"
 )
 add_qtui_runner_scenario(test_runner_snapshot_update_resource qtui_runner_fixture

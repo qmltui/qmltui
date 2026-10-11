@@ -41,19 +41,28 @@ static bool environmentFlagEnabled(const char* name) {
 }
 
 static bool environmentRequestsTestSession() {
-  return !qgetenv("QTUI_SCRIPT").trimmed().isEmpty()
-      || !qgetenv("QTUI_EVAL").trimmed().isEmpty()
-      || !qgetenv("QTUI_CAPTURE_AFTER_MS").trimmed().isEmpty()
-      || environmentFlagEnabled("QTUI_RUNNER_EMBEDDED_SCENARIO")
-      || environmentFlagEnabled("QTUI_TEST_EMBEDDED_SCENARIO");
+  return !qgetenv("QTUI_RUNNER_SCRIPT").trimmed().isEmpty()
+      || !qgetenv("QTUI_RUNNER_EVAL").trimmed().isEmpty()
+      || !qgetenv("QTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty()
+      || environmentFlagEnabled("QTUI_RUNNER_EMBEDDED_SCENARIO");
+}
+
+// Set by requestTestSession() before any engine exists; the programmatic
+// twin of the environment request above.
+static bool s_requestedTestSession = false;
+static bool s_requestedLiveOutput = false;
+
+void TerminalEngine::requestTestSession(bool liveOutput) {
+  s_requestedTestSession = true;
+  s_requestedLiveOutput = s_requestedLiveOutput || liveOutput;
 }
 
 TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
     : QObject(parent), m_rootWindow(rootWindow), m_router(std::make_unique<InputRouter>(rootWindow)) {
   TerminalMessageRouter::registerEngine();
-  m_terminalOutputEnabled = !environmentRequestsTestSession()
-      || environmentFlagEnabled("QTUI_RUNNER_LIVE")
-      || environmentFlagEnabled("QTUI_TEST_LIVE");
+  m_testSession = s_requestedTestSession || environmentRequestsTestSession();
+  m_liveOutput = s_requestedLiveOutput || environmentFlagEnabled("QTUI_RUNNER_LIVE");
+  m_terminalOutputEnabled = !m_testSession || m_liveOutput;
   m_frameStatsLogging = environmentFlagEnabled("QTUI_FRAME_STATS");
   if (m_frameStatsLogging)
       const_cast<QLoggingCategory&>(lcQtuiFrames()).setEnabled(QtDebugMsg, true);
@@ -66,7 +75,8 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   connect(&m_paceTimer, &QTimer::timeout, this, &TerminalEngine::renderFrame);
   bool fpsValid = false;
   const int envFps = qgetenv("QTUI_MAX_FPS").trimmed().toInt(&fpsValid);
-  setMaxFrameRate(fpsValid && envFps >= 0 ? envFps : (environmentRequestsTestSession() ? 0 : 60));
+  m_maxFrameRateFromEnvironment = fpsValid && envFps >= 0;
+  setMaxFrameRate(m_maxFrameRateFromEnvironment ? envFps : (m_testSession ? 0 : 60));
   bool limitValid = false;
   const qlonglong envLimit = qgetenv("QTUI_OUTPUT_QUEUE_LIMIT").trimmed().toLongLong(&limitValid);
   if (limitValid && envLimit >= 0)
@@ -710,6 +720,28 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   if (m_renderer)
     m_renderer->setOutputEnabled(enabled);
   requestRender();
+}
+
+void TerminalEngine::beginTestSession() {
+  if (m_testSession)
+    return;
+  m_testSession = true;
+  // An explicit QTUI_MAX_FPS stays authoritative, as it is for environment
+  // requested sessions.
+  if (!m_maxFrameRateFromEnvironment)
+    setMaxFrameRate(0);
+  applyOutputPolicy();
+}
+
+void TerminalEngine::setLiveOutput(bool live) {
+  if (m_liveOutput == live)
+    return;
+  m_liveOutput = live;
+  applyOutputPolicy();
+}
+
+void TerminalEngine::applyOutputPolicy() {
+  setTerminalOutputEnabled(!m_testSession || m_liveOutput);
 }
 
 bool TerminalEngine::submitScrollback(const QString& text) {

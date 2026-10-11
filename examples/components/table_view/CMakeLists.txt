@@ -12,10 +12,10 @@ qt_add_qml_module(qtui_tableview_demo
 target_link_libraries(qtui_tableview_demo PRIVATE Qt6::Core Qt6::Qml Qtui::Core Qtui::Controls)
 
 if(TARGET Qtui::Runner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    qt_add_executable(qtui_tableview_test main_test.cpp)
+    qt_add_executable(qtui_tableview_test main.cpp)
     qt_add_qml_module(qtui_tableview_test
-        URI TableViewTest
+        URI TableViewDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/TableViewDemo"
         VERSION 1.0
         QML_FILES Main.qml
         SOURCES ProcessProxy.h ProcessProxy.cpp

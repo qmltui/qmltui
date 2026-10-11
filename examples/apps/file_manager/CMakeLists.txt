@@ -44,7 +44,6 @@ if(QTUI_INSTALL_EXAMPLES)
 endif()
 
 if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
     # idle_budget asserts the application does not repaint while nothing changes.
     foreach(scenario navigation preview search actions idle_budget)
         qtui_add_scenario_test(

@@ -23,9 +23,9 @@ EXAMPLE_TARGETS = (
         "examples/apps/markdown_viewer/CMakeLists.txt",
     ),
     (
-        "examples/apps/service_monitor/main_test.cpp",
-        "qtui_service_monitor_test",
-        "examples/apps/service_monitor/CMakeLists.txt",
+        "examples/components/animated_sprite/main.cpp",
+        "qtui_animated_sprite_demo_test",
+        "examples/components/animated_sprite/CMakeLists.txt",
     ),
     (
         "examples/apps/starter_template/main_test.cpp",

@@ -13,10 +13,10 @@ target_link_libraries(qtui_text PRIVATE Qt6::Core Qt6::Qml Qtui::Core)
 
 
 if(TARGET Qtui::Runner)
-    include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
-    qt_add_executable(qtui_text_test main_test.cpp)
+    qt_add_executable(qtui_text_test main.cpp)
     qt_add_qml_module(qtui_text_test
-        URI TextDemoTest
+        URI TextDemo
+        OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/qml_test/TextDemo"
         VERSION 1.0
         QML_FILES Main.qml
         DEPENDENCIES TARGET Qtui::Core

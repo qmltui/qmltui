@@ -68,6 +68,5 @@ if(TARGET Qtui::Runner)
         COLUMNS 132
         ROWS 42
         LABELS AgentSmoke
-        LIVE
     )
 endif()

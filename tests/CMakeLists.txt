@@ -2,8 +2,7 @@ include(CTest)
 enable_testing()
 
 # One directory per library, mirroring src/Qamui: Core, Controls, Image,
-# Runner and TerminalHost each register their own tests. Examples/ holds
-# the scenario runs against the example applications, and the installed
+# Runner and TerminalHost each register their own tests. The installed
 # consumer below is a separate CMake project built against an install tree.
 # The helpers here are shared by every subdirectory.
 
@@ -31,7 +30,7 @@ set(qamui_test_runner_artifacts "${qamui_runner_artifacts}")
 # bounded timeouts and the artifact checks the runner contract promises.
 function(add_qamui_runner_scenario test_name executable script expected_exit)
     cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;FULL;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
-        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK"
+        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK;RECORD"
         "ARGUMENTS" ${ARGN})
     if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
         set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
@@ -71,7 +70,7 @@ function(add_qamui_runner_scenario test_name executable script expected_exit)
     endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT
             PROCESS_TIMEOUT SYMLINK_TRAP SNAPSHOT_SEED_SOURCE SNAPSHOT_SEED_DEST
-            EXPECT_UPDATED_SNAPSHOT EXPECT_UPDATED_SNAPSHOT_CONTENT CLOCK)
+            EXPECT_UPDATED_SNAPSHOT EXPECT_UPDATED_SNAPSHOT_CONTENT CLOCK RECORD)
         if(NOT "${SCENARIO_${argument}}" STREQUAL "")
             list(APPEND arguments ${argument} "${SCENARIO_${argument}}")
         endif()
@@ -138,7 +137,6 @@ add_subdirectory(Runner)
 if(QAMUI_ENABLE_TERMINAL_HOST)
     add_subdirectory(TerminalHost)
 endif()
-add_subdirectory(Examples)
 
 # Installs this build into a private prefix, then configures, builds and runs
 # tests/installed_consumer as an independent project against it: find_package,

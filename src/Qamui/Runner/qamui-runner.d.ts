@@ -145,7 +145,7 @@ interface Region extends QamuiRect {
 /**
  * The driver facade passed to function main(terminal): scripted input,
  * committed-frame queries and assertions, artifacts, and time control.
- * See src/Qamui/Runner/doc/Runner.md for the full behavioural contract.
+ * See docs/cpp-classes/runner.md for the full behavioural contract.
  */
 interface Terminal {
     /** Sends one key (named key, ASCII, or any single grapheme) and waits for the committed frame. */
@@ -280,6 +280,13 @@ interface Terminal {
     expectScrollbackSnapshot(snapshotRelativePath: string, fromRow?: number, timeoutMs?: number): void;
     expectScrollbackSnapshot(snapshotRelativePath: string,
                              options?: QamuiScrollbackOptions & QamuiTimeoutOptions): void;
+
+    /** Starts an asciicast at an artifact path (needs QAMUI_RUNNER_RECORD); closes any open one and opens with a full repaint. */
+    startRecording(relativePath: string): void;
+    /** Closes the recording in progress. */
+    stopRecording(): void;
+    /** Writes a labelled marker event into the recording in progress. */
+    marker(label: string): void;
 
     /** Normalized text of the current committed frame, without waiting. */
     frameText(): string;

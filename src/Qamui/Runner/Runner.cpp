@@ -1,4 +1,8 @@
 #include <Qamui/Runner/Runner.h>
+#include "CastRecorder_p.h"
+#include <Qamui/Runner/MemoryTerminalBackend.h>
+#include <Qamui/Core/primitives/TerminalBackend.h>
+#include <Qamui/Core/primitives/TerminalCapabilities.h>
 #include <Qamui/Core/primitives/ColorMapper.h>
 
 #include <Qamui/Core/items/Item.h>
@@ -340,7 +344,46 @@ struct RunnerAutoHook {
 };
 static RunnerAutoHook s_autoHookRegistration;
 
+// The backend that receives a recording session's output. Created by the
+// factory below before the Terminal exists; a QPointer because the engine's
+// device owns it.
+QPointer<MemoryTerminalBackend> s_recordingBackend;
+
+bool environmentRequestsScenario()
+{
+    return !qgetenv("QAMUI_RUNNER_SCRIPT").trimmed().isEmpty()
+        || !qgetenv("QAMUI_RUNNER_EVAL").trimmed().isEmpty()
+        || !qgetenv("QAMUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty()
+        || !qgetenv("QAMUI_RUNNER_EMBEDDED_SCENARIO").trimmed().isEmpty();
+}
+
+int environmentDimension(const char* name, int fallback)
+{
+    bool ok = false;
+    const int value = qgetenv(name).trimmed().toInt(&ok);
+    return ok && value >= 1 && value <= 1000 ? value : fallback;
+}
+
 } // namespace
+
+// QAMUI_RUNNER_RECORD routes the terminal bytes into memory so the Runner can
+// write them to an asciicast. The engine creates its device when the Terminal
+// completes, before any Runner exists, so the factory is installed as soon as
+// QCoreApplication is constructed. Recording without a scenario would leave the
+// application talking to nobody, so a scenario variable is required too.
+static void qamuiInstallRecordingBackend()
+{
+    if (qgetenv("QAMUI_RUNNER_RECORD").trimmed().isEmpty() || !environmentRequestsScenario())
+        return;
+    const int columns = environmentDimension("QAMUI_RUNNER_COLUMNS", 80);
+    const int rows = environmentDimension("QAMUI_RUNNER_ROWS", 24);
+    TerminalBackend::setFactory([columns, rows](int) -> std::unique_ptr<TerminalBackend> {
+        auto backend = std::make_unique<MemoryTerminalBackend>(QSize(columns, rows));
+        s_recordingBackend = backend.get();
+        return backend;
+    });
+}
+Q_COREAPP_STARTUP_FUNCTION(qamuiInstallRecordingBackend)
 
 Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
 {
@@ -466,6 +509,8 @@ Runner::Runner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
     // after useEmbeddedScenario(), quiet from here on otherwise.
     if (m_terminalEngine)
         m_terminalEngine->beginTestSession();
+    if (m_terminalEngine && s_recordingBackend)
+        armRecording();
 
     m_watchdog.setSingleShot(true);
     connect(&m_watchdog, &QTimer::timeout, this, [this] {
@@ -660,6 +705,7 @@ bool Runner::installJavaScriptFacade()
         "scrollbackRowCount", "scrollbackText", "waitForScrollbackText",
         "expectScrollbackText", "expectNoScrollbackText", "captureScrollback",
         "captureScrollbackStyled", "expectScrollbackSnapshot",
+        "startRecording", "stopRecording", "marker",
         "click", "doubleClick", "drag", "scroll", "hover", "mouseDown", "mouseUp",
         "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
@@ -1789,6 +1835,10 @@ void Runner::resize(int columns, int rows)
         return frame && frame->width() == columns && frame->height() == rows;
     };
 
+    if (m_cast && m_cast->isOpen()) {
+        drainCast();
+        m_cast->resize(castSeconds(), columns, rows);
+    }
     m_terminalEngine->setTestViewportSize(QSize(columns, rows));
     // The next committed frame is normally already at the new size, but a
     // render requested before the resize may still land first; keep waiting
@@ -2146,6 +2196,130 @@ void Runner::expectScrollbackSnapshot(const QString& snapshotRelativePath, int f
         return;
     }
     compareSnapshot(snapshotRelativePath, rows);
+}
+
+void Runner::armRecording()
+{
+    // The recorded terminal is an in-memory one with fixed capabilities: 24-bit
+    // colour, no synchronized-output bracketing, no kitty protocols. Fixing them
+    // also stops the engine from probing, so no query bytes land in the cast.
+    TerminalCapabilities capabilities = m_terminalEngine->capabilities();
+    capabilities.colorDepth = ColorDepth::TrueColor;
+    capabilities.syncOutput = false;
+    capabilities.kittyKeyboard = false;
+    capabilities.kittyGraphics = false;
+    capabilities.sixelGraphics = false;
+    capabilities.mayProbeGraphics = false;
+    capabilities.isTty = true;
+    m_terminalEngine->setCapabilities(capabilities);
+    m_terminalEngine->setLiveOutput(true);
+    connect(m_terminalEngine, &TerminalEngine::frameRendered, this, [this](quint64) { drainCast(); });
+
+    const QString requested = QString::fromUtf8(qgetenv("QAMUI_RUNNER_RECORD")).trimmed();
+    QString error;
+    if (!requested.isEmpty() && !openCast(requested, &error) && m_configurationError.isEmpty())
+        m_configurationError = error;
+}
+
+bool Runner::openCast(const QString& requestedPath, QString* error)
+{
+    QString path = requestedPath;
+    if (QDir::isAbsolutePath(path)) {
+        QDir().mkpath(QFileInfo(path).path());
+    } else {
+        path = resolveArtifactPath(requestedPath, error);
+        if (path.isEmpty())
+            return false;
+    }
+    if (!m_cast)
+        m_cast = std::make_unique<CastRecorder>();
+    if (m_cast->isOpen())
+        closeCast();
+    const QString title = QFileInfo(path).completeBaseName();
+    if (!m_cast->open(path, m_terminalEngine->terminalWidth(), m_terminalEngine->terminalHeight(),
+                      title, error))
+        return false;
+    m_castStartMs = Clock::instance()->elapsed();
+    const QString relative = QDir(m_artifactDirectory).relativeFilePath(path);
+    m_castPaths.append(relative.startsWith(QLatin1String("..")) ? path : QDir::cleanPath(relative));
+    return true;
+}
+
+void Runner::closeCast()
+{
+    if (!m_cast) return;
+    drainCast();
+    m_cast->close();
+}
+
+void Runner::drainCast()
+{
+    if (!s_recordingBackend) return;
+    if (!m_cast || !m_cast->isOpen()) {
+        s_recordingBackend->clearOutput();
+        return;
+    }
+    const std::string& bytes = s_recordingBackend->output();
+    if (bytes.empty()) return;
+    m_cast->output(castSeconds(), bytes);
+    s_recordingBackend->clearOutput();
+}
+
+double Runner::castSeconds() const
+{
+    return static_cast<double>(Clock::instance()->elapsed() - m_castStartMs) / 1000.0;
+}
+
+void Runner::startRecording(const QString& relativePath)
+{
+    if (!ensureRunning("startRecording"))
+        return;
+    if (!s_recordingBackend || !m_terminalEngine) {
+        failScenario(QStringLiteral("terminal.startRecording() requires QAMUI_RUNNER_RECORD "
+                                    "(a RECORD scenario) so the terminal bytes are captured"));
+        return;
+    }
+    QString pathError;
+    if (resolveArtifactPath(relativePath, &pathError).isEmpty()) {
+        failScenario(pathError);
+        return;
+    }
+    if (m_cast && m_cast->isOpen())
+        closeCast();
+    // Bytes emitted between recordings belong to neither cast; the new one
+    // opens with a full repaint instead.
+    s_recordingBackend->clearOutput();
+    QString error;
+    if (!openCast(relativePath, &error)) {
+        failScenario(error);
+        return;
+    }
+    if (m_terminalEngine->renderer())
+        m_terminalEngine->renderer()->discardCommittedState();
+    (void)waitForNextFrame(m_operationTimeoutMs);
+}
+
+void Runner::stopRecording()
+{
+    if (!ensureRunning("stopRecording"))
+        return;
+    if (!m_cast || !m_cast->isOpen()) {
+        failScenario(QStringLiteral("stopRecording() needs a recording in progress"));
+        return;
+    }
+    closeCast();
+}
+
+void Runner::marker(const QString& label)
+{
+    if (!ensureRunning("marker"))
+        return;
+    if (!m_cast || !m_cast->isOpen()) {
+        failScenario(QStringLiteral("marker() needs a recording in progress"));
+        return;
+    }
+    drainCast();
+    m_cast->marker(castSeconds(), label);
 }
 
 QString Runner::normalizedText(const TextGridBuffer& frame)
@@ -2727,6 +2901,10 @@ bool Runner::writeResultArtifact(int exitCode, QString* error)
                           {QStringLiteral("result"), QStringLiteral("result.json")},
                           {QStringLiteral("captures"), captures},
                           {QStringLiteral("updatedSnapshots"), updatedSnapshots}};
+    QJsonArray casts;
+    for (const QString& cast : std::as_const(m_castPaths))
+        casts.append(cast);
+    artifacts.insert(QStringLiteral("casts"), casts);
     artifacts.insert(QStringLiteral("finalFrame"),
                      m_finalFrameRelativePath.isEmpty()
                          ? QJsonValue(QJsonValue::Null)
@@ -2823,6 +3001,13 @@ void Runner::scheduleExit(int exitCode)
     m_exitScheduled = true;
     completeCurrentOperation(exitCode == 0 ? QStringLiteral("passed")
                                            : QStringLiteral("failed"));
+    if (m_cast && m_cast->isOpen()) {
+        // Leave the recorded terminal the way a real session would: cursor
+        // shown, mouse reporting off, styles reset.
+        if (m_terminalEngine)
+            m_terminalEngine->setTerminalOutputEnabled(false);
+        closeCast();
+    }
 
     QString artifactError;
     if (!writeFinalFrameArtifact(&artifactError) && exitCode == 0) {

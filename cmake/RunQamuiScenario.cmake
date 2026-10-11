@@ -34,6 +34,7 @@ set(scenario_environment
     "--unset=QAMUI_RUNNER_EVAL"
     "--unset=QAMUI_RUNNER_CAPTURE_AFTER_MS"
     "--unset=QAMUI_RUNNER_EMBEDDED_SCENARIO"
+    "--unset=QAMUI_RUNNER_RECORD"
 )
 if(CONFLICT_SCENARIO)
     list(APPEND scenario_environment
@@ -77,6 +78,11 @@ else()
     # A globally exported QAMUI_RUNNER_CLOCK must not silently flip scenarios
     # that were written for the real clock.
     list(APPEND scenario_environment "--unset=QAMUI_RUNNER_CLOCK")
+endif()
+
+# RECORD routes the terminal bytes into an asciicast under the artifact directory.
+if(DEFINED RECORD AND NOT "${RECORD}" STREQUAL "")
+    list(APPEND scenario_environment "QAMUI_RUNNER_RECORD=${ARTIFACT_DIR}/${RECORD}")
 endif()
 
 # Snapshot update mode: force it on or off for this test; otherwise the

@@ -8,13 +8,13 @@
 #   cmake --build build-wasm
 #   cmake --build build-wasm --target serve        # http://localhost:8000/
 #
-# See docs/guide/webassembly.md. WebAssembly builds are GPLv3 or commercial only.
+# See docs/topics/webassembly.md. WebAssembly builds are GPLv3 or commercial only.
 cmake_minimum_required(VERSION 3.21)
 project(QamuiWasmPlayground LANGUAGES CXX)
 
 if(NOT EMSCRIPTEN)
     message(FATAL_ERROR "Configure this project with the Qt for WebAssembly kit's qt-cmake; "
-                        "see docs/guide/webassembly.md")
+                        "see docs/topics/webassembly.md")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -30,7 +30,7 @@ qt_standard_project_setup(REQUIRES 6.8)
 set(QAMUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QAMUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(QAMUI_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-set(QAMUI_ENABLE_TEST_RUNNER OFF CACHE BOOL "" FORCE)
+set(QAMUI_ENABLE_RUNNER OFF CACHE BOOL "" FORCE)
 set(QAMUI_ENABLE_TERMINAL_HOST OFF CACHE BOOL "" FORCE)
 option(QAMUI_ENABLE_BEHAVIOR "Behavior on properties (needs Qt QmlPrivate)" ON)
 option(QAMUI_WASM_PLAYGROUND_IMAGE "Link Qamui.Image into the playground binary" ON)
@@ -42,9 +42,9 @@ qamui_wasm_add_demo_page("${CMAKE_CURRENT_SOURCE_DIR}/www")
 
 # The gallery is the app the page runs. configure_file() copies it and makes
 # the build re-run configure when it changes.
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../apps/gallery/Main.qml" "${QAMUI_WASM_WWW_DIR}/gallery.qml" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../gallery/Main.qml" "${QAMUI_WASM_WWW_DIR}/gallery.qml" COPYONLY)
 # The demos it instantiates, plus an index the page fetches them from.
-file(GLOB gallery_examples CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../apps/gallery/examples/*.qml")
+file(GLOB gallery_examples CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../gallery/examples/*.qml")
 # Tiles the runtime cannot instantiate are left out; the gallery then hides them.
 if(NOT QAMUI_ENABLE_BEHAVIOR)
     list(FILTER gallery_examples EXCLUDE REGEX "/Behavior\\.qml$")

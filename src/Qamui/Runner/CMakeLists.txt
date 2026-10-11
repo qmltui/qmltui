@@ -1,6 +1,8 @@
 add_library(QamuiRunner
     Runner.h
     Runner.cpp
+    CastRecorder_p.h
+    CastRecorder.cpp
     MemoryTerminalBackend.h
     MemoryTerminalBackend.cpp
 )

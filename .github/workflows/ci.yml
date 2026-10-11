@@ -3,7 +3,7 @@ name: CI
 # Minutes budget: this repository is private, so hosted Linux minutes count
 # once, Windows twice and macOS ten times against 2,000 a month. Linux and
 # Windows therefore run on self-hosted runners (registered from the developer
-# machine, see docs/guide/ci-runners.md), which GitHub does not bill, using the
+# machine, see docs/contributing/ci-runners.md), which GitHub does not bill, using the
 # Qt installed there. macOS has no self-hosted counterpart and runs only when
 # asked for or on a tag. Once the repository is public, hosted runners are
 # free and the `runs-on` lines can go back to GitHub's images.
@@ -39,7 +39,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="$QAMUI_QT_LINUX"
           -DQAMUI_BUILD_TESTS=ON
           -DQAMUI_BUILD_EXAMPLES=ON
-          -DQAMUI_ENABLE_TEST_RUNNER=ON
+          -DQAMUI_ENABLE_RUNNER=ON
           -DQAMUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
 
       - name: Build
@@ -68,7 +68,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="$env:QAMUI_QT_WINDOWS"
           -DQAMUI_BUILD_TESTS=ON
           -DQAMUI_BUILD_EXAMPLES=ON
-          -DQAMUI_ENABLE_TEST_RUNNER=ON
+          -DQAMUI_ENABLE_RUNNER=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -108,7 +108,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DQAMUI_BUILD_TESTS=ON
           -DQAMUI_BUILD_EXAMPLES=ON
-          -DQAMUI_ENABLE_TEST_RUNNER=ON
+          -DQAMUI_ENABLE_RUNNER=ON
           -DQAMUI_ENABLE_BEHAVIOR=ON
 
       - name: Build

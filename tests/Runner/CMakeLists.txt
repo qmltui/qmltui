@@ -350,10 +350,10 @@ add_qamui_runner_scenario(test_runner_snapshot_update_resource qamui_runner_fixt
     ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
 )
 
-add_qamui_environment_scenario(test_runner_capture qamui_pos_cashier 0
+add_qamui_environment_scenario(test_runner_capture qamui_runner_fixture 0
     CAPTURE_AFTER_MS 0
     ARTIFACT "capture.txt"
-    ARTIFACT_CONTENT "RapidPOS"
+    ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
 )
 # The fixture flips its status 75 ms after start, so a 300 ms delay must observe
 # the settled frame, and the styled capture must be written alongside the text.
@@ -412,3 +412,34 @@ add_qamui_runner_scenario(test_runner_scrollback_timeout qamui_runner_fixture
 add_qamui_runner_scenario(test_runner_scrollback_fullscreen qamui_runner_fixture
     "${qamui_runner_scenarios}/scrollback_fullscreen.js" 1
     FAILURE_PATTERN "needs a Terminal in Inline mode")
+
+# Asciicast recording: the session bytes land in a cast under the artifacts.
+add_qamui_runner_scenario(test_runner_record_basic qamui_runner_fixture
+    "${qamui_runner_scenarios}/record_basic.js" 0
+    CLOCK VIRTUAL
+    RECORD fixture.cast
+    ARTIFACT "fixture.cast"
+    ARTIFACT_CONTENT "TESTRUNNER FIXTURE")
+add_qamui_runner_scenario(test_runner_record_restart qamui_runner_fixture
+    "${qamui_runner_scenarios}/record_restart.js" 0
+    CLOCK VIRTUAL
+    RECORD first.cast
+    ARTIFACT "second.cast"
+    ARTIFACT_CONTENT "two")
+add_qamui_runner_scenario(test_runner_record_without_env qamui_runner_fixture
+    "${qamui_runner_scenarios}/record_without_env.js" 1
+    FAILURE_PATTERN "requires QAMUI_RUNNER_RECORD")
+if(Python3_Interpreter_FOUND)
+    add_test(NAME test_runner_record_basic_cast
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_cast.py"
+                "${qamui_runner_artifacts}/test_runner_record_basic/fixture.cast"
+                --marker start --marker typed --text "TESTRUNNER FIXTURE" --text cast --min-events 2 --resize 90x26 --min-duration 0.05)
+    add_test(NAME test_runner_record_restart_cast
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_cast.py"
+                "${qamui_runner_artifacts}/test_runner_record_restart/second.cast"
+                --marker second --text "TESTRUNNER FIXTURE" --text two)
+    set_tests_properties(test_runner_record_basic_cast PROPERTIES
+        DEPENDS test_runner_record_basic LABELS "Runner;AgentSmoke")
+    set_tests_properties(test_runner_record_restart_cast PROPERTIES
+        DEPENDS test_runner_record_restart LABELS "Runner;AgentSmoke")
+endif()

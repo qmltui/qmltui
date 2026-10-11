@@ -24,6 +24,7 @@ class QQmlEngine;
 
 namespace qamui {
 
+class CastRecorder;
 class RunnerBridge;
 class RunnerHardWatchdog;
 class Terminal;
@@ -187,6 +188,18 @@ public:
     Q_INVOKABLE void expectScrollbackSnapshot(const QString& snapshotRelativePath,
                                               int fromRow = 0, int timeoutMs = -1);
 
+    /// Starts an asciicast recording at relativePath beneath the artifact
+    /// directory, closing any recording in progress, and opens it with a full
+    /// repaint. Recording sessions are armed by QAMUI_RUNNER_RECORD (CMake
+    /// RECORD); without it the call fails.
+    Q_INVOKABLE void startRecording(const QString& relativePath);
+
+    /// Closes the recording in progress.
+    Q_INVOKABLE void stopRecording();
+
+    /// Writes a labelled marker event into the recording in progress.
+    Q_INVOKABLE void marker(const QString& label);
+
     /// Returns normalized text for the current committed frame without waiting.
     Q_INVOKABLE QString frameText();
 
@@ -330,6 +343,11 @@ private:
     bool waitForEngineCondition(const std::function<bool()>& check, int timeoutMs,
                                 const QString& description);
     bool ensureScrollbackSession(const char* operation);
+    void armRecording();
+    bool openCast(const QString& requestedPath, QString* error);
+    void closeCast();
+    void drainCast();
+    double castSeconds() const;
     QString scrollbackTextFrom(int fromRow, bool styled, QString* error) const;
     int validateTimeout(int timeoutMs);
     int resolveExpectTimeout(int timeoutMs);
@@ -375,6 +393,9 @@ private:
     QString m_finalFrameRelativePath;
     QStringList m_capturePaths;
     QStringList m_updatedSnapshots;
+    std::unique_ptr<CastRecorder> m_cast;
+    qint64 m_castStartMs = 0;
+    QStringList m_castPaths;
     bool m_updateSnapshots = false;
     std::optional<bool> m_updateSnapshotsOverride;
     QVector<OperationRecord> m_operations;

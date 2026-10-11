@@ -1,0 +1,59 @@
+---
+# Qamui C++ Clang-Format Configuration
+# Retained-mode terminal UI framework (Qt 6.8+, C++20)
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+
+# Indentation & Alignment
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+AccessModifierOffset: -4
+NamespaceIndentation: None
+
+# Braces & Placement
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
+AllowShortBlocksOnASingleLine: Empty
+
+# Pointers and References
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Includes
+IncludeBlocks: Preserve
+SortIncludes: false
+
+# Comments & Macros
+FixNamespaceComments: true
+SpacesBeforeTrailingComments: 1
+
+StatementMacros:
+  - Q_OBJECT
+  - Q_GADGET
+  - QML_ELEMENT
+  - QML_NAMED_ELEMENT
+  - QML_UNCREATABLE
+  - QML_ATTACHED
+  - QML_SINGLETON
+  - QML_ANONYMOUS
+  - QML_FOREIGN
+  - QML_VALUE_TYPE
+  - QML_STRUCTURED_VALUE
+  - QML_CONSTRUCTIBLE_VALUE
+  - Q_DISABLE_COPY
+  - Q_DISABLE_MOVE
+  - Q_DISABLE_COPY_MOVE
+  - Q_DECLARE_FLAGS
+  - Q_DECLARE_OPERATORS_FOR_FLAGS
+  - Q_ENUM
+  - Q_ENUMS
+  - Q_FLAG
+  - Q_FLAGS
+  - Q_CLASSINFO
+  - Q_INTERFACES
+...

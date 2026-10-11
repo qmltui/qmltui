@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Qamui Git pre-commit hook: verify that staged C++ files adhere to clang-format
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+FORMAT_SCRIPT="$REPO_ROOT/scripts/format.sh"
+
+if [[ ! -x "$FORMAT_SCRIPT" ]]; then
+    exit 0
+fi
+
+# Run format check on staged files
+if ! "$FORMAT_SCRIPT" --check; then
+    cat << 'EOF' >&2
+
+Commit aborted due to code style violations.
+To format your staged changes automatically, run:
+  ./scripts/format.sh
+
+Then re-stage the changes with 'git add' and commit again.
+(To bypass this check in an emergency, use 'git commit --no-verify')
+EOF
+    exit 1
+fi
+
+exit 0

@@ -6,7 +6,7 @@ qt_add_qml_module(qtui_animated_sprite_demo
     QML_FILES
         Main.qml
     RESOURCES
-        fox_spritesheet.webp
+        qami.png
     DEPENDENCIES TARGET
         Qtui::Core
         Qtui::Image
@@ -22,7 +22,7 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
         VERSION 1.0
         QML_FILES Main.qml
         RESOURCES
-            fox_spritesheet.webp
+            qami.png
         DEPENDENCIES TARGET
             Qtui::Core
             Qtui::Image

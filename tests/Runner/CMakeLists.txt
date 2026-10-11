@@ -39,6 +39,7 @@ target_link_libraries(qamui_runner_fixture PRIVATE
 )
 target_compile_definitions(qamui_runner_fixture PRIVATE
     QAMUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/Fixture.qml"
+    QAMUI_RUNNER_INLINE_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/InlineFixture.qml"
 )
 qt_add_resources(qamui_runner_fixture embedded_runner_scenarios
     PREFIX "/qamui-tests"
@@ -383,3 +384,31 @@ add_qamui_environment_scenario(test_runner_environment_conflict qamui_runner_fix
     FAILURE_PATTERN "mutually exclusive"
     ARTIFACT "result.json"
 )
+
+# Scrollback assertions: committed rows of an Inline-mode fixture are observed
+# separately from the live frame.
+add_qamui_runner_scenario(test_runner_scrollback_basic qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_basic.js" 0
+    ARTIFACT "scrollback.txt"
+    ARTIFACT_CONTENT "hello scroll"
+    ARGUMENTS --fixture=inline)
+add_qamui_runner_scenario(test_runner_scrollback_from_row qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_from_row.js" 0
+    ARTIFACT "since.txt"
+    ARTIFACT_CONTENT "MODEL ROW 1"
+    ARGUMENTS --fixture=inline)
+add_qamui_runner_scenario(test_runner_scrollback_snapshot qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_snapshot.js" 0
+    ARGUMENTS --fixture=inline)
+add_qamui_runner_scenario(test_runner_scrollback_styled qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_styled.js" 0
+    ARTIFACT "styled.txt"
+    ARTIFACT_CONTENT "bold"
+    ARGUMENTS --fixture=inline)
+add_qamui_runner_scenario(test_runner_scrollback_timeout qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_timeout.js" 1
+    FAILURE_PATTERN "Timed out after 100 ms waiting for scrollback text"
+    ARGUMENTS --fixture=inline)
+add_qamui_runner_scenario(test_runner_scrollback_fullscreen qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_fullscreen.js" 1
+    FAILURE_PATTERN "needs a Terminal in Inline mode")

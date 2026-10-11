@@ -12,6 +12,7 @@
 #include <Qamui/Core/engine/InputRouter_p.h>
 #include <Qamui/Core/engine/TerminalMessageRouter_p.h>
 #include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/primitives/UnicodeText.h>
 #include <Qamui/Core/engine/Keys.h>
 #include <Qamui/Core/engine/Shortcut.h>
 #include <QCoreApplication>
@@ -63,6 +64,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_testSession = s_requestedTestSession || environmentRequestsTestSession();
   m_liveOutput = s_requestedLiveOutput || environmentFlagEnabled("QAMUI_RUNNER_LIVE");
   m_terminalOutputEnabled = !m_testSession || m_liveOutput;
+  m_scrollbackHistoryEnabled = m_testSession;
   m_frameStatsLogging = environmentFlagEnabled("QAMUI_FRAME_STATS");
   if (m_frameStatsLogging)
       const_cast<QLoggingCategory&>(lcQamuiFrames()).setEnabled(QtDebugMsg, true);
@@ -81,6 +83,10 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   const qlonglong envLimit = qgetenv("QAMUI_OUTPUT_QUEUE_LIMIT").trimmed().toLongLong(&limitValid);
   if (limitValid && envLimit >= 0)
       m_outputQueueLimit = static_cast<size_t>(envLimit);
+  bool historyValid = false;
+  const int envHistoryRows = qgetenv("QAMUI_SCROLLBACK_HISTORY_ROWS").trimmed().toInt(&historyValid);
+  if (historyValid && envHistoryRows >= 0)
+      m_scrollbackHistoryLimit = envHistoryRows;
   m_device.setOutputErrorCallback([this] {
       invalidateOutputSession();
       m_renderDeferredForOutput = false;
@@ -219,7 +225,10 @@ void TerminalEngine::stop() {
     // never resumed. The renderer has already restored the normal buffer.
     if (!m_scrollback.empty() && !m_device.write(m_scrollback))
         emit renderFailed(QStringLiteral("Failed to commit pending scrollback during shutdown"));
+    else if (!m_pendingScrollbackRows.empty())
+        commitScrollbackRows(std::move(m_pendingScrollbackRows));
     m_scrollback.clear();
+    m_pendingScrollbackRows.clear();
     m_device.showCursor();
     const bool flushed = m_device.finishOutput();
     m_device.disableRawMode();
@@ -551,15 +560,23 @@ void TerminalEngine::renderFrame() {
   startQueries();   // no-op once started; retried after a failed probe write
   // Snapshot before painting: bindings may submit additional output during layout.
   std::string submitted;
+  std::deque<ScrollbackRow> submittedRows;
   auto* stream = dynamic_cast<StreamRenderer*>(m_renderer);
-  if (stream) submitted.swap(m_scrollback);
+  if (stream) {
+      submitted.swap(m_scrollback);
+      submittedRows.swap(m_pendingScrollbackRows);
+  }
   m_scrollbackInFlight = submitted.size();
   const bool committed = stream
       ? stream->renderFrame(m_rootWindow, m_device, submitted)
       : m_renderer->renderFrame(m_rootWindow, m_device);
   if (!committed) {
       invalidateOutputSession();
-      if (stream) m_scrollback.insert(0, submitted);
+      if (stream) {
+          m_scrollback.insert(0, submitted);
+          m_pendingScrollbackRows.insert(m_pendingScrollbackRows.begin(),
+                                         submittedRows.begin(), submittedRows.end());
+      }
       m_scrollbackInFlight = 0;
       emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
       return;
@@ -567,6 +584,10 @@ void TerminalEngine::renderFrame() {
 
   m_lastCommit.restart();
   m_scrollbackInFlight = 0;
+  // Rows are committed with their bytes, whether or not those bytes reached a
+  // terminal: a quiet test session commits them too.
+  if (!submittedRows.empty())
+      commitScrollbackRows(std::move(submittedRows));
   FrameStats stats = m_renderer->lastFrameStats();
   stats.sequence = ++m_frameSequence;
   m_lastFrameStats = stats;
@@ -726,6 +747,7 @@ void TerminalEngine::beginTestSession() {
   if (m_testSession)
     return;
   m_testSession = true;
+  m_scrollbackHistoryEnabled = true;
   // An explicit QAMUI_MAX_FPS stays authoritative, as it is for environment
   // requested sessions.
   if (!m_maxFrameRateFromEnvironment)
@@ -759,12 +781,161 @@ bool TerminalEngine::submitScrollback(const QString& text) {
         if (bytes.empty() || bytes.back() != '\r') bytes += '\r';
         bytes += '\n';
     }
+    std::deque<ScrollbackRow> rows;
+    if (m_scrollbackHistoryEnabled)
+        rows = textToScrollbackRows(text);
+    return enqueueScrollback(std::move(bytes), std::move(rows));
+}
+
+bool TerminalEngine::submitScrollback(const TextGridBuffer& painted) {
+    if (m_stopped) return false;
+    std::string bytes;
+    std::deque<ScrollbackRow> rows;
+    for (int y = 0; y < painted.height(); ++y) {
+        painted.appendRowAnsi(bytes, y, m_capabilities.colorDepth);
+        bytes += "\033[0m\r\n";
+        if (m_scrollbackHistoryEnabled)
+            rows.push_back(trimmedRow(painted, y));
+    }
+    if (bytes.size() > ScrollbackQueueLimit) return false;
+    return enqueueScrollback(std::move(bytes), std::move(rows));
+}
+
+bool TerminalEngine::enqueueScrollback(std::string&& bytes, std::deque<ScrollbackRow>&& rows) {
+    // Bytes and rows are accepted or rejected together so the history never
+    // drifts from what the terminal received.
     if (bytes.size() > ScrollbackQueueLimit - std::min(ScrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
         return false;
     m_scrollback += bytes;
+    if (m_scrollbackHistoryEnabled) {
+        for (auto& row : rows)
+            m_pendingScrollbackRows.push_back(std::move(row));
+    }
     if (m_rootWindow && m_rootWindow->mode() == Terminal::Mode::Inline)
         requestRender();
     return true;
+}
+
+TerminalEngine::ScrollbackRow TerminalEngine::trimmedRow(const TextGridBuffer& buffer, int row) {
+    int last = buffer.lastContentColumn(row);
+    // Keep the continuation cells of a wide glyph that ends the row.
+    while (last + 1 < buffer.width() && buffer.cellAt(last + 1, row).continuation)
+        ++last;
+    ScrollbackRow cells;
+    cells.reserve(static_cast<size_t>(last + 1));
+    for (int x = 0; x <= last; ++x)
+        cells.push_back(buffer.cellAt(x, row));
+    return cells;
+}
+
+std::deque<TerminalEngine::ScrollbackRow> TerminalEngine::textToScrollbackRows(const QString& text) {
+    // Imperative print() text: escape sequences dropped, tabs expanded, one
+    // row per line. A trailing newline ends the last row rather than adding
+    // an empty one, matching the bytes the terminal receives.
+    QStringList lines;
+    QString line;
+    const qsizetype size = text.size();
+    for (qsizetype i = 0; i < size; ++i) {
+        const QChar c = text.at(i);
+        if (c == QChar(0x1b)) {
+            const QChar next = i + 1 < size ? text.at(i + 1) : QChar();
+            if (next == QLatin1Char('[')) {
+                i += 2;
+                while (i < size && !(text.at(i).unicode() >= 0x40 && text.at(i).unicode() <= 0x7e)) ++i;
+            } else if (next == QLatin1Char(']')) {
+                i += 2;
+                while (i < size && text.at(i) != QChar(0x07)
+                       && !(text.at(i) == QChar(0x1b) && i + 1 < size && text.at(i + 1) == QLatin1Char('\\')))
+                    ++i;
+                if (i < size && text.at(i) == QChar(0x1b)) ++i;
+            } else {
+                ++i;
+            }
+            continue;
+        }
+        if (c == QLatin1Char('\r')) continue;
+        if (c == QLatin1Char('\n')) {
+            lines.append(line);
+            line.clear();
+            continue;
+        }
+        if (c == QLatin1Char('\t')) {
+            const int column = UnicodeText::displayWidth(line);
+            line += QString(8 - column % 8, QLatin1Char(' '));
+            continue;
+        }
+        line += c;
+    }
+    if (!line.isEmpty() || lines.isEmpty())
+        lines.append(line);
+
+    std::deque<ScrollbackRow> rows;
+    for (const QString& current : lines) {
+        int width = 0;
+        GraphemeIterator iterator(current, /*sanitizeControls=*/true);
+        GraphemeRef cluster;
+        while (iterator.next(cluster))
+            width += cluster.width;
+        ScrollbackRow row;
+        if (width > 0) {
+            TextGridBuffer buffer;
+            buffer.resize(width, 1);
+            buffer.writeText(0, 0, current);
+            row.reserve(static_cast<size_t>(width));
+            for (int x = 0; x < width; ++x)
+                row.push_back(buffer.cellAt(x, 0));
+        }
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+void TerminalEngine::commitScrollbackRows(std::deque<ScrollbackRow>&& rows) {
+    if (rows.empty()) return;
+    m_committedScrollbackTotal += rows.size();
+    for (auto& row : rows)
+        m_committedScrollbackRows.push_back(std::move(row));
+    trimScrollbackHistory();
+    emit scrollbackCommitted(m_committedScrollbackTotal);
+}
+
+void TerminalEngine::trimScrollbackHistory() {
+    while (static_cast<int>(m_committedScrollbackRows.size()) > m_scrollbackHistoryLimit)
+        m_committedScrollbackRows.pop_front();
+}
+
+void TerminalEngine::setScrollbackHistoryEnabled(bool enabled) {
+    if (m_scrollbackHistoryEnabled == enabled) return;
+    m_scrollbackHistoryEnabled = enabled;
+    if (!enabled) {
+        m_pendingScrollbackRows.clear();
+        m_committedScrollbackRows.clear();
+    }
+}
+
+void TerminalEngine::setScrollbackHistoryLimit(int rows) {
+    m_scrollbackHistoryLimit = std::max(0, rows);
+    trimScrollbackHistory();
+}
+
+TextGridBuffer TerminalEngine::committedScrollback(quint64 fromTotalRow) const {
+    TextGridBuffer buffer;
+    const quint64 retained = m_committedScrollbackRows.size();
+    const quint64 oldest = m_committedScrollbackTotal - retained;
+    const quint64 start = std::max(fromTotalRow, oldest);
+    if (start >= m_committedScrollbackTotal) return buffer;
+    const size_t first = static_cast<size_t>(start - oldest);
+    const int height = static_cast<int>(m_committedScrollbackRows.size() - first);
+    int width = 1;
+    for (size_t i = first; i < m_committedScrollbackRows.size(); ++i)
+        width = std::max(width, static_cast<int>(m_committedScrollbackRows[i].size()));
+    if (!buffer.resize(width, height)) return TextGridBuffer();
+    for (int y = 0; y < height; ++y) {
+        const ScrollbackRow& row = m_committedScrollbackRows[first + static_cast<size_t>(y)];
+        for (size_t x = 0; x < row.size(); ++x)
+            buffer.cellAt(static_cast<int>(x), y) = row[x];
+    }
+    return buffer;
 }
 
 void TerminalEngine::startRenderer() {

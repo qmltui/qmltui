@@ -4,6 +4,7 @@
 #include <QQmlContext>
 #include <QAbstractListModel>
 #include <QSignalSpy>
+#include <QScopeGuard>
 #include <QCoreApplication>
 #include <QtLogging>
 #include <algorithm>
@@ -758,6 +759,16 @@ void TestTerminalFramework::scrollbackDelegateReuse() {
 }
 
 void TestTerminalFramework::scrollbackSpacingAndSeparator() {
+    // A quiet test-session engine records the rows it commits.
+    const QByteArray previousScript = qgetenv("QAMUI_RUNNER_SCRIPT");
+    qputenv("QAMUI_RUNNER_SCRIPT", QByteArrayLiteral("quiet-test.js"));
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousScript.isEmpty())
+            qunsetenv("QAMUI_RUNNER_SCRIPT");
+        else
+            qputenv("QAMUI_RUNNER_SCRIPT", previousScript);
+    });
+
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
@@ -787,6 +798,11 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     QVERIFY2(sepDelegate.isReady(), qPrintable(sepDelegate.errorString()));
 
     Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    auto* terminalEngine = terminal.engine();
+    terminalEngine->setTestViewportSize(QSize(20, 6));
+    QVERIFY(terminalEngine->testSession());
+    QVERIFY(terminalEngine->scrollbackHistoryEnabled());
     Scrollback scrollback(&terminal);
     QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
     scrollback.setDelegate(&itemDelegate);
@@ -821,6 +837,29 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
     model3.append(QStringLiteral("X"));
     model3.append(QStringLiteral("Y"));
     overrideScrollback.setModel(&model3);
+
+    // One stream render commits everything both objects submitted: item,
+    // separator, one spacing row, item; then two items whose streamSpacing
+    // override suppresses the spacing.
+    terminalEngine->renderFrame();
+    const TextGridBuffer rows = terminalEngine->committedScrollback();
+    const auto rowText = [&](int y) {
+        QString text;
+        for (int x = 0; x < rows.width(); ++x) {
+            const Cell& cell = rows.cellAt(x, y);
+            if (cell.continuation) continue;
+            text += cell.character().isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character());
+        }
+        while (text.endsWith(QLatin1Char(' '))) text.chop(1);
+        return text;
+    };
+    QCOMPARE(rows.height(), 6);
+    QCOMPARE(rowText(0), QStringLiteral("A"));
+    QCOMPARE(rowText(1), QStringLiteral("-----"));
+    QCOMPARE(rowText(2), QString());
+    QCOMPARE(rowText(3), QStringLiteral("B"));
+    QCOMPARE(rowText(4), QStringLiteral("X"));
+    QCOMPARE(rowText(5), QStringLiteral("Y"));
 
     scrollback.clear();
     QCOMPARE(scrollback.model().isValid(), true);

@@ -231,6 +231,12 @@ documentation for exact signatures. Choose operations by intent:
   snapshot file, `expectStyled()` also compares colors and attributes, and both
   write a unified diff on mismatch. `fail()` aborts the scenario with a message
   when a check cannot be expressed as an assertion.
+- An Inline-mode application commits its history to the scrollback, which no
+  frame assertion can see. Use `expectScrollbackText()`,
+  `waitForScrollbackText()`, `expectNoScrollbackText()`, `scrollbackText()`,
+  `captureScrollback()` and `expectScrollbackSnapshot()` for those rows;
+  `scrollbackRowCount()` gives a `fromRow` mark so a step asserts only what
+  it appended. They fail on a FullScreen terminal, where rows stay pending.
 - `waitForFrame()` requests rendering. To prove that the application scheduled
   its own repaint, use `injectKey()` or `injectText()` followed by
   `expectRepaint()`; the regular input methods would consume that repaint.

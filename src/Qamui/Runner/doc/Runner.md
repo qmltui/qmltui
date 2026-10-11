@@ -118,6 +118,42 @@ Waits for the next committed frame and writes its normalized UTF-8 text beneath 
 
 Waits for the next committed frame and writes its styled text (the `styledText()` format) beneath the configured artifact directory, with the same path rules as `captureText()`. Run it once to record the baseline for `expectStyled()`, then copy the artifact next to the scenario.
 
+#### Scrollback assertions
+
+An Inline-mode application commits its history through `Scrollback`, and those rows never appear in the live frame. In a test session the engine keeps every committed row as cells (see `TerminalEngine::setScrollbackHistoryEnabled()`; `QAMUI_SCROLLBACK_HISTORY_ROWS` sets the retained window, 5,000 rows by default), and the methods below read them with the same normalisation, styled format, artifact and snapshot rules as their frame counterparts. Rows are committed exactly when their bytes would reach the terminal: on the stream render that carries them, so `expect*` waits for a frame first. Row numbers count from the start of the session and keep counting when old rows are trimmed; `print("a\nb")` is two rows and a spacing row is one blank row. Every method fails when the root `Terminal` is not in Inline mode, because scrollback stays pending in FullScreen mode. A Runner constructed after QML loaded starts recording from `beginTestSession()`, so rows appended during `componentComplete` are bytes only.
+
+#### int scrollbackRowCount()
+
+Returns the number of rows committed to the scrollback so far. Pass it as `fromRow` to the other scrollback methods to look only at what a later step appended. JavaScript usage: `const mark = terminal.scrollbackRowCount();`.
+
+#### QString scrollbackText(int fromRow = 0)
+
+Returns the normalized text of the committed scrollback rows from `fromRow` onwards without requesting another render. Empty when nothing has been committed. JavaScript usage: `terminal.scrollbackText(mark)` or `terminal.scrollbackText({ fromRow: mark })`.
+
+#### void waitForScrollbackText(const QString &text, int timeoutMs = 2000)
+
+Waits until the committed scrollback contains the specified non-empty substring, observing frames and scrollback commits rather than sleeping. `timeoutMs` must be between 1 and 30,000 milliseconds. JavaScript usage: `terminal.waitForScrollbackText("Allow once", 5000)`.
+
+#### void expectScrollbackText(const QString &text, int timeoutMs = -1)
+
+Waits for the next committed frame and fails unless the committed scrollback contains the specified non-empty substring. JavaScript usage: `terminal.expectScrollbackText("hello inline")`.
+
+#### void expectNoScrollbackText(const QString &text, int timeoutMs = -1)
+
+Waits for the next committed frame and fails if the committed scrollback contains the specified substring.
+
+#### void captureScrollback(const QString &relativePath, int fromRow = 0)
+
+Waits for the next committed frame and writes the committed scrollback rows from `fromRow` onwards as normalized UTF-8 text beneath the artifact directory, with the path rules of `captureText()`. JavaScript usage: `terminal.captureScrollback("banner.txt")`.
+
+#### void captureScrollbackStyled(const QString &relativePath, int fromRow = 0)
+
+Like `captureScrollback()`, in the `styledText()` format, to record the baseline of a styled scrollback comparison.
+
+#### void expectScrollbackSnapshot(const QString &snapshotRelativePath, int fromRow = 0, int timeoutMs = -1)
+
+Compares the committed scrollback rows from `fromRow` onwards against a snapshot resolved relative to the scenario, with the mismatch artifacts and update mode of `expectSnapshot()`. JavaScript usage: `terminal.expectScrollbackSnapshot("snapshots/history.txt", { fromRow: mark })`.
+
 #### QString frameText()
 
 Returns normalized text for the current committed frame without requesting another render.
@@ -226,7 +262,7 @@ Like `expectSnapshot()`, but compares `styledText()`, so a color or attribute re
 
 ## Snapshot Update Mode
 
-`QAMUI_RUNNER_UPDATE_SNAPSHOTS=1` makes `expectSnapshot()`, `expectStyled()`, and `expectRegionSnapshot()` rewrite their baseline from the committed frame and pass, so recording and refreshing golden files is one command: `QAMUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>`. The scenario runner forwards the variable to the launched process. An update is never silent: every rewritten path is listed in the final stderr summary and under `artifacts.updatedSnapshots` in `result.json`. A missing baseline in normal mode fails with a message naming the variable. A baseline inside a Qt resource cannot be written back; update mode then records the actual frame under the artifact directory and fails with both paths. In CMake, `qamui_add_scenario(... UPDATE_SNAPSHOTS)` forces the mode on for one test and `NO_UPDATE_SNAPSHOTS` pins it off so a verifying or negative test stays deterministic under a global update run.
+`QAMUI_RUNNER_UPDATE_SNAPSHOTS=1` makes `expectSnapshot()`, `expectStyled()`, `expectRegionSnapshot()`, and `expectScrollbackSnapshot()` rewrite their baseline from the committed frame and pass, so recording and refreshing golden files is one command: `QAMUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>`. The scenario runner forwards the variable to the launched process. An update is never silent: every rewritten path is listed in the final stderr summary and under `artifacts.updatedSnapshots` in `result.json`. A missing baseline in normal mode fails with a message naming the variable. A baseline inside a Qt resource cannot be written back; update mode then records the actual frame under the artifact directory and fails with both paths. In CMake, `qamui_add_scenario(... UPDATE_SNAPSHOTS)` forces the mode on for one test and `NO_UPDATE_SNAPSHOTS` pins it off so a verifying or negative test stays deterministic under a global update run.
 
 #### object rootObject()
 

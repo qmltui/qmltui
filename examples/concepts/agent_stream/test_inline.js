@@ -3,6 +3,12 @@ function main(terminal) {
     terminal.expectNoText("shell")
     terminal.captureText("inline.txt")
 
+    // The session banner lives in the scrollback, never in the live frame.
+    terminal.expectScrollbackText("Qamui")
+    terminal.expectScrollbackText("agent stream demo")
+    terminal.expectNoScrollbackText("Ask anything")
+    terminal.captureScrollback("banner.txt")
+
     terminal.typeText("persistent prompt")
     for (const key of ["F1", "T", "B"]) {
         terminal.press(key, key === "F1" ? [] : ["Ctrl"])

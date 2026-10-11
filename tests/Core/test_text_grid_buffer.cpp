@@ -36,6 +36,7 @@ private slots:
     void testControlCharactersAreVisible();
     void testWriteTextAppendsZeroWidthCluster();
     void testWriteTextLongCluster();
+    void testRowAnsiTrimsDefaultBlanks();
     void testCopiedBufferComparesEqual();
     void testToAnsiStringExactRow();
     void testFillRectPreservesAttributes();
@@ -609,6 +610,37 @@ void TestTextGridBuffer::testDiffLargeCoordinates() {
     const std::string diff = before.diff(after);
     QVERIFY(diff.find("\033[100;120H") != std::string::npos);
     QVERIFY(diff.ends_with("Z"));
+}
+
+void TestTextGridBuffer::testRowAnsiTrimsDefaultBlanks() {
+    // Trailing default blanks are dropped; a coloured or attributed blank is
+    // content and keeps everything before it.
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(10, 3));
+    buffer.writeText(0, 0, QStringLiteral("ab"));
+    buffer.fillRect(5, 0, 1, 1, " ", uint32_t(0), 0xFF336699u);
+    QCOMPARE(buffer.lastContentColumn(0), 5);
+    QCOMPARE(buffer.lastContentColumn(1), -1);
+    buffer.setGrapheme(2, 2, QByteArrayView(" "), 1, uint32_t(0), uint32_t(0), TextAttribute::Underline);
+    QCOMPARE(buffer.lastContentColumn(2), 2);
+
+    std::string row;
+    buffer.appendRowAnsi(row, 0, ColorDepth::TrueColor);
+    QVERIFY(row.rfind("\033[0m", 0) == 0);
+    QVERIFY(row.find("48;2;51;102;153") != std::string::npos);
+    std::string visible;
+    for (size_t i = 0; i < row.size(); ++i) {
+        if (row[i] == '\033') {
+            while (i < row.size() && row[i] != 'm') ++i;
+            continue;
+        }
+        visible += row[i];
+    }
+    QCOMPARE(QString::fromStdString(visible), QStringLiteral("ab    "));
+
+    std::string blank;
+    buffer.appendRowAnsi(blank, 1, ColorDepth::TrueColor);
+    QVERIFY(blank.empty());
 }
 
 QTEST_MAIN(TestTextGridBuffer)

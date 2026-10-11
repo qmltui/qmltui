@@ -141,6 +141,35 @@ void TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool absolut
     }
 }
 
+int TextGridBuffer::lastContentColumn(int row) const {
+    if (row < 0 || row >= m_height) return -1;
+    for (int column = m_width - 1; column >= 0; --column) {
+        const Cell& cell = cellAt(column, row);
+        if (!cell.continuation && !cell.character().isEmpty() && cell.character() != " ")
+            return column;
+        if ((cell.bgColor >> 24) != 0 || cell.attributes != TextAttribute::None)
+            return column;
+    }
+    return -1;
+}
+
+void TextGridBuffer::appendRowAnsi(std::string& out, int row, ColorDepth depth) const {
+    const int last = lastContentColumn(row);
+    const Cell* previous = nullptr;
+    for (int column = 0; column <= last; ++column) {
+        const Cell& cell = cellAt(column, row);
+        if (!previous
+            || cell.fgColor != previous->fgColor
+            || cell.bgColor != previous->bgColor
+            || cell.attributes != previous->attributes) {
+            ansi::appendFullStyle(out, cell, depth);
+            previous = &cell;
+        }
+        if (!cell.continuation)
+            ansi::appendGlyph(out, cell);
+    }
+}
+
 std::string TextGridBuffer::toAnsiString() const {
     std::string ansi;
     toAnsiString(ansi);

@@ -25,6 +25,11 @@ interface QamuiTimeoutOptions {
     timeout?: number;
 }
 
+/** Optional starting row for the scrollback methods (a scrollbackRowCount() mark). */
+interface QamuiScrollbackOptions {
+    fromRow?: number;
+}
+
 interface QamuiModifierOptions {
     modifiers?: QamuiModifier[];
 }
@@ -250,6 +255,31 @@ interface Terminal {
                          snapshotRelativePath: string, timeoutMs?: number): void;
     expectRegionSnapshot(x: number, y: number, width: number, height: number,
                          snapshotRelativePath: string, options?: QamuiTimeoutOptions): void;
+
+    /** Rows committed to the scrollback so far (Inline mode); a monotonic mark for fromRow. */
+    scrollbackRowCount(): number;
+    /** Normalized text of the committed scrollback rows from a mark onwards, without waiting. */
+    scrollbackText(fromRow?: number): string;
+    scrollbackText(options?: QamuiScrollbackOptions): string;
+    /** Waits until the committed scrollback contains text. */
+    waitForScrollbackText(text: string, timeoutMs?: number): void;
+    waitForScrollbackText(text: string, options?: QamuiTimeoutOptions): void;
+    /** Fails unless the scrollback committed by the next frame contains text. */
+    expectScrollbackText(text: string, timeoutMs?: number): void;
+    expectScrollbackText(text: string, options?: QamuiTimeoutOptions): void;
+    /** Fails if the scrollback committed by the next frame contains text. */
+    expectNoScrollbackText(text: string, timeoutMs?: number): void;
+    expectNoScrollbackText(text: string, options?: QamuiTimeoutOptions): void;
+    /** Writes committed scrollback rows as normalized text beneath the artifact directory. */
+    captureScrollback(relativePath: string, fromRow?: number): void;
+    captureScrollback(relativePath: string, options?: QamuiScrollbackOptions): void;
+    /** Like captureScrollback(), in the styledText() format. */
+    captureScrollbackStyled(relativePath: string, fromRow?: number): void;
+    captureScrollbackStyled(relativePath: string, options?: QamuiScrollbackOptions): void;
+    /** Compares committed scrollback rows against a golden baseline (QAMUI_RUNNER_UPDATE_SNAPSHOTS rewrites it). */
+    expectScrollbackSnapshot(snapshotRelativePath: string, fromRow?: number, timeoutMs?: number): void;
+    expectScrollbackSnapshot(snapshotRelativePath: string,
+                             options?: QamuiScrollbackOptions & QamuiTimeoutOptions): void;
 
     /** Normalized text of the current committed frame, without waiting. */
     frameText(): string;

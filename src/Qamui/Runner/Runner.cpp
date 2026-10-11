@@ -657,6 +657,9 @@ bool Runner::installJavaScriptFacade()
         "press", "typeText", "paste", "sleep", "waitForFrame", "waitForCondition",
         "waitForText", "expectText", "expectNoText", "captureText",
         "captureStyled", "frameText", "styledText", "cell", "findText", "clickText",
+        "scrollbackRowCount", "scrollbackText", "waitForScrollbackText",
+        "expectScrollbackText", "expectNoScrollbackText", "captureScrollback",
+        "captureScrollbackStyled", "expectScrollbackSnapshot",
         "click", "doubleClick", "drag", "scroll", "hover", "mouseDown", "mouseUp",
         "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
@@ -697,7 +700,14 @@ bool Runner::installJavaScriptFacade()
         expectStyle:  { required: 3, optional: [["timeout", -1]] },
         expectSnapshot: { required: 1, optional: [["timeout", -1]] },
         expectStyled: { required: 1, optional: [["timeout", -1]] },
-        expectRegionSnapshot: { required: 5, optional: [["timeout", -1]] }
+        expectRegionSnapshot: { required: 5, optional: [["timeout", -1]] },
+        scrollbackText: { required: 0, optional: [["fromRow", 0]] },
+        waitForScrollbackText: { required: 1, optional: [["timeout", 2000]] },
+        expectScrollbackText: { required: 1, optional: [["timeout", -1]] },
+        expectNoScrollbackText: { required: 1, optional: [["timeout", -1]] },
+        captureScrollback: { required: 1, optional: [["fromRow", 0]] },
+        captureScrollbackStyled: { required: 1, optional: [["fromRow", 0]] },
+        expectScrollbackSnapshot: { required: 1, optional: [["fromRow", 0], ["timeout", -1]] }
     };
     const rejectUnknownOptions = function(name, options, allowed) {
         for (const key in options) {
@@ -1942,6 +1952,200 @@ void Runner::expectNoText(const QString& text, int timeoutMs)
         failScenario(error);
     else if (text.isEmpty() || frame.contains(text))
         failScenario(QStringLiteral("Expected frame not to contain \"%1\"").arg(text));
+}
+
+bool Runner::waitForEngineCondition(const std::function<bool()>& check, int timeoutMs,
+                                    const QString& description)
+{
+    if (check())
+        return true;
+    if (m_state == State::Failed)
+        return false;
+
+    QDeadlineTimer deadline(timeoutMs);
+    if (m_activeLoop) {
+        failScenario(QStringLiteral("Nested Test wait operations are not supported"));
+        return false;
+    }
+
+    bool matched = false;
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    const auto evaluate = [&] {
+        if (check()) {
+            matched = true;
+            loop.quit();
+        } else if (m_state == State::Failed) {
+            loop.quit();
+        }
+    };
+    const QMetaObject::Connection frameConnection = connect(
+        m_terminalEngine, &TerminalEngine::frameRendered, &loop, [&](quint64) { evaluate(); });
+    const QMetaObject::Connection scrollbackConnection = connect(
+        m_terminalEngine, &TerminalEngine::scrollbackCommitted, &loop, [&](quint64) { evaluate(); });
+    connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    m_activeLoop = &loop;
+    timeout.start(static_cast<int>(qMax<qint64>(1, deadline.remainingTime())));
+    m_terminalEngine->requestRender();
+    loop.exec();
+    m_activeLoop = nullptr;
+    disconnect(frameConnection);
+    disconnect(scrollbackConnection);
+
+    if (m_state == State::Failed)
+        return false;
+    if (!matched) {
+        failScenario(QStringLiteral("Timed out after %1 ms waiting for %2")
+                         .arg(timeoutMs).arg(description) + pausedClockHint());
+        return false;
+    }
+    return true;
+}
+
+bool Runner::ensureScrollbackSession(const char* operation)
+{
+    if (!m_terminalEngine || !m_terminal) {
+        failScenario(QStringLiteral("TerminalEngine is no longer available"));
+        return false;
+    }
+    if (m_terminal->mode() != Terminal::Mode::Inline) {
+        failScenario(QStringLiteral("terminal.%1() needs a Terminal in Inline mode; "
+                                    "scrollback stays pending in FullScreen mode")
+                         .arg(QLatin1String(operation)));
+        return false;
+    }
+    if (!m_terminalEngine->scrollbackHistoryEnabled()) {
+        failScenario(QStringLiteral("terminal.%1() needs scrollback history, which this "
+                                    "session does not record").arg(QLatin1String(operation)));
+        return false;
+    }
+    return true;
+}
+
+QString Runner::scrollbackTextFrom(int fromRow, bool styled, QString* error) const
+{
+    if (!m_terminalEngine) {
+        if (error) *error = QStringLiteral("TerminalEngine is no longer available");
+        return {};
+    }
+    if (fromRow < 0) {
+        if (error) *error = QStringLiteral("fromRow must not be negative");
+        return {};
+    }
+    const TextGridBuffer rows = m_terminalEngine->committedScrollback(static_cast<quint64>(fromRow));
+    if (rows.height() <= 0)
+        return {};
+    return styled ? formatStyledText(rows) : normalizedText(rows);
+}
+
+int Runner::scrollbackRowCount()
+{
+    if (!ensureRunning("scrollbackRowCount") || !ensureScrollbackSession("scrollbackRowCount"))
+        return -1;
+    return static_cast<int>(m_terminalEngine->committedScrollbackTotal());
+}
+
+QString Runner::scrollbackText(int fromRow)
+{
+    if (!ensureRunning("scrollbackText") || !ensureScrollbackSession("scrollbackText"))
+        return {};
+    QString error;
+    const QString text = scrollbackTextFrom(fromRow, false, &error);
+    if (!error.isEmpty())
+        failScenario(error);
+    return text;
+}
+
+void Runner::waitForScrollbackText(const QString& text, int timeoutMs)
+{
+    if (!ensureRunning("waitForScrollbackText") || !ensureScrollbackSession("waitForScrollbackText"))
+        return;
+    if (text.isEmpty()) {
+        failScenario(QStringLiteral("Text conditions require a non-empty string"));
+        return;
+    }
+    const int validated = validateTimeout(timeoutMs);
+    if (!validated)
+        return;
+    const auto contains = [&] {
+        QString error;
+        const QString rows = scrollbackTextFrom(0, false, &error);
+        if (!error.isEmpty()) {
+            failScenario(error);
+            return false;
+        }
+        return rows.contains(text);
+    };
+    (void)waitForEngineCondition(contains, validated,
+                                 QStringLiteral("scrollback text \"%1\"").arg(text));
+}
+
+void Runner::expectScrollbackText(const QString& text, int timeoutMs)
+{
+    if (!ensureRunning("expectScrollbackText") || !ensureScrollbackSession("expectScrollbackText")
+        || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
+        return;
+    QString error;
+    const QString rows = scrollbackTextFrom(0, false, &error);
+    if (!error.isEmpty())
+        failScenario(error);
+    else if (text.isEmpty() || !rows.contains(text))
+        failScenario(QStringLiteral("Expected scrollback to contain \"%1\"").arg(text));
+}
+
+void Runner::expectNoScrollbackText(const QString& text, int timeoutMs)
+{
+    if (!ensureRunning("expectNoScrollbackText") || !ensureScrollbackSession("expectNoScrollbackText")
+        || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
+        return;
+    QString error;
+    const QString rows = scrollbackTextFrom(0, false, &error);
+    if (!error.isEmpty())
+        failScenario(error);
+    else if (text.isEmpty() || rows.contains(text))
+        failScenario(QStringLiteral("Expected scrollback not to contain \"%1\"").arg(text));
+}
+
+void Runner::captureScrollback(const QString& relativePath, int fromRow)
+{
+    if (!ensureRunning("captureScrollback") || !ensureScrollbackSession("captureScrollback")
+        || !waitForNextFrame(m_operationTimeoutMs))
+        return;
+    QString error;
+    const QString rows = scrollbackTextFrom(fromRow, false, &error);
+    if (error.isEmpty() && writeTextArtifact(relativePath, rows, &error))
+        m_capturePaths.append(QDir::cleanPath(relativePath));
+    if (!error.isEmpty())
+        failScenario(error);
+}
+
+void Runner::captureScrollbackStyled(const QString& relativePath, int fromRow)
+{
+    if (!ensureRunning("captureScrollbackStyled") || !ensureScrollbackSession("captureScrollbackStyled")
+        || !waitForNextFrame(m_operationTimeoutMs))
+        return;
+    QString error;
+    const QString rows = scrollbackTextFrom(fromRow, true, &error);
+    if (error.isEmpty() && writeTextArtifact(relativePath, rows, &error))
+        m_capturePaths.append(QDir::cleanPath(relativePath));
+    if (!error.isEmpty())
+        failScenario(error);
+}
+
+void Runner::expectScrollbackSnapshot(const QString& snapshotRelativePath, int fromRow, int timeoutMs)
+{
+    if (!ensureRunning("expectScrollbackSnapshot") || !ensureScrollbackSession("expectScrollbackSnapshot")
+        || !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
+        return;
+    QString error;
+    const QString rows = scrollbackTextFrom(fromRow, false, &error);
+    if (!error.isEmpty()) {
+        failScenario(error);
+        return;
+    }
+    compareSnapshot(snapshotRelativePath, rows);
 }
 
 QString Runner::normalizedText(const TextGridBuffer& frame)

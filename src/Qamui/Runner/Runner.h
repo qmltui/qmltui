@@ -3,6 +3,7 @@
 #include <Qamui/Core/primitives/QamuiExport.h>
 
 #include <QObject>
+#include <functional>
 #include <QElapsedTimer>
 #include <QJSValue>
 #include <QPointer>
@@ -155,6 +156,37 @@ public:
     /// for expectStyled().
     Q_INVOKABLE void captureStyled(const QString& relativePath);
 
+    /// Rows the application has committed to the scrollback (Inline mode).
+    /// The count is monotonic and survives history trimming; pass it as the
+    /// fromRow of the other scrollback methods to look only at rows a step
+    /// appended.
+    Q_INVOKABLE int scrollbackRowCount();
+
+    /// Normalized text of the committed scrollback rows from a total-row mark
+    /// onwards, without waiting. Empty when nothing has been committed.
+    Q_INVOKABLE QString scrollbackText(int fromRow = 0);
+
+    /// Waits until the committed scrollback contains text.
+    Q_INVOKABLE void waitForScrollbackText(const QString& text, int timeoutMs = 2000);
+
+    /// Fails unless the scrollback committed by the next frame contains text.
+    Q_INVOKABLE void expectScrollbackText(const QString& text, int timeoutMs = -1);
+
+    /// Fails if the scrollback committed by the next frame contains text.
+    Q_INVOKABLE void expectNoScrollbackText(const QString& text, int timeoutMs = -1);
+
+    /// Writes the committed scrollback rows from fromRow onwards as normalized
+    /// text beneath the configured artifact directory.
+    Q_INVOKABLE void captureScrollback(const QString& relativePath, int fromRow = 0);
+
+    /// Like captureScrollback(), in the styledText() format.
+    Q_INVOKABLE void captureScrollbackStyled(const QString& relativePath, int fromRow = 0);
+
+    /// Compares the committed scrollback rows from fromRow onwards against a
+    /// snapshot resolved relative to the scenario; update mode rewrites it.
+    Q_INVOKABLE void expectScrollbackSnapshot(const QString& snapshotRelativePath,
+                                              int fromRow = 0, int timeoutMs = -1);
+
     /// Returns normalized text for the current committed frame without waiting.
     Q_INVOKABLE QString frameText();
 
@@ -293,6 +325,12 @@ private:
     void sendKey(const char* operation, const QString& key,
                  const QStringList& modifiers, bool awaitFrame);
     bool waitForTextCondition(const QString& text, bool shouldContain, int timeoutMs);
+    // Waits for frames and scrollback commits until check() holds; the
+    // description names what was awaited in the timeout message.
+    bool waitForEngineCondition(const std::function<bool()>& check, int timeoutMs,
+                                const QString& description);
+    bool ensureScrollbackSession(const char* operation);
+    QString scrollbackTextFrom(int fromRow, bool styled, QString* error) const;
     int validateTimeout(int timeoutMs);
     int resolveExpectTimeout(int timeoutMs);
     bool parseMouseArguments(const QString& button, const QStringList& modifiers,

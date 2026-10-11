@@ -41,5 +41,6 @@ if(TARGET Qamui::Runner)
         QAMUI_AGENT_STREAM_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/Main.qml")
     qamui_add_scenario_test(NAME agent_stream_inline TARGET qamui_agent_stream_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_inline.js"
-        COLUMNS 120 ROWS 35 LABELS AgentSmoke)
+        COLUMNS 120 ROWS 35 LABELS AgentSmoke
+        ARTIFACT "banner.txt" ARTIFACT_CONTENT "Qamui")
 endif()

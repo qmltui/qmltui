@@ -110,6 +110,14 @@ public:
     std::string toAnsiString() const;
     void toAnsiString(std::string& out) const;
 
+    // Column of the last cell that shows when the row is printed: a glyph
+    // other than space, a non-default background or an attribute. -1 when the
+    // row is blank.
+    int lastContentColumn(int row) const;
+    // Appends the row as ANSI text up to lastContentColumn(row), starting from
+    // a style reset. No cursor movement or line break is emitted.
+    void appendRowAnsi(std::string& out, int row, ColorDepth depth) const;
+
 private:
     void diffInternal(const TextGridBuffer& nextBuffer, bool absolute, std::string& out,
                       const AnsiEncodeOptions& options) const;

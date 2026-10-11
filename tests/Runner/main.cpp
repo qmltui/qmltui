@@ -37,10 +37,20 @@ int main(int argc, char* argv[])
     bool liveAfterConstruction = false;
     std::optional<bool> updateSnapshots;
     QString script = QStringLiteral(":/qamui-tests/resource_snapshot.js");
+    QString fixtureQml = QString::fromUtf8(QAMUI_RUNNER_FIXTURE_QML);
     for (int i = 1; i < argc; ++i) {
         const QByteArray argument(argv[i]);
         if (argument.startsWith("--scenario=")) {
             script = QString::fromUtf8(argument.mid(int(strlen("--scenario="))));
+        } else if (argument == "--fixture=inline") {
+            // Inline-mode fixture with a Scrollback, for the scrollback
+            // assertions. Other fixtures reuse this file without one.
+#ifdef QAMUI_RUNNER_INLINE_FIXTURE_QML
+            fixtureQml = QString::fromUtf8(QAMUI_RUNNER_INLINE_FIXTURE_QML);
+#else
+            qCritical() << "This fixture has no inline variant";
+            return 2;
+#endif
         } else if (argument == "--embedded") {
             embedded = true;
         } else if (argument == "--live") {
@@ -68,7 +78,7 @@ int main(int argc, char* argv[])
 
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.load(QUrl::fromLocalFile(QString::fromUtf8(QAMUI_RUNNER_FIXTURE_QML)));
+    engine.load(QUrl::fromLocalFile(fixtureQml));
     if (engine.rootObjects().isEmpty())
         return 2;
 

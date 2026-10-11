@@ -8,8 +8,10 @@
 #include <QSize>
 #include <QTimer>
 #include <atomic>
+#include <deque>
 #include <optional>
 #include <memory>
+#include <vector>
 #include <Qamui/Core/primitives/TerminalDevice.h>
 #include <Qamui/Core/primitives/InputDecoder.h>
 #include <Qamui/Core/primitives/TextGridBuffer.h>
@@ -111,6 +113,29 @@ public:
     bool submitScrollback(const QString& text);
     static constexpr size_t ScrollbackQueueLimit = 1024 * 1024;
     size_t pendingScrollbackBytes() const { return m_scrollback.size(); }
+    // Painted rows submitted as one block: the terminal receives them as
+    // trimmed ANSI rows and, while history is recorded, the cells are kept so a
+    // scenario can assert on them once they are committed.
+    bool submitScrollback(const TextGridBuffer& rows);
+
+    // Committed scrollback retained as cells. Off outside test sessions (no
+    // memory cost for applications); a Runner session records from the first
+    // frame. QAMUI_SCROLLBACK_HISTORY_ROWS overrides the retained row count.
+    // Rows become committed exactly when their bytes are: on the stream render
+    // that carries them, or on stop(). FullScreen keeps them pending.
+    void setScrollbackHistoryEnabled(bool enabled);
+    bool scrollbackHistoryEnabled() const { return m_scrollbackHistoryEnabled; }
+    void setScrollbackHistoryLimit(int rows);
+    int scrollbackHistoryLimit() const { return m_scrollbackHistoryLimit; }
+    static constexpr int DefaultScrollbackHistoryLimit = 5000;
+    // Rows committed since the engine was created (monotonic, survives
+    // trimming) and how many of them are still retained.
+    quint64 committedScrollbackTotal() const { return m_committedScrollbackTotal; }
+    int committedScrollbackRowCount() const { return static_cast<int>(m_committedScrollbackRows.size()); }
+    size_t pendingScrollbackRowCount() const { return m_pendingScrollbackRows.size(); }
+    // Retained rows from a total-row index onwards (clamped to the oldest
+    // retained row), padded to the widest row. Empty when nothing qualifies.
+    TextGridBuffer committedScrollback(quint64 fromTotalRow = 0) const;
     void copyToClipboard(const QString& text);
     static std::string osc52Sequence(const QString& text);
     void setTitle(const QString& title);
@@ -138,6 +163,8 @@ public:
 
 signals:
     void frameRendered(quint64 sequence);
+    // Emitted before frameRendered() on a frame that committed scrollback rows.
+    void scrollbackCommitted(quint64 totalRows);
     void capabilitiesChanged();
     void outputSessionInvalidated(quint64 generation);
     void renderFailed(const QString& message);
@@ -177,6 +204,12 @@ private:
     bool mouseReportingWanted() const;
     void handleResize();
     void cycleFocus(bool forward, Item* scope = nullptr);
+    using ScrollbackRow = std::vector<Cell>;
+    bool enqueueScrollback(std::string&& bytes, std::deque<ScrollbackRow>&& rows);
+    void commitScrollbackRows(std::deque<ScrollbackRow>&& rows);
+    void trimScrollbackHistory();
+    static std::deque<ScrollbackRow> textToScrollbackRows(const QString& text);
+    static ScrollbackRow trimmedRow(const TextGridBuffer& buffer, int row);
     void queryInitialBackgroundColor();
     class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 
@@ -221,6 +254,11 @@ private:
     QString m_title;
     std::string m_scrollback;
     size_t m_scrollbackInFlight = 0;
+    std::deque<ScrollbackRow> m_pendingScrollbackRows;
+    std::deque<ScrollbackRow> m_committedScrollbackRows;
+    quint64 m_committedScrollbackTotal = 0;
+    int m_scrollbackHistoryLimit = DefaultScrollbackHistoryLimit;
+    bool m_scrollbackHistoryEnabled = false;
     bool m_stopped = false;
     bool m_backgroundOsc11Active = false;
     Color m_appliedBackgroundColor;

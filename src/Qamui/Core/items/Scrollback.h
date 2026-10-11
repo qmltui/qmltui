@@ -10,11 +10,13 @@
 #include <QQmlEngine>
 #include <QQmlParserStatus>
 #include <QVariant>
+#include <memory>
 
 namespace qamui {
 
 class Item;
 class Terminal;
+class TextGridBuffer;
 
 class QAMUI_CORE_EXPORT Scrollback : public QObject, public QQmlParserStatus {
     Q_OBJECT
@@ -77,8 +79,14 @@ private:
     CachedDelegate getOrCreateDelegate(QQmlComponent* component, const QVariantMap& initialProperties);
     CachedDelegate getOrCreateSeparator();
     void clearDelegateCache();
-    std::string renderItemToAnsi(Item* item, Terminal* output);
-    std::string renderSeparatorToAnsi(Terminal* output);
+    // Separator (after the first item), spacing rows and the item are painted
+    // into one buffer and submitted as one block, so the engine can keep the
+    // cells alongside the bytes it sends.
+    bool submitBatch(Item* item, Terminal* output);
+    Item* separatorItem(Terminal* output, std::unique_ptr<Item>& owned);
+    static int resolvedWidth(Item* item, Terminal* output);
+    static int resolvedHeight(Item* item);
+    bool reportRejection(const QString& reason);
     void applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
                                  int index, const QVariantMap& modelMap, const QVariant& rawData);
 

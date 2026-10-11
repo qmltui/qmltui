@@ -4,7 +4,8 @@ function main(terminal) {
     terminal.expectText("hello inline")
     terminal.captureText("typed.txt")
     terminal.press("Enter")
-    terminal.expectNoText("hello inline")
+    terminal.expectNoText("hello inline")             // gone from the live region...
+    terminal.expectScrollbackText("hello inline")     // ...and committed to the scrollback
     terminal.expectText("Enter a message.")
     terminal.typeText("clear me")
     terminal.press("Escape")

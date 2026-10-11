@@ -48,6 +48,18 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 _TODO_
 
+### Testing committed rows
+
+Rows leave the live frame once they are committed, so a `Runner` scenario
+cannot see them with `expectText()`. In a test session the engine keeps every
+committed row as cells, and the scenario reads them with
+`expectScrollbackText()`, `waitForScrollbackText()`, `scrollbackText()`,
+`captureScrollback()` and `expectScrollbackSnapshot()`, which follow the same
+normalisation, artifact and snapshot rules as their frame counterparts.
+`scrollbackRowCount()` returns a monotonic mark to look only at rows a step
+appended. `print("a\nb")` is two rows and each `spacing` row is one blank row.
+See the Runner documentation for the full contract.
+
 ### Example
 
 ```qml

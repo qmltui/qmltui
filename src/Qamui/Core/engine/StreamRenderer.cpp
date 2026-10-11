@@ -8,16 +8,6 @@
 
 namespace qamui {
 
-namespace {
-
-void appendCellStyle(std::ostringstream& output, const Cell& cell, ColorDepth depth) {
-    std::string style;
-    ansi::appendFullStyle(style, cell, depth);
-    output << style;
-}
-
-} // namespace
-
 StreamRenderer::StreamRenderer() = default;
 
 void StreamRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
@@ -63,42 +53,9 @@ bool StreamRenderer::drawPromptRegion(TerminalDevice& device) {
 }
 
 std::string StreamRenderer::promptRowToAnsi(int row) const {
-    int lastContentColumn = -1;
-    for (int column = m_promptBuffer.width() - 1; column >= 0; --column) {
-        const Cell& cell = m_promptBuffer.cellAt(column, row);
-        if (!cell.continuation && !cell.character().isEmpty() && cell.character() != " ") {
-            lastContentColumn = column;
-            break;
-        }
-        if ((cell.bgColor >> 24) != 0 || cell.attributes != TextAttribute::None) {
-            lastContentColumn = column;
-            break;
-        }
-    }
-
-    std::ostringstream output;
-    Cell previousCell;
-    bool hasPreviousStyle = false;
-    for (int column = 0; column <= lastContentColumn; ++column) {
-        const Cell& cell = m_promptBuffer.cellAt(column, row);
-        if (!hasPreviousStyle
-            || cell.fgColor != previousCell.fgColor
-            || cell.bgColor != previousCell.bgColor
-            || cell.attributes != previousCell.attributes) {
-            appendCellStyle(output, cell, capabilities().colorDepth);
-            previousCell = cell;
-            hasPreviousStyle = true;
-        }
-
-        if (!cell.continuation) {
-            const QByteArrayView glyph = cell.character();
-            if (glyph.isEmpty())
-                output << ' ';
-            else
-                output.write(glyph.data(), glyph.size());
-        }
-    }
-    return output.str();
+    std::string output;
+    m_promptBuffer.appendRowAnsi(output, row, capabilities().colorDepth);
+    return output;
 }
 
 bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {

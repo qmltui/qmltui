@@ -109,6 +109,7 @@ private slots:
     void testPtyShutdownRestoresRawMode();
     void testDestructorUsesBoundedShutdown();
     void testScrollbackAcrossModes();
+    void testScrollbackHistoryRows();
     void testOsc11BackgroundOutput();
     void testResizeRepaint();
 };
@@ -458,6 +459,83 @@ void TestTerminalDevice::testScrollbackAcrossModes()
     QVERIFY(stopped.find("shutdown output\r\n") != std::string::npos);
     engine->stop();
     QVERIFY(readAvailable(pipe.readEnd).empty());
+}
+
+void TestTerminalDevice::testScrollbackHistoryRows()
+{
+    // The test-session variable from initTestCase keeps output off and turns
+    // history recording on: rows commit with their bytes, without a terminal.
+    Terminal terminal;
+    auto* engine = terminal.engine();
+    engine->setTestViewportSize(QSize(30, 8));
+    QVERIFY(engine->testSession());
+    QVERIFY(!engine->terminalOutputEnabled());
+    QVERIFY(engine->scrollbackHistoryEnabled());
+    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    const auto rowText = [](const TextGridBuffer& rows, int y) {
+        QString text;
+        for (int x = 0; x < rows.width(); ++x) {
+            const Cell& cell = rows.cellAt(x, y);
+            if (cell.continuation) continue;
+            text += cell.character().isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character());
+        }
+        while (text.endsWith(QLatin1Char(' '))) text.chop(1);
+        return text;
+    };
+    QSignalSpy committed(engine, &TerminalEngine::scrollbackCommitted);
+
+    Scrollback history(&terminal);
+    QVERIFY(history.print(QStringLiteral("\033[1;31mred\033[0m\tx\n")));   // escapes dropped, tab expanded, one row
+    QVERIFY(history.print(QStringLiteral("a\nb")));                          // two rows
+    TextGridBuffer painted;
+    QVERIFY(painted.resize(12, 2));
+    painted.writeText(0, 0, QString::fromUtf8("wide 世界"));
+    painted.fillRect(0, 1, 3, 1, " ", uint32_t(0), 0xFF0000FFu);             // coloured blanks are content
+    QVERIFY(engine->submitScrollback(painted));
+    QCOMPARE(engine->pendingScrollbackRowCount(), size_t(5));
+    QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
+
+    QVERIFY(commit());                                                       // FullScreen keeps rows pending
+    QCOMPARE(committed.count(), 0);
+    QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
+
+    terminal.setMode(Terminal::Mode::Inline);
+    QVERIFY(commit());
+    QCOMPARE(committed.count(), 1);
+    QCOMPARE(committed.first().first().toULongLong(), qulonglong(5));
+    QCOMPARE(engine->committedScrollbackTotal(), quint64(5));
+    QCOMPARE(engine->committedScrollbackRowCount(), 5);
+    QCOMPARE(engine->pendingScrollbackRowCount(), size_t(0));
+
+    const TextGridBuffer rows = engine->committedScrollback();
+    QCOMPARE(rows.height(), 5);
+    QCOMPARE(rowText(rows, 0), QStringLiteral("red     x"));
+    QCOMPARE(rowText(rows, 1), QStringLiteral("a"));
+    QCOMPARE(rowText(rows, 2), QStringLiteral("b"));
+    QCOMPARE(rowText(rows, 3), QString::fromUtf8("wide 世界"));
+    QCOMPARE(rowText(rows, 4), QString());
+    QCOMPARE(rows.cellAt(2, 4).bgColor, uint32_t(0xFF0000FF));
+    QCOMPARE(rows.cellAt(3, 4).bgColor, uint32_t(0));                        // the row was stored trimmed
+
+    QCOMPARE(engine->committedScrollback(3).height(), 2);                    // from a total-row mark
+    QCOMPARE(engine->committedScrollback(99).height(), 0);
+
+    engine->setScrollbackHistoryLimit(2);                                    // retention drops the oldest rows
+    QCOMPARE(engine->committedScrollbackRowCount(), 2);
+    QCOMPARE(engine->committedScrollbackTotal(), quint64(5));
+    QCOMPARE(engine->committedScrollback(0).height(), 2);                    // clamped to the oldest retained row
+    QCOMPARE(rowText(engine->committedScrollback(0), 0), QString::fromUtf8("wide 世界"));
+
+    QTest::ignoreMessage(QtWarningMsg, "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+    QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
+    QCOMPARE(engine->pendingScrollbackRowCount(), size_t(0));                // rejected as one unit
+    QCOMPARE(engine->pendingScrollbackBytes(), size_t(0));
+
+    engine->setScrollbackHistoryEnabled(false);
+    QVERIFY(history.print(QStringLiteral("unrecorded")));
+    QVERIFY(commit());
+    QCOMPARE(engine->committedScrollbackTotal(), quint64(5));
+    QCOMPARE(engine->committedScrollbackRowCount(), 0);
 }
 
 void TestTerminalDevice::testOsc11BackgroundOutput()

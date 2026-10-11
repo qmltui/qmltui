@@ -7,6 +7,7 @@
 #include <Qamui/Core/primitives/TextGridBuffer.h>
 #include <QQmlContext>
 #include <QQmlListReference>
+#include <algorithm>
 #include <memory>
 
 namespace qamui {
@@ -207,39 +208,65 @@ Scrollback::CachedDelegate Scrollback::getOrCreateSeparator() {
     return m_cachedSeparator;
 }
 
-std::string Scrollback::renderItemToAnsi(Item* item, Terminal* output) {
-    if (!item) return "";
+int Scrollback::resolvedWidth(Item* item, Terminal* output) {
     int w = item->width() > 0 ? item->width() : (output ? output->width() : 80);
     if (w <= 0) w = 80;
     if (item->width() <= 0) {
         item->setWidth(w);
     }
-    int h = item->height() > 0 ? item->height() : item->implicitHeight();
-    if (h <= 0) h = 1;
-
-    TextGridBuffer buffer;
-    buffer.resize(w, h);
-    ItemPaintTraversal::paintSubtree(item, buffer, 0, 0);
-    return buffer.toAnsiString();
+    return w;
 }
 
-std::string Scrollback::renderSeparatorToAnsi(Terminal* output) {
-    if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return "";
+int Scrollback::resolvedHeight(Item* item) {
+    const int h = item->height() > 0 ? item->height() : item->implicitHeight();
+    return h <= 0 ? 1 : h;
+}
+
+Item* Scrollback::separatorItem(Terminal* output, std::unique_ptr<Item>& owned) {
+    if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return nullptr;
 
     if (m_reuseItems) {
         CachedDelegate cd = getOrCreateSeparator();
-        if (!cd.item) return "";
-        return renderItemToAnsi(cd.item, output);
+        return cd.item;
     }
 
     QQmlContext* context = DelegateUtils::createContext(m_separator, this);
-    if (!context) return "";
+    if (!context) return nullptr;
     Item* item = DelegateUtils::createItem(m_separator, {}, context, output, this);
-    if (!item) return "";
+    if (!item) return nullptr;
     item->setParentItem(nullptr);
-    std::string ansi = renderItemToAnsi(item, output);
-    delete item;
-    return ansi;
+    owned.reset(item);
+    return item;
+}
+
+bool Scrollback::submitBatch(Item* item, Terminal* output) {
+    if (!item || !output) return false;
+    std::unique_ptr<Item> ownedSeparator;
+    Item* separator = m_hasRenderedFirstItem ? separatorItem(output, ownedSeparator) : nullptr;
+    const int spacing = m_hasRenderedFirstItem ? resolveItemSpacing(item, m_spacing) : 0;
+    const int itemWidth = resolvedWidth(item, output);
+    const int itemHeight = resolvedHeight(item);
+    const int separatorWidth = separator ? resolvedWidth(separator, output) : 0;
+    const int separatorHeight = separator ? resolvedHeight(separator) : 0;
+
+    TextGridBuffer buffer;
+    if (!buffer.resize(std::max(itemWidth, separatorWidth), separatorHeight + spacing + itemHeight))
+        return reportRejection(QStringLiteral("Scrollback item is too large to paint"));
+    if (separator) {
+        ItemPaintTraversal::paintSubtree(separator, buffer, 0, 0,
+                                         ClipRect{0, 0, separatorWidth, separatorHeight});
+    }
+    const int itemRow = separatorHeight + spacing;
+    ItemPaintTraversal::paintSubtree(item, buffer, 0, itemRow,
+                                     ClipRect{0, itemRow, itemWidth, itemHeight});
+
+    TerminalEngine* engine = output->engine();
+    if (!engine)
+        return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
+    if (!engine->submitScrollback(buffer))
+        return reportRejection(QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+    m_hasRenderedFirstItem = true;
+    return true;
 }
 
 void Scrollback::applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
@@ -284,7 +311,6 @@ int Scrollback::appendRows(int first, int last) {
 
     const QHash<int, QByteArray> roles = m_model->roleNames();
     for (int row = first; row <= last; ++row) {
-        std::string batchAnsi;
         const QModelIndex index = m_model->index(row, 0);
         QQmlComponent* rowDelegate = delegateForRow(row);
         if (!DelegateUtils::isReady(rowDelegate, this)) return row;
@@ -325,18 +351,7 @@ int Scrollback::appendRows(int first, int last) {
             itemToRender = item;
         }
 
-        if (m_hasRenderedFirstItem) {
-            if (m_separator) {
-                std::string sepAnsi = renderSeparatorToAnsi(output);
-                if (!sepAnsi.empty()) batchAnsi += sepAnsi;
-            }
-            const int effectiveSpacing = resolveItemSpacing(itemToRender, m_spacing);
-            for (int s = 0; s < effectiveSpacing; ++s) batchAnsi += "\r\n";
-        }
-
-        batchAnsi += renderItemToAnsi(itemToRender, output);
-        if (!batchAnsi.empty() && !print(QString::fromStdString(batchAnsi))) return row;
-        m_hasRenderedFirstItem = true;
+        if (!submitBatch(itemToRender, output)) return row;
     }
     return last + 1;
 }
@@ -413,21 +428,7 @@ void Scrollback::append(const QVariant& data) {
         itemToRender = item;
     }
 
-    std::string batchAnsi;
-    if (m_hasRenderedFirstItem) {
-        if (m_separator) {
-            std::string sepAnsi = renderSeparatorToAnsi(output);
-            if (!sepAnsi.empty()) batchAnsi += sepAnsi;
-        }
-        const int effectiveSpacing = resolveItemSpacing(itemToRender, m_spacing);
-        for (int s = 0; s < effectiveSpacing; ++s) batchAnsi += "\r\n";
-    }
-
-    batchAnsi += renderItemToAnsi(itemToRender, output);
-    if (!batchAnsi.empty()) {
-        if (!print(QString::fromStdString(batchAnsi))) return;
-    }
-    m_hasRenderedFirstItem = true;
+    if (!submitBatch(itemToRender, output)) return;
     ++m_consumedRowCount;
 }
 
@@ -435,34 +436,22 @@ void Scrollback::append(qamui::Item* item) {
     Terminal* output = terminal();
     if (!item || !output) return;
 
-    std::string batchAnsi;
-    if (m_hasRenderedFirstItem) {
-        if (m_separator) {
-            std::string sepAnsi = renderSeparatorToAnsi(output);
-            if (!sepAnsi.empty()) batchAnsi += sepAnsi;
-        }
-        const int effectiveSpacing = resolveItemSpacing(item, m_spacing);
-        for (int s = 0; s < effectiveSpacing; ++s) batchAnsi += "\r\n";
-    }
-
-    batchAnsi += renderItemToAnsi(item, output);
-    if (!batchAnsi.empty()) {
-        if (!print(QString::fromStdString(batchAnsi))) return;
-    }
-    m_hasRenderedFirstItem = true;
+    if (!submitBatch(item, output)) return;
     ++m_consumedRowCount;
 }
 
 bool Scrollback::print(const QString& text) {
     Terminal* output = terminal();
-    const QString reason = !output
-        ? QStringLiteral("Scrollback must belong to a Terminal")
-        : !output->engine()
-            ? QStringLiteral("Scrollback requires a root Terminal session")
-        : !output->engine()->submitScrollback(text)
-            ? QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected")
-            : QString();
-    if (reason.isEmpty()) return true;
+    if (!output)
+        return reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
+    if (!output->engine())
+        return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
+    if (!output->engine()->submitScrollback(text))
+        return reportRejection(QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+    return true;
+}
+
+bool Scrollback::reportRejection(const QString& reason) {
     qWarning("%s", qPrintable(reason));
     emit outputRejected(reason);
     return false;

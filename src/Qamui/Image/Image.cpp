@@ -24,7 +24,7 @@ namespace qamui {
 static const char* ASCII_RAMP = " .:-=+*#%@";
 static const int ASCII_RAMP_LEN = 10;
 
-// The Image transparency rule (docs/components/image.md, "Transparency").
+// The Image transparency rule (docs/qml-types/image.md, "Transparency").
 // Returns the colour a source pixel shows once drawn into a cell, or 0 for
 // "draws nothing". Zero alpha leaves the cell untouched. Partial alpha is
 // composited source-over onto the background the cell already holds and the

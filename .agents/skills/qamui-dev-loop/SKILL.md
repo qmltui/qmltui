@@ -21,7 +21,7 @@ Qamui has two complementary test layers:
 
 Do not describe all repository tests as Runner tests. Before changing a
 scenario or Runner integration, read the authoritative
-[Runner API](../../../src/Qamui/Runner/doc/Runner.md),
+[Runner API](../../../docs/cpp-classes/runner.md),
 [`QamuiRunner.cmake`](../../../cmake/QamuiRunner.cmake), and one nearby working
 example.
 
@@ -124,14 +124,8 @@ module URI; only the module's `OUTPUT_DIRECTORY` differs, so the two
 `qt_add_qml_module` calls do not collide on disk. Do not copy `main.cpp` into a
 `main_test.cpp` or invent a `<Uri>Test` module for that. Use
 [`examples/components/animated_sprite/CMakeLists.txt`](../../../examples/components/animated_sprite/CMakeLists.txt)
-as the reference for that shared-main pattern. Use
-[`examples/apps/starter_template/main_test.cpp`](../../../examples/apps/starter_template/main_test.cpp)
-when the test binary genuinely needs different startup (there, a mock backend
-and no single-instance lock). Use
-[`examples/apps/markdown_viewer/main_test_runner.cpp`](../../../examples/apps/markdown_viewer/main_test_runner.cpp)
-for explicitly constructed embedded runners. Use
-[`tests/Runner`](../../../tests/Runner) for framework scenarios and failure
-contracts.
+as the reference for that shared-main pattern. Use [`tests/Runner/main.cpp`](../../../tests/Runner/main.cpp) for explicitly
+constructed embedded runners and framework scenarios and failure contracts.
 
 ## Closed-Loop Inspection
 
@@ -197,7 +191,7 @@ artifacts.
 Every test scenario script must define an entry point: `function main(terminal) { ... }`.
 A scenario ending in `.mjs` is an ECMAScript module instead: it must
 `export function main(terminal)` and may `import` shared helpers with relative
-paths (see `examples/apps/device_cockpit/lib/cockpit.mjs`). Start the entry
+paths (see `tests/Runner/scenarios/lib/module_helpers.mjs`). Start the entry
 point with `/** @param {Terminal} terminal */` — the repository's
 `jsconfig.json` plus `src/Qamui/Runner/qamui-runner.d.ts` then give editor
 autocomplete and hover documentation for the whole facade (scenarios are plain

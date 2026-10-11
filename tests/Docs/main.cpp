@@ -1,6 +1,6 @@
 // Loads one QML file whose root is a Terminal and hands it to Runner's
 // environment-driven startup. scripts/check_doc_examples.py runs every ```qml
-// block from docs/components through it with QAMUI_RUNNER_CAPTURE_AFTER_MS set, so a
+// block from docs/qml-types through it with QAMUI_RUNNER_CAPTURE_AFTER_MS set, so a
 // documentation example that fails to load or render fails the suite.
 #include <QCoreApplication>
 #include <QDebug>

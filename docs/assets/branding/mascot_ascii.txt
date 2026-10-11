@@ -1,51 +1,18 @@
 # ==============================================================================
-# Qami / Qamui Mascot ASCII & Text Equivalents
-# "Rocket" Cyber-Fox / Raccoon with terminal prompt eyes (> _)
+# Qamui terminal banners
+# The mark drawn in braille cells: an O whose > tail makes the Q.
 # ==============================================================================
 
-# 1. Full Character Silhouette with Bushy Cursor Tail
-         /\_____/\
-        /  /   \  \
-       /  /     \  \
-      (  [ > ] [ _ ] )
-       \    ---    /       /\
-       / \  ___  / \      /  \
-      /  / |   | \  \____/  / \
-     /  /  |   |  \________/  /
-    (__/   |___|             /
-                 \__________/
-
-# 2. Compact CLI Avatar (6 lines)
-        /\__/\
-       / >  _ \
-      (   --   )
-      / |    | \  /\
-     (__|____|__)/ /
-                 \/
-
-# 3. Micro Prompt Badge (3 lines)
-       /\_/\
-      ( > _ )
-      /|   |\
-
-# 4. CLI Startup Banner: Qami
-         /\_____/\
-        /  /   \  \
-       /  /     \  \      ____                 _ 
-      (  [ > ] [ _ ] )   / __ \____ _____ ___ (_)
-       \    ---    /    / / / / __ `/ __ `__ \/ / 
-       / \  ___  / \   / /_/ / /_/ / / / / / / /  
-      /  / |   | \  \  \___\_\__,_/_/ /_/ /_/_/   
-     /  /  |   |  \  \  Retained-Mode Terminal UI
-    (__/   |___|   \__)
+# 1. Mark only (10 cols x 5 rows)
+  ⢀⣠⣤⣀
+ ⣔⠕⠁ ⠑⢕⡄
+⠸⣇   ⢀⣀⡿
+ ⠑⢕⣄⣀⣔⠝⢧⡀
+   ⠈⠉⢀⡴⠋
 
 # 5. CLI Startup Banner: Qamui
-         /\_____/\
-        /  /   \  \
-       /  /     \  \      ____                      _ 
-      (  [ > ] [ _ ] )   / __ \____ _____ ___  __  (_)
-       \    ---    /    / / / / __ `/ __ `__ \/ / / / 
-       / \  ___  / \   / /_/ / /_/ / / / / / / /_/ /  
-      /  / |   | \  \  \___\_\__,_/_/ /_/ /_/\__,_/   
-     /  /  |   |  \  \  Retained-Mode Terminal UI
-    (__/   |___|   \__)
+  ⢀⣠⣤⣀      Qamui  ·  retained-mode terminal UI for Qt 6
+ ⣔⠕⠁ ⠑⢕⡄    QML items, layouts, controls and views in text cells
+⠸⣇   ⢀⣀⡿    docs/README.md  ·  examples/gallery  ·  docs/tutorials
+ ⠑⢕⣄⣀⣔⠝⢧⡀   Ctrl+Q quits  ·  Esc quits when the prompt is empty
+   ⠈⠉⢀⡴⠋

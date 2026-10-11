@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """QML type reference pages, generated from and checked against the build.
 
-Every exported Qamui QML type has one page, ``docs/components/<slug>.md``, in the
+Every exported Qamui QML type has one page, ``docs/qml-types/<slug>.md``, in the
 Plan 04 template. The build's ``.qmltypes`` files (C++ types) and ``qmldir``
 files (types written in QML) are the source of what exists: type names, what a
 type inherits, and every property, signal, method, enum and attached property.
@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PAGES_DIR = REPO_ROOT / "docs/components"
+PAGES_DIR = REPO_ROOT / "docs/qml-types"
 
 # Module URI -> (qmltypes relative to the build's qml/ root, QML source dir)
 MODULES = {
@@ -493,7 +493,7 @@ def check(build_dir: Path, strict: bool) -> int:
     by_slug = {t.slug: t for t in types}
     for t in types:
         if not t.page.is_file():
-            errors.append(f"{t.module}/{t.name}: no page docs/components/{t.slug}.md (run `generate`)")
+            errors.append(f"{t.module}/{t.name}: no page docs/qml-types/{t.slug}.md (run `generate`)")
             continue
         text = t.page.read_text(encoding="utf-8")
         fm = _FRONTMATTER.match(text)

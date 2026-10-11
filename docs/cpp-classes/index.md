@@ -1,0 +1,17 @@
+# C++ classes
+
+- [Cell & TextAttribute](cell.md)
+- [Color](color.md)
+- [ColorMapper (internal)](colormapper.md)
+- [ImageProvider](imageprovider.md)
+- [InputDecoder](inputdecoder.md)
+- [Item](item.md)
+- [MemoryTerminalBackend](memoryterminalbackend.md)
+- [MouseArea](mousearea.md)
+- [Rectangle](rectangle.md)
+- [Runner](runner.md)
+- [TerminalBackend](terminalbackend.md)
+- [TerminalDevice](terminaldevice.md)
+- [TerminalEngine](terminalengine.md)
+- [Text](text.md)
+- [TextGridBuffer](textgridbuffer.md)

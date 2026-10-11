@@ -13,7 +13,7 @@ for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
 this document. Check `src/Qamui/Core/items`, `src/Qamui/Core/engine`, `src/Qamui/Controls`,
-`src/Qamui/Image`, `src/Qamui/TerminalHost`, and `docs/qml_api.md`
+`src/Qamui/Image`, `src/Qamui/TerminalHost`, and `docs/qml-types/index.md`
 before using a type or property you have not seen in a nearby file.
 
 ## 1. Imports

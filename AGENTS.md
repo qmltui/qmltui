@@ -43,7 +43,7 @@
   a disabled tree.
 - For detailed Runner scenarios, artifacts, inspection, and live rendering,
   follow `.agents/skills/qamui-dev-loop/SKILL.md` and the authoritative
-  `src/Qamui/Runner/doc/Runner.md`.
+  `docs/cpp-classes/runner.md`.
 
 ## QML Application Behavior
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile and render every QML example in docs/components.
+"""Compile and render every QML example in docs/qml-types.
 
 Each ```qml fenced block that is a complete file (it has an import line)
 becomes a Main.qml in its own directory and is run
@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PAGES_DIR = REPO_ROOT / "docs/components"
+PAGES_DIR = REPO_ROOT / "docs/qml-types"
 _BLOCK = re.compile(r"^```qml\s*\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 
@@ -54,14 +54,14 @@ def main() -> int:
         "QML2_IMPORT_PATH": str(args.qml_import_path),
         "QT_FORCE_STDERR_LOGGING": "1",
     })
-    for name in ("QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL", "QAMUI_RUNNER_LIVE", "QAMUI_RUNNER_EMBEDDED_SCENARIO"):
+    for name in ("QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL", "QAMUI_RUNNER_LIVE", "QAMUI_RUNNER_EMBEDDED_SCENARIO", "QAMUI_RUNNER_RECORD"):
         env.pop(name, None)
 
     failures: list[str] = []
     total = 0
     skipped = 0
     fragments = 0
-    for page in sorted(PAGES_DIR.glob("*.md")):
+    for page in sorted([*PAGES_DIR.glob("*.md"), *(REPO_ROOT / "docs/topics").glob("*.md"), *(REPO_ROOT / "docs/tutorials").glob("*.md")]):
         if args.only and args.only not in page.stem:
             continue
         text = page.read_text(encoding="utf-8")

@@ -92,12 +92,12 @@ function main(terminal) {
     terminal.waitForText(at(26));
     if (terminal.frameText().includes("Frames out of one sheet")) {
         terminal.press("ENTER");
-        terminal.waitForRegex("idle: frame [0-9]+/6");
-        terminal.expectText("of a 840x1024 sheet");
+        terminal.waitForRegex("loading: frame [0-9]+/4");
+        terminal.expectText("of a 256x64 sheet");
         terminal.press("SPACE");
         terminal.waitForText("paused");
         terminal.press("RIGHT");
-        terminal.waitForRegex("walk right: frame [0-9]+/8");
+        terminal.waitForRegex("loading tail: frame [0-9]+/2");
         terminal.typeText("r");
         terminal.waitForText("reverse");
         terminal.captureText("gallery/animated_sprite.txt");

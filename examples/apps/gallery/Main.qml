@@ -111,7 +111,7 @@ Terminal {
           blurb: "Delegates over a model", file: "ListView.qml" },
         { name: "Image", badge: "Image", accent: "#f9a8d4", preview: "▀▄▀▄ ⣿⣷⣄ .:-=+*#",
           blurb: "Pixels as cells: half-block, Braille, ASCII", file: "Image.qml" },
-        { name: "AnimatedSprite", badge: "Image", accent: "#fdba74", preview: "▶ ▄▀▄ ▄█▄ ▄▀▄  1/6",
+        { name: "AnimatedSprite", badge: "Image", accent: "#fdba74", preview: "▶ ▄▀▄ ▄█▄ ▄▀▄  1/4",
           blurb: "Frames out of one sheet", file: "AnimatedSprite.qml" },
         { name: "Canvas", badge: "Core", accent: "#00f0ff", preview: "⢀⡠⠔⠒⠑⠢⢄⡀ ⣾⣿⣷",
           blurb: "Animated Braille shapes", file: "Canvas.qml" },

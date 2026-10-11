@@ -4,28 +4,20 @@ import Qamui.Controls
 import Qamui.Image
 
 // AnimatedSprite: Image plus a frame clock. One tile of the Qamui gallery
-// (examples/apps/gallery) and a complete app on its own. The qami sheet is an
-// 8x9 grid of 105x114 px cells and every animation is a run of cells in one
-// row, so picking an animation is only new frameX/frameY/frameCount values.
-// Row 5 holds two runs (sleep, then faint), which is why an animation also
-// carries the column it starts at.
+// (examples/apps/gallery) and a complete app on its own. The loading sheet is
+// one row of four 64x64 px cells and an animation is a run of cells in that
+// row, so picking an animation is only new frameX/frameY/frameCount values;
+// the second entry plays the last two cells to show that the run can start
+// anywhere.
 Terminal {
     id: root
     color: "#0b0f14"
 
-    readonly property int cellWidth: 105
-    readonly property int cellHeight: 114
+    readonly property int cellWidth: 64
+    readonly property int cellHeight: 64
     readonly property var animations: [
-        { name: "idle", row: 0, firstCol: 0, frameCount: 6 },
-        { name: "walk right", row: 1, firstCol: 0, frameCount: 8 },
-        { name: "walk left", row: 2, firstCol: 0, frameCount: 8 },
-        { name: "wave", row: 3, firstCol: 0, frameCount: 4 },
-        { name: "jump", row: 4, firstCol: 0, frameCount: 5 },
-        { name: "sleep", row: 5, firstCol: 0, frameCount: 5 },
-        { name: "faint", row: 5, firstCol: 5, frameCount: 3 },
-        { name: "dizzy", row: 6, firstCol: 0, frameCount: 6 },
-        { name: "dance", row: 7, firstCol: 0, frameCount: 6 },
-        { name: "cube", row: 8, firstCol: 0, frameCount: 6 }
+        { name: "loading", row: 0, firstCol: 0, frameCount: 4 },
+        { name: "loading tail", row: 0, firstCol: 2, frameCount: 2 }
     ]
     property int animationIndex: 0
     readonly property var animation: animations[animationIndex]
@@ -71,7 +63,7 @@ Terminal {
                 anchors.fill: parent
                 anchors.margins: 1
                 anchors.topMargin: 2
-                source: "qrc:/gallery/assets/qami.png"
+                source: "qrc:/gallery/assets/loading.png"
                 fillMode: Image.PreserveAspectFit
                 renderMode: Image.Auto
                 smooth: false

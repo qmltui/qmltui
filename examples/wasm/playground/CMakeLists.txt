@@ -29,7 +29,7 @@ target_link_libraries(qamui_playground PRIVATE Qt6::Core Qt6::Qml ${playground_m
 
 if(QAMUI_WASM_PLAYGROUND_IMAGE)
     # The gallery's Image tile loads qrc:/gallery/assets/panda.png and its
-    # AnimatedSprite tile qrc:/gallery/assets/qami.png, so the runtime carries
+    # AnimatedSprite tile qrc:/gallery/assets/loading.png, so the runtime carries
     # the same resources the desktop gallery embeds.
     set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/image")
     set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/animated_sprite")
@@ -41,7 +41,7 @@ if(QAMUI_WASM_PLAYGROUND_IMAGE)
     qt_add_resources(qamui_playground playground_gallery_sprite_assets
         PREFIX "/gallery/assets"
         BASE "${gallery_sprite_dir}"
-        FILES "${gallery_sprite_dir}/qami.png"
+        FILES "${gallery_sprite_dir}/loading.png"
     )
 endif()
 

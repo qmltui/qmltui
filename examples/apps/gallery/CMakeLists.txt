@@ -54,7 +54,7 @@ function(gallery_add_executable target uri main_source)
         qt_add_resources(${target} "${target}_sprite_assets"
             PREFIX "/gallery/assets"
             BASE "${gallery_sprite_dir}"
-            FILES "${gallery_sprite_dir}/qami.png"
+            FILES "${gallery_sprite_dir}/loading.png"
         )
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})

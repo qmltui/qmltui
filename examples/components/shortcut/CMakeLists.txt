@@ -20,4 +20,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME shortcut_smoke TARGET qamui_shortcut_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 100 ROWS 24 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME shortcut_demo TARGET qamui_shortcut_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 100 ROWS 24 CLOCK VIRTUAL RECORD components/shortcut.cast LABELS Cast)
 endif()

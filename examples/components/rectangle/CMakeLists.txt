@@ -27,4 +27,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME rectangle_smoke TARGET qamui_rectangle_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME rectangle_demo TARGET qamui_rectangle_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/rectangle.cast LABELS Cast)
 endif()

@@ -1,0 +1,8 @@
+{"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"},"height":40,"theme":{"bg":"#0d1117","fg":"#c9d1d9","palette":"#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"},"title":"switch","version":2,"width":120}
+[0,"o","\u001b[?25l\u001b[?2004h\u001b[?1003l\u001b[?1000h\u001b[?1002h\u001b[?1006h\u001b[?1049h\u001b[2J\u001b[H\u001b[2J\u001b[H\u001b[14;40H\u001b[0m\u001b[96mQamui Switch Component Example\u001b[16;40H\u001b[90m──────────────────────────────────────────\u001b[18;40H\u001b[39m[\u001b[18;42HON]\u001b[18;46HDark\u001b[18;51HTheme\u001b[18;57HMode\u001b[20;40H[OFF]\u001b[20;46HVim\u001b[20;50HKeybindings\u001b[22;40H[\u001b[22;42HON]\u001b[22;46HTelemetry\u001b[22;56HReporting\u001b[24;40H\u001b[90m──────────────────────────────────────────\u001b[26;40H\u001b[96mStatus: Ready."]
+[1.5,"o","\u001b[18;40H\u001b[0m\u001b[1;7m[ ON]\u001b[18;46H\u001b[27mDark Theme Mode"]
+[2.3,"o","\u001b[18;41H\u001b[0m\u001b[1;7mOFF\u001b[26;40H\u001b[96;22;27mDark Them\u001b[26;50H: OFF"]
+[3.3,"o","\u001b[18;40H\u001b[0m[OFF]\u001b[18;46HDark Theme Mode\u001b[20;40H\u001b[1;7m[OFF]\u001b[20;46H\u001b[27mVim Keybindings"]
+[4.1,"o","\u001b[20;41H\u001b[0m\u001b[1;7m ON\u001b[26;40H\u001b[96;22;27mVim Mod\u001b[26;48H: ON\u001b[K"]
+[5.1,"o","\u001b[20;40H\u001b[0m[ ON]\u001b[20;46HVim Keybindings\u001b[22;40H\u001b[1;7m[ ON]\u001b[22;46H\u001b[27mTelemetry Reporting"]
+[5.9,"o","\u001b[22;41H\u001b[0m\u001b[1;7mOFF\u001b[26;40H\u001b[96;22;27mTelemetry: OFF"]

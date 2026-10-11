@@ -26,4 +26,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME tool_tip_smoke TARGET qamui_tool_tip_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME tool_tip_demo TARGET qamui_tool_tip_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/tool_tip.cast LABELS Cast)
 endif()

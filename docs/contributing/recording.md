@@ -7,28 +7,54 @@ with `sleep()` or `advanceTime()` to create visible holds. `marker(label)` names
 steps. `stopRecording()` closes the current cast; `startRecording(relativePath)`
 starts another with a full repaint. See the [Runner API](../cpp-classes/runner.md).
 
-Build the gallery test executable, then run:
+## Gallery tour
+
+Build and run:
 
 ```sh
-scripts/update_casts.sh build-qamui
-ctest --test-dir build-qamui -L Cast --output-on-failure
+cmake --build build-qamui --target qamui_gallery_test
+scripts/update_casts.sh build-qamui --gallery
 ```
 
-The update script copies the gallery cast from its scenario artifact directory
-into `docs/assets/casts`. Run it twice and compare the files: virtual-clock
-recordings omit wall-clock metadata and should be identical for the same build.
-The optional Image and Behavior modules change which gallery tiles are present;
-use the Behavior-enabled, Image-enabled tree for the committed tour.
+This runs `gallery_tour` and copies the cast to `docs/assets/casts/gallery-tour.cast`.
+Run it twice and diff: virtual-clock casts are byte-identical for the same build.
+Use the Behavior-enabled, Image-enabled tree; those modules change which tiles are present.
 
-GIF and SVG conversion are local publishing steps, not CI dependencies:
+## Component demos
+
+Every component in `examples/components/` has a `test_demo.js` scenario with pacing and
+representative interactions, registered with `CLOCK VIRTUAL RECORD components/<name>.cast`.
+
+Regenerate all 30 component casts:
 
 ```sh
+cmake --build build-qamui -j$(nproc)
+scripts/update_casts.sh build-qamui --components
+```
+
+Casts are stored under `docs/assets/casts/components/`.
+
+## GIF and SVG conversion
+
+Local publishing steps; not run in CI (tools are absent on runners).
+
+```sh
+# Install once
 cargo install --git https://github.com/asciinema/agg
-agg docs/assets/casts/gallery-tour.cast docs/assets/casts/gallery-tour.gif
 npm install --global svg-term-cli
-svg-term --in docs/assets/casts/gallery-tour.cast --out docs/assets/casts/gallery.svg --at 500
+
+# All GIFs
+scripts/generate_gifs.sh
+
+# Gallery only / components only
+scripts/generate_gifs.sh --gallery
+scripts/generate_gifs.sh --components
+
+# SVG still of the gallery grid (frame at 500 ms)
+svg-term --in docs/assets/casts/gallery-tour.cast \
+         --out docs/assets/casts/gallery.svg --at 500
 ```
 
-Inspect the resulting GIF and SVG, especially Unicode glyphs, colors, and resizing.
+Inspect the GIFs for Unicode glyphs, colors, and animation pacing.
 The gallery cast ends before its inline-mode demo; the regular gallery scenario
 still tests inline behavior. Additional application casts are maintained in qamui-apps.

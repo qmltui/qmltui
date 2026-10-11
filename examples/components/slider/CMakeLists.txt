@@ -26,4 +26,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME slider_smoke TARGET qamui_slider_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME slider_demo TARGET qamui_slider_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/slider.cast LABELS Cast)
 endif()

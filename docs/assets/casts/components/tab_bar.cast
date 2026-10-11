@@ -1,0 +1,7 @@
+{"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"},"height":40,"theme":{"bg":"#0d1117","fg":"#c9d1d9","palette":"#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"},"title":"tab_bar","version":2,"width":120}
+[0,"o","\u001b[?25l\u001b[?2004h\u001b[?1003l\u001b[?1000h\u001b[?1002h\u001b[?1006h\u001b[?1049h\u001b[2J\u001b[H\u001b[2J\u001b[H\u001b[1;1H\u001b[0m\u001b[96;1m🔖 TABHEADER WIDGET DEMO\u001b[3;1H\u001b[90;22mUse LEFT/RIGHT arrow keys or click tabs to switch, Q/ESC to quit\u001b[5;1H\u001b[39;1;7m[ Overview ]\u001b[22;27m│\u001b[5;16HTelemetry\u001b[5;27H│\u001b[5;30HLogs\u001b[5;36H│\u001b[5;39HSettings\u001b[9;1H\u001b[93;1mActive View: Overview"]
+[1.5,"o","\u001b[5;1H\u001b[0m  Overview  \u001b[5;14H\u001b[1;7m[ Telemetry ]\u001b[9;14H\u001b[93;27mTelemetry"]
+[2.5,"o","\u001b[5;14H\u001b[0m  Telemetry  \u001b[5;28H\u001b[1;7m[ Logs ]\u001b[9;14H\u001b[93;27mLogs\u001b[22m\u001b[K"]
+[3.5,"o","\u001b[5;28H\u001b[0m  Logs  \u001b[5;37H\u001b[1;7m[ Settings ]\u001b[9;14H\u001b[93;27mSettings"]
+[4.5,"o","\u001b[5;28H\u001b[0m\u001b[1;7m[ Logs ]\u001b[5;37H\u001b[22;27m  Settings\u001b[K\u001b[9;14H\u001b[93;1mLogs\u001b[22m\u001b[K"]
+[5.5,"o","\u001b[5;14H\u001b[0m\u001b[1;7m[ Telemetry ]\u001b[5;28H\u001b[22;27m  Logs  \u001b[9;14H\u001b[93;1mTelemetry"]

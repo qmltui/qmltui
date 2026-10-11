@@ -31,4 +31,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME text_input_smoke TARGET qamui_text_input_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME text_input_demo TARGET qamui_text_input_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/text_input.cast LABELS Cast)
 endif()

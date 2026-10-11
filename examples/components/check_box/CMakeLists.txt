@@ -26,4 +26,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME check_box_smoke TARGET qamui_check_box_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME check_box_demo TARGET qamui_check_box_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/check_box.cast LABELS Cast)
 endif()

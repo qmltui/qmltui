@@ -26,4 +26,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME switch_smoke TARGET qamui_switch_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME switch_demo TARGET qamui_switch_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/switch.cast LABELS Cast)
 endif()

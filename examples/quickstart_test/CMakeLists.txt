@@ -36,5 +36,6 @@ if(TARGET Qamui::Runner)
         TARGET qamui_quickstart_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_quickstart.js"
         LABELS AgentSmoke
+
     )
 endif()

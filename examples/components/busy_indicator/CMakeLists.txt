@@ -28,4 +28,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME busy_indicator_smoke TARGET qamui_busy_indicator_demo_test
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME busy_indicator_demo TARGET qamui_busy_indicator_demo_test
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/busy_indicator.cast LABELS Cast)
 endif()

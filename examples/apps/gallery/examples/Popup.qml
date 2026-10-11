@@ -28,7 +28,7 @@ Terminal {
             id: sheet
             anchors.centerIn: parent
             width: 44
-            height: 9
+            height: 10
             modal: true
             color: "#141b24"
             border.style: "double"

@@ -36,6 +36,7 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 | `loops` | `int` | `AnimatedSprite.Infinite` | How many times the animation plays before it finishes. `AnimatedSprite.Infinite` never stops on its own. |
 | `reverse` | `bool` | `false` | Play the frames last to first. A run then starts at the last frame. |
 | `finishBehavior` | `FinishBehavior` | `FinishAtInitialFrame` | Which frame stays visible when a finite `loops` count completes. |
+| `interpolate` | `bool` | `true` | Interpolate between frames (Qt Quick compatibility property). |
 
 Every [Image](image.md) property applies to the current frame: `fillMode`,
 `renderMode`, `smooth`, `alignment`, `source`, `image`, and so on.
@@ -79,11 +80,11 @@ is one frame, height halved for the half-block cell grid.
 
 For several named animations in one sheet — a character with idle, walk and
 jump rows — give each state its own `frameX`/`frameY`/`frameCount` and switch
-them from a state machine or plain bindings;
-`examples/components/animated_sprite` plays one of four fox animations this
-way.
+them from a state machine or plain bindings.
 
 ### Example
+
+The classic 4-frame loading animation from the Qt Quick documentation:
 
 ```qml
 import QtQml
@@ -101,21 +102,22 @@ Terminal {
     }
 
     AnimatedSprite {
-        id: coin
-        x: 2; y: 1
-        width: 12; height: 6
-        source: "coin.png"        // 8 frames of 32x32 in one row
-        frameWidth: 32
-        frameHeight: 32
-        frameCount: 8
-        frameDuration: 120
+        id: loader
+        anchors.centerIn: parent
+        width: 16; height: 8
+        source: "loading.png"        // 4 frames of 64x64 in one row
+        frameWidth: 64
+        frameHeight: 64
+        frameCount: 4
+        frameDuration: 500
+        interpolate: false
         fillMode: Image.PreserveAspectFit
-        renderMode: Image.Auto
     }
 
     Text {
-        x: 2; y: 8
-        text: "frame " + (coin.currentFrame + 1) + " of " + coin.frameCount
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: loader.y + loader.height + 1
+        text: "frame " + (loader.currentFrame + 1) + " of " + loader.frameCount
     }
 }
 ```

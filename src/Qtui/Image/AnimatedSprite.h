@@ -4,6 +4,7 @@
 
 #include <Qtui/Image/Image.h>
 #include <QRect>
+#include <QQmlParserStatus>
 namespace qtui { class ClockTimer; }
 
 namespace qtui {
@@ -20,9 +21,10 @@ namespace qtui {
 // wrap to the sheet's left edge one frameHeight further down when a row runs
 // out. When frameWidth or frameHeight is 0 the sheet is taken as one row of
 // square frames (both default to the sheet height).
-class QTUI_IMAGE_EXPORT AnimatedSprite : public Image {
+class QTUI_IMAGE_EXPORT AnimatedSprite : public Image, public QQmlParserStatus {
     Q_OBJECT
     QML_ELEMENT
+    Q_INTERFACES(QQmlParserStatus)
     Q_PROPERTY(int frameCount READ frameCount WRITE setFrameCount NOTIFY frameCountChanged)
     Q_PROPERTY(int frameWidth READ frameWidth WRITE setFrameWidth NOTIFY frameWidthChanged)
     Q_PROPERTY(int frameHeight READ frameHeight WRITE setFrameHeight NOTIFY frameHeightChanged)
@@ -35,11 +37,10 @@ class QTUI_IMAGE_EXPORT AnimatedSprite : public Image {
     Q_PROPERTY(int currentFrame READ currentFrame WRITE setCurrentFrame NOTIFY currentFrameChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
-    // How many times to play before stopping; AnimatedSprite.Infinite (the
-    // default) plays forever.
     Q_PROPERTY(int loops READ loops WRITE setLoops NOTIFY loopsChanged)
     Q_PROPERTY(bool reverse READ reverse WRITE setReverse NOTIFY reverseChanged)
     Q_PROPERTY(FinishBehavior finishBehavior READ finishBehavior WRITE setFinishBehavior NOTIFY finishBehaviorChanged)
+    Q_PROPERTY(bool interpolate READ interpolate WRITE setInterpolate NOTIFY interpolateChanged)
 
 public:
     enum Loops { Infinite = -1 };
@@ -79,6 +80,8 @@ public:
     void setReverse(bool reverse);
     FinishBehavior finishBehavior() const { return m_finishBehavior; }
     void setFinishBehavior(FinishBehavior behavior);
+    bool interpolate() const { return m_interpolate; }
+    void setInterpolate(bool interpolate);
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
@@ -88,6 +91,9 @@ public:
     // Steps the animation by hand, loops and finishing included; useful while
     // paused or stopped.
     Q_INVOKABLE void advance(int frames = 1);
+
+    void classBegin() override;
+    void componentComplete() override;
 
 signals:
     void frameCountChanged();
@@ -103,6 +109,7 @@ signals:
     void loopsChanged();
     void reverseChanged();
     void finishBehaviorChanged();
+    void interpolateChanged();
     // Emitted when a finite `loops` count completes; never for Infinite, and
     // not when running is set to false.
     void finished();
@@ -136,8 +143,10 @@ private:
     bool m_paused = false;
     bool m_reverse = false;
     FinishBehavior m_finishBehavior = FinishBehavior::FinishAtInitialFrame;
+    bool m_interpolate = true;
     int m_completedLoops = 0;
     bool m_warnedNoDuration = false;
+    bool m_complete = true;
 };
 
 } // namespace qtui

@@ -84,7 +84,18 @@ void AnimatedSprite::step(int frames) {
     setCurrentFrame(frame);
 }
 
+void AnimatedSprite::classBegin() {
+    m_complete = false;
+}
+
+void AnimatedSprite::componentComplete() {
+    m_complete = true;
+    applyFrame();
+    updateTimer();
+}
+
 void AnimatedSprite::updateTimer() {
+    if (!m_complete) return;
     int interval = -1;
     if (m_frameRate > 0.0)
         interval = std::max(1, static_cast<int>(std::lround(1000.0 / m_frameRate)));
@@ -149,6 +160,7 @@ void AnimatedSprite::setFrameY(int y) {
 void AnimatedSprite::setFrameRate(qreal rate) {
     if (qFuzzyCompare(m_frameRate + 1.0, rate + 1.0)) return;
     m_frameRate = rate;
+    if (rate > 0.0) m_warnedNoDuration = false;
     emit frameRateChanged();
     updateTimer();   // restarts the tick with the new pace
 }
@@ -156,6 +168,7 @@ void AnimatedSprite::setFrameRate(qreal rate) {
 void AnimatedSprite::setFrameDuration(int duration) {
     if (m_frameDuration == duration) return;
     m_frameDuration = duration;
+    if (duration > 0) m_warnedNoDuration = false;
     emit frameDurationChanged();
     updateTimer();
 }
@@ -200,6 +213,12 @@ void AnimatedSprite::setFinishBehavior(FinishBehavior behavior) {
     if (m_finishBehavior == behavior) return;
     m_finishBehavior = behavior;
     emit finishBehaviorChanged();
+}
+
+void AnimatedSprite::setInterpolate(bool interpolate) {
+    if (m_interpolate == interpolate) return;
+    m_interpolate = interpolate;
+    emit interpolateChanged();
 }
 
 void AnimatedSprite::start() {

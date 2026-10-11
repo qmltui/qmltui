@@ -6,7 +6,7 @@ qt_add_qml_module(qtui_animated_sprite_demo
     QML_FILES
         Main.qml
     RESOURCES
-        qami.png
+        loading.png
     DEPENDENCIES TARGET
         Qtui::Core
         Qtui::Image
@@ -22,7 +22,7 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
         VERSION 1.0
         QML_FILES Main.qml
         RESOURCES
-            qami.png
+            loading.png
         DEPENDENCIES TARGET
             Qtui::Core
             Qtui::Image
@@ -35,6 +35,7 @@ if(TARGET Qtui::Runner AND QTUI_BUILD_TESTS)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_animated_sprite_demo.js"
         COLUMNS 80
         ROWS 24
+        CLOCK VIRTUAL
         LABELS AgentSmoke
     )
 endif()

@@ -147,3 +147,69 @@ endfunction()
 function(qtui_add_scenario_test)
     qtui_add_scenario(${ARGN})
 endfunction()
+
+# Materializes editor completion for Runner scenarios into a consumer project:
+# copies the scenario API declarations to <DIRECTORY>/.qtui/qtui-runner.d.ts
+# (with a .gitignore so the directory stays out of version control) and, when
+# the project has no jsconfig.json yet, generates one that makes the
+# declarations ambient for every *.js/*.mjs under DIRECTORY. An existing
+# jsconfig.json is never touched; a message explains the one line to add.
+# DIRECTORY defaults to the calling project's source directory. Works for
+# find_package(), FetchContent, and add_subdirectory consumers alike.
+function(qtui_scenario_editor_support)
+    cmake_parse_arguments(QTUI_EDITOR "" "DIRECTORY" "" ${ARGN})
+    if(NOT QTUI_EDITOR_DIRECTORY)
+        set(QTUI_EDITOR_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
+
+    if(NOT QTUI_RUNNER_DECLARATIONS OR NOT EXISTS "${QTUI_RUNNER_DECLARATIONS}")
+        message(FATAL_ERROR
+            "qtui_scenario_editor_support: scenario API declarations not found "
+            "(QTUI_RUNNER_DECLARATIONS='${QTUI_RUNNER_DECLARATIONS}'). Build or "
+            "install Qtui with the Runner enabled first.")
+    endif()
+
+    set(support_dir "${QTUI_EDITOR_DIRECTORY}/.qtui")
+    # configure_file(COPYONLY) rewrites only on change, so a warm reconfigure
+    # leaves editor state alone.
+    configure_file("${QTUI_RUNNER_DECLARATIONS}" "${support_dir}/qtui-runner.d.ts" COPYONLY)
+    if(NOT EXISTS "${support_dir}/.gitignore")
+        file(WRITE "${support_dir}/.gitignore" "*\n")
+    endif()
+
+    set(jsconfig "${QTUI_EDITOR_DIRECTORY}/jsconfig.json")
+    if(NOT EXISTS "${jsconfig}")
+        file(WRITE "${jsconfig}" [=[{
+    "compilerOptions": {
+        "target": "es2020",
+        "lib": ["es2020"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "checkJs": false,
+        "noEmit": true
+    },
+    "include": [
+        ".qtui/qtui-runner.d.ts",
+        "**/*.js",
+        "**/*.mjs"
+    ],
+    "exclude": [
+        "build",
+        "build-*",
+        "node_modules"
+    ]
+}
+]=])
+        message(STATUS
+            "Qtui: generated ${jsconfig}; scenarios get terminal.* completion "
+            "from /** @param {Terminal} terminal */")
+    else()
+        file(READ "${jsconfig}" jsconfig_contents)
+        string(FIND "${jsconfig_contents}" "qtui-runner.d.ts" declarations_position)
+        if(declarations_position EQUAL -1)
+            message(STATUS
+                "Qtui: add \".qtui/qtui-runner.d.ts\" to the include list of "
+                "${jsconfig} to get terminal.* completion in scenarios")
+        endif()
+    endif()
+endfunction()

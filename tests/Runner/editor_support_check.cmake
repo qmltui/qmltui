@@ -1,0 +1,40 @@
+# Verifies what qtui_scenario_editor_support() left in a probe directory:
+# the declarations copy, the VCS guard, and either a generated jsconfig.json
+# (EXPECT_GENERATED) or an untouched pre-existing one (EXPECT_PRESERVED).
+foreach(required PROBE_DIR DECLARATIONS)
+    if(NOT DEFINED ${required})
+        message(FATAL_ERROR "Missing required argument: ${required}")
+    endif()
+endforeach()
+
+file(READ "${DECLARATIONS}" expected_declarations)
+if(NOT EXISTS "${PROBE_DIR}/.qtui/qtui-runner.d.ts")
+    message(FATAL_ERROR "Declarations were not copied into ${PROBE_DIR}/.qtui")
+endif()
+file(READ "${PROBE_DIR}/.qtui/qtui-runner.d.ts" copied_declarations)
+if(NOT copied_declarations STREQUAL expected_declarations)
+    message(FATAL_ERROR "Copied declarations differ from ${DECLARATIONS}")
+endif()
+
+if(NOT EXISTS "${PROBE_DIR}/.qtui/.gitignore")
+    message(FATAL_ERROR "The .qtui directory is missing its .gitignore guard")
+endif()
+
+if(NOT EXISTS "${PROBE_DIR}/jsconfig.json")
+    message(FATAL_ERROR "No jsconfig.json in ${PROBE_DIR}")
+endif()
+file(READ "${PROBE_DIR}/jsconfig.json" jsconfig_contents)
+
+if(EXPECT_GENERATED)
+    string(FIND "${jsconfig_contents}" ".qtui/qtui-runner.d.ts" declarations_position)
+    if(declarations_position EQUAL -1)
+        message(FATAL_ERROR "Generated jsconfig.json does not include the declarations")
+    endif()
+elseif(EXPECT_PRESERVED)
+    string(FIND "${jsconfig_contents}" "pre-existing-marker" marker_position)
+    if(marker_position EQUAL -1)
+        message(FATAL_ERROR "A pre-existing jsconfig.json was overwritten")
+    endif()
+else()
+    message(FATAL_ERROR "Pass EXPECT_GENERATED or EXPECT_PRESERVED")
+endif()

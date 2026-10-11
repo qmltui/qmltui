@@ -193,7 +193,11 @@ paths (see `examples/apps/device_cockpit/lib/cockpit.mjs`). Start the entry
 point with `/** @param {Terminal} terminal */` — the repository's
 `jsconfig.json` plus `src/Qtui/Runner/qtui-runner.d.ts` then give editor
 autocomplete and hover documentation for the whole facade (scenarios are plain
-JavaScript; TypeScript annotations are a syntax error). Use the API
+JavaScript; TypeScript annotations are a syntax error). A consumer project
+(find_package, FetchContent, or add_subdirectory) gets the same completion by
+calling `qtui_scenario_editor_support()` once after bringing Qtui in: it
+copies the declarations to `.qtui/` and generates a `jsconfig.json` when the
+project has none, never touching an existing one. Use the API
 documentation for exact signatures. Choose operations by intent:
 
 - `press()` and `typeText()` inject input and wait for the resulting committed

@@ -5,6 +5,14 @@ add_library(QtuiRunner
     MemoryTerminalBackend.cpp
 )
 
+# The scenario helpers (qtui_add_scenario, qtui_scenario_editor_support) must
+# be available to FetchContent/add_subdirectory consumers even when nothing in
+# this build includes them, and the editor-support helper needs the source
+# location of the scenario API declarations.
+include("${PROJECT_SOURCE_DIR}/cmake/QtuiRunner.cmake")
+set(QTUI_RUNNER_DECLARATIONS "${CMAKE_CURRENT_SOURCE_DIR}/qtui-runner.d.ts"
+    CACHE INTERNAL "Source location of the Runner scenario API declarations")
+
 target_compile_definitions(QtuiRunner PRIVATE QTUI_RUNNER_LIBRARY)
 add_library(Qtui::Runner ALIAS QtuiRunner)
 set_target_properties(QtuiRunner PROPERTIES EXPORT_NAME Runner)

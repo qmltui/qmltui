@@ -295,11 +295,20 @@ function main(terminal) {
 
 `test_runner_declarations` fails when a facade method is missing from the declarations, so completion cannot silently fall behind the API.
 
+Consumer projects get the same completion from one call after bringing Qtui in — whether through `find_package(Qtui)`, `FetchContent`, or `add_subdirectory`:
+
+```cmake
+FetchContent_MakeAvailable(qtui)
+qtui_scenario_editor_support()   # optional: DIRECTORY <path>
+```
+
+The helper copies the declarations to `<project>/.qtui/qtui-runner.d.ts` (with a `.gitignore` so the directory stays out of version control) and generates a `jsconfig.json` when the project has none; an existing `jsconfig.json` is never modified — a status message names the one include line to add. From there the same `@param {Terminal}` JSDoc line lights up completion in the consumer's own scenario files.
+
 A scenario ending in `.mjs` is an ECMAScript module: it must `export function main(terminal)` and may `import` helper modules with relative paths, so applications can share navigation and setup code between scenarios. Module scenarios load from the filesystem or from Qt resources, including their relative imports. `QTUI_EVAL` stays classic.
 
 ## CMake integration
 
-Installed consumers can register scenarios with `qtui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default.
+Installed consumers can register scenarios with `qtui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default. `qtui_scenario_editor_support()` materializes editor completion for the consumer's scenario files (see Scenario Files).
 
 #### void start()
 

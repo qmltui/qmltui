@@ -3,6 +3,33 @@
 
 add_qtui_test(test_runner_declarations test_runner_declarations.cpp)
 
+# Consumer editor support: the helper materializes the declarations and a
+# jsconfig into a project directory, and never clobbers an existing jsconfig.
+set(qtui_editor_probe "${CMAKE_CURRENT_BINARY_DIR}/editor_support_fresh")
+file(REMOVE_RECURSE "${qtui_editor_probe}")
+file(MAKE_DIRECTORY "${qtui_editor_probe}")
+qtui_scenario_editor_support(DIRECTORY "${qtui_editor_probe}")
+add_test(NAME test_runner_editor_support
+    COMMAND "${CMAKE_COMMAND}"
+        "-DPROBE_DIR=${qtui_editor_probe}"
+        "-DDECLARATIONS=${QTUI_RUNNER_DECLARATIONS}"
+        "-DEXPECT_GENERATED=ON"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/editor_support_check.cmake")
+
+set(qtui_editor_probe_seeded "${CMAKE_CURRENT_BINARY_DIR}/editor_support_seeded")
+file(REMOVE_RECURSE "${qtui_editor_probe_seeded}")
+file(MAKE_DIRECTORY "${qtui_editor_probe_seeded}")
+file(WRITE "${qtui_editor_probe_seeded}/jsconfig.json" "{ \"pre-existing-marker\": true }\n")
+qtui_scenario_editor_support(DIRECTORY "${qtui_editor_probe_seeded}")
+add_test(NAME test_runner_editor_support_preserves_jsconfig
+    COMMAND "${CMAKE_COMMAND}"
+        "-DPROBE_DIR=${qtui_editor_probe_seeded}"
+        "-DDECLARATIONS=${QTUI_RUNNER_DECLARATIONS}"
+        "-DEXPECT_PRESERVED=ON"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/editor_support_check.cmake")
+set_tests_properties(test_runner_editor_support
+    test_runner_editor_support_preserves_jsconfig PROPERTIES LABELS "Runner")
+
 add_executable(qtui_runner_fixture main.cpp)
 target_link_libraries(qtui_runner_fixture PRIVATE
     Qt6::Core

@@ -8,6 +8,12 @@
 # prefix.
 set(Qtui_QML_IMPORT_PATH "@PACKAGE_QTUI_INSTALL_QMLDIR@")
 
+# Scenario API declarations for editor completion; consumed by
+# qtui_scenario_editor_support(). Resolved here for the same
+# PACKAGE_PREFIX_DIR reason as the QML import path above.
+set(QTUI_RUNNER_DECLARATIONS
+    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/Qtui/Runner/qtui-runner.d.ts")
+
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 6.8 COMPONENTS Core Qml)
 if(@QTUI_ENABLE_IMAGE@)

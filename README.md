@@ -1,4 +1,9 @@
-# Qamui
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/qamui_lockup_dark.svg">
+    <img alt="Qamui" src="docs/assets/branding/qamui_lockup_light.svg" width="360">
+  </picture>
+</p>
 
 Qamui is a retained-mode terminal UI framework for Qt 6. It exposes terminal
 items, layouts, controls, views, animation, and widgets as QML modules while

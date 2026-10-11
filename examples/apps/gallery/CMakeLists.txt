@@ -11,10 +11,12 @@ if(NOT QTUI_ENABLE_BEHAVIOR)
     list(FILTER gallery_example_files EXCLUDE REGEX "/Behavior\\.qml$")
 endif()
 if(NOT QTUI_ENABLE_IMAGE)
-    list(FILTER gallery_example_files EXCLUDE REGEX "/Image\\.qml$")
+    list(FILTER gallery_example_files EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
-# The Image tile's picture, shared with examples/components/image.
+# The Image tile's picture and the AnimatedSprite tile's sheet, shared with
+# examples/components/image and examples/components/animated_sprite.
 set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/image")
+set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/animated_sprite")
 
 function(gallery_add_executable target uri main_source)
     qt_add_executable(${target} ${main_source})
@@ -41,6 +43,11 @@ function(gallery_add_executable target uri main_source)
             PREFIX "/gallery/assets"
             BASE "${gallery_asset_dir}"
             FILES "${gallery_asset_dir}/panda.png"
+        )
+        qt_add_resources(${target} "${target}_sprite_assets"
+            PREFIX "/gallery/assets"
+            BASE "${gallery_sprite_dir}"
+            FILES "${gallery_sprite_dir}/qami.png"
         )
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})

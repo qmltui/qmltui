@@ -1,7 +1,7 @@
 # Qtui Gallery
 
 A full-screen grid of every user-facing type in `Qtui` and `Qtui.Controls`,
-38 tiles in all with Behavior and Qtui.Image built in, 36 without. Move the selection with the arrow keys (or `hjkl`), open a
+39 tiles in all with Behavior and Qtui.Image built in, 36 without. Move the selection with the arrow keys (or `hjkl`), open a
 tile with Enter, Space or a mouse click. Escape returns to the grid; Q quits
 from the grid or from a demo that has no text input focused.
 

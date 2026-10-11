@@ -84,6 +84,27 @@ function main(terminal) {
     terminal.press("ESCAPE");
     terminal.waitForText("Qtui Gallery");
 
+    // The AnimatedSprite tile (only in a Qtui.Image build) plays a sprite
+    // sheet: Space pauses the frame clock, Right picks the next animation.
+    terminal.press("HOME");
+    for (let i = 0; i < 25; ++i)
+        terminal.press("RIGHT");
+    terminal.waitForText(at(26));
+    if (terminal.frameText().includes("Frames out of one sheet")) {
+        terminal.press("ENTER");
+        terminal.waitForRegex("idle: frame [0-9]+/6");
+        terminal.expectText("of a 840x1024 sheet");
+        terminal.press("SPACE");
+        terminal.waitForText("paused");
+        terminal.press("RIGHT");
+        terminal.waitForRegex("walk right: frame [0-9]+/8");
+        terminal.typeText("r");
+        terminal.waitForText("reverse");
+        terminal.captureText("gallery/animated_sprite.txt");
+        terminal.press("ESCAPE");
+        terminal.waitForText("Qtui Gallery");
+    }
+
     // Every page must instantiate without error: open each one in turn.
     terminal.press("HOME");
     terminal.waitForText(at(1));

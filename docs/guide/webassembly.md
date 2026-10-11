@@ -96,8 +96,8 @@ The link between the two panes needs nothing from the page beyond xterm.js:
   switch its own mode for that example.
 - `Image.source` with an `http(s)` URL works in the browser too: Qt Network
   goes through the browser's `fetch`, so the picture's server must allow the
-  page's origin (CORS). The gallery's own picture stays a resource for that
-  reason.
+  page's origin (CORS). The gallery's own picture and sprite sheet stay
+  resources for that reason.
 
 How the runtime differs from an app binary (`examples/wasm/playground/main.cpp`):
 
@@ -113,8 +113,8 @@ How the runtime differs from an app binary (`examples/wasm/playground/main.cpp`)
 - A generated `Imports.qml` that is never instantiated imports `QtQml`,
   `QtQml.Models`, `Qtui`, and `Qtui.Controls`, so `qmlimportscanner` links
   every plugin the editor may need. `Qtui.Image` (and with it Qt Gui and Qt
-  Network) is on in the gallery build because of its Image tile;
-  `-DQTUI_WASM_PLAYGROUND_IMAGE=OFF` drops it and the tile for a lighter
+  Network) is on in the gallery build because of its Image and AnimatedSprite
+  tiles; `-DQTUI_WASM_PLAYGROUND_IMAGE=OFF` drops it and both tiles for a lighter
   runtime: 8.5 MB raw and 1.86 MB Brotli without it, about twice that with.
 - `Qt.quit()` does not abort. With our own `QQmlEngine` the `quit` and `exit`
   signals are ours: the root is released with `deleteLater()` (quit arrives

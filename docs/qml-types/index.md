@@ -11,6 +11,7 @@
 - [PropertyAnimation](propertyanimation.md)
 - [PropertyChanges](propertychanges.md)
 - [State](state.md)
+- [StateGroup](stategroup.md)
 - [Transition](transition.md)
 
 ## Qamui — canvas

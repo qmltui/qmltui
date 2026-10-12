@@ -16,8 +16,9 @@
   and reusable components; do not add a framework palette or theme singleton.
 - Build terminal interfaces from `QtQml` and Qamui modules. Do not add a
   `QtQuick` import or Qt Quick dependency to Qamui applications or modules.
-- Keep optional subsystems gated. `QAMUI_ENABLE_BEHAVIOR=ON` requires
-  `Qt6::QmlPrivate`; `QAMUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
+- Keep optional subsystems gated. `QAMUI_ENABLE_PRIVATE_QT=ON` requires
+  `Qt6::QmlPrivate` (enabling Behavior, StateGroup, and advanced states);
+  `QAMUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
   supported only on Linux and macOS; `QAMUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
   and `Qt6::Network`.
 
@@ -38,8 +39,8 @@
   `Qamui::Runner`/`Runner` for whole-application input and committed terminal
   frames. A visible-behavior test must assert the rendered frame, not only a QML
   property.
-- For Behavior or feature-gating changes, validate separate Behavior-enabled
-  and Behavior-disabled build trees. Do not expect the Industrial PLC target in
+- For Private Qt or feature-gating changes, validate separate Private-Qt-enabled
+  and Private-Qt-disabled build trees. Do not expect the Industrial PLC target in
   a disabled tree.
 - For detailed Runner scenarios, artifacts, inspection, and live rendering,
   follow `.agents/skills/qamui-dev-loop/SKILL.md` and the authoritative

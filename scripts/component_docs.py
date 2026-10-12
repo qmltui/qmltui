@@ -56,7 +56,7 @@ CATEGORIES = {
     "input events": ["Keys", "KeyEvent", "MouseEvent", "MouseArea", "Shortcut"],
     "animation and state": ["Animation", "PropertyAnimation", "NumberAnimation",
                             "ColorAnimation", "Easing", "Behavior", "State", "Transition",
-                            "PropertyChanges"],
+                            "PropertyChanges", "StateGroup"],
 }
 CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name in names}
 
@@ -64,8 +64,15 @@ CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name
 # every tree; check() reads the option from CMakeCache.txt and does not treat
 # such a page as an orphan when the option is off.
 OPTIONAL_TYPES = {
-    "Behavior": "QAMUI_ENABLE_BEHAVIOR",
+    "Behavior": "QAMUI_ENABLE_PRIVATE_QT",
     "Image": "QAMUI_ENABLE_IMAGE",
+    "StateGroup": "QAMUI_ENABLE_PRIVATE_QT",
+}
+
+# Members (properties, signals, methods, attached) that exist only when a
+# build option is on.
+OPTIONAL_MEMBERS = {
+    ("PropertyChanges", "explicit"): "QAMUI_ENABLE_PRIVATE_QT",
 }
 
 # Qt/C++ spellings shown as QML types in the tables.
@@ -514,6 +521,9 @@ def check(build_dir: Path, strict: bool) -> int:
             for missing in sorted(built - documented):
                 errors.append(f"{t.slug}.md: {heading[:-1].lower()} `{missing}` exists in the build but not on the page")
             for extra in sorted(documented - built):
+                option = OPTIONAL_MEMBERS.get((t.name, extra))
+                if option and _cache_option(build_dir, option) is False:
+                    continue
                 errors.append(f"{t.slug}.md: {heading[:-1].lower()} `{extra}` is on the page but not in the build")
         todo_total += text.count("_TODO_")
     for page in sorted(PAGES_DIR.glob("*.md")) if PAGES_DIR.is_dir() else []:

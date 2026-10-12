@@ -26,15 +26,49 @@ Describes property modifications applied in a State. [More...](#detailed-descrip
 | `target` | `QtObject` | `null` | Holds the target object whose properties are altered in this state. |
 | `properties` | `var` | `{}` | Holds a dictionary of property names and target values applied in this state. |
 | `restoreEntryValues` | `bool` | `true` | Whether modified properties should revert to their entry values upon exiting this state. |
+| `explicit` | `bool` | `false` | When true, expressions are evaluated once upon state entry. When false (default), expressions remain reactive while the state is active. |
 
 ## Detailed Description
 
 PropertyChanges is used inside a [State](state.md) to define how property values of
 target items change when that state becomes active.
 
-The `properties` object specifies key-value pairs matching property names on `target`.
-When the state is exited, if `restoreEntryValues` is `true`, any modified properties
-are restored to the values they had before the state was entered.
+### Syntax Forms
+
+PropertyChanges supports two syntaxes:
+
+1. **Direct assignment syntax** (available with `QAMUI_ENABLE_PRIVATE_QT=ON`):
+   Expressions can be assigned directly to properties on a specified `target`, or
+   using ID-qualified grouped property paths:
+
+   ```qml
+   PropertyChanges {
+       target: label
+       text: root.status
+   }
+
+   PropertyChanges {
+       label.text: root.status
+   }
+   ```
+
+2. **Map-based syntax** (supported in all builds):
+   ```qml
+   PropertyChanges {
+       target: label
+       properties: { "text": root.status }
+   }
+   ```
+
+Mixing direct property assignments and `properties: { ... }` in a single
+`PropertyChanges` object is rejected at compile time.
+
+### Binding Lifecycle and Restoration
+
+When entering a state:
+- Any preexisting binding on the target property is suspended (not destroyed).
+- If `explicit` is `false` (default), direct expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, expressions are evaluated once on entry.
+- When exiting the state, if `restoreEntryValues` is `true` (default), original values or bindings are restored and re-evaluated. If `restoreEntryValues` is `false`, the values applied by the state are retained.
 
 ### Example
 

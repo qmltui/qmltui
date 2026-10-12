@@ -25,6 +25,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+from component_docs import OPTIONAL_TYPES, _cache_option
+
 PAGES_DIR = REPO_ROOT / "docs/qml-types"
 _BLOCK = re.compile(r"^```qml\s*\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
@@ -57,12 +60,19 @@ def main() -> int:
     for name in ("QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL", "QAMUI_RUNNER_LIVE", "QAMUI_RUNNER_EMBEDDED_SCENARIO", "QAMUI_RUNNER_RECORD"):
         env.pop(name, None)
 
+    build_dir = args.qml_import_path.parent
+    disabled_types = {name.lower() for name, opt in OPTIONAL_TYPES.items()
+                      if _cache_option(build_dir, opt) is False}
+
     failures: list[str] = []
     total = 0
     skipped = 0
     fragments = 0
     for page in sorted([*PAGES_DIR.glob("*.md"), *(REPO_ROOT / "docs/topics").glob("*.md"), *(REPO_ROOT / "docs/tutorials").glob("*.md")]):
         if args.only and args.only not in page.stem:
+            continue
+        if page.stem.lower() in disabled_types:
+            skipped += 1
             continue
         text = page.read_text(encoding="utf-8")
         if "_TODO_" in text and not args.include_drafts:
@@ -78,6 +88,10 @@ def main() -> int:
             # If the snippet imports a Qamui module not built here, skip it.
             imports = re.findall(r"^import\s+([A-Za-z0-9_.]+)", body, re.MULTILINE)
             if any(imp.startswith("Qamui") and not args.qml_import_path.joinpath(*imp.split(".")).joinpath("qmldir").is_file() for imp in imports):
+                skipped += 1
+                continue
+            # If the snippet uses a type disabled in this build, skip it.
+            if any(re.search(rf"\b{re.escape(name)}\b", body) for name, opt in OPTIONAL_TYPES.items() if _cache_option(build_dir, opt) is False):
                 skipped += 1
                 continue
             total += 1

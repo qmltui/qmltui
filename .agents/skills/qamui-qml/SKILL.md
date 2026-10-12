@@ -248,7 +248,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `Transition`, `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`,
 `Animation`, `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`.
 
-`Behavior` is available only with `QAMUI_ENABLE_BEHAVIOR=ON`.
+`Behavior` and `StateGroup` are available only with `QAMUI_ENABLE_PRIVATE_QT=ON`.
 
 **`import Qamui.Controls`** (QML and C++ in `src/Qamui/Controls`)
 `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`,

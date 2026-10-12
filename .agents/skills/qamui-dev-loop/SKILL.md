@@ -41,10 +41,10 @@ Use `-DQAMUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
 without the repository tests. Use `-DQAMUI_ENABLE_TERMINAL_HOST=ON` only for the
 optional PTY-backed `TerminalView` module.
 
-Behavior and the Industrial PLC HMI require `-DQAMUI_ENABLE_BEHAVIOR=ON` and
-Qt's private QML component. For changes to Behavior or its feature gating,
-validate both an enabled build and a separate disabled build. Do not assume the
-PLC target exists in a Behavior-disabled tree.
+Features requiring private Qt headers (Behavior, StateGroup, advanced states,
+and the Industrial PLC HMI) require `-DQAMUI_ENABLE_PRIVATE_QT=ON`. For changes to
+private Qt features or their gating, validate both an enabled build and a separate
+disabled build. Do not assume the PLC target exists in a disabled tree.
 
 After an edit, build the affected target first. Rebuild the configured tree
 after Core, public API, QML-module, or CMake changes:

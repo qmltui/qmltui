@@ -35,7 +35,7 @@ the change and plays its child [Animation](animation.md) to transition the prope
 smoothly from its old value to the new value.
 
 > [!NOTE]
-> Behavior is an optional feature in Qamui requiring `QAMUI_ENABLE_BEHAVIOR=ON`
+> Behavior is an optional feature in Qamui requiring `QAMUI_ENABLE_PRIVATE_QT=ON`
 > and links against `Qt6::QmlPrivate`.
 
 ### Example

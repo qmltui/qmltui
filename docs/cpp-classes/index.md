@@ -8,6 +8,7 @@
 - [Item](item.md)
 - [MemoryTerminalBackend](memoryterminalbackend.md)
 - [MouseArea](mousearea.md)
+- [QtMessageRouting](qtmessagerouting.md)
 - [Rectangle](rectangle.md)
 - [Runner](runner.md)
 - [TerminalBackend](terminalbackend.md)

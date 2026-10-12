@@ -28,6 +28,7 @@
 #include "../TestPaint.h"
 
 #include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/engine/QtMessageRouting.h>
 #undef private
 
 using namespace qamui;
@@ -1175,18 +1176,24 @@ void TestTerminalFramework::alternateScreenDefersMessages()
     const QString afterDestroy = QStringLiteral("qamui-message-after-destroy");
 
     {
+        QStringList presented;
+        auto routing = QtMessageRouting::install(
+            [](const QtMessage&) {},
+            [&](const QtMessage& msg) { presented.append(msg.message); }
+        );
+
         Terminal terminal;
         terminal.engine()->setTestViewportSize(QSize(10, 3));
         terminal.engine()->renderFrame();
 
         qInfo().noquote() << deferred;
-        QVERIFY(!capture.messages.contains(deferred));
+        QVERIFY(!presented.contains(deferred));
 
         terminal.engine()->stop();
-        QVERIFY(capture.messages.contains(deferred));
+        QVERIFY(presented.contains(deferred));
 
         qInfo().noquote() << afterStop;
-        QVERIFY(capture.messages.contains(afterStop));
+        QVERIFY(presented.contains(afterStop));
     }
 
     qInfo().noquote() << afterDestroy;
@@ -1195,8 +1202,12 @@ void TestTerminalFramework::alternateScreenDefersMessages()
 
 void TestTerminalFramework::nestedAlternateScreensDelayFlush()
 {
-    ScopedMessageCapture capture;
     const QString deferred = QStringLiteral("qamui-nested-deferred-message");
+    QStringList presented;
+    auto routing = QtMessageRouting::install(
+        [](const QtMessage&) {},
+        [&](const QtMessage& msg) { presented.append(msg.message); }
+    );
 
     Terminal first;
     Terminal second;
@@ -1206,19 +1217,23 @@ void TestTerminalFramework::nestedAlternateScreensDelayFlush()
     second.engine()->renderFrame();
 
     qInfo().noquote() << deferred;
-    QVERIFY(!capture.messages.contains(deferred));
+    QVERIFY(!presented.contains(deferred));
 
     first.engine()->stop();
-    QVERIFY(!capture.messages.contains(deferred));
+    QVERIFY(!presented.contains(deferred));
 
     second.engine()->stop();
-    QVERIFY(capture.messages.contains(deferred));
+    QVERIFY(presented.contains(deferred));
 }
 
 void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
 {
-    ScopedMessageCapture capture;
     const QString immediate = QStringLiteral("qamui-immediate-message");
+    QStringList presented;
+    auto routing = QtMessageRouting::install(
+        [](const QtMessage&) {},
+        [&](const QtMessage& msg) { presented.append(msg.message); }
+    );
 
     Terminal terminal;
     terminal.setMode(Terminal::Mode::Inline);
@@ -1226,7 +1241,7 @@ void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
     terminal.engine()->renderFrame();
 
     qInfo().noquote() << immediate;
-    QVERIFY(capture.messages.contains(immediate));
+    QVERIFY(presented.contains(immediate));
 }
 
 void TestTerminalFramework::terminalTitle()

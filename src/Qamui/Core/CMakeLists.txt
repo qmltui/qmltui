@@ -68,6 +68,8 @@ qt_add_qml_module(QamuiCore
         engine/TerminalEngine.cpp
         engine/TerminalMessageRouter_p.h
         engine/TerminalMessageRouter.cpp
+        engine/QtMessageRouting.h
+        engine/QtMessageRouting.cpp
         engine/InputRouter_p.h
         engine/InputRouter.cpp
         engine/InputScope.h
@@ -255,4 +257,5 @@ qamui_install_headers(Qamui/Core/engine FILES
     engine/KeyEvent.h engine/MouseEvent.h
     # Popup implements this interface.
     engine/InputScope.h
+    engine/QtMessageRouting.h
 )

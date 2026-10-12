@@ -44,5 +44,18 @@ int main()
         return 3;
     if (qamui::braille::utf8(0xFF).size() != 3)
         return 4;
+
+    bool receivedDiagnostic = false;
+    auto routing = qamui::QtMessageRouting::install([&](const qamui::QtMessage &msg) {
+        if (msg.message.contains(QLatin1String("installed-consumer-probe")))
+            receivedDiagnostic = true;
+    });
+    if (!routing)
+        return 5;
+    qInfo("installed-consumer-probe");
+    if (!receivedDiagnostic)
+        return 6;
+    routing->reset();
+
     return 0;
 }

@@ -33,6 +33,7 @@ if(UNIX)
 endif()
 
 add_qamui_test(test_terminal_framework test_terminal_framework.cpp)
+add_qamui_test(test_qt_message_routing test_qt_message_routing.cpp)
 add_qamui_test(test_mouse_modes test_mouse_modes.cpp)
 target_link_libraries(test_mouse_modes PRIVATE Qamui::Runner)
 add_qamui_test(test_render_loop test_render_loop.cpp)

@@ -756,11 +756,6 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
     m_renderer->stop(m_rootWindow, m_device);
     m_rendererStarted = false;
   }
-  if (m_alternateScreenMessageSession) {
-    m_alternateScreenMessageSession = false;
-    TerminalMessageRouter::endAlternateScreenSession();
-  }
-
   if (!enabled) {
     if (m_backgroundOsc11Active) {
       m_device.write(osc111Sequence());
@@ -773,7 +768,15 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
     m_device.disableRawMode();
     if (!flushed)
         emit renderFailed(QStringLiteral("Terminal output could not be flushed when disabling output; undelivered bytes were discarded"));
+    if (m_alternateScreenMessageSession) {
+      m_alternateScreenMessageSession = false;
+      TerminalMessageRouter::endAlternateScreenSession();
+    }
   } else {
+    if (m_alternateScreenMessageSession) {
+      m_alternateScreenMessageSession = false;
+      TerminalMessageRouter::endAlternateScreenSession();
+    }
     m_device.setAsyncOutput(true);
     m_device.enableRawMode();
     m_device.hideCursor();

@@ -20,6 +20,7 @@
 
 class TestScrollView;
 class TestTerminalFramework;
+class TestQtMessageRouting;
 
 namespace qamui {
 
@@ -185,6 +186,7 @@ private:
     bool m_clipboardReadPending = false;
     friend class ::TestScrollView;
     friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
+    friend class ::TestQtMessageRouting;
 
     void startRenderer();
     void startQueries();

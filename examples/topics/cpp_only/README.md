@@ -1,6 +1,6 @@
 # C++ only
 
-A filterable service list built from Qamui's C++ items. No QML file and no QML
+A filterable service list built from QmlTui's C++ items. No QML file and no QML
 engine during normal startup: `QCoreApplication`, a `Terminal` subclass, and one `QProperty` binding.
 
 ```text
@@ -29,8 +29,8 @@ engine during normal startup: `QCoreApplication`, a `Terminal` subclass, and one
   steal the letter from the text field.
 
 ```bash
-cmake --build build --target qamui_cpp_only_demo
-./build/examples/topics/cpp_only/qamui_cpp_only_demo
+cmake --build build --target qmltui_cpp_only_demo
+./build/examples/topics/cpp_only/qmltui_cpp_only_demo
 ctest --test-dir build -R '^cpp_only_dashboard$' --output-on-failure
 ```
 

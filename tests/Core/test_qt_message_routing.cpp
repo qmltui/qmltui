@@ -6,16 +6,16 @@
 #include <QTest>
 #include <QThread>
 
-#include <Qamui/Core/Engine/QtMessageRouting.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Primitives/TerminalBackend.h>
+#include <QmlTui/Core/Engine/QtMessageRouting.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Primitives/TerminalBackend.h>
 
 #include <atomic>
 #include <memory>
 #include <vector>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 
@@ -395,12 +395,12 @@ void TestQtMessageRouting::terminalRestorationPrecedesReplay()
 int main(int argc, char* argv[])
 {
     if (argc > 1 && std::strcmp(argv[1], "--fatal-worker") == 0) {
-        auto routing = qamui::QtMessageRouting::install(
-            [](const qamui::QtMessage& msg) {
+        auto routing = qmltui::QtMessageRouting::install(
+            [](const qmltui::QtMessage& msg) {
                 std::printf("DIAG:%s\n", qPrintable(msg.message));
                 std::fflush(stdout);
             },
-            [](const qamui::QtMessage& msg) {
+            [](const qmltui::QtMessage& msg) {
                 std::printf("PRES:%s\n", qPrintable(msg.message));
                 std::fflush(stdout);
             }

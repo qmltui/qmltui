@@ -1,11 +1,11 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qamui/Core/Items/Repeater.h>
+#include <QmlTui/Core/Items/Repeater.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestRepeater : public QObject {
     Q_OBJECT
@@ -30,7 +30,7 @@ private slots:
             pragma ComponentBehavior: Bound
             import QtQml
             import QtQml.Models
-            import Qamui
+            import QmlTui
             %1 {
                 id: root
                 property int count: 2

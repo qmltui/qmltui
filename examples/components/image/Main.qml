@@ -1,9 +1,9 @@
 import QtQml
-import Qamui
-import Qamui.Controls
-import Qamui.Image
+import QmlTui
+import QmlTui.Controls
+import QmlTui.Image
 
-// Dedicated showcase for Qamui.Image rendering. The large image uses the Auto
+// Dedicated showcase for QmlTui.Image rendering. The large image uses the Auto
 // render mode: on a terminal that supports the kitty graphics protocol it is
 // drawn with real pixels, and on every other terminal it falls back to the
 // half-block glyph rendering. The status bar reports which path is active so
@@ -92,7 +92,7 @@ Terminal {
             Text {
                 anchors.fill: parent
                 anchors.margins: 1
-                text: "Qamui.Image  —  Auto uses kitty graphics where available"
+                text: "QmlTui.Image  —  Auto uses kitty graphics where available"
                 color: "cyan"
                 bold: true
                 horizontalAlignment: Qt.AlignHCenter

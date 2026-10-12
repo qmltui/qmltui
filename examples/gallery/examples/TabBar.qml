@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
-// TabBar: Tabs over a StackLayout. One tile of the Qamui gallery (examples/gallery)
+// TabBar: Tabs over a StackLayout. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

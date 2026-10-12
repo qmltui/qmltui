@@ -4,9 +4,9 @@
 #include <QTest>
 #include <QVector>
 
-#include <Qamui/Core/Primitives/UnicodeText.h>
+#include <QmlTui/Core/Primitives/UnicodeText.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 

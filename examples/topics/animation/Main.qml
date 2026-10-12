@@ -1,5 +1,5 @@
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: (event) => {

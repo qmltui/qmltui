@@ -3,15 +3,15 @@
 #include <QQmlEngine>
 #include <QQmlComponent>
 #include <QElapsedTimer>
-#include <Qamui/Core/Items/TextArea.h>
-#include <Qamui/Core/Primitives/HighlightRange.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
-#include <Qamui/Core/Engine/KeyEvent.h>
+#include <QmlTui/Core/Items/TextArea.h>
+#include <QmlTui/Core/Primitives/HighlightRange.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
 #include "../TestPaint.h"
 #include <climits>
 #include <memory>
 
-using namespace qamui;
+using namespace qmltui;
 
 static TextGridBuffer frame(TextArea &area, int width = 40, int height = 10)
 {
@@ -99,7 +99,7 @@ void TestTextAreaHighlighting::qmlStructuredValue()
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
-        import Qamui
+        import QmlTui
         TextArea {
             text: "Hello world QML"
             function applyHighlights(): bool {

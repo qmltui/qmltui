@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui Dialog Example");
+    terminal.expectText("QmlTui Dialog Example");
     terminal.sleep(1500);
     terminal.press("Tab");
     terminal.sleep(800);
@@ -8,7 +8,7 @@ function main(terminal) {
     terminal.expectText("Confirm");
     terminal.sleep(1500);
     terminal.press("Escape");
-    terminal.expectText("Qamui Dialog Example");
+    terminal.expectText("QmlTui Dialog Example");
     terminal.sleep(1000);
     terminal.press("Tab");
     terminal.sleep(800);

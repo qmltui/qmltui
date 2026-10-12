@@ -1,9 +1,9 @@
 // Gallery smoke scenario: the grid renders, the keyboard moves the selection,
 // Enter opens a demo, Escape returns, and a mouse click opens a tile.
 function main(terminal) {
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
     terminal.expectText("Button");
-    // The tile count depends on the build (Behavior, Qamui.Image), so read it.
+    // The tile count depends on the build (Behavior, QmlTui.Image), so read it.
     terminal.waitForRegex("1 / [0-9]+");
     const total = parseInt(/1 \/ ([0-9]+)/.exec(terminal.frameText())[1], 10);
     const at = n => n + " / " + total;
@@ -29,7 +29,7 @@ function main(terminal) {
 
     // Escape goes back to the grid.
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
     terminal.expectNoText("No clicks yet");
 
     // End jumps to the last tile and scrolls the grid to it.
@@ -42,7 +42,7 @@ function main(terminal) {
     terminal.press("ENTER");
     terminal.waitForRegex("Easing.OutBounce|Behavior on x");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
 
     // Clicking a tile opens it directly.
     terminal.press("HOME");
@@ -53,7 +53,7 @@ function main(terminal) {
     terminal.waitForText("Volume  43%");
     terminal.captureText("gallery/slider.txt");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
 
     // Escape is contextual: it closes an open Dialog before it leaves the demo.
     terminal.clickText("Dialog");
@@ -68,7 +68,7 @@ function main(terminal) {
     terminal.press("ENTER");   // the accept button has initial focus
     terminal.waitForText("Deleted report.pdf");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
 
     // Q typed into a focused TextInput is text, not quit. The tile sits on a
     // lower row, so scroll the grid to the end before clicking it.
@@ -82,9 +82,9 @@ function main(terminal) {
     terminal.typeText("quinn");
     terminal.waitForText("Hello, quinn!");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
 
-    // The AnimatedSprite tile (only in a Qamui.Image build) plays a sprite
+    // The AnimatedSprite tile (only in a QmlTui.Image build) plays a sprite
     // sheet: Space pauses the frame clock, Right picks the next animation.
     terminal.press("HOME");
     for (let i = 0; i < 25; ++i)
@@ -102,7 +102,7 @@ function main(terminal) {
         terminal.waitForText("reverse");
         terminal.captureText("gallery/animated_sprite.txt");
         terminal.press("ESCAPE");
-        terminal.waitForText("Qamui Gallery");
+        terminal.waitForText("QmlTui Gallery");
     }
 
     // Every page must instantiate without error: open each one in turn.
@@ -114,7 +114,7 @@ function main(terminal) {
         terminal.sleep(200);   // let timers and animations paint at least once
         terminal.captureText("gallery/page_" + String(i).padStart(2, "0") + ".txt");
         terminal.press("ESCAPE");
-        terminal.waitForText("Qamui Gallery");
+        terminal.waitForText("QmlTui Gallery");
         terminal.press("RIGHT");
     }
     terminal.captureText("gallery/after_tour.txt");
@@ -125,13 +125,13 @@ function main(terminal) {
     terminal.waitForText(at(total));
     terminal.press("ENTER");
     terminal.waitForText("Inline mode");
-    terminal.expectNoText("Qamui Gallery");
+    terminal.expectNoText("QmlTui Gallery");
     terminal.typeText("hello from inline");
     terminal.press("ENTER");
     terminal.waitForText("printed: 1");
     terminal.captureText("gallery/inline.txt");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
     terminal.captureText("gallery/after_inline.txt");
 
     // Full-screen mode is fully restored: another demo opens and closes.
@@ -140,7 +140,7 @@ function main(terminal) {
     terminal.press("ENTER");
     terminal.waitForRegex("Easing.OutBounce|Behavior on x");
     terminal.press("ESCAPE");
-    terminal.waitForText("Qamui Gallery");
+    terminal.waitForText("QmlTui Gallery");
 
     terminal.finish();
 }

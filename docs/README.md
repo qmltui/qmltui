@@ -1,7 +1,7 @@
-# Qamui documentation
+# QmlTui documentation
 
-Qamui is a C++20 and Qt 6.8+ retained-mode terminal UI framework. Build interfaces
-with QtQml and Qamui modules, integer cell geometry, Qt models, and terminal input.
+QmlTui is a C++20 and Qt 6.8+ retained-mode terminal UI framework. Build interfaces
+with QtQml and QmlTui modules, integer cell geometry, Qt models, and terminal input.
 
 - [Getting started](getting-started.md): requirements, build, installation, and consumption.
 - [Tutorials](tutorials/index.md): build and test a terminal application in six chapters.

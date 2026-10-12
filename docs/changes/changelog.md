@@ -1,12 +1,12 @@
 # Changes in 0.5.0
 
-The framework and QML modules use the Qamui name. Environment settings use
-`QAMUI_*`, including Runner's `QAMUI_RUNNER_*` variables. Frame logging uses
-`qamui.frames`. Consult the porting guides for removed APIs and previous names.
+The framework and QML modules use the QmlTui name. Environment settings use
+`QMLTUI_*`, including Runner's `QMLTUI_RUNNER_*` variables. Frame logging uses
+`qmltui.frames`. Consult the porting guides for removed APIs and previous names.
 
 The gallery now lives under `examples/gallery`; `examples/concepts` became
-`examples/topics`. Example targets consistently use `qamui_<directory>_demo`.
-Full applications moved to the separate qamui-apps project.
+`examples/topics`. Example targets consistently use `qmltui_<directory>_demo`.
+Full applications moved to the separate qmltui-apps project.
 
 Documentation now has Getting Started, Tutorials, Topics, QML Types, C++ Classes,
 Examples, and Changes entry points. Reference documentation no longer lives

@@ -1,4 +1,4 @@
-// Deterministic time under QAMUI_RUNNER_CLOCK=virtual: QML Timer, a Qamui
+// Deterministic time under QMLTUI_RUNNER_CLOCK=virtual: QML Timer, a QmlTui
 // animation mid-state, frame discipline, and virtual sleep().
 /** @param {Terminal} terminal */
 function main(terminal) {
@@ -19,7 +19,7 @@ function main(terminal) {
     terminal.expectText("TICKS: 5");
     terminal.press("T");
 
-    // A 400 ms Qamui NumberAnimation holds a committed mid-state at 200 ms
+    // A 400 ms QmlTui NumberAnimation holds a committed mid-state at 200 ms
     // and its end state after the full duration.
     terminal.press("A");
     terminal.advanceTime(200);

@@ -1,8 +1,8 @@
-import Qamui.Controls
+import QmlTui.Controls
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: rootWindow

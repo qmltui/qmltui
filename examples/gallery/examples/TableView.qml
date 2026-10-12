@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root
@@ -62,7 +62,7 @@ Terminal {
                     padding: 1
                 }
             ]
-            model: [[1, "systemd", "0.1", "sleeping"], [412, "qamui_gallery", "3.4", "running"], [977, "sshd", "0.0", "sleeping"], [1820, "postgres", "12.8", "running"], [2201, "node", "41.2", "running"], [3090, "zsh", "0.0", "stopped"]]
+            model: [[1, "systemd", "0.1", "sleeping"], [412, "qmltui_gallery", "3.4", "running"], [977, "sshd", "0.0", "sleeping"], [1820, "postgres", "12.8", "running"], [2201, "node", "41.2", "running"], [3090, "zsh", "0.0", "stopped"]]
             cellFormat: (row, column, value) => {
                 if (column === 3)
                     return {

@@ -1,22 +1,22 @@
 ---
 title: Terminal
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Terminal
+cpp: qmltui::Terminal
 category: core
-summary: Root element for Qamui terminal applications, managing session lifecycle, screen buffers, and input.
+summary: Root element for QmlTui terminal applications, managing session lifecycle, screen buffers, and input.
 ---
 
 # Terminal QML type
 
-Root element for Qamui terminal applications, managing session lifecycle, screen buffers, and input. [More...](#detailed-description)
+Root element for QmlTui terminal applications, managing session lifecycle, screen buffers, and input. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -63,7 +63,7 @@ Root element for Qamui terminal applications, managing session lifecycle, screen
 
 ## Detailed Description
 
-Terminal is the required root item of every Qamui application. It establishes
+Terminal is the required root item of every QmlTui application. It establishes
 the retained-mode rendering pipeline, handles terminal capability detection,
 coordinates keyboard and mouse event routing, and manages the terminal screen mode.
 
@@ -79,10 +79,10 @@ an explicit keyboard quit path using [Keys](keys.md) or [Shortcut](shortcut.md).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
-    title: "Qamui App"
+    title: "QmlTui App"
     color: "#0f172a"
 
     Keys.onPressed: event => {
@@ -94,7 +94,7 @@ Terminal {
 
     Text {
         anchors.centerIn: parent
-        text: "Welcome to Qamui (Press Q to quit)"
+        text: "Welcome to QmlTui (Press Q to quit)"
         color: "cyan"
     }
 }

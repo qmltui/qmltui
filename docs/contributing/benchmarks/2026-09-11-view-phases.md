@@ -7,7 +7,7 @@ The goal is to say where a frame's time goes and what is worth optimizing.
 
 ## Method
 
-- `tests/Core/benchmark_view_phases.cpp` (built with `QAMUI_BUILD_BENCHMARKS=ON`)
+- `tests/Core/benchmark_view_phases.cpp` (built with `QMLTUI_BUILD_BENCHMARKS=ON`)
   instantiates each view at 80x24 over a 100,000-row `QAbstractListModel`
   with one `display` role and times four phases with `QElapsedTimer`:
   component creation plus first frame (per created delegate), 1,000 scroll
@@ -17,7 +17,7 @@ The goal is to say where a frame's time goes and what is worth optimizing.
   per delegate comes from `/proc/self/statm` around an eager `Repeater` of
   2,000 rows.
 - Delegates: `text` is `Text { required property string display; text: display }`,
-  `rect` wraps that in a `Rectangle`, `standard` is `Qamui.Controls.StandardItemDelegate`,
+  `rect` wraps that in a `Rectangle`, `standard` is `QmlTui.Controls.StandardItemDelegate`,
   `bound` is `text` under `pragma ComponentBehavior: Bound`.
 - Attribution: no `perf` or `valgrind` on the host, so
   `tests/tools/sample_stacks.sh` attaches `gdb` 40 times to
@@ -125,7 +125,7 @@ paint is most.
 
 6. **Unbound delegates pay for context properties.** ListView's bound step is
    four times cheaper than unbound, and idle paint ten times cheaper. Every
-   Qamui example already uses `pragma ComponentBehavior: Bound`; the docs
+   QmlTui example already uses `pragma ComponentBehavior: Bound`; the docs
    should say plainly that it is also the fast path.
 
 7. **Name-based property writes are the common tax.** `setPropertyIfExists`
@@ -192,7 +192,7 @@ thirteen; what remains is regenerating the delegate window on each step
 ## Reproducing
 
 ```
-cmake -S . -B build-bench -DCMAKE_BUILD_TYPE=Release -DQAMUI_BUILD_BENCHMARKS=ON
+cmake -S . -B build-bench -DCMAKE_BUILD_TYPE=Release -DQMLTUI_BUILD_BENCHMARKS=ON
 cmake --build build-bench --target benchmark_view_phases
 build-bench/tests/benchmark_view_phases            # table above
 build-bench/tests/benchmark_view_phases --rows 10000

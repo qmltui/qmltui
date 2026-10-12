@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qamui
+import QmlTui
 
-// RichText: Wrap, rich text, links. One tile of the Qamui gallery (examples/gallery)
+// RichText: Wrap, rich text, links. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
@@ -29,7 +29,7 @@ Terminal {
                 anchors.margins: 1
                 wrapMode: Text.WordWrap
                 textFormat: Text.RichText
-                text: "<b>Text</b> wraps long content to its width and understands HTML tags: <font color='#7ee0ff'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/qamui-dev/qamui'>the Qamui repository</a>. Click a link to activate it."
+                text: "<b>Text</b> wraps long content to its width and understands HTML tags: <font color='#7ee0ff'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/qmltui-dev/qmltui'>the QmlTui repository</a>. Click a link to activate it."
                 onLinkActivated: url => demo.link = url
             }
         }

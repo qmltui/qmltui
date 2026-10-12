@@ -1,10 +1,10 @@
 ---
 title: TableView
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::TableView
+cpp: qmltui::TableView
 category: data views
 summary: Virtualized table with connected borders and configurable row and column grids.
 ---
@@ -15,8 +15,8 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -162,7 +162,7 @@ has a built-in `40×10` implicit size.
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     TableView {
@@ -196,12 +196,12 @@ separators; `headerAlign` can override header alignment independently of cells.
 clipping, and input details.
 
 `delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
-`selected` identify the represented cell. Qamui's `columns` descriptors continue
+`selected` identify the represented cell. QmlTui's `columns` descriptors continue
 to provide terminal column titles, keys, widths, and alignment.
 
-`rowDelegate` retains the deprecated Qamui 0.1 row-scoped delegate contract for
+`rowDelegate` retains the deprecated QmlTui 0.1 row-scoped delegate contract for
 migration; it remains supported with no scheduled removal release. When both properties are set, `delegate` wins and
-Qamui emits a warning.
+QmlTui emits a warning.
 
 Selection properties are `currentRow` (read-only alias of `selectedRow`),
 `selectedRow`, and `currentColumn`. See the
@@ -224,7 +224,7 @@ a visual column number is not necessarily a source-model column number.
 Qt 6.10+ also supplies `SortFilterProxyModel`, `RoleSorter`, and filters through
 `import QtQml.Models`; that native QML API is a technology preview. It requires
 a `QAbstractItemModel` source, not a JavaScript array. It is optional and does
-not change Qamui's Qt 6.8 requirement or require a `QtQuick` import. Qamui does not
+not change QmlTui's Qt 6.8 requirement or require a `QtQuick` import. QmlTui does not
 provide a competing proxy wrapper.
 
 `selectedRow`, delegate `row`/`column`, and `rowActivated(row)` use the supplied

@@ -1,10 +1,10 @@
 ---
 title: CanvasShape
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::CanvasShape
+cpp: qmltui::CanvasShape
 category: canvas
 summary: Abstract base class for 2D geometric shapes drawn on a Canvas.
 ---
@@ -15,8 +15,8 @@ Abstract base class for 2D geometric shapes drawn on a Canvas. [More...](#detail
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -41,7 +41,7 @@ Coordinates are measured in sub-cell canvas pixels.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

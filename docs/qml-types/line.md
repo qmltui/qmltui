@@ -1,10 +1,10 @@
 ---
 title: Line
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: CanvasShape
-cpp: qamui::Line
+cpp: qmltui::Line
 category: canvas
 summary: Draws a straight line segment between two points on a Canvas.
 ---
@@ -15,8 +15,8 @@ Draws a straight line segment between two points on a Canvas. [More...](#detaile
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [CanvasShape](canvasshape.md) |
 
 ## Properties
@@ -41,7 +41,7 @@ if none is specified).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

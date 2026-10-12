@@ -1,10 +1,10 @@
 ---
 title: AnchorLine
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::AnchorLine
+cpp: qmltui::AnchorLine
 category: core
 summary: Represents an edge or center alignment line used for anchoring items.
 ---
@@ -15,8 +15,8 @@ Represents an edge or center alignment line used for anchoring items. [More...](
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -44,7 +44,7 @@ as targets to [Anchors](anchors.md) properties (such as `anchors.left: parent.le
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

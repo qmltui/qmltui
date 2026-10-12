@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui ScrollView Component Example");
+    terminal.expectText("QmlTui ScrollView Component Example");
     terminal.sleep(1500);
     terminal.press("Down");
     terminal.sleep(400);

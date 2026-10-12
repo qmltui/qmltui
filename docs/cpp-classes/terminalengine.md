@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`TerminalEngine` is the central runtime coordinator for Qamui applications. It initializes raw terminal I/O via `TerminalDevice`, hooks into Qt's event loop via `QSocketNotifier` for non-blocking stdin input decoding (`InputDecoder`), manages window resize signals (`SIGWINCH`), dispatches keyboard (`KeyEvent`) and mouse events (`MouseEvent`), and manages off-screen double-buffered frame rendering (`Renderer`).
+`TerminalEngine` is the central runtime coordinator for QmlTui applications. It initializes raw terminal I/O via `TerminalDevice`, hooks into Qt's event loop via `QSocketNotifier` for non-blocking stdin input decoding (`InputDecoder`), manages window resize signals (`SIGWINCH`), dispatches keyboard (`KeyEvent`) and mouse events (`MouseEvent`), and manages off-screen double-buffered frame rendering (`Renderer`).
 
 Button events and button-held motion are enabled for drag interactions. Passive
 mouse motion is enabled only while a component requests hover tracking, such as
@@ -43,7 +43,7 @@ Returns the current terminal window height in character rows.
 #### void print(const QString& text)
 Prints raw text to the terminal device.
 
-#### void append(qamui::Item* item)
+#### void append(qmltui::Item* item)
 Appends a child item to the root window hierarchy.
 
 #### QString requestClipboardText(int timeoutMs)
@@ -95,11 +95,11 @@ Single-threaded. Runs on the main Qt GUI event loop thread.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QGuiApplication>
 
-using namespace qamui;
+using namespace qmltui;
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -124,7 +124,7 @@ protocol (kitty, Ghostty, WezTerm, Konsole, by `TERM_PROGRAM`, `TERM` or their
 own variables). Nothing is queried unless both the output and the input are the
 terminal: a pipe on either end would receive the probes or leave the replies for
 the shell. Recognized replies never become keys. DA1 closes negotiation; a
-100 ms timer handles terminals that do not reply. `QAMUI_QUERY_TIMEOUT_MS`
+100 ms timer handles terminals that do not reply. `QMLTUI_QUERY_TIMEOUT_MS`
 selects a positive timeout in milliseconds. Late replies are consumed without
 changing closed negotiation results. A later negotiation in the same process
 (renderer or output-session change) starts from the capabilities already
@@ -134,15 +134,15 @@ frame that fails with it, and retried on the next frame.
 
 Environment overrides live in `TerminalCapabilities::applyEnvironmentOverrides()`
 and are applied to the detected defaults and again after replies, so they win
-over what the terminal claims: `QAMUI_COLOR_DEPTH`, `QAMUI_SYNC_OUTPUT`,
-`QAMUI_KITTY_KEYBOARD` and `QAMUI_KITTY_GRAPHICS`, where `0`, `false` and `off`
+over what the terminal claims: `QMLTUI_COLOR_DEPTH`, `QMLTUI_SYNC_OUTPUT`,
+`QMLTUI_KITTY_KEYBOARD` and `QMLTUI_KITTY_GRAPHICS`, where `0`, `false` and `off`
 disable.
 
 Colour depth is derived from `COLORTERM`, `TERM` and `TERM_PROGRAM`. Windows
 Terminal (detected by `WT_SESSION`/`WT_PROFILE_ID`, or `WSL_INTEROP`/
 `WSL_DISTRO_NAME` under WSL) is treated as true colour even when `TERM` only
 advertises 256, because otherwise desaturated true colours quantise to the
-256-cube grey ramp and warm tones render as grey. `QAMUI_COLOR_DEPTH=256`
+256-cube grey ramp and warm tones render as grey. `QMLTUI_COLOR_DEPTH=256`
 overrides this.
 `setCapabilities()` is a deterministic programmatic override: it cancels pending
 negotiation and suppresses future probes for that engine. Protocol detection

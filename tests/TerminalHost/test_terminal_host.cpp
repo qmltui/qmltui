@@ -4,13 +4,13 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 
-#include <Qamui/TerminalHost/TerminalView.h>
-#include <Qamui/TerminalHost/UnixPtySession.h>
-#include <Qamui/TerminalHost/VTermAdapter.h>
+#include <QmlTui/TerminalHost/TerminalView.h>
+#include <QmlTui/TerminalHost/UnixPtySession.h>
+#include <QmlTui/TerminalHost/VTermAdapter.h>
 #include "../TestPaint.h"
 
-using namespace qamui;
-using qamui::testing::paintItem;
+using namespace qmltui;
+using qmltui::testing::paintItem;
 
 class TestTerminalHost : public QObject {
     Q_OBJECT
@@ -33,7 +33,7 @@ void TestTerminalHost::adapterRenderingAndOsc() {
     adapter.setNotificationCallback([&](const QString& value) { notification = value; });
     adapter.feed(QByteArrayLiteral(
         "\033[31;3;5;9mA\033[0;8mB\033[0;2mD"
-        "\033]2;Qamui terminal\a"
+        "\033]2;QmlTui terminal\a"
         "\033]52;c;aGVsbG8=\a"
         "\033]9;build complete\a"));
 
@@ -48,7 +48,7 @@ void TestTerminalHost::adapterRenderingAndOsc() {
     QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xffe00000u);
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray(" "));
     QCOMPARE(buffer.cellAt(2, 0).attributes, TextAttribute::None); // SGR 2 is unsupported upstream.
-    QCOMPARE(title, QStringLiteral("Qamui terminal"));
+    QCOMPARE(title, QStringLiteral("QmlTui terminal"));
     QCOMPARE(clipboard, QStringLiteral("hello"));
     QCOMPARE(notification, QStringLiteral("build complete"));
 }
@@ -78,11 +78,11 @@ void TestTerminalHost::adapterInputEncoding() {
 
 void TestTerminalHost::qmlImport() {
     QQmlEngine engine;
-    engine.addImportPath(QStringLiteral(QAMUI_QML_IMPORT_PATH));
+    engine.addImportPath(QStringLiteral(QMLTUI_QML_IMPORT_PATH));
     QQmlComponent component(&engine);
     component.setData(QByteArrayLiteral(
-        "import Qamui\n"
-        "import Qamui.TerminalHost\n"
+        "import QmlTui\n"
+        "import QmlTui.TerminalHost\n"
         "TerminalView { width: 20; height: 5 }\n"), QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
@@ -99,8 +99,8 @@ void TestTerminalHost::ptyLifecycleAndRendering() {
     view.setHeight(4);
     view.setProgram(QStringLiteral("/bin/sh"));
     view.setArguments({QStringLiteral("-c"), QStringLiteral(
-        "printf '\\033[31mOK\\033[0m\\r\\n'; stty size; printf \"$QAMUI_TEST_VALUE\"")});
-    view.setEnvironment({{QStringLiteral("QAMUI_TEST_VALUE"), QStringLiteral("env-ok")}});
+        "printf '\\033[31mOK\\033[0m\\r\\n'; stty size; printf \"$QMLTUI_TEST_VALUE\"")});
+    view.setEnvironment({{QStringLiteral("QMLTUI_TEST_VALUE"), QStringLiteral("env-ok")}});
 
     QSignalSpy startedSpy(&view, &TerminalView::started);
     QSignalSpy finishedSpy(&view, &TerminalView::finished);

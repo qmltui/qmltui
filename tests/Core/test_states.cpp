@@ -4,22 +4,22 @@
 #include <QSignalSpy>
 #include <memory>
 
-#include <Qamui/Core/Items/Item.h>
-#include <Qamui/Core/Items/Text.h>
-#include <Qamui/Core/Items/Rectangle.h>
-#include <Qamui/Core/Engine/State.h>
-#include <Qamui/Core/Engine/Transition.h>
-#include <Qamui/Core/Engine/Animation.h>
-#if defined(QAMUI_ENABLE_PRIVATE_QT)
-#include <Qamui/Core/Engine/StateGroup.h>
+#include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Engine/State.h>
+#include <QmlTui/Core/Engine/Transition.h>
+#include <QmlTui/Core/Engine/Animation.h>
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
+#include <QmlTui/Core/Engine/StateGroup.h>
 #endif
 #include "../TestPaint.h"
 
-using namespace qamui;
+using namespace qmltui;
 
-static void addQamuiImportPath(QQmlEngine &engine) {
+static void addQmlTuiImportPath(QQmlEngine &engine) {
     engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../Qamui"));
+                         + QStringLiteral("/../QmlTui"));
 }
 
 class TestStates : public QObject {
@@ -52,12 +52,12 @@ private slots:
 
 void TestStates::testLegacyMapProperties() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int count: 10
@@ -93,12 +93,12 @@ void TestStates::testLegacyMapProperties() {
 
 void TestStates::testLegacyMapActiveKeyRemoval() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int a: 1
@@ -142,12 +142,12 @@ void TestStates::testLegacyMapActiveKeyRemoval() {
 
 void TestStates::testLegacyMapTargetChange() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property Item targetItem: item1
@@ -205,17 +205,17 @@ void TestStates::testLegacyMapTargetChange() {
     QCOMPARE(item2->property("val").toInt(), 10);
 }
 
-#if defined(QAMUI_ENABLE_PRIVATE_QT)
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
 
 void TestStates::testDirectSyntaxAndGroupedPaths() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property string status: "idle"
@@ -273,13 +273,13 @@ void TestStates::testDirectSyntaxAndGroupedPaths() {
 
 void TestStates::testBindingLifecycleAndRestoration() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property string prefix: "Count"
@@ -332,13 +332,13 @@ void TestStates::testBindingLifecycleAndRestoration() {
 
 void TestStates::testAToBToBaseChainedRestoration() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int baseOffset: 10
@@ -394,13 +394,13 @@ void TestStates::testAToBToBaseChainedRestoration() {
 
 void TestStates::testExplicitTrueVsFalse() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property string msg: "initial"
@@ -460,13 +460,13 @@ void TestStates::testExplicitTrueVsFalse() {
 
 void TestStates::testRestoreEntryValuesFalse() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             Text {
@@ -505,13 +505,13 @@ void TestStates::testRestoreEntryValuesFalse() {
 
 void TestStates::testIndependentStateGroups() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int focusStateVal: 0
@@ -578,13 +578,13 @@ void TestStates::testIndependentStateGroups() {
 
 void TestStates::testAtomicOverlapRejection() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int sharedProp: 0
@@ -656,13 +656,13 @@ void TestStates::testAtomicOverlapRejection() {
 
 void TestStates::testAliasCollisionRejection() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property alias textAlias: targetLabel.text
@@ -723,13 +723,13 @@ void TestStates::testAliasCollisionRejection() {
 
 void TestStates::testReentrantStateRequests() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int step: 0
@@ -771,13 +771,13 @@ void TestStates::testReentrantStateRequests() {
 
 void TestStates::testObjectDestruction() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             Item {
@@ -822,13 +822,13 @@ void TestStates::testObjectDestruction() {
 
 void TestStates::testZeroDurationTransition() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int value: 0
@@ -865,13 +865,13 @@ void TestStates::testZeroDurationTransition() {
 
 void TestStates::testInterruptedTransitionFromDisplayedValue() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             width: 200
@@ -931,13 +931,13 @@ void TestStates::testInterruptedTransitionFromDisplayedValue() {
 
 void TestStates::testDuplicateWriteSuppression() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int cellX: 10
@@ -974,13 +974,13 @@ void TestStates::testDuplicateWriteSuppression() {
 
 void TestStates::testBehaviorInteraction() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             id: root
             property int animatedWithTransition: 0
@@ -1029,7 +1029,7 @@ void TestStates::testBehaviorInteraction() {
 
 void TestStates::testInvalidDeclarationsRejection() {
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     // 1. Mixing map entries and direct assignments is rejected
     {
@@ -1037,7 +1037,7 @@ void TestStates::testInvalidDeclarationsRejection() {
         component.setData(R"(
             pragma ComponentBehavior: Bound
             import QtQml
-            import Qamui
+            import QmlTui
             Item {
                 id: root
                 property int a: 1
@@ -1063,7 +1063,7 @@ void TestStates::testInvalidDeclarationsRejection() {
         component.setData(R"(
             pragma ComponentBehavior: Bound
             import QtQml
-            import Qamui
+            import QmlTui
             Item {
                 id: root
                 states: [
@@ -1103,17 +1103,17 @@ void TestStates::testInvalidDeclarationsRejection() { QSKIP("Advanced states dis
 #endif
 
 void TestStates::testDisabledFeaturesAvailability() {
-#if defined(QAMUI_ENABLE_PRIVATE_QT)
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QSKIP("Private Qt features are enabled in this build");
 #else
     QQmlEngine engine;
-    addQamuiImportPath(engine);
+    addQmlTuiImportPath(engine);
 
     // When advanced states are disabled, StateGroup is not available in QML
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQml
-        import Qamui
+        import QmlTui
         Item {
             StateGroup { }
         }

@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 
 // AnimatedSprite example based on the Qt Quick documentation:
 // Demonstrates a 4-frame loading animation from loading.png (256x64, 4 frames of 64x64).

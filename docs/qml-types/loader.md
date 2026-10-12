@@ -1,10 +1,10 @@
 ---
 title: Loader
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Loader
+cpp: qmltui::Loader
 category: layout
 summary: Loads and instantiates components or QML documents dynamically on demand.
 ---
@@ -15,8 +15,8 @@ Loads and instantiates components or QML documents dynamically on demand. [More.
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -54,7 +54,7 @@ useful for deferring the creation of complex views, tabs, dialogs, or
 controllers until they are actually needed, reducing initial startup time
 and memory footprint.
 
-When the loaded object is a visual `qamui::Item`, it becomes a visual child
+When the loaded object is a visual `qmltui::Item`, it becomes a visual child
 of the Loader: the Loader adopts the item's implicit size, and setting an
 explicit `width` or `height` on the Loader propagates down to the item.
 When `active` is set to `false`, the instantiated item is immediately destroyed.
@@ -66,7 +66,7 @@ or inside the `onLoaded` signal handler.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

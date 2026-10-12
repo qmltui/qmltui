@@ -1,10 +1,10 @@
 ---
 title: ToolTip
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: 
-cpp: qamui::controls::ToolTip
+cpp: qmltui::controls::ToolTip
 category: overlays and navigation
 summary: An attached property that shows a short text box next to an item while it is hovered or focused.
 ---
@@ -15,8 +15,8 @@ An attached property that shows a short text box next to an item while it is hov
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -69,8 +69,8 @@ true.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Row {

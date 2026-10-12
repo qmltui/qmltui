@@ -4,25 +4,25 @@
 #include <QPointer>
 #include <QString>
 #include <QVector>
-#include <Qamui/Core/Items/TextArea.h>
-#include <Qamui/Core/Primitives/Color.h>
-#include <Qamui/Core/Primitives/HighlightRange.h>
+#include <QmlTui/Core/Items/TextArea.h>
+#include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/HighlightRange.h>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-namespace qamui::demo {
+namespace qmltui::demo {
 
 class JsonHighlighter : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(qamui::TextArea* target READ target WRITE setTarget NOTIFY targetChanged)
+    Q_PROPERTY(qmltui::TextArea* target READ target WRITE setTarget NOTIFY targetChanged)
     Q_PROPERTY(QString searchTerm READ searchTerm WRITE setSearchTerm NOTIFY searchTermChanged)
-    Q_PROPERTY(qamui::Color stringColor READ stringColor WRITE setStringColor NOTIFY stylesChanged)
-    Q_PROPERTY(qamui::Color numberColor READ numberColor WRITE setNumberColor NOTIFY stylesChanged)
-    Q_PROPERTY(qamui::Color keywordColor READ keywordColor WRITE setKeywordColor NOTIFY stylesChanged)
-    Q_PROPERTY(qamui::Color commentColor READ commentColor WRITE setCommentColor NOTIFY stylesChanged)
-    Q_PROPERTY(qamui::Color searchBgColor READ searchBgColor WRITE setSearchBgColor NOTIFY stylesChanged)
+    Q_PROPERTY(qmltui::Color stringColor READ stringColor WRITE setStringColor NOTIFY stylesChanged)
+    Q_PROPERTY(qmltui::Color numberColor READ numberColor WRITE setNumberColor NOTIFY stylesChanged)
+    Q_PROPERTY(qmltui::Color keywordColor READ keywordColor WRITE setKeywordColor NOTIFY stylesChanged)
+    Q_PROPERTY(qmltui::Color commentColor READ commentColor WRITE setCommentColor NOTIFY stylesChanged)
+    Q_PROPERTY(qmltui::Color searchBgColor READ searchBgColor WRITE setSearchBgColor NOTIFY stylesChanged)
 
 public:
     enum TokenType {
@@ -91,4 +91,4 @@ private:
     QVector<Token> m_cachedTokens;
 };
 
-} // namespace qamui::demo
+} // namespace qmltui::demo

@@ -1,10 +1,10 @@
 ---
 title: Shortcut
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Shortcut
+cpp: qmltui::Shortcut
 category: input events
 summary: Defines application-wide keyboard shortcuts that trigger actions.
 ---
@@ -15,8 +15,8 @@ Defines application-wide keyboard shortcuts that trigger actions. [More...](#det
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -46,7 +46,7 @@ signal is emitted.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Shortcut {

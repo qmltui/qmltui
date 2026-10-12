@@ -1,10 +1,10 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
-import Qamui.Image
+import QmlTui
+import QmlTui.Controls
+import QmlTui.Image
 
-// A dynamic picture served by a qamui::AsyncImageProvider on a dedicated thread.
+// A dynamic picture served by a qmltui::AsyncImageProvider on a dedicated thread.
 // The Image asks the provider by URL; the tick in the query requests a new sweep
 // each time it changes (Image.source = image://frames/radar?tick=...).
 // Draws at the Image's renderSize, so the sweep is crisp whether the terminal

@@ -6,7 +6,7 @@
 #include <QSortFilterProxyModel>
 #include <QSet>
 #include <QDebug>
-#include <Qamui/Core/Items/TableView.h>
+#include <QmlTui/Core/Items/TableView.h>
 #include "../TestPaint.h"
 #include <algorithm>
 #include <functional>
@@ -78,7 +78,7 @@ static bool benchmark(QQmlEngine &engine, int rows, bool complex, bool useProxy)
     component.setData(QByteArray(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         TableView {
             required property var inputModel
             width: 80; height: 24
@@ -87,15 +87,15 @@ static bool benchmark(QQmlEngine &engine, int rows, bool complex, bool useProxy)
     )") + leaf + "}", QUrl());
     if (!component.isReady()) { qCritical().noquote() << component.errorString(); return false; }
     std::unique_ptr<QObject> object(component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
-    auto *table = qobject_cast<qamui::TableView *>(object.get());
+    auto *table = qobject_cast<qmltui::TableView *>(object.get());
     if (!table) return false;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return false;
-    auto paint = [&] { buffer.clear(); qamui::testing::paintItem(table, buffer, 0, 0); };
+    auto paint = [&] { buffer.clear(); qmltui::testing::paintItem(table, buffer, 0, 0); };
     paint();
     if (table->childItems().isEmpty()) return false;
     qint64 created = 0, destroyed = 0;
-    QSet<qamui::Item *> watched;
+    QSet<qmltui::Item *> watched;
     const auto watch = [&] {
         for (auto *item : table->childItems()) {
             if (watched.contains(item)) continue;
@@ -137,7 +137,7 @@ static bool benchmark(QQmlEngine &engine, int rows, bool complex, bool useProxy)
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-    qamui::TableView linked;
+    qmltui::TableView linked;
     QQmlEngine engine;
     bool ok = true;
     for (int rows : {1'000, 10'000, 1'000'000})

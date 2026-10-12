@@ -1,10 +1,10 @@
 ---
 title: Column
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Column
+cpp: qmltui::Column
 category: layout
 summary: Positions child items vertically along a single column.
 ---
@@ -15,8 +15,8 @@ Positions child items vertically along a single column. [More...](#detailed-desc
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -43,7 +43,7 @@ for flexible stretching and layout alignment, use [ColumnLayout](columnlayout.md
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

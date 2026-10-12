@@ -15,16 +15,16 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <Qamui/Core/Primitives/Color.h>
-#include <Qamui/Core/Engine/AltScreenRenderer.h>
-#include <Qamui/Core/Engine/InlineRenderer.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Primitives/TerminalCapabilities.h>
-#include <Qamui/Core/Primitives/TerminalDevice.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Core/Items/Scrollback.h>
+#include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Engine/AltScreenRenderer.h>
+#include <QmlTui/Core/Engine/InlineRenderer.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Primitives/TerminalCapabilities.h>
+#include <QmlTui/Core/Primitives/TerminalDevice.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Items/Scrollback.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 
@@ -116,7 +116,7 @@ private slots:
 
 void TestTerminalDevice::initTestCase()
 {
-    qputenv("QAMUI_RUNNER_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
+    qputenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
 }
 
 void TestTerminalDevice::testBlockingWriteUnchanged()

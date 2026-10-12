@@ -8,7 +8,7 @@
 - [Input And Focus](input-and-focus.md)
 - [Layouts](layouts.md)
 - [Models](models.md)
-- [Qt Quick To Qamui](qt-quick-to-qamui.md)
+- [Qt Quick To QmlTui](qt-quick-to-qmltui.md)
 - [Styling And Colors](styling-and-colors.md)
 - [TUI Comparison](tui-comparison.md)
 - [Webassembly](webassembly.md)

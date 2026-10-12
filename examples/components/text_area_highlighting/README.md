@@ -1,6 +1,6 @@
 # TextArea Highlighting Component Example
 
-Demonstrates range-based highlighting with `TextArea` in Qamui:
+Demonstrates range-based highlighting with `TextArea` in QmlTui:
 - Layered highlight management: independent `syntax` (priority 0) and `search` (priority 10) layers.
 - Cascaded style resolution: search background highlighting overlays syntax foreground coloring without overwriting token foregrounds.
 - Dual highlighter architectures:

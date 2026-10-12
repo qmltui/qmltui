@@ -1,10 +1,10 @@
 ---
 title: ScrollView
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::ScrollView
+cpp: qmltui::ScrollView
 category: data views
 summary: Container providing vertical scrolling and scrollbar display for overflowing content.
 ---
@@ -15,8 +15,8 @@ Container providing vertical scrolling and scrollbar display for overflowing con
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -42,7 +42,7 @@ machinery.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

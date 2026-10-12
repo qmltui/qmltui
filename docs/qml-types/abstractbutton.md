@@ -1,10 +1,10 @@
 ---
 title: AbstractButton
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::Item
+cpp: qmltui::Item
 category: inputs
 summary: The interaction template every button-like control is built on: text, pressed and down, checkable and checked, hover, paddings, and the background and contentItem items
 ---
@@ -15,8 +15,8 @@ The interaction template every button-like control is built on: text, `pressed` 
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 | **Inherited By** | [Button](button.md), [CheckBox](checkbox.md), [RadioButton](radiobutton.md), [Switch](switch.md) |
 
@@ -110,8 +110,8 @@ A minimal toggle built on the template, with its own look for both states.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     AbstractButton {

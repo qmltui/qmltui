@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Plans 00 to 05 make Qamui presentable. This plan records what separates a
+Plans 00 to 05 make QmlTui presentable. This plan records what separates a
 presentable framework from one people build on, based on an assessment of the
 tree on 2026-09-10. It is ordered by impact. Sections 2, 4, and 6 are the three
 to do first if only three can be done: they address correctness, the input
@@ -17,7 +17,7 @@ Measured on the Release tree (`build/`, Qt 6.8.6, Behavior ON, WSL2):
 | Full CTest suite | 87/87 passed in 17 s |
 | Startup to first frame, `service_monitor` (offscreen) | 30 ms |
 | Peak RSS, `service_monitor` / `btop` | 30 MB / 34 MB |
-| Release `libQamuiCore.so` | 2.6 MB; links Qt6Core, Qt6Qml, ICU |
+| Release `libQmlTuiCore.so` | 2.6 MB; links Qt6Core, Qt6Qml, ICU |
 | `benchmark_render`, worst scene at 240x70 | paint 137 us, diff 196 us |
 | Source size | 26k lines C++/QML, 9.4k tests, 35k examples |
 
@@ -75,7 +75,7 @@ Qt developer hits in the first afternoon destroys trust in the whole framework.
 1. **Conformance suite.** A `tests/Conformance` target that loads the same QML
    (restricted to the shared subset: Item, Rectangle-like, Text, Row, Column,
    Grid, Repeater, Loader, anchors, layouts) through `QQuickView` offscreen and
-   through Qamui, then compares item geometry after layout. Column ordering,
+   through QmlTui, then compares item geometry after layout. Column ordering,
    anchor edge cases, implicit-size propagation, and focus-chain order fall out
    of it automatically. Requires `Qt6::Quick` as a test-only dependency.
 2. **Fix the three verified divergences** listed in Section 2 (Repeater order,
@@ -84,7 +84,7 @@ Qt developer hits in the first afternoon destroys trust in the whole framework.
    installed qmltypes; add a `qmllint` pass over `examples/` to CI. Qt
    developers judge a QML module by whether Qt Creator understands it.
 
-Exit criterion: the conformance suite runs in CI and every documented Qamui
+Exit criterion: the conformance suite runs in CI and every documented QmlTui
 type in the shared subset passes it.
 
 ---
@@ -102,7 +102,7 @@ on a private Qt header, and half-broken (Section 2). Pick one path:
 
 | Path | Work | Result |
 | :--- | :--- | :--- |
-| **Own it** | Make `QAMUI_ENABLE_BEHAVIOR` default ON; add Qt 6.9, 6.10, 6.11 rows to CI; document the supported Qt matrix | Private-header breaks are caught the day they happen |
+| **Own it** | Make `QMLTUI_ENABLE_BEHAVIOR` default ON; add Qt 6.9, 6.10, 6.11 rows to CI; document the supported Qt matrix | Private-header breaks are caught the day they happen |
 | **Design around it** | Ship animated value types (`AnimatedColor`, `AnimatedInt`) that need no interceptor; document plain `Behavior` as unsupported | No private dependency; different syntax from Qt Quick |
 
 Half-on, half-off is the worst option for users. The recommendation is to own
@@ -118,7 +118,7 @@ it: the CI matrix is cheap and the feature is core to the value proposition.
 2. **Focus reporting** (`?1004`) surfaced as `Terminal.active` and used to pause
    cursor blink and animations.
 3. **Capability probing at startup**: DA1, XTVERSION, and DECRQM for `?2026`,
-   replacing `COLORTERM`/`TERM` guesses. Keep `QAMUI_COLOR_DEPTH` as the
+   replacing `COLORTERM`/`TERM` guesses. Keep `QMLTUI_COLOR_DEPTH` as the
    override.
 4. **Signal safety** in `PosixTerminalBackend`: `SIGTSTP` restores the terminal
    and re-enters raw mode on `SIGCONT`; an async-signal-safe crash handler for
@@ -151,7 +151,7 @@ generating test.
 
 ## 7. Control Set Every Dashboard Needs
 
-Admit under the existing `Qamui.Controls` rule (needs engine knowledge or is
+Admit under the existing `QmlTui.Controls` rule (needs engine knowledge or is
 universal): ComboBox, Menu, MenuBar, context menu, ScrollBar, SpinBox. Done
 2026-09-15: `MouseArea.containsMouse` with `entered`/`exited` (the Qt Quick
 names rather than `hovered`), and `Button.hoverEnabled`/`hovered` as the
@@ -187,19 +187,19 @@ a wrapping or proportional layout in the spirit of CSS flexbox and grid beyond
 
 ## 9. Ship and Get Users
 
-1. Tag `v0.4.0` (Plan 00); add vcpkg and Conan ports so `find_package(Qamui)`
+1. Tag `v0.4.0` (Plan 00); add vcpkg and Conan ports so `find_package(QmlTui)`
    works without cloning.
 2. Publish the quickstart the CI already compiles.
 3. Find three real applications outside `examples/`. Excellent frameworks are
-   shaped by users who are not the author; Qamui has none yet.
+   shaped by users who are not the author; QmlTui has none yet.
 
 ---
 
 ## 10. Comparison Context
 
-Where Qamui stands against the field, for prioritising the above:
+Where QmlTui stands against the field, for prioritising the above:
 
-| Library | Qamui wins on | Qamui loses on |
+| Library | QmlTui wins on | QmlTui loses on |
 | :--- | :--- | :--- |
 | ncurses, Notcurses (C) | layout, Unicode, model/view, tests | maturity, footprint, graphics protocols |
 | FTXUI (C++17) | models, anchors, animation, tests | simplicity, zero dependencies |
@@ -215,7 +215,7 @@ to it; nothing else on the list offers QML, Qt models, or native C++.
 
 ## 11. Findings From the Reference Documentation Pass (2026-09-14)
 
-Writing the `docs/qml-types` pages for `Qamui.Controls` against the source
+Writing the `docs/qml-types` pages for `QmlTui.Controls` against the source
 turned up the following. Items marked *fixed* were resolved the same day
 (commit noted in git history as "fix(controls)"); each page documents the
 current behaviour. Triage the rest into section 3 or 7 as they are taken.

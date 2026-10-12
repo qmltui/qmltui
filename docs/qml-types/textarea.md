@@ -1,10 +1,10 @@
 ---
 title: TextArea
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::TextArea
+cpp: qmltui::TextArea
 category: inputs
 summary: A multi-line editable text area item for terminal applications.
 ---
@@ -15,8 +15,8 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -116,7 +116,7 @@ cluster boundaries to avoid partially styled multi-byte or combining sequences.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Qamui Git pre-commit hook: verify that staged C++ files adhere to clang-format
+# QmlTui Git pre-commit hook: verify that staged C++ files adhere to clang-format
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"

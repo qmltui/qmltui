@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qamui
+import QmlTui
 
-// TextArea: Multi-line editing. One tile of the Qamui gallery (examples/gallery)
+// TextArea: Multi-line editing. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
@@ -30,7 +30,7 @@ Terminal {
                 focus: true
                 color: "#c9d1d9"
                 placeholderText: "Write a few lines…"
-                text: "Qamui renders QML into terminal cells.\nThis TextArea keeps a multi-line buffer."
+                text: "QmlTui renders QML into terminal cells.\nThis TextArea keeps a multi-line buffer."
             }
         }
         Text { text: notes.text.length + " characters, " + notes.text.split("\n").length + " lines"; color: "#a78bfa" }

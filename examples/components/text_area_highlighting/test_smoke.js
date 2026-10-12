@@ -36,7 +36,7 @@ function main(terminal) {
     terminal.expectStyle(qmlType.x, qmlType.y, { character: "T", foreground: "cyan", bold: true });
 
     // Palette toggle via F2 in QML Mode
-    const qmlStr = terminal.findText("Hello from Qamui QML!")[0];
+    const qmlStr = terminal.findText("Hello from QmlTui QML!")[0];
     terminal.expectStyle(qmlStr.x, qmlStr.y, { foreground: "green" });
     terminal.press("F2");
     terminal.expectStyle(qmlStr.x, qmlStr.y, { foreground: "magenta" });

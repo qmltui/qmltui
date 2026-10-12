@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 // The default look of the button-like controls, pinned by a styled snapshot
 // so the AbstractButton template and later restyling keep every cell and

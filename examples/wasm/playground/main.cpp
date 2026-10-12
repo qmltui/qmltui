@@ -1,7 +1,7 @@
-// Qamui QML playground for the browser: one binary, QML source supplied by the
-// page at run time. The page calls Module.qamuiLoadQml(source, fileName) after
+// QmlTui QML playground for the browser: one binary, QML source supplied by the
+// page at run time. The page calls Module.qmltuiLoadQml(source, fileName) after
 // every edit; the previous root is destroyed and the new one instantiated.
-// No user C++ is possible here by design; everything Qamui.* offers is linked.
+// No user C++ is possible here by design; everything QmlTui.* offers is linked.
 
 #include <QCoreApplication>
 #include <QEvent>
@@ -28,10 +28,10 @@ QObject* g_root = nullptr;
 
 // Page callbacks; each is optional.
 EM_JS(void, playground_js_quit, (), {
-    if (Module['qamuiOnQuit']) Module['qamuiOnQuit']();
+    if (Module['qmltuiOnQuit']) Module['qmltuiOnQuit']();
 });
 EM_JS(void, playground_js_warning, (const char* text, int length), {
-    if (Module['qamuiOnWarning']) Module['qamuiOnWarning'](UTF8ToString(text, length));
+    if (Module['qmltuiOnWarning']) Module['qmltuiOnWarning'](UTF8ToString(text, length));
 });
 
 std::string errorsToJson(const QList<QQmlError>& errors)
@@ -74,7 +74,7 @@ std::string loadQml(const std::string& source, const std::string& fileName)
     if (!g_root)
         return errorsToJson(component.errors());
 
-    if (!g_root->inherits("qamui::Terminal")) {
+    if (!g_root->inherits("qmltui::Terminal")) {
         QString name = QString::fromLatin1(g_root->metaObject()->className());
         name.remove(QRegularExpression(QStringLiteral("_QMLTYPE_\\d+$")));   // Main_QMLTYPE_4 -> Main
         delete g_root;
@@ -105,18 +105,18 @@ std::string checkQml(const std::string& source, const std::string& fileName)
 }
 
 // Page-defined state the next root can read as a context property, e.g. the
-// gallery's qamuiGalleryPage. Applies to roots created after the call.
+// gallery's qmltuiGalleryPage. Applies to roots created after the call.
 void setContextProperty(const std::string& name, const std::string& value)
 {
     if (g_engine)
         g_engine->rootContext()->setContextProperty(QString::fromStdString(name), QString::fromStdString(value));
 }
 
-EMSCRIPTEN_BINDINGS(qamui_playground)
+EMSCRIPTEN_BINDINGS(qmltui_playground)
 {
-    emscripten::function("qamuiLoadQml", &loadQml);
-    emscripten::function("qamuiCheckQml", &checkQml);
-    emscripten::function("qamuiSetContextProperty", &setContextProperty);
+    emscripten::function("qmltuiLoadQml", &loadQml);
+    emscripten::function("qmltuiCheckQml", &checkQml);
+    emscripten::function("qmltuiSetContextProperty", &setContextProperty);
 }
 
 int main(int argc, char* argv[])
@@ -143,5 +143,5 @@ int main(int argc, char* argv[])
     };
     QObject::connect(&engine, &QQmlEngine::quit, releaseRoot);
     QObject::connect(&engine, &QQmlEngine::exit, [releaseRoot](int) { releaseRoot(); });
-    return app.exec();   // never returns in the browser; the page drives qamuiLoadQml
+    return app.exec();   // never returns in the browser; the page drives qmltuiLoadQml
 }

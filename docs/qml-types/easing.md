@@ -1,10 +1,10 @@
 ---
 title: Easing
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Easing
+cpp: qmltui::Easing
 category: animation and state
 summary: Defines easing curve types for animations.
 ---
@@ -15,8 +15,8 @@ Defines easing curve types for animations. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -45,7 +45,7 @@ more natural and responsive than standard linear transitions.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

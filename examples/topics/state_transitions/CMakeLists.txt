@@ -1,19 +1,19 @@
-qt_add_executable(qamui_state_transitions_demo main.cpp)
+qt_add_executable(qmltui_state_transitions_demo main.cpp)
 
-qt_add_qml_module(qamui_state_transitions_demo
+qt_add_qml_module(qmltui_state_transitions_demo
     URI StateTransitionsDemo
     VERSION 1.0
     QML_FILES
         Main.qml
 
-    DEPENDENCIES TARGET Qamui::Core
+    DEPENDENCIES TARGET qmltui::core
 )
 
-target_link_libraries(qamui_state_transitions_demo PRIVATE Qt6::Core Qt6::Qml Qamui::Core)
+target_link_libraries(qmltui_state_transitions_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
-if(TARGET Qamui::Runner)
-    target_link_libraries(qamui_state_transitions_demo PRIVATE Qamui::Runner)
-    qamui_add_scenario(NAME state_transitions_smoke TARGET qamui_state_transitions_demo
+if(TARGET qmltui::runner)
+    target_link_libraries(qmltui_state_transitions_demo PRIVATE qmltui::runner)
+    qmltui_add_scenario(NAME state_transitions_smoke TARGET qmltui_state_transitions_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
 endif()

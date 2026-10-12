@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qamui
+import QmlTui
 
-// ScrollView: Scroll any tall content. One tile of the Qamui gallery (examples/gallery)
+// ScrollView: Scroll any tall content. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

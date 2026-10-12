@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root
@@ -22,7 +22,7 @@ Terminal {
 
     readonly property string qmlSample:
 `import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
   id: window
@@ -37,7 +37,7 @@ Terminal {
 
     Text {
       anchors.centerIn: parent
-      text: "Hello from Qamui QML!"
+      text: "Hello from QmlTui QML!"
       color: "cyan"
       bold: true
     }

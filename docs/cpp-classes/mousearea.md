@@ -36,13 +36,13 @@ Emitted when the relative Y coordinate of the mouse cursor changes.
 #### void hoverEnabledChanged()
 Emitted when passive hover tracking is enabled or disabled.
 
-#### void pressed(qamui::MouseEvent *event)
+#### void pressed(qmltui::MouseEvent *event)
 Emitted when a mouse button is pressed inside the MouseArea bounds.
 
-#### void released(qamui::MouseEvent *event)
+#### void released(qmltui::MouseEvent *event)
 Emitted when a mouse button is released over the MouseArea bounds.
 
-#### void clicked(qamui::MouseEvent *event)
+#### void clicked(qmltui::MouseEvent *event)
 Emitted when a mouse press and release sequence completes within the MouseArea bounds.
 
 ## 9. Public Methods
@@ -53,10 +53,10 @@ Manually updates the recorded cursor coordinates relative to this MouseArea.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Items/MouseArea.h>
+#include <QmlTui/Core/Items/MouseArea.h>
 #include <QDebug>
 
-using namespace qamui;
+using namespace qmltui;
 
 // In a parent item initialization:
 MouseArea* area = new MouseArea(parentItem);

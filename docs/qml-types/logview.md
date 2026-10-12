@@ -1,10 +1,10 @@
 ---
 title: LogView
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: TextArea
-cpp: qamui::LogView
+cpp: qmltui::LogView
 category: data views
 summary: Streaming log viewer with history buffer trimming and auto-scroll to tail.
 ---
@@ -15,8 +15,8 @@ Streaming log viewer with history buffer trimming and auto-scroll to tail. [More
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [TextArea](textarea.md) |
 
 ## Properties
@@ -49,7 +49,7 @@ pauses auto-scrolling if the user manually scrolls up to inspect history.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

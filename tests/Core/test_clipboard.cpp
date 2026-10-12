@@ -2,14 +2,14 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
-#include <Qamui/Core/Engine/Clipboard.h>
-#include <Qamui/Core/Items/TextInput.h>
-#include <Qamui/Core/Items/TextArea.h>
-#include <Qamui/Core/Engine/Clock_p.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Runner/MemoryTerminalBackend.h>
+#include <QmlTui/Core/Engine/Clipboard.h>
+#include <QmlTui/Core/Items/TextInput.h>
+#include <QmlTui/Core/Items/TextArea.h>
+#include <QmlTui/Core/Engine/Clock_p.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Runner/MemoryTerminalBackend.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestClipboard : public QObject {
     Q_OBJECT
@@ -20,7 +20,7 @@ class TestClipboard : public QObject {
         component.setData(R"(
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 Terminal {
     id: root
     property string status: "READY"
@@ -40,7 +40,7 @@ Terminal {
         return object;
     }
     Clipboard* clipboard(QQmlEngine& engine) {
-        return engine.singletonInstance<Clipboard*>("Qamui", "Clipboard");
+        return engine.singletonInstance<Clipboard*>("QmlTui", "Clipboard");
     }
     QJSValue watch(QQmlEngine& engine, const QJSValue& promise) {
         return engine.evaluate(QStringLiteral(
@@ -355,7 +355,7 @@ private slots:
     void uninitializedOverride() {
         QQmlEngine engine;
         QQmlComponent component(&engine);
-        component.setData("import Qamui\nTerminal { Terminal { objectName: \"nested\" } }", QUrl());
+        component.setData("import QmlTui\nTerminal { Terminal { objectName: \"nested\" } }", QUrl());
         std::unique_ptr<QObject> root(component.create());
         QVERIFY2(root, qPrintable(component.errorString()));
         auto* nested = root->findChild<Terminal*>("nested");

@@ -1,11 +1,11 @@
-# Qamui for Terminal UI Developers
+# QmlTui for Terminal UI Developers
 
 If you are coming from immediate-mode TUI frameworks such as **Ratatui** (Rust),
-**Bubble Tea** (Go), **Textual** (Python), or **Ink** (React/JavaScript), Qamui
+**Bubble Tea** (Go), **Textual** (Python), or **Ink** (React/JavaScript), QmlTui
 offers a fundamentally different architectural model.
 
 While those frameworks typically rely on procedural render loops and state diffing,
-Qamui brings Qt's mature **retained-mode declarative engine** and C++20 performance
+QmlTui brings Qt's mature **retained-mode declarative engine** and C++20 performance
 to terminal screens.
 
 ---
@@ -27,11 +27,11 @@ loop {
 }
 ```
 
-In Qamui, you declare the view hierarchy and property relationships **once**.
+In QmlTui, you declare the view hierarchy and property relationships **once**.
 The Qt event loop and QML engine manage state updates automatically:
 
 ```qml
-// Retained-mode declarative view (Qamui)
+// Retained-mode declarative view (QmlTui)
 Terminal {
     Text {
         // Automatically updates ONLY when server.status changes
@@ -42,7 +42,7 @@ Terminal {
 ```
 
 When `server.status` changes, only that single `Text` element re-evaluates.
-Qamui marks only the dirty cells in the double-buffered text grid and flushes
+QmlTui marks only the dirty cells in the double-buffered text grid and flushes
 the minimal ANSI diff to the terminal.
 
 ---
@@ -57,7 +57,7 @@ arrays:
 let visible_items = &logs[scroll_offset..scroll_offset + screen_height];
 ```
 
-In Qamui, standard Qt models (`QAbstractListModel`, `QAbstractTableModel`) handle
+In QmlTui, standard Qt models (`QAbstractListModel`, `QAbstractTableModel`) handle
 this out of the box:
 - `ListView`, `TableView`, and `TreeView` instantiate only the visible delegates.
 - As the user scrolls via arrow keys or mouse wheel, delegates are reused and
@@ -75,7 +75,7 @@ or control hardware.
 In many TUI frameworks, sharing state between background tasks and the render loop
 requires explicit channel passing (e.g. `mpsc::channel` in Rust or `tea.Msg` in Go).
 
-In Qamui:
+In QmlTui:
 - **C++ Backend**: Background threads emit standard Qt signals.
 - **Thread Safety**: Qt automatically routes cross-thread signal connections
   (`Qt::QueuedConnection`) into the main thread's event loop.
@@ -88,7 +88,7 @@ emit temperatureChanged(newTemp); // Safe from any background thread
 ```
 
 ```qml
-// In Qamui QML:
+// In QmlTui QML:
 Sparkline {
     data: telemetryWorker.history
 }
@@ -98,12 +98,12 @@ Sparkline {
 
 ## 4. Architectural Comparison Table
 
-| Feature | Ratatui (Rust) / Bubble Tea (Go) | Qamui (C++20 / QML) |
+| Feature | Ratatui (Rust) / Bubble Tea (Go) | QmlTui (C++20 / QML) |
 | :--- | :--- | :--- |
 | **UI Paradigm** | Immediate mode (re-render every tick) | Retained mode (declarative reactive bindings) |
 | **State Sync** | Application recalculates on every tick | Fine-grained dependency tracking per property |
 | **Layout System** | Procedural Rect splits (`Layout::default()`) | Declarative Anchors, Row, Column, Grid |
 | **Virtualization** | Manual array slice calculation | Built-in via `QAbstractItemModel` & `ListView` |
 | **Animations** | Manual tick interpolation | Retained `NumberAnimation`, `PropertyAnimation` |
-| **Testing** | Headless buffer assertions | Built-in [`Qamui::Runner`](../cpp-classes/runner.md) frame snapshot testing |
+| **Testing** | Headless buffer assertions | Built-in [`qmltui::runner`](../cpp-classes/runner.md) frame snapshot testing |
 | **Web Browser** | Custom WASM wrappers | Built-in Qt for WebAssembly via `xterm.js` |

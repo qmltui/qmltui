@@ -1,10 +1,10 @@
 ---
 title: span
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Span
+cpp: qmltui::Span
 category: core
 summary: A literal text run with optional style overrides.
 ---
@@ -15,10 +15,10 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Object literal or `Qamui.span()` |
+| **Instantiation** | Object literal or `QmlTui.span()` |
 
 ## Properties
 
@@ -36,8 +36,8 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 ## Detailed Description
 
 Use spans through [Text.spans](text.md). Create them with JavaScript object
-literals or the [Qamui.span()](qamui.md) factory. Both accept color strings and
-Qamui `rgba` values. Attribute omission is distinct from explicit `false`.
+literals or the [QmlTui.span()](qmltui.md) factory. Both accept color strings and
+QmlTui `rgba` values. Attribute omission is distinct from explicit `false`.
 
 In C++, `hasBold()` (and the corresponding methods for other attributes)
 reports whether an override exists. A boolean getter alone does not report
@@ -53,7 +53,7 @@ identity. See Text for multiline, grapheme-boundary, and gradient semantics.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {
@@ -66,9 +66,9 @@ Terminal {
     Text {
         anchors.centerIn: parent
         spans: [
-            Qamui.span("Normal ", {}),
-            Qamui.span("Bold ", { "bold": true, "color": "cyan" }),
-            Qamui.span("Underlined", { "underline": true, "color": "yellow" })
+            QmlTui.span("Normal ", {}),
+            QmlTui.span("Bold ", { "bold": true, "color": "cyan" }),
+            QmlTui.span("Underlined", { "underline": true, "color": "yellow" })
         ]
     }
 }

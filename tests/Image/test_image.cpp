@@ -1,21 +1,21 @@
 #include <QtTest/QtTest>
-#include <Qamui/Image/Image.h>
-#include <Qamui/Image/ImageProvider.h>
+#include <QmlTui/Image/Image.h>
+#include <QmlTui/Image/ImageProvider.h>
 #include <QBuffer>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QSignalSpy>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
 #include <memory>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QTemporaryFile>
-#include <Qamui/Core/Primitives/Color.h>
-#include <Qamui/Core/Primitives/Subpixel.h>
+#include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/Subpixel.h>
 
 class TestImage : public QObject {
     Q_OBJECT
@@ -50,10 +50,10 @@ private:
     // Writes `pixels` (row-major, `width` per row) to a temporary PNG, which
     // keeps the alpha channel, and points `img` at it. Returns the file name
     // so the caller can remove it.
-    QString loadPixels(qamui::Image& img, int width, const QList<QRgb>& pixels);
+    QString loadPixels(qmltui::Image& img, int width, const QList<QRgb>& pixels);
 };
 
-QString TestImage::loadPixels(qamui::Image& img, int width, const QList<QRgb>& pixels) {
+QString TestImage::loadPixels(qmltui::Image& img, int width, const QList<QRgb>& pixels) {
     const int height = pixels.size() / width;
     QImage testImg(width, height, QImage::Format_ARGB32);
     for (int y = 0; y < height; ++y)
@@ -73,17 +73,17 @@ QString TestImage::loadPixels(qamui::Image& img, int width, const QList<QRgb>& p
 
 // Pre-paints a cell the way a Rectangle or the root Terminal would, so the
 // tests can tell an untouched cell from a repainted one.
-static void primeCell(qamui::Cell& cell, uint32_t bgColor) {
+static void primeCell(qmltui::Cell& cell, uint32_t bgColor) {
     cell.setCharacter("X");
     cell.fgColor = 0xFFFFFFFFu;
     cell.bgColor = bgColor;
 }
 
 void TestImage::testInitialState() {
-    qamui::Image img;
-    QCOMPARE(img.status(), qamui::Image::Status::Null);
-    QCOMPARE(img.fillMode(), qamui::Image::FillMode::Stretch);
-    QCOMPARE(img.renderMode(), qamui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
+    qmltui::Image img;
+    QCOMPARE(img.status(), qmltui::Image::Status::Null);
+    QCOMPARE(img.fillMode(), qmltui::Image::FillMode::Stretch);
+    QCOMPARE(img.renderMode(), qmltui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
     QCOMPARE(img.smooth(), false);
     QCOMPARE(img.source().isEmpty(), true);
     QCOMPARE(img.retainWhileLoading(), false);
@@ -105,10 +105,10 @@ void TestImage::testLoadValidImage() {
 
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
 
-    QCOMPARE(img.status(), qamui::Image::Status::Ready);
+    QCOMPARE(img.status(), qmltui::Image::Status::Ready);
     QCOMPARE(img.sourceSize(), QSize(4, 4));
     QCOMPARE(img.implicitWidth(), 4);
     QCOMPARE(img.implicitHeight(), 2); // 4 subpixels / 2 = 2 rows
@@ -117,9 +117,9 @@ void TestImage::testLoadValidImage() {
 }
 
 void TestImage::testLoadInvalidImage() {
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile("/non_existent_path_12345.png"));
-    QCOMPARE(img.status(), qamui::Image::Status::Error);
+    QCOMPARE(img.status(), qmltui::Image::Status::Error);
 }
 
 void TestImage::testRenderHalfBlock() {
@@ -136,18 +136,18 @@ void TestImage::testRenderHalfBlock() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(2);
     img.setHeight(1); // 1 cell height = 2 subpixel rows
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 4);
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
+    const qmltui::Cell& cell0 = buffer.cellAt(0, 0);
     QCOMPARE(cell0.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
     QCOMPARE(QColor::fromRgba(cell0.fgColor).red(), 255);
     QCOMPARE(QColor::fromRgba(cell0.bgColor).blue(), 255);
@@ -157,37 +157,37 @@ void TestImage::testRenderHalfBlock() {
 
 void TestImage::testHalfBlockSampling_data() {
     QTest::addColumn<QSize>("cells");
-    QTest::addColumn<qamui::Image::RenderMode>("mode");
-    QTest::newRow("half-block-smaller") << QSize(7, 2) << qamui::Image::RenderMode::HalfBlock;
-    QTest::newRow("half-block-larger") << QSize(17, 5) << qamui::Image::RenderMode::HalfBlock;
-    QTest::newRow("auto-smaller") << QSize(7, 2) << qamui::Image::RenderMode::Auto;
-    QTest::newRow("auto-larger") << QSize(17, 5) << qamui::Image::RenderMode::Auto;
-    QTest::newRow("kitty-fallback") << QSize(7, 2) << qamui::Image::RenderMode::Kitty;
-    QTest::newRow("sixel-fallback") << QSize(7, 2) << qamui::Image::RenderMode::Sixel;
-    QTest::newRow("native-size") << QSize(10, 3) << qamui::Image::RenderMode::HalfBlock;
+    QTest::addColumn<qmltui::Image::RenderMode>("mode");
+    QTest::newRow("half-block-smaller") << QSize(7, 2) << qmltui::Image::RenderMode::HalfBlock;
+    QTest::newRow("half-block-larger") << QSize(17, 5) << qmltui::Image::RenderMode::HalfBlock;
+    QTest::newRow("auto-smaller") << QSize(7, 2) << qmltui::Image::RenderMode::Auto;
+    QTest::newRow("auto-larger") << QSize(17, 5) << qmltui::Image::RenderMode::Auto;
+    QTest::newRow("kitty-fallback") << QSize(7, 2) << qmltui::Image::RenderMode::Kitty;
+    QTest::newRow("sixel-fallback") << QSize(7, 2) << qmltui::Image::RenderMode::Sixel;
+    QTest::newRow("native-size") << QSize(10, 3) << qmltui::Image::RenderMode::HalfBlock;
 }
 
 void TestImage::testHalfBlockSampling() {
     QFETCH(QSize, cells);
-    QFETCH(qamui::Image::RenderMode, mode);
+    QFETCH(qmltui::Image::RenderMode, mode);
     // An opaque black/white edge contains no intermediate shades to begin
     // with. Any grey in the rendered cells must come from resampling.
     QImage source(10, 6, QImage::Format_RGB32);
     for (int y = 0; y < source.height(); ++y)
         for (int x = 0; x < source.width(); ++x)
             source.setPixel(x, y, x < 5 ? qRgb(0, 0, 0) : qRgb(255, 255, 255));
-    qamui::Image img;
+    qmltui::Image img;
     img.setImage(source);
     img.setRenderMode(mode);
     img.setWidth(cells.width());
     img.setHeight(cells.height());
     auto render = [&] {
-        qamui::TextGridBuffer frame;
+        qmltui::TextGridBuffer frame;
         frame.resize(cells.width(), cells.height());
-        qamui::testing::paintItem(img, frame, 0, 0);
+        qmltui::testing::paintItem(img, frame, 0, 0);
         return frame;
     };
-    auto blendedHalves = [](const qamui::TextGridBuffer& frame) {
+    auto blendedHalves = [](const qmltui::TextGridBuffer& frame) {
         int count = 0;
         for (int y = 0; y < frame.height(); ++y) {
             for (int x = 0; x < frame.width(); ++x) {
@@ -228,28 +228,28 @@ void TestImage::testAutoFitsLikeHalfBlock() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    auto paintWith = [&](qamui::Image::RenderMode mode) {
-        qamui::Image img;
+    auto paintWith = [&](qmltui::Image::RenderMode mode) {
+        qmltui::Image img;
         img.setSource(QUrl::fromLocalFile(fileName));
         img.setRenderMode(mode);
-        img.setFillMode(qamui::Image::FillMode::PreserveAspectFit);
+        img.setFillMode(qmltui::Image::FillMode::PreserveAspectFit);
         img.setWidth(8);
         img.setHeight(4);   // 8 pixel rows: the 2x2 picture fits as 8x8 pixels = 8 cells x 4 rows
-        qamui::TextGridBuffer buffer;
+        qmltui::TextGridBuffer buffer;
         buffer.resize(8, 4);
-        qamui::testing::paintItem(img, buffer, 0, 0);
+        qmltui::testing::paintItem(img, buffer, 0, 0);
         QString picture;
         for (int y = 0; y < 4; ++y) {
             for (int x = 0; x < 8; ++x) {
-                const qamui::Cell& cell = buffer.cellAt(x, y);
+                const qmltui::Cell& cell = buffer.cellAt(x, y);
                 picture += QString::fromUtf8(cell.character().toByteArray()) + QString::number(cell.fgColor, 16) + "/" + QString::number(cell.bgColor, 16) + " ";
             }
             picture += "\n";
         }
         return picture;
     };
-    const QString halfBlock = paintWith(qamui::Image::RenderMode::HalfBlock);
-    const QString automatic = paintWith(qamui::Image::RenderMode::Auto);
+    const QString halfBlock = paintWith(qmltui::Image::RenderMode::HalfBlock);
+    const QString automatic = paintWith(qmltui::Image::RenderMode::Auto);
     QVERIFY2(halfBlock.count(QStringLiteral("\u2580")) == 32, qPrintable(halfBlock));   // every cell painted
     QCOMPARE(automatic, halfBlock);
     QFile::remove(fileName);
@@ -264,16 +264,16 @@ void TestImage::testSetImageFromMemory() {
     frame.setPixelColor(0, 1, QColor(0, 0, 255));
     frame.setPixelColor(1, 1, QColor(0, 0, 255));
 
-    qamui::Image img;
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    qmltui::Image img;
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(2);
     img.setHeight(1);
-    QSignalSpy imageChanged(&img, &qamui::Image::imageChanged);
-    QSignalSpy statusChanged(&img, &qamui::Image::statusChanged);
-    QSignalSpy sizeChanged(&img, &qamui::Image::sourceSizeChanged);
+    QSignalSpy imageChanged(&img, &qmltui::Image::imageChanged);
+    QSignalSpy statusChanged(&img, &qmltui::Image::statusChanged);
+    QSignalSpy sizeChanged(&img, &qmltui::Image::sourceSizeChanged);
 
     img.setImage(frame);
-    QCOMPARE(img.status(), qamui::Image::Status::Ready);
+    QCOMPARE(img.status(), qmltui::Image::Status::Ready);
     QCOMPARE(img.sourceSize(), QSize(2, 2));
     QCOMPARE(img.image().size(), QSize(2, 2));
     QVERIFY(img.source().isEmpty());
@@ -281,10 +281,10 @@ void TestImage::testSetImageFromMemory() {
     QCOMPARE(statusChanged.count(), 1);
     QCOMPARE(sizeChanged.count(), 1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 4);
-    qamui::testing::paintItem(img, buffer, 0, 0);
-    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
+    const qmltui::Cell& cell0 = buffer.cellAt(0, 0);
     QCOMPARE(cell0.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
     QCOMPARE(QColor::fromRgba(cell0.fgColor).red(), 255);
     QCOMPARE(QColor::fromRgba(cell0.bgColor).blue(), 255);
@@ -294,18 +294,18 @@ void TestImage::testSetImageFromMemory() {
     img.setImage(frame);
     QCOMPARE(imageChanged.count(), 2);
     QCOMPARE(sizeChanged.count(), 1);
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
     QCOMPARE(QColor::fromRgba(buffer.cellAt(0, 0).fgColor).green(), 255);
 
     // A null image clears the item.
     img.setImage(QImage());
-    QCOMPARE(img.status(), qamui::Image::Status::Null);
+    QCOMPARE(img.status(), qmltui::Image::Status::Null);
     QVERIFY(img.image().isNull());
     QCOMPARE(sizeChanged.count(), 2);
 }
 
 namespace {
-class SolidProvider : public qamui::ImageProvider {
+class SolidProvider : public qmltui::ImageProvider {
 public:
     QStringList ids;
     QSize lastRequested;
@@ -327,15 +327,15 @@ public:
 void TestImage::testImageProvider() {
     QQmlEngine qml;
     auto* provider = new SolidProvider;
-    qamui::ImageProvider::add(&qml, QStringLiteral("test"), provider);
-    QCOMPARE(qamui::ImageProvider::find(&qml, QStringLiteral("test")), provider);
+    qmltui::ImageProvider::add(&qml, QStringLiteral("test"), provider);
+    QCOMPARE(qmltui::ImageProvider::find(&qml, QStringLiteral("test")), provider);
     QCOMPARE(provider->parent(), &qml);
 
     QQmlComponent component(&qml);
     component.setData(R"(
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
             source: "image://test/solid?frame=1" }
@@ -343,11 +343,11 @@ Terminal {
 )", QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto* terminal = qobject_cast<qamui::Terminal*>(object.get());
+    auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
     QVERIFY(terminal);
-    auto* picture = terminal->findChild<qamui::Image*>("picture");
+    auto* picture = terminal->findChild<qmltui::Image*>("picture");
     QVERIFY(picture);
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCOMPARE(picture->sourceSize(), QSize(4, 4));
     QCOMPARE(provider->ids, QStringList{"solid?frame=1"});
 
@@ -370,24 +370,24 @@ Terminal {
 
     // Unknown id: the provider returns null, the item reports Error.
     picture->setSource(QUrl(QStringLiteral("image://test/missing")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Error);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Error);
     // Unknown provider: Error as well, and a warning.
-    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("no qamui::ImageProvider named \"nobody\""));
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("no qmltui::ImageProvider named \"nobody\""));
     picture->setSource(QUrl(QStringLiteral("image://nobody/x")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Error);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Error);
 
     // Replacing a provider deletes the previous one.
-    QPointer<qamui::ImageProvider> old(provider);
-    qamui::ImageProvider::add(&qml, QStringLiteral("test"), new SolidProvider);
+    QPointer<qmltui::ImageProvider> old(provider);
+    qmltui::ImageProvider::add(&qml, QStringLiteral("test"), new SolidProvider);
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QVERIFY(!old);
-    qamui::ImageProvider::remove(&qml, QStringLiteral("test"));
-    QVERIFY(!qamui::ImageProvider::find(&qml, QStringLiteral("test")));
+    qmltui::ImageProvider::remove(&qml, QStringLiteral("test"));
+    QVERIFY(!qmltui::ImageProvider::find(&qml, QStringLiteral("test")));
 }
 
 namespace {
 // An asynchronous provider the test completes by hand, so timing is explicit.
-class LaterResponse : public qamui::ImageResponse {
+class LaterResponse : public qmltui::ImageResponse {
 public:
     QImage img;
     bool cancelled = false;
@@ -395,11 +395,11 @@ public:
     void cancel() override { cancelled = true; }
     void complete(const QImage& picture) { img = picture; emit finished(); }
 };
-class LaterProvider : public qamui::AsyncImageProvider {
+class LaterProvider : public qmltui::AsyncImageProvider {
 public:
     QStringList ids;
     QList<QPointer<LaterResponse>> responses;
-    qamui::ImageResponse* requestImageResponse(const QString& id, const QSize&) override {
+    qmltui::ImageResponse* requestImageResponse(const QString& id, const QSize&) override {
         ids.append(id);
         if (id == QLatin1String("refuse")) return nullptr;
         auto* response = new LaterResponse;
@@ -420,12 +420,12 @@ QImage solid(Qt::GlobalColor colour) {
 void TestImage::testAsyncImageProvider() {
     QQmlEngine qml;
     auto* provider = new LaterProvider;
-    qamui::ImageProvider::add(&qml, QStringLiteral("later"), provider);
+    qmltui::ImageProvider::add(&qml, QStringLiteral("later"), provider);
     QQmlComponent component(&qml);
     component.setData(R"(
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
             retainWhileLoading: true
@@ -434,22 +434,22 @@ Terminal {
 )", QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto* terminal = qobject_cast<qamui::Terminal*>(object.get());
-    auto* picture = terminal->findChild<qamui::Image*>("picture");
+    auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
+    auto* picture = terminal->findChild<qmltui::Image*>("picture");
     QVERIFY(picture);
-    QCOMPARE(picture->status(), qamui::Image::Status::Loading);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
     QCOMPARE(provider->ids, QStringList{"first"});
     QCOMPARE(provider->responses.size(), 1);
 
     provider->responses[0]->complete(solid(Qt::red));
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCOMPARE(picture->sourceSize(), QSize(4, 4));
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QVERIFY(!provider->responses[0]);            // the item deleted the finished response
 
     // A new request keeps the old picture on screen while it is pending.
     picture->setSource(QUrl(QStringLiteral("image://later/second")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Loading);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
     QVERIFY(!picture->image().isNull());
     QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::red));
 
@@ -458,25 +458,25 @@ Terminal {
     QCOMPARE(provider->responses.size(), 3);
     QVERIFY(provider->responses[1]->cancelled);
     provider->responses[1]->complete(solid(Qt::green));
-    QCOMPARE(picture->status(), qamui::Image::Status::Loading);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
     QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::red));
     provider->responses[2]->complete(solid(Qt::blue));
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::blue));
 
     // Refused at once, and a null picture, both report Error.
     picture->setSource(QUrl(QStringLiteral("image://later/refuse")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Error);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Error);
     picture->setSource(QUrl(QStringLiteral("image://later/fourth")));
     provider->responses.last()->complete(QImage());
-    QCOMPARE(picture->status(), qamui::Image::Status::Error);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Error);
 
     // Assigning a picture directly drops an outstanding request.
     picture->setSource(QUrl(QStringLiteral("image://later/fifth")));
     QPointer<LaterResponse> pending = provider->responses.last();
     picture->setImage(solid(Qt::yellow));
     QVERIFY(pending->cancelled);
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QVERIFY(!pending); // Cancellation need not emit finished().
 
@@ -504,18 +504,18 @@ void TestImage::testRenderASCII() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setRenderMode(qamui::Image::RenderMode::ASCII);
+    img.setRenderMode(qmltui::Image::RenderMode::ASCII);
     img.setWidth(2);
     img.setHeight(2);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 4);
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
+    const qmltui::Cell& cell0 = buffer.cellAt(0, 0);
     QCOMPARE(cell0.character().toByteArray(), QByteArray("@"));
 
     QFile::remove(fileName);
@@ -531,19 +531,19 @@ void TestImage::testRenderBraille() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setRenderMode(qamui::Image::RenderMode::Braille);
+    img.setRenderMode(qmltui::Image::RenderMode::Braille);
     img.setWidth(1);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(2, 2);
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
-    QCOMPARE(cell0.character().toByteArray(), qamui::braille::utf8(0xFF).toByteArray());
+    const qmltui::Cell& cell0 = buffer.cellAt(0, 0);
+    QCOMPARE(cell0.character().toByteArray(), qmltui::braille::utf8(0xFF).toByteArray());
 
     QFile::remove(fileName);
 }
@@ -572,20 +572,20 @@ void TestImage::testBrailleIndividualDots() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSmooth(false);
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setRenderMode(qamui::Image::RenderMode::Braille);
+    img.setRenderMode(qmltui::Image::RenderMode::Braille);
     img.setWidth(1);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(1, 1);
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
-    const uint8_t expectedMask = qamui::braille::dotMask(dotX, dotY);
-    QCOMPARE(cell0.character().toByteArray(), qamui::braille::utf8(expectedMask).toByteArray());
+    const qmltui::Cell& cell0 = buffer.cellAt(0, 0);
+    const uint8_t expectedMask = qmltui::braille::dotMask(dotX, dotY);
+    QCOMPARE(cell0.character().toByteArray(), qmltui::braille::utf8(expectedMask).toByteArray());
 
     QFile::remove(fileName);
 }
@@ -602,20 +602,20 @@ void TestImage::testZeroMaskPreservesUnderlyingCell() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setRenderMode(qamui::Image::RenderMode::Braille);
+    img.setRenderMode(qmltui::Image::RenderMode::Braille);
     img.setWidth(1);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(1, 1);
-    qamui::Cell& cell = buffer.cellAt(0, 0);
+    qmltui::Cell& cell = buffer.cellAt(0, 0);
     cell.setCharacter("Z");
     cell.fgColor = 0xFF112233;
     cell.bgColor = 0xFF445566;
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
     QCOMPARE(cell.character().toByteArray(), QByteArray("Z"));
     QCOMPARE(cell.fgColor, 0xFF112233u);
@@ -634,17 +634,17 @@ void TestImage::testFillModeScaling() {
     tempFile.close();
     QVERIFY(testImg.save(fileName, "PNG"));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl::fromLocalFile(fileName));
-    img.setFillMode(qamui::Image::FillMode::PreserveAspectFit);
+    img.setFillMode(qmltui::Image::FillMode::PreserveAspectFit);
     img.setWidth(20);
     img.setHeight(10);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(20, 10);
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    QCOMPARE(img.status(), qamui::Image::Status::Ready);
+    QCOMPARE(img.status(), qmltui::Image::Status::Ready);
 
     QFile::remove(fileName);
 }
@@ -658,12 +658,12 @@ void TestImage::testSourceClipRect() {
             sheet.setPixel(x, y, y < 2 ? (x < 2 ? qRgb(255, 0, 0) : qRgb(0, 255, 0))
                                        : (x < 2 ? qRgb(0, 0, 255) : qRgb(255, 255, 0)));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setImage(sheet);
     QCOMPARE(img.sourceClipRect(), QRect());
     QCOMPARE(img.implicitWidth(), 4);
 
-    QSignalSpy clipSpy(&img, &qamui::Image::sourceClipRectChanged);
+    QSignalSpy clipSpy(&img, &qmltui::Image::sourceClipRectChanged);
     img.setSourceClipRect(QRect(2, 2, 2, 2));   // the yellow quadrant
     QCOMPARE(clipSpy.count(), 1);
     // The implicit size follows the clip; sourceSize keeps the full picture.
@@ -671,23 +671,23 @@ void TestImage::testSourceClipRect() {
     QCOMPARE(img.implicitHeight(), 1);
     QCOMPARE(img.sourceSize(), QSize(4, 4));
 
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(2);
     img.setHeight(1);
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 4);
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
     for (int x = 0; x < 2; ++x) {
-        const qamui::Cell& cell = buffer.cellAt(x, 0);
+        const qmltui::Cell& cell = buffer.cellAt(x, 0);
         QCOMPARE(cell.fgColor, 0xFFFFFF00u);   // both halves yellow
         QCOMPARE(cell.bgColor, 0xFFFFFF00u);
     }
 
     // A clip reaching outside the picture is cut to it: the same quadrant.
     img.setSourceClipRect(QRect(2, 2, 4, 4));
-    qamui::TextGridBuffer buffer2;
+    qmltui::TextGridBuffer buffer2;
     buffer2.resize(4, 4);
-    qamui::testing::paintItem(img, buffer2, 0, 0);
+    qmltui::testing::paintItem(img, buffer2, 0, 0);
     QCOMPARE(buffer2.cellAt(0, 0).fgColor, 0xFFFFFF00u);
 
     img.resetSourceClipRect();
@@ -699,28 +699,28 @@ void TestImage::testSourceClipRectOutside() {
     QImage sheet(4, 4, QImage::Format_ARGB32);
     sheet.fill(QColor(255, 0, 0));
 
-    qamui::Image img;
+    qmltui::Image img;
     img.setImage(sheet);
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setSourceClipRect(QRect(10, 10, 2, 2));   // entirely outside
     img.setWidth(2);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 4);
     primeCell(buffer.cellAt(0, 0), 0xFF123456u);
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
     // Nothing to show: the cell keeps its glyph and colours.
-    const qamui::Cell& cell = buffer.cellAt(0, 0);
+    const qmltui::Cell& cell = buffer.cellAt(0, 0);
     QCOMPARE(cell.character().toByteArray(), QByteArray("X"));
     QCOMPARE(cell.bgColor, 0xFF123456u);
 }
 
 void TestImage::testQrcResourceUrl() {
-    qamui::Image img;
+    qmltui::Image img;
     img.setSource(QUrl("qrc:/qt/qml/ImageDemo/demo_image.png"));
-    QVERIFY(img.status() == qamui::Image::Status::Error || img.status() == qamui::Image::Status::Ready);
+    QVERIFY(img.status() == qmltui::Image::Status::Error || img.status() == qmltui::Image::Status::Ready);
 }
 
 // The transparency rule: zero alpha draws nothing, partial alpha composites
@@ -733,51 +733,51 @@ void TestImage::testTransparencyOverKnownBackground() {
     constexpr QRgb halfWhite = qRgba(255, 255, 255, 128);
     constexpr uint32_t blue = 0xFF0000FFu;
 
-    qamui::Image img;
+    qmltui::Image img;
     const QString fileName = loadPixels(img, 4, {
         halfRed, clear, clear, halfWhite,   // top row
         clear,   green, clear, clear,       // bottom row
     });
     QVERIFY(!fileName.isEmpty());
-    QCOMPARE(img.status(), qamui::Image::Status::Ready);
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    QCOMPARE(img.status(), qmltui::Image::Status::Ready);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(4);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(4, 1);
     for (int x = 0; x < 3; ++x)
         primeCell(buffer.cellAt(x, 0), blue);
     // Column 3 sits on an ANSI palette background: index 0, xterm black.
-    primeCell(buffer.cellAt(3, 0), qamui::Color::fromAnsiIndex(0).argb32());
+    primeCell(buffer.cellAt(3, 0), qmltui::Color::fromAnsiIndex(0).argb32());
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
     // Half-transparent red over blue: the upper half shows the blend, the
     // lower half stays the blue that was there.
-    const qamui::Cell& blended = buffer.cellAt(0, 0);
+    const qmltui::Cell& blended = buffer.cellAt(0, 0);
     QCOMPARE(blended.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
     QCOMPARE(blended.fgColor, uint32_t(qRgb(128, 0, 127)));
     QCOMPARE(blended.bgColor, blue);
 
     // Only the lower pixel is painted: the glyph covers the lower half so the
     // upper half is the background, not a stale foreground.
-    const qamui::Cell& lower = buffer.cellAt(1, 0);
+    const qmltui::Cell& lower = buffer.cellAt(1, 0);
     QCOMPARE(lower.character().toByteArray(), QByteArray("\xE2\x96\x84")); // ▄
     QCOMPARE(lower.fgColor, uint32_t(green));
     QCOMPARE(lower.bgColor, blue);
 
     // Two clear pixels leave the cell exactly as it was.
-    const qamui::Cell& untouched = buffer.cellAt(2, 0);
+    const qmltui::Cell& untouched = buffer.cellAt(2, 0);
     QCOMPARE(untouched.character().toByteArray(), QByteArray("X"));
     QCOMPARE(untouched.fgColor, 0xFFFFFFFFu);
     QCOMPARE(untouched.bgColor, blue);
 
     // A palette background blends through its xterm RGB: half white over black.
-    const qamui::Cell& overAnsi = buffer.cellAt(3, 0);
+    const qmltui::Cell& overAnsi = buffer.cellAt(3, 0);
     QCOMPARE(overAnsi.character().toByteArray(), QByteArray("\xE2\x96\x80"));
     QCOMPARE(overAnsi.fgColor, uint32_t(qRgb(128, 128, 128)));
-    QCOMPARE(overAnsi.bgColor, qamui::Color::fromAnsiIndex(0).argb32());
+    QCOMPARE(overAnsi.bgColor, qmltui::Color::fromAnsiIndex(0).argb32());
 
     QFile::remove(fileName);
 }
@@ -788,29 +788,29 @@ void TestImage::testTransparencyOverUnknownBackground() {
     constexpr QRgb faintRed = qRgba(255, 0, 0, 100);
     constexpr QRgb mostlyGreen = qRgba(0, 255, 0, 200);
 
-    qamui::Image img;
+    qmltui::Image img;
     const QString fileName = loadPixels(img, 2, {
         faintRed,    mostlyGreen,  // top row
         mostlyGreen, faintRed,     // bottom row
     });
     QVERIFY(!fileName.isEmpty());
-    img.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(2);
     img.setHeight(1);
 
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     buffer.resize(2, 1);
     primeCell(buffer.cellAt(0, 0), 0x00000000u);
     primeCell(buffer.cellAt(1, 0), 0x00000000u);
 
-    qamui::testing::paintItem(img, buffer, 0, 0);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
 
-    const qamui::Cell& lowerOnly = buffer.cellAt(0, 0);
+    const qmltui::Cell& lowerOnly = buffer.cellAt(0, 0);
     QCOMPARE(lowerOnly.character().toByteArray(), QByteArray("\xE2\x96\x84")); // ▄
     QCOMPARE(lowerOnly.fgColor, 0xFF00FF00u);   // unblended, stored opaque
     QCOMPARE(lowerOnly.bgColor, 0x00000000u);   // the faint pixel drew nothing
 
-    const qamui::Cell& upperOnly = buffer.cellAt(1, 0);
+    const qmltui::Cell& upperOnly = buffer.cellAt(1, 0);
     QCOMPARE(upperOnly.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
     QCOMPARE(upperOnly.fgColor, 0xFF00FF00u);
     QCOMPARE(upperOnly.bgColor, 0x00000000u);
@@ -826,18 +826,18 @@ void TestImage::testTransparencyAsciiAndBraille() {
     constexpr uint32_t black = 0xFF000000u;
 
     {
-        qamui::Image img;
+        qmltui::Image img;
         const QString fileName = loadPixels(img, 2, { halfWhite, 0x00000000u });
         QVERIFY(!fileName.isEmpty());
-        img.setRenderMode(qamui::Image::RenderMode::ASCII);
+        img.setRenderMode(qmltui::Image::RenderMode::ASCII);
         img.setWidth(2);
         img.setHeight(1);
 
-        qamui::TextGridBuffer buffer;
+        qmltui::TextGridBuffer buffer;
         buffer.resize(2, 1);
         primeCell(buffer.cellAt(0, 0), black);
         primeCell(buffer.cellAt(1, 0), black);
-        qamui::testing::paintItem(img, buffer, 0, 0);
+        qmltui::testing::paintItem(img, buffer, 0, 0);
 
         // Half white over black is mid grey: the middle of the ramp, in grey.
         QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("="));
@@ -848,7 +848,7 @@ void TestImage::testTransparencyAsciiAndBraille() {
     {
         // One Braille cell is 2x4 pixels: the left column is faint, the right
         // column is half white. Only the right column clears the dark cut-off.
-        qamui::Image img;
+        qmltui::Image img;
         const QString fileName = loadPixels(img, 2, {
             faintWhite, halfWhite,
             faintWhite, halfWhite,
@@ -856,14 +856,14 @@ void TestImage::testTransparencyAsciiAndBraille() {
             faintWhite, halfWhite,
         });
         QVERIFY(!fileName.isEmpty());
-        img.setRenderMode(qamui::Image::RenderMode::Braille);
+        img.setRenderMode(qmltui::Image::RenderMode::Braille);
         img.setWidth(1);
         img.setHeight(1);
 
-        qamui::TextGridBuffer buffer;
+        qmltui::TextGridBuffer buffer;
         buffer.resize(1, 1);
         primeCell(buffer.cellAt(0, 0), black);
-        qamui::testing::paintItem(img, buffer, 0, 0);
+        qmltui::testing::paintItem(img, buffer, 0, 0);
 
         // Right column dots only: U+28B8 (dots 4, 5, 6, 8).
         QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QString(QChar(0x28B8)).toUtf8());
@@ -927,8 +927,8 @@ void TestImage::testRemoteUrl() {
     QQmlComponent component(&qml);
     component.setData(R"(
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 6; height: 2; renderMode: Image.HalfBlock }
     Image { objectName: "second"; x: 0; y: 2; width: 6; height: 2; renderMode: Image.HalfBlock }
@@ -936,16 +936,16 @@ Terminal {
 )", QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto* terminal = qobject_cast<qamui::Terminal*>(object.get());
-    auto* picture = terminal->findChild<qamui::Image*>("picture");
-    auto* second = terminal->findChild<qamui::Image*>("second");
+    auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
+    auto* picture = terminal->findChild<qmltui::Image*>("picture");
+    auto* second = terminal->findChild<qmltui::Image*>("second");
     QVERIFY(picture && second);
     picture->setRetainWhileLoading(retain);
 
-    QSignalSpy progress(picture, &qamui::Image::progressChanged);
+    QSignalSpy progress(picture, &qmltui::Image::progressChanged);
     picture->setSource(QUrl(server.url("/picture.png")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Loading);
-    QTRY_COMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
+    QTRY_COMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCOMPARE(picture->sourceSize(), QSize(6, 4));
     QCOMPARE(QColor(picture->image().pixel(0, 0)), QColor(Qt::magenta));
     QCOMPARE(picture->progress(), 1.0);
@@ -954,16 +954,16 @@ Terminal {
 
     // Cached: the second item is Ready at once and the server is not asked again.
     second->setSource(QUrl(server.url("/picture.png")));
-    QCOMPARE(second->status(), qamui::Image::Status::Ready);
+    QCOMPARE(second->status(), qmltui::Image::Status::Ready);
     QCOMPARE(second->sourceSize(), QSize(6, 4));
     QCOMPARE(server.requests, 1);
 
     // A missing picture reports Error and clears the item.
     QTest::ignoreMessage(QtWarningMsg, QRegularExpression("Image: http://127\\.0\\.0\\.1:\\d+/missing\\.png: .*"));
     picture->setSource(QUrl(server.url("/missing.png")));
-    QCOMPARE(picture->status(), qamui::Image::Status::Loading);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
     QCOMPARE(picture->image().isNull(), !retain);
-    QTRY_COMPARE(picture->status(), qamui::Image::Status::Error);
+    QTRY_COMPARE(picture->status(), qmltui::Image::Status::Error);
     QVERIFY(picture->image().isNull());
     QCOMPARE(picture->progress(), 0.0);
     QCOMPARE(server.requests, 2);
@@ -971,9 +971,9 @@ Terminal {
     // Superseding a download drops it: the later source wins.
     picture->setSource(QUrl(server.url("/also-missing.png")));
     picture->setSource(QUrl(server.url("/picture.png")));   // cached: Ready at once
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QTest::qWait(50);   // the aborted reply must not change anything
-    QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
 }
 
 QTEST_MAIN(TestImage)

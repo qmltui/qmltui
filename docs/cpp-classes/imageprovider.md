@@ -1,12 +1,12 @@
 # ImageProvider
 
-`qamui::ImageProvider` supplies pictures to `Image` items from C++ under an
+`qmltui::ImageProvider` supplies pictures to `Image` items from C++ under an
 `image://` URL, in the shape of Qt Quick's `QQuickImageProvider`. Qt reserves
-that class's base for Qt Quick, so Qamui keeps its own registry on the QML engine.
+that class's base for Qt Quick, so QmlTui keeps its own registry on the QML engine.
 
-- **Header**: `src/Qamui/Image/ImageProvider.h`, installed as `<Qamui/Image/ImageProvider.h>`
+- **Header**: `src/QmlTui/Image/ImageProvider.h`, installed as `<QmlTui/Image/ImageProvider.h>`
 - **Inherits**: `QObject`
-- **Module**: `Qamui::Image`
+- **Module**: `qmltui::image`
 
 ## Public Functions
 
@@ -22,7 +22,7 @@ that class's base for Qt Quick, so Qamui keeps its own registry on the QML engin
 Register a provider once, then refer to it from QML:
 
 ```cpp
-class ScopeProvider : public qamui::ImageProvider {
+class ScopeProvider : public qmltui::ImageProvider {
     QImage requestImage(const QString& id, QSize* size, const QSize& requested) override {
         QImage frame(requested.isValid() ? requested : QSize(80, 24), QImage::Format_RGB32);
         frame.fill(Qt::black);
@@ -33,7 +33,7 @@ class ScopeProvider : public qamui::ImageProvider {
 };
 
 QQmlApplicationEngine engine;
-qamui::ImageProvider::add(&engine, QStringLiteral("frames"), new ScopeProvider);
+qmltui::ImageProvider::add(&engine, QStringLiteral("frames"), new ScopeProvider);
 ```
 
 ```qml

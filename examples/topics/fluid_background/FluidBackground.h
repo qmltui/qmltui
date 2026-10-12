@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Qamui/Core/Items/Item.h>
-#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QList>
 #include <QString>
 
-namespace qamui {
+namespace qmltui {
 
 class ClockTimer;
 
@@ -26,10 +26,10 @@ class FluidBackground : public Item {
     Q_PROPERTY(qreal speed READ speed WRITE setSpeed NOTIFY speedChanged)
     Q_PROPERTY(qreal time READ time WRITE setTime NOTIFY timeChanged)
     Q_PROPERTY(QString charset READ charset WRITE setCharset NOTIFY charsetChanged)
-    Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qamui::Color secondaryColor READ secondaryColor WRITE setSecondaryColor NOTIFY
+    Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qmltui::Color secondaryColor READ secondaryColor WRITE setSecondaryColor NOTIFY
                    secondaryColorChanged)
-    Q_PROPERTY(qamui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
+    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
                    backgroundColorChanged)
     Q_PROPERTY(bool interactive READ interactive WRITE setInteractive NOTIFY interactiveChanged)
     Q_PROPERTY(bool autoWakes READ autoWakes WRITE setAutoWakes NOTIFY autoWakesChanged)
@@ -122,4 +122,4 @@ private:
     float m_autoWakeTimer = 0.0f;
 };
 
-} // namespace qamui
+} // namespace qmltui

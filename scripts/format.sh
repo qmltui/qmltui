@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Qamui C++ formatting helper using clang-format / git-clang-format
+# QmlTui C++ formatting helper using clang-format / git-clang-format
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

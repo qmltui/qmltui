@@ -1,6 +1,6 @@
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root
@@ -17,7 +17,7 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "Qamui ToolTip Component Example"
+            text: "QmlTui ToolTip Component Example"
             color: "cyan"
         }
 

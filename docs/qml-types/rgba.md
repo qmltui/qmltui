@@ -1,10 +1,10 @@
 ---
 title: rgba
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Color
+cpp: qmltui::Color
 category: core
 summary: Terminal color value type supporting ANSI palette indices, RGB hex, and named colors.
 ---
@@ -15,8 +15,8 @@ Terminal color value type supporting ANSI palette indices, RGB hex, and named co
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Value type, not instantiable |
 
@@ -32,7 +32,7 @@ Terminal color value type supporting ANSI palette indices, RGB hex, and named co
 
 ## Detailed Description
 
-`rgba` is the foundational color value type in Qamui. In QML, string literals
+`rgba` is the foundational color value type in QmlTui. In QML, string literals
 automatically convert to `rgba`, supporting:
 
 - Standard named terminal ANSI colors (`"black"`, `"red"`, `"green"`, `"yellow"`,
@@ -42,13 +42,13 @@ automatically convert to `rgba`, supporting:
 - `"transparent"`: No ink is painted, allowing underlying content to show through.
 - Hexadecimal formats (`"#RGB"`, `"#RRGGBB"`, `"#AARRGGBB"`).
 
-Construct color values dynamically using [Qamui.rgba()](qamui.md).
+Construct color values dynamically using [QmlTui.rgba()](qmltui.md).
 
 ### Example
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

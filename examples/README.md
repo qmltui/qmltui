@@ -1,6 +1,6 @@
 # Examples
 
-Build with `QAMUI_BUILD_EXAMPLES=ON`; enable tests to run the Runner scenarios.
+Build with `QMLTUI_BUILD_EXAMPLES=ON`; enable tests to run the Runner scenarios.
 Each component directory includes its build target and a short guide. The
 [gallery](gallery/) presents the same concepts as a browsable catalog; its tile
 sources are also used by the [WebAssembly playground](wasm/).
@@ -69,4 +69,4 @@ sources are also used by the [WebAssembly playground](wasm/).
 
 - [Tutorials](../docs/tutorials/index.md)
 - [Standalone quickstart](quickstart/) and [its Runner test](quickstart_test/)
-- [Full applications](https://github.com/qamui-dev/qamui-apps)
+- [Full applications](https://github.com/qmltui-dev/qmltui-apps)

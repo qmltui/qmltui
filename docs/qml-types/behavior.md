@@ -1,10 +1,10 @@
 ---
 title: Behavior
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Behavior
+cpp: qmltui::Behavior
 category: animation and state
 summary: Defines default animations for property changes.
 ---
@@ -15,8 +15,8 @@ Defines default animations for property changes. [More...](#detailed-description
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -35,7 +35,7 @@ the change and plays its child [Animation](animation.md) to transition the prope
 smoothly from its old value to the new value.
 
 > [!NOTE]
-> Behavior is an optional feature in Qamui requiring `QAMUI_ENABLE_PRIVATE_QT=ON`
+> Behavior is an optional feature in QmlTui requiring `QMLTUI_ENABLE_PRIVATE_QT=ON`
 > and links against `Qt6::QmlPrivate`.
 
 ### Example

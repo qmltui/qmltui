@@ -1,10 +1,10 @@
 ---
 title: PropertyChanges
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::PropertyChanges
+cpp: qmltui::PropertyChanges
 category: animation and state
 summary: Describes property modifications applied in a State.
 ---
@@ -15,8 +15,8 @@ Describes property modifications applied in a State. [More...](#detailed-descrip
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -37,7 +37,7 @@ target items change when that state becomes active.
 
 PropertyChanges supports two syntaxes:
 
-1. **Direct assignment syntax** (available with `QAMUI_ENABLE_PRIVATE_QT=ON`):
+1. **Direct assignment syntax** (available with `QMLTUI_ENABLE_PRIVATE_QT=ON`):
    Expressions can be assigned directly to properties on a specified `target`, or
    using ID-qualified grouped property paths:
 
@@ -74,7 +74,7 @@ When entering a state:
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

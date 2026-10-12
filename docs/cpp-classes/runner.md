@@ -2,15 +2,15 @@
 
 ## Class Overview
 
-`qamui::Runner` turns a running Qamui `Terminal` application into a bounded JavaScript-driven automation and test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
+`qmltui::Runner` turns a running QmlTui `Terminal` application into a bounded JavaScript-driven automation and test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
 
 The class is intended for application-level automated scenarios, agent harnesses, and tests. It operates on an explicitly supplied `Terminal`, so applications with multiple terminals do not rely on global target selection.
 
 ## Project Structure and Dependencies
 
-The declaration is in `Runner/Runner.h` and the implementation is in `Runner/Runner.cpp`. `QamuiRunner` is available when either `QAMUI_BUILD_TESTS` or `QAMUI_ENABLE_RUNNER` is enabled. Consumers link against `Qamui::Runner`.
+The declaration is in `Runner/Runner.h` and the implementation is in `Runner/Runner.cpp`. `QmlTuiRunner` is available when either `QMLTUI_BUILD_TESTS` or `QMLTUI_ENABLE_RUNNER` is enabled. Consumers link against `qmltui::runner`.
 
-Its only build dependencies are Qt 6 QML and `Qamui::Core`; a `QCoreApplication` is sufficient, and no Qt GUI module is needed. The driver collaborates with these project types:
+Its only build dependencies are Qt 6 QML and `qmltui::core`; a `QCoreApplication` is sufficient, and no Qt GUI module is needed. The driver collaborates with these project types:
 
 - `Terminal` identifies the UI under test.
 - `TerminalEngine` injects input, requests rendering, publishes committed-frame notifications, and provides the current frame.
@@ -46,11 +46,11 @@ Waits for the requested duration while continuing to process Qt events, QML time
 
 #### void advanceTime(int durationMs)
 
-Virtual clock only. Advances Qamui time by `durationMs` in steps of at most 16 ms — or to the next Qamui timer deadline when that is sooner — firing Qamui timers, animations, and QML `Timer`s at their exact virtual instants and committing frames for whatever they invalidated. A step that scheduled nothing commits no frame, so `frameCount()` comparisons remain meaningful. On the real clock the call fails with the variable that selects virtual mode. JavaScript usage: `terminal.advanceTime(500)`.
+Virtual clock only. Advances QmlTui time by `durationMs` in steps of at most 16 ms — or to the next QmlTui timer deadline when that is sooner — firing QmlTui timers, animations, and QML `Timer`s at their exact virtual instants and committing frames for whatever they invalidated. A step that scheduled nothing commits no frame, so `frameCount()` comparisons remain meaningful. On the real clock the call fails with the variable that selects virtual mode. JavaScript usage: `terminal.advanceTime(500)`.
 
 #### double now()
 
-Milliseconds on the Qamui clock: virtual time under the virtual clock, wall time since process start otherwise. JavaScript usage: `const t = terminal.now();`
+Milliseconds on the QmlTui clock: virtual time under the virtual clock, wall time since process start otherwise. JavaScript usage: `const t = terminal.now();`
 
 #### void waitForFrame(int timeoutMs = 2000)
 
@@ -120,7 +120,7 @@ Waits for the next committed frame and writes its styled text (the `styledText()
 
 #### Scrollback assertions
 
-An Inline-mode application commits its history through `Scrollback`, and those rows never appear in the live frame. In a test session the engine keeps every committed row as cells (see `TerminalEngine::setScrollbackHistoryEnabled()`; `QAMUI_SCROLLBACK_HISTORY_ROWS` sets the retained window, 5,000 rows by default), and the methods below read them with the same normalisation, styled format, artifact and snapshot rules as their frame counterparts. Rows are committed exactly when their bytes would reach the terminal: on the stream render that carries them, so `expect*` waits for a frame first. Row numbers count from the start of the session and keep counting when old rows are trimmed; `print("a\nb")` is two rows and a spacing row is one blank row. Every method fails when the root `Terminal` is not in Inline mode, because scrollback stays pending in AltScreen mode. A Runner constructed after QML loaded starts recording from `beginTestSession()`, so rows appended during `componentComplete` are bytes only.
+An Inline-mode application commits its history through `Scrollback`, and those rows never appear in the live frame. In a test session the engine keeps every committed row as cells (see `TerminalEngine::setScrollbackHistoryEnabled()`; `QMLTUI_SCROLLBACK_HISTORY_ROWS` sets the retained window, 5,000 rows by default), and the methods below read them with the same normalisation, styled format, artifact and snapshot rules as their frame counterparts. Rows are committed exactly when their bytes would reach the terminal: on the stream render that carries them, so `expect*` waits for a frame first. Row numbers count from the start of the session and keep counting when old rows are trimmed; `print("a\nb")` is two rows and a spacing row is one blank row. Every method fails when the root `Terminal` is not in Inline mode, because scrollback stays pending in AltScreen mode. A Runner constructed after QML loaded starts recording from `beginTestSession()`, so rows appended during `componentComplete` are bytes only.
 
 #### int scrollbackRowCount()
 
@@ -156,11 +156,11 @@ Compares the committed scrollback rows from `fromRow` onwards against a snapshot
 
 #### Recording a session as an asciicast
 
-A scenario registered with `qamui_add_scenario(... RECORD <name>.cast)` (or run with `QAMUI_RUNNER_RECORD=<path>` next to a scenario variable) records the terminal bytes the application emits into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. The Runner swaps the terminal backend for an in-memory one before the `Terminal` exists, turns output on, fixes the capabilities to 24-bit colour with no synchronized output, kitty protocols or probes, and appends one `"o"` event per committed frame with the Runner clock as its time. Under `CLOCK VIRTUAL` the timeline advances only through `sleep()` and `advanceTime()`, so pace a recording scenario with them; the cast is then byte-identical on every run. Full-screen and inline (scrollback) sessions both record faithfully because the bytes are the real ones. The header carries no wall-clock timestamp. Recorded paths are listed under `artifacts.casts` in `result.json`, and the test gets the `Cast` label. `RECORD` cannot be combined with `LIVE`. Derive a GIF with `agg <name>.cast <name>.gif` or an SVG still with `svg-term`; neither tool is needed to record.
+A scenario registered with `qmltui_add_scenario(... RECORD <name>.cast)` (or run with `QMLTUI_RUNNER_RECORD=<path>` next to a scenario variable) records the terminal bytes the application emits into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. The Runner swaps the terminal backend for an in-memory one before the `Terminal` exists, turns output on, fixes the capabilities to 24-bit colour with no synchronized output, kitty protocols or probes, and appends one `"o"` event per committed frame with the Runner clock as its time. Under `CLOCK VIRTUAL` the timeline advances only through `sleep()` and `advanceTime()`, so pace a recording scenario with them; the cast is then byte-identical on every run. Full-screen and inline (scrollback) sessions both record faithfully because the bytes are the real ones. The header carries no wall-clock timestamp. Recorded paths are listed under `artifacts.casts` in `result.json`, and the test gets the `Cast` label. `RECORD` cannot be combined with `LIVE`. Derive a GIF with `agg <name>.cast <name>.gif` or an SVG still with `svg-term`; neither tool is needed to record.
 
 #### void startRecording(const QString &relativePath)
 
-Closes any recording in progress and starts a new cast at `relativePath` beneath the artifact directory, beginning with a full repaint. Fails when the session was not armed with `QAMUI_RUNNER_RECORD`. JavaScript usage: `terminal.startRecording("tour.cast")`.
+Closes any recording in progress and starts a new cast at `relativePath` beneath the artifact directory, beginning with a full repaint. Fails when the session was not armed with `QMLTUI_RUNNER_RECORD`. JavaScript usage: `terminal.startRecording("tour.cast")`.
 
 #### void stopRecording()
 
@@ -286,7 +286,7 @@ Like `expectSnapshot()`, but compares `styledText()`, so a color or attribute re
 
 ## Snapshot Update Mode
 
-`QAMUI_RUNNER_UPDATE_SNAPSHOTS=1` makes `expectSnapshot()`, `expectStyled()`, `expectRegionSnapshot()`, and `expectScrollbackSnapshot()` rewrite their baseline from the committed frame and pass, so recording and refreshing golden files is one command: `QAMUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>`. The scenario runner forwards the variable to the launched process. An update is never silent: every rewritten path is listed in the final stderr summary and under `artifacts.updatedSnapshots` in `result.json`. A missing baseline in normal mode fails with a message naming the variable. A baseline inside a Qt resource cannot be written back; update mode then records the actual frame under the artifact directory and fails with both paths. In CMake, `qamui_add_scenario(... UPDATE_SNAPSHOTS)` forces the mode on for one test and `NO_UPDATE_SNAPSHOTS` pins it off so a verifying or negative test stays deterministic under a global update run.
+`QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` makes `expectSnapshot()`, `expectStyled()`, `expectRegionSnapshot()`, and `expectScrollbackSnapshot()` rewrite their baseline from the committed frame and pass, so recording and refreshing golden files is one command: `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>`. The scenario runner forwards the variable to the launched process. An update is never silent: every rewritten path is listed in the final stderr summary and under `artifacts.updatedSnapshots` in `result.json`. A missing baseline in normal mode fails with a message naming the variable. A baseline inside a Qt resource cannot be written back; update mode then records the actual frame under the artifact directory and fails with both paths. In CMake, `qmltui_add_scenario(... UPDATE_SNAPSHOTS)` forces the mode on for one test and `NO_UPDATE_SNAPSHOTS` pins it off so a verifying or negative test stays deterministic under a global update run.
 
 #### object rootObject()
 
@@ -314,40 +314,40 @@ Construction does not start execution. Schedule `start()` after the application 
 
 #### static Runner *startFromEnvironment(QQmlEngine *qmlEngine, Terminal *terminal)
 
-Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QAMUI_RUNNER_SCRIPT`, `QAMUI_RUNNER_EVAL`, and `QAMUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive.
+Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `QAMUI_RUNNER_SCRIPT` | None | Required filesystem scenario path. |
-| `QAMUI_RUNNER_EVAL` | None | Inline JavaScript scenario; its temporary file is removed at completion. |
-| `QAMUI_RUNNER_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QAMUI_RUNNER_TIMEOUT_MS`. |
-| `QAMUI_RUNNER_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. |
-| `QAMUI_RUNNER_COLUMNS` | `80` | Viewport columns, from 1 through 1,000. |
-| `QAMUI_RUNNER_ROWS` | `24` | Viewport rows, from 1 through 1,000. |
-| `QAMUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. |
-| `QAMUI_RUNNER_TIMEOUT_MS` | `10000` | Overall scenario watchdog, from 1 through 300,000 milliseconds. |
-| `QAMUI_RUNNER_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. C++: `useEmbeddedScenario(true)` or `setLiveOutput()`. |
-| `QAMUI_RUNNER_EMBEDDED_SCENARIO` | Off | Marks a run driven by a directly constructed `Runner`, so the engine applies the same quiet-by-default terminal behavior as an environment-requested scenario. C++: `useEmbeddedScenario()`. |
-| `QAMUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines instead of failing on mismatch; see Snapshot Update Mode. C++: `setUpdateSnapshots()`. |
-| `QAMUI_RUNNER_CLOCK` | `real` | `virtual` freezes Qamui time; see The Virtual Clock. C++: `useVirtualClock()`. |
+| `QMLTUI_RUNNER_SCRIPT` | None | Required filesystem scenario path. |
+| `QMLTUI_RUNNER_EVAL` | None | Inline JavaScript scenario; its temporary file is removed at completion. |
+| `QMLTUI_RUNNER_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QMLTUI_RUNNER_TIMEOUT_MS`. |
+| `QMLTUI_RUNNER_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. |
+| `QMLTUI_RUNNER_COLUMNS` | `80` | Viewport columns, from 1 through 1,000. |
+| `QMLTUI_RUNNER_ROWS` | `24` | Viewport rows, from 1 through 1,000. |
+| `QMLTUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. |
+| `QMLTUI_RUNNER_TIMEOUT_MS` | `10000` | Overall scenario watchdog, from 1 through 300,000 milliseconds. |
+| `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. C++: `useEmbeddedScenario(true)` or `setLiveOutput()`. |
+| `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Marks a run driven by a directly constructed `Runner`, so the engine applies the same quiet-by-default terminal behavior as an environment-requested scenario. C++: `useEmbeddedScenario()`. |
+| `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines instead of failing on mismatch; see Snapshot Update Mode. C++: `setUpdateSnapshots()`. |
+| `QMLTUI_RUNNER_CLOCK` | `real` | `virtual` freezes QmlTui time; see The Virtual Clock. C++: `useVirtualClock()`. |
 
-Every Runner setting uses the `QAMUI_RUNNER_` prefix. There are no alternate or legacy spellings. The environment is read in `startFromEnvironment()` only, with two deliberate exceptions: the terminal engine reads the session and live variables when the root `Terminal` is created, and `start()` falls back to `QAMUI_RUNNER_UPDATE_SNAPSHOTS` when `setUpdateSnapshots()` was not called, so `QAMUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest` also refreshes the baselines of embedded runs. A directly constructed `Runner` takes the constructor arguments plus the three methods below instead of the variables.
+Every Runner setting uses the `QMLTUI_RUNNER_` prefix. There are no alternate or legacy spellings. The environment is read in `startFromEnvironment()` only, with two deliberate exceptions: the terminal engine reads the session and live variables when the root `Terminal` is created, and `start()` falls back to `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` when `setUpdateSnapshots()` was not called, so `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest` also refreshes the baselines of embedded runs. A directly constructed `Runner` takes the constructor arguments plus the three methods below instead of the variables.
 
 #### static void useEmbeddedScenario(bool liveOutput = false)
 
-Marks the process as a scenario run driven by a directly constructed `Runner`, as `QAMUI_RUNNER_EMBEDDED_SCENARIO=1` does: every `Terminal` created afterwards stays quiet — no ANSI output, no frame pacing — unless `liveOutput` is true or `QAMUI_RUNNER_LIVE` is set. Call it before loading QML, like `useVirtualClock()`. A `Runner` constructed without it still switches its engine into the quiet test session from its constructor on, but the terminal's startup sequences (raw mode, cursor, bracketed paste) have reached the terminal by then.
+Marks the process as a scenario run driven by a directly constructed `Runner`, as `QMLTUI_RUNNER_EMBEDDED_SCENARIO=1` does: every `Terminal` created afterwards stays quiet — no ANSI output, no frame pacing — unless `liveOutput` is true or `QMLTUI_RUNNER_LIVE` is set. Call it before loading QML, like `useVirtualClock()`. A `Runner` constructed without it still switches its engine into the quiet test session from its constructor on, but the terminal's startup sequences (raw mode, cursor, bracketed paste) have reached the terminal by then.
 
 #### void setLiveOutput(bool live)
 
-Renders the scenario to the real terminal instead of committing frames quietly, as `QAMUI_RUNNER_LIVE=1` does. Takes effect immediately and can be toggled during a run; outside a test session output is on regardless.
+Renders the scenario to the real terminal instead of committing frames quietly, as `QMLTUI_RUNNER_LIVE=1` does. Takes effect immediately and can be toggled during a run; outside a test session output is on regardless.
 
 #### void setUpdateSnapshots(bool update)
 
-Selects snapshot update mode for this run, as `QAMUI_RUNNER_UPDATE_SNAPSHOTS=1` does. An explicit value wins over the environment in both directions, so a harness can pin verification off under a global update run or record baselines without touching the environment. Call it before `start()`.
+Selects snapshot update mode for this run, as `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` does. An explicit value wins over the environment in both directions, so a harness can pin verification off under a global update run or record baselines without touching the environment. Call it before `start()`.
 
 ## The Virtual Clock
 
-`QAMUI_RUNNER_CLOCK=virtual` — or `qamui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads — runs the scenario on a frozen timeline: Qamui timers and animations, cursor blink, tooltip delays, toast lifetimes, `AnimatedSprite`, and QML `Timer` advance only through `advanceTime()` and `sleep()`. Timers fire at their exact virtual instants, an animation holds any mid-state for inspection, and a 10-second walkthrough of timed behavior executes in milliseconds without flakiness under load.
+`QMLTUI_RUNNER_CLOCK=virtual` — or `qmltui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads — runs the scenario on a frozen timeline: QmlTui timers and animations, cursor blink, tooltip delays, toast lifetimes, `AnimatedSprite`, and QML `Timer` advance only through `advanceTime()` and `sleep()`. Timers fire at their exact virtual instants, an animation holds any mid-state for inspection, and a 10-second walkthrough of timed behavior executes in milliseconds without flakiness under load.
 
 The mode is chosen once, before QML loads, and never changes mid-run. `waitFor*` timeouts stay on wall time and do not advance the virtual clock; a wait that depends on paused time fails quickly with a hint naming `advanceTime()`. Limits: application `QTimer`s, threads, image providers, network, and `Date.now()` stay on wall time, and a QML `Timer` shorter than the 16 ms step fires at most once per step. Scenarios mixing wall-time sources should use `waitFor*` for those parts. `result.json` records `clock` and, in virtual mode, the final `virtualTimeMs`.
 
@@ -359,7 +359,7 @@ Every requested run atomically writes `result.json` with schema version `1`, sta
 
 A scenario ending in `.js` is a classic script defining `function main(terminal)`. It is evaluated inside a function scope, so its top-level declarations stay out of the application's JavaScript globals; reported line numbers are unchanged.
 
-The argument is conventionally named `terminal` — the facade is the terminal under test, as Playwright's handle is `page` — and short scenarios often abbreviate it to `t`. Scenarios are plain JavaScript, so TypeScript annotations are a syntax error; editor completion comes from the shipped declarations instead. `Runner/qamui-runner.d.ts` (made ambient by the repository's `jsconfig.json`, and installed next to the headers for consumers) types the whole facade, so one JSDoc line enables autocomplete and hover documentation in any editor with a TypeScript language service:
+The argument is conventionally named `terminal` — the facade is the terminal under test, as Playwright's handle is `page` — and short scenarios often abbreviate it to `t`. Scenarios are plain JavaScript, so TypeScript annotations are a syntax error; editor completion comes from the shipped declarations instead. `Runner/qmltui-runner.d.ts` (made ambient by the repository's `jsconfig.json`, and installed next to the headers for consumers) types the whole facade, so one JSDoc line enables autocomplete and hover documentation in any editor with a TypeScript language service:
 
 ```javascript
 /** @param {Terminal} terminal */
@@ -370,28 +370,28 @@ function main(terminal) {
 
 `test_runner_declarations` fails when a facade method is missing from the declarations, so completion cannot silently fall behind the API.
 
-Consumer projects get the same completion from one call after bringing Qamui in — whether through `find_package(Qamui)`, `FetchContent`, or `add_subdirectory`:
+Consumer projects get the same completion from one call after bringing QmlTui in — whether through `find_package(QmlTui)`, `FetchContent`, or `add_subdirectory`:
 
 ```cmake
-FetchContent_MakeAvailable(qamui)
-qamui_scenario_editor_support()   # optional: DIRECTORY <path>
+FetchContent_MakeAvailable(qmltui)
+qmltui_scenario_editor_support()   # optional: DIRECTORY <path>
 ```
 
-The helper copies the declarations to `<project>/.qamui/qamui-runner.d.ts` (with a `.gitignore` so the directory stays out of version control) and generates a `jsconfig.json` when the project has none; an existing `jsconfig.json` is never modified — a status message names the one include line to add. From there the same `@param {Terminal}` JSDoc line lights up completion in the consumer's own scenario files.
+The helper copies the declarations to `<project>/.qmltui/qmltui-runner.d.ts` (with a `.gitignore` so the directory stays out of version control) and generates a `jsconfig.json` when the project has none; an existing `jsconfig.json` is never modified — a status message names the one include line to add. From there the same `@param {Terminal}` JSDoc line lights up completion in the consumer's own scenario files.
 
-A scenario ending in `.mjs` is an ECMAScript module: it must `export function main(terminal)` and may `import` helper modules with relative paths, so applications can share navigation and setup code between scenarios. Module scenarios load from the filesystem or from Qt resources, including their relative imports. `QAMUI_RUNNER_EVAL` stays classic.
+A scenario ending in `.mjs` is an ECMAScript module: it must `export function main(terminal)` and may `import` helper modules with relative paths, so applications can share navigation and setup code between scenarios. Module scenarios load from the filesystem or from Qt resources, including their relative imports. `QMLTUI_RUNNER_EVAL` stays classic.
 
 ## CMake integration
 
-The helpers live in `cmake/QamuiRunner.cmake` and are defined wherever the `Qamui::Runner` target is: `find_package(Qamui)` includes the module from the installed package, and an `add_subdirectory` or `FetchContent` build defines it while configuring the Runner library, before any consumer directory is processed. Nothing needs to `include()` the file by hand. Consumers register scenarios with `qamui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default. `qamui_scenario_editor_support()` materializes editor completion for the consumer's scenario files (see Scenario Files).
+The helpers live in `cmake/QmlTuiRunner.cmake` and are defined wherever the `qmltui::runner` target is: `find_package(QmlTui)` includes the module from the installed package, and an `add_subdirectory` or `FetchContent` build defines it while configuring the Runner library, before any consumer directory is processed. Nothing needs to `include()` the file by hand. Consumers register scenarios with `qmltui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default. `qmltui_scenario_editor_support()` materializes editor completion for the consumer's scenario files (see Scenario Files).
 
 Examples and applications use their normal executable for scenarios. After defining
 the application and its QML module, conditionally link Runner and register a script:
 
 ```cmake
-if(TARGET Qamui::Runner)
-    target_link_libraries(my_app PRIVATE Qamui::Runner)
-    qamui_add_scenario(
+if(TARGET qmltui::runner)
+    target_link_libraries(my_app PRIVATE qmltui::runner)
+    qmltui_add_scenario(
         NAME my_app_smoke
         TARGET my_app
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
@@ -404,7 +404,7 @@ There is no second executable or QML module. Linking Runner installs an automati
 hook for QML-created Terminals; ordinary startup runs no scenario unless a Runner
 environment mode is requested. C++-created Terminals must explicitly call
 `Runner::startFromEnvironment()` with a script engine. For production builds,
-disable both `QAMUI_BUILD_TESTS` and `QAMUI_ENABLE_RUNNER` to omit Runner.
+disable both `QMLTUI_BUILD_TESTS` and `QMLTUI_ENABLE_RUNNER` to omit Runner.
 
 #### void start()
 
@@ -435,33 +435,33 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 ```cpp
 #include <QTimer>
 #include <QQmlApplicationEngine>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Runner/Runner.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Runner/Runner.h>
 
-qamui::Runner::useEmbeddedScenario();   // before QML loads: quiet terminal
+qmltui::Runner::useEmbeddedScenario();   // before QML loads: quiet terminal
 QQmlApplicationEngine engine;
 engine.loadFromModule("MyApplication", "Main");
-auto *terminal = qobject_cast<qamui::Terminal *>(engine.rootObjects().constFirst());
-auto *driver = new qamui::Runner(
+auto *terminal = qobject_cast<qmltui::Terminal *>(engine.rootObjects().constFirst());
+auto *driver = new qmltui::Runner(
     &engine, terminal,
     QStringLiteral(":/qt/qml/MyApplication/test_scenario.js"),
     QStringLiteral("/tmp/test-artifacts"), QSize(80, 24),
     1500, 8000, QString());
 driver->setUpdateSnapshots(recordBaselines);   // optional; defaults to the environment
-QTimer::singleShot(0, driver, &qamui::Runner::start);
+QTimer::singleShot(0, driver, &qmltui::Runner::start);
 ```
 
 ## Command-line launcher
 
-`qamui-runner` launches a Runner-linked application without CMake scenario
+`qmltui-runner` launches a Runner-linked application without CMake scenario
 registration. Build it with tests enabled, or build and install it with
-`QAMUI_ENABLE_RUNNER=ON`. The launcher itself requires only Qt Core.
+`QMLTUI_ENABLE_RUNNER=ON`. The launcher itself requires only Qt Core.
 
 ```bash
-qamui-runner --script test.js -- ./myApp --config demo.json
-qamui-runner --eval 'terminal.clickText("Save")' -- ./myApp
-qamui-runner --capture-after-ms 500 -- ./myApp
-qamui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
+qmltui-runner --script test.js -- ./myApp --config demo.json
+qmltui-runner --eval 'terminal.clickText("Save")' -- ./myApp
+qmltui-runner --capture-after-ms 500 -- ./myApp
+qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
 ```
 
 Exactly one of `--script`, `--eval`, and `--capture-after-ms` is required.
@@ -488,7 +488,7 @@ be found through `PATH`.
 Capture delay is 0–30,000 ms; delay plus operation timeout must fit within the
 scenario timeout. Application stdout and stderr are forwarded, and summaries
 and absolute artifact paths go to stderr. Standard input is inherited. The
-launcher clears inherited `QAMUI_RUNNER_*` settings and supplies its own options
+launcher clears inherited `QMLTUI_RUNNER_*` settings and supplies its own options
 and defaults; ordinary application environment variables, including QML import
 paths, remain inherited. For an uninstalled build, set `QML_IMPORT_PATH` to that
 build's `qml` directory if the application needs it.
@@ -509,8 +509,8 @@ must be rebuilt. The helper does not inject libraries or attach to an existing
 process. No activation can mean missing Runner linkage, an older version, or
 application startup that has not yet created its Terminal.
 
-The optional launcher protocol uses `QAMUI_RUNNER_HANDSHAKE_PATH` and
-`QAMUI_RUNNER_HANDSHAKE_TOKEN`. At entry to `start()`, Runner atomically writes
+The optional launcher protocol uses `QMLTUI_RUNNER_HANDSHAKE_PATH` and
+`QMLTUI_RUNNER_HANDSHAKE_TOKEN`. At entry to `start()`, Runner atomically writes
 `{"protocolVersion":1,"token":"...","pid":123}` to the private control path.
 The launcher verifies all three fields. This acknowledges activation, not test
 success. Direct and CTest runs do not need these variables. Handshake write
@@ -518,6 +518,6 @@ errors fail the session; the existing result schema and CMake driver are
 unchanged.
 
 To operate on another machine, run the launcher there through SSH, for example
-`ssh host 'qamui-runner --script /srv/tests/smoke.js -- /srv/bin/myApp'`.
+`ssh host 'qmltui-runner --script /srv/tests/smoke.js -- /srv/bin/myApp'`.
 The application, scripts, and artifacts reside on the remote machine. This is
 bounded script execution, not a persistent interactive remote-control service.

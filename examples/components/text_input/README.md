@@ -1,9 +1,9 @@
 # Text Input
 
-A Qamui component example.
+A QmlTui component example.
 
-Build with `cmake --build build --target qamui_text_input_demo`.
-Run `./build/examples/components/text_input/qamui_text_input_demo`.
+Build with `cmake --build build --target qmltui_text_input_demo`.
+Run `./build/examples/components/text_input/qmltui_text_input_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

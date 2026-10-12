@@ -1,12 +1,12 @@
 # Third-party code
 
 These libraries are fetched and built from source at configure time. They are
-not part of the Qamui license; each keeps its upstream license, reproduced here.
+not part of the QmlTui license; each keeps its upstream license, reproduced here.
 
 | Library | Version | Fetched by | License |
 | :--- | :--- | :--- | :--- |
-| [utf8proc](https://github.com/JuliaStrings/utf8proc) | 2.11.3 | `cmake/QamuiUtf8proc.cmake` | MIT |
-| [libvterm](https://www.leonerd.org.uk/code/libvterm/) | 0.3.3 | `cmake/QamuiLibvterm.cmake` (only with `Qamui.TerminalHost`) | MIT |
+| [utf8proc](https://github.com/JuliaStrings/utf8proc) | 2.11.3 | `cmake/QmlTuiUtf8proc.cmake` | MIT |
+| [libvterm](https://www.leonerd.org.uk/code/libvterm/) | 0.3.3 | `cmake/QmlTuiLibvterm.cmake` (only with `QmlTui.TerminalHost`) | MIT |
 
 Qt itself is a build and runtime dependency and is licensed by The Qt Company
 under its own terms, see <https://www.qt.io/licensing>. Qt for WebAssembly is

@@ -1,25 +1,25 @@
-# Qamui Repository Guidance
+# QmlTui Repository Guidance
 
 ## Architecture Boundaries
 
-- Qamui is a C++20, Qt 6.8+ retained-mode terminal UI framework. Its runtime
+- QmlTui is a C++20, Qt 6.8+ retained-mode terminal UI framework. Its runtime
   targets are Linux, macOS, and Windows Terminal. Platform code lives only in
-  `src/Qamui/Core/Primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
+  `src/QmlTui/Core/Primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.
   Legacy `conhost.exe` gets whatever its VT support allows and is not a target.
-- `Qamui.Controls` admits a type only if it needs engine knowledge an
+- `QmlTui.Controls` admits a type only if it needs engine knowledge an
   application cannot reproduce in QML (cell geometry, Unicode width,
   virtualization, overlays) or is universal in terminal toolkits. Everything
   else is a recipe under `examples/components/`. Core items and Controls default to the terminal's foreground and background.
   Expose ordinary color properties where useful; explicit overrides must survive
   focus and disabled states. Applications own shared styling through QML bindings
   and reusable components; do not add a framework palette or theme singleton.
-- Build terminal interfaces from `QtQml` and Qamui modules. Do not add a
-  `QtQuick` import or Qt Quick dependency to Qamui applications or modules.
-- Keep optional subsystems gated. `QAMUI_ENABLE_PRIVATE_QT=ON` requires
+- Build terminal interfaces from `QtQml` and QmlTui modules. Do not add a
+  `QtQuick` import or Qt Quick dependency to QmlTui applications or modules.
+- Keep optional subsystems gated. `QMLTUI_ENABLE_PRIVATE_QT=ON` requires
   `Qt6::QmlPrivate` (enabling Behavior, StateGroup, and advanced states);
-  `QAMUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
-  supported only on Linux and macOS; `QAMUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
+  `QMLTUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
+  supported only on Linux and macOS; `QMLTUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
   and `Qt6::Network`.
 
 ## Build and Test Decisions
@@ -28,35 +28,35 @@
 
   ```bash
   rtk cmake -S . -B build \
-    -DQAMUI_BUILD_TESTS=ON \
-    -DQAMUI_BUILD_EXAMPLES=ON
+    -DQMLTUI_BUILD_TESTS=ON \
+    -DQMLTUI_BUILD_EXAMPLES=ON
   ```
 
 - Build the affected target and run the narrowest relevant CTest first. Run the
   broader configured suite after changes to Core, public APIs, QML modules, or
   CMake integration.
 - Use Qt Test executables for C++ units and component contracts. Use
-  `Qamui::Runner`/`Runner` for whole-application input and committed terminal
+  `qmltui::Runner`/`Runner` for whole-application input and committed terminal
   frames. A visible-behavior test must assert the rendered frame, not only a QML
   property.
 - For Private Qt or feature-gating changes, validate separate Private-Qt-enabled
   and Private-Qt-disabled build trees. Do not expect the Industrial PLC target in
   a disabled tree.
 - For detailed Runner scenarios, artifacts, inspection, and live rendering,
-  follow `.agents/skills/qamui-dev-loop/SKILL.md` and the authoritative
+  follow `.agents/skills/qmltui-dev-loop/SKILL.md` and the authoritative
   `docs/cpp-classes/runner.md`.
 
 ## QML Application Behavior
 
 - For imports, pragmas, typing, renderer mode, geometry, and the type
-  reference, follow `.agents/skills/qamui-qml/SKILL.md`.
+  reference, follow `.agents/skills/qmltui-qml/SKILL.md`.
 - A root `Terminal` does not automatically map Q or Escape to application exit.
   Applications and examples must provide a reachable keyboard quit path.
 - A simple application may handle Q and Escape at the root and mark the event
   accepted. Preserve contextual Escape behavior: close a modal, cancel an
   operation, or clear input first, and quit only when nothing consumes Escape.
-- Examples and applications conditionally link `Qamui::Runner` into their normal
-  executable with `if(TARGET Qamui::Runner)` and register scenarios against that
+- Examples and applications conditionally link `qmltui::runner` into their normal
+  executable with `if(TARGET qmltui::runner)` and register scenarios against that
   target. Do not duplicate executable or QML-module targets for Runner. Normal
   startup must remain independent from scenarios unless requested through the
   Runner environment variables. Build without tests and Runner for production.

@@ -5,16 +5,16 @@
 #include <QSignalSpy>
 #include <memory>
 #include <cmath>
-#include <Qamui/Core/Items/Canvas.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Items/Canvas.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 
 
-using namespace qamui;
-using qamui::testing::paintItem;
+using namespace qmltui;
+using qmltui::testing::paintItem;
 
 class TestCanvas : public QObject {
     Q_OBJECT
@@ -320,7 +320,7 @@ void TestCanvas::testQmlCanvasHalfBlock() {
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQuick
-        import Qamui
+        import QmlTui
 
         Canvas {
             width: 20
@@ -359,7 +359,7 @@ void TestCanvas::testHalfBlockDemoRendering() {
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/../..");
 
-    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QAMUI_SOURCE_DIR "/examples/components/canvas/Main.qml")));
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QMLTUI_SOURCE_DIR "/examples/components/canvas/Main.qml")));
 
     QObject* obj = component.create();
     QVERIFY2(obj != nullptr, qPrintable(component.errorString()));
@@ -401,7 +401,7 @@ void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         Canvas {
             width: 20

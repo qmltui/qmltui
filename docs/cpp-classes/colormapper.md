@@ -3,8 +3,8 @@
 ## 1. Class Overview
 
 `ColorMapper` is an internal bridge from legacy string parsing call sites to
-`qamui::Color`. It is not installed or part of the custom-item API. New code
-should include `Color.h` and use `qamui::Color` directly.
+`qmltui::Color`. It is not installed or part of the custom-item API. New code
+should include `Color.h` and use `qmltui::Color` directly.
 
 Developers use `ColorMapper` when mapping QML string color properties into internal cell rendering formats.
 
@@ -22,10 +22,10 @@ Parses a color string into a 32-bit ARGB integer. Returns `defaultColor` if `col
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <iostream>
 
-using namespace qamui;
+using namespace qmltui;
 
 int main() {
     uint32_t red = ColorMapper::fromString("#FF0000");

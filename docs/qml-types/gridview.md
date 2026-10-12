@@ -1,10 +1,10 @@
 ---
 title: GridView
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: ScrollView
-cpp: qamui::GridView
+cpp: qmltui::GridView
 category: data views
 summary: Displays a virtualized, scrollable two-dimensional grid of model delegates.
 ---
@@ -15,8 +15,8 @@ Displays a virtualized, scrollable two-dimensional grid of model delegates. [Mor
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [ScrollView](scrollview.md) |
 
 ## Properties
@@ -44,7 +44,7 @@ enables pooling and recycling of delegate items.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

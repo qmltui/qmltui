@@ -1,10 +1,10 @@
 ---
 title: Scrollback
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Scrollback
+cpp: qmltui::Scrollback
 category: core
 summary: Manages committing rendered output lines into the terminal's native scrollback buffer.
 ---
@@ -15,8 +15,8 @@ Manages committing rendered output lines into the terminal's native scrollback b
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -70,7 +70,7 @@ See the Runner documentation for the full contract.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

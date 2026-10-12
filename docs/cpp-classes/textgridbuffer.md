@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`TextGridBuffer` is the core off-screen rendering canvas for Qamui. It represents a 2D grid of terminal cells (`Cell`), where each `Cell` stores the UTF-8 bytes of one grapheme cluster (inline, without heap allocation), visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
+`TextGridBuffer` is the core off-screen rendering canvas for QmlTui. It represents a 2D grid of terminal cells (`Cell`), where each `Cell` stores the UTF-8 bytes of one grapheme cluster (inline, without heap allocation), visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
 
 `TextGridBuffer` provides low-level character drawing primitives (`writeText`, `drawLine`, `drawBox`, `fillRect`) and efficient differential ANSI sequence generation (`diff`, `diffRelative`). The rendering engine uses `TextGridBuffer` to compare the previous frame with the current frame and emit minimal ANSI escape codes to the terminal output.
 
@@ -93,10 +93,10 @@ Serializes the entire grid buffer into a formatted ANSI string complete with new
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <iostream>
 
-using namespace qamui;
+using namespace qmltui;
 
 int main() {
     TextGridBuffer buffer;
@@ -104,7 +104,7 @@ int main() {
 
     // Draw a box and header text
     buffer.drawBox(0, 0, 40, 10, Color("green"));
-    buffer.writeText(2, 1, "Qamui Terminal Grid", Color("white"),
+    buffer.writeText(2, 1, "QmlTui Terminal Grid", Color("white"),
                      Color("transparent"), TextAttribute::Bold);
 
     // Convert to ANSI string and print to standard output

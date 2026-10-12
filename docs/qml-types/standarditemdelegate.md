@@ -1,10 +1,10 @@
 ---
 title: StandardItemDelegate
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::Item
+cpp: qmltui::Item
 category: data views
 summary: A one-row view delegate that renders Qt's standard item roles the way QStyledItemDelegate does in Qt Widgets.
 ---
@@ -15,8 +15,8 @@ A one-row view delegate that renders Qt's standard item roles the way QStyledIte
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -51,7 +51,7 @@ A one-row view delegate that renders Qt's standard item roles the way QStyledIte
 ## Detailed Description
 
 StandardItemDelegate is the terminal counterpart of `QStyledItemDelegate`.
-Qamui views publish Qt's numeric item roles, which have no entry in
+QmlTui views publish Qt's numeric item roles, which have no entry in
 `roleNames()`, to delegates under Widgets-style names: `foreground` and
 `background` from `Qt::ForegroundRole` and `Qt::BackgroundRole` as colour
 strings, `textAlignment` from `Qt::TextAlignmentRole`, `checkState` from
@@ -84,8 +84,8 @@ See the [models guide](../topics/models.md) for the full role table.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Rectangle {
@@ -111,7 +111,7 @@ Terminal {
 ## Standard model roles
 
 
-`Qamui.Controls.StandardItemDelegate` is the terminal counterpart of Qt
+`QmlTui.Controls.StandardItemDelegate` is the terminal counterpart of Qt
 Widgets' `QStyledItemDelegate`: a delegate for any C++ model that renders the
 standard item roles, decoration glyph, check box, foreground and background
 colors, text alignment, and disabled state, plus reversed text for the current

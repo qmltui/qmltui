@@ -1,10 +1,10 @@
 ---
 title: TextInput
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::TextInput
+cpp: qmltui::TextInput
 category: inputs
 summary: A single-line editable text input item for terminal applications.
 ---
@@ -15,8 +15,8 @@ A single-line editable text input item for terminal applications. [More...](#det
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -110,7 +110,7 @@ focus also emits `editingFinished()`.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

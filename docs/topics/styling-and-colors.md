@@ -1,15 +1,15 @@
 # Styling and colors
 
 
-Qamui provides its own QtGui-free `rgba` value type. Use the `Qamui` singleton
+QmlTui provides its own QtGui-free `rgba` value type. Use the `QmlTui` singleton
 to construct a value from normalized red, green, blue, and alpha channels:
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
-    property rgba accent: Qamui.rgba(0.2, 0.4, 0.6, 1.0)
+    property rgba accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
     Text { text: "Custom color"; color: parent.accent }
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) { Qt.quit(); event.accepted = true }
@@ -17,10 +17,10 @@ Terminal {
 }
 ```
 
-This property contains a `qamui::Color`, not a `QColor`. The built-in QML
+This property contains a `qmltui::Color`, not a `QColor`. The built-in QML
 `color` type and `Qt.rgba()` belong to QtGui and are unavailable in a
-QtCore/QtQml-only Qamui application. String literals remain supported for Qamui
-properties whose declared C++ type is `qamui::Color`.
+QtCore/QtQml-only QmlTui application. String literals remain supported for QmlTui
+properties whose declared C++ type is `qmltui::Color`.
 
 Two kinds of string are accepted, and they behave differently on screen:
 
@@ -50,7 +50,7 @@ Set ordinary properties to customize individual components, or define reusable
 QML components for application-wide styling:
 
 ```qml
-// AppButton.qml; import Qamui and Qamui.Controls in this component.
+// AppButton.qml; import QmlTui and QmlTui.Controls in this component.
 Button {
     background: Rectangle {
         color: "#202830"

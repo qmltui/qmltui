@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Qamui app icon">
-  <title>Qamui app icon</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="QmlTui app icon">
+  <title>QmlTui app icon</title>
   <desc>A Q made of two glyphs: an O and a > prompt whose upper arm crosses the ring to form the tail.</desc>
   <rect width="256" height="256" rx="56" fill="#0B1020"/>
   <g transform="translate(26 26) scale(0.8)">

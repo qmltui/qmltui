@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
-import Qamui
+import QmlTui
 
-// MouseArea: Clicks, presses, hover. One tile of the Qamui gallery (examples/gallery)
+// MouseArea: Clicks, presses, hover. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui Switch Component Example");
+    terminal.expectText("QmlTui Switch Component Example");
     terminal.sleep(1500);
     terminal.press("Tab");
     terminal.sleep(800);

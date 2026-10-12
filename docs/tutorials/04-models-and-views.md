@@ -6,15 +6,15 @@ styles the selected row. Down changes selection; the scenario checks the bold
 cell in the committed frame. TableView displays a small two-dimensional model
 with explicit column widths. Larger application datasets belong in C++ models.
 
-Build with `cmake --build build --target qamui_tutorial_04_models_and_views` and run
-`./build/examples/tutorials/04_models_and_views/qamui_tutorial_04_models_and_views`. Press Escape to quit.
+Build with `cmake --build build --target qmltui_tutorial_04_models_and_views` and run
+`./build/examples/tutorials/04_models_and_views/qmltui_tutorial_04_models_and_views`. Press Escape to quit.
 
 <!-- include: examples/tutorials/04_models_and_views/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 import QtQml.Models
 
 Terminal {

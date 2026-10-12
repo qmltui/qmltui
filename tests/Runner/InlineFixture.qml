@@ -1,6 +1,6 @@
 import QtQml
 import QtQml.Models
-import Qamui
+import QmlTui
 
 // Inline-mode fixture for the scrollback assertions. History leaves through a
 // model-backed Scrollback and the imperative print(); the live region is a

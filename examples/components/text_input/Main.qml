@@ -1,5 +1,5 @@
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: rootWindow
@@ -124,7 +124,7 @@ Terminal {
                             id: beamInput
                             anchors.fill: parent
                             anchors.margins: 1
-                            text: "operator@qamui.dev"
+                            text: "operator@qmltui.dev"
                             color: activeFocus ? "#ffffff" : "#cbd5e1"
                             focusable: true
 

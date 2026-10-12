@@ -1,10 +1,10 @@
 ---
 title: Row
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Row
+cpp: qmltui::Row
 category: layout
 summary: Positions child items horizontally along a single row.
 ---
@@ -15,8 +15,8 @@ Positions child items horizontally along a single row. [More...](#detailed-descr
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -43,7 +43,7 @@ for stretching and alignment behavior, use [RowLayout](rowlayout.md).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

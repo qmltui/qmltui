@@ -10,12 +10,12 @@
 
 #include <memory>
 
-#include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Primitives/TerminalBackend.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Runner/MemoryTerminalBackend.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Primitives/TerminalBackend.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 
@@ -88,7 +88,7 @@ void TestTerminalBackend::factoryReplacesPlatformBackend()
 void TestTerminalBackend::engineOutputReachesBackend()
 {
     Session session = createSession(m_qmlEngine,
-        "import QtQml\nimport Qamui\n"
+        "import QtQml\nimport QmlTui\n"
         "Terminal { Text { text: \"HELLO BACKEND\" } }");
     QVERIFY(session.terminal);
     QVERIFY(session.backend);
@@ -109,7 +109,7 @@ void TestTerminalBackend::engineOutputReachesBackend()
 void TestTerminalBackend::inputBytesReachKeyHandlers()
 {
     Session session = createSession(m_qmlEngine,
-        "import QtQml\nimport Qamui\n"
+        "import QtQml\nimport QmlTui\n"
         "Terminal {\n"
         "    property int presses: 0\n"
         "    property string lastText\n"
@@ -131,7 +131,7 @@ void TestTerminalBackend::inputBytesReachKeyHandlers()
 
 void TestTerminalBackend::resizeUpdatesTerminalSize()
 {
-    Session session = createSession(m_qmlEngine, "import QtQml\nimport Qamui\nTerminal {}");
+    Session session = createSession(m_qmlEngine, "import QtQml\nimport QmlTui\nTerminal {}");
     QVERIFY(session.terminal);
     QVERIFY(session.backend);
     QCOMPARE(session.terminal->terminalWidth(), 80);

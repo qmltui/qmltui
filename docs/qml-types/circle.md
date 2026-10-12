@@ -1,10 +1,10 @@
 ---
 title: Circle
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: CanvasShape
-cpp: qamui::Circle
+cpp: qmltui::Circle
 category: canvas
 summary: Draws a circle outline or filled disk on a Canvas.
 ---
@@ -15,8 +15,8 @@ Draws a circle outline or filled disk on a Canvas. [More...](#detailed-descripti
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [CanvasShape](canvasshape.md) |
 
 ## Properties
@@ -41,7 +41,7 @@ outer outline is drawn.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

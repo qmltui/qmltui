@@ -1,6 +1,6 @@
 # Fluid Background Showcase (Asciify-inspired)
 
-An implementation of procedural domain-warping fluid dynamics rendered as an ASCII/Unicode character field in Qamui, inspired by [Asciify Fluid Background](https://asciify.org/docs/backgrounds/fluid).
+An implementation of procedural domain-warping fluid dynamics rendered as an ASCII/Unicode character field in QmlTui, inspired by [Asciify Fluid Background](https://asciify.org/docs/backgrounds/fluid).
 
 ## Features
 

@@ -1,11 +1,11 @@
 // Real-mode parity: a ClockTimer behaves like the QTimer it wraps, and the
 // clock reports advancing wall time.
-#include <Qamui/Core/Engine/Clock_p.h>
+#include <QmlTui/Core/Engine/Clock_p.h>
 
 #include <QSignalSpy>
 #include <QtTest/QtTest>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestClockReal : public QObject {
     Q_OBJECT

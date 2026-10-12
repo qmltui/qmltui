@@ -10,17 +10,17 @@
 #include <iostream>
 #include <memory>
 
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Items/Popup.h>
-#include <Qamui/Core/Items/Rectangle.h>
-#include <Qamui/Core/Items/MouseArea.h>
-#include <Qamui/Core/Engine/KeyEvent.h>
-#include <Qamui/Core/Engine/MouseEvent.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/Popup.h>
+#include <QmlTui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Items/MouseArea.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
 
-#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #undef private
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestPopup : public QObject {
     Q_OBJECT
@@ -253,11 +253,11 @@ void TestPopup::testOwnedPopupCascade() {
 void TestPopup::testAttachedToolTipOnFocus() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
-        import Qamui.Controls
+        import QmlTui
+        import QmlTui.Controls
         Terminal {
             width: 40; height: 10
             Item {
@@ -354,11 +354,11 @@ void TestPopup::testModalRestoresFocusClearedDuringOpen() {
 void TestPopup::testAttachedToolTipFollowsTarget() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
-        import Qamui.Controls
+        import QmlTui
+        import QmlTui.Controls
         Terminal {
             width: 40; height: 10
             Item {

@@ -1,10 +1,10 @@
 ---
 title: Slider
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Rectangle
-cpp: qamui::Rectangle
+cpp: qmltui::Rectangle
 category: inputs
 summary: A one-row horizontal slider that selects a numeric value with the Left and Right keys or a mouse click
 ---
@@ -15,8 +15,8 @@ A one-row horizontal slider that selects a numeric value with the Left and Right
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Rectangle](rectangle.md) |
 
 ## Properties
@@ -59,8 +59,8 @@ slider too narrow to show a track reveals where focus is.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Keys.onPressed: event => {

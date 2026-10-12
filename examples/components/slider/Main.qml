@@ -1,6 +1,6 @@
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root
@@ -17,7 +17,7 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "Qamui Slider Component Example"
+            text: "QmlTui Slider Component Example"
             color: "cyan"
         }
 

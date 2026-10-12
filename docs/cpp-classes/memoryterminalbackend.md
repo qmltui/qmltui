@@ -4,8 +4,8 @@
 
 `MemoryTerminalBackend` is an in-memory [`TerminalBackend`](terminalbackend.md). It captures every byte the engine writes and lets a test inject input bytes and terminal resizes, so the whole path from `TerminalEngine` through `InputDecoder` to QML key handlers can be exercised without a pipe, a pseudo terminal, or a console. It is also the reference implementation of the application-facing backend extension point.
 
-- **Header**: `#include <Qamui/Runner/MemoryTerminalBackend.h>` (target `Qamui::Runner`)
-- **Inherits**: `qamui::TerminalBackend`
+- **Header**: `#include <QmlTui/Runner/MemoryTerminalBackend.h>` (target `qmltui::runner`)
+- **Inherits**: `qmltui::TerminalBackend`
 
 ## 9. Public Methods
 
@@ -30,14 +30,14 @@ What `isInteractive()` reports; affects `TerminalCapabilities::detect()`.
 ## 16. Usage Example
 
 ```cpp
-static qamui::MemoryTerminalBackend* g_backend = nullptr;
+static qmltui::MemoryTerminalBackend* g_backend = nullptr;
 
-qamui::TerminalBackend::setFactory([](int) {
-    auto backend = std::make_unique<qamui::MemoryTerminalBackend>();
+qmltui::TerminalBackend::setFactory([](int) {
+    auto backend = std::make_unique<qmltui::MemoryTerminalBackend>();
     g_backend = backend.get();
     return backend;
 });
-// ... create the Terminal from QML with output enabled (no QAMUI_RUNNER_SCRIPT, QAMUI_RUNNER_EVAL, or QAMUI_RUNNER_CAPTURE_AFTER_MS in the environment) ...
+// ... create the Terminal from QML with output enabled (no QMLTUI_RUNNER_SCRIPT, QMLTUI_RUNNER_EVAL, or QMLTUI_RUNNER_CAPTURE_AFTER_MS in the environment) ...
 g_backend->feedInput("q");            // reaches Keys.onPressed
 g_backend->setSize(QSize(120, 40));   // Terminal.terminalWidth becomes 120
 QVERIFY(g_backend->output().find("\033[") != std::string::npos);

@@ -1,10 +1,10 @@
 ---
 title: Polygon
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: CanvasShape
-cpp: qamui::Polygon
+cpp: qmltui::Polygon
 category: canvas
 summary: Draws a sequence of connected straight line segments through 2D points on a Canvas.
 ---
@@ -15,8 +15,8 @@ Draws a sequence of connected straight line segments through 2D points on a Canv
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [CanvasShape](canvasshape.md) |
 
 ## Properties
@@ -39,7 +39,7 @@ from the last point back to the first point. When `false`, the path remains open
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

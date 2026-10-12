@@ -1,10 +1,10 @@
 ---
 title: GradientStop
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::GradientStop
+cpp: qmltui::GradientStop
 category: core
 summary: Defines a color stop at a normalized position within a Gradient.
 ---
@@ -15,8 +15,8 @@ Defines a color stop at a normalized position within a Gradient. [More...](#deta
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -44,7 +44,7 @@ ramps. `position` ranges from `0.0` (start of the gradient axis) to `1.0` (end o
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

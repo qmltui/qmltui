@@ -1,13 +1,13 @@
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Popup {
     id: diffModal
 
     Theme { id: theme }
 
-    property string targetFile: "src/Qamui/engine/InlineRenderer.cpp"
+    property string targetFile: "src/QmlTui/engine/InlineRenderer.cpp"
 
     width: parent ? parent.width : 78
     height: 13

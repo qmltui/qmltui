@@ -1,21 +1,21 @@
-qt_add_executable(qamui_color_type_resolution_demo
+qt_add_executable(qmltui_color_type_resolution_demo
     main.cpp
 )
 
-target_link_libraries(qamui_color_type_resolution_demo PRIVATE
+target_link_libraries(qmltui_color_type_resolution_demo PRIVATE
     Qt6::Core
     Qt6::Qml
-    Qamui::Core
+    qmltui::core
 )
 
-target_compile_definitions(qamui_color_type_resolution_demo PRIVATE
-    QAMUI_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}"
+target_compile_definitions(qmltui_color_type_resolution_demo PRIVATE
+    QMLTUI_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}"
 )
 
-if(QAMUI_BUILD_TESTS)
+if(QMLTUI_BUILD_TESTS)
     add_test(
         NAME color_type_resolution
-        COMMAND qamui_color_type_resolution_demo
+        COMMAND qmltui_color_type_resolution_demo
     )
     set_tests_properties(color_type_resolution PROPERTIES
         LABELS AgentSmoke

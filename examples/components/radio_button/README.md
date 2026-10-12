@@ -1,9 +1,9 @@
 # Radio Button
 
-A Qamui component example.
+A QmlTui component example.
 
-Build with `cmake --build build --target qamui_radio_button_demo`.
-Run `./build/examples/components/radio_button/qamui_radio_button_demo`.
+Build with `cmake --build build --target qmltui_radio_button_demo`.
+Run `./build/examples/components/radio_button/qmltui_radio_button_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

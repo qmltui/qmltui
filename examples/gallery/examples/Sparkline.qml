@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
-// Sparkline: Live series in one row. One tile of the Qamui gallery (examples/gallery)
+// Sparkline: Live series in one row. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

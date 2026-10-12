@@ -1,11 +1,11 @@
 # Engine Include Hygiene Check
-# Ensures src/Qamui/Core/Engine/ does not include any item headers other than Item.h and Terminal.h.
+# Ensures src/QmlTui/Core/Engine/ does not include any item headers other than Item.h and Terminal.h.
 
-file(GLOB_RECURSE ENGINE_FILES "${Qamui_SOURCE_DIR}/src/Qamui/Core/Engine/*.*")
+file(GLOB_RECURSE ENGINE_FILES "${qmltui_SOURCE_DIR}/src/QmlTui/Core/Engine/*.*")
 
 list(LENGTH ENGINE_FILES ENGINE_FILES_COUNT)
 if(ENGINE_FILES_COUNT EQUAL 0)
-    message(FATAL_ERROR "CheckEngineIncludes: No engine files found to check in ${Qamui_SOURCE_DIR}/src/Qamui/Core/Engine/")
+    message(FATAL_ERROR "CheckEngineIncludes: No engine files found to check in ${qmltui_SOURCE_DIR}/src/QmlTui/Core/Engine/")
 endif()
 
 foreach(FILE_PATH ${ENGINE_FILES})

@@ -1,10 +1,10 @@
 ---
 title: highlightRange
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.5"
 inherits:
-cpp: qamui::HighlightRange
+cpp: qmltui::HighlightRange
 category: core
 summary: A character range with formatting styles for TextArea highlighting.
 ---
@@ -15,8 +15,8 @@ A character range with formatting styles for TextArea highlighting. [More...](#d
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.5 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.5 |
 | **Inherits** | none |
 | **Instantiation** | Object literal |
 

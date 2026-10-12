@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Qamui mark, single colour">
-  <title>Qamui mark, single colour</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="QmlTui mark, single colour">
+  <title>QmlTui mark, single colour</title>
   <desc>A Q made of two glyphs: an O and a > prompt whose upper arm crosses the ring to form the tail. Follows currentColor.</desc>
   <circle cx="110" cy="104" r="72" fill="none" stroke="currentColor" stroke-width="26"/>
   <polyline points="136.2,130.2 177.2,171.2 136.2,212.2" fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>

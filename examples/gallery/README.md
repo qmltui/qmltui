@@ -1,7 +1,7 @@
-# Qamui Gallery
+# QmlTui Gallery
 
-A full-screen grid of every user-facing type in `Qamui` and `Qamui.Controls`,
-39 tiles in all with Behavior and Qamui.Image built in, 36 without. Move the selection with the arrow keys (or `hjkl`), open a
+A full-screen grid of every user-facing type in `QmlTui` and `QmlTui.Controls`,
+39 tiles in all with Behavior and QmlTui.Image built in, 36 without. Move the selection with the arrow keys (or `hjkl`), open a
 tile with Enter, Space or a mouse click. Escape returns to the grid; Q quits
 from the grid or from a demo that has no text input focused.
 
@@ -11,7 +11,7 @@ from the grid or from a demo that has no text input focused.
   imports and `Terminal` root. Each runs on its own (`qml`-style single file,
   or paste it into the browser page) and is what the gallery shows.
 - `Main.qml`: the launcher. It receives the example texts through the
-  `qamuiExampleSources` context property (a JSON object `{ "Button.qml":
+  `qmltuiExampleSources` context property (a JSON object `{ "Button.qml":
   "<qml>", ... }`), rewrites the root `Terminal {` of the chosen file into an
   `Item` that fills the demo panel, drops the root-level properties only a
   Terminal has (`title`, `color`, `mode`, the quit handler), and instantiates
@@ -27,16 +27,16 @@ Because the launcher only reads text, an example is exactly what runs.
 
 `examples/wasm` builds the site around this app: the gallery runs in xterm.js
 on the right, and opening a tile puts that tile's file in a CodeMirror editor
-on the left. Every edit is compiled first (`qamuiCheckQml`), then the gallery
-re-runs with the same tile open (`qamuiGalleryPage`); Escape empties the
+on the left. Every edit is compiled first (`qmltuiCheckQml`), then the gallery
+re-runs with the same tile open (`qmltuiGalleryPage`); Escape empties the
 editor again, and "launcher" edits `Main.qml`. The launcher names the open
-file in its terminal title (`Qamui Gallery · Button.qml`), which is how the
+file in its terminal title (`QmlTui Gallery · Button.qml`), which is how the
 page follows it. See `docs/topics/webassembly.md`.
 
 ## Tests
 
 `test_gallery.js` is the Runner scenario (`ctest -R gallery_smoke` in a
-tree with `QAMUI_ENABLE_RUNNER=ON`): it walks the grid with the keyboard,
+tree with `QMLTUI_ENABLE_RUNNER=ON`): it walks the grid with the keyboard,
 opens the Button demo and activates a button, clicks the Slider tile, checks
 Escape closes a Dialog before leaving its page, types into a TextInput, opens
 every example once so a broken file fails the build, and finally round-trips

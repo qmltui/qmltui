@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qamui
-import Qamui.Controls
-import Qamui.TerminalHost
+import QmlTui
+import QmlTui.Controls
+import QmlTui.TerminalHost
 
 Terminal {
     id: root
@@ -455,7 +455,7 @@ Terminal {
                             id: cmdInput
                             anchors.fill: parent
                             anchors.margins: 1
-                            text: "echo 'Hello Qamui Dual Terminal!'"
+                            text: "echo 'Hello QmlTui Dual Terminal!'"
                             color: activeFocus ? "#ffffff" : "#cdd6f4"
                             focusable: true
 

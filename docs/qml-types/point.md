@@ -1,10 +1,10 @@
 ---
 title: Point
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: CanvasShape
-cpp: qamui::Point
+cpp: qmltui::Point
 category: canvas
 summary: Draws a single sub-cell pixel or dot on a Canvas.
 ---
@@ -15,8 +15,8 @@ Draws a single sub-cell pixel or dot on a Canvas. [More...](#detailed-descriptio
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [CanvasShape](canvasshape.md) |
 
 ## Detailed Description
@@ -30,7 +30,7 @@ default `color` if unset).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

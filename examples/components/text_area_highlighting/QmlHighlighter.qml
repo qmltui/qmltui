@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 QtObject {
     id: root

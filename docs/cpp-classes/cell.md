@@ -2,15 +2,15 @@
 
 ## 1. Class Overview
 
-`Cell` and `TextAttribute` define the primitive data structures representing a single terminal grid position in Qamui. A `Cell` stores the UTF-8 bytes of one grapheme cluster, its visual display width, a continuation flag (for multi-column characters), 32-bit ARGB foreground and background colors, and styling attributes (bold, italic, underline, reversed, blink, conceal, and strikethrough).
+`Cell` and `TextAttribute` define the primitive data structures representing a single terminal grid position in QmlTui. A `Cell` stores the UTF-8 bytes of one grapheme cluster, its visual display width, a continuation flag (for multi-column characters), 32-bit ARGB foreground and background colors, and styling attributes (bold, italic, underline, reversed, blink, conceal, and strikethrough).
 
 Developers interact with `Cell` when implementing custom C++ terminal UI items.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/Primitives/Cell.h` (installed as `<Qamui/Core/Primitives/Cell.h>`)
+- **Header**: `src/QmlTui/Core/Primitives/Cell.h` (installed as `<QmlTui/Core/Primitives/Cell.h>`)
 - **Dependencies**: `<cstdint>`, `<cstring>`, `QByteArrayView`, `Color.h`.
-- **Module**: Part of the core Qamui library layer.
+- **Module**: Part of the core QmlTui library layer.
 
 ## 3. Storage Model
 
@@ -81,10 +81,10 @@ Compares all fields, including the cluster bytes.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Primitives/Cell.h>
+#include <QmlTui/Core/Primitives/Cell.h>
 #include <iostream>
 
-using namespace qamui;
+using namespace qmltui;
 
 int main() {
     Cell cell;

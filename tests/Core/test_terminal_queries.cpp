@@ -2,15 +2,15 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
-#include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Items/MouseArea.h>
-#include <Qamui/Core/Items/Text.h>
-#include <Qamui/Core/Engine/MouseEvent.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Core/Engine/InlineRenderer.h>
+#include <QmlTui/Runner/MemoryTerminalBackend.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/MouseArea.h>
+#include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Engine/InlineRenderer.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 MemoryTerminalBackend* backend = nullptr;
@@ -70,15 +70,15 @@ class TestTerminalQueries : public QObject {
     Q_OBJECT
 private slots:
     void init() {
-        for (const char* name : {"QAMUI_SYNC_OUTPUT", "QAMUI_KITTY_KEYBOARD", "QAMUI_KITTY_GRAPHICS",
-                                 "QAMUI_QUERY_TIMEOUT_MS", "QAMUI_ESCAPE_TIMEOUT_MS", "QAMUI_RUNNER_EMBEDDED_SCENARIO",
-                                 "QAMUI_RUNNER_LIVE",
+        for (const char* name : {"QMLTUI_SYNC_OUTPUT", "QMLTUI_KITTY_KEYBOARD", "QMLTUI_KITTY_GRAPHICS",
+                                 "QMLTUI_QUERY_TIMEOUT_MS", "QMLTUI_ESCAPE_TIMEOUT_MS", "QMLTUI_RUNNER_EMBEDDED_SCENARIO",
+                                 "QMLTUI_RUNNER_LIVE",
                                  "TERM_PROGRAM", "TERM", "KITTY_WINDOW_ID", "KONSOLE_VERSION",
                                  "WEZTERM_EXECUTABLE", "GHOSTTY_RESOURCES_DIR"}) {
             saved.insert(name, qgetenv(name));
             qunsetenv(name);
         }
-        qputenv("QAMUI_QUERY_TIMEOUT_MS", "1000");
+        qputenv("QMLTUI_QUERY_TIMEOUT_MS", "1000");
         qputenv("TERM_PROGRAM", "kitty");   // a terminal known to parse APC strings
         TerminalBackend::setFactory([](int) {
             auto memory = std::make_unique<MemoryTerminalBackend>(QSize(30, 4));
@@ -177,7 +177,7 @@ private slots:
         component.setData(R"(
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 Terminal {
     id: root
     focus: true
@@ -233,9 +233,9 @@ Terminal {
         QCOMPARE(engine->capabilities().syncOutput, status >= 1 && status <= 3);
     }
     void overridesAndMalformedReplies() {
-        qputenv("QAMUI_SYNC_OUTPUT", "off");
-        qputenv("QAMUI_KITTY_KEYBOARD", "false");
-        qputenv("QAMUI_KITTY_GRAPHICS", "0");
+        qputenv("QMLTUI_SYNC_OUTPUT", "off");
+        qputenv("QMLTUI_KITTY_KEYBOARD", "false");
+        qputenv("QMLTUI_KITTY_GRAPHICS", "0");
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
@@ -247,7 +247,7 @@ Terminal {
         QVERIFY(!engine->capabilities().cellPixelSize.isValid());
     }
     void timeoutAndStoppedNegotiation() {
-        qputenv("QAMUI_QUERY_TIMEOUT_MS", "10");
+        qputenv("QMLTUI_QUERY_TIMEOUT_MS", "10");
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
@@ -364,7 +364,7 @@ Terminal {
         QVERIFY(backend->output().find("\033[16t") == std::string::npos);
     }
     void renegotiationKeepsProvenCapabilities() {
-        qputenv("QAMUI_QUERY_TIMEOUT_MS", "10");
+        qputenv("QMLTUI_QUERY_TIMEOUT_MS", "10");
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
@@ -422,7 +422,7 @@ Terminal {
         QQmlComponent component(&qml);
         component.setData(R"(
 import QtQml
-import Qamui
+import QmlTui
 Terminal { color: "black"; Text { text: "x" } }
 )", QUrl());
         std::unique_ptr<QObject> object(component.create());
@@ -471,8 +471,8 @@ Terminal { color: "black"; Text { text: "x" } }
     }
     void kittyKeyboardNotPushedWithoutReply() {
         QFETCH(QByteArray, override);
-        qputenv("QAMUI_QUERY_TIMEOUT_MS", "10");
-        if (!override.isNull()) qputenv("QAMUI_KITTY_KEYBOARD", override);
+        qputenv("QMLTUI_QUERY_TIMEOUT_MS", "10");
+        if (!override.isNull()) qputenv("QMLTUI_KITTY_KEYBOARD", override);
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
@@ -539,7 +539,7 @@ Terminal { color: "black"; Text { text: "x" } }
         component.setData(R"(
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 Terminal {
     id: root
     focus: true
@@ -580,7 +580,7 @@ Terminal {
         component.setData(R"(
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 Terminal {
     id: root
     property int accepts: 0
@@ -610,13 +610,13 @@ Terminal {
         QTRY_VERIFY2(frameText(engine).contains("LEN3 ACC2 [0Ab]"), qPrintable(frameText(engine)));
     }
     void loneEscapeIsDeliveredAfterTheTimeout() {
-        qputenv("QAMUI_ESCAPE_TIMEOUT_MS", "10");
+        qputenv("QMLTUI_ESCAPE_TIMEOUT_MS", "10");
         QQmlEngine qml;
         QQmlComponent component(&qml);
         component.setData(R"(
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 Terminal {
     id: root
     focus: true
@@ -650,7 +650,7 @@ Terminal {
         QTRY_VERIFY(frameText(engine).contains("ESC2 UP1"));
     }
     void disabledStartupDoesNotProbe() {
-        qputenv("QAMUI_RUNNER_EMBEDDED_SCENARIO", "1");
+        qputenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO", "1");
         Terminal terminal;
         auto* engine = terminal.engine();
         QVERIFY(engine->testSession());
@@ -660,7 +660,7 @@ Terminal {
         QVERIFY(!engine->enqueueControlSequence("ignored"));
         QVERIFY(engine->takeControlSequences().isEmpty());
     }
-    // The programmatic twin of QAMUI_RUNNER_EMBEDDED_SCENARIO / QAMUI_RUNNER_LIVE:
+    // The programmatic twin of QMLTUI_RUNNER_EMBEDDED_SCENARIO / QMLTUI_RUNNER_LIVE:
     // a test session begun after construction silences output and frame
     // pacing, and live output toggles rendering back on and off.
     void testSessionApiControlsOutput() {

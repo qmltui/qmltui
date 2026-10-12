@@ -31,7 +31,7 @@ private slots:
         // also processed all requests whose response objects were deleted.
         auto* response = provider.requestImageResponse(QStringLiteral("radar?tick=16"), QSize(80, 40));
         QVERIFY(response);
-        QSignalSpy finished(response, &qamui::ImageResponse::finished);
+        QSignalSpy finished(response, &qmltui::ImageResponse::finished);
         QVERIFY(finished.wait(1000));
         QVERIFY(!response->image().isNull());
         delete response;
@@ -43,7 +43,7 @@ private slots:
 
         auto* response = provider.requestImageResponse(QStringLiteral("radar?tick=2"), QSize(80, 40));
         QVERIFY(response);
-        QSignalSpy finished(response, &qamui::ImageResponse::finished);
+        QSignalSpy finished(response, &qmltui::ImageResponse::finished);
         QVERIFY(finished.wait(1000));
         QCOMPARE(response->image().size(), QSize(80, 40));
         QVERIFY(!response->image().isNull());

@@ -1,7 +1,7 @@
 import QtQml
-import Qamui
+import QmlTui
 
-import Qamui.Controls
+import QmlTui.Controls
 
 Terminal {
 

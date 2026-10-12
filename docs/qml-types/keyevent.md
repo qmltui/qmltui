@@ -1,10 +1,10 @@
 ---
 title: KeyEvent
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::KeyEvent
+cpp: qmltui::KeyEvent
 category: input events
 summary: Carries keyboard event details delivered to Keys handlers.
 ---
@@ -15,8 +15,8 @@ Carries keyboard event details delivered to Keys handlers. [More...](#detailed-d
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -47,7 +47,7 @@ event as handled, preventing it from propagating up the visual hierarchy.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     focus: true

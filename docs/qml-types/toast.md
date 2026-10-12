@@ -1,10 +1,10 @@
 ---
 title: Toast
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::Toast
+cpp: qmltui::Toast
 category: overlays and navigation
 summary: A host item that stacks transient, timed notification boxes in one of its corners.
 ---
@@ -15,8 +15,8 @@ A host item that stacks transient, timed notification boxes in one of its corner
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -70,8 +70,8 @@ stacking order, so an open modal popup and its dimming are drawn above it.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Row {

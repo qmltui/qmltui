@@ -30,11 +30,11 @@ int peer(const QStringList& args) {
         QThread::sleep(10);
         return 0;
     }
-    QSaveFile ack(qEnvironmentVariable("QAMUI_RUNNER_HANDSHAKE_PATH"));
+    QSaveFile ack(qEnvironmentVariable("QMLTUI_RUNNER_HANDSHAKE_PATH"));
     const QJsonObject payload{
         {"protocolVersion", behavior == "bad-version" ? 2 : 1},
         {"token",
-         behavior == "bad-token" ? "wrong" : qEnvironmentVariable("QAMUI_RUNNER_HANDSHAKE_TOKEN")},
+         behavior == "bad-token" ? "wrong" : qEnvironmentVariable("QMLTUI_RUNNER_HANDSHAKE_TOKEN")},
         {"pid", behavior == "bad-pid" ? qint64(-1) : QCoreApplication::applicationPid()}};
     if (!ack.open(QIODevice::WriteOnly)) return 99;
     ack.write(QJsonDocument(payload).toJson());
@@ -45,7 +45,7 @@ int peer(const QStringList& args) {
     }
     if (behavior == "crash") std::abort();
     const QString result =
-        QDir(qEnvironmentVariable("QAMUI_RUNNER_ARTIFACT_DIR")).filePath("result.json");
+        QDir(qEnvironmentVariable("QMLTUI_RUNNER_ARTIFACT_DIR")).filePath("result.json");
     if (behavior == "missing") return 0;
     if (behavior == "malformed") {
         writeFile(result, "not json");
@@ -55,10 +55,10 @@ int peer(const QStringList& args) {
     if (behavior == "arguments") {
         valid =
             args.mid(3) == QStringList{"--script", "literal space", "--help", "$value;unchanged"} &&
-            !qEnvironmentVariableIsSet("QAMUI_RUNNER_UNEXPECTED") &&
-            qEnvironmentVariable("QAMUI_RUNNER_CLOCK") == "real" &&
-            qEnvironmentVariable("QAMUI_RUNNER_UPDATE_SNAPSHOTS") == "0" &&
-            qEnvironmentVariable("QAMUI_TEST_INHERITED") == "preserved";
+            !qEnvironmentVariableIsSet("QMLTUI_RUNNER_UNEXPECTED") &&
+            qEnvironmentVariable("QMLTUI_RUNNER_CLOCK") == "real" &&
+            qEnvironmentVariable("QMLTUI_RUNNER_UPDATE_SNAPSHOTS") == "0" &&
+            qEnvironmentVariable("QMLTUI_TEST_INHERITED") == "preserved";
     }
     const int code = valid ? 0 : 1;
     writeFile(result,
@@ -82,7 +82,7 @@ class LauncherTest : public QObject {
                QProcessEnvironment env = QProcessEnvironment::systemEnvironment()) {
         QProcess process;
         process.setProcessEnvironment(env);
-        process.start(qEnvironmentVariable("QAMUI_TEST_LAUNCHER"), args);
+        process.start(qEnvironmentVariable("QMLTUI_TEST_LAUNCHER"), args);
         if (!process.waitForStarted(5000)) return {-100, {}, process.errorString().toUtf8()};
         if (!process.waitForFinished(20000)) {
             process.kill();
@@ -119,11 +119,11 @@ private slots:
         QCOMPARE(run({"--eval", "x", "--artifacts", temporary.path(), "--", "unused"}).code, 2);
         QCOMPARE(readFile(sentinel), QByteArray("keep"));
         auto environment = QProcessEnvironment::systemEnvironment();
-        environment.insert("QAMUI_RUNNER_UNEXPECTED", "remove");
-        environment.insert("QAMUI_RUNNER_CAPTURE_AFTER_MS", "0");
-        environment.insert("QAMUI_RUNNER_UPDATE_SNAPSHOTS", "1");
-        environment.insert("QAMUI_RUNNER_CLOCK", "virtual");
-        environment.insert("QAMUI_TEST_INHERITED", "preserved");
+        environment.insert("QMLTUI_RUNNER_UNEXPECTED", "remove");
+        environment.insert("QMLTUI_RUNNER_CAPTURE_AFTER_MS", "0");
+        environment.insert("QMLTUI_RUNNER_UPDATE_SNAPSHOTS", "1");
+        environment.insert("QMLTUI_RUNNER_CLOCK", "virtual");
+        environment.insert("QMLTUI_TEST_INHERITED", "preserved");
         const auto result = run({"--eval=x", "--artifacts", temporary.filePath("new directory"),
                                  QCoreApplication::applicationFilePath(), "--peer", "arguments",
                                  "--script", "literal space", "--help", "$value;unchanged"},
@@ -176,9 +176,9 @@ private slots:
         QTest::newRow("failure") << QStringList{"--eval", "terminal.fail('intentional')"} << 1
                                  << QString("failure.txt");
         QTest::newRow("module") << QStringList{"--script",
-                                               QStringLiteral(QAMUI_SCENARIOS) + "/module_main.mjs"}
+                                               QStringLiteral(QMLTUI_SCENARIOS) + "/module_main.mjs"}
                                 << 0 << QString("module_main.txt");
-        QTest::newRow("resource") << QStringList{"--script", ":/qamui-tests/module_main.mjs"} << 0
+        QTest::newRow("resource") << QStringList{"--script", ":/qmltui-tests/module_main.mjs"} << 0
                                   << QString("module_main.txt");
     }
     void realModes() {
@@ -187,7 +187,7 @@ private slots:
         QFETCH(QString, artifact);
         QTemporaryDir temporary;
         const QString directory = temporary.filePath("artifacts");
-        options << "--artifacts" << directory << "--" << qEnvironmentVariable("QAMUI_TEST_FIXTURE");
+        options << "--artifacts" << directory << "--" << qEnvironmentVariable("QMLTUI_TEST_FIXTURE");
         const auto result = run(options);
         QVERIFY2(result.code == expected, result.err.constData());
         const QByteArray bytes = readFile(QDir(directory).filePath(artifact));
@@ -210,14 +210,14 @@ private slots:
         QProcess child;
         auto env = QProcessEnvironment::systemEnvironment();
         for (const auto& key : env.keys()) {
-            if (key.startsWith("QAMUI_RUNNER_")) env.remove(key);
+            if (key.startsWith("QMLTUI_RUNNER_")) env.remove(key);
         }
-        env.insert("QAMUI_RUNNER_EVAL", "terminal.expectText('TESTRUNNER FIXTURE')");
-        env.insert("QAMUI_RUNNER_ARTIFACT_DIR", temporary.filePath("handshake-failure"));
-        env.insert("QAMUI_RUNNER_HANDSHAKE_PATH", temporary.filePath("absent/ack.json"));
-        env.insert("QAMUI_RUNNER_HANDSHAKE_TOKEN", "test-token");
+        env.insert("QMLTUI_RUNNER_EVAL", "terminal.expectText('TESTRUNNER FIXTURE')");
+        env.insert("QMLTUI_RUNNER_ARTIFACT_DIR", temporary.filePath("handshake-failure"));
+        env.insert("QMLTUI_RUNNER_HANDSHAKE_PATH", temporary.filePath("absent/ack.json"));
+        env.insert("QMLTUI_RUNNER_HANDSHAKE_TOKEN", "test-token");
         child.setProcessEnvironment(env);
-        child.start(qEnvironmentVariable("QAMUI_TEST_FIXTURE"), {});
+        child.start(qEnvironmentVariable("QMLTUI_TEST_FIXTURE"), {});
         QVERIFY(child.waitForStarted());
         QVERIFY(child.waitForFinished(5000));
         QCOMPARE(child.exitCode(), 1);
@@ -232,11 +232,11 @@ private slots:
                                   "t.expectSnapshot('baseline.txt'); }"));
         auto result =
             run({"--script=" + script, "--update-snapshots", "--artifacts",
-                 temporary.filePath("recorded"), "--", qEnvironmentVariable("QAMUI_TEST_FIXTURE")});
+                 temporary.filePath("recorded"), "--", qEnvironmentVariable("QMLTUI_TEST_FIXTURE")});
         QVERIFY2(result.code == 0, result.err.constData());
         QVERIFY(readFile(temporary.filePath("baseline.txt")).contains("TESTRUNNER FIXTURE"));
         result = run({"--script", script, "--artifacts", temporary.filePath("verified"), "--",
-                      qEnvironmentVariable("QAMUI_TEST_FIXTURE")});
+                      qEnvironmentVariable("QMLTUI_TEST_FIXTURE")});
         QVERIFY2(result.code == 0, result.err.constData());
     }
 };

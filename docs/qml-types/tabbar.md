@@ -1,10 +1,10 @@
 ---
 title: TabBar
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::TabBar
+cpp: qmltui::TabBar
 category: overlays and navigation
 summary: A one-row strip of named tabs selected with the Left and Right keys or the mouse.
 ---
@@ -15,8 +15,8 @@ A one-row strip of named tabs selected with the Left and Right keys or the mouse
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -57,8 +57,8 @@ switch pages with the tabs.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Column {

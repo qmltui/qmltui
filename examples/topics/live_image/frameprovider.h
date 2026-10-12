@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qamui/Image/ImageProvider.h>
+#include <QmlTui/Image/ImageProvider.h>
 
 #include <QThread>
 
@@ -11,13 +11,13 @@ class RadarRenderer;
 // becomes a request. The sweep is painted on a dedicated render thread;
 // retainWhileLoading on the Image keeps the previous sweep visible until the
 // new one is ready.
-class RadarProvider : public qamui::AsyncImageProvider {
+class RadarProvider : public qmltui::AsyncImageProvider {
     Q_OBJECT
 public:
     explicit RadarProvider(QObject* parent = nullptr);
     ~RadarProvider() override;
 
-    qamui::ImageResponse* requestImageResponse(const QString& id, const QSize& requestedSize) override;
+    qmltui::ImageResponse* requestImageResponse(const QString& id, const QSize& requestedSize) override;
 
     // A radar sweep whose angle follows `tick`. Pure: safe on any thread.
     static QImage paintRadar(int tick, const QSize& size);

@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`QtMessageRouting` provides a unified routing pipeline for Qt diagnostics (`qDebug`, `qInfo`, `qWarning`, `qCritical`, `qFatal`) in Qamui applications. It cleanly decouples **immediate application diagnostic logging** (e.g., writing to a log file or telemetry engine) from **deferred terminal screen presentation** (preventing log text from garbling full-screen alternate-screen terminal sessions).
+`QtMessageRouting` provides a unified routing pipeline for Qt diagnostics (`qDebug`, `qInfo`, `qWarning`, `qCritical`, `qFatal`) in QmlTui applications. It cleanly decouples **immediate application diagnostic logging** (e.g., writing to a log file or telemetry engine) from **deferred terminal screen presentation** (preventing log text from garbling full-screen alternate-screen terminal sessions).
 
 Scope:
 - Intercepts all messages flowing through Qt's global message handler (`qInstallMessageHandler`).
@@ -11,8 +11,8 @@ Scope:
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `<Qamui/Core/Engine/QtMessageRouting.h>`
-- **Namespace**: `qamui`
+- **Header**: `<QmlTui/Core/Engine/QtMessageRouting.h>`
+- **Namespace**: `qmltui`
 - **Dependencies**: `Qt6::Core`
 
 ## 3. Architecture and Defaults
@@ -76,7 +76,7 @@ Installs an explicit routing configuration.
 #### `static QtMessageSink stderrPresentationSink()`
 Returns a callback that writes `msg.formattedMessage()` to `stderr` and flushes it.
 > [!NOTE]
-> If an application or user redirects `stderr` (e.g. `./app 2> errors.log`), this sink writes to that redirected stream. Qamui does not open `/dev/tty` or bypass operating system file descriptors.
+> If an application or user redirects `stderr` (e.g. `./app 2> errors.log`), this sink writes to that redirected stream. QmlTui does not open `/dev/tty` or bypass operating system file descriptors.
 
 #### `void reset()`
 Idempotently unregisters the token:
@@ -104,8 +104,8 @@ Idempotently unregisters the token:
 #include <QCoreApplication>
 #include <QFile>
 #include <QTextStream>
-#include <Qamui/Core/Engine/QtMessageRouting.h>
-#include <Qamui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Engine/QtMessageRouting.h>
+#include <QmlTui/Core/Items/Terminal.h>
 
 int main(int argc, char *argv[])
 {
@@ -117,17 +117,17 @@ int main(int argc, char *argv[])
     QTextStream logStream(&logFile);
 
     // Install routing BEFORE constructing terminal engines
-    auto routing = qamui::QtMessageRouting::install(
-        [&](const qamui::QtMessage &msg) {
+    auto routing = qmltui::QtMessageRouting::install(
+        [&](const qmltui::QtMessage &msg) {
             logStream << "[" << msg.timestampUtc.toString(Qt::ISODate) << "] "
                       << msg.formattedMessage() << "\n";
             logStream.flush();
         },
-        qamui::QtMessageRouting::stderrPresentationSink()
+        qmltui::QtMessageRouting::stderrPresentationSink()
     );
 
     // Terminal engine and QML runtime
-    qamui::Terminal terminal;
+    qmltui::Terminal terminal;
     // ... setup and run application ...
 
     return app.exec();

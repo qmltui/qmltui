@@ -1,10 +1,10 @@
 ---
 title: TerminalView
 kind: qml
-import: Qamui.TerminalHost
+import: QmlTui.TerminalHost
 since: "0.4"
 inherits: Item
-cpp: qamui::TerminalView
+cpp: qmltui::TerminalView
 category: display
 summary: Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY).
 ---
@@ -15,8 +15,8 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.TerminalHost` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.TerminalHost` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -82,12 +82,12 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 ## Detailed Description
 
 TerminalView is a QML item that hosts an external terminal application inside
-a Unix pseudo-terminal (PTY) using libvterm. It is available when Qamui is built
-with `QAMUI_ENABLE_TERMINAL_HOST=ON` (supported on Linux and macOS).
+a Unix pseudo-terminal (PTY) using libvterm. It is available when QmlTui is built
+with `QMLTUI_ENABLE_TERMINAL_HOST=ON` (supported on Linux and macOS).
 
-Programs and arguments are passed directly to the child process. Qamui never
+Programs and arguments are passed directly to the child process. QmlTui never
 implicitly invokes a shell or expands shell syntax. The child receives
-`TERM=xterm-256color`, `COLORTERM=truecolor`, and `TERM_PROGRAM=qamui` unless a
+`TERM=xterm-256color`, `COLORTERM=truecolor`, and `TERM_PROGRAM=qmltui` unless a
 different `terminalType` is selected.
 
 The process lifecycle is exposed through `processState`, `running`, `processId`,

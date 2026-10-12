@@ -1,9 +1,9 @@
 # Tree View
 
-A Qamui component example.
+A QmlTui component example.
 
-Build with `cmake --build build --target qamui_tree_view_demo`.
-Run `./build/examples/components/tree_view/qamui_tree_view_demo`.
+Build with `cmake --build build --target qmltui_tree_view_demo`.
+Run `./build/examples/components/tree_view/qmltui_tree_view_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

@@ -1,6 +1,6 @@
-# Models in Qamui Views
+# Models in QmlTui Views
 
-Qamui views accept the same model kinds as Qt Quick: an integer count, a
+QmlTui views accept the same model kinds as Qt Quick: an integer count, a
 JavaScript array or list of maps, and any `QAbstractItemModel`, including
 `QStandardItemModel`, `QStringListModel`, proxies such as
 `QSortFilterProxyModel`, and your own list, table, or tree models. This page
@@ -52,7 +52,7 @@ color binding; declare `required property string color` to receive it.
 model they show the top level and emit one warning:
 
 ```
-qamui::ListView: model has nested rows; this view shows one level.
+qmltui::ListView: model has nested rows; this view shows one level.
 Use TreeView, or set rootIndex to show a subtree.
 ```
 
@@ -123,7 +123,7 @@ Qt Widgets styles items through numeric roles that have no entry in
 `roleNames()`: `Qt::ForegroundRole`, `Qt::BackgroundRole`,
 `Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole`, plus the
 `Qt::ItemIsEnabled` and `Qt::ItemIsUserCheckable` flags. `QStyledItemDelegate`
-paints them; Qt Quick views ignore them. Qamui does what Widgets does.
+paints them; Qt Quick views ignore them. QmlTui does what Widgets does.
 
 For every C++ model row, views add these delegate properties when the model
 has not claimed the name itself in `roleNames()`:
@@ -144,7 +144,7 @@ changes or a pooled delegate is rebound to another row, every name is
 published, including cleared ones, so read them with a fallback
 (`model.foreground || textColor`) rather than as required properties.
 
-`StandardItemDelegate` from `Qamui.Controls` renders them: decoration glyph,
+`StandardItemDelegate` from `QmlTui.Controls` renders them: decoration glyph,
 `[x]`, `[ ]`, or `[-]` for checkable items, colored and aligned text, dimmed
 text for disabled items, and reversed text for the current row. Its
 `toggle()` writes `Qt::CheckStateRole` back through the model's `setData()`,
@@ -164,12 +164,12 @@ selected row keeps the view's selection colors.
 `examples/components/standard_item_delegate/` shows one styled
 `QStandardItemModel` in all three views, with Space toggling a check box
 through the model. When Qt Widgets is available it also builds
-`qamui_standard_item_delegate_widgets`, the same model in `QListView`,
+`qmltui_standard_item_delegate_widgets`, the same model in `QListView`,
 `QTableView`, and `QTreeView` with their default `QStyledItemDelegate`, for a
-side-by-side comparison (`QAMUI_BUILD_WIDGETS_REFERENCE` turns it off).
+side-by-side comparison (`QMLTUI_BUILD_WIDGETS_REFERENCE` turns it off).
 
 `QColor` and `QBrush` are decoded through their `QDataStream` form, which
-QtGui registers on the metatype, so QamuiCore still does not link QtGui. Only
+QtGui registers on the metatype, so QmlTuiCore still does not link QtGui. Only
 RGB colors decode; HSV, HSL, CMYK, and extended-RGB colors are treated as
 unset. Models that store colors as strings work in any process.
 
@@ -200,7 +200,7 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
 All views accept ready inline components and components that become ready
 asynchronously. Delegate creation preserves the component's lexical QML context,
 including `pragma ComponentBehavior: Bound`. A delegate root that is not a
-`Qamui.Item`, or a component that enters the error state, is rejected with a QML
+`QmlTui.Item`, or a component that enters the error state, is rejected with a QML
 warning instead of being partially installed.
 
 For map and `QAbstractItemModel` data, named roles are available both as required
@@ -208,7 +208,7 @@ delegate properties and through `model`. `modelData` contains the row or cell
 value described in the table below. `dataChanged` updates only the roles named by
 the model when the model supplies such a list.
 
-| Type | Standard delegate properties | `modelData` | Qamui-specific behavior |
+| Type | Standard delegate properties | `modelData` | QmlTui-specific behavior |
 | --- | --- | --- | --- |
 | `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting; `rootIndex` selects the level of a tree model |
 | `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight`; only the viewport's cells are instantiated; `rootIndex` as ListView |

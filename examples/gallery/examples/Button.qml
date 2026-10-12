@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
-// Button: Enter, Space or click; background and contentItem restyle it. One tile of the Qamui gallery (examples/gallery)
+// Button: Enter, Space or click; background and contentItem restyle it. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

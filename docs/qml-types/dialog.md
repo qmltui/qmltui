@@ -1,10 +1,10 @@
 ---
 title: Dialog
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Popup
-cpp: qamui::Popup
+cpp: qmltui::Popup
 category: overlays and navigation
 summary: A modal, centred message box with a title, a message and accept and reject buttons.
 ---
@@ -15,8 +15,8 @@ A modal, centred message box with a title, a message and accept and reject butto
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Popup](popup.md) |
 
 ## Properties
@@ -64,8 +64,8 @@ when you need custom content or a non-modal overlay, and
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Column {

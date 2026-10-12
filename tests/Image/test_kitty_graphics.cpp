@@ -12,16 +12,16 @@
 #include <QMap>
 #include <QtEndian>
 
-#include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/Items/Terminal.h>
-#include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Image/Image.h>
-#include <Qamui/Image/ImageProvider.h>
-#include <Qamui/Image/TerminalGraphics.h>
+#include <QmlTui/Runner/MemoryTerminalBackend.h>
+#include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Image/Image.h>
+#include <QmlTui/Image/ImageProvider.h>
+#include <QmlTui/Image/TerminalGraphics.h>
 #include <QSignalSpy>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 MemoryTerminalBackend* backend = nullptr;
@@ -79,8 +79,8 @@ class TestKittyGraphics : public QObject {
         QQmlComponent component(&qml);
         component.setData(R"(
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 Terminal {
     Image { objectName: "img"; x: 0; y: 0; width: 6; height: 3
             fillMode: Image.Stretch; renderMode: Image.Auto }

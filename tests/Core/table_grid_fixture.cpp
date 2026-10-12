@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     engine.loadData(R"(
         pragma ComponentBehavior: Bound
         import QtQml
-        import Qamui
+        import QmlTui
         Terminal {
             id: root
             required property var tableModel

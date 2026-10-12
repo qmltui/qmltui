@@ -1,5 +1,5 @@
 ---
-# Qamui C++ Clang-Format Configuration
+# QmlTui C++ Clang-Format Configuration
 # Retained-mode terminal UI framework (Qt 6.8+, C++20)
 Language: Cpp
 BasedOnStyle: LLVM

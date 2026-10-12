@@ -1,10 +1,10 @@
 ---
 title: RowLayout
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: LinearLayout
-cpp: qamui::RowLayout
+cpp: qmltui::RowLayout
 category: layout
 summary: Arranges items horizontally with flexible sizing and alignment.
 ---
@@ -15,8 +15,8 @@ Arranges items horizontally with flexible sizing and alignment. [More...](#detai
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | `LinearLayout` |
 
 ## Detailed Description
@@ -39,7 +39,7 @@ between adjacent items.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

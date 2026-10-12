@@ -23,29 +23,29 @@ set(agent_stream_qml_files
     ToastNotification.qml
 )
 
-qt_add_executable(qamui_agent_stream_demo main.cpp)
+qt_add_executable(qmltui_agent_stream_demo main.cpp)
 
-qt_add_qml_module(qamui_agent_stream_demo
+qt_add_qml_module(qmltui_agent_stream_demo
     URI AgentStreamDemo
     VERSION 1.0
     QML_FILES ${agent_stream_qml_files}
     DEPENDENCIES
-        TARGET Qamui::Core
-        TARGET Qamui::Controls
+        TARGET qmltui::core
+        TARGET qmltui::controls
 )
 
-target_link_libraries(qamui_agent_stream_demo PRIVATE Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
+target_link_libraries(qmltui_agent_stream_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 
-if(TARGET Qamui::Runner)
-    target_link_libraries(qamui_agent_stream_demo PRIVATE Qamui::Runner)
-    qamui_add_scenario(NAME agent_stream_inline TARGET qamui_agent_stream_demo
+if(TARGET qmltui::runner)
+    target_link_libraries(qmltui_agent_stream_demo PRIVATE qmltui::runner)
+    qmltui_add_scenario(NAME agent_stream_inline TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_inline.js"
         COLUMNS 120 ROWS 35 LABELS AgentSmoke
-        ARTIFACT "banner.txt" ARTIFACT_CONTENT "Qamui")
-    qamui_add_scenario(NAME agent_stream_prompt_focus TARGET qamui_agent_stream_demo
+        ARTIFACT "banner.txt" ARTIFACT_CONTENT "QmlTui")
+    qmltui_add_scenario(NAME agent_stream_prompt_focus TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_focus.js"
         COLUMNS 120 ROWS 35 CLOCK VIRTUAL LABELS AgentSmoke)
-    qamui_add_scenario(NAME agent_stream_mouse TARGET qamui_agent_stream_demo
+    qmltui_add_scenario(NAME agent_stream_mouse TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_mouse.js"
         COLUMNS 120 ROWS 35 LABELS AgentSmoke)
 endif()

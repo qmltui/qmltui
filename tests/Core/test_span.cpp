@@ -2,12 +2,12 @@
 #include <QSignalSpy>
 #include <QQmlEngine>
 #include <QQmlComponent>
-#include <Qamui/Core/Items/Text.h>
-#include <Qamui/Core/Primitives/QamuiGlobal.h>
+#include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Primitives/QmlTuiGlobal.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qamui;
+using namespace qmltui;
 
 static TextGridBuffer frame(Text &text, int width = 30, int height = 5)
 {
@@ -159,12 +159,12 @@ void TestSpan::qmlIntegration() {
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
-        import Qamui
+        import QmlTui
         Text {
             bold: true
             spans: [ { text: "A", bold: false, color: "default" },
-                     Qamui.span("B", { color: Qamui.rgba(1, 0, 0, 1), backgroundColor: "#123456", dim: true }),
-                     Qamui.span("C"), { text: "D", color: "green" } ]
+                     QmlTui.span("B", { color: QmlTui.rgba(1, 0, 0, 1), backgroundColor: "#123456", dim: true }),
+                     QmlTui.span("C"), { text: "D", color: "green" } ]
         }
     )", QUrl());
     std::unique_ptr<QObject> object(component.create());
@@ -186,7 +186,7 @@ void TestSpan::qmlResetAndMutation() {
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
-        import Qamui
+        import QmlTui
         Text {
             bold: true
             color: "#ff0000"
@@ -215,10 +215,10 @@ void TestSpan::qmlResetAndMutation() {
 }
 
 void TestSpan::factoryValidation() {
-    QamuiGlobal global;
-    QTest::ignoreMessage(QtWarningMsg, "Qamui.span: expected boolean for bold");
-    QTest::ignoreMessage(QtWarningMsg, "Qamui.span: invalid color for color");
-    QTest::ignoreMessage(QtWarningMsg, "Qamui.span: unknown option typo");
+    QmlTuiGlobal global;
+    QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: expected boolean for bold");
+    QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: invalid color for color");
+    QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: unknown option typo");
     auto span = global.span(QStringLiteral("x"), {{"bold", "false"}, {"color", "bad-color"}, {"typo", true}});
     QVERIFY(!span.hasBold());
     QVERIFY(!span.color().isValid());
@@ -229,7 +229,7 @@ void TestSpan::gradient() {
     QQmlComponent component(&engine);
     component.setData(R"(
         pragma ComponentBehavior: Bound
-        import Qamui
+        import QmlTui
         Text {
             spans: [{ text: "AB", color: "green" }]
             gradient: Gradient {

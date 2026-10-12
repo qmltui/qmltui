@@ -4,7 +4,7 @@
 This script parses docs/qml-types, docs/cpp-classes, docs/topics, and docs/tutorials,
 generates self-contained HTML files with a Qt-style CSS stylesheet, extracts
 symbol keywords (QML types, properties, signals, C++ classes and methods),
-and writes qamui.qhp ready for qhelpgenerator.
+and writes qmltui.qhp ready for qhelpgenerator.
 """
 
 from __future__ import annotations
@@ -213,9 +213,9 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Write stylesheet
-    (out_dir / "qamui-doc.css").write_text(CSS_STYLESHEET, encoding="utf-8")
+    (out_dir / "qmltui-doc.css").write_text(CSS_STYLESHEET, encoding="utf-8")
 
-    files_list: list[str] = ["qamui-doc.css"]
+    files_list: list[str] = ["qmltui-doc.css"]
     keywords: list[tuple[str, str, str]] = []  # (name, id, ref)
     toc_entries: dict[str, list[tuple[str, str]]] = {
         "Getting Started": [],
@@ -249,7 +249,7 @@ def main():
                     if prop_name not in ("Property", "Type", "Default", "Signal", "Method"):
                         keywords.append((f"{type_name}.{prop_name}", f"QML.{type_name}.{prop_name}", f"{rel_name}#{prop_name}"))
             elif subfolder == "cpp-classes":
-                cls_name = meta.get("title") or f"qamui::{md_file.stem.capitalize()}"
+                cls_name = meta.get("title") or f"qmltui::{md_file.stem.capitalize()}"
                 keywords.append((cls_name, cls_name, rel_name))
 
             body_html = convert_markdown(body)
@@ -257,8 +257,8 @@ def main():
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{html.escape(title)} - Qamui Documentation</title>
-    <link rel="stylesheet" href="../qamui-doc.css">
+    <title>{html.escape(title)} - QmlTui Documentation</title>
+    <link rel="stylesheet" href="../qmltui-doc.css">
 </head>
 <body>
     {body_html}
@@ -286,8 +286,8 @@ def main():
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Getting Started - Qamui Documentation</title>
-    <link rel="stylesheet" href="qamui-doc.css">
+    <title>Getting Started - QmlTui Documentation</title>
+    <link rel="stylesheet" href="qmltui-doc.css">
 </head>
 <body>
     {body_html}
@@ -299,7 +299,7 @@ def main():
         toc_entries["Getting Started"].append(("Getting Started", "getting-started.html"))
         keywords.append(("Getting Started", "getting-started", "getting-started.html"))
 
-    # Generate qamui.qhp
+    # Generate qmltui.qhp
     toc_xml_parts = []
     for section_title, entries in toc_entries.items():
         if not entries:
@@ -317,11 +317,11 @@ def main():
 
     qhp_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <QtHelpProject version="1.0">
-    <namespace>org.qamui.qamui.0.5.0</namespace>
-    <virtualFolder>qamui</virtualFolder>
+    <namespace>org.qmltui.qmltui.0.5.0</namespace>
+    <virtualFolder>qmltui</virtualFolder>
     <filterSection>
         <toc>
-            <section title="Qamui Reference Documentation" ref="getting-started.html">
+            <section title="QmlTui Reference Documentation" ref="getting-started.html">
 {os.linesep.join(toc_xml_parts)}
             </section>
         </toc>
@@ -334,8 +334,8 @@ def main():
     </filterSection>
 </QtHelpProject>
 """
-    (out_dir / "qamui.qhp").write_text(qhp_content, encoding="utf-8")
-    print(f"Generated {len(files_list)} HTML doc files, {len(keywords)} keywords, and qamui.qhp in {out_dir}")
+    (out_dir / "qmltui.qhp").write_text(qhp_content, encoding="utf-8")
+    print(f"Generated {len(files_list)} HTML doc files, {len(keywords)} keywords, and qmltui.qhp in {out_dir}")
 
 if __name__ == "__main__":
     main()

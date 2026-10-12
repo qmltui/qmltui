@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
-// Switch: On/off with a label. One tile of the Qamui gallery (examples/gallery)
+// Switch: On/off with a label. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

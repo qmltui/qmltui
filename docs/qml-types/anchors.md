@@ -1,10 +1,10 @@
 ---
 title: Anchors
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Anchors
+cpp: qmltui::Anchors
 category: core
 summary: Grouped property defining relative positioning constraints between items.
 ---
@@ -15,8 +15,8 @@ Grouped property defining relative positioning constraints between items. [More.
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -55,7 +55,7 @@ All margins are measured in integer character cells and rows.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

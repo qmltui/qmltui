@@ -1,10 +1,10 @@
 ---
 title: terminalCapabilities
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::TerminalCapabilities
+cpp: qmltui::TerminalCapabilities
 category: core
 summary: Describes capabilities detected from the host terminal environment.
 ---
@@ -15,8 +15,8 @@ Describes capabilities detected from the host terminal environment. [More...](#d
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Value type, not instantiable |
 
@@ -33,7 +33,7 @@ Describes capabilities detected from the host terminal environment. [More...](#d
 ## Detailed Description
 
 `terminalCapabilities` is a read-only value type exposed through [Terminal.capabilities](terminal.md).
-During application startup, Qamui inspects environment variables (`TERM`, `TERM_PROGRAM`,
+During application startup, QmlTui inspects environment variables (`TERM`, `TERM_PROGRAM`,
 `COLORTERM`) and issues asynchronous VT query probes to determine host terminal features.
 
 Applications use these flags to enable rich features conditionally, such as true-pixel
@@ -43,7 +43,7 @@ image rendering via Kitty graphics or fine-grained key event detection.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

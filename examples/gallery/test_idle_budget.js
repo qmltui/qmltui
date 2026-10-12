@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui Gallery");
+    terminal.expectText("QmlTui Gallery");
     terminal.sleep(300); // Real event-loop settling, then observe unscripted renders.
     const before = terminal.frameCount();
     terminal.sleep(500);

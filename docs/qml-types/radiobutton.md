@@ -1,10 +1,10 @@
 ---
 title: RadioButton
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qamui::Item
+cpp: qmltui::Item
 category: inputs
 summary: A focusable exclusive option drawn as (*) or ( ) that unchecks its ButtonGroup siblings when selected
 ---
@@ -15,8 +15,8 @@ A focusable exclusive option drawn as `(*)` or `( )` that unchecks its [ButtonGr
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [AbstractButton](abstractbutton.md) |
 
 ## Properties
@@ -55,8 +55,8 @@ toggles that can only be checked.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     ButtonGroup {

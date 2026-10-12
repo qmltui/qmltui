@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui RadioButton Component Example");
+    terminal.expectText("QmlTui RadioButton Component Example");
     terminal.sleep(1500);
     terminal.press("Tab");
     terminal.sleep(800);

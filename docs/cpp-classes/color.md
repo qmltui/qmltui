@@ -1,7 +1,7 @@
 # Color
 
-`qamui::Color` is Qamui's QtGui-free public color value. It is available in C++
-and as the constructible QML value type `rgba`; QML string assignments to Qamui
+`qmltui::Color` is QmlTui's QtGui-free public color value. It is available in C++
+and as the constructible QML value type `rgba`; QML string assignments to QmlTui
 color properties continue to work.
 
 Construct a color from `#RGB`, `#RRGGBB`, `#AARRGGBB`, `transparent`, an SVG
@@ -70,15 +70,15 @@ to the painter rather than a color, so it has no representation in a cell:
 `Color::paintedArgb32()`, and every path that writes a cell, turns it into the
 terminal default.
 
-Use `Qamui.rgba(red, green, blue, alpha)` in QML to construct a color from
+Use `QmlTui.rgba(red, green, blue, alpha)` in QML to construct a color from
 normalized channels. Finite channel values are clamped to `0.0` through `1.0`.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 QtObject {
-    property rgba accent: Qamui.rgba(0.2, 0.4, 0.6, 1.0)
+    property rgba accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
 }
 ```
 

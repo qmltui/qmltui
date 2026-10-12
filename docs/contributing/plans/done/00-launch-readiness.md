@@ -25,7 +25,7 @@ Exit criteria:
 
 ## 2. API Consistency Pass (Qt Quick naming)
 
-Newcomers are Qt developers. Every place Qamui deviates from Qt Quick naming
+Newcomers are Qt developers. Every place QmlTui deviates from Qt Quick naming
 becomes a permanent papercut once published. Audit and fix now.
 
 Known deviations:
@@ -37,16 +37,16 @@ Known deviations:
 
 Procedure:
 
-1. Grep every `property` declaration in `src/Qamui/Controls/*.qml` and
-   `src/Qamui/Extras/*.qml` and compare against the matching Qt Quick Controls
+1. Grep every `property` declaration in `src/QmlTui/Controls/*.qml` and
+   `src/QmlTui/Extras/*.qml` and compare against the matching Qt Quick Controls
    type. Record each deviation in a table in the PR description.
 2. Rename in the control, then update `examples/`, `tests/`, and every markdown
-   under `src/Qamui/**/doc/` and `docs/` in the same commit. No deprecation
+   under `src/QmlTui/**/doc/` and `docs/` in the same commit. No deprecation
    aliases: there are no users yet.
 3. Run the full suite in both Behavior trees (see `AGENTS.md`).
 
 ```bash
-grep -n 'property ' src/Qamui/Controls/*.qml | grep -v 'readonly'
+grep -n 'property ' src/QmlTui/Controls/*.qml | grep -v 'readonly'
 grep -rln 'import QtQml 2' examples src tests docs
 ```
 
@@ -142,7 +142,7 @@ the frame renderer or accumulate without a limit.
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 // Dashboard: full-screen by default
 Terminal {
@@ -165,7 +165,7 @@ The following composition sketch uses application-defined `PromptBar`,
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root
@@ -225,12 +225,12 @@ mode itself does not select a page or establish a focus-restoration policy.
 | `Terminal.border` | Removed |
 | `fillTerminal`, explicit root dimensions | Remove `fillTerminal`; move fixed-size geometry to an inner item |
 
-Files to update: `src/Qamui/Core/Items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
+Files to update: `src/QmlTui/Core/Items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
 `Scrollback`), `engine/TerminalEngine.cpp` and renderers (mode transitions and
 separate scrollback output),
 `examples/topics/agent_stream/Main.qml`, every example root that sets
 `fillTerminal: true` or a border, `docs/qml-types/index.md`, `docs/topics/architecture.md`,
-`.agents/skills/qamui-qml/SKILL.md` section 3, and the `TestRunner` hook if it
+`.agents/skills/qmltui-qml/SKILL.md` section 3, and the `TestRunner` hook if it
 reads `rendererMode`.
 
 ### Acceptance
@@ -255,7 +255,7 @@ reads `rendererMode`.
 ## 4. Module Boundaries, Component Cuts, and Terminal Colors
 
 Decided on 2026-09-08, colors revised on 2026-09-09. Three problems share one
-fix window: which module a type lives in is not principled (`Qamui.Extras`
+fix window: which module a type lives in is not principled (`QmlTui.Extras`
 exists because nothing else fit), the library ships components that are an
 application's business, and every control invents its own color properties
 (Button alone has nine) while three example apps each wrote their own theme
@@ -263,25 +263,25 @@ singleton.
 
 ### Module rules
 
-1. **`Qamui`** holds what cannot be built in QML from other Qamui types: the
+1. **`QmlTui`** holds what cannot be built in QML from other QmlTui types: the
    scene primitives, geometry and layouts, input areas, the model-driven views,
    text editing, Canvas and its shapes, animation and states, and the root
    types. `ListView` and `TableView` stay here for the same reason they live in
    `QtQuick` rather than `QtQuick.Controls`.
-2. **`Qamui.Controls`** holds everything a user operates or reads as a finished
+2. **`QmlTui.Controls`** holds everything a user operates or reads as a finished
    widget with a consistent look and keyboard behaviour, regardless of whether
    it is implemented in QML or C++. `Popup` moves here (Dialog, ToolTip, and
    Toast build on it, and it is a Controls type in Qt).
-3. **A separate module exists only for an optional dependency.** `Qamui.Image`
-   (QtGui) and `Qamui.TerminalHost` (libvterm, Unix PTY) stay. `Qamui.Canvas`
-   folds into `Qamui`. `Qamui.Extras` is dissolved.
+3. **A separate module exists only for an optional dependency.** `QmlTui.Image`
+   (QtGui) and `QmlTui.TerminalHost` (libvterm, Unix PTY) stay. `QmlTui.Canvas`
+   folds into `QmlTui`. `QmlTui.Extras` is dissolved.
 
 | Module | Contents after the move |
 | :--- | :--- |
-| `Qamui` | Terminal, Scrollback, Item, Rectangle, Text, Paragraph, TextInput, TextArea, Row, Column, Layouts, Repeater, Loader, MouseArea, ScrollView, ListView, GridView, TableView, TreeView, LogView, Canvas and shapes, animations, states, Keys, Shortcut |
-| `Qamui.Controls` | Button, ButtonGroup, CheckBox, RadioButton, Switch, Slider, ProgressBar, BusyIndicator, TabBar, StackView, StackLayout, Panel, Dialog, Popup, ToolTip, Toast, Sparkline |
-| `Qamui.Image` | Image |
-| `Qamui.TerminalHost` | TerminalView |
+| `QmlTui` | Terminal, Scrollback, Item, Rectangle, Text, Paragraph, TextInput, TextArea, Row, Column, Layouts, Repeater, Loader, MouseArea, ScrollView, ListView, GridView, TableView, TreeView, LogView, Canvas and shapes, animations, states, Keys, Shortcut |
+| `QmlTui.Controls` | Button, ButtonGroup, CheckBox, RadioButton, Switch, Slider, ProgressBar, BusyIndicator, TabBar, StackView, StackLayout, Panel, Dialog, Popup, ToolTip, Toast, Sparkline |
+| `QmlTui.Image` | Image |
+| `QmlTui.TerminalHost` | TerminalView |
 
 Renames to Qt Quick names in the same step: `TabHeader` to `TabBar`, `Spinner`
 to `BusyIndicator`, `ToastManager` to `Toast`. Two overlaps get a decision, not
@@ -290,7 +290,7 @@ a footnote: `Paragraph` folds into `Text` with `wrapMode`; `LogView` and
 
 ### Component cuts
 
-A type stays in `Qamui.Controls` only if it needs engine knowledge an app author
+A type stays in `QmlTui.Controls` only if it needs engine knowledge an app author
 cannot reproduce in QML (cell geometry, Unicode width, virtualization,
 overlays) or is universal enough that every TUI toolkit ships it. Everything
 else is an application's concern and becomes a recipe under
@@ -308,7 +308,7 @@ This rule goes into `AGENTS.md` so `Extras` cannot grow back.
 ### Terminal colors
 
 Superseded on 2026-09-09. This section first specified a palette: named color
-roles on a `Palette` singleton in `Qamui.Controls`, implemented in C++ so C++
+roles on a `Palette` singleton in `QmlTui.Controls`, implemented in C++ so C++
 controls read the same instance, with a `Terminal` preset (ANSI named colors)
 and a `Dark` preset (the emerald-on-navy brand look). Later, if a real need
 appeared, an inherited `palette` grouped property on `Item` as in Qt Quick.
@@ -342,7 +342,7 @@ Focus and disabled states no longer substitute colors, so whatever an instance
 configures survives both. Focus is carried by `border.style` (`double` when
 focused, `single` otherwise) and by `bold` on the label.
 
-The same rule applies below `Qamui.Controls`, which is what makes it hold: the
+The same rule applies below `QmlTui.Controls`, which is what makes it hold: the
 color defaults on `Text`, `TextArea`, `TextInput`, `Paragraph`, `Canvas` and
 `Border`, and the text and branch roles on `TableView`, `TreeView` and
 `ListView`, are all `"default"`; `Cell::fgColor` and the `TextGridBuffer`
@@ -372,7 +372,7 @@ cannot diverge.
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
-project(hello_qamui LANGUAGES CXX)
+project(hello_qmltui LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -380,36 +380,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 
-# Consume Qamui with zero install. CI overrides the source with
-# FETCHCONTENT_SOURCE_DIR_QAMUI to test the working tree.
-set(QAMUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(QAMUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+# Consume QmlTui with zero install. CI overrides the source with
+# FETCHCONTENT_SOURCE_DIR_QMLTUI to test the working tree.
+set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
-    Qamui
-    GIT_REPOSITORY https://github.com/qamui-dev/qamui.git
+    QmlTui
+    GIT_REPOSITORY https://github.com/qmltui-dev/qmltui.git
     GIT_TAG        v0.4.0
 )
-FetchContent_MakeAvailable(Qamui)
+FetchContent_MakeAvailable(QmlTui)
 
-qt_add_executable(hello_qamui main.cpp)
-qt_add_qml_module(hello_qamui
-    URI HelloQamui
+qt_add_executable(hello_qmltui main.cpp)
+qt_add_qml_module(hello_qmltui
+    URI HelloQmlTui
     VERSION 1.0
     QML_FILES Main.qml
-    DEPENDENCIES TARGET Qamui::Core Qamui::Controls
+    DEPENDENCIES TARGET qmltui::core qmltui::controls
 )
-target_link_libraries(hello_qamui PRIVATE Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
+target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 ```
 
 Notes:
 
-- Target names are `Qamui::Core`, `Qamui::Controls`, `Qamui::Extras`. The old plan
-  used `QamuiCore`, which does not exist.
-- Do not add `EXCLUDE_FROM_ALL` to the Qamui subdirectory. The QML plugin targets
-  (`QamuiCoreplugin`, `QamuiControlsplugin`) are not link dependencies, so with
+- Target names are `qmltui::core`, `qmltui::controls`, `qmltui::Extras`. The old plan
+  used `QmlTuiCore`, which does not exist.
+- Do not add `EXCLUDE_FROM_ALL` to the QmlTui subdirectory. The QML plugin targets
+  (`QmlTuiCoreplugin`, `QmlTuiControlsplugin`) are not link dependencies, so with
   `EXCLUDE_FROM_ALL` they never build and the app fails at runtime with
-  "module Qamui is not installed". `starter_template` works around this with an
+  "module QmlTui is not installed". `starter_template` works around this with an
   `add_dependencies` loop; the quickstart avoids the problem entirely.
 
 ### `examples/quickstart/main.cpp`
@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.loadFromModule("HelloQamui", "Main");
+    engine.loadFromModule("HelloQmlTui", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
     return app.exec();
@@ -433,8 +433,8 @@ int main(int argc, char *argv[])
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root
@@ -452,7 +452,7 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "Welcome to Qamui"
+            text: "Welcome to QmlTui"
             color: "cyan"
             bold: true
         }
@@ -512,8 +512,8 @@ jobs:
           modules: qtshadertools
       - run: >
           cmake -S . -B build
-          -DQAMUI_BUILD_TESTS=ON -DQAMUI_BUILD_EXAMPLES=ON
-          -DQAMUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
+          -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
+          -DQMLTUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
       - run: cmake --build build --parallel --config Release
       - run: ctest --test-dir build --output-on-failure -C Release
 
@@ -527,13 +527,13 @@ jobs:
       - name: Build the quickstart exactly as a newcomer would, against this tree
         run: >
           cmake -S examples/quickstart -B build-qs
-          -DFETCHCONTENT_SOURCE_DIR_QAMUI=${{ github.workspace }}
+          -DFETCHCONTENT_SOURCE_DIR_QMLTUI=${{ github.workspace }}
       - run: cmake --build build-qs --parallel
       - name: Smoke-run headless
-        run: QAMUI_CAPTURE_AFTER_MS=0 QAMUI_TEST_ARTIFACT_DIR=qs-artifacts ./build-qs/hello_qamui
+        run: QMLTUI_CAPTURE_AFTER_MS=0 QMLTUI_TEST_ARTIFACT_DIR=qs-artifacts ./build-qs/hello_qmltui
 ```
 
-`FETCHCONTENT_SOURCE_DIR_QAMUI` is CMake's standard override for a declared
+`FETCHCONTENT_SOURCE_DIR_QMLTUI` is CMake's standard override for a declared
 dependency. It lets CI validate the quickstart against the working tree before
 the tag exists, and the file a newcomer copies is unchanged.
 
@@ -613,7 +613,7 @@ any backend, which is the existing headless path.
 `TerminalBackend::setFactory()` lets an application replace the platform
 backend process-wide: serial consoles on devices without a tty layer,
 in-process hosts over sockets or ConPTY, the WebAssembly bridge of Plan 05,
-and tests. `Qamui::TestRunner` ships `MemoryTerminalBackend` as the reference
+and tests. `qmltui::TestRunner` ships `MemoryTerminalBackend` as the reference
 implementation, and `tests/Core/test_terminal_backend.cpp` drives the engine
 through it end to end. C++ only, no QML surface, documented as subject to
 change before 1.0. Per-Terminal injection is deferred until a multi-session
@@ -625,10 +625,10 @@ host needs it.
   for free; do not spend time on it.
 - **Mouse reporting** works in Windows Terminal through the same SGR sequences
   once VT input is enabled. Verify, do not assume.
-- **`Qamui.TerminalHost`** (the embedded PTY module) is Unix only and stays
-  `QAMUI_ENABLE_TERMINAL_HOST=OFF` on Windows. ConPTY support is a separate,
+- **`QmlTui.TerminalHost`** (the embedded PTY module) is Unix only and stays
+  `QMLTUI_ENABLE_TERMINAL_HOST=OFF` on Windows. ConPTY support is a separate,
   later plan.
-- **Sixel images** are not supported by Windows Terminal; `Qamui.Image` falls
+- **Sixel images** are not supported by Windows Terminal; `QmlTui.Image` falls
   back to half-block rendering, which it already does when capabilities say so.
 
 ### Windows CI and examples
@@ -636,7 +636,7 @@ host needs it.
 - The `windows-2022` row in the CI matrix above builds with MSVC and runs
   `ctest`. Scenario tests are headless and need no console.
 - Add one interactive smoke job that launches the quickstart inside Windows
-  Terminal through `wt.exe` with `QAMUI_SCRIPT` and checks the artifact, so the
+  Terminal through `wt.exe` with `QMLTUI_SCRIPT` and checks the artifact, so the
   real console path is exercised, not only the headless one.
 - The README and the site quickstart list Windows alongside Linux and macOS
   with the MSVC and MinGW commands that CI runs.
@@ -651,8 +651,8 @@ public: a lawyer's read of `CLA.md`, and the CLA bot on GitHub.
 
 ### The model
 
-Qamui mirrors Qt: **LGPLv3, GPLv3, or a commercial license**, chosen by the
-user. Qamui is the personal project of its copyright holder and not a Qt
+QmlTui mirrors Qt: **LGPLv3, GPLv3, or a commercial license**, chosen by the
+user. QmlTui is the personal project of its copyright holder and not a Qt
 Company product; the commercial license is sold by the copyright holder.
 
 Why this and not MIT, which the tree said until 2026-09-14:
@@ -671,12 +671,12 @@ Why this and not MIT, which the tree said until 2026-09-14:
 
 | Path | License | Note |
 | :--- | :--- | :--- |
-| `src/Qamui/**` (Core, Controls, Extras, Canvas, Image, TerminalHost, TestRunner) | `LGPL-3.0-only OR GPL-3.0-only` | One rule for all library code, TestRunner included |
-| `examples/**`, `qamui-starter` (Plan 03) | `BSD-3-Clause` | Qt's convention for examples. The goal is "copy three files" with nothing to read first |
+| `src/QmlTui/**` (Core, Controls, Extras, Canvas, Image, TerminalHost, TestRunner) | `LGPL-3.0-only OR GPL-3.0-only` | One rule for all library code, TestRunner included |
+| `examples/**`, `qmltui-starter` (Plan 03) | `BSD-3-Clause` | Qt's convention for examples. The goal is "copy three files" with nothing to read first |
 | `cmake/**`, `scripts/**`, `.github/**` | `BSD-3-Clause` | Build glue, as in Qt |
 | `docs/**` | `CC-BY-4.0` | Open decision 4 below |
 | Fetched third parties: utf8proc, libvterm | MIT (upstream) | Recorded in `THIRD-PARTY.md`; nothing to relicense |
-| WebAssembly builds of Qamui | Source LGPL/GPL; Qt wasm binary GPLv3 or commercial | Mirrors Qt's own rule for wasm; see Plan 05 section 7. Open decision 3 |
+| WebAssembly builds of QmlTui | Source LGPL/GPL; Qt wasm binary GPLv3 or commercial | Mirrors Qt's own rule for wasm; see Plan 05 section 7. Open decision 3 |
 
 ### Files and mechanics
 
@@ -695,14 +695,14 @@ Follow the REUSE specification so the state is machine-checkable with
    not a legal requirement. `CONTRIBUTING.md` tells contributors to extend
    `REUSE.toml` rather than add headers.
 4. `THIRD-PARTY.md`: utf8proc and libvterm, with upstream license text and the
-   pinned versions from `cmake/QamuiUtf8proc.cmake` and `cmake/QamuiLibvterm.cmake`.
+   pinned versions from `cmake/QmlTuiUtf8proc.cmake` and `cmake/QmlTuiLibvterm.cmake`.
 5. `CONTRIBUTING.md` plus a contributor agreement (`CLA.md`). Every
    contribution must be relicensable by the copyright holder or the commercial
    option dies with the first merged external PR. Enforce with a CLA bot on
    GitHub before the repository flips public. Form is open decision 2.
 6. README license section, in the rewrite (section 10):
 
-   > Qamui is available under the LGPLv3 and GPLv3, or under a commercial
+   > QmlTui is available under the LGPLv3 and GPLv3, or under a commercial
    > license for teams that cannot meet those terms (static linking on
    > devices, closed distribution, WebAssembly). Examples and the starter
    > template are BSD-3-Clause; documentation is CC-BY-4.0. The license of a
@@ -741,10 +741,10 @@ Follow the REUSE specification so the state is machine-checkable with
 
 ## 9. Tag and Release
 
-1. Confirm `project(Qamui VERSION 0.4.0 ...)` matches the tag.
-2. `git tag -a v0.4.0 -m "Qamui 0.4.0"` and push the tag.
-3. Create a GitHub release. Attach `qamui.qch` once Plan 04 exists.
-4. Re-run the quickstart job without the `FETCHCONTENT_SOURCE_DIR_QAMUI`
+1. Confirm `project(qmltui VERSION 0.4.0 ...)` matches the tag.
+2. `git tag -a v0.4.0 -m "QmlTui 0.4.0"` and push the tag.
+3. Create a GitHub release. Attach `qmltui.qch` once Plan 04 exists.
+4. Re-run the quickstart job without the `FETCHCONTENT_SOURCE_DIR_QMLTUI`
    override to prove the public path works.
 5. Run the quickstart by hand once in Windows Terminal, in a Linux terminal, and
    in macOS Terminal.app before publishing the release.
@@ -769,7 +769,7 @@ Record (2026-09-14, commit b0bdb32 plus this note, before the `v0.4.0` tag):
 | Linux, Qt 6.8.6, Behavior ON, TestRunner ON, TerminalHost ON | 104 of 104 tests pass |
 | Linux, Qt 6.8.6, Behavior OFF, TestRunner ON | 92 of 92 tests pass |
 | Windows 11, MSVC 2022, Qt 6.8.3, Behavior OFF, native build via cmd.exe | 84 pass, 1 skipped (symlink trap) |
-| Quickstart standalone with `FETCHCONTENT_SOURCE_DIR_QAMUI` override | configures, builds, renders "Welcome", runs until the 3 s timeout |
+| Quickstart standalone with `FETCHCONTENT_SOURCE_DIR_QMLTUI` override | configures, builds, renders "Welcome", runs until the 3 s timeout |
 | Stale root API names (`rendererMode`, `useAlternateScreen`, `fillTerminal`, `liveItem`, `StreamView`) | none outside `docs/plans` |
 | `import QtQml 2` | none outside `docs/plans` |
 | `label:` outside `StatusBadge` and `Panel` | 40 hits, all app-local property names (`Gauge.label`, key-map entries, settings rows), no stale control API |
@@ -780,25 +780,25 @@ Terminal, a Linux terminal and Terminal.app (section 9 step 5).
 
 ```bash
 # Both Behavior trees green
-cmake -S . -B build -DQAMUI_BUILD_TESTS=ON -DQAMUI_BUILD_EXAMPLES=ON -DQAMUI_ENABLE_BEHAVIOR=ON
+cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_BEHAVIOR=ON
 cmake --build build && ctest --test-dir build --output-on-failure
-cmake -S . -B build-nobehavior -DQAMUI_BUILD_TESTS=ON -DQAMUI_BUILD_EXAMPLES=ON
+cmake -S . -B build-nobehavior -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build-nobehavior && ctest --test-dir build-nobehavior --output-on-failure
 
 # Quickstart standalone against the working tree
-cmake -S examples/quickstart -B build-qs -DFETCHCONTENT_SOURCE_DIR_QAMUI=$PWD
-cmake --build build-qs && QAMUI_CAPTURE_AFTER_MS=0 ./build-qs/hello_qamui
+cmake -S examples/quickstart -B build-qs -DFETCHCONTENT_SOURCE_DIR_QMLTUI=$PWD
+cmake --build build-qs && QMLTUI_CAPTURE_AFTER_MS=0 ./build-qs/hello_qmltui
 
 # Windows (from a Developer PowerShell)
-cmake -S . -B build-win -DQAMUI_BUILD_TESTS=ON -DQAMUI_BUILD_EXAMPLES=ON
+cmake -S . -B build-win -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build-win --config Release
 ctest --test-dir build-win -C Release --output-on-failure
-.\build-win\examples\quickstart\Release\hello_qamui.exe   # inside Windows Terminal
+.\build-win\examples\quickstart\Release\hello_qmltui.exe   # inside Windows Terminal
 
 # Audit stale public root API; migration explanations in plans are excluded
 rg -n 'rendererMode|useAlternateScreen|fillTerminal|liveItem|StreamView' src examples docs tests -g '!docs/plans/**'
 
 # No stale names remain
-grep -rn 'label:' examples docs src/Qamui/*/doc src/Qamui/Core/*/doc | grep -v 'StatusBadge\|Panel' || echo "clean"
+grep -rn 'label:' examples docs src/QmlTui/*/doc src/QmlTui/Core/*/doc | grep -v 'StatusBadge\|Panel' || echo "clean"
 grep -rln 'import QtQml 2' examples src tests docs || echo "clean"
 ```

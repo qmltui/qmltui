@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
-#include <Qamui/Core/Primitives/Subpixel.h>
+#include <QmlTui/Core/Primitives/Subpixel.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestSubpixel : public QObject {
     Q_OBJECT

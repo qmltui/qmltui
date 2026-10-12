@@ -3,7 +3,7 @@
 ## 1. Goal
 
 Reference pages that look and read like Qt's own, and a Qt Creator experience
-where F1 on a Qamui symbol opens Qamui help and QML completion knows every Qamui
+where F1 on a QmlTui symbol opens QmlTui help and QML completion knows every QmlTui
 type. Both are generated from the single markdown source defined in Plan 01.
 
 ---
@@ -26,10 +26,10 @@ placeholders once the prose is written. Slugs are the lowercase type name
 ---
 title: Button
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.1"
 inherits: Item
-cpp: qamui::Item
+cpp: qmltui::Item
 category: inputs
 summary: A focusable, clickable action button.
 ---
@@ -40,8 +40,8 @@ A focusable, clickable action button. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.1 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.1 |
 | **Inherits** | [Item](../../qml-types/item.md) |
 
 ## Properties
@@ -73,8 +73,8 @@ reflects state.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Button {
@@ -92,7 +92,7 @@ Rules:
 - Every example compiles. `scripts/check_doc_examples.py` extracts each
   complete `qml` block (one with an `import` line) into a temporary
   `Main.qml`, builds it against the tree, and runs it with
-  `QAMUI_CAPTURE_AFTER_MS` set. CI fails on any block that does not load or
+  `QMLTUI_CAPTURE_AFTER_MS` set. CI fails on any block that does not load or
   renders nothing. A `qml` block without an import line is an illustrative
   snippet and is not run.
 - Property names follow the Plan 00 naming pass. The template says `text`, not
@@ -102,25 +102,25 @@ Rules:
 
 ---
 
-## 3. C++ Class Page Template (`src/Qamui/<module>/doc/<Class>.md`)
+## 3. C++ Class Page Template (`src/QmlTui/<module>/doc/<Class>.md`)
 
 The existing files already follow a close variant of this. Normalize them to:
 
 ```markdown
 ---
-title: qamui::Item
+title: qmltui::Item
 kind: cpp
-header: <Qamui/Item.h>
-target: Qamui::Core
+header: <QmlTui/Item.h>
+target: qmltui::core
 inherits: QObject
 category: core
 summary: Base class for every terminal item.
 ---
 
-# qamui::Item Class
+# qmltui::Item Class
 
-- **Header**: `#include <Qamui/Item.h>`
-- **CMake**: `target_link_libraries(app PRIVATE Qamui::Core)`
+- **Header**: `#include <QmlTui/Item.h>`
+- **CMake**: `target_link_libraries(app PRIVATE qmltui::core)`
 - **Inherits**: `QObject`
 - **Inherited By**: `Rectangle`, `Text`, `Loader`, ...
 
@@ -146,30 +146,30 @@ of contents, and keywords. Markdown is not an input. Qt Creator also does
 ones in the Qt kit's documentation directory automatically and everything else
 through Preferences.
 
-### Pipeline (`scripts/build_qch.py` + `cmake/QamuiDoc.cmake`)
+### Pipeline (`scripts/build_qch.py` + `cmake/QmlTuiDoc.cmake`)
 
 1. Render every markdown page (components, guides, C++ classes) to
    self-contained HTML with `python-markdown` and a small Qt-like stylesheet.
-2. Emit `qamui.qhp`: namespace `org.qamui.qamui.0.5.0`, virtual folder `qamui`, a TOC
+2. Emit `qmltui.qhp`: namespace `org.qmltui.qmltui.0.5.0`, virtual folder `qmltui`, a TOC
    mirroring the site sidebar, and one `<keyword>` per type, property, signal,
    and method. Keyword `id` values follow Qt's scheme, `QML.Button` and
    `QML.Button.text`, so F1 resolves the symbol under the cursor.
 3. Run `qhelpgenerator`.
 
 ```cmake
-# cmake/QamuiDoc.cmake
-find_program(QAMUI_QHELPGENERATOR qhelpgenerator
+# cmake/QmlTuiDoc.cmake
+find_program(QMLTUI_QHELPGENERATOR qhelpgenerator
     HINTS "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_LIBEXECS}" "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_BINS}")
 find_package(Python3 COMPONENTS Interpreter)
 
-if(QAMUI_QHELPGENERATOR AND Python3_Interpreter_FOUND)
-    set(qamui_doc_dir "${CMAKE_BINARY_DIR}/doc")
+if(QMLTUI_QHELPGENERATOR AND Python3_Interpreter_FOUND)
+    set(qmltui_doc_dir "${CMAKE_BINARY_DIR}/doc")
     add_custom_target(docs_qch
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_qch.py"
-                --source "${CMAKE_SOURCE_DIR}" --out "${qamui_doc_dir}"
-        COMMAND ${QAMUI_QHELPGENERATOR} "${qamui_doc_dir}/qamui.qhp" -o "${qamui_doc_dir}/qamui.qch"
-        COMMENT "Generating qamui.qch for Qt Creator")
-    install(FILES "${qamui_doc_dir}/qamui.qch"
+                --source "${CMAKE_SOURCE_DIR}" --out "${qmltui_doc_dir}"
+        COMMAND ${QMLTUI_QHELPGENERATOR} "${qmltui_doc_dir}/qmltui.qhp" -o "${qmltui_doc_dir}/qmltui.qch"
+        COMMENT "Generating qmltui.qch for Qt Creator")
+    install(FILES "${qmltui_doc_dir}/qmltui.qch"
         DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT Documentation OPTIONAL)
 endif()
 ```
@@ -179,11 +179,11 @@ with those hints is more reliable than looking for a CMake target.
 
 ### Getting it into Qt Creator
 
-Ship `qamui.qch` as a GitHub release asset and document both paths on the
+Ship `qmltui.qch` as a GitHub release asset and document both paths on the
 `guide/qt-creator` page:
 
-- **GUI**: Edit, Preferences, Help, Documentation, Add, pick `qamui.qch`.
-- **Kit docs folder**: copy `qamui.qch` next to the kit's Qt docs
+- **GUI**: Edit, Preferences, Help, Documentation, Add, pick `qmltui.qch`.
+- **Kit docs folder**: copy `qmltui.qch` next to the kit's Qt docs
   (`$(qmake -query QT_INSTALL_DOCS)`), which Qt Creator registers on start.
 
 Neither is automatic after `cmake --install`, so the page must say so.
@@ -194,15 +194,15 @@ Neither is automatic after `cmake --install`, so the page must say so.
 
 This matters more to a newcomer than F1. Completion and lint depend on the
 `qmldir` and `plugins.qmltypes` that `qt_add_qml_module` already generates for
-`Qamui`, `Qamui.Controls`, `Qamui.Extras`, `Qamui.Canvas`, `Qamui.Image`, and
-`Qamui.TerminalHost`.
+`QmlTui`, `QmlTui.Controls`, `QmlTui.Extras`, `QmlTui.Canvas`, `QmlTui.Image`, and
+`QmlTui.TerminalHost`.
 
-- Verify the install step places them under `QAMUI_INSTALL_QMLDIR` and that
-  `QamuiConfig.cmake` exports that path.
+- Verify the install step places them under `QMLTUI_INSTALL_QMLDIR` and that
+  `QmlTuiConfig.cmake` exports that path.
 - Add a `qmlls` section to the `qt-creator` guide: enable the QML language
   server in Preferences, set the build directory, and completion works for
-  every Qamui type. Verify with a screenshot in the guide.
-- Run `qmllint` over `examples/` in CI with the Qamui import path so the
+  every QmlTui type. Verify with a screenshot in the guide.
+- Run `qmllint` over `examples/` in CI with the QmlTui import path so the
   shipped examples are warning-free, which is what a newcomer copies.
 
 ---
@@ -210,8 +210,8 @@ This matters more to a newcomer than F1. Completion and lint depend on the
 ## 6. Acceptance
 
 - Every `docs/qml-types/*.md` example block builds and loads in CI.
-- `cmake --build build --target docs_qch` produces `qamui.qch`; opening it in
+- `cmake --build build --target docs_qch` produces `qmltui.qch`; opening it in
   Qt Creator and pressing F1 on `Button` in a QML file opens the Button page.
-- `qmlls` completes `Qamui.Controls` types in a fresh Qt Creator project that
-  consumes Qamui via `FetchContent`.
+- `qmlls` completes `QmlTui.Controls` types in a fresh Qt Creator project that
+  consumes QmlTui via `FetchContent`.
 - `qmllint` passes on `examples/`.

@@ -1,27 +1,27 @@
-qt_add_executable(qamui_loader_demo main.cpp)
+qt_add_executable(qmltui_loader_demo main.cpp)
 
-qt_add_qml_module(qamui_loader_demo
+qt_add_qml_module(qmltui_loader_demo
     URI LoaderDemo
     VERSION 1.0
     QML_FILES
         Main.qml
 
- DEPENDENCIES TARGET Qamui::Core Qamui::Controls
+ DEPENDENCIES TARGET qmltui::core qmltui::controls
 )
 
-target_link_libraries(qamui_loader_demo PRIVATE
+target_link_libraries(qmltui_loader_demo PRIVATE
     Qt6::Core
     Qt6::Qml
-    Qamui::Core
-    Qamui::Controls
+    qmltui::core
+    qmltui::controls
 )
 
-if(TARGET Qamui::Runner)
-    target_link_libraries(qamui_loader_demo PRIVATE Qamui::Runner)
-    qamui_add_scenario(NAME loader_smoke TARGET qamui_loader_demo
+if(TARGET qmltui::runner)
+    target_link_libraries(qmltui_loader_demo PRIVATE qmltui::runner)
+    qmltui_add_scenario(NAME loader_smoke TARGET qmltui_loader_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
-    qamui_add_scenario(NAME loader_demo TARGET qamui_loader_demo
+    qmltui_add_scenario(NAME loader_demo TARGET qmltui_loader_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/loader.cast LABELS Cast)
 endif()

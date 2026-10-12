@@ -3,11 +3,11 @@
 
 Each ```qml fenced block that is a complete file (it has an import line)
 becomes a Main.qml in its own directory and is run
-through qamui_doc_example_runner with QAMUI_RUNNER_CAPTURE_AFTER_MS set, so the block
+through qmltui_doc_example_runner with QMLTUI_RUNNER_CAPTURE_AFTER_MS set, so the block
 has to parse, resolve every type it imports, build its item tree with a
 Terminal root, and commit a frame. The runner's result.json decides.
 
-    check_doc_examples.py --runner build/tests/Docs/qamui_doc_example_runner \
+    check_doc_examples.py --runner build/tests/Docs/qmltui_doc_example_runner \
         --qml-import-path build/qml --artifact-dir build/tests/Docs/DocExampleArtifacts
 
 Registered as test_component_doc_examples (Plan 04 section 2, rule 1).
@@ -50,14 +50,14 @@ def main() -> int:
 
     env = dict(os.environ)
     env.update({
-        "QAMUI_RUNNER_CAPTURE_AFTER_MS": str(args.capture_after_ms),
-        "QAMUI_RUNNER_COLUMNS": "80",
-        "QAMUI_RUNNER_ROWS": "24",
+        "QMLTUI_RUNNER_CAPTURE_AFTER_MS": str(args.capture_after_ms),
+        "QMLTUI_RUNNER_COLUMNS": "80",
+        "QMLTUI_RUNNER_ROWS": "24",
         "QML_IMPORT_PATH": str(args.qml_import_path),
         "QML2_IMPORT_PATH": str(args.qml_import_path),
         "QT_FORCE_STDERR_LOGGING": "1",
     })
-    for name in ("QAMUI_RUNNER_SCRIPT", "QAMUI_RUNNER_EVAL", "QAMUI_RUNNER_LIVE", "QAMUI_RUNNER_EMBEDDED_SCENARIO", "QAMUI_RUNNER_RECORD"):
+    for name in ("QMLTUI_RUNNER_SCRIPT", "QMLTUI_RUNNER_EVAL", "QMLTUI_RUNNER_LIVE", "QMLTUI_RUNNER_EMBEDDED_SCENARIO", "QMLTUI_RUNNER_RECORD"):
         env.pop(name, None)
 
     build_dir = args.qml_import_path.parent
@@ -85,9 +85,9 @@ def main() -> int:
             if not re.search(r"^import\s", body, re.MULTILINE):
                 fragments += 1     # an illustrative snippet, not a complete file
                 continue
-            # If the snippet imports a Qamui module not built here, skip it.
+            # If the snippet imports a QmlTui module not built here, skip it.
             imports = re.findall(r"^import\s+([A-Za-z0-9_.]+)", body, re.MULTILINE)
-            if any(imp.startswith("Qamui") and not args.qml_import_path.joinpath(*imp.split(".")).joinpath("qmldir").is_file() for imp in imports):
+            if any(imp.startswith("QmlTui") and not args.qml_import_path.joinpath(*imp.split(".")).joinpath("qmldir").is_file() for imp in imports):
                 skipped += 1
                 continue
             # If the snippet uses a type disabled in this build, skip it.
@@ -100,7 +100,7 @@ def main() -> int:
             work.mkdir()
             main_qml = work / "Main.qml"
             main_qml.write_text(match.group(1), encoding="utf-8")
-            env["QAMUI_RUNNER_ARTIFACT_DIR"] = str(work)
+            env["QMLTUI_RUNNER_ARTIFACT_DIR"] = str(work)
             try:
                 run = subprocess.run([str(args.runner), str(main_qml)], env=env,
                                      capture_output=True, text=True, timeout=30)

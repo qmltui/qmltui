@@ -1,10 +1,10 @@
 ---
 title: Image
 kind: qml
-import: Qamui.Image
+import: QmlTui.Image
 since: "0.4"
 inherits: Item
-cpp: qamui::Image
+cpp: qmltui::Image
 category: display
 summary: Draws a raster image into terminal cells, with real pixels where the terminal supports them.
 ---
@@ -15,15 +15,15 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Image` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Image` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `source` | `url` | empty | Where the picture comes from: a local file, a `qrc:` resource, a path relative to the working directory, or an `http:`/`https:` URL. Any format Qt's image plugins read, including PNG, JPEG, and WebP. Remote pictures are fetched asynchronously through the QML engine's network access manager (redirects followed), the item stays `Loading` with `progress` advancing until the reply arrives, and decoded pictures are cached by URL so a second item or a relayout does not download again. Also `image://<provider>/<id>`, served by a `qamui::ImageProvider` installed on the QML engine; changing the URL asks the provider again. Cleared when `image` is assigned. |
+| `source` | `url` | empty | Where the picture comes from: a local file, a `qrc:` resource, a path relative to the working directory, or an `http:`/`https:` URL. Any format Qt's image plugins read, including PNG, JPEG, and WebP. Remote pictures are fetched asynchronously through the QML engine's network access manager (redirects followed), the item stays `Loading` with `progress` advancing until the reply arrives, and decoded pictures are cached by URL so a second item or a relayout does not download again. Also `image://<provider>/<id>`, served by a `qmltui::ImageProvider` installed on the QML engine; changing the URL asks the provider again. Cleared when `image` is assigned. |
 | `image` | `QImage` | null | The picture itself. Assign a `QImage` from C++, or bind to a `QImage` property of a C++ object, to show pixels that never touch a file; `source` becomes empty. Reading returns whatever is shown, loaded or assigned; a null image clears the item. |
 | `fillMode` | `FillMode` | `Image.Stretch` | How the picture is fitted into the item's cell rectangle. |
 | `renderMode` | `RenderMode` | `Image.Auto` | How pixels become terminal output: a pixel protocol when the terminal has one, otherwise a glyph approximation. |
@@ -69,7 +69,7 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 ## Detailed Description
 
 Image places a picture on the cell grid. The item's `width` and `height` are
-cells, like every Qamui item; a half-block picture therefore has twice as many
+cells, like every QmlTui item; a half-block picture therefore has twice as many
 pixel rows as the item has cell rows, and the implicit size is the source size
 with the height halved. Set `fillMode` to keep the aspect ratio and `alignment`
 to place the picture inside a larger item.
@@ -137,7 +137,7 @@ or a decoded video frame:
   frame of the same size does not disturb the layout. Bind it to a `QImage`
   property of a C++ object to keep the QML declarative.
 - Point `source` at `image://<provider>/<id>` and install a
-  `qamui::ImageProvider` on the engine with `ImageProvider::add()`. The id is
+  `qmltui::ImageProvider` on the engine with `ImageProvider::add()`. The id is
   everything after the provider name, query included, so a counter in the
   query (`?frame=` + tick) asks C++ for a new picture. The provider receives
   the item's `renderSize` as the requested size and may render to it. An
@@ -178,8 +178,8 @@ Image {
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Image
+import QmlTui
+import QmlTui.Image
 
 Terminal {
     id: root

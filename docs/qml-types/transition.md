@@ -1,10 +1,10 @@
 ---
 title: Transition
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Transition
+cpp: qmltui::Transition
 category: animation and state
 summary: Defines animated transitions between states.
 ---
@@ -15,8 +15,8 @@ Defines animated transitions between states. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -41,7 +41,7 @@ the properties modified by the state change.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

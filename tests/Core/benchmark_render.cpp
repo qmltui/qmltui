@@ -26,12 +26,12 @@
 #include <memory>
 #include <vector>
 
-#include <Qamui/Core/Items/Canvas.h>
-#include <Qamui/Core/Primitives/Color.h>
-#include <Qamui/Core/Items/Item.h>
-#include <Qamui/Core/Items/ListView.h>
-#include <Qamui/Controls/Sparkline.h>
-#include <Qamui/Core/Items/TableView.h>
+#include <QmlTui/Core/Items/Canvas.h>
+#include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/ListView.h>
+#include <QmlTui/Controls/Sparkline.h>
+#include <QmlTui/Core/Items/TableView.h>
 #include "../TestPaint.h"
 
 namespace {
@@ -80,7 +80,7 @@ struct Result {
     qint64 updatePaintMedianUs = 0;
 };
 
-using Mutation = std::function<void(qamui::Item *, int frame)>;
+using Mutation = std::function<void(qmltui::Item *, int frame)>;
 
 constexpr int WarmUpFrames = 5;
 int measuredFrames = 200;
@@ -126,11 +126,11 @@ Result summarize(const QString &scenario, int width, int height, bool idle,
 
 // Measure setters separately as well: cached text parsing can run from setText,
 // so paint alone does not describe the cost of changing text.
-std::vector<Sample> measureItem(qamui::Item *item, int width, int height,
+std::vector<Sample> measureItem(qmltui::Item *item, int width, int height,
                                 const Mutation &mutate)
 {
-    qamui::TextGridBuffer previous;
-    qamui::TextGridBuffer next;
+    qmltui::TextGridBuffer previous;
+    qmltui::TextGridBuffer next;
     previous.resize(width, height);
     next.resize(width, height);
 
@@ -144,7 +144,7 @@ std::vector<Sample> measureItem(qamui::Item *item, int width, int height,
         const qint64 updateNs = mutate ? timer.nsecsElapsed() : 0;
         next.clear();
         timer.start();
-        qamui::testing::paintItem(item, next, 0, 0);
+        qmltui::testing::paintItem(item, next, 0, 0);
         const qint64 paintedNs = timer.nsecsElapsed();
         const std::string ansi = previous.diff(next);
         const qint64 diffedNs = timer.nsecsElapsed();
@@ -166,9 +166,9 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
         return false;
     }
     std::unique_ptr<QObject> object(component.create());
-    auto *item = qobject_cast<qamui::Item *>(object.get());
+    auto *item = qobject_cast<qmltui::Item *>(object.get());
     if (!item) {
-        qCritical().noquote() << name << "root is not a qamui::Item";
+        qCritical().noquote() << name << "root is not a qmltui::Item";
         return false;
     }
     item->setWidth(width);
@@ -177,9 +177,9 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
         mutate(item, 0);   // give the idle run a populated scene
 
     if (!expectedText.isEmpty()) {
-        qamui::TextGridBuffer frame;
+        qmltui::TextGridBuffer frame;
         frame.resize(width, height);
-        qamui::testing::paintItem(item, frame, 0, 0);
+        qmltui::testing::paintItem(item, frame, 0, 0);
         QString text;
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x)
@@ -203,8 +203,8 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
 void runBufferFill(int width, int height, std::vector<Result> &results)
 {
     for (bool idle : {true, false}) {
-        qamui::TextGridBuffer previous;
-        qamui::TextGridBuffer next;
+        qmltui::TextGridBuffer previous;
+        qmltui::TextGridBuffer next;
         previous.resize(width, height);
         next.resize(width, height);
         std::vector<Sample> samples;
@@ -227,7 +227,7 @@ void runBufferFill(int width, int height, std::vector<Result> &results)
 
 QString textRowsQml()
 {
-    QString qml = QStringLiteral("import Qamui\nColumn {\n");
+    QString qml = QStringLiteral("import QmlTui\nColumn {\n");
     for (int row = 0; row < 50; ++row) {
         qml += QStringLiteral(
             "    Text { objectName: \"row%1\"; text: \"<b>Row %1</b> \\u001b[32mOK\\u001b[0m "
@@ -258,8 +258,8 @@ QVariantList compositeRows(int frame)
 }
 
 const char *compositeQml = R"(
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Item {
     id: root
@@ -308,7 +308,7 @@ Item {
 )";
 
 const char *rectangleQml = R"(
-import Qamui
+import QmlTui
 Rectangle {
     color: "#102030"
     border.style: Border.Double
@@ -317,7 +317,7 @@ Rectangle {
 )";
 
 const char *listViewQml = R"(
-import Qamui
+import QmlTui
 ListView {
     model: benchmarkModel
     delegate: Rectangle {
@@ -382,10 +382,10 @@ bool writeJson(const QString &path, const std::vector<Result> &results)
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
-    qamui::ListView ensureListViewLinked;
-    qamui::TableView ensureTableViewLinked;
-    qamui::Sparkline ensureExtrasLinked;
-    qamui::Canvas ensureCanvasLinked;
+    qmltui::ListView ensureListViewLinked;
+    qmltui::TableView ensureTableViewLinked;
+    qmltui::Sparkline ensureExtrasLinked;
+    qmltui::Canvas ensureCanvasLinked;
 
     QString jsonPath;
     bool strict = false;
@@ -409,28 +409,28 @@ int main(int argc, char **argv)
     }
 
     QQmlEngine engine;
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../Qamui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
     CountModel listModel(1000);
     engine.rootContext()->setContextProperty("benchmarkModel", &listModel);
 
-    const Mutation toggleColor = [](qamui::Item *item, int frame) {
+    const Mutation toggleColor = [](qmltui::Item *item, int frame) {
         item->setProperty("color", QVariant::fromValue(
-            qamui::Color((frame % 2) ? "#302010" : "#102030")));
+            qmltui::Color((frame % 2) ? "#302010" : "#102030")));
     };
-    const Mutation editOneRow = [](qamui::Item *item, int frame) {
+    const Mutation editOneRow = [](qmltui::Item *item, int frame) {
         if (QObject *row = item->findChild<QObject *>(QStringLiteral("row%1").arg(frame % 50)))
             row->setProperty("text", QStringLiteral("<b>Row %1</b> [33mBUSY[0m frame %2 "
                                                     "lorem ipsum dolor sit amet, consectetur")
                                          .arg(frame % 50).arg(frame));
     };
-    const Mutation advanceComposite = [](qamui::Item *item, int frame) {
+    const Mutation advanceComposite = [](qmltui::Item *item, int frame) {
         item->setProperty("frame", frame);
         item->setProperty("history", compositeHistory(frame));
         item->setProperty("rows", compositeRows(frame));
     };
-    const Mutation scrollList = [](qamui::Item *item, int frame) {
+    const Mutation scrollList = [](qmltui::Item *item, int frame) {
         item->setProperty("contentY", (frame * 3) % 900);
     };
 

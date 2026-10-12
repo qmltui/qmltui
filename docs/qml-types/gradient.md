@@ -1,10 +1,10 @@
 ---
 title: Gradient
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Gradient
+cpp: qmltui::Gradient
 category: core
 summary: Defines a linear color gradient with multiple color stops.
 ---
@@ -15,8 +15,8 @@ Defines a linear color gradient with multiple color stops. [More...](#detailed-d
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -54,7 +54,7 @@ Cells spanned by the gradient interpolate RGB color components between adjacent 
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

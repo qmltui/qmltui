@@ -1,10 +1,10 @@
 ---
 title: Keys
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Keys
+cpp: qmltui::Keys
 category: input events
 summary: Provides attached properties and signals for handling keyboard input.
 ---
@@ -15,8 +15,8 @@ Provides attached properties and signals for handling keyboard input. [More...](
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -65,7 +65,7 @@ Once an event handler sets `event.accepted = true`, event propagation terminates
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

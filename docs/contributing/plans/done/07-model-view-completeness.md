@@ -2,13 +2,13 @@
 
 ## 1. Goal
 
-Make the sentence "pass any `QAbstractItemModel` to a Qamui view and it works"
+Make the sentence "pass any `QAbstractItemModel` to a QmlTui view and it works"
 true, and prove it with a test matrix. Today that sentence holds for flat list
 and table models in `ListView` and `TableView`. It does not hold for tree
 models, lazily populated models, models that carry the standard Qt item roles,
 or models whose header data should drive the table columns.
 
-Everything in this plan is view-side work under `src/Qamui/Core/Items/`. No public
+Everything in this plan is view-side work under `src/QmlTui/Core/Items/`. No public
 QML API is removed. New properties follow Qt Quick names where an equivalent
 exists.
 
@@ -45,12 +45,12 @@ Gaps, each with the line that proves it:
 G7 is by design (output already left the retained buffer) and is closed by
 documentation only. G1 to G6 are code.
 
-Constraint that shapes G3: `QamuiCore` links `Qt6::Core` and `Qt6::Qml` only,
-never `Qt6::Gui` (`src/Qamui/CMakeLists.txt:156`). `QColor` cannot be named in
-Qamui code. It can still be consumed: a `QColor` can only exist in the process
+Constraint that shapes G3: `QmlTuiCore` links `Qt6::Core` and `Qt6::Qml` only,
+never `Qt6::Gui` (`src/QmlTui/CMakeLists.txt:156`). `QColor` cannot be named in
+QmlTui code. It can still be consumed: a `QColor` can only exist in the process
 if the application loaded QtGui, and QtGui registers the `QColor` to `QString`
 `QVariant` converter, so `variant.toString()` followed by
-`qamui::Color::fromString()` works without a link dependency.
+`qmltui::Color::fromString()` works without a link dependency.
 
 ---
 
@@ -241,7 +241,7 @@ the numeric roles and flags, every view publishes them as delegate properties
 `enabled`, `checkable`, `modelIndex`) when the model has not claimed the name,
 `StandardItemDelegate` renders them, and the TableView and TreeView built-in
 painters reuse the helper. `QColor` and `QBrush` are decoded from their
-`QDataStream` form, so QamuiCore still does not link QtGui; `QStandardItem`
+`QDataStream` form, so QmlTuiCore still does not link QtGui; `QStandardItem`
 stores brushes, which is why both are handled.
 
 Cost of WP4, measured with `benchmark_views` on the Qt 6.8.6 Release scratch
@@ -257,10 +257,10 @@ calls and `flags()` per node, which the Widgets item views pay as well.
 Findings while implementing, beyond the plan:
 
 - An example whose QML module lives in a shared static library (one module,
-  two executables) cannot find `Qamui.Controls` when launched from Qt Creator
+  two executables) cannot find `QmlTui.Controls` when launched from Qt Creator
   or a shell: the executable references no Controls C++ symbol, the linker's
-  default `--as-needed` drops `libQamuiControls.so`, and with it the embedded
-  `Qamui.Controls` qmldir resource; only the scenario runner's
+  default `--as-needed` drops `libQmlTuiControls.so`, and with it the embedded
+  `QmlTui.Controls` qmldir resource; only the scenario runner's
   `QML2_IMPORT_PATH` hides this. Owning the module in each executable, as
   `table_view` and `btop` do, makes Qt record the build tree's QML import path
   for that executable and works on Qt 6.8 and 6.11: Qt writes a `qt.conf`
@@ -323,7 +323,7 @@ Done means: `docs/topics/models.md` says "any `QAbstractItemModel`" and
 - Editing (`setData` from delegates, `Qt::ItemIsEditable`) beyond the
   check-state toggle in WP4.
 - Drag and drop, `QMimeData`, `moveRows` initiated from the view.
-- Linking `Qt6::Gui` into `QamuiCore`. Every role decode must work through
+- Linking `Qt6::Gui` into `QmlTuiCore`. Every role decode must work through
   `QVariant` conversions available in a Core-only process.
 - A `DelegateModel` / `DelegateChooser` port. `DelegateUtils::resolveDelegate`
   already covers the `choices` pattern in use.

@@ -5,7 +5,7 @@ on:
     paths:
       - 'website/**'
       - 'docs/**'
-      - 'src/Qamui/**/doc/**'
+      - 'src/QmlTui/**/doc/**'
       - 'examples/quickstart/**'
       - 'scripts/sync_docs.py'
       - '.github/workflows/docs.yml'

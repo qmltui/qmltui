@@ -6,15 +6,15 @@ is explicitly handled: Terminal does not supply an application quit policy.
 or display server is required. The standalone quickstart demonstrates a
 [FetchContent consumer](../../examples/quickstart/CMakeLists.txt).
 
-Build with `cmake --build build --target qamui_tutorial_01_first_terminal` and run
-`./build/examples/tutorials/01_first_terminal/qamui_tutorial_01_first_terminal`. Press Escape to quit.
+Build with `cmake --build build --target qmltui_tutorial_01_first_terminal` and run
+`./build/examples/tutorials/01_first_terminal/qmltui_tutorial_01_first_terminal`. Press Escape to quit.
 
 <!-- include: examples/tutorials/01_first_terminal/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root
@@ -45,7 +45,7 @@ function main(terminal) {
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.loadFromModule("QamuiTutorial01", "Main");
+    engine.loadFromModule("QmlTuiTutorial01", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
     return app.exec();
@@ -54,14 +54,14 @@ int main(int argc, char *argv[]) {
 
 <!-- include: examples/tutorials/01_first_terminal/CMakeLists.txt -->
 ```cmake
-qt_add_executable(qamui_tutorial_01_first_terminal main.cpp)
-qt_add_qml_module(qamui_tutorial_01_first_terminal
-    URI QamuiTutorial01 VERSION 1.0 QML_FILES Main.qml
-    DEPENDENCIES TARGET Qamui::Core TARGET Qamui::Controls)
-target_link_libraries(qamui_tutorial_01_first_terminal PRIVATE Qt6::Core Qt6::Qml Qamui::Core Qamui::Controls)
-if(TARGET Qamui::Runner)
-    target_link_libraries(qamui_tutorial_01_first_terminal PRIVATE Qamui::Runner)
-    qamui_add_scenario(NAME tutorial_01_smoke TARGET qamui_tutorial_01_first_terminal
+qt_add_executable(qmltui_tutorial_01_first_terminal main.cpp)
+qt_add_qml_module(qmltui_tutorial_01_first_terminal
+    URI QmlTuiTutorial01 VERSION 1.0 QML_FILES Main.qml
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls)
+target_link_libraries(qmltui_tutorial_01_first_terminal PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+if(TARGET qmltui::runner)
+    target_link_libraries(qmltui_tutorial_01_first_terminal PRIVATE qmltui::runner)
+    qmltui_add_scenario(NAME tutorial_01_smoke TARGET qmltui_tutorial_01_first_terminal
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_tutorial.js"
         COLUMNS 80 ROWS 24 CLOCK VIRTUAL LABELS "Tutorial;AgentSmoke")
 endif()

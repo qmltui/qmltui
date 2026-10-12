@@ -1,10 +1,10 @@
 ---
 title: ColorAnimation
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: PropertyAnimation
-cpp: qamui::ColorAnimation
+cpp: qmltui::ColorAnimation
 category: animation and state
 summary: Animates color properties over time by smoothly interpolating color channels.
 ---
@@ -15,8 +15,8 @@ Animates color properties over time by smoothly interpolating color channels. [M
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [PropertyAnimation](propertyanimation.md) |
 
 ## Detailed Description
@@ -31,7 +31,7 @@ Like all PropertyAnimations, it supports `duration`, `from`, `to`, and `easing`.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

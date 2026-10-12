@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Convert committed .cast files into GIFs using agg.
 # Usage: scripts/generate_gifs.sh [--gallery] [--components]
-#   Defaults to all. Requires: agg (cargo install agg or from qamui-dev/agg-builds).
+#   Defaults to all. Requires: agg (cargo install agg or from qmltui-dev/agg-builds).
 set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 casts_dir="$repo_dir/docs/assets/casts"

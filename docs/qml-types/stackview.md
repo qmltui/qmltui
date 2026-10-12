@@ -1,10 +1,10 @@
 ---
 title: StackView
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::Item
+cpp: qmltui::Item
 category: overlays and navigation
 summary: A navigation stack that shows only its topmost page and creates pages on demand from URLs, components or items.
 ---
@@ -15,8 +15,8 @@ A navigation stack that shows only its topmost page and creates pages on demand 
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -64,8 +64,8 @@ chosen by index, for example from a [TabBar](tabbar.md).
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     StackView {

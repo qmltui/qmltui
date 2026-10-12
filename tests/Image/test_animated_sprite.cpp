@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
-#include <Qamui/Image/AnimatedSprite.h>
+#include <QmlTui/Image/AnimatedSprite.h>
 #include <QSignalSpy>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
 // Four 2x2 frames in one 8x2 row: red, green, blue, yellow.
@@ -33,26 +33,26 @@ private slots:
 };
 
 void TestAnimatedSprite::testInitialState() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     QCOMPARE(sprite.frameCount(), 1);
     QCOMPARE(sprite.frameWidth(), 0);
     QCOMPARE(sprite.frameHeight(), 0);
     QCOMPARE(sprite.currentFrame(), 0);
     QCOMPARE(sprite.running(), true);
     QCOMPARE(sprite.paused(), false);
-    QCOMPARE(sprite.loops(), static_cast<int>(qamui::AnimatedSprite::Infinite));
+    QCOMPARE(sprite.loops(), static_cast<int>(qmltui::AnimatedSprite::Infinite));
     QCOMPARE(sprite.reverse(), false);
-    QCOMPARE(sprite.finishBehavior(), qamui::AnimatedSprite::FinishBehavior::FinishAtInitialFrame);
+    QCOMPARE(sprite.finishBehavior(), qmltui::AnimatedSprite::FinishBehavior::FinishAtInitialFrame);
 }
 
 void TestAnimatedSprite::testFrameRendering() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameWidth(2);
     sprite.setFrameHeight(2);
     sprite.setFrameCount(4);
     sprite.setImage(rowSheet());
-    sprite.setRenderMode(qamui::Image::RenderMode::HalfBlock);
+    sprite.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     sprite.setWidth(2);
     sprite.setHeight(1);
 
@@ -63,9 +63,9 @@ void TestAnimatedSprite::testFrameRendering() {
     for (int frame = 0; frame < 4; ++frame) {
         sprite.setCurrentFrame(frame);
         QCOMPARE(sprite.sourceClipRect(), QRect(frame * 2, 0, 2, 2));
-        qamui::TextGridBuffer buffer;
+        qmltui::TextGridBuffer buffer;
         buffer.resize(4, 4);
-        qamui::testing::paintItem(sprite, buffer, 0, 0);
+        qmltui::testing::paintItem(sprite, buffer, 0, 0);
         QCOMPARE(buffer.cellAt(0, 0).fgColor, rowColors[frame]);
         QCOMPARE(buffer.cellAt(0, 0).bgColor, rowColors[frame]);
     }
@@ -76,7 +76,7 @@ void TestAnimatedSprite::testRowWrapping() {
     QImage sheet(4, 4, QImage::Format_ARGB32);
     sheet.fill(QColor(0, 0, 0));
 
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameWidth(2);
     sprite.setFrameHeight(2);
@@ -91,7 +91,7 @@ void TestAnimatedSprite::testRowWrapping() {
 
 void TestAnimatedSprite::testDerivedSquareFrames() {
     // Without frameWidth/frameHeight the sheet is one row of square frames.
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(4);
     sprite.setImage(rowSheet());   // 8x2, so 2x2 frames
@@ -105,7 +105,7 @@ void TestAnimatedSprite::testFrameOrigin() {
     QImage sheet(8, 6, QImage::Format_ARGB32);
     sheet.fill(QColor(0, 0, 0));
 
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameWidth(2);
     sprite.setFrameHeight(2);
@@ -123,7 +123,7 @@ void TestAnimatedSprite::testFrameOrigin() {
 }
 
 void TestAnimatedSprite::testAdvanceWrapsAndReverses() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(3);
     sprite.setImage(rowSheet());
@@ -141,15 +141,15 @@ void TestAnimatedSprite::testAdvanceWrapsAndReverses() {
 }
 
 void TestAnimatedSprite::testFiniteLoopsFinish() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(3);
     sprite.setLoops(2);
     sprite.setImage(rowSheet());
     sprite.setRunning(true);
 
-    QSignalSpy finishedSpy(&sprite, &qamui::AnimatedSprite::finished);
-    QSignalSpy runningSpy(&sprite, &qamui::AnimatedSprite::runningChanged);
+    QSignalSpy finishedSpy(&sprite, &qmltui::AnimatedSprite::finished);
+    QSignalSpy runningSpy(&sprite, &qmltui::AnimatedSprite::runningChanged);
     for (int i = 0; i < 6; ++i)
         sprite.advance();
     QCOMPARE(finishedSpy.count(), 1);
@@ -163,14 +163,14 @@ void TestAnimatedSprite::testFiniteLoopsFinish() {
 }
 
 void TestAnimatedSprite::testFinishAtFinalFrame() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(3);
     sprite.setLoops(1);
-    sprite.setFinishBehavior(qamui::AnimatedSprite::FinishBehavior::FinishAtFinalFrame);
+    sprite.setFinishBehavior(qmltui::AnimatedSprite::FinishBehavior::FinishAtFinalFrame);
     sprite.setImage(rowSheet());
 
-    QSignalSpy finishedSpy(&sprite, &qamui::AnimatedSprite::finished);
+    QSignalSpy finishedSpy(&sprite, &qmltui::AnimatedSprite::finished);
     for (int i = 0; i < 3; ++i)
         sprite.advance();
     QCOMPARE(finishedSpy.count(), 1);
@@ -178,7 +178,7 @@ void TestAnimatedSprite::testFinishAtFinalFrame() {
 }
 
 void TestAnimatedSprite::testStartRestartsFromInitialFrame() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(4);
     sprite.setImage(rowSheet());
@@ -195,12 +195,12 @@ void TestAnimatedSprite::testStartRestartsFromInitialFrame() {
 }
 
 void TestAnimatedSprite::testTimerAdvancesFrames() {
-    qamui::AnimatedSprite sprite;
+    qmltui::AnimatedSprite sprite;
     sprite.setFrameCount(4);
     sprite.setFrameDuration(10);
     sprite.setImage(rowSheet());
 
-    QSignalSpy frameSpy(&sprite, &qamui::AnimatedSprite::currentFrameChanged);
+    QSignalSpy frameSpy(&sprite, &qmltui::AnimatedSprite::currentFrameChanged);
     QTRY_VERIFY(frameSpy.count() >= 2);
 
     // Pausing freezes the clock; the frame stays put.

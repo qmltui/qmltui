@@ -27,7 +27,7 @@ private:
     }};
 };
 
-// Application policy, not a new framework proxy API. Qamui only consumes this model.
+// Application policy, not a new framework proxy API. QmlTui only consumes this model.
 class ProcessProxy : public QSortFilterProxyModel
 {
     Q_OBJECT

@@ -15,14 +15,14 @@ and predictable transition interpolation.
   without colliding with other controllers.
 - **Contextual Quit Path**: `Escape` contextually cancels an in-flight connection before
   reverting to standard exit behavior.
-- **Virtual-Clock Validation**: Verified using Qamui Runner with deterministic time advancement
+- **Virtual-Clock Validation**: Verified using QmlTui Runner with deterministic time advancement
   across entry, midpoint, completion, interruption, resize, and restoration phases.
 
 ## Running
 
 ```bash
 # Direct run
-./build/examples/topics/independent_states/qamui_independent_states_demo
+./build/examples/topics/independent_states/qmltui_independent_states_demo
 
 # Runner scenario test
 ctest --test-dir build -R independent_states_scenario --output-on-failure

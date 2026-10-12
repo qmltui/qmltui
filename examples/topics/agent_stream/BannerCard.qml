@@ -1,6 +1,6 @@
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 // Session banner: a Canvas mark beside the product and model details.
 Row {
@@ -82,7 +82,7 @@ Row {
         Row {
             spacing: 1
             Text {
-                text: "Qamui"
+                text: "QmlTui"
                 color: "#f8fafc"
                 bold: true
             }
@@ -97,7 +97,7 @@ Row {
             }
         }
         Text {
-            text: "✦ Qt AI studio · " + banner.activeModel + " · ~/Qamui"
+            text: "✦ Qt AI studio · " + banner.activeModel + " · ~/QmlTui"
             color: "#94a3b8"
         }
         Text {

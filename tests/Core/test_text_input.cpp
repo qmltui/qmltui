@@ -4,14 +4,14 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <memory>
-#include <Qamui/Core/Items/TextInput.h>
-#include <Qamui/Core/Engine/KeyEvent.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Items/TextInput.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/ColorMapper.h>
 
-using namespace qamui;
-using qamui::testing::paintItem;
+using namespace qmltui;
+using qmltui::testing::paintItem;
 
 class TestTextInput : public QObject {
     Q_OBJECT
@@ -329,12 +329,12 @@ void TestTextInput::testTerminalCursorCustomization() {
 }
 
 void TestTextInput::testQmlSurface() {
-    qmlRegisterType<TextInput>("QamuiTextInputTest", 1, 0, "TextInput");
+    qmlRegisterType<TextInput>("QmlTuiTextInputTest", 1, 0, "TextInput");
     QQmlEngine engine;
     QQmlComponent component(&engine);
     component.setData(R"(
         import QtQml
-        import QamuiTextInputTest 1.0
+        import QmlTuiTextInputTest 1.0
 
         TextInput {
             text: "123"

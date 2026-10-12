@@ -8,17 +8,17 @@
 #include <QTest>
 #include <functional>
 #include <memory>
-#include <Qamui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/Color.h>
 
 #include <QSignalSpy>
-#include <Qamui/Core/Engine/MouseEvent.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
 
-#include <Qamui/Core/Items/Text.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
-using namespace qamui;
-using qamui::testing::paintItem;
+using namespace qmltui;
+using qmltui::testing::paintItem;
 
 namespace {
 
@@ -190,7 +190,7 @@ void TestTextLayout::testGradientPerColumn()
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
         Text {
             text: "ABCD"
             gradient: Gradient {
@@ -264,14 +264,14 @@ void TestTextLayout::testLinkActivated()
         text.setWidth(30);
         text.setHeight(3);
         text.setTextFormat(Text::AutoText);
-        text.setText(QStringLiteral("Click [here](https://qamui.org) for info"));
+        text.setText(QStringLiteral("Click [here](https://qmltui.org) for info"));
 
         QSignalSpy spy(&text, &Text::linkActivated);
         MouseEvent event(MouseEvent::Type::Press, 7, 0, Qt::LeftButton, Qt::NoModifier);
         text.mousePressEvent(&event);
 
         QCOMPARE(spy.count(), 1);
-        QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qamui.org"));
+        QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qmltui.org"));
         QVERIFY(event.isAccepted());
     }
 }

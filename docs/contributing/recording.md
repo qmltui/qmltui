@@ -12,8 +12,8 @@ starts another with a full repaint. See the [Runner API](../cpp-classes/runner.m
 Build and run:
 
 ```sh
-cmake --build build-qamui --target qamui_gallery
-scripts/update_casts.sh build-qamui --gallery
+cmake --build build-qmltui --target qmltui_gallery
+scripts/update_casts.sh build-qmltui --gallery
 ```
 
 This runs `gallery_tour` and copies the cast to `docs/assets/casts/gallery-tour.cast`.
@@ -28,8 +28,8 @@ representative interactions, registered with `CLOCK VIRTUAL RECORD components/<n
 Regenerate all 30 component casts:
 
 ```sh
-cmake --build build-qamui -j$(nproc)
-scripts/update_casts.sh build-qamui --components
+cmake --build build-qmltui -j$(nproc)
+scripts/update_casts.sh build-qmltui --components
 ```
 
 Casts are stored under `docs/assets/casts/components/`.
@@ -57,4 +57,4 @@ svg-term --in docs/assets/casts/gallery-tour.cast \
 
 Inspect the GIFs for Unicode glyphs, colors, and animation pacing.
 The gallery cast ends before its inline-mode demo; the regular gallery scenario
-still tests inline behavior. Additional application casts are maintained in qamui-apps.
+still tests inline behavior. Additional application casts are maintained in qmltui-apps.

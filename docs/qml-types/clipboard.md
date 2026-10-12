@@ -1,17 +1,17 @@
 ---
 title: Clipboard
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.5"
 inherits:
-cpp: qamui::Clipboard
+cpp: qmltui::Clipboard
 category: core
 summary: Terminal clipboard singleton with copying and Promise-based text reads.
 ---
 
 # Clipboard
 
-`import Qamui`
+`import QmlTui`
 
 Clipboard is a singleton for text clipboard operations through the application's
 terminal. It uses OSC 52 and requires neither Qt GUI nor local clipboard helper
@@ -103,14 +103,14 @@ and feedback to continue working. The application owns the notification UI:
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Button {
         text: "Copy greeting"
         focus: true
-        onClicked: Clipboard.copy("Hello from Qamui")
+        onClicked: Clipboard.copy("Hello from QmlTui")
     }
 
     Toast {

@@ -1,10 +1,10 @@
 ---
 title: NumberAnimation
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: PropertyAnimation
-cpp: qamui::NumberAnimation
+cpp: qmltui::NumberAnimation
 category: animation and state
 summary: Animates numeric properties over time.
 ---
@@ -15,8 +15,8 @@ Animates numeric properties over time. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [PropertyAnimation](propertyanimation.md) |
 
 ## Detailed Description
@@ -31,7 +31,7 @@ It inherits all properties and methods from PropertyAnimation, including `durati
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

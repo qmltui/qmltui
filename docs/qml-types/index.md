@@ -1,7 +1,7 @@
 # QML types
 
 
-## Qamui — animation and state
+## QmlTui — animation and state
 
 - [Animation](animation.md)
 - [Behavior](behavior.md)
@@ -14,7 +14,7 @@
 - [StateGroup](stategroup.md)
 - [Transition](transition.md)
 
-## Qamui — canvas
+## QmlTui — canvas
 
 - [Canvas](canvas.md)
 - [CanvasRectangle](canvasrectangle.md)
@@ -24,7 +24,7 @@
 - [Point](point.md)
 - [Polygon](polygon.md)
 
-## Qamui — core
+## QmlTui — core
 
 - [AnchorLine](anchorline.md)
 - [Anchors](anchors.md)
@@ -33,7 +33,7 @@
 - [Gradient](gradient.md)
 - [GradientStop](gradientstop.md)
 - [Item](item.md)
-- [Qamui](qamui.md)
+- [QmlTui](qmltui.md)
 - [Rectangle](rectangle.md)
 - [rgba](rgba.md)
 - [Scrollback](scrollback.md)
@@ -42,7 +42,7 @@
 - [Terminal](terminal.md)
 - [terminalCapabilities](terminalcapabilities.md)
 
-## Qamui — data views
+## QmlTui — data views
 
 - [GridView](gridview.md)
 - [ListView](listview.md)
@@ -51,11 +51,11 @@
 - [TableView](tableview.md)
 - [TreeView](treeview.md)
 
-## Qamui — display
+## QmlTui — display
 
 - [Text](text.md)
 
-## Qamui — input events
+## QmlTui — input events
 
 - [KeyEvent](keyevent.md)
 - [Keys](keys.md)
@@ -63,12 +63,12 @@
 - [MouseEvent](mouseevent.md)
 - [Shortcut](shortcut.md)
 
-## Qamui — inputs
+## QmlTui — inputs
 
 - [TextArea](textarea.md)
 - [TextInput](textinput.md)
 
-## Qamui — layout
+## QmlTui — layout
 
 - [Column](column.md)
 - [ColumnLayout](columnlayout.md)
@@ -79,17 +79,17 @@
 - [Row](row.md)
 - [RowLayout](rowlayout.md)
 
-## Qamui.Controls — data views
+## QmlTui.Controls — data views
 
 - [StandardItemDelegate](standarditemdelegate.md)
 
-## Qamui.Controls — display
+## QmlTui.Controls — display
 
 - [BusyIndicator](busyindicator.md)
 - [ProgressBar](progressbar.md)
 - [Sparkline](sparkline.md)
 
-## Qamui.Controls — inputs
+## QmlTui.Controls — inputs
 
 - [AbstractButton](abstractbutton.md)
 - [Button](button.md)
@@ -99,11 +99,11 @@
 - [Slider](slider.md)
 - [Switch](switch.md)
 
-## Qamui.Controls — layout
+## QmlTui.Controls — layout
 
 - [StackLayout](stacklayout.md)
 
-## Qamui.Controls — overlays and navigation
+## QmlTui.Controls — overlays and navigation
 
 - [Dialog](dialog.md)
 - [Panel](panel.md)
@@ -113,11 +113,11 @@
 - [Toast](toast.md)
 - [ToolTip](tooltip.md)
 
-## Qamui.Image — display
+## QmlTui.Image — display
 
 - [AnimatedSprite](animatedsprite.md)
 - [Image](image.md)
 
-## Qamui.TerminalHost — display
+## QmlTui.TerminalHost — display
 
 - [TerminalView](terminalview.md)

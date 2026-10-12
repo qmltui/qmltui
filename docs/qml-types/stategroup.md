@@ -1,10 +1,10 @@
 ---
 title: StateGroup
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits:
-cpp: qamui::StateGroup
+cpp: qmltui::StateGroup
 category: animation and state
 summary: Provides state and transition management outside of an Item.
 ---
@@ -15,8 +15,8 @@ Provides state and transition management outside of an Item. [More...](#detailed
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -37,13 +37,13 @@ StateGroup uses the same internal state controller as Item, honoring `when`
 conditions, independent ownership tracking, atomic collision preflight, and
 restoration behavior.
 
-Available when built with `QAMUI_ENABLE_PRIVATE_QT=ON`.
+Available when built with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
 
 ### Example
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

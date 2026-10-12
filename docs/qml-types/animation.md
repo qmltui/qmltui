@@ -1,22 +1,22 @@
 ---
 title: Animation
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Animation
+cpp: qmltui::Animation
 category: animation and state
-summary: Base class for all Qamui animations.
+summary: Base class for all QmlTui animations.
 ---
 
 # Animation QML type
 
-Base class for all Qamui animations. [More...](#detailed-description)
+Base class for all QmlTui animations. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -44,20 +44,20 @@ Base class for all Qamui animations. [More...](#detailed-description)
 
 ## Detailed Description
 
-Animation is the uncreatable abstract base class for all animation types in Qamui,
+Animation is the uncreatable abstract base class for all animation types in QmlTui,
 including [PropertyAnimation](propertyanimation.md), [NumberAnimation](numberanimation.md),
 and [ColorAnimation](coloranimation.md).
 
 It provides common playback controls (`start()`, `stop()`), loop management (`loops`),
 and lifecycle signals (`started`, `stopped`, `finished`). Under the hood, running
-animations are stepped by the Qamui animation manager driven by the active
+animations are stepped by the QmlTui animation manager driven by the active
 system or virtual clock.
 
 ### Example
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

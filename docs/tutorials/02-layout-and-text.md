@@ -5,15 +5,15 @@ its Column; the Column then positions its own children. RowLayout shares the
 available width, while Row places content at its natural width. Text wraps
 when resized if wrapMode is set. Text spans apply styles to individual literal text runs.
 
-Build with `cmake --build build --target qamui_tutorial_02_layout_and_text` and run
-`./build/examples/tutorials/02_layout_and_text/qamui_tutorial_02_layout_and_text`. Press Escape to quit.
+Build with `cmake --build build --target qmltui_tutorial_02_layout_and_text` and run
+`./build/examples/tutorials/02_layout_and_text/qmltui_tutorial_02_layout_and_text`. Press Escape to quit.
 
 <!-- include: examples/tutorials/02_layout_and_text/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root

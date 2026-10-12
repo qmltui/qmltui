@@ -1,9 +1,9 @@
 # IDE Setup and Tooling
 
-A productive Qamui developer experience requires autocompletion, real-time
+A productive QmlTui developer experience requires autocompletion, real-time
 linting, hover documentation, and context-sensitive help.
 
-Because Qamui builds on `QtQml` without `QtQuick`, configuring the QML Language
+Because QmlTui builds on `QtQml` without `QtQuick`, configuring the QML Language
 Server (`qmlls`) and Qt Help (`.qch`) ensures you receive instant completions
 and zero false-positive diagnostics.
 
@@ -18,12 +18,12 @@ and zero false-positive diagnostics.
 
 ### Workspace Configuration (`.vscode/settings.json`)
 
-To enable `qmlls` autocompletion for Qamui modules, point `qml.importPaths` to your
+To enable `qmlls` autocompletion for QmlTui modules, point `qml.importPaths` to your
 build directory's generated QML folder:
 
 ```json
 {
-    // Point QML language server to Qamui's generated module definitions (.qmltypes & qmldir)
+    // Point QML language server to QmlTui's generated module definitions (.qmltypes & qmldir)
     "qml.importPaths": [
         "${workspaceFolder}/build/qml",
         "${workspaceFolder}/../../build/qml"
@@ -53,22 +53,22 @@ Qt Creator provides native CMake and QML integration out of the box.
 ### A. QML Language Server (`qmlls`)
 1. Open **Preferences $\rightarrow$ Qt Quick $\rightarrow$ QML Language Server**.
 2. Ensure **Enable QML Language Server** is checked.
-3. When building a Qamui project, Qt Creator automatically feeds CMake's
+3. When building a QmlTui project, Qt Creator automatically feeds CMake's
    `QT_QML_OUTPUT_DIRECTORY` (`build/qml`) to `qmlls`. Types like `Terminal`,
    `Button`, `TableView`, and `Rectangle` will auto-complete with full properties.
 
-### B. Offline F1 Help (`qamui.qch`)
-You can view Qamui documentation directly inside Qt Creator's Help pane and press
-**F1** on any Qamui symbol to jump to its reference page.
+### B. Offline F1 Help (`qmltui.qch`)
+You can view QmlTui documentation directly inside Qt Creator's Help pane and press
+**F1** on any QmlTui symbol to jump to its reference page.
 
 1. Build the help archive (requires `qhelpgenerator`):
    ```bash
    cmake --build build --target docs_qch
    ```
-   Or download `qamui.qch` from the latest GitHub release.
+   Or download `qmltui.qch` from the latest GitHub release.
 2. In Qt Creator, go to **Preferences $\rightarrow$ Help $\rightarrow$ Documentation**.
-3. Click **Add...** and select `build/doc/qamui.qch` (or your downloaded copy).
-4. Place the cursor over `Button`, `Terminal`, or `qamui::Item` in your editor and
+3. Click **Add...** and select `build/doc/qmltui.qch` (or your downloaded copy).
+4. Place the cursor over `Button`, `Terminal`, or `qmltui::Item` in your editor and
    press **F1**.
 
 ---
@@ -95,7 +95,7 @@ when generated with `cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`.
 
 ## 4. Linting with `qmllint`
 
-Qamui enforces strict QML practices (explicit types, `pragma ComponentBehavior: Bound`,
+QmlTui enforces strict QML practices (explicit types, `pragma ComponentBehavior: Bound`,
 and no `QtQuick` imports).
 
 You can run `qmllint` from your terminal:

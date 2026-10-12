@@ -8,8 +8,8 @@
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/Primitives/InputDecoder.h`
-- **Implementation**: `src/Qamui/Core/Primitives/InputDecoder.cpp`
+- **Header**: `src/QmlTui/Core/Primitives/InputDecoder.h`
+- **Implementation**: `src/QmlTui/Core/Primitives/InputDecoder.cpp`
 - **Dependencies**: `<functional>`, `<string>`, `<QString>`, Qt Core (`Qt::Key`).
 
 ## 3. Class Hierarchy and Role
@@ -39,7 +39,7 @@ Appends raw incoming terminal bytes to the internal decoding buffer and triggers
 #### bool hasPendingEscape() const / void flushPendingEscape()
 A lone ESC is held back because it may begin a sequence whose remaining bytes
 are still in flight. `TerminalEngine` runs a short timer after each read
-(`QAMUI_ESCAPE_TIMEOUT_MS`, default 50 ms) and calls `flushPendingEscape()`
+(`QMLTUI_ESCAPE_TIMEOUT_MS`, default 50 ms) and calls `flushPendingEscape()`
 when it expires with the ESC still alone, delivering `Qt::Key_Escape`. Nothing
 is pending inside a bracketed paste or a partial sequence. Terminals with the
 kitty disambiguate flag pushed report Escape as `CSI 27 u` and never need this.
@@ -83,10 +83,10 @@ reaches the reply callback.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Primitives/InputDecoder.h>
+#include <QmlTui/Core/Primitives/InputDecoder.h>
 #include <iostream>
 
-using namespace qamui;
+using namespace qmltui;
 
 int main() {
     InputDecoder decoder;

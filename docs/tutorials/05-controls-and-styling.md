@@ -5,15 +5,15 @@ bar and a label through bindings. An inline AppButton component owns shared
 styling without a framework palette. The modal consumes Escape before the
 application's root quit handler; accepting or rejecting updates visible state.
 
-Build with `cmake --build build --target qamui_tutorial_05_controls_and_styling` and run
-`./build/examples/tutorials/05_controls_and_styling/qamui_tutorial_05_controls_and_styling`. Press Escape to quit.
+Build with `cmake --build build --target qmltui_tutorial_05_controls_and_styling` and run
+`./build/examples/tutorials/05_controls_and_styling/qmltui_tutorial_05_controls_and_styling`. Press Escape to quit.
 
 <!-- include: examples/tutorials/05_controls_and_styling/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root

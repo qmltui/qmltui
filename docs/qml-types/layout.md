@@ -1,10 +1,10 @@
 ---
 title: Layout
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Layout
+cpp: qmltui::Layout
 category: layout
 summary: Provides attached properties for items positioned in RowLayout, ColumnLayout, or GridLayout.
 ---
@@ -15,8 +15,8 @@ Provides attached properties for items positioned in RowLayout, ColumnLayout, or
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -58,7 +58,7 @@ and `Layout.columnSpan` determine the exact grid cell coordinates and cell span.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

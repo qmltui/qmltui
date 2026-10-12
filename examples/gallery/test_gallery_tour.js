@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Qamui Gallery");
+    terminal.expectText("QmlTui Gallery");
     terminal.marker("Gallery");
     terminal.captureText("gallery/grid.txt");
     terminal.sleep(1500);
@@ -12,7 +12,7 @@ function main(terminal) {
         terminal.sleep(1000);
         terminal.captureText("gallery/page_" + i + ".txt");
         terminal.press("Escape");
-        terminal.expectText("Qamui Gallery");
+        terminal.expectText("QmlTui Gallery");
         terminal.press("Right");
     }
     terminal.marker("Tour complete");

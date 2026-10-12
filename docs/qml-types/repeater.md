@@ -1,10 +1,10 @@
 ---
 title: Repeater
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Repeater
+cpp: qmltui::Repeater
 category: layout
 summary: Instantiates a delegate component for each item in a data model.
 ---
@@ -15,8 +15,8 @@ Instantiates a delegate component for each item in a data model. [More...](#deta
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -44,7 +44,7 @@ scrollable lists or tables, prefer [ListView](listview.md) or [TableView](tablev
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

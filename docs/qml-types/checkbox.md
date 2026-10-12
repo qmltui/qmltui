@@ -1,10 +1,10 @@
 ---
 title: CheckBox
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qamui::Item
+cpp: qmltui::Item
 category: inputs
 summary: A focusable two-state option drawn as [x] or [ ] followed by a label
 ---
@@ -15,8 +15,8 @@ A focusable two-state option drawn as `[x]` or `[ ]` followed by a label. [More.
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [AbstractButton](abstractbutton.md) |
 
 CheckBox adds no members of its own: `checked`, `text`, `textColor`,
@@ -49,8 +49,8 @@ on/off look use [Switch](switch.md), which behaves identically but draws
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Keys.onPressed: event => {

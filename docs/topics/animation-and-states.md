@@ -1,6 +1,6 @@
 # Animation and states
 
-Qamui provides declarative states, property changes, and transitions tailored for
+QmlTui provides declarative states, property changes, and transitions tailored for
 retained-mode terminal user interfaces.
 
 ## Feature Matrix
@@ -21,15 +21,15 @@ retained-mode terminal user interfaces.
 | Interrupted transition starts from displayed value | Supported | Supported |
 | `Behavior on property` | Not available | Supported |
 
-The unified option `QAMUI_ENABLE_PRIVATE_QT=ON` enables both `Behavior` and advanced
-states/`StateGroup` support via `Qt6::QmlPrivate`. When disabled (default), Qamui uses
+The unified option `QMLTUI_ENABLE_PRIVATE_QT=ON` enables both `Behavior` and advanced
+states/`StateGroup` support via `Qt6::QmlPrivate`. When disabled (default), QmlTui uses
 strictly public Qt 6 APIs with zero private header dependencies.
 
 ## Syntax Forms
 
 ### 1. Direct Assignment (Private Qt Builds)
 
-In builds with `QAMUI_ENABLE_PRIVATE_QT=ON`, properties can be declared directly
+In builds with `QMLTUI_ENABLE_PRIVATE_QT=ON`, properties can be declared directly
 on targets or qualified by item IDs:
 
 ```qml
@@ -113,7 +113,7 @@ coexist within an application.
 
 ## Testing with Runner
 
-Register time-dependent Runner scenarios with `CLOCK VIRTUAL` and advance Qamui
+Register time-dependent Runner scenarios with `CLOCK VIRTUAL` and advance QmlTui
 time using `advanceTime()`. Assert committed text and styled frames at key phases:
 entry, midpoint, completion, interruption, resize, and restoration.
 

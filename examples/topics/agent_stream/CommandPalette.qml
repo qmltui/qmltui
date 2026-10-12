@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Column {
     id: commandPalette

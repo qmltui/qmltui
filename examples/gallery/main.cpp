@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty(QStringLiteral("qamuiExampleSources"), exampleSources());
+    engine.rootContext()->setContextProperty(QStringLiteral("qmltuiExampleSources"), exampleSources());
     engine.loadFromModule("Gallery", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;

@@ -1,10 +1,10 @@
 ---
 title: BusyIndicator
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Text
-cpp: qamui::Text
+cpp: qmltui::Text
 category: display
 summary: A one-cell animated spinner that cycles through a sequence of glyphs while an operation is in progress.
 ---
@@ -15,8 +15,8 @@ A one-cell animated spinner that cycles through a sequence of glyphs while an op
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Text](text.md) |
 
 ## Properties
@@ -45,8 +45,8 @@ animation resumes from the current frame.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root

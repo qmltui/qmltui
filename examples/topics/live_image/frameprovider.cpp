@@ -7,7 +7,7 @@
 
 // The response the Image holds while the render thread works. It lives on
 // the GUI thread; the renderer hands the picture over with a queued call.
-class RadarResponse : public qamui::ImageResponse {
+class RadarResponse : public qmltui::ImageResponse {
     Q_OBJECT
 public:
     QImage image() const override { return m_image; }
@@ -44,7 +44,7 @@ public:
     }
 };
 
-RadarProvider::RadarProvider(QObject* parent) : qamui::AsyncImageProvider(parent) {
+RadarProvider::RadarProvider(QObject* parent) : qmltui::AsyncImageProvider(parent) {
     m_renderer = new RadarRenderer;
     m_renderer->moveToThread(&m_thread);
     connect(&m_thread, &QThread::finished, m_renderer, &QObject::deleteLater);
@@ -57,7 +57,7 @@ RadarProvider::~RadarProvider() {
     m_thread.wait();
 }
 
-qamui::ImageResponse* RadarProvider::requestImageResponse(const QString& id, const QSize& requestedSize) {
+qmltui::ImageResponse* RadarProvider::requestImageResponse(const QString& id, const QSize& requestedSize) {
     // id is "<name>?<query>": the name selects the picture, the query its parameters.
     const int query = id.indexOf(QLatin1Char('?'));
     const QString name = query < 0 ? id : id.left(query);

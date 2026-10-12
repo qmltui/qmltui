@@ -17,7 +17,7 @@ it comes back.
 
 ## Linux runner (WSL)
 
-The workflow expects the Qt prefix in `QAMUI_QT_LINUX`; CMake and Ninja come
+The workflow expects the Qt prefix in `QMLTUI_QT_LINUX`; CMake and Ninja come
 from the distribution.
 
 ```bash
@@ -25,9 +25,9 @@ mkdir -p ~/actions-runner && cd ~/actions-runner
 curl -o actions-runner-linux-x64.tar.gz -L \
   https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64-$(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep -oP '"tag_name": "v\K[^"]+').tar.gz
 tar xzf actions-runner-linux-x64.tar.gz
-./config.sh --url https://github.com/qamui-dev/qamui --token <TOKEN> \
+./config.sh --url https://github.com/qmltui-dev/qmltui --token <TOKEN> \
   --name wsl-linux --labels linux --unattended
-echo 'QAMUI_QT_LINUX=/home/yosri/Qt/6.8.6/gcc_64' >> .env
+echo 'QMLTUI_QT_LINUX=/home/yosri/Qt/6.8.6/gcc_64' >> .env
 ```
 
 Then keep it running. Without systemd in WSL (the default here), start it in a
@@ -47,7 +47,7 @@ sudo ./svc.sh install && sudo ./svc.sh start
 
 ## Windows runner
 
-The workflow expects the MSVC Qt prefix in `QAMUI_QT_WINDOWS` and Visual
+The workflow expects the MSVC Qt prefix in `QMLTUI_QT_WINDOWS` and Visual
 Studio 2022 with the C++ workload (`ilammy/msvc-dev-cmd` finds it). CMake and
 Ninja from the Qt installer are put on the runner's PATH through `.path`.
 In an elevated PowerShell:
@@ -57,8 +57,8 @@ mkdir C:\actions-runner; cd C:\actions-runner
 $v = (Invoke-RestMethod https://api.github.com/repos/actions/runner/releases/latest).tag_name.TrimStart('v')
 Invoke-WebRequest -Uri "https://github.com/actions/runner/releases/download/v$v/actions-runner-win-x64-$v.zip" -OutFile runner.zip
 Expand-Archive runner.zip -DestinationPath .
-.\config.cmd --url https://github.com/qamui-dev/qamui --token <TOKEN> --name win-host --labels windows --runasservice --unattended
-Add-Content .env 'QAMUI_QT_WINDOWS=C:\Qt\6.8.3\msvc2022_64'
+.\config.cmd --url https://github.com/qmltui-dev/qmltui --token <TOKEN> --name win-host --labels windows --runasservice --unattended
+Add-Content .env 'QMLTUI_QT_WINDOWS=C:\Qt\6.8.3\msvc2022_64'
 Add-Content .path "C:\Qt\Tools\CMake_64\bin;C:\Qt\Tools\Ninja;$env:PATH"
 Restart-Service "actions.runner.*"
 ```

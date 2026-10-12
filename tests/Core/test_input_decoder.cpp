@@ -2,9 +2,9 @@
 #include <QObject>
 #include <vector>
 #include <tuple>
-#include <Qamui/Core/Primitives/InputDecoder.h>
+#include <QmlTui/Core/Primitives/InputDecoder.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestInputDecoder : public QObject {
     Q_OBJECT

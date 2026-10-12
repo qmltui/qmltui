@@ -1,10 +1,10 @@
 ---
 title: GridLayout
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::GridLayout
+cpp: qmltui::GridLayout
 category: layout
 summary: Arranges items in a two-dimensional grid of rows and columns.
 ---
@@ -15,8 +15,8 @@ Arranges items in a two-dimensional grid of rows and columns. [More...](#detaile
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -52,7 +52,7 @@ is controlled by `columnSpacing` and `rowSpacing`.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

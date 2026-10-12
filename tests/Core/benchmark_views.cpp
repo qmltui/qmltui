@@ -6,10 +6,10 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <memory>
-#include <Qamui/Core/Items/TreeView.h>
-#include <Qamui/Core/Items/TableView.h>
-#include <Qamui/Core/Items/ListView.h>
-#include <Qamui/Core/Items/GridView.h>
+#include <QmlTui/Core/Items/TreeView.h>
+#include <QmlTui/Core/Items/TableView.h>
+#include <QmlTui/Core/Items/ListView.h>
+#include <QmlTui/Core/Items/GridView.h>
 #include "../TestPaint.h"
 
 class CountModel final : public QAbstractListModel {
@@ -42,7 +42,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
         
         TreeView {
             width: 80
@@ -66,11 +66,11 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *tree = qobject_cast<qamui::TreeView*>(object.get());
+    auto *tree = qobject_cast<qmltui::TreeView*>(object.get());
     if (!tree) return -1;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    qamui::testing::paintItem(tree, buffer, 0, 0);
+    qmltui::testing::paintItem(tree, buffer, 0, 0);
     if (tree->childItems().size() < 24) {
         qCritical("TreeView benchmark failed to create visible delegates");
         return -1;
@@ -84,7 +84,7 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
         
         TableView {
             width: 80
@@ -105,11 +105,11 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *table = qobject_cast<qamui::TableView*>(object.get());
+    auto *table = qobject_cast<qmltui::TableView*>(object.get());
     if (!table) return -1;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    qamui::testing::paintItem(table, buffer, 0, 0);
+    qmltui::testing::paintItem(table, buffer, 0, 0);
     if (table->childItems().size() < 22 || buffer.cellAt(0, 2).character() != "0") {
         qCritical("TableView benchmark failed to render visible delegates");
         return -1;
@@ -123,7 +123,7 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         ListView {
             width: 80
@@ -147,18 +147,18 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
     }
 
     std::unique_ptr<QObject> object(component.create());
-    auto *listView = qobject_cast<qamui::ListView*>(object.get());
+    auto *listView = qobject_cast<qmltui::ListView*>(object.get());
     if (!listView) return -1;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
 
-    qamui::testing::paintItem(listView, buffer, 0, 0);
+    qmltui::testing::paintItem(listView, buffer, 0, 0);
 
     QElapsedTimer timer;
     timer.start();
     for (int i = 0; i < steps; ++i) {
         listView->setCurrentIndex(i % rowCount);
-        qamui::testing::paintItem(listView, buffer, 0, 0);
+        qmltui::testing::paintItem(listView, buffer, 0, 0);
     }
     return timer.elapsed();
 }
@@ -171,7 +171,7 @@ static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int s
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         TreeView {
             width: 80
@@ -188,18 +188,18 @@ static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int s
         return -1;
     }
     std::unique_ptr<QObject> object(component.create());
-    auto *tree = qobject_cast<qamui::TreeView*>(object.get());
+    auto *tree = qobject_cast<qmltui::TreeView*>(object.get());
     if (!tree) return -1;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    qamui::testing::paintItem(tree, buffer, 0, 0);
+    qmltui::testing::paintItem(tree, buffer, 0, 0);
     const auto before = tree->childItems();
 
     QElapsedTimer timer;
     timer.start();
     for (int i = 0; i < steps; ++i) {
         model.touch(i % 24);
-        qamui::testing::paintItem(tree, buffer, 0, 0);
+        qmltui::testing::paintItem(tree, buffer, 0, 0);
     }
     const qint64 elapsed = timer.elapsed();
     if (tree->childItems() != before) {
@@ -215,7 +215,7 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         GridView {
             width: 80
@@ -237,11 +237,11 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *grid = qobject_cast<qamui::GridView*>(object.get());
+    auto *grid = qobject_cast<qmltui::GridView*>(object.get());
     if (!grid) return -1;
-    qamui::TextGridBuffer buffer;
+    qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
-    qamui::testing::paintItem(grid, buffer, 0, 0);
+    qmltui::testing::paintItem(grid, buffer, 0, 0);
     // 4 columns x 12 rows visible, one overscan row each side: at most 56 delegates.
     if (grid->childItems().size() > 56 || buffer.cellAt(0, 0).character() != "0") {
         qCritical("GridView benchmark created more delegates than the viewport needs");
@@ -249,7 +249,7 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
     }
     for (int i = 0; i < steps; ++i) {
         grid->setContentY((i * 7) % grid->contentHeight());
-        qamui::testing::paintItem(grid, buffer, 0, 0);
+        qmltui::testing::paintItem(grid, buffer, 0, 0);
     }
     return timer.elapsed();
 }
@@ -257,13 +257,13 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
-    qamui::TreeView ensureModuleIsLinked;
-    qamui::TableView ensureTableViewLinked;
-    qamui::ListView ensureListViewLinked;
-    qamui::GridView ensureGridViewLinked;
+    qmltui::TreeView ensureModuleIsLinked;
+    qmltui::TableView ensureTableViewLinked;
+    qmltui::ListView ensureListViewLinked;
+    qmltui::GridView ensureGridViewLinked;
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../Qamui"));
+                         + QStringLiteral("/../QmlTui"));
     engine.addImportPath(QCoreApplication::applicationDirPath()
                          + QStringLiteral("/.."));
 

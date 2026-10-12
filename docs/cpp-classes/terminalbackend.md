@@ -2,20 +2,20 @@
 
 ## 1. Class Overview
 
-`TerminalBackend` is the platform seam between Qamui and the operating system's terminal. Everything above it is shared code: `TerminalDevice` owns the output queue and raw-mode bookkeeping, `TerminalEngine` decodes input bytes and drives the renderers. Everything below it is platform code, one class per platform:
+`TerminalBackend` is the platform seam between QmlTui and the operating system's terminal. Everything above it is shared code: `TerminalDevice` owns the output queue and raw-mode bookkeeping, `TerminalEngine` decodes input bytes and drives the renderers. Everything below it is platform code, one class per platform:
 
 | Implementation | Platform | Mechanisms |
 | :--- | :--- | :--- |
 | `PosixTerminalBackend` | Linux, macOS, other POSIX | `termios` raw mode on standard input, `write(2)` and `poll(2)` on the output descriptor, a `QSocketNotifier` on standard input, a process-wide `SIGWINCH` self-pipe bridge |
 | `Win32ConsoleBackend` | Windows (Windows Terminal, VT-capable conhost) | `SetConsoleMode` with `ENABLE_VIRTUAL_TERMINAL_INPUT`, `ENABLE_WINDOW_INPUT`, and `ENABLE_VIRTUAL_TERMINAL_PROCESSING`; UTF-8 code pages; `WriteFile`; `ReadConsoleInputW` driven by a `QWinEventNotifier` on the console input handle |
-| `WasmTerminalBackend` | Qt for WebAssembly (any browser, xterm.js on the page) | Output bytes through the `Module.qamuiOnOutput` JS callback (`EM_JS`), key bytes and geometry through the embind entry points `qamuiFeedInput` / `qamuiResize`; sets `TERM`/`COLORTERM` when the environment is empty; synchronous output |
+| `WasmTerminalBackend` | Qt for WebAssembly (any browser, xterm.js on the page) | Output bytes through the `Module.qmltuiOnOutput` JS callback (`EM_JS`), key bytes and geometry through the embind entry points `qmltuiFeedInput` / `qmltuiResize`; sets `TERM`/`COLORTERM` when the environment is empty; synchronous output |
 
 Input is always delivered as raw VT byte sequences, so `InputDecoder` needs no platform knowledge. On Windows the console itself performs that translation once virtual-terminal input is enabled.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/Primitives/TerminalBackend.h`, installed as `<Qamui/Core/Primitives/TerminalBackend.h>`
-- **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/Qamui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
+- **Header**: `src/QmlTui/Core/Primitives/TerminalBackend.h`, installed as `<QmlTui/Core/Primitives/TerminalBackend.h>`
+- **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/QmlTui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
 - **Factory**: `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` in `TerminalBackend.cpp`
 - **Dependencies**: QtCore only. Platform headers are confined to the implementation files; `<windows.h>` never reaches a public header.
 
@@ -77,14 +77,14 @@ Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIG
 `TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/topics/webassembly.md](../topics/webassembly.md).
 
 ```cpp
-#include <Qamui/Core/Primitives/TerminalBackend.h>
+#include <QmlTui/Core/Primitives/TerminalBackend.h>
 
-qamui::TerminalBackend::setFactory([](int) {
+qmltui::TerminalBackend::setFactory([](int) {
     return std::make_unique<SerialConsoleBackend>(QStringLiteral("/dev/ttyS0"));
 });
 ```
 
-`qamui::MemoryTerminalBackend` in `Qamui::Runner` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
+`qmltui::MemoryTerminalBackend` in `qmltui::runner` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
 
 This is a C++ extension point and may still change before 1.0, like custom items.
 

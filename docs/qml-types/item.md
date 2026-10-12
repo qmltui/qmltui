@@ -1,10 +1,10 @@
 ---
 title: Item
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::Item
+cpp: qmltui::Item
 category: core
 summary: Base visual type providing cell geometry, layout anchors, visibility, focus, and state management.
 ---
@@ -15,8 +15,8 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -64,7 +64,7 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 
 ## Detailed Description
 
-Item is the base type for all visual components in Qamui, analogous to `QQuickItem`
+Item is the base type for all visual components in QmlTui, analogous to `QQuickItem`
 in Qt Quick, but operating entirely on discrete integer character cell columns and rows.
 
 It defines spatial position (`x`, `y`), explicit and implicit size (`width`, `height`,
@@ -79,7 +79,7 @@ and attributes to the terminal text grid buffer.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

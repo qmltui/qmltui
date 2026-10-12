@@ -2,9 +2,9 @@
 #include <QProcessEnvironment>
 #include <QTest>
 
-#include <Qamui/Core/Primitives/TerminalCapabilities.h>
+#include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 namespace {
 
@@ -75,7 +75,7 @@ void TestTerminalCapabilities::testWindowsTerminalIsTrueColor()
     // NO_COLOR and an explicit override still win over the Windows heuristic.
     QCOMPARE(TerminalCapabilities::detect(environmentWith({{"WT_SESSION", "abc"}, {"NO_COLOR", "1"}})).colorDepth,
              ColorDepth::Mono);
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"WT_SESSION", "abc"}, {"QAMUI_COLOR_DEPTH", "256"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"WT_SESSION", "abc"}, {"QMLTUI_COLOR_DEPTH", "256"}})).colorDepth,
              ColorDepth::Indexed256);
 }
 
@@ -103,16 +103,16 @@ void TestTerminalCapabilities::testMonoFromNoColorAndDumb()
 
 void TestTerminalCapabilities::testOverrideWins()
 {
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"COLORTERM", "truecolor"}, {"QAMUI_COLOR_DEPTH", "16"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"COLORTERM", "truecolor"}, {"QMLTUI_COLOR_DEPTH", "16"}})).colorDepth,
              ColorDepth::Basic16);
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"NO_COLOR", "1"}, {"QAMUI_COLOR_DEPTH", "truecolor"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"NO_COLOR", "1"}, {"QMLTUI_COLOR_DEPTH", "truecolor"}})).colorDepth,
              ColorDepth::TrueColor);
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QAMUI_COLOR_DEPTH", "256"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QMLTUI_COLOR_DEPTH", "256"}})).colorDepth,
              ColorDepth::Indexed256);
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QAMUI_COLOR_DEPTH", "mono"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QMLTUI_COLOR_DEPTH", "mono"}})).colorDepth,
              ColorDepth::Mono);
     // Unknown values fall through to detection.
-    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QAMUI_COLOR_DEPTH", "bogus"}, {"TERM", "xterm-256color"}})).colorDepth,
+    QCOMPARE(TerminalCapabilities::detect(environmentWith({{"QMLTUI_COLOR_DEPTH", "bogus"}, {"TERM", "xterm-256color"}})).colorDepth,
              ColorDepth::Indexed256);
 }
 
@@ -122,8 +122,8 @@ void TestTerminalCapabilities::testSyncOutput()
     const TerminalCapabilities piped = TerminalCapabilities::detect(environmentWith({}), false);
     QVERIFY(!piped.syncOutput);
     QVERIFY(!piped.isTty);
-    QVERIFY(!TerminalCapabilities::detect(environmentWith({{"QAMUI_SYNC_OUTPUT", "0"}}), true).syncOutput);
-    QVERIFY(TerminalCapabilities::detect(environmentWith({{"QAMUI_SYNC_OUTPUT", "1"}}), false).syncOutput);
+    QVERIFY(!TerminalCapabilities::detect(environmentWith({{"QMLTUI_SYNC_OUTPUT", "0"}}), true).syncOutput);
+    QVERIFY(TerminalCapabilities::detect(environmentWith({{"QMLTUI_SYNC_OUTPUT", "1"}}), false).syncOutput);
 }
 
 void TestTerminalCapabilities::testDepthNames()

@@ -1,12 +1,12 @@
-# Licensing map for the Qamui repository, in REUSE.toml form (https://reuse.software).
+# Licensing map for the QmlTui repository, in REUSE.toml form (https://reuse.software).
 # Source files carry no per-file header; the license of a file is decided by its
 # path below. Later tables win over earlier ones for the same file. Full license
 # texts are in LICENSES/. Summary for humans: LICENSE.md.
 
 version = 1
-SPDX-PackageName = "Qamui"
+SPDX-PackageName = "QmlTui"
 SPDX-PackageSupplier = "Yosri Ayed"
-SPDX-PackageDownloadLocation = "https://github.com/qamui-dev/qamui"
+SPDX-PackageDownloadLocation = "https://github.com/qmltui-dev/qmltui"
 
 # Library code: LGPLv3 or GPLv3, at the user's choice.
 [[annotations]]

@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Treat the terminal as a device Qamui negotiates with rather than guesses about.
+Treat the terminal as a device QmlTui negotiates with rather than guesses about.
 Three deliverables, each its own PR, in this order:
 
 1. A real control-sequence parser in `InputDecoder`, a query-and-reply path
@@ -10,7 +10,7 @@ Three deliverables, each its own PR, in this order:
 2. The kitty keyboard protocol, so Escape is unambiguous, Ctrl and Alt
    combinations carry their real modifiers, and Ctrl+Shift, Ctrl+Enter and
    Shift+Enter become expressible.
-3. The kitty graphics protocol in `Qamui.Image`, using Unicode placeholders so
+3. The kitty graphics protocol in `QmlTui.Image`, using Unicode placeholders so
    an image is ordinary cells to the frame renderer.
 
 Everything degrades to today's behaviour when the terminal does not answer a
@@ -47,7 +47,7 @@ through the decoder instead of mirroring its table.
 The lone-Escape gap carried out of WP1 (Escape delivered only when a following
 byte arrived) is closed by WP2: `InputDecoder::hasPendingEscape()` and
 `flushPendingEscape()`, driven by a single-shot timer in the engine after each
-read (`QAMUI_ESCAPE_TIMEOUT_MS`, default 50 ms). Nothing is pending inside a
+read (`QMLTUI_ESCAPE_TIMEOUT_MS`, default 50 ms). Nothing is pending inside a
 paste or a partial sequence, and the rest of a split sequence arriving inside
 the window still wins.
 
@@ -70,7 +70,7 @@ virtual placement sized to the item's cells, and paints placeholder cells that
 carry the id in their foreground; it frees the upload on source change, item
 destruction (per item) and engine stop (`a=d,d=A`, all images). Covered by
 `test_kitty_graphics` through the memory backend. The graphics-protocol seam
-lives in `src/Qamui/Image/TerminalGraphics.{h,cpp}`: a `Protocol` enum, a
+lives in `src/QmlTui/Image/TerminalGraphics.{h,cpp}`: a `Protocol` enum, a
 `resolve()` preference order, and the kitty encoders, so sixel and iTerm2 add
 a detector case, a `resolve()` case, and an encoder without touching `Image`.
 
@@ -96,7 +96,7 @@ the same seam (a detector, a `resolve()` case, an encoder).
 WP2 kitty keyboard is implemented (2026-09-13), flag 1 only in the push/pop
 form. The engine owns the mode per output session: `updateKittyKeyboard()`
 pushes `CSI > 1 u` once the terminal has answered the query (any valid reply,
-including zero flags, unless `QAMUI_KITTY_KEYBOARD=0`) and the renderer is on
+including zero flags, unless `QMLTUI_KITTY_KEYBOARD=0`) and the renderer is on
 its screen; `popKittyKeyboard()` writes `CSI < u` before every screen exit
 (stop, output disabled, renderer switch) and when a programmatic override
 withdraws the capability. A proven capability survives renegotiation, so a new
@@ -126,7 +126,7 @@ Real-terminal verification (2026-09-13): Ghostty 1.3.1 answers `CSI ? u`, the
 status line of `focus_and_keys` reports the kitty protocol, and Shift+Enter is
 logged as its own chord. Ctrl+Enter is consumed by Ghostty's default
 `ctrl+enter=toggle_fullscreen` binding before it is encoded, which is not a
-Qamui defect: run with `ghostty --keybind=ctrl+enter=unbind` (or unbind it in the
+QmlTui defect: run with `ghostty --keybind=ctrl+enter=unbind` (or unbind it in the
 Ghostty config) and Ctrl+Enter is logged as well. Any documentation that
 promises Ctrl+Enter in Ghostty should carry that caveat. Still owed: kitty
 itself, and Windows Terminal, where support depends on the emulator version and
@@ -227,7 +227,7 @@ mode, not a support bitmask. For DECRQM, distinguish unsupported status 0 from
 supported modes that are currently set or reset; keep explicit overrides.
 
 Send DA1 last as the protocol-recommended completion marker, with a separate
-100 ms negotiation deadline (`QAMUI_QUERY_TIMEOUT_MS` override). Do not tie the
+100 ms negotiation deadline (`QMLTUI_QUERY_TIMEOUT_MS` override). Do not tie the
 deadline to frame pacing or delay the first frame. Test missing, duplicate,
 malformed, and late replies; late replies are consumed without reopening the
 closed window. Document that the deadline can yield conservative fallback on
@@ -235,8 +235,8 @@ slow connections. Keep environment-derived defaults until negotiation closes.
 The graphics query proves transport support only; WP3 separately determines
 whether Unicode placeholders are usable.
 
-`QAMUI_COLOR_DEPTH` and `QAMUI_SYNC_OUTPUT` remain overrides. Two new ones,
-`QAMUI_KITTY_KEYBOARD=0` and `QAMUI_KITTY_GRAPHICS=0`, disable a protocol the
+`QMLTUI_COLOR_DEPTH` and `QMLTUI_SYNC_OUTPUT` remain overrides. Two new ones,
+`QMLTUI_KITTY_KEYBOARD=0` and `QMLTUI_KITTY_GRAPHICS=0`, disable a protocol the
 terminal claims but gets wrong.
 
 `TerminalCapabilities` gains `kittyKeyboard`, `kittyGraphics`, `cellPixelSize`,
@@ -338,7 +338,7 @@ CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text
   code point alone must not insert control shortcuts as text.
 - Legacy arrows and edit keys in kitty form (`CSI 1 ; mods A`,
   `CSI 3 ; mods ~`) already parse through WP1's tables; the `9;2u` literal for
-  Shift+Tab is subsumed by the general `u` case, preserving Qamui's
+  Shift+Tab is subsumed by the general `u` case, preserving QmlTui's
   `Qt::Key_Backtab` convention.
 
 The reply `CSI ? flags u` is a WP1 query reply, not a key.
@@ -346,7 +346,7 @@ The reply `CSI ? flags u` is a WP1 query reply, not a key.
 ### Fallback
 
 Without a valid support reply, send no push and keep legacy decoding. A terminal
-that answers but misbehaves is disabled with `QAMUI_KITTY_KEYBOARD=0`. Record
+that answers but misbehaves is disabled with `QMLTUI_KITTY_KEYBOARD=0`. Record
 terminal versions used for acceptance, including Windows Terminal; a Windows
 unit-test CI row alone does not establish emulator protocol support.
 
@@ -370,7 +370,7 @@ Exit criterion: those tests pass; `examples/topics/focus_and_keys` documents
 Ctrl+Enter and Shift+Enter as working in kitty-capable terminals and states
 the fallback.
 
-## 5. WP3: Kitty Graphics in `Qamui.Image` — 5–8 days
+## 5. WP3: Kitty Graphics in `QmlTui.Image` — 5–8 days
 
 ### Prototype gate
 
@@ -378,7 +378,7 @@ Before implementing the full Image integration, demonstrate a chunked PNG upload
 a virtual placement, clipped placeholder cells, and suspend/resume recovery in
 real terminals. Record emulator versions and results. This gate resolves resource
 lifetime and placement semantics before committing to the implementation below.
-Memory-backend tests verify Qamui's output, not emulator behaviour.
+Memory-backend tests verify QmlTui's output, not emulator behaviour.
 
 ### Transmission and placeholders
 
@@ -479,7 +479,7 @@ outlives its Terminal or the engine has already stopped.
 add `kittyGraphicsPlaceholders` to distinguish verified placeholder support.
 `Auto` selects Kitty only with both capabilities, effective TrueColor output,
 and a supported placement size. An explicit Kitty request uses the same safe
-fallback when prerequisites fail. `QAMUI_KITTY_GRAPHICS=0` disables its use.
+fallback when prerequisites fail. `QMLTUI_KITTY_GRAPHICS=0` disables its use.
 
 A graphics `OK` reply alone does not establish placeholder support. Initially
 use a conservative terminal identity allowlist backed by recorded real-terminal

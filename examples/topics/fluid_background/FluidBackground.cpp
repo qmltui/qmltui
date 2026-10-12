@@ -1,11 +1,11 @@
 #include "FluidBackground.h"
-#include <Qamui/Core/Engine/Clock_p.h>
-#include <Qamui/Core/Engine/MouseEvent.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Engine/Clock_p.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <algorithm>
 #include <cmath>
 
-namespace qamui {
+namespace qmltui {
 
 FluidBackground::FluidBackground(QObject* parent) : Item(parent) {
     m_resolvedColor = ColorMapper::fromString(m_color, 0xFF38BDF8);
@@ -263,4 +263,4 @@ void FluidBackground::paint(TextGridBuffer& buffer, int absX, int absY,
     }
 }
 
-} // namespace qamui
+} // namespace qmltui

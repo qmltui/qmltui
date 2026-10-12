@@ -1,10 +1,10 @@
 ---
 title: PropertyAnimation
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Animation
-cpp: qamui::PropertyAnimation
+cpp: qmltui::PropertyAnimation
 category: animation and state
 summary: Animates changes to a target property over time with configurable easing.
 ---
@@ -15,8 +15,8 @@ Animates changes to a target property over time with configurable easing. [More.
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Animation](animation.md) |
 
 ## Properties
@@ -46,7 +46,7 @@ for color properties, prefer [ColorAnimation](coloranimation.md).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

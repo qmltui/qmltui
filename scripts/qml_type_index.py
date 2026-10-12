@@ -62,7 +62,7 @@ def build_index(build_dir: Path, qt_qml_dir: Path | None, modules: list[str]) ->
 
     def add(qtypes: list[cd.QmlType]) -> None:
         for t in qtypes:
-            if t.name in types:      # first module wins; Qamui is loaded before Qt
+            if t.name in types:      # first module wins; QmlTui is loaded before Qt
                 continue
             types[t.name] = type_entry(t)
             by_module.setdefault(t.module, []).append(t.name)
@@ -103,10 +103,10 @@ def main() -> int:
     parser.add_argument("--build-dir", type=Path, required=True)
     parser.add_argument("--qt-qml-dir", type=Path, help="Qt's qml/ directory for QtQml and QtQml.Models")
     parser.add_argument("--module", action="append", dest="modules",
-                        help="module URI to include; default: Qamui, Qamui.Controls, QML, QtQml, QtQml.Models")
+                        help="module URI to include; default: QmlTui, QmlTui.Controls, QML, QtQml, QtQml.Models")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    modules = args.modules or ["Qamui", "Qamui.Controls", "QML", "QtQml", "QtQml.Models"]
+    modules = args.modules or ["QmlTui", "QmlTui.Controls", "QML", "QtQml", "QtQml.Models"]
     index = build_index(args.build_dir, args.qt_qml_dir, modules)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")

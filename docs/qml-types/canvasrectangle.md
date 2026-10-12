@@ -1,10 +1,10 @@
 ---
 title: CanvasRectangle
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: CanvasShape
-cpp: qamui::CanvasRectangle
+cpp: qmltui::CanvasRectangle
 category: canvas
 summary: Draws a rectangle outline or filled rectangle on a Canvas.
 ---
@@ -15,8 +15,8 @@ Draws a rectangle outline or filled rectangle on a Canvas. [More...](#detailed-d
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [CanvasShape](canvasshape.md) |
 
 ## Properties
@@ -38,7 +38,7 @@ If `fill` is `true`, all pixels within the rectangle are painted with the shape'
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

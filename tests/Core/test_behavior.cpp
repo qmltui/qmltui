@@ -1,11 +1,11 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qamui/Core/Engine/Animation.h>
+#include <QmlTui/Core/Engine/Animation.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qamui;
+using namespace qmltui;
 
 class TestBehavior : public QObject {
     Q_OBJECT
@@ -26,7 +26,7 @@ private slots:
         component.setData(QString(R"(
             pragma ComponentBehavior: Bound
             import QtQml
-            import Qamui
+            import QmlTui
             Item {
                 id: root
                 width: 30; height: 1
@@ -92,7 +92,7 @@ private slots:
         component.setData(QString(R"(
             pragma ComponentBehavior: Bound
             import QtQml
-            import Qamui
+            import QmlTui
             Item {
                 id: root
                 width: 1; height: 1
@@ -137,7 +137,7 @@ private slots:
         component.setData(R"(
             pragma ComponentBehavior: Bound
             import QtQml
-            import Qamui
+            import QmlTui
             Text {
                 id: root
                 property int requested: 0

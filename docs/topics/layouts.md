@@ -1,6 +1,6 @@
 # Layouts and cell geometry
 
-Qamui measures position and size in integer terminal cells. Use `Row` and
+QmlTui measures position and size in integer terminal cells. Use `Row` and
 `Column` to arrange children with spacing and padding. Use `RowLayout`,
 `ColumnLayout`, or `GridLayout` when siblings need `Layout.fillWidth`,
 `Layout.fillHeight`, or stretch constraints.

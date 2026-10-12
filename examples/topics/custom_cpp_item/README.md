@@ -1,9 +1,9 @@
 # Custom Cpp Item
 
-A Qamui topic example.
+A QmlTui topic example.
 
-Build with `cmake --build build --target qamui_custom_cpp_item_demo`.
-Run `./build/examples/topics/custom_cpp_item/qamui_custom_cpp_item_demo`.
+Build with `cmake --build build --target qmltui_custom_cpp_item_demo`.
+Run `./build/examples/topics/custom_cpp_item/qmltui_custom_cpp_item_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

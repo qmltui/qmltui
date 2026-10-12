@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Keys.onPressed: (event) => {
@@ -44,7 +44,7 @@ Terminal {
             spacing: 0
 
             Text {
-                text: qsTr("Qamui Loader Demo")
+                text: qsTr("QmlTui Loader Demo")
                 color: "cyan"
                 bold: true
             }

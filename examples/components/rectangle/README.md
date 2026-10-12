@@ -1,9 +1,9 @@
 # Rectangle
 
-A Qamui component example.
+A QmlTui component example.
 
-Build with `cmake --build build --target qamui_rectangle_demo`.
-Run `./build/examples/components/rectangle/qamui_rectangle_demo`.
+Build with `cmake --build build --target qmltui_rectangle_demo`.
+Run `./build/examples/components/rectangle/qmltui_rectangle_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

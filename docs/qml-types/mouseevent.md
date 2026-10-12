@@ -1,10 +1,10 @@
 ---
 title: MouseEvent
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::MouseEvent
+cpp: qmltui::MouseEvent
 category: input events
 summary: Carries mouse pointer coordinates, button state, and wheel deltas in character cells.
 ---
@@ -15,8 +15,8 @@ Carries mouse pointer coordinates, button state, and wheel deltas in character c
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
@@ -59,7 +59,7 @@ stops further propagation to items beneath or behind in the stacking order.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

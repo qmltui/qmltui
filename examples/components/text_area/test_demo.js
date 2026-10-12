@@ -4,7 +4,7 @@ function main(terminal) {
     terminal.sleep(1500);
     terminal.press("Tab");
     terminal.sleep(500);
-    terminal.typeText("Hello from Qamui!");
+    terminal.typeText("Hello from QmlTui!");
     terminal.sleep(1000);
     terminal.press("Enter");
     terminal.typeText("A retained-mode terminal UI.");

@@ -2,8 +2,8 @@
 
 Most terminal UI frameworks — Ratatui, Bubble Tea, FTXUI, or a raw ncurses
 loop — are immediate mode: the UI is a function the application re-runs.
-Qamui is retained mode with QML property bindings. This page explains what
-that difference means in practice and why Qamui makes this trade.
+QmlTui is retained mode with QML property bindings. This page explains what
+that difference means in practice and why QmlTui makes this trade.
 
 ## Immediate mode: the UI is a function you re-run
 
@@ -41,7 +41,7 @@ application grows:
 
 ## Declarative bindings: the UI is a graph you declare once
 
-In Qamui, a QML expression establishes a persistent dependency edge:
+In QmlTui, a QML expression establishes a persistent dependency edge:
 
 ```qml
 Text {
@@ -84,6 +84,6 @@ small applications.
 Where immediate mode loses is scale and longevity. As a UI grows,
 immediate-mode applications accumulate hand-written caching, dirty flags,
 and identity bookkeeping — they gradually reimplement an ad-hoc reactive
-system. Qamui's position is that if an application is going to end up with
+system. QmlTui's position is that if an application is going to end up with
 a reactive dependency system anyway, it should be the QML engine's:
 correct by construction, and paired with a mature declarative language.

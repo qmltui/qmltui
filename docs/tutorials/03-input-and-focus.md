@@ -5,15 +5,15 @@ The input starts focused. Tab moves to the button, and Enter activates its
 provides a F5 command independent of focus. Escape bubbles to the root only
 when a child does not consume it.
 
-Build with `cmake --build build --target qamui_tutorial_03_input_and_focus` and run
-`./build/examples/tutorials/03_input_and_focus/qamui_tutorial_03_input_and_focus`. Press Escape to quit.
+Build with `cmake --build build --target qmltui_tutorial_03_input_and_focus` and run
+`./build/examples/tutorials/03_input_and_focus/qmltui_tutorial_03_input_and_focus`. Press Escape to quit.
 
 <!-- include: examples/tutorials/03_input_and_focus/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root

@@ -1,10 +1,10 @@
 ---
 title: Rectangle
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Rectangle
+cpp: qmltui::Rectangle
 category: core
 summary: Renders a filled rectangular area on the character grid with optional borders and gradients.
 ---
@@ -15,8 +15,8 @@ Renders a filled rectangular area on the character grid with optional borders an
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -29,7 +29,7 @@ Renders a filled rectangular area on the character grid with optional borders an
 
 ## Detailed Description
 
-Rectangle is the fundamental visual container in Qamui, filling a rectangular
+Rectangle is the fundamental visual container in QmlTui, filling a rectangular
 region of character cells with an optional background `color`, an optional
 [Gradient](gradient.md), and a configurable [Border](border.md).
 
@@ -47,7 +47,7 @@ any hex or named color.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

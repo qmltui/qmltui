@@ -8,7 +8,7 @@
         "noEmit": true
     },
     "include": [
-        "src/Qamui/Runner/qamui-runner.d.ts",
+        "src/QmlTui/Runner/qmltui-runner.d.ts",
         "tests/**/*.js",
         "tests/**/*.mjs",
         "examples/**/*.js",

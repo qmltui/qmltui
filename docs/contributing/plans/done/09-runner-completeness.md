@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Make `Qamui::Runner` the tool a Qt developer reaches for first when testing a
+Make `qmltui::runner` the tool a Qt developer reaches for first when testing a
 terminal application, and the one an agent can drive without learning its
 quirks. The core model stays: scenarios are blocking, straight-line JavaScript
 against committed cell grids, with structured artifacts. This plan closes the
@@ -28,7 +28,7 @@ one and touches Core. WP9 migrates the existing scenarios once WP8 exists.
 ## 2. Verified State (2026-09-26)
 
 - `Runner` exposes 33 facade methods (`installJavaScriptFacade()` in
-  `src/Qamui/Runner/Runner.cpp`). Every method blocks inside a bounded nested
+  `src/QmlTui/Runner/Runner.cpp`). Every method blocks inside a bounded nested
   event loop. `main(terminal)` may return a Promise, but no operation returns
   one.
 - Usage across the tree's scenarios: `press` 255, `expectText` 189,
@@ -110,7 +110,7 @@ Small, first, and it unblocks honest documentation for everything after it.
 - `Runner.md`: document `frameStats()` (field list from `Runner.h`) and
   `rootObject()` (with the "expectations, not assertions" rule); replace every
   `Test.` example with `terminal.`; fix the description of
-  `QAMUI_SCRIPT`; rewrite "Asynchronous & Promise Integration" per section 3.
+  `QMLTUI_SCRIPT`; rewrite "Asynchronous & Promise Integration" per section 3.
 - `Runner.h`: correct the `typeText` comment.
 - Move the internal invokables off the exported class: a private
   `RunnerBridge` QObject in `Runner.cpp` carries `onPromiseResolved`,
@@ -132,7 +132,7 @@ the facade.
 
 ### WP2: Resize
 
-- `resize(columns, rows)`: validates 1 to 1,000 like `QAMUI_RUNNER_COLUMNS`,
+- `resize(columns, rows)`: validates 1 to 1,000 like `QMLTUI_RUNNER_COLUMNS`,
   calls `setTestViewportSize()`, and waits for the committed frame at the new
   size. The frame's dimensions are checked, not just its sequence number.
 - `size()`: returns `{columns, rows}` of the current committed frame.
@@ -204,17 +204,17 @@ off-screen) returning the clipped rectangle.
 
 ### WP5: Snapshot update mode
 
-- `QAMUI_UPDATE_SNAPSHOTS=1`: `expectSnapshot()` and `expectStyled()` write the
+- `QMLTUI_UPDATE_SNAPSHOTS=1`: `expectSnapshot()` and `expectStyled()` write the
   actual text to the resolved baseline path and pass. A missing baseline in
   normal mode fails with a message naming the variable. Resource-path
   scenarios cannot write back: the actual text goes to the artifact directory,
   and the scenario fails with the path it would have updated.
 - `result.json` gains `updatedSnapshots` (paths written), and the stderr
   summary lists them so an update is never silent.
-- `cmake/QamuiRunner.cmake` forwards `QAMUI_UPDATE_SNAPSHOTS` from the
+- `cmake/QmlTuiRunner.cmake` forwards `QMLTUI_UPDATE_SNAPSHOTS` from the
   environment to the launched process, so
-  `QAMUI_UPDATE_SNAPSHOTS=1 ctest -R <name>` works for both
-  `qamui_add_scenario` and `qamui_add_scenario_test`.
+  `QMLTUI_UPDATE_SNAPSHOTS=1 ctest -R <name>` works for both
+  `qmltui_add_scenario` and `qmltui_add_scenario_test`.
 - `captureStyled()` stays for exploration; `Runner.md` points to update mode
   for baselines.
 
@@ -235,7 +235,7 @@ hint.
   top-level declarations no longer become properties of the application's
   global object. The wrapper is prepended on the first line without a
   newline, so reported line numbers do not move; a regression test pins that.
-- `QAMUI_EVAL` stays classic.
+- `QMLTUI_EVAL` stays classic.
 - The operation trace's file/line extraction is checked against module stack
   frames.
 
@@ -248,11 +248,11 @@ export fails with a clear message; a classic scenario defining
 
 - The scenario watchdog accepts up to 300,000 ms (5 minutes). The per-operation
   and per-wait limit stays at 30,000 ms: a single wait longer than that is a
-  scenario bug. `qamui_add_scenario` derives its CTest timeout from the larger
+  scenario bug. `qmltui_add_scenario` derives its CTest timeout from the larger
   value as it does today, and defaults stay 2,000/10,000 ms.
 - The hard watchdog keeps its "scenario timeout + 1 s" rule.
 
-Tests: `QAMUI_RUNNER_TIMEOUT_MS=300000` accepted, `300001` rejected with the
+Tests: `QMLTUI_RUNNER_TIMEOUT_MS=300000` accepted, `300001` rejected with the
 range message; existing timeout scenarios unchanged.
 
 ### WP8: Virtual clock
@@ -261,12 +261,12 @@ The large package. It makes animation, Timer, ToolTip, Toast and blink
 behaviour deterministic and instant to test, without touching application C++
 timers.
 
-**8.1 Clock seam in Core.** A private `qamui::Clock` (`Core/Engine/Clock_p.h`)
+**8.1 Clock seam in Core.** A private `qmltui::Clock` (`Core/Engine/Clock_p.h`)
 with two modes:
 
 - `Clock::elapsed()`: milliseconds since process start (real: a
   `QElapsedTimer`; virtual: a counter).
-- `qamui::ClockTimer`: the subset of `QTimer` Qamui uses (interval, single-shot,
+- `qmltui::ClockTimer`: the subset of `QTimer` QmlTui uses (interval, single-shot,
   `start`, `stop`, `isActive`, `timeout`). In real mode it wraps a `QTimer`,
   so behaviour and idle cost are unchanged. In virtual mode it registers a
   deadline with the clock.
@@ -278,14 +278,14 @@ pacing is disabled in virtual mode: a render request renders on the next event
 loop pass, so a paused clock never withholds a frame.
 
 **8.2 Mode selection before QML loads.** A `Q_COREAPP_STARTUP_FUNCTION` in
-Core reads `QAMUI_RUNNER_CLOCK` (`real`, the default, or `virtual`) when the
+Core reads `QMLTUI_RUNNER_CLOCK` (`real`, the default, or `virtual`) when the
 `QCoreApplication` is constructed. That is before any `main` loads QML,
 whether the Runner is started from the environment or embedded. Virtual mode
 also installs a `VirtualAnimationDriver` (a `QAnimationDriver` whose
 `elapsed()` returns `Clock::elapsed()`), which brings QML `Timer` and
 anything else on `QUnifiedTimer` onto the same timeline. The public C++ entry
-point for embedders is `qamui::Runner::useVirtualClock()`, documented as "call
-before loading QML"; it fails loudly if a Qamui item already exists.
+point for embedders is `qmltui::Runner::useVirtualClock()`, documented as "call
+before loading QML"; it fails loudly if a QmlTui item already exists.
 
 **8.3 Runner API.**
 
@@ -296,12 +296,12 @@ before loading QML"; it fails loudly if a Qamui item already exists.
   Bounded by the operation limit in virtual milliseconds (30,000).
 - `now()`: virtual milliseconds since start.
 - `sleep(ms)` in virtual mode is `advanceTime(ms)`, so existing scenarios run
-  faster without edits where they only wait on Qamui or QML time.
+  faster without edits where they only wait on QmlTui or QML time.
 - `waitFor*` in virtual mode: wall-clock timeouts, clock stays paused. The
   timeout message appends "the virtual clock is paused; advance it with
   advanceTime()".
 - `result.json` records `clock: "real" | "virtual"` and the final virtual
-  time. `qamui_add_scenario(... CLOCK VIRTUAL)` sets the variable.
+  time. `qmltui_add_scenario(... CLOCK VIRTUAL)` sets the variable.
 
 **8.4 Limits, documented.** Application `QTimer`s, threads, image providers,
 network and `Date.now()` stay on wall time. A QML `Timer` shorter than the
@@ -334,16 +334,16 @@ After WP8:
 - Audit all 66 `sleep()` calls. Each gets one of four outcomes: removed
   (`press`/`typeText` already waited for the frame), replaced by
   `waitForText`/`waitForCondition`/`expectRepaint`, kept under a
-  `CLOCK VIRTUAL` scenario (Qamui/QML time only), or kept with a comment naming
+  `CLOCK VIRTUAL` scenario (QmlTui/QML time only), or kept with a comment naming
   the wall-time source (an application `QTimer`). The btop run of
   `press` + `sleep(200)` pairs and cyber_audio's layout sleeps are the first
   candidates.
 - Move gallery and animation-heavy component scenarios to `CLOCK VIRTUAL`.
 - Convert one application (device_cockpit) to a `.mjs` helper module as the
   reference for shared navigation code.
-- Update `.agents/skills/qamui-dev-loop/SKILL.md`: prefer `waitFor*` over
+- Update `.agents/skills/qmltui-dev-loop/SKILL.md`: prefer `waitFor*` over
   `sleep`, use update mode for baselines, use `region`/`item` locators, pick
-  `CLOCK VIRTUAL` when the behavior under test is Qamui or QML time.
+  `CLOCK VIRTUAL` when the behavior under test is QmlTui or QML time.
 
 Record the suite's wall time (sum of Runner scenario durations from CTest)
 before WP9 and after it in this file.
@@ -367,7 +367,7 @@ WP1, WP2, WP5 and WP7 can land in any order or together. WP8's Core half
 
 ## 6. Verification per Package
 
-- Build `qamui_runner_fixture` and run `ctest -R test_runner_fixture` in the
+- Build `qmltui_runner_fixture` and run `ctest -R test_runner_fixture` in the
   development tree first; then the full configured suite, because the Runner
   is public API and CMake integration.
 - WP2, WP3 and WP8 each add an application scenario that asserts committed
@@ -397,11 +397,11 @@ All nine work packages were implemented on 2026-09-26.
 | WP2 | Done: resize()/size(), finalViewport in result.json, fixture + device_cockpit narrow-layout scenarios |
 | WP3 | Done: paste()/injectPaste(), hover() gated on motion reporting, mouseDown()/mouseUp(), drag() walks the path, press() takes any single grapheme |
 | WP4 | Done: trailing options objects with unknown-key rejection, regionText()/itemRect()/waitForItem()/expectRegionSnapshot() natives, region()/item() locators, expect* timeouts |
-| WP5 | Done: QAMUI_UPDATE_SNAPSHOTS with per-test UPDATE_SNAPSHOTS/NO_UPDATE_SNAPSHOTS and seeded-baseline tests; updates listed in result.json and the summary |
+| WP5 | Done: QMLTUI_UPDATE_SNAPSHOTS with per-test UPDATE_SNAPSHOTS/NO_UPDATE_SNAPSHOTS and seeded-baseline tests; updates listed in result.json and the summary |
 | WP6 | Done: .mjs module scenarios (filesystem and Qt resources, relative imports), classic scripts wrapped in a function scope with line numbers preserved |
 | WP7 | Done: scenario watchdog accepts up to 300 s; per-operation limit stays 30 s |
-| WP8 | Done: Clock/ClockTimer seam (AnimationManager, ToolTip, Toast, AnimatedSprite, cursor blink, escape flush; pacing off in virtual mode), QAMUI_RUNNER_CLOCK=virtual with a permanently-running animation driver so QML Timer is virtual too, advanceTime()/now(), CLOCK VIRTUAL in CMake, test_clock_virtual/test_clock_real, tooltip-to-the-millisecond scenario |
-| WP9 | Done: sleep audit (66 → 21 calls: btop -14, cyber_audio -16, snake and gallery moved to CLOCK VIRTUAL, remaining wall-time sleeps name their source), device_cockpit converted to .mjs with lib/cockpit.mjs, qamui-dev-loop skill updated. Two findings: btop's sleeps were masking Behavior-animated panel collapse — the scenario now waits for the settled state; industrial_plc_hmi stays on the real clock because its waitForCondition() polls simulation state that only develops with time, and waits deliberately do not advance the virtual clock |
+| WP8 | Done: Clock/ClockTimer seam (AnimationManager, ToolTip, Toast, AnimatedSprite, cursor blink, escape flush; pacing off in virtual mode), QMLTUI_RUNNER_CLOCK=virtual with a permanently-running animation driver so QML Timer is virtual too, advanceTime()/now(), CLOCK VIRTUAL in CMake, test_clock_virtual/test_clock_real, tooltip-to-the-millisecond scenario |
+| WP9 | Done: sleep audit (66 → 21 calls: btop -14, cyber_audio -16, snake and gallery moved to CLOCK VIRTUAL, remaining wall-time sleeps name their source), device_cockpit converted to .mjs with lib/cockpit.mjs, qmltui-dev-loop skill updated. Two findings: btop's sleeps were masking Behavior-animated panel collapse — the scenario now waits for the settled state; industrial_plc_hmi stays on the real clock because its waitForCondition() polls simulation state that only develops with time, and waits deliberately do not advance the virtual clock |
 
 Suite wall time (build-public-delegates, `ctest -j4`, warm): 16.4 s for 108
 tests before WP1; 15.1 s for 132 tests after WP9. Runner-labeled scenarios:
@@ -409,7 +409,7 @@ tests before WP1; 15.1 s for 132 tests after WP9. Runner-labeled scenarios:
 snake AI gameplay run went from wall-clock seconds to 0.06 s and the
 37-page gallery tour from ~8 s to 0.5 s under the virtual clock.
 
-Follow-up landed the same day: `src/Qamui/Runner/qamui-runner.d.ts` plus a
+Follow-up landed the same day: `src/QmlTui/Runner/qmltui-runner.d.ts` plus a
 repository `jsconfig.json` give scenario authors editor autocomplete from one
 JSDoc line (`/** @param {Terminal} terminal */`); the declarations are
 installed next to the headers, verified against the facade by

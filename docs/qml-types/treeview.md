@@ -1,10 +1,10 @@
 ---
 title: TreeView
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::TreeView
+cpp: qmltui::TreeView
 category: data views
 summary: Displays expandable hierarchical model data.
 ---
@@ -15,8 +15,8 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -84,7 +84,7 @@ rendered using `branchColor`.
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Keys.onPressed: event => {

@@ -1,6 +1,6 @@
 #include "JsonHighlighter.h"
 
-namespace qamui::demo {
+namespace qmltui::demo {
 
 JsonHighlighter::JsonHighlighter(QObject *parent)
     : QObject(parent)
@@ -259,4 +259,4 @@ void JsonHighlighter::applySearchHighlighting()
     m_target->setHighlightLayer(QStringLiteral("search"), searchRanges, m_target->textRevision(), 10);
 }
 
-} // namespace qamui::demo
+} // namespace qmltui::demo

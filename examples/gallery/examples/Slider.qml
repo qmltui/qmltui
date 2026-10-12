@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
-// Slider: Left/Right or drag. One tile of the Qamui gallery (examples/gallery)
+// Slider: Left/Right or drag. One tile of the QmlTui gallery (examples/gallery)
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root

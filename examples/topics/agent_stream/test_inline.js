@@ -6,7 +6,7 @@ function main(terminal) {
     terminal.captureText("inline.txt")
 
     // The session banner lives in the scrollback, never in the live frame.
-    terminal.expectScrollbackText("Qamui")
+    terminal.expectScrollbackText("QmlTui")
     terminal.expectScrollbackText("agent stream demo")
     terminal.expectNoScrollbackText("Ask anything")
     terminal.captureScrollback("banner.txt")

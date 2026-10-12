@@ -4,14 +4,14 @@
 #include <QStandardItemModel>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qamui/Core/Items/TableView.h>
-#include <Qamui/Core/Engine/KeyEvent.h>
-#include <Qamui/Core/Engine/MouseEvent.h>
+#include <QmlTui/Core/Items/TableView.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
 #include "../TestPaint.h"
 #include <memory>
 #include <limits>
 
-using namespace qamui;
+using namespace qmltui;
 
 // Answers Qt::ForegroundRole, so a column function can be shown deferring to it.
 class ColoredRows final : public QAbstractListModel
@@ -80,7 +80,7 @@ public:
     TextGridBuffer buffer;
     bool create(QObject *model, const QString &delegate, bool bound = true) {
         const QString qml = (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString())
-            + QStringLiteral("import QtQml\nimport Qamui\nimport Qt.labs.qmlmodels\n"
+            + QStringLiteral("import QtQml\nimport QmlTui\nimport Qt.labs.qmlmodels\n"
                 "TableView { required property var inputModel; model: inputModel; width: 40; height: 8; "
                 "columns: [{title:'A',width:12},{title:'B',width:12},{title:'C',width:12}]; ")
             + delegate + QStringLiteral(" }");
@@ -95,7 +95,7 @@ public:
     // Same as create(), but the caller supplies the whole TableView body, so
     // tests can omit the columns descriptors.
     bool createBody(QObject *model, const QString &body, int initialHeight = 8) {
-        const QString qml = QStringLiteral("pragma ComponentBehavior: Bound\nimport QtQml\nimport Qamui\n"
+        const QString qml = QStringLiteral("pragma ComponentBehavior: Bound\nimport QtQml\nimport QmlTui\n"
                 "TableView { required property var inputModel; model: inputModel; width: 40; height: %1; ").arg(initialHeight)
             + body + QStringLiteral(" }");
         component.setData(qml.toUtf8(), QUrl());

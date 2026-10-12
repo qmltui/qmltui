@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
-    engine.loadFromModule("QamuiTutorial01", "Main");
+    engine.loadFromModule("QmlTuiTutorial01", "Main");
     if (engine.rootObjects().isEmpty())
         return -1;
     return app.exec();

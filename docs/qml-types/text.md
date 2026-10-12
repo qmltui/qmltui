@@ -1,10 +1,10 @@
 ---
 title: Text
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: Item
-cpp: qamui::Text
+cpp: qmltui::Text
 category: display
 summary: Displays terminal text with inline styling and explicit line breaks.
 ---
@@ -15,8 +15,8 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -93,7 +93,7 @@ at paint time, including to spans that explicitly set `dim: false`.
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     Text {
@@ -101,7 +101,7 @@ Terminal {
         bold: true
         spans: [
             { text: "Status: ", dim: true, bold: false },
-            Qamui.span("Active\n", { color: "green" }),
+            QmlTui.span("Active\n", { color: "green" }),
             { text: "Workers: 4" }
         ]
     }
@@ -116,6 +116,6 @@ Terminal {
 
 ### C++
 
-Use `qamui::Text` from `<Qamui/Text.h>`. Construct it with an optional parent
+Use `qmltui::Text` from `<QmlTui/Text.h>`. Construct it with an optional parent
 `QObject`, set properties directly, and use `paint()` during the text grid
 render pass.

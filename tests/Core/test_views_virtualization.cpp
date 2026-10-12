@@ -4,15 +4,15 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QAbstractListModel>
-#include <Qamui/Core/Items/ListView.h>
-#include <Qamui/Core/Items/GridView.h>
-#include <Qamui/Core/Items/TableView.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Items/ListView.h>
+#include <QmlTui/Core/Items/GridView.h>
+#include <QmlTui/Core/Items/TableView.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <memory>
 
-using namespace qamui;
-using qamui::testing::paintItem;
+using namespace qmltui;
+using qmltui::testing::paintItem;
 
 class TestCountModel final : public QAbstractListModel {
 public:
@@ -53,7 +53,7 @@ void TestViewsVirtualization::testListViewPooling() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         ListView {
             width: 80
@@ -98,7 +98,7 @@ void TestViewsVirtualization::testTableView2DVirtualization() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         TableView {
             width: 80
@@ -132,7 +132,7 @@ void TestViewsVirtualization::testTableViewDelegateChooser() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
         import QtQml.Models
         import Qt.labs.qmlmodels
 
@@ -192,7 +192,7 @@ void TestViewsVirtualization::testGridViewVirtualization() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import Qamui
+        import QmlTui
 
         GridView {
             width: 80

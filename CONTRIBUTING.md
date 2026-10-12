@@ -1,11 +1,11 @@
-# Contributing to Qamui
+# Contributing to QmlTui
 
 Thank you for considering a contribution. Two things before the first pull
 request.
 
 ## Licensing and the contributor agreement
 
-Qamui is offered under LGPL-3.0-only or GPL-3.0-only, with separate commercial
+QmlTui is offered under LGPL-3.0-only or GPL-3.0-only, with separate commercial
 terms available upon inquiry (see [LICENSE.md](LICENSE.md)). To preserve this
 model and guarantee the open-source promise, every contribution to `src/` or
 `tests/` needs the contributor agreement in [CLA.md](CLA.md). A check on the
@@ -31,5 +31,5 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Pull requests must keep both Behavior trees green (`QAMUI_ENABLE_BEHAVIOR` ON
+Pull requests must keep both Behavior trees green (`QMLTUI_ENABLE_BEHAVIOR` ON
 and OFF), which CI checks on Linux, macOS, and Windows.

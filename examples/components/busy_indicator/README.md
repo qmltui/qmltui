@@ -1,9 +1,9 @@
 # Busy Indicator
 
-A Qamui component example.
+A QmlTui component example.
 
-Build with `cmake --build build --target qamui_busy_indicator_demo`.
-Run `./build/examples/components/busy_indicator/qamui_busy_indicator_demo`.
+Build with `cmake --build build --target qmltui_busy_indicator_demo`.
+Run `./build/examples/components/busy_indicator/qmltui_busy_indicator_demo`.
 See [main.cpp](main.cpp) for startup and local QML files for the interface.
 
 The example is included when its optional modules are enabled.

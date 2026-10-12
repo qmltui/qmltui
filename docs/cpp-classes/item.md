@@ -2,7 +2,7 @@
 
 ## 1. Class Overview
 
-`Item` is the base visual class for all QML elements in Qamui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
+`Item` is the base visual class for all QML elements in QmlTui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
 
 Developers subclass `Item` when creating new C++ terminal components.
 
@@ -34,14 +34,14 @@ Developers subclass `Item` when creating new C++ terminal components.
 | `focus` | `bool` | `focus` | `setFocus` | `focusChanged` | Requested focus state. |
 | `activeFocus` | `bool` | `activeFocus` | — | `activeFocusChanged` | Read-only property indicating if the item has active input focus. |
 | `focusable` | `bool` | `focusable` | `setFocusable` | `focusableChanged` | Whether the item participates in Tab focus cycling. |
-| `parent` | `qamui::Item*` | `parentItem` | `setParentItem` | `parentChanged` | Parent visual item. |
-| `anchors` | `qamui::Anchors*` | `anchors` | — | — | Attached anchor configuration object. |
-| `left` | `qamui::AnchorLine*` | `left` | — | — | Left anchor line constraint of the item. |
-| `right` | `qamui::AnchorLine*` | `right` | — | — | Right anchor line constraint of the item. |
-| `top` | `qamui::AnchorLine*` | `top` | — | — | Top anchor line constraint of the item. |
-| `bottom` | `qamui::AnchorLine*` | `bottom` | — | — | Bottom anchor line constraint of the item. |
-| `horizontalCenter` | `qamui::AnchorLine*` | `horizontalCenter` | — | — | Horizontal center anchor line constraint of the item. |
-| `verticalCenter` | `qamui::AnchorLine*` | `verticalCenter` | — | — | Vertical center anchor line constraint of the item. |
+| `parent` | `qmltui::Item*` | `parentItem` | `setParentItem` | `parentChanged` | Parent visual item. |
+| `anchors` | `qmltui::Anchors*` | `anchors` | — | — | Attached anchor configuration object. |
+| `left` | `qmltui::AnchorLine*` | `left` | — | — | Left anchor line constraint of the item. |
+| `right` | `qmltui::AnchorLine*` | `right` | — | — | Right anchor line constraint of the item. |
+| `top` | `qmltui::AnchorLine*` | `top` | — | — | Top anchor line constraint of the item. |
+| `bottom` | `qmltui::AnchorLine*` | `bottom` | — | — | Bottom anchor line constraint of the item. |
+| `horizontalCenter` | `qmltui::AnchorLine*` | `horizontalCenter` | — | — | Horizontal center anchor line constraint of the item. |
+| `verticalCenter` | `qmltui::AnchorLine*` | `verticalCenter` | — | — | Vertical center anchor line constraint of the item. |
 | `clip` | `bool` | `clip` | `setClip` | `clipChanged` | Enables clipping of child rendering to item bounds. |
 | `padding` | `int` | `padding` | `setPadding` | `paddingChanged` | Uniform inner padding for all sides. |
 | `leftPadding` | `int` | `leftPadding` | `setLeftPadding` | `leftPaddingChanged` | Inner left padding. |
@@ -49,8 +49,8 @@ Developers subclass `Item` when creating new C++ terminal components.
 | `topPadding` | `int` | `topPadding` | `setTopPadding` | `topPaddingChanged` | Inner top padding. |
 | `bottomPadding` | `int` | `bottomPadding` | `setBottomPadding` | `bottomPaddingChanged` | Inner bottom padding. |
 | `data` | `QQmlListProperty<QObject>` | `data` | — | — | List of QML visual/logical child objects. |
-| `states` | `QQmlListProperty<qamui::State>` | `states` | — | — | List of states defined on the item. |
-| `transitions` | `QQmlListProperty<qamui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
+| `states` | `QQmlListProperty<qmltui::State>` | `states` | — | — | List of states defined on the item. |
+| `transitions` | `QQmlListProperty<qmltui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
 | `state` | `QString` | `state` | `setState` | `stateChanged` | Current active state name. |
 
 ## 6. Public Member Variables
@@ -210,10 +210,10 @@ Single-threaded. Must be instantiated and used on the main GUI thread.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Items/Item.h>
-#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 class CustomWidget : public Item {
     Q_OBJECT

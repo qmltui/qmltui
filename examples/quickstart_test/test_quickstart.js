@@ -3,7 +3,7 @@
 // looks like.
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.waitForText("Welcome to Qamui");
+    terminal.waitForText("Welcome to QmlTui");
     terminal.expectText("[ Press Enter, or Q to quit ]");
     terminal.expectText("Status: ready");
     terminal.press("Enter");

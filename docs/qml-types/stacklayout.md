@@ -1,10 +1,10 @@
 ---
 title: StackLayout
 kind: qml
-import: Qamui.Controls
+import: QmlTui.Controls
 since: "0.4"
 inherits: Item
-cpp: qamui::Item
+cpp: qmltui::Item
 category: layout
 summary: A container that shows exactly one of its children at a time, chosen by index, and sizes it to fill the layout.
 ---
@@ -15,8 +15,8 @@ A container that shows exactly one of its children at a time, chosen by index, a
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui.Controls` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui.Controls` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -58,8 +58,8 @@ pages are created on demand.
 
 ```qml
 import QtQml
-import Qamui
-import Qamui.Controls
+import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Column {

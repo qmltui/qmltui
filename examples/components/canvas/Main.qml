@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import QtQml.Models
-import Qamui
+import QmlTui
 
 Terminal {
     id: rootWindow
@@ -172,7 +172,7 @@ Terminal {
 
             Text {
                 anchors.fill: parent
-                text: " Multi-Color Overlapping Braille Canvas Demo (Qamui)"
+                text: " Multi-Color Overlapping Braille Canvas Demo (QmlTui)"
                 color: "#f8fafc"
                 bold: true
             }

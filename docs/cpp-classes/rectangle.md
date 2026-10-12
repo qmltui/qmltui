@@ -21,7 +21,7 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
-| `color` | `qamui::Color` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
+| `color` | `qmltui::Color` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
 | `border` | `Border*` | `border` | — | — | Attached border configuration (`style`, `color`). |
 
 ## 7. Signals
@@ -58,9 +58,9 @@ traverses children afterward.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Items/Rectangle.h>
 
-using namespace qamui;
+using namespace qmltui;
 
 Rectangle* rect = new Rectangle(parentItem);
 rect->setColor("#1e1e1e");

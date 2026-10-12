@@ -1,10 +1,10 @@
 ---
 title: State
 kind: qml
-import: Qamui
+import: QmlTui
 since: "0.4"
 inherits: 
-cpp: qamui::State
+cpp: qmltui::State
 category: animation and state
 summary: Defines a named visual configuration of an item.
 ---
@@ -15,8 +15,8 @@ Defines a named visual configuration of an item. [More...](#detailed-description
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import Qamui` |
-| **Since** | Qamui 0.4 |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.4 |
 | **Inherits** | none |
 
 ## Properties
@@ -41,7 +41,7 @@ animated using [Transition](transition.md).
 
 ```qml
 import QtQml
-import Qamui
+import QmlTui
 
 Terminal {
     id: root

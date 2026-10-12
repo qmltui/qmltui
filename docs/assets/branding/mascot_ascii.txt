@@ -1,5 +1,5 @@
 # ==============================================================================
-# Qamui terminal banners
+# QmlTui terminal banners
 # The mark drawn in braille cells: an O whose > tail makes the Q.
 # ==============================================================================
 
@@ -10,8 +10,8 @@
  ⠑⢕⣄⣀⣔⠝⢧⡀
    ⠈⠉⢀⡴⠋
 
-# 5. CLI Startup Banner: Qamui
-  ⢀⣠⣤⣀      Qamui  ·  retained-mode terminal UI for Qt 6
+# 5. CLI Startup Banner: QmlTui
+  ⢀⣠⣤⣀      QmlTui  ·  retained-mode terminal UI for Qt 6
  ⣔⠕⠁ ⠑⢕⡄    QML items, layouts, controls and views in text cells
 ⠸⣇   ⢀⣀⡿    docs/README.md  ·  examples/gallery  ·  docs/tutorials
  ⠑⢕⣄⣀⣔⠝⢧⡀   Ctrl+Q quits  ·  Esc quits when the prompt is empty

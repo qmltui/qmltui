@@ -11,7 +11,7 @@ if(QAMUI_ENABLE_BEHAVIOR OR QAMUI_ENABLE_ADVANCED_STATES)
 endif()
 option(QAMUI_ENABLE_IMAGE     "Build the optional Qamui Image module (requires Qt Gui and Network)" ON)
 option(QAMUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
-option(QAMUI_ENABLE_RUNNER "Build and install the optional Qamui Runner library" OFF)
+option(QAMUI_ENABLE_RUNNER "Build and install the optional Qamui Runner library and CLI" OFF)
 option(QAMUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid Qamui Commercial License" OFF)
 
 if(QAMUI_COMMERCIAL_LICENSE)
@@ -86,6 +86,9 @@ if(QAMUI_BUILD_TESTS)
 endif()
 
 add_subdirectory(src/Qamui)
+if(TARGET Qamui::Runner AND NOT EMSCRIPTEN)
+    add_subdirectory(tools/qamui-runner)
+endif()
 
 # Example executable to test the library
 if(QAMUI_BUILD_EXAMPLES)

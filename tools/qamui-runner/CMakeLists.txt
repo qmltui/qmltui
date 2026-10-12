@@ -1,0 +1,6 @@
+qt_add_executable(qamui-runner main.cpp)
+target_link_libraries(qamui-runner PRIVATE Qt6::Core)
+target_compile_definitions(qamui-runner PRIVATE QAMUI_VERSION="${PROJECT_VERSION}")
+if(QAMUI_ENABLE_RUNNER)
+    install(TARGETS qamui-runner RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()

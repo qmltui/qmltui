@@ -98,6 +98,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
             cell.setCharacter(" ");
             cell.displayWidth = 1;
             cell.continuation = false;
+            cell.attributes = TextAttribute::None;
           }
         }
       }
@@ -144,6 +145,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
       cell.displayWidth = 1;
       cell.continuation = false;
       cell.fgColor = fg;
+      cell.attributes = TextAttribute::None;
     };
 
     for (int dy = 0; dy < h; ++dy) {

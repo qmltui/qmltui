@@ -46,8 +46,20 @@ Prints raw text to the terminal device.
 #### void append(qamui::Item* item)
 Appends a child item to the root window hierarchy.
 
+#### QString requestClipboardText(int timeoutMs)
+Starts an OSC 52 clipboard read. An empty result means pending; otherwise the
+result is an error code. Concurrent requests share the active query and its
+deadline. `clipboardReadFinished(text, code)` reports completion: an empty code
+means success. Reads require an active interactive session and enabled clipboard
+integration. QML applications should use [Clipboard.requestText()](../qml-types/clipboard.md).
+
+#### void cancelClipboardRead()
+Cancels a pending read with `Cancelled`. Shutdown and suppressed output cancel
+automatically. Replies are validated as Base64-encoded UTF-8 with a 1 MiB decoded
+limit; malformed replies fail without becoming keyboard input.
+
 #### void copyToClipboard(const QString& text)
-Copies the given text to the system clipboard, utilizing OSC 52 sequences if configured.
+Sends an OSC 52 write request when terminal output is enabled. This does not confirm that the terminal updated its clipboard; the Terminal facade applies clipboardMode.
 
 #### static std::string osc52Sequence(const QString& text)
 Generates the ANSI escape sequence for copying the given text to the clipboard using the OSC 52 protocol.

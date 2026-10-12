@@ -13,6 +13,7 @@
 namespace qamui {
 
 class TerminalEngine;
+class Clipboard;
 class Popup;
 
 class QAMUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
@@ -137,6 +138,7 @@ private:
   Color m_color = "transparent";
   uint32_t m_background = 0;
   Mode m_mode = Mode::FullScreen;
+  QPointer<Clipboard> m_clipboard;
   ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
   bool m_mouseReporting = true;
   bool m_mouseReportingExplicit = false;

@@ -137,6 +137,9 @@ public:
     // retained row), padded to the widest row. Empty when nothing qualifies.
     TextGridBuffer committedScrollback(quint64 fromTotalRow = 0) const;
     void copyToClipboard(const QString& text);
+    // Empty return means the request is pending; otherwise an error code.
+    QString requestClipboardText(int timeoutMs);
+    void cancelClipboardRead();
     static std::string osc52Sequence(const QString& text);
     void setTitle(const QString& title);
     QString title() const { return m_title; }
@@ -168,6 +171,7 @@ signals:
     void capabilitiesChanged();
     void outputSessionInvalidated(quint64 generation);
     void renderFailed(const QString& message);
+    void clipboardReadFinished(const QString& text, const QString& code);
 
 private slots:
     void readResizeSignal();
@@ -176,6 +180,9 @@ private slots:
 
 private:
     void applyOutputPolicy();
+    void finishClipboardRead(const QString& text, const QString& code);
+    class ClockTimer* m_clipboardTimer = nullptr;
+    bool m_clipboardReadPending = false;
     friend class ::TestScrollView;
     friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
 

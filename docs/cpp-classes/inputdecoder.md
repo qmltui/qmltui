@@ -100,3 +100,12 @@ int main() {
     return 0;
 }
 ```
+
+## Clipboard replies
+
+OSC 52 replies have a separate framing bound allowing 1 MiB of decoded text
+plus Base64 expansion and framing. Other control strings retain their 4 KiB
+limit. `setClipboardErrorCallback()` reports malformed or oversized OSC 52
+frames; discarded bytes do not become keyboard input. The engine validates
+selection, Base64 and UTF-8. Fragmented string frames resume scanning without
+rescanning their whole buffered payload. Bracketed paste bypasses reply parsing.

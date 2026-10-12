@@ -1,5 +1,8 @@
 # Tests for Qamui::Core: primitives, engine, items, and the benchmarks.
 
+add_qamui_test(test_clipboard test_clipboard.cpp)
+target_link_libraries(test_clipboard PRIVATE Qamui::Runner)
+
 add_qamui_test(test_input_decoder test_input_decoder.cpp)
 add_qamui_test(test_text_grid_buffer test_text_grid_buffer.cpp)
 add_qamui_test(test_unicode_text test_unicode_text.cpp)

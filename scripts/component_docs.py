@@ -41,7 +41,7 @@ MODULES = {
 # reports it so the table stays deliberate.
 CATEGORIES = {
     "core": ["Item", "Terminal", "Rectangle", "Border", "Gradient", "GradientStop",
-             "Scrollback", "Qamui", "rgba", "terminalCapabilities", "AnchorLine", "Anchors"],
+             "Scrollback", "Clipboard", "Qamui", "rgba", "terminalCapabilities", "AnchorLine", "Anchors"],
     "layout": ["Row", "Column", "RowLayout", "ColumnLayout", "GridLayout", "Layout",
                "StackLayout", "Repeater", "Loader"],
     "data views": ["ListView", "GridView", "TableView", "TreeView", "ScrollView", "LogView",

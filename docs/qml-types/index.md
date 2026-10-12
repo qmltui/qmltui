@@ -28,6 +28,7 @@
 - [AnchorLine](anchorline.md)
 - [Anchors](anchors.md)
 - [Border](border.md)
+- [Clipboard](clipboard.md)
 - [Gradient](gradient.md)
 - [GradientStop](gradientstop.md)
 - [Item](item.md)

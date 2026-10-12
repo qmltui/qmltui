@@ -59,6 +59,8 @@ qt_add_qml_module(QamuiCore
         ${qamui_platform_sources}
         primitives/TerminalDevice.h
         primitives/TerminalDevice.cpp
+        engine/Clipboard.h
+        engine/Clipboard.cpp
         engine/Clock_p.h
         engine/Clock.cpp
         engine/TerminalEngine.h

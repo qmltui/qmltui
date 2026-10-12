@@ -46,6 +46,10 @@ public:
     // OSC number); otherwise ESC plus ']', '_' or 'P' is an Alt-prefixed key.
     using ReplyCallback = std::function<void(const ControlSequence&)>;
     void setReplyCallback(ReplyCallback cb);
+    static constexpr qsizetype MaxClipboardTextBytes = 1024 * 1024;
+    // Malformed/oversized OSC 52 frames are discarded, never keyboard input.
+    void setClipboardErrorCallback(std::function<void()> cb);
+
 
     InputDecoder();
     ~InputDecoder();
@@ -82,6 +86,8 @@ private:
     bool dispatchKittyKey(const ControlSequence& sequence);
 
     ReplyCallback m_replyCallback;
+    std::function<void()> m_clipboardErrorCallback;
+    size_t m_stringScanOffset = 2;
     int m_discardKind = 0; // 1: CSI/SS3, 2: APC/DCS, 3: OSC
     bool m_discardEscape = false;
     KeyCallback m_keyCallback;

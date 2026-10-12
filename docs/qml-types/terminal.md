@@ -37,7 +37,7 @@ Root element for Qamui terminal applications, managing session lifecycle, screen
 
 | Signal | Description |
 | :--- | :--- |
-| `clipboardCopyRequested(string text)` | Emitted when clipboard content is sent to the terminal. |
+| `clipboardCopyRequested(string text)` | Emitted for every copy request, including when clipboard output is disabled. |
 | `focusedItemChanged()` | Emitted when the currently focused item changes. |
 | `mouseMotionRequestedChanged(bool requested)` | Emitted when items request or release mouse motion tracking. |
 
@@ -59,7 +59,7 @@ Root element for Qamui terminal applications, managing session lifecycle, screen
 | Value | Description |
 | :--- | :--- |
 | `Terminal.Disabled` | Disables terminal clipboard escape sequence integration. |
-| `Terminal.Osc52` | Uses OSC 52 escape sequences to read and write the system clipboard. |
+| `Terminal.Osc52` | Enables OSC 52 clipboard writes and explicit asynchronous reads through [Clipboard](clipboard.md). |
 
 ## Detailed Description
 
@@ -99,3 +99,7 @@ Terminal {
     }
 }
 ```
+
+The [Clipboard singleton](clipboard.md) provides `copy(text)` and Promise-based
+`requestText()` with automatic terminal selection. Normal terminal-initiated
+paste arrives through input handling independently of clipboard queries.

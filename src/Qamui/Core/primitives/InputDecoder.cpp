@@ -15,15 +15,17 @@ enum class ParseResult { Complete, Incomplete, Invalid, Oversized };
 
 bool isFinalByte(unsigned char c);
 
-ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& consumed) {
+ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& consumed, size_t stringScanOffset) {
     const char introducer = bytes[1];
     sequence.kind = introducer == '[' ? Sequence::Csi : introducer == 'O' ? Sequence::Ss3
         : introducer == '_' ? Sequence::Apc : introducer == ']' ? Sequence::Osc : Sequence::Dcs;
     const bool string = sequence.kind >= Sequence::Apc;
-    const size_t limit = string ? 4096 : 64;
+    const bool clipboard = bytes.starts_with("\033]52;");
+    constexpr size_t ClipboardFrameLimit = 4 * ((InputDecoder::MaxClipboardTextBytes + 2) / 3) + 32;
+    const size_t limit = clipboard ? ClipboardFrameLimit : string ? 4096 : 64;
     bool intermediates = false;
     size_t intermediateStart = 0;
-    for (size_t pos = 2; pos < bytes.size(); ++pos) {
+    for (size_t pos = string ? stringScanOffset : 2; pos < bytes.size(); ++pos) {
         const unsigned char c = bytes[pos];
         consumed = pos + 1;
         if (c == 0x18 || c == 0x1a)
@@ -209,6 +211,10 @@ void InputDecoder::setDetailedMouseCallback(DetailedMouseCallback cb) {
 
 void InputDecoder::setReplyCallback(ReplyCallback cb) {
     m_replyCallback = std::move(cb);
+}
+
+void InputDecoder::setClipboardErrorCallback(std::function<void()> cb) {
+    m_clipboardErrorCallback = std::move(cb);
 }
 
 void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
@@ -432,8 +438,19 @@ void InputDecoder::processBuffer() {
             if (framed) {
                 ControlSequence sequence;
                 size_t consumed = 0;
-                const auto result = parseSequence(std::string_view(m_buffer).substr(i), sequence, consumed);
-                if (result == ParseResult::Incomplete) break;
+                const auto bytes = std::string_view(m_buffer).substr(i);
+                const auto result = parseSequence(bytes, sequence, consumed, m_stringScanOffset);
+                if (result == ParseResult::Incomplete) {
+                    // Resume string scanning near the previous end (an ESC may
+                    // still need its following byte). Avoid quadratic large reads.
+                    if (sequence.kind >= ControlSequence::Apc)
+                        m_stringScanOffset = std::max(size_t(2), bytes.size() - 1);
+                    break;
+                }
+                m_stringScanOffset = 2;
+                if (result != ParseResult::Complete && bytes.starts_with("\033]52;")
+                    && m_clipboardErrorCallback)
+                    m_clipboardErrorCallback();
                 i += consumed;
                 if (result == ParseResult::Complete) dispatchSequence(sequence);
                 else if (result == ParseResult::Oversized)

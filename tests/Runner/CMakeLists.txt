@@ -295,6 +295,12 @@ add_qamui_runner_scenario(test_runner_input_extended qamui_runner_fixture
     ARTIFACT_CONTENT "INPUT: line1 line2 tabé世"
 )
 
+add_qamui_runner_scenario(test_runner_clipboard qamui_runner_fixture
+    "${qamui_runner_scenarios}/clipboard.js" 0
+    ARTIFACT "clipboard.txt"
+    ARTIFACT_CONTENT "CLIPBOARD: Unavailable"
+)
+
 # Options objects and scoped locators.
 add_qamui_runner_scenario(test_runner_locators qamui_runner_fixture
     "${qamui_runner_scenarios}/locators.js" 0

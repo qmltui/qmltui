@@ -116,6 +116,14 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   const int escapeTimeout = qEnvironmentVariableIntValue("QAMUI_ESCAPE_TIMEOUT_MS", &escapeValid);
   m_escapeTimer->setInterval(escapeValid && escapeTimeout >= 0 ? escapeTimeout : 50);
   connect(m_escapeTimer, &ClockTimer::timeout, this, [this] { m_inputDecoder.flushPendingEscape(); });
+  m_clipboardTimer = new ClockTimer(this);
+  m_clipboardTimer->setSingleShot(true);
+  connect(m_clipboardTimer, &ClockTimer::timeout, this, [this] {
+      finishClipboardRead({}, QStringLiteral("Timeout"));
+  });
+  m_inputDecoder.setClipboardErrorCallback([this] {
+      finishClipboardRead({}, QStringLiteral("InvalidResponse"));
+  });
   m_inputDecoder.setReplyCallback([this](const InputDecoder::ControlSequence& sequence) {
       handleReply(sequence);
   });
@@ -190,6 +198,7 @@ TerminalEngine::~TerminalEngine() {
 void TerminalEngine::stop() {
   if (m_stopped) return;
   m_stopped = true;
+  cancelClipboardRead();
   flushControlSequences();
   invalidateOutputSession();
   m_paceTimer.stop();
@@ -324,6 +333,35 @@ void TerminalEngine::setMouseReporting(bool) {
 void TerminalEngine::copyToClipboard(const QString& text) {
   if (m_terminalOutputEnabled)
     m_device.write(osc52Sequence(text));
+}
+
+QString TerminalEngine::requestClipboardText(int timeoutMs) {
+  if (m_rootWindow->clipboardMode() == Terminal::ClipboardMode::Disabled)
+    return QStringLiteral("Disabled");
+  const auto* backend = m_device.backend();
+  if (m_stopped || !m_terminalOutputEnabled || !backend
+      || !backend->isInteractive() || !backend->isInputInteractive())
+    return QStringLiteral("Unavailable");
+  if (m_clipboardReadPending) return {};
+  m_clipboardReadPending = true;
+  m_clipboardTimer->start(timeoutMs);
+  if (!m_device.write("\033]52;c;?\a")) {
+    m_clipboardReadPending = false;
+    m_clipboardTimer->stop();
+    return QStringLiteral("Unavailable");
+  }
+  return {};
+}
+
+void TerminalEngine::cancelClipboardRead() {
+  finishClipboardRead({}, QStringLiteral("Cancelled"));
+}
+
+void TerminalEngine::finishClipboardRead(const QString& text, const QString& code) {
+  if (!m_clipboardReadPending) return;
+  m_clipboardReadPending = false;
+  m_clipboardTimer->stop();
+  emit clipboardReadFinished(text, code);
 }
 
 std::string TerminalEngine::osc52Sequence(const QString& text) {
@@ -706,6 +744,7 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
   popKittyKeyboard();        // likewise: the pop has to reach the terminal
   // Settle the flag before outputSessionInvalidated() fires so a slot that
   // enqueues cleanup sees the state its bytes will actually meet.
+  if (!enabled) cancelClipboardRead();
   m_terminalOutputEnabled = enabled;
   invalidateOutputSession();
   if (m_renderer && m_rendererStarted) {
@@ -1034,6 +1073,26 @@ void TerminalEngine::finishQueries() {
 void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) {
     using Sequence = InputDecoder::ControlSequence;
     if (sequence.kind == Sequence::Osc) {
+        if (sequence.payload.startsWith("52;")) {
+            if (!m_clipboardReadPending) return;
+            const auto fields = sequence.payload.sliced(3);
+            const auto separator = fields.indexOf(';');
+            if (separator < 0) {
+                finishClipboardRead({}, QStringLiteral("InvalidResponse"));
+                return;
+            }
+            // The query requests CLIPBOARD only, never PRIMARY or cut buffers.
+            if (fields.first(separator) != QByteArrayView("c")) return;
+            const auto decoded = QByteArray::fromBase64Encoding(
+                fields.sliced(separator + 1).toByteArray(), QByteArray::AbortOnBase64DecodingErrors);
+            if (!decoded || decoded.decoded.size() > InputDecoder::MaxClipboardTextBytes
+                || !decoded.decoded.isValidUtf8()) {
+                finishClipboardRead({}, QStringLiteral("InvalidResponse"));
+                return;
+            }
+            finishClipboardRead(QString::fromUtf8(decoded.decoded), {});
+            return;
+        }
         if (sequence.payload.startsWith("11;")) {
             const Color parsed = parseOsc11Color(sequence.payload);
             if (parsed.isValid())

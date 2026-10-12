@@ -1,4 +1,5 @@
 #include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/engine/Clipboard.h>
 #include <Qamui/Core/engine/TerminalEngine.h>
 #include <Qamui/Core/engine/FrameRenderer.h>
 #include <Qamui/Core/engine/StreamRenderer.h>
@@ -79,6 +80,10 @@ void Terminal::initializeEngine() {
     connect(m_engine, &TerminalEngine::capabilitiesChanged, this, &Terminal::capabilitiesChanged);
     if (m_mode == Mode::Inline) m_engine->setRenderer(new StreamRenderer());
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+    if (auto* qml = qmlEngine(this)) {
+        m_clipboard = qml->singletonInstance<Clipboard*>("Qamui", "Clipboard");
+        if (m_clipboard) m_clipboard->addTerminal(this);
+    }
     emit capabilitiesChanged();
     emit terminalSizeChanged();
     emit widthChanged();
@@ -86,6 +91,7 @@ void Terminal::initializeEngine() {
 }
 
 Terminal::~Terminal() {
+    if (m_clipboard) m_clipboard->removeTerminal(this);
     delete m_engine;
     for (const QMetaObject::Connection& connection : std::as_const(m_mouseMotionRequesters))
         disconnect(connection);
@@ -280,6 +286,7 @@ void Terminal::setMode(Mode mode) {
 void Terminal::setClipboardMode(ClipboardMode mode) {
     if (m_clipboardMode == mode) return;
     m_clipboardMode = mode;
+    if (mode == ClipboardMode::Disabled && m_engine) m_engine->cancelClipboardRead();
     emit clipboardModeChanged();
 }
 

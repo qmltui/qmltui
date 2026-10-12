@@ -13,6 +13,21 @@ Terminal {
     property int tickCount: 0
     property bool ticking: false
 
+    Connections {
+        target: Clipboard
+        function onCopyRequested(text: string): void {
+            root.fixtureStatus = "COPY REQUESTED: " + text
+        }
+    }
+
+    function requestClipboard(): void {
+        Clipboard.requestText().then(function(text) {
+            root.fixtureStatus = "CLIPBOARD: " + text
+        }, function(error) {
+            root.fixtureStatus = "CLIPBOARD: " + error.code
+        })
+    }
+
     // Virtual-clock probes: a repeating QML Timer counter and a Qamui
     // animation, both armed on demand so real-clock scenarios stay still.
     Timer {

@@ -3,21 +3,21 @@ title: Popup
 kind: qml
 import: Qamui.Controls
 since: "0.4"
-inherits: Rectangle
+inherits: Item
 cpp: qamui::Popup
 category: overlays and navigation
-summary: A rectangle drawn above all ordinary items that can trap input, dim the background and restore focus when closed.
+summary: An unpainted item drawn above all ordinary items that can trap input, dim the background and restore focus when closed.
 ---
 
 # Popup QML type
 
-A rectangle drawn above all ordinary items that can trap input, dim the background and restore focus when closed. [More...](#detailed-description)
+An unpainted item drawn above all ordinary items that can trap input, dim the background and restore focus when closed. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
 | **Import Statement** | `import Qamui.Controls` |
 | **Since** | Qamui 0.4 |
-| **Inherits** | [Rectangle](rectangle.md) |
+| **Inherits** | [Item](item.md) |
 
 ## Properties
 
@@ -59,20 +59,28 @@ A rectangle drawn above all ordinary items that can trap input, dim the backgrou
 
 ## Detailed Description
 
-Popup is a [Rectangle](rectangle.md) that starts hidden, with `color`
-`"black"`, and is painted by the [Terminal](terminal.md) after all ordinary
-items regardless of where it sits in the item tree. Visible popups are
-ordered by `z` and then by opening order, so calling `open()` on an already
-visible popup raises it. When a modal popup is open, it and every popup whose
-`parentPopup` chain leads to it are drawn above all other popups. Closing or
-destroying a popup also closes every visible popup that descends from it via
-`owner` or parenting.
+Popup is an [Item](item.md) that starts hidden, has no default background
+fill, and is painted by the [Terminal](terminal.md) after all ordinary
+items regardless of where it sits in the item tree. Because Popup itself
+is unpainted, callers compose a [Rectangle](rectangle.md) child inside it
+when an opaque surface or decorative border is needed, or leave it transparent
+for floating HUD elements or non-rectangular compositions.
+
+Visible popups are ordered by `z` and then by opening order, so calling `open()`
+on an already visible popup raises it. When a modal popup is open, it and every
+popup whose `parentPopup` chain leads to it are drawn above all other popups.
+Closing or destroying a popup also closes every visible popup that descends
+from it via `owner` or parenting.
 
 While a modal popup is open the background is dimmed if `dimBackground` is
 true, mouse events outside it are swallowed, and Tab and Shift+Tab cycle
-focus only among the popup's focusable descendants. Escape is offered first
-to the topmost popup in the modal group; if that popup has
-`Popup.CloseOnEscape` it is rejected, otherwise the key is dispatched to the
+focus only among the popup's focusable descendants. The rectangular bounds of
+the popup define the outside-click boundary: clicks within the popup bounds
+land on the popup (even where unpainted and transparent) and do not trigger
+`CloseOnOutsideClick`, while clicks outside dismiss it.
+
+Escape is offered first to the topmost popup in the modal group; if that popup
+has `Popup.CloseOnEscape` it is rejected, otherwise the key is dispatched to the
 focus chain inside the popup. Without a modal popup, Escape rejects the
 topmost visible popup that has `CloseOnEscape`, and `CloseOnOutsideClick`
 rejects a popup when a press and the following release both land outside its
@@ -89,8 +97,9 @@ nothing is focused. Calling `close()` on a popup that is not
 open does nothing, so it never takes focus from another item. Setting `visible` directly registers or
 unregisters the popup and emits `opened()` or `closed()`, but does not move
 focus. Popup has no implicit size; give it `width` and `height` or anchors.
-[Dialog](dialog.md) is a Popup with a title, message and buttons, and
-[ToolTip](tooltip.md) creates a non-modal Popup internally.
+[Dialog](dialog.md) is a Popup with a title, message and buttons that composes
+an opaque [Rectangle](rectangle.md) background, and [ToolTip](tooltip.md)
+creates a non-modal Popup internally.
 
 ### Example
 
@@ -113,8 +122,13 @@ Terminal {
         width: 40
         height: 7
         modal: true
-        border.style: "double"
-        border.color: "yellow"
+
+        Rectangle {
+            anchors.fill: parent
+            color: "default"
+            border.style: "double"
+            border.color: "yellow"
+        }
 
         Text {
             x: 2; y: 1

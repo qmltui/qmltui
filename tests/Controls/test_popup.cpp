@@ -12,6 +12,7 @@
 
 #include <Qamui/Core/items/Terminal.h>
 #include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/items/Rectangle.h>
 #include <Qamui/Core/items/MouseArea.h>
 #include <Qamui/Core/engine/KeyEvent.h>
 #include <Qamui/Core/engine/MouseEvent.h>
@@ -38,6 +39,9 @@ private slots:
     void testCloseWithoutTakingFocusLeavesFocusAlone();
     void testModalRestoresFocusClearedDuringOpen();
     void testAttachedToolTipFollowsTarget();
+    void testUnpaintedPopupLeavesBackgroundIntact();
+    void testTransparentInteriorClickAndOutsideDismissal();
+    void testNestedOwnershipStackingAndFocusRestoration();
 };
 
 void TestPopup::testPopupRegistration() {
@@ -75,11 +79,17 @@ void TestPopup::testOwnerChangeUpdatesRenderedOrder() {
     modal.setDimBackground(false);
     modal.setWidth(4);
     modal.setHeight(2);
-    modal.setColor(QStringLiteral("#ff0000"));
+    Rectangle modalBg(&modal);
+    modalBg.setWidth(4);
+    modalBg.setHeight(2);
+    modalBg.setColor(QStringLiteral("#ff0000"));
     Popup child(&terminal);
     child.setWidth(4);
     child.setHeight(2);
-    child.setColor(QStringLiteral("#0000ff"));
+    Rectangle childBg(&child);
+    childBg.setWidth(4);
+    childBg.setHeight(2);
+    childBg.setColor(QStringLiteral("#0000ff"));
     modal.open();
     child.open();
     QCOMPARE(terminal.orderedPopups().last(), &modal);
@@ -377,6 +387,143 @@ void TestPopup::testAttachedToolTipFollowsTarget() {
     target->setY(6);
     QCOMPARE(tip->x(), 20);
     QCOMPARE(tip->y(), 7);
+}
+
+void TestPopup::testUnpaintedPopupLeavesBackgroundIntact() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(10, 4));
+    Rectangle bg(&terminal);
+    bg.setWidth(10);
+    bg.setHeight(4);
+    bg.setColor(QStringLiteral("#334455"));
+
+    Popup popup(&terminal);
+    popup.setX(1);
+    popup.setY(1);
+    popup.setWidth(6);
+    popup.setHeight(2);
+    popup.setModal(false);
+    popup.setDimBackground(false);
+    popup.open();
+
+    QVERIFY(QMetaObject::invokeMethod(terminal.engine(), "renderFrame", Qt::DirectConnection));
+    auto frame = terminal.engine()->currentFrame();
+    QVERIFY(frame);
+    // Because popup is unpainted and dimBackground is false, the cells within popup bounds remain unchanged
+    QCOMPARE(frame->cellAt(2, 2).bgColor, 0xff334455u);
+
+    // Composing an opaque surface occludes the background
+    Rectangle childBg(&popup);
+    childBg.setWidth(6);
+    childBg.setHeight(2);
+    childBg.setColor(QStringLiteral("#aabbcc"));
+
+    QVERIFY(QMetaObject::invokeMethod(terminal.engine(), "renderFrame", Qt::DirectConnection));
+    frame = terminal.engine()->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(frame->cellAt(2, 2).bgColor, 0xffaabbccu);
+}
+
+void TestPopup::testTransparentInteriorClickAndOutsideDismissal() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
+
+    MouseArea bgMouseArea(&terminal);
+    bgMouseArea.setX(0);
+    bgMouseArea.setY(0);
+    bgMouseArea.setWidth(80);
+    bgMouseArea.setHeight(24);
+    int bgClicks = 0;
+    connect(&bgMouseArea, &MouseArea::clicked, [&] { ++bgClicks; });
+
+    Popup modal(&terminal);
+    modal.setX(20);
+    modal.setY(5);
+    modal.setWidth(20);
+    modal.setHeight(10);
+    modal.setModal(true);
+    modal.setClosePolicy(Popup::CloseOnOutsideClick);
+
+    MouseArea innerArea(&modal);
+    innerArea.setX(2);
+    innerArea.setY(2);
+    innerArea.setWidth(4);
+    innerArea.setHeight(2);
+    int innerClicks = 0;
+    connect(&innerArea, &MouseArea::clicked, [&] { ++innerClicks; });
+
+    modal.open();
+    QVERIFY(modal.visible());
+
+    TerminalEngine engine(&terminal);
+
+    // 1. Click on transparent interior of modal popup: absolute (30, 10)
+    // Within popup bounds (20..40, 5..15), but outside innerArea (22..26, 7..9).
+    engine.handleMouseInput(0, 30, 10, false);
+    engine.handleMouseInput(0, 30, 10, true);
+
+    QCOMPARE(innerClicks, 0);
+    QCOMPARE(bgClicks, 0);      // Blocked by modal popup!
+    QVERIFY(modal.visible());   // Not dismissed, click was inside popup bounds!
+
+    // 2. Click on child item inside popup: absolute (23, 8)
+    engine.handleMouseInput(0, 23, 8, false);
+    engine.handleMouseInput(0, 23, 8, true);
+
+    QCOMPARE(innerClicks, 1);
+    QCOMPARE(bgClicks, 0);
+    QVERIFY(modal.visible());
+
+    // 3. Click outside popup: absolute (5, 5)
+    engine.handleMouseInput(0, 5, 5, false);
+    engine.handleMouseInput(0, 5, 5, true);
+
+    QCOMPARE(bgClicks, 0);      // Swallowed by modal outside-click dismissal
+    QVERIFY(!modal.visible());  // Dismissed by outside click!
+}
+
+void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+
+    Item bgField(&terminal);
+    bgField.setFocusable(true);
+    terminal.setFocusedItem(&bgField);
+    QCOMPARE(terminal.focusedItem(), &bgField);
+
+    Popup parentPopup(&terminal);
+    parentPopup.setModal(true);
+    Rectangle parentBg(&parentPopup);
+    parentBg.setWidth(20);
+    parentBg.setHeight(8);
+    parentBg.setColor(QStringLiteral("#111111"));
+    Item parentField(&parentPopup);
+    parentField.setFocusable(true);
+    parentPopup.setInitialFocusItem(&parentField);
+
+    Popup childPopup(&terminal);
+    childPopup.setModal(true);
+    childPopup.setOwner(&parentPopup);
+    Rectangle childBg(&childPopup);
+    childBg.setWidth(10);
+    childBg.setHeight(4);
+    childBg.setColor(QStringLiteral("#222222"));
+    Item childField(&childPopup);
+    childField.setFocusable(true);
+    childPopup.setInitialFocusItem(&childField);
+
+    parentPopup.open();
+    QCOMPARE(terminal.focusedItem(), &parentField);
+
+    childPopup.open();
+    QCOMPARE(terminal.focusedItem(), &childField);
+    QCOMPARE(terminal.orderedPopups().last(), &childPopup);
+
+    childPopup.close();
+    QCOMPARE(terminal.focusedItem(), &parentField);
+
+    parentPopup.close();
+    QCOMPARE(terminal.focusedItem(), &bgField);
 }
 
 QTEST_MAIN(TestPopup)

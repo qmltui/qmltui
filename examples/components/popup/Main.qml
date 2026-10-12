@@ -80,11 +80,12 @@ Terminal {
             height: 10
             modal: true
             dimBackground: true
-            color: "#2E2E2E"
 
-            border {
-                style: "double"
-                color: "yellow"
+            Rectangle {
+                anchors.fill: parent
+                color: "#2E2E2E"
+                border.style: "double"
+                border.color: "yellow"
             }
 
             Text {

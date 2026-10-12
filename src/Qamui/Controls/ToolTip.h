@@ -8,7 +8,7 @@
 #include <QPointer>
 namespace qamui { class ClockTimer; }
 
-namespace qamui { class Item; class Terminal; class Popup; class Text; }
+namespace qamui { class Item; class Terminal; class Popup; class Text; class Rectangle; }
 
 namespace qamui::controls {
 
@@ -73,6 +73,7 @@ private:
     QPointer<qamui::Terminal> m_terminal;
     QList<QMetaObject::Connection> m_geometryConnections;
     QPointer<qamui::Popup> m_popup;
+    QPointer<qamui::Rectangle> m_background;
     QPointer<qamui::Text> m_label;
     QString m_text;
     // On the Qamui Clock so delay and timeout are steppable in tests.

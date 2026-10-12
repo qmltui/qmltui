@@ -51,3 +51,18 @@ qamui_add_scenario(
     ROWS 12
     LABELS AgentSmoke
 )
+
+# Popup frames scenario covering transparency, occlusion, nesting, resize, and dialogs.
+add_executable(qamui_popup_frames_fixture ../Runner/main.cpp)
+target_link_libraries(qamui_popup_frames_fixture PRIVATE Qamui::Core Qamui::Controls Qamui::Runner)
+target_compile_definitions(qamui_popup_frames_fixture PRIVATE
+    QAMUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/PopupFramesFixture.qml"
+)
+qamui_add_scenario(
+    NAME test_popup_frames
+    TARGET qamui_popup_frames_fixture
+    SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_popup_frames.js"
+    COLUMNS 50
+    ROWS 16
+    LABELS AgentSmoke
+)

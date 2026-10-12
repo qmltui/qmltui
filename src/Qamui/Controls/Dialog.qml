@@ -4,6 +4,8 @@ import Qamui
 Popup {
     id: control
 
+    readonly property Rectangle background: bg
+
     property rgba textColor: "default"
     property rgba titleColor: textColor
     property string title: ""
@@ -17,11 +19,16 @@ Popup {
     closePolicy: Popup.CloseOnEscape
     implicitWidth: Math.max(32, contentColumn.implicitWidth + 4)
     implicitHeight: contentColumn.implicitHeight + 2
-    border.style: "double"
-    border.color: "default"
-    color: "default"
     initialFocusItem: acceptButton
     anchors.centerIn: parent
+
+    Rectangle {
+        id: bg
+        anchors.fill: parent
+        color: "default"
+        border.style: "double"
+        border.color: "default"
+    }
 
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {

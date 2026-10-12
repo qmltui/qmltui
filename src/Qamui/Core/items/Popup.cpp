@@ -3,15 +3,10 @@
 
 namespace qamui {
 
-Popup::Popup(QObject *parent) : Rectangle(parent) {
+Popup::Popup(QObject *parent) : Item(parent) {
     setItemFlag(ItemFlag::IsPopup);
     // Popups are not focusable by default, but modal popups will trap input.
     setVisible(false);
-    // A popup is an opaque surface: it must hide what it covers. "default"
-    // paints the cells with the terminal's own background, so the popup
-    // occludes while still following the user's theme, where "transparent"
-    // would leave the content behind it showing through.
-    setColor("default");
 }
 
 Popup::~Popup() {

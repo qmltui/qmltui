@@ -1,0 +1,45 @@
+=== POPUP RUNNER FIXTURE HEADER ===
+
+Row 1:╔══════════════════════════════════════════╗
+      ║                                          ║
+Row 2:║ Opaque Composed Content                  ║
+      ║                                          ║
+Row 3:║                                          ║
+      ║                                          ║
+┌─────║                                          ║
+│ Back╚══════════════════════════════════════════╝
+└───────────────────┘
+
+Row 5: Background text line 5 abcdefghijklmnopqrst
+
+Row 6: Another background line for transparency ch
+
+--- styles
+y=0 x=0-34 fg=#00FFFFFF bg=default
+y=2 x=0-5 fg=#808080FF bg=default
+y=2 x=6-49 fg=#FFFF00FF bg=#223344FF
+y=3 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=3 x=7-48 fg=default bg=#223344FF
+y=3 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=4 x=0-5 fg=#808080FF bg=default
+y=4 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=4 x=7-7 fg=#808080FF bg=#223344FF
+y=4 x=8-30 fg=#FFFFFFFF bg=#223344FF
+y=4 x=31-48 fg=#808080FF bg=#223344FF
+y=4 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=5 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=5 x=7-48 fg=default bg=#223344FF
+y=5 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=6 x=0-5 fg=#808080FF bg=default
+y=6 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=6 x=7-48 fg=#808080FF bg=#223344FF
+y=6 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=7 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=7 x=7-48 fg=default bg=#223344FF
+y=7 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=8 x=6-6 fg=#FFFF00FF bg=#223344FF
+y=8 x=7-48 fg=default bg=#223344FF
+y=8 x=49-49 fg=#FFFF00FF bg=#223344FF
+y=9 x=6-49 fg=#FFFF00FF bg=#223344FF
+y=12 x=0-49 fg=#808080FF bg=default
+y=14 x=0-49 fg=#808080FF bg=default

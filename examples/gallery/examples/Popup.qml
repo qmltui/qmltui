@@ -30,10 +30,13 @@ Terminal {
             width: 44
             height: 10
             modal: true
-            color: "#141b24"
-            border.style: "double"
-            border.color: "#a3e635"
             onOpened: popupDemo.opened++
+            Rectangle {
+                anchors.fill: parent
+                color: "#141b24"
+                border.style: "double"
+                border.color: "#a3e635"
+            }
             Text { x: 2; y: 1; text: "Export options"; bold: true; color: "#a3e635" }
             CheckBox { id: includeImages; x: 2; y: 3; text: "Include images"; checked: true }
             CheckBox { x: 2; y: 4; text: "Compress output" }

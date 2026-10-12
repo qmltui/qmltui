@@ -1,0 +1,50 @@
+=== POPUP RUNNER FIXTURE HEADER ===
+
+Row 1: Underneath popup background text sample
+         ╔══════════════════════════════╗
+Row 2: Ba║ Standard Notice              ║LMNOPQRST
+         ║                              ║
+Row 3: Ba║ Default styled surface.      ║123456789
+         ║                              ║
+┌────────║ ╔════╗                       ║
+│ Backgro║ ║ OK ║                       ║
+└────────║ ╚════╝                       ║
+         ╚══════════════════════════════╝
+Row 5: Background text line 5 abcdefghijklmnopqrst
+
+Row 6: Another background line for transparency ch
+
+--- styles
+y=0 x=0-34 fg=#00FFFFFF bg=default dim
+y=0 x=35-49 fg=default bg=default dim
+y=1 x=0-49 fg=default bg=default dim
+y=2 x=0-45 fg=#808080FF bg=default dim
+y=2 x=46-49 fg=default bg=default dim
+y=3 x=0-8 fg=default bg=default dim
+y=3 x=41-49 fg=default bg=default dim
+y=4 x=0-8 fg=#808080FF bg=default dim
+y=4 x=10-10 fg=#808080FF bg=default
+y=4 x=11-25 fg=default bg=default bold
+y=4 x=26-39 fg=#808080FF bg=default
+y=4 x=41-49 fg=#808080FF bg=default dim
+y=5 x=0-8 fg=default bg=default dim
+y=5 x=41-49 fg=default bg=default dim
+y=6 x=0-8 fg=#808080FF bg=default dim
+y=6 x=10-10 fg=#808080FF bg=default
+y=6 x=34-39 fg=#808080FF bg=default
+y=6 x=41-49 fg=#808080FF bg=default dim
+y=7 x=0-8 fg=default bg=default dim
+y=7 x=41-49 fg=default bg=default dim
+y=8 x=0-8 fg=default bg=default dim
+y=8 x=41-49 fg=default bg=default dim
+y=9 x=0-8 fg=default bg=default dim
+y=9 x=13-14 fg=default bg=default bold
+y=9 x=41-49 fg=default bg=default dim
+y=10 x=0-8 fg=default bg=default dim
+y=10 x=41-49 fg=default bg=default dim
+y=11 x=0-8 fg=default bg=default dim
+y=11 x=41-49 fg=default bg=default dim
+y=12 x=0-49 fg=#808080FF bg=default dim
+y=13 x=0-49 fg=default bg=default dim
+y=14 x=0-49 fg=#808080FF bg=default dim
+y=15 x=0-49 fg=default bg=default dim

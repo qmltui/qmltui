@@ -67,7 +67,7 @@ Button {
 | Rectangle and rectangle-based controls | `color`, `border.color` |
 | Button, CheckBox, RadioButton, Switch, Slider | `textColor` |
 | Panel | `titleColor` |
-| Dialog | `textColor`, `titleColor` |
+| Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
 | ProgressBar | `color`, optional gradient/threshold colors |
 | TabBar | `textColor`, `color`, `selectedTextColor`, `selectionColor` (background) |
 | Toast | `textColor`, `color`, `infoColor`, `successColor`, `warningColor`, `errorColor` |

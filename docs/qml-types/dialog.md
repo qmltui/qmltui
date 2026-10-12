@@ -23,6 +23,7 @@ A modal, centred message box with a title, a message and accept and reject butto
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `background` | `Rectangle` |  | Read-only. Holds the background rectangle composed behind the dialog content. Customize `background.color`, `background.border` and `background.gradient`. |
 | `textColor` | `rgba` | `"default"` | Holds the terminal colour of the message text, where `"default"` is the terminal's own foreground colour. |
 | `titleColor` | `rgba` |  | Holds the terminal colour of the bold title line; it follows `textColor` unless set explicitly. |
 | `title` | `string` | `""` | Holds the bold heading drawn on the first content row of the dialog. |
@@ -34,10 +35,12 @@ A modal, centred message box with a title, a message and accept and reject butto
 ## Detailed Description
 
 Dialog is a preconfigured [Popup](popup.md): it is `modal`, dims the
-background, is anchored to the centre of its parent, and has a `"double"`
-border with `color`, `border.color` and `textColor` all set to `"default"`,
-the terminal's own colours. Its `closePolicy` is `Popup.CloseOnEscape` only,
+background, is anchored to the centre of its parent, and composes an opaque
+[Rectangle](rectangle.md) accessible via `background` with a `"double"`
+border and default terminal colors. Its `closePolicy` is `Popup.CloseOnEscape` only,
 so Escape calls `reject()` but clicking outside the dialog does nothing.
+Callers customize the visual surface through `background.color`,
+`background.border`, and `background.gradient`.
 Open it with `open()` and react to `accepted()`, `rejected()` or
 `finished(bool)`, all of which are inherited from Popup and are followed by
 `close()`.

@@ -12,10 +12,14 @@ Popup {
     width: parent ? parent.width : 78
     height: 13
     clip: true
-    color: "#0f172a"
     modal: true
     dimBackground: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnOutsideClick
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#0f172a"
+    }
 
     Column {
         anchors.fill: parent

@@ -1,0 +1,71 @@
+=== POPUP RUNNER FIXTURE HEADER ===
+    ┌────────────────────────────────────────┐
+Row │ Parent Popup Window                    │
+    │                                        │
+Row │       ╔════════════════════════╗       │QRST
+    │       ║ Nested Child Overlay   ║       │
+Row │       ║                        ║       │6789
+    │       ║                        ║       │
+┌───│       ╚════════════════════════╝       │
+│ Ba│                                        │
+└───└────────────────────────────────────────┘
+
+Row 5: Background text line 5 abcdefghijklmnopqrst
+
+Row 6: Another background line for transparency ch
+
+--- styles
+y=0 x=0-34 fg=#00FFFFFF bg=default
+y=1 x=4-45 fg=#00FFFFFF bg=#182430FF
+y=2 x=0-3 fg=#808080FF bg=default
+y=2 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=2 x=5-5 fg=#808080FF bg=#182430FF
+y=2 x=6-24 fg=#00FFFFFF bg=#182430FF
+y=2 x=25-44 fg=#808080FF bg=#182430FF
+y=2 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=3 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=3 x=5-44 fg=default bg=#182430FF
+y=3 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=4 x=0-3 fg=#808080FF bg=default
+y=4 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=4 x=5-11 fg=#808080FF bg=#182430FF
+y=4 x=12-37 fg=#FF00FFFF bg=#301824FF
+y=4 x=38-44 fg=#808080FF bg=#182430FF
+y=4 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=4 x=46-49 fg=#808080FF bg=default
+y=5 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=5 x=5-11 fg=default bg=#182430FF
+y=5 x=12-12 fg=#FF00FFFF bg=#301824FF
+y=5 x=13-13 fg=default bg=#301824FF
+y=5 x=14-33 fg=#FF00FFFF bg=#301824FF
+y=5 x=34-36 fg=default bg=#301824FF
+y=5 x=37-37 fg=#FF00FFFF bg=#301824FF
+y=5 x=38-44 fg=default bg=#182430FF
+y=5 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=6 x=0-3 fg=#808080FF bg=default
+y=6 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=6 x=5-11 fg=#808080FF bg=#182430FF
+y=6 x=12-12 fg=#FF00FFFF bg=#301824FF
+y=6 x=13-36 fg=#808080FF bg=#301824FF
+y=6 x=37-37 fg=#FF00FFFF bg=#301824FF
+y=6 x=38-44 fg=#808080FF bg=#182430FF
+y=6 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=6 x=46-49 fg=#808080FF bg=default
+y=7 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=7 x=5-11 fg=default bg=#182430FF
+y=7 x=12-12 fg=#FF00FFFF bg=#301824FF
+y=7 x=13-36 fg=default bg=#301824FF
+y=7 x=37-37 fg=#FF00FFFF bg=#301824FF
+y=7 x=38-44 fg=default bg=#182430FF
+y=7 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=8 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=8 x=5-11 fg=default bg=#182430FF
+y=8 x=12-37 fg=#FF00FFFF bg=#301824FF
+y=8 x=38-44 fg=default bg=#182430FF
+y=8 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=9 x=4-4 fg=#00FFFFFF bg=#182430FF
+y=9 x=5-44 fg=default bg=#182430FF
+y=9 x=45-45 fg=#00FFFFFF bg=#182430FF
+y=10 x=4-45 fg=#00FFFFFF bg=#182430FF
+y=12 x=0-49 fg=#808080FF bg=default
+y=14 x=0-49 fg=#808080FF bg=default

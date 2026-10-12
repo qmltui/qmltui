@@ -60,7 +60,6 @@ Popup {
     width: parent ? parent.width : 78
     height: 16
     clip: true
-    color: "#0f172a"
     modal: true
     dimBackground: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnOutsideClick
@@ -89,6 +88,11 @@ Popup {
                 }
             }
         }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#0f172a"
     }
 
     Column {

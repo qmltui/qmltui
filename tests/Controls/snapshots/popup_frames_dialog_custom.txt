@@ -1,0 +1,75 @@
+=== POPUP RUNNER FIXTURE HEADER ===
+
+Row 1: Underneath popup background text sample
+        ┌────────────────────────────────┐
+Row 2: B│ Customized Dialog              │MNOPQRST
+        │                                │
+Row 3: B│ Customized background surface. │23456789
+        │                                │
+┌───────│ ╔════╗                         │
+│ Backgr│ ║ OK ║                         │
+└───────│ ╚════╝                         │
+        └────────────────────────────────┘
+Row 5: Background text line 5 abcdefghijklmnopqrst
+
+Row 6: Another background line for transparency ch
+
+--- styles
+y=0 x=0-34 fg=#00FFFFFF bg=default dim
+y=0 x=35-49 fg=default bg=default dim
+y=1 x=0-49 fg=default bg=default dim
+y=2 x=0-45 fg=#808080FF bg=default dim
+y=2 x=46-49 fg=default bg=default dim
+y=3 x=0-7 fg=default bg=default dim
+y=3 x=8-41 fg=#008000FF bg=#1C2B3CFF
+y=3 x=42-49 fg=default bg=default dim
+y=4 x=0-7 fg=#808080FF bg=default dim
+y=4 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=4 x=9-9 fg=#808080FF bg=#1C2B3CFF
+y=4 x=10-26 fg=default bg=#1C2B3CFF bold
+y=4 x=27-40 fg=#808080FF bg=#1C2B3CFF
+y=4 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=4 x=42-49 fg=#808080FF bg=default dim
+y=5 x=0-7 fg=default bg=default dim
+y=5 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=5 x=9-40 fg=default bg=#1C2B3CFF
+y=5 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=5 x=42-49 fg=default bg=default dim
+y=6 x=0-7 fg=#808080FF bg=default dim
+y=6 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=6 x=9-9 fg=#808080FF bg=#1C2B3CFF
+y=6 x=10-39 fg=default bg=#1C2B3CFF
+y=6 x=40-40 fg=#808080FF bg=#1C2B3CFF
+y=6 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=6 x=42-49 fg=#808080FF bg=default dim
+y=7 x=0-7 fg=default bg=default dim
+y=7 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=7 x=9-40 fg=default bg=#1C2B3CFF
+y=7 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=7 x=42-49 fg=default bg=default dim
+y=8 x=0-7 fg=default bg=default dim
+y=8 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=8 x=9-9 fg=default bg=#1C2B3CFF
+y=8 x=16-40 fg=default bg=#1C2B3CFF
+y=8 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=8 x=42-49 fg=default bg=default dim
+y=9 x=0-7 fg=default bg=default dim
+y=9 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=9 x=9-9 fg=default bg=#1C2B3CFF
+y=9 x=12-13 fg=default bg=default bold
+y=9 x=16-40 fg=default bg=#1C2B3CFF
+y=9 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=9 x=42-49 fg=default bg=default dim
+y=10 x=0-7 fg=default bg=default dim
+y=10 x=8-8 fg=#008000FF bg=#1C2B3CFF
+y=10 x=9-9 fg=default bg=#1C2B3CFF
+y=10 x=16-40 fg=default bg=#1C2B3CFF
+y=10 x=41-41 fg=#008000FF bg=#1C2B3CFF
+y=10 x=42-49 fg=default bg=default dim
+y=11 x=0-7 fg=default bg=default dim
+y=11 x=8-41 fg=#008000FF bg=#1C2B3CFF
+y=11 x=42-49 fg=default bg=default dim
+y=12 x=0-49 fg=#808080FF bg=default dim
+y=13 x=0-49 fg=default bg=default dim
+y=14 x=0-49 fg=#808080FF bg=default dim
+y=15 x=0-49 fg=default bg=default dim

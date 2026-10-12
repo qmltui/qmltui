@@ -2,14 +2,14 @@
 
 #include <Qamui/Core/primitives/QamuiExport.h>
 
-#include <Qamui/Core/items/Rectangle.h>
+#include <Qamui/Core/items/Item.h>
 #include <Qamui/Core/engine/InputScope.h>
 #include <QPointer>
 #include <cstdint>
 
 namespace qamui {
 
-class QAMUI_CORE_EXPORT Popup : public Rectangle, public InputScope {
+class QAMUI_CORE_EXPORT Popup : public Item, public InputScope {
     Q_OBJECT
     // Registered as a QML type by Qamui.Controls (see Controls/ForeignTypes.h);
     // the class stays in Core because Terminal manages popups.

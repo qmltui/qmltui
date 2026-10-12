@@ -3,6 +3,7 @@
 #include <Qamui/Core/items/Item.h>
 #include <Qamui/Core/items/Terminal.h>
 #include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/items/Rectangle.h>
 #include <Qamui/Core/items/Text.h>
 #include <Qamui/Core/primitives/UnicodeText.h>
 #include <algorithm>
@@ -62,6 +63,7 @@ void ToolTip::bindTerminal() {
         m_popup->close();
         delete m_popup.data();
         m_popup.clear();
+        m_background.clear();
         m_label.clear();
     }
     if (m_terminal) disconnect(m_terminal, nullptr, this, nullptr);
@@ -159,6 +161,7 @@ void ToolTip::showNow() {
         m_popup->setModal(false);
         m_popup->setDimBackground(false);
         m_popup->setClosePolicy(Popup::NoAutoClose);
+        m_background = new Rectangle(m_popup);
         m_label = new Text(m_popup);
         m_label->setBold(true);
         m_label->setX(1);
@@ -185,6 +188,10 @@ void ToolTip::reposition() {
     m_popup->setWidth(textWidth + 2);
     m_popup->setHeight(lines);
     m_popup->setZ(m_z);
+    if (m_background) {
+        m_background->setWidth(m_popup->width());
+        m_background->setHeight(m_popup->height());
+    }
     const QPoint targetPos = m_target->absolutePosition();
     int x = std::clamp(targetPos.x(), 0, std::max(0, m_terminal->width() - m_popup->width()));
     int y = targetPos.y() + m_target->height();
@@ -195,7 +202,8 @@ void ToolTip::reposition() {
 
 void ToolTip::updateAppearance() {
     if (!m_target || !m_popup || !m_label) return;
-    m_popup->setColor(m_color);
+    if (m_background)
+        m_background->setColor(m_color);
     m_label->setColor(m_textColor);
 }
 

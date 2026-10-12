@@ -55,13 +55,15 @@ in whether the cell is painted at all:
 
 | Value | Painted? | Use it for |
 |---|---|---|
-| `"default"` | Yes | A surface that should follow the terminal's own color *and* hide what it covers, such as a popup or a dialog. |
+| `"default"` | Yes | A surface that should follow the terminal's own color *and* hide what it covers, such as a dialog or an opaque popup background. |
 | `"transparent"` | No | Letting whatever is behind show through. This is a `Rectangle`'s color when none is set. |
 
 A `Rectangle` whose color is `"default"` fills its area, so it occludes the
 content beneath it while the terminal still chooses the shade. One whose color
-is `"transparent"` writes nothing at all. `Popup` uses `"default"`, which is
-why a popup follows the terminal background instead of a hard-coded color.
+is `"transparent"` writes nothing at all. `Dialog` uses a background `Rectangle`
+with `"default"`, which is why a dialog follows the terminal background instead
+of a hard-coded color. `Popup` itself is an unpainted `Item` container; compose a
+`Rectangle` with `"default"` inside it when occlusion is needed.
 
 `Color::isTransparent()` distinguishes the two. Transparency is an instruction
 to the painter rather than a color, so it has no representation in a cell:

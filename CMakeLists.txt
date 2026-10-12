@@ -97,6 +97,8 @@ if(QAMUI_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+include(cmake/QamuiDoc.cmake)
+
 configure_package_config_file(
     cmake/QamuiConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/QamuiConfig.cmake"

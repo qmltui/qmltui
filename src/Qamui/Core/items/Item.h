@@ -49,6 +49,19 @@ class Keys;
 class Terminal;
 class AnchorLine;
 
+/**
+ * @brief Base visual and layout item for all Qamui terminal elements.
+ *
+ * Equivalent to QQuickItem in Qt Quick. Provides integer cell geometry (x, y,
+ * width, height), stacking order (z), keyboard focus management (focus,
+ * activeFocus, focusable), declarative states and transitions, anchors,
+ * and the virtual rendering contract (paint, paintOverlay).
+ *
+ * Developers subclass Item in C++ to implement custom terminal components.
+ *
+ * @thread_safety Main/engine thread only. Subclasses must run on the thread owning the Qamui engine.
+ * @see Rectangle, Text, TableView, Terminal
+ */
 class QAMUI_CORE_EXPORT Item : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(Item)
@@ -63,43 +76,74 @@ public:
   };
   Q_DECLARE_FLAGS(DirtyFlags, DirtyFlag)
 
+  /// @brief Horizontal position relative to parent in terminal character columns.
   Q_PROPERTY(int x READ x WRITE setX NOTIFY xChanged)
+  /// @brief Vertical position relative to parent in terminal character rows.
   Q_PROPERTY(int y READ y WRITE setY NOTIFY yChanged)
+  /// @brief Stacking order relative to siblings. Items with higher z render on top.
   Q_PROPERTY(qreal z READ z WRITE setZ NOTIFY zChanged)
+  /// @brief Width of the item in integer terminal cell columns. Defaults to implicitWidth.
   Q_PROPERTY(int width READ width WRITE setWidth NOTIFY widthChanged)
+  /// @brief Height of the item in integer terminal cell rows. Defaults to implicitHeight.
   Q_PROPERTY(int height READ height WRITE setHeight NOTIFY heightChanged)
+  /// @brief Natural content width in columns when width is unassigned.
   Q_PROPERTY(int implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY
                  implicitWidthChanged)
+  /// @brief Natural content height in rows when height is unassigned.
   Q_PROPERTY(int implicitHeight READ implicitHeight WRITE setImplicitHeight
                  NOTIFY implicitHeightChanged)
+  /// @brief Whether the item is rendered. Invisible items do not receive focus or paint.
   Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
+  /// @brief Whether the item is interactive. Disabled items ignore mouse and key input.
   Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
+  /// @brief Whether this item requests keyboard focus within its focus scope.
   Q_PROPERTY(bool focus READ focus WRITE setFocus NOTIFY focusChanged)
+  /// @brief Read-only. True if this item currently holds active keyboard input focus.
   Q_PROPERTY(bool activeFocus READ activeFocus NOTIFY activeFocusChanged)
+  /// @brief Whether this item participates in Tab and Shift+Tab focus navigation cycling.
   Q_PROPERTY(
       bool focusable READ focusable WRITE setFocusable NOTIFY focusableChanged)
+  /// @brief Visual parent item. Setting this updates the visual scene hierarchy.
   Q_PROPERTY(qamui::Item *parent READ parentItem WRITE setParentItem NOTIFY parentChanged)
+  /// @brief Anchoring specification for alignment relative to sibling or parent edges.
   Q_PROPERTY(qamui::Anchors *anchors READ anchors CONSTANT)
+  /// @brief Left edge anchor line.
   Q_PROPERTY(qamui::AnchorLine* left READ left CONSTANT)
+  /// @brief Right edge anchor line.
   Q_PROPERTY(qamui::AnchorLine* right READ right CONSTANT)
+  /// @brief Top edge anchor line.
   Q_PROPERTY(qamui::AnchorLine* top READ top CONSTANT)
+  /// @brief Bottom edge anchor line.
   Q_PROPERTY(qamui::AnchorLine* bottom READ bottom CONSTANT)
+  /// @brief Horizontal center anchor line.
   Q_PROPERTY(qamui::AnchorLine* horizontalCenter READ horizontalCenter CONSTANT)
+  /// @brief Vertical center anchor line.
   Q_PROPERTY(qamui::AnchorLine* verticalCenter READ verticalCenter CONSTANT)
+  /// @brief Whether visual children are clipped to this item's bounding box.
   Q_PROPERTY(bool clip READ clip WRITE setClip NOTIFY clipChanged)
+  /// @brief Uniform padding in cells inside this item's boundary.
   Q_PROPERTY(int padding READ padding WRITE setPadding NOTIFY paddingChanged)
+  /// @brief Left padding in cell columns.
   Q_PROPERTY(int leftPadding READ leftPadding WRITE setLeftPadding NOTIFY
                  leftPaddingChanged)
+  /// @brief Right padding in cell columns.
   Q_PROPERTY(int rightPadding READ rightPadding WRITE setRightPadding NOTIFY
                  rightPaddingChanged)
+  /// @brief Top padding in cell rows.
   Q_PROPERTY(int topPadding READ topPadding WRITE setTopPadding NOTIFY
                  topPaddingChanged)
+  /// @brief Bottom padding in cell rows.
   Q_PROPERTY(int bottomPadding READ bottomPadding WRITE setBottomPadding NOTIFY
                  bottomPaddingChanged)
+  /// @brief Default property containing visual children and non-visual data objects.
   Q_PROPERTY(QQmlListProperty<QObject> data READ data)
+  /// @brief Visual child items of this item.
   Q_PROPERTY(QQmlListProperty<qamui::Item> children READ childrenProperty NOTIFY childrenChanged)
+  /// @brief List of declarative states defined on this item.
   Q_PROPERTY(QQmlListProperty<qamui::State> states READ states)
+  /// @brief List of declarative transitions between states.
   Q_PROPERTY(QQmlListProperty<qamui::Transition> transitions READ transitions)
+  /// @brief Current state name of the item. Assigning transitions to that state.
   Q_PROPERTY(QString state READ state WRITE setState NOTIFY stateChanged)
   Q_CLASSINFO("DefaultProperty", "data")
 
@@ -280,13 +324,72 @@ protected:
   // emitting unconditionally.
   void notifyImplicitSizeIfChanged();
 
+  /**
+   * @brief Recomputes geometry or child item arrangements.
+   *
+   * Called during layout passes before rendering when LayoutDirty is set.
+   * Container subclasses (Row, Column, Grid) override this to position children.
+   */
   virtual void updateLayout();
+
+  /**
+   * @brief Paints the item into the terminal text grid buffer.
+   *
+   * Overridden by visual subclasses (such as Rectangle, Text, Canvas) to write
+   * cells, glyphs, and styling into @p buffer during the frame commit phase.
+   *
+   * ### Subclassing Contract & Invariants
+   * - **Coordinate System**: @p absX and @p absY represent the item's origin in
+   *   absolute buffer grid columns and rows (0-indexed integer cell geometry).
+   *   Local coordinate (0, 0) corresponds to (@p absX, @p absY).
+   * - **Const Correctness**: This method is `const`. It must not mutate item state,
+   *   recompute layouts, or emit signals. State changes must happen in property
+   *   setters, which call update() to request a future paint pass.
+   * - **Clipping**: Drawing must stay within @p clipRect. Writing outside this rect
+   *   will corrupt adjacent terminal regions or cause rendering artifacts.
+   *   Helper methods on @ref TextGridBuffer automatically clip to this boundary.
+   * - **Performance**: Never perform heap allocations, string formatting, or
+   *   Unicode width calculations inside paint(). Pre-compute string caches and
+   *   glyph widths in property setters.
+   *
+   * @param buffer   Double-buffered text grid representing the terminal screen.
+   * @param absX     Absolute horizontal grid column of this item's left edge.
+   * @param absY     Absolute vertical grid row of this item's top edge.
+   * @param clipRect Visible bounding box in absolute buffer coordinates.
+   *
+   * @thread_safety Main/engine thread only. Not thread-safe.
+   * @see paintOverlay(), update(), TextGridBuffer
+   */
   virtual void paint(TextGridBuffer &buffer, int absX, int absY,
                      const ClipRect &clipRect) const;
+
+  /**
+   * @brief Paints an overlay pass above all sibling items and child subtrees.
+   *
+   * Called after the standard paint() traversal of all items has completed.
+   * Use this for elements that must visually float over neighboring items
+   * without affecting layout (e.g., focus rings, tooltips, dropdown popups).
+   *
+   * Follows the same const, clipping, and performance rules as paint().
+   *
+   * @param buffer   Double-buffered text grid representing the terminal screen.
+   * @param absX     Absolute horizontal grid column of this item's left edge.
+   * @param absY     Absolute vertical grid row of this item's top edge.
+   * @param clipRect Visible bounding box in absolute buffer coordinates.
+   *
+   * @see paint(), TextGridBuffer
+   */
   virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
                             const ClipRect &clipRect) const;
+
+  /**
+   * @brief Computes the clipping rectangle applied to this item's children.
+   *
+   * If clip is true, returns the intersection of @p clipRect with this item's
+   * bounding box. Otherwise, returns @p clipRect unchanged.
+   */
   virtual ClipRect clipRectForChildren(int absX, int absY,
-                                      const ClipRect &clipRect) const;
+                                       const ClipRect &clipRect) const;
 
   int m_x = 0;
   int m_y = 0;

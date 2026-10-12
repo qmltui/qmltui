@@ -16,19 +16,47 @@ class TerminalEngine;
 class Clipboard;
 class Popup;
 
+/**
+ * @brief Root visual item and window manager for Qamui terminal applications.
+ *
+ * Terminal establishes the top-level screen container, tracks terminal size
+ * and resize events (SIGWINCH / console buffer events), routes input events
+ * to focused items, and interfaces with the underlying TerminalBackend.
+ *
+ * ### Modes
+ * - **FullScreen**: Takes over the terminal buffer (alternate screen buffer smcup/rmcup),
+ *   clears the screen, and manages full window redrawing.
+ * - **Inline**: Emits stream output directly into the existing terminal scrollback
+ *   below the shell prompt without clearing previous history.
+ *
+ * Applications should place central keyboard handling (such as Quit on Escape/Q)
+ * on the root Terminal item.
+ *
+ * @thread_safety Main/engine thread only.
+ * @see Item, TerminalEngine, TerminalBackend
+ */
 class QAMUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
   Q_OBJECT
   QML_ELEMENT
   Q_INTERFACES(QQmlParserStatus)
 
+  /// @brief Queryable host terminal capabilities (color depth, mouse reporting, Unicode).
   Q_PROPERTY(qamui::TerminalCapabilities capabilities READ capabilities NOTIFY capabilitiesChanged)
+  /// @brief Window title set via VT OSC 2 / OSC 0 escape sequences.
   Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
+  /// @brief Background color for the terminal window matrix. Defaults to "default".
   Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
+  /// @brief Display mode: FullScreen (alternate screen) or Inline (scrollback stream).
   Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged)
+  /// @brief Clipboard synchronization mode (Disabled or Osc52 ANSI escape writes).
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
+  /// @brief Whether mouse tracking escapes (SGR 1006 / 1000) are enabled on the host terminal.
   Q_PROPERTY(bool mouseReporting READ mouseReporting WRITE setMouseReporting NOTIFY mouseReportingChanged)
+  /// @brief Currently hovered Item under the mouse cursor, or nullptr.
   Q_PROPERTY(qamui::Item* hoveredItem READ hoveredItem NOTIFY hoveredItemChanged)
+  /// @brief Total width of the host terminal screen in character columns.
   Q_PROPERTY(int terminalWidth READ terminalWidth NOTIFY terminalSizeChanged FINAL)
+  /// @brief Total height of the host terminal screen in character rows.
   Q_PROPERTY(int terminalHeight READ terminalHeight NOTIFY terminalSizeChanged FINAL)
 
 public:

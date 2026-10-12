@@ -15,22 +15,46 @@ struct AnsiEncodeOptions {
     int eraseMinimumCells = 4;      // only when at least this many blanks remain
 };
 
+/**
+ * @brief Double-buffered 2D character grid representing the terminal matrix.
+ *
+ * TextGridBuffer holds an array of @ref Cell elements indexed by (column, row).
+ * Visual items paint into a TextGridBuffer during frame commit. The terminal
+ * engine compares the front and back buffers via @ref diff() to produce minimal
+ * VT/ANSI escape sequences that update only modified cells.
+ *
+ * Supports full-width Unicode characters, East Asian ambiguous width, grapheme
+ * clustering, and 24-bit TrueColor/ANSI 256 color mapping.
+ *
+ * @thread_safety Not thread-safe. Manipulated on the Qamui engine render thread.
+ * @see Cell, Color, TextAttribute
+ */
 class TextGridBuffer {
 public:
     TextGridBuffer();
 
+    /// @brief Resizes buffer to given columns and rows, clearing contents. Returns true if size changed.
     bool resize(int width, int height);
+    /// @brief Resets all cells to blank spaces with default background and foreground.
     void clear();
+    /// @brief Swaps contents with another buffer in O(1) time without copying cell vectors.
     void swap(TextGridBuffer& other) noexcept;
 
+    /// @brief Width of the buffer in character columns.
     int width() const { return m_width; }
+    /// @brief Height of the buffer in character rows.
     int height() const { return m_height; }
 
+    /// @brief Returns true if (x, y) column/row coordinates are within bounds [0, width) x [0, height).
     bool contains(int x, int y) const;
+    /// @brief Returns pointer to cell at (x, y), or nullptr if out of bounds.
     Cell *tryCellAt(int x, int y);
+    /// @brief Const overload of tryCellAt(). Returns nullptr if out of bounds.
     const Cell *tryCellAt(int x, int y) const;
 
+    /// @brief Returns reference to cell at (x, y). Undefined behavior if out of bounds.
     Cell& cellAt(int x, int y);
+    /// @brief Const overload of cellAt(). Undefined behavior if out of bounds.
     const Cell& cellAt(int x, int y) const;
 
     // Writes one already-segmented grapheme cluster of the given display width
@@ -94,19 +118,31 @@ public:
         fillRect(x, y, width, height, character, fgColor.argb32(), bgColor.argb32());
     }
 
-    // Generates ANSI escape sequences using absolute cursor positioning that
-    // turn this buffer's contents into nextBuffer's. The std::string overloads
-    // append to a caller-owned string so the renderer can reuse its allocation.
+    /**
+     * @brief Generates minimal VT/ANSI escape sequences to update a terminal
+     * from this buffer's state to @p nextBuffer's state.
+     *
+     * Uses absolute cursor positioning. Appends to caller-owned string in the
+     * second overload to avoid heap allocations across frames.
+     */
     std::string diff(const TextGridBuffer& nextBuffer) const;
     void diff(const TextGridBuffer& nextBuffer, std::string& out,
               const AnsiEncodeOptions& options = {}) const;
 
-    // Same with relative cursor movements from the region's top-left corner.
+    /**
+     * @brief Computes relative ANSI cursor diff from top-left corner.
+     *
+     * Used for inline stream rendering where the cursor origin is relative.
+     */
     std::string diffRelative(const TextGridBuffer& nextBuffer) const;
     void diffRelative(const TextGridBuffer& nextBuffer, std::string& out,
                       const AnsiEncodeOptions& options = {}) const;
 
-    // Converts the buffer linearly to an ANSI string with newlines.
+    /**
+     * @brief Formats the entire buffer as a complete ANSI text string with newlines.
+     *
+     * Suitable for full-screen flushes, headless snapshots, or terminal dump logging.
+     */
     std::string toAnsiString() const;
     void toAnsiString(std::string& out) const;
 

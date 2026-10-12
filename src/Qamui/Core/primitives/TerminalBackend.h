@@ -51,57 +51,83 @@ public:
     static const Factory& factory();
 
     // Mode ----------------------------------------------------------------
+    /**
+     * @brief Configures the terminal device in raw mode (disabling echo and canonical input).
+     * @return True on success, false on platform error.
+     */
     virtual bool enterRawMode() = 0;
+
+    /**
+     * @brief Restores the terminal device to its original cooked mode.
+     * @return True on success, false on error.
+     */
     virtual bool leaveRawMode() = 0;
-    // True when the terminal parser must be told the byte stream is UTF-8
-    // (ESC % G) right after entering raw mode.
+
+    /// @brief True when the terminal parser must be told the stream is UTF-8 (ESC % G) right after raw mode.
     virtual bool needsUtf8Designation() const { return false; }
-    // The engine has pushed a kitty keyboard mode on the current screen. A
-    // backend that restores the terminal out of band (POSIX signal handlers)
-    // must pop it before leaving the screen; everyone else can ignore this.
+
+    /// @brief Informs the backend whether kitty keyboard protocol is currently active.
     virtual void setKeyboardProtocolActive(bool) {}
 
     // Output --------------------------------------------------------------
-    // Writes as much of [data + offset, data + size) as the terminal accepts
-    // right now and advances offset. WouldBlock is only possible after
-    // setNonBlockingOutput(true).
+    /**
+     * @brief Writes up to @p size bytes from @p data starting at @p offset.
+     * @param data   Byte buffer to write.
+     * @param size   Total byte length of @p data.
+     * @param offset Current read offset into @p data (advanced on successful writes).
+     * @return WriteStatus::Done, WouldBlock, or Error.
+     */
     virtual WriteStatus writeSome(const char* data, size_t size, size_t& offset) = 0;
-    // Delivers everything in `pending`, erasing delivered bytes, waiting for
-    // the terminal as needed but never past timeoutMs. False on error/timeout.
+
+    /**
+     * @brief Writes all pending bytes, waiting up to @p timeoutMs.
+     * @param pending String containing pending bytes (erased as bytes are written).
+     * @param timeoutMs Timeout in milliseconds (-1 for indefinite).
+     * @return True if all bytes were written before timeout.
+     */
     virtual bool writeAll(std::string& pending, int timeoutMs) = 0;
-    // Whether output can be made non-blocking and drained from the event loop.
+
+    /// @brief Whether output channel supports non-blocking writes and event loop notifications.
     virtual bool supportsAsyncOutput() const = 0;
-    // Switches the output channel between blocking and non-blocking. Disabling
-    // when already blocking succeeds. Returns false when unsupported or on error.
+
+    /// @brief Switches the output channel between blocking and non-blocking modes.
     virtual bool setNonBlockingOutput(bool enabled) = 0;
-    // Enables or disables writable() notifications for a non-blocking channel.
+
+    /// @brief Enables or disables writable() signal notifications.
     virtual void setWritableNotifications(bool enabled) = 0;
 
     // Geometry and identity ----------------------------------------------
-    // Terminal size in cells, or an invalid QSize when unknown.
+    /// @brief Returns terminal window geometry in character cells (width, height).
     virtual QSize size() const = 0;
-    // True when output goes to a real terminal rather than a pipe or file.
+
+    /// @brief True when stdout is connected to an interactive TTY rather than a pipe or file.
     virtual bool isInteractive() const = 0;
-    // Input side of the same question: replies to terminal queries arrive on
-    // the input channel, so queries are only worth sending when both ends are
-    // the terminal. Defaults to the output answer.
+
+    /// @brief True when stdin is connected to an interactive terminal device.
     virtual bool isInputInteractive() const { return isInteractive(); }
 
     // Input ---------------------------------------------------------------
-    // Begins delivering inputReceived() and resized(). Idempotent.
+    /// @brief Starts monitoring input descriptor for incoming bytes and resize signals.
     virtual void startInput() = 0;
+
+    /// @brief Stops monitoring input descriptor.
     virtual void stopInput() = 0;
 
 signals:
-    // The non-blocking output channel can accept more bytes.
+    /// @brief Emitted when a non-blocking output channel is ready to accept more bytes.
     void writable();
-    // Raw VT bytes read from the terminal.
+
+    /// @brief Emitted when raw VT bytes are read from the terminal input stream.
     void inputReceived(const QByteArray& bytes);
-    // The terminal geometry changed; call size().
+
+    /// @brief Emitted when terminal window dimensions change (e.g., SIGWINCH).
     void resized();
-    // The process continued after a job-control stop. The backend has already
-    // re-entered raw mode; the screen content and every terminal mode the
-    // engine enabled are unknown and must be re-established and repainted.
+
+    /**
+     * @brief Emitted when process continues after a SIGCONT job-control pause.
+     *
+     * Screen state and terminal modes are invalid and must be re-rendered.
+     */
     void resumed();
 };
 

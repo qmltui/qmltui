@@ -16,21 +16,46 @@
 
 namespace qamui {
 
+/**
+ * @brief Terminal text rendering element with Unicode formatting and alignment.
+ *
+ * Text renders a single-line or styled string into character cells. Supports
+ * ANSI escape parsing, rich text spans, horizontal and vertical alignments,
+ * bold/dim/italic/underline/reverse video attributes, and color gradients.
+ *
+ * Automatically measures implicit width and height based on string character
+ * length and East Asian full-width Unicode characters.
+ *
+ * @thread_safety Main/engine thread only.
+ * @see Paragraph, Span, Item
+ */
 class QAMUI_CORE_EXPORT Text : public Item {
     Q_OBJECT
     QML_ELEMENT
 
+    /// @brief Formatted text spans with individual colors and attributes.
     Q_PROPERTY(QList<qamui::Span> spans READ spans WRITE setSpans NOTIFY spansChanged)
+    /// @brief Plain or formatted text content to display.
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
+    /// @brief Text foreground color. Defaults to "default" (host terminal foreground).
     Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    /// @brief Whether text is rendered with the bold / bright attribute.
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
+    /// @brief Whether text is rendered with dim / faint attribute.
     Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
+    /// @brief Whether text is rendered in italics (requires terminal emulator support).
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
+    /// @brief Whether text is rendered with an underline.
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
+    /// @brief Whether text is rendered in reverse video (swapped foreground/background).
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
+    /// @brief Horizontal alignment: Text.AlignLeft, Text.AlignRight, Text.AlignHCenter.
     Q_PROPERTY(int horizontalAlignment READ horizontalAlignment WRITE setHorizontalAlignment NOTIFY horizontalAlignmentChanged)
+    /// @brief Vertical alignment: Text.AlignTop, Text.AlignBottom, Text.AlignVCenter.
     Q_PROPERTY(int verticalAlignment READ verticalAlignment WRITE setVerticalAlignment NOTIFY verticalAlignmentChanged)
+    /// @brief Text parsing format (PlainText, RichText, AnsiText, AutoText).
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
+    /// @brief Optional color gradient applied across the characters.
     Q_PROPERTY(qamui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
 
 public:

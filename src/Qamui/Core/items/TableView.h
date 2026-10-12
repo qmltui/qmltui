@@ -18,41 +18,72 @@
 
 namespace qamui {
 
+/**
+ * @brief High-performance two-dimensional tabular data view with virtualized row rendering.
+ *
+ * TableView renders tabular data backed by a QAbstractItemModel, QVariantList of maps,
+ * or JavaScript arrays. Handles column headers, row selection, keyboard navigation,
+ * custom column width providers, cell formatting functions, alternating row backgrounds,
+ * and standard Qt model roles (Qt::DisplayRole, Qt::TextAlignmentRole, Qt::ForegroundRole).
+ *
+ * @thread_safety Main/engine thread only.
+ * @see TreeView, ListView, Item
+ */
 class QAMUI_CORE_EXPORT TableView : public Item {
     Q_OBJECT
     QML_ELEMENT
 
+    /// @brief List of column descriptors defining title, role/key, width, and alignment.
     Q_PROPERTY(QVariantList columns READ columns WRITE setColumns NOTIFY columnsChanged)
+    /// @brief Data model (QAbstractItemModel*, list of maps, or array of objects).
     Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
+    /// @brief Zero-indexed index of the currently selected row (-1 for no selection).
     Q_PROPERTY(int selectedRow READ selectedRow WRITE setSelectedRow NOTIFY selectedRowChanged)
+    /// @brief Alias for selectedRow for consistency with Qt item views.
     Q_PROPERTY(int currentRow READ selectedRow NOTIFY selectedRowChanged)
+    /// @brief Zero-indexed index of the active column.
     Q_PROPERTY(int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
+    /// @brief Whether alternating rows use alternatingRowBackgroundColor.
     Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY alternatingRowsChanged)
+    /// @brief Whether the rightmost column expands to fill remaining table width.
     Q_PROPERTY(bool stretchLastColumn READ stretchLastColumn WRITE setStretchLastColumn NOTIFY stretchLastColumnChanged)
 
+    /// @brief Foreground text color for header row cells. Defaults to "default".
     Q_PROPERTY(qamui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
+    /// @brief Background color for header row cells. Defaults to "default".
     Q_PROPERTY(qamui::Color headerBackgroundColor READ headerBackgroundColor WRITE setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
+    /// @brief Text color applied to cells on the selected row.
     Q_PROPERTY(qamui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    // Keep the model's own foreground and background on the selected row,
-    // letting the selection show through the background alone. A table whose
-    // cells carry meaning in their colour -- a diff, a heat map, a byte that
-    // just changed -- otherwise loses exactly the row being inspected.
+    /// @brief Whether model cell colors are preserved even when the row is selected.
     Q_PROPERTY(bool selectionKeepsCellColors READ selectionKeepsCellColors
                WRITE setSelectionKeepsCellColors NOTIFY selectionKeepsCellColorsChanged)
+    /// @brief Background fill color for the selected row.
     Q_PROPERTY(qamui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
+    /// @brief Default text color for body rows.
     Q_PROPERTY(qamui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
+    /// @brief Default background fill color for body rows.
     Q_PROPERTY(qamui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
+    /// @brief Background color used on alternate rows when alternatingRows is true.
     Q_PROPERTY(qamui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
+    /// @brief Color used to draw grid line characters.
     Q_PROPERTY(qamui::Color gridColor READ gridColor WRITE setGridColor NOTIFY gridColorChanged)
 
+    /// @brief Whether vertical grid lines between columns are drawn.
     Q_PROPERTY(bool showColumnGrid READ showColumnGrid WRITE setShowColumnGrid NOTIFY showColumnGridChanged)
+    /// @brief Whether horizontal grid lines between rows are drawn.
     Q_PROPERTY(bool showRowGrid READ showRowGrid WRITE setShowRowGrid NOTIFY showRowGridChanged)
+    /// @brief Whether an outer border box is drawn around the table perimeter.
     Q_PROPERTY(bool showOuterBorder READ showOuterBorder WRITE setShowOuterBorder NOTIFY showOuterBorderChanged)
+    /// @brief Border style for grid lines ("single", "double", "heavy", "rounded").
     Q_PROPERTY(QString gridStyle READ gridStyle WRITE setGridStyle NOTIFY gridStyleChanged)
 
+    /// @brief Optional JS function (columnIndex) => width in columns.
     Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider NOTIFY columnWidthProviderChanged)
+    /// @brief Optional JS formatting callback (value, row, col) => formatted string.
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
+    /// @brief Optional custom QML delegate component for rendering cells.
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
+    /// @brief Optional custom QML delegate component for rendering entire rows.
     Q_PROPERTY(QQmlComponent* rowDelegate READ rowDelegate WRITE setRowDelegate NOTIFY rowDelegateChanged)
 
 public:

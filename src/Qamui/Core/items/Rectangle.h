@@ -9,12 +9,24 @@
 
 namespace qamui {
 
+/**
+ * @brief Filled or bordered rectangular terminal area with optional gradient.
+ *
+ * Renders a rectangular region with a fill color or vertical/horizontal gradient,
+ * and an optional outer border drawn with Unicode box-drawing characters.
+ *
+ * @thread_safety Main/engine thread only.
+ * @see Border, Gradient, Item
+ */
 class QAMUI_CORE_EXPORT Rectangle : public Item {
     Q_OBJECT
     QML_ELEMENT
 
+    /// @brief Fill color of the rectangle. Defaults to "transparent".
     Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    /// @brief Attached border configuration (style: "single", "double", "rounded", "heavy", "none", color).
     Q_PROPERTY(qamui::Border* border READ border CONSTANT)
+    /// @brief Optional gradient fill applied across the interior.
     Q_PROPERTY(qamui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
 
 public:

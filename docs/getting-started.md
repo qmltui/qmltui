@@ -91,4 +91,9 @@ The installed QML modules are:
 - `Qamui.TerminalHost` when built with `QAMUI_ENABLE_TERMINAL_HOST=ON`
 
 
-Continue with the [first tutorial](tutorials/01-first-terminal.md).
+## Next Steps
+
+- Configure your development environment with the [IDE setup guide](topics/ide-setup.md).
+- Coming from Qt Quick? Read [Qamui for Qt Quick developers](topics/qt-quick-to-qamui.md).
+- Coming from Ratatui, Bubble Tea, or Textual? Read [Qamui for TUI developers](topics/tui-comparison.md).
+- Follow the hands-on [first tutorial](tutorials/01-first-terminal.md).

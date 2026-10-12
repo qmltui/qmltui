@@ -240,6 +240,10 @@ public:
                                const QString& button = QStringLiteral("left"),
                                const QStringList& modifiers = {});
 
+    /// Moves the mouse to the center of a rendered text match with no button held.
+    Q_INVOKABLE void hoverText(const QString& text, int occurrence = 0,
+                               const QStringList& modifiers = {});
+
     /// Sends a mouse click at (x, y) with optional button ("left", "middle", "right") and modifiers.
     Q_INVOKABLE void click(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 

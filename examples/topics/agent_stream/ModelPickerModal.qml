@@ -120,8 +120,30 @@ Popup {
             }
 
             Text {
-                text: " · [1-4/Enter] select · [Esc] close"
+                text: " · [1-4/Enter] select · "
                 color: theme.muted
+            }
+
+            Rectangle {
+                width: closeModelBtn.implicitWidth + 2
+                height: 1
+                color: closeModelMouse.containsMouse ? "#1e293b" : "transparent"
+
+                Text {
+                    id: closeModelBtn
+                    anchors.centerIn: parent
+                    text: "[Esc] close"
+                    color: closeModelMouse.containsMouse ? "white" : theme.muted
+                    bold: closeModelMouse.containsMouse
+                    underline: closeModelMouse.containsMouse
+                }
+
+                MouseArea {
+                    id: closeModelMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: modelPicker.close()
+                }
             }
         }
 
@@ -141,10 +163,11 @@ Popup {
                 readonly property var m: modelPicker.models[modelEntry.index]
                 readonly property bool isSelected: modelEntry.index === modelPicker.selectedIndex
                 readonly property bool isActive: modelEntry.m.id === modelPicker.currentModel
+                readonly property bool isHovered: modelMouse.containsMouse
 
                 width: parent.width
                 height: 3
-                color: modelEntry.isSelected ? "#1e293b" : "transparent"
+                color: modelEntry.isHovered ? (modelMouse.pressed ? "#334155" : "#1e293b") : (modelEntry.isSelected ? "#1e293b" : "transparent")
 
                 Column {
                     anchors.fill: parent
@@ -157,20 +180,21 @@ Popup {
                         spacing: 1
 
                         Text {
-                            text: (modelEntry.isSelected ? "❯ [" : "  [") + (modelEntry.index + 1) + "] "
-                            color: modelEntry.isSelected ? theme.cyan : theme.muted
-                            bold: modelEntry.isSelected
+                            text: (modelEntry.isSelected || modelEntry.isHovered ? "❯ [" : "  [") + (modelEntry.index + 1) + "] "
+                            color: (modelEntry.isSelected || modelEntry.isHovered) ? theme.cyan : theme.muted
+                            bold: modelEntry.isSelected || modelEntry.isHovered
                         }
 
                         Text {
                             text: modelEntry.m.name
-                            color: modelEntry.isSelected ? "white" : (modelEntry.isActive ? theme.cyan : theme.slate)
-                            bold: modelEntry.isSelected || modelEntry.isActive
+                            color: modelEntry.isHovered ? "white" : (modelEntry.isSelected ? "white" : (modelEntry.isActive ? theme.cyan : theme.slate))
+                            bold: modelEntry.isSelected || modelEntry.isActive || modelEntry.isHovered
+                            underline: modelEntry.isHovered
                         }
 
                         Text {
                             text: "(" + modelEntry.m.provider + ")"
-                            color: theme.muted
+                            color: modelEntry.isHovered ? theme.slate : theme.muted
                         }
 
                         StatusBadge {
@@ -194,7 +218,7 @@ Popup {
 
                         Text {
                             text: "      " + modelEntry.m.desc
-                            color: modelEntry.isSelected ? theme.slate : theme.muted
+                            color: modelEntry.isHovered ? theme.white : (modelEntry.isSelected ? theme.slate : theme.muted)
                         }
                     }
 
@@ -205,13 +229,16 @@ Popup {
 
                         Text {
                             text: "      Ctx: " + modelEntry.m.context + " · " + modelEntry.m.rate
-                            color: theme.muted
+                            color: modelEntry.isHovered ? theme.slate : theme.muted
                         }
                     }
                 }
 
                 MouseArea {
+                    id: modelMouse
                     anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: modelPicker.selectedIndex = modelEntry.index
                     onClicked: {
                         modelPicker.selectedIndex = modelEntry.index
                         modelPicker.chooseCurrent()

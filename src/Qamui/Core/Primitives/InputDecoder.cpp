@@ -219,6 +219,16 @@ void InputDecoder::setClipboardErrorCallback(std::function<void()> cb) {
 
 void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
     const char final = sequence.finalByte;
+    // Inline rendering queries from column one after a nonempty prompt.
+    // Its CPR cannot be a modified F3 key, whose first parameter is one.
+    if (sequence.kind == Sequence::Csi && !sequence.privateMarker
+        && sequence.intermediates.isEmpty() && final == 'R'
+        && sequence.params.size() == 2 && sequence.params[0].size() == 1
+        && sequence.params[1].size() == 1
+        && sequence.parameter(0) > 1 && sequence.parameter(1) == 1) {
+        if (m_replyCallback) m_replyCallback(sequence);
+        return;
+    }
     if (sequence.kind == Sequence::Csi && sequence.privateMarker == '<'
         && sequence.intermediates.isEmpty() && (final == 'M' || final == 'm')) {
         if (sequence.params.size() != 3) return;

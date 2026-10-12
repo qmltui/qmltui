@@ -47,28 +47,9 @@ Column {
 
     readonly property string currentCommand: (filteredCommands.length > 0 && selectedIndex >= 0 && selectedIndex < filteredCommands.length) ? filteredCommands[selectedIndex].cmd : ""
 
-    // Sliding window of up to 5 items around selectedIndex
-    readonly property int windowStart: {
-        if (filteredCommands.length <= 5) return 0
-        if (selectedIndex < 3) return 0
-        if (selectedIndex >= filteredCommands.length - 2) return filteredCommands.length - 5
-        return selectedIndex - 2
-    }
-
-    readonly property var visibleCommands: {
-        const result = []
-        const count = Math.min(5, filteredCommands.length)
-        for (let i = 0; i < count; ++i) {
-            const actualIndex = windowStart + i
-            if (actualIndex < filteredCommands.length) {
-                result.push({
-                    "item": filteredCommands[actualIndex],
-                    "actualIndex": actualIndex
-                })
-            }
-        }
-        return result
-    }
+    // Keyboard navigation moves the window; mouse selection keeps the
+    // command under the pointer stationary until it is clicked.
+    property int windowStart: 0
 
     width: parent ? parent.width : 80
     spacing: 0
@@ -78,13 +59,21 @@ Column {
     function close() { visible = false }
 
     function selectNext() {
-        if (filteredCommands.length > 0)
+        if (filteredCommands.length > 0) {
             selectedIndex = (selectedIndex + 1) % filteredCommands.length
+            revealCurrent()
+        }
     }
 
     function selectPrev() {
-        if (filteredCommands.length > 0)
+        if (filteredCommands.length > 0) {
             selectedIndex = (selectedIndex - 1 + filteredCommands.length) % filteredCommands.length
+            revealCurrent()
+        }
+    }
+
+    function revealCurrent() {
+        windowStart = Math.max(0, Math.min(selectedIndex - 2, filteredCommands.length - 5))
     }
 
     function chooseCurrent() {
@@ -99,11 +88,14 @@ Column {
         if (currentCommand.length > 0) {
             const chosen = currentCommand
             close()
-            commandExecuted(chosen)
+            Qt.callLater(() => {
+                commandExecuted(chosen)
+            })
         }
     }
 
     onFilteredCommandsChanged: {
+        windowStart = 0
         selectedIndex = 0
     }
 
@@ -128,43 +120,52 @@ Column {
 
     // Borderless Command Suggestions
     Repeater {
-        model: commandPalette.visibleCommands
+        // Keep row objects alive when navigation shifts the window.
+        // Replacing an array model here would delete the active MouseArea
+        // synchronously, while its QML signal handler is still running.
+        model: Math.min(5, commandPalette.filteredCommands.length)
         delegate: Rectangle {
             id: commandEntry
             required property int index
-            readonly property var entry: commandPalette.visibleCommands[commandEntry.index]
-            readonly property var itemData: commandEntry.entry.item
-            readonly property int actualIdx: commandEntry.entry.actualIndex
+            readonly property int actualIdx: commandPalette.windowStart + commandEntry.index
+            readonly property var itemData: commandPalette.filteredCommands[commandEntry.actualIdx]
             readonly property bool isCurrent: commandEntry.actualIdx === commandPalette.selectedIndex
+            readonly property bool isHovered: cmdMouse.containsMouse
 
             width: commandPalette.width
             height: 1
-            color: commandEntry.isCurrent ? "#1e293b" : "transparent"
+            color: commandEntry.isHovered ? (cmdMouse.pressed ? "#334155" : "#1e293b") : (commandEntry.isCurrent ? "#1e293b" : "transparent")
 
             Row {
                 anchors.fill: parent
                 spacing: 1
 
                 Text {
-                    text: commandEntry.isCurrent ? "  ❯ " : "    "
-                    color: theme.cyan
-                    bold: commandEntry.isCurrent
+                    text: (commandEntry.isCurrent || commandEntry.isHovered) ? "  ❯ " : "    "
+                    color: commandEntry.isHovered ? "white" : theme.cyan
+                    bold: commandEntry.isCurrent || commandEntry.isHovered
                 }
 
                 Text {
                     text: commandEntry.itemData.cmd
-                    color: commandEntry.isCurrent ? "white" : theme.cyan
-                    bold: commandEntry.isCurrent
+                    color: (commandEntry.isCurrent || commandEntry.isHovered) ? "white" : theme.cyan
+                    bold: commandEntry.isCurrent || commandEntry.isHovered
+                    underline: commandEntry.isHovered
                 }
 
                 Text {
                     text: "· " + commandEntry.itemData.desc
-                    color: commandEntry.isCurrent ? theme.slate : theme.muted
+                    color: commandEntry.isHovered ? theme.white : (commandEntry.isCurrent ? theme.slate : theme.muted)
                 }
             }
 
             MouseArea {
+                id: cmdMouse
                 anchors.fill: parent
+                hoverEnabled: true
+                onEntered: commandPalette.selectedIndex = commandEntry.actualIdx
+                onMouseXChanged: if (cmdMouse.containsMouse) commandPalette.selectedIndex = commandEntry.actualIdx
+                onMouseYChanged: if (cmdMouse.containsMouse) commandPalette.selectedIndex = commandEntry.actualIdx
                 onClicked: {
                     commandPalette.selectedIndex = commandEntry.actualIdx
                     commandPalette.executeCurrent()

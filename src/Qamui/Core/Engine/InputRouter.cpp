@@ -1,4 +1,5 @@
 #include <Qamui/Core/Engine/InputRouter_p.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <Qamui/Core/Engine/InputScope.h>
 #include <Qamui/Core/Engine/FocusManager.h>
 #include <Qamui/Core/Engine/KeyEvent.h>
@@ -232,6 +233,29 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button,
 void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion,
                              int modifiers, int wheelDeltaX, int wheelDeltaY) {
     if (!m_terminal) return;
+    const auto* renderer = m_terminal->engine()->renderer();
+    if (!renderer) return;
+    const auto offset = renderer->mouseRowOffset();
+    if (!offset) {
+        // Never guess a target while a cursor report is outstanding. Still
+        // release an existing grab outside its bounds so it cannot stay stuck.
+        m_terminal->setHoveredItem(nullptr);
+        if (release) {
+            QPointer<Item> grab = m_implicitMouseGrabItem;
+            m_implicitMouseGrabItem = nullptr;
+            m_outsidePressArmedScope = nullptr;
+            if (grab) {
+                const auto pos = grab->absolutePosition();
+                dispatchMouseEvent(grab, pos.x() - 1, pos.y() - 1, button,
+                                   modifiers, false, true, 0, 0);
+            }
+        }
+        return;
+    }
+    const int localY = y - *offset;
+    const auto* frame = renderer->currentBuffer();
+    const bool inFrame = m_terminal->mode() != Terminal::Mode::Inline
+        || (frame && x >= 0 && x < frame->width() && localY >= 0 && localY < frame->height());
     const bool buttonMotion = motion && ((button & 3) != 3);
     const bool isWheel = (wheelDeltaX != 0 || wheelDeltaY != 0);
     const bool isButtonPress = (!release && !motion && !isWheel && (button >= 0 && button <= 2));
@@ -252,8 +276,8 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
         m_outsidePressArmedScope = nullptr;
         if (armedItem) {
             QPoint absPos = armedItem->absolutePosition();
-            bool inside = (x >= absPos.x() && x < absPos.x() + armedItem->width() &&
-                           y >= absPos.y() && y < absPos.y() + armedItem->height());
+            bool inside = (inFrame && x >= absPos.x() && x < absPos.x() + armedItem->width() &&
+                           localY >= absPos.y() && localY < absPos.y() + armedItem->height());
             if (!inside) {
                 for (InputScope* s : scopes) {
                     if (s && s->asItem() == armedItem && s->isScopeVisible()) {
@@ -286,7 +310,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             }
 
             QPointer<Item> grabGuard(grabItem);
-            dispatchMouseEvent(grabItem, x, y, button, modifiers, motion, release,
+            dispatchMouseEvent(grabItem, x, localY, button, modifiers, motion, release,
                                wheelDeltaX, wheelDeltaY);
             if (release) {
                 m_implicitMouseGrabItem = nullptr;
@@ -306,8 +330,8 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             Item* scopeItem = scope->asItem();
             if (!scopeItem) continue;
             QPoint absPos = scopeItem->absolutePosition();
-            bool inside = (x >= absPos.x() && x < absPos.x() + scopeItem->width() &&
-                           y >= absPos.y() && y < absPos.y() + scopeItem->height());
+            bool inside = (inFrame && x >= absPos.x() && x < absPos.x() + scopeItem->width() &&
+                           localY >= absPos.y() && localY < absPos.y() + scopeItem->height());
             if (!inside) {
                 m_outsidePressArmedScope = scopeItem;
                 break;
@@ -327,14 +351,14 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
         if (!scopeItem) continue;
 
         QPoint absPos = scopeItem->absolutePosition();
-        bool inside = (x >= absPos.x() && x < absPos.x() + scopeItem->width() &&
-                       y >= absPos.y() && y < absPos.y() + scopeItem->height());
+        bool inside = (inFrame && x >= absPos.x() && x < absPos.x() + scopeItem->width() &&
+                       localY >= absPos.y() && localY < absPos.y() + scopeItem->height());
                        
         if (inside) {
             m_outsidePressArmedScope = nullptr;
             int parentAbsX = absPos.x() - scopeItem->x();
             int parentAbsY = absPos.y() - scopeItem->y();
-            Item* target = hitTestItem(scopeItem, x, y, parentAbsX, parentAbsY);
+            Item* target = hitTestItem(scopeItem, x, localY, parentAbsX, parentAbsY);
             if (target) {
                 if (motion) m_terminal->setHoveredItem(target);
                 if (motion && !buttonMotion) {
@@ -350,7 +374,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
                 }
 
                 QPointer<Item> targetGuard(target);
-                bool accepted = dispatchMouseEvent(target, x, y, button, modifiers,
+                bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers,
                                                    motion, release, wheelDeltaX, wheelDeltaY, scopeItem);
                 if (accepted && isButtonPress && targetGuard) {
                     m_implicitMouseGrabItem = targetGuard.data();
@@ -371,7 +395,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
     }
 
     // 6. Terminal root hit-test & dispatch
-    Item* target = hitTestItem(m_terminal, x, y, 0, 0);
+    Item* target = inFrame ? hitTestItem(m_terminal, x, localY, 0, 0) : nullptr;
     if (motion) m_terminal->setHoveredItem(target);
     if (target) {
         if (motion && !buttonMotion) {
@@ -387,7 +411,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
         }
 
         QPointer<Item> targetGuard(target);
-        bool accepted = dispatchMouseEvent(target, x, y, button, modifiers,
+        bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers,
                                            motion, release, wheelDeltaX, wheelDeltaY);
         if (accepted && isButtonPress && targetGuard) {
             m_implicitMouseGrabItem = targetGuard.data();

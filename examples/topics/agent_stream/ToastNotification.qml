@@ -13,7 +13,7 @@ Rectangle {
 
     width: Math.min(50, message.length + 8)
     height: 1
-    color: "#1e293b"
+    color: toastMouse.containsMouse ? "#334155" : "#1e293b"
     visible: false
 
     function notify(msg, stat) {
@@ -46,5 +46,12 @@ Rectangle {
             color: "white"
             bold: true
         }
+    }
+
+    MouseArea {
+        id: toastMouse
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: toast.visible = false
     }
 }

@@ -4,6 +4,9 @@
 #include <QSignalSpy>
 #include <Qamui/Runner/MemoryTerminalBackend.h>
 #include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/MouseArea.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Engine/MouseEvent.h>
 #include <Qamui/Core/Engine/TerminalEngine.h>
 #include <Qamui/Core/Engine/StreamRenderer.h>
 
@@ -90,6 +93,83 @@ private slots:
             else qputenv(it.key().constData(), it.value());
         }
         saved.clear();
+    }
+    void inlineMouseUsesReportedOrigin() {
+        Terminal terminal;
+        terminal.setMode(Terminal::Mode::Inline);
+        auto* engine = terminal.engine();
+        backend->setSize(QSize(40, 24));
+        MouseArea area(&terminal);
+        area.setWidth(30);
+        area.setHeight(4);
+        area.setHoverEnabled(true);
+        Text label(&area);
+        label.setText("READY");
+        int clicks = 0;
+        int wheels = 0;
+        connect(&area, &MouseArea::clicked, &label, [&](MouseEvent* event) {
+            ++clicks;
+            label.setText(QStringLiteral("CLICK %1,%2").arg(event->x()).arg(event->y()));
+        });
+        connect(&area, &MouseArea::wheel, &label, [&](MouseEvent* event) {
+            ++wheels;
+            label.setText(QStringLiteral("WHEEL %1,%2").arg(event->x()).arg(event->y()));
+        });
+        QTRY_VERIFY(frameText(engine).contains("READY"));
+        QVERIFY(backend->output().find("\033[6n") != std::string::npos);
+        QVERIFY(!engine->renderer()->mouseRowOffset());
+        // The prompt started at row 3, well above the bottom of the screen.
+        // The cursor report must not be interpreted as the F3 key.
+        backend->feedInput("\033[8;1R");
+        QCOMPARE(engine->renderer()->mouseRowOffset(), std::optional<int>(3));
+        backend->feedInput("\033[<35;6;5M");
+        QCOMPARE(area.mouseX(), 5);
+        QCOMPARE(area.mouseY(), 1);
+        QVERIFY(area.containsMouse());
+        backend->feedInput("\033[<0;6;5M\033[<0;6;5m");
+        QTRY_VERIFY(frameText(engine).contains("CLICK 5,1"));
+        QCOMPARE(clicks, 1);
+        backend->feedInput("\033[<64;6;6M");
+        QTRY_VERIFY(frameText(engine).contains("WHEEL 5,2"));
+        QCOMPARE(wheels, 1);
+        // Neither history nor the trailing cursor row belongs to the prompt.
+        backend->feedInput("\033[<0;6;3M\033[<0;6;3m\033[<0;6;8M\033[<0;6;8m");
+        QCOMPARE(clicks, 1);
+        // A grab still receives releases outside the live region.
+        backend->feedInput("\033[<0;6;5M\033[<32;6;2M\033[<0;6;2m");
+        QVERIFY(!area.isPressed());
+        QCOMPARE(clicks, 1);
+
+        // History can move the live region; do not keep using the old origin.
+        backend->feedInput("\033[<0;6;5M");
+        QVERIFY(area.isPressed());
+        auto frame = engine->frameSequence();
+        QVERIFY(engine->submitScrollback("history"));
+        QTRY_VERIFY(engine->frameSequence() > frame);
+        QVERIFY(!engine->renderer()->mouseRowOffset());
+        backend->feedInput("\033[<0;6;5m");
+        QVERIFY(!area.isPressed());
+        QCOMPARE(clicks, 1);
+        backend->feedInput("\033[24;1R");
+        QCOMPARE(engine->renderer()->mouseRowOffset(), std::optional<int>(19));
+        backend->feedInput("\033[<0;6;23M\033[<0;6;23m");
+        QTRY_VERIFY(frameText(engine).contains("CLICK 5,3"));
+
+        // A resize while a query is pending makes that reply stale. Send one
+        // fresh query after consuming it instead of accumulating requests.
+        area.setHeight(6);
+        QTRY_COMPARE(engine->currentFrame()->height(), 6);
+        backend->setSize(QSize(40, 30));
+        frame = engine->frameSequence();
+        QTRY_VERIFY(engine->frameSequence() > frame);
+        backend->clearOutput();
+        backend->feedInput("\033[24;1R");
+        QVERIFY(!engine->renderer()->mouseRowOffset());
+        QVERIFY(backend->output().find("\033[6n") != std::string::npos);
+        backend->feedInput("\033[25;1R");
+        QCOMPARE(engine->renderer()->mouseRowOffset(), std::optional<int>(18));
+        backend->feedInput("\033[<0;6;24M\033[<0;6;24m");
+        QTRY_VERIFY(frameText(engine).contains("CLICK 5,5"));
     }
     void repliesUpdateCommittedFrame() {
         QQmlEngine qml;

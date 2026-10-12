@@ -192,6 +192,9 @@ interface Terminal {
     clickText(text: string, occurrence?: number, button?: QamuiMouseButton,
               modifiers?: QamuiModifier[]): void;
     clickText(text: string, options?: QamuiClickTextOptions): void;
+    /** Hovers over the center of a rendered text match and waits for the frame. */
+    hoverText(text: string, occurrence?: number, modifiers?: QamuiModifier[]): void;
+    hoverText(text: string, options?: QamuiOccurrenceOptions & QamuiModifierOptions): void;
 
     /** Waits for the requested duration; under the virtual clock this is advanceTime(). */
     sleep(durationMs: number): void;

@@ -13,6 +13,48 @@ StreamRenderer::StreamRenderer() = default;
 void StreamRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
     m_rootWindow = rootWindow;
     m_lastPromptHeight = 0;
+    invalidateMouseOrigin();
+}
+
+void StreamRenderer::invalidateMouseOrigin() {
+    m_mouseRowOffset.reset();
+    if (m_cursorQueryPending)
+        m_cursorQueryStale = true;
+}
+
+void StreamRenderer::discardCommittedState() {
+    m_lastPromptHeight = 0;
+    invalidateMouseOrigin();
+}
+
+std::optional<int> StreamRenderer::mouseRowOffset() const {
+    if (!outputEnabled())
+        return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
+    return m_mouseRowOffset;
+}
+
+void StreamRenderer::queryCursorPosition(TerminalDevice& device) {
+    // Only one outstanding request: terminals that do not answer must not
+    // accumulate queries. Column one below a nonempty prompt gives a report
+    // with row >= 2 and column == 1, distinct from modified F3 (CSI 1;mod R).
+    if (outputEnabled() && m_lastPromptHeight > 0 && !m_cursorQueryPending
+        && device.write("\r\033[6n")) {
+        m_cursorQueryPending = true;
+        m_cursorQueryStale = false;
+    }
+}
+
+void StreamRenderer::handleCursorPosition(int row, TerminalDevice& device) {
+    if (!m_cursorQueryPending)
+        return;
+    m_cursorQueryPending = false;
+    if (m_cursorQueryStale) {
+        queryCursorPosition(device);
+        return;
+    }
+    // row is zero-based and names the cursor row following the prompt.
+    if (row >= m_lastPromptHeight && row < m_terminalHeight)
+        m_mouseRowOffset = row - m_lastPromptHeight;
 }
 
 void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
@@ -28,6 +70,7 @@ void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 void StreamRenderer::resize(int width, int height) {
+    invalidateMouseOrigin();
     m_terminalWidth = width;
     m_terminalHeight = height;
     m_promptBuffer.resize(width, m_lastPromptHeight);
@@ -73,6 +116,8 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     const int requiredHeight = std::clamp(rootWindow->height(), 0, (std::max)(0, m_terminalHeight - 1));
 
     const int previousPromptHeight = m_lastPromptHeight;
+    if (previousPromptHeight != requiredHeight || !scrollback.empty())
+        invalidateMouseOrigin();
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     m_promptBuffer.clear();
@@ -110,6 +155,8 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
     stats.diffBytes = static_cast<qint64>(ansi.size());
     const bool written = device.write(ansi);
+    if (written && !m_mouseRowOffset)
+        queryCursorPosition(device);
     stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
     if (written)
         stats.bytesWritten = stats.diffBytes;

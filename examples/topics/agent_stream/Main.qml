@@ -44,7 +44,7 @@ Terminal {
         }
         return "● Ready — Qt AI Studio (" + root.activeModel + " · " + root.sessionCostStr + ")";
     }
-    mouseReporting: false
+    mouseReporting: true
 
     property int agentState: Main.ReadyState
     property int currentScenario: 1
@@ -506,6 +506,7 @@ Terminal {
         onPermissionChosen: index => root.choosePermission(index)
         onOpenModelPickerRequested: () => modelModal.open()
         onOpenDiffInspectorRequested: () => diffInspector.open()
+        onInterruptRequested: () => root.interruptAgent()
     }
 
     // Interactive Neural Model Picker Dialog (F2 / /model)

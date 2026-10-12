@@ -36,6 +36,7 @@ private slots:
     void testLegacyWheelEventsNotSwallowedByMouseArea();
     void testModalPopupDiscardsStaleBackgroundGrab();
     void testTopmostPopupDismissalOrder();
+    void testInlineModeMouseOffset();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -566,6 +567,101 @@ void TestInputRouter::testTopmostPopupDismissalOrder() {
 
     QCOMPARE(high.visible(), false);
     QCOMPARE(low.visible(), true);
+}
+
+void TestInputRouter::testInlineModeMouseOffset() {
+    Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    terminal.engine()->setTerminalOutputEnabled(false);
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
+
+    MouseArea ma(&terminal);
+    ma.setX(0);
+    ma.setY(0);
+    ma.setWidth(40);
+    ma.setHeight(4);
+    ma.setHoverEnabled(true);
+
+    int pressCount = 0;
+    int clickLocalX = -1;
+    int clickLocalY = -1;
+    connect(&ma, &MouseArea::pressed, [&](MouseEvent *ev) {
+        pressCount++;
+        clickLocalX = ev->x();
+        clickLocalY = ev->y();
+    });
+
+    QTRY_COMPARE(terminal.engine()->currentFrame()->height(), 4);
+    InputRouter router(&terminal);
+
+    // Terminal height is 24, inline prompt height is 4.
+    // The prompt region sits at terminal rows [19, 22].
+    // 1. Mouse motion in scrollback above prompt at screen (10, 5):
+    // Should NOT hover MouseArea.
+    router.routeMouse(0, 10, 5, false, true);
+    QCOMPARE(terminal.hoveredItem(), nullptr);
+    QCOMPARE(ma.containsMouse(), false);
+
+    // 2. Mouse motion inside prompt at screen (10, 20):
+    // Local row should be 20 - 19 = 1.
+    router.routeMouse(0, 10, 20, false, true);
+    QCOMPARE(terminal.hoveredItem(), static_cast<Item*>(&ma));
+    QCOMPARE(ma.containsMouse(), true);
+    QCOMPARE(ma.mouseY(), 1);
+    QCOMPARE(ma.mouseX(), 10);
+
+    // 3. Mouse press at screen (10, 21):
+    // Local row should be 21 - 19 = 2.
+    router.routeMouse(0, 10, 21, false, false);
+    QCOMPARE(pressCount, 1);
+    QCOMPARE(clickLocalX, 10);
+    QCOMPARE(clickLocalY, 2);
+
+    // 4. Mouse release at screen (10, 21):
+    router.routeMouse(0, 10, 21, true, false);
+
+    // 5. Test modal popup in inline mode:
+    Popup popup(&terminal);
+    popup.setX(0);
+    popup.setY(0);
+    popup.setWidth(40);
+    popup.setHeight(10);
+    popup.setModal(true);
+
+    MouseArea popupMa(&popup);
+    popupMa.setX(0);
+    popupMa.setY(0);
+    popupMa.setWidth(40);
+    popupMa.setHeight(10);
+    popupMa.setHoverEnabled(true);
+
+    popup.open();
+    QTRY_COMPARE(terminal.engine()->currentFrame()->height(), 10);
+    // Now prompt height is 10. Start row is 24 - 1 - 10 = 13.
+    // Modal sits at screen rows [13, 22].
+    // Motion at screen row 13 -> local row 0 in popup.
+    router.routeMouse(0, 5, 13, false, true);
+    QCOMPARE(terminal.hoveredItem(), static_cast<Item*>(&popupMa));
+    QCOMPARE(popupMa.mouseY(), 0);
+
+    // Motion at screen row 22 -> local row 9 in popup.
+    router.routeMouse(0, 5, 22, false, true);
+    QCOMPARE(terminal.hoveredItem(), static_cast<Item*>(&popupMa));
+    QCOMPARE(popupMa.mouseY(), 9);
+
+    // Motion at screen row 10 (above modal) -> modal not hovered!
+    router.routeMouse(0, 5, 10, false, true);
+    QCOMPARE(terminal.hoveredItem(), nullptr);
+    QCOMPARE(popupMa.containsMouse(), false);
+
+    // Content beyond the committed buffer is not clickable, even if the
+    // popup's own geometry extends into the reserved trailing cursor row.
+    popup.setHeight(30);
+    popupMa.setHeight(30);
+    QTRY_COMPARE(terminal.engine()->currentFrame()->height(), 23);
+    QSignalSpy popupPresses(&popupMa, &MouseArea::pressed);
+    router.routeMouse(0, 5, 23, false, false);
+    QCOMPARE(popupPresses.count(), 0);
 }
 
 QTEST_MAIN(TestInputRouter)

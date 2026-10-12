@@ -34,6 +34,7 @@ private slots:
     void testKittyEventTypes();
     void testKittyIgnoredKeys();
     void testKittyQueryReplyIsNotAKey();
+    void testInlineCursorReportAndF3();
     void testPendingEscapeFlush();
 };
 
@@ -629,6 +630,28 @@ void TestInputDecoder::testKittyIgnoredKeys() {
     decoder.decode("z", 1);
     QCOMPARE(keys, QList<int>{Qt::Key_Z});
     QCOMPARE(texts, QStringList{"z"});
+}
+
+void TestInputDecoder::testInlineCursorReportAndF3() {
+    const QByteArray input = "\033[8;1R\033[1;2R\033OR\033[R";
+    for (int split = 0; split <= input.size(); ++split) {
+        InputDecoder decoder;
+        int replies = 0;
+        QList<int> modifiers;
+        decoder.setReplyCallback([&](const InputDecoder::ControlSequence& sequence) {
+            ++replies;
+            QCOMPARE(sequence.parameter(0), 8);
+            QCOMPARE(sequence.parameter(1), 1);
+        });
+        decoder.setKeyCallback([&](int key, const QString&, int mods) {
+            QCOMPARE(key, int(Qt::Key_F3));
+            modifiers.append(mods);
+        });
+        decoder.decode(input.constData(), split);
+        decoder.decode(input.constData() + split, input.size() - split);
+        QCOMPARE(replies, 1);
+        QCOMPARE(modifiers, QList<int>({Qt::ShiftModifier, 0, 0}));
+    }
 }
 
 void TestInputDecoder::testKittyQueryReplyIsNotAKey() {

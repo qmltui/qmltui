@@ -223,6 +223,14 @@ Returns a locator scoped to the rectangle, with `text()`, `findText()`, `expectT
 #### void clickText(const QString &text, int occurrence = 0, const QString &button = "left", const QStringList &modifiers = {})
 
 Clicks the center of the selected rendered-text match and waits for the resulting committed frame.
+Text-based mouse helpers translate frame rows through the renderer's screen
+origin. Quiet inline sessions place the frame immediately above the terminal's
+last row, which is reserved for the trailing cursor. Coordinate-based mouse
+methods use screen coordinates; `findText()` returns frame coordinates.
+
+#### void hoverText(const QString &text, int occurrence = 0, const QStringList &modifiers = {})
+
+Moves the mouse to the center of the selected rendered-text match with no button held and waits for the resulting committed frame. Delivered only while any-motion reporting is enabled.
 
 #### void click(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
 

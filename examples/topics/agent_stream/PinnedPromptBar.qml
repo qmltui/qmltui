@@ -36,6 +36,7 @@ Column {
     signal permissionChosen(int index)
     signal openModelPickerRequested
     signal openDiffInspectorRequested
+    signal interruptRequested
 
     function focusPrompt() {
         inputField.focus = true;
@@ -58,23 +59,96 @@ Column {
             showIcon: false
         }
 
-        Text {
-            text: promptBar.activeModel
-            color: theme.cyan
-            bold: true
+        Rectangle {
+            width: modelChipText.implicitWidth
+            height: 1
+            color: modelChipMouse.containsMouse ? "#1e293b" : "transparent"
+
+            Text {
+                id: modelChipText
+                anchors.fill: parent
+                text: promptBar.activeModel
+                color: modelChipMouse.containsMouse ? theme.white : theme.cyan
+                bold: true
+                underline: modelChipMouse.containsMouse
+            }
+
+            MouseArea {
+                id: modelChipMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: promptBar.openModelPickerRequested()
+            }
         }
+
         Text {
             text: "· ~/Qamui ·"
             color: theme.muted
         }
+
         Text {
             text: promptBar.sessionCostStr
             color: theme.green
             bold: true
         }
-        Text {
-            text: " · [F2] model · [F3] diff"
-            color: theme.amber
+
+        Row {
+            spacing: 0
+            height: 1
+
+            Text {
+                text: " · "
+                color: theme.muted
+            }
+
+            Rectangle {
+                width: modelBtnText.implicitWidth
+                height: 1
+                color: modelBtnMouse.containsMouse ? "#1e293b" : "transparent"
+
+                Text {
+                    id: modelBtnText
+                    anchors.fill: parent
+                    text: "[F2] model"
+                    color: modelBtnMouse.containsMouse ? theme.white : theme.amber
+                    bold: modelBtnMouse.containsMouse
+                    underline: modelBtnMouse.containsMouse
+                }
+
+                MouseArea {
+                    id: modelBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: promptBar.openModelPickerRequested()
+                }
+            }
+
+            Text {
+                text: " · "
+                color: theme.muted
+            }
+
+            Rectangle {
+                width: diffBtnText.implicitWidth
+                height: 1
+                color: diffBtnMouse.containsMouse ? "#1e293b" : "transparent"
+
+                Text {
+                    id: diffBtnText
+                    anchors.fill: parent
+                    text: "[F3] diff"
+                    color: diffBtnMouse.containsMouse ? theme.white : theme.amber
+                    bold: diffBtnMouse.containsMouse
+                    underline: diffBtnMouse.containsMouse
+                }
+
+                MouseArea {
+                    id: diffBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: promptBar.openDiffInspectorRequested()
+                }
+            }
         }
     }
 
@@ -95,8 +169,29 @@ Column {
             color: "white"
         }
         Text {
-            text: " · Ctrl+C to abort"
+            text: " · "
             color: theme.muted
+        }
+        Rectangle {
+            width: abortBtnText.implicitWidth
+            height: 1
+            color: abortBtnMouse.containsMouse ? "#3b1219" : "transparent"
+
+            Text {
+                id: abortBtnText
+                anchors.fill: parent
+                text: "Ctrl+C to abort"
+                color: abortBtnMouse.containsMouse ? theme.rose : theme.muted
+                bold: abortBtnMouse.containsMouse
+                underline: abortBtnMouse.containsMouse
+            }
+
+            MouseArea {
+                id: abortBtnMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: promptBar.interruptRequested()
+            }
         }
     }
 
@@ -128,10 +223,24 @@ Column {
             height: 1
             spacing: 0
 
-            Text {
-                text: "❯ "
-                color: theme.cyan
-                bold: true
+            Rectangle {
+                width: 2
+                height: 1
+                color: chevronMouse.containsMouse ? "#1e293b" : "transparent"
+
+                Text {
+                    anchors.fill: parent
+                    text: "❯ "
+                    color: chevronMouse.containsMouse ? theme.white : theme.cyan
+                    bold: true
+                }
+
+                MouseArea {
+                    id: chevronMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: promptBar.focusPrompt()
+                }
             }
 
             TextInput {
@@ -260,44 +369,76 @@ Column {
         Rectangle {
             width: parent.width
             height: 1
-            color: promptBar.permissionIndex === 0 ? theme.amber : "transparent"
+            color: (promptBar.permissionIndex === 0 || perm0Mouse.containsMouse) ? (perm0Mouse.pressed ? "#d97706" : theme.amber) : "transparent"
             Text {
-                text: (promptBar.permissionIndex === 0 ? "  > [1] " : "    [1] ") + "Allow once"
-                color: promptBar.permissionIndex === 0 ? "black" : "white"
-                bold: promptBar.permissionIndex === 0
+                text: ((promptBar.permissionIndex === 0 || perm0Mouse.containsMouse) ? "  > [1] " : "    [1] ") + "Allow once"
+                color: (promptBar.permissionIndex === 0 || perm0Mouse.containsMouse) ? "black" : "white"
+                bold: promptBar.permissionIndex === 0 || perm0Mouse.containsMouse
+                underline: perm0Mouse.containsMouse
+            }
+            MouseArea {
+                id: perm0Mouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: promptBar.permissionIndex = 0
+                onClicked: promptBar.permissionChosen(0)
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: promptBar.permissionIndex === 1 ? theme.amber : "transparent"
+            color: (promptBar.permissionIndex === 1 || perm1Mouse.containsMouse) ? (perm1Mouse.pressed ? "#d97706" : theme.amber) : "transparent"
             Text {
-                text: (promptBar.permissionIndex === 1 ? "  > [2] " : "    [2] ") + "Always allow for this session"
-                color: promptBar.permissionIndex === 1 ? "black" : "white"
-                bold: promptBar.permissionIndex === 1
+                text: ((promptBar.permissionIndex === 1 || perm1Mouse.containsMouse) ? "  > [2] " : "    [2] ") + "Always allow for this session"
+                color: (promptBar.permissionIndex === 1 || perm1Mouse.containsMouse) ? "black" : "white"
+                bold: promptBar.permissionIndex === 1 || perm1Mouse.containsMouse
+                underline: perm1Mouse.containsMouse
+            }
+            MouseArea {
+                id: perm1Mouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: promptBar.permissionIndex = 1
+                onClicked: promptBar.permissionChosen(1)
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: promptBar.permissionIndex === 2 ? theme.amber : "transparent"
+            color: (promptBar.permissionIndex === 2 || perm2Mouse.containsMouse) ? (perm2Mouse.pressed ? "#d97706" : theme.amber) : "transparent"
             Text {
-                text: (promptBar.permissionIndex === 2 ? "  > [3] " : "    [3] ") + "Deny execution"
-                color: promptBar.permissionIndex === 2 ? "black" : "white"
-                bold: promptBar.permissionIndex === 2
+                text: ((promptBar.permissionIndex === 2 || perm2Mouse.containsMouse) ? "  > [3] " : "    [3] ") + "Deny execution"
+                color: (promptBar.permissionIndex === 2 || perm2Mouse.containsMouse) ? "black" : "white"
+                bold: promptBar.permissionIndex === 2 || perm2Mouse.containsMouse
+                underline: perm2Mouse.containsMouse
+            }
+            MouseArea {
+                id: perm2Mouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: promptBar.permissionIndex = 2
+                onClicked: promptBar.permissionChosen(2)
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: promptBar.permissionIndex === 3 ? theme.amber : "transparent"
+            color: (promptBar.permissionIndex === 3 || perm3Mouse.containsMouse) ? (perm3Mouse.pressed ? "#d97706" : theme.amber) : "transparent"
             Text {
-                text: (promptBar.permissionIndex === 3 ? "  > [4] " : "    [4] ") + "Cancel request"
-                color: promptBar.permissionIndex === 3 ? "black" : "white"
-                bold: promptBar.permissionIndex === 3
+                text: ((promptBar.permissionIndex === 3 || perm3Mouse.containsMouse) ? "  > [4] " : "    [4] ") + "Cancel request"
+                color: (promptBar.permissionIndex === 3 || perm3Mouse.containsMouse) ? "black" : "white"
+                bold: promptBar.permissionIndex === 3 || perm3Mouse.containsMouse
+                underline: perm3Mouse.containsMouse
+            }
+            MouseArea {
+                id: perm3Mouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: promptBar.permissionIndex = 3
+                onClicked: promptBar.permissionChosen(3)
             }
         }
     }

@@ -726,6 +726,7 @@ bool Runner::installJavaScriptFacade()
         "captureScrollbackStyled", "expectScrollbackSnapshot",
         "startRecording", "stopRecording", "marker",
         "click", "doubleClick", "drag", "scroll", "hover", "mouseDown", "mouseUp",
+        "clickText", "hoverText",
         "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
         "expectStyled", "expectRegionSnapshot", "regionText", "itemRect", "waitForItem",
@@ -752,6 +753,8 @@ bool Runner::installJavaScriptFacade()
         scroll:       { required: 4, optional: [["modifiers", []]] },
         clickText:    { required: 1,
                         optional: [["occurrence", 0], ["button", "left"], ["modifiers", []]] },
+        hoverText:    { required: 1,
+                        optional: [["occurrence", 0], ["modifiers", []]] },
         waitForFrame: { required: 0, optional: [["timeout", 2000]] },
         expectRepaint:{ required: 0, optional: [["timeout", 2000]] },
         waitForText:  { required: 1, optional: [["timeout", 2000]] },
@@ -2866,7 +2869,42 @@ void Runner::clickText(const QString& text, int occurrence, const QString& butto
         return;
     }
     const TextMatch& match = matches.at(occurrence);
-    click(match.x + (std::max)(0, match.width - 1) / 2, match.y, button, modifiers);
+    const auto offset = m_terminalEngine->renderer()->mouseRowOffset();
+    if (!offset) {
+        failScenario(QStringLiteral("The inline frame's screen position is not yet known"));
+        return;
+    }
+    const int screenY = match.y + *offset;
+    click(match.x + (std::max)(0, match.width - 1) / 2, screenY, button, modifiers);
+}
+
+void Runner::hoverText(const QString& text, int occurrence, const QStringList& modifiers)
+{
+    if (!ensureRunning("hoverText") || !m_terminalEngine)
+        return;
+    if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
+        failScenario(QStringLiteral("terminal.hoverText() requires non-empty single-row text"));
+        return;
+    }
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame) {
+        failScenario(QStringLiteral("No committed frame buffer is available"));
+        return;
+    }
+    const QList<TextMatch> matches = textMatches(*frame, text);
+    if (occurrence < 0 || occurrence >= matches.size()) {
+        failScenario(QStringLiteral("Text \"%1\" occurrence %2 was not found (%3 matches)")
+                         .arg(text).arg(occurrence).arg(matches.size()));
+        return;
+    }
+    const TextMatch& match = matches.at(occurrence);
+    const auto offset = m_terminalEngine->renderer()->mouseRowOffset();
+    if (!offset) {
+        failScenario(QStringLiteral("The inline frame's screen position is not yet known"));
+        return;
+    }
+    const int screenY = match.y + *offset;
+    hover(match.x + (std::max)(0, match.width - 1) / 2, screenY, modifiers);
 }
 
 bool Runner::writeFinalFrameArtifact(QString* error)

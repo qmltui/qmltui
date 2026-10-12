@@ -46,8 +46,30 @@ Popup {
             }
 
             Text {
-                text: " · [Esc/F3] close"
+                text: " · "
                 color: theme.muted
+            }
+
+            Rectangle {
+                width: closeText.implicitWidth + 2
+                height: 1
+                color: closeMouse.containsMouse ? "#1e293b" : "transparent"
+
+                Text {
+                    id: closeText
+                    anchors.centerIn: parent
+                    text: "[Esc/F3] close"
+                    color: closeMouse.containsMouse ? "white" : theme.muted
+                    bold: closeMouse.containsMouse
+                    underline: closeMouse.containsMouse
+                }
+
+                MouseArea {
+                    id: closeMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: diffModal.close()
+                }
             }
         }
 

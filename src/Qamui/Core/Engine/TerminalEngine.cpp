@@ -1114,6 +1114,14 @@ void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) 
         return true;
     };
     if (sequence.kind == Sequence::Csi && scalarParams()) {
+        if (sequence.privateMarker == 0 && sequence.intermediates.isEmpty()
+            && sequence.finalByte == 'R'
+            && sequence.params.size() == 2
+            && sequence.parameter(0) > 1 && sequence.parameter(1) == 1) {
+            if (auto* stream = dynamic_cast<StreamRenderer*>(m_renderer))
+                stream->handleCursorPosition(sequence.parameter(0) - 1, m_device);
+            return;
+        }
         if (sequence.privateMarker == '?' && sequence.intermediates.isEmpty()
             && sequence.finalByte == 'c' && !sequence.params.isEmpty()) {
             // Primary device attributes: attribute 4 advertises sixel graphics.

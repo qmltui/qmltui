@@ -45,4 +45,7 @@ if(TARGET Qamui::Runner)
     qamui_add_scenario(NAME agent_stream_prompt_focus TARGET qamui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_focus.js"
         COLUMNS 120 ROWS 35 CLOCK VIRTUAL LABELS AgentSmoke)
+    qamui_add_scenario(NAME agent_stream_mouse TARGET qamui_agent_stream_demo
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_mouse.js"
+        COLUMNS 120 ROWS 35 LABELS AgentSmoke)
 endif()

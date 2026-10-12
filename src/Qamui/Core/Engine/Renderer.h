@@ -3,6 +3,7 @@
 #include <Qamui/Core/Primitives/TerminalDevice.h>
 #include <Qamui/Core/Primitives/TerminalCapabilities.h>
 #include <QtGlobal>
+#include <optional>
 
 namespace qamui {
 
@@ -34,6 +35,9 @@ public:
     virtual bool renderFrame(Terminal* rootWindow, TerminalDevice& device) = 0;
     virtual bool usesAlternateScreen(Terminal*) const { return false; }
     virtual const TextGridBuffer* currentBuffer() const { return nullptr; }
+    // Screen row of the committed frame's first row; unknown until an inline
+    // renderer has located its live region in the normal terminal buffer.
+    virtual std::optional<int> mouseRowOffset() const { return 0; }
     virtual void setOutputEnabled(bool enabled) { m_outputEnabled = enabled; }
     // Bytes of committed frames were discarded after an output error: forget
     // what the terminal is believed to show so the next frame repaints it all.

@@ -24,12 +24,11 @@ Terminal {
             anchors.fill: parent
             anchors.topMargin: 1
             anchors.leftMargin: 2
-            
+
             spacing: 1
             Row {
                 spacing: 2
                 BusyIndicator {
-                    style: BusyIndicator.Style.Dots
                     color: "cyan"
                 }
                 Text { text: "Loading network requests (Dots)"; color: "cyan" }
@@ -37,7 +36,7 @@ Terminal {
             Row {
                 spacing: 2
                 BusyIndicator {
-                    style: BusyIndicator.Style.Line
+                    frames: ["|", "/", "-", "\\"]
                     color: "green"
                 }
                 Text { text: "Loading system resources (Line)"; color: "green" }
@@ -46,17 +45,16 @@ Terminal {
             Row {
                 spacing: 2
                 BusyIndicator {
-                    style: BusyIndicator.Style.Pipe
+                    frames: ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
                     color: "yellow"
                 }
                 Text { text: "Encrypting sensitive data (Pipe)"; color: "yellow" }
-            
             }
 
             Row {
                 spacing: 2
                 BusyIndicator {
-                    style: BusyIndicator.Style.Block
+                    frames: ["▖", "▘", "▝", "▗"]
                     color: "magenta"
                 }
                 Text { text: "Initializing database connection (Block)"; color: "magenta" }
@@ -65,11 +63,74 @@ Terminal {
             Row {
                 spacing: 2
                 BusyIndicator {
-                    style: BusyIndicator.Style.Bounce
+                    frames: ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
                     color: "lightgreen"
                 }
                 Text { text: "Connecting to remote server (Bounce)"; color: "lightgreen" }
-             
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: ["◐", "◓", "◑", "◒"]
+                    color: "lightblue"
+                }
+                Text { text: "Resolving domain names (Circle)"; color: "lightblue" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: ["←", "↖", "↑", "↗", "→", "↘", "↓", "↙"]
+                    color: "lightyellow"
+                }
+                Text { text: "Synchronizing repository (Arrows)"; color: "lightyellow" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: ["░", "▒", "▓", "█", "▓", "▒"]
+                    color: "lightmagenta"
+                }
+                Text { text: "Waiting for background worker (Pulse)"; color: "lightmagenta" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: [" ", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃"]
+                    color: "cyan"
+                }
+                Text { text: "Processing audio stream (Grow)"; color: "cyan" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: ["▲", "▶", "▼", "◀"]
+                    color: "green"
+                }
+                Text { text: "Routing network packets (Triangles)"; color: "green" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: [".  ", ".. ", "...", "   "]
+                    color: "yellow"
+                    interval: 500
+                }
+                Text { text: "Connecting to fallback host (AsciiDots)"; color: "yellow" }
+            }
+
+            Row {
+                spacing: 2
+                BusyIndicator {
+                    frames: ["◴", "◷", "◶", "◵"]
+                    color: "white"
+                }
+                Text { text: "Streaming AI response (Clock)"; color: "white" }
             }
         }
     }

@@ -4,48 +4,27 @@ import Qamui
 Text {
     id: control
 
-    enum Style {
-        Dots,
-        Line,
-        Pipe,
-        Block,
-        Bounce
-    }
-
-    property int style: BusyIndicator.Style.Dots
     property bool running: true
     property int interval: 100
+    property list<string> frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-    QtObject {
-        id: d
-        property int frameIndex: 0
-        readonly property list<string> frames: {
-            if (control.style === BusyIndicator.Style.Line) {
-                return ["|", "/", "-", "\\"]
-            } else if (control.style === BusyIndicator.Style.Pipe) {
-                return ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
-            } else if (control.style === BusyIndicator.Style.Block) {
-                return ["▖", "▘", "▝", "▗"]
-            } else if (control.style === BusyIndicator.Style.Bounce) {
-                return ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
-            } else {
-                // Default Dots braille spinner
-                return ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    onFramesChanged: timer.index = 0
+
+    text: control.frames.length > 0 ? control.frames[timer.index % control.frames.length] : ""
+    bold: true
+    color: "default"
+
+    Timer {
+        id: timer
+        property int index: 0
+
+        interval: Math.max(1, control.interval)
+        running: control.running && control.visible && control.frames.length > 0
+        repeat: true
+        onTriggered: {
+            if (control.frames.length > 0) {
+                timer.index = (timer.index + 1) % control.frames.length
             }
         }
-    }
-
-    text: d.frames[d.frameIndex % d.frames.length]
-    color: "default"
-    bold: true
-
-    NumberAnimation {
-        target: d
-        property: "frameIndex"
-        running: control.running && control.visible
-        from: 0
-        to: d.frames.length
-        duration: control.interval * d.frames.length
-        loops: -1
     }
 }

@@ -497,6 +497,43 @@ Terminal {
         // so title is clamped to x=5:
         QCOMPARE(rows[4].left(25), QString::fromUtf8("╭──── LongTitle  Right ─╮"));
     }
+
+    void busyIndicatorFramesBehaviour() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    BusyIndicator { id: b1; objectName: "b1"; interval: 10 }
+    BusyIndicator { id: b2; objectName: "b2"; frames: ["A", "B", "C"]; running: false }
+    BusyIndicator { id: b3; objectName: "b3"; frames: ["X", "Y"]; interval: 10 }
+}
+)", &terminal);
+        QVERIFY(terminal);
+        auto* b1 = terminal->findChild<Item*>("b1");
+        auto* b2 = terminal->findChild<Item*>("b2");
+        auto* b3 = terminal->findChild<Item*>("b3");
+        QVERIFY(b1 && b2 && b3);
+
+        // b1 defaults to 10-frame braille spinner and animates
+        const QStringList defaultBraille = {
+            QStringLiteral(u"⠋"), QStringLiteral(u"⠙"), QStringLiteral(u"⠹"), QStringLiteral(u"⠸"),
+            QStringLiteral(u"⠼"), QStringLiteral(u"⠴"), QStringLiteral(u"⠦"), QStringLiteral(u"⠧"),
+            QStringLiteral(u"⠇"), QStringLiteral(u"⠏")
+        };
+        QCOMPARE(b1->property("frames").toStringList(), defaultBraille);
+        QTRY_VERIFY(b1->property("text").toString() != QStringLiteral(u"⠋"));
+
+        // b2 paused with custom frames shows initial frame
+        QCOMPARE(b2->property("frames").toStringList(), QStringList({QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C")}));
+        QCOMPARE(b2->property("text").toString(), QStringLiteral("A"));
+        b2->setProperty("running", true);
+        QTRY_VERIFY(b2->property("text").toString() == QStringLiteral("B") || b2->property("text").toString() == QStringLiteral("C"));
+
+        // b3 custom frames animate
+        QCOMPARE(b3->property("frames").toStringList(), QStringList({QStringLiteral("X"), QStringLiteral("Y")}));
+        QTRY_VERIFY(b3->property("text").toString() == QStringLiteral("Y"));
+    }
 };
 
 QTEST_MAIN(TestControlsBehaviour)

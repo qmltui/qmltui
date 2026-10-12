@@ -4,7 +4,11 @@ project(Qamui VERSION 0.5.0 LANGUAGES CXX)
 option(QAMUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QAMUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QAMUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
-option(QAMUI_ENABLE_BEHAVIOR  "Enable Behavior on properties (requires Qt QmlPrivate)" OFF)
+option(QAMUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, StateGroup, advanced states)" OFF)
+# Compatibility aliases
+if(QAMUI_ENABLE_BEHAVIOR OR QAMUI_ENABLE_ADVANCED_STATES)
+    set(QAMUI_ENABLE_PRIVATE_QT ON CACHE BOOL "Enable features requiring private Qt modules" FORCE)
+endif()
 option(QAMUI_ENABLE_IMAGE     "Build the optional Qamui Image module (requires Qt Gui and Network)" ON)
 option(QAMUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QAMUI_ENABLE_RUNNER "Build and install the optional Qamui Runner library" OFF)
@@ -59,11 +63,14 @@ list(REMOVE_DUPLICATES qt_required_components)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
 
-if(QAMUI_ENABLE_BEHAVIOR)
+if(QAMUI_ENABLE_PRIVATE_QT)
     set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL
         "Suppress warnings about the optional Qt QmlPrivate dependency")
     if(NOT TARGET Qt6::QmlPrivate)
         find_package(Qt6 6.8 OPTIONAL_COMPONENTS QmlPrivate)
+    endif()
+    if(NOT TARGET Qt6::QmlPrivate)
+        message(FATAL_ERROR "QAMUI_ENABLE_PRIVATE_QT is enabled but Qt6::QmlPrivate was not found. Please install the Qt 6 Qml private development headers.")
     endif()
 endif()
 

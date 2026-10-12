@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QList>
+#include <cstdint>
 
 namespace qamui {
 
@@ -17,7 +18,7 @@ class QAMUI_CORE_EXPORT Easing : public QObject {
     QML_ELEMENT
     QML_UNCREATABLE("Easing is only available as an enum")
 public:
-    enum Type {
+    enum Type : uint8_t {
         Linear,
         InQuad,
         OutQuad,
@@ -25,7 +26,7 @@ public:
         InCubic,
         OutCubic,
         InOutCubic,
-        OutBounce
+        OutBounce,
     };
     Q_ENUM(Type)
 };
@@ -43,7 +44,7 @@ public:
     ~Animation() override;
 
     bool running() const { return m_running; }
-    void setRunning(bool r);
+    virtual void setRunning(bool r);
 
     int loops() const { return m_loops; }
     void setLoops(int l);
@@ -99,6 +100,7 @@ public:
     void setEasing(Easing::Type e);
 
     void tick(qint64 elapsedMs) override;
+    void setRunning(bool r) override;
 
 signals:
     void targetChanged();

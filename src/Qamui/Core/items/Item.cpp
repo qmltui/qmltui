@@ -10,6 +10,7 @@
 #include <Qamui/Core/engine/State.h>
 #include <Qamui/Core/engine/Transition.h>
 #include <Qamui/Core/engine/Animation.h>
+#include <Qamui/Core/engine/StateController_p.h>
 #include <QSet>
 #include <QChildEvent>
 #include <QPointer>
@@ -18,7 +19,11 @@
 
 namespace qamui {
 
-Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
+Item::Item(QObject *parent) : QObject(parent), m_anchors(this),
+    m_stateController(std::make_unique<StateController>(this)) {
+    m_stateController->setDefaultTarget(this);
+    connect(m_stateController.get(), &StateController::stateChanged, this, &Item::stateChanged);
+
     m_leftLine = new AnchorLine(AnchorLine::Left, this);
     m_rightLine = new AnchorLine(AnchorLine::Right, this);
     m_topLine = new AnchorLine(AnchorLine::Top, this);
@@ -66,12 +71,13 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
 
 qsizetype Item::dataCount(QQmlListProperty<QObject> *list) {
     Item *self = qobject_cast<Item*>(list->object);
-    return self ? self->m_dataChildren.count() : 0;
+    return self ? self->m_dataChildren.size() : 0;
 }
 
 QObject *Item::dataAt(QQmlListProperty<QObject> *list, qsizetype index) {
     Item *self = qobject_cast<Item*>(list->object);
-    return self ? self->m_dataChildren.at(index).data() : nullptr;
+    return (self && index >= 0 && index < self->m_dataChildren.size())
+        ? self->m_dataChildren.at(index).data() : nullptr;
 }
 
 void Item::clearData(QQmlListProperty<QObject> *list) {
@@ -85,9 +91,9 @@ void Item::clearData(QQmlListProperty<QObject> *list) {
     }
 }
 
-QQmlListProperty<Item> Item::childrenProperty() {
+QQmlListProperty<Item> Item::childrenProperty() const {
     return QQmlListProperty<Item>(
-        this, nullptr,
+        const_cast<Item*>(this), nullptr,
         [](QQmlListProperty<Item> *list) -> qsizetype {
             Item *self = qobject_cast<Item*>(list->object);
             return self ? self->childItems().size() : 0;
@@ -404,17 +410,10 @@ void Item::childEvent(QChildEvent* event) {
         m_dataChildren.removeIf([childObject](const QPointer<QObject> &entry) {
             return entry.isNull() || entry.data() == childObject;
         });
-        const qsizetype removedStates = m_statesList.removeIf(
-            [childObject](const QPointer<State> &entry) {
-            return entry.isNull() || entry.data() == childObject;
-        });
-        m_transitionsList.removeIf([childObject](const QPointer<Transition> &entry) {
-            return entry.isNull() || entry.data() == childObject;
-        });
         if (State *state = qobject_cast<State *>(childObject))
-            disconnect(state, nullptr, this, nullptr);
-        if (removedStates > 0)
-            evaluateStateConditions();
+            m_stateController->stateRemoved(state);
+        else if (Transition *transition = qobject_cast<Transition *>(childObject))
+            m_stateController->transitionRemoved(transition);
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
             unregisterChildItem(childItem);
         } else {
@@ -710,337 +709,23 @@ bool Item::childMouseEventFilter(Item* item, class MouseEvent* event) {
 }
 
 QQmlListProperty<qamui::State> Item::states() const {
-    return QQmlListProperty<qamui::State>(const_cast<Item*>(this), nullptr,
-        &Item::appendState,
-        &Item::stateCount,
-        &Item::stateAt,
-        &Item::clearStates);
-}
-
-void Item::appendState(QQmlListProperty<qamui::State>* list, qamui::State* state) {
-    Item* self = qobject_cast<Item*>(list->object);
-    if (self && state) {
-        state->setParent(self);
-        self->m_statesList.append(state);
-        connect(state, &State::whenChanged, self, &Item::evaluateStateConditions);
-        self->evaluateStateConditions();
-    }
-}
-
-qsizetype Item::stateCount(QQmlListProperty<qamui::State>* list) {
-    Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_statesList.size() : 0;
-}
-
-qamui::State* Item::stateAt(QQmlListProperty<qamui::State>* list, qsizetype index) {
-    Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_statesList.at(index).data() : nullptr;
-}
-
-void Item::clearStates(QQmlListProperty<qamui::State>* list) {
-    Item* self = qobject_cast<Item*>(list->object);
-    if (self) {
-        const QList<QPointer<State>> states = self->m_statesList;
-        self->m_statesList.clear();
-        for (const QPointer<State> &state : states) {
-            if (!state)
-                continue;
-            disconnect(state, nullptr, self, nullptr);
-            if (state->parent() == self)
-                state->setParent(nullptr);
-        }
-        self->evaluateStateConditions();
-    }
+    return m_stateController->statesProperty();
 }
 
 QQmlListProperty<qamui::Transition> Item::transitions() const {
-    return QQmlListProperty<qamui::Transition>(const_cast<Item*>(this), nullptr,
-        &Item::appendTransition,
-        &Item::transitionCount,
-        &Item::transitionAt,
-        &Item::clearTransitions);
+    return m_stateController->transitionsProperty();
 }
 
-void Item::appendTransition(QQmlListProperty<qamui::Transition>* list, qamui::Transition* transition) {
-    Item* self = qobject_cast<Item*>(list->object);
-    if (self && transition) {
-        transition->setParent(self);
-        self->m_transitionsList.append(transition);
-    }
-}
-
-qsizetype Item::transitionCount(QQmlListProperty<qamui::Transition>* list) {
-    Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_transitionsList.count() : 0;
-}
-
-qamui::Transition* Item::transitionAt(QQmlListProperty<qamui::Transition>* list, qsizetype index) {
-    Item* self = qobject_cast<Item*>(list->object);
-    return self ? self->m_transitionsList.at(index).data() : nullptr;
-}
-
-void Item::clearTransitions(QQmlListProperty<qamui::Transition>* list) {
-    Item* self = qobject_cast<Item*>(list->object);
-    if (self) {
-        const QList<QPointer<Transition>> transitions = self->m_transitionsList;
-        self->m_transitionsList.clear();
-        for (const QPointer<Transition> &transition : transitions)
-            if (transition && transition->parent() == self)
-                transition->setParent(nullptr);
-    }
-}
-
-void Item::evaluateStateConditions() {
-    State* activeState = nullptr;
-    for (const QPointer<State> &state : m_statesList) {
-        State *s = state.data();
-        if (s && s->when()) {
-            activeState = s;
-            break;
-        }
-    }
-    if (activeState) {
-        setState(activeState->name());
-    } else {
-        State* currentObj = nullptr;
-        for (const QPointer<State> &state : m_statesList) {
-            State *s = state.data();
-            if (s && s->name() == m_stateName) {
-                currentObj = s;
-                break;
-            }
-        }
-        if (!m_stateName.isEmpty() && (!currentObj || !currentObj->when())) {
-            setState(QString());
-        }
-    }
+QString Item::state() const {
+    return m_stateController->state();
 }
 
 void Item::setState(const QString& newState) {
-    if (m_stateName == newState) return;
+    m_stateController->setState(newState);
+}
 
-    QString oldState = m_stateName;
-    m_stateName = newState;
-    emit stateChanged();
-
-    // 1. Stop any currently running transition animations
-    for (const QPointer<Animation>& anim : m_runningTransitionAnimations) {
-        if (anim) {
-            anim->stop();
-            delete anim.data();
-        }
-    }
-    m_runningTransitionAnimations.clear();
-
-    // 2. Find State objects for old and new states
-    State* oldStateObj = nullptr;
-    State* newStateObj = nullptr;
-    for (const QPointer<State> &state : m_statesList) {
-        State *s = state.data();
-        if (s) {
-            if (s->name() == oldState) oldStateObj = s;
-            if (s->name() == newState) newStateObj = s;
-        }
-    }
-
-    // 3. Find if there is a matching Transition
-    Transition* transitionObj = nullptr;
-    for (const QPointer<Transition> &transition : m_transitionsList) {
-        Transition *t = transition.data();
-        if (t && t->matches(oldState, newState)) {
-            transitionObj = t;
-            break;
-        }
-    }
-
-    // 4. Compute the set of all modified properties
-    struct PropChangeInfo {
-        QObject* target;
-        QString property;
-        QVariant fromVal;
-        QVariant toVal;
-    };
-    QList<PropChangeInfo> modifiedProperties;
-
-    // Helper to find if a property is overridden in a State
-    auto findOverrideInState = [](State* state, QObject* defaultTarget, QObject* targetObj, const QString& propName, QVariant& valOut) -> bool {
-        if (!state) return false;
-        for (QObject* changeObj : state->changesList()) {
-            PropertyChanges* pc = qobject_cast<PropertyChanges*>(changeObj);
-            if (!pc) continue;
-            QObject* pcTarget = pc->target() ? pc->target() : defaultTarget;
-            if (pcTarget == targetObj) {
-                QVariantMap props = pc->properties();
-                if (props.contains(propName)) {
-                    valOut = props.value(propName);
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    // First, scan for properties to revert from the old state
-    if (oldStateObj) {
-        for (QObject* changeObj : oldStateObj->changesList()) {
-            PropertyChanges* pc = qobject_cast<PropertyChanges*>(changeObj);
-            if (!pc) continue;
-            QObject* oldTarget = pc->target() ? pc->target() : this;
-            if (!oldTarget) continue;
-
-            if (pc->restoreEntryValues()) {
-                QVariantMap props = pc->properties();
-                for (auto it = props.begin(); it != props.end(); ++it) {
-                    QString propName = it.key();
-                    // Check if the new state overrides it
-                    QVariant dummy;
-                    if (!findOverrideInState(newStateObj, this, oldTarget, propName, dummy)) {
-                        // Needs to be reverted!
-                        auto key = qMakePair(QPointer<QObject>(oldTarget), propName);
-                        if (m_savedPropertyValues.contains(key)) {
-                            PropChangeInfo info;
-                            info.target = oldTarget;
-                            info.property = propName;
-                            info.fromVal = oldTarget->property(propName.toUtf8().constData());
-                            info.toVal = m_savedPropertyValues.value(key);
-                            modifiedProperties.append(info);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Next, scan for properties set by the new state
-    if (newStateObj) {
-        for (QObject* changeObj : newStateObj->changesList()) {
-            PropertyChanges* pc = qobject_cast<PropertyChanges*>(changeObj);
-            if (!pc) continue;
-            QObject* newTarget = pc->target() ? pc->target() : this;
-            if (!newTarget) continue;
-
-            QVariantMap props = pc->properties();
-            for (auto it = props.begin(); it != props.end(); ++it) {
-                QString propName = it.key();
-                QVariant newVal = it.value();
-
-                // Save current value if not already saved (so we can revert to it later)
-                auto key = qMakePair(QPointer<QObject>(newTarget), propName);
-                if (!m_savedPropertyValues.contains(key)) {
-                    m_savedPropertyValues.insert(key, newTarget->property(propName.toUtf8().constData()));
-                }
-
-                PropChangeInfo info;
-                info.target = newTarget;
-                info.property = propName;
-                info.fromVal = newTarget->property(propName.toUtf8().constData());
-                info.toVal = newVal;
-                modifiedProperties.append(info);
-            }
-        }
-    }
-
-    // 5. Apply changes, either via Transition animations or immediately
-    QSet<QPair<QObject*, QString>> animatedProperties;
-
-    if (transitionObj && !modifiedProperties.isEmpty()) {
-        for (Animation* anim : transitionObj->animationsList()) {
-            PropertyAnimation* propAnim = qobject_cast<PropertyAnimation*>(anim);
-            if (!propAnim) continue;
-
-            // For this animation template, find all matching modified properties
-            for (const PropChangeInfo& info : modifiedProperties) {
-                // Match target
-                if (propAnim->target() && propAnim->target() != info.target) continue;
-                // Match property
-                if (!propAnim->property().isEmpty() && propAnim->property() != info.property) continue;
-
-                // Match animation type
-                bool isColorAnim = (qobject_cast<ColorAnimation*>(propAnim) != nullptr);
-                bool isNumberAnim = (qobject_cast<NumberAnimation*>(propAnim) != nullptr);
-
-                // Check type compatibility
-                if (isColorAnim) {
-                    bool looksLikeColor = info.property.contains("color", Qt::CaseInsensitive) ||
-                                          (info.toVal.userType() == QMetaType::QString && info.toVal.toString().startsWith('#'));
-                    if (!looksLikeColor) continue;
-                } else if (isNumberAnim) {
-                    bool isNumeric = (info.toVal.userType() == QMetaType::Int ||
-                                      info.toVal.userType() == QMetaType::Double ||
-                                      info.toVal.userType() == QMetaType::Float ||
-                                      info.toVal.userType() == QMetaType::LongLong ||
-                                      info.toVal.userType() == QMetaType::ULongLong);
-                    if (!isNumeric) continue;
-                }
-
-                // Instantiate running animation copy
-                PropertyAnimation* newAnim = nullptr;
-                if (isColorAnim) {
-                    newAnim = new ColorAnimation(this);
-                } else if (isNumberAnim) {
-                    newAnim = new NumberAnimation(this);
-                } else {
-                    newAnim = new PropertyAnimation(this);
-                }
-
-                newAnim->setDuration(propAnim->duration());
-                newAnim->setEasing(propAnim->easing());
-                newAnim->setLoops(propAnim->loops());
-                newAnim->setTarget(info.target);
-                newAnim->setProperty(info.property);
-                newAnim->setFrom(info.fromVal);
-                newAnim->setTo(info.toVal);
-
-                // Clean up when done
-                connect(newAnim, &Animation::finished, newAnim, [this, newAnim]() {
-                    m_runningTransitionAnimations.removeOne(newAnim);
-                    newAnim->deleteLater();
-                });
-
-                // Track running transition animations
-                m_runningTransitionAnimations.append(newAnim);
-                animatedProperties.insert(qMakePair(info.target, info.property));
-
-                newAnim->start();
-            }
-        }
-    }
-
-    // Apply any properties that were NOT animated
-    for (const PropChangeInfo& info : modifiedProperties) {
-        if (!animatedProperties.contains(qMakePair(info.target, info.property))) {
-            info.target->setProperty(info.property.toUtf8().constData(), info.toVal);
-        }
-    }
-
-    // Clean up reverted properties from the saved values map if they are not in the new state
-    if (oldStateObj) {
-        for (QObject* changeObj : oldStateObj->changesList()) {
-            PropertyChanges* pc = qobject_cast<PropertyChanges*>(changeObj);
-            if (!pc) continue;
-            QObject* oldTarget = pc->target() ? pc->target() : this;
-            if (!oldTarget) continue;
-
-            QVariantMap props = pc->properties();
-            for (auto it = props.begin(); it != props.end(); ++it) {
-                QString propName = it.key();
-                QVariant dummy;
-                if (!findOverrideInState(newStateObj, this, oldTarget, propName, dummy)) {
-                    auto key = qMakePair(QPointer<QObject>(oldTarget), propName);
-                    m_savedPropertyValues.remove(key);
-                }
-            }
-        }
-    }
-
-    // Prune any dead QPointer entries from m_savedPropertyValues map
-    for (auto it = m_savedPropertyValues.begin(); it != m_savedPropertyValues.end(); ) {
-        if (it.key().first.isNull()) {
-            it = m_savedPropertyValues.erase(it);
-        } else {
-            ++it;
-        }
-    }
+void Item::evaluateStateConditions() {
+    m_stateController->evaluateStateConditions();
 }
 
 } // namespace qamui

@@ -5,9 +5,9 @@ set(gallery_qml_files Main.qml)
 # text (see Main.qml). Plain resources, not QML module files, so their names
 # (Button.qml, ...) never shadow the Qamui.Controls types they demonstrate.
 file(GLOB gallery_example_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.qml")
-# Behavior needs QAMUI_ENABLE_BEHAVIOR; without it the tile is left out and the
+# Behavior needs QAMUI_ENABLE_PRIVATE_QT; without it the tile is left out and the
 # catalog hides the entry (Main.qml filters on the files it was given).
-if(NOT QAMUI_ENABLE_BEHAVIOR)
+if(NOT QAMUI_ENABLE_PRIVATE_QT)
     list(FILTER gallery_example_files EXCLUDE REGEX "/Behavior\\.qml$")
 endif()
 if(NOT QAMUI_ENABLE_IMAGE)

@@ -2,14 +2,15 @@
 #include <Qamui/Core/engine/Clock_p.h>
 #include <Qamui/Core/primitives/ColorMapper.h>
 #include <Qamui/Core/primitives/Color.h>
-#include <cmath>
-#include <algorithm>
 #include <QDebug>
 #include <QMetaProperty>
 #include <QMetaType>
-#ifdef QAMUI_ENABLE_BEHAVIOR
+#include <QPointer>
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
 #include <QtQml/private/qqmlproperty_p.h>
 #endif
+#include <algorithm>
+#include <cmath>
 
 namespace qamui {
 
@@ -54,7 +55,7 @@ static double applyEasing(Easing::Type type, double t) {
 
 static void writePropertyBypassingInterceptor(QObject* target, const QString& name, const QVariant& value) {
     if (!target || name.isEmpty()) return;
-#ifdef QAMUI_ENABLE_BEHAVIOR
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
     // Dynamic QML properties have no C++ static_metacall. A regular property
     // write would re-enter Behavior and remove the property's source binding.
     const QQmlProperty property(target, name);
@@ -195,8 +196,19 @@ void PropertyAnimation::setProperty(const QString& name) {
 
 void PropertyAnimation::setDuration(int d) {
     if (m_duration == d) return;
-    m_duration = std::max(1, d);
+    m_duration = (std::max)(0, d);
     emit durationChanged();
+}
+
+void PropertyAnimation::setRunning(bool r) {
+    if (m_running == r) return;
+    if (r && m_duration == 0) {
+        writeValue(1.0);
+        emit started();
+        emit finished();
+        return;
+    }
+    Animation::setRunning(r);
 }
 
 void PropertyAnimation::setFrom(const QVariant& f) {
@@ -286,6 +298,10 @@ void PropertyAnimation::writeValue(const QVariant& value) {
         typedVal = QVariant(static_cast<float>(currentVal));
     }
 
+    if (currentProp == typedVal) {
+        return;
+    }
+
     writePropertyBypassingInterceptor(m_target.data(), m_propertyName, typedVal);
 }
 
@@ -347,6 +363,12 @@ void ColorAnimation::writeValue(const QVariant& value) {
                       | static_cast<uint32_t>(currB);
 
     Color animatedColor = Color::fromArgb32(currArgb);
+    QVariant currentProp = m_target->property(m_propertyName.toUtf8().constData());
+    if (currentProp.userType() == QMetaType::fromType<Color>().id() && currentProp.value<Color>() == animatedColor)
+        return;
+    if (currentProp.userType() == QMetaType::QString && currentProp.toString() == animatedColor.toString())
+        return;
+
     writePropertyBypassingInterceptor(m_target.data(), m_propertyName, QVariant::fromValue(animatedColor));
 }
 
@@ -388,8 +410,12 @@ void AnimationManager::handleTick() {
     qint64 delta = current - m_lastTickTime;
     m_lastTickTime = current;
 
-    QList<Animation*> activeList = m_animations;
-    for (Animation* anim : activeList) {
+    QList<QPointer<Animation>> activeList;
+    activeList.reserve(m_animations.size());
+    for (Animation* anim : m_animations) {
+        activeList.append(anim);
+    }
+    for (const QPointer<Animation>& anim : activeList) {
         if (anim && anim->running()) {
             anim->tick(delta);
         }

@@ -6,13 +6,14 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <vector>
+#include <utility>
 #include <QMap>
-#include <QPair>
 #include <QPointer>
 #include <QPoint>
 #include <QHash>
 #include <QMetaObject>
 #include <algorithm>
+#include <optional>
 
 #include <Qamui/Core/items/Anchors.h>
 #include <Qamui/Core/items/Border.h>
@@ -21,6 +22,7 @@ namespace qamui {
 
 class State;
 class Transition;
+class StateController;
 class Animation;
 class ItemPaintTraversal;
 
@@ -35,11 +37,11 @@ struct ClipRect {
     }
 
     ClipRect intersected(const ClipRect& other) const {
-        int nx = std::max(x, other.x);
-        int ny = std::max(y, other.y);
-        int nrx = std::min(x + width, other.x + other.width);
-        int nby = std::min(y + height, other.y + other.height);
-        return ClipRect{nx, ny, std::max(0, nrx - nx), std::max(0, nby - ny)};
+        int nx = (std::max)(x, other.x);
+        int ny = (std::max)(y, other.y);
+        int nrx = (std::min)(x + width, other.x + other.width);
+        int nby = (std::min)(y + height, other.y + other.height);
+        return ClipRect{nx, ny, (std::max)(0, nrx - nx), (std::max)(0, nby - ny)};
     }
 };
 
@@ -106,10 +108,10 @@ public:
   virtual ~Item();
 
   QQmlListProperty<QObject> data() const;
-  QQmlListProperty<qamui::Item> childrenProperty();
+  QQmlListProperty<qamui::Item> childrenProperty() const;
   QQmlListProperty<qamui::State> states() const;
   QQmlListProperty<qamui::Transition> transitions() const;
-  QString state() const { return m_stateName; }
+  QString state() const;
   void setState(const QString& newState);
   void evaluateStateConditions();
   const QList<qamui::Item *> &childItems() const { return m_visualChildren; }
@@ -253,16 +255,6 @@ private:
   static QObject *dataAt(QQmlListProperty<QObject> *list, qsizetype index);
   static void clearData(QQmlListProperty<QObject> *list);
 
-  static void appendState(QQmlListProperty<qamui::State>* list, qamui::State* state);
-  static qsizetype stateCount(QQmlListProperty<qamui::State>* list);
-  static qamui::State* stateAt(QQmlListProperty<qamui::State>* list, qsizetype index);
-  static void clearStates(QQmlListProperty<qamui::State>* list);
-
-  static void appendTransition(QQmlListProperty<qamui::Transition>* list, qamui::Transition* transition);
-  static qsizetype transitionCount(QQmlListProperty<qamui::Transition>* list);
-  static qamui::Transition* transitionAt(QQmlListProperty<qamui::Transition>* list, qsizetype index);
-  static void clearTransitions(QQmlListProperty<qamui::Transition>* list);
-
 protected:
   // `focus: true` set while a subtree is still detached from its Terminal is
   // recorded on the item; these apply it once the subtree is attached.
@@ -328,11 +320,7 @@ protected:
   mutable QList<Item *> m_stackingChildren;
   mutable bool m_stackingOrderDirty = true;
 
-  QString m_stateName;
-  QList<QPointer<qamui::State>> m_statesList;
-  QList<QPointer<qamui::Transition>> m_transitionsList;
-  QMap<QPair<QPointer<QObject>, QString>, QVariant> m_savedPropertyValues;
-  QList<QPointer<Animation>> m_runningTransitionAnimations;
+  std::unique_ptr<StateController> m_stateController;
   QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
   bool m_filtersChildMouseEvents = false;
   quint8 m_itemFlags = 0;

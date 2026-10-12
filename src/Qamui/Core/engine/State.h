@@ -7,12 +7,21 @@
 #include <QQmlEngine>
 #include <QQmlListProperty>
 #include <QPointer>
+#include <memory>
 
 namespace qamui {
+
+class PropertyChangesPrivate;
 
 class QAMUI_CORE_EXPORT PropertyChanges : public QObject {
     Q_OBJECT
     QML_ELEMENT
+
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
+    QML_CUSTOMPARSER
+    Q_CLASSINFO("ImmediatePropertyNames", "target,restoreEntryValues,explicit,properties,objectName")
+    Q_PROPERTY(bool explicit READ isExplicit WRITE setIsExplicit NOTIFY explicitChanged)
+#endif
 
     Q_PROPERTY(QObject* target READ target WRITE setTarget NOTIFY targetChanged)
     Q_PROPERTY(QVariantMap properties READ properties WRITE setProperties NOTIFY propertiesChanged)
@@ -20,7 +29,7 @@ class QAMUI_CORE_EXPORT PropertyChanges : public QObject {
 
 public:
     explicit PropertyChanges(QObject* parent = nullptr);
-    ~PropertyChanges() override = default;
+    ~PropertyChanges() override;
 
     QObject* target() const { return m_target.data(); }
     void setTarget(QObject* t);
@@ -31,15 +40,27 @@ public:
     bool restoreEntryValues() const { return m_restoreEntryValues; }
     void setRestoreEntryValues(bool r);
 
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
+    bool isExplicit() const;
+    void setIsExplicit(bool e);
+#endif
+
+    PropertyChangesPrivate* d_func() { return d.get(); }
+    const PropertyChangesPrivate* d_func() const { return d.get(); }
+
 signals:
     void targetChanged();
     void propertiesChanged();
     void restoreEntryValuesChanged();
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
+    void explicitChanged();
+#endif
 
 private:
     QPointer<QObject> m_target;
     QVariantMap m_properties;
     bool m_restoreEntryValues = true;
+    std::unique_ptr<PropertyChangesPrivate> d;
 };
 
 class QAMUI_CORE_EXPORT State : public QObject {
@@ -60,8 +81,10 @@ public:
     bool when() const { return m_when; }
     void setWhen(bool w);
 
-    QQmlListProperty<QObject> changes();
-    const QList<QObject*>& changesList() const { return m_changesList; }
+    QQmlListProperty<QObject> changes() const;
+    const QList<QPointer<QObject>>& changesList() const { return m_changesList; }
+
+    QList<PropertyChanges*> propertyChangesList() const;
 
 signals:
     void nameChanged();
@@ -75,7 +98,15 @@ private:
 
     QString m_name;
     bool m_when = false;
-    QList<QObject*> m_changesList;
+    QList<QPointer<QObject>> m_changesList;
 };
 
 } // namespace qamui
+
+#if defined(QAMUI_ENABLE_PRIVATE_QT)
+QT_BEGIN_NAMESPACE
+class QQmlCustomParser;
+template<>
+QAMUI_CORE_EXPORT QQmlCustomParser *qmlCreateCustomParser<qamui::PropertyChanges>();
+QT_END_NAMESPACE
+#endif

@@ -1,11 +1,12 @@
 include("${Qamui_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
 
-# The library backing the QML module
-set(qamui_behavior_sources)
-if(QAMUI_ENABLE_BEHAVIOR)
-    list(APPEND qamui_behavior_sources
+set(qamui_private_qt_sources)
+if(QAMUI_ENABLE_PRIVATE_QT)
+    list(APPEND qamui_private_qt_sources
         engine/Behavior.h
         engine/Behavior.cpp
+        engine/StateGroup.h
+        engine/StateGroup.cpp
     )
 endif()
 
@@ -92,6 +93,9 @@ qt_add_qml_module(QamuiCore
         engine/State.cpp
         engine/Transition.h
         engine/Transition.cpp
+        engine/StateController_p.h
+        engine/StateController.cpp
+        ${qamui_private_qt_sources}
         items/Item.h
         items/Item.cpp
         items/Canvas.h
@@ -153,7 +157,6 @@ qt_add_qml_module(QamuiCore
         items/TableView.cpp
         items/TreeView.h
         items/TreeView.cpp
-        ${qamui_behavior_sources}
 )
 
 # Headers are reached as <Qamui/Core/<layer>/Name.h> from the src/ root in the
@@ -186,9 +189,14 @@ if(qamui_core_library_type STREQUAL "STATIC_LIBRARY" AND NOT QAMUI_USE_SYSTEM_UT
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
 endif()
-if(QAMUI_ENABLE_BEHAVIOR)
+if(QAMUI_ENABLE_PRIVATE_QT)
     target_link_libraries(QamuiCore PRIVATE Qt6::QmlPrivate)
-    target_compile_definitions(QamuiCore PRIVATE QAMUI_ENABLE_BEHAVIOR)
+    target_compile_definitions(QamuiCore PUBLIC
+        QAMUI_ENABLE_PRIVATE_QT
+        QAMUI_HAS_QML_PRIVATE
+        QAMUI_ENABLE_BEHAVIOR
+        QAMUI_ENABLE_ADVANCED_STATES
+    )
 endif()
 
 target_compile_definitions(QamuiCore PRIVATE QAMUI_CORE_LIBRARY)

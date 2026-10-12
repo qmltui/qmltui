@@ -3,6 +3,7 @@
 #include <Qamui/Core/primitives/QamuiExport.h>
 
 #include <QObject>
+#include <QPointer>
 #include <QQmlEngine>
 #include <QQmlListProperty>
 #include <Qamui/Core/engine/Animation.h>
@@ -27,8 +28,8 @@ public:
     QString to() const { return m_to; }
     void setTo(const QString& t);
 
-    QQmlListProperty<Animation> animations();
-    const QList<Animation*>& animationsList() const { return m_animationsList; }
+    QQmlListProperty<Animation> animations() const;
+    const QList<QPointer<Animation>>& animationsList() const { return m_animationsList; }
 
     bool matches(const QString& fromState, const QString& toState) const;
 
@@ -44,7 +45,7 @@ private:
 
     QString m_from = "*";
     QString m_to = "*";
-    QList<Animation*> m_animationsList;
+    QList<QPointer<Animation>> m_animationsList;
 };
 
 } // namespace qamui

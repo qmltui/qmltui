@@ -23,9 +23,9 @@ bool Transition::matches(const QString& fromState, const QString& toState) const
     return fromOk && toOk;
 }
 
-QQmlListProperty<Animation> Transition::animations() {
+QQmlListProperty<Animation> Transition::animations() const {
     return QQmlListProperty<Animation>(
-        this,
+        const_cast<Transition*>(this),
         nullptr,
         &Transition::appendAnimation,
         &Transition::animationCount,
@@ -43,12 +43,13 @@ void Transition::appendAnimation(QQmlListProperty<Animation>* list, Animation* a
 
 qsizetype Transition::animationCount(QQmlListProperty<Animation>* list) {
     auto* self = qobject_cast<Transition*>(list->object);
-    return self ? self->m_animationsList.count() : 0;
+    return self ? self->m_animationsList.size() : 0;
 }
 
 Animation* Transition::animationAt(QQmlListProperty<Animation>* list, qsizetype index) {
     auto* self = qobject_cast<Transition*>(list->object);
-    return self ? self->m_animationsList.at(index) : nullptr;
+    return (self && index >= 0 && index < self->m_animationsList.size())
+        ? self->m_animationsList.at(index).data() : nullptr;
 }
 
 void Transition::clearAnimations(QQmlListProperty<Animation>* list) {

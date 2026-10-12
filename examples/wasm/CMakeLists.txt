@@ -32,7 +32,7 @@ set(QAMUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(QAMUI_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 set(QAMUI_ENABLE_RUNNER OFF CACHE BOOL "" FORCE)
 set(QAMUI_ENABLE_TERMINAL_HOST OFF CACHE BOOL "" FORCE)
-option(QAMUI_ENABLE_BEHAVIOR "Behavior on properties (needs Qt QmlPrivate)" ON)
+option(QAMUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior, StateGroup (needs Qt QmlPrivate)" ON)
 option(QAMUI_WASM_PLAYGROUND_IMAGE "Link Qamui.Image into the playground binary" ON)
 
 add_subdirectory(../.. qamui)   # the root includes cmake/QamuiWasm.cmake under EMSCRIPTEN
@@ -46,7 +46,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../gallery/Main.qml" "${QAMUI_WASM_W
 # The demos it instantiates, plus an index the page fetches them from.
 file(GLOB gallery_examples CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../gallery/examples/*.qml")
 # Tiles the runtime cannot instantiate are left out; the gallery then hides them.
-if(NOT QAMUI_ENABLE_BEHAVIOR)
+if(NOT QAMUI_ENABLE_PRIVATE_QT)
     list(FILTER gallery_examples EXCLUDE REGEX "/Behavior\\.qml$")
 endif()
 if(NOT QAMUI_WASM_PLAYGROUND_IMAGE OR NOT QAMUI_ENABLE_IMAGE)

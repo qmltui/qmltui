@@ -53,7 +53,7 @@ Manually updates the recorded cursor coordinates relative to this MouseArea.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/items/MouseArea.h>
+#include <Qamui/Core/Items/MouseArea.h>
 #include <QDebug>
 
 using namespace qamui;

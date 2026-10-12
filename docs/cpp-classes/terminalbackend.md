@@ -14,7 +14,7 @@ Input is always delivered as raw VT byte sequences, so `InputDecoder` needs no p
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/primitives/TerminalBackend.h`, installed as `<Qamui/Core/primitives/TerminalBackend.h>`
+- **Header**: `src/Qamui/Core/Primitives/TerminalBackend.h`, installed as `<Qamui/Core/Primitives/TerminalBackend.h>`
 - **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/Qamui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
 - **Factory**: `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` in `TerminalBackend.cpp`
 - **Dependencies**: QtCore only. Platform headers are confined to the implementation files; `<windows.h>` never reaches a public header.
@@ -77,7 +77,7 @@ Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIG
 `TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/topics/webassembly.md](../topics/webassembly.md).
 
 ```cpp
-#include <Qamui/Core/primitives/TerminalBackend.h>
+#include <Qamui/Core/Primitives/TerminalBackend.h>
 
 qamui::TerminalBackend::setFactory([](int) {
     return std::make_unique<SerialConsoleBackend>(QStringLiteral("/dev/ttyS0"));

@@ -210,8 +210,8 @@ Single-threaded. Must be instantiated and used on the main GUI thread.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 
 using namespace qamui;
 

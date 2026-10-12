@@ -6,10 +6,10 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <memory>
-#include <Qamui/Core/items/TreeView.h>
-#include <Qamui/Core/items/TableView.h>
-#include <Qamui/Core/items/ListView.h>
-#include <Qamui/Core/items/GridView.h>
+#include <Qamui/Core/Items/TreeView.h>
+#include <Qamui/Core/Items/TableView.h>
+#include <Qamui/Core/Items/ListView.h>
+#include <Qamui/Core/Items/GridView.h>
 #include "../TestPaint.h"
 
 class CountModel final : public QAbstractListModel {

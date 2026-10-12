@@ -96,3 +96,28 @@ endif()
 ```
 
 [Tutorial index](index.md)
+
+## Launch a scenario from the shell
+
+When your normal application links `Qamui::Runner`, use the installed launcher
+(or `build/tools/qamui-runner/qamui-runner` from a development build):
+
+```bash
+qamui-runner --script test.js --artifacts ./run-results -- ./myApp
+qamui-runner --capture-after-ms 0 -- ./myApp
+qamui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
+```
+
+The explicit artifact directory must be new or empty. Without `--artifacts`,
+the launcher retains a unique temporary directory and prints its location.
+Inspect `result.json` and the committed `final.txt`, `failure.txt`, or capture
+files there. Exit codes are 0 (pass), 1 (scenario failure), and 2 (launcher or
+process failure).
+
+Build/install with `QAMUI_ENABLE_RUNNER=ON` to use this without repository tests.
+The application needs a current Runner supporting the activation handshake;
+C++-created terminals also need `Runner::startFromEnvironment()`. The launcher
+starts a new process and does not inject Runner into an unprepared executable.
+Existing `qamui_add_scenario()` tests continue using their original driver.
+See the [launcher reference](../cpp-classes/runner.md#command-line-launcher) for
+all options, deadlines, environment handling, and remote execution through SSH.

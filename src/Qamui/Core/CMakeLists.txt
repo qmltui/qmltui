@@ -3,29 +3,29 @@ include("${Qamui_SOURCE_DIR}/cmake/CheckEngineIncludes.cmake")
 set(qamui_private_qt_sources)
 if(QAMUI_ENABLE_PRIVATE_QT)
     list(APPEND qamui_private_qt_sources
-        engine/Behavior.h
-        engine/Behavior.cpp
-        engine/StateGroup.h
-        engine/StateGroup.cpp
+        Engine/Behavior.h
+        Engine/Behavior.cpp
+        Engine/StateGroup.h
+        Engine/StateGroup.cpp
     )
 endif()
 
-# One terminal backend per platform behind primitives/TerminalBackend.h.
+# One terminal backend per platform behind Primitives/TerminalBackend.h.
 set(qamui_platform_sources)
 if(WIN32)
     list(APPEND qamui_platform_sources
-        primitives/Win32ConsoleBackend.h
-        primitives/Win32ConsoleBackend.cpp
+        Primitives/Win32ConsoleBackend.h
+        Primitives/Win32ConsoleBackend.cpp
     )
 elseif(EMSCRIPTEN)
     list(APPEND qamui_platform_sources
-        primitives/WasmTerminalBackend.h
-        primitives/WasmTerminalBackend.cpp
+        Primitives/WasmTerminalBackend.h
+        Primitives/WasmTerminalBackend.cpp
     )
 else()
     list(APPEND qamui_platform_sources
-        primitives/PosixTerminalBackend.h
-        primitives/PosixTerminalBackend.cpp
+        Primitives/PosixTerminalBackend.h
+        Primitives/PosixTerminalBackend.cpp
     )
 endif()
 
@@ -33,132 +33,132 @@ qt_add_qml_module(QamuiCore
     URI Qamui
     OUTPUT_TARGETS qamui_core_output_targets
     SOURCES
-        primitives/Span.h
-        primitives/Span.cpp
-        primitives/Color.h
-        primitives/Color.cpp
-        primitives/QamuiExport.h
-        primitives/QamuiGlobal.h
-        primitives/QamuiGlobal.cpp
-        primitives/ColorMapper.h
-        primitives/ColorMapper.cpp
-        primitives/InputDecoder.cpp
-        primitives/Cell.h
-        primitives/Cell.cpp
-        primitives/UnicodeText.h
-        primitives/UnicodeText.cpp
-        primitives/Subpixel.h
-        primitives/Subpixel.cpp
-        primitives/TextGridBuffer.h
-        primitives/TextGridBuffer.cpp
-        primitives/TextGridBufferAnsi.cpp
-        primitives/AnsiEncoder_p.h
-        primitives/TerminalCapabilities.h
-        primitives/TerminalCapabilities.cpp
-        primitives/TerminalBackend.h
-        primitives/TerminalBackend.cpp
+        Primitives/Span.h
+        Primitives/Span.cpp
+        Primitives/Color.h
+        Primitives/Color.cpp
+        Primitives/QamuiExport.h
+        Primitives/QamuiGlobal.h
+        Primitives/QamuiGlobal.cpp
+        Primitives/ColorMapper.h
+        Primitives/ColorMapper.cpp
+        Primitives/InputDecoder.cpp
+        Primitives/Cell.h
+        Primitives/Cell.cpp
+        Primitives/UnicodeText.h
+        Primitives/UnicodeText.cpp
+        Primitives/Subpixel.h
+        Primitives/Subpixel.cpp
+        Primitives/TextGridBuffer.h
+        Primitives/TextGridBuffer.cpp
+        Primitives/TextGridBufferAnsi.cpp
+        Primitives/AnsiEncoder_p.h
+        Primitives/TerminalCapabilities.h
+        Primitives/TerminalCapabilities.cpp
+        Primitives/TerminalBackend.h
+        Primitives/TerminalBackend.cpp
         ${qamui_platform_sources}
-        primitives/TerminalDevice.h
-        primitives/TerminalDevice.cpp
-        engine/Clipboard.h
-        engine/Clipboard.cpp
-        engine/Clock_p.h
-        engine/Clock.cpp
-        engine/TerminalEngine.h
-        engine/TerminalEngine.cpp
-        engine/TerminalMessageRouter_p.h
-        engine/TerminalMessageRouter.cpp
-        engine/QtMessageRouting.h
-        engine/QtMessageRouting.cpp
-        engine/InputRouter_p.h
-        engine/InputRouter.cpp
-        engine/InputScope.h
-        engine/FocusManager.h
-        engine/FocusManager.cpp
-        engine/Renderer.h
-        engine/RenderPhase_p.h
-        engine/RenderPhase.cpp
-        engine/ItemPaintTraversal_p.h
-        engine/FrameRenderer.h
-        engine/FrameRenderer.cpp
-        engine/StreamRenderer.h
-        engine/StreamRenderer.cpp
-        engine/Shortcut.h
-        engine/Shortcut.cpp
-        engine/KeyEvent.h
-        engine/MouseEvent.h
-        engine/Keys.h
-        engine/Keys.cpp
-        engine/Animation.h
-        engine/Animation.cpp
-        engine/State.h
-        engine/State.cpp
-        engine/Transition.h
-        engine/Transition.cpp
-        engine/StateController_p.h
-        engine/StateController.cpp
+        Primitives/TerminalDevice.h
+        Primitives/TerminalDevice.cpp
+        Engine/Clipboard.h
+        Engine/Clipboard.cpp
+        Engine/Clock_p.h
+        Engine/Clock.cpp
+        Engine/TerminalEngine.h
+        Engine/TerminalEngine.cpp
+        Engine/TerminalMessageRouter_p.h
+        Engine/TerminalMessageRouter.cpp
+        Engine/QtMessageRouting.h
+        Engine/QtMessageRouting.cpp
+        Engine/InputRouter_p.h
+        Engine/InputRouter.cpp
+        Engine/InputScope.h
+        Engine/FocusManager.h
+        Engine/FocusManager.cpp
+        Engine/Renderer.h
+        Engine/RenderPhase_p.h
+        Engine/RenderPhase.cpp
+        Engine/ItemPaintTraversal_p.h
+        Engine/FrameRenderer.h
+        Engine/FrameRenderer.cpp
+        Engine/StreamRenderer.h
+        Engine/StreamRenderer.cpp
+        Engine/Shortcut.h
+        Engine/Shortcut.cpp
+        Engine/KeyEvent.h
+        Engine/MouseEvent.h
+        Engine/Keys.h
+        Engine/Keys.cpp
+        Engine/Animation.h
+        Engine/Animation.cpp
+        Engine/State.h
+        Engine/State.cpp
+        Engine/Transition.h
+        Engine/Transition.cpp
+        Engine/StateController_p.h
+        Engine/StateController.cpp
         ${qamui_private_qt_sources}
-        items/Item.h
-        items/Item.cpp
-        items/Canvas.h
-        items/Canvas.cpp
-        items/Rectangle.h
-        items/Rectangle.cpp
-        items/Anchors.h
-        items/Anchors.cpp
-        items/AnchorLine.h
-        items/Border.h
-        items/Border.cpp
-        items/TextInput.h
-        items/TextInput.cpp
-        items/TextEditorState.h
-        items/TextEditorState.cpp
-        items/TextArea.h
-        items/TextArea.cpp
-        items/LogView.h
-        items/LogView.cpp
-        items/ScrollView.h
-        items/ScrollView.cpp
-        items/GridLayout.h
-        items/GridLayout.cpp
-        items/Terminal.h
-        items/Terminal.cpp
-        items/Popup.h
-        items/Popup.cpp
-        items/Text.h
-        items/Text.cpp
-        items/GradientStop.h
-        items/GradientStop.cpp
-        items/Gradient.h
-        items/Gradient.cpp
-        items/Scrollback.h
-        items/Scrollback.cpp
-        items/DelegateUtils.h
-        items/NumericItemRoles_p.h
-        items/Row.h
-        items/Row.cpp
-        items/Column.h
-        items/Column.cpp
-        items/Layout.h
-        items/Layout.cpp
-        items/LinearLayout.h
-        items/LinearLayout.cpp
-        items/MouseArea.h
-        items/MouseArea.cpp
-        items/Repeater.h
-        items/Repeater.cpp
-        items/Loader.h
-        items/Loader.cpp
-        items/ListView.h
-        items/ListView.cpp
-        items/GridView.h
-        items/GridView.cpp
-        items/Paragraph.h
-        items/Paragraph.cpp
-        items/TableView.h
-        items/TableView.cpp
-        items/TreeView.h
-        items/TreeView.cpp
+        Items/Item.h
+        Items/Item.cpp
+        Items/Canvas.h
+        Items/Canvas.cpp
+        Items/Rectangle.h
+        Items/Rectangle.cpp
+        Items/Anchors.h
+        Items/Anchors.cpp
+        Items/AnchorLine.h
+        Items/Border.h
+        Items/Border.cpp
+        Items/TextInput.h
+        Items/TextInput.cpp
+        Items/TextEditorState.h
+        Items/TextEditorState.cpp
+        Items/TextArea.h
+        Items/TextArea.cpp
+        Items/LogView.h
+        Items/LogView.cpp
+        Items/ScrollView.h
+        Items/ScrollView.cpp
+        Items/GridLayout.h
+        Items/GridLayout.cpp
+        Items/Terminal.h
+        Items/Terminal.cpp
+        Items/Popup.h
+        Items/Popup.cpp
+        Items/Text.h
+        Items/Text.cpp
+        Items/GradientStop.h
+        Items/GradientStop.cpp
+        Items/Gradient.h
+        Items/Gradient.cpp
+        Items/Scrollback.h
+        Items/Scrollback.cpp
+        Items/DelegateUtils.h
+        Items/NumericItemRoles_p.h
+        Items/Row.h
+        Items/Row.cpp
+        Items/Column.h
+        Items/Column.cpp
+        Items/Layout.h
+        Items/Layout.cpp
+        Items/LinearLayout.h
+        Items/LinearLayout.cpp
+        Items/MouseArea.h
+        Items/MouseArea.cpp
+        Items/Repeater.h
+        Items/Repeater.cpp
+        Items/Loader.h
+        Items/Loader.cpp
+        Items/ListView.h
+        Items/ListView.cpp
+        Items/GridView.h
+        Items/GridView.cpp
+        Items/Paragraph.h
+        Items/Paragraph.cpp
+        Items/TableView.h
+        Items/TableView.cpp
+        Items/TreeView.h
+        Items/TreeView.cpp
 )
 
 # Headers are reached as <Qamui/Core/<layer>/Name.h> from the src/ root in the
@@ -170,9 +170,9 @@ target_include_directories(QamuiCore
         $<BUILD_INTERFACE:${Qamui_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/primitives
-        ${CMAKE_CURRENT_SOURCE_DIR}/engine
-        ${CMAKE_CURRENT_SOURCE_DIR}/items
+        ${CMAKE_CURRENT_SOURCE_DIR}/Primitives
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine
+        ${CMAKE_CURRENT_SOURCE_DIR}/Items
 )
 
 target_link_libraries(QamuiCore PUBLIC
@@ -238,24 +238,24 @@ install(FILES
 )
 # The public C++ surface. Everything a listed header includes must be listed
 # too; qamui_check_public_headers() enforces it at configure time.
-qamui_install_headers(Qamui/Core/items FILES
-    items/Text.h
-    items/Item.h items/Anchors.h items/AnchorLine.h items/Border.h items/Paragraph.h
-    items/TableView.h items/TreeView.h items/Terminal.h items/Rectangle.h
-    items/Gradient.h items/GradientStop.h items/Canvas.h items/Popup.h
+qamui_install_headers(Qamui/Core/Items FILES
+    Items/Text.h
+    Items/Item.h Items/Anchors.h Items/AnchorLine.h Items/Border.h Items/Paragraph.h
+    Items/TableView.h Items/TreeView.h Items/Terminal.h Items/Rectangle.h
+    Items/Gradient.h Items/GradientStop.h Items/Canvas.h Items/Popup.h
 )
-qamui_install_headers(Qamui/Core/primitives FILES
-    primitives/Span.h primitives/QamuiGlobal.h
-    primitives/QamuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h
-    primitives/UnicodeText.h primitives/Subpixel.h primitives/TerminalCapabilities.h
+qamui_install_headers(Qamui/Core/Primitives FILES
+    Primitives/Span.h Primitives/QamuiGlobal.h
+    Primitives/QamuiExport.h Primitives/Color.h Primitives/TextGridBuffer.h Primitives/Cell.h
+    Primitives/UnicodeText.h Primitives/Subpixel.h Primitives/TerminalCapabilities.h
     # The application-provided backend extension point (TerminalBackend::setFactory).
-    primitives/TerminalBackend.h
+    Primitives/TerminalBackend.h
     # Pulled in by the installed item headers, so it has to ship with them.
-    primitives/ColorMapper.h
+    Primitives/ColorMapper.h
 )
-qamui_install_headers(Qamui/Core/engine FILES
-    engine/KeyEvent.h engine/MouseEvent.h
+qamui_install_headers(Qamui/Core/Engine FILES
+    Engine/KeyEvent.h Engine/MouseEvent.h
     # Popup implements this interface.
-    engine/InputScope.h
-    engine/QtMessageRouting.h
+    Engine/InputScope.h
+    Engine/QtMessageRouting.h
 )

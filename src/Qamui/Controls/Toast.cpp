@@ -1,6 +1,6 @@
 #include <Qamui/Controls/Toast.h>
-#include <Qamui/Core/engine/Clock_p.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Engine/Clock_p.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 #include <algorithm>
 
 namespace qamui {

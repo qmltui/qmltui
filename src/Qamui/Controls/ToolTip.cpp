@@ -1,11 +1,11 @@
 #include <Qamui/Controls/ToolTip.h>
-#include <Qamui/Core/engine/Clock_p.h>
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/items/Popup.h>
-#include <Qamui/Core/items/Rectangle.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/Engine/Clock_p.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/Popup.h>
+#include <Qamui/Core/Items/Rectangle.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Primitives/UnicodeText.h>
 #include <algorithm>
 
 namespace qamui::controls {

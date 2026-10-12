@@ -4,7 +4,7 @@
 #include <QTest>
 #include <QVector>
 
-#include <Qamui/Core/primitives/UnicodeText.h>
+#include <Qamui/Core/Primitives/UnicodeText.h>
 
 using namespace qamui;
 

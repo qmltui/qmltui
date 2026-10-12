@@ -1,5 +1,5 @@
 #include <Qamui/Image/AnimatedSprite.h>
-#include <Qamui/Core/engine/Clock_p.h>
+#include <Qamui/Core/Engine/Clock_p.h>
 
 #include <QDebug>
 #include <algorithm>

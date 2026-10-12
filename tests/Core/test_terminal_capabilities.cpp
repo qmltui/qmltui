@@ -2,7 +2,7 @@
 #include <QProcessEnvironment>
 #include <QTest>
 
-#include <Qamui/Core/primitives/TerminalCapabilities.h>
+#include <Qamui/Core/Primitives/TerminalCapabilities.h>
 
 using namespace qamui;
 

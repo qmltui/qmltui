@@ -26,12 +26,12 @@
 #include <memory>
 #include <vector>
 
-#include <Qamui/Core/items/Canvas.h>
-#include <Qamui/Core/primitives/Color.h>
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/ListView.h>
+#include <Qamui/Core/Items/Canvas.h>
+#include <Qamui/Core/Primitives/Color.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/ListView.h>
 #include <Qamui/Controls/Sparkline.h>
-#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/Items/TableView.h>
 #include "../TestPaint.h"
 
 namespace {

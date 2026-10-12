@@ -1,7 +1,7 @@
 #include "FluidBackground.h"
-#include <Qamui/Core/engine/Clock_p.h>
-#include <Qamui/Core/engine/MouseEvent.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Engine/Clock_p.h>
+#include <Qamui/Core/Engine/MouseEvent.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include <algorithm>
 #include <cmath>
 

@@ -3,15 +3,15 @@
 #include <QQmlEngine>
 #include <QStandardItemModel>
 #include <memory>
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/items/TableView.h>
-#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Items/TableView.h>
+#include <Qamui/Core/Items/TreeView.h>
 #include <Qamui/Controls/Toast.h>
 #include <Qamui/Controls/TabBar.h>
 #include <Qamui/Controls/ToolTip.h>
-#include <Qamui/Core/items/Popup.h>
+#include <Qamui/Core/Items/Popup.h>
 #include "../TestPaint.h"
 
 using namespace qamui;

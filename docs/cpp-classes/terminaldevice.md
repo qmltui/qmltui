@@ -8,8 +8,8 @@
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/primitives/TerminalDevice.h`
-- **Implementation**: `src/Qamui/Core/primitives/TerminalDevice.cpp`
+- **Header**: `src/Qamui/Core/Primitives/TerminalDevice.h`
+- **Implementation**: `src/Qamui/Core/Primitives/TerminalDevice.cpp`
 - **Dependencies**: `<string>`, `<functional>`, `<memory>`, and `TerminalBackend.h`. No platform headers; those live in the backend implementations.
 
 ## 3. Class Hierarchy and Role
@@ -64,7 +64,7 @@ Single-threaded. Must be invoked from the thread managing terminal I/O.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/primitives/TerminalDevice.h>
+#include <Qamui/Core/Primitives/TerminalDevice.h>
 #include <iostream>
 
 using namespace qamui;

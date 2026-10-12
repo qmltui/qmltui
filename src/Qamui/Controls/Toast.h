@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Qamui/Core/primitives/QamuiExport.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
 
-#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/Items/Item.h>
 namespace qamui { class ClockTimer; }
 #include <QList>
 #include <QString>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 
 namespace qamui {
 

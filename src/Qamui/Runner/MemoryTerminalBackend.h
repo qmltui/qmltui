@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Qamui/Core/primitives/QamuiExport.h>
-#include <Qamui/Core/primitives/TerminalBackend.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
+#include <Qamui/Core/Primitives/TerminalBackend.h>
 
 #include <QByteArray>
 #include <QSize>

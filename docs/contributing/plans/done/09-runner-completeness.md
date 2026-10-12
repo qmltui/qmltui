@@ -61,7 +61,7 @@ one and touches Core. WP9 migrates the existing scenarios once WP8 exists.
   terminal default color, `cell()` formats the sentinel through
   `rgbaString()`, while `styledText()` writes `default`.
 - Time sources that a virtual clock must cover, all on `QTimer`/`QElapsedTimer`
-  today: `AnimationManager` and `PropertyAnimation` (`Core/engine/Animation.h`),
+  today: `AnimationManager` and `PropertyAnimation` (`Core/Engine/Animation.h`),
   `ToolTip` delay and timeout, `Toast`, `AnimatedSprite`, the `TextInput` cursor
   blink, and the engine's Escape flush timer and frame pacing
   (`m_paceTimer`, `m_lastCommit`). QML `Timer` (`QQmlTimer` in QtQmlMeta) is
@@ -261,7 +261,7 @@ The large package. It makes animation, Timer, ToolTip, Toast and blink
 behaviour deterministic and instant to test, without touching application C++
 timers.
 
-**8.1 Clock seam in Core.** A private `qamui::Clock` (`Core/engine/Clock_p.h`)
+**8.1 Clock seam in Core.** A private `qamui::Clock` (`Core/Engine/Clock_p.h`)
 with two modes:
 
 - `Clock::elapsed()`: milliseconds since process start (real: a

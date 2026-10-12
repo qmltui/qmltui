@@ -1,7 +1,7 @@
 #include <QTest>
 #include <QQmlComponent>
 #include <QQmlEngine>
-#include <Qamui/Core/items/Repeater.h>
+#include <Qamui/Core/Items/Repeater.h>
 #include "../TestPaint.h"
 #include <memory>
 

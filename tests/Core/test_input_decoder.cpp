@@ -2,7 +2,7 @@
 #include <QObject>
 #include <vector>
 #include <tuple>
-#include <Qamui/Core/primitives/InputDecoder.h>
+#include <Qamui/Core/Primitives/InputDecoder.h>
 
 using namespace qamui;
 

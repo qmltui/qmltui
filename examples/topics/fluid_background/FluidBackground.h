@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 #include <QList>
 #include <QString>
 

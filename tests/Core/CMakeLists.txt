@@ -1,4 +1,4 @@
-# Tests for Qamui::Core: primitives, engine, items, and the benchmarks.
+# Tests for Qamui::Core: Primitives, Engine, Items, and the benchmarks.
 
 add_qamui_test(test_clipboard test_clipboard.cpp)
 target_link_libraries(test_clipboard PRIVATE Qamui::Runner)

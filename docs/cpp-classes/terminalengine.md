@@ -95,8 +95,8 @@ Single-threaded. Runs on the main Qt GUI event loop thread.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <QGuiApplication>
 
 using namespace qamui;

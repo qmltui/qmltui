@@ -22,7 +22,7 @@ Parses a color string into a 32-bit ARGB integer. Returns `defaultColor` if `col
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 #include <iostream>
 
 using namespace qamui;

@@ -8,8 +8,8 @@
 #include <QQmlContext>
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
-#include <Qamui/Core/items/TreeView.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/TreeView.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <memory>
 

@@ -4,10 +4,10 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QAbstractListModel>
-#include <Qamui/Core/items/ListView.h>
-#include <Qamui/Core/items/GridView.h>
-#include <Qamui/Core/items/TableView.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/ListView.h>
+#include <Qamui/Core/Items/GridView.h>
+#include <Qamui/Core/Items/TableView.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <memory>
 

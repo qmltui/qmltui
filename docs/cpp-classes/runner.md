@@ -427,7 +427,7 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 ```cpp
 #include <QTimer>
 #include <QQmlApplicationEngine>
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Runner/Runner.h>
 
 qamui::Runner::useEmbeddedScenario();   // before QML loads: quiet terminal
@@ -442,3 +442,74 @@ auto *driver = new qamui::Runner(
 driver->setUpdateSnapshots(recordBaselines);   // optional; defaults to the environment
 QTimer::singleShot(0, driver, &qamui::Runner::start);
 ```
+
+## Command-line launcher
+
+`qamui-runner` launches a Runner-linked application without CMake scenario
+registration. Build it with tests enabled, or build and install it with
+`QAMUI_ENABLE_RUNNER=ON`. The launcher itself requires only Qt Core.
+
+```bash
+qamui-runner --script test.js -- ./myApp --config demo.json
+qamui-runner --eval 'terminal.clickText("Save")' -- ./myApp
+qamui-runner --capture-after-ms 500 -- ./myApp
+qamui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
+```
+
+Exactly one of `--script`, `--eval`, and `--capture-after-ms` is required.
+Scripts support `.js`, `.mjs` with relative imports, and application resource
+paths such as `:/scenarios/test.js`. Both `--script=test.js` and
+`--script test.js` work. Launcher options precede the executable; everything
+after the executable is passed unchanged to the application. `--` explicitly
+ends launcher option parsing. Filesystem paths and the application's working
+directory are relative to the invoking shell's directory; executables may also
+be found through `PATH`.
+
+| Option | Default | Meaning |
+|--------|---------|---------|
+| `--columns`, `--rows` | `80`, `24` | Initial viewport; each 1–1,000 cells. |
+| `--artifacts DIRECTORY` | Unique retained temporary directory | Must be new or empty, including hidden files. Existing contents are never deleted. |
+| `--live` | Off | Forward live ANSI rendering. |
+| `--clock real\|virtual` | `real` | Select the Runner clock before application startup. |
+| `--record RELATIVE_PATH` | Off | Write an asciicast beneath the artifact directory; incompatible with `--live`. |
+| `--update-snapshots` | Off | Rewrite snapshot baselines using Runner's existing update behavior. |
+| `--operation-timeout-ms` | `2000` | Per-operation timeout, 1–30,000 ms. |
+| `--timeout-ms` | `10000` | Scenario timeout, 1–300,000 ms. |
+| `--startup-timeout-ms` | `5000` | Runner activation deadline, 1–300,000 ms. |
+
+Capture delay is 0–30,000 ms; delay plus operation timeout must fit within the
+scenario timeout. Application stdout and stderr are forwarded, and summaries
+and absolute artifact paths go to stderr. Standard input is inherited. The
+launcher clears inherited `QAMUI_RUNNER_*` settings and supplies its own options
+and defaults; ordinary application environment variables, including QML import
+paths, remain inherited. For an uninstalled build, set `QML_IMPORT_PATH` to that
+build's `qml` directory if the application needs it.
+
+Exit codes are `0` for a verified passing Runner result, `1` for a verified
+scenario failure, and `2` for invalid CLI arguments, launch/activation failures,
+crashes, external timeouts, or missing/inconsistent results. A child exit of zero
+alone is insufficient: the launcher requires a matching schema-v1 `result.json`.
+Artifacts survive both successful and failed runs. After activation the child
+has the scenario timeout plus 5 seconds to exit; termination then gets a
+1-second grace before a forced kill. The launcher supervises its direct child,
+not an arbitrary tree of application-spawned processes.
+
+The application must link a Runner version supporting the activation handshake.
+QML-created Terminals activate automatically; C++-created Terminals must call
+`Runner::startFromEnvironment()` with their script engine. Older Runner builds
+must be rebuilt. The helper does not inject libraries or attach to an existing
+process. No activation can mean missing Runner linkage, an older version, or
+application startup that has not yet created its Terminal.
+
+The optional launcher protocol uses `QAMUI_RUNNER_HANDSHAKE_PATH` and
+`QAMUI_RUNNER_HANDSHAKE_TOKEN`. At entry to `start()`, Runner atomically writes
+`{"protocolVersion":1,"token":"...","pid":123}` to the private control path.
+The launcher verifies all three fields. This acknowledges activation, not test
+success. Direct and CTest runs do not need these variables. Handshake write
+errors fail the session; the existing result schema and CMake driver are
+unchanged.
+
+To operate on another machine, run the launcher there through SSH, for example
+`ssh host 'qamui-runner --script /srv/tests/smoke.js -- /srv/bin/myApp'`.
+The application, scripts, and artifacts reside on the remote machine. This is
+bounded script execution, not a persistent interactive remote-control service.

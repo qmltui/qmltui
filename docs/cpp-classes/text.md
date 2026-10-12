@@ -51,7 +51,7 @@ Draws the formatted text line(s) into `buffer` applying alignment and font attri
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/Items/Text.h>
 
 using namespace qamui;
 

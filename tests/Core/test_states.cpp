@@ -4,14 +4,14 @@
 #include <QSignalSpy>
 #include <memory>
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/items/Rectangle.h>
-#include <Qamui/Core/engine/State.h>
-#include <Qamui/Core/engine/Transition.h>
-#include <Qamui/Core/engine/Animation.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Items/Rectangle.h>
+#include <Qamui/Core/Engine/State.h>
+#include <Qamui/Core/Engine/Transition.h>
+#include <Qamui/Core/Engine/Animation.h>
 #if defined(QAMUI_ENABLE_PRIVATE_QT)
-#include <Qamui/Core/engine/StateGroup.h>
+#include <Qamui/Core/Engine/StateGroup.h>
 #endif
 #include "../TestPaint.h"
 

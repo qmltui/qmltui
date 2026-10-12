@@ -12,14 +12,14 @@
 #include <QTest>
 #include <memory>
 
-#include <Qamui/Core/primitives/Color.h>
-#include <Qamui/Core/items/GridView.h>
-#include <Qamui/Core/items/ListView.h>
-#include <Qamui/Core/items/TableView.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
-#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/Primitives/Color.h>
+#include <Qamui/Core/Items/GridView.h>
+#include <Qamui/Core/Items/ListView.h>
+#include <Qamui/Core/Items/TableView.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/TreeView.h>
 
 using namespace qamui;
 

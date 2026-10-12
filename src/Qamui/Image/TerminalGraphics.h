@@ -12,10 +12,10 @@
 // Everything else, the Auto render mode and the capability plumbing, already
 // accounts for more than one protocol.
 
-#include <Qamui/Core/items/Item.h>                 // ClipRect
-#include <Qamui/Core/primitives/TextGridBuffer.h>
-#include <Qamui/Core/primitives/TerminalCapabilities.h>
-#include <Qamui/Core/primitives/QamuiExport.h>
+#include <Qamui/Core/Items/Item.h>                 // ClipRect
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <Qamui/Core/Primitives/TerminalCapabilities.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
 
 #include <QByteArray>
 #include <QImage>

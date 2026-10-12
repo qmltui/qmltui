@@ -3,9 +3,9 @@
 #include <QQmlEngine>
 #include <QSignalSpy>
 #include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/engine/StreamRenderer.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Engine/StreamRenderer.h>
 
 using namespace qamui;
 

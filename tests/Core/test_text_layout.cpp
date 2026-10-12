@@ -8,10 +8,10 @@
 #include <QTest>
 #include <functional>
 #include <memory>
-#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/Primitives/Color.h>
 
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
 using namespace qamui;

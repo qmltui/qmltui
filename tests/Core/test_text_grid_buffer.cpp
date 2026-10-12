@@ -1,11 +1,11 @@
 #include <QTest>
 #include <QObject>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Primitives/Color.h>
 #include "../TestPaint.h"
 #include <QString>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 
 #include <limits>
 

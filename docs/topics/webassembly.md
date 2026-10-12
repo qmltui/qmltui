@@ -152,7 +152,7 @@ for a fixed binary is `noInitialRun`, `qamuiResize` before `callMain`,
 
 ## How it works
 
-`WasmTerminalBackend` (`src/Qamui/Core/primitives/WasmTerminalBackend.cpp`) is
+`WasmTerminalBackend` (`src/Qamui/Core/Primitives/WasmTerminalBackend.cpp`) is
 the third implementation of `TerminalBackend`, selected by
 `createTerminalBackend()` when compiling under Emscripten. It is about as long
 as the in-memory test backend and has three touch points with the page:

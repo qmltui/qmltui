@@ -16,11 +16,11 @@
 #include <QQmlEngine>
 #include <QTextStream>
 #include <memory>
-#include <Qamui/Core/items/ListView.h>
-#include <Qamui/Core/items/GridView.h>
-#include <Qamui/Core/items/TableView.h>
-#include <Qamui/Core/items/TreeView.h>
-#include <Qamui/Core/items/Repeater.h>
+#include <Qamui/Core/Items/ListView.h>
+#include <Qamui/Core/Items/GridView.h>
+#include <Qamui/Core/Items/TableView.h>
+#include <Qamui/Core/Items/TreeView.h>
+#include <Qamui/Core/Items/Repeater.h>
 #include "../TestPaint.h"
 #ifdef __linux__
 #include <sys/prctl.h>

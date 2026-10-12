@@ -1,15 +1,15 @@
 #include <Qamui/Runner/Runner.h>
 #include "CastRecorder_p.h"
 #include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/primitives/TerminalBackend.h>
-#include <Qamui/Core/primitives/TerminalCapabilities.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/TerminalBackend.h>
+#include <Qamui/Core/Primitives/TerminalCapabilities.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/Clock_p.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/Clock_p.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 
 #include <QCoreApplication>
 #include <QDeadlineTimer>
@@ -545,6 +545,24 @@ void Runner::setUpdateSnapshots(bool update)
 void Runner::start()
 {
     m_elapsed.start();
+    // Optional launcher protocol: acknowledge activation before loading the
+    // scenario. This is not a claim that initialization or the test passed.
+    const QString handshakePath = QString::fromUtf8(qgetenv("QAMUI_RUNNER_HANDSHAKE_PATH"));
+    const QString handshakeToken = QString::fromUtf8(qgetenv("QAMUI_RUNNER_HANDSHAKE_TOKEN"));
+    if (!handshakePath.isEmpty() || !handshakeToken.isEmpty()) {
+        QSaveFile handshake(handshakePath);
+        const QByteArray payload = QJsonDocument(QJsonObject{
+            {QStringLiteral("protocolVersion"), 1},
+            {QStringLiteral("token"), handshakeToken},
+            {QStringLiteral("pid"), QCoreApplication::applicationPid()}
+        }).toJson(QJsonDocument::Compact);
+        if (handshakePath.isEmpty() || handshakeToken.isEmpty()
+            || !handshake.open(QIODevice::WriteOnly)
+            || handshake.write(payload) != payload.size() || !handshake.commit()) {
+            m_configurationError = QStringLiteral("Cannot write Runner activation handshake: %1")
+                                       .arg(handshake.errorString());
+        }
+    }
     if (m_updateSnapshotsOverride.has_value()) {
         m_updateSnapshots = *m_updateSnapshotsOverride;
     } else {

@@ -8,9 +8,9 @@
 
 #include <memory>
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/items/Loader.h>
-#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Items/Loader.h>
+#include <Qamui/Core/Items/Text.h>
 
 using namespace qamui;
 

@@ -1,10 +1,10 @@
 #include "ServiceDashboard.h"
 
-#include <Qamui/Core/engine/KeyEvent.h>
-#include <Qamui/Core/items/Column.h>
-#include <Qamui/Core/items/Row.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/items/TextInput.h>
+#include <Qamui/Core/Engine/KeyEvent.h>
+#include <Qamui/Core/Items/Column.h>
+#include <Qamui/Core/Items/Row.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Items/TextInput.h>
 
 #include <QBindable>
 #include <QCoreApplication>

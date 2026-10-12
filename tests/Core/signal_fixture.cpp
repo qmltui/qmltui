@@ -2,7 +2,7 @@
 // platform backend, no Runner, no handlers of its own. The test drives it
 // through a pseudo-terminal and job-control signals.
 #include <QCoreApplication>
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Items/Terminal.h>
 
 int main(int argc, char* argv[])
 {

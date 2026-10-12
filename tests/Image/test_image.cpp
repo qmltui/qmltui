@@ -5,17 +5,17 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QSignalSpy>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
 #include <memory>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QTemporaryFile>
-#include <Qamui/Core/primitives/Color.h>
-#include <Qamui/Core/primitives/Subpixel.h>
+#include <Qamui/Core/Primitives/Color.h>
+#include <Qamui/Core/Primitives/Subpixel.h>
 
 class TestImage : public QObject {
     Q_OBJECT

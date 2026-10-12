@@ -225,7 +225,7 @@ mode itself does not select a page or establish a focus-restoration policy.
 | `Terminal.border` | Removed |
 | `fillTerminal`, explicit root dimensions | Remove `fillTerminal`; move fixed-size geometry to an inner item |
 
-Files to update: `src/Qamui/Core/items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
+Files to update: `src/Qamui/Core/Items/Terminal.{h,cpp}`, `StreamView.{h,cpp}` (renamed to
 `Scrollback`), `engine/TerminalEngine.cpp` and renderers (mode transitions and
 separate scrollback output),
 `examples/topics/agent_stream/Main.qml`, every example root that sets

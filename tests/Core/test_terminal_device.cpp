@@ -15,14 +15,14 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <Qamui/Core/primitives/Color.h>
-#include <Qamui/Core/engine/FrameRenderer.h>
-#include <Qamui/Core/engine/StreamRenderer.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/primitives/TerminalCapabilities.h>
-#include <Qamui/Core/primitives/TerminalDevice.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/items/Scrollback.h>
+#include <Qamui/Core/Primitives/Color.h>
+#include <Qamui/Core/Engine/FrameRenderer.h>
+#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Primitives/TerminalCapabilities.h>
+#include <Qamui/Core/Primitives/TerminalDevice.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Scrollback.h>
 
 using namespace qamui;
 

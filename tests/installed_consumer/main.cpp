@@ -2,9 +2,9 @@
 // custom item below then exercises three of them.
 #include QAMUI_PUBLIC_HEADERS
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/primitives/Color.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Primitives/Color.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 
 class CustomItem final : public qamui::Item
 {

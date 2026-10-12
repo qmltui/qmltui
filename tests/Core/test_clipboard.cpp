@@ -2,11 +2,11 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QSignalSpy>
-#include <Qamui/Core/engine/Clipboard.h>
-#include <Qamui/Core/items/TextInput.h>
-#include <Qamui/Core/items/TextArea.h>
-#include <Qamui/Core/engine/Clock_p.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Engine/Clipboard.h>
+#include <Qamui/Core/Items/TextInput.h>
+#include <Qamui/Core/Items/TextArea.h>
+#include <Qamui/Core/Engine/Clock_p.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <Qamui/Runner/MemoryTerminalBackend.h>
 
 using namespace qamui;

@@ -2,8 +2,8 @@
 #include <QSignalSpy>
 #include <QQmlEngine>
 #include <QQmlComponent>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/primitives/QamuiGlobal.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Primitives/QamuiGlobal.h>
 #include "../TestPaint.h"
 #include <memory>
 

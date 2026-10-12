@@ -6,7 +6,7 @@
 #include <QSortFilterProxyModel>
 #include <QSet>
 #include <QDebug>
-#include <Qamui/Core/items/TableView.h>
+#include <Qamui/Core/Items/TableView.h>
 #include "../TestPaint.h"
 #include <algorithm>
 #include <functional>

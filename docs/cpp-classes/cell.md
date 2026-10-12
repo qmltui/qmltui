@@ -8,7 +8,7 @@ Developers interact with `Cell` when implementing custom C++ terminal UI items.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/primitives/Cell.h` (installed as `<Qamui/Core/primitives/Cell.h>`)
+- **Header**: `src/Qamui/Core/Primitives/Cell.h` (installed as `<Qamui/Core/Primitives/Cell.h>`)
 - **Dependencies**: `<cstdint>`, `<cstring>`, `QByteArrayView`, `Color.h`.
 - **Module**: Part of the core Qamui library layer.
 
@@ -81,7 +81,7 @@ Compares all fields, including the cluster bytes.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/primitives/Cell.h>
+#include <Qamui/Core/Primitives/Cell.h>
 #include <iostream>
 
 using namespace qamui;

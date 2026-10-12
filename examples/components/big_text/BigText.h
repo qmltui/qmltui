@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/Items/Item.h>
 #include <QString>
 
 namespace qamui {

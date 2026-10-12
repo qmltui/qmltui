@@ -93,7 +93,7 @@ Serializes the entire grid buffer into a formatted ANSI string complete with new
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include <iostream>
 
 using namespace qamui;

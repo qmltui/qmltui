@@ -6,10 +6,10 @@
 #include <QTest>
 #include <QThread>
 
-#include <Qamui/Core/engine/QtMessageRouting.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/primitives/TerminalBackend.h>
+#include <Qamui/Core/Engine/QtMessageRouting.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Primitives/TerminalBackend.h>
 
 #include <atomic>
 #include <memory>

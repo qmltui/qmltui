@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Qamui/Core/primitives/QamuiExport.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
 
 #include <QImage>
 #include <QObject>

@@ -1,8 +1,8 @@
 #include <Qamui/TerminalHost/TerminalView.h>
 
-#include <Qamui/Core/engine/KeyEvent.h>
-#include <Qamui/Core/engine/MouseEvent.h>
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Engine/KeyEvent.h>
+#include <Qamui/Core/Engine/MouseEvent.h>
+#include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/TerminalHost/UnixPtySession.h>
 #include <Qamui/TerminalHost/VTermAdapter.h>
 

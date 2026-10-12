@@ -10,25 +10,25 @@
 #include <algorithm>
 #include <memory>
 
-#include <Qamui/Core/primitives/UnicodeText.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/items/Popup.h>
-#include <Qamui/Core/items/MouseArea.h>
-#include <Qamui/Core/items/TextArea.h>
-#include <Qamui/Core/items/Text.h>
-#include <Qamui/Core/engine/State.h>
-#include <Qamui/Core/items/LogView.h>
-#include <Qamui/Core/items/Scrollback.h>
-#include <Qamui/Core/items/LinearLayout.h>
-#include <Qamui/Core/items/Layout.h>
-#include <Qamui/Core/engine/KeyEvent.h>
-#include <Qamui/Core/items/ListView.h>
-#include <Qamui/Core/items/TreeView.h>
+#include <Qamui/Core/Primitives/UnicodeText.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/Popup.h>
+#include <Qamui/Core/Items/MouseArea.h>
+#include <Qamui/Core/Items/TextArea.h>
+#include <Qamui/Core/Items/Text.h>
+#include <Qamui/Core/Engine/State.h>
+#include <Qamui/Core/Items/LogView.h>
+#include <Qamui/Core/Items/Scrollback.h>
+#include <Qamui/Core/Items/LinearLayout.h>
+#include <Qamui/Core/Items/Layout.h>
+#include <Qamui/Core/Engine/KeyEvent.h>
+#include <Qamui/Core/Items/ListView.h>
+#include <Qamui/Core/Items/TreeView.h>
 #include "../TestPaint.h"
 
-#include <Qamui/Core/engine/TerminalEngine.h>
-#include <Qamui/Core/engine/QtMessageRouting.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
+#include <Qamui/Core/Engine/QtMessageRouting.h>
 #undef private
 
 using namespace qamui;

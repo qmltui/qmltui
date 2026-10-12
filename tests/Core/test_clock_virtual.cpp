@@ -1,6 +1,6 @@
 // ClockTimer semantics on the virtual clock: deadline ordering, single-shot
 // versus repeating, and mutation from inside a timeout handler.
-#include <Qamui/Core/engine/Clock_p.h>
+#include <Qamui/Core/Engine/Clock_p.h>
 
 #include <QtTest/QtTest>
 

@@ -1,5 +1,5 @@
 #include <Qamui/Controls/Sparkline.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 #include <algorithm>
 #include <cmath>
 

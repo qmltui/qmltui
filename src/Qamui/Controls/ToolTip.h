@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Qamui/Core/primitives/QamuiExport.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
 
 #include <QObject>
-#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/Primitives/Color.h>
 #include <QQmlEngine>
 #include <QPointer>
 namespace qamui { class ClockTimer; }

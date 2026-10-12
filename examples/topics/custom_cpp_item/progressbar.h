@@ -1,5 +1,5 @@
 #pragma once
-#include <Qamui/Core/items/Rectangle.h>
+#include <Qamui/Core/Items/Rectangle.h>
 
 namespace qamui {
 

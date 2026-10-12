@@ -8,7 +8,7 @@ If your item has custom properties, define them using `Q_PROPERTY`.
 
 ```cpp
 #pragma once
-#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/Items/Item.h>
 
 namespace qamui {
 

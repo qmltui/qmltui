@@ -10,14 +10,14 @@
 #include <iostream>
 #include <memory>
 
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/items/Popup.h>
-#include <Qamui/Core/items/Rectangle.h>
-#include <Qamui/Core/items/MouseArea.h>
-#include <Qamui/Core/engine/KeyEvent.h>
-#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/Popup.h>
+#include <Qamui/Core/Items/Rectangle.h>
+#include <Qamui/Core/Items/MouseArea.h>
+#include <Qamui/Core/Engine/KeyEvent.h>
+#include <Qamui/Core/Engine/MouseEvent.h>
 
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #undef private
 
 using namespace qamui;

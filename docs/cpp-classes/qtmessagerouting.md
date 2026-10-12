@@ -11,7 +11,7 @@ Scope:
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `<Qamui/Core/engine/QtMessageRouting.h>`
+- **Header**: `<Qamui/Core/Engine/QtMessageRouting.h>`
 - **Namespace**: `qamui`
 - **Dependencies**: `Qt6::Core`
 
@@ -104,8 +104,8 @@ Idempotently unregisters the token:
 #include <QCoreApplication>
 #include <QFile>
 #include <QTextStream>
-#include <Qamui/Core/engine/QtMessageRouting.h>
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Engine/QtMessageRouting.h>
+#include <Qamui/Core/Items/Terminal.h>
 
 int main(int argc, char *argv[])
 {

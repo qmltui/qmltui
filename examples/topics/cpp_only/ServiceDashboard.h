@@ -3,7 +3,7 @@
 // A small Qamui application without QML: a filterable list of services with
 // live latencies, built from Qamui's C++ items.
 
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Items/Terminal.h>
 
 #include <QList>
 #include <QProperty>

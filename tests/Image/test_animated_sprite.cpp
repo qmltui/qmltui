@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
 #include <Qamui/Image/AnimatedSprite.h>
 #include <QSignalSpy>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 
 // Four 2x2 frames in one 8x2 row: red, green, blue, yellow.

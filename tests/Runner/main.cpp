@@ -6,7 +6,7 @@
 #include <QTimer>
 #include <QUrl>
 
-#include <Qamui/Core/items/Terminal.h>
+#include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Runner/Runner.h>
 
 #include <cstring>

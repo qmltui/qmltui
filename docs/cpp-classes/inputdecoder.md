@@ -8,8 +8,8 @@
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `src/Qamui/Core/primitives/InputDecoder.h`
-- **Implementation**: `src/Qamui/Core/primitives/InputDecoder.cpp`
+- **Header**: `src/Qamui/Core/Primitives/InputDecoder.h`
+- **Implementation**: `src/Qamui/Core/Primitives/InputDecoder.cpp`
 - **Dependencies**: `<functional>`, `<string>`, `<QString>`, Qt Core (`Qt::Key`).
 
 ## 3. Class Hierarchy and Role
@@ -83,7 +83,7 @@ reaches the reply callback.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/primitives/InputDecoder.h>
+#include <Qamui/Core/Primitives/InputDecoder.h>
 #include <iostream>
 
 using namespace qamui;

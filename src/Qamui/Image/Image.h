@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Qamui/Core/primitives/QamuiExport.h>
+#include <Qamui/Core/Primitives/QamuiExport.h>
 
-#include <Qamui/Core/items/Item.h>
+#include <Qamui/Core/Items/Item.h>
 #include <Qamui/Image/TerminalGraphics.h>
 #include <QMetaObject>
 #include <QPointer>

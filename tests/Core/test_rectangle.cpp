@@ -2,9 +2,9 @@
 #include <QSignalSpy>
 #include <QQmlEngine>
 #include <QQmlComponent>
-#include <Qamui/Core/items/Rectangle.h>
-#include <Qamui/Core/items/Gradient.h>
-#include <Qamui/Core/items/GradientStop.h>
+#include <Qamui/Core/Items/Rectangle.h>
+#include <Qamui/Core/Items/Gradient.h>
+#include <Qamui/Core/Items/GradientStop.h>
 #include "../TestPaint.h"
 #include <memory>
 

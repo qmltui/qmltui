@@ -1,10 +1,10 @@
 #include <Qamui/Image/Image.h>
 #include <Qamui/Image/ImageProvider.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <Qamui/Image/TerminalGraphics.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
-#include <Qamui/Core/primitives/Subpixel.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/Subpixel.h>
 #include <QDebug>
 #include <QDirIterator>
 #include <algorithm>

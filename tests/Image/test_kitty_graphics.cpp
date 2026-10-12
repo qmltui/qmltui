@@ -13,13 +13,13 @@
 #include <QtEndian>
 
 #include <Qamui/Runner/MemoryTerminalBackend.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 #include <Qamui/Image/Image.h>
 #include <Qamui/Image/ImageProvider.h>
 #include <Qamui/Image/TerminalGraphics.h>
 #include <QSignalSpy>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 
 using namespace qamui;
 

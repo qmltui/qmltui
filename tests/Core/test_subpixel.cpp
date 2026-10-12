@@ -1,5 +1,5 @@
 #include <QtTest/QtTest>
-#include <Qamui/Core/primitives/Subpixel.h>
+#include <Qamui/Core/Primitives/Subpixel.h>
 
 using namespace qamui;
 

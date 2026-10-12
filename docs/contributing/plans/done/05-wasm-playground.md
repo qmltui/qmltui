@@ -42,7 +42,7 @@ bypasses both and travels as bytes.
 
 ### A. `WasmTerminalBackend` in Core
 
-`src/Qamui/Core/primitives/WasmTerminalBackend.{h,cpp}`, compiled only under
+`src/Qamui/Core/Primitives/WasmTerminalBackend.{h,cpp}`, compiled only under
 Emscripten, about the size of `MemoryTerminalBackend`:
 
 ```cpp

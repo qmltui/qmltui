@@ -58,7 +58,7 @@ traverses children afterward.
 ## 16. Usage Example
 
 ```cpp
-#include <Qamui/Core/items/Rectangle.h>
+#include <Qamui/Core/Items/Rectangle.h>
 
 using namespace qamui;
 

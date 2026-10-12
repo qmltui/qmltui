@@ -5,11 +5,11 @@
 #include <QSignalSpy>
 #include <memory>
 #include <cmath>
-#include <Qamui/Core/items/Canvas.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/primitives/TextGridBuffer.h>
+#include <Qamui/Core/Items/Canvas.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
 
 
 

@@ -12,7 +12,7 @@ repository. When a rule and an existing file disagree, match the file's style
 for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
-this document. Check `src/Qamui/Core/items`, `src/Qamui/Core/engine`, `src/Qamui/Controls`,
+this document. Check `src/Qamui/Core/Items`, `src/Qamui/Core/Engine`, `src/Qamui/Controls`,
 `src/Qamui/Image`, `src/Qamui/TerminalHost`, and `docs/qml-types/index.md`
 before using a type or property you have not seen in a nearby file.
 
@@ -239,7 +239,7 @@ knowledge an application cannot reproduce in QML, or is universal in terminal
 toolkits. Status badges, calendars, and banner text are recipes under
 `examples/components/`, not library types; copy them into your module.
 
-**`import Qamui`** (C++ in `src/Qamui/Core/items` and `src/Qamui/Core/engine`)
+**`import Qamui`** (C++ in `src/Qamui/Core/Items` and `src/Qamui/Core/Engine`)
 `Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
 `TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `LogView`,
 `Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,

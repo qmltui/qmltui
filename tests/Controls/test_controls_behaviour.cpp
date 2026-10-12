@@ -11,10 +11,10 @@
 #include <QQmlEngine>
 #include <memory>
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/primitives/Cell.h>
-#include <Qamui/Core/items/Terminal.h>
-#include <Qamui/Core/engine/TerminalEngine.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Primitives/Cell.h>
+#include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Engine/TerminalEngine.h>
 
 using namespace qamui;
 

@@ -1,7 +1,7 @@
 #include <Qamui/Controls/TabBar.h>
-#include <Qamui/Core/primitives/ColorMapper.h>
-#include <Qamui/Core/engine/KeyEvent.h>
-#include <Qamui/Core/engine/MouseEvent.h>
+#include <Qamui/Core/Primitives/ColorMapper.h>
+#include <Qamui/Core/Engine/KeyEvent.h>
+#include <Qamui/Core/Engine/MouseEvent.h>
 #include <algorithm>
 
 namespace qamui {

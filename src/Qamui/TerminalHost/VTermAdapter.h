@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Qamui/Core/items/Item.h>
-#include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/Items/Item.h>
+#include <Qamui/Core/Primitives/Color.h>
 
 #include <QByteArray>
 #include <QString>

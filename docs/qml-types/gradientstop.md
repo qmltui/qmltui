@@ -58,7 +58,7 @@ Terminal {
         anchors.centerIn: parent
         width: 30
         height: 6
-        border.style: "single"
+        border.style: Border.Single
 
         gradient: Gradient {
             orientation: Gradient.Horizontal

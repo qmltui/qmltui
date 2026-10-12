@@ -96,7 +96,7 @@ Terminal {
 
         Rectangle {
             anchors.fill: parent
-            border.style: "single"
+            border.style: Border.Single
             color: "#1e1e2e"
         }
 

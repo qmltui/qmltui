@@ -21,7 +21,7 @@ Terminal {
         Rectangle {
             width: 50
             height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#f472b6"
             ListView {
                 id: people

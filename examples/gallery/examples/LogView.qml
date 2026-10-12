@@ -37,7 +37,7 @@ Terminal {
         Rectangle {
             width: 60
             height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#a3e635"
             LogView {
                 id: log

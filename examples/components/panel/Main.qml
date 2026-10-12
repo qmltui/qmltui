@@ -27,7 +27,7 @@ Terminal {
             titleBadgeColor: "green"
             titleColor: "cyan"
             border.color: "blue"
-            border.style: "rounded"
+            border.style: Border.Rounded
             footer: "[h] Help"
             footerColor: "gray"
 
@@ -50,7 +50,7 @@ Terminal {
             titleTrailingColor: "magenta"
             titleColor: "yellow"
             border.color: "green"
-            border.style: "single"
+            border.style: Border.Single
             footer: "Load: 12%"
             footerTrailing: "RAM: 45%"
 
@@ -75,7 +75,7 @@ Terminal {
             titleTrailingColor: "gray"
             titleColor: "magenta"
             border.color: "red"
-            border.style: "rounded"
+            border.style: Border.Rounded
             footer: "[q] Quit"
             footerTrailing: "Status: OK"
             footerTrailingColor: "green"

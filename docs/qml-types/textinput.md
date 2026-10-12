@@ -127,7 +127,7 @@ Terminal {
         Rectangle {
             width: 30
             height: 3
-            border.style: "single"
+            border.style: Border.Single
 
             TextInput {
                 id: nameInput

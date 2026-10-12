@@ -326,7 +326,7 @@ private slots:
         QVERIFY(f.create(&model, QString()));
         f.table->setColumns({QVariantMap{{"title", "COL1"}, {"width", 5}},
                              QVariantMap{{"title", "COL2"}, {"width", 6}}});
-        QCOMPARE(f.table->gridStyle(), QStringLiteral("single"));
+        QCOMPARE(f.table->gridStyle(), TableView::Single);
 
         // Single style (default)
         f.table->setShowColumnGrid(true);
@@ -336,16 +336,16 @@ private slots:
         QCOMPARE(f.line(2).left(12), QString::fromUtf8("val  │val   "));
 
         // Double style
-        f.table->setGridStyle(QStringLiteral("double"));
-        QCOMPARE(f.table->gridStyle(), QStringLiteral("double"));
+        f.table->setGridStyle(TableView::Double);
+        QCOMPARE(f.table->gridStyle(), TableView::Double);
         f.paint();
         QCOMPARE(f.line(0).left(12), QString::fromUtf8("COL1 ║COL2  "));
         QCOMPARE(f.line(1).left(12), QString::fromUtf8("═════╬══════"));
         QCOMPARE(f.line(2).left(12), QString::fromUtf8("val  ║val   "));
 
         // Ascii style
-        f.table->setGridStyle(QStringLiteral("ascii"));
-        QCOMPARE(f.table->gridStyle(), QStringLiteral("ascii"));
+        f.table->setGridStyle(TableView::Ascii);
+        QCOMPARE(f.table->gridStyle(), TableView::Ascii);
         f.paint();
         QCOMPARE(f.line(0).left(12), QStringLiteral("COL1 |COL2  "));
         QCOMPARE(f.line(1).left(12), QStringLiteral("-----+------"));
@@ -353,11 +353,17 @@ private slots:
 
         // showColumnGrid false with double style: header divider still matches gridStyle
         f.table->setShowColumnGrid(false);
-        f.table->setGridStyle(QStringLiteral("double"));
+        f.table->setGridStyle(TableView::Double);
         f.paint();
         QCOMPARE(f.line(0).left(12), QStringLiteral("COL1 COL2   "));
         QCOMPARE(f.line(1).left(12), QString::fromUtf8("════════════"));
         QCOMPARE(f.line(2).left(12), QStringLiteral("val  val    "));
+
+        // Test string overload backward compatibility
+        f.table->setGridStyle(QStringLiteral("ascii"));
+        QCOMPARE(f.table->gridStyle(), TableView::Ascii);
+        f.table->setGridStyle(QStringLiteral("single"));
+        QCOMPARE(f.table->gridStyle(), TableView::Single);
     }
 
     void cellAndColumnPadding() {
@@ -775,7 +781,7 @@ private slots:
         QCOMPARE(f.line(1).left(10), QStringLiteral("│ X  Y   │"));
         QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*Unsupported TableView gridStyle:.*bogus.*"));
         f.table->setGridStyle("bogus");
-        QCOMPARE(f.table->gridStyle(), QStringLiteral("single"));
+        QCOMPARE(f.table->gridStyle(), TableView::Single);
     }
 
     void tinyAndEmptyGrids() {

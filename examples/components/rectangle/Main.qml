@@ -6,7 +6,8 @@ Terminal {
     id: root
 
     property int borderStyleIndex: 0
-    property var borderStyles: ["single", "double", "ascii", "none"]
+    property var borderStyles: [Border.Single, Border.Double, Border.Ascii, Border.None]
+    property var borderStyleNames: ["single", "double", "ascii", "none"]
     property bool isVertical: true
     property real animOffset: 0.0
     property bool animRunning: true
@@ -47,7 +48,7 @@ Terminal {
         Rectangle {
             width: parent.width
             height: 3
-            border.style: "double"
+            border.style: Border.Double
             border.color: "cyan"
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -73,7 +74,7 @@ Terminal {
             Rectangle {
                 width: 20
                 height: 5
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "cyan"
 
                 Column {
@@ -81,49 +82,49 @@ Terminal {
                     anchors.centerIn: parent
                     spacing: 0
                     Text { text: "Single Border"; bold: true; color: "cyan" }
-                    Text { text: 'style: "single"'; dim: true }
+                    Text { text: 'style: Border.Single'; dim: true }
                 }
             }
 
             Rectangle {
                 width: 20
                 height: 5
-                border.style: "double"
+                border.style: Border.Double
                 border.color: "yellow"
 
                 Column {
                     anchors.centerIn: parent
                     spacing: 0
                     Text { text: "Double Border"; bold: true; color: "yellow" }
-                    Text { text: 'style: "double"'; dim: true }
+                    Text { text: 'style: Border.Double'; dim: true }
                 }
             }
 
             Rectangle {
                 width: 20
                 height: 5
-                border.style: "ascii"
+                border.style: Border.Ascii
                 border.color: "lime"
 
                 Column {
                     anchors.centerIn: parent
                     spacing: 0
                     Text { text: "ASCII Border"; bold: true; color: "lime" }
-                    Text { text: 'style: "ascii"'; dim: true }
+                    Text { text: 'style: Border.Ascii'; dim: true }
                 }
             }
 
             Rectangle {
                 width: 20
                 height: 5
-                border.style: "none"
+                border.style: Border.None
                 color: "#2e3440"
 
                 Column {
                     anchors.centerIn: parent
                     spacing: 0
                     Text { text: "No Border"; bold: true; color: "white" }
-                    Text { text: 'style: "none"'; dim: true }
+                    Text { text: 'style: Border.None'; dim: true }
                 }
             }
         }
@@ -204,7 +205,7 @@ Terminal {
                     Rectangle {
                         width: 18
                         height: 3
-                        border.style: "single"
+                        border.style: Border.Single
                         border.color: "#001b10"
                         color: "#001b10"
 
@@ -223,7 +224,7 @@ Terminal {
         Rectangle {
             width: parent.width
             height: 3
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#585b70"
             color: "#181825"
 
@@ -239,7 +240,7 @@ Terminal {
                 Text { text: "•"; dim: true }
 
                 Text {
-                    text: "[B] Border: " + root.borderStyles[root.borderStyleIndex]
+                    text: "[B] Border: " + root.borderStyleNames[root.borderStyleIndex]
                     color: "cyan"
                 }
 

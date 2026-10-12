@@ -34,7 +34,7 @@ Terminal {
             Rectangle {
                 width: 70
                 height: 10
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "cyan"
 
                 Paragraph {

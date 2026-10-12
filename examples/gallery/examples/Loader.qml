@@ -31,7 +31,7 @@ Terminal {
         Rectangle {
             width: 50
             height: 5
-            border.style: pageLoader2.status === Loader.Ready ? "single" : "ascii"
+            border.style: pageLoader2.status === Loader.Ready ? Border.Single : Border.Ascii
             border.color: pageLoader2.status === Loader.Ready ? "#fcd34d" : "#6e7b8b"
             Loader {
                 id: pageLoader2

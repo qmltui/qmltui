@@ -76,7 +76,7 @@ Terminal {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumWidth: 10
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Panel A"
@@ -87,7 +87,7 @@ Terminal {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.horizontalStretch: 2
-            border.style: "double"
+            border.style: Border.Double
             Text {
                 anchors.centerIn: parent
                 text: "Panel B (2x)"

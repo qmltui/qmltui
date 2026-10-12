@@ -189,7 +189,7 @@ Terminal {
         x: 2; y: 1
         width: 40; height: 12
         color: "#1e3a5f"
-        border.style: "single"
+        border.style: Border.Single
 
         // A logo with a transparent background sits on the panel colour;
         // its soft edges blend into the blue instead of turning black.

@@ -60,7 +60,7 @@ Terminal {
         Rectangle {
             width: 10
             height: 3
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Left"
@@ -70,7 +70,7 @@ Terminal {
         Rectangle {
             width: 10
             height: 3
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Right"

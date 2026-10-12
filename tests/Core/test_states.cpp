@@ -225,7 +225,7 @@ void TestStates::testDirectSyntaxAndGroupedPaths() {
                 width: 20
                 height: 5
                 border.color: "white"
-                border.style: "single"
+                border.style: Border.Single
                 Text {
                     id: label
                     text: "initial"

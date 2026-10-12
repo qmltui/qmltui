@@ -60,7 +60,7 @@ Terminal {
         anchors.centerIn: parent
         width: 12
         height: 3
-        border.style: "single"
+        border.style: Border.Single
 
         NumberAnimation {
             target: card

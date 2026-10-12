@@ -48,7 +48,7 @@ Rectangle {
         return badgeBackgroundColor !== "" ? badgeBackgroundColor : "transparent"
     }
 
-    border.style: variant === "outlined" ? "single" : "none"
+    border.style: variant === "outlined" ? Border.Single : Border.None
     border.color: variant === "outlined" ? activeColor : "transparent"
 
     implicitWidth: {

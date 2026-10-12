@@ -24,7 +24,7 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `style` | `string` | `"none"` | Holds the border style glyph set: `"none"`, `"single"` (single-line), `"double"` (double-line), `"ascii"` (`+`, `-`, `|`), or `"rounded"` (single-line with curved corners `╭`, `╮`, `╰`, `╯`). |
+| `style` | `enumeration` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), or `Border.Ascii` (`+`, `-`, `|`). |
 | `color` | `rgba` | `"default"` | Holds the colour of the border glyphs. |
 
 ## Detailed Description
@@ -32,12 +32,12 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 `Border` is a grouped property available on [Rectangle](rectangle.md). It
 controls the box-drawing characters used to frame the item.
 
-Supported styles are:
-- `"none"`: no border is rendered.
-- `"single"`: standard box-drawing characters (`┌`, `┐`, `└`, `┘`, `─`, `│`).
-- `"double"`: double-line box-drawing characters (`╔`, `╗`, `╚`, `╝`, `═`, `║`).
-- `"ascii"`: ASCII fallback characters (`+`, `-`, `|`).
-- `"rounded"`: single-line border with curved corner glyphs (`╭`, `╮`, `╰`, `╯`).
+Supported styles via the `Border.Style` enumeration are:
+- `Border.None`: no border is rendered.
+- `Border.Single`: standard box-drawing characters (`┌`, `┐`, `└`, `┘`, `─`, `│`).
+- `Border.Double`: double-line box-drawing characters (`╔`, `╗`, `╚`, `╝`, `═`, `║`).
+- `Border.Rounded`: single-line border with curved corner glyphs (`╭`, `╮`, `╰`, `╯`).
+- `Border.Ascii`: ASCII fallback characters (`+`, `-`, `|`).
 
 ### Example
 
@@ -50,7 +50,7 @@ Terminal {
         anchors.centerIn: parent
         width: 20
         height: 6
-        border.style: "rounded"
+        border.style: Border.Rounded
         border.color: "cyan"
     }
 }

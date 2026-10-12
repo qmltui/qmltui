@@ -74,7 +74,7 @@ Terminal {
                 width: parent.width
                 height: 12
                 color: "#172033"
-                border.style: "double"
+                border.style: Border.Double
                 border.color: contentLoader.status === Loader.Ready ? "green" : "yellow"
 
                 Loader {

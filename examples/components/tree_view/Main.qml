@@ -39,7 +39,7 @@ Terminal {
             Rectangle {
                 width: parent.width
                 height: parent.height - 6
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "gray"
 
                 TreeView {

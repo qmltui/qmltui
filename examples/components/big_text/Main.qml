@@ -32,7 +32,7 @@ Terminal {
         Rectangle {
             width: parent.width
             height: 14
-            border.style: "double"
+            border.style: Border.Double
             border.color: "yellow"
 
             Column {

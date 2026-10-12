@@ -68,7 +68,7 @@ Terminal {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 2
-        border.style: "double"
+        border.style: Border.Double
 
         Text {
             anchors.centerIn: parent

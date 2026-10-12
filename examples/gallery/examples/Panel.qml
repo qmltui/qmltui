@@ -21,7 +21,7 @@ Terminal {
         Panel {
             width: 24; height: 6
             title: "single"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#94a3b8"
             Text { x: 2; y: 1; text: "Default caption"; color: "#c9d1d9" }
             Text { x: 2; y: 2; text: "left aligned"; color: "#6e7b8b" }
@@ -31,17 +31,17 @@ Terminal {
             title: "double"
             titleAlignment: Qt.AlignHCenter
             titleColor: "#7ee0ff"
-            border.style: "double"
+            border.style: Border.Double
             border.color: "#7ee0ff"
             Text { x: 2; y: 1; text: "Centred caption"; color: "#c9d1d9" }
             Text { x: 2; y: 2; text: "coloured border"; color: "#6e7b8b" }
         }
         Panel {
             width: 24; height: 6
-            title: "bold"
+            title: "rounded"
             titleAlignment: Qt.AlignRight
             titleColor: "#f9c74f"
-            border.style: "bold"
+            border.style: Border.Rounded
             border.color: "#f9c74f"
             color: "#1a1a10"
             Text { x: 2; y: 1; text: "Right caption"; color: "#c9d1d9" }

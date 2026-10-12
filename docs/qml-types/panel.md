@@ -60,7 +60,7 @@ Panel adds no layout of its own: children are positioned as in any
 Rectangle, and content should be inset by one cell on each side to stay
 inside the border, for example with `anchors.fill: parent` and
 `anchors.margins: 1`. It has no implicit size, so set `width` and `height`
-or anchor it. Change `border.style` to `"rounded"`, `"double"`, `"ascii"` or
+or anchor it. Change `border.style` to `Border.Rounded`, `Border.Double`, `Border.Ascii` or
 `"none"` like any Rectangle; types without a `border` group, such as
 [TabBar](tabbar.md) or [TableView](tableview.md), are typically wrapped in a
 Panel to get a titled frame.
@@ -83,7 +83,7 @@ Terminal {
         titleTrailing: "v1.2.0"
         footer: "[q] Quit"
         footerTrailing: "CPU: 42%"
-        border.style: "rounded"
+        border.style: Border.Rounded
 
         Column {
             anchors.fill: parent

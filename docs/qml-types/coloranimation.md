@@ -46,7 +46,7 @@ Terminal {
         anchors.centerIn: parent
         width: 20
         height: 5
-        border.style: "double"
+        border.style: Border.Double
 
         ColorAnimation {
             target: box

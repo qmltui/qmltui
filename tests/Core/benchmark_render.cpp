@@ -311,7 +311,7 @@ const char *rectangleQml = R"(
 import Qamui
 Rectangle {
     color: "#102030"
-    border.style: "double"
+    border.style: Border.Double
     border.color: "#56604a"
 }
 )";

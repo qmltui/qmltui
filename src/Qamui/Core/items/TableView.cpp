@@ -19,6 +19,17 @@ enum GridGlyph : uint8_t {
     TopTee, BottomTee, LeftTee, RightTee, Cross,
 };
 
+struct RegisterTableConverters {
+    RegisterTableConverters() {
+        QMetaType::registerConverter<QString, TableView::GridStyle>([](const QString &str) {
+            return TableView::gridStyleFromString(str, TableView::Single);
+        });
+        QMetaType::registerConverter<TableView::GridStyle, QString>([](TableView::GridStyle style) {
+            return TableView::gridStyleToString(style);
+        });
+    }
+} s_registerTableConverters;
+
 QQmlContext *delegateContext(Item *item) {
     return item ? item->findChild<QQmlContext *>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
 }
@@ -420,16 +431,39 @@ void TableView::setShowOuterBorder(bool show) {
     forceLayout();
 }
 
-void TableView::setGridStyle(const QString &style) {
-    if (style != QLatin1String("single") && style != QLatin1String("double")
-        && style != QLatin1String("ascii")) {
-        qmlWarning(this) << "Unsupported TableView gridStyle:" << style;
-        return;
-    }
+void TableView::setGridStyle(GridStyle style) {
     if (m_gridStyle == style) return;
     m_gridStyle = style;
     emit gridStyleChanged();
     markDirty();
+}
+
+void TableView::setGridStyle(const QString &style) {
+    if (style == QLatin1String("single")) {
+        setGridStyle(Single);
+    } else if (style == QLatin1String("double")) {
+        setGridStyle(Double);
+    } else if (style == QLatin1String("ascii")) {
+        setGridStyle(Ascii);
+    } else {
+        qmlWarning(this) << "Unsupported TableView gridStyle:" << style;
+    }
+}
+
+TableView::GridStyle TableView::gridStyleFromString(QStringView str, GridStyle defaultStyle) {
+    if (str.compare(u"single", Qt::CaseInsensitive) == 0) return Single;
+    if (str.compare(u"double", Qt::CaseInsensitive) == 0) return Double;
+    if (str.compare(u"ascii", Qt::CaseInsensitive) == 0) return Ascii;
+    return defaultStyle;
+}
+
+QString TableView::gridStyleToString(GridStyle style) {
+    switch (style) {
+    case Single: return QStringLiteral("single");
+    case Double: return QStringLiteral("double");
+    case Ascii: return QStringLiteral("ascii");
+    }
+    return QStringLiteral("single");
 }
 
 
@@ -1154,8 +1188,8 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     if (!m_visible || width() <= 0 || height() <= 0) return;
     // Order: horizontal, vertical, corners, top/bottom/left/right tees, cross.
-    const QString glyphs = m_gridStyle == QLatin1String("double") ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
-        : m_gridStyle == QLatin1String("ascii") ? QStringLiteral("-|+++++++++")
+    const QString glyphs = (m_gridStyle == Double) ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
+        : (m_gridStyle == Ascii) ? QStringLiteral("-|+++++++++")
         : QStringLiteral("─│┌┐└┘┬┴├┤┼");
     const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
         .intersected({absX, absY, width(), height()});

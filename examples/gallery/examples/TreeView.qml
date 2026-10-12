@@ -24,7 +24,7 @@ Terminal {
         Rectangle {
             width: 50
             height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#86efac"
             TreeView {
                 anchors.fill: parent

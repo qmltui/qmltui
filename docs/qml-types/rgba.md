@@ -63,7 +63,7 @@ Terminal {
         width: 25
         height: 5
         color: "#2563eb"
-        border.style: "single"
+        border.style: Border.Single
         border.color: "white"
 
         Text {

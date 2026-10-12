@@ -35,7 +35,7 @@ Terminal {
 
         Rectangle {
             x: 1; y: 3; width: 36; height: 9
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
             Text { x: 1; y: 0; text: " ListView + StandardItemDelegate "; color: "cyan" }
             ListView {
@@ -54,7 +54,7 @@ Terminal {
 
         Rectangle {
             x: 37; y: 3; width: 42; height: 9
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
             Text { x: 1; y: 0; text: " TableView, built-in painter "; color: "cyan" }
             TableView {
@@ -71,7 +71,7 @@ Terminal {
 
         Rectangle {
             x: 1; y: 13; width: 78; height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
             Text { x: 1; y: 0; text: " TreeView, built-in painter "; color: "cyan" }
             TreeView {

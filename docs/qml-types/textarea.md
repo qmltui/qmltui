@@ -84,7 +84,7 @@ Terminal {
         anchors.centerIn: parent
         width: 40
         height: 8
-        border.style: "single"
+        border.style: Border.Single
 
         TextArea {
             anchors.fill: parent

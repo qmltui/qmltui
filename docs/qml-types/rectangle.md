@@ -33,7 +33,7 @@ Rectangle is the fundamental visual container in Qamui, filling a rectangular
 region of character cells with an optional background `color`, an optional
 [Gradient](gradient.md), and a configurable [Border](border.md).
 
-When `border.style` is anything other than `"none"`, the perimeter cells are drawn
+When `border.style` is anything other than `Border.None`, the perimeter cells are drawn
 with box-drawing glyphs (`single`, `double`, `rounded`, `bold`, etc.). The presence
 of a border automatically introduces 1 character cell of internal padding along each
 bordered edge, ensuring child items anchored within `anchors.fill: parent` or
@@ -62,7 +62,7 @@ Terminal {
         width: 30
         height: 7
         color: "#1e293b"
-        border.style: "double"
+        border.style: Border.Double
         border.color: "cyan"
 
         Text {

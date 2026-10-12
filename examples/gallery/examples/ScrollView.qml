@@ -21,7 +21,7 @@ Terminal {
         Rectangle {
             width: 50
             height: 9
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#67e8f9"
             ScrollView {
                 id: scroller

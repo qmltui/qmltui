@@ -184,7 +184,7 @@ void TestRectangle::testGradientWithBorder() {
     Rectangle rect;
     rect.setWidth(6);
     rect.setHeight(4);
-    rect.border()->setStyle("single");
+    rect.border()->setStyle(Border::Single);
     rect.border()->setColor("#ffffff");
 
     auto *gradient = new Gradient(&rect);
@@ -232,23 +232,24 @@ void TestRectangle::testGradientUpdate() {
 
 void TestRectangle::testBorderStyles() {
     struct StyleCase {
-        const char *styleName;
+        Border::Style style;
         QByteArrayView tl, tr, bl, br, hz, vt;
     };
 
     const StyleCase cases[] = {
-        {"single",  QByteArrayView("┌"), QByteArrayView("┐"), QByteArrayView("└"), QByteArrayView("┘"), QByteArrayView("─"), QByteArrayView("│")},
-        {"double",  QByteArrayView("╔"), QByteArrayView("╗"), QByteArrayView("╚"), QByteArrayView("╝"), QByteArrayView("═"), QByteArrayView("║")},
-        {"ascii",   QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("-"), QByteArrayView("|")},
-        {"rounded", QByteArrayView("╭"), QByteArrayView("╮"), QByteArrayView("╰"), QByteArrayView("╯"), QByteArrayView("─"), QByteArrayView("│")},
+        {Border::Single,  QByteArrayView("┌"), QByteArrayView("┐"), QByteArrayView("└"), QByteArrayView("┘"), QByteArrayView("─"), QByteArrayView("│")},
+        {Border::Double,  QByteArrayView("╔"), QByteArrayView("╗"), QByteArrayView("╚"), QByteArrayView("╝"), QByteArrayView("═"), QByteArrayView("║")},
+        {Border::Ascii,   QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("+"), QByteArrayView("-"), QByteArrayView("|")},
+        {Border::Rounded, QByteArrayView("╭"), QByteArrayView("╮"), QByteArrayView("╰"), QByteArrayView("╯"), QByteArrayView("─"), QByteArrayView("│")},
     };
 
     for (const auto &c : cases) {
         Rectangle rect;
         rect.setWidth(4);
         rect.setHeight(3);
-        rect.border()->setStyle(QString::fromLatin1(c.styleName));
+        rect.border()->setStyle(c.style);
         rect.border()->setColor("#ffffff");
+        QCOMPARE(rect.border()->style(), c.style);
 
         TextGridBuffer buffer = paintRect(rect, 4, 3);
 
@@ -272,6 +273,23 @@ void TestRectangle::testBorderStyles() {
         QCOMPARE(buffer.cellAt(1, 1).character(), QByteArrayView(" "));
         QCOMPARE(buffer.cellAt(2, 1).character(), QByteArrayView(" "));
     }
+
+    // None style
+    {
+        Rectangle rect;
+        rect.setWidth(4);
+        rect.setHeight(3);
+        rect.border()->setStyle(Border::None);
+        QCOMPARE(rect.border()->style(), Border::None);
+        QCOMPARE(rect.leftPadding(), 0);
+    }
+
+    // String overload
+    {
+        Rectangle rect;
+        rect.border()->setStyle(QStringLiteral("rounded"));
+        QCOMPARE(rect.border()->style(), Border::Rounded);
+    }
 }
 
 void TestRectangle::testQmlIntegration() {
@@ -283,6 +301,8 @@ void TestRectangle::testQmlIntegration() {
         Rectangle {
             width: 8
             height: 4
+            border.style: Border.Double
+            border.color: "#ffffff"
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "#ff0000" }
@@ -295,6 +315,7 @@ void TestRectangle::testQmlIntegration() {
     QVERIFY2(object, qPrintable(component.errorString()));
     auto *rect = qobject_cast<Rectangle *>(object.get());
     QVERIFY(rect);
+    QCOMPARE(rect->border()->style(), Border::Double);
     QVERIFY(rect->gradient());
     QCOMPARE(rect->gradient()->orientation(), Gradient::Horizontal);
 

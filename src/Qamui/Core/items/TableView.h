@@ -74,8 +74,8 @@ class QAMUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(bool showRowGrid READ showRowGrid WRITE setShowRowGrid NOTIFY showRowGridChanged)
     /// @brief Whether an outer border box is drawn around the table perimeter.
     Q_PROPERTY(bool showOuterBorder READ showOuterBorder WRITE setShowOuterBorder NOTIFY showOuterBorderChanged)
-    /// @brief Border style for grid lines ("single", "double", "heavy", "rounded").
-    Q_PROPERTY(QString gridStyle READ gridStyle WRITE setGridStyle NOTIFY gridStyleChanged)
+    /// @brief Border style for grid lines ("single", "double", "ascii").
+    Q_PROPERTY(GridStyle gridStyle READ gridStyle WRITE setGridStyle NOTIFY gridStyleChanged)
 
     /// @brief Optional JS function (columnIndex) => width in columns.
     Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider NOTIFY columnWidthProviderChanged)
@@ -87,6 +87,13 @@ class QAMUI_CORE_EXPORT TableView : public Item {
     Q_PROPERTY(QQmlComponent* rowDelegate READ rowDelegate WRITE setRowDelegate NOTIFY rowDelegateChanged)
 
 public:
+    enum GridStyle : uint8_t {
+        Single = 0,
+        Double,
+        Ascii,
+    };
+    Q_ENUM(GridStyle)
+
     explicit TableView(QObject *parent = nullptr);
     ~TableView() override;
 
@@ -144,8 +151,12 @@ public:
     bool showOuterBorder() const { return m_showOuterBorder; }
     void setShowOuterBorder(bool show);
 
-    QString gridStyle() const { return m_gridStyle; }
+    GridStyle gridStyle() const { return m_gridStyle; }
+    void setGridStyle(GridStyle style);
     void setGridStyle(const QString &style);
+
+    static GridStyle gridStyleFromString(QStringView str, GridStyle defaultStyle = Single);
+    static QString gridStyleToString(GridStyle style);
 
 
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
@@ -365,7 +376,7 @@ private:
     bool m_showColumnGrid = false;
     bool m_showRowGrid = false;
     bool m_showOuterBorder = false;
-    QString m_gridStyle = QStringLiteral("single");
+    GridStyle m_gridStyle = Single;
 
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;

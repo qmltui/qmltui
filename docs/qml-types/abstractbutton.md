@@ -92,7 +92,7 @@ Button {
     text: "Save"
     background: Rectangle {
         color: save.down ? "#2f6f4f" : "#65e6a0"
-        border.style: save.activeFocus ? "double" : "single"
+        border.style: save.activeFocus ? Border.Double : Border.Single
     }
     contentItem: Text {
         text: save.text
@@ -123,7 +123,7 @@ Terminal {
         focus: true
         background: Rectangle {
             color: pin.checked ? "#65e6a0" : "default"
-            border.style: pin.activeFocus ? "double" : "single"
+            border.style: pin.activeFocus ? Border.Double : Border.Single
         }
         contentItem: Text {
             text: pin.text

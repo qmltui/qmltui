@@ -13,7 +13,7 @@ Terminal {
     }
     Rectangle {
         anchors.fill: parent
-        border.style: "single"
+        border.style: Border.Single
         Column {
             anchors.fill: parent
             anchors.margins: 1

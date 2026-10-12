@@ -64,7 +64,7 @@ Terminal {
 
                 width: listView.width
                 height: 3
-                border.style: "single"
+                border.style: Border.Single
                 border.color: ListView.isCurrentItem ? "yellow" : "blue"
 
                 Column {

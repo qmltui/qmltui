@@ -67,7 +67,7 @@ Terminal {
                 width: parent.width
                 height: 3
                 color: "#1a1a24"
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "#3b4252"
 
                 Text {
@@ -84,7 +84,7 @@ Terminal {
                 width: parent.width
                 height: 3
                 color: "#201515"
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "#e06c75"
 
                 Row {
@@ -119,7 +119,7 @@ Terminal {
                     focusable: true
                     focus: true
                     color: "#1e1e1e"
-                    border.style: "single"
+                    border.style: Border.Single
                     border.color: "#555555"
 
                     Column {
@@ -175,7 +175,7 @@ Terminal {
                     focusable: true
                     focus: false
                     color: "#1e1e1e"
-                    border.style: "single"
+                    border.style: Border.Single
                     border.color: "#555555"
 
                     Column {
@@ -230,7 +230,7 @@ Terminal {
                 width: parent.width
                 height: 4
                 color: "#181818"
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "#333333"
 
                 Column {

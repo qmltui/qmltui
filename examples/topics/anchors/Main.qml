@@ -15,7 +15,7 @@ Terminal {
     Rectangle {
         anchors.fill: parent
         color: "#111111"
-        border.style: "double"
+        border.style: Border.Double
         border.color: "gray"
 
         // Header - anchored to top, left, and right of the parent

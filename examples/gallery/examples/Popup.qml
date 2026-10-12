@@ -34,7 +34,7 @@ Terminal {
             Rectangle {
                 anchors.fill: parent
                 color: "#141b24"
-                border.style: "double"
+                border.style: Border.Double
                 border.color: "#a3e635"
             }
             Text { x: 2; y: 1; text: "Export options"; bold: true; color: "#a3e635" }

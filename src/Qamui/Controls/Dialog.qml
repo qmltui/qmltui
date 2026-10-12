@@ -26,7 +26,7 @@ Popup {
         id: bg
         anchors.fill: parent
         color: "default"
-        border.style: "double"
+        border.style: Border.Double
         border.color: "default"
     }
 

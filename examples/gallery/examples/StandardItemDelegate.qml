@@ -22,7 +22,7 @@ Terminal {
         Rectangle {
             width: 40
             height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#93c5fd"
             ListView {
                 id: tasks

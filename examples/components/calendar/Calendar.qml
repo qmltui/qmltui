@@ -33,7 +33,7 @@ Rectangle {
     implicitWidth: 34
     implicitHeight: showFooter ? 13 : 11
 
-    border.style: activeFocus ? "double" : "single"
+    border.style: activeFocus ? Border.Double : Border.Single
     border.color: !enabled ? "gray" : (activeFocus ? focusBorderColor : normalBorderColor)
     color: "transparent"
 
@@ -164,7 +164,7 @@ Rectangle {
                 background: Rectangle {
                     color: "default"
                     border.color: "default"
-                    border.style: "none"
+                    border.style: Border.None
                 }
                 text: "<<"
                 implicitWidth: 4
@@ -176,7 +176,7 @@ Rectangle {
                 background: Rectangle {
                     color: "default"
                     border.color: "default"
-                    border.style: "none"
+                    border.style: Border.None
                 }
                 text: "<"
                 implicitWidth: 3
@@ -196,7 +196,7 @@ Rectangle {
                 background: Rectangle {
                     color: "default"
                     border.color: "default"
-                    border.style: "none"
+                    border.style: Border.None
                 }
                 text: ">"
                 implicitWidth: 3
@@ -208,7 +208,7 @@ Rectangle {
                 background: Rectangle {
                     color: "default"
                     border.color: "default"
-                    border.style: "none"
+                    border.style: Border.None
                 }
                 text: ">>"
                 implicitWidth: 4

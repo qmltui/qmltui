@@ -23,7 +23,7 @@ Terminal {
         Rectangle {
             width: 66
             height: 8
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#fbbf24"
             GridView {
                 anchors.fill: parent

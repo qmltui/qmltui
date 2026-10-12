@@ -24,7 +24,7 @@ Terminal {
 
         Rectangle {
             anchors.fill: parent
-            border.style: "single"
+            border.style: Border.Single
             border.color: "gray"
 
             Column {
@@ -50,7 +50,7 @@ Terminal {
                     id: statusCard
                     width: 44
                     height: 5
-                    border.style: "double"
+                    border.style: Border.Double
                     border.color: root.isActive ? "green" : "red"
                     focusable: true
                     focus: true

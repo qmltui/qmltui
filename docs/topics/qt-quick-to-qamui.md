@@ -51,7 +51,7 @@ Terminal {
         x: 2; y: 1
         width: 30
         height: 5
-        border.style: "rounded"
+        border.style: Border.Rounded
     }
 }
 ```
@@ -66,7 +66,7 @@ terminal cells, a border is drawn using Unicode box-drawing characters:
 ```qml
 Rectangle {
     color: "#0d1117"
-    border.style: "single"   // or "double", "rounded", "heavy", "none"
+    border.style: Border.Single   // or Border.Double, Border.Rounded, "heavy", Border.None
     border.color: "cyan"
 }
 ```
@@ -166,7 +166,7 @@ ListView {
 | :--- | :--- | :--- |
 | `import QtQuick` | `import QtQml` + `import Qamui` | No Qt Quick dependency |
 | `Item { width: 100.0 }` | `Item { width: 10 }` | Integer cells, no decimals |
-| `Rectangle { border.width: 1 }` | `Rectangle { border.style: "single" }` | Uses box-drawing glyphs |
+| `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Uses box-drawing glyphs |
 | `font.pixelSize: 14` | `font.pointSize: 1` | Implicit cell height |
 | `color: Material.accent` | `color: "cyan"` or `color: "#2CDE85"` | No theme singletons |
 | `focus: true` | `focus: true`, `focusable: true` | Explicit Tab navigation |

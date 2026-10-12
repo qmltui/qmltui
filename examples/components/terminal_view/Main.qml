@@ -107,7 +107,7 @@ Terminal {
             Rectangle {
                 width: Math.floor(parent.width / 2)
                 height: parent.height
-                border.style: "single"
+                border.style: Border.Single
                 border.color: terminal1.activeFocus ? "#89dceb" : "#45475a"
                 color: "#11111b"
 
@@ -212,7 +212,7 @@ Terminal {
             Rectangle {
                 width: parent.width - Math.floor(parent.width / 2)
                 height: parent.height
-                border.style: "single"
+                border.style: Border.Single
                 border.color: terminal2.activeFocus ? "#a6e3a1" : "#45475a"
                 color: "#11111b"
 
@@ -317,7 +317,7 @@ Terminal {
         Rectangle {
             width: parent.width
             height: 12
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#585b70"
             color: "#181825"
 
@@ -341,7 +341,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: terminal1.activeFocus ? "#89dceb" : "gray"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Focus T1 ]"
                         onClicked: {
@@ -355,7 +355,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: terminal2.activeFocus ? "#a6e3a1" : "gray"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Focus T2 ]"
                         onClicked: {
@@ -369,7 +369,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#89dceb"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ T1 ➔ T2 ]"
                         onClicked: {
@@ -382,7 +382,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#a6e3a1"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ T2 ➔ T1 ]"
                         onClicked: {
@@ -395,7 +395,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#cba6f7"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Pipe T1 Env -> T2 ]"
                         onClicked: {
@@ -409,7 +409,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#f9e2af"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Sync PWD ]"
                         onClicked: {
@@ -423,7 +423,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#f38ba8"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Clear Both ]"
                         onClicked: {
@@ -448,7 +448,7 @@ Terminal {
                         width: 38
                         height: 3
                         color: cmdInput.activeFocus ? "#1e1e2e" : "#11111b"
-                        border.style: cmdInput.activeFocus ? "double" : "single"
+                        border.style: cmdInput.activeFocus ? Border.Double : Border.Single
                         border.color: cmdInput.activeFocus ? "#f9e2af" : "#45475a"
 
                         TextInput {
@@ -504,7 +504,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: root.commandTarget === 0 ? "#89dceb" : "gray"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: root.commandTarget === 0 ? "[ Target: T1 (Active) ]" : "[ Target: T1 ]"
                         onClicked: {
@@ -517,7 +517,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: root.commandTarget === 1 ? "#a6e3a1" : "gray"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: root.commandTarget === 1 ? "[ Target: T2 (Active) ]" : "[ Target: T2 ]"
                         onClicked: {
@@ -530,7 +530,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: root.commandTarget === 2 ? "#cba6f7" : "gray"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: root.commandTarget === 2 ? "[ Target: BOTH (Broadcast) ]" : "[ Target: BOTH ]"
                         onClicked: {
@@ -543,7 +543,7 @@ Terminal {
                         background: Rectangle {
                             color: "default"
                             border.color: "#f9e2af"
-                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? "double" : "single") : "none"
+                            border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
                         }
                         text: "[ Dispatch ➔ ]"
                         onClicked: {

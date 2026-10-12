@@ -61,7 +61,7 @@ Terminal {
         anchors.centerIn: parent
         width: 15
         height: 3
-        border.style: "single"
+        border.style: Border.Single
 
         PropertyAnimation {
             target: box

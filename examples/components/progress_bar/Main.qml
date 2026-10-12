@@ -30,7 +30,7 @@ Terminal {
     Rectangle {
         anchors.fill: parent
         color: "#0f172a"
-        border.style: "double"
+        border.style: Border.Double
         border.color: "#38bdf8"
 
         Column {

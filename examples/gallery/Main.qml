@@ -470,7 +470,7 @@ Terminal {
                 height: root.tileHeight
                 clip: true
                 color: current ? root.tileCurrentColor : root.tileColor
-                border.style: current ? "double" : "single"
+                border.style: current ? Border.Double : Border.Single
                 border.color: current ? modelData.accent : root.lineColor
 
                 Text {
@@ -527,7 +527,7 @@ Terminal {
             anchors.fill: parent
             title: root.current ? root.current.name + "  ·  examples/" + root.current.file : ""
             titleColor: root.current ? root.current.accent : root.textColor
-            border.style: "single"
+            border.style: Border.Single
             border.color: root.lineColor
             color: root.panelColor
 

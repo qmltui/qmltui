@@ -9,7 +9,7 @@ import Qamui
 // only supply defaults for those two items. Assign your own to restyle:
 //
 //     Button {
-//         background: Rectangle { color: "#65e6a0"; border.style: "none" }
+//         background: Rectangle { color: "#65e6a0"; border.style: Border.None }
 //         contentItem: Text { text: parent.text; color: "#0b0f14" }
 //     }
 //

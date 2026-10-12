@@ -354,7 +354,7 @@ Terminal {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        border.style: "double"
+        border.style: Border.Double
         border.color: root.currentTheme.border
 
         Row {
@@ -421,7 +421,7 @@ Terminal {
                 if (parent.width >= 98) return parent.width - 30
                 return Math.max(48, parent.width - 32)
             }
-            border.style: "single"
+            border.style: Border.Single
             border.color: root.currentTheme.panelBorder
 
             ScrollView {
@@ -452,7 +452,7 @@ Terminal {
                                     width: 21
                                     height: 8
                                     color: "transparent"
-                                    border.style: "none"
+                                    border.style: Border.None
 
                                     Column {
                                         anchors.fill: parent
@@ -564,7 +564,7 @@ Terminal {
                 titleColor: root.currentTheme.accent
                 width: rightCol.width
                 height: 4
-                border.style: "single"
+                border.style: Border.Single
                 border.color: root.currentTheme.panelBorder
 
                 Column {
@@ -586,7 +586,7 @@ Terminal {
                             width: 12
                             height: 1
                             color: jumpInput.activeFocus ? "#1e3a5f" : "#0f172a"
-                            border.style: "none"
+                            border.style: Border.None
 
                             TextInput {
                                 id: jumpInput
@@ -659,7 +659,7 @@ Terminal {
                 titleColor: root.currentTheme.accent
                 width: rightCol.width
                 height: 4
-                border.style: "single"
+                border.style: Border.Single
                 border.color: root.currentTheme.panelBorder
 
                 Column {
@@ -704,7 +704,7 @@ Terminal {
                 titleColor: root.currentTheme.accent
                 width: rightCol.width
                 height: Math.max(8, rightCol.height - 8)
-                border.style: "single"
+                border.style: Border.Single
                 border.color: root.currentTheme.panelBorder
 
                 Column {
@@ -726,7 +726,7 @@ Terminal {
                             width: Math.max(10, rightCol.width - 13)
                             height: 1
                             color: noteInput.activeFocus ? "#1e3a5f" : "#0f172a"
-                            border.style: "none"
+                            border.style: Border.None
 
                             TextInput {
                                 id: noteInput
@@ -822,7 +822,7 @@ Terminal {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        border.style: "double"
+        border.style: Border.Double
         border.color: root.currentTheme.border
 
         Row {

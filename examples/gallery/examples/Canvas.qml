@@ -36,7 +36,7 @@ Terminal {
             width: parent.width
             height: parent.height - 2
             color: "#020617"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#1e293b"
             Canvas {
                 id: waveCanvas

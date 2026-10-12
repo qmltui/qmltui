@@ -44,7 +44,7 @@ Terminal {
                 id: progBar
                 width: parent.width
                 height: 3
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "gray"
                 barColor: "green"
                 value: 0.0

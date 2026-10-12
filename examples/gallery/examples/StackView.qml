@@ -29,7 +29,7 @@ Terminal {
             Rectangle {
                 width: 50
                 height: 5
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "#2a3542"
                 StackView {
                     id: stack

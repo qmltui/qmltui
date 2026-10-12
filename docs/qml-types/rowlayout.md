@@ -57,7 +57,7 @@ Terminal {
         Rectangle {
             Layout.preferredWidth: 20
             Layout.fillHeight: true
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Sidebar"
@@ -67,7 +67,7 @@ Terminal {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            border.style: "double"
+            border.style: Border.Double
             Text {
                 anchors.centerIn: parent
                 text: "Main Content"

@@ -95,7 +95,7 @@ Terminal {
         anchors.centerIn: parent
         width: 20
         height: 5
-        border.style: "single"
+        border.style: Border.Single
 
         Text {
             id: statusText

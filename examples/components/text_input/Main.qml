@@ -25,7 +25,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
 
             Text {
@@ -51,7 +51,7 @@ Terminal {
             width: parent.width
             height: parent.height - 8
             color: "#020617"
-            border.style: "double"
+            border.style: Border.Double
             border.color: "#334155"
 
             ScrollView {
@@ -84,7 +84,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: userInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: userInput.activeFocus ? "double" : "single"
+                        border.style: userInput.activeFocus ? Border.Double : Border.Single
                         border.color: userInput.activeFocus ? "#38bdf8" : "#475569"
 
                         TextInput {
@@ -117,7 +117,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: beamInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: beamInput.activeFocus ? "double" : "single"
+                        border.style: beamInput.activeFocus ? Border.Double : Border.Single
                         border.color: beamInput.activeFocus ? "#eab308" : "#475569"
 
                         TextInput {
@@ -148,7 +148,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: cmdInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: cmdInput.activeFocus ? "double" : "single"
+                        border.style: cmdInput.activeFocus ? Border.Double : Border.Single
                         border.color: cmdInput.activeFocus ? "#22c55e" : "#475569"
 
                         TextInput {
@@ -181,7 +181,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: customInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: customInput.activeFocus ? "double" : "single"
+                        border.style: customInput.activeFocus ? Border.Double : Border.Single
                         border.color: customInput.activeFocus ? "#f43f5e" : "#475569"
 
                         TextInput {
@@ -212,7 +212,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: selInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: selInput.activeFocus ? "double" : "single"
+                        border.style: selInput.activeFocus ? Border.Double : Border.Single
                         border.color: selInput.activeFocus ? "#a855f7" : "#475569"
 
                         TextInput {
@@ -245,7 +245,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: holderInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: holderInput.activeFocus ? "double" : "single"
+                        border.style: holderInput.activeFocus ? Border.Double : Border.Single
                         border.color: holderInput.activeFocus ? "#ec4899" : "#475569"
 
                         TextInput {
@@ -277,7 +277,7 @@ Terminal {
                         implicitWidth: 45
                         implicitHeight: 3
                         color: overwriteInput.activeFocus ? "#1e293b" : "#0f172a"
-                        border.style: overwriteInput.activeFocus ? "double" : "single"
+                        border.style: overwriteInput.activeFocus ? Border.Double : Border.Single
                         border.color: overwriteInput.activeFocus ? "#10b981" : "#475569"
 
                         TextInput {
@@ -306,7 +306,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "yellow"
 
             Text {

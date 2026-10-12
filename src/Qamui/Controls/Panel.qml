@@ -19,7 +19,7 @@ Rectangle {
     property string footerTrailing: ""
     property rgba footerTrailingColor: "default"
 
-    border.style: "single"
+    border.style: Border.Single
     border.color: "default"
 
     QtObject {

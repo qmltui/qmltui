@@ -53,7 +53,7 @@ used to be:
 Button {
     id: filled
     text: "Filled"
-    background: Rectangle { color: "#65e6a0"; border.style: "none" }
+    background: Rectangle { color: "#65e6a0"; border.style: Border.None }
     contentItem: Text {
         text: filled.text
         color: "#0b0f14"

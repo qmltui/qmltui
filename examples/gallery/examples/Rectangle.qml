@@ -19,10 +19,10 @@ Terminal {
         spacing: 1
         Row {
             spacing: 2
-            Rectangle { width: 16; height: 4; border.style: "single"; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: "single"; color: "#c9d1d9" } }
-            Rectangle { width: 16; height: 4; border.style: "double"; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: "double"; color: "#c9d1d9" } }
-            Rectangle { width: 16; height: 4; border.style: "bold"; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: "bold"; color: "#c9d1d9" } }
-            Rectangle { width: 16; height: 4; border.style: "ascii"; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: "ascii"; color: "#c9d1d9" } }
+            Rectangle { width: 16; height: 4; border.style: Border.Single; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: Border.Single; color: "#c9d1d9" } }
+            Rectangle { width: 16; height: 4; border.style: Border.Double; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: Border.Double; color: "#c9d1d9" } }
+            Rectangle { width: 16; height: 4; border.style: Border.Rounded; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: Border.Rounded; color: "#c9d1d9" } }
+            Rectangle { width: 16; height: 4; border.style: Border.Ascii; border.color: "#60a5fa"; Text { anchors.centerIn: parent; text: Border.Ascii; color: "#c9d1d9" } }
         }
         Row {
             spacing: 2

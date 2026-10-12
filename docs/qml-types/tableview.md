@@ -42,7 +42,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |
-| `gridStyle` | `string` | `"single"` | Style of all borders and grid lines: `"single"`, `"double"`, or `"ascii"`. |
+| `gridStyle` | `enumeration` | `TableView.Single` | Style of all borders and grid lines: `TableView.Single`, `TableView.Double`, or `TableView.Ascii`. |
 | `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
 | `cellFormat` | `var` |  | JS callback `(row, column, value) => ({ text, color, backgroundColor, bold, align, padding, leftPadding, rightPadding })`. |
 | `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
@@ -65,9 +65,8 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 
 `showColumnGrid`, `showRowGrid`, and `showOuterBorder` are independent and default
 to `false`. Enable all three for a complete box-art table. The header underline
-is always present when a header is shown. `gridStyle` accepts `"single"`,
-`"double"`, and `"ascii"`; other values produce a warning and leave the style
-unchanged. Structural lines, including the header underline, use `textColor`
+is always present when a header is shown. `gridStyle` accepts `TableView.Single`,
+`TableView.Double`, and `TableView.Ascii`. Structural lines, including the header underline, use `textColor`
 and the terminal background; `headerColor` applies to heading text only.
 
 ### Columns and sizing

@@ -46,7 +46,7 @@ Terminal {
                 width: 12
                 height: 3
                 color: root.warm ? "#f87171" : "#65e6a0"
-                border.style: "single"
+                border.style: Border.Single
                 border.color: "#0b0f14"
                 // The property still jumps in your code; the Behavior turns the
                 // jump into an animation from the old value to the new one.

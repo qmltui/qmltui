@@ -58,7 +58,7 @@ Terminal {
             width: parent.width
             height: Math.max(3, parent.height - 8)
             color: "#111827"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#334155"
 
             AnimatedSprite {
@@ -81,7 +81,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "yellow"
 
             Text {

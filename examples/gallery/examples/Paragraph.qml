@@ -22,7 +22,7 @@ Terminal {
         Rectangle {
             width: 66
             height: 7
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#fde68a"
             Paragraph {
                 anchors.fill: parent

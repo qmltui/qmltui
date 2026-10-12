@@ -56,7 +56,7 @@ Terminal {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 3
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Header"
@@ -66,7 +66,7 @@ Terminal {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Body"
@@ -76,7 +76,7 @@ Terminal {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 3
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Footer"

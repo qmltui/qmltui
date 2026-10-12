@@ -24,7 +24,7 @@ Terminal {
 
     Rectangle {
         anchors.fill: parent
-        border.style: "single"
+        border.style: Border.Single
         border.color: "yellow"
     }
 

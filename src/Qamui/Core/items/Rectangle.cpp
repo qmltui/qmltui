@@ -38,28 +38,28 @@ void Rectangle::setGradient(Gradient *gradient) {
 
 int Rectangle::leftPadding() const {
   int p = Item::leftPadding();
-  if (m_border.style() != "none")
+  if (m_border.style() != Border::None)
     p += 1;
   return p;
 }
 
 int Rectangle::rightPadding() const {
   int p = Item::rightPadding();
-  if (m_border.style() != "none")
+  if (m_border.style() != Border::None)
     p += 1;
   return p;
 }
 
 int Rectangle::topPadding() const {
   int p = Item::topPadding();
-  if (m_border.style() != "none")
+  if (m_border.style() != Border::None)
     p += 1;
   return p;
 }
 
 int Rectangle::bottomPadding() const {
   int p = Item::bottomPadding();
-  if (m_border.style() != "none")
+  if (m_border.style() != Border::None)
     p += 1;
   return p;
 }
@@ -111,7 +111,7 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
   }
 
   // Render border if enabled
-  if (m_border.style() != "none") {
+  if (m_border.style() != Border::None) {
     uint32_t borderColor =
         ColorMapper::fromString(m_border.color(), 0xFFFFFFFF);
     const char *tl = "┌";
@@ -121,25 +121,32 @@ void Rectangle::paint(TextGridBuffer &buffer, int absX, int absY,
     const char *hz = "─";
     const char *vt = "│";
 
-    if (m_border.style() == "double") {
+    switch (m_border.style()) {
+    case Border::Double:
       tl = "╔";
       tr = "╗";
       bl = "╚";
       br = "╝";
       hz = "═";
       vt = "║";
-    } else if (m_border.style() == "ascii") {
+      break;
+    case Border::Ascii:
       tl = "+";
       tr = "+";
       bl = "+";
       br = "+";
       hz = "-";
       vt = "|";
-    } else if (m_border.style() == "rounded") {
+      break;
+    case Border::Rounded:
       tl = "╭";
       tr = "╮";
       bl = "╰";
       br = "╯";
+      break;
+    case Border::Single:
+    case Border::None:
+      break;
     }
 
     // Measure the six glyphs once instead of per border cell.

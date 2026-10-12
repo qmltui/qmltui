@@ -27,7 +27,7 @@ Terminal {
             width: 44
             height: 3
             color: "#331111"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#7f1d1d"
             Text { id: cardLabel; anchors.centerIn: parent; text: "● OFF"; bold: true; color: "#fca5a5" }
             states: [

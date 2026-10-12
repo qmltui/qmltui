@@ -339,7 +339,7 @@ Terminal {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            border.style: "double"
+            border.style: Border.Double
             border.color: "cyan"
             color: "#141b24"
 
@@ -374,7 +374,7 @@ Terminal {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
             color: "#0d1117"
 
@@ -392,7 +392,7 @@ Terminal {
             anchors.top: header.bottom
             anchors.bottom: footer.top
             anchors.left: parent.left
-            border.style: "single"
+            border.style: Border.Single
             border.color: "magenta"
             color: "#12141c"
 
@@ -414,7 +414,7 @@ Terminal {
                     background: Rectangle {
                         color: "#1d212a"
                         border.color: "default"
-                        border.style: "none"
+                        border.style: Border.None
                     }
                     width: sidebarColumn.width
                     height: 3
@@ -430,7 +430,7 @@ Terminal {
                         background: Rectangle {
                             color: "#1d212a"
                             border.color: "default"
-                            border.style: "none"
+                            border.style: Border.None
                         }
                         width: Math.floor((sidebarColumn.width - 1) / 2)
                         height: 3
@@ -444,7 +444,7 @@ Terminal {
                         background: Rectangle {
                             color: "#1d212a"
                             border.color: "default"
-                            border.style: "none"
+                            border.style: Border.None
                         }
                         width: sidebarColumn.width - Math.floor((sidebarColumn.width - 1) / 2) - 1
                         height: 3
@@ -464,7 +464,7 @@ Terminal {
                         background: Rectangle {
                             color: "#1d212a"
                             border.color: "default"
-                            border.style: "none"
+                            border.style: Border.None
                         }
                         width: Math.floor((sidebarColumn.width - 1) / 2)
                         height: 3
@@ -478,7 +478,7 @@ Terminal {
                         background: Rectangle {
                             color: "#1d212a"
                             border.color: "default"
-                            border.style: "none"
+                            border.style: Border.None
                         }
                         width: sidebarColumn.width - Math.floor((sidebarColumn.width - 1) / 2) - 1
                         height: 3
@@ -491,7 +491,7 @@ Terminal {
                     background: Rectangle {
                         color: "#1d212a"
                         border.color: "default"
-                        border.style: "none"
+                        border.style: Border.None
                     }
                     width: sidebarColumn.width
                     height: 3
@@ -593,7 +593,7 @@ Terminal {
                 Rectangle {
                     width: parent.width
                     height: 7
-                    border.style: "double"
+                    border.style: Border.Double
                     border.color: "green"
                     color: "#0a140e"
 
@@ -691,7 +691,7 @@ Terminal {
                 Rectangle {
                     width: parent.width
                     height: 8
-                    border.style: "double"
+                    border.style: Border.Double
                     border.color: "yellow"
                     color: "#16140a"
 
@@ -730,7 +730,7 @@ Terminal {
                 Rectangle {
                     width: parent.width
                     height: 6
-                    border.style: "double"
+                    border.style: Border.Double
                     border.color: "cyan"
                     color: "#0a131a"
 
@@ -809,7 +809,7 @@ Terminal {
                 Rectangle {
                     width: parent.width
                     height: 6
-                    border.style: "double"
+                    border.style: Border.Double
                     border.color: "magenta"
                     color: "#140a16"
 

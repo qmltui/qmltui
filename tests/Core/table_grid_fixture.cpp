@@ -66,9 +66,9 @@ int main(int argc, char **argv)
                 else if (event.key === Qt.Key_G) table.showRowGrid = !table.showRowGrid
                 else if (event.key === Qt.Key_C) table.showColumnGrid = !table.showColumnGrid
                 else if (event.key === Qt.Key_B) table.showOuterBorder = !table.showOuterBorder
-                else if (event.key === Qt.Key_D) table.gridStyle = "double"
-                else if (event.key === Qt.Key_A) table.gridStyle = "ascii"
-                else if (event.key === Qt.Key_S) table.gridStyle = "single"
+                else if (event.key === Qt.Key_D) table.gridStyle = TableView.Double
+                else if (event.key === Qt.Key_A) table.gridStyle = TableView.Ascii
+                else if (event.key === Qt.Key_S) table.gridStyle = TableView.Single
                 else if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) Qt.quit()
                 else return
                 event.accepted = true

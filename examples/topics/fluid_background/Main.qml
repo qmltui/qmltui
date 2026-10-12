@@ -71,7 +71,7 @@ Terminal {
         width: 54
         height: 12
         color: "#0f172a"
-        border.style: "double"
+        border.style: Border.Double
         border.color: fluid.color
 
         Column {

@@ -92,7 +92,7 @@ Terminal {
         anchors.centerIn: parent
         width: 30
         height: 7
-        border.style: "single"
+        border.style: Border.Single
 
         ListView {
             anchors.fill: parent

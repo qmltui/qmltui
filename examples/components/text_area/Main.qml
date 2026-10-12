@@ -25,7 +25,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
 
             Text {
@@ -51,7 +51,7 @@ Terminal {
             width: parent.width
             height: 12
             color: "#020617"
-            border.style: editableArea.activeFocus ? "double" : "single"
+            border.style: editableArea.activeFocus ? Border.Double : Border.Single
             border.color: editableArea.activeFocus ? "#38bdf8" : "#334155"
 
             Column {
@@ -76,7 +76,7 @@ Terminal {
                     width: parent.width
                     height: 8
                     color: editableArea.activeFocus ? "#0f172a" : "#020617"
-                    border.style: "single"
+                    border.style: Border.Single
                     border.color: editableArea.activeFocus ? "#0284c7" : "#1e293b"
 
                     TextArea {
@@ -105,7 +105,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#475569"
 
             Row {
@@ -137,7 +137,7 @@ Terminal {
             width: parent.width
             height: parent.height - 23
             color: "#020617"
-            border.style: readOnlyArea.activeFocus ? "double" : "single"
+            border.style: readOnlyArea.activeFocus ? Border.Double : Border.Single
             border.color: readOnlyArea.activeFocus ? "#38bdf8" : "#334155"
 
             Column {
@@ -162,7 +162,7 @@ Terminal {
                     width: parent.width
                     height: parent.height - 3
                     color: readOnlyArea.activeFocus ? "#0f172a" : "#020617"
-                    border.style: "single"
+                    border.style: Border.Single
                     border.color: readOnlyArea.activeFocus ? "#0284c7" : "#1e293b"
 
                     TextArea {
@@ -188,7 +188,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "yellow"
 
             Text {

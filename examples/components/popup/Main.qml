@@ -84,7 +84,7 @@ Terminal {
             Rectangle {
                 anchors.fill: parent
                 color: "#2E2E2E"
-                border.style: "double"
+                border.style: Border.Double
                 border.color: "yellow"
             }
 

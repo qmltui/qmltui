@@ -98,7 +98,7 @@ Terminal {
         anchors.centerIn: parent
         width: 35
         height: 10
-        border.style: "single"
+        border.style: Border.Single
 
         TreeView {
             anchors.fill: parent

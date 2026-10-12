@@ -160,14 +160,14 @@ Non-Rectangle types, including `Paragraph`, `TableView`, `TreeView`,
 or `borderColor`. Wrap one in a `Rectangle` or `Panel` and inset it by one cell
 when a decorative border is needed. For a connected table frame, use
 `TableView.showOuterBorder` with `showColumnGrid` and `showRowGrid`; these
-independent switches default to `false`. Its `gridStyle` is `"single"`,
-`"double"`, or `"ascii"`. Column widths include padding but exclude separator
+independent switches default to `false`. Its `gridStyle` is `TableView.Single`,
+`TableView.Double`, or `TableView.Ascii`. Column widths include padding but exclude separator
 cells. `headerAlign` overrides heading alignment without changing body text.
 TableView does not expose the Rectangle `border` group:
 
 ```qml
 Rectangle {
-    border.style: "single"
+    border.style: Border.Single
     border.color: "cyan"
 
     TableView {

@@ -58,7 +58,7 @@ Terminal {
         id: box
         width: 20
         height: 5
-        border.style: "single"
+        border.style: Border.Single
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 2

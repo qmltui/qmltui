@@ -53,7 +53,7 @@ Terminal {
         id: box
         width: 20
         height: 5
-        border.style: "single"
+        border.style: Border.Single
         border.color: "gray"
 
         Text {

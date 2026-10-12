@@ -21,7 +21,7 @@ Terminal {
         Rectangle {
             width: 66
             height: 7
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#a78bfa"
             TextArea {
                 id: notes

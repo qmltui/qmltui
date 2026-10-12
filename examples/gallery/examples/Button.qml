@@ -34,7 +34,7 @@ Terminal {
                 background: Rectangle {
                     color: "#65e6a0"
                     border.color: "default"
-                    border.style: "none"
+                    border.style: Border.None
                 }
                 text: "Filled"
                 textColor: "#0b0f14"
@@ -61,7 +61,7 @@ Terminal {
                 background: Rectangle {
                     color: reactive.down ? "#65e6a0" : "#1d2733"
                     border.color: reactive.activeFocus ? "#65e6a0" : "#3a4657"
-                    border.style: reactive.down ? "double" : "single"
+                    border.style: reactive.down ? Border.Double : Border.Single
                 }
             }
             // A contentItem of your own: an icon glyph before the label.

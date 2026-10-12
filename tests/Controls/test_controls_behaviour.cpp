@@ -273,7 +273,7 @@ Terminal {
 Terminal {
     Button {
         id: filled; objectName: "filled"; x: 0; y: 0; text: "Filled"
-        background: Rectangle { objectName: "bg"; color: "lime"; border.style: "none" }
+        background: Rectangle { objectName: "bg"; color: "lime"; border.style: Border.None }
         contentItem: Text { objectName: "label"; text: filled.text; color: "black"
                             horizontalAlignment: Qt.AlignHCenter; verticalAlignment: Qt.AlignVCenter }
     }
@@ -460,7 +460,7 @@ Terminal {
         id: p1
         objectName: "p1"
         x: 0; y: 0; width: 30; height: 3
-        border.style: "rounded"
+        border.style: Border.Rounded
         title: "Speed"
         titleBadge: "[active]"
         titleTrailing: "0.0 km/h"
@@ -471,7 +471,7 @@ Terminal {
         id: p2
         objectName: "p2"
         x: 0; y: 4; width: 25; height: 3
-        border.style: "rounded"
+        border.style: Border.Rounded
         title: "LongTitle"
         titleAlignment: Qt.AlignHCenter
         titleTrailing: "Right"

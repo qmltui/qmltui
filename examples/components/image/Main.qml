@@ -86,7 +86,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
 
             Text {
@@ -128,7 +128,7 @@ Terminal {
             width: parent.width
             height: 3
             color: "#1e293b"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "yellow"
 
             Text {

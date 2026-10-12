@@ -82,7 +82,7 @@ Terminal {
         sourceComponent: Rectangle {
             width: 24
             height: 5
-            border.style: "single"
+            border.style: Border.Single
             Text {
                 anchors.centerIn: parent
                 text: "Loaded Content"

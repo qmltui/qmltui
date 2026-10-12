@@ -59,7 +59,7 @@ Terminal {
             id: opaqueBg
             anchors.fill: parent
             color: "#223344"
-            border.style: "double"
+            border.style: Border.Double
             border.color: "yellow"
         }
 
@@ -93,7 +93,7 @@ Terminal {
         Rectangle {
             anchors.fill: parent
             color: "#182430"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "cyan"
         }
 
@@ -125,7 +125,7 @@ Terminal {
             Rectangle {
                 anchors.fill: parent
                 color: "#301824"
-                border.style: "double"
+                border.style: Border.Double
                 border.color: "magenta"
             }
 
@@ -152,7 +152,7 @@ Terminal {
         title: "Customized Dialog"
         message: "Customized background surface."
         background.color: "#1c2b3c"
-        background.border.style: "single"
+        background.border.style: Border.Single
         background.border.color: "green"
         showRejectButton: false
     }

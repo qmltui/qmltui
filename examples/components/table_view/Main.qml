@@ -59,7 +59,7 @@ Terminal {
                 showOuterBorder: true
                 alternatingRows: true
                 showColumnGrid: true
-                gridStyle: "double"
+                gridStyle: TableView.Double
                 columns: [
                     { title: "PID", width: 8, padding: 1 },
                     { title: "PROCESS NAME", width: 18, padding: 1 },
@@ -83,7 +83,7 @@ Terminal {
                 showOuterBorder: true
                 alternatingRows: true
                 showColumnGrid: true
-                gridStyle: "single"
+                gridStyle: TableView.Single
                 columns: [
                     { title: "PORT", width: 6, align: "right", padding: 1 },
                     { title: "SERVICE", width: 13, padding: 1 },

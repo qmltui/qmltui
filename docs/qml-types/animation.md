@@ -72,7 +72,7 @@ Terminal {
         anchors.centerIn: parent
         width: 10
         height: 3
-        border.style: "single"
+        border.style: Border.Single
 
         NumberAnimation {
             target: box

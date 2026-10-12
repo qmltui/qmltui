@@ -25,7 +25,7 @@ Terminal {
             width: 50
             height: 7
             color: area.containsPress ? "#7c2d12" : "#1c1917"
-            border.style: "single"
+            border.style: Border.Single
             border.color: "#f97316"
             MouseArea {
                 id: area

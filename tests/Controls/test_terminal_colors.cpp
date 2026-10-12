@@ -51,7 +51,7 @@ void TestTerminalColors::defaultInk_data() {
     QTest::newRow("progress") << QByteArray("ProgressBar { value: 0.5; showPercentage: true }");
     QTest::newRow("busy") << QByteArray("BusyIndicator { running: false }");
     QTest::newRow("panel") << QByteArray("Panel { title: 'Ink'; width: 12; height: 3 }");
-    QTest::newRow("border") << QByteArray("Rectangle { border.style: 'single'; width: 8; height: 3 }");
+    QTest::newRow("border") << QByteArray("Rectangle { border.style: Border.Single; width: 8; height: 3 }");
     QTest::newRow("tabs") << QByteArray("TabBar { tabs: ['One', 'Two']; width: 24 }");
     QTest::newRow("sparkline") << QByteArray("Sparkline { values: [1, 2, 3]; width: 8 }");
     QTest::newRow("toast") << QByteArray("Toast { width: 28; height: 4; Component.onCompleted: showToast('Title', 'Body', 'warning') }");

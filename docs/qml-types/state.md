@@ -62,7 +62,7 @@ Terminal {
         anchors.centerIn: parent
         width: 24
         height: 5
-        border.style: "single"
+        border.style: Border.Single
 
         Text {
             id: label

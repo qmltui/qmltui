@@ -27,7 +27,7 @@ Terminal {
         id: animationArea
         anchors.fill: parent
         color: "#111111"
-        border.style: "single"
+        border.style: Border.Single
         border.color: "gray"
 
         Text {
@@ -45,7 +45,7 @@ Terminal {
             height: 5
             anchors.left: animationArea.left
             anchors.top: animationArea.top
-            border.style: "double"
+            border.style: Border.Double
             border.color: "yellow"
             color: "blue"
 

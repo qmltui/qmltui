@@ -33,6 +33,7 @@ private slots:
     void testRequestPaint();
     void testCircleGeometry_data();
     void testCircleGeometry();
+    void testZeroMaskPreservesUnderlyingCell();
 };
 
 
@@ -497,6 +498,28 @@ void TestCanvas::testRequestPaint() {
     canvas.requestPaint();
     QCOMPARE(dirtySpy.count(), 1);
     QVERIFY(canvas.dirtyFlags().testFlag(Item::DirtyFlag::SelfDirty));
+}
+
+void TestCanvas::testZeroMaskPreservesUnderlyingCell() {
+    Canvas canvas;
+    canvas.setRenderMode(Canvas::RenderMode::Braille);
+    canvas.setWidth(2);
+    canvas.setHeight(2);
+    canvas.setAutoClear(false);
+    // No dots drawn into canvas
+
+    TextGridBuffer buffer;
+    buffer.resize(2, 2);
+    Cell& cell = buffer.cellAt(0, 0);
+    cell.setCharacter("W");
+    cell.fgColor = 0xFF556677;
+    cell.bgColor = 0xFF8899AA;
+
+    paintItem(canvas, buffer, 0, 0);
+
+    QCOMPARE(cell.character().toByteArray(), QByteArray("W"));
+    QCOMPARE(cell.fgColor, 0xFF556677u);
+    QCOMPARE(cell.bgColor, 0xFF8899AAu);
 }
 
 QTEST_MAIN(TestCanvas)

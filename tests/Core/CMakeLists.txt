@@ -3,6 +3,7 @@
 add_qamui_test(test_input_decoder test_input_decoder.cpp)
 add_qamui_test(test_text_grid_buffer test_text_grid_buffer.cpp)
 add_qamui_test(test_unicode_text test_unicode_text.cpp)
+add_qamui_test(test_subpixel test_subpixel.cpp)
 add_qamui_test(test_color_depth test_color_depth.cpp)
 add_qamui_test(test_terminal_capabilities test_terminal_capabilities.cpp)
 add_qamui_test(test_terminal_backend test_terminal_backend.cpp)

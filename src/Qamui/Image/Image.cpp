@@ -4,6 +4,7 @@
 #include <Qamui/Core/engine/TerminalEngine.h>
 #include <Qamui/Image/TerminalGraphics.h>
 #include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/Subpixel.h>
 #include <QDebug>
 #include <QDirIterator>
 #include <algorithm>
@@ -54,14 +55,6 @@ static uint32_t cellBackgroundRgb(uint32_t bgColor)
 {
     if ((bgColor >> 24) == 0) return 0;
     return 0xFF000000u | (ColorMapper::toArgb(bgColor) & 0x00FFFFFFu);
-}
-
-static constexpr uint8_t brailleBit(int dotX, int dotY) {
-    constexpr uint8_t masks[2][4] = {
-        { 0x01, 0x02, 0x04, 0x40 },
-        { 0x08, 0x10, 0x20, 0x80 }
-    };
-    return masks[dotX & 1][dotY & 3];
 }
 
 // Sources fetched over the network rather than read from a file or resource.
@@ -201,9 +194,9 @@ QSize Image::renderSize() const {
         }
     }
     switch (m_renderMode) {
-    case RenderMode::Braille: return QSize(w * 2, h * 4);
+    case RenderMode::Braille: return QSize(w * braille::DotsX, h * braille::DotsY);
     case RenderMode::ASCII: return QSize(w, h);
-    default: return QSize(w, h * 2);   // HalfBlock and every fallback
+    default: return QSize(w * half_block::SubpixelsX, h * half_block::SubpixelsY);   // HalfBlock and every fallback
     }
 }
 
@@ -514,11 +507,11 @@ void Image::updateScaledCache(RenderMode mode) const {
     int targetSubH = itemH;
 
     if (mode == RenderMode::HalfBlock) {
-        targetSubW = itemW;
-        targetSubH = itemH * 2;
+        targetSubW = itemW * half_block::SubpixelsX;
+        targetSubH = itemH * half_block::SubpixelsY;
     } else if (mode == RenderMode::Braille) {
-        targetSubW = itemW * 2;
-        targetSubH = itemH * 4;
+        targetSubW = itemW * braille::DotsX;
+        targetSubH = itemH * braille::DotsY;
     } else if (mode == RenderMode::ASCII) {
         targetSubW = itemW;
         targetSubH = itemH;
@@ -628,8 +621,8 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
 
     if (mode == RenderMode::HalfBlock) {
         // Compute alignment offsets in subpixel space
-        int subTargetW = itemW;
-        int subTargetH = itemH * 2;
+        int subTargetW = itemW * half_block::SubpixelsX;
+        int subTargetH = itemH * half_block::SubpixelsY;
 
         int offsetX = 0;
         int offsetY = 0;
@@ -654,8 +647,8 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 if (!clipRect.contains(targetX, targetY))
                     continue;
 
-                int topPy = cy * 2 - offsetY;
-                int botPy = cy * 2 + 1 - offsetY;
+                int topPy = cy * half_block::SubpixelsY - offsetY;
+                int botPy = cy * half_block::SubpixelsY + 1 - offsetY;
                 int px = cx - offsetX;
 
                 const QRgb top = (px >= 0 && px < subW && topPy >= 0 && topPy < subH)
@@ -678,10 +671,10 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 // The glyph covers only the painted half, so a clear half shows
                 // the background behind the image rather than a stale foreground.
                 if (topShown == 0) {
-                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
+                    cell.setCharacter(block_glyphs::LowerHalf); // ▄ Lower Half Block
                     cell.fgColor = botShown;
                 } else {
-                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
+                    cell.setCharacter(block_glyphs::UpperHalf); // ▀ Upper Half Block
                     cell.fgColor = topShown;
                     if (botShown != 0)
                         cell.bgColor = botShown;
@@ -743,8 +736,8 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         }
     } else if (mode == RenderMode::Braille) {
         // 2x4 subpixels per cell
-        int subTargetW = itemW * 2;
-        int subTargetH = itemH * 4;
+        int subTargetW = itemW * braille::DotsX;
+        int subTargetH = itemH * braille::DotsY;
 
         int offsetX = 0;
         int offsetY = 0;
@@ -777,17 +770,17 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 uint8_t cellValue = 0;
                 uint32_t lastRgb = 0xFFFFFFFF;
 
-                for (int dotY = 0; dotY < 4; ++dotY) {
-                    for (int dotX = 0; dotX < 2; ++dotX) {
-                        int px = cx * 2 + dotX - offsetX;
-                        int py = cy * 4 + dotY - offsetY;
+                for (int dotY = 0; dotY < braille::DotsY; ++dotY) {
+                    for (int dotX = 0; dotX < braille::DotsX; ++dotX) {
+                        int px = cx * braille::DotsX + dotX - offsetX;
+                        int py = cy * braille::DotsY + dotY - offsetY;
                         if (px < 0 || px >= subW || py < 0 || py >= subH)
                             continue;
                         // A dot is set when the composited pixel clears the dark
                         // cut-off, so a faint pixel over a dark background stays off.
                         const uint32_t shown = compositeOver(m_scaledImage.pixel(px, py), behind);
                         if (shown != 0 && qGray(shown) > 50) {
-                            cellValue |= brailleBit(dotX, dotY);
+                            cellValue |= braille::dotMask(dotX, dotY);
                             lastRgb = shown;
                         }
                     }
@@ -797,9 +790,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                     Cell& cell = *targetCell;
                     cell.displayWidth = 1;
                     cell.continuation = false;
-                    int brailleChar = 0x2800 + cellValue;
-                    QChar qc(brailleChar);
-                    cell.setCharacter(QString(qc).toUtf8());
+                    cell.setCharacter(braille::utf8(cellValue));
                     cell.fgColor = lastRgb;
                 }
             }

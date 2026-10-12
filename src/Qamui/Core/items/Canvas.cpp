@@ -10,17 +10,6 @@ namespace qamui {
 
 namespace {
 
-constexpr uint8_t brailleBit(int dotX, int dotY) {
-    // Unicode Braille Patterns (U+2800..U+28FF) 8-dot bit mapping:
-    // Left column  (dotX=0): Dot 1 (y=0) -> bit 0 (0x01), Dot 2 (y=1) -> bit 1 (0x02), Dot 3 (y=2) -> bit 2 (0x04), Dot 7 (y=3) -> bit 6 (0x40)
-    // Right column (dotX=1): Dot 4 (y=0) -> bit 3 (0x08), Dot 5 (y=1) -> bit 4 (0x10), Dot 6 (y=2) -> bit 5 (0x20), Dot 8 (y=3) -> bit 7 (0x80)
-    constexpr uint8_t masks[2][4] = {
-        { 0x01, 0x02, 0x04, 0x40 },
-        { 0x08, 0x10, 0x20, 0x80 }
-    };
-    return masks[dotX & 1][dotY & 3];
-}
-
 void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, uint32_t color) {
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
@@ -53,10 +42,10 @@ static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulato
 // --- CanvasPainter ---
 void CanvasPainter::setPixel(int x, int y, bool value) {
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
-        const int cellX = x / 2;
-        const int cellY = y / 4;
+        const int cellX = x / braille::DotsX;
+        const int cellY = y / braille::DotsY;
         if (x < 0 || y < 0 || cellX >= m_canvas.width() || cellY >= m_canvas.height()) return;
-        const uint8_t bitMask = brailleBit(x % 2, y % 4);
+        const uint8_t bitMask = braille::dotMask(x % braille::DotsX, y % braille::DotsY);
         const size_t idx = static_cast<size_t>(cellY * m_canvas.width() + cellX);
         if (idx >= m_canvas.m_cells.size()) return;
         if (value) {
@@ -90,9 +79,9 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
     const int h = pixelHeight();
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
-        const size_t idx = static_cast<size_t>((y / 4) * m_canvas.width() + (x / 2));
+        const size_t idx = static_cast<size_t>((y / braille::DotsY) * m_canvas.width() + (x / braille::DotsX));
         if (idx < m_canvas.m_cells.size()) {
-            m_canvas.m_cells[idx] |= brailleBit(x % 2, y % 4);
+            m_canvas.m_cells[idx] |= braille::dotMask(x % braille::DotsX, y % braille::DotsY);
             if (idx < m_canvas.m_cellColors.size())
                 m_canvas.m_cellColors[idx] = color;         // last dot drawn wins the cell
             if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
@@ -235,19 +224,6 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
     }
 
     if (m_renderMode == RenderMode::Braille) {
-        static const auto brailleTable = []() {
-            std::array<QByteArray, 256> table;
-            for (int i = 0; i < 256; ++i) {
-                char bytes[3] = {
-                    static_cast<char>(0xE2),
-                    static_cast<char>(0xA0 | (i >> 6)),
-                    static_cast<char>(0x80 | (i & 0x3F))
-                };
-                table[i] = QByteArray(bytes, 3);
-            }
-            return table;
-        }();
-
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
                 if (!clipRect.contains(absX + x, absY + y))
@@ -259,7 +235,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 if (!targetCell)
                     continue;
                 Cell& cell = *targetCell;
-                cell.setCharacter(brailleTable[cellValue]);
+                cell.setCharacter(braille::utf8(cellValue));
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 const size_t cellIdx = static_cast<size_t>(y * width() + x);
@@ -283,11 +259,11 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
             for (int cellX = 0; cellX < w; ++cellX) {
                 if (!clipRect.contains(absX + cellX, absY + cellY))
                     continue;
-                const int topY = cellY * 2;
-                const int bottomY = cellY * 2 + 1;
+                const int topY = cellY * half_block::SubpixelsY;
+                const int bottomY = cellY * half_block::SubpixelsY + 1;
 
-                const uint32_t topColor = (topY < h * 2) ? m_pixelColors[static_cast<size_t>(topY * w + cellX)] : 0x00000000;
-                const uint32_t bottomColor = (bottomY < h * 2) ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)] : 0x00000000;
+                const uint32_t topColor = (topY < h * half_block::SubpixelsY) ? m_pixelColors[static_cast<size_t>(topY * w + cellX)] : 0x00000000;
+                const uint32_t bottomColor = (bottomY < h * half_block::SubpixelsY) ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)] : 0x00000000;
 
                 const bool topSet = m_pixelSet[static_cast<size_t>(topY * w + cellX)];
                 const bool bottomSet = m_pixelSet[static_cast<size_t>(bottomY * w + cellX)];
@@ -304,23 +280,23 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 if (topSet && bottomSet && (topColor >> 24) == 0 && (bottomColor >> 24) == 0) {
                     // SGR 49 is the default background, not the default ink.
                     // A full block paints both pixels with the foreground.
-                    cell.setCharacter("\xE2\x96\x88"); // █ Full Block
+                    cell.setCharacter(block_glyphs::Full);
                     cell.fgColor = 0;
                     cell.bgColor = 0;
                 } else if (topSet && bottomSet && (bottomColor >> 24) == 0) {
-                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
+                    cell.setCharacter(block_glyphs::LowerHalf);
                     cell.fgColor = bottomColor;
                     cell.bgColor = topColor;
                 } else if (topSet && bottomSet) {
-                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
+                    cell.setCharacter(block_glyphs::UpperHalf);
                     cell.fgColor = topColor;
                     cell.bgColor = bottomColor;
                 } else if (topSet) {
-                    cell.setCharacter("\xE2\x96\x80"); // ▀ Upper Half Block
+                    cell.setCharacter(block_glyphs::UpperHalf);
                     cell.fgColor = topColor;
                     cell.bgColor = 0x00000000;
                 } else {
-                    cell.setCharacter("\xE2\x96\x84"); // ▄ Lower Half Block
+                    cell.setCharacter(block_glyphs::LowerHalf);
                     cell.fgColor = bottomColor;
                     cell.bgColor = 0x00000000;
                 }
@@ -340,7 +316,7 @@ void Canvas::resizeBuffer() const {
         if (m_cellAccumulators.size() != accumulatorsNeeded)
             m_cellAccumulators.assign(accumulatorsNeeded, CellAccumulator{});
     } else {
-        const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * 2));
+        const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * half_block::SubpixelsY));
         if (m_pixelColors.size() != needed) {
             m_pixelColors.resize(needed, 0x00000000);
             m_pixelSet.resize(needed, false);

@@ -46,6 +46,8 @@ qt_add_qml_module(QamuiCore
         primitives/Cell.cpp
         primitives/UnicodeText.h
         primitives/UnicodeText.cpp
+        primitives/Subpixel.h
+        primitives/Subpixel.cpp
         primitives/TextGridBuffer.h
         primitives/TextGridBuffer.cpp
         primitives/TextGridBufferAnsi.cpp
@@ -233,7 +235,7 @@ qamui_install_headers(Qamui/Core/items FILES
 qamui_install_headers(Qamui/Core/primitives FILES
     primitives/Span.h primitives/QamuiGlobal.h
     primitives/QamuiExport.h primitives/Color.h primitives/TextGridBuffer.h primitives/Cell.h
-    primitives/UnicodeText.h primitives/TerminalCapabilities.h
+    primitives/UnicodeText.h primitives/Subpixel.h primitives/TerminalCapabilities.h
     # The application-provided backend extension point (TerminalBackend::setFactory).
     primitives/TerminalBackend.h
     # Pulled in by the installed item headers, so it has to ship with them.

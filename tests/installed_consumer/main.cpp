@@ -42,5 +42,7 @@ int main()
         return 2;
     if (cell->foreground() != qamui::Color("tomato"))
         return 3;
+    if (qamui::braille::utf8(0xFF).size() != 3)
+        return 4;
     return 0;
 }

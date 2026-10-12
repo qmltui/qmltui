@@ -7,6 +7,7 @@
 #include <QVariantList>
 #include <vector>
 #include <Qamui/Core/primitives/ColorMapper.h>
+#include <Qamui/Core/primitives/Subpixel.h>
 
 namespace qamui {
 
@@ -70,8 +71,8 @@ public:
     void setWidth(int width) override;
     void setHeight(int height) override;
 
-    int pixelWidth() const { return m_renderMode == RenderMode::Braille ? width() * 2 : width(); }
-    int pixelHeight() const { return m_renderMode == RenderMode::Braille ? height() * 4 : height() * 2; }
+    int pixelWidth() const { return m_renderMode == RenderMode::Braille ? width() * braille::DotsX : width() * half_block::SubpixelsX; }
+    int pixelHeight() const { return m_renderMode == RenderMode::Braille ? height() * braille::DotsY : height() * half_block::SubpixelsY; }
 
     // Scripted drawing from QML. These persist until the next frame when
     // autoClear is true, or until clear() otherwise, and schedule a repaint.

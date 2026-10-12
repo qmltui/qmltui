@@ -15,6 +15,7 @@
 #include "../TestPaint.h"
 #include <QTemporaryFile>
 #include <Qamui/Core/primitives/Color.h>
+#include <Qamui/Core/primitives/Subpixel.h>
 
 class TestImage : public QObject {
     Q_OBJECT
@@ -32,6 +33,9 @@ private slots:
     void testAsyncImageProvider();
     void testRenderASCII();
     void testRenderBraille();
+    void testBrailleIndividualDots_data();
+    void testBrailleIndividualDots();
+    void testZeroMaskPreservesUnderlyingCell();
     void testFillModeScaling();
     void testSourceClipRect();
     void testSourceClipRectOutside();
@@ -524,7 +528,83 @@ void TestImage::testRenderBraille() {
     qamui::testing::paintItem(img, buffer, 0, 0);
 
     const qamui::Cell& cell0 = buffer.cellAt(0, 0);
-    QVERIFY(!cell0.character().isEmpty());
+    QCOMPARE(cell0.character().toByteArray(), qamui::braille::utf8(0xFF).toByteArray());
+
+    QFile::remove(fileName);
+}
+
+void TestImage::testBrailleIndividualDots_data() {
+    QTest::addColumn<int>("dotX");
+    QTest::addColumn<int>("dotY");
+    for (int y = 0; y < 4; ++y) {
+        for (int x = 0; x < 2; ++x) {
+            QTest::newRow(qPrintable(QStringLiteral("dot_%1_%2").arg(x).arg(y))) << x << y;
+        }
+    }
+}
+
+void TestImage::testBrailleIndividualDots() {
+    QFETCH(int, dotX);
+    QFETCH(int, dotY);
+
+    QImage testImg(2, 4, QImage::Format_ARGB32);
+    testImg.fill(Qt::black);
+    testImg.setPixelColor(dotX, dotY, Qt::white);
+
+    QTemporaryFile tempFile;
+    QVERIFY(tempFile.open());
+    QString fileName = tempFile.fileName() + ".png";
+    tempFile.close();
+    QVERIFY(testImg.save(fileName, "PNG"));
+
+    qamui::Image img;
+    img.setSmooth(false);
+    img.setSource(QUrl::fromLocalFile(fileName));
+    img.setRenderMode(qamui::Image::RenderMode::Braille);
+    img.setWidth(1);
+    img.setHeight(1);
+
+    qamui::TextGridBuffer buffer;
+    buffer.resize(1, 1);
+    qamui::testing::paintItem(img, buffer, 0, 0);
+
+    const qamui::Cell& cell0 = buffer.cellAt(0, 0);
+    const uint8_t expectedMask = qamui::braille::dotMask(dotX, dotY);
+    QCOMPARE(cell0.character().toByteArray(), qamui::braille::utf8(expectedMask).toByteArray());
+
+    QFile::remove(fileName);
+}
+
+void TestImage::testZeroMaskPreservesUnderlyingCell() {
+    // A fully transparent image should produce no Braille dots and leave the
+    // existing cell character and colours untouched.
+    QImage testImg(2, 4, QImage::Format_ARGB32);
+    testImg.fill(Qt::transparent);
+
+    QTemporaryFile tempFile;
+    QVERIFY(tempFile.open());
+    QString fileName = tempFile.fileName() + ".png";
+    tempFile.close();
+    QVERIFY(testImg.save(fileName, "PNG"));
+
+    qamui::Image img;
+    img.setSource(QUrl::fromLocalFile(fileName));
+    img.setRenderMode(qamui::Image::RenderMode::Braille);
+    img.setWidth(1);
+    img.setHeight(1);
+
+    qamui::TextGridBuffer buffer;
+    buffer.resize(1, 1);
+    qamui::Cell& cell = buffer.cellAt(0, 0);
+    cell.setCharacter("Z");
+    cell.fgColor = 0xFF112233;
+    cell.bgColor = 0xFF445566;
+
+    qamui::testing::paintItem(img, buffer, 0, 0);
+
+    QCOMPARE(cell.character().toByteArray(), QByteArray("Z"));
+    QCOMPARE(cell.fgColor, 0xFF112233u);
+    QCOMPARE(cell.bgColor, 0xFF445566u);
 
     QFile::remove(fileName);
 }

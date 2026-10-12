@@ -83,10 +83,10 @@ qt_add_qml_module(QamuiCore
         Engine/RenderPhase_p.h
         Engine/RenderPhase.cpp
         Engine/ItemPaintTraversal_p.h
-        Engine/FrameRenderer.h
-        Engine/FrameRenderer.cpp
-        Engine/StreamRenderer.h
-        Engine/StreamRenderer.cpp
+        Engine/AltScreenRenderer.h
+        Engine/AltScreenRenderer.cpp
+        Engine/InlineRenderer.h
+        Engine/InlineRenderer.cpp
         Engine/Shortcut.h
         Engine/Shortcut.cpp
         Engine/KeyEvent.h

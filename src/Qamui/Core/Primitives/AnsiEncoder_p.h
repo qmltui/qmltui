@@ -1,7 +1,7 @@
 #pragma once
 
 // Internal helpers shared by TextGridBuffer's diff/serialisation and the
-// StreamRenderer: allocation-free integer and SGR emission into a caller-owned
+// InlineRenderer: allocation-free integer and SGR emission into a caller-owned
 // std::string, with colour quantisation for the terminal's colour depth.
 
 #include <Qamui/Core/Primitives/Cell.h>
@@ -230,7 +230,7 @@ inline void appendGlyph(std::string &out, const Cell &cell)
 }
 
 // Full style as independent sequences (reset, fg, bg, one per attribute), the
-// format StreamRenderer has always used for prompt rows.
+// format InlineRenderer has always used for prompt rows.
 inline void appendFullStyle(std::string &out, const Cell &cell, ColorDepth depth)
 {
     out += "\033[0m";

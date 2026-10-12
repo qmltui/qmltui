@@ -6,9 +6,9 @@
 
 namespace qamui {
 
-class StreamRenderer : public Renderer {
+class InlineRenderer : public Renderer {
 public:
-    StreamRenderer();
+    InlineRenderer();
 
     void start(Terminal* rootWindow, TerminalDevice& device) override;
     void stop(Terminal* rootWindow, TerminalDevice& device) override;

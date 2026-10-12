@@ -34,7 +34,7 @@ Column {
         spacing: 0
 
         Text {
-            text: "  @@ -72,6 +72,9 @@ void StreamRenderer::resize(...) @@"
+            text: "  @@ -72,6 +72,9 @@ void InlineRenderer::resize(...) @@"
             color: "#a78bfa"
         }
         Text {

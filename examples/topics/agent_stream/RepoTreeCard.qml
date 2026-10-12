@@ -37,7 +37,7 @@ Column {
                         "text": "src/Qamui/engine",
                         "expanded": true,
                         "children": [
-                            { "text": "StreamRenderer.cpp [Optimized]", "expanded": false },
+                            { "text": "InlineRenderer.cpp [Optimized]", "expanded": false },
                             { "text": "TextGridBuffer.cpp [Verified]", "expanded": false }
                         ]
                     },

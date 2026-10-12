@@ -24,7 +24,7 @@ class Popup;
  * to focused items, and interfaces with the underlying TerminalBackend.
  *
  * ### Modes
- * - **FullScreen**: Takes over the terminal buffer (alternate screen buffer smcup/rmcup),
+ * - **AltScreen**: Takes over the terminal buffer (alternate screen buffer smcup/rmcup),
  *   clears the screen, and manages full window redrawing.
  * - **Inline**: Emits stream output directly into the existing terminal scrollback
  *   below the shell prompt without clearing previous history.
@@ -46,7 +46,7 @@ class QAMUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
   Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
   /// @brief Background color for the terminal window matrix. Defaults to "default".
   Q_PROPERTY(qamui::Color color READ color WRITE setColor NOTIFY colorChanged)
-  /// @brief Display mode: FullScreen (alternate screen) or Inline (scrollback stream).
+  /// @brief Display mode: AltScreen (alternate screen) or Inline (scrollback stream).
   Q_PROPERTY(Mode mode READ mode WRITE setMode NOTIFY modeChanged)
   /// @brief Clipboard synchronization mode (Disabled or Osc52 ANSI escape writes).
   Q_PROPERTY(ClipboardMode clipboardMode READ clipboardMode WRITE setClipboardMode NOTIFY clipboardModeChanged)
@@ -61,7 +61,7 @@ class QAMUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
 
 public:
   enum class Mode {
-      FullScreen,
+      AltScreen,
       Inline
   };
   Q_ENUM(Mode)
@@ -165,7 +165,7 @@ private:
   QString m_title;
   Color m_color = "transparent";
   uint32_t m_background = 0;
-  Mode m_mode = Mode::FullScreen;
+  Mode m_mode = Mode::AltScreen;
   QPointer<Clipboard> m_clipboard;
   ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
   bool m_mouseReporting = true;

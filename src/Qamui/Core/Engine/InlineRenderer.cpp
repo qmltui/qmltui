@@ -1,4 +1,4 @@
-#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Engine/InlineRenderer.h>
 #include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Core/Engine/ItemPaintTraversal_p.h>
 #include <Qamui/Core/Primitives/AnsiEncoder_p.h>
@@ -8,32 +8,32 @@
 
 namespace qamui {
 
-StreamRenderer::StreamRenderer() = default;
+InlineRenderer::InlineRenderer() = default;
 
-void StreamRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
+void InlineRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
     m_rootWindow = rootWindow;
     m_lastPromptHeight = 0;
     invalidateMouseOrigin();
 }
 
-void StreamRenderer::invalidateMouseOrigin() {
+void InlineRenderer::invalidateMouseOrigin() {
     m_mouseRowOffset.reset();
     if (m_cursorQueryPending)
         m_cursorQueryStale = true;
 }
 
-void StreamRenderer::discardCommittedState() {
+void InlineRenderer::discardCommittedState() {
     m_lastPromptHeight = 0;
     invalidateMouseOrigin();
 }
 
-std::optional<int> StreamRenderer::mouseRowOffset() const {
+std::optional<int> InlineRenderer::mouseRowOffset() const {
     if (!outputEnabled())
         return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
     return m_mouseRowOffset;
 }
 
-void StreamRenderer::queryCursorPosition(TerminalDevice& device) {
+void InlineRenderer::queryCursorPosition(TerminalDevice& device) {
     // Only one outstanding request: terminals that do not answer must not
     // accumulate queries. Column one below a nonempty prompt gives a report
     // with row >= 2 and column == 1, distinct from modified F3 (CSI 1;mod R).
@@ -44,7 +44,7 @@ void StreamRenderer::queryCursorPosition(TerminalDevice& device) {
     }
 }
 
-void StreamRenderer::handleCursorPosition(int row, TerminalDevice& device) {
+void InlineRenderer::handleCursorPosition(int row, TerminalDevice& device) {
     if (!m_cursorQueryPending)
         return;
     m_cursorQueryPending = false;
@@ -57,7 +57,7 @@ void StreamRenderer::handleCursorPosition(int row, TerminalDevice& device) {
         m_mouseRowOffset = row - m_lastPromptHeight;
 }
 
-void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
+void InlineRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
     if (m_lastPromptHeight > 0) {
@@ -69,14 +69,14 @@ void StreamRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     m_rootWindow = nullptr;
 }
 
-void StreamRenderer::resize(int width, int height) {
+void InlineRenderer::resize(int width, int height) {
     invalidateMouseOrigin();
     m_terminalWidth = width;
     m_terminalHeight = height;
     m_promptBuffer.resize(width, m_lastPromptHeight);
 }
 
-bool StreamRenderer::clearPromptRegion(TerminalDevice& device) {
+bool InlineRenderer::clearPromptRegion(TerminalDevice& device) {
     if (m_lastPromptHeight > 0) {
         std::ostringstream oss;
         oss << "\r\033[" << m_lastPromptHeight << "A\033[J";
@@ -85,7 +85,7 @@ bool StreamRenderer::clearPromptRegion(TerminalDevice& device) {
     return true;
 }
 
-bool StreamRenderer::drawPromptRegion(TerminalDevice& device) {
+bool InlineRenderer::drawPromptRegion(TerminalDevice& device) {
     if (m_lastPromptHeight <= 0) return true;
 
     std::ostringstream output;
@@ -95,17 +95,17 @@ bool StreamRenderer::drawPromptRegion(TerminalDevice& device) {
     return device.write(output.str());
 }
 
-std::string StreamRenderer::promptRowToAnsi(int row) const {
+std::string InlineRenderer::promptRowToAnsi(int row) const {
     std::string output;
     m_promptBuffer.appendRowAnsi(output, row, capabilities().colorDepth);
     return output;
 }
 
-bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     return renderFrame(rootWindow, device, {});
 }
 
-bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
+bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
                                  std::string_view scrollback) {
     m_rootWindow = rootWindow;
     if (!rootWindow) return false;

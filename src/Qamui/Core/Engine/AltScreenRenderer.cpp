@@ -1,11 +1,11 @@
-#include <Qamui/Core/Engine/FrameRenderer.h>
+#include <Qamui/Core/Engine/AltScreenRenderer.h>
 #include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QElapsedTimer>
 
 namespace qamui {
 
-void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
+void AltScreenRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
     if (rootWindow) {
@@ -14,7 +14,7 @@ void FrameRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
     device.clearScreen();
 }
 
-void FrameRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
+void AltScreenRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     if (!outputEnabled())
         return;
     if (rootWindow) {
@@ -24,7 +24,7 @@ void FrameRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
     }
 }
 
-void FrameRenderer::resize(int width, int height) {
+void AltScreenRenderer::resize(int width, int height) {
     if (m_currentBuffer.width() == width && m_currentBuffer.height() == height)
         return;
     m_currentBuffer.resize(width, height);
@@ -32,7 +32,7 @@ void FrameRenderer::resize(int width, int height) {
     m_repaintAll = true;
 }
 
-bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
+bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     if (!rootWindow) return false;
 
     QElapsedTimer timer;
@@ -89,7 +89,7 @@ bool FrameRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
     return true;
 }
 
-bool FrameRenderer::usesAlternateScreen(Terminal* rootWindow) const {
+bool AltScreenRenderer::usesAlternateScreen(Terminal* rootWindow) const {
     return outputEnabled() && rootWindow;
 }
 

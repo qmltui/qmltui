@@ -88,7 +88,7 @@ Serializes the entire grid buffer into a formatted ANSI string complete with new
 ## 14. Inter-Class Interactions
 
 - **`Item::paint()` / `paintOverlay()`**: Receive a reference to `TextGridBuffer` while the framework paints an item tree.
-- **`FrameRenderer` / `TerminalEngine`**: Maintains front and back `TextGridBuffer` instances to calculate frame diffs.
+- **`AltScreenRenderer` / `TerminalEngine`**: Maintains front and back `TextGridBuffer` instances to calculate frame diffs.
 
 ## 16. Usage Example
 

@@ -1,8 +1,8 @@
 #include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Core/Engine/Clipboard.h>
 #include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Core/Engine/FrameRenderer.h>
-#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Engine/AltScreenRenderer.h>
+#include <Qamui/Core/Engine/InlineRenderer.h>
 #include <Qamui/Core/Items/Popup.h>
 #include <Qamui/Core/Primitives/ColorMapper.h>
 #include <Qamui/Core/Engine/ItemPaintTraversal_p.h>
@@ -78,7 +78,7 @@ void Terminal::initializeEngine() {
     }
     m_engine = new TerminalEngine(this, this);
     connect(m_engine, &TerminalEngine::capabilitiesChanged, this, &Terminal::capabilitiesChanged);
-    if (m_mode == Mode::Inline) m_engine->setRenderer(new StreamRenderer());
+    if (m_mode == Mode::Inline) m_engine->setRenderer(new InlineRenderer());
     connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
     if (auto* qml = qmlEngine(this)) {
         m_clipboard = qml->singletonInstance<Clipboard*>("Qamui", "Clipboard");
@@ -260,7 +260,7 @@ void Terminal::setMode(Mode mode) {
     m_mode = mode;
     
     if (!m_mouseReportingExplicit) {
-        bool autoReporting = (m_mode == Mode::FullScreen);
+        bool autoReporting = (m_mode == Mode::AltScreen);
         if (m_mouseReporting != autoReporting) {
             m_mouseReporting = autoReporting;
             emit mouseReportingChanged();
@@ -271,10 +271,10 @@ void Terminal::setMode(Mode mode) {
     }
 
     if (m_engine) {
-        if (m_mode == Mode::FullScreen) {
-            m_engine->setRenderer(new FrameRenderer());
+        if (m_mode == Mode::AltScreen) {
+            m_engine->setRenderer(new AltScreenRenderer());
         } else {
-            m_engine->setRenderer(new StreamRenderer());
+            m_engine->setRenderer(new InlineRenderer());
         }
     }
     

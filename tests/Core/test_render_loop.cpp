@@ -191,7 +191,7 @@ void TestRenderLoop::terminalModesAndVisibleChildren()
     QAMUI_VERIFY_ONE_FRAME(session.engine, overlay->setVisible(true));
     QVERIFY(frameText(session.engine).contains("OVERLAY"));
     QVERIFY(!frameText(session.engine).contains("FIRST"));
-    QAMUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::FullScreen));
+    QAMUI_VERIFY_ONE_FRAME(session.engine, session.terminal->setMode(Terminal::Mode::AltScreen));
     QCOMPARE(session.engine->currentFrame()->height(), session.engine->terminalHeight());
     QVERIFY(frameText(session.engine).contains("OVERLAY"));
     QVERIFY(!second->visible());

@@ -422,8 +422,8 @@ add_qamui_runner_scenario(test_runner_scrollback_timeout qamui_runner_fixture
     "${qamui_runner_scenarios}/scrollback_timeout.js" 1
     FAILURE_PATTERN "Timed out after 100 ms waiting for scrollback text"
     ARGUMENTS --fixture=inline)
-add_qamui_runner_scenario(test_runner_scrollback_fullscreen qamui_runner_fixture
-    "${qamui_runner_scenarios}/scrollback_fullscreen.js" 1
+add_qamui_runner_scenario(test_runner_scrollback_altscreen qamui_runner_fixture
+    "${qamui_runner_scenarios}/scrollback_altscreen.js" 1
     FAILURE_PATTERN "needs a Terminal in Inline mode")
 
 # Asciicast recording: the session bytes land in a cast under the artifacts.

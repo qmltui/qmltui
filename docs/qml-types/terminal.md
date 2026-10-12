@@ -26,9 +26,9 @@ Root element for Qamui terminal applications, managing session lifecycle, screen
 | `capabilities` | `terminalCapabilities` |  | Read-only. Holds detected terminal capabilities such as Kitty graphics and synchronized output support. |
 | `title` | `string` | `""` | Holds the terminal window title bar string set via OSC 2 escape sequence. |
 | `color` | `rgba` | `"default"` | Holds the root background color of the terminal screen. |
-| `mode` | `Mode` | `Terminal.FullScreen` | Holds the display mode: `Terminal.FullScreen` (alternate screen) or `Terminal.Inline` (normal buffer). |
+| `mode` | `Mode` | `Terminal.AltScreen` | Holds the display mode: `Terminal.AltScreen` (alternate screen) or `Terminal.Inline` (normal buffer). |
 | `clipboardMode` | `ClipboardMode` | `Terminal.Osc52` | Holds the clipboard integration mode: `Terminal.Osc52` or `Terminal.Disabled`. |
-| `mouseReporting` | `bool` |  | Whether the application takes the mouse from the terminal: on in `FullScreen`, off in `Inline` unless set explicitly, in which case the value sticks across mode changes. Off means no clicks, drags, wheel or hover reach any item and the terminal keeps selection and scrollback; hover requests (`MouseArea.hoverEnabled`, `ToolTip`) only turn on motion reporting while this is true. |
+| `mouseReporting` | `bool` |  | Whether the application takes the mouse from the terminal: on in `AltScreen`, off in `Inline` unless set explicitly, in which case the value sticks across mode changes. Off means no clicks, drags, wheel or hover reach any item and the terminal keeps selection and scrollback; hover requests (`MouseArea.hoverEnabled`, `ToolTip`) only turn on motion reporting while this is true. |
 | `hoveredItem` | `Item` |  | Read-only. Holds the item currently under the mouse pointer. |
 | `terminalWidth` | `int` |  | Read-only. Holds the host terminal screen width in columns. |
 | `terminalHeight` | `int` |  | Read-only. Holds the host terminal screen height in rows. |
@@ -51,7 +51,7 @@ Root element for Qamui terminal applications, managing session lifecycle, screen
 
 | Value | Description |
 | :--- | :--- |
-| `Terminal.FullScreen` | Fills the entire terminal window using the alternate screen buffer. |
+| `Terminal.AltScreen` | Fills the entire terminal window using the alternate screen buffer. |
 | `Terminal.Inline` | Operates within the normal terminal buffer, sizing to content height. |
 
 ## Enumeration Terminal.ClipboardMode
@@ -67,7 +67,7 @@ Terminal is the required root item of every Qamui application. It establishes
 the retained-mode rendering pipeline, handles terminal capability detection,
 coordinates keyboard and mouse event routing, and manages the terminal screen mode.
 
-In `FullScreen` mode, the application switches to the terminal's alternate screen
+In `AltScreen` mode, the application switches to the terminal's alternate screen
 buffer, clears the screen, and renders frames across the full terminal grid dimensions.
 In `Inline` mode, the application renders inside the normal buffer with content-driven
 height, leaving preceding terminal scrollback intact.

@@ -2,8 +2,8 @@
 #include <Qamui/Core/Engine/Clock_p.h>
 #include <Qamui/Core/Primitives/InputDecoder.h>
 #include <Qamui/Core/Engine/Renderer.h>
-#include <Qamui/Core/Engine/FrameRenderer.h>
-#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Engine/AltScreenRenderer.h>
+#include <Qamui/Core/Engine/InlineRenderer.h>
 #include <Qamui/Core/Items/Item.h>
 #include <Qamui/Core/Engine/ItemPaintTraversal_p.h>
 #include <Qamui/Core/Items/Terminal.h>
@@ -157,7 +157,7 @@ TerminalEngine::TerminalEngine(Terminal *rootWindow, QObject *parent)
   m_capabilities = TerminalCapabilities::detect(QProcessEnvironment::systemEnvironment(),
                                                 m_device.backend()->isInteractive());
 
-  m_renderer = new FrameRenderer();
+  m_renderer = new AltScreenRenderer();
   m_renderer->setOutputEnabled(m_terminalOutputEnabled);
   m_renderer->setCapabilities(m_capabilities);
 
@@ -395,7 +395,7 @@ void TerminalEngine::updateBackgroundColor() {
 
   const bool canApply = m_terminalOutputEnabled
       && m_rootWindow
-      && m_rootWindow->mode() == Terminal::Mode::FullScreen;
+      && m_rootWindow->mode() == Terminal::Mode::AltScreen;
 
   if (canApply) {
     const Color rootColor = m_rootWindow->color();
@@ -604,7 +604,7 @@ void TerminalEngine::renderFrame() {
   // Snapshot before painting: bindings may submit additional output during layout.
   std::string submitted;
   std::deque<ScrollbackRow> submittedRows;
-  auto* stream = dynamic_cast<StreamRenderer*>(m_renderer);
+  auto* stream = dynamic_cast<InlineRenderer*>(m_renderer);
   if (stream) {
       submitted.swap(m_scrollback);
       submittedRows.swap(m_pendingScrollbackRows);
@@ -1118,7 +1118,7 @@ void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) 
             && sequence.finalByte == 'R'
             && sequence.params.size() == 2
             && sequence.parameter(0) > 1 && sequence.parameter(1) == 1) {
-            if (auto* stream = dynamic_cast<StreamRenderer*>(m_renderer))
+            if (auto* stream = dynamic_cast<InlineRenderer*>(m_renderer))
                 stream->handleCursorPosition(sequence.parameter(0) - 1, m_device);
             return;
         }

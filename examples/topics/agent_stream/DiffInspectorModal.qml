@@ -7,7 +7,7 @@ Popup {
 
     Theme { id: theme }
 
-    property string targetFile: "src/Qamui/engine/StreamRenderer.cpp"
+    property string targetFile: "src/Qamui/engine/InlineRenderer.cpp"
 
     width: parent ? parent.width : 78
     height: 13
@@ -130,9 +130,9 @@ Popup {
                 width: parent.width
                 height: 1
                 spacing: 0
-                Text { width: 36; text: " 72: void StreamRenderer::render() {"; color: theme.slate }
+                Text { width: 36; text: " 72: void InlineRenderer::render() {"; color: theme.slate }
                 Text { text: "  "; color: theme.muted }
-                Text { text: " 72: void StreamRenderer::render() {"; color: theme.slate }
+                Text { text: " 72: void InlineRenderer::render() {"; color: theme.slate }
             }
         }
 

@@ -7,7 +7,7 @@ import Qamui.TerminalHost
 
 Terminal {
     id: root
-    mode: Terminal.FullScreen
+    mode: Terminal.AltScreen
     title: "TerminalView — dual shell workflow"
     color: "#0d0e15"
 

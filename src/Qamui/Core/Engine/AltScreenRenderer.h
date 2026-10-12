@@ -5,7 +5,7 @@
 
 namespace qamui {
 
-class FrameRenderer : public Renderer {
+class AltScreenRenderer : public Renderer {
 public:
     void start(Terminal* rootWindow, TerminalDevice& device) override;
     void stop(Terminal* rootWindow, TerminalDevice& device) override;

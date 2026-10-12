@@ -1314,7 +1314,7 @@ void TestTerminalFramework::terminalBackgroundColor()
     engine->feedInput("\033]11;rgb:1313/1313/1313\033\\");
     QCOMPARE(engine->originalBackgroundColor(), Color("#131313"));
 
-    // Setting an opaque color in FullScreen mode activates OSC 11 tracking
+    // Setting an opaque color in AltScreen mode activates OSC 11 tracking
     terminal.setColor(Color("#282a36"));
     QCOMPARE(engine->isBackgroundOsc11Active(), true);
     QCOMPARE(engine->appliedBackgroundColor(), Color("#282a36"));
@@ -1338,8 +1338,8 @@ void TestTerminalFramework::terminalBackgroundColor()
     QCOMPARE(engine->isBackgroundOsc11Active(), false);
     QCOMPARE(engine->appliedBackgroundColor(), Color());
 
-    // Switching back to FullScreen mode reactivates OSC 11 tracking
-    terminal.setMode(Terminal::Mode::FullScreen);
+    // Switching back to AltScreen mode reactivates OSC 11 tracking
+    terminal.setMode(Terminal::Mode::AltScreen);
     QCOMPARE(engine->isBackgroundOsc11Active(), true);
     QCOMPARE(engine->appliedBackgroundColor(), Color("#112233"));
 

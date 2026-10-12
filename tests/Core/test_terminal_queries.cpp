@@ -8,7 +8,7 @@
 #include <Qamui/Core/Items/Text.h>
 #include <Qamui/Core/Engine/MouseEvent.h>
 #include <Qamui/Core/Engine/TerminalEngine.h>
-#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Engine/InlineRenderer.h>
 
 using namespace qamui;
 
@@ -275,7 +275,7 @@ Terminal {
         Terminal terminal;
         auto* engine = terminal.engine();
         engine->setCapabilities(TerminalCapabilities{}); // deterministic; no probes
-        if (stream) engine->setRenderer(new StreamRenderer);
+        if (stream) engine->setRenderer(new InlineRenderer);
         CommandItem item(&terminal);
         QTRY_VERIFY(engine->frameSequence() > 0);
         QVERIFY(item.accepted);
@@ -373,7 +373,7 @@ Terminal {
         QVERIFY(engine->capabilities().kittyKeyboard);
         QSignalSpy changed(engine, &TerminalEngine::capabilitiesChanged);
         backend->clearOutput();
-        engine->setRenderer(new StreamRenderer);   // new output session, new negotiation
+        engine->setRenderer(new InlineRenderer);   // new output session, new negotiation
         QTRY_VERIFY(backend->output().find("\033[?u") != std::string::npos);
         QTest::qWait(40);                          // the terminal never answers this time
         QVERIFY(engine->capabilities().kittyGraphics);
@@ -517,7 +517,7 @@ Terminal { color: "black"; Text { text: "x" } }
         QCOMPARE(output.find("\033[<u"), npos);
         // Renderer switch: pop on the alternate screen, push on the main one.
         backend->clearOutput();
-        engine->setRenderer(new StreamRenderer);
+        engine->setRenderer(new InlineRenderer);
         QTRY_VERIFY(output.find("\033[>1u") != npos);
         QVERIFY(output.find("\033[<u") < output.find("\033[?1049l"));
         QVERIFY(output.find("\033[?1049l") < output.find("\033[>1u"));

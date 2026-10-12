@@ -123,7 +123,7 @@ public:
     // memory cost for applications); a Runner session records from the first
     // frame. QAMUI_SCROLLBACK_HISTORY_ROWS overrides the retained row count.
     // Rows become committed exactly when their bytes are: on the stream render
-    // that carries them, or on stop(). FullScreen keeps them pending.
+    // that carries them, or on stop(). AltScreen keeps them pending.
     void setScrollbackHistoryEnabled(bool enabled);
     bool scrollbackHistoryEnabled() const { return m_scrollbackHistoryEnabled; }
     void setScrollbackHistoryLimit(int rows);

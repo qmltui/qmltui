@@ -91,7 +91,7 @@ text: root.isActive ? "Active" : "Idle"
 
 ## 3. Terminal Mode and Scrollback
 
-`Terminal.mode` defaults to `Terminal.FullScreen`, which fills the terminal
+`Terminal.mode` defaults to `Terminal.AltScreen`, which fills the terminal
 and uses the alternate screen. `Terminal.Inline` uses the normal buffer,
 terminal width, and visible content height, capped at terminal rows minus one.
 

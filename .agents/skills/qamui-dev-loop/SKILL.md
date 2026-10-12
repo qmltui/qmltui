@@ -232,7 +232,7 @@ documentation for exact signatures. Choose operations by intent:
   `waitForScrollbackText()`, `expectNoScrollbackText()`, `scrollbackText()`,
   `captureScrollback()` and `expectScrollbackSnapshot()` for those rows;
   `scrollbackRowCount()` gives a `fromRow` mark so a step asserts only what
-  it appended. They fail on a FullScreen terminal, where rows stay pending.
+  it appended. They fail on an AltScreen terminal, where rows stay pending.
 - `waitForFrame()` requests rendering. To prove that the application scheduled
   its own repaint, use `injectKey()` or `injectText()` followed by
   `expectRepaint()`; the regular input methods would consume that repaint.

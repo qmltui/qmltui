@@ -87,8 +87,8 @@ accumulate under one another (found on Windows Terminal, 2026-09-13).
 Covered by `test_kitty_graphics` (sixel cases). Real-terminal verification (2026-09-13): kitty confirmed on Ghostty, sixel confirmed on Windows Terminal. Documented limitation: sixel
 paints at the cursor, so it is drawn after the cells and cannot sit under other
 cell content the way kitty placeholders can; it is meant for a dedicated image
-region. Inline (Stream) mode uses absolute positioning that assumes full-screen;
-sixel is intended for FullScreen for now.
+region. Inline mode uses absolute positioning that assumes full-screen;
+sixel is intended for AltScreen for now.
 
 The iTerm2 inline-image protocol is the remaining candidate and would follow
 the same seam (a detector, a `resolve()` case, an encoder).
@@ -145,8 +145,8 @@ stays off until it replies.
   depth, synchronized output, tty state and program name, derived once from
   environment variables. The terminal is never asked anything and no reply is
   ever parsed.
-- `FrameRenderer` emits the diffed cells between `\033[?2026h` and
-  `\033[?2026l` (`FrameRenderer.cpp:49`). No item can hand the engine a byte
+- `AltScreenRenderer` emits the diffed cells between `\033[?2026h` and
+  `\033[?2026l` (`AltScreenRenderer.cpp:49`). No item can hand the engine a byte
   sequence to write; paint only produces cells.
 - `Image` renders `HalfBlock`, `Braille`, and `ASCII` (`Image.cpp:183`). Plan 00
   mentions a sixel fallback; no sixel code exists. The module links `Qt6::Gui`, so it
@@ -258,8 +258,8 @@ for resource commands that preserve cursor and text rendition state; arbitrary
 cursor movement would invalidate the renderer's model.
 
 Enqueueing requests a render, including when no cells are dirty. After paint,
-`FrameRenderer` drains commands before that same frame's cell diff, inside
-synchronized output when enabled. `StreamRenderer` drains before its live
+`AltScreenRenderer` drains commands before that same frame's cell diff, inside
+synchronized output when enabled. `InlineRenderer` drains before its live
 region. A command-only frame must be written even when the cell diff is empty.
 Preserve enqueue order and keep each chunked upload contiguous.
 

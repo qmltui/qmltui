@@ -17,7 +17,7 @@ Column {
 
     readonly property var allCommands: [
         { "cmd": "/help",   "desc": "Show all workflows & shortcuts" },
-        { "cmd": "/demo 1", "desc": "Refactor StreamRenderer & clamp bounds" },
+        { "cmd": "/demo 1", "desc": "Refactor InlineRenderer & clamp bounds" },
         { "cmd": "/demo 2", "desc": "Dispatch parallel subagent swarm (TableView)" },
         { "cmd": "/demo 3", "desc": "Security sandbox exploit audit" },
         { "cmd": "/demo 4", "desc": "Explore workspace hierarchy (TreeView)" },

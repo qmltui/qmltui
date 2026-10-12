@@ -16,8 +16,8 @@
 #include <unistd.h>
 
 #include <Qamui/Core/Primitives/Color.h>
-#include <Qamui/Core/Engine/FrameRenderer.h>
-#include <Qamui/Core/Engine/StreamRenderer.h>
+#include <Qamui/Core/Engine/AltScreenRenderer.h>
+#include <Qamui/Core/Engine/InlineRenderer.h>
 #include <Qamui/Core/Items/Terminal.h>
 #include <Qamui/Core/Primitives/TerminalCapabilities.h>
 #include <Qamui/Core/Primitives/TerminalDevice.h>
@@ -312,7 +312,7 @@ void TestTerminalDevice::testStreamPrintLaysOutPrompt()
     Terminal terminal;
     terminal.setMode(Terminal::Mode::Inline);
     new Prompt(&terminal);
-    StreamRenderer renderer;
+    InlineRenderer renderer;
     renderer.resize(30, 8);
     renderer.start(&terminal, device);
     QVERIFY(renderer.renderFrame(&terminal, device, "message\r\n"));
@@ -378,7 +378,7 @@ void TestTerminalDevice::testSyncOutputBracketsFrame()
         Pipe pipe;
         QVERIFY(pipe.open());
         TerminalDevice device(pipe.writeEnd);
-        FrameRenderer renderer;
+        AltScreenRenderer renderer;
         renderer.setOutputEnabled(true);
         TerminalCapabilities capabilities;
         capabilities.syncOutput = synchronize;
@@ -448,7 +448,7 @@ void TestTerminalDevice::testScrollbackAcrossModes()
     QVERIFY(commit());
     QVERIFY(readAvailable(pipe.readEnd).find("first") == std::string::npos);
 
-    terminal.setMode(Terminal::Mode::FullScreen);
+    terminal.setMode(Terminal::Mode::AltScreen);
     QVERIFY(commit());
     (void)readAvailable(pipe.readEnd);
     Scrollback history(&terminal);
@@ -495,7 +495,7 @@ void TestTerminalDevice::testScrollbackHistoryRows()
     QCOMPARE(engine->pendingScrollbackRowCount(), size_t(5));
     QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
 
-    QVERIFY(commit());                                                       // FullScreen keeps rows pending
+    QVERIFY(commit());                                                       // AltScreen keeps rows pending
     QCOMPARE(committed.count(), 0);
     QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
 
@@ -592,7 +592,7 @@ void TestTerminalDevice::testResizeRepaint()
     Pipe pipe;
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
-    FrameRenderer renderer;
+    AltScreenRenderer renderer;
     renderer.setOutputEnabled(true);
     renderer.resize(8, 1);
     renderer.start(&terminal, device);
@@ -626,7 +626,7 @@ void TestTerminalDevice::testResizeRepaint()
     // Resizing with an empty scene must still emit the clear sequence
     Terminal emptyTerminal;
     emptyTerminal.engine()->setTestViewportSize(QSize(10, 2));
-    FrameRenderer blankRenderer;
+    AltScreenRenderer blankRenderer;
     blankRenderer.setOutputEnabled(true);
     blankRenderer.resize(10, 2);
     blankRenderer.start(&emptyTerminal, device);

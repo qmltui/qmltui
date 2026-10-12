@@ -170,7 +170,7 @@ Terminal {
         let promptText = customPrompt;
         if (!promptText || promptText.length === 0) {
             if (scenarioId === 1)
-                promptText = "Optimize StreamRenderer buffer resizing and verify zero-copy safety";
+                promptText = "Optimize InlineRenderer buffer resizing and verify zero-copy safety";
             else if (scenarioId === 2)
                 promptText = "Dispatch parallel subagent swarm to audit memory leaks and concurrency locks";
             else if (scenarioId === 3)
@@ -561,21 +561,21 @@ Terminal {
             if (root.currentScenario === 1) {
                 if (root.agentStep === 0) {
                     root.currentToolName = "Planner";
-                    root.addMessage(Main.ThoughtMessage, "Analyzing StreamRenderer buffer logic to eliminate resize flicker and clamp bounds.", "0.8s");
+                    root.addMessage(Main.ThoughtMessage, "Analyzing InlineRenderer buffer logic to eliminate resize flicker and clamp bounds.", "0.8s");
                 } else if (root.agentStep === 1) {
                     root.currentToolName = "Grep";
                     root.addMessage(Main.ToolCallMessage, "query=\"promptRowToAnsi\", path=\"src/Qamui/engine/\"", "Grep");
                 } else if (root.agentStep === 2) {
-                    root.addMessage(Main.ToolResultMessage, "Found 3 matches across 2 files (StreamRenderer.h, StreamRenderer.cpp)");
+                    root.addMessage(Main.ToolResultMessage, "Found 3 matches across 2 files (InlineRenderer.h, InlineRenderer.cpp)");
                 } else if (root.agentStep === 3) {
                     root.currentToolName = "ViewFile";
-                    root.addMessage(Main.ToolCallMessage, "path=\"src/Qamui/engine/StreamRenderer.cpp\", lines=70-105", "ViewFile");
+                    root.addMessage(Main.ToolCallMessage, "path=\"src/Qamui/engine/InlineRenderer.cpp\", lines=70-105", "ViewFile");
                 } else if (root.agentStep === 4) {
-                    root.addMessage(Main.ToolResultMessage, "Read 35 lines from StreamRenderer.cpp");
+                    root.addMessage(Main.ToolResultMessage, "Read 35 lines from InlineRenderer.cpp");
                 } else if (root.agentStep === 5) {
-                    root.currentDiffFile = "src/Qamui/engine/StreamRenderer.cpp";
+                    root.currentDiffFile = "src/Qamui/engine/InlineRenderer.cpp";
                     root.currentToolName = "EditFile";
-                    root.currentToolTarget = "src/Qamui/engine/StreamRenderer.cpp";
+                    root.currentToolTarget = "src/Qamui/engine/InlineRenderer.cpp";
                     root.currentToolAction = "Clamp safeHeight and emit atomic buffer flush (+3, -1 lines)";
 
                     root.addMessage(Main.DiffMessage, "", root.currentDiffFile);
@@ -599,7 +599,7 @@ Terminal {
                 } else if (root.agentStep === 9) {
                     root.addMessage(Main.ToolResultMessage, "Passed 2/2 tests: zero regressions (0.08s)");
                 } else {
-                    root.addMessage(Main.AgentMessage, "StreamRenderer optimization complete:\n" + "• Implemented in-memory atomic double buffering in StreamRenderer.cpp\n" + "• Replaced multi-step clears with single device.write() flushes\n" + "• Rebuilt and validated: 100% tests passed", "Agent", "2.1k tokens · 7.7s");
+                    root.addMessage(Main.AgentMessage, "InlineRenderer optimization complete:\n" + "• Implemented in-memory atomic double buffering in InlineRenderer.cpp\n" + "• Replaced multi-step clears with single device.write() flushes\n" + "• Rebuilt and validated: 100% tests passed", "Agent", "2.1k tokens · 7.7s");
                     toast.notify("Refactor patch applied & tested", "success");
                     root.agentState = Main.ReadyState;
                     agentTimer.stop();
@@ -671,7 +671,7 @@ Terminal {
                 } else if (root.agentStep === 1) {
                     root.addMessage(Main.RepoTreeMessage, "", "~/Qamui Workspace");
                 } else {
-                    root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: StreamRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Inline session: agent output stays in terminal scrollback", "Agent", "1.2k tokens · 0.9s");
+                    root.addMessage(Main.AgentMessage, "Indexed workspace tree:\n" + "• Engine core: InlineRenderer (ANSI stream) & TextGridBuffer\n" + "• Stream components: TableView, TreeView, ProgressBar, Sparkline, StatusBadge\n" + "• Inline session: agent output stays in terminal scrollback", "Agent", "1.2k tokens · 0.9s");
                     toast.notify("Workspace tree indexed", "info");
                     root.agentState = Main.ReadyState;
                     agentTimer.stop();

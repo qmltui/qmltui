@@ -45,7 +45,7 @@ function main(terminal) {
 
     // 3. Mouse click on [F3] diff opens diff inspector modal
     terminal.clickText("[F3] diff")
-    terminal.expectText("StreamRenderer.cpp")
+    terminal.expectText("InlineRenderer.cpp")
     terminal.captureText("mouse_diff_modal.txt")
 
     // 4. Mouse click on close text dismisses diff modal

@@ -50,7 +50,7 @@ void TestFocus::testTerminalGeometry() {
     Terminal term;
     auto* engine = term.engine();
     engine->setTestViewportSize(QSize(70, 20));
-    QCOMPARE(term.mode(), Terminal::Mode::FullScreen);
+    QCOMPARE(term.mode(), Terminal::Mode::AltScreen);
     QCOMPARE(term.width(), 70);
     QCOMPARE(term.height(), 20);
     term.setMode(Terminal::Mode::Inline);
@@ -59,7 +59,7 @@ void TestFocus::testTerminalGeometry() {
     QCOMPARE(term.height(), 3);
     child.setHeight(30);
     QCOMPARE(term.height(), 19);
-    term.setMode(Terminal::Mode::FullScreen);
+    term.setMode(Terminal::Mode::AltScreen);
     QCOMPARE(term.engine(), engine);
     QCOMPARE(term.height(), 20);
 }

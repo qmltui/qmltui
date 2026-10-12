@@ -2089,7 +2089,7 @@ bool Runner::ensureScrollbackSession(const char* operation)
     }
     if (m_terminal->mode() != Terminal::Mode::Inline) {
         failScenario(QStringLiteral("terminal.%1() needs a Terminal in Inline mode; "
-                                    "scrollback stays pending in FullScreen mode")
+                                    "scrollback stays pending in AltScreen mode")
                          .arg(QLatin1String(operation)));
         return false;
     }

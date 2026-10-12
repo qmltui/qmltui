@@ -294,7 +294,7 @@ Terminal {
     function closeDemo() {
         closeDemoItem()
         openIndex = -1
-        mode = Terminal.FullScreen
+        mode = Terminal.AltScreen
         root.focus = true
     }
 

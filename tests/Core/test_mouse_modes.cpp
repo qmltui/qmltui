@@ -47,7 +47,7 @@ private slots:
     }
     void cleanup() { TerminalBackend::setFactory(nullptr); }
 
-    void fullScreenDefaultsToClicksOnly() {
+    void altScreenDefaultsToClicksOnly() {
         QQmlEngine qml;
         Terminal* terminal = nullptr;
         auto object = load(qml, "Terminal { MouseArea { width: 4; height: 1 } }", &terminal);

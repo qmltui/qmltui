@@ -1,0 +1,139 @@
+
+ ┌────────────────────────────────────────────────────────────────────────────┐
+ │                  ⚡ INDEPENDENT STATES & TRANSITIONS DEMO                  │
+ └────────────────────────────────────────────────────────────────────────────┘
+
+ ┌────────────────────────────────────────────────────────────────────────────┐
+ │                              STATUS: Connecting...                         │
+ └────────────────────────────────────────────────────────────────────────────┘
+
+ ┌──────────────────────────────────┐  ┌──────────────────────────────────┐
+ │[Card 1: Primary Node]            │  │[Card 2: Secondary Node]          │
+ │                                  │  │                                  │
+ │Press Tab to switch focus         │  │Independent focus states          │
+ │                                  │  │                                  │
+ │Mode: Active (Focused)            │  │Mode: Standby                     │
+ └──────────────────────────────────┘  └──────────────────────────────────┘
+
+ ┌────────────────────────────────────────────────────────────────────────────┐
+ │Controls: [Tab] Focus  [C] Connect/Disconnect  [R] Reset  [Esc/Q] Quit      │
+ │Escape contextually cancels in-flight connection before quitting.           │
+ └────────────────────────────────────────────────────────────────────────────┘
+
+
+
+--- styles
+y=0 x=0-79 fg=default bg=#000000FF
+y=1 x=0-0 fg=default bg=#000000FF
+y=1 x=1-78 fg=#3B4252FF bg=#1A1A24FF
+y=1 x=79-79 fg=default bg=#000000FF
+y=2 x=0-0 fg=default bg=#000000FF
+y=2 x=1-1 fg=#3B4252FF bg=#1A1A24FF
+y=2 x=2-19 fg=default bg=#1A1A24FF
+y=2 x=20-59 fg=#00FFFFFF bg=#1A1A24FF bold
+y=2 x=60-77 fg=default bg=#1A1A24FF
+y=2 x=78-78 fg=#3B4252FF bg=#1A1A24FF
+y=2 x=79-79 fg=default bg=#000000FF
+y=3 x=0-0 fg=default bg=#000000FF
+y=3 x=1-78 fg=#3B4252FF bg=#1A1A24FF
+y=3 x=79-79 fg=default bg=#000000FF
+y=4 x=0-79 fg=default bg=#000000FF
+y=5 x=0-0 fg=default bg=#000000FF
+y=5 x=1-78 fg=#E06C75FF bg=#201515FF
+y=5 x=79-79 fg=default bg=#000000FF
+y=6 x=0-0 fg=default bg=#000000FF
+y=6 x=1-1 fg=#E06C75FF bg=#201515FF
+y=6 x=2-26 fg=default bg=#201515FF
+y=6 x=27-29 fg=default bg=#E06C75FF
+y=6 x=30-31 fg=default bg=#201515FF
+y=6 x=32-52 fg=#FFFFFFFF bg=#201515FF bold
+y=6 x=53-77 fg=default bg=#201515FF
+y=6 x=78-78 fg=#E06C75FF bg=#201515FF
+y=6 x=79-79 fg=default bg=#000000FF
+y=7 x=0-0 fg=default bg=#000000FF
+y=7 x=1-78 fg=#E06C75FF bg=#201515FF
+y=7 x=79-79 fg=default bg=#000000FF
+y=8 x=0-79 fg=default bg=#000000FF
+y=9 x=0-0 fg=default bg=#000000FF
+y=9 x=1-36 fg=#61AFEFFF bg=#282C34FF
+y=9 x=37-38 fg=default bg=#000000FF
+y=9 x=39-74 fg=#555555FF bg=#1E1E1EFF
+y=9 x=75-79 fg=default bg=#000000FF
+y=10 x=0-0 fg=default bg=#000000FF
+y=10 x=1-1 fg=#61AFEFFF bg=#282C34FF
+y=10 x=2-23 fg=#61AFEFFF bg=#282C34FF bold
+y=10 x=24-35 fg=default bg=#282C34FF
+y=10 x=36-36 fg=#61AFEFFF bg=#282C34FF
+y=10 x=37-38 fg=default bg=#000000FF
+y=10 x=39-39 fg=#555555FF bg=#1E1E1EFF
+y=10 x=40-63 fg=#808080FF bg=#1E1E1EFF
+y=10 x=64-73 fg=default bg=#1E1E1EFF
+y=10 x=74-74 fg=#555555FF bg=#1E1E1EFF
+y=10 x=75-79 fg=default bg=#000000FF
+y=11 x=0-0 fg=default bg=#000000FF
+y=11 x=1-1 fg=#61AFEFFF bg=#282C34FF
+y=11 x=2-35 fg=default bg=#282C34FF
+y=11 x=36-36 fg=#61AFEFFF bg=#282C34FF
+y=11 x=37-38 fg=default bg=#000000FF
+y=11 x=39-39 fg=#555555FF bg=#1E1E1EFF
+y=11 x=40-73 fg=default bg=#1E1E1EFF
+y=11 x=74-74 fg=#555555FF bg=#1E1E1EFF
+y=11 x=75-79 fg=default bg=#000000FF
+y=12 x=0-0 fg=default bg=#000000FF
+y=12 x=1-1 fg=#61AFEFFF bg=#282C34FF
+y=12 x=2-26 fg=#C0C0C0FF bg=#282C34FF
+y=12 x=27-35 fg=default bg=#282C34FF
+y=12 x=36-36 fg=#61AFEFFF bg=#282C34FF
+y=12 x=37-38 fg=default bg=#000000FF
+y=12 x=39-39 fg=#555555FF bg=#1E1E1EFF
+y=12 x=40-63 fg=#C0C0C0FF bg=#1E1E1EFF
+y=12 x=64-73 fg=default bg=#1E1E1EFF
+y=12 x=74-74 fg=#555555FF bg=#1E1E1EFF
+y=12 x=75-79 fg=default bg=#000000FF
+y=13 x=0-0 fg=default bg=#000000FF
+y=13 x=1-1 fg=#61AFEFFF bg=#282C34FF
+y=13 x=2-35 fg=default bg=#282C34FF
+y=13 x=36-36 fg=#61AFEFFF bg=#282C34FF
+y=13 x=37-38 fg=default bg=#000000FF
+y=13 x=39-39 fg=#555555FF bg=#1E1E1EFF
+y=13 x=40-73 fg=default bg=#1E1E1EFF
+y=13 x=74-74 fg=#555555FF bg=#1E1E1EFF
+y=13 x=75-79 fg=default bg=#000000FF
+y=14 x=0-0 fg=default bg=#000000FF
+y=14 x=1-1 fg=#61AFEFFF bg=#282C34FF
+y=14 x=2-23 fg=#FFFF00FF bg=#282C34FF
+y=14 x=24-35 fg=default bg=#282C34FF
+y=14 x=36-36 fg=#61AFEFFF bg=#282C34FF
+y=14 x=37-38 fg=default bg=#000000FF
+y=14 x=39-39 fg=#555555FF bg=#1E1E1EFF
+y=14 x=40-52 fg=#FFFF00FF bg=#1E1E1EFF
+y=14 x=53-73 fg=default bg=#1E1E1EFF
+y=14 x=74-74 fg=#555555FF bg=#1E1E1EFF
+y=14 x=75-79 fg=default bg=#000000FF
+y=15 x=0-0 fg=default bg=#000000FF
+y=15 x=1-36 fg=#61AFEFFF bg=#282C34FF
+y=15 x=37-38 fg=default bg=#000000FF
+y=15 x=39-74 fg=#555555FF bg=#1E1E1EFF
+y=15 x=75-79 fg=default bg=#000000FF
+y=16 x=0-79 fg=default bg=#000000FF
+y=17 x=0-0 fg=default bg=#000000FF
+y=17 x=1-78 fg=#333333FF bg=#181818FF
+y=17 x=79-79 fg=default bg=#000000FF
+y=18 x=0-0 fg=default bg=#000000FF
+y=18 x=1-1 fg=#333333FF bg=#181818FF
+y=18 x=2-71 fg=#808080FF bg=#181818FF
+y=18 x=72-77 fg=default bg=#181818FF
+y=18 x=78-78 fg=#333333FF bg=#181818FF
+y=18 x=79-79 fg=default bg=#000000FF
+y=19 x=0-0 fg=default bg=#000000FF
+y=19 x=1-1 fg=#333333FF bg=#181818FF
+y=19 x=2-66 fg=#A9A9A9FF bg=#181818FF
+y=19 x=67-77 fg=default bg=#181818FF
+y=19 x=78-78 fg=#333333FF bg=#181818FF
+y=19 x=79-79 fg=default bg=#000000FF
+y=20 x=0-0 fg=default bg=#000000FF
+y=20 x=1-78 fg=#333333FF bg=#181818FF
+y=20 x=79-79 fg=default bg=#000000FF
+y=21 x=0-79 fg=default bg=#000000FF
+y=22 x=0-79 fg=default bg=#000000FF
+y=23 x=0-79 fg=default bg=#000000FF

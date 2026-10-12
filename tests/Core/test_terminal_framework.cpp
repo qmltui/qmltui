@@ -16,6 +16,8 @@
 #include <Qamui/Core/items/Popup.h>
 #include <Qamui/Core/items/MouseArea.h>
 #include <Qamui/Core/items/TextArea.h>
+#include <Qamui/Core/items/Text.h>
+#include <Qamui/Core/engine/State.h>
 #include <Qamui/Core/items/LogView.h>
 #include <Qamui/Core/items/Scrollback.h>
 #include <Qamui/Core/items/LinearLayout.h>
@@ -153,6 +155,8 @@ private slots:
     void nestedModalFocus();
     void dialogDefaultAndCancelActions();
     void graphemeSelection();
+    void textAreaNavigationBounds();
+    void reentrantStateChange();
     void mouseMotionIsDemandDriven();
     void mouseDragSelection();
     void responsiveLayout();
@@ -338,6 +342,91 @@ void TestTerminalFramework::graphemeSelection() {
     KeyEvent selectRight(Qt::Key_Right, {}, Qt::ShiftModifier);
     area.keyPressEvent(&selectRight);
     QCOMPARE(area.selectedText(), family);
+}
+
+void TestTerminalFramework::textAreaNavigationBounds() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(10, 4));
+    TextArea area(&terminal);
+    area.setWidth(10);
+    area.setHeight(4);
+    area.setText(QStringLiteral("abc\ndef"));
+    terminal.setFocusedItem(&area);
+    for (const int key : {Qt::Key_Up, Qt::Key_PageUp}) {
+        area.setCursorPosition(1);
+        KeyEvent event(key, {});
+        area.keyPressEvent(&event);
+        QCOMPARE(area.cursorPosition(), 1);
+        terminal.engine()->renderFrame();
+        const auto frame = terminal.engine()->currentFrame();
+        QVERIFY(frame);
+        QVERIFY((frame->cellAt(1, 0).attributes & TextAttribute::Reversed) != TextAttribute::None);
+    }
+    for (const int key : {Qt::Key_Down, Qt::Key_PageDown}) {
+        area.setCursorPosition(5);
+        KeyEvent event(key, {});
+        area.keyPressEvent(&event);
+        QCOMPARE(area.cursorPosition(), 5);
+    }
+    area.setCursorPosition(1);
+    KeyEvent selectUp(Qt::Key_Up, {}, Qt::ShiftModifier);
+    area.keyPressEvent(&selectUp);
+    QVERIFY(area.selectedText().isEmpty());
+}
+
+void TestTerminalFramework::reentrantStateChange() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(12, 2));
+    Text label(&terminal);
+    label.setText(QStringLiteral("idle"));
+    for (const QString name : {QStringLiteral("loading"), QStringLiteral("ready")}) {
+        auto *state = new State(&label);
+        state->setName(name);
+        auto *change = new PropertyChanges(state);
+        change->setTarget(&label);
+        change->setProperties({{QStringLiteral("text"), name}});
+        auto changes = state->changes();
+        changes.append(&changes, change);
+        auto states = label.states();
+        states.append(&states, state);
+    }
+    const auto redirect = connect(&label, &Item::stateChanged, &label, [&] {
+        if (label.state() == QStringLiteral("loading"))
+            label.setState(QStringLiteral("ready"));
+    });
+    label.setState(QStringLiteral("loading"));
+    QCOMPARE(label.state(), QStringLiteral("ready"));
+    QCOMPARE(label.text(), QStringLiteral("ready"));
+    terminal.engine()->renderFrame();
+    const auto frame = terminal.engine()->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(frame->cellAt(0, 0).character(), QByteArrayView("r"));
+    label.setState({});
+    QCOMPARE(label.text(), QStringLiteral("idle"));
+    disconnect(redirect);
+
+    // An empty pending state is a real request, and the latest request wins.
+    const auto reset = connect(&label, &Item::stateChanged, &label, [&] {
+        if (label.state() == QStringLiteral("loading")) {
+            label.setState(QStringLiteral("ready"));
+            label.setState({});
+        }
+    });
+    label.setState(QStringLiteral("loading"));
+    QCOMPARE(label.state(), QString());
+    QCOMPARE(label.text(), QStringLiteral("idle"));
+    disconnect(reset);
+
+    // Property application can also trigger State.when reevaluation.
+    auto states = label.states();
+    State *ready = states.at(&states, 1);
+    connect(&label, &Text::textChanged, &label, [&] {
+        if (label.text() == QStringLiteral("loading"))
+            ready->setWhen(true);
+    });
+    label.setState(QStringLiteral("loading"));
+    QCOMPARE(label.state(), QStringLiteral("ready"));
+    QCOMPARE(label.text(), QStringLiteral("ready"));
 }
 
 void TestTerminalFramework::mouseDragSelection() {

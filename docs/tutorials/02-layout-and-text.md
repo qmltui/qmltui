@@ -2,8 +2,8 @@
 
 The Rectangle fills the terminal and draws a one-cell border. Anchors inset
 its Column; the Column then positions its own children. RowLayout shares the
-available width, while Row places content at its natural width. Paragraph wraps
-when resized. Text spans apply styles to individual literal text runs.
+available width, while Row places content at its natural width. Text wraps
+when resized if wrapMode is set. Text spans apply styles to individual literal text runs.
 
 Build with `cmake --build build --target qamui_tutorial_02_layout_and_text` and run
 `./build/examples/tutorials/02_layout_and_text/qamui_tutorial_02_layout_and_text`. Press Escape to quit.
@@ -35,8 +35,9 @@ Terminal {
                 Text { text: "Layout and text"; Layout.fillWidth: true }
                 Text { text: "Esc quits" }
             }
-            Paragraph {
+            Text {
                 width: parent.width
+                wrapMode: Text.WordWrap
                 text: "A paragraph wraps at the available cell width. Resize the terminal to see these words move across lines without changing the source text."
             }
             Row {

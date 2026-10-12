@@ -63,7 +63,7 @@ Button {
 
 | Component | Color overrides |
 | :--- | :--- |
-| Text, Paragraph, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
+| Text, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
 | Rectangle and rectangle-based controls | `color`, `border.color` |
 | Button, CheckBox, RadioButton, Switch, Slider | `textColor` |
 | Panel | `titleColor` |
@@ -76,7 +76,7 @@ Button {
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
 its configured color. `Text.dim` also exposes this attribute directly. TextInput
 hints use the configured text color with dimming unless `placeholderColor` is
-set. Rich Paragraph links use underline and inline code uses bold.
+set. Rich Text links use underline and inline code uses bold.
 
 TabBar and the built-in TableView/TreeView selection render with reverse video
 until selection colors are explicitly supplied. TextInput also supports explicit
@@ -88,4 +88,22 @@ Core `Palette`, `TerminalPalette`, `ResolvedPalette`, `Item.palette`, and Contro
 ordinary color bindings or application-defined components.
 
 
-See the [ANSI styling example](../../examples/topics/ansi_styling/).
+See the [ANSI styling example](../../examples/topics/ansi_styling/) and the [TextArea highlighting example](../../examples/components/text_area_highlighting/).
+
+### TextArea Highlighting Layers
+
+`TextArea` supports independent named highlight layers through `setHighlightLayer()` and `highlightRange` values. Each layer specifies its own priority and range list. Overlapping layers compose independently per property (foreground color, background color, and text attributes):
+
+```qml
+// Priority 0: syntax coloring
+textArea.setHighlightLayer("syntax", [
+    { start: 0, length: 5, color: "green", bold: true }
+], textArea.textRevision, 0)
+
+// Priority 10: search background overlay (preserves syntax green foreground and bold)
+textArea.setHighlightLayer("search", [
+    { start: 2, length: 3, backgroundColor: "yellow" }
+], textArea.textRevision, 10)
+```
+
+Highlight changes schedule repaints without modifying document text, layout dimensions, or undo history. Document modifications increment `textRevision` and clear existing layers before `textChanged` is emitted, allowing highlighters to update synchronously or asynchronously.

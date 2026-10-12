@@ -39,7 +39,7 @@ private:
 void TestTerminalColors::defaultInk_data() {
     QTest::addColumn<QByteArray>("qml");
     QTest::newRow("text") << QByteArray("Text { text: 'Ink' }");
-    QTest::newRow("paragraph") << QByteArray("Paragraph { text: '[Link](url) `code`'; width: 30; height: 2 }");
+    QTest::newRow("text_wrap") << QByteArray("Text { text: '[Link](url) `code`'; wrapMode: Text.WordWrap; width: 30; height: 2 }");
     QTest::newRow("input") << QByteArray("TextInput { text: 'Ink'; width: 8; height: 1 }");
     QTest::newRow("area") << QByteArray("TextArea { text: 'Ink'; width: 8; height: 1 }");
     QTest::newRow("placeholder") << QByteArray("TextInput { placeholderText: 'Hint'; width: 8; height: 1 }");

@@ -97,8 +97,8 @@ Terminal {
           blurb: "Styles, spans, gradients", file: "Text.qml" },
         { name: "Rectangle", badge: "Core", accent: "#60a5fa", preview: "┌─┐ ╔═╗ ┏━┓ +-+",
           blurb: "Borders and gradients", file: "Rectangle.qml" },
-        { name: "Paragraph", badge: "Core", accent: "#fde68a", preview: "Wrapped rich text…",
-          blurb: "Wrap, rich text, links", file: "Paragraph.qml" },
+        { name: "RichText", badge: "Core", accent: "#fde68a", preview: "Wrapped rich text…",
+          blurb: "Wrap, rich text, links", file: "RichText.qml" },
         { name: "TextInput", badge: "Core", accent: "#4ade80", preview: "Name: Ada█   Pw: •••",
           blurb: "Single-line editing", file: "TextInput.qml" },
         { name: "TextArea", badge: "Core", accent: "#a78bfa", preview: "Multi-line notes ⏎",
@@ -540,11 +540,11 @@ Terminal {
                 clip: true   // tall examples stop at the panel border
             }
 
-            Paragraph {
+            Text {
                 anchors.fill: parent
                 anchors.margins: 2
                 visible: root.demoError !== ""
-                wrapMode: true
+                wrapMode: Text.WordWrap
                 color: "#f87171"
                 text: root.demoError
             }

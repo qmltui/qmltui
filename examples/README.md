@@ -23,7 +23,6 @@ sources are also used by the [WebAssembly playground](wasm/).
 | [Loader](components/loader/) | [Loader](gallery/examples/Loader.qml) | [QML reference](../docs/qml-types/loader.md) |
 | [LogView](components/log_view/) | [LogView](gallery/examples/LogView.qml) | [QML reference](../docs/qml-types/logview.md) |
 | [Panel](components/panel/) | [Panel](gallery/examples/Panel.qml) | [QML reference](../docs/qml-types/panel.md) |
-| [Paragraph](components/paragraph/) | [Paragraph](gallery/examples/Paragraph.qml) | [QML reference](../docs/qml-types/paragraph.md) |
 | [Popup](components/popup/) | [Popup](gallery/examples/Popup.qml) | [QML reference](../docs/qml-types/popup.md) |
 | [ProgressBar](components/progress_bar/) | [ProgressBar](gallery/examples/ProgressBar.qml) | [QML reference](../docs/qml-types/progressbar.md) |
 | [RadioButton](components/radio_button/) | [RadioButton](gallery/examples/RadioButton.qml) | [QML reference](../docs/qml-types/radiobutton.md) |

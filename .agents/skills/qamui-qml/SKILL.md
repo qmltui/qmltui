@@ -155,7 +155,7 @@ Panel {
 }
 ```
 
-Non-Rectangle types, including `Paragraph`, `TableView`, `TreeView`,
+Non-Rectangle types, including `TableView`, `TreeView`,
 `Sparkline`, and `TabBar`, do not expose `border`, `borderStyle`,
 or `borderColor`. Wrap one in a `Rectangle` or `Panel` and inset it by one cell
 when a decorative border is needed. For a connected table frame, use
@@ -240,7 +240,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `examples/components/`, not library types; copy them into your module.
 
 **`import Qamui`** (C++ in `src/Qamui/Core/Items` and `src/Qamui/Core/Engine`)
-`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `Paragraph`, `TextInput`, `TextArea`,
+`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`,
 `TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `LogView`,
 `Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,
 `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `Repeater`,

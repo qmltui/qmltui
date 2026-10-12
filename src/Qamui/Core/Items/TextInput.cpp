@@ -6,10 +6,16 @@
 #include <Qamui/Core/Primitives/ColorMapper.h>
 #include <Qamui/Core/Primitives/UnicodeText.h>
 #include <Qamui/Core/Items/Terminal.h>
+#include <Qamui/Core/Items/TextCursorPainter.h>
 
 #include <algorithm>
 
 namespace qamui {
+
+static_assert(int(TextInput::Block) == int(detail::TextCursorShape::Block)
+    && int(TextInput::Underline) == int(detail::TextCursorShape::Underline)
+    && int(TextInput::Beam) == int(detail::TextCursorShape::Beam)
+    && int(TextInput::HollowBlock) == int(detail::TextCursorShape::HollowBlock));
 
 TextInput::TextInput(QObject *parent) : Item(parent) {
     setFocusable(true);
@@ -110,13 +116,9 @@ void TextInput::setCursorShape(CursorShape shape) {
 void TextInput::setCursorColor(Color color) {
     if (m_cursorColor == color) return;
     m_cursorColor = color;
-    if (!m_cursorColor.isValid()) {
-        m_hasResolvedCursorColor = false;
-        m_resolvedCursorColor = 0;
-    } else {
-        m_hasResolvedCursorColor = true;
-        m_resolvedCursorColor = ColorMapper::fromString(m_cursorColor, 0xFFFFFFFF);
-    }
+    const std::optional<uint32_t> resolved = detail::resolveCursorColor(m_cursorColor);
+    m_hasResolvedCursorColor = resolved.has_value();
+    m_resolvedCursorColor = resolved.value_or(0);
     emit cursorColorChanged();
     markDirty();
 }
@@ -606,75 +608,23 @@ void TextInput::paint(
             if (!cursorCell)
                 return;
             Cell &cell = *cursorCell;
-            const bool isSpaceOrEmpty = cell.character().isEmpty() || cell.character() == " ";
+            const std::optional<uint32_t> cursorColor = m_hasResolvedCursorColor
+                ? std::optional<uint32_t>(m_resolvedCursorColor)
+                : std::nullopt;
 
             if (!m_cursorDelegate.isEmpty()) {
-                if (isSpaceOrEmpty) {
+                if (detail::isBlankCursorCell(cell)) {
                     cell.setCharacter(m_cursorDelegate.toUtf8());
-                }
-                if (m_hasResolvedCursorColor) {
-                    if (isSpaceOrEmpty) {
-                        cell.fgColor = m_resolvedCursorColor;
-                    } else {
-                        cell.bgColor = m_resolvedCursorColor;
-                        cell.fgColor = 0x000000FF;
-                    }
+                    if (cursorColor)
+                        cell.fgColor = *cursorColor;
+                    else
+                        cell.attributes = cell.attributes | TextAttribute::Reversed;
                 } else {
-                    cell.attributes = cell.attributes | TextAttribute::Reversed;
+                    detail::paintBlockCursor(cell, cursorColor);
                 }
             } else {
-                switch (m_cursorShape) {
-                case Block: {
-                    if (isSpaceOrEmpty)
-                        cell.setCharacter(" ");
-                    if (m_hasResolvedCursorColor) {
-                        cell.bgColor = m_resolvedCursorColor;
-                        cell.fgColor = 0x000000FF;
-                    } else {
-                        cell.attributes = cell.attributes | TextAttribute::Reversed;
-                    }
-                    break;
-                }
-                case Underline: {
-                    if (isSpaceOrEmpty)
-                        cell.setCharacter("_");
-                    if (m_hasResolvedCursorColor) {
-                        cell.fgColor = m_resolvedCursorColor;
-                    }
-                    cell.attributes = cell.attributes | TextAttribute::Underline;
-                    break;
-                }
-                case Beam: {
-                    if (isSpaceOrEmpty) {
-                        cell.setCharacter("│");
-                        if (m_hasResolvedCursorColor) {
-                            cell.fgColor = m_resolvedCursorColor;
-                        }
-                    } else {
-                        if (m_hasResolvedCursorColor) {
-                            cell.bgColor = m_resolvedCursorColor;
-                            cell.fgColor = 0x000000FF;
-                        } else {
-                            cell.attributes = cell.attributes | TextAttribute::Reversed;
-                        }
-                    }
-                    break;
-                }
-                case HollowBlock: {
-                    if (isSpaceOrEmpty) {
-                        cell.setCharacter("▯");
-                        if (m_hasResolvedCursorColor) {
-                            cell.fgColor = m_resolvedCursorColor;
-                        }
-                    } else {
-                        if (m_hasResolvedCursorColor) {
-                            cell.fgColor = m_resolvedCursorColor;
-                        }
-                        cell.attributes = cell.attributes | TextAttribute::Bold;
-                    }
-                    break;
-                }
-                }
+                detail::paintTextCursor(cell,
+                    static_cast<detail::TextCursorShape>(m_cursorShape), cursorColor);
             }
         }
     }

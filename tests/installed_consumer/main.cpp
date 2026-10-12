@@ -57,5 +57,13 @@ int main()
         return 6;
     routing->reset();
 
+    qamui::TextArea textArea;
+    textArea.setText(QStringLiteral("hello world"));
+    qamui::HighlightRange range(0, 5, qamui::Color("blue"));
+    if (!textArea.setHighlightLayer(QStringLiteral("test"), {range}, textArea.textRevision()))
+        return 7;
+    if (range.color() != qamui::Color("blue"))
+        return 8;
+
     return 0;
 }

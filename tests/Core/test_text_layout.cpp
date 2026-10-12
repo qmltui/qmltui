@@ -10,6 +10,9 @@
 #include <memory>
 #include <Qamui/Core/Primitives/Color.h>
 
+#include <QSignalSpy>
+#include <Qamui/Core/Engine/MouseEvent.h>
+
 #include <Qamui/Core/Items/Text.h>
 #include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
@@ -60,6 +63,8 @@ private slots:
     void testEscapeAdvanceQuirk();
     void testAlignmentAndClippingUseCachedWidth();
     void testGradientPerColumn();
+    void testWordWrap();
+    void testLinkActivated();
 };
 
 void TestTextLayout::testRepaintMatchesFreshItem()
@@ -210,6 +215,65 @@ void TestTextLayout::testGradientPerColumn()
 
     TextGridBuffer second = paintToBuffer(*text, 6, 1);
     QVERIFY(buffersEqual(first, second));
+}
+
+void TestTextLayout::testWordWrap()
+{
+    Text text;
+    text.setWrapMode(Text::WordWrap);
+    text.setWidth(10);
+    text.setText(QStringLiteral("Hello world this is wrapped"));
+
+    TextGridBuffer buffer = paintToBuffer(text, 10, 5);
+    QCOMPARE(rowText(buffer, 0).trimmed(), QStringLiteral("Hello"));
+    QCOMPARE(rowText(buffer, 1).trimmed(), QStringLiteral("world this"));
+    QCOMPARE(rowText(buffer, 2).trimmed(), QStringLiteral("is wrapped"));
+    QCOMPARE(text.implicitHeight(), 3);
+
+    // Test WrapAnywhere
+    text.setWrapMode(Text::WrapAnywhere);
+    text.setText(QStringLiteral("ABCDEFGHIJ12345"));
+    TextGridBuffer anyBuffer = paintToBuffer(text, 10, 3);
+    QCOMPARE(rowText(anyBuffer, 0).trimmed(), QStringLiteral("ABCDEFGHIJ"));
+    QCOMPARE(rowText(anyBuffer, 1).trimmed(), QStringLiteral("12345"));
+    QCOMPARE(text.implicitHeight(), 2);
+}
+
+void TestTextLayout::testLinkActivated()
+{
+    // HTML link
+    {
+        Text text;
+        text.setWidth(30);
+        text.setHeight(3);
+        text.setTextFormat(Text::RichText);
+        text.setText(QStringLiteral("Click <a href=\"https://example.com\">here</a> for info"));
+
+        QSignalSpy spy(&text, &Text::linkActivated);
+        MouseEvent event(MouseEvent::Type::Press, 7, 0, Qt::LeftButton, Qt::NoModifier);
+        text.mousePressEvent(&event);
+
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://example.com"));
+        QVERIFY(event.isAccepted());
+    }
+
+    // Markdown link
+    {
+        Text text;
+        text.setWidth(30);
+        text.setHeight(3);
+        text.setTextFormat(Text::AutoText);
+        text.setText(QStringLiteral("Click [here](https://qamui.org) for info"));
+
+        QSignalSpy spy(&text, &Text::linkActivated);
+        MouseEvent event(MouseEvent::Type::Press, 7, 0, Qt::LeftButton, Qt::NoModifier);
+        text.mousePressEvent(&event);
+
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qamui.org"));
+        QVERIFY(event.isAccepted());
+    }
 }
 
 QTEST_MAIN(TestTextLayout)

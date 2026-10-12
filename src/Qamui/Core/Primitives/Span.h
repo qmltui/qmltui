@@ -3,6 +3,7 @@
 #include <Qamui/Core/Primitives/QamuiExport.h>
 #include <Qamui/Core/Primitives/Color.h>
 #include <Qamui/Core/Primitives/Cell.h>
+#include <Qamui/Core/Primitives/TextStyle.h>
 #include <utility>
 
 namespace qamui {
@@ -27,51 +28,58 @@ public:
     Span() = default;
     explicit Span(QString text) : m_text(std::move(text)) {}
     Span(QString text, Color foreground, Color background = {})
-        : m_text(std::move(text)), m_color(foreground), m_backgroundColor(background) {}
+        : m_text(std::move(text)), m_style(foreground, background) {}
+    Span(QString text, TextStyle style)
+        : m_text(std::move(text)), m_style(std::move(style)) {}
 
     QString text() const { return m_text; }
     void setText(const QString &text) { m_text = text; }
-    Color color() const { return m_color; }
-    void setColor(Color color) { m_color = color; }
-    void resetColor() { m_color = {}; }
-    Color backgroundColor() const { return m_backgroundColor; }
-    void setBackgroundColor(Color color) { m_backgroundColor = color; }
-    void resetBackgroundColor() { m_backgroundColor = {}; }
 
-    bool bold() const { return (m_values & bit(TextAttribute::Bold)) != 0; }
-    bool hasBold() const { return (m_specified & bit(TextAttribute::Bold)) != 0; }
-    void setBold(bool value) { setAttribute(TextAttribute::Bold, value); }
-    void resetBold() { resetAttribute(TextAttribute::Bold); }
-    bool dim() const { return (m_values & bit(TextAttribute::Dim)) != 0; }
-    bool hasDim() const { return (m_specified & bit(TextAttribute::Dim)) != 0; }
-    void setDim(bool value) { setAttribute(TextAttribute::Dim, value); }
-    void resetDim() { resetAttribute(TextAttribute::Dim); }
-    bool italic() const { return (m_values & bit(TextAttribute::Italic)) != 0; }
-    bool hasItalic() const { return (m_specified & bit(TextAttribute::Italic)) != 0; }
-    void setItalic(bool value) { setAttribute(TextAttribute::Italic, value); }
-    void resetItalic() { resetAttribute(TextAttribute::Italic); }
-    bool underline() const { return (m_values & bit(TextAttribute::Underline)) != 0; }
-    bool hasUnderline() const { return (m_specified & bit(TextAttribute::Underline)) != 0; }
-    void setUnderline(bool value) { setAttribute(TextAttribute::Underline, value); }
-    void resetUnderline() { resetAttribute(TextAttribute::Underline); }
-    bool reversed() const { return (m_values & bit(TextAttribute::Reversed)) != 0; }
-    bool hasReversed() const { return (m_specified & bit(TextAttribute::Reversed)) != 0; }
-    void setReversed(bool value) { setAttribute(TextAttribute::Reversed, value); }
-    void resetReversed() { resetAttribute(TextAttribute::Reversed); }
+    TextStyle style() const { return m_style; }
+    void setStyle(const TextStyle &style) { m_style = style; }
 
-    TextAttribute resolveAttributes(TextAttribute base) const;
+    Color color() const { return m_style.color(); }
+    void setColor(Color color) { m_style.setColor(color); }
+    void resetColor() { m_style.resetColor(); }
+
+    Color backgroundColor() const { return m_style.backgroundColor(); }
+    void setBackgroundColor(Color color) { m_style.setBackgroundColor(color); }
+    void resetBackgroundColor() { m_style.resetBackgroundColor(); }
+
+    bool bold() const { return m_style.bold(); }
+    bool hasBold() const { return m_style.hasBold(); }
+    void setBold(bool value) { m_style.setBold(value); }
+    void resetBold() { m_style.resetBold(); }
+
+    bool dim() const { return m_style.dim(); }
+    bool hasDim() const { return m_style.hasDim(); }
+    void setDim(bool value) { m_style.setDim(value); }
+    void resetDim() { m_style.resetDim(); }
+
+    bool italic() const { return m_style.italic(); }
+    bool hasItalic() const { return m_style.hasItalic(); }
+    void setItalic(bool value) { m_style.setItalic(value); }
+    void resetItalic() { m_style.resetItalic(); }
+
+    bool underline() const { return m_style.underline(); }
+    bool hasUnderline() const { return m_style.hasUnderline(); }
+    void setUnderline(bool value) { m_style.setUnderline(value); }
+    void resetUnderline() { m_style.resetUnderline(); }
+
+    bool reversed() const { return m_style.reversed(); }
+    bool hasReversed() const { return m_style.hasReversed(); }
+    void setReversed(bool value) { m_style.setReversed(value); }
+    void resetReversed() { m_style.resetReversed(); }
+
+    TextAttribute resolveAttributes(TextAttribute base) const {
+        return m_style.resolveAttributes(base);
+    }
+
     friend bool operator==(const Span &, const Span &) = default;
 
 private:
-    static constexpr quint8 bit(TextAttribute attribute) { return static_cast<quint8>(attribute); }
-    void setAttribute(TextAttribute attribute, bool value);
-    void resetAttribute(TextAttribute attribute);
-
     QString m_text;
-    Color m_color;
-    Color m_backgroundColor;
-    quint8 m_values = 0;
-    quint8 m_specified = 0;
+    TextStyle m_style;
 };
 
 } // namespace qamui

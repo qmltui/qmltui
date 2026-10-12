@@ -37,6 +37,7 @@
 - [Rectangle](rectangle.md)
 - [rgba](rgba.md)
 - [Scrollback](scrollback.md)
+- [highlightRange](highlightrange.md)
 - [span](span.md)
 - [Terminal](terminal.md)
 - [terminalCapabilities](terminalcapabilities.md)
@@ -52,7 +53,6 @@
 
 ## Qamui — display
 
-- [Paragraph](paragraph.md)
 - [Text](text.md)
 
 ## Qamui — input events

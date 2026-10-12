@@ -26,6 +26,7 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | `spans` | `list<span>` | `[]` | Literal styled runs; a nonempty list takes precedence over `text`. |
 | `text` | `string` | `""` | Holds the plain, rich, or ANSI text to display when `spans` is empty. |
 | `color` | `rgba` | `"default"` | Holds the text foreground color. |
+| `backgroundColor` | `rgba` | `"transparent"` | Holds the background color of character cells. |
 | `bold` | `bool` | `false` | Whether text is rendered in bold face. |
 | `dim` | `bool` | `false` | Whether text is rendered in dim or faint face. |
 | `italic` | `bool` | `false` | Whether text is rendered in italic face if supported by the terminal. |
@@ -34,16 +35,32 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | `horizontalAlignment` | `int` | `Qt.AlignLeft` | Holds horizontal alignment: `Qt.AlignLeft`, `Qt.AlignHCenter`, or `Qt.AlignRight`. |
 | `verticalAlignment` | `int` | `Qt.AlignTop` | Holds vertical alignment: `Qt.AlignTop`, `Qt.AlignVCenter`, or `Qt.AlignBottom`. |
 | `textFormat` | `TextFormat` | `Text.AutoText` | Holds how text is parsed: `Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`. |
+| `wrapMode` | `WrapMode` | `Text.NoWrap` | Holds text wrapping mode: `Text.NoWrap`, `Text.WordWrap`, `Text.WrapAnywhere`, or `Text.Wrap`. |
 | `gradient` | `Gradient` | `null` | Holds an optional [Gradient](gradient.md) applied across the rendered text characters. |
+
+## Signals
+
+| Signal | Description |
+| :--- | :--- |
+| `linkActivated(string link)` | Emitted when an embedded hyperlink tag or markdown link is clicked. |
 
 ## Enumeration Text.TextFormat
 
 | Value | Description |
 | :--- | :--- |
 | `Text.PlainText` | Text is treated as plain literal text without formatting interpretation. |
-| `Text.RichText` | Basic HTML tags (such as `<b>`, `<i>`, `<font color="...">`) are parsed. |
+| `Text.RichText` | Basic HTML tags (such as `<b>`, `<i>`, `<font color="...">`, `<a href="...">`) are parsed. |
 | `Text.AnsiText` | Embedded ANSI/VT SGR escape sequences are parsed and styled. |
-| `Text.AutoText` | Automatically determines format based on presence of HTML tags or ANSI escape codes. |
+| `Text.AutoText` | Automatically determines format based on presence of HTML tags, markdown links, or ANSI escape codes. |
+
+## Enumeration Text.WrapMode
+
+| Value | Description |
+| :--- | :--- |
+| `Text.NoWrap` | Text is not wrapped; explicit line breaks are preserved. |
+| `Text.WordWrap` | Text is wrapped at word boundaries when width is exceeded. |
+| `Text.WrapAnywhere` | Text is wrapped at any character boundary when width is exceeded. |
+| `Text.Wrap` | Text is wrapped at word boundaries when possible, or at any character boundary. |
 
 ## Detailed Description
 

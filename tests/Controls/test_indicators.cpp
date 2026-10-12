@@ -9,7 +9,7 @@
 #include <Qamui/Controls/TabBar.h>
 #include <Qamui/Core/Items/Gradient.h>
 #include <Qamui/Core/Items/GradientStop.h>
-#include <Qamui/Core/Items/Paragraph.h>
+#include <Qamui/Core/Items/Text.h>
 #include <Qamui/Core/Items/Rectangle.h>
 #include <Qamui/Core/Primitives/TextGridBuffer.h>
 #include <Qamui/Core/Engine/MouseEvent.h>
@@ -261,7 +261,7 @@ private slots:
 
     void testBordersBelongToRectangle() {
         Rectangle rectangle;
-        Paragraph paragraph;
+        Text text;
         TableView table;
         TreeView tree;
         Sparkline sparkline;
@@ -269,7 +269,7 @@ private slots:
 
         QVERIFY(rectangle.metaObject()->indexOfProperty("border") >= 0);
         const QObject *borderlessItems[] = {
-            &paragraph, &table, &tree, &sparkline, &tabs
+            &text, &table, &tree, &sparkline, &tabs
         };
         for (const QObject *item : borderlessItems) {
             QCOMPARE(item->metaObject()->indexOfProperty("border"), -1);
@@ -278,8 +278,9 @@ private slots:
         }
     }
 
-    void testParagraph() {
-        Paragraph p;
+    void testTextWrapping() {
+        Text p;
+        p.setWrapMode(Text::WordWrap);
         p.setWidth(20);
         p.setHeight(5);
         p.setText("Qamui is a modern reactive QML Terminal UI framework.");

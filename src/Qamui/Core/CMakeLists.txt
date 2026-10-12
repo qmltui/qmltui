@@ -35,6 +35,10 @@ qt_add_qml_module(QamuiCore
     SOURCES
         Primitives/Span.h
         Primitives/Span.cpp
+        Primitives/TextStyle.h
+        Primitives/TextStyle.cpp
+        Primitives/HighlightRange.h
+        Primitives/HighlightRange.cpp
         Primitives/Color.h
         Primitives/Color.cpp
         Primitives/QamuiExport.h
@@ -115,6 +119,7 @@ qt_add_qml_module(QamuiCore
         Items/TextEditorState.cpp
         Items/TextArea.h
         Items/TextArea.cpp
+        Items/TextCursorPainter.h
         Items/LogView.h
         Items/LogView.cpp
         Items/ScrollView.h
@@ -153,8 +158,6 @@ qt_add_qml_module(QamuiCore
         Items/ListView.cpp
         Items/GridView.h
         Items/GridView.cpp
-        Items/Paragraph.h
-        Items/Paragraph.cpp
         Items/TableView.h
         Items/TableView.cpp
         Items/TreeView.h
@@ -240,12 +243,13 @@ install(FILES
 # too; qamui_check_public_headers() enforces it at configure time.
 qamui_install_headers(Qamui/Core/Items FILES
     Items/Text.h
-    Items/Item.h Items/Anchors.h Items/AnchorLine.h Items/Border.h Items/Paragraph.h
+    Items/Item.h Items/Anchors.h Items/AnchorLine.h Items/Border.h
     Items/TableView.h Items/TreeView.h Items/Terminal.h Items/Rectangle.h
     Items/Gradient.h Items/GradientStop.h Items/Canvas.h Items/Popup.h
+    Items/TextArea.h Items/TextEditorState.h
 )
 qamui_install_headers(Qamui/Core/Primitives FILES
-    Primitives/Span.h Primitives/QamuiGlobal.h
+    Primitives/Span.h Primitives/TextStyle.h Primitives/HighlightRange.h Primitives/QamuiGlobal.h
     Primitives/QamuiExport.h Primitives/Color.h Primitives/TextGridBuffer.h Primitives/Cell.h
     Primitives/UnicodeText.h Primitives/Subpixel.h Primitives/TerminalCapabilities.h
     # The application-provided backend extension point (TerminalBackend::setFactory).

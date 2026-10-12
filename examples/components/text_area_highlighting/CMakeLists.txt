@@ -1,0 +1,23 @@
+qt_add_executable(qamui_text_area_highlighting_demo main.cpp)
+
+qt_add_qml_module(qamui_text_area_highlighting_demo
+    URI TextAreaHighlightingDemo
+    VERSION 1.0
+    SOURCES
+        JsonHighlighter.h
+        JsonHighlighter.cpp
+    QML_FILES
+        Main.qml
+        QmlHighlighter.qml
+
+    DEPENDENCIES TARGET Qamui::Core
+)
+
+target_link_libraries(qamui_text_area_highlighting_demo PRIVATE Qt6::Core Qt6::Qml Qamui::Core)
+
+if(TARGET Qamui::Runner)
+    target_link_libraries(qamui_text_area_highlighting_demo PRIVATE Qamui::Runner)
+    qamui_add_scenario(NAME text_area_highlighting_smoke TARGET qamui_text_area_highlighting_demo
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+endif()

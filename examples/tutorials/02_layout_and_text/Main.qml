@@ -23,8 +23,9 @@ Terminal {
                 Text { text: "Layout and text"; Layout.fillWidth: true }
                 Text { text: "Esc quits" }
             }
-            Paragraph {
+            Text {
                 width: parent.width
+                wrapMode: Text.WordWrap
                 text: "A paragraph wraps at the available cell width. Resize the terminal to see these words move across lines without changing the source text."
             }
             Row {

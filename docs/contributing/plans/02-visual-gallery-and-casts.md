@@ -50,7 +50,7 @@ the Windows launch), `spaceship_game` (third game, untested).
 | :--- | :--- |
 | Data views | `TableView`, `TreeView`, `ListView`, `ScrollView`, `LogView`, `Canvas`, `Sparkline` |
 | Inputs | `Button`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `TextInput`, `TextArea` |
-| Display and metrics | `Text`, `Paragraph`, `ProgressBar`, `BusyIndicator`, `Rectangle`, `Image` |
+| Display and metrics | `Text`, `ProgressBar`, `BusyIndicator`, `Rectangle`, `Image` |
 | Overlays and navigation | `Dialog`, `Popup`, `Toast`, `ToolTip`, `TabBar`, `Panel`, `Loader`, `TerminalView` |
 | Recipes (not library types) | `StatusBadge`, `Calendar`, `BigText` as worked examples of composing and subclassing |
 

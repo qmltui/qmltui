@@ -1,11 +1,12 @@
 #pragma once
 
+#include <Qamui/Core/Primitives/QamuiExport.h>
 #include <QString>
 #include <QVector>
 
 namespace qamui {
 
-class TextEditorState {
+class QAMUI_CORE_EXPORT TextEditorState {
 public:
     struct Snapshot {
         QString text;

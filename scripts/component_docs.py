@@ -48,7 +48,7 @@ CATEGORIES = {
                    "StandardItemDelegate"],
     "inputs": ["AbstractButton", "Button", "ButtonGroup", "CheckBox", "RadioButton", "Switch",
                "Slider", "TextInput", "TextArea"],
-    "display": ["Text", "Paragraph", "ProgressBar", "BusyIndicator", "Sparkline", "Image",
+    "display": ["Text", "ProgressBar", "BusyIndicator", "Sparkline", "Image",
                 "TerminalView"],
     "overlays and navigation": ["Dialog", "Popup", "Toast", "ToolTip", "TabBar", "StackView",
                                 "Panel"],

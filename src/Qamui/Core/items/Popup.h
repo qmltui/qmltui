@@ -5,6 +5,7 @@
 #include <Qamui/Core/items/Rectangle.h>
 #include <Qamui/Core/engine/InputScope.h>
 #include <QPointer>
+#include <cstdint>
 
 namespace qamui {
 
@@ -21,10 +22,10 @@ class QAMUI_CORE_EXPORT Popup : public Rectangle, public InputScope {
     Q_PROPERTY(qamui::Popup* parentPopup READ parentPopup NOTIFY ownerChanged)
 
 public:
-    enum ClosePolicy {
+    enum ClosePolicy : uint8_t {
         NoAutoClose = 0,
         CloseOnEscape = 1 << 0,
-        CloseOnOutsideClick = 1 << 1
+        CloseOnOutsideClick = 1 << 1,
     };
     Q_DECLARE_FLAGS(ClosePolicies, ClosePolicy)
     Q_FLAG(ClosePolicies)

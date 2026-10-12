@@ -36,7 +36,7 @@ struct WidthAccumulator {
 
     void add(char32_t codePoint) noexcept
     {
-        width = std::max(width, utf8proc_charwidth(static_cast<utf8proc_int32_t>(codePoint)));
+        width = (std::max)(width, utf8proc_charwidth(static_cast<utf8proc_int32_t>(codePoint)));
         emojiPresentation |= codePoint == 0xFE0F || (codePoint >= 0x1F300 && codePoint <= 0x1FAFF);
         regionalIndicator |= codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF;
         keycap |= codePoint == 0x20E3;

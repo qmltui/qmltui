@@ -2,6 +2,7 @@
 
 #include <Qamui/Core/primitives/QamuiExport.h>
 
+#include <cstdint>
 #include <Qamui/Core/items/Item.h>
 
 namespace qamui {
@@ -11,7 +12,7 @@ class QAMUI_CORE_EXPORT LinearLayout : public Item {
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
 
 public:
-    enum Direction { Horizontal, Vertical };
+    enum Direction : uint8_t { Horizontal, Vertical, };
 
     explicit LinearLayout(Direction direction, QObject *parent = nullptr);
     int spacing() const { return m_spacing; }

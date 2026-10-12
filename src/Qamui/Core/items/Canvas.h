@@ -47,7 +47,7 @@ public:
         uint32_t count = 0;
     };
 
-    Canvas(QObject* parent = nullptr);
+    explicit Canvas(QObject* parent = nullptr);
     ~Canvas() override = default;
 
     Color color() const { return m_color; }

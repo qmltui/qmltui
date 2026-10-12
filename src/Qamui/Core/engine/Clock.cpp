@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QVariantAnimation>
+#include <algorithm>
 
 namespace qamui {
 
@@ -31,7 +32,17 @@ public:
 
 Clock::Clock() = default;
 
-Clock::~Clock() = default;
+Clock::~Clock()
+{
+    if (m_driverKeepalive) {
+        m_driverKeepalive->stop();
+    }
+    if (m_driver) {
+        m_driver->uninstall();
+        delete m_driver;
+        m_driver = nullptr;
+    }
+}
 
 Clock* Clock::instance()
 {
@@ -68,7 +79,7 @@ void Clock::setVirtual()
     // nor keepalive ticks on its own: time moves only through advanceTo().
     clock->m_driver = new VirtualAnimationDriver();
     clock->m_driver->install();
-    clock->m_driverKeepalive = new QVariantAnimation();
+    clock->m_driverKeepalive = new QVariantAnimation(clock);
     clock->m_driverKeepalive->setStartValue(0.0);
     clock->m_driverKeepalive->setEndValue(1.0);
     clock->m_driverKeepalive->setDuration(1000000000);
@@ -112,7 +123,7 @@ void Clock::advanceTo(qint64 timeMs)
     // Fire strictly in deadline order, moving now to each deadline first so a
     // handler that reads elapsed() or restarts a timer sees consistent time.
     while (ClockTimer* due = takeNextDue(timeMs)) {
-        m_virtualNow = qMax(m_virtualNow, due->m_deadline);
+        m_virtualNow = (std::max)(m_virtualNow, due->m_deadline);
         due->fire();
     }
     m_virtualNow = timeMs;
@@ -157,7 +168,7 @@ void ClockTimer::start()
 {
     if (Clock::isVirtual()) {
         m_active = true;
-        m_deadline = Clock::instance()->elapsed() + qMax(0, m_interval);
+        m_deadline = Clock::instance()->elapsed() + (std::max)(0, m_interval);
     } else {
         m_timer.start();
     }
@@ -184,7 +195,7 @@ void ClockTimer::fire()
     if (m_singleShot)
         m_active = false;
     else
-        m_deadline += qMax(1, m_interval);
+        m_deadline += (std::max)(1, m_interval);
     emit timeout();
 }
 

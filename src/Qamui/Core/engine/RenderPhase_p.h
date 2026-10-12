@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtGlobal>
+#include <cstdint>
 
 namespace qamui {
 
@@ -21,7 +22,7 @@ class Item;
 class RenderPhase final
 {
 public:
-    enum Phase { Idle, Layout, Paint };
+    enum Phase : uint8_t { Idle, Layout, Paint, };
 
     static Phase current();
 

@@ -266,7 +266,7 @@ private:
     quint64 m_committedScrollbackTotal = 0;
     int m_scrollbackHistoryLimit = DefaultScrollbackHistoryLimit;
     bool m_scrollbackHistoryEnabled = false;
-    bool m_stopped = false;
+    std::atomic<bool> m_stopped{false};
     bool m_backgroundOsc11Active = false;
     Color m_appliedBackgroundColor;
     bool m_initialBgQueried = false;

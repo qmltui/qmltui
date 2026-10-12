@@ -84,7 +84,7 @@ ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& co
         else if (c >= '0' && c <= '9') {
             int& value = sequence.params.last().last();
             if (value < 0) value = 0;
-            if (value > (std::numeric_limits<int>::max() - (c - '0')) / 10)
+            if (value > ((std::numeric_limits<int>::max)() - (c - '0')) / 10)
                 return ParseResult::Oversized;
             value = value * 10 + c - '0';
         } else return ParseResult::Oversized;
@@ -364,7 +364,7 @@ void InputDecoder::decode(const char* buffer, size_t size) {
     // Process large reads incrementally so control framing is never lost by
     // truncating the beginning of an input read.
     while (size) {
-        const size_t chunk = std::min(size, size_t(4096));
+        const size_t chunk = (std::min)(size, size_t(4096));
         m_buffer.append(buffer, chunk);
         buffer += chunk;
         size -= chunk;
@@ -444,7 +444,7 @@ void InputDecoder::processBuffer() {
                     // Resume string scanning near the previous end (an ESC may
                     // still need its following byte). Avoid quadratic large reads.
                     if (sequence.kind >= ControlSequence::Apc)
-                        m_stringScanOffset = std::max(size_t(2), bytes.size() - 1);
+                        m_stringScanOffset = (std::max)(size_t(2), bytes.size() - 1);
                     break;
                 }
                 m_stringScanOffset = 2;

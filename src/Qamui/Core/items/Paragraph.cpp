@@ -8,6 +8,13 @@
 
 namespace qamui {
 
+namespace {
+const QRegularExpression& tagDelimiterRe() {
+    static const QRegularExpression re(QStringLiteral("[\"'>\\s]"));
+    return re;
+}
+}
+
 Paragraph::Paragraph(QObject *parent) : Item(parent) {
     setImplicitWidth(30);
     setImplicitHeight(5);
@@ -63,7 +70,7 @@ void Paragraph::setWrapMode(bool wrap) {
 }
 
 void Paragraph::setScrollY(int scroll) {
-    int clamped = std::max(0, scroll);
+    int clamped = (std::max)(0, scroll);
     if (m_scrollY == clamped) return;
     m_scrollY = clamped;
     emit scrollYChanged();
@@ -96,7 +103,7 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
     bool underline = false;
 
     int i = 0;
-    int len = line.length();
+    int len = line.size();
 
     while (i < len) {
         // Parse HTML Tags: <a href="..."> </a> <font color="..."> <b> <i> <u>
@@ -107,11 +114,12 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
                 QString lowerTag = tag.toLower();
 
                 if (lowerTag.startsWith("a ") || lowerTag == "a") {
-                    if (lowerTag.contains("href=")) {
-                        int startQuote = tag.indexOf("href=") + 5;
-                        if (startQuote < tag.length() && (tag[startQuote] == '"' || tag[startQuote] == '\'')) startQuote++;
-                        int endQuote = tag.indexOf(QRegularExpression("[\"'>\\s]"), startQuote);
-                        if (endQuote == -1) endQuote = tag.length();
+                    int hrefIdx = tag.indexOf(QStringLiteral("href="), 0, Qt::CaseInsensitive);
+                    if (hrefIdx != -1) {
+                        int startQuote = hrefIdx + 5;
+                        if (startQuote < tag.size() && (tag[startQuote] == '"' || tag[startQuote] == '\'')) startQuote++;
+                        int endQuote = tag.indexOf(tagDelimiterRe(), startQuote);
+                        if (endQuote == -1) endQuote = tag.size();
                         activeHref = tag.mid(startQuote, endQuote - startQuote);
                         fgStack.push(fgStack.top()); // Links keep the configured text color.
                     }
@@ -125,11 +133,12 @@ FormattedLine Paragraph::parseRichLine(const QString &line) const {
                 else if (lowerTag == "u") underline = true;
                 else if (lowerTag == "/u") underline = false;
                 else if (lowerTag.startsWith("font")) {
-                    if (lowerTag.contains("color=")) {
-                        int startQuote = tag.indexOf("color=") + 6;
-                        if (startQuote < tag.length() && (tag[startQuote] == '"' || tag[startQuote] == '\'')) startQuote++;
-                        int endQuote = tag.indexOf(QRegularExpression("[\"'>\\s]"), startQuote);
-                        if (endQuote == -1) endQuote = tag.length();
+                    int colorIdx = tag.indexOf(QStringLiteral("color="), 0, Qt::CaseInsensitive);
+                    if (colorIdx != -1) {
+                        int startQuote = colorIdx + 6;
+                        if (startQuote < tag.size() && (tag[startQuote] == '"' || tag[startQuote] == '\'')) startQuote++;
+                        int endQuote = tag.indexOf(tagDelimiterRe(), startQuote);
+                        if (endQuote == -1) endQuote = tag.size();
                         QString colName = tag.mid(startQuote, endQuote - startQuote);
                         fgStack.push(ColorMapper::fromString(colName, fgStack.top()));
                     }
@@ -237,7 +246,7 @@ QList<FormattedLine> Paragraph::wordWrapFormatted(const FormattedLine &rawLine, 
     return result;
 }
 
-QList<FormattedLine> Paragraph::getRenderedLines(int availW) const {
+const QList<FormattedLine>& Paragraph::renderedLines(int availW) const {
     if (m_cachedWidth == availW)
         return m_cachedLines;
     QStringList rawParagraphs = m_text.split('\n');
@@ -249,7 +258,7 @@ QList<FormattedLine> Paragraph::getRenderedLines(int availW) const {
         wrappedLines.append(lines);
     }
     m_cachedWidth = availW;
-    m_cachedLines = wrappedLines;
+    m_cachedLines = std::move(wrappedLines);
     return m_cachedLines;
 }
 
@@ -269,7 +278,7 @@ void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
     if (availW <= 0 || availH <= 0) return;
 
-    QList<FormattedLine> wrappedLines = getRenderedLines(availW);
+    const QList<FormattedLine> &wrappedLines = renderedLines(availW);
 
     for (int idx = 0; idx < availH && (m_scrollY + idx) < wrappedLines.size(); ++idx) {
         const FormattedLine &line = wrappedLines[m_scrollY + idx];
@@ -277,7 +286,7 @@ void Paragraph::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         int lineLen = 0;
         for (const FormattedChar &character : line)
             lineLen += character.width;
-        lineLen = std::min(availW, lineLen);
+        lineLen = (std::min)(availW, lineLen);
 
         int curX = startX;
         if (m_alignment == "right") {
@@ -303,7 +312,7 @@ void Paragraph::mousePressEvent(MouseEvent *event) {
     int clickX = event->x();
     int clickY = event->y() + m_scrollY;
 
-    QList<FormattedLine> lines = getRenderedLines(availW);
+    const QList<FormattedLine> &lines = renderedLines(availW);
     if (clickY >= 0 && clickY < lines.size()) {
         const FormattedLine &line = lines[clickY];
         int startX = 0;

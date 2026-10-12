@@ -4,8 +4,8 @@
 
 #include <QObject>
 #include <QString>
-#include <cstdint>
 #include <QtQml/qqmlregistration.h>
+#include <cstdint>
 
 #include <Qamui/Core/primitives/Color.h>
 #include <Qamui/Core/primitives/ColorMapper.h>

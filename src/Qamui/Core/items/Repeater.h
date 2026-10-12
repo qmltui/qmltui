@@ -10,6 +10,7 @@
 #include <QQmlContext>
 #include <QPointer>
 #include <QMetaObject>
+#include <QHash>
 
 class QAbstractItemModel;
 class QQmlPropertyMap;
@@ -26,7 +27,7 @@ class QAMUI_CORE_EXPORT Repeater : public Item {
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
 
 public:
-    Repeater(QObject* parent = nullptr);
+    explicit Repeater(QObject* parent = nullptr);
     ~Repeater() override;
 
     QVariant model() const { return m_model; }
@@ -62,6 +63,8 @@ private:
     QList<QMetaObject::Connection> m_modelConnections;
     quint64 m_modelGeneration = 0;
     QPersistentModelIndex m_rootIndex;
+    QHash<int, QString> m_roleMap;
+    quint16 m_claimedNames = 0;
     bool m_nestedWarned = false;
     bool m_fetching = false;
 };

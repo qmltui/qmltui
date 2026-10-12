@@ -26,6 +26,8 @@ class TestPopup : public QObject {
 
 private slots:
     void testPopupRegistration();
+    void testTerminalContextConnectionsSurviveClose();
+    void testOwnerChangeUpdatesRenderedOrder();
     void testModalInputBlocking();
     void testClosePolicies();
     void testBaseVisibilityDispatchAndParentNotification();
@@ -50,6 +52,49 @@ void TestPopup::testPopupRegistration() {
 
     popup->close();
     QCOMPARE(terminal.activePopups().count(), 0);
+}
+
+void TestPopup::testTerminalContextConnectionsSurviveClose() {
+    Terminal terminal;
+    Popup popup(&terminal);
+    int closed = 0;
+    connect(&popup, &Popup::closed, &terminal, [&] { ++closed; });
+    for (int count = 1; count <= 2; ++count) {
+        popup.open();
+        popup.open(); // Raising an open popup must not affect connections.
+        popup.close();
+        QCOMPARE(closed, count);
+    }
+}
+
+void TestPopup::testOwnerChangeUpdatesRenderedOrder() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(10, 4));
+    Popup modal(&terminal);
+    modal.setModal(true);
+    modal.setDimBackground(false);
+    modal.setWidth(4);
+    modal.setHeight(2);
+    modal.setColor(QStringLiteral("#ff0000"));
+    Popup child(&terminal);
+    child.setWidth(4);
+    child.setHeight(2);
+    child.setColor(QStringLiteral("#0000ff"));
+    modal.open();
+    child.open();
+    QCOMPARE(terminal.orderedPopups().last(), &modal);
+    child.setOwner(&modal);
+    QCOMPARE(terminal.orderedPopups().last(), &child);
+    QVERIFY(QMetaObject::invokeMethod(terminal.engine(), "renderFrame", Qt::DirectConnection));
+    auto frame = terminal.engine()->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(frame->cellAt(0, 0).bgColor, 0xff0000ffu);
+    child.setOwner(nullptr);
+    QCOMPARE(terminal.orderedPopups().last(), &modal);
+    QVERIFY(QMetaObject::invokeMethod(terminal.engine(), "renderFrame", Qt::DirectConnection));
+    frame = terminal.engine()->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(frame->cellAt(0, 0).bgColor, 0xffff0000u);
 }
 
 void TestPopup::testModalInputBlocking() {

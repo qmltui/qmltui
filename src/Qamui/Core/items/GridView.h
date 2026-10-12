@@ -28,7 +28,7 @@ class QAMUI_CORE_EXPORT GridView : public ScrollView {
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
 
 public:
-    GridView(QObject* parent = nullptr);
+    explicit GridView(QObject* parent = nullptr);
     ~GridView() override;
 
     QVariant model() const { return m_model; }

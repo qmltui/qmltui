@@ -132,7 +132,7 @@ void TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool absolut
                 appendCursorPosition(column, y);
                 ansi::appendStyleTransition(ansi, nextCell, style, options.colorDepth);
                 ansi::appendGlyph(ansi, nextCell);
-                curX = column + std::max(1, static_cast<int>(nextCell.displayWidth));
+                curX = column + (std::max)(1, static_cast<int>(nextCell.displayWidth));
                 curY = y;
             }
 

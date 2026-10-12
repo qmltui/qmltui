@@ -4,10 +4,10 @@
 
 #include <Qamui/Core/items/Item.h>
 #include <Qamui/Core/items/Border.h>
+#include <Qamui/Core/items/Gradient.h>
+#include <QPointer>
 
 namespace qamui {
-
-class Gradient;
 
 class QAMUI_CORE_EXPORT Rectangle : public Item {
     Q_OBJECT
@@ -24,12 +24,12 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
-    Gradient* gradient() const { return m_gradient; }
+    Gradient* gradient() const { return m_gradient.data(); }
     void setGradient(Gradient* gradient);
 
     uint32_t resolvedBackgroundColor() const { return m_resolvedBackgroundColor; }
 
-    Border* border() { return &m_border; }
+    Border* border() const { return const_cast<Border*>(&m_border); }
 
     int leftPadding() const override;
     int rightPadding() const override;
@@ -46,7 +46,7 @@ private:
     Color m_color = "transparent";
     uint32_t m_resolvedBackgroundColor = Color::TransparentTag;
     Border m_border;
-    Gradient* m_gradient = nullptr;
+    QPointer<Gradient> m_gradient;
 };
 
 } // namespace qamui

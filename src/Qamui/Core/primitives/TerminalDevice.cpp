@@ -166,12 +166,12 @@ bool TerminalDevice::finishOutput(int timeoutMs) {
     return m_finishSucceeded;
 }
 
-int TerminalDevice::getWidth() const {
+int TerminalDevice::width() const {
     const QSize size = m_backend->size();
     return size.width() > 0 ? size.width() : 80;
 }
 
-int TerminalDevice::getHeight() const {
+int TerminalDevice::height() const {
     const QSize size = m_backend->size();
     return size.height() > 0 ? size.height() : 24;
 }

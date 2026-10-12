@@ -5,6 +5,7 @@
 #include <QAbstractItemModel>
 #include <QByteArrayView>
 #include <QMetaProperty>
+#include <QJSValue>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -219,6 +220,34 @@ inline void setDelegateProperty(QObject *object, const char *name, const QVarian
     const int index = object->metaObject()->indexOfProperty(name);
     if (index < 0) object->setProperty(name, value);
     else if (isDeclaredInQml(object, index)) object->metaObject()->property(index).write(object, value);
+}
+
+constexpr int MaxMaterializedModelItems = 10000;
+
+inline bool unpackStaticModel(const QVariant &modelVariant,
+                              int &modelCount,
+                              QVariantList &listValues)
+{
+    if (modelVariant.canConvert<int>() && modelVariant.userType() != qMetaTypeId<QJSValue>()) {
+        modelCount = std::clamp(modelVariant.toInt(), 0, MaxMaterializedModelItems);
+        return true;
+    }
+    if (modelVariant.canConvert<QVariantList>() || modelVariant.userType() == qMetaTypeId<QJSValue>()) {
+        if (modelVariant.userType() == qMetaTypeId<QJSValue>()) {
+            const QJSValue value = modelVariant.value<QJSValue>();
+            if (value.isArray()) {
+                const int length = std::clamp(value.property("length").toInt(), 0, MaxMaterializedModelItems);
+                listValues.reserve(length);
+                for (int index = 0; index < length; ++index)
+                    listValues.append(value.property(index).toVariant());
+            }
+        } else {
+            listValues = modelVariant.toList().mid(0, MaxMaterializedModelItems);
+        }
+        modelCount = static_cast<int>(listValues.size());
+        return true;
+    }
+    return false;
 }
 
 } // namespace qamui::DelegateUtils

@@ -335,7 +335,7 @@ void Anchors::resolve() {
         int x1 = getLineCoord(m_left.data()) + leftMargin();
         int x2 = getLineCoord(m_right.data()) - rightMargin();
         m_owner->setX(x1);
-        m_owner->setWidth(std::max(0, x2 - x1));
+        m_owner->setWidth((std::max)(0, x2 - x1));
     } else if (hasHC) {
         int hc = getLineCoord(m_horizontalCenter.data());
         m_owner->setX(hc - m_owner->width() / 2);
@@ -355,7 +355,7 @@ void Anchors::resolve() {
         int y1 = getLineCoord(m_top.data()) + topMargin();
         int y2 = getLineCoord(m_bottom.data()) - bottomMargin();
         m_owner->setY(y1);
-        m_owner->setHeight(std::max(0, y2 - y1));
+        m_owner->setHeight((std::max)(0, y2 - y1));
     } else if (hasVC) {
         int vc = getLineCoord(m_verticalCenter.data());
         m_owner->setY(vc - m_owner->height() / 2);

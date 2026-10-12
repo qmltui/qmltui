@@ -70,7 +70,7 @@ bool StreamRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     QElapsedTimer timer;
     timer.start();
     ItemPaintTraversal::layoutSubtree(rootWindow);
-    const int requiredHeight = std::clamp(rootWindow->height(), 0, std::max(0, m_terminalHeight - 1));
+    const int requiredHeight = std::clamp(rootWindow->height(), 0, (std::max)(0, m_terminalHeight - 1));
 
     const int previousPromptHeight = m_lastPromptHeight;
     m_lastPromptHeight = requiredHeight;

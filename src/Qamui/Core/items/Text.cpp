@@ -74,7 +74,7 @@ static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle
     // so the terminal's theme applies, exactly as it would for the raw sequence.
     const auto ansiIndex = [](int index) { return Color::fromAnsiIndex(index).argb32(); };
     const QStringList params = paramsStr.split(';');
-    for (int pIdx = 0; pIdx < params.count(); ++pIdx) {
+    for (int pIdx = 0; pIdx < params.size(); ++pIdx) {
         if (params[pIdx].isEmpty()) continue;
         const int code = params[pIdx].toInt();
         if (code == 0) {
@@ -104,17 +104,17 @@ static void applySgrParameters(const QString& paramsStr, TextStyle& currentStyle
             currentStyle.fgColor = baseStyle.fgColor;
         } else if (code == 49) {
             currentStyle.bgColor = baseStyle.bgColor;
-        } else if (code == 38 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
-            const int r = params[pIdx + 2].toInt();
-            const int g = params[pIdx + 3].toInt();
-            const int b = params[pIdx + 4].toInt();
-            currentStyle.fgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
+        } else if (code == 38 && pIdx + 4 < params.size() && params[pIdx + 1].toInt() == 2) {
+            const int r = std::clamp(params[pIdx + 2].toInt(), 0, 255);
+            const int g = std::clamp(params[pIdx + 3].toInt(), 0, 255);
+            const int b = std::clamp(params[pIdx + 4].toInt(), 0, 255);
+            currentStyle.fgColor = 0xFF000000u | (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(b);
             pIdx += 4;
-        } else if (code == 48 && pIdx + 4 < params.count() && params[pIdx + 1].toInt() == 2) {
-            const int r = params[pIdx + 2].toInt();
-            const int g = params[pIdx + 3].toInt();
-            const int b = params[pIdx + 4].toInt();
-            currentStyle.bgColor = 0xFF000000 | (r << 16) | (g << 8) | b;
+        } else if (code == 48 && pIdx + 4 < params.size() && params[pIdx + 1].toInt() == 2) {
+            const int r = std::clamp(params[pIdx + 2].toInt(), 0, 255);
+            const int g = std::clamp(params[pIdx + 3].toInt(), 0, 255);
+            const int b = std::clamp(params[pIdx + 4].toInt(), 0, 255);
+            currentStyle.bgColor = 0xFF000000u | (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(b);
             pIdx += 4;
         }
     }
@@ -216,13 +216,18 @@ void Text::setTextFormat(TextFormat format) {
 }
 
 void Text::setGradient(Gradient* gradient) {
-    if (m_gradient == gradient) return;
+    if (m_gradient.data() == gradient) return;
     if (m_gradient) {
-        disconnect(m_gradient, nullptr, this, nullptr);
+        disconnect(m_gradient.data(), nullptr, this, nullptr);
     }
     m_gradient = gradient;
     if (m_gradient) {
-        connect(m_gradient, &Gradient::updated, this, [this]() { markDirty(); });
+        connect(m_gradient.data(), &Gradient::updated, this, [this]() { markDirty(); });
+        connect(m_gradient.data(), &QObject::destroyed, this, [this]() {
+            m_gradient = nullptr;
+            emit gradientChanged();
+            markDirty();
+        });
     }
     emit gradientChanged();
     markDirty();
@@ -232,7 +237,7 @@ void Text::updateImplicitSize() {
     ensureLayout();
     int maxWidth = 0;
     for (const LineLayout &line : m_lines)
-        maxWidth = std::max(maxWidth, line.visualWidth);
+        maxWidth = (std::max)(maxWidth, line.visualWidth);
     setImplicitWidth(maxWidth);
     setImplicitHeight(static_cast<int>(m_lines.size()));
 }
@@ -256,13 +261,13 @@ int Text::parseLine(const QString &line, std::vector<GlyphEntry> *entries,
     int visualWidth = 0;
     const QStringView view(line);
 
-    for (int i = 0; i < line.length(); ) {
+    for (int i = 0; i < line.size(); ) {
         // SGR ANSI escape sequence: \033[...m
-        if (parseAnsi && line[i] == '\033' && i + 1 < line.length() && line[i + 1] == '[') {
+        if (parseAnsi && line[i] == '\033' && i + 1 < line.size() && line[i + 1] == '[') {
             int j = i + 2;
-            while (j < line.length() && (line[j].isDigit() || line[j] == ';'))
+            while (j < line.size() && (line[j].isDigit() || line[j] == ';'))
                 j++;
-            if (j < line.length() && line[j] == 'm') {
+            if (j < line.size() && line[j] == 'm') {
                 if (entries)
                     applySgrParameters(line.mid(i + 2, j - i - 2), currentStyle, baseStyle);
                 i = j + 1;
@@ -305,7 +310,7 @@ TextAttribute Text::baseAttributes() const {
 int Text::appendGrapheme(const GraphemeRef &cluster, uint32_t fg, uint32_t bg,
                          TextAttribute attributes, std::vector<GlyphEntry> *entries,
                          QByteArray *bytes) {
-    const int advance = std::max(0, cluster.width);
+    const int advance = (std::max)(0, cluster.width);
     int cellWidth = advance;
     if (advance == 0) {
         GraphemeIterator sanitized(cluster.utf16, /*sanitizeControls=*/true);
@@ -320,8 +325,8 @@ int Text::appendGrapheme(const GraphemeRef &cluster, uint32_t fg, uint32_t bg,
         entry.fgColor = fg;
         entry.bgColor = bg;
         entry.attributes = attributes;
-        entry.advance = static_cast<uint8_t>(std::min(advance, 255));
-        entry.cellWidth = static_cast<uint8_t>(std::min(cellWidth, 255));
+        entry.advance = static_cast<uint8_t>((std::min)(advance, 255));
+        entry.cellWidth = static_cast<uint8_t>((std::min)(cellWidth, 255));
         entry.glyphOffset = static_cast<uint32_t>(bytes->size());
         char encoded[64];
         const int length = UnicodeText::encodeUtf8(cluster.utf16, encoded, sizeof encoded,

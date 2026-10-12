@@ -93,12 +93,12 @@ int TextGridBuffer::setGrapheme(int x, int y, QStringView cluster, int width,
 int TextGridBuffer::setGrapheme(int x, int y, QByteArrayView utf8, int width,
                                 uint32_t fgColor, uint32_t bgColor, TextAttribute attributes)
 {
-    width = std::max(0, width);
-    if (y < 0 || y >= m_height)
+    width = (std::max)(0, width);
+    if (m_width <= 0 || m_height <= 0 || y < 0 || y >= m_height)
         return width;
 
-    if (width == 0 && x > 0) {
-        int targetX = std::min(x, m_width) - 1;
+    if (width == 0 && x > 0 && m_width > 0) {
+        int targetX = (std::min)(x, m_width) - 1;
         while (targetX > 0 && cellAt(targetX, y).continuation)
             --targetX;
         cellAt(targetX, y).appendCharacter(utf8);
@@ -166,10 +166,10 @@ void TextGridBuffer::drawLine(int x1, int y1, int x2, int y2, const char* charac
 
 void TextGridBuffer::fillRect(int x, int y, int width, int height, const char* character, uint32_t fgColor, uint32_t bgColor) {
     const QByteArrayView glyph(character);   // measured once, not per cell
-    const int startX = std::max(x, 0);
-    const int endX = std::min(x + width, m_width);
-    const int startY = std::max(y, 0);
-    const int endY = std::min(y + height, m_height);
+    const int startX = (std::max)(x, 0);
+    const int endX = (std::min)(x + width, m_width);
+    const int startY = (std::max)(y, 0);
+    const int endY = (std::min)(y + height, m_height);
     for (int cy = startY; cy < endY; ++cy) {
         for (int cx = startX; cx < endX; ++cx) {
             Cell& cell = cellAt(cx, cy);

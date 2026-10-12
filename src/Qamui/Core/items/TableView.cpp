@@ -14,9 +14,9 @@
 
 namespace qamui {
 namespace {
-enum GridGlyph {
+enum GridGlyph : uint8_t {
     Horizontal, Vertical, TopLeft, TopRight, BottomLeft, BottomRight,
-    TopTee, BottomTee, LeftTee, RightTee, Cross
+    TopTee, BottomTee, LeftTee, RightTee, Cross,
 };
 
 QQmlContext *delegateContext(Item *item) {
@@ -752,10 +752,13 @@ void TableView::handleDataChanged(const QModelIndex &topLeft, const QModelIndex 
     bool affected = false;
     for (auto &record : m_createdDelegateItems) {
         const QModelIndex index = record.source;
+        const bool columnMatches = m_rowDelegate
+            ? (bottomRight.column() >= 0 && topLeft.column() < columnCount())
+            : (index.column() >= topLeft.column() && index.column() <= bottomRight.column());
         if (!topLeft.isValid() || !bottomRight.isValid()
             || (index.isValid() && index.parent() == topLeft.parent()
                 && index.row() >= topLeft.row() && index.row() <= bottomRight.row()
-                && index.column() >= topLeft.column() && index.column() <= bottomRight.column())) {
+                && columnMatches)) {
             if (roles.isEmpty()) record.allRolesDirty = true;
             else for (int role : roles) record.dirtyRoles.insert(role);
             affected = true;
@@ -1041,7 +1044,7 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             for (int x = begin; x < end; ++x)
                 buffer.writeText(x, absY + view.top, QStringLiteral(" "), m_resolvedHeaderColor, headerBg, TextAttribute::Bold);
         }
-        for (const auto &geometry : m_geometry) {
+        for (const auto &geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
             write(absX + geometry.x, absY + view.top,
                 alignedPrefix(geometry.title, geometry.width, visibleWidth(geometry),
@@ -1066,7 +1069,7 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             for (int x = begin; x < end; ++x)
                 buffer.writeText(x, y, QStringLiteral(" "), fg, bg, attributes);
         }
-        for (const auto &geometry : m_geometry) {
+        for (const auto &geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
             if (m_delegate || m_rowDelegate) continue;
             const QModelIndex index = sourceIndex(row, geometry.column);

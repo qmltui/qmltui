@@ -188,7 +188,7 @@ inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVa
     put(QStringLiteral("enabled"), ClaimsEnabled, enabled, enabled);
     put(QStringLiteral("checkable"), ClaimsCheckable, checkable, !checkable);
     put(QStringLiteral("modelIndex"), ClaimsModelIndex,
-        QVariant::fromValue(QModelIndex(index)), !checkable);
+        QVariant::fromValue(QModelIndex(index)), !index.isValid());
 }
 
 // For callers with nowhere to cache the mask; resolves it per call, as before.

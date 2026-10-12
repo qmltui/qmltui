@@ -1,4 +1,5 @@
 #include <Qamui/Core/items/Column.h>
+#include <algorithm>
 
 namespace qamui {
 
@@ -9,8 +10,9 @@ Column::Column(QObject *parent) : Item(parent) {
 Column::~Column() = default;
 
 void Column::setSpacing(int spacing) {
-    if (m_spacing == spacing) return;
-    m_spacing = spacing;
+    const int sanitized = (std::max)(0, spacing);
+    if (m_spacing == sanitized) return;
+    m_spacing = sanitized;
     emit spacingChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
     notifyImplicitSizeIfChanged();

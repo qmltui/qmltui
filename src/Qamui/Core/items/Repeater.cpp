@@ -83,6 +83,8 @@ void Repeater::clearItems() {
     m_createdItems.clear();
     m_contexts.clear();
     m_rowMaps.clear();
+    m_roleMap.clear();
+    m_claimedNames = 0;
 }
 
 void Repeater::disconnectModelSignals()
@@ -215,22 +217,20 @@ void Repeater::generateItems() {
             QAbstractItemModel* model = qobject_cast<QAbstractItemModel*>(modelObj);
             if (model) {
                 DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
-                auto buildRoleMap = [](QAbstractItemModel* m) {
-                    QHash<int, QString> roleMap;
-                    const QHash<int, QByteArray> roles = m->roleNames();
-                    for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
-                        roleMap.insert(it.key(), QString::fromUtf8(it.value()));
-                    }
-                    return roleMap;
-                };
+                m_roleMap.clear();
+                const QHash<int, QByteArray> roles = model->roleNames();
+                for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
+                    m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
+                }
+                m_claimedNames = NumericItemRoles::claimedNames(model);
 
                 const quint64 generation = m_modelGeneration;
                 QPointer<QAbstractItemModel> guardedModel(model);
-                m_modelConnections.append(connect(model, &QAbstractItemModel::dataChanged, this, [this, guardedModel, generation, buildRoleMap](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &changedRoles) {
+                m_modelConnections.append(connect(model, &QAbstractItemModel::dataChanged, this, [this, guardedModel, generation](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &changedRoles) {
                     if (!guardedModel || generation != m_modelGeneration
                         || guardedModel.data() != m_objectModel.data()) return;
                     if (topLeft.parent() != m_rootIndex) return;
-                    const QHash<int, QString> roleMap = buildRoleMap(guardedModel);
+                    const QHash<int, QString> &roleMap = m_roleMap;
                     int first = topLeft.row();
                     int last = bottomRight.row();
                     for (int row = first; row <= last; ++row) {
@@ -248,7 +248,7 @@ void Repeater::generateItems() {
                                 setPropertyIfExists(item, it.value().toUtf8().constData(), val);
                             }
                             QVariantMap standard;
-                            NumericItemRoles::apply(guardedModel, modelIndex, standard, true);
+                            NumericItemRoles::apply(guardedModel, modelIndex, standard, true, m_claimedNames);
                             for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
                                 if (rowMap) rowMap->insert(it.key(), it.value());
                                 DelegateUtils::setContextProperty(m_delegate, ctx, it.key(), it.value());
@@ -297,8 +297,8 @@ void Repeater::generateItems() {
                     generateItems();
                 }));
 
-                const QHash<int, QString> roleMap = buildRoleMap(model);
-                int rowCount = std::max(0, model->rowCount(m_rootIndex));
+                const QHash<int, QString> &roleMap = m_roleMap;
+                int rowCount = (std::max)(0, model->rowCount(m_rootIndex));
                 for (int i = 0; i < rowCount; ++i) {
                     QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
                     const QModelIndex modelIndex = model->index(i, 0, m_rootIndex);
@@ -310,7 +310,7 @@ void Repeater::generateItems() {
                         initialProps[it.value()] = val;
                     }
                     QVariantMap standard;
-                    NumericItemRoles::apply(model, modelIndex, standard);
+                    NumericItemRoles::apply(model, modelIndex, standard, false, m_claimedNames);
                     for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
                         rowMap->insert(it.key(), it.value());
                         initialProps[it.key()] = it.value();
@@ -375,11 +375,14 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
     Item* parentVis = parentItem();
     if (!parentVis || !m_delegate) return;
 
-    QHash<int, QString> roleMap;
-    const QHash<int, QByteArray> roles = model->roleNames();
-    for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
-        roleMap.insert(it.key(), QString::fromUtf8(it.value()));
+    if (m_roleMap.isEmpty()) {
+        const QHash<int, QByteArray> roles = model->roleNames();
+        for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
+            m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
+        }
+        m_claimedNames = NumericItemRoles::claimedNames(model);
     }
+    const QHash<int, QString> &roleMap = m_roleMap;
 
     for (int i = first; i <= last; ++i) {
         QQmlPropertyMap* rowMap = new QQmlPropertyMap(this);
@@ -392,7 +395,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
             initialProps[it.value()] = val;
         }
         QVariantMap standard;
-        NumericItemRoles::apply(model, modelIndex, standard);
+        NumericItemRoles::apply(model, modelIndex, standard, false, m_claimedNames);
         for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
             rowMap->insert(it.key(), it.value());
             initialProps[it.key()] = it.value();

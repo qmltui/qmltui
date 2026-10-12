@@ -110,7 +110,7 @@ void Scrollback::setDelegate(QQmlComponent* delegate) {
 }
 
 void Scrollback::setSpacing(int spacing) {
-    spacing = std::max(0, spacing);
+    spacing = (std::max)(0, spacing);
     if (m_spacing == spacing) return;
     m_spacing = spacing;
     emit spacingChanged();
@@ -250,7 +250,7 @@ bool Scrollback::submitBatch(Item* item, Terminal* output) {
     const int separatorHeight = separator ? resolvedHeight(separator) : 0;
 
     TextGridBuffer buffer;
-    if (!buffer.resize(std::max(itemWidth, separatorWidth), separatorHeight + spacing + itemHeight))
+    if (!buffer.resize((std::max)(itemWidth, separatorWidth), separatorHeight + spacing + itemHeight))
         return reportRejection(QStringLiteral("Scrollback item is too large to paint"));
     if (separator) {
         ItemPaintTraversal::paintSubtree(separator, buffer, 0, 0,
@@ -310,6 +310,12 @@ int Scrollback::appendRows(int first, int last) {
     if (!m_model || !m_delegate || !output) return first;
 
     const QHash<int, QByteArray> roles = m_model->roleNames();
+    QList<std::pair<int, QString>> roleList;
+    roleList.reserve(roles.size());
+    for (auto role = roles.cbegin(); role != roles.cend(); ++role) {
+        roleList.append({role.key(), QString::fromUtf8(role.value())});
+    }
+
     for (int row = first; row <= last; ++row) {
         const QModelIndex index = m_model->index(row, 0);
         QQmlComponent* rowDelegate = delegateForRow(row);
@@ -318,9 +324,8 @@ int Scrollback::appendRows(int first, int last) {
         QVariantMap properties;
         QVariantMap modelMap;
         properties.insert(QStringLiteral("index"), row);
-        for (auto role = roles.cbegin(); role != roles.cend(); ++role) {
-            const QString roleName = QString::fromUtf8(role.value());
-            const QVariant value = m_model->data(index, role.key());
+        for (const auto& [roleKey, roleName] : roleList) {
+            const QVariant value = m_model->data(index, roleKey);
             properties.insert(roleName, value);
             modelMap.insert(roleName, value);
         }
@@ -466,9 +471,10 @@ QQmlComponent* Scrollback::delegateForRow(int row) const {
     const QModelIndex modelIndex = m_model->index(row, 0);
     const QString roleName = m_delegate->property("role").toString();
     QVariant roleValue;
+    const QByteArray roleUtf8 = roleName.toUtf8();
     const QHash<int, QByteArray> roles = m_model->roleNames();
     for (auto role = roles.cbegin(); role != roles.cend(); ++role) {
-        if (role.value() == roleName.toUtf8()) {
+        if (role.value() == roleUtf8) {
             roleValue = m_model->data(modelIndex, role.key());
             break;
         }

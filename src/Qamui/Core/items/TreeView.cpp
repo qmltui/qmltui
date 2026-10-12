@@ -62,10 +62,17 @@ void TreeView::setModel(const QVariant &model) {
 
     if (QAbstractItemModel *cppModel = qobject_cast<QAbstractItemModel*>(obj)) {
         m_cppModel = cppModel;
+        m_roleNameStrings.clear();
+        const QHash<int, QByteArray> roles = m_cppModel->roleNames();
+        for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+            m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
+        m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
         connect(m_cppModel.data(), &QObject::destroyed, this, [this]() {
             m_cppModel.clear();
             m_modelVariant.clear();
             m_visibleNodes.clear();
+            m_roleNameStrings.clear();
+            m_claimedNames = 0;
             clearDelegateItems();
             emit modelChanged();
             emit currentIndexChanged();
@@ -80,6 +87,13 @@ void TreeView::setModel(const QVariant &model) {
         connect(m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this, invalidate]() {
             // Persistent indexes are invalid after a reset; nothing is expanded.
             m_expandedIndexes.clear();
+            m_roleNameStrings.clear();
+            if (m_cppModel) {
+                const QHash<int, QByteArray> roles = m_cppModel->roleNames();
+                for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+                    m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
+                m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
+            }
             invalidate();
         });
         connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
@@ -545,12 +559,17 @@ void TreeView::fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &i
     QString name = model->data(index, Qt::DisplayRole).toString();
     if (name.isEmpty()) name = QStringLiteral("Item %1").arg(index.row());
     QVariantMap rawData;
-    const QHash<int, QByteArray> roles = model->roleNames();
-    for (auto it = roles.cbegin(); it != roles.cend(); ++it)
-        rawData[QString::fromUtf8(it.value())] = model->data(index, it.key());
+    if (m_roleNameStrings.isEmpty()) {
+        const QHash<int, QByteArray> roles = model->roleNames();
+        for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+            m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
+        m_claimedNames = NumericItemRoles::claimedNames(model);
+    }
+    for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it)
+        rawData[it.value()] = model->data(index, it.key());
     rawData[QStringLiteral("display")] = name;
     rawData[QStringLiteral("text")] = name;
-    NumericItemRoles::apply(model, index, rawData, includeUnsetRoles);
+    NumericItemRoles::apply(model, index, rawData, includeUnsetRoles, m_claimedNames);
     node.text = name;
     node.rawData = rawData;
     node.hasChildren = model->hasChildren(index) || model->rowCount(index) > 0;
@@ -1113,8 +1132,8 @@ ClipRect TreeView::clipRectForChildren(int absX, int absY,
     return clipRect.intersected(ClipRect{
         absX,
         absY,
-        std::max(0, width()),
-        std::max(0, height()),
+        (std::max)(0, width()),
+        (std::max)(0, height()),
     });
 }
 

@@ -9,11 +9,12 @@
 #include <QList>
 #include <QByteArray>
 #include <QString>
+#include <QPointer>
+#include <Qamui/Core/items/Gradient.h>
+#include <cstdint>
 #include <vector>
 
 namespace qamui {
-
-class Gradient;
 
 class QAMUI_CORE_EXPORT Text : public Item {
     Q_OBJECT
@@ -33,11 +34,11 @@ class QAMUI_CORE_EXPORT Text : public Item {
     Q_PROPERTY(qamui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
 
 public:
-    enum TextFormat {
+    enum TextFormat : uint8_t {
         PlainText,
         RichText,
         AnsiText,
-        AutoText
+        AutoText,
     };
     Q_ENUM(TextFormat)
 
@@ -76,7 +77,7 @@ public:
     TextFormat textFormat() const { return m_textFormat; }
     void setTextFormat(TextFormat format);
 
-    Gradient* gradient() const { return m_gradient; }
+    Gradient* gradient() const { return m_gradient.data(); }
     void setGradient(Gradient* gradient);
 
     int visualLength(const QString &line) const;
@@ -147,7 +148,7 @@ private:
     int m_horizontalAlignment = Qt::AlignLeft;
     int m_verticalAlignment = Qt::AlignTop;
     TextFormat m_textFormat = AutoText;
-    Gradient* m_gradient = nullptr;
+    QPointer<Gradient> m_gradient;
 };
 
 } // namespace qamui

@@ -2,6 +2,7 @@
 
 #include <Qamui/Core/primitives/QamuiExport.h>
 
+#include <cstdint>
 #include <QObject>
 #include <QQmlEngine>
 #include <Qamui/Core/items/Item.h>
@@ -14,13 +15,13 @@ class QAMUI_CORE_EXPORT AnchorLine : public QObject {
     QML_UNCREATABLE("AnchorLine is only available as a property of Item")
 
 public:
-    enum Edge {
+    enum Edge : uint8_t {
         Left,
         Right,
         Top,
         Bottom,
         HorizontalCenter,
-        VerticalCenter
+        VerticalCenter,
     };
     Q_ENUM(Edge)
 

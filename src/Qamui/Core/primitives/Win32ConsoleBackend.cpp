@@ -108,8 +108,8 @@ TerminalBackend::WriteStatus Win32ConsoleBackend::writeSome(const char* data, si
         return WriteStatus::Error;
     while (offset < size) {
         const size_t remaining = size - offset;
-        const DWORD chunk = static_cast<DWORD>(std::min(remaining,
-            static_cast<size_t>(std::numeric_limits<DWORD>::max())));
+        const DWORD chunk = static_cast<DWORD>((std::min)(remaining,
+            static_cast<size_t>((std::numeric_limits<DWORD>::max)())));
         DWORD written = 0;
         if (!WriteFile(toHandle(m_output), data + offset, chunk, &written, nullptr) || written == 0)
             return WriteStatus::Error;

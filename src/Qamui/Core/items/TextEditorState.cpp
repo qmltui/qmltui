@@ -7,11 +7,11 @@
 namespace qamui {
 
 int TextEditorState::selectionStart() const {
-    return std::min(m_cursorPosition, m_selectionAnchor);
+    return (std::min)(m_cursorPosition, m_selectionAnchor);
 }
 
 int TextEditorState::selectionEnd() const {
-    return std::max(m_cursorPosition, m_selectionAnchor);
+    return (std::max)(m_cursorPosition, m_selectionAnchor);
 }
 
 QString TextEditorState::selectedText() const {
@@ -274,7 +274,7 @@ int TextEditorState::columnForPosition(const QString &text, int position) {
 }
 
 int TextEditorState::positionForColumn(const QString &text, int column) {
-    const int target = std::max(0, column);
+    const int target = (std::max)(0, column);
     int width = 0;
     int position = 0;
     GraphemeIterator iterator(text);

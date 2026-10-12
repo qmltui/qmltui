@@ -82,6 +82,10 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
         QMutexLocker lock(&router.mutex);
         previousHandler = router.previousHandler;
         if (router.alternateScreenSessionCount > 0 && type != QtFatalMsg) {
+            constexpr int kMaxBufferedMessages = 500;
+            if (router.messages.size() >= kMaxBufferedMessages) {
+                router.messages.removeFirst();
+            }
             router.messages.append(BufferedMessage{
                 type,
                 message,

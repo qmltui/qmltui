@@ -7,6 +7,7 @@
 #include <QList>
 #include <QMetaObject>
 #include <QPointer>
+#include <cstdint>
 #include <QUrl>
 #include <QQmlComponent>
 #include <QQmlParserStatus>
@@ -31,11 +32,11 @@ class QAMUI_CORE_EXPORT Loader : public Item, public QQmlParserStatus {
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
 
 public:
-    enum Status {
+    enum Status : uint8_t {
         Null = QQmlComponent::Null,
         Ready = QQmlComponent::Ready,
         Loading = QQmlComponent::Loading,
-        Error = QQmlComponent::Error
+        Error = QQmlComponent::Error,
     };
     Q_ENUM(Status)
 

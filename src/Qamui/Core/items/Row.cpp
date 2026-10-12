@@ -1,4 +1,5 @@
 #include <Qamui/Core/items/Row.h>
+#include <algorithm>
 
 namespace qamui {
 
@@ -9,8 +10,9 @@ Row::Row(QObject *parent) : Item(parent) {
 Row::~Row() = default;
 
 void Row::setSpacing(int spacing) {
-    if (m_spacing == spacing) return;
-    m_spacing = spacing;
+    const int sanitized = (std::max)(0, spacing);
+    if (m_spacing == sanitized) return;
+    m_spacing = sanitized;
     emit spacingChanged();
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
     notifyImplicitSizeIfChanged();

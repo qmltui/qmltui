@@ -9,6 +9,7 @@
 #include <QThread>
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <iterator>
 #include <cstring>
@@ -45,9 +46,10 @@ public:
     // Async-signal-safe: one write(2) on the self-pipe.
     static void notify(Code code)
     {
-        if (s_pipe[1] != -1) {
+        const int fd = s_pipe[1].load(std::memory_order_relaxed);
+        if (fd != -1) {
             const char wake = code;
-            const ssize_t result = ::write(s_pipe[1], &wake, 1);
+            const ssize_t result = ::write(fd, &wake, 1);
             (void)result;
         }
     }
@@ -80,11 +82,13 @@ private:
     {
         if (m_installed)
             return;
-        if (::pipe(s_pipe) != 0) {
-            s_pipe[0] = s_pipe[1] = -1;
+        int fds[2] = {-1, -1};
+        if (::pipe(fds) != 0) {
+            s_pipe[0].store(-1, std::memory_order_relaxed);
+            s_pipe[1].store(-1, std::memory_order_relaxed);
             return;
         }
-        for (int fd : s_pipe) {
+        for (int fd : fds) {
             int flags = ::fcntl(fd, F_GETFD);
             if (flags != -1)
                 ::fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
@@ -92,6 +96,8 @@ private:
             if (flags != -1)
                 ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
         }
+        s_pipe[0].store(fds[0], std::memory_order_release);
+        s_pipe[1].store(fds[1], std::memory_order_release);
         struct sigaction action {};
         action.sa_handler = &SignalBridge::handler;
         sigemptyset(&action.sa_mask);
@@ -101,13 +107,14 @@ private:
             return;
         }
         m_installed = true;
-        m_notifier = new QSocketNotifier(s_pipe[0], QSocketNotifier::Read, this);
+        m_notifier = new QSocketNotifier(s_pipe[0].load(std::memory_order_relaxed), QSocketNotifier::Read, this);
         connect(m_notifier, &QSocketNotifier::activated, this, [this] {
             char buffer[128];
             bool windowChanged = false;
             bool resumed = false;
             ssize_t count = 0;
-            while ((count = ::read(s_pipe[0], buffer, sizeof buffer)) > 0) {
+            const int readFd = s_pipe[0].load(std::memory_order_relaxed);
+            while (readFd != -1 && (count = ::read(readFd, buffer, sizeof buffer)) > 0) {
                 // Drain every pending wake-up before notifying once per kind.
                 for (ssize_t i = 0; i < count; ++i) {
                     if (buffer[i] == Continued) resumed = true;
@@ -135,10 +142,10 @@ private:
 
     void closePipe()
     {
-        for (int& fd : s_pipe) {
-            if (fd != -1) {
-                ::close(fd);
-                fd = -1;
+        for (auto& fd : s_pipe) {
+            const int val = fd.exchange(-1, std::memory_order_acq_rel);
+            if (val != -1) {
+                ::close(val);
             }
         }
     }
@@ -150,14 +157,14 @@ private:
         errno = savedErrno;
     }
 
-    static int s_pipe[2];
+    static std::atomic<int> s_pipe[2];
     QSet<QObject*> m_listeners;
     QSocketNotifier* m_notifier = nullptr;
     struct sigaction m_previousAction {};
     bool m_installed = false;
 };
 
-int SignalBridge::s_pipe[2] = {-1, -1};
+std::atomic<int> SignalBridge::s_pipe[2] = {{-1}, {-1}};
 
 // Emergency restore ----------------------------------------------------------
 // While a backend is in raw mode the terminal belongs to the application:
@@ -217,6 +224,7 @@ void restoreTerminalFromSignal()
 {
     if (!g_emergency.active)
         return;
+    std::atomic_thread_fence(std::memory_order_acquire);
     if (g_emergency.keyboardProtocol) {
         // Pop our own entry only, and only once: after a stop the engine
         // pushes again on resume and re-arms this flag.
@@ -274,6 +282,7 @@ void installEmergencyHandlers(int inputFd, int outputFd, const termios& original
     g_emergency.outputFd = outputFd;
     g_emergency.original = original;
     g_emergency.raw = raw;
+    std::atomic_thread_fence(std::memory_order_release);
     g_emergency.active = 1;
     if (g_handlersInstalled)
         return;   // a second backend in raw mode takes over the state only
@@ -294,6 +303,7 @@ void uninstallEmergencyHandlers()
 {
     g_emergency.active = 0;
     g_emergency.keyboardProtocol = 0;
+    std::atomic_thread_fence(std::memory_order_release);
     if (!g_handlersInstalled)
         return;
     for (size_t i = 0; i < std::size(kFatalSignals); ++i)
@@ -388,7 +398,7 @@ bool PosixTerminalBackend::writeAll(std::string& pending, int timeoutMs)
     timer.start();
     while (!pending.empty()) {
         const ssize_t written = ::write(m_outputFd, pending.data(),
-                                        std::min(pending.size(), size_t(65536)));
+                                        (std::min)(pending.size(), size_t(65536)));
         if (written > 0)
             pending.erase(0, static_cast<size_t>(written));
         else if (written == 0 || (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK))

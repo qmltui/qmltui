@@ -33,8 +33,8 @@ public:
     int minimumHeight = 0;
     int preferredWidth = -1;
     int preferredHeight = -1;
-    int maximumWidth = std::numeric_limits<int>::max();
-    int maximumHeight = std::numeric_limits<int>::max();
+    int maximumWidth = (std::numeric_limits<int>::max)();
+    int maximumHeight = (std::numeric_limits<int>::max)();
     bool fillWidth = false;
     bool fillHeight = false;
     int horizontalStretch = 1;

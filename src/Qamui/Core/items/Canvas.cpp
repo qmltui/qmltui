@@ -307,7 +307,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 
 void Canvas::resizeBuffer() const {
     if (m_renderMode == RenderMode::Braille) {
-        const size_t needed = static_cast<size_t>(std::max(0, width()) * std::max(0, height()));
+        const size_t needed = static_cast<size_t>((std::max)(0, width()) * (std::max)(0, height()));
         if (m_cells.size() != needed || m_cellColors.size() != needed) {
             m_cells.resize(needed, 0x00);
             m_cellColors.resize(needed, 0x00000000);
@@ -316,7 +316,7 @@ void Canvas::resizeBuffer() const {
         if (m_cellAccumulators.size() != accumulatorsNeeded)
             m_cellAccumulators.assign(accumulatorsNeeded, CellAccumulator{});
     } else {
-        const size_t needed = static_cast<size_t>(std::max(0, width()) * (std::max(0, height()) * half_block::SubpixelsY));
+        const size_t needed = static_cast<size_t>((std::max)(0, width()) * ((std::max)(0, height()) * half_block::SubpixelsY));
         if (m_pixelColors.size() != needed) {
             m_pixelColors.resize(needed, 0x00000000);
             m_pixelSet.resize(needed, false);

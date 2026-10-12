@@ -5,8 +5,10 @@
 #include <Qamui/Core/engine/KeyEvent.h>
 #include <Qamui/Core/items/Item.h>
 #include <QObject>
+#include <QPointer>
 #include <QQmlEngine>
 #include <QQmlListProperty>
+#include <cstdint>
 
 namespace qamui {
 
@@ -17,7 +19,7 @@ class QAMUI_CORE_EXPORT Keys : public QObject {
     QML_ATTACHED(Keys)
 
 public:
-    enum Priority { BeforeItem, AfterItem };
+    enum Priority : uint8_t { BeforeItem, AfterItem, };
     Q_ENUM(Priority)
 
     Q_PROPERTY(Priority priority READ priority WRITE setPriority NOTIFY priorityChanged)
@@ -35,15 +37,15 @@ public:
         }
     }
 
-    QQmlListProperty<qamui::Item> forwardTo() {
-        return QQmlListProperty<qamui::Item>(this, this,
+    QQmlListProperty<qamui::Item> forwardTo() const {
+        return QQmlListProperty<qamui::Item>(const_cast<Keys*>(this), const_cast<Keys*>(this),
                                             &Keys::appendForwardTo,
                                             &Keys::forwardToCount,
                                             &Keys::forwardToAt,
                                             &Keys::clearForwardTo);
     }
 
-    const QList<qamui::Item*>& forwardToItems() const { return m_forwardToItems; }
+    const QList<QPointer<qamui::Item>>& forwardToItems() const { return m_forwardToItems; }
 
 signals:
     void priorityChanged();
@@ -65,17 +67,17 @@ private:
         }
     }
     static qsizetype forwardToCount(QQmlListProperty<qamui::Item> *list) {
-        return static_cast<Keys *>(list->object)->m_forwardToItems.count();
+        return static_cast<Keys *>(list->object)->m_forwardToItems.size();
     }
     static qamui::Item *forwardToAt(QQmlListProperty<qamui::Item> *list, qsizetype index) {
-        return static_cast<Keys *>(list->object)->m_forwardToItems.at(index);
+        return static_cast<Keys *>(list->object)->m_forwardToItems.at(index).data();
     }
     static void clearForwardTo(QQmlListProperty<qamui::Item> *list) {
         static_cast<Keys *>(list->object)->m_forwardToItems.clear();
     }
 
     Priority m_priority;
-    QList<qamui::Item*> m_forwardToItems;
+    QList<QPointer<qamui::Item>> m_forwardToItems;
 };
 
 } // namespace qamui

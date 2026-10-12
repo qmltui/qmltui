@@ -4,6 +4,7 @@
 #include <QByteArrayView>
 #include <QVarLengthArray>
 #include <Qt>
+#include <cstdint>
 #include <functional>
 #include <string>
 
@@ -27,7 +28,7 @@ public:
     using DetailedMouseCallback = std::function<void(const MouseInput& input)>;
 
     struct ControlSequence {
-        enum Kind { Csi, Ss3, Apc, Osc, Dcs } kind = Csi;
+        enum Kind : uint8_t { Csi, Ss3, Apc, Osc, Dcs, } kind = Csi;
         char privateMarker = 0;
         QVarLengthArray<QVarLengthArray<int, 3>, 8> params;
         QByteArrayView intermediates;

@@ -145,8 +145,8 @@ private:
 
     void flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
     void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
-    static void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node,
-                                  bool includeUnsetRoles = false);
+    void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node,
+                           bool includeUnsetRoles = false);
     static QString modelPath(const QAbstractItemModel *model, const QModelIndex &index);
     void ensureLoaded(VisibleNode &node);
     static bool sameNode(const VisibleNode &a, const VisibleNode &b);
@@ -223,7 +223,8 @@ private:
     QString m_expandedIcon = "[-] ";
     QString m_collapsedIcon = "[+] ";
 
-
+    QHash<int, QString> m_roleNameStrings;
+    quint16 m_claimedNames = 0;
 };
 
 } // namespace qamui

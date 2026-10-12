@@ -18,14 +18,19 @@ void Rectangle::setColor(Color color) {
 }
 
 void Rectangle::setGradient(Gradient *gradient) {
-  if (m_gradient == gradient)
+  if (m_gradient.data() == gradient)
     return;
   if (m_gradient) {
-    disconnect(m_gradient, nullptr, this, nullptr);
+    disconnect(m_gradient.data(), nullptr, this, nullptr);
   }
   m_gradient = gradient;
   if (m_gradient) {
-    connect(m_gradient, &Gradient::updated, this, [this]() { markDirty(); });
+    connect(m_gradient.data(), &Gradient::updated, this, [this]() { markDirty(); });
+    connect(m_gradient.data(), &QObject::destroyed, this, [this]() {
+      m_gradient = nullptr;
+      emit gradientChanged();
+      markDirty();
+    });
   }
   emit gradientChanged();
   markDirty();

@@ -71,9 +71,7 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
         }
 
         if (!ev.isAccepted() && attached) {
-            QList<QPointer<Item>> forwardedItems;
-            for (Item *forwardedItem : attached->forwardToItems())
-                forwardedItems.append(forwardedItem);
+            const QList<QPointer<Item>> forwardedItems = attached->forwardToItems();
             for (const QPointer<Item> &forwardedGuard : forwardedItems) {
                 if (forwardedGuard && forwardedGuard->isEffectivelyEnabled()
                     && forwardedGuard->isEffectivelyVisible()) {
@@ -301,7 +299,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
     // 4. Outside-press arming for CloseOnOutsideClick scopes
     if (isButtonPress) {
         m_outsidePressArmedScope = nullptr;
-        for (int i = scopes.count() - 1; i >= 0; --i) {
+        for (int i = scopes.size() - 1; i >= 0; --i) {
             InputScope* scope = scopes[i];
             if (!scope || !scope->isScopeVisible() || !scope->closeOnOutsideClick()) continue;
             if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal)) continue;
@@ -320,7 +318,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
     }
 
     // 5. Scopes dispatch
-    for (int i = scopes.count() - 1; i >= 0; --i) {
+    for (int i = scopes.size() - 1; i >= 0; --i) {
         InputScope* scope = scopes[i];
         if (!scope || !scope->isScopeVisible()) continue;
         if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal)) continue;

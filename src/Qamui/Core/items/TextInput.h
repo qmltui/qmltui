@@ -6,6 +6,7 @@
 #include <Qamui/Core/items/TextEditorState.h>
 #include <QRegularExpression>
 #include <QString>
+#include <cstdint>
 namespace qamui { class ClockTimer; }
 #include <Qamui/Core/primitives/ColorMapper.h>
 
@@ -46,18 +47,18 @@ class QAMUI_CORE_EXPORT TextInput : public Item {
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
 
 public:
-    enum EchoMode {
+    enum EchoMode : uint8_t {
         Normal,
         Password,
-        NoEcho
+        NoEcho,
     };
     Q_ENUM(EchoMode)
 
-    enum CursorShape {
+    enum CursorShape : uint8_t {
         Block,
         Underline,
         Beam,
-        HollowBlock
+        HollowBlock,
     };
     Q_ENUM(CursorShape)
 

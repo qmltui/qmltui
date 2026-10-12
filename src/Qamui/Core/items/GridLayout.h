@@ -2,6 +2,7 @@
 
 #include <Qamui/Core/primitives/QamuiExport.h>
 
+#include <cstdint>
 #include <Qamui/Core/items/Item.h>
 
 namespace qamui {
@@ -17,7 +18,7 @@ class QAMUI_CORE_EXPORT GridLayout : public Item {
     Q_PROPERTY(Flow flow READ flow WRITE setFlow NOTIFY flowChanged)
 
 public:
-    enum Flow { LeftToRight, TopToBottom };
+    enum Flow : uint8_t { LeftToRight, TopToBottom, };
     Q_ENUM(Flow)
 
     explicit GridLayout(QObject *parent = nullptr);

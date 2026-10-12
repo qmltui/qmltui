@@ -44,8 +44,10 @@ public:
     bool write(const std::string& data);
 
     // Terminal dimensions in cells, with 80x24 as the fallback.
-    int getWidth() const;
-    int getHeight() const;
+    int width() const;
+    int height() const;
+    [[deprecated("Use width()")]] int getWidth() const { return width(); }
+    [[deprecated("Use height()")]] int getHeight() const { return height(); }
 
     int outputFd() const { return m_outputFd; }
 

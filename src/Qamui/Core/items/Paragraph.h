@@ -3,6 +3,7 @@
 #include <Qamui/Core/primitives/QamuiExport.h>
 
 #include <Qamui/Core/items/Item.h>
+#include <cstdint>
 #include <QString>
 #include <QStringList>
 #include <QList>
@@ -34,10 +35,10 @@ class QAMUI_CORE_EXPORT Paragraph : public Item {
     Q_PROPERTY(int scrollY READ scrollY WRITE setScrollY NOTIFY scrollYChanged)
 
 public:
-    enum TextFormat {
+    enum TextFormat : uint8_t {
         AutoText,
         PlainText,
-        RichText
+        RichText,
     };
     Q_ENUM(TextFormat)
 
@@ -82,7 +83,7 @@ private:
     void invalidateTextCache();
     FormattedLine parseRichLine(const QString &line) const;
     QList<FormattedLine> wordWrapFormatted(const FormattedLine &rawLine, int maxW) const;
-    QList<FormattedLine> getRenderedLines(int availW) const;
+    const QList<FormattedLine>& renderedLines(int availW) const;
 
     QString m_text;
     TextFormat m_textFormat = AutoText;

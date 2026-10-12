@@ -168,7 +168,7 @@ void GridView::disconnectModelSignals() {
 }
 
 int GridView::columnsPerRow() const {
-  return m_cellWidth > 0 ? std::max(1, width() / m_cellWidth) : 1;
+  return m_cellWidth > 0 ? (std::max)(1, width() / m_cellWidth) : 1;
 }
 
 void GridView::updateContentExtent() {
@@ -332,12 +332,12 @@ void GridView::rebuildViewport(bool force) {
   if (m_cellWidth > 0 && m_cellHeight > 0) {
     const int columns = columnsPerRow();
     const int viewportHeight =
-        std::max(1, height() - topPadding() - bottomPadding());
-    const int firstRow = std::max(0, contentY() / m_cellHeight);
+        (std::max)(1, height() - topPadding() - bottomPadding());
+    const int firstRow = (std::max)(0, contentY() / m_cellHeight);
     const int lastRow = (contentY() + viewportHeight - 1) / m_cellHeight;
     constexpr int overscanRows = 1;
-    first = std::max(0, (firstRow - overscanRows) * columns);
-    last = std::min(m_modelCount - 1, (lastRow + overscanRows + 1) * columns - 1);
+    first = (std::max)(0, (firstRow - overscanRows) * columns);
+    last = (std::min)(m_modelCount - 1, (lastRow + overscanRows + 1) * columns - 1);
   }
 
   if (!force && first == m_materializedFirst && last == m_materializedLast)
@@ -390,31 +390,15 @@ void GridView::generateItems() {
     return;
   }
 
-  if (m_model.canConvert<int>() &&
-      m_model.userType() != qMetaTypeId<QJSValue>()) {
-    m_modelCount = std::clamp(m_model.toInt(), 0, 10000);
-  } else if (m_model.canConvert<QVariantList>() ||
-             m_model.userType() == qMetaTypeId<QJSValue>()) {
-    if (m_model.userType() == qMetaTypeId<QJSValue>()) {
-      const QJSValue value = m_model.value<QJSValue>();
-      if (value.isArray()) {
-        const int length =
-            std::clamp(value.property("length").toInt(), 0, 10000);
-        m_listValues.reserve(length);
-        for (int index = 0; index < length; ++index)
-          m_listValues.append(value.property(index).toVariant());
-      }
-    } else {
-      m_listValues = m_model.toList().mid(0, 10000);
-    }
-    m_modelCount = int(m_listValues.size());
+  if (DelegateUtils::unpackStaticModel(m_model, m_modelCount, m_listValues)) {
+    // Model count and list values unpacked
   } else if (auto *model =
                  qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
     DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
     const QHash<int, QByteArray> roles = model->roleNames();
     for (auto it = roles.cbegin(); it != roles.cend(); ++it)
       m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
-    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+    m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
 
     const quint64 generation = m_modelGeneration;
     QPointer<QAbstractItemModel> guardedModel(model);
@@ -509,7 +493,7 @@ void GridView::generateItems() {
 
 void GridView::refreshFromModel() {
   if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
-    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+    m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
   clearItems();
   updateContentExtent();
   rebuildViewport(true);
@@ -518,7 +502,7 @@ void GridView::refreshFromModel() {
 void GridView::insertModelRows(QAbstractItemModel *model, int first, int last) {
   if (!model || !m_delegate || first < 0 || first > last)
     return;
-  m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+  m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
   const int count = last - first + 1;
   QMap<int, Item *> shifted;
   for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
@@ -533,10 +517,11 @@ void GridView::insertModelRows(QAbstractItemModel *model, int first, int last) {
 }
 
 void GridView::removeModelRows(int first, int last) {
+  if (first < 0 || first > last) return;
   if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
-    m_modelCount = std::max(0, model->rowCount(m_rootIndex));
+    m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
   else
-    m_modelCount = std::max(0, m_modelCount - (last - first + 1));
+    m_modelCount = (std::max)(0, m_modelCount - (last - first + 1));
   const int count = last - first + 1;
   QMap<int, Item *> shifted;
   for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {

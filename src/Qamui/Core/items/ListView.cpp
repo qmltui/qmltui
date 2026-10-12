@@ -124,8 +124,9 @@ void ListView::setOrientation(Qt::Orientation orientation) {
 }
 
 void ListView::setSpacing(int spacing) {
-    if (m_spacing == spacing) return;
-    m_spacing = spacing;
+    const int sanitized = (std::max)(0, spacing);
+    if (m_spacing == sanitized) return;
+    m_spacing = sanitized;
     emit spacingChanged();
     updateContentExtent();
     rebuildViewport(true);
@@ -186,6 +187,7 @@ void ListView::updateDelegateState(Item *item, int index)
 {
     if (!item)
         return;
+    DelegateUtils::setContextProperty(m_delegate, delegateContext(item), QStringLiteral("index"), index);
     setPropertyIfExists(item, "index", index);
     auto *attached = qobject_cast<ListViewAttached *>(
         qmlAttachedPropertiesObject<ListView>(item, true));
@@ -509,22 +511,8 @@ void ListView::generateItems() {
         return;
     }
 
-    if (m_model.canConvert<int>() && m_model.userType() != qMetaTypeId<QJSValue>()) {
-        m_modelCount = std::clamp(m_model.toInt(), 0, 10000);
-    } else if (m_model.canConvert<QVariantList>()
-               || m_model.userType() == qMetaTypeId<QJSValue>()) {
-        if (m_model.userType() == qMetaTypeId<QJSValue>()) {
-            const QJSValue value = m_model.value<QJSValue>();
-            if (value.isArray()) {
-                const int length = std::clamp(value.property("length").toInt(), 0, 10000);
-                m_listValues.reserve(length);
-                for (int index = 0; index < length; ++index)
-                    m_listValues.append(value.property(index).toVariant());
-            }
-        } else {
-            m_listValues = m_model.toList().mid(0, 10000);
-        }
-        m_modelCount = m_listValues.size();
+    if (DelegateUtils::unpackStaticModel(m_model, m_modelCount, m_listValues)) {
+        // Model count and list values unpacked
     } else if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data())) {
         DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
         const QHash<int, QByteArray> roles = model->roleNames();
@@ -642,6 +630,7 @@ void ListView::insertModelRows(QAbstractItemModel *model, int first, int last,
 }
 
 void ListView::removeModelRows(int first, int last) {
+    if (first < 0 || first > last) return;
     const int oldCurrentIndex = m_currentIndex;
     if (auto *model = qobject_cast<QAbstractItemModel *>(m_objectModel.data()))
         m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
@@ -650,7 +639,7 @@ void ListView::removeModelRows(int first, int last) {
     if (oldCurrentIndex > last)
         m_currentIndex = oldCurrentIndex - (last - first + 1);
     else if (oldCurrentIndex >= first)
-        m_currentIndex = std::min(first, m_modelCount - 1);
+        m_currentIndex = (std::min)(first, m_modelCount - 1);
     if (m_currentIndex != oldCurrentIndex)
         emit currentIndexChanged();
 

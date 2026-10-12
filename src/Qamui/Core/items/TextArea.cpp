@@ -5,6 +5,7 @@
 #include <Qamui/Core/primitives/ColorMapper.h>
 #include <Qamui/Core/primitives/UnicodeText.h>
 #include <Qamui/Core/items/Terminal.h>
+#include <QStringTokenizer>
 
 #include <algorithm>
 
@@ -22,11 +23,11 @@ TextArea::~TextArea() = default;
 void TextArea::applyEditorChange(const TextEditorState::Change &change) {
     if (change.text) {
         int maximumWidth = 0;
-        for (const QString &line : m_editor.text().split('\n'))
-            maximumWidth = std::max(maximumWidth, UnicodeText::displayWidth(line));
-        setImplicitWidth(std::max(
+        for (const auto line : QStringTokenizer{m_editor.text(), u'\n'})
+            maximumWidth = (std::max)(maximumWidth, UnicodeText::displayWidth(line));
+        setImplicitWidth((std::max)(
             1, maximumWidth + leftPadding() + rightPadding()));
-        setImplicitHeight(std::max(
+        setImplicitHeight((std::max)(
             1, static_cast<int>(m_editor.text().count('\n')) + 1
                 + topPadding() + bottomPadding()));
         emit textChanged();
@@ -83,7 +84,7 @@ void TextArea::setReadOnly(bool readOnly) {
 }
 
 void TextArea::setContentX(int x) {
-    const int clamped = std::max(0, x);
+    const int clamped = (std::max)(0, x);
     if (m_contentX == clamped) return;
     m_contentX = clamped;
     emit contentXChanged();
@@ -91,9 +92,9 @@ void TextArea::setContentX(int x) {
 }
 
 void TextArea::setContentY(int y) {
-    const int maximum = std::max(
+    const int maximum = (std::max)(
         0, static_cast<int>(m_editor.text().count('\n')) + 1
-            - std::max(1, height() - topPadding() - bottomPadding()));
+            - (std::max)(1, height() - topPadding() - bottomPadding()));
     const int clamped = std::clamp(y, 0, maximum);
     if (m_contentY == clamped) return;
     m_contentY = clamped;
@@ -144,18 +145,26 @@ void TextArea::lineColumnForPosition(int position, int &line, int &column) const
 }
 
 int TextArea::positionForLineColumn(int line, int column) const {
-    const QStringList lines = m_editor.text().split('\n');
-    if (lines.isEmpty()) return 0;
-    line = std::clamp(line, 0, static_cast<int>(lines.size()) - 1);
+    const QString &text = m_editor.text();
+    if (text.isEmpty()) return 0;
+    line = std::clamp(line, 0, static_cast<int>(text.count(u'\n')));
+    int currentLine = 0;
     int position = 0;
-    for (int index = 0; index < line; ++index)
-        position += lines[index].size() + 1;
-    return position + TextEditorState::positionForColumn(lines[line], column);
+    QString targetLineStr;
+    for (const auto lineView : QStringTokenizer{text, u'\n'}) {
+        if (currentLine == line) {
+            targetLineStr = lineView.toString();
+            break;
+        }
+        position += lineView.size() + 1;
+        ++currentLine;
+    }
+    return position + TextEditorState::positionForColumn(targetLineStr, column);
 }
 
 int TextArea::lineStart(int position) const {
     const int newline = m_editor.text().lastIndexOf(
-        '\n', std::max(0, position - 1));
+        '\n', (std::max)(0, position - 1));
     return newline < 0 ? 0 : newline + 1;
 }
 
@@ -172,9 +181,9 @@ void TextArea::ensureCursorVisible() {
     int line = 0;
     int column = 0;
     lineColumnForPosition(m_editor.cursorPosition(), line, column);
-    const int viewportWidth = std::max(
+    const int viewportWidth = (std::max)(
         1, width() - leftPadding() - rightPadding());
-    const int viewportHeight = std::max(
+    const int viewportHeight = (std::max)(
         1, height() - topPadding() - bottomPadding());
     if (line < m_contentY) setContentY(line);
     else if (line >= m_contentY + viewportHeight)
@@ -239,7 +248,7 @@ void TextArea::keyPressEvent(KeyEvent* event) {
     } else if (key == Qt::Key_PageUp || key == Qt::Key_PageDown) {
         int line = 0, column = 0;
         lineColumnForPosition(m_editor.cursorPosition(), line, column);
-        const int page = std::max(
+        const int page = (std::max)(
             1, height() - topPadding() - bottomPadding());
         change = m_editor.moveCursor(positionForLineColumn(
             line + (key == Qt::Key_PageUp ? -page : page), column), shift);
@@ -281,16 +290,16 @@ void TextArea::mouseMoveEvent(MouseEvent *event) {
 }
 
 int TextArea::positionAtMouse(int x, int y) const {
-    const int line = m_contentY + std::max(0, y - topPadding());
-    const int column = m_contentX + std::max(0, x - leftPadding());
+    const int line = m_contentY + (std::max)(0, y - topPadding());
+    const int column = m_contentX + (std::max)(0, x - leftPadding());
     return positionForLineColumn(line, column);
 }
 
 void TextArea::paint(
     TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    const int viewportWidth = std::max(
+    const int viewportWidth = (std::max)(
         0, width() - leftPadding() - rightPadding());
-    const int viewportHeight = std::max(
+    const int viewportHeight = (std::max)(
         0, height() - topPadding() - bottomPadding());
     const ClipRect contentClip = clipRect.intersected(
         ClipRect{absX + leftPadding(), absY + topPadding(),
@@ -302,21 +311,24 @@ void TextArea::paint(
     const TextAttribute displayAttributes = !isEffectivelyEnabled()
         || (m_editor.text().isEmpty() && !activeFocus())
         ? TextAttribute::Dim : TextAttribute::None;
-    const QStringList lines = displayText.split('\n');
+    int currentLine = 0;
     int globalOffset = 0;
-    for (int line = 0; line < m_contentY && line < lines.size(); ++line)
-        globalOffset += lines[line].size() + 1;
+    for (const auto lineView : QStringTokenizer{displayText, u'\n'}) {
+        if (currentLine < m_contentY) {
+            globalOffset += lineView.size() + 1;
+            ++currentLine;
+            continue;
+        }
+        const int visibleLine = currentLine - m_contentY;
+        if (visibleLine >= viewportHeight) break;
 
-    for (int visibleLine = 0; visibleLine < viewportHeight; ++visibleLine) {
-        const int lineIndex = m_contentY + visibleLine;
-        if (lineIndex >= lines.size()) break;
         const int y = absY + topPadding() + visibleLine;
         int displayColumn = 0;
-        GraphemeIterator iterator(lines[lineIndex], /*sanitizeControls=*/true);
+        GraphemeIterator iterator(lineView, /*sanitizeControls=*/true);
         GraphemeRef cluster;
         while (iterator.next(cluster)) {
             const int x = absX + leftPadding() + displayColumn - m_contentX;
-            const int width = std::max(1, cluster.width);
+            const int width = (std::max)(1, cluster.width);
             if (x >= absX + leftPadding()
                 && x + width <= absX + leftPadding() + viewportWidth
                 && contentClip.contains(x, y)
@@ -336,7 +348,8 @@ void TextArea::paint(
             }
             displayColumn += cluster.width;
         }
-        globalOffset += lines[lineIndex].size() + 1;
+        globalOffset += lineView.size() + 1;
+        ++currentLine;
     }
 
     if (activeFocus()) {

@@ -313,14 +313,14 @@ int Terminal::implicitHeight() const {
     for (Item* child : childItems()) {
         if (!child || !child->visible()) continue;
         int childH = child->height() > 0 ? child->height() : child->implicitHeight();
-        maxBottom = std::max(maxBottom, child->y() + childH);
+        maxBottom = (std::max)(maxBottom, child->y() + childH);
     }
     return maxBottom;
 }
 
 int Terminal::height() const {
     if (m_mode == Mode::Inline)
-        return std::clamp(implicitHeight(), 0, std::max(0, terminalHeight() - 1));
+        return std::clamp(implicitHeight(), 0, (std::max)(0, terminalHeight() - 1));
     return terminalHeight();
 }
 
@@ -350,10 +350,10 @@ void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
     // to occlude: skipping the fill leaves the cells at their default and emits
     // fewer bytes for the same picture.
     if (m_background == 0 || ColorMapper::isTransparent(m_background)) return;
-    const int right = std::min(buffer.width(), absX + width());
-    const int bottom = std::min(buffer.height(), absY + height());
-    for (int y = std::max(0, absY); y < bottom; ++y) {
-        for (int x = std::max(0, absX); x < right; ++x) {
+    const int right = (std::min)(buffer.width(), absX + width());
+    const int bottom = (std::min)(buffer.height(), absY + height());
+    for (int y = (std::max)(0, absY); y < bottom; ++y) {
+        for (int x = (std::max)(0, absX); x < right; ++x) {
             if (!clipRect.contains(x, y)) continue;
             Cell& cell = buffer.cellAt(x, y);
             cell.bgColor = m_background;

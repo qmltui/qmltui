@@ -251,12 +251,12 @@ void TerminalEngine::stop() {
 }
 
 void TerminalEngine::requestRender() {
-  if (m_stopped) return;
+  if (m_stopped.load()) return;
   if (m_renderPending.exchange(true))
     return;
   // Frame pacing is wall-clock; under the virtual clock a requested render
   // must never be withheld by a paused timeline.
-  if (!Clock::isVirtual() && QThread::currentThread() == thread() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
+  if (QThread::currentThread() == thread() && !Clock::isVirtual() && m_frameIntervalMs > 0 && m_lastCommit.isValid()) {
     const qint64 sinceCommit = m_lastCommit.elapsed();
     if (sinceCommit < m_frameIntervalMs) {
       m_paceTimer.start(static_cast<int>(m_frameIntervalMs - sinceCommit));
@@ -268,8 +268,8 @@ void TerminalEngine::requestRender() {
 }
 
 void TerminalEngine::setMaxFrameRate(int framesPerSecond) {
-  m_maxFrameRate = std::max(0, framesPerSecond);
-  m_frameIntervalMs = m_maxFrameRate > 0 ? std::max(1, 1000 / m_maxFrameRate) : 0;
+  m_maxFrameRate = (std::max)(0, framesPerSecond);
+  m_frameIntervalMs = m_maxFrameRate > 0 ? (std::max)(1, 1000 / m_maxFrameRate) : 0;
   if (m_frameIntervalMs == 0 && m_paceTimer.isActive()) {
     m_paceTimer.stop();
     QMetaObject::invokeMethod(this, &TerminalEngine::renderFrame, Qt::QueuedConnection);
@@ -277,11 +277,11 @@ void TerminalEngine::setMaxFrameRate(int framesPerSecond) {
 }
 
 int TerminalEngine::terminalWidth() const {
-  return m_testViewportSize.isValid() ? m_testViewportSize.width() : m_device.getWidth();
+  return m_testViewportSize.isValid() ? m_testViewportSize.width() : m_device.width();
 }
 
 int TerminalEngine::terminalHeight() const {
-  return m_testViewportSize.isValid() ? m_testViewportSize.height() : m_device.getHeight();
+  return m_testViewportSize.isValid() ? m_testViewportSize.height() : m_device.height();
 }
 
 std::optional<TextGridBuffer> TerminalEngine::currentFrame() const {
@@ -460,9 +460,14 @@ Color TerminalEngine::parseOsc11Color(QByteArrayView payload) {
       uint b = parts[2].toUInt(&okB, 16);
       if (okR && okG && okB && !parts[0].isEmpty() && !parts[1].isEmpty() && !parts[2].isEmpty()) {
         auto scaleTo8Bit = [](uint val, qsizetype len) -> uint8_t {
-          if (len >= 2)
-            return static_cast<uint8_t>(val >> ((len - 2) * 4));
-          return static_cast<uint8_t>((val << 4) | val);
+          if (len <= 0)
+            return 0;
+          if (len == 1)
+            return static_cast<uint8_t>((val << 4) | val);
+          if (len == 2)
+            return static_cast<uint8_t>(val);
+          const int shift = (std::min)(static_cast<int>(len - 2) * 4, 24);
+          return static_cast<uint8_t>(val >> shift);
         };
         const uint8_t r8 = scaleTo8Bit(r, parts[0].size());
         const uint8_t g8 = scaleTo8Bit(g, parts[1].size());
@@ -631,7 +636,7 @@ void TerminalEngine::renderFrame() {
   m_lastFrameStats = stats;
   m_frameStatsTotals.frames += 1;
   m_frameStatsTotals.paintMicrosTotal += stats.paintMicros;
-  m_frameStatsTotals.paintMicrosMax = std::max(m_frameStatsTotals.paintMicrosMax, stats.paintMicros);
+  m_frameStatsTotals.paintMicrosMax = (std::max)(m_frameStatsTotals.paintMicrosMax, stats.paintMicros);
   m_frameStatsTotals.diffMicrosTotal += stats.diffMicros;
   m_frameStatsTotals.writeMicrosTotal += stats.writeMicros;
   m_frameStatsTotals.bytesTotal += stats.diffBytes;
@@ -843,7 +848,7 @@ bool TerminalEngine::submitScrollback(const TextGridBuffer& painted) {
 bool TerminalEngine::enqueueScrollback(std::string&& bytes, std::deque<ScrollbackRow>&& rows) {
     // Bytes and rows are accepted or rejected together so the history never
     // drifts from what the terminal received.
-    if (bytes.size() > ScrollbackQueueLimit - std::min(ScrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
+    if (bytes.size() > ScrollbackQueueLimit - (std::min)(ScrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
         return false;
     m_scrollback += bytes;
     if (m_scrollbackHistoryEnabled) {
@@ -953,7 +958,7 @@ void TerminalEngine::setScrollbackHistoryEnabled(bool enabled) {
 }
 
 void TerminalEngine::setScrollbackHistoryLimit(int rows) {
-    m_scrollbackHistoryLimit = std::max(0, rows);
+    m_scrollbackHistoryLimit = (std::max)(0, rows);
     trimScrollbackHistory();
 }
 
@@ -961,13 +966,13 @@ TextGridBuffer TerminalEngine::committedScrollback(quint64 fromTotalRow) const {
     TextGridBuffer buffer;
     const quint64 retained = m_committedScrollbackRows.size();
     const quint64 oldest = m_committedScrollbackTotal - retained;
-    const quint64 start = std::max(fromTotalRow, oldest);
+    const quint64 start = (std::max)(fromTotalRow, oldest);
     if (start >= m_committedScrollbackTotal) return buffer;
     const size_t first = static_cast<size_t>(start - oldest);
     const int height = static_cast<int>(m_committedScrollbackRows.size() - first);
     int width = 1;
     for (size_t i = first; i < m_committedScrollbackRows.size(); ++i)
-        width = std::max(width, static_cast<int>(m_committedScrollbackRows[i].size()));
+        width = (std::max)(width, static_cast<int>(m_committedScrollbackRows[i].size()));
     if (!buffer.resize(width, height)) return TextGridBuffer();
     for (int y = 0; y < height; ++y) {
         const ScrollbackRow& row = m_committedScrollbackRows[first + static_cast<size_t>(y)];

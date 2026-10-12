@@ -7,8 +7,8 @@ namespace qamui {
 
 Gradient::Gradient(QObject *parent) : QObject(parent) {}
 
-QQmlListProperty<GradientStop> Gradient::stops() {
-    return QQmlListProperty<GradientStop>(this, this,
+QQmlListProperty<GradientStop> Gradient::stops() const {
+    return QQmlListProperty<GradientStop>(const_cast<Gradient*>(this), const_cast<Gradient*>(this),
         &Gradient::appendStop,
         &Gradient::countStops,
         &Gradient::stopAt,
@@ -24,6 +24,10 @@ void Gradient::addStop(GradientStop* stop) {
     if (!stop) return;
     m_stops.append(stop);
     connect(stop, &GradientStop::updated, this, &Gradient::updated);
+    connect(stop, &QObject::destroyed, this, [this, stop]() {
+        m_stops.removeAll(stop);
+        emit updated();
+    });
     emit updated();
 }
 
@@ -34,7 +38,7 @@ qsizetype Gradient::countStops(QQmlListProperty<GradientStop>* list) {
 
 GradientStop* Gradient::stopAt(QQmlListProperty<GradientStop>* list, qsizetype index) {
     auto* self = static_cast<Gradient*>(list->object);
-    return self ? self->m_stops.at(index) : nullptr;
+    return (self && index >= 0 && index < self->m_stops.size()) ? self->m_stops.at(index).data() : nullptr;
 }
 
 void Gradient::clearStops(QQmlListProperty<GradientStop>* list) {
@@ -43,8 +47,8 @@ void Gradient::clearStops(QQmlListProperty<GradientStop>* list) {
 }
 
 void Gradient::clearStops() {
-    for (auto* stop : m_stops) {
-        disconnect(stop, &GradientStop::updated, this, &Gradient::updated);
+    for (const auto& stop : m_stops) {
+        if (stop) disconnect(stop.data(), nullptr, this, nullptr);
     }
     m_stops.clear();
     emit updated();
@@ -65,14 +69,19 @@ void Gradient::setOrientation(Orientation orientation) {
 }
 
 uint32_t Gradient::colorAt(qreal t) const {
-    if (m_stops.isEmpty()) {
-        return 0xFFFFFFFF;
-    }
-    if (m_stops.size() == 1) {
-        return m_stops.first()->resolvedColor();
+    QList<GradientStop*> sorted;
+    sorted.reserve(m_stops.size());
+    for (const auto& stop : m_stops) {
+        if (stop) sorted.append(stop.data());
     }
 
-    QList<GradientStop*> sorted = m_stops;
+    if (sorted.isEmpty()) {
+        return 0xFFFFFFFF;
+    }
+    if (sorted.size() == 1) {
+        return sorted.first()->resolvedColor();
+    }
+
     std::sort(sorted.begin(), sorted.end(), [](const GradientStop* a, const GradientStop* b) {
         return a->position() < b->position();
     });

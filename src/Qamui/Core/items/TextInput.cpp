@@ -130,7 +130,7 @@ void TextInput::setCursorBlinking(bool blinking) {
 }
 
 void TextInput::setCursorBlinkRate(int rate) {
-    const int validRate = std::max(50, rate);
+    const int validRate = (std::max)(50, rate);
     if (m_cursorBlinkRate == validRate) return;
     m_cursorBlinkRate = validRate;
     resetBlinkTimer();
@@ -227,7 +227,7 @@ void TextInput::setReadOnly(bool readOnly) {
 }
 
 void TextInput::setContentX(int x) {
-    const int clamped = std::max(0, x);
+    const int clamped = (std::max)(0, x);
     if (m_contentX == clamped) return;
     m_contentX = clamped;
     emit contentXChanged();
@@ -235,7 +235,7 @@ void TextInput::setContentX(int x) {
 }
 
 void TextInput::setMaximumLength(int length) {
-    const int clamped = std::max(0, length);
+    const int clamped = (std::max)(0, length);
     if (m_maximumLength == clamped) return;
     m_maximumLength = clamped;
     emit maximumLengthChanged();
@@ -382,8 +382,8 @@ int TextInput::positionForDisplayColumn(int column) const {
     if (m_echoMode == NoEcho)
         return 0;
 
-    const int maskWidth = std::max(1, UnicodeText::displayWidth(m_echoCharacter));
-    const int targetIndex = std::max(0, column) / maskWidth;
+    const int maskWidth = (std::max)(1, UnicodeText::displayWidth(m_echoCharacter));
+    const int targetIndex = (std::max)(0, column) / maskWidth;
     GraphemeIterator iterator(m_editor.text());
     GraphemeRef cluster;
     int index = 0;
@@ -396,13 +396,13 @@ int TextInput::positionForDisplayColumn(int column) const {
 }
 
 int TextInput::positionAtMouse(int x) const {
-    return positionForDisplayColumn(m_contentX + std::max(0, x - leftPadding()));
+    return positionForDisplayColumn(m_contentX + (std::max)(0, x - leftPadding()));
 }
 
 void TextInput::ensureCursorVisible() {
     if (!m_autoScroll)
         return;
-    const int viewportWidth = std::max(1, width() - leftPadding() - rightPadding());
+    const int viewportWidth = (std::max)(1, width() - leftPadding() - rightPadding());
     const int column = displayColumnForPosition(m_editor.cursorPosition());
     if (column < m_contentX)
         setContentX(column);
@@ -413,7 +413,7 @@ void TextInput::ensureCursorVisible() {
 }
 
 void TextInput::updateImplicitWidth() {
-    setImplicitWidth(std::max(
+    setImplicitWidth((std::max)(
         10, UnicodeText::displayWidth(displayText()) + leftPadding() + rightPadding()));
 }
 
@@ -528,8 +528,8 @@ void TextInput::paint(
     TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
-    const int viewportWidth = std::max(0, width() - leftPadding() - rightPadding());
-    const int viewportHeight = std::max(0, height() - topPadding() - bottomPadding());
+    const int viewportWidth = (std::max)(0, width() - leftPadding() - rightPadding());
+    const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
     if (viewportWidth == 0 || viewportHeight == 0)
         return;
 
@@ -551,7 +551,7 @@ void TextInput::paint(
         GraphemeRef cluster;
         while (iterator.next(cluster)) {
             const int x = contentLeft + column - m_contentX;
-            const int width = std::max(1, cluster.width);
+            const int width = (std::max)(1, cluster.width);
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y))
                 buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
@@ -560,11 +560,11 @@ void TextInput::paint(
     } else if (m_echoMode != NoEcho) {
         int column = 0;
         const bool masked = m_echoMode == Password;
-        const int maskWidth = masked ? std::max(1, UnicodeText::displayWidth(m_echoCharacter)) : 1;
+        const int maskWidth = masked ? (std::max)(1, UnicodeText::displayWidth(m_echoCharacter)) : 1;
         GraphemeIterator iterator(m_editor.text(), /*sanitizeControls=*/true);
         GraphemeRef cluster;
         while (iterator.next(cluster)) {
-            const int width = masked ? maskWidth : std::max(1, cluster.width);
+            const int width = masked ? maskWidth : (std::max)(1, cluster.width);
             const int x = contentLeft + column - m_contentX;
             if (x >= contentLeft && x + width <= contentRight
                 && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y)) {

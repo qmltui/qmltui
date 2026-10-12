@@ -16,7 +16,7 @@ LogView::LogView(QObject *parent) : TextArea(parent) {
 }
 
 void LogView::setMaximumLineCount(int count) {
-    count = std::max(1, count);
+    count = (std::max)(1, count);
     if (m_maximumLineCount == count) return;
     m_maximumLineCount = count;
     emit maximumLineCountChanged();
@@ -79,7 +79,7 @@ void LogView::trimHistory() {
 }
 
 void LogView::scrollToTail() {
-    setContentY(std::max(0, static_cast<int>(m_lines.size()) - height()));
+    setContentY((std::max)(0, static_cast<int>(m_lines.size()) - height()));
 }
 
 void LogView::applyBufferedText() {

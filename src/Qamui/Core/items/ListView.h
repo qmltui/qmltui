@@ -61,7 +61,7 @@ class QAMUI_CORE_EXPORT ListView : public ScrollView {
 public:
     static ListViewAttached *qmlAttachedProperties(QObject *object);
 
-    ListView(QObject* parent = nullptr);
+    explicit ListView(QObject* parent = nullptr);
     ~ListView() override;
 
     QVariant model() const { return m_model; }

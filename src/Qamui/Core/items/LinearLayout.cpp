@@ -13,7 +13,7 @@ LinearLayout::LinearLayout(Direction direction, QObject *parent)
 }
 
 void LinearLayout::setSpacing(int spacing) {
-    spacing = std::max(0, spacing);
+    spacing = (std::max)(0, spacing);
     if (m_spacing == spacing) return;
     m_spacing = spacing;
     emit spacingChanged();
@@ -42,7 +42,7 @@ int LinearLayout::minimumMainSize(Item *item) const {
 int LinearLayout::maximumMainSize(Item *item) const {
     LayoutAttached *info = layoutInfo(item);
     const int minimum = m_direction == Horizontal ? info->minimumWidth : info->minimumHeight;
-    return std::max(minimum, m_direction == Horizontal ? info->maximumWidth : info->maximumHeight);
+    return (std::max)(minimum, m_direction == Horizontal ? info->maximumWidth : info->maximumHeight);
 }
 
 void LinearLayout::layoutChildren() {
@@ -53,11 +53,11 @@ void LinearLayout::layoutChildren() {
     }
     if (children.isEmpty()) return;
 
-    const int mainAvailable = std::max(0,
+    const int mainAvailable = (std::max)(0,
         (m_direction == Horizontal ? width() - leftPadding() - rightPadding()
                                    : height() - topPadding() - bottomPadding()) -
         m_spacing * (static_cast<int>(children.size()) - 1));
-    const int crossAvailable = std::max(0,
+    const int crossAvailable = (std::max)(0,
         m_direction == Horizontal ? height() - topPadding() - bottomPadding()
                                   : width() - leftPadding() - rightPadding());
 
@@ -78,7 +78,7 @@ void LinearLayout::layoutChildren() {
             const bool fill = m_direction == Horizontal ? info->fillWidth : info->fillHeight;
             if ((remaining > 0 && fill && sizes[i] < maximumMainSize(children[i])) ||
                 (remaining < 0 && sizes[i] > minimumMainSize(children[i])))
-                totalStretch += std::max(1, m_direction == Horizontal
+                totalStretch += (std::max)(1, m_direction == Horizontal
                     ? info->horizontalStretch : info->verticalStretch);
         }
         if (totalStretch == 0) break;
@@ -92,11 +92,11 @@ void LinearLayout::layoutChildren() {
             const int limit = remaining > 0 ? maximumMainSize(children[i]) : minimumMainSize(children[i]);
             if ((remaining > 0 && sizes[i] >= limit) || (remaining < 0 && sizes[i] <= limit))
                 continue;
-            const int stretch = std::max(1, m_direction == Horizontal
+            const int stretch = (std::max)(1, m_direction == Horizontal
                 ? info->horizontalStretch : info->verticalStretch);
-            int delta = std::max(1, std::abs(remaining) * stretch / remainingStretch);
-            delta = std::min(delta, std::abs(limit - sizes[i]));
-            delta = std::min(delta, std::abs(remaining));
+            int delta = (std::max)(1, std::abs(remaining) * stretch / remainingStretch);
+            delta = (std::min)(delta, std::abs(limit - sizes[i]));
+            delta = (std::min)(delta, std::abs(remaining));
             if (remaining < 0) delta = -delta;
             sizes[i] += delta;
             remaining -= delta;
@@ -116,14 +116,14 @@ void LinearLayout::layoutChildren() {
             child->setWidth(sizes[i]);
             if (info->fillHeight)
                 child->setHeight(std::clamp(crossAvailable, info->minimumHeight,
-                                            std::max(info->minimumHeight, info->maximumHeight)));
+                                            (std::max)(info->minimumHeight, info->maximumHeight)));
         } else {
             child->setX(leftPadding());
             child->setY(position);
             child->setHeight(sizes[i]);
             if (info->fillWidth)
                 child->setWidth(std::clamp(crossAvailable, info->minimumWidth,
-                                           std::max(info->minimumWidth, info->maximumWidth)));
+                                           (std::max)(info->minimumWidth, info->maximumWidth)));
         }
         position += sizes[i] + m_spacing;
     }

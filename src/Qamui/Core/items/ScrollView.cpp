@@ -18,7 +18,7 @@ int ScrollView::effectiveContentHeight() const {
     int h = 0;
     for (Item* childItem : childItems()) {
         if (childItem && childItem->visible()) {
-            h = std::max(h, childItem->y() + childItem->height());
+            h = (std::max)(h, childItem->y() + childItem->height());
         }
     }
     return h;
@@ -32,7 +32,7 @@ void ScrollView::setContentHeight(int h) {
     // Clamp contentY
     int viewportH = height() - topPadding() - bottomPadding();
     int effectiveH = effectiveContentHeight();
-    int maxScroll = std::max(0, effectiveH - viewportH);
+    int maxScroll = (std::max)(0, effectiveH - viewportH);
     if (m_contentY > maxScroll) {
         setContentY(maxScroll);
     }
@@ -42,7 +42,7 @@ void ScrollView::setContentHeight(int h) {
 void ScrollView::setContentY(int y) {
     int viewportH = height() - topPadding() - bottomPadding();
     int effectiveH = effectiveContentHeight();
-    int maxScroll = std::max(0, effectiveH - viewportH);
+    int maxScroll = (std::max)(0, effectiveH - viewportH);
     int clamped = std::clamp(y, 0, maxScroll);
     if (m_contentY == clamped) return;
     m_contentY = clamped;
@@ -145,9 +145,9 @@ void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
     if (m_scrollBarVisible) {
         int effectiveH = effectiveContentHeight();
         if (effectiveH > viewportH) {
-            int sbH = std::max(1, (viewportH * viewportH) / effectiveH);
+            int sbH = (std::max)(1, (viewportH * viewportH) / effectiveH);
             int maxScroll = effectiveH - viewportH;
-            int sbPos = (m_contentY * (viewportH - sbH)) / std::max(1, maxScroll);
+            int sbPos = (m_contentY * (viewportH - sbH)) / (std::max)(1, maxScroll);
             int sbX = absX + w - rp; // just inside border / right padding
 
             for (int dy = 0; dy < viewportH; ++dy) {

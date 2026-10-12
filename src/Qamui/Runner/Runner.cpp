@@ -33,6 +33,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <algorithm>
 #include <utility>
 
 namespace qamui {
@@ -938,7 +939,7 @@ void Runner::beginOperation(const QString& name, const QString& stack)
     record.name = name;
     record.startedMs = m_elapsed.isValid() ? m_elapsed.elapsed() : 0;
 
-    const QRegularExpression locationPattern(
+    static const QRegularExpression locationPattern(
         QStringLiteral("(?:at\\s+)?([^\\n]+?):(\\d+)(?::(\\d+))?"));
     QRegularExpressionMatchIterator matches = locationPattern.globalMatch(stack);
     while (matches.hasNext()) {
@@ -996,7 +997,7 @@ void Runner::completeCurrentOperation(const QString& status)
     OperationRecord& record = m_operations[m_currentOperation];
     if (record.status == QLatin1String("running")) {
         record.status = status;
-        record.elapsedMs = qMax<qint64>(0, m_elapsed.elapsed() - record.startedMs);
+        record.elapsedMs = (std::max<qint64>)(0, m_elapsed.elapsed() - record.startedMs);
     }
 }
 
@@ -1122,7 +1123,7 @@ bool Runner::waitForTextCondition(const QString& text, bool shouldContain, int t
     connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
 
     m_activeLoop = &loop;
-    timeout.start(static_cast<int>(qMax<qint64>(1, deadline.remainingTime())));
+    timeout.start(static_cast<int>((std::max<qint64>)(1, deadline.remainingTime())));
     m_terminalEngine->requestRender();
     loop.exec();
     m_activeLoop = nullptr;
@@ -1358,10 +1359,10 @@ void Runner::drag(int startX, int startY, int endX, int endY, const QString& but
     // Button-held motion is reported cell by cell under mode 1002; walk the
     // path so drag handlers see the same intermediate positions a user
     // produces instead of one jump to the end.
-    const int steps = qMax(qAbs(endX - startX), qAbs(endY - startY));
+    const int steps = (std::max)(qAbs(endX - startX), qAbs(endY - startY));
     for (int step = 1; step <= steps; ++step) {
-        const int x = startX + ((endX - startX) * step) / qMax(1, steps);
-        const int y = startY + ((endY - startY) * step) / qMax(1, steps);
+        const int x = startX + ((endX - startX) * step) / (std::max)(1, steps);
+        const int y = startY + ((endY - startY) * step) / (std::max)(1, steps);
         m_terminalEngine->handleMouseInput(b, x, y, false, true, parsedModifiers);
     }
     m_terminalEngine->handleMouseInput(b, endX, endY, true, false, parsedModifiers);
@@ -1426,7 +1427,7 @@ void Runner::waitForRegex(const QString& pattern, int timeoutMs)
     connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
 
     m_activeLoop = &loop;
-    timeout.start(static_cast<int>(qMax<qint64>(1, deadline.remainingTime())));
+    timeout.start(static_cast<int>((std::max<qint64>)(1, deadline.remainingTime())));
     m_terminalEngine->requestRender();
     loop.exec();
     m_activeLoop = nullptr;
@@ -1654,8 +1655,8 @@ void Runner::compareSnapshot(const QString& snapshotRelativePath, const QString&
         baseName = baseName.mid(QStringLiteral("snapshots/").size());
     if (const int dot = baseName.lastIndexOf(QLatin1Char('.')); dot > 0)
         baseName.truncate(dot);
-    baseName.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]+")),
-                     QStringLiteral("_"));
+    static const QRegularExpression sanitizer(QStringLiteral("[^A-Za-z0-9._-]+"));
+    baseName.replace(sanitizer, QStringLiteral("_"));
     baseName = baseName.mid(0, 120);
     if (baseName.isEmpty())
         baseName = QStringLiteral("snapshot");
@@ -1773,7 +1774,7 @@ void Runner::advanceVirtualTime(const char* operation, int durationMs)
     while (clock->elapsed() < target) {
         // Step at most 16 ms — the animation tick — or to the next Qamui timer
         // deadline when that is sooner, so timers fire at their exact time.
-        qint64 next = qMin(clock->elapsed() + 16, target);
+        qint64 next = (std::min)(clock->elapsed() + 16, target);
         const qint64 deadline = clock->nextTimerDeadline();
         if (deadline > clock->elapsed() && deadline < next)
             next = deadline;
@@ -1854,7 +1855,7 @@ void Runner::resize(int columns, int rows)
                              .arg(frame ? frame->height() : 0));
             return;
         }
-        const int remaining = static_cast<int>(qMax<qint64>(1, deadline.remainingTime()));
+        const int remaining = static_cast<int>((std::max<qint64>)(1, deadline.remainingTime()));
         if (!waitForNextFrame(remaining))
             return;
     }
@@ -1864,13 +1865,18 @@ QVariantMap Runner::size()
 {
     if (!ensureRunning("size") || !m_terminalEngine)
         return {};
-    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
-    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
+    if (m_terminalEngine->frameSequence() == 0) {
         failScenario(QStringLiteral("No committed frame buffer is available"));
         return {};
     }
-    return {{QStringLiteral("columns"), frame->width()},
-            {QStringLiteral("rows"), frame->height()}};
+    const int width = m_terminalEngine->terminalWidth();
+    const int height = m_terminalEngine->terminalHeight();
+    if (width <= 0 || height <= 0) {
+        failScenario(QStringLiteral("No committed frame buffer is available"));
+        return {};
+    }
+    return {{QStringLiteral("columns"), width},
+            {QStringLiteral("rows"), height}};
 }
 
 int Runner::frameCount() const
@@ -2037,7 +2043,7 @@ bool Runner::waitForEngineCondition(const std::function<bool()>& check, int time
     connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
 
     m_activeLoop = &loop;
-    timeout.start(static_cast<int>(qMax<qint64>(1, deadline.remainingTime())));
+    timeout.start(static_cast<int>((std::max<qint64>)(1, deadline.remainingTime())));
     m_terminalEngine->requestRender();
     loop.exec();
     m_activeLoop = nullptr;
@@ -2398,7 +2404,7 @@ QList<Runner::TextMatch> Runner::textMatches(const TextGridBuffer& frame,
             renderedRow.append(character);
             for (qsizetype index = 0; index < character.size(); ++index) {
                 sourceColumns.append(column);
-                sourceEnds.append(column + qMax(1, static_cast<int>(renderedCell.displayWidth)));
+                sourceEnds.append(column + (std::max)(1, static_cast<int>(renderedCell.displayWidth)));
             }
         }
 
@@ -2410,9 +2416,9 @@ QList<Runner::TextMatch> Runner::textMatches(const TextGridBuffer& frame,
             const qsizetype lastIndex = matchIndex + text.size() - 1;
             if (matchIndex < sourceColumns.size() && lastIndex < sourceEnds.size()) {
                 const int x = sourceColumns.at(matchIndex);
-                matches.append(TextMatch{x, row, qMax(1, sourceEnds.at(lastIndex) - x)});
+                matches.append(TextMatch{x, row, (std::max)(1, sourceEnds.at(lastIndex) - x)});
             }
-            from = matchIndex + qMax<qsizetype>(1, text.size());
+            from = matchIndex + (std::max<qsizetype>)(1, text.size());
         }
     }
     return matches;
@@ -2433,7 +2439,7 @@ QString Runner::unifiedTextDiff(const QString& expectedPath,
     const QStringList actualLines = actual.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
     QString diff = QStringLiteral("--- %1\n+++ actual\n@@ -1,%2 +1,%3 @@\n")
         .arg(expectedPath).arg(expectedLines.size()).arg(actualLines.size());
-    const qsizetype lineCount = qMax(expectedLines.size(), actualLines.size());
+    const qsizetype lineCount = (std::max)(expectedLines.size(), actualLines.size());
     for (qsizetype index = 0; index < lineCount; ++index) {
         const bool hasExpected = index < expectedLines.size();
         const bool hasActual = index < actualLines.size();
@@ -2484,12 +2490,13 @@ QString Runner::resolveArtifactPath(const QString& relativePath, QString* error)
         || QFileInfo(cleaned).isAbsolute() || cleaned == QLatin1String("..")
         || cleaned.startsWith(QLatin1String("../"))
         || relativePath.contains(QLatin1Char('\n')) || relativePath.contains(QLatin1Char('\r'))) {
-        *error = QStringLiteral("Artifact path must be a relative path without newlines: %1")
-                     .arg(relativePath);
+        if (error)
+            *error = QStringLiteral("Artifact path must be a relative path without newlines: %1")
+                         .arg(relativePath);
         return {};
     }
 
-    const QString path = QDir(m_artifactDirectory).absoluteFilePath(cleaned);
+    QString path = QDir(m_artifactDirectory).absoluteFilePath(cleaned);
 
     // The lexical checks above cannot see through symlinks, so verify the real
     // location: create the parent, then require that its canonical path is the
@@ -2497,7 +2504,8 @@ QString Runner::resolveArtifactPath(const QString& relativePath, QString* error)
     // scenario write anywhere on the filesystem while still reporting success.
     const QString parent = QFileInfo(path).absolutePath();
     if (!QDir().mkpath(parent)) {
-        *error = QStringLiteral("Cannot create artifact parent directory for %1").arg(path);
+        if (error)
+            *error = QStringLiteral("Cannot create artifact parent directory for %1").arg(path);
         return {};
     }
     const QString canonicalRoot = QFileInfo(m_artifactDirectory).canonicalFilePath();
@@ -2505,12 +2513,14 @@ QString Runner::resolveArtifactPath(const QString& relativePath, QString* error)
     if (canonicalRoot.isEmpty() || canonicalParent.isEmpty()
         || (canonicalParent != canonicalRoot
             && !canonicalParent.startsWith(canonicalRoot + QLatin1Char('/')))) {
-        *error = QStringLiteral("Artifact path escapes the artifact directory: %1")
-                     .arg(relativePath);
+        if (error)
+            *error = QStringLiteral("Artifact path escapes the artifact directory: %1")
+                         .arg(relativePath);
         return {};
     }
     if (QFileInfo(path).isSymLink()) {
-        *error = QStringLiteral("Artifact path is a symbolic link: %1").arg(relativePath);
+        if (error)
+            *error = QStringLiteral("Artifact path is a symbolic link: %1").arg(relativePath);
         return {};
     }
     return path;
@@ -2710,17 +2720,22 @@ bool Runner::locateItem(const QString& objectName, QRect* outRect, QString* erro
         *error = QStringLiteral("No visible item with objectName \"%1\"").arg(objectName);
         return false;
     }
-    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
-    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
+    if (m_terminalEngine->frameSequence() == 0) {
+        *error = QStringLiteral("No committed frame buffer is available");
+        return false;
+    }
+    const int frameWidth = m_terminalEngine->terminalWidth();
+    const int frameHeight = m_terminalEngine->terminalHeight();
+    if (frameWidth <= 0 || frameHeight <= 0) {
         *error = QStringLiteral("No committed frame buffer is available");
         return false;
     }
     const QPoint origin = item->absolutePosition();
     const QRect clipped = QRect(origin, QSize(item->width(), item->height()))
-        & QRect(0, 0, frame->width(), frame->height());
+        & QRect(0, 0, frameWidth, frameHeight);
     if (clipped.isEmpty()) {
         *error = QStringLiteral("Item \"%1\" lies outside the %2x%3 viewport")
-                     .arg(objectName).arg(frame->width()).arg(frame->height());
+                     .arg(objectName).arg(frameWidth).arg(frameHeight);
         return false;
     }
     *outRect = clipped;
@@ -2833,7 +2848,7 @@ void Runner::clickText(const QString& text, int occurrence, const QString& butto
         return;
     }
     const TextMatch& match = matches.at(occurrence);
-    click(match.x + qMax(0, match.width - 1) / 2, match.y, button, modifiers);
+    click(match.x + (std::max)(0, match.width - 1) / 2, match.y, button, modifiers);
 }
 
 bool Runner::writeFinalFrameArtifact(QString* error)
@@ -2842,7 +2857,9 @@ bool Runner::writeFinalFrameArtifact(QString* error)
     const QString frame = currentFrameText(&frameError);
     if (!frameError.isEmpty()) {
         m_finalFrameRelativePath.clear();
-        return true;
+        if (error)
+            *error = frameError;
+        return false;
     }
 
     if (m_state == State::Failed)
@@ -2882,12 +2899,9 @@ bool Runner::writeResultArtifact(int exitCode, QString* error)
     // "viewport" keeps the initial size the scenario was configured with;
     // "finalViewport" records where resize() calls left it.
     QJsonValue finalViewport = QJsonValue(QJsonValue::Null);
-    if (m_terminalEngine) {
-        if (const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
-            frame && frame->width() > 0 && frame->height() > 0) {
-            finalViewport = QJsonObject{{QStringLiteral("columns"), frame->width()},
-                                        {QStringLiteral("rows"), frame->height()}};
-        }
+    if (m_terminalEngine && m_terminalEngine->frameSequence() > 0) {
+        finalViewport = QJsonObject{{QStringLiteral("columns"), m_terminalEngine->terminalWidth()},
+                                    {QStringLiteral("rows"), m_terminalEngine->terminalHeight()}};
     }
     QJsonArray captures;
     m_capturePaths.removeDuplicates();
@@ -2959,6 +2973,7 @@ void Runner::finish()
     if (!m_evaluating) {
         m_state = State::Passed;
         m_watchdog.stop();
+        stopHardWatchdog();
         scheduleExit(0);
     }
 }
@@ -2968,6 +2983,7 @@ void Runner::onPromiseResolved()
     if (m_state == State::Running || m_state == State::Finishing) {
         m_state = State::Passed;
         m_watchdog.stop();
+        stopHardWatchdog();
         scheduleExit(0);
     }
 }
@@ -2985,6 +3001,10 @@ void Runner::failScenario(const QString& message, bool raiseJsError)
         return;
     m_state = State::Failed;
     m_watchdog.stop();
+    // A script can catch the failure and keep running. Evaluation owns the
+    // hard watchdog until JavaScript has actually returned.
+    if (!m_evaluating)
+        stopHardWatchdog();
     m_message = message;
     completeCurrentOperation(QStringLiteral("failed"));
     if (m_activeLoop)

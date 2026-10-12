@@ -2,6 +2,7 @@
 
 #include <QSocketNotifier>
 
+#include <algorithm>
 #include <cerrno>
 #include <csignal>
 #include <cstring>
@@ -40,6 +41,8 @@ UnixPtySession::UnixPtySession(QObject* parent) : QObject(parent) {
 }
 
 UnixPtySession::~UnixPtySession() {
+    m_process.disconnect(this);
+    blockSignals(true);
     if (running())
         signalProcessGroup(SIGKILL);
     closeMaster();
@@ -55,8 +58,8 @@ bool UnixPtySession::start(const QString& program, const QStringList& arguments,
         return false;
 
     struct winsize size {};
-    size.ws_row = static_cast<unsigned short>(qBound(1, rows, 65535));
-    size.ws_col = static_cast<unsigned short>(qBound(1, columns, 65535));
+    size.ws_row = static_cast<unsigned short>((std::clamp)(rows, 1, 65535));
+    size.ws_col = static_cast<unsigned short>((std::clamp)(columns, 1, 65535));
 
     int slaveFd = -1;
     if (::openpty(&m_masterFd, &slaveFd, nullptr, nullptr, &size) < 0) {
@@ -76,9 +79,11 @@ bool UnixPtySession::start(const QString& program, const QStringList& arguments,
         ::setsid();
         ::ioctl(slaveFd, TIOCSCTTY, 0);
         ::tcsetpgrp(slaveFd, ::getpid());
-        ::dup2(slaveFd, STDIN_FILENO);
-        ::dup2(slaveFd, STDOUT_FILENO);
-        ::dup2(slaveFd, STDERR_FILENO);
+        if (::dup2(slaveFd, STDIN_FILENO) < 0 ||
+            ::dup2(slaveFd, STDOUT_FILENO) < 0 ||
+            ::dup2(slaveFd, STDERR_FILENO) < 0) {
+            ::_exit(errno != 0 ? errno : 1);
+        }
         if (slaveFd > STDERR_FILENO)
             ::close(slaveFd);
         ::close(masterFd);
@@ -124,8 +129,8 @@ void UnixPtySession::resize(int rows, int columns) {
     if (m_masterFd < 0)
         return;
     struct winsize size {};
-    size.ws_row = static_cast<unsigned short>(qBound(1, rows, 65535));
-    size.ws_col = static_cast<unsigned short>(qBound(1, columns, 65535));
+    size.ws_row = static_cast<unsigned short>((std::clamp)(rows, 1, 65535));
+    size.ws_col = static_cast<unsigned short>((std::clamp)(columns, 1, 65535));
     if (::ioctl(m_masterFd, TIOCSWINSZ, &size) < 0 && errno != EBADF)
         emit errorOccurred(QStringLiteral("PTY resize failed: %1")
                                .arg(QString::fromLocal8Bit(std::strerror(errno))));
@@ -143,22 +148,32 @@ void UnixPtySession::readAvailable() {
     if (m_masterFd < 0)
         return;
     char buffer[16384];
-    for (;;) {
+    constexpr qsizetype MaxReadPerEvent = 128 * 1024;
+    qsizetype totalRead = 0;
+    while (totalRead < MaxReadPerEvent) {
         const ssize_t count = ::read(m_masterFd, buffer, sizeof(buffer));
         if (count > 0) {
+            totalRead += count;
             emit dataReceived(QByteArray(buffer, static_cast<qsizetype>(count)));
+            if (m_masterFd < 0)
+                return;
             continue;
         }
         if (count == 0 || (count < 0 && errno == EIO)) {
             if (m_readNotifier)
                 m_readNotifier->setEnabled(false);
+            closeMaster();
             return;
         }
         if (errno == EINTR)
             continue;
-        if (errno != EAGAIN && errno != EWOULDBLOCK)
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (m_readNotifier)
+                m_readNotifier->setEnabled(false);
             emit errorOccurred(QStringLiteral("PTY read failed: %1")
                                    .arg(QString::fromLocal8Bit(std::strerror(errno))));
+            closeMaster();
+        }
         return;
     }
 }
@@ -173,9 +188,14 @@ void UnixPtySession::writeAvailable() {
         }
         if (count < 0 && errno == EINTR)
             continue;
-        if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+        if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (m_writeNotifier)
+                m_writeNotifier->setEnabled(false);
+            m_writeQueue.clear();
             emit errorOccurred(QStringLiteral("PTY write failed: %1")
                                    .arg(QString::fromLocal8Bit(std::strerror(errno))));
+            closeMaster();
+        }
         break;
     }
     if (m_writeNotifier)
@@ -183,10 +203,16 @@ void UnixPtySession::writeAvailable() {
 }
 
 void UnixPtySession::closeMaster() {
-    delete m_readNotifier;
-    m_readNotifier = nullptr;
-    delete m_writeNotifier;
-    m_writeNotifier = nullptr;
+    if (m_readNotifier) {
+        m_readNotifier->setEnabled(false);
+        m_readNotifier->deleteLater();
+        m_readNotifier = nullptr;
+    }
+    if (m_writeNotifier) {
+        m_writeNotifier->setEnabled(false);
+        m_writeNotifier->deleteLater();
+        m_writeNotifier = nullptr;
+    }
     if (m_masterFd >= 0) {
         ::close(m_masterFd);
         m_masterFd = -1;

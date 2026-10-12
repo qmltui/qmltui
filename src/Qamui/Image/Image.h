@@ -56,30 +56,30 @@ class QAMUI_IMAGE_EXPORT Image : public Item {
     Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
 
 public:
-    enum class FillMode {
+    enum class FillMode : uint8_t {
         Stretch,
         PreserveAspectFit,
         PreserveAspectCrop,
         Tile,
-        Pad
+        Pad,
     };
     Q_ENUM(FillMode)
 
-    enum class RenderMode {
+    enum class RenderMode : uint8_t {
         HalfBlock,  // 1x2 TrueColor subpixels per cell using ▀
         Braille,    // 2x4 dot subpixel grid
         ASCII,      // Brightness gradient mapping to ASCII characters
         Kitty,      // true pixels via the kitty graphics protocol
         Sixel,      // true pixels via the sixel protocol (e.g. Windows Terminal)
-        Auto        // best pixel protocol the terminal supports, else HalfBlock
+        Auto,       // best pixel protocol the terminal supports, else HalfBlock
     };
     Q_ENUM(RenderMode)
 
-    enum class Status {
+    enum class Status : uint8_t {
         Null,
         Ready,
         Loading,
-        Error
+        Error,
     };
     Q_ENUM(Status)
 
@@ -167,9 +167,9 @@ private:
     // Reserves the image cells and enqueues a positioned sixel after the diff.
     void paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
     // Frees the current kitty upload if the terminal is still reachable.
-    void releaseKittyImage() const;
+    void releaseKittyImage();
     // Erases the persisted sixel when the picture is discarded.
-    void releaseSixelImage() const;
+    void releaseSixelImage();
     // The pixel protocol paint() will use for the current mode and terminal:
     // None means a glyph mode (half-block, Braille or ASCII).
     graphics::Protocol activeProtocol() const;

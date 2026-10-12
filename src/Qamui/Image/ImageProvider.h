@@ -27,6 +27,7 @@ namespace qamui {
 // the provider suits QML-declared items whose pixels come from C++.
 class QAMUI_IMAGE_EXPORT ImageProvider : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(ImageProvider)
 public:
     explicit ImageProvider(QObject* parent = nullptr);
     ~ImageProvider() override;
@@ -55,6 +56,7 @@ public:
 // only the object itself and its signal must live on the GUI thread.
 class QAMUI_IMAGE_EXPORT ImageResponse : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(ImageResponse)
 public:
     explicit ImageResponse(QObject* parent = nullptr);
     ~ImageResponse() override;
@@ -73,6 +75,7 @@ signals:
 // flicker. requestImage() is not used for this kind of provider.
 class QAMUI_IMAGE_EXPORT AsyncImageProvider : public ImageProvider {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(AsyncImageProvider)
 public:
     explicit AsyncImageProvider(QObject* parent = nullptr);
     ~AsyncImageProvider() override;

@@ -477,6 +477,21 @@ Terminal {
     picture->setImage(solid(Qt::yellow));
     QVERIFY(pending->cancelled);
     QCOMPARE(picture->status(), qamui::Image::Status::Ready);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(!pending); // Cancellation need not emit finished().
+
+    picture->setSource(QUrl(QStringLiteral("image://later/superseded")));
+    pending = provider->responses.last();
+    picture->setSource(QUrl(QStringLiteral("image://later/replacement")));
+    QVERIFY(pending->cancelled);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(!pending);
+
+    pending = provider->responses.last();
+    object.reset();
+    QVERIFY(pending->cancelled);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(!pending);
 }
 
 void TestImage::testRenderASCII() {

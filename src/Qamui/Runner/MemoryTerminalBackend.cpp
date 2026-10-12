@@ -22,6 +22,8 @@ bool MemoryTerminalBackend::leaveRawMode()
 
 TerminalBackend::WriteStatus MemoryTerminalBackend::writeSome(const char* data, size_t size, size_t& offset)
 {
+    if (offset >= size)
+        return WriteStatus::Done;
     m_output.append(data + offset, size - offset);
     offset = size;
     return WriteStatus::Done;

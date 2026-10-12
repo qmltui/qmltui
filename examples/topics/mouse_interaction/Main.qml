@@ -40,7 +40,7 @@ Terminal {
 
             Text {
                 width: parent.width
-                text: "Move your mouse or click inside the panel below.\nThe panel tracks coordinates and buttons natively."
+                text: "Move your mouse, click, or scroll the wheel inside the panel below.\nThe panel tracks coordinates, buttons, and wheel scroll natively."
                 color: "gray"
             }
 
@@ -73,6 +73,9 @@ Terminal {
                     }
                     onClicked: (event) => {
                         mousePanelText.text = "Mouse Tracker Area\n\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast Event: Clicked button " + event.button
+                    }
+                    onWheel: (event) => {
+                        mousePanelText.text = "Mouse Tracker Area\n\nCoordinates: (" + mouseX + ", " + mouseY + ")\nLast Event: Wheel deltaY " + event.wheelDeltaY + " deltaX " + event.wheelDeltaX
                     }
                 }
             }

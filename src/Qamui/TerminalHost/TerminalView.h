@@ -46,7 +46,12 @@ class QAMUI_TERMINALHOST_EXPORT TerminalView : public Item, public QQmlParserSta
     Q_PROPERTY(bool allowNotifications READ allowNotifications WRITE setAllowNotifications NOTIFY allowNotificationsChanged)
 
 public:
-    enum ProcessState { NotRunning, Starting, Running, Stopping };
+    enum ProcessState : uint8_t {
+        NotRunning,
+        Starting,
+        Running,
+        Stopping,
+    };
     Q_ENUM(ProcessState)
 
     explicit TerminalView(QObject* parent = nullptr);
@@ -160,7 +165,7 @@ private:
     bool m_inheritEnvironment = true;
     QString m_terminalType = QStringLiteral("xterm-256color");
     bool m_autoStart = false;
-    bool m_componentComplete = false;
+    bool m_componentComplete = true;
     bool m_autoStartAttempted = false;
     ProcessState m_processState = NotRunning;
     int m_exitCode = -1;

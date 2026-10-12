@@ -1,6 +1,7 @@
 #include "frameprovider.h"
 
 #include <QPainter>
+#include <QPointer>
 #include <QUrlQuery>
 #include <QtMath>
 
@@ -31,11 +32,15 @@ private:
 class RadarRenderer : public QObject {
     Q_OBJECT
 public:
-    void render(int tick, const QSize& size, RadarResponse* response) {
+    void render(int tick, const QSize& size, QObject* receiver,
+                const QPointer<RadarResponse>& response) {
         const QImage image = RadarProvider::paintRadar(tick, size);
-        // Back to the GUI thread: the response and its signal live there.
-        QMetaObject::invokeMethod(response, [response, image] { response->complete(image); },
-                                  Qt::QueuedConnection);
+        // The provider waits for this worker during destruction, so it remains
+        // a valid receiver. Only inspect the response on its owning thread:
+        // cancellation may have deleted it while the worker was painting.
+        QMetaObject::invokeMethod(receiver, [response, image] {
+            if (response) response->complete(image);
+        }, Qt::QueuedConnection);
     }
 };
 
@@ -67,9 +72,11 @@ qamui::ImageResponse* RadarProvider::requestImageResponse(const QString& id, con
     const QSize target = usable ? requestedSize : QSize(256, 128);
 
     auto* response = new RadarResponse;   // owned by the requesting Image
-    QMetaObject::invokeMethod(m_renderer, [renderer = m_renderer, tick, target, response] {
-        renderer->render(tick, target, response);
-    }, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(m_renderer,
+        [renderer = m_renderer, receiver = this, tick, target,
+         response = QPointer<RadarResponse>(response)] {
+            renderer->render(tick, target, receiver, response);
+        }, Qt::QueuedConnection);
     return response;
 }
 

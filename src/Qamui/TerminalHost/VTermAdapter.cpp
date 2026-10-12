@@ -53,10 +53,34 @@ TextAttribute attributesFor(const VTermScreenCell& cell) {
     return attributes;
 }
 
+inline int encodeCodepointUtf8(uint32_t cp, char *out) noexcept {
+    if (cp <= 0x7F) {
+        out[0] = static_cast<char>(cp);
+        return 1;
+    } else if (cp <= 0x7FF) {
+        out[0] = static_cast<char>(0xC0 | ((cp >> 6) & 0x1F));
+        out[1] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 2;
+    } else if (cp <= 0xFFFF) {
+        if (cp >= 0xD800 && cp <= 0xDFFF) return 0;
+        out[0] = static_cast<char>(0xE0 | ((cp >> 12) & 0x0F));
+        out[1] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out[2] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 3;
+    } else if (cp <= 0x10FFFF) {
+        out[0] = static_cast<char>(0xF0 | ((cp >> 18) & 0x07));
+        out[1] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+        out[2] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out[3] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 4;
+    }
+    return 0;
+}
+
 } // namespace
 
 VTermAdapter::VTermAdapter(int rows, int columns)
-    : m_rows(std::max(1, rows)), m_columns(std::max(1, columns)) {
+    : m_rows((std::max)(1, rows)), m_columns((std::max)(1, columns)) {
     VTermBuilder builder{};
     builder.rows = m_rows;
     builder.cols = m_columns;
@@ -95,8 +119,8 @@ void VTermAdapter::feed(const QByteArray& bytes) {
 }
 
 void VTermAdapter::resize(int rows, int columns) {
-    rows = std::max(1, rows);
-    columns = std::max(1, columns);
+    rows = (std::max)(1, rows);
+    columns = (std::max)(1, columns);
     if (!m_vterm || (rows == m_rows && columns == m_columns))
         return;
     m_rows = rows;
@@ -130,7 +154,7 @@ void VTermAdapter::setPaletteColor(int index, Color color) {
 
 void VTermAdapter::setPalette(const QList<Color>& palette) {
     m_palette = palette;
-    for (int i = 0; i < std::min(16, static_cast<int>(palette.size())); ++i) {
+    for (int i = 0; i < (std::min)(16, static_cast<int>(palette.size())); ++i) {
         setPaletteColor(i, palette[i]);
     }
     if (m_damageCallback)
@@ -138,7 +162,7 @@ void VTermAdapter::setPalette(const QList<Color>& palette) {
 }
 
 void VTermAdapter::setScrollbackLimit(int limit) {
-    m_scrollbackLimit = std::max(0, limit);
+    m_scrollbackLimit = (std::max)(0, limit);
     while (static_cast<int>(m_scrollback.size()) > m_scrollbackLimit)
         m_scrollback.pop_front();
 }
@@ -155,7 +179,7 @@ void VTermAdapter::reset() {
     if (m_state) {
         vterm_state_reset(m_state, 1);
         if (!m_palette.isEmpty()) {
-            for (int i = 0; i < std::min(16, static_cast<int>(m_palette.size())); ++i)
+            for (int i = 0; i < (std::min)(16, static_cast<int>(m_palette.size())); ++i)
                 setPaletteColor(i, m_palette[i]);
         }
         VTermColor fg;
@@ -280,19 +304,24 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
             target.fgColor = hasSource ? colorToArgb(source.fg) : m_defaultForeground;
             target.bgColor = hasSource ? colorToArgb(source.bg) : m_defaultBackground;
             target.attributes = attributesFor(source);
-            target.displayWidth = static_cast<uint8_t>(std::max(1, static_cast<int>(source.width)));
-            target.continuation = source.width == 0;
+            target.displayWidth = hasSource ? static_cast<uint8_t>((std::max)(1, static_cast<int>(source.width))) : 1;
+            target.continuation = hasSource && (source.width == 0);
 
-            QString character;
-            for (uint32_t codepoint : source.chars) {
-                if (codepoint == 0)
-                    break;
-                const char32_t scalar = static_cast<char32_t>(codepoint);
-                character += QString::fromUcs4(&scalar, 1);
+            if (!hasSource || source.attrs.conceal) {
+                target.setCharacter(QByteArrayView(" ", 1));
+            } else {
+                char utf8[24];
+                int utf8Len = 0;
+                for (uint32_t codepoint : source.chars) {
+                    if (codepoint == 0)
+                        break;
+                    utf8Len += encodeCodepointUtf8(codepoint, utf8 + utf8Len);
+                }
+                if (utf8Len == 0)
+                    target.setCharacter(QByteArrayView(" ", 1));
+                else
+                    target.setCharacter(QByteArrayView(utf8, utf8Len));
             }
-            if (source.attrs.conceal || character.isEmpty())
-                character = QStringLiteral(" ");
-            target.setCharacter(character.toUtf8());
         }
     }
 
@@ -385,7 +414,7 @@ int VTermAdapter::popScrollback(int columns, VTermScreenCell* cells, void* user)
     const auto line = std::move(self->m_scrollback.back());
     self->m_scrollback.pop_back();
     std::memset(cells, 0, sizeof(VTermScreenCell) * static_cast<size_t>(columns));
-    std::copy_n(line.begin(), std::min(columns, static_cast<int>(line.size())), cells);
+    std::copy_n(line.begin(), (std::min)(columns, static_cast<int>(line.size())), cells);
     return 1;
 }
 
@@ -399,8 +428,9 @@ int VTermAdapter::clearScrollbackCallback(void* user) {
 
 int VTermAdapter::setSelection(VTermSelectionMask mask, VTermStringFragment fragment, void* user) {
     auto* self = static_cast<VTermAdapter*>(user);
-    if ((mask & VTERM_SELECTION_CLIPBOARD) && fragment.final && self->m_clipboardCallback)
-        self->m_clipboardCallback(QString::fromUtf8(fragment.str, static_cast<qsizetype>(fragment.len)));
+    if ((mask & VTERM_SELECTION_CLIPBOARD) && self->m_clipboardCallback)
+        self->appendFragment(self->m_clipboardBuffer, fragment, 1024 * 1024,
+                             self->m_clipboardCallback);
     return 1;
 }
 
@@ -479,8 +509,8 @@ void VTermAdapter::appendFragment(QByteArray& target, VTermStringFragment fragme
                                   qsizetype limit, const StringCallback& callback) {
     if (fragment.initial)
         target.clear();
-    const qsizetype available = std::max<qsizetype>(0, limit - target.size());
-    target.append(fragment.str, std::min<qsizetype>(available, static_cast<qsizetype>(fragment.len)));
+    const qsizetype available = (std::max)(qsizetype(0), limit - target.size());
+    target.append(fragment.str, (std::min)(available, static_cast<qsizetype>(fragment.len)));
     if (fragment.final) {
         if (callback)
             callback(QString::fromUtf8(target));

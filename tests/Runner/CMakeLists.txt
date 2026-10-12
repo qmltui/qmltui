@@ -124,6 +124,13 @@ add_qamui_runner_scenario(test_runner_fixture_never_yields qamui_runner_fixture
     ARTIFACT "failure.txt"
     SCENARIO_TIMEOUT_MS 1500
 )
+add_qamui_runner_scenario(test_runner_failure_never_yields qamui_runner_fixture
+    "${qamui_runner_scenarios}/failure_never_yields.js" 1
+    FAILURE_PATTERN "Caught failure must still terminate"
+    ARTIFACT "failure.txt"
+    SCENARIO_TIMEOUT_MS 100
+    PROCESS_TIMEOUT 5
+)
 add_qamui_runner_scenario(test_runner_fixture_missing_finish qamui_runner_fixture
     "${qamui_runner_scenarios}/missing_finish.js" 0
     ARTIFACT "missing_finish.txt"

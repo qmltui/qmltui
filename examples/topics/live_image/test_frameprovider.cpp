@@ -18,6 +18,25 @@ private slots:
         QVERIFY(frame0 != frame1);
     }
 
+    void cancelledResponsesMayBeDeletedBeforeRenderingFinishes() {
+        RadarProvider provider;
+        for (int tick = 0; tick < 16; ++tick) {
+            auto* response = provider.requestImageResponse(
+                QStringLiteral("radar?tick=%1").arg(tick), QSize(256, 128));
+            QVERIFY(response);
+            response->cancel();
+            delete response;
+        }
+        // Requests render in order. Completing this one proves the worker has
+        // also processed all requests whose response objects were deleted.
+        auto* response = provider.requestImageResponse(QStringLiteral("radar?tick=16"), QSize(80, 40));
+        QVERIFY(response);
+        QSignalSpy finished(response, &qamui::ImageResponse::finished);
+        QVERIFY(finished.wait(1000));
+        QVERIFY(!response->image().isNull());
+        delete response;
+    }
+
     void requestImageResponseProducesRadar() {
         RadarProvider provider;
         QVERIFY(!provider.requestImageResponse(QStringLiteral("unknown"), QSize(64, 64)));

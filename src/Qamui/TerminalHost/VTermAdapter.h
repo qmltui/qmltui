@@ -5,6 +5,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QtGlobal>
 
 #include <deque>
 #include <functional>
@@ -15,6 +16,7 @@
 namespace qamui {
 
 class VTermAdapter final {
+    Q_DISABLE_COPY_MOVE(VTermAdapter)
 public:
   using BytesCallback = std::function<void(const QByteArray &)>;
   using StringCallback = std::function<void(const QString &)>;
@@ -106,6 +108,7 @@ private:
     QList<Color> m_palette;
   std::deque<std::vector<VTermScreenCell>> m_scrollback;
   QByteArray m_selectionBuffer;
+  QByteArray m_clipboardBuffer;
   QByteArray m_titleBuffer;
   QByteArray m_notificationBuffer;
   BytesCallback m_outputCallback;

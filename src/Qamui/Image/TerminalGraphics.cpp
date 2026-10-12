@@ -47,6 +47,30 @@ constexpr int kDiacriticCount = static_cast<int>(std::size(kDiacritics));
 
 constexpr char32_t kPlaceholder = 0x10EEEE;
 
+inline int encodeCodepointUtf8(uint32_t cp, char *out) noexcept {
+    if (cp <= 0x7F) {
+        out[0] = static_cast<char>(cp);
+        return 1;
+    } else if (cp <= 0x7FF) {
+        out[0] = static_cast<char>(0xC0 | ((cp >> 6) & 0x1F));
+        out[1] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 2;
+    } else if (cp <= 0xFFFF) {
+        if (cp >= 0xD800 && cp <= 0xDFFF) return 0;
+        out[0] = static_cast<char>(0xE0 | ((cp >> 12) & 0x0F));
+        out[1] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out[2] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 3;
+    } else if (cp <= 0x10FFFF) {
+        out[0] = static_cast<char>(0xF0 | ((cp >> 18) & 0x07));
+        out[1] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+        out[2] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out[3] = static_cast<char>(0x80 | (cp & 0x3F));
+        return 4;
+    }
+    return 0;
+}
+
 } // namespace
 
 Protocol resolve(const TerminalCapabilities& capabilities)
@@ -103,6 +127,8 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image)
     // qCompress prefixes the zlib stream with a Qt-specific four-byte length.
     // Only the zlib stream belongs on the wire. Level 1 favours frame latency.
     const QByteArray compressed = qCompress(pixels, 1);
+    if (compressed.size() < 4)
+        return {};
     const QByteArray payload = QByteArray::fromRawData(compressed.constData() + 4,
                                                      compressed.size() - 4).toBase64();
 
@@ -111,7 +137,7 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image)
     const int chunks = static_cast<int>((payload.size() + chunkSize - 1) / chunkSize);
     for (int i = 0; i < chunks; ++i) {
         const int offset = i * chunkSize;
-        const int length = static_cast<int>(std::min<qsizetype>(chunkSize, payload.size() - offset));
+        const int length = static_cast<int>((std::min)(qsizetype(chunkSize), payload.size() - offset));
         const bool last = (i == chunks - 1);
         out += "\033_G";
         if (i == 0) {
@@ -134,6 +160,8 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image)
 
 QByteArray kittyPlacement(quint32 imageId, int cols, int rows)
 {
+    if (imageId == 0 || cols <= 0 || rows <= 0)
+        return {};
     // A nonzero placement id replaces the same placement on every update.
     // Ghostty 1.3.1 retains placements when image data is replaced; leaving
     // p unspecified accumulates unnamed placements with stale resize geometry.
@@ -182,11 +210,14 @@ QByteArray sixelEncode(const QImage& source)
 
     std::vector<char> sixels(static_cast<size_t>(w));
     for (int band = 0; band < h; band += 6) {
-        const int rowsInBand = std::min(6, h - band);
+        const int rowsInBand = (std::min)(6, h - band);
+        const uchar* scanLines[6];
+        for (int r = 0; r < rowsInBand; ++r)
+            scanLines[r] = image.constScanLine(band + r);
         // Colours present anywhere in this band.
         std::vector<bool> present(static_cast<size_t>(palette.size()), false);
         for (int r = 0; r < rowsInBand; ++r) {
-            const uchar* line = image.constScanLine(band + r);
+            const uchar* line = scanLines[r];
             for (int x = 0; x < w; ++x) {
                 const int idx = line[x];
                 if (idx < palette.size() && opaque[static_cast<size_t>(idx)])
@@ -202,7 +233,7 @@ QByteArray sixelEncode(const QImage& source)
             for (int x = 0; x < w; ++x) {
                 unsigned char bits = 0;
                 for (int r = 0; r < rowsInBand; ++r)
-                    if (image.constScanLine(band + r)[x] == i) bits |= (1u << r);
+                    if (scanLines[r][x] == i) bits |= (1u << r);
                 sixels[static_cast<size_t>(x)] = static_cast<char>(63 + bits);
             }
             // Run-length encode the band row for this colour.
@@ -230,8 +261,8 @@ void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0,
                             int cols, int rows, quint32 imageId, const ClipRect& clip)
 {
     const uint32_t idColor = 0xFF000000u | (imageId & 0xFFFFFFu);   // true-colour, opaque
-    const int usableRows = std::min(rows, kDiacriticCount);
-    const int usableCols = std::min(cols, kDiacriticCount);
+    const int usableRows = (std::min)(rows, kDiacriticCount);
+    const int usableCols = (std::min)(cols, kDiacriticCount);
     for (int r = 0; r < usableRows; ++r) {
         for (int c = 0; c < usableCols; ++c) {
             const int x = x0 + c;
@@ -241,8 +272,11 @@ void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0,
             Cell* cell = buffer.tryCellAt(x, y);
             if (!cell)
                 continue;
-            const char32_t glyph[3] = {kPlaceholder, kDiacritics[r], kDiacritics[c]};
-            cell->setCharacter(QString::fromUcs4(glyph, 3).toUtf8());
+            char buf[16];
+            int len = encodeCodepointUtf8(kPlaceholder, buf);
+            len += encodeCodepointUtf8(kDiacritics[r], buf + len);
+            len += encodeCodepointUtf8(kDiacritics[c], buf + len);
+            cell->setCharacter(QByteArrayView(buf, len));
             cell->displayWidth = 1;
             cell->continuation = false;
             cell->fgColor = idColor;

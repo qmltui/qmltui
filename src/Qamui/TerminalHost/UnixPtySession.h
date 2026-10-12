@@ -12,6 +12,7 @@ namespace qamui {
 
 class QAMUI_TERMINALHOST_EXPORT UnixPtySession final : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(UnixPtySession)
 
 public:
     explicit UnixPtySession(QObject* parent = nullptr);

@@ -43,12 +43,14 @@ class QAMUI_IMAGE_EXPORT AnimatedSprite : public Image, public QQmlParserStatus 
     Q_PROPERTY(bool interpolate READ interpolate WRITE setInterpolate NOTIFY interpolateChanged)
 
 public:
-    enum Loops { Infinite = -1 };
+    enum Loops {
+        Infinite = -1,
+    };
     Q_ENUM(Loops)
 
-    enum class FinishBehavior {
+    enum class FinishBehavior : uint8_t {
         FinishAtInitialFrame,
-        FinishAtFinalFrame
+        FinishAtFinalFrame,
     };
     Q_ENUM(FinishBehavior)
 

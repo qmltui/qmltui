@@ -23,8 +23,12 @@ bool CastRecorder::open(const QString& path, int columns, int rows, const QStrin
                        {QStringLiteral("theme"), QJsonObject{{QStringLiteral("fg"), QStringLiteral("#c9d1d9")},
                                                              {QStringLiteral("bg"), QStringLiteral("#0d1117")},
                                                              {QStringLiteral("palette"), QStringLiteral("#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff")}}}};
-    m_file.write(QJsonDocument(header).toJson(QJsonDocument::Compact));
-    m_file.write("\n");
+    const QByteArray headerBytes = QJsonDocument(header).toJson(QJsonDocument::Compact);
+    if (m_file.write(headerBytes) != headerBytes.size() || m_file.write("\n") != 1) {
+        if (error) *error = QStringLiteral("Cannot write cast header %1: %2").arg(path, m_file.errorString());
+        m_file.close();
+        return false;
+    }
     return true;
 }
 
@@ -47,8 +51,10 @@ void CastRecorder::event(double seconds, const char* code, const QString& data)
 {
     if (!m_file.isOpen()) return;
     const QJsonArray line{seconds, QString::fromLatin1(code), data};
-    m_file.write(QJsonDocument(line).toJson(QJsonDocument::Compact));
-    m_file.write("\n");
+    const QByteArray lineBytes = QJsonDocument(line).toJson(QJsonDocument::Compact);
+    if (m_file.write(lineBytes) != lineBytes.size() || m_file.write("\n") != 1) {
+        m_file.close();
+    }
 }
 
 void CastRecorder::close()

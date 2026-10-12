@@ -15,13 +15,14 @@
 #include <Qamui/Core/items/Item.h>                 // ClipRect
 #include <Qamui/Core/primitives/TextGridBuffer.h>
 #include <Qamui/Core/primitives/TerminalCapabilities.h>
+#include <Qamui/Core/primitives/QamuiExport.h>
 
 #include <QByteArray>
 #include <QImage>
 
 namespace qamui::graphics {
 
-enum class Protocol {
+enum class Protocol : uint8_t {
     None,    // no pixel protocol; the caller falls back to half-block or braille
     Kitty,   // kitty graphics with Unicode virtual placements (implemented)
     Sixel,   // detected, not yet rendered; resolve() will return it once encoded
@@ -30,18 +31,18 @@ enum class Protocol {
 // The best pixel protocol the terminal supports, in preference order. Kitty
 // needs true colour because the Unicode placeholder cells carry the image id
 // in a 24-bit foreground colour that must not be quantised.
-Protocol resolve(const TerminalCapabilities& capabilities);
+QAMUI_IMAGE_EXPORT Protocol resolve(const TerminalCapabilities& capabilities);
 
 // A process-wide image id in [1, 0xFFFFFF]. Stays in 24 bits so it fits a
 // single true-colour foreground with no high-byte diacritic.
-quint32 nextImageId();
+QAMUI_IMAGE_EXPORT quint32 nextImageId();
 
 // --- kitty graphics encoders. Each returns a complete APC byte sequence. ---
 
 // Uploads `image` as zlib-compressed RGBA under `imageId`, chunked at the
 // protocol's 4096-byte base64 limit, with responses suppressed. Creates the image only; placement
 // is separate so a resize re-places without re-uploading.
-QByteArray kittyTransmit(quint32 imageId, const QImage& image);
+QAMUI_IMAGE_EXPORT QByteArray kittyTransmit(quint32 imageId, const QImage& image);
 
 // The pixel size to upload for a source shown in a placement of
 // `placementPixels` (cols x rows times the cell size, invalid when the cell
@@ -51,28 +52,28 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image);
 // the source is pre-scaled here to the placement size, never beyond
 // `maxEdge` per side; without it, or when shrinking or the cell size is
 // unknown, the source goes as is (capped at maxEdge) and the terminal scales.
-QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool smooth, int maxEdge = 2048);
+QAMUI_IMAGE_EXPORT QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool smooth, int maxEdge = 2048);
 
 // A Unicode virtual placement of `imageId` sized to cols x rows cells. The
 // terminal scales the image into that rectangle; the placeholder cells select
 // which part shows where. Reuses placement id 1 so resizing replaces the
 // existing geometry even on terminals that retain placements across uploads.
-QByteArray kittyPlacement(quint32 imageId, int cols, int rows);
+QAMUI_IMAGE_EXPORT QByteArray kittyPlacement(quint32 imageId, int cols, int rows);
 
 // --- sixel encoder. Paints at the cursor, so the caller positions it. ---
 
 // Encodes `image` as a sixel data string (DCS ... ST). Alpha below 128 is
 // left unpainted so the cell background shows through. The image is emitted at
 // its own pixel size; the caller scales it to the target first.
-QByteArray sixelEncode(const QImage& image);
+QAMUI_IMAGE_EXPORT QByteArray sixelEncode(const QImage& image);
 
 // Frees `imageId` and every placement of it.
-QByteArray kittyDelete(quint32 imageId);
+QAMUI_IMAGE_EXPORT QByteArray kittyDelete(quint32 imageId);
 
 // Fills the cols x rows rectangle at (x0, y0) with Unicode placeholder cells
 // that reference `imageId`, clipped to `clip`. Each cell is U+10EEEE plus a row
 // and a column combining mark, with the id in its foreground colour.
-void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0,
-                            int cols, int rows, quint32 imageId, const ClipRect& clip);
+QAMUI_IMAGE_EXPORT void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0,
+                                               int cols, int rows, quint32 imageId, const ClipRect& clip);
 
 } // namespace qamui::graphics

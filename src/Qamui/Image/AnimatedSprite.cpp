@@ -33,8 +33,8 @@ QRect AnimatedSprite::frameRect(int index) const {
     if (frame.isEmpty() || sheet.isEmpty()) return QRect();
     // Frames run to the right from (frameX, frameY) and wrap to the sheet's
     // left edge one frame further down when the row runs out.
-    const int perFirstRow = std::max(1, (sheet.width() - m_frameX) / frame.width());
-    const int perRow = std::max(1, sheet.width() / frame.width());
+    const int perFirstRow = (std::max)(1, (sheet.width() - m_frameX) / frame.width());
+    const int perRow = (std::max)(1, sheet.width() / frame.width());
     int x = m_frameX;
     int y = m_frameY;
     if (index < perFirstRow) {
@@ -48,13 +48,13 @@ QRect AnimatedSprite::frameRect(int index) const {
 }
 
 void AnimatedSprite::applyFrame() {
-    const QRect rect = frameRect(std::clamp(m_currentFrame, 0, std::max(0, m_frameCount - 1)));
+    const QRect rect = frameRect((std::clamp)(m_currentFrame, 0, (std::max)(0, m_frameCount - 1)));
     if (!rect.isNull())
         setSourceClipRect(rect);
 }
 
 int AnimatedSprite::initialFrame() const {
-    return m_reverse ? std::max(0, m_frameCount - 1) : 0;
+    return m_reverse ? (std::max)(0, m_frameCount - 1) : 0;
 }
 
 void AnimatedSprite::step(int frames) {
@@ -98,7 +98,7 @@ void AnimatedSprite::updateTimer() {
     if (!m_complete) return;
     int interval = -1;
     if (m_frameRate > 0.0)
-        interval = std::max(1, static_cast<int>(std::lround(1000.0 / m_frameRate)));
+        interval = (std::max)(1, static_cast<int>(std::lround(1000.0 / m_frameRate)));
     else if (m_frameDuration > 0)
         interval = m_frameDuration;
     const bool active = m_running && !m_paused && visible() && m_frameCount > 1 && interval > 0;
@@ -114,7 +114,7 @@ void AnimatedSprite::updateTimer() {
 }
 
 void AnimatedSprite::setFrameCount(int count) {
-    count = std::max(1, count);
+    count = (std::max)(1, count);
     if (m_frameCount == count) return;
     m_frameCount = count;
     emit frameCountChanged();
@@ -126,7 +126,7 @@ void AnimatedSprite::setFrameCount(int count) {
 }
 
 void AnimatedSprite::setFrameWidth(int width) {
-    width = std::max(0, width);
+    width = (std::max)(0, width);
     if (m_frameWidth == width) return;
     m_frameWidth = width;
     emit frameWidthChanged();
@@ -134,7 +134,7 @@ void AnimatedSprite::setFrameWidth(int width) {
 }
 
 void AnimatedSprite::setFrameHeight(int height) {
-    height = std::max(0, height);
+    height = (std::max)(0, height);
     if (m_frameHeight == height) return;
     m_frameHeight = height;
     emit frameHeightChanged();
@@ -142,7 +142,7 @@ void AnimatedSprite::setFrameHeight(int height) {
 }
 
 void AnimatedSprite::setFrameX(int x) {
-    x = std::max(0, x);
+    x = (std::max)(0, x);
     if (m_frameX == x) return;
     m_frameX = x;
     emit frameXChanged();
@@ -150,7 +150,7 @@ void AnimatedSprite::setFrameX(int x) {
 }
 
 void AnimatedSprite::setFrameY(int y) {
-    y = std::max(0, y);
+    y = (std::max)(0, y);
     if (m_frameY == y) return;
     m_frameY = y;
     emit frameYChanged();
@@ -198,6 +198,8 @@ void AnimatedSprite::setPaused(bool paused) {
 }
 
 void AnimatedSprite::setLoops(int loops) {
+    if (loops < 0)
+        loops = Infinite;
     if (m_loops == loops) return;
     m_loops = loops;
     emit loopsChanged();
@@ -218,6 +220,7 @@ void AnimatedSprite::setFinishBehavior(FinishBehavior behavior) {
 void AnimatedSprite::setInterpolate(bool interpolate) {
     if (m_interpolate == interpolate) return;
     m_interpolate = interpolate;
+    setSmooth(interpolate);
     emit interpolateChanged();
 }
 

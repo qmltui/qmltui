@@ -194,16 +194,24 @@ QSize Image::renderSize() const {
         }
     }
     switch (m_renderMode) {
-    case RenderMode::Braille: return QSize(w * braille::DotsX, h * braille::DotsY);
-    case RenderMode::ASCII: return QSize(w, h);
-    default: return QSize(w * half_block::SubpixelsX, h * half_block::SubpixelsY);   // HalfBlock and every fallback
+    case RenderMode::Braille:
+        return QSize(w * braille::DotsX, h * braille::DotsY);
+    case RenderMode::ASCII:
+        return QSize(w, h);
+    case RenderMode::HalfBlock:
+    case RenderMode::Kitty:
+    case RenderMode::Sixel:
+    case RenderMode::Auto:
+        return QSize(w * half_block::SubpixelsX, h * half_block::SubpixelsY);
     }
+    return QSize(w * half_block::SubpixelsX, h * half_block::SubpixelsY);
 }
 
 Image::~Image() {
     cancelPendingResponse();
     cancelPendingReply();
     releaseKittyImage();
+    releaseSixelImage();
 }
 
 void Image::cancelPendingReply() {
@@ -216,7 +224,7 @@ void Image::cancelPendingReply() {
 }
 
 void Image::setProgress(qreal progress) {
-    progress = std::clamp(progress, 0.0, 1.0);
+    progress = (std::clamp)(progress, 0.0, 1.0);
     if (qFuzzyCompare(m_progress + 1.0, progress + 1.0)) return;
     m_progress = progress;
     emit progressChanged();
@@ -269,7 +277,7 @@ void Image::cancelPendingResponse() {
     response->deleteLater();
 }
 
-void Image::releaseKittyImage() const {
+void Image::releaseKittyImage() {
     if (m_imageId == 0) return;
     if (Terminal* root = terminal())
         root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
@@ -278,16 +286,19 @@ void Image::releaseKittyImage() const {
     m_lastKittyCells = QSize();
 }
 
-void Image::releaseSixelImage() const {
+void Image::releaseSixelImage() {
     if (m_lastSixelRect.isEmpty()) return;
     if (Terminal* root = terminal()) {
         // Sixels persist outside the cell buffer. Erase before the next cell
         // diff so underlying content can be painted back over these blanks.
         QByteArray clear = "\033[0m\0337";
         const QByteArray blank(m_lastSixelRect.width(), ' ');
-        for (int y = m_lastSixelRect.top(); y <= m_lastSixelRect.bottom(); ++y)
-            clear += "\033[" + QByteArray::number(y + 1) + ';'
-                   + QByteArray::number(m_lastSixelRect.left() + 1) + 'H' + blank;
+        for (int y = m_lastSixelRect.top(); y <= m_lastSixelRect.bottom(); ++y) {
+            const int rowCoord = (std::max)(1, y + 1);
+            const int colCoord = (std::max)(1, m_lastSixelRect.left() + 1);
+            clear += "\033[" + QByteArray::number(rowCoord) + ';'
+                   + QByteArray::number(colCoord) + 'H' + blank;
+        }
         clear += "\0338";
         root->enqueueControlSequence(clear);
     }
@@ -532,7 +543,7 @@ void Image::updateScaledCache(RenderMode mode) const {
 
     if (mode == RenderMode::ASCII) {
         // Monospace cell aspect ratio correction (1 column : 2 rows visual ratio, cellAspect = 0.5)
-        double srcAspect = static_cast<double>(source.width()) / std::max(1, source.height());
+        double srcAspect = static_cast<double>(source.width()) / (std::max)(1, source.height());
 
         if (m_fillMode == FillMode::Stretch) {
             m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
@@ -544,8 +555,8 @@ void Image::updateScaledCache(RenderMode mode) const {
                 fitH = targetSubH;
                 fitW = std::round(targetSubH * srcAspect * 2.0);
             }
-            fitW = std::clamp(fitW, 1, targetSubW);
-            fitH = std::clamp(fitH, 1, targetSubH);
+            fitW = (std::clamp)(fitW, 1, targetSubW);
+            fitH = (std::clamp)(fitH, 1, targetSubH);
             m_scaledImage = source.scaled(QSize(fitW, fitH), Qt::IgnoreAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectCrop) {
             int cropW = targetSubW;
@@ -557,7 +568,7 @@ void Image::updateScaledCache(RenderMode mode) const {
             QImage scaledTemp = source.scaled(QSize(cropW, cropH), Qt::IgnoreAspectRatio, transMode);
             int startX = (scaledTemp.width() - targetSubW) / 2;
             int startY = (scaledTemp.height() - targetSubH) / 2;
-            m_scaledImage = scaledTemp.copy(std::max(0, startX), std::max(0, startY), targetSubW, targetSubH);
+            m_scaledImage = scaledTemp.copy((std::max)(0, startX), (std::max)(0, startY), targetSubW, targetSubH);
         } else {
             m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
         }
@@ -827,37 +838,39 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
             fitRows = itemH;
             fitCols = static_cast<int>(std::lround(double(fitRows) * ch * sw / (double(sh) * cw)));
         }
-        cols = std::clamp(fitCols, 1, itemW);
-        rows = std::clamp(fitRows, 1, itemH);
+        cols = (std::clamp)(fitCols, 1, itemW);
+        rows = (std::clamp)(fitRows, 1, itemH);
         if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
         else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
         if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
         else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
     }
 
-    // Re-upload only when the source, the placement geometry or the upload
-    // size changed. The terminal scales the stored image into the cols x rows
-    // placement; a small source is pre-scaled here when `smooth` is set so the
-    // magnification is filtered rather than blocky (see kittyUploadSize).
+    // Re-upload only when the source, the upload size or session changed.
+    // The placement is updated separately when placement geometry changes.
     const qint64 key = source.cacheKey();
     const QSize cellPx = root->capabilities().cellPixelSize;
     const QSize placementPx = cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
     const QSize uploadSize = graphics::kittyUploadSize(source.size(), placementPx, m_smooth);
     const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
-    if (m_imageId == 0 || key != m_lastKittyKey || QSize(cols, rows) != m_lastKittyCells
-        || uploadSize != m_lastKittyUpload || session != m_lastKittySession) {
+
+    if (m_imageId == 0)
+        m_imageId = graphics::nextImageId();
+
+    const bool needUpload = (key != m_lastKittyKey || uploadSize != m_lastKittyUpload || session != m_lastKittySession);
+    if (needUpload) {
         QImage upload = source;
         if (uploadSize != source.size())
             upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         m_lastKittyUpload = uploadSize;
-        if (m_imageId == 0) m_imageId = graphics::nextImageId();
-        // Replace the image data and its named virtual placement. Some
-        // terminals retain placements across uploads, so both ids stay fixed.
         root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
-        root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
         m_lastKittyKey = key;
-        m_lastKittyCells = QSize(cols, rows);
         m_lastKittySession = session;
+    }
+
+    if (needUpload || QSize(cols, rows) != m_lastKittyCells) {
+        root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
+        m_lastKittyCells = QSize(cols, rows);
     }
 
     graphics::writeKittyPlaceholders(buffer, originX, originY, cols, rows, m_imageId, clipRect);
@@ -892,8 +905,8 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
             fitRows = itemH;
             fitCols = static_cast<int>(std::lround(double(fitRows) * ch * sw / (double(sh) * cw)));
         }
-        cols = std::clamp(fitCols, 1, itemW);
-        rows = std::clamp(fitRows, 1, itemH);
+        cols = (std::clamp)(fitCols, 1, itemW);
+        rows = (std::clamp)(fitRows, 1, itemH);
         if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
         else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
         if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
@@ -929,7 +942,10 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     m_lastSixelCells = QSize(cols, rows);
     m_lastSixelSession = session;
 
-    QImage scaled = source.scaled(QSize(cols * cw, rows * ch),
+    const int pixelW = (std::min)(4096, cols * cw);
+    const int pixelH = (std::min)(4096, rows * ch);
+    if (pixelW <= 0 || pixelH <= 0) return;
+    QImage scaled = source.scaled(QSize(pixelW, pixelH),
                                          Qt::IgnoreAspectRatio,
                                          m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
     const QByteArray sixel = graphics::sixelEncode(scaled);
@@ -943,11 +959,16 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     // default background; the next frame's diff re-establishes style.
     QByteArray positioned = "\033[0m\0337";            // default SGR, save cursor
     const QByteArray blank(itemW, ' ');
-    for (int r = 0; r < itemH; ++r)
-        positioned += "\033[" + QByteArray::number(absY + 1 + r) + ';'
-                    + QByteArray::number(absX + 1) + 'H' + blank;
-    positioned += "\033[" + QByteArray::number(originY + 1) + ';'
-                + QByteArray::number(originX + 1) + 'H';    // move to the image origin
+    for (int r = 0; r < itemH; ++r) {
+        const int rowCoord = (std::max)(1, absY + 1 + r);
+        const int colCoord = (std::max)(1, absX + 1);
+        positioned += "\033[" + QByteArray::number(rowCoord) + ';'
+                    + QByteArray::number(colCoord) + 'H' + blank;
+    }
+    const int origRowCoord = (std::max)(1, originY + 1);
+    const int origColCoord = (std::max)(1, originX + 1);
+    positioned += "\033[" + QByteArray::number(origRowCoord) + ';'
+                + QByteArray::number(origColCoord) + 'H';    // move to the image origin
     positioned += sixel;
     positioned += "\0338";                               // restore cursor
     root->enqueuePostControlSequence(positioned);

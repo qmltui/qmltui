@@ -6,12 +6,12 @@ since: "0.4"
 inherits: CanvasShape
 cpp: qamui::Circle
 category: canvas
-summary: _TODO_
+summary: Draws a circle outline or filled disk on a Canvas.
 ---
 
 # Circle QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Draws a circle outline or filled disk on a Canvas. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,14 +23,19 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `cx` | `int` |  | _TODO_ |
-| `cy` | `int` |  | _TODO_ |
-| `radius` | `int` |  | _TODO_ |
-| `fill` | `bool` |  | _TODO_ |
+| `cx` | `int` |  | Holds the horizontal center coordinate in canvas pixels. If not set, defaults to `x`. |
+| `cy` | `int` |  | Holds the vertical center coordinate in canvas pixels. If not set, defaults to `y`. |
+| `radius` | `int` | `0` | Holds the radius of the circle in canvas pixels. |
+| `fill` | `bool` | `false` | Whether to fill the interior of the circle or draw only its perimeter outline. |
 
 ## Detailed Description
 
-_TODO_
+Circle draws a rasterized circle or filled disk on its parent [Canvas](canvas.md)
+using the midpoint circle algorithm. Center coordinates (`cx`, `cy`) and `radius`
+are given in sub-cell canvas pixels.
+
+If `fill` is `true`, a solid disk is drawn using `color`. If `false`, only the
+outer outline is drawn.
 
 ### Example
 
@@ -39,8 +44,26 @@ import QtQml
 import Qamui
 
 Terminal {
-    Circle {
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Canvas {
         anchors.centerIn: parent
+        width: 30
+        height: 10
+        renderMode: Canvas.Braille
+
+        Circle {
+            cx: 30
+            cy: 20
+            radius: 15
+            color: "yellow"
+            fill: false
+        }
     }
 }
 ```

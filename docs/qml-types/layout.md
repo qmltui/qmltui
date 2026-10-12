@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::Layout
 category: layout
-summary: _TODO_
+summary: Provides attached properties for items positioned in RowLayout, ColumnLayout, or GridLayout.
 ---
 
 # Layout Attached type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Provides attached properties for items positioned in RowLayout, ColumnLayout, or GridLayout. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -24,25 +24,35 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
-| `Layout.minimumWidth` | `int` | _TODO_ |
-| `Layout.minimumHeight` | `int` | _TODO_ |
-| `Layout.preferredWidth` | `int` | _TODO_ |
-| `Layout.preferredHeight` | `int` | _TODO_ |
-| `Layout.maximumWidth` | `int` | _TODO_ |
-| `Layout.maximumHeight` | `int` | _TODO_ |
-| `Layout.fillWidth` | `bool` | _TODO_ |
-| `Layout.fillHeight` | `bool` | _TODO_ |
-| `Layout.horizontalStretch` | `int` | _TODO_ |
-| `Layout.verticalStretch` | `int` | _TODO_ |
-| `Layout.row` | `int` | _TODO_ |
-| `Layout.column` | `int` | _TODO_ |
-| `Layout.rowSpan` | `int` | _TODO_ |
-| `Layout.columnSpan` | `int` | _TODO_ |
-| `Layout.alignment` | `Qt::Alignment` | _TODO_ |
+| `Layout.minimumWidth` | `int` | Holds the minimum width in character cells that the layout will assign to this item. |
+| `Layout.minimumHeight` | `int` | Holds the minimum height in rows that the layout will assign to this item. |
+| `Layout.preferredWidth` | `int` | Holds the preferred width in character cells. If `-1`, the item's `implicitWidth` is used. |
+| `Layout.preferredHeight` | `int` | Holds the preferred height in rows. If `-1`, the item's `implicitHeight` is used. |
+| `Layout.maximumWidth` | `int` | Holds the maximum width in character cells that the layout will assign to this item. |
+| `Layout.maximumHeight` | `int` | Holds the maximum height in rows that the layout will assign to this item. |
+| `Layout.fillWidth` | `bool` | Whether the item should expand to fill remaining horizontal space in the layout. |
+| `Layout.fillHeight` | `bool` | Whether the item should expand to fill remaining vertical space in the layout. |
+| `Layout.horizontalStretch` | `int` | Holds the relative horizontal stretch factor when distributing extra width among expanding items. |
+| `Layout.verticalStretch` | `int` | Holds the relative vertical stretch factor when distributing extra height among expanding items. |
+| `Layout.row` | `int` | Holds the 0-based row index for positioning this item in a [GridLayout](gridlayout.md). |
+| `Layout.column` | `int` | Holds the 0-based column index for positioning this item in a [GridLayout](gridlayout.md). |
+| `Layout.rowSpan` | `int` | Holds the number of rows spanned by this item in a [GridLayout](gridlayout.md). |
+| `Layout.columnSpan` | `int` | Holds the number of columns spanned by this item in a [GridLayout](gridlayout.md). |
+| `Layout.alignment` | `Qt::Alignment` | Holds the alignment flags (such as `Qt.AlignHCenter` or `Qt.AlignVCenter`) used to align the item within its allocated cell. |
 
 ## Detailed Description
 
-_TODO_
+Layout provides attached properties used by child items of [RowLayout](rowlayout.md),
+[ColumnLayout](columnlayout.md), and [GridLayout](gridlayout.md) to define how they
+resize, align, and position themselves within their parent layout.
+
+By attaching `Layout.fillWidth: true` or `Layout.fillHeight: true`, an item requests
+that any excess space in the layout after sizing all items to their preferred sizes
+be allocated to it. When multiple items request expansion, extra space is divided
+proportionally according to `Layout.horizontalStretch` and `Layout.verticalStretch`.
+
+In [GridLayout](gridlayout.md), `Layout.row`, `Layout.column`, `Layout.rowSpan`,
+and `Layout.columnSpan` determine the exact grid cell coordinates and cell span.
 
 ### Example
 
@@ -51,6 +61,38 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Layout in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        spacing: 1
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumWidth: 10
+            border.style: "single"
+            Text {
+                anchors.centerIn: parent
+                text: "Panel A"
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.horizontalStretch: 2
+            border.style: "double"
+            Text {
+                anchors.centerIn: parent
+                text: "Panel B (2x)"
+            }
+        }
+    }
 }
 ```

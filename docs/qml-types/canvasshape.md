@@ -6,12 +6,12 @@ since: "0.4"
 inherits: Item
 cpp: qamui::CanvasShape
 category: canvas
-summary: _TODO_
+summary: Abstract base class for 2D geometric shapes drawn on a Canvas.
 ---
 
 # CanvasShape QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Abstract base class for 2D geometric shapes drawn on a Canvas. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -24,11 +24,18 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` |  | _TODO_ |
+| `color` | `rgba` |  | Holds the color used to draw the shape. If not set, the parent Canvas color is used. |
 
 ## Detailed Description
 
-_TODO_
+CanvasShape is the uncreatable abstract base class for declarative shapes drawn
+inside a [Canvas](canvas.md). Subclasses include [Line](line.md), [Circle](circle.md),
+[Point](point.md), [Polygon](polygon.md), and [CanvasRectangle](canvasrectangle.md).
+
+Shapes are placed as child items of a Canvas. During the canvas's paint pass,
+each child shape's geometry is rasterized into the canvas's pixel buffer using
+the shape's individual `color` (or the canvas's default `color` if unset).
+Coordinates are measured in sub-cell canvas pixels.
 
 ### Example
 
@@ -37,6 +44,25 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show CanvasShape in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Canvas {
+        anchors.centerIn: parent
+        width: 20
+        height: 8
+        color: "green"
+
+        Line {
+            x1: 0
+            y1: 0
+            x2: 39
+            y2: 31
+        }
+    }
 }
 ```

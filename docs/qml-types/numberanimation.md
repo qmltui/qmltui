@@ -6,12 +6,12 @@ since: "0.4"
 inherits: PropertyAnimation
 cpp: qamui::NumberAnimation
 category: animation and state
-summary: _TODO_
+summary: Animates numeric properties over time.
 ---
 
 # NumberAnimation QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Animates numeric properties over time. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -21,7 +21,11 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 ## Detailed Description
 
-_TODO_
+NumberAnimation is a specialized [PropertyAnimation](propertyanimation.md) optimized
+for interpolating numeric properties such as `x`, `y`, `width`, `height`, and `opacity`.
+
+It inherits all properties and methods from PropertyAnimation, including `duration`,
+`from`, `to`, `easing`, and `loops`.
 
 ### Example
 
@@ -30,6 +34,33 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show NumberAnimation in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        id: box
+        anchors.centerIn: parent
+        width: 10
+        height: 3
+        border.style: "single"
+
+        NumberAnimation {
+            target: box
+            property: "width"
+            from: 10
+            to: 30
+            duration: 400
+            running: true
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: "NumberAnimation"
+        }
+    }
 }
 ```

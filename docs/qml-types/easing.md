@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::Easing
 category: animation and state
-summary: _TODO_
+summary: Defines easing curve types for animations.
 ---
 
 # Easing QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Defines easing curve types for animations. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -24,18 +24,22 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Value | Description |
 | :--- | :--- |
-| `Easing.Linear` | _TODO_ |
-| `Easing.InQuad` | _TODO_ |
-| `Easing.OutQuad` | _TODO_ |
-| `Easing.InOutQuad` | _TODO_ |
-| `Easing.InCubic` | _TODO_ |
-| `Easing.OutCubic` | _TODO_ |
-| `Easing.InOutCubic` | _TODO_ |
-| `Easing.OutBounce` | _TODO_ |
+| `Easing.Linear` | Linear progression at uniform speed with no acceleration or deceleration. |
+| `Easing.InQuad` | Acceleration from zero velocity following a quadratic curve. |
+| `Easing.OutQuad` | Deceleration to zero velocity following a quadratic curve. |
+| `Easing.InOutQuad` | Acceleration followed by deceleration using a quadratic curve. |
+| `Easing.InCubic` | Acceleration from zero velocity following a cubic curve. |
+| `Easing.OutCubic` | Deceleration to zero velocity following a cubic curve. |
+| `Easing.InOutCubic` | Acceleration followed by deceleration using a cubic curve. |
+| `Easing.OutBounce` | Bouncing effect that decelerates, overshoots, and rebounds to rest at the target. |
 
 ## Detailed Description
 
-_TODO_
+Easing provides curve types used by [PropertyAnimation](propertyanimation.md)
+to control the rate of change of an animated value over time.
+
+By assigning `easing: Easing.OutQuad` or `Easing.InOutCubic`, animations feel
+more natural and responsive than standard linear transitions.
 
 ### Example
 
@@ -44,6 +48,34 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Easing in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        id: card
+        anchors.centerIn: parent
+        width: 12
+        height: 3
+        border.style: "single"
+
+        NumberAnimation {
+            target: card
+            property: "width"
+            from: 12
+            to: 36
+            duration: 400
+            easing: Easing.OutQuad
+            running: true
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: "Easing Demo"
+        }
+    }
 }
 ```

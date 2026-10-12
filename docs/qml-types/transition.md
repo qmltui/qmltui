@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::Transition
 category: animation and state
-summary: _TODO_
+summary: Defines animated transitions between states.
 ---
 
 # Transition QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Defines animated transitions between states. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,13 +23,19 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `from` | `string` |  | _TODO_ |
-| `to` | `string` |  | _TODO_ |
-| `animations` | `list<Animation>` |  | Read-only. _TODO_ |
+| `from` | `string` | `"*"` | Holds the origin state name that triggers this transition (`"*"` matches any state). |
+| `to` | `string` | `"*"` | Holds the target destination state name that triggers this transition (`"*"` matches any state). |
+| `animations` | `list<Animation>` |  | Read-only. Holds the animations played when moving between the states. This is the default property. |
 
 ## Detailed Description
 
-_TODO_
+Transition specifies the animations that play when an item changes its visual
+[State](state.md).
+
+By default, transitions apply in both directions if `from` and `to` are `*`,
+or they can be customized for specific state changes (e.g. `from: "off"; to: "on"`).
+Animations placed inside the Transition are automatically configured to animate
+the properties modified by the state change.
 
 ### Example
 
@@ -38,6 +44,48 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Transition in use
+    id: root
+    property bool active: false
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        } else if (event.key === Qt.Key_Space) {
+            root.active = !root.active
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        id: box
+        anchors.centerIn: parent
+        width: 20
+        height: 5
+        color: "blue"
+        border.style: "single"
+
+        states: [
+            State {
+                name: "active"
+                when: root.active
+                PropertyChanges {
+                    target: box
+                    properties: { "color": "green" }
+                }
+            }
+        ]
+
+        transitions: [
+            Transition {
+                ColorAnimation { duration: 300 }
+            }
+        ]
+
+        Text {
+            anchors.centerIn: parent
+            text: "Toggle Space"
+        }
+    }
 }
 ```

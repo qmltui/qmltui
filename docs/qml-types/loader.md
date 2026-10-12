@@ -6,12 +6,12 @@ since: "0.4"
 inherits: Item
 cpp: qamui::Loader
 category: layout
-summary: _TODO_
+summary: Loads and instantiates components or QML documents dynamically on demand.
 ---
 
 # Loader QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Loads and instantiates components or QML documents dynamically on demand. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,33 +23,44 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `active` | `bool` |  | _TODO_ |
-| `source` | `url` |  | _TODO_ |
-| `sourceComponent` | `Component` |  | _TODO_ |
-| `item` | `Item` |  | Read-only. _TODO_ |
-| `status` | `Status` |  | Read-only. _TODO_ |
-| `progress` | `real` |  | Read-only. _TODO_ |
-| `asynchronous` | `bool` |  | _TODO_ |
-| `errorString` | `string` |  | Read-only. _TODO_ |
+| `active` | `bool` | `true` | Holds whether the component should be instantiated. Setting to `false` destroys the loaded item. |
+| `source` | `url` |  | Holds the URL of a QML document to load. Setting it clears `sourceComponent`. |
+| `sourceComponent` | `Component` |  | Holds an inline component to instantiate. Setting it clears `source`. |
+| `item` | `Item` |  | Read-only. Holds the instantiated visual item, or `null` if nothing is loaded. |
+| `status` | `Status` |  | Read-only. Holds the current loading status: `Loader.Null`, `Loader.Ready`, `Loader.Loading`, or `Loader.Error`. |
+| `progress` | `real` |  | Read-only. Holds the loading progress from `0.0` to `1.0`. |
+| `asynchronous` | `bool` | `false` | Whether the QML component should be compiled and instantiated asynchronously in a background thread. |
+| `errorString` | `string` |  | Read-only. Holds the description of any error encountered during compilation or instantiation. |
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `loaded()` | _TODO_ |
+| `loaded()` | Emitted when the item has completed loading and instantiation. |
 
 ## Enumeration Loader.Status
 
 | Value | Description |
 | :--- | :--- |
-| `Loader.Null` | _TODO_ |
-| `Loader.Ready` | _TODO_ |
-| `Loader.Loading` | _TODO_ |
-| `Loader.Error` | _TODO_ |
+| `Loader.Null` | No source or sourceComponent is specified, or the Loader is inactive. |
+| `Loader.Ready` | The component has been successfully loaded and instantiated. |
+| `Loader.Loading` | The component is actively being loaded or compiled. |
+| `Loader.Error` | An error occurred while loading or compiling the component. |
 
 ## Detailed Description
 
-_TODO_
+Loader is used to dynamically load and unload QML items on demand. It is
+useful for deferring the creation of complex views, tabs, dialogs, or
+controllers until they are actually needed, reducing initial startup time
+and memory footprint.
+
+When the loaded object is a visual `qamui::Item`, it becomes a visual child
+of the Loader: the Loader adopts the item's implicit size, and setting an
+explicit `width` or `height` on the Loader propagates down to the item.
+When `active` is set to `false`, the instantiated item is immediately destroyed.
+
+Access the loaded instance via `item` only after `status` is `Loader.Ready`
+or inside the `onLoaded` signal handler.
 
 ### Example
 
@@ -58,64 +69,25 @@ import QtQml
 import Qamui
 
 Terminal {
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
     Loader {
         anchors.centerIn: parent
+        active: true
+        sourceComponent: Rectangle {
+            width: 24
+            height: 5
+            border.style: "single"
+            Text {
+                anchors.centerIn: parent
+                text: "Loaded Content"
+            }
+        }
     }
 }
 ```
-
-## Loading components on demand
-
-`Loader` creates an object from a QML component when it is needed. It
-instantiates any object type, not only visual ones, so a theme, controller, or
-other headless `QtObject` can be loaded on demand.
-
-## Properties
-
-| Property | Type | Description |
-|---|---|---|
-| `active` | `bool` | Creates the item when true and destroys it when false. |
-| `source` | `url` | URL of a QML component to load. |
-| `sourceComponent` | `Component` | Inline component to instantiate. Setting it clears `source`. |
-| `item` | `QtObject` | The instantiated object, or `null`. |
-| `status` | `Loader.Status` | `Null`, `Ready`, `Loading`, or `Error`. |
-| `progress` | `real` | Source compilation progress from 0 to 1. |
-| `asynchronous` | `bool` | Requests asynchronous compilation for URL sources. |
-| `errorString` | `string` | Compilation or instantiation error text. |
-
-When the loaded object is a `qamui::Item` it becomes a visual child of the
-loader: the loader adopts its implicit size, and an explicit loader width or
-height is propagated to it. No sizing rule applies to a non-visual object; the
-loader keeps its own zero implicit size and the object is owned by the loader
-without joining the visual tree.
-
-## Example
-
-```qml
-Loader {
-    active: showDetails
-    sourceComponent: Text {
-        text: "Details"
-    }
-}
-```
-
-Loading a headless object works the same way:
-
-```qml
-Loader {
-    id: themeLoader
-    source: darkMode ? "DarkTheme.qml" : "LightTheme.qml"
-}
-```
-
-```qml
-// DarkTheme.qml
-import QtQml
-
-QtObject {
-    readonly property color accent: "cyan"
-}
-```
-
-Access `item` only after `status` becomes `Loader.Ready`.

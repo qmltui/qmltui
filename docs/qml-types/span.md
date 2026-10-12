@@ -24,14 +24,14 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `text` | `string` |  | _TODO_ |
-| `color` | `rgba` |  | _TODO_ |
-| `backgroundColor` | `rgba` |  | _TODO_ |
-| `bold` | `bool` |  | _TODO_ |
-| `dim` | `bool` |  | _TODO_ |
-| `italic` | `bool` |  | _TODO_ |
-| `underline` | `bool` |  | _TODO_ |
-| `reversed` | `bool` |  | _TODO_ |
+| `text` | `string` |  | Holds the plain text content of this span. |
+| `color` | `rgba` |  | Holds the foreground text color override for this span. |
+| `backgroundColor` | `rgba` |  | Holds the background cell color override for this span. |
+| `bold` | `bool` |  | Whether this span applies bold text formatting. |
+| `dim` | `bool` |  | Whether this span applies dim / faint text formatting. |
+| `italic` | `bool` |  | Whether this span applies italic text formatting. |
+| `underline` | `bool` |  | Whether this span applies underline text formatting. |
+| `reversed` | `bool` |  | Whether this span swaps foreground and background colors. |
 
 ## Detailed Description
 
@@ -48,3 +48,28 @@ The QML properties support reset by assigning `undefined`.
 Equality includes override presence, so an unset attribute differs from an
 explicitly disabled attribute. Copies are ordinary values with no QObject
 identity. See Text for multiline, grapheme-boundary, and gradient semantics.
+
+### Example
+
+```qml
+import QtQml
+import Qamui
+
+Terminal {
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Text {
+        anchors.centerIn: parent
+        spans: [
+            Qamui.span("Normal ", {}),
+            Qamui.span("Bold ", { "bold": true, "color": "cyan" }),
+            Qamui.span("Underlined", { "underline": true, "color": "yellow" })
+        ]
+    }
+}
+```

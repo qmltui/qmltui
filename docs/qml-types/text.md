@@ -24,26 +24,26 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `spans` | `list<span>` | `[]` | Literal styled runs; a nonempty list takes precedence over `text`. |
-| `text` | `string` |  | _TODO_ |
-| `color` | `rgba` |  | _TODO_ |
-| `bold` | `bool` |  | _TODO_ |
-| `dim` | `bool` |  | _TODO_ |
-| `italic` | `bool` |  | _TODO_ |
-| `underline` | `bool` |  | _TODO_ |
-| `reversed` | `bool` |  | _TODO_ |
-| `horizontalAlignment` | `int` |  | _TODO_ |
-| `verticalAlignment` | `int` |  | _TODO_ |
-| `textFormat` | `TextFormat` |  | _TODO_ |
-| `gradient` | `Gradient` |  | _TODO_ |
+| `text` | `string` | `""` | Holds the plain, rich, or ANSI text to display when `spans` is empty. |
+| `color` | `rgba` | `"default"` | Holds the text foreground color. |
+| `bold` | `bool` | `false` | Whether text is rendered in bold face. |
+| `dim` | `bool` | `false` | Whether text is rendered in dim or faint face. |
+| `italic` | `bool` | `false` | Whether text is rendered in italic face if supported by the terminal. |
+| `underline` | `bool` | `false` | Whether text is rendered with an underline. |
+| `reversed` | `bool` | `false` | Whether foreground and background colors are inverted. |
+| `horizontalAlignment` | `int` | `Qt.AlignLeft` | Holds horizontal alignment: `Qt.AlignLeft`, `Qt.AlignHCenter`, or `Qt.AlignRight`. |
+| `verticalAlignment` | `int` | `Qt.AlignTop` | Holds vertical alignment: `Qt.AlignTop`, `Qt.AlignVCenter`, or `Qt.AlignBottom`. |
+| `textFormat` | `TextFormat` | `Text.AutoText` | Holds how text is parsed: `Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`. |
+| `gradient` | `Gradient` | `null` | Holds an optional [Gradient](gradient.md) applied across the rendered text characters. |
 
 ## Enumeration Text.TextFormat
 
 | Value | Description |
 | :--- | :--- |
-| `Text.PlainText` | _TODO_ |
-| `Text.RichText` | _TODO_ |
-| `Text.AnsiText` | _TODO_ |
-| `Text.AutoText` | _TODO_ |
+| `Text.PlainText` | Text is treated as plain literal text without formatting interpretation. |
+| `Text.RichText` | Basic HTML tags (such as `<b>`, `<i>`, `<font color="...">`) are parsed. |
+| `Text.AnsiText` | Embedded ANSI/VT SGR escape sequences are parsed and styled. |
+| `Text.AutoText` | Automatically determines format based on presence of HTML tags or ANSI escape codes. |
 
 ## Detailed Description
 
@@ -99,30 +99,6 @@ Terminal {
 
 ### C++
 
-```cpp
-#include <Qamui/Core/items/Text.h>
-
-qamui::Span label(QStringLiteral("Status: "));
-label.setBold(false);
-label.setDim(true);
-qamui::Text text;
-text.setSpans({label, qamui::Span(QStringLiteral("Active"), qamui::Color("green"))});
-```
-
-Spans have value semantics without per-span QObject allocation. Strings,
-containers, QML construction, and layout storage can still allocate.
-
-## Styled text spans
-
-`Text.spans` accepts a `list<span>` built from object literals or
-`Qamui.span(text, options)`. Nonempty spans take precedence over `text`; clearing
-the list restores it. Content is literal, and newlines create explicit lines
-without automatic wrapping. Omitted style inherits, explicit boolean values
-override, and `color: "default"` requests the terminal foreground. See
-[Text](text.md) and [span](span.md) for the complete
-layout, inheritance, and C++ contracts.
-
-## 13. QML Exposure
-
-Registered as `Text` in the `Tui` module via `QML_ELEMENT`.
-
+Use `qamui::Text` from `<Qamui/Text.h>`. Construct it with an optional parent
+`QObject`, set properties directly, and use `paint()` during the text grid
+render pass.

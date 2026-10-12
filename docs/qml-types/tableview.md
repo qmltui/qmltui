@@ -24,42 +24,42 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, width, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
-| `model` | `var` |  | _TODO_ |
-| `selectedRow` | `int` |  | _TODO_ |
-| `currentRow` | `int` |  | Read-only. _TODO_ |
-| `currentColumn` | `int` |  | _TODO_ |
-| `alternatingRows` | `bool` |  | _TODO_ |
+| `model` | `var` |  | Holds the data model providing tabular entries: 2D array, TableModel, or QAbstractItemModel. |
+| `selectedRow` | `int` |  | Holds the index of the currently selected row, or -1 if no row is selected. |
+| `currentRow` | `int` |  | Read-only. Holds the index of the currently active row. |
+| `currentColumn` | `int` |  | Holds the index of the currently active column. |
+| `alternatingRows` | `bool` |  | Whether alternating rows use alternatingRowBackgroundColor. |
 | `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
-| `headerColor` | `rgba` |  | _TODO_ |
-| `headerBackgroundColor` | `rgba` |  | _TODO_ |
-| `selectionColor` | `rgba` |  | _TODO_ |
+| `headerColor` | `rgba` |  | Holds the foreground text color used for column headers. |
+| `headerBackgroundColor` | `rgba` |  | Holds the background color used for column headers. |
+| `selectionColor` | `rgba` |  | Holds the foreground text color for the selected row. |
 | `selectionKeepsCellColors` | bool | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
-| `selectionBackgroundColor` | `rgba` |  | _TODO_ |
-| `textColor` | `rgba` |  | _TODO_ |
-| `rowBackgroundColor` | `rgba` |  | _TODO_ |
-| `alternatingRowBackgroundColor` | `rgba` |  | _TODO_ |
+| `selectionBackgroundColor` | `rgba` |  | Holds the background highlight color for the selected row. |
+| `textColor` | `rgba` |  | Holds the default text color for data cells. |
+| `rowBackgroundColor` | `rgba` |  | Holds the default background color for table rows. |
+| `alternatingRowBackgroundColor` | `rgba` |  | Holds the background color for alternating table rows. |
 | `gridColor` | `rgba` |  | Color used for borders and grid lines; falls back to `textColor`. |
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |
 | `gridStyle` | `string` | `"single"` | Style of all borders and grid lines: `"single"`, `"double"`, or `"ascii"`. |
-| `columnWidthProvider` | `var` |  | _TODO_ |
+| `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
 | `cellFormat` | `var` |  | JS callback `(row, column, value) => ({ text, color, backgroundColor, bold, align, padding, leftPadding, rightPadding })`. |
-| `delegate` | `Component` |  | _TODO_ |
-| `rowDelegate` | `Component` |  | _TODO_ |
+| `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
+| `rowDelegate` | `Component` |  | Holds an optional custom component for rendering entire rows. |
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `rowActivated(int index)` | _TODO_ |
-| `headerClicked(int column)` | _TODO_ |
+| `rowActivated(int index)` | Emitted when a row is activated by pressing Enter or clicking. |
+| `headerClicked(int column)` | Emitted when a column header is clicked. |
 
 ## Methods
 
 | Method | Description |
 | :--- | :--- |
-| `void forceLayout()` | _TODO_ |
+| `void forceLayout()` | Recalculates column widths, layout geometry, and visible rows immediately. |
 
 ## Detailed Description
 

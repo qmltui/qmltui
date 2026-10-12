@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::Anchors
 category: core
-summary: _TODO_
+summary: Grouped property defining relative positioning constraints between items.
 ---
 
 # Anchors QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Grouped property defining relative positioning constraints between items. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -24,23 +24,32 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `fill` | `QtObject` |  | _TODO_ |
-| `centerIn` | `QtObject` |  | _TODO_ |
-| `left` | `AnchorLine` |  | _TODO_ |
-| `right` | `AnchorLine` |  | _TODO_ |
-| `top` | `AnchorLine` |  | _TODO_ |
-| `bottom` | `AnchorLine` |  | _TODO_ |
-| `horizontalCenter` | `AnchorLine` |  | _TODO_ |
-| `verticalCenter` | `AnchorLine` |  | _TODO_ |
-| `margins` | `int` |  | _TODO_ |
-| `leftMargin` | `int` |  | _TODO_ |
-| `rightMargin` | `int` |  | _TODO_ |
-| `topMargin` | `int` |  | _TODO_ |
-| `bottomMargin` | `int` |  | _TODO_ |
+| `fill` | `QtObject` | `null` | Anchors all four edges to match the target item's bounds. |
+| `centerIn` | `QtObject` | `null` | Centers this item both horizontally and vertically inside the target item. |
+| `left` | `AnchorLine` | `null` | Anchors the left edge of this item to the specified [AnchorLine](anchorline.md). |
+| `right` | `AnchorLine` | `null` | Anchors the right edge of this item to the specified [AnchorLine](anchorline.md). |
+| `top` | `AnchorLine` | `null` | Anchors the top edge of this item to the specified [AnchorLine](anchorline.md). |
+| `bottom` | `AnchorLine` | `null` | Anchors the bottom edge of this item to the specified [AnchorLine](anchorline.md). |
+| `horizontalCenter` | `AnchorLine` | `null` | Anchors the horizontal center of this item to the specified [AnchorLine](anchorline.md). |
+| `verticalCenter` | `AnchorLine` | `null` | Anchors the vertical center of this item to the specified [AnchorLine](anchorline.md). |
+| `margins` | `int` | `0` | Holds the default distance in character cells applied to all anchor edges. |
+| `leftMargin` | `int` | `margins` | Holds the horizontal margin in cells for the left anchor. |
+| `rightMargin` | `int` | `margins` | Holds the horizontal margin in cells for the right anchor. |
+| `topMargin` | `int` | `margins` | Holds the vertical margin in rows for the top anchor. |
+| `bottomMargin` | `int` | `margins` | Holds the vertical margin in rows for the bottom anchor. |
 
 ## Detailed Description
 
-_TODO_
+Anchors provide a declarative way to specify geometric relationships and alignments
+between items on the character cell grid. Every [Item](item.md) exposes an `anchors`
+grouped property.
+
+Items can be anchored to their parent or to siblings. Anchoring both `left` and `right`
+automatically resolves the item's width; anchoring both `top` and `bottom` resolves its
+height. Using `anchors.fill: target` sets all four edges, while `anchors.centerIn: target`
+centers the item within the target without altering its dimensions.
+
+All margins are measured in integer character cells and rows.
 
 ### Example
 
@@ -49,6 +58,22 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Anchors in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 2
+        border.style: "double"
+
+        Text {
+            anchors.centerIn: parent
+            text: "Centered with Anchors"
+        }
+    }
 }
 ```

@@ -6,12 +6,12 @@ since: "0.4"
 inherits: PropertyAnimation
 cpp: qamui::ColorAnimation
 category: animation and state
-summary: _TODO_
+summary: Animates color properties over time by smoothly interpolating color channels.
 ---
 
 # ColorAnimation QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Animates color properties over time by smoothly interpolating color channels. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -21,7 +21,11 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 ## Detailed Description
 
-_TODO_
+ColorAnimation is a specialized [PropertyAnimation](propertyanimation.md) that
+smoothly transitions between color values by interpolating their RGBA channels.
+It is commonly used on properties like `color`, `textColor`, and `borderColor`.
+
+Like all PropertyAnimations, it supports `duration`, `from`, `to`, and `easing`.
 
 ### Example
 
@@ -30,6 +34,33 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show ColorAnimation in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        id: box
+        anchors.centerIn: parent
+        width: 20
+        height: 5
+        border.style: "double"
+
+        ColorAnimation {
+            target: box
+            property: "color"
+            from: "blue"
+            to: "red"
+            duration: 500
+            running: true
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: "ColorAnimation"
+        }
+    }
 }
 ```

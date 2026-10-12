@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::QamuiGlobal
 category: core
-summary: _TODO_
+summary: Global Qamui engine singleton providing helper factory methods.
 ---
 
 # Qamui Singleton
 
-_TODO_ one sentence. [More...](#detailed-description)
+Global Qamui engine singleton providing helper factory methods. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -26,7 +26,7 @@ _TODO_ one sentence. [More...](#detailed-description)
 | :--- | :--- |
 | `span span(string text)` | Creates a literal span with inherited style. |
 | `span span(string text, QVariantMap options)` | Creates a span with explicit style overrides. |
-| `Color rgba(real red, real green, real blue, real alpha)` | _TODO_ |
+| `Color rgba(real red, real green, real blue, real alpha)` | Constructs an rgba color value from channel components in the 0.0 to 1.0 range. |
 
 ## Detailed Description
 
@@ -36,7 +36,10 @@ _TODO_ one sentence. [More...](#detailed-description)
 values; attributes require booleans. Unknown options and invalid values emit
 warnings and are ignored, leaving the corresponding overrides unset.
 
-Use the returned values in [Text.spans](text.md).
+`Qamui.rgba(red, green, blue, alpha)` constructs a color value directly from
+normalized channel floats (0.0 to 1.0).
+
+Use the returned spans in [Text.spans](text.md).
 
 ### Example
 
@@ -45,6 +48,19 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Qamui in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Text {
+        anchors.centerIn: parent
+        spans: [
+            Qamui.span("Hello ", { "color": "cyan", "bold": true }),
+            Qamui.span("Terminal", { "color": "yellow", "underline": true })
+        ]
+    }
 }
 ```

@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::GradientStop
 category: core
-summary: _TODO_
+summary: Defines a color stop at a normalized position within a Gradient.
 ---
 
 # GradientStop QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Defines a color stop at a normalized position within a Gradient. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,18 +23,22 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `position` | `real` |  | _TODO_ |
-| `color` | `rgba` |  | _TODO_ |
+| `position` | `real` | `0.0` | Holds the normalized position of the stop along the gradient axis, from `0.0` to `1.0`. |
+| `color` | `rgba` | `"white"` | Holds the color of the gradient at this stop. |
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `updated()` | _TODO_ |
+| `updated()` | Emitted when either `position` or `color` is modified. |
 
 ## Detailed Description
 
-_TODO_
+GradientStop specifies the color at a particular location along the axis of a
+[Gradient](gradient.md).
+
+Multiple stops are defined within a Gradient to create smooth multi-stop color
+ramps. `position` ranges from `0.0` (start of the gradient axis) to `1.0` (end of the axis).
 
 ### Example
 
@@ -43,6 +47,30 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show GradientStop in use
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Rectangle {
+        anchors.centerIn: parent
+        width: 30
+        height: 6
+        border.style: "single"
+
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "magenta" }
+            GradientStop { position: 0.5; color: "yellow" }
+            GradientStop { position: 1.0; color: "cyan" }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: "Gradient Stops"
+        }
+    }
 }
 ```

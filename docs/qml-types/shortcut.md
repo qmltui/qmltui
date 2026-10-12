@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::Shortcut
 category: input events
-summary: _TODO_
+summary: Defines application-wide keyboard shortcuts that trigger actions.
 ---
 
 # Shortcut QML type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Defines application-wide keyboard shortcuts that trigger actions. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -23,18 +23,24 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `sequence` | `int` |  | _TODO_ |
-| `enabled` | `bool` |  | _TODO_ |
+| `sequence` | `int` | `0` | Holds the key code or key sequence combination that activates the shortcut. |
+| `enabled` | `bool` | `true` | Holds whether the shortcut is currently active and listens for key presses. |
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `activated()` | _TODO_ |
+| `activated()` | Emitted when the shortcut key combination is pressed. |
 
 ## Detailed Description
 
-_TODO_
+Shortcut provides a convenient way to register global keyboard shortcuts that
+trigger actions regardless of which item currently possesses keyboard focus.
+
+The `sequence` property accepts a Qt key code (for instance `Qt.Key_F1`,
+`Qt.Key_Escape`, or a modified combination like `Qt.ControlModifier | Qt.Key_S`).
+When the matching key is pressed and `enabled` is `true`, the `activated()`
+signal is emitted.
 
 ### Example
 
@@ -43,6 +49,20 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show Shortcut in use
+    Shortcut {
+        sequence: Qt.Key_Q
+        onActivated: Qt.quit()
+    }
+
+    Shortcut {
+        sequence: Qt.Key_Space
+        onActivated: message.text = "Shortcut activated!"
+    }
+
+    Text {
+        id: message
+        anchors.centerIn: parent
+        text: "Press Space or Q"
+    }
 }
 ```

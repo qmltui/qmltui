@@ -6,12 +6,12 @@ since: "0.4"
 inherits: 
 cpp: qamui::TerminalCapabilities
 category: core
-summary: _TODO_
+summary: Describes capabilities detected from the host terminal environment.
 ---
 
 # terminalCapabilities Value type
 
-_TODO_ one sentence. [More...](#detailed-description)
+Describes capabilities detected from the host terminal environment. [More...](#detailed-description)
 
 | | |
 | :--- | :--- |
@@ -24,15 +24,20 @@ _TODO_ one sentence. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `kittyKeyboard` | `bool` |  | Read-only. _TODO_ |
-| `kittyGraphics` | `bool` |  | Read-only. _TODO_ |
-| `sixelGraphics` | `bool` |  | Read-only. _TODO_ |
-| `cellPixelSize` | `size` |  | Read-only. _TODO_ |
-| `syncOutput` | `bool` |  | Read-only. _TODO_ |
+| `kittyKeyboard` | `bool` |  | Read-only. Holds whether the terminal supports the Kitty keyboard protocol with key disambiguation. |
+| `kittyGraphics` | `bool` |  | Read-only. Holds whether the terminal supports true-pixel graphics via the Kitty graphics protocol. |
+| `sixelGraphics` | `bool` |  | Read-only. Holds whether the terminal supports raster graphics via the Sixel protocol. |
+| `cellPixelSize` | `size` |  | Read-only. Holds the pixel dimensions (width x height) of a single character cell, or invalid if unknown. |
+| `syncOutput` | `bool` |  | Read-only. Holds whether the terminal supports synchronized output (DEC private mode 2026) for tear-free frame updates. |
 
 ## Detailed Description
 
-_TODO_
+`terminalCapabilities` is a read-only value type exposed through [Terminal.capabilities](terminal.md).
+During application startup, Qamui inspects environment variables (`TERM`, `TERM_PROGRAM`,
+`COLORTERM`) and issues asynchronous VT query probes to determine host terminal features.
+
+Applications use these flags to enable rich features conditionally, such as true-pixel
+image rendering via Kitty graphics or fine-grained key event detection.
 
 ### Example
 
@@ -41,6 +46,28 @@ import QtQml
 import Qamui
 
 Terminal {
-    // _TODO_ show terminalCapabilities in use
+    id: root
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    Column {
+        anchors.centerIn: parent
+        spacing: 1
+
+        Text {
+            text: "Kitty Keyboard: " + (root.capabilities.kittyKeyboard ? "Yes" : "No")
+        }
+        Text {
+            text: "Kitty Graphics: " + (root.capabilities.kittyGraphics ? "Yes" : "No")
+        }
+        Text {
+            text: "Sync Output:    " + (root.capabilities.syncOutput ? "Yes" : "No")
+        }
+    }
 }
 ```

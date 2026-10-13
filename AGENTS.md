@@ -61,6 +61,20 @@
   startup must remain independent from scenarios unless requested through the
   Runner environment variables. Build without tests and Runner for production.
 
+## Code Formatting and Style Conventions
+
+- Format C++ files with `clang-format` according to `.clang-format` (4 spaces,
+  attached braces, pointer/reference left-aligned, column limit 100).
+- Format QML files with `qmlformat` according to `.qmlformat.ini` (4 spaces,
+  no tabs, semicolon required on JS statements, group attributes together).
+- Run `./scripts/format.sh` to automatically format staged files or `./scripts/format.sh <path>`
+  for specific files. Use `./scripts/format.sh --check` to verify code style without modifications.
+- In QML, follow the Qt property declaration order:
+  `id` -> custom properties -> signals -> JavaScript functions -> object properties / geometry -> visual/text -> signal handlers -> child objects -> states/transitions.
+- In QML signal handlers with parameters, always use arrow functions: `Keys.onPressed: event => { ... }`.
+- In QML, prefer grouped property notation (e.g. `anchors { left: ...; top: ... }`, `border { color: ...; style: ... }`)
+  over repetitive dot notation when specifying multiple grouped properties.
+
 ## Handoff
 
 - Run `rtk git diff --check` before handoff.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# QmlTui Git pre-commit hook: verify that staged C++ files adhere to clang-format
+# QmlTui Git pre-commit hook: verify that staged C++ and QML files adhere to code style
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -13,7 +13,7 @@ fi
 if ! "$FORMAT_SCRIPT" --check; then
     cat << 'EOF' >&2
 
-Commit aborted due to code style violations.
+Commit aborted due to code style violations in staged C++ or QML files.
 To format your staged changes automatically, run:
   ./scripts/format.sh
 

@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
           QCommandLineOption("record", "Record asciicast beneath the artifact directory.",
                              "relative-path"),
           QCommandLineOption("operation-timeout-ms", "Operation timeout (1..30000).", "ms", "2000"),
-          QCommandLineOption("timeout-ms", "Scenario timeout (1..300000).", "ms", "10000"),
+          QCommandLineOption("timeout-ms", "Scenario timeout (1..300000).", "ms", "30000"),
           QCommandLineOption("startup-timeout-ms", "Activation timeout (1..300000).", "ms", "5000"),
           QCommandLineOption("live", "Forward live terminal rendering."),
           QCommandLineOption("update-snapshots", "Rewrite snapshot baselines.")})

@@ -376,7 +376,7 @@ add_qmltui_environment_scenario(test_runner_capture_after qmltui_runner_fixture 
     ARTIFACT_CONTENT "STATUS: ASYNC READY"
 )
 add_qmltui_environment_scenario(test_runner_capture_too_long qmltui_runner_fixture 1
-    CAPTURE_AFTER_MS 9000
+    CAPTURE_AFTER_MS 29000
     FAILURE_PATTERN "must not exceed QMLTUI_RUNNER_TIMEOUT_MS"
     ARTIFACT "result.json"
 )

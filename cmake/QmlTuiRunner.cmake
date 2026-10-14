@@ -34,7 +34,7 @@ function(qmltui_add_scenario)
             "COLUMNS;80"
             "ROWS;24"
             "OPERATION_TIMEOUT_MS;2000"
-            "SCENARIO_TIMEOUT_MS;10000"
+            "SCENARIO_TIMEOUT_MS;30000"
             "EXPECTED_EXIT;0")
         list(GET default_pair 0 key)
         list(GET default_pair 1 value)

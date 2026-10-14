@@ -389,7 +389,7 @@ private:
     QString m_artifactDirectory;
     QSize m_viewport;
     int m_operationTimeoutMs = 2000;
-    int m_scenarioTimeoutMs = 10000;
+    int m_scenarioTimeoutMs = 30000;
     QString m_configurationError;
     QString m_mode = QStringLiteral("embedded");
     QString m_temporaryScriptPath;

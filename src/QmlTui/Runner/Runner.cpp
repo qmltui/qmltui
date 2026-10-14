@@ -455,7 +455,7 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal)
         viewport = QSize(columns, rows);
     }
 
-    const int scenarioTimeout = environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 10000,
+    const int scenarioTimeout = environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 30000,
                                                     minimumTimeoutMs, maximumScenarioTimeoutMs,
                                                     &configurationError);
     const int operationTimeout = environmentInteger("QMLTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000,

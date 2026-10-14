@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
         script,
         artifacts, viewport,
         environmentInteger("QMLTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000),
-        environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 10000),
+        environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 30000),
         QString());
     if (liveAfterConstruction)
         runner->setLiveOutput(true);

@@ -325,7 +325,7 @@ Creates and schedules a runner from environment variables. It returns `nullptr` 
 | `QMLTUI_RUNNER_COLUMNS` | `80` | Viewport columns, from 1 through 1,000. |
 | `QMLTUI_RUNNER_ROWS` | `24` | Viewport rows, from 1 through 1,000. |
 | `QMLTUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. |
-| `QMLTUI_RUNNER_TIMEOUT_MS` | `10000` | Overall scenario watchdog, from 1 through 300,000 milliseconds. |
+| `QMLTUI_RUNNER_TIMEOUT_MS` | `30000` | Overall scenario watchdog, from 1 through 300,000 milliseconds. |
 | `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. C++: `useEmbeddedScenario(true)` or `setLiveOutput()`. |
 | `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Marks a run driven by a directly constructed `Runner`, so the engine applies the same quiet-by-default terminal behavior as an environment-requested scenario. C++: `useEmbeddedScenario()`. |
 | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines instead of failing on mismatch; see Snapshot Update Mode. C++: `setUpdateSnapshots()`. |
@@ -482,7 +482,7 @@ be found through `PATH`.
 | `--record RELATIVE_PATH` | Off | Write an asciicast beneath the artifact directory; incompatible with `--live`. |
 | `--update-snapshots` | Off | Rewrite snapshot baselines using Runner's existing update behavior. |
 | `--operation-timeout-ms` | `2000` | Per-operation timeout, 1–30,000 ms. |
-| `--timeout-ms` | `10000` | Scenario timeout, 1–300,000 ms. |
+| `--timeout-ms` | `30000` | Scenario timeout, 1–300,000 ms. |
 | `--startup-timeout-ms` | `5000` | Runner activation deadline, 1–300,000 ms. |
 
 Capture delay is 0–30,000 ms; delay plus operation timeout must fit within the

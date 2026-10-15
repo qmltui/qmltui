@@ -6,7 +6,7 @@ since: "0.4"
 inherits: Item
 cpp: qmltui::Item
 category: inputs
-summary: The interaction template every button-like control is built on: text, pressed and down, checkable and checked, hover, paddings, and the background and contentItem items
+summary: "The interaction template every button-like control is built on: text, pressed and down, checkable and checked, hover, paddings, and the background and contentItem items"
 ---
 
 # AbstractButton QML type

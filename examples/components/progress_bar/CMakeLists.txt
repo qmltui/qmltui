@@ -6,12 +6,10 @@ qt_add_qml_module(qmltui_progress_bar_demo
     QML_FILES
         Main.qml
 
- DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 
 target_link_libraries(qmltui_progress_bar_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
-
-install(TARGETS qmltui_progress_bar_demo DESTINATION bin)
 
 if(TARGET qmltui::runner)
     target_link_libraries(qmltui_progress_bar_demo PRIVATE qmltui::runner)

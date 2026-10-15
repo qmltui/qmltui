@@ -196,21 +196,20 @@ if(qmltui_core_library_type STREQUAL "STATIC_LIBRARY" AND NOT QMLTUI_USE_SYSTEM_
 endif()
 if(QMLTUI_ENABLE_PRIVATE_QT)
     target_link_libraries(QmlTuiCore PRIVATE Qt6::QmlPrivate)
-    target_compile_definitions(QmlTuiCore PUBLIC
-        QMLTUI_ENABLE_PRIVATE_QT
-        QMLTUI_HAS_QML_PRIVATE
-        QMLTUI_ENABLE_BEHAVIOR
-        QMLTUI_ENABLE_ADVANCED_STATES
-    )
+    target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
 target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_CORE_LIBRARY)
 add_library(qmltui::core ALIAS QmlTuiCore)
 add_library(QmlTui::Core ALIAS QmlTuiCore)
 set_target_properties(QmlTuiCore PROPERTIES EXPORT_NAME Core)
+file(RELATIVE_PATH _qmltui_rel_libdir
+    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui"
+    "${CMAKE_INSTALL_FULL_LIBDIR}"
+)
 set_target_properties(QmlTuiCoreplugin PROPERTIES
     EXPORT_NAME CorePlugin
-    INSTALL_RPATH "$ORIGIN/../../.."
+    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
 )
 install(TARGETS QmlTuiCore
     EXPORT QmlTuiTargets

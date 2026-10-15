@@ -11,7 +11,7 @@ qt_add_qml_module(qmltui_standard_item_delegate_demo
     VERSION 1.0
     QML_FILES Main.qml
     SOURCES ReleaseChecklistModel.h ReleaseChecklistModel.cpp
-    DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE
     Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::controls)

@@ -7,9 +7,9 @@ qt_add_qml_module(qmltui_animated_sprite_demo
         Main.qml
     RESOURCES
         loading.png
-    DEPENDENCIES TARGET
-        qmltui::core
-        qmltui::image
+    DEPENDENCIES
+        TARGET qmltui::core
+        TARGET qmltui::image
 )
 
 target_link_libraries(qmltui_animated_sprite_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::image)

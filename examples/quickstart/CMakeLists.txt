@@ -23,6 +23,6 @@ qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
     VERSION 1.0
     QML_FILES Main.qml
- DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)

@@ -7,7 +7,7 @@ qt_add_qml_module(qmltui_status_badge_demo
         StatusBadge.qml
         Main.qml
 
- DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 
 target_link_libraries(qmltui_status_badge_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)

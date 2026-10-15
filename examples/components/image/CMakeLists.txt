@@ -10,10 +10,10 @@ qt_add_qml_module(qmltui_image_demo
         panda.png
         map.png
 
-    DEPENDENCIES TARGET
-        qmltui::core
-        qmltui::controls
-        qmltui::image
+    DEPENDENCIES
+        TARGET qmltui::core
+        TARGET qmltui::controls
+        TARGET qmltui::image
 )
 
 target_link_libraries(qmltui_image_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::controls qmltui::image)

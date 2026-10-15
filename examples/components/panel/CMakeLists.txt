@@ -4,7 +4,7 @@ qt_add_qml_module(qmltui_panel_demo
     URI PanelDemo
     VERSION 1.0
     QML_FILES Main.qml
- DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 
 target_link_libraries(qmltui_panel_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls qmltui::controls)

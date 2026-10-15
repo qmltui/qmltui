@@ -44,7 +44,7 @@ function(_qmltui_fetch_libvterm)
         ${libvterm_SOURCE_DIR}/src/vterm.c
     )
     target_compile_features(qmltui_libvterm PRIVATE c_std_99)
-    target_include_directories(qmltui_libvterm PUBLIC ${libvterm_SOURCE_DIR}/include)
+    target_include_directories(qmltui_libvterm PUBLIC $<BUILD_INTERFACE:${libvterm_SOURCE_DIR}/include>)
     set_target_properties(qmltui_libvterm PROPERTIES
         POSITION_INDEPENDENT_CODE ON
         C_VISIBILITY_PRESET hidden

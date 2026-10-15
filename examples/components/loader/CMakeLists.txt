@@ -6,7 +6,7 @@ qt_add_qml_module(qmltui_loader_demo
     QML_FILES
         Main.qml
 
- DEPENDENCIES TARGET qmltui::core qmltui::controls
+    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )
 
 target_link_libraries(qmltui_loader_demo PRIVATE

@@ -16,7 +16,6 @@ option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a va
 
 if(QMLTUI_COMMERCIAL_LICENSE)
     message(STATUS "QmlTui: Building under Commercial License terms.")
-    add_compile_definitions(QMLTUI_IS_COMMERCIAL=1)
 else()
     message(STATUS "QmlTui: Building under LGPLv3 / GPLv3 terms.")
 endif()

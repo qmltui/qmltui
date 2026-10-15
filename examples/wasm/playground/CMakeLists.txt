@@ -4,9 +4,11 @@ option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binar
 
 set(playground_imports "import QtQml\nimport QtQml.Models\nimport QmlTui\nimport QmlTui.Controls\n")
 set(playground_modules qmltui::core qmltui::controls)
+set(playground_dependencies TARGET qmltui::core TARGET qmltui::controls)
 if(QMLTUI_WASM_PLAYGROUND_IMAGE AND TARGET qmltui::image)
     string(APPEND playground_imports "import QmlTui.Image\n")
     list(APPEND playground_modules qmltui::image)
+    list(APPEND playground_dependencies TARGET qmltui::image)
 endif()
 # Never instantiated: its imports make qmlimportscanner link every QML plugin
 # the playground offers into the static binary.
@@ -22,7 +24,7 @@ qt_add_qml_module(qmltui_playground
     URI QmlTuiPlayground
     VERSION 1.0
     QML_FILES "${CMAKE_CURRENT_BINARY_DIR}/Imports.qml"
-    DEPENDENCIES TARGET ${playground_modules}
+    DEPENDENCIES ${playground_dependencies}
 )
 
 target_link_libraries(qmltui_playground PRIVATE Qt6::Core Qt6::Qml ${playground_modules})

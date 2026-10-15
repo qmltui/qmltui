@@ -29,8 +29,12 @@ target_link_libraries(QmlTuiImage PUBLIC qmltui::core Qt6::Gui PRIVATE Qt6::Core
 
 set_target_properties(QmlTuiImage PROPERTIES EXPORT_NAME Image)
 set_target_properties(QmlTuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)
+file(RELATIVE_PATH _qmltui_rel_libdir
+    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
+    "${CMAKE_INSTALL_FULL_LIBDIR}"
+)
 set_target_properties(QmlTuiImage QmlTuiImageplugin PROPERTIES
-    INSTALL_RPATH "$ORIGIN;$ORIGIN/../../../../.."
+    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
 )
 
 install(TARGETS QmlTuiImage

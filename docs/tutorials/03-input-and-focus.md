@@ -8,6 +8,26 @@ when a child does not consume it.
 Build with `cmake --build build --target qmltui_tutorial_03_input_and_focus` and run
 `./build/examples/tutorials/03_input_and_focus/qmltui_tutorial_03_input_and_focus`. Press Escape to quit.
 
+## Terminal Output Preview
+
+```text
+
+  Enter your name
+
+  Name
+
+  ┌───────┐
+  │ Greet │
+  └───────┘
+
+  Tab moves focus; Enter activates; F5 resets
+
+```
+
+## Source Files
+
+### `Main.qml`
+
 <!-- include: examples/tutorials/03_input_and_focus/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
@@ -35,6 +55,8 @@ Terminal {
 }
 ```
 
+### `test_tutorial.js`
+
 <!-- include: examples/tutorials/03_input_and_focus/test_tutorial.js -->
 ```javascript
 /** @param {Terminal} terminal */
@@ -47,4 +69,12 @@ function main(terminal) {
 }
 ```
 
-[Tutorial index](index.md)
+## Key Concepts in This Chapter
+
+- **Initial Focus (`focus: true`) & Tab Traversal**: Setting `focus: true` on `nameInput` gives the `TextInput` active focus when the scene loads. Pressing **Tab** (or **Shift+Tab**) cycles focus through focusable controls (`TextInput` → `Button`) in tree order. When `Button` receives active focus, its border switches from single (`┌───┐`) to double (`╔═══╗`).
+- **Reactive Property Bindings**: `root.greeting` is declared as a custom `property string` on the root `Terminal`. The top `Text { text: root.greeting }` binds to it declaratively, so updating `root.greeting` inside `Button.onClicked` immediately schedules a repaint of the affected cells.
+- **`Shortcut` vs. `Keys.onPressed` Bubbling**: `Shortcut { sequence: Qt.Key_F5; ... }` triggers application-wide regardless of which control currently holds focus. By contrast, `Keys.onPressed` events start at the actively focused item and bubble up the parent chain until an item sets `event.accepted = true`—allowing modals or inputs to handle keys first before `Escape` reaches `root`.
+
+---
+
+[← Previous: 02: Layout and text](02-layout-and-text.md) | [Tutorial index](index.md) | [Next: 04: Models and views →](04-models-and-views.md)

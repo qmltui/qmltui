@@ -8,6 +8,34 @@ application's root quit handler; accepting or rejecting updates visible state.
 Build with `cmake --build build --target qmltui_tutorial_05_controls_and_styling` and run
 `./build/examples/tutorials/05_controls_and_styling/qmltui_tutorial_05_controls_and_styling`. Press Escape to quit.
 
+## Terminal Output Preview
+
+```text
+
+  Settings ready
+
+  [ ] Logging
+
+  Logging disabled
+
+  [OFF] Notifications
+
+  ──────────●────────────── [40]
+
+  ████████████░░░░░░░░░░░░░░░░░░
+
+  Volume: 40%
+
+  ┌────────────────┐
+  │ Apply settings │
+  └────────────────┘
+
+```
+
+## Source Files
+
+### `Main.qml`
+
 <!-- include: examples/tutorials/05_controls_and_styling/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
@@ -46,6 +74,8 @@ Terminal {
 }
 ```
 
+### `test_tutorial.js`
+
 <!-- include: examples/tutorials/05_controls_and_styling/test_tutorial.js -->
 ```javascript
 /** @param {Terminal} terminal */
@@ -62,4 +92,12 @@ function main(terminal) {
 }
 ```
 
-[Tutorial index](index.md)
+## Key Concepts in This Chapter
+
+- **Application-Owned Styling (`component AppButton: Button`)**: QmlTui controls default to `"default"` terminal colors and do not enforce a global framework theme singleton. To share styling across an application, define reusable QML components—either as inline components (`component AppButton: Button { textColor: "cyan" }`) or separate `.qml` files. Explicit color overrides survive focus and disabled state changes.
+- **Synchronized Controls via Bindings**: `Slider` (`id: volume`) exposes its numeric `value`, while `ProgressBar { value: volume.value }` and `Text { text: "Volume: " + volume.value + "%" }` bind to it directly. Moving the slider with **Left**/**Right** arrows or the mouse updates both dependents in the same frame.
+- **Modal `Dialog` & Contextual `Escape`**: Calling `confirmation.open()` displays a modal `Dialog` overlay that traps keyboard focus. Pressing **Escape** while the dialog is open dismisses the dialog and emits `onRejected` (`root.status = "Settings unchanged"`), consuming the key event so it does **not** trigger the root `Terminal`'s quit handler.
+
+---
+
+[← Previous: 04: Models and views](04-models-and-views.md) | [Tutorial index](index.md) | [Next: 06: Testing with runner →](06-testing-with-runner.md)

@@ -8,6 +8,25 @@ when resized if wrapMode is set. Text spans apply styles to individual literal t
 Build with `cmake --build build --target qmltui_tutorial_02_layout_and_text` and run
 `./build/examples/tutorials/02_layout_and_text/qmltui_tutorial_02_layout_and_text`. Press Escape to quit.
 
+## Terminal Output Preview
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│Layout and text                                                      Esc quits│
+│                                                                              │
+│                                                                              │
+│A paragraph wraps at the available cell width. Resize the terminal to see     │
+│these words move across lines without changing the source text.               │
+│                                                                              │
+│Ready to build  Integer cells                                                 │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Source Files
+
+### `Main.qml`
+
 <!-- include: examples/tutorials/02_layout_and_text/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
@@ -50,6 +69,8 @@ Terminal {
 }
 ```
 
+### `test_tutorial.js`
+
 <!-- include: examples/tutorials/02_layout_and_text/test_tutorial.js -->
 ```javascript
 /** @param {Terminal} terminal */
@@ -62,4 +83,13 @@ function main(terminal) {
 }
 ```
 
-[Tutorial index](index.md)
+## Key Concepts in This Chapter
+
+- **Borders & Anchor Margins**: `Rectangle` with `border.style: Border.Single` draws a 1-cell box-drawing frame around the viewport. Setting `anchors.fill: parent` and `anchors.margins: 1` on the inner `Column` insets its content by one cell on every side so children never overwrite the border glyphs.
+- **`RowLayout` vs. `Row` Positioners**: `RowLayout` distributes available width across its children—attaching `Layout.fillWidth: true` to the left `Text` pushes `"Esc quits"` flush against the right edge. By contrast, `Row` simply places items side by side at their natural `implicitWidth` separated by `spacing: 2`.
+- **Responsive Word Wrapping (`Text.WordWrap`)**: Giving a `Text` item `width: parent.width` and `wrapMode: Text.WordWrap` reflows paragraphs automatically when the terminal resizes, updating `implicitHeight` so subsequent items in the `Column` shift down cleanly. The `Runner` scenario verifies this by calling `terminal.resize(60, 20)`.
+- **Rich-Text `spans`**: Instead of embedding raw ANSI escape codes or HTML tags, pass an array of `{ text, bold, color, ... }` objects to `Text.spans` to style individual runs within a single text item.
+
+---
+
+[← Previous: 01: First terminal](01-first-terminal.md) | [Tutorial index](index.md) | [Next: 03: Input and focus →](03-input-and-focus.md)

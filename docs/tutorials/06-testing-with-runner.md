@@ -13,6 +13,34 @@ steps. Recordings are listed in `result.json` under `artifacts.casts`.
 Build with `cmake --build build --target qmltui_tutorial_06_testing_with_runner` and run
 `./build/examples/tutorials/06_testing_with_runner/qmltui_tutorial_06_testing_with_runner`. Press Escape to quit.
 
+## Terminal Output Preview
+
+```text
+
+  Settings ready
+
+  [ ] Logging
+
+  Logging disabled
+
+  [OFF] Notifications
+
+  ──────────●────────────── [40]
+
+  ████████████░░░░░░░░░░░░░░░░░░
+
+  Volume: 40%
+
+  ┌────────────────┐
+  │ Apply settings │
+  └────────────────┘
+
+```
+
+## Source Files
+
+### `Main.qml`
+
 <!-- include: examples/tutorials/06_testing_with_runner/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
@@ -51,6 +79,8 @@ Terminal {
 }
 ```
 
+### `test_tutorial.js`
+
 <!-- include: examples/tutorials/06_testing_with_runner/test_tutorial.js -->
 ```javascript
 /** @param {Terminal} terminal */
@@ -61,6 +91,8 @@ function main(terminal) {
     terminal.captureText("tutorial.txt");
 }
 ```
+
+### `main.cpp`
 
 <!-- include: examples/tutorials/06_testing_with_runner/main.cpp -->
 ```cpp
@@ -76,6 +108,8 @@ int main(int argc, char *argv[]) {
     return app.exec();
 }
 ```
+
+### `CMakeLists.txt`
 
 <!-- include: examples/tutorials/06_testing_with_runner/CMakeLists.txt -->
 ```cmake
@@ -95,7 +129,13 @@ if(TARGET qmltui::runner)
 endif()
 ```
 
-[Tutorial index](index.md)
+## Key Concepts in This Chapter
+
+- **Single Executable, Conditional Runner (`if(TARGET qmltui::runner)`)**: Your normal application executable links `qmltui::runner` only when tests or `QMLTUI_ENABLE_RUNNER=ON` are enabled. Normal interactive startup stays completely unaffected unless Runner activation environment variables are present.
+- **Declarative CTest Integration (`qmltui_add_scenario`)**: Registers a headless CTest case with fixed `COLUMNS 80 ROWS 24` geometry and a JavaScript scenario script (`SCRIPT`).
+- **Deterministic Virtual Clock (`CLOCK VIRTUAL`)**: Replaces wall-clock waiting with deterministic virtual time so animations, timers, and `terminal.sleep()` advance instantaneously and reproducibly on any CI machine.
+- **Full-Frame Snapshot Testing (`expectSnapshot`)**: Compares the entire committed terminal frame against a checked-in baseline (`snapshots/initial.txt`). Refresh baselines intentionally with `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1`.
+- **Reproducible `.cast` Recording (`RECORD tutorial.cast`)**: Produces an Asciinema v2 `.cast` recording directly from a virtual-clock scenario (`tutorial_06_cast`) with chapter markers (`terminal.marker(...)`), eliminating shaky manual screen recordings.
 
 ## Launch a scenario from the shell
 
@@ -121,3 +161,7 @@ starts a new process and does not inject Runner into an unprepared executable.
 Existing `qmltui_add_scenario()` tests continue using their original driver.
 See the [launcher reference](../cpp-classes/runner.md#command-line-launcher) for
 all options, deadlines, environment handling, and remote execution through SSH.
+
+---
+
+[← Previous: 05: Controls and styling](05-controls-and-styling.md) | [Tutorial index](index.md)

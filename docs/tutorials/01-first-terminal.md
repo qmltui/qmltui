@@ -9,6 +9,18 @@ or display server is required. The standalone quickstart demonstrates a
 Build with `cmake --build build --target qmltui_tutorial_01_first_terminal` and run
 `./build/examples/tutorials/01_first_terminal/qmltui_tutorial_01_first_terminal`. Press Escape to quit.
 
+## Terminal Output Preview
+
+```text
+
+  Hello, terminal!
+
+```
+
+## Source Files
+
+### `Main.qml`
+
 <!-- include: examples/tutorials/01_first_terminal/Main.qml -->
 ```qml
 pragma ComponentBehavior: Bound
@@ -28,6 +40,8 @@ Terminal {
 }
 ```
 
+### `test_tutorial.js`
+
 <!-- include: examples/tutorials/01_first_terminal/test_tutorial.js -->
 ```javascript
 /** @param {Terminal} terminal */
@@ -36,6 +50,8 @@ function main(terminal) {
     terminal.captureText("tutorial.txt");
 }
 ```
+
+### `main.cpp`
 
 <!-- include: examples/tutorials/01_first_terminal/main.cpp -->
 ```cpp
@@ -52,6 +68,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+### `CMakeLists.txt`
+
 <!-- include: examples/tutorials/01_first_terminal/CMakeLists.txt -->
 ```cmake
 qt_add_executable(qmltui_tutorial_01_first_terminal main.cpp)
@@ -67,4 +85,13 @@ if(TARGET qmltui::runner)
 endif()
 ```
 
-[Tutorial index](index.md)
+## Key Concepts in This Chapter
+
+- **Strict QML Typing & Zero `QtQuick`**: `pragma ComponentBehavior: Bound` enables compile-time scope checks for `qmllint` and `qmlls`. QmlTui interfaces import only `QtQml`, `QmlTui`, and `QmlTui.Controls`.
+- **`Terminal` Root & Integer Cell Coordinates**: `Terminal` represents the terminal screen buffer. Child coordinates (`x: 2; y: 1`) are measured in integer character cells (`0, 0` is the top-left cell), so `"Hello, terminal!"` renders two columns from the left and one row down.
+- **Explicit Quit Policy**: `Terminal` never intercepts `Q` or `Escape` behind your back. Adding a `Keys.onPressed` handler on `root` that calls `Qt.quit()` and sets `event.accepted = true` gives the application a clear, predictable exit path.
+- **Headless `QCoreApplication` Bootstrap**: `main.cpp` uses `QCoreApplication` and `QQmlApplicationEngine::loadFromModule()`—no `QGuiApplication` or windowing server is needed. When `qmltui::runner` is available, `qmltui_add_scenario()` registers a headless CTest scenario (`tutorial_01_smoke`) against the exact same executable.
+
+---
+
+[Tutorial index](index.md) | [Next: 02: Layout and text →](02-layout-and-text.md)

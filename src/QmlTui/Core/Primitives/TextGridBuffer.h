@@ -5,14 +5,15 @@
 #include <vector>
 #include <string>
 #include <QString>
+#include <QStringList>
 
 namespace qmltui {
 
 // How a frame diff is encoded for the terminal.
 struct AnsiEncodeOptions {
     ColorDepth colorDepth = ColorDepth::TrueColor;
-    bool eraseToEndOfLine = true;   // "\033[K" instead of a run of trailing blanks
-    int eraseMinimumCells = 4;      // only when at least this many blanks remain
+    bool eraseToEndOfLine = true; // "\033[K" instead of a run of trailing blanks
+    int eraseMinimumCells = 4;    // only when at least this many blanks remain
 };
 
 /**
@@ -33,7 +34,8 @@ class TextGridBuffer {
 public:
     TextGridBuffer();
 
-    /// @brief Resizes buffer to given columns and rows, clearing contents. Returns true if size changed.
+    /// @brief Resizes buffer to given columns and rows, clearing contents. Returns true if size
+    /// changed.
     bool resize(int width, int height);
     /// @brief Resets all cells to blank spaces with default background and foreground.
     void clear();
@@ -45,12 +47,13 @@ public:
     /// @brief Height of the buffer in character rows.
     int height() const { return m_height; }
 
-    /// @brief Returns true if (x, y) column/row coordinates are within bounds [0, width) x [0, height).
+    /// @brief Returns true if (x, y) column/row coordinates are within bounds [0, width) x [0,
+    /// height).
     bool contains(int x, int y) const;
     /// @brief Returns pointer to cell at (x, y), or nullptr if out of bounds.
-    Cell *tryCellAt(int x, int y);
+    Cell* tryCellAt(int x, int y);
     /// @brief Const overload of tryCellAt(). Returns nullptr if out of bounds.
-    const Cell *tryCellAt(int x, int y) const;
+    const Cell* tryCellAt(int x, int y) const;
 
     /// @brief Returns reference to cell at (x, y). Undefined behavior if out of bounds.
     Cell& cellAt(int x, int y);
@@ -66,56 +69,52 @@ public:
     // zero-width cluster), or -1 when the cluster does not fit before the right
     // edge and nothing was written. Rows outside the buffer are ignored but
     // still advance.
-    int setGrapheme(int x, int y, QByteArrayView utf8, int width,
-                    uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000,
-                    TextAttribute attributes = TextAttribute::None);
+    int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000,
+                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
     int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
-                    TextAttribute attributes = TextAttribute::None)
-    {
-        return setGrapheme(x, y, utf8, width, fgColor.argb32(), bgColor.argb32(), attributes);
+                    TextAttribute attributes = TextAttribute::None) {
+        return setGrapheme(x, y, utf8, width, fgColor.paintedArgb32(), bgColor.paintedArgb32(),
+                           attributes);
     }
 
     // Same as above for a UTF-16 cluster (typically a GraphemeRef::utf16 view);
     // control characters are replaced by their visible glyphs as in writeText.
-    int setGrapheme(int x, int y, QStringView cluster, int width,
-                    uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000,
-                    TextAttribute attributes = TextAttribute::None);
+    int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000,
+                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
     int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
-                    TextAttribute attributes = TextAttribute::None)
-    {
-        return setGrapheme(x, y, cluster, width, fgColor.argb32(), bgColor.argb32(), attributes);
+                    TextAttribute attributes = TextAttribute::None) {
+        return setGrapheme(x, y, cluster, width, fgColor.paintedArgb32(), bgColor.paintedArgb32(),
+                           attributes);
     }
 
     // Drawing and text helpers. Omitted foregrounds use the terminal default;
     // zero-alpha backgrounds preserve the surface underneath.
-    void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
-    void writeText(int x, int y, const QString &text, Color fgColor,
+    void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000,
+                   uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
+    void writeText(int x, int y, const QString& text, Color fgColor,
                    Color bgColor = Color::fromArgb32(0x00000000),
-                   TextAttribute attributes = TextAttribute::None)
-    {
-        writeText(x, y, text, fgColor.argb32(), bgColor.argb32(), attributes);
+                   TextAttribute attributes = TextAttribute::None) {
+        writeText(x, y, text, fgColor.paintedArgb32(), bgColor.paintedArgb32(), attributes);
     }
-    void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
-    void drawLine(int x1, int y1, int x2, int y2, const char *character,
-                  Color fgColor,
-                  Color bgColor = Color::fromArgb32(0x00000000))
-    {
-        drawLine(x1, y1, x2, y2, character, fgColor.argb32(), bgColor.argb32());
+    void drawLine(int x1, int y1, int x2, int y2, const char* character = "*",
+                  uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
+    void drawLine(int x1, int y1, int x2, int y2, const char* character, Color fgColor,
+                  Color bgColor = Color::fromArgb32(0x00000000)) {
+        drawLine(x1, y1, x2, y2, character, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
-    void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
+    void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000,
+                 uint32_t bgColor = 0x00000000);
     void drawBox(int x, int y, int width, int height, Color fgColor,
-                 Color bgColor = Color::fromArgb32(0x00000000))
-    {
-        drawBox(x, y, width, height, fgColor.argb32(), bgColor.argb32());
+                 Color bgColor = Color::fromArgb32(0x00000000)) {
+        drawBox(x, y, width, height, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
-    void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
-    void fillRect(int x, int y, int width, int height, const char *character,
-                  Color fgColor,
-                  Color bgColor = Color::fromArgb32(0x00000000))
-    {
-        fillRect(x, y, width, height, character, fgColor.argb32(), bgColor.argb32());
+    void fillRect(int x, int y, int width, int height, const char* character = " ",
+                  uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
+    void fillRect(int x, int y, int width, int height, const char* character, Color fgColor,
+                  Color bgColor = Color::fromArgb32(0x00000000)) {
+        fillRect(x, y, width, height, character, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
 
     /**
@@ -154,6 +153,11 @@ public:
     // a style reset. No cursor movement or line break is emitted.
     void appendRowAnsi(std::string& out, int row, ColorDepth depth) const;
 
+    uint8_t registerLink(const QString& url);
+    QString linkUrl(uint8_t linkId) const;
+    void setActiveLinkId(uint8_t linkId) { m_activeLinkId = linkId; }
+    uint8_t activeLinkId() const { return m_activeLinkId; }
+
 private:
     void diffInternal(const TextGridBuffer& nextBuffer, bool absolute, std::string& out,
                       const AnsiEncodeOptions& options) const;
@@ -161,6 +165,8 @@ private:
     int m_width = 0;
     int m_height = 0;
     std::vector<Cell> m_cells;
+    QStringList m_links;
+    uint8_t m_activeLinkId = 0;
 };
 
 } // namespace qmltui

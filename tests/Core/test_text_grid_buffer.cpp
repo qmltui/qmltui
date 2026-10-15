@@ -50,6 +50,7 @@ private slots:
     void testDiffEraseNotUsedWhenTailStyled();
     void testDiffAppendsIntoCallerString();
     void testDiffLargeCoordinates();
+    void testOsc8Hyperlinks();
 };
 
 void TestTextGridBuffer::testResize() {
@@ -641,6 +642,34 @@ void TestTextGridBuffer::testRowAnsiTrimsDefaultBlanks() {
     std::string blank;
     buffer.appendRowAnsi(blank, 1, ColorDepth::TrueColor);
     QVERIFY(blank.empty());
+}
+
+void TestTextGridBuffer::testOsc8Hyperlinks() {
+    Text textItem;
+    textItem.setWidth(20);
+    textItem.setHeight(1);
+    textItem.setTextFormat(Text::RichText);
+    textItem.setText(QStringLiteral("Go <a href=\"https://qmltui.org\">Docs</a> now"));
+
+    TextGridBuffer before, after;
+    QVERIFY(before.resize(20, 1));
+    QVERIFY(after.resize(20, 1));
+    paintItem(textItem, after, 0, 0);
+
+    // "Go " (0..2) has linkId 0; "Docs" (3..6) has linkId 1; " now" (7..10) has linkId 0.
+    QCOMPARE(after.cellAt(0, 0).linkId, uint8_t(0));
+    QVERIFY(after.cellAt(3, 0).linkId != 0);
+    QCOMPARE(after.linkUrl(after.cellAt(3, 0).linkId), QStringLiteral("https://qmltui.org"));
+    QCOMPARE(after.cellAt(7, 0).linkId, uint8_t(0));
+
+    const std::string diff = before.diff(after);
+    QVERIFY(diff.find("\033]8;;https://qmltui.org\033\\") != std::string::npos);
+    QVERIFY(diff.find("\033]8;;\033\\") != std::string::npos);
+
+    std::string row;
+    after.appendRowAnsi(row, 0, ColorDepth::TrueColor);
+    QVERIFY(row.find("\033]8;;https://qmltui.org\033\\") != std::string::npos);
+    QVERIFY(row.find("\033]8;;\033\\") != std::string::npos);
 }
 
 QTEST_MAIN(TestTextGridBuffer)

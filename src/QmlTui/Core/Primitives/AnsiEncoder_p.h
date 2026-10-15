@@ -8,6 +8,7 @@
 #include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 
+#include <QStringView>
 #include <charconv>
 #include <cstdint>
 #include <string>
@@ -254,6 +255,16 @@ inline void appendFullStyle(std::string &out, const Cell &cell, ColorDepth depth
             out += 'm';
         }
     }
+}
+
+inline void appendOsc8(std::string &out, QStringView url)
+{
+    out += "\033]8;;";
+    if (!url.isEmpty()) {
+        const QByteArray utf8 = url.toUtf8();
+        out.append(utf8.constData(), static_cast<size_t>(utf8.size()));
+    }
+    out += "\033\\";
 }
 
 } // namespace qmltui::ansi

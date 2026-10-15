@@ -37,13 +37,14 @@ inline TextAttribute operator&(TextAttribute a, TextAttribute b) {
 // process-wide append-only table and referenced by index, so cells still
 // compare and copy by value across buffers and the table is never freed.
 struct Cell {
-    static constexpr int InlineGlyphCapacity = 12;
+    static constexpr int InlineGlyphCapacity = 11;
 
     uint32_t fgColor = 0x00000000; // Terminal default foreground
     uint32_t bgColor = 0x00000000; // Default background (Transparent)
     uint8_t displayWidth = 1;
     bool continuation = false;
     TextAttribute attributes = TextAttribute::None;
+    uint8_t linkId = 0;
 
     // UTF-8 bytes of the cluster (empty for continuation cells). The view is
     // valid until this cell is modified or its buffer is resized, cleared,

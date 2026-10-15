@@ -13,8 +13,7 @@ bool TextGridBuffer::resize(int width, int height) {
     if (width < 0 || height < 0) return false;
     const size_t cellWidth = static_cast<size_t>(width);
     const size_t cellHeight = static_cast<size_t>(height);
-    if (cellHeight != 0 && cellWidth > MaxCellCount / cellHeight)
-        return false;
+    if (cellHeight != 0 && cellWidth > MaxCellCount / cellHeight) return false;
     const size_t cellCount = cellWidth * cellHeight;
     if (cellCount > MaxCellCount) return false;
 
@@ -30,24 +29,38 @@ void TextGridBuffer::swap(TextGridBuffer& other) noexcept {
     swap(m_width, other.m_width);
     swap(m_height, other.m_height);
     swap(m_cells, other.m_cells);
+    swap(m_links, other.m_links);
+    swap(m_activeLinkId, other.m_activeLinkId);
 }
 
 void TextGridBuffer::clear() {
     std::fill(m_cells.begin(), m_cells.end(), Cell{});
+    m_links.clear();
+    m_activeLinkId = 0;
 }
 
-bool TextGridBuffer::contains(int x, int y) const
-{
+uint8_t TextGridBuffer::registerLink(const QString& url) {
+    if (url.isEmpty()) return 0;
+    const qsizetype existing = m_links.indexOf(url);
+    if (existing >= 0) return static_cast<uint8_t>(existing + 1);
+    if (m_links.size() >= 255) return 0;
+    m_links.append(url);
+    return static_cast<uint8_t>(m_links.size());
+}
+
+QString TextGridBuffer::linkUrl(uint8_t linkId) const {
+    return (linkId > 0 && linkId <= m_links.size()) ? m_links.at(linkId - 1) : QString();
+}
+
+bool TextGridBuffer::contains(int x, int y) const {
     return x >= 0 && x < m_width && y >= 0 && y < m_height;
 }
 
-Cell *TextGridBuffer::tryCellAt(int x, int y)
-{
+Cell* TextGridBuffer::tryCellAt(int x, int y) {
     return contains(x, y) ? &m_cells[static_cast<size_t>(y * m_width + x)] : nullptr;
 }
 
-const Cell *TextGridBuffer::tryCellAt(int x, int y) const
-{
+const Cell* TextGridBuffer::tryCellAt(int x, int y) const {
     return contains(x, y) ? &m_cells[static_cast<size_t>(y * m_width + x)] : nullptr;
 }
 
@@ -63,39 +76,39 @@ const Cell& TextGridBuffer::cellAt(int x, int y) const {
 
 // diff(), diffRelative() and toAnsiString() live in TextGridBufferAnsi.cpp.
 
-void TextGridBuffer::writeText(int x, int y, const QString& text, uint32_t fgColor, uint32_t bgColor, TextAttribute attributes) {
+void TextGridBuffer::writeText(int x, int y, const QString& text, uint32_t fgColor,
+                               uint32_t bgColor, TextAttribute attributes) {
     if (y < 0 || y >= m_height || x >= m_width) return;
 
     int curX = x;
     GraphemeIterator iterator(text, /*sanitizeControls=*/true);
     GraphemeRef cluster;
     while (iterator.next(cluster)) {
-        const int advance = setGrapheme(curX, y, cluster.utf16, cluster.width,
-                                        fgColor, bgColor, attributes);
-        if (advance < 0)
-            break;
+        const int advance =
+            setGrapheme(curX, y, cluster.utf16, cluster.width, fgColor, bgColor, attributes);
+        if (advance < 0) break;
         curX += advance;
     }
 }
 
-int TextGridBuffer::setGrapheme(int x, int y, QStringView cluster, int width,
-                                uint32_t fgColor, uint32_t bgColor, TextAttribute attributes)
-{
+int TextGridBuffer::setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor,
+                                uint32_t bgColor, TextAttribute attributes) {
     char encoded[64];
     const int length = UnicodeText::encodeUtf8(cluster, encoded, sizeof encoded,
                                                /*sanitizeControls=*/true);
     if (length >= 0)
-        return setGrapheme(x, y, QByteArrayView(encoded, length), width, fgColor, bgColor, attributes);
+        return setGrapheme(x, y, QByteArrayView(encoded, length), width, fgColor, bgColor,
+                           attributes);
     const QByteArray fallback = UnicodeText::toUtf8(cluster, /*sanitizeControls=*/true);
     return setGrapheme(x, y, QByteArrayView(fallback), width, fgColor, bgColor, attributes);
 }
 
-int TextGridBuffer::setGrapheme(int x, int y, QByteArrayView utf8, int width,
-                                uint32_t fgColor, uint32_t bgColor, TextAttribute attributes)
-{
+int TextGridBuffer::setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor,
+                                uint32_t bgColor, TextAttribute attributes) {
+    fgColor = Color::fromArgb32(fgColor).paintedArgb32();
+    bgColor = Color::fromArgb32(bgColor).paintedArgb32();
     width = (std::max)(0, width);
-    if (m_width <= 0 || m_height <= 0 || y < 0 || y >= m_height)
-        return width;
+    if (m_width <= 0 || m_height <= 0 || y < 0 || y >= m_height) return width;
 
     if (width == 0 && x > 0 && m_width > 0) {
         int targetX = (std::min)(x, m_width) - 1;
@@ -104,25 +117,42 @@ int TextGridBuffer::setGrapheme(int x, int y, QByteArrayView utf8, int width,
         cellAt(targetX, y).appendCharacter(utf8);
         return 0;
     }
-    if (width > 0 && x + width > m_width)
-        return -1;
-    if (x < 0 || x >= m_width)
-        return width;
+    if (width > 0 && x + width > m_width) return -1;
+    if (x < 0 || x >= m_width) return width;
 
     Cell& cell = cellAt(x, y);
+    if (cell.continuation && x > 0) {
+        Cell& prev = cellAt(x - 1, y);
+        prev.setCharacter(" ");
+        prev.displayWidth = 1;
+        prev.continuation = false;
+    }
+    if (cell.displayWidth == 2 && width == 1 && x + 1 < m_width) {
+        Cell& next = cellAt(x + 1, y);
+        next.setCharacter(" ");
+        next.displayWidth = 1;
+        next.continuation = false;
+    }
+    if (width == 2 && x + 1 < m_width && cellAt(x + 1, y).displayWidth == 2 && x + 2 < m_width) {
+        Cell& after = cellAt(x + 2, y);
+        after.setCharacter(" ");
+        after.displayWidth = 1;
+        after.continuation = false;
+    }
+
     cell.fgColor = fgColor;
-    if ((bgColor >> 24) != 0)
-        cell.bgColor = bgColor;
+    if ((bgColor >> 24) != 0) cell.bgColor = bgColor;
     cell.attributes = attributes;
+    cell.linkId = m_activeLinkId;
     cell.setCharacter(utf8);
     cell.displayWidth = static_cast<uint8_t>(width);
     cell.continuation = false;
     for (int offset = 1; offset < width; ++offset) {
-        Cell &continuation = cellAt(x + offset, y);
-        if ((bgColor >> 24) != 0)
-            continuation.bgColor = bgColor;
+        Cell& continuation = cellAt(x + offset, y);
+        if ((bgColor >> 24) != 0) continuation.bgColor = bgColor;
         continuation.fgColor = fgColor;
         continuation.attributes = attributes;
+        continuation.linkId = m_activeLinkId;
         continuation.clearCharacter();
         continuation.displayWidth = 0;
         continuation.continuation = true;
@@ -130,19 +160,22 @@ int TextGridBuffer::setGrapheme(int x, int y, QByteArrayView utf8, int width,
     return width;
 }
 
-void TextGridBuffer::drawLine(int x1, int y1, int x2, int y2, const char* character, uint32_t fgColor, uint32_t bgColor) {
+void TextGridBuffer::drawLine(int x1, int y1, int x2, int y2, const char* character,
+                              uint32_t fgColor, uint32_t bgColor) {
+    fgColor = Color::fromArgb32(fgColor).paintedArgb32();
+    bgColor = Color::fromArgb32(bgColor).paintedArgb32();
     int dx = std::abs(x2 - x1);
     int dy = std::abs(y2 - y1);
     int sx = (x1 < x2) ? 1 : -1;
     int sy = (y1 < y2) ? 1 : -1;
     int err = dx - dy;
 
-    const QByteArrayView glyph(character);   // measured once, not per cell
+    const QByteArrayView glyph(character); // measured once, not per cell
     auto setChar = [&](int cx, int cy) {
         if (cx >= 0 && cx < m_width && cy >= 0 && cy < m_height) {
             Cell& cell = cellAt(cx, cy);
             cell.fgColor = fgColor;
-            cell.bgColor = bgColor;
+            if ((bgColor >> 24) != 0) cell.bgColor = bgColor;
             cell.setCharacter(glyph);
             cell.displayWidth = 1;
             cell.continuation = false;
@@ -164,17 +197,24 @@ void TextGridBuffer::drawLine(int x1, int y1, int x2, int y2, const char* charac
     }
 }
 
-void TextGridBuffer::fillRect(int x, int y, int width, int height, const char* character, uint32_t fgColor, uint32_t bgColor) {
-    const QByteArrayView glyph(character);   // measured once, not per cell
+void TextGridBuffer::fillRect(int x, int y, int width, int height, const char* character,
+                              uint32_t fgColor, uint32_t bgColor) {
+    if (width <= 0 || height <= 0) return;
+    fgColor = Color::fromArgb32(fgColor).paintedArgb32();
+    bgColor = Color::fromArgb32(bgColor).paintedArgb32();
     const int startX = (std::max)(x, 0);
     const int endX = (std::min)(x + width, m_width);
     const int startY = (std::max)(y, 0);
     const int endY = (std::min)(y + height, m_height);
+    if (startX >= endX || startY >= endY) return;
+
+    const QByteArrayView glyph(character);
+    const bool hasBg = (bgColor >> 24) != 0;
     for (int cy = startY; cy < endY; ++cy) {
         for (int cx = startX; cx < endX; ++cx) {
             Cell& cell = cellAt(cx, cy);
             cell.fgColor = fgColor;
-            cell.bgColor = bgColor;
+            if (hasBg) cell.bgColor = bgColor;
             cell.setCharacter(glyph);
             cell.displayWidth = 1;
             cell.continuation = false;
@@ -182,21 +222,24 @@ void TextGridBuffer::fillRect(int x, int y, int width, int height, const char* c
     }
 }
 
-void TextGridBuffer::drawBox(int x, int y, int width, int height, uint32_t fgColor, uint32_t bgColor) {
+void TextGridBuffer::drawBox(int x, int y, int width, int height, uint32_t fgColor,
+                             uint32_t bgColor) {
     if (width <= 0 || height <= 0) return;
+    fgColor = Color::fromArgb32(fgColor).paintedArgb32();
+    bgColor = Color::fromArgb32(bgColor).paintedArgb32();
 
-    const QByteArrayView topLeft("\xE2\x94\x8C"); // ┌
-    const QByteArrayView topRight("\xE2\x94\x90"); // ┐
-    const QByteArrayView bottomLeft("\xE2\x94\x94"); // └
+    const QByteArrayView topLeft("\xE2\x94\x8C");     // ┌
+    const QByteArrayView topRight("\xE2\x94\x90");    // ┐
+    const QByteArrayView bottomLeft("\xE2\x94\x94");  // └
     const QByteArrayView bottomRight("\xE2\x94\x98"); // ┘
-    const QByteArrayView horizontal("\xE2\x94\x80"); // ─
-    const QByteArrayView vertical("\xE2\x94\x82"); // │
+    const QByteArrayView horizontal("\xE2\x94\x80");  // ─
+    const QByteArrayView vertical("\xE2\x94\x82");    // │
 
     auto setCellChar = [&](int cx, int cy, QByteArrayView glyph) {
         if (cx >= 0 && cx < m_width && cy >= 0 && cy < m_height) {
             Cell& cell = cellAt(cx, cy);
             cell.fgColor = fgColor;
-            cell.bgColor = bgColor;
+            if ((bgColor >> 24) != 0) cell.bgColor = bgColor;
             cell.setCharacter(glyph);
             cell.displayWidth = 1;
             cell.continuation = false;

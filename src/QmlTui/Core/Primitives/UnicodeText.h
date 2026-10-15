@@ -35,7 +35,7 @@ public:
     explicit GraphemeIterator(QStringView text, bool sanitizeControls = false) noexcept;
 
     // Advances to the next cluster; returns false at the end of the string.
-    bool next(GraphemeRef &cluster) noexcept;
+    bool next(GraphemeRef& cluster) noexcept;
     void reset() noexcept { m_position = 0; }
 
 private:
@@ -48,12 +48,13 @@ class UnicodeText {
 public:
     static QVector<Grapheme> graphemes(QStringView text);
     static int displayWidth(QStringView text);
+    static QString elideText(QStringView text, int maxColumns);
     static int nextBoundary(QStringView text, int utf16Position);
     static int previousBoundary(QStringView text, int utf16Position);
 
     // Encodes a cluster as UTF-8 into out. Returns the byte count, or -1 when
     // capacity is insufficient (nothing is written in that case).
-    static int encodeUtf8(QStringView cluster, char *out, int capacity,
+    static int encodeUtf8(QStringView cluster, char* out, int capacity,
                           bool sanitizeControls = false) noexcept;
     static QByteArray toUtf8(QStringView cluster, bool sanitizeControls = false);
 

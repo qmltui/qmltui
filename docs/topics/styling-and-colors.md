@@ -32,15 +32,18 @@ Two kinds of string are accepted, and they behave differently on screen:
   indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
   depth, so the user's terminal theme decides how they look. Other CSS names (`orange`, `steelblue`,
   ...) are literal RGB.
-- `default` (also spelled `transparent`) means the terminal's default foreground or background.
+- `"default"` resets to the terminal's default foreground or background via SGR 39/49 (occluding underlying cells when used as a background, e.g., on `Dialog`).
+- `"transparent"` leaves background cells unpainted so underlying content shows through.
 
 
 ## Component styling
 
 Core items and Controls use the terminal's default foreground and background.
-`"default"` delegates to the terminal; named ANSI colors follow its color table,
-while hex colors request specific RGB values. `"transparent"` is an alias for
-`"default"`; transparent item backgrounds leave the surface underneath visible.
+`"default"` delegates to the terminal via SGR 39/49 (when used as a background,
+it paints opaque cells with the terminal's default background color, occluding
+underlying content); named ANSI colors follow its color table, while hex colors
+request specific RGB values. `"transparent"` leaves item background cells
+unpainted so the surface underneath remains visible.
 On a `Canvas` this means `setPixelColor(x, y, "transparent")` paints a set pixel
 in the terminal's default ink, not a hole; erase a pixel with
 `setPixel(x, y, false)` or the whole surface with `clear()`.
@@ -66,7 +69,7 @@ Button {
 | Text, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
 | Rectangle and rectangle-based controls | `color`, `border.color` |
 | Button, CheckBox, RadioButton, Switch, Slider | `textColor` |
-| Panel | `titleColor` |
+| Panel | `titleColor`, `titleBadgeColor`, `titleTrailingColor`, `footerColor`, `footerTrailingColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
 | ProgressBar | `color`, optional gradient/threshold colors |
 | TabBar | `textColor`, `color`, `selectedTextColor`, `selectionColor` (background) |

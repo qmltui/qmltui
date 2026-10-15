@@ -25,13 +25,16 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | :--- | :--- | :--- | :--- |
 | `capabilities` | `terminalCapabilities` |  | Read-only. Holds detected terminal capabilities such as Kitty graphics and synchronized output support. |
 | `title` | `string` | `""` | Holds the terminal window title bar string set via OSC 2 escape sequence. |
-| `color` | `rgba` | `"default"` | Holds the root background color of the terminal screen. |
+| `color` | `rgba` | `"transparent"` | Holds the root background color of the terminal screen. |
 | `mode` | `Mode` | `Terminal.AltScreen` | Holds the display mode: `Terminal.AltScreen` (alternate screen) or `Terminal.Inline` (normal buffer). |
 | `clipboardMode` | `ClipboardMode` | `Terminal.Osc52` | Holds the clipboard integration mode: `Terminal.Osc52` or `Terminal.Disabled`. |
 | `mouseReporting` | `bool` |  | Whether the application takes the mouse from the terminal: on in `AltScreen`, off in `Inline` unless set explicitly, in which case the value sticks across mode changes. Off means no clicks, drags, wheel or hover reach any item and the terminal keeps selection and scrollback; hover requests (`MouseArea.hoverEnabled`, `ToolTip`) only turn on motion reporting while this is true. |
 | `hoveredItem` | `Item` |  | Read-only. Holds the item currently under the mouse pointer. |
 | `terminalWidth` | `int` |  | Read-only. Holds the host terminal screen width in columns. |
 | `terminalHeight` | `int` |  | Read-only. Holds the host terminal screen height in rows. |
+| `applicationActive` | `bool` | `true` | Read-only. Whether the terminal window currently holds host focus (updated via DECSET 1004 focus-in/out events). |
+| `progress` | `int` | `-1` | Holds the terminal progress indicator percentage (`0`–`100`), or `-1` when hidden, emitted via OSC 9;4. |
+| `progressState` | `ProgressState` | `Terminal.ProgressNone` | Holds the OSC 9;4 progress indicator state (`ProgressNone`, `ProgressNormal`, `ProgressError`, `ProgressIndeterminate`, or `ProgressPaused`). |
 
 ## Signals
 
@@ -46,6 +49,7 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | Method | Description |
 | :--- | :--- |
 | `void copyToClipboard(string text)` | Copies text to the system clipboard using the configured clipboardMode. |
+| `void bell()` | Emits an audible or visual terminal bell (`BEL`, `\x07`) to the host terminal. |
 
 ## Enumeration Terminal.Mode
 

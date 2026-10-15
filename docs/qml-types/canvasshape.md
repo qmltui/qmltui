@@ -18,7 +18,7 @@ Abstract base class for 2D geometric shapes drawn on a Canvas. [More...](#detail
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
-| **Instantiation** | Not instantiable; use as an attached property |
+| **Instantiation** | Not directly instantiable |
 
 ## Properties
 

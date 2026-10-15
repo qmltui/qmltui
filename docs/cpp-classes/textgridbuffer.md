@@ -12,8 +12,8 @@ Zero-alpha drawing backgrounds preserve the surface underneath.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/core/TextGridBuffer.h`
-- **Implementation**: `Terminal/src/core/TextGridBuffer.cpp`
+- **Header**: `src/QmlTui/Core/Primitives/TextGridBuffer.h`
+- **Implementation**: `src/QmlTui/Core/Primitives/TextGridBuffer.cpp`
 - **Dependencies**:
   - `Cell.h` — provides `Cell` struct and `TextAttribute` enum.
   - Standard C++ Library (`<vector>`, `<string>`).

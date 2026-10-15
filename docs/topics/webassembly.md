@@ -63,7 +63,7 @@ factor of four.
 
 `index.html` is the whole site. On the right, xterm.js runs the component
 gallery launcher (`examples/gallery/Main.qml`, copied to
-`www/gallery.qml`) with the 36 example files (`examples/gallery/examples/`,
+`www/gallery.qml`) with the 39 example files (36 when built without Behavior and Image) (`examples/gallery/examples/`,
 copied to `www/examples/` with an `index.json`). On the left, a CodeMirror
 editor with QML completion starts out with a hint. Open a tile in the gallery
 (arrows and Enter, or a click) and that tile's file appears in the editor: a
@@ -251,8 +251,8 @@ sets them. Do not add `-sASYNCIFY`; it is not needed.
 
 Force these off in a wasm configure: `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`,
 `QMLTUI_ENABLE_RUNNER` (TestRunner owns a `std::thread`), and
-`QMLTUI_ENABLE_TERMINAL_HOST` (PTYs). `QMLTUI_ENABLE_BEHAVIOR` works when the kit
-ships `Qt6QmlPrivate`, which the official 6.11 kit does.
+`QMLTUI_ENABLE_TERMINAL_HOST` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` works when the kit
+ships `Qt6QmlPrivate`, which the official 6.11 kit does (pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` otherwise).
 
 What cannot work in the browser: `QProcess`, `/proc`, D-Bus, sockets other than
 WebSockets, `QmlTui.TerminalHost`, and anything reading host files. `QFile`

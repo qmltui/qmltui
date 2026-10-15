@@ -39,7 +39,7 @@ properties and as required properties:
 - One property per role name from `roleNames()`.
 
 `TableView` cell delegates add `row`, `column`, `current`, and `selected`.
-`TreeView` adds `depth`, `expanded`, `hasChildren`, and `treeView`.
+`TreeView` adds `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, and `hasChildren`.
 
 These reach a delegate only through properties it declares in QML. A C++
 property of the root type, `Text.text`, `Rectangle.color`, `Item.enabled`, is
@@ -226,5 +226,5 @@ replacement disconnects the old model before a new generation is observed.
 model with nested rows they show the top level and warn once; set `rootIndex`
 (a `QModelIndex`, as `DelegateModel.rootIndex` in Qt Quick) to show the
 children of one node instead. All views drive lazily populated models through
-`canFetchMore()`/`fetchMore()`. The [models guide](models.md) has the
-full view-by-capability matrix.
+`canFetchMore()`/`fetchMore()`. See the [Support matrix](#support-matrix) above for
+the full view-by-capability breakdown.

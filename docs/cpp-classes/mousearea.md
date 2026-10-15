@@ -8,8 +8,8 @@ Developers use `MouseArea` to handle mouse clicks and hover tracking in QML layo
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/items/MouseArea.h`
-- **Implementation**: `Terminal/src/items/MouseArea.cpp`
+- **Header**: `src/QmlTui/Core/Items/MouseArea.h`
+- **Implementation**: `src/QmlTui/Core/Items/MouseArea.cpp`
 - **Dependencies**: `Item.h`, `MouseEvent.h`.
 
 ## 3. Class Hierarchy and Role

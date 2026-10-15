@@ -18,7 +18,7 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Not instantiable; use as an attached property |
+| **Instantiation** | Not directly instantiable |
 
 ## Properties
 

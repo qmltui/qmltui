@@ -8,8 +8,8 @@ Developers use `Rectangle` for containers, cards, panels, and borders.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/items/Rectangle.h`
-- **Implementation**: `Terminal/src/items/Rectangle.cpp`
+- **Header**: `src/QmlTui/Core/Items/Rectangle.h`
+- **Implementation**: `src/QmlTui/Core/Items/Rectangle.cpp`
 - **Dependencies**: `Item.h`, `Border.h`, `Color.h`.
 
 ## 3. Class Hierarchy and Role

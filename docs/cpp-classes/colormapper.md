@@ -10,8 +10,8 @@ Developers use `ColorMapper` when mapping QML string color properties into inter
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/core/ColorMapper.h`
-- **Implementation**: `Terminal/src/core/ColorMapper.cpp`
+- **Header**: `src/QmlTui/Core/Primitives/ColorMapper.h`
+- **Implementation**: `src/QmlTui/Core/Primitives/ColorMapper.cpp`
 - **Dependencies**: Qt Core (`QString`, `QHash`).
 
 ## 9. Public Methods

@@ -18,7 +18,7 @@ Base class for all QmlTui animations. [More...](#detailed-description)
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Not instantiable; use as an attached property |
+| **Instantiation** | Not directly instantiable |
 
 ## Properties
 

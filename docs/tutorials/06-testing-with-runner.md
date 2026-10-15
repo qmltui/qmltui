@@ -1,8 +1,8 @@
 # 06: Testing with runner
 
-The `_test` executable shares the application's main.cpp and QML, and links
-qmltui::runner. `qmltui_add_scenario_test` sets the viewport and runs a JavaScript
-scenario. `expectSnapshot()` checks the complete committed frame; create or
+The `qmltui_tutorial_06_testing_with_runner` executable conditionally links
+`qmltui::runner` when available. `qmltui_add_scenario` sets the viewport and runs a JavaScript
+scenario against that target. `expectSnapshot()` checks the complete committed frame; create or
 refresh its baseline with `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest --test-dir build
 -R tutorial_06_smoke`. Inspect every refreshed baseline before keeping it.
 

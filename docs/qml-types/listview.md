@@ -28,8 +28,6 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 | `orientation` | `Qt::Orientation` | `Qt.Vertical` | Holds the layout orientation of items: `Qt.Vertical` or `Qt.Horizontal`. |
 | `spacing` | `int` | `0` | Holds the spacing in character cells between adjacent items. |
 | `currentIndex` | `int` | `-1` | Holds the index of the currently selected or focused item, or `-1`. |
-| `highlightColor` | `rgba` |  | Holds the text color override for the currently selected item. |
-| `highlightBackgroundColor` | `rgba` |  | Holds the background color override for the currently selected item. |
 | `reuseItems` | `bool` | `true` | Whether delegates that scroll out of view are recycled and rebound to items scrolling into view. |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose direct children the view displays when using a hierarchical model. |
 

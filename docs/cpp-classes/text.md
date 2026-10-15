@@ -8,8 +8,8 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Tui/src/items/Text.h`
-- **Implementation**: `Tui/src/items/Text.cpp`
+- **Header**: `src/QmlTui/Core/Items/Text.h`
+- **Implementation**: `src/QmlTui/Core/Items/Text.cpp`
 - **Dependencies**: `Item.h`, `TextGridBuffer.h`, `Color.h`.
 
 ## 3. Class Hierarchy and Role

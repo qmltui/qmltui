@@ -27,24 +27,23 @@ A single-line editable text input item for terminal applications. [More...](#det
 | `color` | `rgba` | `"default"` | Holds the foreground color of the entered text. |
 | `placeholderText` | `string` | `""` | Holds the hint text displayed when `text` is empty. |
 | `placeholderColor` | `rgba` |  | Holds the color used to draw `placeholderText`. |
-| `displayText` | `string` |  | Read-only. Holds the text currently rendered on screen, reflecting `echoMode` and `inputMask`. |
+| `displayText` | `string` |  | Read-only. Holds the text currently rendered on screen, reflecting `echoMode`. |
 | `overwriteMode` | `bool` | `false` | Whether typed characters overwrite existing text at the cursor instead of being inserted. |
 | `autoScroll` | `bool` | `true` | Whether the view automatically scrolls horizontally to follow cursor movement. |
-| `inputMask` | `string` | `""` | Holds an optional validation mask restricting the format and characters permitted. |
 | `cursorPosition` | `int` | `0` | Holds the current character index of the cursor within `text`. |
 | `selectionStart` | `int` | `0` | Read-only. Holds the starting character index of the current text selection. |
 | `selectionEnd` | `int` | `0` | Read-only. Holds the ending character index of the current text selection. |
 | `selectedText` | `string` | `""` | Read-only. Holds the text currently selected. |
 | `readOnly` | `bool` | `false` | Whether text editing is disabled. |
 | `contentX` | `int` | `0` | Holds the horizontal scroll offset in character cells. |
-| `maximumLength` | `int` | `32767` | Holds the maximum number of characters allowed in `text`. |
+| `maximumLength` | `int` | `0` | Holds the maximum number of characters allowed in `text` (`0` means no limit). |
 | `validator` | `QRegularExpression` |  | Holds a regular expression used to validate acceptable input. |
-| `acceptableInput` | `bool` |  | Read-only. Whether the current `text` satisfies `validator` and `inputMask`. |
+| `acceptableInput` | `bool` |  | Read-only. Whether the current `text` satisfies `validator`. |
 | `echoMode` | `EchoMode` | `TextInput.Normal` | Holds the display mode for entered characters: `Normal`, `Password`, or `NoEcho`. |
 | `echoCharacter` | `string` | `"*"` | Holds the masking character displayed when `echoMode` is `Password`. |
 | `cursorShape` | `CursorShape` | `TextInput.Block` | Holds the visual shape of the cursor: `Block`, `Underline`, `Beam`, or `HollowBlock`. |
 | `cursorColor` | `rgba` | `"default"` | Holds the color of the text cursor. |
-| `cursorBlinking` | `bool` | `true` | Whether the cursor blinks periodically while the item has focus. |
+| `cursorBlinking` | `bool` | `false` | Whether the cursor blinks periodically while the item has focus. |
 | `cursorBlinkRate` | `int` | `500` | Holds the cursor blinking interval in milliseconds. |
 | `cursorVisible` | `bool` | `true` | Whether the cursor is visible when the item has focus. |
 | `cursorDelegate` | `string` | `""` | Holds an optional custom character glyph used to render the cursor. |
@@ -98,7 +97,7 @@ It handles keyboard cursor movement (Left/Right arrows, Home, End, word navigati
 Control/Alt), character insertion and deletion (Backspace, Delete), mouse click and drag
 selection, and clipboard operations.
 
-Input can be constrained using `maximumLength`, `inputMask`, or a regular expression
+Input can be constrained using `maximumLength` or a regular expression
 `validator`. When `echoMode` is set to `TextInput.Password`, characters are obscured
 with `echoCharacter`. The cursor appearance is customizable via `cursorShape`,
 `cursorColor`, and `cursorBlinkRate`.

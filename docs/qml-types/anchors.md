@@ -18,7 +18,7 @@ Grouped property defining relative positioning constraints between items. [More.
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Not instantiable; use as an attached property |
+| **Instantiation** | Not directly instantiable |
 
 ## Properties
 

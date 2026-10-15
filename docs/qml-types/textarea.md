@@ -35,7 +35,13 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `contentY` | `int` | `0` | Holds the vertical scroll offset in rows. |
 | `cursorShape` | `CursorShape` | `TextArea.Block` | Holds the visual shape of the cursor: `Block`, `Underline`, `Beam`, or `HollowBlock`. |
 | `cursorColor` | `rgba` |  | Holds the color of the text cursor. When unset or `"default"`, reverse video is used. |
+| `cursorBlinking` | `bool` | `false` | Whether the cursor blinks periodically while the item has active focus and the terminal application is active. |
+| `cursorBlinkRate` | `int` | `500` | Holds the cursor blinking interval in milliseconds. |
 | `cursorVisible` | `bool` | `true` | Whether the cursor is visible when the item has focus. |
+| `selectionColor` | `rgba` |  | Holds the background highlight color for selected text. When unset or `"default"`, reverse video is used. |
+| `selectedTextColor` | `rgba` |  | Holds the foreground text color for selected text. |
+| `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
+| `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
 | `textRevision` | `quint64` | `0` | Read-only. Incremented on each text change. Validates highlight layer submissions. |
 | `tabChangesFocus` | `bool` | `false` | Whether Tab changes focus or is accepted as text input. When `false`, Tab inserts spaces to the next tab stop. |
 | `tabStopDistance` | `int` | `4` | Number of character columns per tab stop. Tab inserts spaces aligning to multiples of this distance. |

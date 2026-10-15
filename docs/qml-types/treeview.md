@@ -36,8 +36,8 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 | `selectionBackgroundColor` | `rgba` |  | Holds the background color override for the selected row. |
 | `textColor` | `rgba` |  | Holds the default text color for tree items. |
 | `branchColor` | `rgba` |  | Holds the color used to draw branch guides and expansion icons. |
-| `expandedIcon` | `string` | `"▼"` | Holds the icon glyph displayed for expanded parent nodes. |
-| `collapsedIcon` | `string` | `"▶"` | Holds the icon glyph displayed for collapsed parent nodes. |
+| `expandedIcon` | `string` | `"[-] "` | Holds the icon glyph displayed for expanded parent nodes. |
+| `collapsedIcon` | `string` | `"[+] "` | Holds the icon glyph displayed for collapsed parent nodes. |
 
 ## Signals
 

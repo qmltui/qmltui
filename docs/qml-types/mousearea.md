@@ -112,8 +112,3 @@ now), `positionChanged` (bind to `mouseX`/`mouseY` changes), the `drag`
 attached group (build drags from `pressed` plus `mouseX`/`mouseY`),
 `propagateComposedEvents`/`preventStealing` (QmlTui's propagation is the plain
 unaccepted-events-bubble model), and `scrollGestureEnabled` (no gestures).
-
-## 13. QML Exposure
-
-Registered as `MouseArea` in the `Tui` module via `QML_ELEMENT`.
-

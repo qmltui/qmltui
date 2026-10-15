@@ -18,7 +18,7 @@ Carries mouse pointer coordinates, button state, and wheel deltas in character c
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | none |
-| **Instantiation** | Not instantiable; use as an attached property |
+| **Instantiation** | Not directly instantiable |
 
 ## Properties
 

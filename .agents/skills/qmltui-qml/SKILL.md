@@ -150,7 +150,7 @@ as `Panel`; its style is a string:
 ```qml
 Panel {
     title: "Pod Metrics"
-    border.style: "double"      // "none", "single", "double", "bold", "ascii"
+    border.style: "double"      // "none", "single", "double", "rounded", "ascii"
     border.color: "#555555"
 }
 ```
@@ -177,13 +177,15 @@ Rectangle {
 }
 ```
 
-`Panel` exposes `title`, `titleAlignment`, and `titleColor` in addition to the
+`Panel` exposes `title`, `titleAlignment`, `titleColor`, `titleBadge`,
+`titleBadgeColor`, `titleTrailing`, `titleTrailingColor`, `footer`,
+`footerColor`, `footerTrailing`, and `footerTrailingColor` in addition to the
 inherited `Rectangle.border` group.
 
-Every QmlTui color property is a `string` (`"#rrggbb"` or a named color), not a
-Qt Quick `color`. Without `QtQuick` there is no color value-type provider, so
-a `QColor` property cannot be assigned from QML; new C++ items must expose
-colors as `QString`.
+QmlTui C++ items expose colors as `qmltui::Color` (QML value type `rgba`), which
+accepts named colors (`"cyan"`, `"default"`, `"transparent"`), hex strings
+(`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.rgba(...)`, or `Qt.rgba(...)` without
+requiring `QtQuick`.
 
 ## 5. Keyboard Focus and Quit Path
 

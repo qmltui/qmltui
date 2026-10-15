@@ -58,7 +58,7 @@ Requests rendering and waits for a committed frame whose sequence is newer than 
 
 #### void expectRepaint(int timeoutMs = 2000)
 
-Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `terminal.injectKey("k"); Test.expectRepaint();`
+Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `terminal.injectKey("k"); terminal.expectRepaint();`
 
 #### void injectKey(const QString &key, const QStringList &modifiers = {})
 
@@ -264,15 +264,15 @@ Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizonta
 
 Waits until a committed terminal frame matches the regular expression `pattern`. JavaScript usage: `terminal.waitForRegex("STATUS:\\s+READY", 3000)`.
 
-#### void expectRegex(const QString &pattern)
+#### void expectRegex(const QString &pattern, int timeoutMs = -1)
 
 Fails the scenario unless the next committed frame matches the regular expression `pattern`. JavaScript usage: `terminal.expectRegex("System\\s+v\\d+\\.\\d+")`.
 
-#### void expectTextInRegion(int x, int y, int width, int height, const QString &text)
+#### void expectTextInRegion(int x, int y, int width, int height, const QString &text, int timeoutMs = -1)
 
 Fails the scenario unless the bounding box `[x, y, width, height]` contains `text`. JavaScript usage: `terminal.expectTextInRegion(0, 0, 80, 2, "HEADER")`.
 
-#### void expectStyle(int x, int y, const QJSValue &expectedStyle)
+#### void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)
 
 Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `terminal.expectStyle(0, 0, { bold: true })`. The `dim` attribute can be checked with `{ dim: true }`. `foreground` and `background` accept a color string or `"default"` for the terminal's own color.
 
@@ -330,8 +330,13 @@ Creates and schedules a runner from environment variables. It returns `nullptr` 
 | `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Marks a run driven by a directly constructed `Runner`, so the engine applies the same quiet-by-default terminal behavior as an environment-requested scenario. C++: `useEmbeddedScenario()`. |
 | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines instead of failing on mismatch; see Snapshot Update Mode. C++: `setUpdateSnapshots()`. |
 | `QMLTUI_RUNNER_CLOCK` | `real` | `virtual` freezes QmlTui time; see The Virtual Clock. C++: `useVirtualClock()`. |
+| `QMLTUI_RUNNER_RECORD` | None | Relative path under the artifact directory for recording the session as an asciicast v2 file (`.cast`). Incompatible with `QMLTUI_RUNNER_LIVE`. |
 
-Every Runner setting uses the `QMLTUI_RUNNER_` prefix. There are no alternate or legacy spellings. The environment is read in `startFromEnvironment()` only, with two deliberate exceptions: the terminal engine reads the session and live variables when the root `Terminal` is created, and `start()` falls back to `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` when `setUpdateSnapshots()` was not called, so `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest` also refreshes the baselines of embedded runs. A directly constructed `Runner` takes the constructor arguments plus the three methods below instead of the variables.
+Every Runner setting uses the `QMLTUI_RUNNER_` prefix. There are no alternate or legacy spellings. The environment is read in `startFromEnvironment()` only, with two deliberate exceptions: the terminal engine reads the session and live variables when the root `Terminal` is created, and `start()` falls back to `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` when `setUpdateSnapshots()` was not called, so `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest` also refreshes the baselines of embedded runs. A directly constructed `Runner` takes the constructor arguments plus the methods below instead of the variables.
+
+#### static void useVirtualClock()
+
+Switches the process-wide QmlTui clock into virtual mode before QML loads, equivalent to `QMLTUI_RUNNER_CLOCK=virtual`. Application timers, animations, and QML `Timer` instances advance only when driven by `advanceTime()` or `sleep()`.
 
 #### static void useEmbeddedScenario(bool liveOutput = false)
 

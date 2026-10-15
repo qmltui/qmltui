@@ -8,8 +8,8 @@ Developers subclass `Item` when creating new C++ terminal components.
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/items/Item.h`
-- **Implementation**: `Terminal/src/items/Item.cpp`
+- **Header**: `src/QmlTui/Core/Items/Item.h`
+- **Implementation**: `src/QmlTui/Core/Items/Item.cpp`
 - **Dependencies**: `TextGridBuffer.h`, `Anchors.h`, `Border.h`, Qt Core (`QObject`, `QQmlEngine`, `QPoint`, `QList`).
 
 ## 3. Class Hierarchy and Role

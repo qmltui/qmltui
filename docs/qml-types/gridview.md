@@ -25,8 +25,8 @@ Displays a virtualized, scrollable two-dimensional grid of model delegates. [Mor
 | :--- | :--- | :--- | :--- |
 | `model` | `var` |  | Holds the data model providing items for the grid. |
 | `delegate` | `Component` |  | Holds the component template instantiated for visible grid cells. This is the default property. |
-| `cellWidth` | `int` | `10` | Holds the width of each grid cell in character columns. |
-| `cellHeight` | `int` | `3` | Holds the height of each grid cell in rows. |
+| `cellWidth` | `int` | `0` | Holds the width of each grid cell in character columns. |
+| `cellHeight` | `int` | `0` | Holds the height of each grid cell in rows. |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose direct children the view displays when using a hierarchical model. |
 | `reuseItems` | `bool` | `true` | Whether delegates that scroll out of view are recycled and rebound to incoming cells. |
 

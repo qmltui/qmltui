@@ -22,6 +22,7 @@ sources are also used by the [WebAssembly playground](wasm/).
 | [ListView](components/list_view/) | [ListView](gallery/examples/ListView.qml) | [QML reference](../docs/qml-types/listview.md) |
 | [Loader](components/loader/) | [Loader](gallery/examples/Loader.qml) | [QML reference](../docs/qml-types/loader.md) |
 | [LogView](components/log_view/) | [LogView](gallery/examples/LogView.qml) | [QML reference](../docs/qml-types/logview.md) |
+| [mouse_interaction](topics/mouse_interaction/) | [MouseArea](gallery/examples/MouseArea.qml) | [QML reference](../docs/qml-types/mousearea.md) |
 | [Panel](components/panel/) | [Panel](gallery/examples/Panel.qml) | [QML reference](../docs/qml-types/panel.md) |
 | [Popup](components/popup/) | [Popup](gallery/examples/Popup.qml) | [QML reference](../docs/qml-types/popup.md) |
 | [ProgressBar](components/progress_bar/) | [ProgressBar](gallery/examples/ProgressBar.qml) | [QML reference](../docs/qml-types/progressbar.md) |
@@ -39,8 +40,9 @@ sources are also used by the [WebAssembly playground](wasm/).
 | [TabBar](components/tab_bar/) | [TabBar](gallery/examples/TabBar.qml) | [QML reference](../docs/qml-types/tabbar.md) |
 | [TableView](components/table_view/) | [TableView](gallery/examples/TableView.qml) | [QML reference](../docs/qml-types/tableview.md) |
 | [TerminalView](components/terminal_view/) | Recipe / standalone | [QML reference](../docs/qml-types/terminalview.md) |
-| [Text](components/text/) | [Text](gallery/examples/Text.qml) | [QML reference](../docs/qml-types/text.md) |
+| [Text](components/text/) | [Text](gallery/examples/Text.qml), [RichText](gallery/examples/RichText.qml) | [QML reference](../docs/qml-types/text.md) |
 | [TextArea](components/text_area/) | [TextArea](gallery/examples/TextArea.qml) | [QML reference](../docs/qml-types/textarea.md) |
+| [text_area_highlighting](components/text_area_highlighting/) | Recipe / standalone | [QML reference](../docs/qml-types/textarea.md) |
 | [TextInput](components/text_input/) | [TextInput](gallery/examples/TextInput.qml) | [QML reference](../docs/qml-types/textinput.md) |
 | [Toast](components/toast/) | [Toast](gallery/examples/Toast.qml) | [QML reference](../docs/qml-types/toast.md) |
 | [ToolTip](components/tool_tip/) | [ToolTip](gallery/examples/ToolTip.qml) | [QML reference](../docs/qml-types/tooltip.md) |
@@ -48,23 +50,25 @@ sources are also used by the [WebAssembly playground](wasm/).
 
 ## Topics
 
-| Example | Guide |
-| --- | --- |
-| [agent_stream](topics/agent_stream/) | [inline-mode](../docs/topics/inline-mode.md) |
-| [anchors](topics/anchors/) | [layouts](../docs/topics/layouts.md) |
-| [animation](topics/animation/) | [animation-and-states](../docs/topics/animation-and-states.md) |
-| [ansi_styling](topics/ansi_styling/) | [styling-and-colors](../docs/topics/styling-and-colors.md) |
-| [color_type_resolution](topics/color_type_resolution/) | [styling-and-colors](../docs/topics/styling-and-colors.md) |
-| [cpp_only](topics/cpp_only/) | [custom-items](../docs/topics/custom-items.md) |
-| [custom_cpp_item](topics/custom_cpp_item/) | [custom-items](../docs/topics/custom-items.md) |
-| [focus_and_keys](topics/focus_and_keys/) | [input-and-focus](../docs/topics/input-and-focus.md) |
-| [inline_repl](topics/inline_repl/) | [inline-mode](../docs/topics/inline-mode.md) |
-| [layouts](topics/layouts/) | [layouts](../docs/topics/layouts.md) |
-| [lazy_model](topics/lazy_model/) | [models](../docs/topics/models.md) |
-| [live_image](topics/live_image/) | [architecture](../docs/topics/architecture.md) |
-| [mouse_interaction](topics/mouse_interaction/) | [input-and-focus](../docs/topics/input-and-focus.md) |
-| [state_transitions](topics/state_transitions/) | [animation-and-states](../docs/topics/animation-and-states.md) |
-| [terminal_capabilities](topics/terminal_capabilities/) | [terminal-capabilities](../docs/qml-types/terminalcapabilities.md) |
+| Example | Gallery tile | Guide |
+| --- | --- | --- |
+| [agent_stream](topics/agent_stream/) | [InlineMode](gallery/examples/InlineMode.qml) | [inline-mode](../docs/topics/inline-mode.md) |
+| [anchors](topics/anchors/) | — | [layouts](../docs/topics/layouts.md) |
+| [animation](topics/animation/) | [Animation](gallery/examples/Animation.qml), [Behavior](gallery/examples/Behavior.qml) | [animation-and-states](../docs/topics/animation-and-states.md) |
+| [ansi_styling](topics/ansi_styling/) | — | [styling-and-colors](../docs/topics/styling-and-colors.md) |
+| [color_type_resolution](topics/color_type_resolution/) | — | [styling-and-colors](../docs/topics/styling-and-colors.md) |
+| [cpp_only](topics/cpp_only/) | — | [custom-items](../docs/topics/custom-items.md) |
+| [custom_cpp_item](topics/custom_cpp_item/) | — | [custom-items](../docs/topics/custom-items.md) |
+| [fluid_background](topics/fluid_background/) | — | [canvas](../docs/qml-types/canvas.md) |
+| [focus_and_keys](topics/focus_and_keys/) | — | [input-and-focus](../docs/topics/input-and-focus.md) |
+| [independent_states](topics/independent_states/) | — | [animation-and-states](../docs/topics/animation-and-states.md) |
+| [inline_repl](topics/inline_repl/) | [InlineMode](gallery/examples/InlineMode.qml) | [inline-mode](../docs/topics/inline-mode.md) |
+| [layouts](topics/layouts/) | [Layouts](gallery/examples/Layouts.qml) | [layouts](../docs/topics/layouts.md) |
+| [lazy_model](topics/lazy_model/) | — | [models](../docs/topics/models.md) |
+| [live_image](topics/live_image/) | — | [architecture](../docs/topics/architecture.md) |
+| [mouse_interaction](topics/mouse_interaction/) | [MouseArea](gallery/examples/MouseArea.qml) | [input-and-focus](../docs/topics/input-and-focus.md) |
+| [state_transitions](topics/state_transitions/) | [States](gallery/examples/States.qml) | [animation-and-states](../docs/topics/animation-and-states.md) |
+| [terminal_capabilities](topics/terminal_capabilities/) | — | [terminal-capabilities](../docs/qml-types/terminalcapabilities.md) |
 
 ## More examples
 

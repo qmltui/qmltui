@@ -66,18 +66,18 @@ terminal cells, a border is drawn using Unicode box-drawing characters:
 ```qml
 Rectangle {
     color: "#0d1117"
-    border.style: Border.Single   // or Border.Double, Border.Rounded, "heavy", Border.None
+    border.style: Border.Single   // or Border.Double, Border.Rounded, Border.Ascii, Border.None
     border.color: "cyan"
 }
 ```
 
 | Border Style | Visual Output in Terminal |
 | :--- | :--- |
-| `"single"` | `┌───┐` / `│   │` / `└───┘` |
-| `"double"` | `╔═══╗` / `║   ║` / `╚═══╝` |
-| `"rounded"` | `╭───╮` / `│   │` / `╰───╯` |
-| `"heavy"` | `┏━━━┓` / `┃   ┃` / `┗━━━┛` |
-| `"none"` | No border characters drawn |
+| `"single"` (`Border.Single`) | `┌───┐` / `│   │` / `└───┘` |
+| `"double"` (`Border.Double`) | `╔═══╗` / `║   ║` / `╚═══╝` |
+| `"rounded"` (`Border.Rounded`) | `╭───╮` / `│   │` / `╰───╯` |
+| `"ascii"` (`Border.Ascii`) | `+---+` / `|   |` / `+---+` |
+| `"none"` (`Border.None`) | No border characters drawn |
 
 Borders consume exactly 1 cell on each outer edge. A 10×5 rectangle with a border
 has an interior content area of 8 columns by 3 rows.
@@ -167,7 +167,7 @@ ListView {
 | `import QtQuick` | `import QtQml` + `import QmlTui` | No Qt Quick dependency |
 | `Item { width: 100.0 }` | `Item { width: 10 }` | Integer cells, no decimals |
 | `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Uses box-drawing glyphs |
-| `font.pixelSize: 14` | `font.pointSize: 1` | Implicit cell height |
+| `font.pixelSize: 14` | `N/A (use bold, dim, italic, underline)` | Implicit cell height |
 | `color: Material.accent` | `color: "cyan"` or `color: "#2CDE85"` | No theme singletons |
 | `focus: true` | `focus: true`, `focusable: true` | Explicit Tab navigation |
 | Window Manager `[X]` | `Keys.onPressed: event => ...` | Explicit keyboard quit path |

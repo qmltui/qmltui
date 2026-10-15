@@ -12,14 +12,34 @@ Developers interact with `TerminalEngine` when setting up top-level application 
 
 ## 2. Project Structure and Dependencies
 
-- **Header**: `Terminal/src/engine/TerminalEngine.h`
-- **Implementation**: `Terminal/src/engine/TerminalEngine.cpp`
+- **Header**: `src/QmlTui/Core/Engine/TerminalEngine.h`
+- **Implementation**: `src/QmlTui/Core/Engine/TerminalEngine.cpp`
 - **Dependencies**: `TerminalDevice.h`, `InputDecoder.h`, `Renderer.h`, `Terminal.h`, `Item.h`.
 
 ## 3. Class Hierarchy and Role
 
 - **Base Class**: `QObject`
   - Leverages Qt slots, meta-object invocation, and event loop integration.
+
+## 7. Signals
+
+#### void frameRendered(quint64 sequence)
+Emitted after a frame is painted and committed, passing the monotonically increasing frame sequence number.
+
+#### void scrollbackCommitted(quint64 totalRows)
+Emitted before `frameRendered()` on a frame that committed scrollback rows in Inline mode.
+
+#### void capabilitiesChanged()
+Emitted when detected or overridden terminal capabilities change.
+
+#### void outputSessionInvalidated(quint64 generation)
+Emitted when the output session generation changes or an output write fails, allowing resource owners to invalidate terminal-side handles.
+
+#### void renderFailed(const QString& message)
+Emitted when an immediate frame write or asynchronous output drain fails.
+
+#### void clipboardReadFinished(const QString& text, const QString& code)
+Emitted when an OSC 52 clipboard read completes (`code` is empty on success, or an error identifier otherwise).
 
 ## 8. Public Slots and Q_INVOKABLE Methods
 
@@ -34,17 +54,21 @@ Constructs the terminal engine instance bound to the given root `Terminal` windo
 #### void setRenderer(Renderer* renderer)
 Registers a custom frame renderer strategy.
 
+#### void setMaxFrameRate(int framesPerSecond) / int maxFrameRate() const
+Sets or returns the upper bound on committed frames per second (`0` disables frame pacing). Defaults to `60` (`QMLTUI_MAX_FPS`), or `0` in test sessions.
+
+#### const TerminalCapabilities& capabilities() const / void setCapabilities(const TerminalCapabilities& capabilities)
+Returns the active terminal capabilities or overrides them programmatically (cancelling pending protocol negotiation probes).
+
 #### int terminalWidth() const
 Returns the current terminal window width in character columns.
 
 #### int terminalHeight() const
 Returns the current terminal window height in character rows.
 
-#### void print(const QString& text)
-Prints raw text to the terminal device.
-
-#### void append(qmltui::Item* item)
-Appends a child item to the root window hierarchy.
+#### bool submitScrollback(const QString& text)
+#### bool submitScrollback(const TextGridBuffer& rows)
+Queues text or painted cell rows for scrollback emission in Inline mode (bounded by `ScrollbackQueueLimit`, 1 MiB). Rejects the submission and returns `false` on overflow while retaining already accepted output.
 
 #### QString requestClipboardText(int timeoutMs)
 Starts an OSC 52 clipboard read. An empty result means pending; otherwise the
@@ -79,7 +103,7 @@ Generates the ANSI escape sequence (`\033]111\a`) for resetting the terminal bac
 
 ## 12. Thread Safety
 
-Single-threaded. Runs on the main Qt GUI event loop thread.
+Single-threaded. Runs on the main Qt event loop thread.
 
 ## 14. Inter-Class Interactions
 
@@ -97,12 +121,12 @@ Single-threaded. Runs on the main Qt GUI event loop thread.
 ```cpp
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
-#include <QGuiApplication>
+#include <QCoreApplication>
 
 using namespace qmltui;
 
 int main(int argc, char *argv[]) {
-    QGuiApplication app(argc, argv);
+    QCoreApplication app(argc, argv);
 
     Terminal rootWindow;
     TerminalEngine engine(&rootWindow);

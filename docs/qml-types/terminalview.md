@@ -29,15 +29,15 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `environment` | `var` | `{}` | Holds additional custom environment variables for the child process. |
 | `inheritEnvironment` | `bool` | `true` | Whether the child process inherits environment variables from the parent process. |
 | `terminalType` | `string` | `"xterm-256color"` | Holds the `TERM` environment variable reported to the child process. |
-| `autoStart` | `bool` | `true` | Whether the process starts automatically when the component completes. |
+| `autoStart` | `bool` | `false` | Whether the process starts automatically when the component completes. |
 | `processState` | `ProcessState` |  | Read-only. Holds the current process lifecycle state: `NotRunning`, `Starting`, `Running`, or `Stopping`. |
 | `running` | `bool` |  | Read-only. Holds whether the child process is currently active and running. |
-| `processId` | `qlonglong` |  | Read-only. Holds the operating system process ID (PID) of the child process. |
+| `processId` | `int` |  | Read-only. Holds the operating system process ID (PID) of the child process. |
 | `exitCode` | `int` |  | Read-only. Holds the exit status code after the process terminates. |
 | `errorString` | `string` |  | Read-only. Holds error details if process spawning or execution fails. |
 | `title` | `string` |  | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
-| `foregroundColor` | `rgba` | `"default"` | Holds the default foreground text color. |
-| `backgroundColor` | `rgba` | `"transparent"` | Holds the default background color. |
+| `foregroundColor` | `rgba` | `"white"` | Holds the default foreground text color. |
+| `backgroundColor` | `rgba` | `"black"` | Holds the default background color. |
 | `palette` | `list<rgba>` | `[]` | Holds the 16 standard ANSI colors used by the terminal emulator. |
 | `scrollbackLimit` | `int` | `10000` | Holds the maximum number of scrollback lines retained in history. |
 | `scrollOffset` | `int` | `0` | Holds the current scroll offset into scrollback history (0 at live screen). |
@@ -97,12 +97,25 @@ in a split layout and interchange data between them programmatically using `send
 ### Example
 
 ```qml
-TerminalView {
-    width: 80
-    height: 24
-    focus: true
-    program: "/bin/sh"
-    arguments: ["-l"]
-    autoStart: true
+import QtQml
+import QmlTui
+import QmlTui.TerminalHost
+
+Terminal {
+    Keys.onPressed: event => {
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Q) {
+            Qt.quit()
+            event.accepted = true
+        }
+    }
+
+    TerminalView {
+        anchors.fill: parent
+        focus: true
+        program: "/bin/sh"
+        arguments: ["-l"]
+        autoStart: true
+        onFinished: Qt.quit()
+    }
 }
 ```

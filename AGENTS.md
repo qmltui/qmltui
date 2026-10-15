@@ -66,7 +66,7 @@
 - Format C++ files with `clang-format` according to `.clang-format` (4 spaces,
   attached braces, pointer/reference left-aligned, column limit 100).
 - Format QML files with `qmlformat` according to `.qmlformat.ini` (4 spaces,
-  no tabs, semicolon required on JS statements, group attributes together).
+  no tabs, semicolon required on JS statements).
 - Run `./scripts/format.sh` to automatically format staged files or `./scripts/format.sh <path>`
   for specific files. Use `./scripts/format.sh --check` to verify code style without modifications.
 - In QML, follow the Qt property declaration order:

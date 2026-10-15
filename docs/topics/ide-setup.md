@@ -106,3 +106,31 @@ qmllint -I build/qml Main.qml
 
 Any attempt to import `QtQuick` or assign non-existent properties will be flagged
 immediately.
+
+---
+
+## 5. JavaScript Scenario Editor Support
+
+When writing Runner scenario scripts (`*.js` or `*.mjs`), you can enable full IDE
+autocompletion and type checking for the `terminal` scenario API:
+
+1. Call `qmltui_scenario_editor_support()` in your project's `CMakeLists.txt`:
+   ```cmake
+   if(COMMAND qmltui_scenario_editor_support)
+       qmltui_scenario_editor_support()
+   endif()
+   ```
+   This copies `.qmltui/qmltui-runner.d.ts` into your source directory and
+   generates a `jsconfig.json` (if one does not already exist) that includes
+   `.qmltui/qmltui-runner.d.ts`.
+2. Annotate your scenario entry point with a JSDoc `@param {Terminal}` tag:
+   ```javascript
+   /** @param {Terminal} terminal */
+   function main(terminal) {
+       terminal.expectText("Ready");
+       terminal.press("Enter");
+   }
+   ```
+   Editors with TypeScript/JavaScript language server support (VS Code, Qt Creator,
+   Neovim `ts_ls`, Helix) will then provide method completions, parameter hints,
+   and hover documentation on `terminal.*`.

@@ -28,9 +28,7 @@ static int resolveItemSpacing(Item* item, int defaultSpacing) {
     return defaultSpacing;
 }
 
-Scrollback::Scrollback(QObject* parent)
-    : QObject(parent) {
-}
+Scrollback::Scrollback(QObject* parent) : QObject(parent) {}
 
 Scrollback::~Scrollback() {
     clearDelegateCache();
@@ -72,14 +70,11 @@ void Scrollback::setModel(const QVariant& model) {
                     appendExistingRows();
                 });
         connect(m_model, &QAbstractItemModel::rowsRemoved, this,
-                [this]() {
-                    m_consumedRowCount = m_model ? m_model->rowCount() : 0;
-                });
-        connect(m_model, &QAbstractItemModel::modelReset, this,
-                [this]() {
-                    m_consumedRowCount = 0;
-                    appendExistingRows();
-                });
+                [this]() { m_consumedRowCount = m_model ? m_model->rowCount() : 0; });
+        connect(m_model, &QAbstractItemModel::modelReset, this, [this]() {
+            m_consumedRowCount = 0;
+            appendExistingRows();
+        });
     }
 
     emit modelChanged();
@@ -99,11 +94,11 @@ void Scrollback::setDelegate(QQmlComponent* delegate) {
         });
         connect(m_delegate, &QQmlComponent::statusChanged, this,
                 [this](QQmlComponent::Status status) {
-            if (status == QQmlComponent::Ready)
-                appendExistingRows();
-            else if (status == QQmlComponent::Error)
-                DelegateUtils::isReady(m_delegate, this);
-        });
+                    if (status == QQmlComponent::Ready)
+                        appendExistingRows();
+                    else if (status == QQmlComponent::Error)
+                        DelegateUtils::isReady(m_delegate, this);
+                });
     }
     emit delegateChanged();
     appendExistingRows();
@@ -165,7 +160,8 @@ void Scrollback::clearDelegateCache() {
     }
 }
 
-Scrollback::CachedDelegate Scrollback::getOrCreateDelegate(QQmlComponent* component, const QVariantMap& initialProperties) {
+Scrollback::CachedDelegate Scrollback::getOrCreateDelegate(QQmlComponent* component,
+                                                           const QVariantMap& initialProperties) {
     if (!component) return {nullptr, nullptr};
     auto it = m_delegateCache.find(component);
     if (it != m_delegateCache.end() && it.value().item) {
@@ -190,11 +186,9 @@ Scrollback::CachedDelegate Scrollback::getOrCreateDelegate(QQmlComponent* compon
 }
 
 Scrollback::CachedDelegate Scrollback::getOrCreateSeparator() {
-    if (!m_separator || !DelegateUtils::isReady(m_separator, this))
-        return {nullptr, nullptr};
+    if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return {nullptr, nullptr};
 
-    if (m_cachedSeparator.item)
-        return m_cachedSeparator;
+    if (m_cachedSeparator.item) return m_cachedSeparator;
 
     QQmlContext* context = DelegateUtils::createContext(m_separator, this);
     if (!context) return {nullptr, nullptr};
@@ -250,7 +244,8 @@ bool Scrollback::submitBatch(Item* item, Terminal* output) {
     const int separatorHeight = separator ? resolvedHeight(separator) : 0;
 
     TextGridBuffer buffer;
-    if (!buffer.resize((std::max)(itemWidth, separatorWidth), separatorHeight + spacing + itemHeight))
+    if (!buffer.resize((std::max)(itemWidth, separatorWidth),
+                       separatorHeight + spacing + itemHeight))
         return reportRejection(QStringLiteral("Scrollback item is too large to paint"));
     if (separator) {
         ItemPaintTraversal::paintSubtree(separator, buffer, 0, 0,
@@ -264,28 +259,32 @@ bool Scrollback::submitBatch(Item* item, Terminal* output) {
     if (!engine)
         return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
     if (!engine->submitScrollback(buffer))
-        return reportRejection(QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+        return reportRejection(
+            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
     m_hasRenderedFirstItem = true;
     return true;
 }
 
-void Scrollback::applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
-                                         int index, const QVariantMap& modelMap, const QVariant& rawData) {
+void Scrollback::applyModelDataToDelegate(Item* item, QQmlContext* context,
+                                          QQmlComponent* component, int index,
+                                          const QVariantMap& modelMap, const QVariant& rawData) {
     if (!item) return;
 
-    item->setProperty("index", index);
-    item->setProperty("model", modelMap);
-    item->setProperty("modelData", rawData.isValid() ? rawData : QVariant::fromValue(modelMap));
+    DelegateUtils::setPropertyIfExists(item, "index", index);
+    DelegateUtils::setPropertyIfExists(item, "model", modelMap);
+    DelegateUtils::setPropertyIfExists(item, "modelData",
+                                       rawData.isValid() ? rawData : QVariant::fromValue(modelMap));
 
     for (auto it = modelMap.cbegin(); it != modelMap.cend(); ++it) {
-        item->setProperty(it.key().toUtf8().constData(), it.value());
+        DelegateUtils::setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
     }
 
     if (context && component) {
         DelegateUtils::setContextProperty(component, context, QStringLiteral("index"), index);
         DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), modelMap);
         DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"),
-                                          rawData.isValid() ? rawData : QVariant::fromValue(modelMap));
+                                          rawData.isValid() ? rawData
+                                                            : QVariant::fromValue(modelMap));
         for (auto it = modelMap.cbegin(); it != modelMap.cend(); ++it) {
             DelegateUtils::setContextProperty(component, context, it.key(), it.value());
         }
@@ -344,8 +343,10 @@ int Scrollback::appendRows(int first, int last) {
             QQmlContext* context = DelegateUtils::createContext(rowDelegate, this);
             if (!context) return row;
             DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("index"), row);
-            DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("model"), modelMap);
-            DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("modelData"), modelMap);
+            DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("model"),
+                                              modelMap);
+            DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("modelData"),
+                                              modelMap);
             for (auto it = modelMap.cbegin(); it != modelMap.cend(); ++it)
                 DelegateUtils::setContextProperty(rowDelegate, context, it.key(), it.value());
 
@@ -420,9 +421,11 @@ void Scrollback::append(const QVariant& data) {
     } else {
         QQmlContext* context = DelegateUtils::createContext(rowDelegate, this);
         if (!context) return;
-        DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("index"), currentIndex);
+        DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("index"),
+                                          currentIndex);
         DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("model"), modelMap);
-        DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("modelData"), rawData);
+        DelegateUtils::setContextProperty(rowDelegate, context, QStringLiteral("modelData"),
+                                          rawData);
         for (auto it = modelMap.cbegin(); it != modelMap.cend(); ++it)
             DelegateUtils::setContextProperty(rowDelegate, context, it.key(), it.value());
 
@@ -447,12 +450,12 @@ void Scrollback::append(qmltui::Item* item) {
 
 bool Scrollback::print(const QString& text) {
     Terminal* output = terminal();
-    if (!output)
-        return reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
+    if (!output) return reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
     if (!output->engine())
         return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
     if (!output->engine()->submitScrollback(text))
-        return reportRejection(QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+        return reportRejection(
+            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
     return true;
 }
 
@@ -484,8 +487,10 @@ QQmlComponent* Scrollback::delegateForRow(int row) const {
         QObject* choice = choices.at(choiceIndex);
         if (!choice) continue;
 
-        const int choiceRow = choice->property("row").toInt();
-        const int choiceColumn = choice->property("column").toInt();
+        const QVariant rProp = choice->property("row");
+        const QVariant cProp = choice->property("column");
+        const int choiceRow = rProp.isValid() && !rProp.isNull() ? rProp.toInt() : -1;
+        const int choiceColumn = cProp.isValid() && !cProp.isNull() ? cProp.toInt() : -1;
         const QVariant choiceValue = choice->property("roleValue");
         const bool rowMatches = choiceRow < 0 || choiceRow == row;
         const bool columnMatches = choiceColumn < 0 || choiceColumn == 0;
@@ -493,10 +498,8 @@ QQmlComponent* Scrollback::delegateForRow(int row) const {
         if (!rowMatches || !columnMatches || !roleMatches) continue;
 
         const QVariant prop = choice->property("delegate");
-        if (auto* comp = prop.value<QQmlComponent*>())
-            return comp;
-        if (auto* obj = prop.value<QObject*>())
-            return qobject_cast<QQmlComponent*>(obj);
+        if (auto* comp = prop.value<QQmlComponent*>()) return comp;
+        if (auto* obj = prop.value<QObject*>()) return qobject_cast<QQmlComponent*>(obj);
     }
 
     return nullptr;

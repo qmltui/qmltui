@@ -42,49 +42,62 @@ class QMLTUI_CORE_EXPORT TableView : public Item {
     /// @brief Alias for selectedRow for consistency with Qt item views.
     Q_PROPERTY(int currentRow READ selectedRow NOTIFY selectedRowChanged)
     /// @brief Zero-indexed index of the active column.
-    Q_PROPERTY(int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
+    Q_PROPERTY(
+        int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
     /// @brief Whether alternating rows use alternatingRowBackgroundColor.
-    Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY alternatingRowsChanged)
+    Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY
+                   alternatingRowsChanged)
     /// @brief Whether the rightmost column expands to fill remaining table width.
-    Q_PROPERTY(bool stretchLastColumn READ stretchLastColumn WRITE setStretchLastColumn NOTIFY stretchLastColumnChanged)
+    Q_PROPERTY(bool stretchLastColumn READ stretchLastColumn WRITE setStretchLastColumn NOTIFY
+                   stretchLastColumnChanged)
 
     /// @brief Foreground text color for header row cells. Defaults to "default".
-    Q_PROPERTY(qmltui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
+    Q_PROPERTY(
+        qmltui::Color headerColor READ headerColor WRITE setHeaderColor NOTIFY headerColorChanged)
     /// @brief Background color for header row cells. Defaults to "default".
-    Q_PROPERTY(qmltui::Color headerBackgroundColor READ headerBackgroundColor WRITE setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color headerBackgroundColor READ headerBackgroundColor WRITE
+                   setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
     /// @brief Text color applied to cells on the selected row.
-    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
+    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
+                   selectionColorChanged)
     /// @brief Whether model cell colors are preserved even when the row is selected.
-    Q_PROPERTY(bool selectionKeepsCellColors READ selectionKeepsCellColors
-               WRITE setSelectionKeepsCellColors NOTIFY selectionKeepsCellColorsChanged)
+    Q_PROPERTY(bool selectionKeepsCellColors READ selectionKeepsCellColors WRITE
+                   setSelectionKeepsCellColors NOTIFY selectionKeepsCellColorsChanged)
     /// @brief Background fill color for the selected row.
-    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE
+                   setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     /// @brief Default text color for body rows.
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     /// @brief Default background fill color for body rows.
-    Q_PROPERTY(qmltui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor NOTIFY rowBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor
+                   NOTIFY rowBackgroundColorChanged)
     /// @brief Background color used on alternate rows when alternatingRows is true.
-    Q_PROPERTY(qmltui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color alternatingRowBackgroundColor READ alternatingRowBackgroundColor WRITE
+                   setAlternatingRowBackgroundColor NOTIFY alternatingRowBackgroundColorChanged)
     /// @brief Color used to draw grid line characters.
     Q_PROPERTY(qmltui::Color gridColor READ gridColor WRITE setGridColor NOTIFY gridColorChanged)
 
     /// @brief Whether vertical grid lines between columns are drawn.
-    Q_PROPERTY(bool showColumnGrid READ showColumnGrid WRITE setShowColumnGrid NOTIFY showColumnGridChanged)
+    Q_PROPERTY(bool showColumnGrid READ showColumnGrid WRITE setShowColumnGrid NOTIFY
+                   showColumnGridChanged)
     /// @brief Whether horizontal grid lines between rows are drawn.
     Q_PROPERTY(bool showRowGrid READ showRowGrid WRITE setShowRowGrid NOTIFY showRowGridChanged)
     /// @brief Whether an outer border box is drawn around the table perimeter.
-    Q_PROPERTY(bool showOuterBorder READ showOuterBorder WRITE setShowOuterBorder NOTIFY showOuterBorderChanged)
+    Q_PROPERTY(bool showOuterBorder READ showOuterBorder WRITE setShowOuterBorder NOTIFY
+                   showOuterBorderChanged)
     /// @brief Border style for grid lines ("single", "double", "ascii").
     Q_PROPERTY(GridStyle gridStyle READ gridStyle WRITE setGridStyle NOTIFY gridStyleChanged)
 
     /// @brief Optional JS function (columnIndex) => width in columns.
-    Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider NOTIFY columnWidthProviderChanged)
+    Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider
+                   NOTIFY columnWidthProviderChanged)
     /// @brief Optional JS formatting callback (value, row, col) => formatted string.
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
     /// @brief Optional custom QML delegate component for rendering cells.
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
     /// @brief Optional custom QML delegate component for rendering entire rows.
-    Q_PROPERTY(QQmlComponent* rowDelegate READ rowDelegate WRITE setRowDelegate NOTIFY rowDelegateChanged)
+    Q_PROPERTY(
+        QQmlComponent* rowDelegate READ rowDelegate WRITE setRowDelegate NOTIFY rowDelegateChanged)
 
 public:
     enum GridStyle : uint8_t {
@@ -94,14 +107,14 @@ public:
     };
     Q_ENUM(GridStyle)
 
-    explicit TableView(QObject *parent = nullptr);
+    explicit TableView(QObject* parent = nullptr);
     ~TableView() override;
 
     QVariantList columns() const { return m_columns; }
-    void setColumns(const QVariantList &columns);
+    void setColumns(const QVariantList& columns);
 
     QVariant model() const { return m_modelVariant; }
-    void setModel(const QVariant &model);
+    void setModel(const QVariant& model);
 
     int selectedRow() const { return m_selectedRow; }
     void setSelectedRow(int row);
@@ -153,26 +166,27 @@ public:
 
     GridStyle gridStyle() const { return m_gridStyle; }
     void setGridStyle(GridStyle style);
-    void setGridStyle(const QString &style);
+    void setGridStyle(const QString& style);
 
     static GridStyle gridStyleFromString(QStringView str, GridStyle defaultStyle = Single);
     static QString gridStyleToString(GridStyle style);
 
-
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
-    void setColumnWidthProvider(const QJSValue &provider);
+    void setColumnWidthProvider(const QJSValue& provider);
 
     QJSValue cellFormat() const { return m_cellFormat; }
-    void setCellFormat(const QJSValue &format);
+    void setCellFormat(const QJSValue& format);
 
     QQmlComponent* delegate() const { return m_delegate; }
-    void setDelegate(QQmlComponent *delegate);
+    void setDelegate(QQmlComponent* delegate);
     QQmlComponent* rowDelegate() const { return m_rowDelegate; }
-    void setRowDelegate(QQmlComponent *delegate);
+    void setRowDelegate(QQmlComponent* delegate);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
-    void keyPressEvent(KeyEvent *event) override;
-    void mousePressEvent(MouseEvent *event) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
+    void keyPressEvent(KeyEvent* event) override;
+    void mousePressEvent(MouseEvent* event) override;
+    void wheelEvent(MouseEvent* event) override;
     int implicitWidth() const override;
 
 signals:
@@ -209,12 +223,11 @@ protected:
     // Computes the scroll offset and creates, positions and shows delegate
     // items. Runs in the layout pass, never from paint().
     void updateLayout() override;
-    void paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                      const ClipRect &clipRect) const override;
+    void paintOverlay(TextGridBuffer& buffer, int absX, int absY,
+                      const ClipRect& clipRect) const override;
 
 private:
-    ClipRect clipRectForChildren(int absX, int absY,
-                                const ClipRect &clipRect) const override;
+    ClipRect clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const override;
     int rowCount() const;
     int columnCount() const;
     int headerRows() const;
@@ -278,14 +291,14 @@ private:
         QJSValue backgroundFn;
     };
     QModelIndex sourceIndex(int row, int column) const;
-    void updateDelegate(DelegateRecord &record, int row, int column);
-    void updateDelegateState(DelegateRecord &record, int row, int column);
+    void updateDelegate(DelegateRecord& record, int row, int column);
+    void updateDelegateState(DelegateRecord& record, int row, int column);
     void refreshDelegateStates(Position previous);
     void handleStructureChanged();
     void synchronizeSelection();
     void clearSelection();
-    void handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
-                           const QList<int> &roles);
+    void handleDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+                           const QList<int>& roles);
     QString cellText(int row, int col) const;
     QVariant modelHeader(int column, int role) const;
     void refreshModelRoles();
@@ -293,18 +306,18 @@ private:
     // returns. Empty when the function returns nothing or fails, which leaves
     // the cell to the model's role: a view can decide some rows and defer on
     // the rest.
-    std::optional<uint32_t> columnColor(const QJSValue &callback, int row, int column,
-                                        const QString &text) const;
+    std::optional<uint32_t> columnColor(const QJSValue& callback, int row, int column,
+                                        const QString& text) const;
     void refreshModelHeader();
-    static QString alignmentName(const QVariant &alignment);
+    static QString alignmentName(const QVariant& alignment);
     void resolveColumns();
-    int resolveColumnWidth(int column, const QVariantMap &descriptor);
+    int resolveColumnWidth(int column, const QVariantMap& descriptor);
     void updateImplicitWidth();
-    void callbackWarning(const QString &message, QSet<QString> &errors) const;
+    void callbackWarning(const QString& message, QSet<QString>& errors) const;
 
     void clearDelegateItems();
     void generateDelegateItems();
-    static void destroyDelegate(DelegateRecord &record);
+    static void destroyDelegate(DelegateRecord& record);
 
     int m_calculatedImplicitWidth = 0;
     QVariantList m_columns;
@@ -360,7 +373,8 @@ private:
     Color m_selectionColor;
     uint32_t m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
     Color m_selectionBackgroundColor;
-    uint32_t m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    uint32_t m_resolvedSelectionBackgroundColor =
+        ColorMapper::fromString(m_selectionBackgroundColor, 0);
 
     Color m_textColor = "default";
     uint32_t m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);

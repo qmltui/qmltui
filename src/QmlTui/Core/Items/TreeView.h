@@ -28,33 +28,39 @@ class QMLTUI_CORE_EXPORT TreeView : public Item {
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
 
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
-    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+    Q_PROPERTY(
+        int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int currentRow READ currentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(int currentColumn READ currentColumn NOTIFY currentIndexChanged)
     Q_PROPERTY(QVariantMap currentItemData READ currentItemData NOTIFY currentItemDataChanged)
 
-    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
+                   selectionColorChanged)
+    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE
+                   setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
-    Q_PROPERTY(qmltui::Color branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
-    Q_PROPERTY(QString expandedIcon READ expandedIcon WRITE setExpandedIcon NOTIFY expandedIconChanged)
-    Q_PROPERTY(QString collapsedIcon READ collapsedIcon WRITE setCollapsedIcon NOTIFY collapsedIconChanged)
+    Q_PROPERTY(
+        qmltui::Color branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
+    Q_PROPERTY(
+        QString expandedIcon READ expandedIcon WRITE setExpandedIcon NOTIFY expandedIconChanged)
+    Q_PROPERTY(
+        QString collapsedIcon READ collapsedIcon WRITE setCollapsedIcon NOTIFY collapsedIconChanged)
 
 public:
-    explicit TreeView(QObject *parent = nullptr);
+    explicit TreeView(QObject* parent = nullptr);
     ~TreeView() override;
 
     QVariant model() const { return m_modelVariant; }
-    void setModel(const QVariant &model);
+    void setModel(const QVariant& model);
 
     QVariant rootNode() const { return m_rootNodeVariant; }
-    void setRootNode(const QVariant &node);
+    void setRootNode(const QVariant& node);
 
     QModelIndex rootIndex() const { return m_rootIndex; }
-    void setRootIndex(const QModelIndex &index);
+    void setRootIndex(const QModelIndex& index);
 
     QQmlComponent* delegate() const { return m_delegate; }
-    void setDelegate(QQmlComponent *delegate);
+    void setDelegate(QQmlComponent* delegate);
 
     int currentIndex() const { return m_selectedIndex; }
     void setCurrentIndex(int index);
@@ -77,11 +83,10 @@ public:
     void setBranchColor(Color color);
 
     QString expandedIcon() const { return m_expandedIcon; }
-    void setExpandedIcon(const QString &icon);
+    void setExpandedIcon(const QString& icon);
 
     QString collapsedIcon() const { return m_collapsedIcon; }
-    void setCollapsedIcon(const QString &icon);
-
+    void setCollapsedIcon(const QString& icon);
 
     // Q_INVOKABLE Qt Quick TreeView Methods
     Q_INVOKABLE void expand(int index);
@@ -91,14 +96,16 @@ public:
     Q_INVOKABLE int depth(int row) const;
     Q_INVOKABLE void expandRecursively(int row = -1, int depth = -1);
     Q_INVOKABLE void collapseRecursively(int row = -1);
-    Q_INVOKABLE void expandToIndex(const QModelIndex &index);
+    Q_INVOKABLE void expandToIndex(const QModelIndex& index);
     Q_INVOKABLE void expandAll();
     Q_INVOKABLE void collapseAll();
 
     void layoutChildren();
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
-    void keyPressEvent(KeyEvent *event) override;
-    void mousePressEvent(MouseEvent *event) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
+    void keyPressEvent(KeyEvent* event) override;
+    void mousePressEvent(MouseEvent* event) override;
+    void wheelEvent(MouseEvent* event) override;
 
 signals:
     void modelChanged();
@@ -114,7 +121,7 @@ signals:
     void branchColorChanged();
     void expandedIconChanged();
     void collapsedIconChanged();
-    void nodeActivated(const QString &path);
+    void nodeActivated(const QString& path);
     void itemActivated(int index);
     void expanded(int row, int depth);
     void collapsed(int row, bool recursively);
@@ -125,8 +132,7 @@ protected:
     void updateLayout() override;
 
 private:
-    ClipRect clipRectForChildren(int absX, int absY,
-                                const ClipRect &clipRect) const override;
+    ClipRect clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const override;
     // One row of the flattened tree. For C++ models only the shape (index,
     // depth, hasChildren, expanded, key) is filled while flattening; text,
     // path and role data are read on first use by ensureLoaded(), so a
@@ -143,36 +149,40 @@ private:
         QModelIndex modelIndex;
     };
 
-    void flattenTree(const QVariantMap &map, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
-    void flattenCppModel(QAbstractItemModel *model, const QModelIndex &parent, const QString &parentPath, const QString &parentKey, int depth, QList<VisibleNode> &list);
-    void fillNodeFromModel(QAbstractItemModel *model, const QModelIndex &index, VisibleNode &node,
+    void flattenTree(const QVariantMap& map, const QString& parentPath, const QString& parentKey,
+                     int depth, QList<VisibleNode>& list);
+    void flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
+                         const QString& parentPath, const QString& parentKey, int depth,
+                         QList<VisibleNode>& list);
+    void fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& index, VisibleNode& node,
                            bool includeUnsetRoles = false);
-    static QString modelPath(const QAbstractItemModel *model, const QModelIndex &index);
-    void ensureLoaded(VisibleNode &node);
-    static bool sameNode(const VisibleNode &a, const VisibleNode &b);
+    static QString modelPath(const QAbstractItemModel* model, const QModelIndex& index);
+    void ensureLoaded(VisibleNode& node);
+    static bool sameNode(const VisibleNode& a, const VisibleNode& b);
     // Writes only index, row, current and selected to a delegate that still
     // shows the same, unchanged node after a re-flatten (the scroll path).
-    void updateDelegatePosition(Item *item, int index);
+    void updateDelegatePosition(Item* item, int index);
     // Property indexes of index/row/current/selected per delegate meta-object,
     // so the scroll path does not resolve property names on every write.
-    struct PositionProperties { int index = -1, row = -1, current = -1, selected = -1; };
-    const PositionProperties &positionProperties(const QObject *item);
-    QHash<const QMetaObject *, PositionProperties> m_positionProperties;
+    struct PositionProperties {
+        int index = -1, row = -1, current = -1, selected = -1;
+    };
+    const PositionProperties& positionProperties(const QObject* item);
+    QHash<const QMetaObject*, PositionProperties> m_positionProperties;
     // True when rows under `parent` are part of the flattened list (the root
     // level, or a visible node), so a structural change there is observable.
-    bool isLevelShown(const QModelIndex &parent) const;
-    void setNodeExpanded(const VisibleNode &node, bool expanded);
-    void handleModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
-    Item *delegateItemForRow(int row) const;
+    bool isLevelShown(const QModelIndex& parent) const;
+    void setNodeExpanded(const VisibleNode& node, bool expanded);
+    void handleModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
+    Item* delegateItemForRow(int row) const;
     void adjustScrollTop();
     void updateTree();
 
     void clearDelegateItems();
     void generateDelegateItems(QList<Item*> oldItems = {},
                                QList<QPersistentModelIndex> oldIndexes = {},
-                               QStringList oldPaths = {},
-                               QList<VisibleNode> oldNodes = {});
-    void updateDelegateItem(Item *item, int index);
+                               QStringList oldPaths = {}, QList<VisibleNode> oldNodes = {});
+    void updateDelegateItem(Item* item, int index);
 
     QVariant m_modelVariant;
     QVariant m_rootNodeVariant;
@@ -212,7 +222,8 @@ private:
     // early-return when the color is unchanged, so the initializer is the only chance).
     uint32_t m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
     Color m_selectionBackgroundColor;
-    uint32_t m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    uint32_t m_resolvedSelectionBackgroundColor =
+        ColorMapper::fromString(m_selectionBackgroundColor, 0);
 
     Color m_textColor = "default";
     uint32_t m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);

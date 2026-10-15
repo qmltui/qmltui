@@ -16,21 +16,20 @@ using qmltui::testing::paintItem;
 
 class TestCountModel final : public QAbstractListModel {
 public:
-    explicit TestCountModel(int count, QObject *parent = nullptr)
+    explicit TestCountModel(int count, QObject* parent = nullptr)
         : QAbstractListModel(parent), m_count(count) {}
 
-    int rowCount(const QModelIndex &parent = {}) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_count;
     }
 
-    QVariant data(const QModelIndex &index, int role) const override {
+    QVariant data(const QModelIndex& index, int role) const override {
         return index.isValid() && role == Qt::DisplayRole
-            ? QVariant(QString("Item %1").arg(index.row())) : QVariant();
+                   ? QVariant(QString("Item %1").arg(index.row()))
+                   : QVariant();
     }
 
-    QHash<int, QByteArray> roleNames() const override {
-        return {{Qt::DisplayRole, "display"}};
-    }
+    QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
 
 private:
     int m_count;
@@ -56,6 +55,9 @@ void TestViewsVirtualization::testListViewPooling() {
         import QmlTui
 
         ListView {
+            id: root
+            property int pooledCount: 0
+            property int reusedCount: 0
             width: 80
             height: 10
             model: testModel
@@ -63,13 +65,16 @@ void TestViewsVirtualization::testListViewPooling() {
             delegate: Text {
                 required property string display
                 text: display
+                ListView.onPooled: ++root.pooledCount
+                ListView.onReused: ++root.reusedCount
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     QVERIFY(component.isReady());
     std::unique_ptr<QObject> object(component.create());
-    auto *listView = qobject_cast<ListView*>(object.get());
+    auto* listView = qobject_cast<ListView*>(object.get());
     QVERIFY(listView != nullptr);
 
     TextGridBuffer buffer;
@@ -86,9 +91,11 @@ void TestViewsVirtualization::testListViewPooling() {
         paintItem(listView, buffer, 0, 0);
     }
 
-    // Children count should stay bounded (pooled & reused)
+    // Children count should stay bounded (pooled & reused), and attached signals must fire
     const int scrolledChildren = listView->findChildren<Item*>().size();
     QVERIFY(scrolledChildren <= 14);
+    QVERIFY(listView->property("pooledCount").toInt() > 0);
+    QVERIFY(listView->property("reusedCount").toInt() > 0);
 }
 
 void TestViewsVirtualization::testTableView2DVirtualization() {
@@ -109,18 +116,20 @@ void TestViewsVirtualization::testTableView2DVirtualization() {
                 text: display
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     QVERIFY(component.isReady());
     std::unique_ptr<QObject> object(component.create());
-    auto *tableView = qobject_cast<TableView*>(object.get());
+    auto* tableView = qobject_cast<TableView*>(object.get());
     QVERIFY(tableView != nullptr);
 
     TextGridBuffer buffer;
     buffer.resize(80, 10);
     paintItem(tableView, buffer, 0, 0);
 
-    // For 5000 rows x 5 columns (25,000 total cells), only visible viewport delegates (max 14 rows x 5 cols = 70) are created!
+    // For 5000 rows x 5 columns (25,000 total cells), only visible viewport delegates (max 14 rows
+    // x 5 cols = 70) are created!
     const int childCount = tableView->findChildren<Item*>().size();
     QVERIFY(childCount > 0 && childCount <= 70);
 }
@@ -161,11 +170,12 @@ void TestViewsVirtualization::testTableViewDelegateChooser() {
                 }
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *tableView = qobject_cast<TableView*>(object.get());
+    auto* tableView = qobject_cast<TableView*>(object.get());
     QVERIFY(tableView != nullptr);
 
     TextGridBuffer buffer;
@@ -205,11 +215,12 @@ void TestViewsVirtualization::testGridViewVirtualization() {
                 text: display
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *gridView = qobject_cast<GridView*>(object.get());
+    auto* gridView = qobject_cast<GridView*>(object.get());
     QVERIFY(gridView != nullptr);
 
     TextGridBuffer buffer;
@@ -219,12 +230,14 @@ void TestViewsVirtualization::testGridViewVirtualization() {
     // 4 columns x 5 visible rows, plus one overscan row above and below:
     // at most 7 rows x 4 columns = 28 delegates for 100,000 model rows.
     const int initialChildren = gridView->findChildren<Item*>().size();
-    QVERIFY2(initialChildren > 0 && initialChildren <= 28, qPrintable(QString::number(initialChildren)));
+    QVERIFY2(initialChildren > 0 && initialChildren <= 28,
+             qPrintable(QString::number(initialChildren)));
     QCOMPARE(gridView->contentHeight(), 100000 / 4 * 2);
 
     auto textAt = [&](int x, int y) {
         QString line;
-        for (int i = 0; i < 20; ++i) line += QString::fromUtf8(buffer.cellAt(x + i, y).character());
+        for (int i = 0; i < 20; ++i)
+            line += QString::fromUtf8(buffer.cellAt(x + i, y).character());
         return line.trimmed();
     };
     QCOMPARE(textAt(0, 0), QStringLiteral("Item 0"));

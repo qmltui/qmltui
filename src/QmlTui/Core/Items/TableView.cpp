@@ -8,6 +8,8 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlInfo>
+#include <QQmlListReference>
+#include <QVarLengthArray>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -15,29 +17,38 @@
 namespace qmltui {
 namespace {
 enum GridGlyph : uint8_t {
-    Horizontal, Vertical, TopLeft, TopRight, BottomLeft, BottomRight,
-    TopTee, BottomTee, LeftTee, RightTee, Cross,
+    Horizontal,
+    Vertical,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    TopTee,
+    BottomTee,
+    LeftTee,
+    RightTee,
+    Cross,
 };
 
 struct RegisterTableConverters {
     RegisterTableConverters() {
-        QMetaType::registerConverter<QString, TableView::GridStyle>([](const QString &str) {
+        QMetaType::registerConverter<QString, TableView::GridStyle>([](const QString& str) {
             return TableView::gridStyleFromString(str, TableView::Single);
         });
-        QMetaType::registerConverter<TableView::GridStyle, QString>([](TableView::GridStyle style) {
-            return TableView::gridStyleToString(style);
-        });
+        QMetaType::registerConverter<TableView::GridStyle, QString>(
+            [](TableView::GridStyle style) { return TableView::gridStyleToString(style); });
     }
 } s_registerTableConverters;
 
-QQmlContext *delegateContext(Item *item) {
-    return item ? item->findChild<QQmlContext *>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
+QQmlContext* delegateContext(Item* item) {
+    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
 }
 QVariant unpack(QVariant value) {
-    return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant() : value;
+    return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant()
+                                                               : value;
 }
 // Compute alignment against the logical width, but allocate only the visible prefix.
-QString alignedPrefix(const QString &text, int width, int visibleWidth, const QString &alignment,
+QString alignedPrefix(const QString& text, int width, int visibleWidth, const QString& alignment,
                       int leftPadding = 0, int rightPadding = 0) {
     if (width <= 0 || visibleWidth <= 0) return {};
     int leftPad = (std::max)(0, leftPadding);
@@ -54,35 +65,39 @@ QString alignedPrefix(const QString &text, int width, int visibleWidth, const QS
         used += cluster.width;
     }
     const int extraSpace = innerWidth - used;
-    const int alignOffset = alignment == "right" ? extraSpace : alignment == "center" ? extraSpace / 2 : 0;
+    const int alignOffset = alignment == "right"    ? extraSpace
+                            : alignment == "center" ? extraSpace / 2
+                                                    : 0;
     const int left = leftPad + alignOffset;
 
     QString result((std::min)(left, visibleWidth), QLatin1Char(' '));
     int position = left;
     GraphemeIterator draw(text);
     while (position < visibleWidth && draw.next(cluster)) {
-        if (cluster.width > width - rightPad - position || cluster.width > visibleWidth - position) break;
+        if (cluster.width > width - rightPad - position || cluster.width > visibleWidth - position)
+            break;
         result.append(cluster.utf16);
         position += cluster.width;
     }
     if (position < visibleWidth) result.append(QString(visibleWidth - position, QLatin1Char(' ')));
     return result;
 }
-}
+} // namespace
 
-TableView::TableView(QObject *parent) : Item(parent) {
+TableView::TableView(QObject* parent) : Item(parent) {
     setFocusable(true);
     connect(this, &Item::widthChanged, this, &TableView::forceLayout);
     connect(this, &Item::heightChanged, this, &TableView::forceLayout);
     forceLayout();
 }
 int TableView::implicitWidth() const {
-    if (m_implicitWidth > 0)
-        return m_implicitWidth;
+    if (m_implicitWidth > 0) return m_implicitWidth;
     return m_calculatedImplicitWidth;
 }
-TableView::~TableView() { clearDelegateItems(); }
-void TableView::destroyDelegate(DelegateRecord &record) {
+TableView::~TableView() {
+    clearDelegateItems();
+}
+void TableView::destroyDelegate(DelegateRecord& record) {
     if (record.item) {
         record.item->setParentItem(nullptr);
         delete record.item.data();
@@ -93,24 +108,27 @@ void TableView::destroyDelegate(DelegateRecord &record) {
     record.component.clear();
 }
 void TableView::clearDelegateItems() {
-    for (auto &record : m_createdDelegateItems) destroyDelegate(record);
+    for (auto& record : m_createdDelegateItems)
+        destroyDelegate(record);
     m_createdDelegateItems.clear();
 }
 void TableView::generateDelegateItems() {
     m_resetDelegates = true;
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
-void TableView::setColumns(const QVariantList &columns) {
+void TableView::setColumns(const QVariantList& columns) {
     QVariantList normalized;
     normalized.reserve(columns.size());
-    for (const QVariant &column : columns) normalized.append(unpack(column));
+    for (const QVariant& column : columns)
+        normalized.append(unpack(column));
     if (m_columns == normalized) return;
     m_columns = std::move(normalized);
     m_widthErrors.clear();
     updateImplicitWidth();
     refreshModelHeader();
     if (!m_cppModel)
-        for (auto &record : m_createdDelegateItems) record.allRolesDirty = true;
+        for (auto& record : m_createdDelegateItems)
+            record.allRolesDirty = true;
     setCurrentColumn(m_currentColumn);
     emit columnsChanged();
     forceLayout();
@@ -130,7 +148,7 @@ void TableView::clearSelection() {
     if (columnChanged) emit currentColumnChanged();
     refreshDelegateStates(previous);
 }
-void TableView::setModel(const QVariant &model) {
+void TableView::setModel(const QVariant& model) {
     if (m_modelVariant == model) return;
     if (m_cppModel) disconnect(m_cppModel, nullptr, this, nullptr);
     m_modelVariant = model;
@@ -139,9 +157,12 @@ void TableView::setModel(const QVariant &model) {
     m_roleNames.clear();
     m_roleNameStrings.clear();
     m_claimedNames = 0;
-    if (model.metaType() == QMetaType::fromType<QJSValue>()) m_listModel = unpack(model).toList();
-    else if (model.canConvert<QVariantList>()) m_listModel = model.toList();
-    else m_cppModel = qobject_cast<QAbstractItemModel *>(model.value<QObject *>());
+    if (model.metaType() == QMetaType::fromType<QJSValue>())
+        m_listModel = unpack(model).toList();
+    else if (model.canConvert<QVariantList>())
+        m_listModel = model.toList();
+    else
+        m_cppModel = qobject_cast<QAbstractItemModel*>(model.value<QObject*>());
     resetViewport();
     if (m_selectedRow >= 0) {
         if (rowCount() > 0) {
@@ -161,7 +182,7 @@ void TableView::setModel(const QVariant &model) {
             m_modelVariant.clear();
             m_roleNames.clear();
             m_roleNameStrings.clear();
-                    m_claimedNames = 0;
+            m_claimedNames = 0;
             m_modelProvidesHeader = false;
             resetViewport();
             clearSelection();
@@ -171,19 +192,26 @@ void TableView::setModel(const QVariant &model) {
             emit modelChanged();
         });
         connect(m_cppModel, &QAbstractItemModel::dataChanged, this, &TableView::handleDataChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsInserted, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsRemoved, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsMoved, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsInserted, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsRemoved, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsMoved, this, &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::layoutChanged, this, &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::rowsInserted, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::rowsRemoved, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::rowsMoved, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::columnsInserted, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::columnsRemoved, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::columnsMoved, this,
+                &TableView::handleStructureChanged);
+        connect(m_cppModel, &QAbstractItemModel::layoutChanged, this,
+                &TableView::handleStructureChanged);
         connect(m_cppModel, &QAbstractItemModel::headerDataChanged, this,
                 [this](Qt::Orientation orientation) {
-            if (orientation != Qt::Horizontal) return;
-            refreshModelHeader();
-            forceLayout();
-        });
+                    if (orientation != Qt::Horizontal) return;
+                    refreshModelHeader();
+                    forceLayout();
+                });
         connect(m_cppModel, &QAbstractItemModel::modelReset, this, [this] {
             refreshModelRoles();
             refreshModelHeader();
@@ -211,7 +239,9 @@ void TableView::setModel(const QVariant &model) {
     forceLayout();
     emit modelChanged();
 }
-int TableView::rowCount() const { return m_cppModel ? m_cppModel->rowCount() : int(m_listModel.size()); }
+int TableView::rowCount() const {
+    return m_cppModel ? m_cppModel->rowCount() : int(m_listModel.size());
+}
 int TableView::columnCount() const {
     if (!m_columns.isEmpty()) return int(m_columns.size());
     // Without column descriptors a C++ model defines its own column count;
@@ -219,7 +249,8 @@ int TableView::columnCount() const {
     return m_cppModel ? (std::max)(1, m_cppModel->columnCount()) : 5;
 }
 int TableView::headerRows() const {
-    return !m_columns.isEmpty() || m_columnWidthProvider.isCallable() || m_modelProvidesHeader ? 2 : 0;
+    return !m_columns.isEmpty() || m_columnWidthProvider.isCallable() || m_modelProvidesHeader ? 2
+                                                                                               : 0;
 }
 QVariant TableView::modelHeader(int column, int role) const {
     return m_cppModel ? m_cppModel->headerData(column, Qt::Horizontal, role) : QVariant();
@@ -242,12 +273,13 @@ void TableView::refreshModelHeader() {
         const int count = columnCount();
         for (int column = 0; column < count && !provides; ++column) {
             const QVariant title = modelHeader(column, Qt::DisplayRole);
-            provides = title.metaType() == QMetaType::fromType<QString>() && !title.toString().isEmpty();
+            provides =
+                title.metaType() == QMetaType::fromType<QString>() && !title.toString().isEmpty();
         }
     }
     m_modelProvidesHeader = provides;
 }
-QString TableView::alignmentName(const QVariant &alignment) {
+QString TableView::alignmentName(const QVariant& alignment) {
     return NumericItemRoles::alignmentName(alignment);
 }
 QModelIndex TableView::sourceIndex(int row, int column) const {
@@ -438,7 +470,7 @@ void TableView::setGridStyle(GridStyle style) {
     markDirty();
 }
 
-void TableView::setGridStyle(const QString &style) {
+void TableView::setGridStyle(const QString& style) {
     if (style == QLatin1String("single")) {
         setGridStyle(Single);
     } else if (style == QLatin1String("double")) {
@@ -459,33 +491,34 @@ TableView::GridStyle TableView::gridStyleFromString(QStringView str, GridStyle d
 
 QString TableView::gridStyleToString(GridStyle style) {
     switch (style) {
-    case Single: return QStringLiteral("single");
-    case Double: return QStringLiteral("double");
-    case Ascii: return QStringLiteral("ascii");
+    case Single:
+        return QStringLiteral("single");
+    case Double:
+        return QStringLiteral("double");
+    case Ascii:
+        return QStringLiteral("ascii");
     }
     return QStringLiteral("single");
 }
-
-
 
 void TableView::forceLayout() {
     m_geometryDirty = true;
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
-void TableView::setColumnWidthProvider(const QJSValue &provider) {
+void TableView::setColumnWidthProvider(const QJSValue& provider) {
     m_columnWidthProvider = provider;
     m_widthErrors.clear();
     emit columnWidthProviderChanged();
     updateImplicitWidth();
     forceLayout();
 }
-void TableView::setCellFormat(const QJSValue &format) {
+void TableView::setCellFormat(const QJSValue& format) {
     m_cellFormat = format;
     m_formatErrors.clear();
     emit cellFormatChanged();
     markDirty();
 }
-void TableView::setDelegate(QQmlComponent *delegate) {
+void TableView::setDelegate(QQmlComponent* delegate) {
     if (m_delegate == delegate) return;
     generateDelegateItems();
     if (m_delegate) disconnect(m_delegate, nullptr, this, nullptr);
@@ -499,11 +532,11 @@ void TableView::setDelegate(QQmlComponent *delegate) {
         });
         connect(m_delegate, &QQmlComponent::statusChanged, this,
                 [this](QQmlComponent::Status status) {
-            if (status == QQmlComponent::Ready)
-                generateDelegateItems();
-            else if (status == QQmlComponent::Error)
-                DelegateUtils::isReady(m_delegate, this);
-        });
+                    if (status == QQmlComponent::Ready)
+                        generateDelegateItems();
+                    else if (status == QQmlComponent::Error)
+                        DelegateUtils::isReady(m_delegate, this);
+                });
     }
     if (m_delegate && m_rowDelegate)
         qmlWarning(this) << "TableView.delegate overrides deprecated rowDelegate";
@@ -512,8 +545,7 @@ void TableView::setDelegate(QQmlComponent *delegate) {
     markDirty();
 }
 
-void TableView::setRowDelegate(QQmlComponent *delegate)
-{
+void TableView::setRowDelegate(QQmlComponent* delegate) {
     if (m_rowDelegate == delegate) return;
     generateDelegateItems();
     if (m_rowDelegate) disconnect(m_rowDelegate, nullptr, this, nullptr);
@@ -527,11 +559,11 @@ void TableView::setRowDelegate(QQmlComponent *delegate)
         });
         connect(m_rowDelegate, &QQmlComponent::statusChanged, this,
                 [this](QQmlComponent::Status status) {
-            if (status == QQmlComponent::Ready && !m_delegate)
-                generateDelegateItems();
-            else if (status == QQmlComponent::Error)
-                DelegateUtils::isReady(m_rowDelegate, this);
-        });
+                    if (status == QQmlComponent::Ready && !m_delegate)
+                        generateDelegateItems();
+                    else if (status == QQmlComponent::Error)
+                        DelegateUtils::isReady(m_rowDelegate, this);
+                });
     }
     if (m_delegate && m_rowDelegate)
         qmlWarning(this) << "TableView.delegate overrides deprecated rowDelegate";
@@ -540,15 +572,14 @@ void TableView::setRowDelegate(QQmlComponent *delegate)
     markDirty();
 }
 
-
-void TableView::callbackWarning(const QString &message, QSet<QString> &errors) const {
+void TableView::callbackWarning(const QString& message, QSet<QString>& errors) const {
     if (!errors.contains(message) && errors.size() < 16) {
         errors.insert(message);
         qmlWarning(this) << message;
     }
 }
-std::optional<uint32_t> TableView::columnColor(const QJSValue &callback, int row, int column,
-                                               const QString &text) const {
+std::optional<uint32_t> TableView::columnColor(const QJSValue& callback, int row, int column,
+                                               const QString& text) const {
     if (!callback.isCallable()) return std::nullopt;
 
     // Scalars, deliberately: the same (row, column, value) the cellFormat hook
@@ -557,8 +588,8 @@ std::optional<uint32_t> TableView::columnColor(const QJSValue &callback, int row
     // model, which QML already has.
     const QJSValue result = callback.call({QJSValue(row), QJSValue(column), QJSValue(text)});
     if (result.isError()) {
-        callbackWarning(QStringLiteral("column colour: ") + result.toString()
-                        + QLatin1Char('\n') + result.property("stack").toString(),
+        callbackWarning(QStringLiteral("column colour: ") + result.toString() + QLatin1Char('\n') +
+                            result.property("stack").toString(),
                         m_columnColorErrors);
         return std::nullopt;
     }
@@ -574,21 +605,26 @@ std::optional<uint32_t> TableView::columnColor(const QJSValue &callback, int row
     m_columnColorCache.insert(name, parsed);
     return parsed;
 }
-int TableView::resolveColumnWidth(int column, const QVariantMap &descriptor) {
+int TableView::resolveColumnWidth(int column, const QVariantMap& descriptor) {
     const auto valid = [](double value) {
-        return std::isfinite(value) && value >= 0 && std::floor(value) == value
-            && value <= (std::numeric_limits<int>::max)();
+        return std::isfinite(value) && value >= 0 && std::floor(value) == value &&
+               value <= (std::numeric_limits<int>::max)();
     };
     if (m_columnWidthProvider.isCallable()) {
         const QJSValue result = m_columnWidthProvider.call({column});
         if (result.isError()) {
-            callbackWarning(QStringLiteral("columnWidthProvider: ") + result.toString()
-                            + QLatin1Char('\n') + result.property("stack").toString(), m_widthErrors);
+            callbackWarning(QStringLiteral("columnWidthProvider: ") + result.toString() +
+                                QLatin1Char('\n') + result.property("stack").toString(),
+                            m_widthErrors);
         } else if (result.isNumber() && valid(result.toNumber())) {
             m_widthErrors.clear();
             return int(result.toNumber());
-        } else if (!result.isUndefined() && !(result.isNumber() && std::isfinite(result.toNumber()) && result.toNumber() < 0)) {
-            callbackWarning(QStringLiteral("columnWidthProvider must return a finite integer width"), m_widthErrors);
+        } else if (!result.isUndefined() &&
+                   !(result.isNumber() && std::isfinite(result.toNumber()) &&
+                     result.toNumber() < 0)) {
+            callbackWarning(
+                QStringLiteral("columnWidthProvider must return a finite integer width"),
+                m_widthErrors);
         } else {
             m_widthErrors.clear();
         }
@@ -604,8 +640,8 @@ void TableView::updateImplicitWidth() {
     int visibleColumns = 0;
 
     const auto validWidth = [](double value) {
-        return std::isfinite(value) && value >= 0 && std::floor(value) == value
-            && value <= (std::numeric_limits<int>::max)();
+        return std::isfinite(value) && value >= 0 && std::floor(value) == value &&
+               value <= (std::numeric_limits<int>::max)();
     };
 
     if (!m_columns.isEmpty()) {
@@ -660,14 +696,16 @@ void TableView::resolveColumns() {
     const int count = columnCount();
     // A C++ model without descriptors or a width provider shares the width
     // evenly; the last column absorbs the remainder.
-    const bool fillFromModel = m_columns.isEmpty() && m_cppModel && !m_columnWidthProvider.isCallable();
+    const bool fillFromModel =
+        m_columns.isEmpty() && m_cppModel && !m_columnWidthProvider.isCallable();
     const int contentWidth = (std::max)(0, view.width - (m_showColumnGrid ? count - 1 : 0));
     for (int column = 0; column < count; ++column) {
         const QVariant value = column < m_columns.size() ? unpack(m_columns[column]) : QVariant();
         QVariantMap descriptor = value.toMap();
         if (fillFromModel) {
             const int share = (std::max)(1, contentWidth / count);
-            descriptor.insert(QStringLiteral("width"),
+            descriptor.insert(
+                QStringLiteral("width"),
                 column == count - 1 ? (std::max)(1, contentWidth - share * (count - 1)) : share);
         }
         int columnWidth = resolveColumnWidth(column, descriptor);
@@ -678,12 +716,13 @@ void TableView::resolveColumns() {
         }
         if (x > (std::numeric_limits<int>::max)()) break;
 
-        const bool shouldStretch = (m_stretchLastColumn && column == count - 1)
-            || descriptor.value(QStringLiteral("stretch")).toBool();
+        const bool shouldStretch = (m_stretchLastColumn && column == count - 1) ||
+                                   descriptor.value(QStringLiteral("stretch")).toBool();
         if (shouldStretch) {
             int subsequentWidth = 0;
             for (int next = column + 1; next < count; ++next) {
-                const QVariant nextVal = next < m_columns.size() ? unpack(m_columns[next]) : QVariant();
+                const QVariant nextVal =
+                    next < m_columns.size() ? unpack(m_columns[next]) : QVariant();
                 const QVariantMap nextDesc = nextVal.toMap();
                 const int nextW = resolveColumnWidth(next, nextDesc);
                 if (nextW > 0) {
@@ -704,12 +743,16 @@ void TableView::resolveColumns() {
             if (header.metaType() == QMetaType::fromType<QString>() && !header.toString().isEmpty())
                 defaultTitle = header.toString();
         }
-        const QString title = value.canConvert<QVariantMap>()
-            ? descriptor.value(QStringLiteral("title"), defaultTitle).toString()
-            : value.isValid() ? value.toString() : defaultTitle;
-        QString alignment = descriptor.value(QStringLiteral("alignment"),
-            descriptor.value(QStringLiteral("align"))).toString();
-        if (alignment.isEmpty()) alignment = alignmentName(modelHeader(column, Qt::TextAlignmentRole));
+        const QString title =
+            value.canConvert<QVariantMap>()
+                ? descriptor.value(QStringLiteral("title"), defaultTitle).toString()
+            : value.isValid() ? value.toString()
+                              : defaultTitle;
+        QString alignment =
+            descriptor.value(QStringLiteral("alignment"), descriptor.value(QStringLiteral("align")))
+                .toString();
+        if (alignment.isEmpty())
+            alignment = alignmentName(modelHeader(column, Qt::TextAlignmentRole));
         if (alignment.isEmpty()) alignment = QStringLiteral("left");
         int leftPadding = 0;
         int rightPadding = 0;
@@ -722,7 +765,7 @@ void TableView::resolveColumns() {
         if (descriptor.contains(QStringLiteral("rightPadding"))) {
             rightPadding = descriptor.value(QStringLiteral("rightPadding")).toInt();
         }
-        const auto columnStyle = [&](const char *key) {
+        const auto columnStyle = [&](const char* key) {
             const QVariant entry = descriptor.value(QLatin1String(key));
             QJSValue callable;
             if (entry.metaType() == QMetaType::fromType<QJSValue>()) {
@@ -777,37 +820,40 @@ QString TableView::cellText(int row, int col) const {
     return QString();
 }
 
-
-
-
-void TableView::handleDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
-                                  const QList<int> &roles) {
+void TableView::handleDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+                                  const QList<int>& roles) {
     m_fetchedRoles.clear();
     bool affected = false;
-    for (auto &record : m_createdDelegateItems) {
+    for (auto& record : m_createdDelegateItems) {
         const QModelIndex index = record.source;
-        const bool columnMatches = m_rowDelegate
-            ? (bottomRight.column() >= 0 && topLeft.column() < columnCount())
-            : (index.column() >= topLeft.column() && index.column() <= bottomRight.column());
-        if (!topLeft.isValid() || !bottomRight.isValid()
-            || (index.isValid() && index.parent() == topLeft.parent()
-                && index.row() >= topLeft.row() && index.row() <= bottomRight.row()
-                && columnMatches)) {
-            if (roles.isEmpty()) record.allRolesDirty = true;
-            else for (int role : roles) record.dirtyRoles.insert(role);
+        const bool columnMatches =
+            m_rowDelegate
+                ? (bottomRight.column() >= 0 && topLeft.column() < columnCount())
+                : (index.column() >= topLeft.column() && index.column() <= bottomRight.column());
+        if (!topLeft.isValid() || !bottomRight.isValid() ||
+            (index.isValid() && index.parent() == topLeft.parent() &&
+             index.row() >= topLeft.row() && index.row() <= bottomRight.row() && columnMatches)) {
+            if (roles.isEmpty())
+                record.allRolesDirty = true;
+            else
+                for (int role : roles)
+                    record.dirtyRoles.insert(role);
             affected = true;
         }
     }
-    if (affected) markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
-    else if (!m_delegate && !m_rowDelegate) markDirty();
+    if (affected)
+        markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    else if (!m_delegate && !m_rowDelegate)
+        markDirty();
 }
-void TableView::updateDelegateState(DelegateRecord &record, int row, int column) {
+void TableView::updateDelegateState(DelegateRecord& record, int row, int column) {
     const bool current = row == m_selectedRow && column == m_currentColumn;
     if (!record.item || record.current == current) return;
     record.current = current;
-    QQmlContext *context = delegateContext(record.item);
-    for (const char *name : {"current", "selected"}) {
-        DelegateUtils::setContextProperty(record.component, context, QString::fromLatin1(name), current);
+    QQmlContext* context = delegateContext(record.item);
+    for (const char* name : {"current", "selected"}) {
+        DelegateUtils::setContextProperty(record.component, context, QString::fromLatin1(name),
+                                          current);
         DelegateUtils::setPropertyIfExists(record.item, name, current);
     }
 }
@@ -818,20 +864,25 @@ void TableView::refreshDelegateStates(Position previous) {
             updateDelegateState(it.value(), position.first, position.second);
     }
 }
-void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
+void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
     const bool cellMode = bool(m_delegate);
     const bool dataDirty = !record.loaded || record.allRolesDirty || !record.dirtyRoles.isEmpty();
     const bool allRolesDirty = record.allRolesDirty;
     const QSet<int> dirtyRoles = std::exchange(record.dirtyRoles, {});
     record.allRolesDirty = false;
     const bool moved = record.row != row || record.column != column;
+    if (!dataDirty && !moved && record.item) {
+        updateDelegateState(record, row, column);
+        return;
+    }
     QVariantMap values = record.values;
     QVariant modelData = record.modelData;
     if (dataDirty) {
         if (m_cppModel) {
-            auto &fetched = m_fetchedRoles[record.source];
+            auto& fetched = m_fetchedRoles[record.source];
             const auto readRole = [&](int role) {
-                if (!fetched.contains(role)) fetched.insert(role, m_cppModel->data(record.source, role));
+                if (!fetched.contains(role))
+                    fetched.insert(role, m_cppModel->data(record.source, role));
                 return fetched.value(role);
             };
             if (allRolesDirty || !record.loaded) values.clear();
@@ -841,18 +892,19 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
             NumericItemRoles::apply(m_cppModel.data(), record.source, values, true, m_claimedNames);
             modelData = m_roleNames.isEmpty() ? readRole(Qt::DisplayRole) : QVariant(values);
         } else {
-            const QVariant value = row >= 0 && row < m_listModel.size() ? unpack(m_listModel[row]) : QVariant();
+            const QVariant value =
+                row >= 0 && row < m_listModel.size() ? unpack(m_listModel[row]) : QVariant();
             values = value.toMap();
             modelData = cellMode ? QVariant(cellText(row, column)) : value;
             if (cellMode) values.insert(QStringLiteral("display"), modelData);
         }
     }
-    QQmlComponent *raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
-    QQmlComponent *component = record.component;
+    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    QQmlComponent* component = record.component;
     if (dataDirty || moved || !record.item)
         component = DelegateUtils::resolveDelegate(raw, row, column, values);
     if (record.component != component) destroyDelegate(record);
-    const auto assign = [&](const QString &name, const QVariant &value) {
+    const auto assign = [&](const QString& name, const QVariant& value) {
         DelegateUtils::setContextProperty(component, delegateContext(record.item), name, value);
         DelegateUtils::setPropertyIfExists(record.item, name.toUtf8().constData(), value);
     };
@@ -867,13 +919,14 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
         initial.insert(QStringLiteral("selected"), record.current);
         initial.insert(QStringLiteral("model"), values);
         initial.insert(QStringLiteral("modelData"), modelData);
-        if (QQmlContext *context = DelegateUtils::createContext(component, this)) {
+        if (QQmlContext* context = DelegateUtils::createContext(component, this)) {
             for (auto it = initial.cbegin(); it != initial.cend(); ++it)
                 DelegateUtils::setContextProperty(component, context, it.key(), it.value());
             record.container = new Item(this);
             record.container->setParentItem(this);
             record.container->setClip(true);
-            record.item = DelegateUtils::createItem(component, initial, context, record.container, this);
+            record.item =
+                DelegateUtils::createItem(component, initial, context, record.container, this);
             if (!record.item) {
                 delete record.container.data();
                 record.container.clear();
@@ -889,10 +942,12 @@ void TableView::updateDelegate(DelegateRecord &record, int row, int column) {
         if (record.values != values) assign(QStringLiteral("model"), values);
         if (record.modelData != modelData) assign(QStringLiteral("modelData"), modelData);
         if (moved) {
+            assign(QStringLiteral("index"), index);
             assign(QStringLiteral("row"), row);
             if (cellMode) assign(QStringLiteral("column"), column);
+        } else if (record.item->property("index").toLongLong() != index) {
+            assign(QStringLiteral("index"), index);
         }
-        if (record.item->property("index").toLongLong() != index) assign(QStringLiteral("index"), index);
         updateDelegateState(record, row, column);
     }
     record.row = row;
@@ -908,8 +963,14 @@ TableView::ViewGeometry TableView::viewGeometry() const {
     const int header = (std::min)(headerRows(), innerHeight);
     const int body = innerHeight - header;
     const int capacity = m_showRowGrid ? body / 2 + body % 2 : body;
-    return {inset, inset, innerWidth, innerHeight, inset + header, body,
-            m_showRowGrid ? 2 : 1, innerWidth > 0 ? capacity : 0};
+    return {inset,
+            inset,
+            innerWidth,
+            innerHeight,
+            inset + header,
+            body,
+            m_showRowGrid ? 2 : 1,
+            innerWidth > 0 ? capacity : 0};
 }
 
 int TableView::computeFirstVisibleRow() const {
@@ -945,8 +1006,8 @@ void TableView::synchronizeViewport() {
     if (m_firstVisibleRow > 0 && m_topIndex.isValid() && !m_topIndex.parent().isValid()) {
         m_firstVisibleRow = m_topIndex.row();
     }
-    m_firstVisibleRow = std::clamp(m_firstVisibleRow, 0,
-                                   (std::max)(0, rowCount() - viewGeometry().capacity));
+    m_firstVisibleRow =
+        std::clamp(m_firstVisibleRow, 0, (std::max)(0, rowCount() - viewGeometry().capacity));
 }
 void TableView::updateLayout() {
     Item::updateLayout();
@@ -963,7 +1024,7 @@ void TableView::maybeFetchMore() {
     // built-in painting modes.
     const auto lastShown = [this] {
         return int((std::min)(qint64(rowCount()) - 1,
-            qint64(m_firstVisibleRow) + viewGeometry().capacity + 1));
+                              qint64(m_firstVisibleRow) + viewGeometry().capacity + 1));
     };
     DelegateUtils::fetchMoreIfNeeded(m_cppModel.data(), QModelIndex(), 2, m_fetching, lastShown);
 }
@@ -976,13 +1037,13 @@ void TableView::layoutDelegates() {
     if (m_structureDirty) {
         QHash<Position, DelegateRecord> remapped;
         for (auto it = m_createdDelegateItems.begin(); it != m_createdDelegateItems.end(); ++it) {
-            auto &record = it.value();
+            auto& record = it.value();
             if (!record.source.isValid() || record.source.parent().isValid()) {
                 destroyDelegate(record);
                 continue;
             }
-            const int column = m_delegate && m_cppModel->columnCount() > 1
-                ? record.source.column() : it.key().second;
+            const int column = m_delegate && m_cppModel->columnCount() > 1 ? record.source.column()
+                                                                           : it.key().second;
             const Position position{record.source.row(), column};
             if (remapped.contains(position)) {
                 destroyDelegate(record);
@@ -998,25 +1059,42 @@ void TableView::layoutDelegates() {
     const int bodyHeight = view.capacity;
     if (bodyHeight > 0) {
         const int first = (std::max)(0, m_firstVisibleRow - 2);
-        const int last = int((std::min)(qint64(rowCount()) - 1, qint64(m_firstVisibleRow) + bodyHeight + 1));
+        const int last =
+            int((std::min)(qint64(rowCount()) - 1, qint64(m_firstVisibleRow) + bodyHeight + 1));
         for (int row = first; row <= last; ++row) {
             if (m_delegate) {
-                for (const auto &geometry : std::as_const(m_geometry))
+                for (const auto& geometry : std::as_const(m_geometry))
                     wanted.insert({row, geometry.column}, geometry);
-            } else wanted.insert({row, 0}, {0, view.left, view.width, {}, {}});
+            } else
+                wanted.insert({row, 0}, {0, view.left, view.width, {}, {}});
         }
     }
+    QVarLengthArray<DelegateRecord, 32> recyclePool;
     for (auto it = m_createdDelegateItems.begin(); it != m_createdDelegateItems.end();) {
         if (!wanted.contains(it.key())) {
-            destroyDelegate(it.value());
+            recyclePool.append(std::move(it.value()));
             it = m_createdDelegateItems.erase(it);
-        } else ++it;
+        } else
+            ++it;
     }
     m_fetchedRoles.clear();
+    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    const bool isChooser = raw && QQmlListReference(raw, "choices").isValid();
     for (auto it = wanted.cbegin(); it != wanted.cend(); ++it) {
-        auto &record = m_createdDelegateItems[it.key()];
         const int row = it.key().first;
         const int column = it.key().second;
+        if (!m_createdDelegateItems.contains(it.key()) && !isChooser && !recyclePool.isEmpty()) {
+            for (qsizetype i = 0; i < recyclePool.size(); ++i) {
+                if (recyclePool[i].item && recyclePool[i].component == raw) {
+                    DelegateRecord recycled = std::move(recyclePool[i]);
+                    recyclePool.remove(i);
+                    recycled.allRolesDirty = true;
+                    m_createdDelegateItems.insert(it.key(), std::move(recycled));
+                    break;
+                }
+            }
+        }
+        auto& record = m_createdDelegateItems[it.key()];
         const QModelIndex source = sourceIndex(row, m_delegate ? column : 0);
         if (record.source != source) {
             record.source = source;
@@ -1024,13 +1102,16 @@ void TableView::layoutDelegates() {
         }
         updateDelegate(record, row, column);
         if (record.item) {
-            const auto &geometry = it.value();
-            const bool visible = row >= m_firstVisibleRow && qint64(row) < qint64(m_firstVisibleRow) + bodyHeight
-                && geometry.x < view.right();
+            const auto& geometry = it.value();
+            const bool visible = row >= m_firstVisibleRow &&
+                                 qint64(row) < qint64(m_firstVisibleRow) + bodyHeight &&
+                                 geometry.x < view.right();
             // Hidden overscan items need no potentially huge absolute origin.
             record.container->setX(visible ? geometry.x : 0);
-            record.container->setY(visible ? view.bodyTop + (row - m_firstVisibleRow) * view.stride : 0);
-            record.container->setWidth((std::max)(0, (std::min)(geometry.width, view.right() - geometry.x)));
+            record.container->setY(visible ? view.bodyTop + (row - m_firstVisibleRow) * view.stride
+                                           : 0);
+            record.container->setWidth(
+                (std::max)(0, (std::min)(geometry.width, view.right() - geometry.x)));
             record.container->setHeight(1);
             record.container->setVisible(visible);
             record.item->setX(0);
@@ -1040,16 +1121,19 @@ void TableView::layoutDelegates() {
             record.item->setVisible(visible);
         }
     }
+    for (auto& record : recyclePool)
+        destroyDelegate(record);
     m_fetchedRoles.clear();
 }
 
-void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
     const auto view = viewGeometry();
-    const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
-        .intersected({absX + view.left, absY + view.top, view.width, view.height});
+    const ClipRect clip =
+        clipRect.intersected({0, 0, buffer.width(), buffer.height()})
+            .intersected({absX + view.left, absY + view.top, view.width, view.height});
     if (clip.width == 0 || clip.height == 0) return;
-    const auto write = [&](int x, int y, const QString &text, uint32_t fg, uint32_t bg,
+    const auto write = [&](int x, int y, const QString& text, uint32_t fg, uint32_t bg,
                            TextAttribute attributes) {
         if (y < clip.y || y >= clip.y + clip.height) return;
         // alignedPrefix already clips the right edge; only a clipped left edge
@@ -1067,23 +1151,30 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             x += cluster.width;
         }
     };
-    const auto visibleWidth = [&](const ColumnGeometry &geometry) {
+    const auto visibleWidth = [&](const ColumnGeometry& geometry) {
         return (std::max)(0, (std::min)(geometry.width, clip.x + clip.width - absX - geometry.x));
     };
     if (headerRows()) {
         const uint32_t headerBg = m_resolvedHeaderBackgroundColor;
-        if (headerBg != 0) {
+        const int headerY = absY + view.top;
+        if (headerBg != 0 && headerY >= clip.y && headerY < clip.y + clip.height) {
             const int begin = (std::max)(clip.x, absX + view.left);
             const int end = (std::min)(clip.x + clip.width, absX + view.right());
-            for (int x = begin; x < end; ++x)
-                buffer.writeText(x, absY + view.top, QStringLiteral(" "), m_resolvedHeaderColor, headerBg, TextAttribute::Bold);
+            if (end > begin) {
+                buffer.fillRect(begin, headerY, end - begin, 1, " ", m_resolvedHeaderColor,
+                                headerBg);
+                for (int x = begin; x < end; ++x)
+                    if (Cell* cell = buffer.tryCellAt(x, headerY))
+                        cell->attributes = TextAttribute::Bold;
+            }
         }
-        for (const auto &geometry : std::as_const(m_geometry)) {
+        for (const auto& geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
             write(absX + geometry.x, absY + view.top,
-                alignedPrefix(geometry.title, geometry.width, visibleWidth(geometry),
-                              geometry.headerAlignment, geometry.leftPadding, geometry.rightPadding),
-                m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
+                  alignedPrefix(geometry.title, geometry.width, visibleWidth(geometry),
+                                geometry.headerAlignment, geometry.leftPadding,
+                                geometry.rightPadding),
+                  m_resolvedHeaderColor, m_resolvedHeaderBackgroundColor, TextAttribute::Bold);
         }
     }
     for (int r = 0; r < view.capacity && qint64(m_firstVisibleRow) + r < rowCount(); ++r) {
@@ -1091,24 +1182,38 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
         const int y = absY + view.bodyTop + r * view.stride;
         if (y < clip.y || y >= clip.y + clip.height) continue;
         const bool selected = row == m_selectedRow;
-        const uint32_t bg = selected ? m_resolvedSelectionBackgroundColor :
-            m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor : m_resolvedRowBackgroundColor;
-        const uint32_t fg = selected && m_selectionColor.isValid() ? m_resolvedSelectionColor : m_resolvedTextColor;
-        const TextAttribute attributes = (selected ? TextAttribute::Bold : TextAttribute::None)
-            | (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
-                   ? TextAttribute::Reversed : TextAttribute::None);
+        const uint32_t bg = selected                       ? m_resolvedSelectionBackgroundColor
+                            : m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor
+                                                           : m_resolvedRowBackgroundColor;
+        const uint32_t fg =
+            selected && m_selectionColor.isValid() ? m_resolvedSelectionColor : m_resolvedTextColor;
+        const TextAttribute attributes =
+            (selected ? TextAttribute::Bold : TextAttribute::None) |
+            (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
+                 ? TextAttribute::Reversed
+                 : TextAttribute::None);
         if (selected || bg != 0) {
             const int begin = (std::max)(clip.x, absX + view.left);
             const int end = (std::min)(clip.x + clip.width, absX + view.right());
-            for (int x = begin; x < end; ++x)
-                buffer.writeText(x, y, QStringLiteral(" "), fg, bg, attributes);
+            if (end > begin) {
+                if ((bg >> 24) != 0) {
+                    buffer.fillRect(begin, y, end - begin, 1, " ", fg, bg);
+                    if (attributes != TextAttribute::None) {
+                        for (int x = begin; x < end; ++x)
+                            if (Cell* cell = buffer.tryCellAt(x, y)) cell->attributes = attributes;
+                    }
+                } else {
+                    for (int x = begin; x < end; ++x)
+                        buffer.setGrapheme(x, y, QByteArrayView(" ", 1), 1, fg, bg, attributes);
+                }
+            }
         }
-        for (const auto &geometry : std::as_const(m_geometry)) {
+        for (const auto& geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
             if (m_delegate || m_rowDelegate) continue;
             const QModelIndex index = sourceIndex(row, geometry.column);
             QString value = m_cppModel ? m_cppModel->data(index, Qt::DisplayRole).toString()
-                                      : cellText(row, geometry.column);
+                                       : cellText(row, geometry.column);
             QString alignment = geometry.alignment;
             int cellLeftPadding = geometry.leftPadding;
             int cellRightPadding = geometry.rightPadding;
@@ -1128,24 +1233,24 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                 if (geometry.hasForeground) {
                     cellFg = geometry.foreground;
                     columnGaveFg = true;
-                } else if (const auto ink = columnColor(geometry.foregroundFn, row,
-                                                        geometry.column, value)) {
+                } else if (const auto ink =
+                               columnColor(geometry.foregroundFn, row, geometry.column, value)) {
                     cellFg = *ink;
                     columnGaveFg = true;
                 }
                 if (geometry.hasBackground) {
                     cellBg = geometry.background;
                     columnGaveBg = true;
-                } else if (const auto fill = columnColor(geometry.backgroundFn, row,
-                                                         geometry.column, value)) {
+                } else if (const auto fill =
+                               columnColor(geometry.backgroundFn, row, geometry.column, value)) {
                     cellBg = *fill;
                     columnGaveBg = true;
                 }
             }
             if (m_cppModel) {
                 // Standard item roles, as QStyledItemDelegate would paint them.
-                const auto standard = NumericItemRoles::readForPaint(m_cppModel.data(), index,
-                    cellFg, cellBg, keepCellColors && !columnGaveFg,
+                const auto standard = NumericItemRoles::readForPaint(
+                    m_cppModel.data(), index, cellFg, cellBg, keepCellColors && !columnGaveFg,
                     keepCellColors && !columnGaveBg);
                 if (!standard.prefix.isEmpty()) value.prepend(standard.prefix);
                 cellFg = standard.foreground;
@@ -1156,16 +1261,23 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             if (m_cellFormat.isCallable()) {
                 const QJSValue result = m_cellFormat.call({row, geometry.column, value});
                 if (result.isError()) {
-                    callbackWarning(QStringLiteral("cellFormat: ") + result.toString()
-                                    + QLatin1Char('\n') + result.property("stack").toString(), m_formatErrors);
+                    callbackWarning(QStringLiteral("cellFormat: ") + result.toString() +
+                                        QLatin1Char('\n') + result.property("stack").toString(),
+                                    m_formatErrors);
                 } else {
                     m_formatErrors.clear();
                     if (result.isObject()) {
                         if (result.hasProperty("text")) value = result.property("text").toString();
-                        if (result.hasProperty("color")) cellFg = ColorMapper::fromString(result.property("color").toString(), cellFg);
-                        if (result.hasProperty("backgroundColor")) cellBg = ColorMapper::fromString(result.property("backgroundColor").toString(), cellBg);
-                        if (result.property("bold").toBool()) cellAttributes = cellAttributes | TextAttribute::Bold;
-                        if (result.hasProperty("align")) alignment = result.property("align").toString();
+                        if (result.hasProperty("color"))
+                            cellFg = ColorMapper::fromString(result.property("color").toString(),
+                                                             cellFg);
+                        if (result.hasProperty("backgroundColor"))
+                            cellBg = ColorMapper::fromString(
+                                result.property("backgroundColor").toString(), cellBg);
+                        if (result.property("bold").toBool())
+                            cellAttributes = cellAttributes | TextAttribute::Bold;
+                        if (result.hasProperty("align"))
+                            alignment = result.property("align").toString();
                         if (result.hasProperty("padding")) {
                             cellLeftPadding = cellRightPadding = result.property("padding").toInt();
                         }
@@ -1179,20 +1291,22 @@ void TableView::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
                 }
             }
             write(absX + geometry.x, y,
-                alignedPrefix(value, geometry.width, visibleWidth(geometry), alignment,
-                              cellLeftPadding, cellRightPadding), cellFg, cellBg, cellAttributes);
+                  alignedPrefix(value, geometry.width, visibleWidth(geometry), alignment,
+                                cellLeftPadding, cellRightPadding),
+                  cellFg, cellBg, cellAttributes);
         }
     }
 }
 
-void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void TableView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
+                             const ClipRect& clipRect) const {
     if (!m_visible || width() <= 0 || height() <= 0) return;
     // Order: horizontal, vertical, corners, top/bottom/left/right tees, cross.
-    const QString glyphs = (m_gridStyle == Double) ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
-        : (m_gridStyle == Ascii) ? QStringLiteral("-|+++++++++")
-        : QStringLiteral("─│┌┐└┘┬┴├┤┼");
+    const QString glyphs = (m_gridStyle == Double)  ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
+                           : (m_gridStyle == Ascii) ? QStringLiteral("-|+++++++++")
+                                                    : QStringLiteral("─│┌┐└┘┬┴├┤┼");
     const ClipRect clip = clipRect.intersected({0, 0, buffer.width(), buffer.height()})
-        .intersected({absX, absY, width(), height()});
+                              .intersected({absX, absY, width(), height()});
     if (clip.width == 0 || clip.height == 0) return;
     const uint32_t gridFg = m_gridColor.isValid() ? m_resolvedGridColor : m_resolvedTextColor;
     const auto put = [&](int x, int y, GridGlyph glyph) {
@@ -1200,45 +1314,58 @@ void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const C
             const int cellX = absX + x;
             const int cellY = absY + y;
             int lead = cellX;
-            while (lead > clip.x && buffer.cellAt(lead, cellY).continuation) --lead;
+            while (lead > clip.x && buffer.cellAt(lead, cellY).continuation)
+                --lead;
             const int end = (std::min)(clip.x + clip.width,
-                lead + int(buffer.cellAt(lead, cellY).displayWidth));
+                                       lead + int(buffer.cellAt(lead, cellY).displayWidth));
             for (int part = lead; part < end; ++part)
-                if (part != cellX)
-                    buffer.writeText(part, cellY, QStringLiteral(" "), gridFg);
+                if (part != cellX) buffer.writeText(part, cellY, QStringLiteral(" "), gridFg);
             buffer.writeText(cellX, cellY, QString(glyphs[glyph]), gridFg);
         }
     };
     const auto horizontal = [&](int y, int left, int right, GridGlyph junction) {
         const int begin = (std::max)(left, clip.x - absX);
         const int end = (std::min)(right, clip.x + clip.width - absX);
-        for (int x = begin; x < end; ++x) put(x, y, Horizontal);
-        for (int x : m_separators) put(x, y, junction);
+        for (int x = begin; x < end; ++x)
+            put(x, y, Horizontal);
+        for (int x : m_separators)
+            put(x, y, junction);
     };
     if (m_showOuterBorder && (width() == 1 || height() == 1)) {
-        if (width() == 1 && height() == 1) put(0, 0, Cross);
-        else if (height() == 1) horizontal(0, 0, width(), Horizontal);
-        else for (int y = (std::max)(0, clip.y - absY);
-                  y < (std::min)(height(), clip.y + clip.height - absY); ++y) put(0, y, Vertical);
+        if (width() == 1 && height() == 1)
+            put(0, 0, Cross);
+        else if (height() == 1)
+            horizontal(0, 0, width(), Horizontal);
+        else
+            for (int y = (std::max)(0, clip.y - absY);
+                 y < (std::min)(height(), clip.y + clip.height - absY); ++y)
+                put(0, y, Vertical);
         return;
     }
     const auto view = viewGeometry();
     const auto verticals = [&](int y) {
-        for (int x : m_separators) put(x, y, Vertical);
+        for (int x : m_separators)
+            put(x, y, Vertical);
     };
     if (m_showOuterBorder) {
         horizontal(0, view.left, view.right(), TopTee);
         horizontal(height() - 1, view.left, view.right(), BottomTee);
-        put(0, 0, TopLeft); put(width() - 1, 0, TopRight);
-        put(0, height() - 1, BottomLeft); put(width() - 1, height() - 1, BottomRight);
+        put(0, 0, TopLeft);
+        put(width() - 1, 0, TopRight);
+        put(0, height() - 1, BottomLeft);
+        put(width() - 1, height() - 1, BottomRight);
         for (int y = (std::max)(1, clip.y - absY);
              y < (std::min)(height() - 1, clip.y + clip.height - absY); ++y) {
-            put(0, y, Vertical); put(width() - 1, y, Vertical);
+            put(0, y, Vertical);
+            put(width() - 1, y, Vertical);
         }
     }
     const auto divider = [&](int y) {
         horizontal(y, view.left, view.right(), Cross);
-        if (m_showOuterBorder) { put(0, y, LeftTee); put(width() - 1, y, RightTee); }
+        if (m_showOuterBorder) {
+            put(0, y, LeftTee);
+            put(width() - 1, y, RightTee);
+        }
     };
     if (headerRows() && view.height > 0) {
         verticals(view.top);
@@ -1247,17 +1374,16 @@ void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const C
     if (m_showRowGrid) {
         for (int r = 0; r < view.capacity; ++r) {
             const int y = view.bodyTop + r * view.stride;
-            if (y < view.bodyTop + view.bodyHeight)
-                verticals(y);
+            if (y < view.bodyTop + view.bodyHeight) verticals(y);
             if (r + 1 < view.capacity) {
                 const int divY = y + 1;
-                if (divY < view.bodyTop + view.bodyHeight)
-                    divider(divY);
+                if (divY < view.bodyTop + view.bodyHeight) divider(divY);
             }
         }
         // Dividers only sit between rows, so the last covered line is the last
         // row itself; any body lines after it still carry the column separators.
-        const int lastCovered = view.bodyTop + (view.capacity > 0 ? (view.capacity - 1) * view.stride : -1);
+        const int lastCovered =
+            view.bodyTop + (view.capacity > 0 ? (view.capacity - 1) * view.stride : -1);
         for (int y = lastCovered + 1; y < view.bodyTop + view.bodyHeight; ++y)
             verticals(y);
     } else {
@@ -1266,31 +1392,44 @@ void TableView::paintOverlay(TextGridBuffer &buffer, int absX, int absY, const C
     }
 }
 
-ClipRect TableView::clipRectForChildren(int absX, int absY, const ClipRect &clipRect) const {
+ClipRect TableView::clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const {
     const auto view = viewGeometry();
-    return clipRect.intersected({absX + view.left, absY + view.bodyTop, view.width, view.bodyHeight});
+    return clipRect.intersected(
+        {absX + view.left, absY + view.bodyTop, view.width, view.bodyHeight});
 }
 
-void TableView::keyPressEvent(KeyEvent *event) {
+void TableView::keyPressEvent(KeyEvent* event) {
     const int page = (std::max)(1, viewGeometry().capacity);
-    if (event->key() == Qt::Key_Up) setSelectedRow(m_selectedRow - 1);
-    else if (event->key() == Qt::Key_Down) setSelectedRow(m_selectedRow + 1);
-    else if (event->key() == Qt::Key_PageUp) setSelectedRow(m_selectedRow - page);
+    if (event->key() == Qt::Key_Up)
+        setSelectedRow(m_selectedRow - 1);
+    else if (event->key() == Qt::Key_Down)
+        setSelectedRow(m_selectedRow + 1);
+    else if (event->key() == Qt::Key_PageUp)
+        setSelectedRow(m_selectedRow - page);
     else if (event->key() == Qt::Key_PageDown)
         setSelectedRow(int((std::min)(qint64(m_selectedRow) + page, qint64(rowCount()) - 1)));
-    else if (event->key() == Qt::Key_Right) setCurrentColumn(m_currentColumn + 1);
-    else if (event->key() == Qt::Key_Left) setCurrentColumn(m_currentColumn - 1);
-    else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter || event->key() == Qt::Key_Space) {
+    else if (event->key() == Qt::Key_Home) {
+        if (rowCount() > 0) setSelectedRow(0);
+    } else if (event->key() == Qt::Key_End) {
+        if (rowCount() > 0) setSelectedRow(rowCount() - 1);
+    } else if (event->key() == Qt::Key_Right)
+        setCurrentColumn(m_currentColumn + 1);
+    else if (event->key() == Qt::Key_Left)
+        setCurrentColumn(m_currentColumn - 1);
+    else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ||
+             event->key() == Qt::Key_Space) {
         if (m_selectedRow >= 0 && m_selectedRow < rowCount()) emit rowActivated(m_selectedRow);
-    } else return;
+    } else
+        return;
     event->setAccepted(true);
 }
-void TableView::mousePressEvent(MouseEvent *event) {
+void TableView::mousePressEvent(MouseEvent* event) {
     const auto view = viewGeometry();
-    if (event->button() != Qt::LeftButton || event->x() < view.left || event->x() >= view.right()
-        || event->y() < view.top || event->y() >= view.bottom()) return;
+    if (event->button() != Qt::LeftButton || event->x() < view.left || event->x() >= view.right() ||
+        event->y() < view.top || event->y() >= view.bottom())
+        return;
     int column = -1;
-    for (const auto &geometry : std::as_const(m_geometry))
+    for (const auto& geometry : std::as_const(m_geometry))
         if (event->x() >= geometry.x && qint64(event->x()) < qint64(geometry.x) + geometry.width) {
             column = geometry.column;
             break;
@@ -1314,5 +1453,25 @@ void TableView::mousePressEvent(MouseEvent *event) {
         emit rowActivated(row);
         event->setAccepted(true);
     }
+}
+void TableView::wheelEvent(MouseEvent* event) {
+    if (!event || event->wheelDeltaY() == 0) return;
+    if (focusable() && !focus()) setFocus(true);
+    const int visibleRows = viewGeometry().capacity;
+    const int maxFirst = (std::max)(0, rowCount() - visibleRows);
+    const int nextFirst = std::clamp(m_firstVisibleRow - event->wheelDeltaY(), 0, maxFirst);
+    if (nextFirst != m_firstVisibleRow) {
+        m_firstVisibleRow = nextFirst;
+        m_topIndex = m_cppModel ? QPersistentModelIndex(sourceIndex(m_firstVisibleRow, 0))
+                                : QPersistentModelIndex();
+        if (m_selectedRow >= 0 && visibleRows > 0) {
+            const int clampedSelected =
+                std::clamp(m_selectedRow, m_firstVisibleRow,
+                           (std::min)(rowCount() - 1, m_firstVisibleRow + visibleRows - 1));
+            if (clampedSelected != m_selectedRow) setSelectedRow(clampedSelected);
+        }
+        markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+    }
+    event->setAccepted(true);
 }
 } // namespace qmltui

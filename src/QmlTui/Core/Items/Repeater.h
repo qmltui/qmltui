@@ -35,7 +35,7 @@ public:
 
     // Parent index whose children the repeater instantiates; invalid means the top level.
     QModelIndex rootIndex() const { return m_rootIndex; }
-    void setRootIndex(const QModelIndex &rootIndex);
+    void setRootIndex(const QModelIndex& rootIndex);
 
     QQmlComponent* delegate() const { return m_delegate; }
     void setDelegate(QQmlComponent* delegate);
@@ -49,6 +49,7 @@ private:
     void disconnectModelSignals();
     void clearItems();
     void generateItems();
+    void instantiateModelRow(QAbstractItemModel* model, int row, Item* parentVis, bool append);
     void onRowsInserted(QAbstractItemModel* model, int first, int last);
     void maybeFetchMore();
     void onRowsRemoved(int first, int last);

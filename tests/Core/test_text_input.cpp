@@ -6,6 +6,7 @@
 #include <memory>
 #include <QmlTui/Core/Items/TextInput.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QmlTui/Core/Primitives/ColorMapper.h>
@@ -29,6 +30,7 @@ private slots:
     void testHorizontalViewport();
     void testFieldPropertiesAndPasswordRendering();
     void testTerminalCursorCustomization();
+    void testDoubleClickWordSelection();
     void testQmlSurface();
 };
 
@@ -326,6 +328,21 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.keyPressEvent(&overwriteEv);
     QCOMPARE(input.text(), QString("axcd"));
     QCOMPARE(input.cursorPosition(), 2);
+}
+
+void TestTextInput::testDoubleClickWordSelection() {
+    TextInput input;
+    input.setWidth(20);
+    input.setHeight(1);
+    input.setText(QStringLiteral("hello world test"));
+
+    MouseEvent press1(MouseEvent::Type::Press, 7, 0, 0);
+    input.mousePressEvent(&press1);
+    QCOMPARE(input.selectedText(), QString());
+
+    MouseEvent press2(MouseEvent::Type::Press, 7, 0, 0);
+    input.mousePressEvent(&press2);
+    QCOMPARE(input.selectedText(), QStringLiteral("world"));
 }
 
 void TestTextInput::testQmlSurface() {

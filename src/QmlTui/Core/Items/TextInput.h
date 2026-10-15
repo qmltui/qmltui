@@ -7,7 +7,9 @@
 #include <QRegularExpression>
 #include <QString>
 #include <cstdint>
-namespace qmltui { class ClockTimer; }
+namespace qmltui {
+class ClockTimer;
+}
 #include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
@@ -18,31 +20,45 @@ class QMLTUI_CORE_EXPORT TextInput : public Item {
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
-    Q_PROPERTY(qmltui::Color placeholderColor READ placeholderColor WRITE setPlaceholderColor NOTIFY placeholderColorChanged)
+    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY
+                   placeholderTextChanged)
+    Q_PROPERTY(qmltui::Color placeholderColor READ placeholderColor WRITE setPlaceholderColor NOTIFY
+                   placeholderColorChanged)
     Q_PROPERTY(QString displayText READ displayText NOTIFY textChanged)
-    Q_PROPERTY(bool overwriteMode READ overwriteMode WRITE setOverwriteMode NOTIFY overwriteModeChanged)
+    Q_PROPERTY(
+        bool overwriteMode READ overwriteMode WRITE setOverwriteMode NOTIFY overwriteModeChanged)
     Q_PROPERTY(bool autoScroll READ autoScroll WRITE setAutoScroll NOTIFY autoScrollChanged)
-    Q_PROPERTY(QString inputMask READ inputMask WRITE setInputMask NOTIFY inputMaskChanged)
-    Q_PROPERTY(int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
+    Q_PROPERTY(
+        int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
     Q_PROPERTY(int selectionStart READ selectionStart NOTIFY selectionChanged)
     Q_PROPERTY(int selectionEnd READ selectionEnd NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedText READ selectedText NOTIFY selectionChanged)
     Q_PROPERTY(bool readOnly READ readOnly WRITE setReadOnly NOTIFY readOnlyChanged)
     Q_PROPERTY(int contentX READ contentX WRITE setContentX NOTIFY contentXChanged)
-    Q_PROPERTY(int maximumLength READ maximumLength WRITE setMaximumLength NOTIFY maximumLengthChanged)
-    Q_PROPERTY(QRegularExpression validator READ validator WRITE setValidator NOTIFY validatorChanged)
+    Q_PROPERTY(
+        int maximumLength READ maximumLength WRITE setMaximumLength NOTIFY maximumLengthChanged)
+    Q_PROPERTY(
+        QRegularExpression validator READ validator WRITE setValidator NOTIFY validatorChanged)
     Q_PROPERTY(bool acceptableInput READ acceptableInput NOTIFY acceptableInputChanged)
     Q_PROPERTY(EchoMode echoMode READ echoMode WRITE setEchoMode NOTIFY echoModeChanged)
-    Q_PROPERTY(QString echoCharacter READ echoCharacter WRITE setEchoCharacter NOTIFY echoCharacterChanged)
-    Q_PROPERTY(CursorShape cursorShape READ cursorShape WRITE setCursorShape NOTIFY cursorShapeChanged)
-    Q_PROPERTY(qmltui::Color cursorColor READ cursorColor WRITE setCursorColor NOTIFY cursorColorChanged)
-    Q_PROPERTY(bool cursorBlinking READ cursorBlinking WRITE setCursorBlinking NOTIFY cursorBlinkingChanged)
-    Q_PROPERTY(int cursorBlinkRate READ cursorBlinkRate WRITE setCursorBlinkRate NOTIFY cursorBlinkRateChanged)
-    Q_PROPERTY(bool cursorVisible READ cursorVisible WRITE setCursorVisible NOTIFY cursorVisibleChanged)
-    Q_PROPERTY(QString cursorDelegate READ cursorDelegate WRITE setCursorDelegate NOTIFY cursorDelegateChanged)
-    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor NOTIFY selectedTextColorChanged)
+    Q_PROPERTY(
+        QString echoCharacter READ echoCharacter WRITE setEchoCharacter NOTIFY echoCharacterChanged)
+    Q_PROPERTY(
+        CursorShape cursorShape READ cursorShape WRITE setCursorShape NOTIFY cursorShapeChanged)
+    Q_PROPERTY(
+        qmltui::Color cursorColor READ cursorColor WRITE setCursorColor NOTIFY cursorColorChanged)
+    Q_PROPERTY(bool cursorBlinking READ cursorBlinking WRITE setCursorBlinking NOTIFY
+                   cursorBlinkingChanged)
+    Q_PROPERTY(int cursorBlinkRate READ cursorBlinkRate WRITE setCursorBlinkRate NOTIFY
+                   cursorBlinkRateChanged)
+    Q_PROPERTY(
+        bool cursorVisible READ cursorVisible WRITE setCursorVisible NOTIFY cursorVisibleChanged)
+    Q_PROPERTY(QString cursorDelegate READ cursorDelegate WRITE setCursorDelegate NOTIFY
+                   cursorDelegateChanged)
+    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
+                   selectionColorChanged)
+    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor
+                   NOTIFY selectedTextColorChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY canUndoChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
 
@@ -62,7 +78,7 @@ public:
     };
     Q_ENUM(CursorShape)
 
-    explicit TextInput(QObject *parent = nullptr);
+    explicit TextInput(QObject* parent = nullptr);
     ~TextInput() override;
 
     QString text() const { return m_editor.text(); }
@@ -71,7 +87,7 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
     QString placeholderText() const { return m_placeholderText; }
-    void setPlaceholderText(const QString &text);
+    void setPlaceholderText(const QString& text);
 
     int cursorPosition() const { return m_editor.cursorPosition(); }
     void setCursorPosition(int pos);
@@ -85,12 +101,12 @@ public:
     int maximumLength() const { return m_maximumLength; }
     void setMaximumLength(int length);
     QRegularExpression validator() const { return m_validator; }
-    void setValidator(const QRegularExpression &validator);
+    void setValidator(const QRegularExpression& validator);
     bool acceptableInput() const;
     EchoMode echoMode() const { return m_echoMode; }
     void setEchoMode(EchoMode mode);
     QString echoCharacter() const { return m_echoCharacter; }
-    void setEchoCharacter(const QString &character);
+    void setEchoCharacter(const QString& character);
     CursorShape cursorShape() const { return m_cursorShape; }
     void setCursorShape(CursorShape shape);
     Color cursorColor() const { return m_cursorColor; }
@@ -102,7 +118,7 @@ public:
     bool cursorVisible() const { return m_cursorVisible; }
     void setCursorVisible(bool visible);
     QString cursorDelegate() const { return m_cursorDelegate; }
-    void setCursorDelegate(const QString &delegate);
+    void setCursorDelegate(const QString& delegate);
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
     Color selectedTextColor() const { return m_selectedTextColor; }
@@ -113,8 +129,6 @@ public:
     void setOverwriteMode(bool overwrite);
     bool autoScroll() const { return m_autoScroll; }
     void setAutoScroll(bool autoScroll);
-    QString inputMask() const { return m_inputMask; }
-    void setInputMask(const QString &mask);
     bool canUndo() const { return m_editor.canUndo(); }
     bool canRedo() const { return m_editor.canRedo(); }
 
@@ -124,14 +138,15 @@ public:
     Q_INVOKABLE void clear();
     Q_INVOKABLE void copy();
     Q_INVOKABLE void cut();
-    Q_INVOKABLE void paste(const QString &text);
+    Q_INVOKABLE void paste(const QString& text);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
 
     void keyPressEvent(class KeyEvent* event) override;
-    void mousePressEvent(class MouseEvent *event) override;
-    void mouseMoveEvent(class MouseEvent *event) override;
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
+    void mousePressEvent(class MouseEvent* event) override;
+    void mouseMoveEvent(class MouseEvent* event) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void textChanged();
@@ -140,7 +155,6 @@ signals:
     void placeholderColorChanged();
     void overwriteModeChanged();
     void autoScrollChanged();
-    void inputMaskChanged();
     void cursorPositionChanged();
     void selectionChanged();
     void readOnlyChanged();
@@ -171,8 +185,8 @@ private:
     };
 
     EditorStatus editorStatus() const;
-    void applyEditorChange(const TextEditorState::Change &change, const EditorStatus &before);
-    QString constrainedReplacement(const QString &replacement) const;
+    void applyEditorChange(const TextEditorState::Change& change, const EditorStatus& before);
+    QString constrainedReplacement(const QString& replacement) const;
     QString displayText() const;
     int displayColumnForPosition(int position) const;
     int positionForDisplayColumn(int column) const;
@@ -180,6 +194,7 @@ private:
     void ensureCursorVisible();
     void updateImplicitWidth();
     void resetBlinkTimer();
+    void updateTerminalConnection();
 
     TextEditorState m_editor;
     // "default" is the terminal's foreground (alpha 0 -> SGR 39),
@@ -200,7 +215,6 @@ private:
     bool m_readOnly = false;
     bool m_overwriteMode = false;
     bool m_autoScroll = true;
-    QString m_inputMask;
     EchoMode m_echoMode = Normal;
 
     CursorShape m_cursorShape = Block;
@@ -221,6 +235,10 @@ private:
     Color m_selectedTextColor;
     uint32_t m_resolvedSelectedTextColor = 0;
     bool m_hasResolvedSelectedTextColor = false;
+    QPointer<Terminal> m_observedTerminal;
+    QMetaObject::Connection m_appActiveConnection;
+    qint64 m_lastClickMs = -1;
+    int m_lastClickPos = -1;
 };
 
 } // namespace qmltui

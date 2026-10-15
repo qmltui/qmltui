@@ -6,18 +6,20 @@
 #include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Items/TextCursorPainter.h>
 
 #include <algorithm>
+#include <memory>
 
 namespace qmltui {
 
-static_assert(int(TextInput::Block) == int(detail::TextCursorShape::Block)
-    && int(TextInput::Underline) == int(detail::TextCursorShape::Underline)
-    && int(TextInput::Beam) == int(detail::TextCursorShape::Beam)
-    && int(TextInput::HollowBlock) == int(detail::TextCursorShape::HollowBlock));
+static_assert(int(TextInput::Block) == int(detail::TextCursorShape::Block) &&
+              int(TextInput::Underline) == int(detail::TextCursorShape::Underline) &&
+              int(TextInput::Beam) == int(detail::TextCursorShape::Beam) &&
+              int(TextInput::HollowBlock) == int(detail::TextCursorShape::HollowBlock));
 
-TextInput::TextInput(QObject *parent) : Item(parent) {
+TextInput::TextInput(QObject* parent) : Item(parent) {
     setFocusable(true);
     setClip(true);
     setImplicitWidth(10);
@@ -36,13 +38,33 @@ TextInput::TextInput(QObject *parent) : Item(parent) {
         resetBlinkTimer();
         markDirty();
     });
+    connect(this, &Item::parentChanged, this, &TextInput::updateTerminalConnection);
+    connect(this, &Item::ancestryChanged, this, &TextInput::updateTerminalConnection);
 }
 
 TextInput::~TextInput() = default;
 
+void TextInput::updateTerminalConnection() {
+    Terminal* term = terminal();
+    if (m_observedTerminal == term) return;
+    if (m_observedTerminal) {
+        disconnect(m_appActiveConnection);
+    }
+    m_observedTerminal = term;
+    if (m_observedTerminal) {
+        m_appActiveConnection =
+            connect(m_observedTerminal, &Terminal::applicationActiveChanged, this, [this]() {
+                resetBlinkTimer();
+                markDirty();
+            });
+    }
+}
+
 void TextInput::resetBlinkTimer() {
+    updateTerminalConnection();
     m_blinkState = true;
-    if (activeFocus() && m_cursorBlinking && m_cursorBlinkRate > 0) {
+    const bool appActive = !m_observedTerminal || m_observedTerminal->applicationActive();
+    if (activeFocus() && appActive && m_cursorBlinking && m_cursorBlinkRate > 0) {
         m_blinkTimer->start(m_cursorBlinkRate);
     } else {
         m_blinkTimer->stop();
@@ -53,22 +75,17 @@ TextInput::EditorStatus TextInput::editorStatus() const {
     return EditorStatus{acceptableInput(), canUndo(), canRedo()};
 }
 
-void TextInput::applyEditorChange(
-    const TextEditorState::Change &change, const EditorStatus &before) {
+void TextInput::applyEditorChange(const TextEditorState::Change& change,
+                                  const EditorStatus& before) {
     if (change.text) {
         updateImplicitWidth();
         emit textChanged();
     }
-    if (change.cursor)
-        emit cursorPositionChanged();
-    if (change.selection)
-        emit selectionChanged();
-    if (before.acceptable != acceptableInput())
-        emit acceptableInputChanged();
-    if (before.canUndo != canUndo())
-        emit canUndoChanged();
-    if (before.canRedo != canRedo())
-        emit canRedoChanged();
+    if (change.cursor) emit cursorPositionChanged();
+    if (change.selection) emit selectionChanged();
+    if (before.acceptable != acceptableInput()) emit acceptableInputChanged();
+    if (before.canUndo != canUndo()) emit canUndoChanged();
+    if (before.canRedo != canRedo()) emit canRedoChanged();
     if (change.any()) {
         ensureCursorVisible();
         resetBlinkTimer();
@@ -76,12 +93,11 @@ void TextInput::applyEditorChange(
     }
 }
 
-void TextInput::setText(const QString &text) {
+void TextInput::setText(const QString& text) {
     const EditorStatus before = editorStatus();
     const QString sanitized = TextEditorState::sanitizeSingleLine(text);
     applyEditorChange(
-        m_editor.setText(TextEditorState::truncateToGraphemes(sanitized, m_maximumLength)),
-        before);
+        m_editor.setText(TextEditorState::truncateToGraphemes(sanitized, m_maximumLength)), before);
 }
 
 void TextInput::setColor(Color color) {
@@ -92,7 +108,7 @@ void TextInput::setColor(Color color) {
     markDirty();
 }
 
-void TextInput::setPlaceholderText(const QString &text) {
+void TextInput::setPlaceholderText(const QString& text) {
     const QString sanitized = TextEditorState::sanitizeSingleLine(text);
     if (m_placeholderText == sanitized) return;
     m_placeholderText = sanitized;
@@ -147,7 +163,7 @@ void TextInput::setCursorVisible(bool visible) {
     markDirty();
 }
 
-void TextInput::setCursorDelegate(const QString &delegate) {
+void TextInput::setCursorDelegate(const QString& delegate) {
     if (m_cursorDelegate == delegate) return;
     m_cursorDelegate = delegate;
     emit cursorDelegateChanged();
@@ -157,13 +173,9 @@ void TextInput::setCursorDelegate(const QString &delegate) {
 void TextInput::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    if (!m_selectionColor.isValid()) {
-        m_hasResolvedSelectionColor = false;
-        m_resolvedSelectionColor = 0;
-    } else {
-        m_hasResolvedSelectionColor = true;
-        m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0xFF0000FF);
-    }
+    const std::optional<uint32_t> resolved = detail::resolveCursorColor(m_selectionColor);
+    m_hasResolvedSelectionColor = resolved.has_value();
+    m_resolvedSelectionColor = resolved.value_or(0);
     emit selectionColorChanged();
     markDirty();
 }
@@ -171,13 +183,9 @@ void TextInput::setSelectionColor(Color color) {
 void TextInput::setSelectedTextColor(Color color) {
     if (m_selectedTextColor == color) return;
     m_selectedTextColor = color;
-    if (!m_selectedTextColor.isValid()) {
-        m_hasResolvedSelectedTextColor = false;
-        m_resolvedSelectedTextColor = 0;
-    } else {
-        m_hasResolvedSelectedTextColor = true;
-        m_resolvedSelectedTextColor = ColorMapper::fromString(m_selectedTextColor, 0xFFFFFFFF);
-    }
+    const std::optional<uint32_t> resolved = detail::resolveCursorColor(m_selectedTextColor);
+    m_hasResolvedSelectedTextColor = resolved.has_value();
+    m_resolvedSelectedTextColor = resolved.value_or(0);
     emit selectedTextColorChanged();
     markDirty();
 }
@@ -190,8 +198,8 @@ void TextInput::setPlaceholderColor(Color color) {
         m_resolvedPlaceholderColor = 0;
     } else {
         m_hasResolvedPlaceholderColor = true;
-        m_resolvedPlaceholderColor = ColorMapper::fromString(m_placeholderColor,
-                                                            Color::fromAnsiIndex(8).argb32());
+        m_resolvedPlaceholderColor =
+            ColorMapper::fromString(m_placeholderColor, Color::fromAnsiIndex(8).argb32());
     }
     emit placeholderColorChanged();
     markDirty();
@@ -208,13 +216,6 @@ void TextInput::setAutoScroll(bool autoScroll) {
     if (m_autoScroll == autoScroll) return;
     m_autoScroll = autoScroll;
     emit autoScrollChanged();
-}
-
-void TextInput::setInputMask(const QString &mask) {
-    if (m_inputMask == mask) return;
-    m_inputMask = mask;
-    emit inputMaskChanged();
-    markDirty();
 }
 
 void TextInput::clear() {
@@ -244,21 +245,19 @@ void TextInput::setMaximumLength(int length) {
     setText(m_editor.text());
 }
 
-void TextInput::setValidator(const QRegularExpression &validator) {
+void TextInput::setValidator(const QRegularExpression& validator) {
     if (m_validator == validator) return;
     const bool wasAcceptable = acceptableInput();
     m_validator = validator;
     emit validatorChanged();
-    if (wasAcceptable != acceptableInput())
-        emit acceptableInputChanged();
+    if (wasAcceptable != acceptableInput()) emit acceptableInputChanged();
 }
 
 bool TextInput::acceptableInput() const {
-    if (!m_validator.isValid() || m_validator.pattern().isEmpty())
-        return true;
+    if (!m_validator.isValid() || m_validator.pattern().isEmpty()) return true;
     const QRegularExpressionMatch match = m_validator.match(m_editor.text());
-    return match.hasMatch() && match.capturedStart() == 0
-        && match.capturedLength() == m_editor.text().size();
+    return match.hasMatch() && match.capturedStart() == 0 &&
+           match.capturedLength() == m_editor.text().size();
 }
 
 void TextInput::setEchoMode(EchoMode mode) {
@@ -270,13 +269,12 @@ void TextInput::setEchoMode(EchoMode mode) {
     markDirty();
 }
 
-void TextInput::setEchoCharacter(const QString &character) {
+void TextInput::setEchoCharacter(const QString& character) {
     const QVector<Grapheme> clusters = UnicodeText::graphemes(character);
-    const QString candidate = clusters.isEmpty()
-        ? QString("*")
-        : character.mid(clusters.first().utf16Start, clusters.first().utf16Length);
-    const QString normalized = UnicodeText::displayWidth(candidate) > 0
-        ? candidate : QString("*");
+    const QString candidate = clusters.isEmpty() ? QString("*")
+                                                 : character.mid(clusters.first().utf16Start,
+                                                                 clusters.first().utf16Length);
+    const QString normalized = UnicodeText::displayWidth(candidate) > 0 ? candidate : QString("*");
     if (m_echoCharacter == normalized) return;
     m_echoCharacter = normalized;
     updateImplicitWidth();
@@ -302,8 +300,7 @@ void TextInput::clearSelection() {
 
 void TextInput::copy() {
     if (!m_editor.hasSelection()) return;
-    if (Terminal *term = terminal())
-        term->copyToClipboard(m_editor.selectedText());
+    if (Terminal* term = terminal()) term->copyToClipboard(m_editor.selectedText());
 }
 
 void TextInput::cut() {
@@ -313,19 +310,17 @@ void TextInput::cut() {
     applyEditorChange(m_editor.deleteSelection(), before);
 }
 
-QString TextInput::constrainedReplacement(const QString &replacement) const {
+QString TextInput::constrainedReplacement(const QString& replacement) const {
     const QString sanitized = TextEditorState::sanitizeSingleLine(replacement);
-    if (m_maximumLength <= 0)
-        return sanitized;
-    const int retained = TextEditorState::graphemeCount(m_editor.text())
-        - TextEditorState::graphemeCount(m_editor.selectedText());
+    if (m_maximumLength <= 0) return sanitized;
+    const int retained = TextEditorState::graphemeCount(m_editor.text()) -
+                         TextEditorState::graphemeCount(m_editor.selectedText());
     const int available = m_maximumLength - retained;
-    if (available <= 0)
-        return {};
+    if (available <= 0) return {};
     return TextEditorState::truncateToGraphemes(sanitized, available);
 }
 
-void TextInput::paste(const QString &text) {
+void TextInput::paste(const QString& text) {
     if (m_readOnly || text.isEmpty()) return;
     const QString replacement = constrainedReplacement(text);
     if (replacement.isEmpty()) return;
@@ -346,12 +341,9 @@ void TextInput::redo() {
 }
 
 QString TextInput::displayText() const {
-    if (m_editor.text().isEmpty())
-        return m_placeholderText;
-    if (m_echoMode == NoEcho)
-        return {};
-    if (m_echoMode == Normal)
-        return m_editor.text();
+    if (m_editor.text().isEmpty()) return m_placeholderText;
+    if (m_echoMode == NoEcho) return {};
+    if (m_echoMode == Normal) return m_editor.text();
 
     QString masked;
     const int count = TextEditorState::graphemeCount(m_editor.text());
@@ -361,28 +353,23 @@ QString TextInput::displayText() const {
 }
 
 int TextInput::displayColumnForPosition(int position) const {
-    if (m_echoMode == NoEcho)
-        return 0;
-    if (m_echoMode == Normal)
-        return TextEditorState::columnForPosition(m_editor.text(), position);
+    if (m_echoMode == NoEcho) return 0;
+    if (m_echoMode == Normal) return TextEditorState::columnForPosition(m_editor.text(), position);
 
     const int snapped = TextEditorState::snapToBoundary(m_editor.text(), position);
     int count = 0;
     GraphemeIterator iterator(m_editor.text());
     GraphemeRef cluster;
     while (iterator.next(cluster)) {
-        if (cluster.utf16Start >= snapped)
-            break;
+        if (cluster.utf16Start >= snapped) break;
         ++count;
     }
     return count * UnicodeText::displayWidth(m_echoCharacter);
 }
 
 int TextInput::positionForDisplayColumn(int column) const {
-    if (m_echoMode == Normal)
-        return TextEditorState::positionForColumn(m_editor.text(), column);
-    if (m_echoMode == NoEcho)
-        return 0;
+    if (m_echoMode == Normal) return TextEditorState::positionForColumn(m_editor.text(), column);
+    if (m_echoMode == NoEcho) return 0;
 
     const int maskWidth = (std::max)(1, UnicodeText::displayWidth(m_echoCharacter));
     const int targetIndex = (std::max)(0, column) / maskWidth;
@@ -390,8 +377,7 @@ int TextInput::positionForDisplayColumn(int column) const {
     GraphemeRef cluster;
     int index = 0;
     while (iterator.next(cluster)) {
-        if (index == targetIndex)
-            return cluster.utf16Start;
+        if (index == targetIndex) return cluster.utf16Start;
         ++index;
     }
     return m_editor.text().size();
@@ -402,8 +388,7 @@ int TextInput::positionAtMouse(int x) const {
 }
 
 void TextInput::ensureCursorVisible() {
-    if (!m_autoScroll)
-        return;
+    if (!m_autoScroll) return;
     const int viewportWidth = (std::max)(1, width() - leftPadding() - rightPadding());
     const int column = displayColumnForPosition(m_editor.cursorPosition());
     if (column < m_contentX)
@@ -415,8 +400,8 @@ void TextInput::ensureCursorVisible() {
 }
 
 void TextInput::updateImplicitWidth() {
-    setImplicitWidth((std::max)(
-        10, UnicodeText::displayWidth(displayText()) + leftPadding() + rightPadding()));
+    setImplicitWidth(
+        (std::max)(10, UnicodeText::displayWidth(displayText()) + leftPadding() + rightPadding()));
 }
 
 void TextInput::keyPressEvent(KeyEvent* event) {
@@ -426,8 +411,7 @@ void TextInput::keyPressEvent(KeyEvent* event) {
     const bool alt = event->modifiers() & Qt::AltModifier;
     const bool wordModifier = control || alt;
 
-    if (key == Qt::Key_Tab || key == Qt::Key_Backtab)
-        return;
+    if (key == Qt::Key_Tab || key == Qt::Key_Backtab) return;
 
     const EditorStatus before = editorStatus();
     TextEditorState::Change change;
@@ -442,6 +426,24 @@ void TextInput::keyPressEvent(KeyEvent* event) {
             copy();
             change = m_editor.deleteSelection();
         }
+    } else if (control && key == Qt::Key_V) {
+        if (!m_readOnly) {
+            if (Terminal* term = terminal()) {
+                if (term->clipboardMode() != Terminal::ClipboardMode::Disabled) {
+                    if (TerminalEngine* eng = term->engine()) {
+                        auto conn = std::make_shared<QMetaObject::Connection>();
+                        *conn = connect(eng, &TerminalEngine::clipboardReadFinished, this,
+                                        [this, conn](const QString& text, const QString& code) {
+                                            disconnect(*conn);
+                                            if (code.isEmpty() && !text.isEmpty()) paste(text);
+                                        });
+                        if (!eng->requestClipboardText(2000).isEmpty()) disconnect(*conn);
+                    }
+                }
+            }
+        }
+        event->setAccepted(true);
+        return;
     } else if (control && key == Qt::Key_Z && shift) {
         if (!m_readOnly) change = m_editor.redo();
     } else if (control && key == Qt::Key_Z) {
@@ -449,26 +451,24 @@ void TextInput::keyPressEvent(KeyEvent* event) {
     } else if (control && key == Qt::Key_Y) {
         if (!m_readOnly) change = m_editor.redo();
     } else if (key == Qt::Key_Left) {
-        int position = m_editor.hasSelection() && !shift
-            ? m_editor.selectionStart()
-            : (wordModifier
-                ? (m_echoMode == Normal ? m_editor.previousWordPosition() : 0)
-                : UnicodeText::previousBoundary(
-                    m_editor.text(), m_editor.cursorPosition()));
+        int position =
+            m_editor.hasSelection() && !shift
+                ? m_editor.selectionStart()
+                : (wordModifier
+                       ? (m_echoMode == Normal ? m_editor.previousWordPosition() : 0)
+                       : UnicodeText::previousBoundary(m_editor.text(), m_editor.cursorPosition()));
         change = m_editor.moveCursor(position, shift);
     } else if (key == Qt::Key_Right) {
-        int position = m_editor.hasSelection() && !shift
-            ? m_editor.selectionEnd()
-            : (wordModifier
-                ? (m_echoMode == Normal
-                    ? (shift
-                        ? m_editor.nextWordEndPosition()
-                        : m_editor.nextWordPosition())
-                    : m_editor.text().size())
-                : UnicodeText::nextBoundary(
-                    m_editor.text(), m_editor.cursorPosition()));
+        int position =
+            m_editor.hasSelection() && !shift
+                ? m_editor.selectionEnd()
+                : (wordModifier
+                       ? (m_echoMode == Normal ? (shift ? m_editor.nextWordEndPosition()
+                                                        : m_editor.nextWordPosition())
+                                               : m_editor.text().size())
+                       : UnicodeText::nextBoundary(m_editor.text(), m_editor.cursorPosition()));
         change = m_editor.moveCursor(position, shift);
-    } else if (key == Qt::Key_Home || (control && key == Qt::Key_A)) {
+    } else if (key == Qt::Key_Home) {
         change = m_editor.moveCursor(0, shift);
     } else if (key == Qt::Key_End || (control && key == Qt::Key_E)) {
         change = m_editor.moveCursor(m_editor.text().size(), shift);
@@ -477,12 +477,12 @@ void TextInput::keyPressEvent(KeyEvent* event) {
         emit editingFinished();
     } else if (key == Qt::Key_Backspace || (control && key == Qt::Key_H)) {
         if (!m_readOnly)
-            change = wordModifier && key == Qt::Key_Backspace
-                ? m_editor.deletePreviousWord() : m_editor.deletePreviousCharacter();
+            change = wordModifier && key == Qt::Key_Backspace ? m_editor.deletePreviousWord()
+                                                              : m_editor.deletePreviousCharacter();
     } else if (key == Qt::Key_Delete || (control && key == Qt::Key_D)) {
         if (!m_readOnly)
-            change = wordModifier && key == Qt::Key_Delete
-                ? m_editor.deleteNextWord() : m_editor.deleteNextCharacter();
+            change = wordModifier && key == Qt::Key_Delete ? m_editor.deleteNextWord()
+                                                           : m_editor.deleteNextCharacter();
     } else if (key == Qt::Key_Insert) {
         setOverwriteMode(!m_overwriteMode);
         event->setAccepted(true);
@@ -495,15 +495,14 @@ void TextInput::keyPressEvent(KeyEvent* event) {
         if (!m_readOnly) change = m_editor.deleteToEnd();
     } else if (!control && !alt && !event->text().isEmpty()) {
         if (!m_readOnly) {
-            if (m_overwriteMode && !m_editor.hasSelection()
-                && m_editor.cursorPosition() < m_editor.text().size()) {
+            if (m_overwriteMode && !m_editor.hasSelection() &&
+                m_editor.cursorPosition() < m_editor.text().size()) {
                 const int currentPos = m_editor.cursorPosition();
                 const int nextPos = UnicodeText::nextBoundary(m_editor.text(), currentPos);
                 m_editor.select(currentPos, nextPos);
             }
             const QString replacement = constrainedReplacement(event->text());
-            if (!replacement.isEmpty())
-                change = m_editor.replaceSelection(replacement);
+            if (!replacement.isEmpty()) change = m_editor.replaceSelection(replacement);
         }
     } else {
         return;
@@ -513,39 +512,68 @@ void TextInput::keyPressEvent(KeyEvent* event) {
     event->setAccepted(true);
 }
 
-void TextInput::mousePressEvent(MouseEvent *event) {
+void TextInput::mousePressEvent(MouseEvent* event) {
     setFocus(true);
     const EditorStatus before = editorStatus();
-    applyEditorChange(m_editor.moveCursor(positionAtMouse(event->x())), before);
+    const int pos = positionAtMouse(event->x());
+    const qint64 now = Clock::instance()->elapsed();
+    TextEditorState::Change change = m_editor.moveCursor(pos);
+    if (event->button() == Qt::LeftButton) {
+        if (m_lastClickMs >= 0 && now - m_lastClickMs <= 400 && pos == m_lastClickPos) {
+            int start = 0;
+            int end = 0;
+            if (pos < m_editor.text().size() && !m_editor.text()[pos].isSpace()) {
+                end = m_editor.nextWordEndPosition();
+                m_editor.moveCursor(end);
+                start = m_editor.previousWordPosition();
+            } else {
+                start = m_editor.previousWordPosition();
+                m_editor.moveCursor(start);
+                end = m_editor.nextWordEndPosition();
+            }
+            m_editor.moveCursor(pos);
+            const TextEditorState::Change selChange = m_editor.select(start, end);
+            change.text = change.text || selChange.text;
+            change.cursor = change.cursor || selChange.cursor;
+            change.selection = change.selection || selChange.selection;
+            m_lastClickMs = -1;
+            m_lastClickPos = -1;
+        } else {
+            m_lastClickMs = now;
+            m_lastClickPos = pos;
+        }
+    } else {
+        m_lastClickMs = -1;
+        m_lastClickPos = -1;
+    }
+    applyEditorChange(change, before);
     event->setAccepted(true);
 }
 
-void TextInput::mouseMoveEvent(MouseEvent *event) {
+void TextInput::mouseMoveEvent(MouseEvent* event) {
     const EditorStatus before = editorStatus();
     applyEditorChange(m_editor.moveCursor(positionAtMouse(event->x()), true), before);
     event->setAccepted(true);
 }
 
-void TextInput::paint(
-    TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
+void TextInput::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
 
     const int viewportWidth = (std::max)(0, width() - leftPadding() - rightPadding());
     const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
-    if (viewportWidth == 0 || viewportHeight == 0)
-        return;
+    if (viewportWidth == 0 || viewportHeight == 0) return;
 
     const int y = absY + topPadding();
     const int contentLeft = absX + leftPadding();
     const int contentRight = contentLeft + viewportWidth;
-    const ClipRect contentClip = clipRect.intersected(
-        ClipRect{contentLeft, y, viewportWidth, 1});
+    const ClipRect contentClip = clipRect.intersected(ClipRect{contentLeft, y, viewportWidth, 1});
     const bool placeholder = m_editor.text().isEmpty() && !m_placeholderText.isEmpty();
-    const uint32_t displayColor = placeholder && m_hasResolvedPlaceholderColor
-        ? m_resolvedPlaceholderColor : m_resolvedColor;
-    const TextAttribute displayAttributes = !isEffectivelyEnabled()
-        || (placeholder && !m_hasResolvedPlaceholderColor)
-        ? TextAttribute::Dim : TextAttribute::None;
+    const uint32_t displayColor =
+        placeholder && m_hasResolvedPlaceholderColor ? m_resolvedPlaceholderColor : m_resolvedColor;
+    const TextAttribute displayAttributes =
+        !isEffectivelyEnabled() || (placeholder && !m_hasResolvedPlaceholderColor)
+            ? TextAttribute::Dim
+            : TextAttribute::None;
 
     if (placeholder) {
         int column = 0;
@@ -554,34 +582,36 @@ void TextInput::paint(
         while (iterator.next(cluster)) {
             const int x = contentLeft + column - m_contentX;
             const int width = (std::max)(1, cluster.width);
-            if (x >= contentLeft && x + width <= contentRight
-                && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y))
-                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
+            if (x >= contentLeft && x + width <= contentRight && contentClip.contains(x, y) &&
+                contentClip.contains(x + width - 1, y))
+                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0,
+                                   displayAttributes);
             column += cluster.width;
         }
     } else if (m_echoMode != NoEcho) {
         int column = 0;
         const bool masked = m_echoMode == Password;
-        const int maskWidth = masked ? (std::max)(1, UnicodeText::displayWidth(m_echoCharacter)) : 1;
+        const int maskWidth =
+            masked ? (std::max)(1, UnicodeText::displayWidth(m_echoCharacter)) : 1;
         GraphemeIterator iterator(m_editor.text(), /*sanitizeControls=*/true);
         GraphemeRef cluster;
         while (iterator.next(cluster)) {
             const int width = masked ? maskWidth : (std::max)(1, cluster.width);
             const int x = contentLeft + column - m_contentX;
-            if (x >= contentLeft && x + width <= contentRight
-                && contentClip.contains(x, y) && contentClip.contains(x + width - 1, y)) {
+            if (x >= contentLeft && x + width <= contentRight && contentClip.contains(x, y) &&
+                contentClip.contains(x + width - 1, y)) {
                 if (masked)
                     buffer.writeText(x, y, m_echoCharacter, displayColor, 0, displayAttributes);
                 else
-                    buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0, displayAttributes);
+                    buffer.setGrapheme(x, y, cluster.utf16, cluster.width, displayColor, 0,
+                                       displayAttributes);
                 const int clusterStart = cluster.utf16Start;
                 const int clusterEnd = clusterStart + cluster.utf16Length();
                 if (clusterEnd > selectionStart() && clusterStart < selectionEnd()) {
                     for (int dx = 0; dx < width; ++dx) {
-                        Cell *selectionCell = buffer.tryCellAt(x + dx, y);
-                        if (!selectionCell)
-                            continue;
-                        Cell &selCell = *selectionCell;
+                        Cell* selectionCell = buffer.tryCellAt(x + dx, y);
+                        if (!selectionCell) continue;
+                        Cell& selCell = *selectionCell;
                         if (m_hasResolvedSelectionColor) {
                             selCell.bgColor = m_resolvedSelectionColor;
                             if (m_hasResolvedSelectedTextColor) {
@@ -600,31 +630,40 @@ void TextInput::paint(
         }
     }
 
-    if (activeFocus() && m_cursorVisible && m_blinkState) {
-        const int x = contentLeft
-            + displayColumnForPosition(m_editor.cursorPosition()) - m_contentX;
+    if (activeFocus()) {
+        const int x =
+            contentLeft + displayColumnForPosition(m_editor.cursorPosition()) - m_contentX;
         if (contentClip.contains(x, y)) {
-            Cell *cursorCell = buffer.tryCellAt(x, y);
-            if (!cursorCell)
-                return;
-            Cell &cell = *cursorCell;
-            const std::optional<uint32_t> cursorColor = m_hasResolvedCursorColor
-                ? std::optional<uint32_t>(m_resolvedCursorColor)
-                : std::nullopt;
-
-            if (!m_cursorDelegate.isEmpty()) {
-                if (detail::isBlankCursorCell(cell)) {
-                    cell.setCharacter(m_cursorDelegate.toUtf8());
-                    if (cursorColor)
-                        cell.fgColor = *cursorColor;
-                    else
-                        cell.attributes = cell.attributes | TextAttribute::Reversed;
-                } else {
-                    detail::paintBlockCursor(cell, cursorColor);
+            if (!m_readOnly) {
+                if (Terminal* term = terminal()) {
+                    if (TerminalEngine* eng = term->engine()) {
+                        eng->setHardwareCursorPosition(x, y);
+                    }
                 }
-            } else {
-                detail::paintTextCursor(cell,
-                    static_cast<detail::TextCursorShape>(m_cursorShape), cursorColor);
+            }
+            const bool appActive = !terminal() || terminal()->applicationActive();
+            if (m_cursorVisible && (m_blinkState || !appActive)) {
+                Cell* cursorCell = buffer.tryCellAt(x, y);
+                if (!cursorCell) return;
+                Cell& cell = *cursorCell;
+                const std::optional<uint32_t> cursorColor =
+                    m_hasResolvedCursorColor ? std::optional<uint32_t>(m_resolvedCursorColor)
+                                             : std::nullopt;
+
+                if (!m_cursorDelegate.isEmpty()) {
+                    if (detail::isBlankCursorCell(cell)) {
+                        cell.setCharacter(m_cursorDelegate.toUtf8());
+                        if (cursorColor)
+                            cell.fgColor = *cursorColor;
+                        else
+                            cell.attributes = cell.attributes | TextAttribute::Reversed;
+                    } else {
+                        detail::paintBlockCursor(cell, cursorColor);
+                    }
+                } else {
+                    detail::paintTextCursor(
+                        cell, static_cast<detail::TextCursorShape>(m_cursorShape), cursorColor);
+                }
             }
         }
     }

@@ -148,3 +148,16 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+┌──────────────────────────────────────┐
+│First line of notes                   │
+│Second line of notes                  │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+└──────────────────────────────────────┘
+```

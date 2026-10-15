@@ -186,6 +186,18 @@ Terminal {
 }
 ```
 
+### Terminal Preview
+
+```text
+┌───────────────┬──────────┐
+│ Service       │  Status  │
+├───────────────┼──────────┤
+│ api           │ ready    │
+├───────────────┼──────────┤
+│ worker        │ busy     │
+└───────────────┴──────────┘
+```
+
 ## Usage guide
 
 Grid controls are `showColumnGrid`, `showRowGrid`, and `showOuterBorder`, all

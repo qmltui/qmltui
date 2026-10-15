@@ -96,3 +96,16 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+┌────────────────────────────┐
+│> Alpha                     │
+│  Beta                      │
+│  Gamma                     │
+│  Delta                     │
+│  Epsilon                   │
+│  Zeta                      │
+└────────────────────────────┘
+```

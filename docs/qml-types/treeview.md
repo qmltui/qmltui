@@ -122,3 +122,18 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+┌─────────────────────────────────┐
+│Project                          │
+│  src                            │
+│    main.cpp                     │
+│    App.qml                      │
+│  docs                           │
+│    index.md                     │
+│  CMakeLists.txt                 │
+│                                 │
+└─────────────────────────────────┘
+```

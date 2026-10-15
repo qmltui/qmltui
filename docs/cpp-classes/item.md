@@ -1,24 +1,24 @@
 # Item
 
-## 1. Class Overview
+## Class Overview
 
 `Item` is the base visual class for all QML elements in QmlTui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
 
 Developers subclass `Item` when creating new C++ terminal components.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `src/QmlTui/Core/Items/Item.h`
 - **Implementation**: `src/QmlTui/Core/Items/Item.cpp`
 - **Dependencies**: `TextGridBuffer.h`, `Anchors.h`, `Border.h`, Qt Core (`QObject`, `QQmlEngine`, `QPoint`, `QList`).
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: `QObject`
   - Provides parent-child hierarchy, properties, signal/slot communication, and QML meta-object registration.
 - **Derived Classes**: `Rectangle`, `Text`, `MouseArea`, `Row`, `Column`, `Terminal`, `ScrollView`, `ListView`, etc.
 
-## 4. Q_PROPERTY Declarations
+## Q_PROPERTY Declarations
 
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
@@ -53,14 +53,14 @@ Developers subclass `Item` when creating new C++ terminal components.
 | `transitions` | `QQmlListProperty<qmltui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
 | `state` | `QString` | `state` | `setState` | `stateChanged` | Current active state name. |
 
-## 6. Public Member Variables
+## Public Types and Member Variables
 
 ### ClipRect Struct
 
 | Variable | Type | Description |
 |----------|------|-------------|
 | `x` | `int` | X coordinate of the clipping bounds (default: `0`). |
-| `y` | `int` | Y coordinate of the clipping bounds (default: `0`). |
+| `y` | `int` | `y` coordinate of the clipping bounds (default: `0`). |
 | `width` | `int` | Width of the clipping bounds (default: `99999`). |
 | `height` | `int` | Height of the clipping bounds (default: `99999`). |
 
@@ -70,7 +70,7 @@ Returns `true` if coordinates (cx, cy) are inside the clipping rectangle.
 #### ClipRect intersected(const ClipRect& other) const
 Returns a new `ClipRect` representing the intersection of this rectangle and the other.
 
-## 7. Signals
+## Signals
 
 #### void xChanged()
 Emitted when `x` coordinate changes.
@@ -135,7 +135,7 @@ Emitted when active state changes.
 #### void dirty()
 Emitted to request a frame re-render when item visual state changes.
 
-## 9. Public Methods
+## Public Methods
 
 #### explicit Item(QObject *parent = nullptr)
 Constructs an `Item` with the optional parent visual item.
@@ -164,7 +164,7 @@ Returns the root `Terminal` object this item is associated with.
 #### void evaluateStateConditions()
 Re-evaluates declarative states to update values according to state constraints.
 
-## 10. Protected Virtual Methods / Event Handlers
+## Protected Virtual Methods / Event Handlers
 
 #### virtual void updateLayout()
 Performs layout work when the item has `LayoutDirty` set. The framework runs a
@@ -199,15 +199,15 @@ such as attached tooltips.
 #### virtual void wheelEvent(MouseEvent* event)
 Called when mouse wheel scrolling occurs over the item.
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 `Item` objects pass `QObject* parent` to the constructor and are parent-owned. Deletion of a parent `Item` deletes all child items.
 
-## 12. Thread Safety
+## Thread Safety
 
 Single-threaded. Must be instantiated and used on the main GUI thread.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Items/Item.h>

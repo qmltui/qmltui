@@ -93,3 +93,12 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+╔═══════╗  ┌──────┐
+║ Build ║  │ Quit │
+╚═══════╝  └──────┘
+ Compile the current project
+```

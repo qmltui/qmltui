@@ -72,3 +72,11 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+[ ON] Dark theme
+
+Theme: dark
+```

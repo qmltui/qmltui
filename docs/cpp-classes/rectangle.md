@@ -1,35 +1,35 @@
 # Rectangle
 
-## 1. Class Overview
+## Class Overview
 
 `Rectangle` is a visual QML item that renders a background color fill and optional single or double borders in the terminal grid.
 
 Developers use `Rectangle` for containers, cards, panels, and borders.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `src/QmlTui/Core/Items/Rectangle.h`
 - **Implementation**: `src/QmlTui/Core/Items/Rectangle.cpp`
 - **Dependencies**: `Item.h`, `Border.h`, `Color.h`.
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: `Item`
   - Inherits spatial positioning, sizing, flexbox layout, and rendering interfaces.
 
-## 4. Q_PROPERTY Declarations
+## Q_PROPERTY Declarations
 
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
 | `color` | `qmltui::Color` | `color` | `setColor` | `colorChanged` | Background color of the rectangle. |
 | `border` | `Border*` | `border` | — | — | Attached border configuration (`style`, `color`). |
 
-## 7. Signals
+## Signals
 
 #### void colorChanged()
 Emitted when the background color changes.
 
-## 9. Public Methods
+## Public Methods
 
 #### uint32_t resolvedBackgroundColor() const
 Returns the 32-bit ARGB integer value of the background color.
@@ -49,13 +49,13 @@ Returns the top padding, accounting for the top border width.
 #### int bottomPadding() const [override]
 Returns the bottom padding, accounting for the bottom border width.
 
-## 10. Protected Virtual Methods / Event Handlers
+## Protected Virtual Methods / Event Handlers
 
 #### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const [override]
 Paints the background color fill and borders into `buffer`; the framework
 traverses children afterward.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Items/Rectangle.h>

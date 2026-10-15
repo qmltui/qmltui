@@ -103,3 +103,13 @@ Terminal {
     Component.onCompleted: notices.showToast("Welcome", "Press Save to see a toast.")
 }
 ```
+
+### Terminal Preview
+
+```text
+                                ┌ℹ Welcome─────────────────┐
+                                │Press Save to see a toast │
+╔══════╗  ┌──────┐              └──────────────────────────┘
+║ Save ║  │ Quit │
+╚══════╝  └──────┘
+```

@@ -96,3 +96,16 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+╭─ Pod Metrics [RUNNING] ───────── v1.2.0 ─╮
+│Memory: 512 MiB / 2048 MiB                │
+│                                          │
+│╔══════╗                                  │
+│║ Quit ║                                  │
+│╚══════╝                                  │
+│                                          │
+╰─ [q] Quit ──────────────────── CPU: 42% ─╯
+```

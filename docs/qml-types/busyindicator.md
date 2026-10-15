@@ -73,3 +73,9 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+⠋ Fetching results
+```

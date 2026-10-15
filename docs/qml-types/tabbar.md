@@ -86,3 +86,11 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+[ Overview ]│  Logs  │  Settings
+
+Everything is running.
+```

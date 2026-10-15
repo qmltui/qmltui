@@ -79,3 +79,11 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+[x] Enable logging
+
+Logging: on
+```

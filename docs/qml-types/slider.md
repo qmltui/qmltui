@@ -95,3 +95,13 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+Volume: 75%
+
+━━━━━━━━━━━━━━━━━━●━━━━━━ [75]
+
+Playing
+```

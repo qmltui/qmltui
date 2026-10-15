@@ -145,3 +145,13 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+┌────────────────────────────┐
+│Enter name...               │
+└────────────────────────────┘
+
+Type a name and press Enter
+```

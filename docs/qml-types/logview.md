@@ -81,3 +81,16 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+┌──────────────────────────────────────┐
+│[INFO] Application starting...        │
+│[INFO] Subsystems initialized.        │
+│[DEBUG] Ready for input.              │
+│                                      │
+│                                      │
+│                                      │
+└──────────────────────────────────────┘
+```

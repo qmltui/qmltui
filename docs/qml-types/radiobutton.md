@@ -88,3 +88,13 @@ Terminal {
     }
 }
 ```
+
+### Terminal Preview
+
+```text
+(*) Small
+
+( ) Large
+
+Size: small
+```

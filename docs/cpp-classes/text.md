@@ -1,23 +1,23 @@
 # Text
 
-## 1. Class Overview
+## Class Overview
 
 `Text` renders single-line or multi-line formatted text strings in the terminal. It supports bold, dim, italic, underline, reversed video attributes, horizontal/vertical alignment, and text format modes (`PlainText`, `RichText` HTML tag parsing, `AnsiText` escape sequences, and `AutoText`).
 
 Developers use `Text` for labels, headlines, and data output in terminal UIs.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `src/QmlTui/Core/Items/Text.h`
 - **Implementation**: `src/QmlTui/Core/Items/Text.cpp`
 - **Dependencies**: `Item.h`, `TextGridBuffer.h`, `Color.h`.
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: `Item`
   - Inherits visual placement, alignment, and clipping functionality.
 
-## 4. Q_PROPERTY Declarations
+## Q_PROPERTY Declarations
 
 | Property | Type | READ | WRITE | NOTIFY | Description |
 |----------|------|------|-------|--------|-------------|
@@ -32,7 +32,7 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 | `verticalAlignment` | `int` | `verticalAlignment` | `setVerticalAlignment` | `verticalAlignmentChanged` | AlignTop, AlignVCenter, or AlignBottom. |
 | `textFormat` | `TextFormat` | `textFormat` | `setTextFormat` | `textFormatChanged` | PlainText, RichText, AnsiText, or AutoText. |
 
-## 5. Enumerations
+## Enumerations
 
 ### TextFormat
 
@@ -43,12 +43,12 @@ Developers use `Text` for labels, headlines, and data output in terminal UIs.
 | `AnsiText` | `2` | Parses raw ANSI color and attribute escape codes. |
 | `AutoText` | `3` | Automatically detects HTML tags or ANSI codes and applies formatting. |
 
-## 10. Protected Virtual Methods / Event Handlers
+## Protected Virtual Methods / Event Handlers
 
 #### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const [override]
 Draws the formatted text line(s) into `buffer` applying alignment and font attributes.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Items/Text.h>

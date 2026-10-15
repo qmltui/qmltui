@@ -1,6 +1,6 @@
 # TextGridBuffer
 
-## 1. Class Overview
+## Class Overview
 
 `TextGridBuffer` is the core off-screen rendering canvas for QmlTui. It represents a 2D grid of terminal cells (`Cell`), where each `Cell` stores the UTF-8 bytes of one grapheme cluster (inline, without heap allocation), visual display width, continuation flag, 32-bit ARGB foreground/background colors, and text formatting attributes (bold, italic, underline, reversed).
 
@@ -10,7 +10,7 @@ New cells and omitted drawing-helper foregrounds use `0x00000000`, the terminal
 default foreground. Pass `0xFFFFFFFF` explicitly to request literal RGB white.
 Zero-alpha drawing backgrounds preserve the surface underneath.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `src/QmlTui/Core/Primitives/TextGridBuffer.h`
 - **Implementation**: `src/QmlTui/Core/Primitives/TextGridBuffer.cpp`
@@ -19,12 +19,12 @@ Zero-alpha drawing backgrounds preserve the surface underneath.
   - Standard C++ Library (`<vector>`, `<string>`).
   - Qt Core (`QString`).
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: None (standalone value/utility class).
 - **Role**: Serves as the memory buffer for 2D terminal character rendering and ANSI delta calculations.
 
-## 9. Public Methods
+## Public Methods
 
 #### bool resize(int width, int height)
 Resizes the 2D cell grid buffer to the specified width and height in terminal character columns and rows. All cells are reset to empty spaces with default formatting. Returns `true` if the size changed, otherwise `false`.
@@ -77,20 +77,20 @@ Compares this buffer with `nextBuffer` and returns relative cursor movement ANSI
 #### std::string toAnsiString() const
 Serializes the entire grid buffer into a formatted ANSI string complete with newline characters per row.
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 `TextGridBuffer` manages its internal `std::vector<Cell>` via standard value semantics. It is safe to copy or move `TextGridBuffer` instances.
 
-## 12. Thread Safety
+## Thread Safety
 
 `TextGridBuffer` is **single-threaded**. Instances should be accessed from a single thread (typically the main/rendering thread).
 
-## 14. Inter-Class Interactions
+## Inter-Class Interactions
 
 - **`Item::paint()` / `paintOverlay()`**: Receive a reference to `TextGridBuffer` while the framework paints an item tree.
 - **`AltScreenRenderer` / `TerminalEngine`**: Maintains front and back `TextGridBuffer` instances to calculate frame diffs.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>

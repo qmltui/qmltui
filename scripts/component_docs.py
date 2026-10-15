@@ -41,7 +41,8 @@ MODULES = {
 # reports it so the table stays deliberate.
 CATEGORIES = {
     "core": ["Item", "Terminal", "Rectangle", "Border", "Gradient", "GradientStop",
-             "Scrollback", "Clipboard", "QmlTui", "rgba", "terminalCapabilities", "AnchorLine", "Anchors"],
+             "Scrollback", "Clipboard", "QmlTui", "rgba", "span", "highlightRange",
+             "terminalCapabilities", "AnchorLine", "Anchors"],
     "layout": ["Row", "Column", "RowLayout", "ColumnLayout", "GridLayout", "Layout",
                "StackLayout", "Repeater", "Loader"],
     "data views": ["ListView", "GridView", "TableView", "TreeView", "ScrollView", "LogView",
@@ -49,7 +50,7 @@ CATEGORIES = {
     "inputs": ["AbstractButton", "Button", "ButtonGroup", "CheckBox", "RadioButton", "Switch",
                "Slider", "TextInput", "TextArea"],
     "display": ["Text", "ProgressBar", "BusyIndicator", "Sparkline", "Image",
-                "TerminalView"],
+                "AnimatedSprite", "TerminalView"],
     "overlays and navigation": ["Dialog", "Popup", "Toast", "ToolTip", "TabBar", "StackView",
                                 "Panel"],
     "canvas": ["Canvas", "CanvasShape", "CanvasRectangle", "Circle", "Line", "Point", "Polygon"],
@@ -64,9 +65,11 @@ CATEGORY_OF = {name: category for category, names in CATEGORIES.items() for name
 # every tree; check() reads the option from CMakeCache.txt and does not treat
 # such a page as an orphan when the option is off.
 OPTIONAL_TYPES = {
+    "AnimatedSprite": "QMLTUI_ENABLE_IMAGE",
     "Behavior": "QMLTUI_ENABLE_PRIVATE_QT",
     "Image": "QMLTUI_ENABLE_IMAGE",
     "StateGroup": "QMLTUI_ENABLE_PRIVATE_QT",
+    "TerminalView": "QMLTUI_ENABLE_TERMINAL_HOST",
 }
 
 # Members (properties, signals, methods, attached) that exist only when a
@@ -78,6 +81,7 @@ OPTIONAL_MEMBERS = {
 # Qt/C++ spellings shown as QML types in the tables.
 QML_TYPE_NAMES = {
     "QString": "string", "QStringList": "list<string>", "bool": "bool", "int": "int",
+    "quint64": "int", "qulonglong": "int", "qlonglong": "int", "qint64": "int",
     "double": "real", "qreal": "real", "float": "real", "QVariant": "var",
     "QVariantList": "list<var>", "QVariantMap": "var", "QJSValue": "var",
     "QSize": "size", "QPoint": "point", "QRect": "rect", "QUrl": "url",
@@ -405,7 +409,10 @@ def render_page(t: QmlType, slugs: set[str]) -> str:
     elif t.value_type:
         lines.append("| **Instantiation** | Value type, not instantiable |")
     elif not t.creatable:
-        lines.append("| **Instantiation** | Not instantiable; use as an attached property |")
+        if t.attached:
+            lines.append("| **Instantiation** | Not instantiable; use as an attached property |")
+        else:
+            lines.append("| **Instantiation** | Not directly instantiable |")
     lines.append("")
 
     def table(title, header, rows):

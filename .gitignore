@@ -9,6 +9,7 @@ build-*/
 .tokensave/
 /.vscode/
 /Testing/
+Temporary/
 
 # User settings and logs
 *.log

@@ -196,11 +196,24 @@ def format_inline(text: str) -> str:
     return text
 
 def convert_markdown(text: str) -> str:
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
     try:
         import markdown
         return markdown.markdown(text, extensions=["tables", "fenced_code", "toc"])
     except ImportError:
         return simple_markdown_to_html(text)
+
+def read_project_version(source_dir: Path) -> str:
+    cmake_lists = source_dir / "CMakeLists.txt"
+    if cmake_lists.is_file():
+        m = re.search(
+            r"project\s*\(\s*\w+\s+VERSION\s+([0-9]+(?:\.[0-9]+)*)",
+            cmake_lists.read_text(encoding="utf-8"),
+            re.IGNORECASE,
+        )
+        if m:
+            return m.group(1)
+    return "0.5.0"
 
 def main():
     parser = argparse.ArgumentParser(description="Build Qt Help Project (.qhp) and HTML docs")
@@ -211,6 +224,7 @@ def main():
     source_dir = Path(args.source).resolve()
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    version = read_project_version(source_dir)
 
     # Write stylesheet
     (out_dir / "qmltui-doc.css").write_text(CSS_STYLESHEET, encoding="utf-8")
@@ -317,7 +331,7 @@ def main():
 
     qhp_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <QtHelpProject version="1.0">
-    <namespace>org.qmltui.qmltui.0.5.0</namespace>
+    <namespace>org.qmltui.qmltui.{html.escape(version)}</namespace>
     <virtualFolder>qmltui</virtualFolder>
     <filterSection>
         <toc>

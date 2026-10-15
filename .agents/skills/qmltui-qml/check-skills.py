@@ -114,6 +114,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
     private_qt_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PRIVATE_QT")
     if private_qt_enabled is None:
         private_qt_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_BEHAVIOR")
+    image_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_IMAGE")
     terminal_host_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_TERMINAL_HOST")
     checked = 0
     for module, types in modules.items():
@@ -121,6 +122,8 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
         if relative_qmltypes is None:
             continue
         qmltypes_path = build_dir / relative_qmltypes
+        if module == "QmlTui.Image" and image_enabled is False:
+            continue
         if module == "QmlTui.TerminalHost" and terminal_host_enabled is False:
             continue
         if not qmltypes_path.is_file():

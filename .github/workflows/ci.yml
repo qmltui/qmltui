@@ -40,7 +40,8 @@ jobs:
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
-          -DQMLTUI_ENABLE_BEHAVIOR=${{ matrix.behavior }}
+          -DQMLTUI_ENABLE_PRIVATE_QT=${{ matrix.behavior }}
+          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -69,6 +70,7 @@ jobs:
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
+          -DQMLTUI_ENABLE_PRIVATE_QT=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -109,7 +111,8 @@ jobs:
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
-          -DQMLTUI_ENABLE_BEHAVIOR=ON
+          -DQMLTUI_ENABLE_PRIVATE_QT=ON
+          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -150,8 +153,7 @@ jobs:
 
   reuse:
     name: REUSE licensing compliance
-    # About one hosted Linux minute; runs only when licensing inputs change.
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    # About one hosted Linux minute.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

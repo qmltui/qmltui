@@ -55,14 +55,14 @@ usage() {
 Usage: ./scripts/format.sh [OPTIONS] [FILES...]
 
 Options:
-  --staged        Format staged C++ and QML changes (default when no arguments given)
-  --check         Check staged changes without modifying files; exit 1 if unformatted
-  --all           Format all C++ and QML files in src/, tests/, and examples/
+  --staged        Target staged C++ and QML changes (default when no scope is given)
+  --check         Check target files without modifying them; exit 1 if unformatted
+  --all           Target all C++ and QML files in src/, tests/, examples/, and tools/
   --cpp-only      Limit formatting or check to C++ files (.cpp, .h)
   --qml-only      Limit formatting or check to QML files (.qml)
   -h, --help      Show this help message
 
-If specific files are passed as arguments, formatters will format them in-place.
+If specific files are passed as arguments, they are formatted (or checked with --check).
 EOF
     exit 0
 }
@@ -77,22 +77,23 @@ if [[ -z "$QML_FORMAT" ]]; then
     exit 1
 fi
 
-MODE="staged"
+SCOPE="staged"
+CHECK_ONLY=0
 FILTER="both"
 FILES=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --staged)
-            MODE="staged"
+            SCOPE="staged"
             shift
             ;;
         --check|--diff)
-            MODE="check"
+            CHECK_ONLY=1
             shift
             ;;
         --all)
-            MODE="all"
+            SCOPE="all"
             shift
             ;;
         --cpp-only)
@@ -107,7 +108,7 @@ while [[ $# -gt 0 ]]; do
             usage
             ;;
         *)
-            MODE="files"
+            SCOPE="files"
             FILES+=("$1")
             shift
             ;;
@@ -124,6 +125,15 @@ format_qml_file() {
     "$QML_FORMAT" -i "$file"
 }
 
+check_cpp_file() {
+    local file="$1"
+    if ! "$CLANG_FORMAT" "$file" | cmp -s "$file" -; then
+        diff -u "$file" <("$CLANG_FORMAT" "$file") || true
+        return 1
+    fi
+    return 0
+}
+
 check_qml_file() {
     local file="$1"
     local formatted
@@ -135,126 +145,177 @@ check_qml_file() {
     return 0
 }
 
-case "$MODE" in
+ALL_DIRS=(src tests examples)
+if [[ -d tools ]]; then
+    ALL_DIRS+=(tools)
+fi
+
+case "$SCOPE" in
     staged)
-        # Format C++
-        if [[ "$FILTER" != "qml" ]]; then
-            if [[ -z "$GIT_CLANG_FORMAT" ]]; then
-                git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(cpp|h)$' | while read -r file; do
+        if [[ "$CHECK_ONLY" -eq 0 ]]; then
+            # Format C++
+            if [[ "$FILTER" != "qml" ]]; then
+                if [[ -z "$GIT_CLANG_FORMAT" ]]; then
+                    git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(cpp|h)$' | while read -r file; do
+                        if [[ -f "$file" ]]; then
+                            format_cpp_file "$file"
+                            git add "$file"
+                            echo "Formatted C++: $file"
+                        fi
+                    done
+                else
+                    "$GIT_CLANG_FORMAT" --binary "$CLANG_FORMAT" --extensions h,cpp
+                fi
+            fi
+
+            # Format QML
+            if [[ "$FILTER" != "cpp" ]]; then
+                git diff --cached --name-only --diff-filter=ACMR | grep -E '\.qml$' | while read -r file; do
                     if [[ -f "$file" ]]; then
-                        format_cpp_file "$file"
+                        format_qml_file "$file"
                         git add "$file"
-                        echo "Formatted C++: $file"
+                        echo "Formatted QML: $file"
                     fi
                 done
-            else
-                "$GIT_CLANG_FORMAT" --binary "$CLANG_FORMAT" --extensions h,cpp
             fi
-        fi
+        else
+            FAILED=0
 
-        # Format QML
-        if [[ "$FILTER" != "cpp" ]]; then
-            git diff --cached --name-only --diff-filter=ACMR | grep -E '\.qml$' | while read -r file; do
-                if [[ -f "$file" ]]; then
-                    format_qml_file "$file"
-                    git add "$file"
-                    echo "Formatted QML: $file"
+            # Check C++
+            if [[ "$FILTER" != "qml" ]]; then
+                if [[ -n "$GIT_CLANG_FORMAT" ]]; then
+                    DIFF="$("$GIT_CLANG_FORMAT" --binary "$CLANG_FORMAT" --extensions h,cpp --diff)"
+                    if [[ "$DIFF" != *"no modified files to format"* && "$DIFF" != *"clang-format did not modify any files"* && -n "$DIFF" ]]; then
+                        echo "=================================================================" >&2
+                        echo "Code style violations detected in staged C++ files:" >&2
+                        echo "=================================================================" >&2
+                        echo "$DIFF" >&2
+                        echo "=================================================================" >&2
+                        FAILED=1
+                    fi
+                else
+                    echo "Warning: git-clang-format not found; checking C++ files one by one..." >&2
+                    while IFS= read -r file; do
+                        if [[ -f "$file" ]]; then
+                            if ! check_cpp_file "$file" >/dev/null; then
+                                echo "Unformatted C++ file: $file" >&2
+                                FAILED=1
+                            fi
+                        fi
+                    done < <(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(cpp|h)$' || true)
                 fi
-            done
-        fi
-        ;;
+            fi
 
-    check)
-        FAILED=0
+            # Check QML
+            if [[ "$FILTER" != "cpp" ]]; then
+                QML_VIOLATIONS=()
+                while IFS= read -r file; do
+                    if [[ -f "$file" ]]; then
+                        if ! check_qml_file "$file" >/dev/null; then
+                            QML_VIOLATIONS+=("$file")
+                        fi
+                    fi
+                done < <(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.qml$' || true)
 
-        # Check C++
-        if [[ "$FILTER" != "qml" ]]; then
-            if [[ -n "$GIT_CLANG_FORMAT" ]]; then
-                DIFF="$("$GIT_CLANG_FORMAT" --binary "$CLANG_FORMAT" --extensions h,cpp --diff)"
-                if [[ "$DIFF" != *"no modified files to format"* && "$DIFF" != *"clang-format did not modify any files"* && -n "$DIFF" ]]; then
+                if [[ ${#QML_VIOLATIONS[@]} -gt 0 ]]; then
                     echo "=================================================================" >&2
-                    echo "Code style violations detected in staged C++ files:" >&2
+                    echo "Code style violations detected in staged QML files:" >&2
                     echo "=================================================================" >&2
-                    echo "$DIFF" >&2
+                    for f in "${QML_VIOLATIONS[@]}"; do
+                        echo "  $f" >&2
+                        check_qml_file "$f" | head -n 20 >&2 || true
+                    done
                     echo "=================================================================" >&2
                     FAILED=1
                 fi
+            fi
+
+            if [[ "$FAILED" -ne 0 ]]; then
+                echo "To format staged files automatically, run:" >&2
+                echo "  ./scripts/format.sh" >&2
+                echo "=================================================================" >&2
+                exit 1
             else
-                echo "Warning: git-clang-format not found; checking C++ files one by one..." >&2
-                while IFS= read -r file; do
-                    if [[ -f "$file" ]]; then
-                        if ! "$CLANG_FORMAT" "$file" | cmp -s "$file" -; then
-                            echo "Unformatted C++ file: $file" >&2
-                            FAILED=1
-                        fi
-                    fi
-                done < <(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(cpp|h)$' || true)
+                echo "Format check passed: staged files match code style."
             fi
-        fi
-
-        # Check QML
-        if [[ "$FILTER" != "cpp" ]]; then
-            QML_VIOLATIONS=()
-            while IFS= read -r file; do
-                if [[ -f "$file" ]]; then
-                    if ! check_qml_file "$file" >/dev/null; then
-                        QML_VIOLATIONS+=("$file")
-                    fi
-                fi
-            done < <(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.qml$' || true)
-
-            if [[ ${#QML_VIOLATIONS[@]} -gt 0 ]]; then
-                echo "=================================================================" >&2
-                echo "Code style violations detected in staged QML files:" >&2
-                echo "=================================================================" >&2
-                for f in "${QML_VIOLATIONS[@]}"; do
-                    echo "  $f" >&2
-                    check_qml_file "$f" | head -n 20 >&2 || true
-                done
-                echo "=================================================================" >&2
-                FAILED=1
-            fi
-        fi
-
-        if [[ "$FAILED" -ne 0 ]]; then
-            echo "To format staged files automatically, run:" >&2
-            echo "  ./scripts/format.sh" >&2
-            echo "=================================================================" >&2
-            exit 1
-        else
-            echo "Format check passed: staged files match code style."
         fi
         ;;
 
     all)
-        if [[ "$FILTER" != "qml" ]]; then
-            echo "Formatting all C++ files in src/, tests/, examples/..."
-            find src tests examples -type f \( -name "*.cpp" -o -name "*.h" \) | while read -r file; do
-                format_cpp_file "$file"
-            done
-            echo "All C++ files formatted."
-        fi
+        if [[ "$CHECK_ONLY" -eq 0 ]]; then
+            if [[ "$FILTER" != "qml" ]]; then
+                echo "Formatting all C++ files in ${ALL_DIRS[*]}..."
+                while IFS= read -r file; do
+                    format_cpp_file "$file"
+                done < <(find "${ALL_DIRS[@]}" -type f \( -name "*.cpp" -o -name "*.h" \))
+                echo "All C++ files formatted."
+            fi
 
-        if [[ "$FILTER" != "cpp" ]]; then
-            echo "Formatting all QML files in src/, tests/, examples/..."
-            find src tests examples -type f -name "*.qml" | while read -r file; do
-                format_qml_file "$file"
-            done
-            echo "All QML files formatted."
+            if [[ "$FILTER" != "cpp" ]]; then
+                echo "Formatting all QML files in ${ALL_DIRS[*]}..."
+                while IFS= read -r file; do
+                    format_qml_file "$file"
+                done < <(find "${ALL_DIRS[@]}" -type f -name "*.qml")
+                echo "All QML files formatted."
+            fi
+        else
+            FAILED=0
+            if [[ "$FILTER" != "qml" ]]; then
+                while IFS= read -r file; do
+                    if ! check_cpp_file "$file" >/dev/null; then
+                        echo "Unformatted C++ file: $file" >&2
+                        FAILED=1
+                    fi
+                done < <(find "${ALL_DIRS[@]}" -type f \( -name "*.cpp" -o -name "*.h" \))
+            fi
+
+            if [[ "$FILTER" != "cpp" ]]; then
+                while IFS= read -r file; do
+                    if ! check_qml_file "$file" >/dev/null; then
+                        echo "Unformatted QML file: $file" >&2
+                        FAILED=1
+                    fi
+                done < <(find "${ALL_DIRS[@]}" -type f -name "*.qml")
+            fi
+
+            if [[ "$FAILED" -ne 0 ]]; then
+                echo "To format all files automatically, run:" >&2
+                echo "  ./scripts/format.sh --all" >&2
+                exit 1
+            else
+                echo "Format check passed: all files in ${ALL_DIRS[*]} match code style."
+            fi
         fi
         ;;
 
     files)
+        FAILED=0
         for file in "${FILES[@]}"; do
             if [[ -f "$file" ]]; then
                 case "$file" in
                     *.cpp|*.h)
-                        format_cpp_file "$file"
-                        echo "Formatted: $file"
+                        if [[ "$FILTER" != "qml" ]]; then
+                            if [[ "$CHECK_ONLY" -eq 0 ]]; then
+                                format_cpp_file "$file"
+                                echo "Formatted: $file"
+                            elif ! check_cpp_file "$file" >/dev/null; then
+                                echo "Unformatted C++ file: $file" >&2
+                                check_cpp_file "$file" | head -n 20 >&2 || true
+                                FAILED=1
+                            fi
+                        fi
                         ;;
                     *.qml)
-                        format_qml_file "$file"
-                        echo "Formatted: $file"
+                        if [[ "$FILTER" != "cpp" ]]; then
+                            if [[ "$CHECK_ONLY" -eq 0 ]]; then
+                                format_qml_file "$file"
+                                echo "Formatted: $file"
+                            elif ! check_qml_file "$file" >/dev/null; then
+                                echo "Unformatted QML file: $file" >&2
+                                check_qml_file "$file" | head -n 20 >&2 || true
+                                FAILED=1
+                            fi
+                        fi
                         ;;
                     *)
                         echo "Skipping unknown file type: $file" >&2
@@ -264,5 +325,8 @@ case "$MODE" in
                 echo "Warning: $file not found." >&2
             fi
         done
+        if [[ "$CHECK_ONLY" -ne 0 && "$FAILED" -ne 0 ]]; then
+            exit 1
+        fi
         ;;
 esac

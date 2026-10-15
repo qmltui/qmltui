@@ -10,14 +10,14 @@ SPDX-PackageDownloadLocation = "https://github.com/qmltui-dev/qmltui"
 
 # Library code: LGPLv3 or GPLv3, at the user's choice.
 [[annotations]]
-path = ["src/**", "tests/**"]
+path = ["src/**", "tests/**", "tools/**"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "LGPL-3.0-only OR GPL-3.0-only"
 
 # Examples and build glue: BSD-3-Clause, so they can be copied without conditions.
 [[annotations]]
-path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", "CMakeLists.txt", "jsconfig.json", ".gitignore", "REUSE.toml"]
+path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", ".githooks/**", "CMakeLists.txt", "jsconfig.json", ".gitignore", ".clang-format", ".qmlformat.ini", "REUSE.toml"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "BSD-3-Clause"

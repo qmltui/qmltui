@@ -5,20 +5,22 @@
 
 namespace qmltui {
 
-Sparkline::Sparkline(QObject *parent) : Item(parent) {
+Sparkline::Sparkline(QObject* parent) : Item(parent) {
     setImplicitWidth(20);
     setImplicitHeight(1);
 }
 
-void Sparkline::setValues(const QVariant &values) {
+void Sparkline::setValues(const QVariant& values) {
     m_valuesVariant = values;
-    m_values.clear();
+    QVariantList newValues;
 
     if (values.userType() == QMetaType::fromType<QJSValue>().id()) {
-        m_values = values.value<QJSValue>().toVariant().toList();
+        newValues = values.value<QJSValue>().toVariant().toList();
     } else if (values.canConvert<QVariantList>()) {
-        m_values = values.toList();
+        newValues = values.toList();
     }
+    if (m_values == newValues) return;
+    m_values = std::move(newValues);
     emit valuesChanged();
     markDirty();
 }
@@ -60,7 +62,7 @@ void Sparkline::setBackgroundColor(Color color) {
     markDirty();
 }
 
-void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void Sparkline::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible || m_values.isEmpty()) return;
 
     const int availW = width();
@@ -77,7 +79,7 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
     if (qFuzzyIsNull(m_to)) {
         computedMin = m_values[0].toDouble();
         computedMax = m_values[0].toDouble();
-        for (const QVariant &v : m_values) {
+        for (const QVariant& v : m_values) {
             double d = v.toDouble();
             if (d < computedMin) computedMin = d;
             if (d > computedMax) computedMax = d;
@@ -92,7 +94,7 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
 
     // Unicode block level characters from   to █ (8 sub-cell levels per row, U+2581 to U+2588)
     static const char* blockGlyphs[] = {
-        "\xE2\x96\x81", // 0:  
+        "\xE2\x96\x81", // 0:
         "\xE2\x96\x82", // 1: ▂
         "\xE2\x96\x83", // 2: ▃
         "\xE2\x96\x84", // 3: ▄
@@ -131,9 +133,8 @@ void Sparkline::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect
             int cx = startX + dx;
 
             if (clipRect.contains(cx, cy)) {
-                Cell *targetCell = buffer.tryCellAt(cx, cy);
-                if (!targetCell)
-                    continue;
+                Cell* targetCell = buffer.tryCellAt(cx, cy);
+                if (!targetCell) continue;
                 Cell& cell = *targetCell;
                 cell.fgColor = m_resolvedColor;
                 cell.bgColor = m_resolvedBackgroundColor;

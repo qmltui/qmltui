@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -35,26 +36,37 @@ Item {
 
     // Effective filled character
     readonly property string effectiveFillChar: {
-        if (fillCharacter && fillCharacter.length > 0) return fillCharacter;
-        if (control.style === "segmented") return "▰";
-        if (control.style === "pill") return "▮";
-        if (control.style === "dot") return "●";
-        if (control.style === "hash") return "#";
+        if (fillCharacter && fillCharacter.length > 0)
+            return fillCharacter;
+        if (control.style === "segmented")
+            return "▰";
+        if (control.style === "pill")
+            return "▮";
+        if (control.style === "dot")
+            return "●";
+        if (control.style === "hash")
+            return "#";
         return "█"; // "block" and any unknown preset
     }
 
     // Effective empty character
     readonly property string effectiveEmptyChar: {
-        if (emptyCharacter && emptyCharacter.length > 0) return emptyCharacter;
-        if (control.style === "segmented") return "▱";
-        if (control.style === "pill") return "▯";
-        if (control.style === "dot") return "○";
-        if (control.style === "hash") return "-";
+        if (emptyCharacter && emptyCharacter.length > 0)
+            return emptyCharacter;
+        if (control.style === "segmented")
+            return "▱";
+        if (control.style === "pill")
+            return "▯";
+        if (control.style === "dot")
+            return "○";
+        if (control.style === "hash")
+            return "-";
         return "░"; // "block" and any unknown preset
     }
 
     readonly property real position: {
-        if (to <= from) return 0.0;
+        if (to <= from)
+            return 0.0;
         return Math.max(0.0, Math.min(1.0, (value - from) / (to - from)));
     }
 
@@ -87,10 +99,12 @@ Item {
 
     // Calculate colored text segments from left to right across the progress bar length
     readonly property var segments: {
-        if (!control.hasGradient) return [];
+        if (!control.hasGradient)
+            return [];
 
         let w = control.barWidth;
-        if (w <= 0) return [];
+        if (w <= 0)
+            return [];
 
         let fillLen = Math.round(control.position * w);
         let emptyLen = w - fillLen;
@@ -107,7 +121,10 @@ Item {
             let c = getColorAt(posAtCell);
             if (c !== currentSegColor) {
                 if (currentSegText.length > 0) {
-                    segs.push({ text: currentSegText, color: currentSegColor });
+                    segs.push({
+                        text: currentSegText,
+                        color: currentSegColor
+                    });
                 }
                 currentSegColor = c;
                 currentSegText = fillChar;
@@ -116,14 +133,21 @@ Item {
             }
         }
         if (currentSegText.length > 0) {
-            segs.push({ text: currentSegText, color: currentSegColor });
+            segs.push({
+                text: currentSegText,
+                color: currentSegColor
+            });
         }
 
         // Add empty portion
         if (emptyLen > 0) {
             let emptyStr = "";
-            for (let j = 0; j < emptyLen; ++j) emptyStr += emptyChar;
-            segs.push({ text: emptyStr, color: control.color });
+            for (let j = 0; j < emptyLen; ++j)
+                emptyStr += emptyChar;
+            segs.push({
+                text: emptyStr,
+                color: control.color
+            });
         }
 
         return segs;
@@ -139,9 +163,11 @@ Item {
         color: control.color
         bold: true
         text: {
-            if (control.hasGradient) return "";
+            if (control.hasGradient)
+                return "";
             let w = control.barWidth;
-            if (w <= 0) return control.showBrackets ? "[]" + control.percentageText : control.percentageText;
+            if (w <= 0)
+                return control.showBrackets ? "[]" + control.percentageText : control.percentageText;
 
             let fillLen = Math.round(control.position * w);
             let emptyLen = w - fillLen;
@@ -150,10 +176,12 @@ Item {
             let emptyChar = control.effectiveEmptyChar;
 
             let filledStr = "";
-            for (let i = 0; i < fillLen; ++i) filledStr += fillChar;
+            for (let i = 0; i < fillLen; ++i)
+                filledStr += fillChar;
 
             let emptyStr = "";
-            for (let j = 0; j < emptyLen; ++j) emptyStr += emptyChar;
+            for (let j = 0; j < emptyLen; ++j)
+                emptyStr += emptyChar;
 
             const bar = filledStr + emptyStr;
             return (control.showBrackets ? "[" + bar + "]" : bar) + control.percentageText;
@@ -166,18 +194,34 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        Text { visible: control.showBrackets; text: "["; color: control.color; bold: true }
+        Text {
+            visible: control.showBrackets
+            text: "["
+            color: control.color
+            bold: true
+        }
         Repeater {
             model: control.hasGradient ? control.segments.length : 0
 
             Text {
+                required property int index
                 property var segData: control.segments[index]
                 text: segData ? segData.text : ""
                 color: segData ? segData.color : control.color
                 bold: true
             }
         }
-        Text { visible: control.showBrackets; text: "]"; color: control.color; bold: true }
-        Text { visible: control.showPercentage; text: control.percentageText; color: control.color; bold: true }
+        Text {
+            visible: control.showBrackets
+            text: "]"
+            color: control.color
+            bold: true
+        }
+        Text {
+            visible: control.showPercentage
+            text: control.percentageText
+            color: control.color
+            bold: true
+        }
     }
 }

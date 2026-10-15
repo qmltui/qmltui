@@ -19,8 +19,10 @@ AbstractButton {
 
     background: Rectangle {
         color: "default"
-        border.color: "default"
-        border.style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
+        border {
+            color: "default"
+            style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
+        }
     }
 
     contentItem: Text {

@@ -1,6 +1,7 @@
 #include <QmlTui/Controls/Toast.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
 #include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <algorithm>
 
 namespace qmltui {
@@ -18,8 +19,7 @@ void Toast::setTextColor(Color color) {
     markDirty();
 }
 
-
-Toast::Toast(QObject *parent) : Item(parent) {
+Toast::Toast(QObject* parent) : Item(parent) {
     setImplicitWidth(30);
     setImplicitHeight(10);
 
@@ -28,8 +28,9 @@ Toast::Toast(QObject *parent) : Item(parent) {
     m_timer->setInterval(100);
 }
 
-void Toast::showToast(const QString &title, const QString &message, const QString &type, int timeoutMs) {
-    m_toasts.append(ToastItem{ title, message, type, (std::max)(100, timeoutMs) });
+void Toast::showToast(const QString& title, const QString& message, const QString& type,
+                      int timeoutMs) {
+    m_toasts.append(ToastItem{title, message, type, (std::max)(100, timeoutMs)});
     if (!m_timer->isActive()) m_timer->start();
     markDirty();
 }
@@ -73,7 +74,7 @@ void Toast::setToastWidth(int w) {
     markDirty();
 }
 
-void Toast::setPosition(const QString &pos) {
+void Toast::setPosition(const QString& pos) {
     if (m_position == pos) return;
     m_position = pos;
     emit positionChanged();
@@ -98,7 +99,7 @@ void Toast::onTick() {
     if (m_toasts.isEmpty()) m_timer->stop();
 }
 
-void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void Toast::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible || m_toasts.isEmpty()) return;
 
     int curY = absY;
@@ -110,26 +111,36 @@ void Toast::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &cl
     const uint32_t background = ColorMapper::fromString(m_color, 0);
     const uint32_t messageColor = ColorMapper::fromString(m_textColor, 0);
 
-    for (const ToastItem &toast : m_toasts) {
+    for (const ToastItem& toast : m_toasts) {
         int toastX = absX + width() - tWidth;
         if (m_position.contains("left")) {
             toastX = absX;
         }
 
         uint32_t borderColor = m_resolvedInfoColor;
-        if (toast.type == "success") borderColor = m_resolvedSuccessColor;
-        else if (toast.type == "warning") borderColor = m_resolvedWarningColor;
-        else if (toast.type == "error") borderColor = m_resolvedErrorColor;
+        if (toast.type == "success")
+            borderColor = m_resolvedSuccessColor;
+        else if (toast.type == "warning")
+            borderColor = m_resolvedWarningColor;
+        else if (toast.type == "error")
+            borderColor = m_resolvedErrorColor;
 
         // Draw Box
         buffer.drawBox(toastX, curY, tWidth, 3, borderColor, background);
 
         // Header Title
-        QString prefix = (toast.type == "error" ? "✖ " : (toast.type == "success" ? "✔ " : (toast.type == "warning" ? "⚠ " : "ℹ ")));
-        buffer.writeText(toastX + 1, curY, prefix + toast.title.left(tWidth - 4), borderColor, background, TextAttribute::Bold);
+        QString prefix =
+            (toast.type == "error"
+                 ? "✖ "
+                 : (toast.type == "success" ? "✔ " : (toast.type == "warning" ? "⚠ " : "ℹ ")));
+        buffer.writeText(toastX + 1, curY,
+                         prefix + UnicodeText::elideText(toast.title, (std::max)(0, tWidth - 4)),
+                         borderColor, background, TextAttribute::Bold);
 
         // Body message.
-        buffer.writeText(toastX + 1, curY + 1, toast.message.left(tWidth - 3), messageColor, background);
+        buffer.writeText(toastX + 1, curY + 1,
+                         UnicodeText::elideText(toast.message, (std::max)(0, tWidth - 3)),
+                         messageColor, background);
 
         curY += 4;
     }

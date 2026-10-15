@@ -42,65 +42,76 @@ Item {
     property Item background: null
     property Item contentItem: null
 
-    signal clicked()
+    signal clicked
     signal toggled(bool checked)
 
     focusable: enabled
-    implicitWidth: Math.max(background ? background.implicitWidth : 0,
-                            leftPadding + (contentItem ? contentItem.implicitWidth : 0) + rightPadding)
-    implicitHeight: Math.max(background ? background.implicitHeight : 0,
-                             topPadding + (contentItem ? contentItem.implicitHeight : 0) + bottomPadding)
+    implicitWidth: Math.max(background ? background.implicitWidth : 0, leftPadding + (contentItem ? contentItem.implicitWidth : 0) + rightPadding)
+    implicitHeight: Math.max(background ? background.implicitHeight : 0, topPadding + (contentItem ? contentItem.implicitHeight : 0) + bottomPadding)
 
     // Flips `checked` and emits toggled(); a checked autoExclusive control
     // stays checked, so a group of RadioButtons never ends up with none.
     function toggle() {
         if (!checkable || (checked && autoExclusive))
-            return
-        checked = !checked
-        toggled(checked)
+            return;
+        checked = !checked;
+        toggled(checked);
     }
 
     QtObject {
         id: d
+        property Item prevBackground: null
+        property Item prevContentItem: null
+
         function activate() {
             if (!control.enabled)
-                return
+                return;
             if (control.checkable)
-                control.toggle()
-            control.clicked()
+                control.toggle();
+            control.clicked();
         }
         // background fills the control; contentItem gets the padded area, or
         // is centred in the whole control when the paddings leave no room
         // (a one-row Button keeps its label visible).
         function layout() {
-            const bg = control.background
-            if (bg) {
-                bg.parent = control   // adopts an item QML created for the property
-                bg.x = 0
-                bg.y = 0
-                bg.width = control.width
-                bg.height = control.height
-                bg.z = -1
+            const bg = control.background;
+            if (d.prevBackground && d.prevBackground !== bg) {
+                d.prevBackground.visible = false;
+                d.prevBackground.parent = null;
             }
-            const ci = control.contentItem
+            d.prevBackground = bg;
+            if (bg) {
+                bg.parent = control;   // adopts an item QML created for the property
+                bg.x = 0;
+                bg.y = 0;
+                bg.width = control.width;
+                bg.height = control.height;
+                bg.z = -1;
+            }
+            const ci = control.contentItem;
+            if (d.prevContentItem && d.prevContentItem !== ci) {
+                d.prevContentItem.visible = false;
+                d.prevContentItem.parent = null;
+            }
+            d.prevContentItem = ci;
             if (!ci)
-                return
-            ci.parent = control
-            const cw = ci.implicitWidth
-            const ch = ci.implicitHeight
+                return;
+            ci.parent = control;
+            const cw = ci.implicitWidth;
+            const ch = ci.implicitHeight;
             if (control.availableWidth > 0) {
-                ci.x = control.leftPadding
-                ci.width = control.availableWidth
+                ci.x = control.leftPadding;
+                ci.width = control.availableWidth;
             } else {
-                ci.width = Math.min(cw, control.width)
-                ci.x = Math.max(0, Math.floor((control.width - ci.width) / 2))
+                ci.width = Math.min(cw, control.width);
+                ci.x = Math.max(0, Math.floor((control.width - ci.width) / 2));
             }
             if (control.availableHeight > 0) {
-                ci.y = control.topPadding
-                ci.height = control.availableHeight
+                ci.y = control.topPadding;
+                ci.height = control.availableHeight;
             } else {
-                ci.height = Math.min(ch, control.height)
-                ci.y = Math.max(0, Math.floor((control.height - ci.height) / 2))
+                ci.height = Math.min(ch, control.height);
+                ci.y = Math.max(0, Math.floor((control.height - ci.height) / 2));
             }
         }
     }
@@ -117,14 +128,18 @@ Item {
 
     Connections {
         target: control.contentItem
-        function onImplicitWidthChanged() { d.layout() }
-        function onImplicitHeightChanged() { d.layout() }
+        function onImplicitWidthChanged() {
+            d.layout();
+        }
+        function onImplicitHeightChanged() {
+            d.layout();
+        }
     }
 
-    Keys.onPressed: (event) => {
-        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Space)) {
-            d.activate()
-            event.accepted = true
+    Keys.onPressed: event => {
+        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+            d.activate();
+            event.accepted = true;
         }
     }
 
@@ -134,17 +149,17 @@ Item {
         z: 1
         hoverEnabled: control.hoverEnabled
 
-        onPressed: (event) => {
+        onPressed: event => {
             if (!control.enabled)
-                return
-            control.focus = true
-            control.pressed = true
+                return;
+            control.focus = true;
+            control.pressed = true;
         }
-        onReleased: (event) => {
-            control.pressed = false
+        onReleased: event => {
+            control.pressed = false;
         }
-        onClicked: (event) => {
-            d.activate()
+        onClicked: event => {
+            d.activate();
         }
     }
 }

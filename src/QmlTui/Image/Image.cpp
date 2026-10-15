@@ -33,8 +33,7 @@ static const int ASCII_RAMP_LEN = 10;
 // when that background is the terminal default, whose real colour is unknown:
 // then only pixels at least half opaque are drawn, unblended, the same cut the
 // sixel encoder applies. QRgb and cell colours share the 0xAARRGGBB layout.
-static uint32_t compositeOver(QRgb pixel, uint32_t behind)
-{
+static uint32_t compositeOver(QRgb pixel, uint32_t behind) {
     const int alpha = qAlpha(pixel);
     if (alpha == 0) return 0;
     if (alpha == 255) return pixel;
@@ -43,16 +42,14 @@ static uint32_t compositeOver(QRgb pixel, uint32_t behind)
     const auto mix = [&](int source, int destination) {
         return (source * alpha + destination * inverse + 127) / 255;
     };
-    return qRgb(mix(qRed(pixel), qRed(behind)),
-                mix(qGreen(pixel), qGreen(behind)),
+    return qRgb(mix(qRed(pixel), qRed(behind)), mix(qGreen(pixel), qGreen(behind)),
                 mix(qBlue(pixel), qBlue(behind)));
 }
 
 // RGB of the background a cell holds, or 0 for the terminal default. ANSI
 // palette entries resolve to xterm's default palette, the same approximation
 // the encoder uses when it quantises.
-static uint32_t cellBackgroundRgb(uint32_t bgColor)
-{
+static uint32_t cellBackgroundRgb(uint32_t bgColor) {
     if ((bgColor >> 24) == 0) return 0;
     return 0xFF000000u | (ColorMapper::toArgb(bgColor) & 0x00FFFFFFu);
 }
@@ -60,7 +57,8 @@ static uint32_t cellBackgroundRgb(uint32_t bgColor)
 // Sources fetched over the network rather than read from a file or resource.
 static bool isRemote(const QUrl& url) {
     const QString scheme = url.scheme();
-    return scheme == QLatin1String("http") || scheme == QLatin1String("https") || scheme == QLatin1String("ftp");
+    return scheme == QLatin1String("http") || scheme == QLatin1String("https") ||
+           scheme == QLatin1String("ftp");
 }
 
 // Decoded remote pictures by URL, so a grid of the same thumbnail, a relayout
@@ -74,9 +72,9 @@ static QCache<QString, QImage>& remoteCache() {
 // and a redirect policy set there apply), else one shared by every Image
 // created from C++.
 static QNetworkAccessManager* networkManager(QObject* item) {
-    if (QQmlEngine* engine = qmlEngine(item))
-        return engine->networkAccessManager();
-    static QNetworkAccessManager* shared = new QNetworkAccessManager(QCoreApplication::instance());
+    if (QQmlEngine* engine = qmlEngine(item)) return engine->networkAccessManager();
+    static QPointer<QNetworkAccessManager> shared;
+    if (!shared) shared = new QNetworkAccessManager(QCoreApplication::instance());
     return shared;
 }
 
@@ -152,15 +150,19 @@ Image::Image(QObject* parent) : Item(parent) {
 }
 
 graphics::Protocol Image::activeProtocol() const {
-    if (m_renderMode != RenderMode::Auto && m_renderMode != RenderMode::Kitty && m_renderMode != RenderMode::Sixel)
+    if (m_renderMode != RenderMode::Auto && m_renderMode != RenderMode::Kitty &&
+        m_renderMode != RenderMode::Sixel)
         return graphics::Protocol::None;
-    const TerminalCapabilities caps = terminal() ? terminal()->capabilities() : TerminalCapabilities{};
+    const TerminalCapabilities caps =
+        terminal() ? terminal()->capabilities() : TerminalCapabilities{};
     const graphics::Protocol available = graphics::resolve(caps);
     // Auto takes the best available; an explicit mode is honoured only when
     // that protocol is the one available, else all fall back to HalfBlock.
     if (m_renderMode == RenderMode::Auto) return available;
-    if (m_renderMode == RenderMode::Kitty && available == graphics::Protocol::Kitty) return available;
-    if (m_renderMode == RenderMode::Sixel && available == graphics::Protocol::Sixel) return available;
+    if (m_renderMode == RenderMode::Kitty && available == graphics::Protocol::Kitty)
+        return available;
+    if (m_renderMode == RenderMode::Sixel && available == graphics::Protocol::Sixel)
+        return available;
     return graphics::Protocol::None;
 }
 
@@ -170,7 +172,8 @@ void Image::watchCapabilities() const {
     if (m_capabilitiesConnection) disconnect(m_capabilitiesConnection);
     m_watchedTerminal = root;
     if (root)
-        m_capabilitiesConnection = connect(root, &Terminal::capabilitiesChanged, this, &Image::renderSizeChanged);
+        m_capabilitiesConnection =
+            connect(root, &Terminal::capabilitiesChanged, this, &Image::renderSizeChanged);
 }
 
 QSize Image::renderSize() const {
@@ -218,7 +221,7 @@ void Image::cancelPendingReply() {
     if (!m_reply) return;
     QNetworkReply* reply = m_reply;
     m_reply.clear();
-    disconnect(reply, nullptr, this, nullptr);   // abort() emits finished() synchronously
+    disconnect(reply, nullptr, this, nullptr); // abort() emits finished() synchronously
     reply->abort();
     reply->deleteLater();
 }
@@ -233,16 +236,20 @@ void Image::setProgress(qreal progress) {
 void Image::loadFromNetwork(const QUrl& url) {
     setProgress(0.0);
     QNetworkRequest request(url);
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("QmlTui.Image"));
+    request.setTransferTimeout(15000);
     QNetworkReply* reply = networkManager(this)->get(request);
     m_reply = reply;
-    connect(reply, &QNetworkReply::downloadProgress, this, [this, reply](qint64 received, qint64 total) {
-        if (reply != m_reply) return;
-        if (total > 0) setProgress(static_cast<qreal>(received) / static_cast<qreal>(total));
-    });
+    connect(reply, &QNetworkReply::downloadProgress, this,
+            [this, reply](qint64 received, qint64 total) {
+                if (reply != m_reply) return;
+                if (total > 0)
+                    setProgress(static_cast<qreal>(received) / static_cast<qreal>(total));
+            });
     connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
-        if (reply != m_reply) {   // superseded meanwhile
+        if (reply != m_reply) { // superseded meanwhile
             reply->deleteLater();
             return;
         }
@@ -256,10 +263,12 @@ void Image::loadFromNetwork(const QUrl& url) {
             QImageReader reader(&buffer);
             image = reader.read();
             if (image.isNull()) {
-                qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reader.errorString()));
+                qWarning("Image: %s: %s", qPrintable(url.toString()),
+                         qPrintable(reader.errorString()));
             } else {
                 image = image.convertToFormat(QImage::Format_ARGB32);
-                remoteCache().insert(url.toString(), new QImage(image), static_cast<qsizetype>(image.sizeInBytes()));
+                remoteCache().insert(url.toString(), new QImage(image),
+                                     static_cast<qsizetype>(image.sizeInBytes()));
             }
         } else {
             qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reply->errorString()));
@@ -279,8 +288,7 @@ void Image::cancelPendingResponse() {
 
 void Image::releaseKittyImage() {
     if (m_imageId == 0) return;
-    if (Terminal* root = terminal())
-        root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
+    if (Terminal* root = terminal()) root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
     m_imageId = 0;
     m_lastKittyKey = 0;
     m_lastKittyCells = QSize();
@@ -296,8 +304,8 @@ void Image::releaseSixelImage() {
         for (int y = m_lastSixelRect.top(); y <= m_lastSixelRect.bottom(); ++y) {
             const int rowCoord = (std::max)(1, y + 1);
             const int colCoord = (std::max)(1, m_lastSixelRect.left() + 1);
-            clear += "\033[" + QByteArray::number(rowCoord) + ';'
-                   + QByteArray::number(colCoord) + 'H' + blank;
+            clear += "\033[" + QByteArray::number(rowCoord) + ';' + QByteArray::number(colCoord) +
+                     'H' + blank;
         }
         clear += "\0338";
         root->enqueueControlSequence(clear);
@@ -314,14 +322,15 @@ void Image::setSource(const QUrl& source) {
 }
 
 void Image::setImage(const QImage& image) {
-    cancelPendingResponse();   // a picture assigned directly wins over one in flight
+    cancelPendingResponse(); // a picture assigned directly wins over one in flight
     cancelPendingReply();
     if (!m_source.isEmpty()) {
         // The picture no longer comes from a URL.
         m_source = QUrl();
         emit sourceChanged();
     }
-    adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32), Status::Null);
+    adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32),
+               Status::Null);
 }
 
 void Image::adoptImage(const QImage& image, Status statusIfNull) {
@@ -364,18 +373,19 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
     // The pixel grid this item paints into, so a provider can render sharp.
     if (auto* async = qobject_cast<AsyncImageProvider*>(provider)) {
         ImageResponse* response = async->requestImageResponse(id, renderSize());
-        if (!response) return QImage();          // refused: Error
+        if (!response) return QImage(); // refused: Error
         *pending = true;
         m_pendingResponse = response;
         // With retainWhileLoading the current picture stays until this arrives.
         connect(response, &ImageResponse::finished, this, [this, response] {
-            if (response != m_pendingResponse) return;   // superseded meanwhile
+            if (response != m_pendingResponse) return; // superseded meanwhile
             m_pendingResponse.clear();
             const QImage image = response->image();
             if (image.isNull() && !response->errorString().isEmpty())
                 qWarning("Image: %s", qPrintable(response->errorString()));
             response->deleteLater();
-            adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32), Status::Error);
+            adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32),
+                       Status::Error);
         });
         return QImage();
     }
@@ -384,8 +394,7 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
 }
 
 const QImage& Image::effectiveImage() const {
-    if (m_sourceClipRect.isNull() || m_sourceImage.isNull())
-        return m_sourceImage;
+    if (m_sourceClipRect.isNull() || m_sourceImage.isNull()) return m_sourceImage;
     const QRect bounded = m_sourceClipRect.intersected(m_sourceImage.rect());
     const qint64 key = m_sourceImage.cacheKey();
     if (key != m_clippedSourceKey || bounded != m_clippedForRect) {
@@ -468,6 +477,7 @@ void Image::loadImage() {
         m_scaledImage = QImage();
         m_status = Status::Null;
         emit statusChanged();
+        emit imageChanged();
         emit sourceSizeChanged();
         emit implicitWidthChanged();
         emit implicitHeightChanged();
@@ -487,7 +497,7 @@ void Image::loadImage() {
         } else {
             if (!m_retainWhileLoading) adoptImage(QImage(), Status::Loading);
             loadFromNetwork(m_source);
-            return;   // Loading until the reply finishes
+            return; // Loading until the reply finishes
         }
     } else if (m_source.scheme() == QLatin1String("image")) {
         bool found = false;
@@ -495,7 +505,7 @@ void Image::loadImage() {
         loaded = loadFromProvider(m_source, &found, &pending);
         if (pending) {
             if (!m_retainWhileLoading) adoptImage(QImage(), Status::Loading);
-            return;   // Loading until the response finishes
+            return; // Loading until the response finishes
         }
         if (!found)
             qWarning("Image: no qmltui::ImageProvider named \"%s\" on this engine",
@@ -503,7 +513,8 @@ void Image::loadImage() {
     } else {
         loaded.load(resolvePath(m_source));
     }
-    adoptImage(loaded.isNull() ? QImage() : loaded.convertToFormat(QImage::Format_ARGB32), Status::Error);
+    adoptImage(loaded.isNull() ? QImage() : loaded.convertToFormat(QImage::Format_ARGB32),
+               Status::Error);
 }
 
 void Image::updateScaledCache(RenderMode mode) const {
@@ -565,10 +576,12 @@ void Image::updateScaledCache(RenderMode mode) const {
                 cropH = targetSubH;
                 cropW = std::round(targetSubH * srcAspect * 2.0);
             }
-            QImage scaledTemp = source.scaled(QSize(cropW, cropH), Qt::IgnoreAspectRatio, transMode);
+            QImage scaledTemp =
+                source.scaled(QSize(cropW, cropH), Qt::IgnoreAspectRatio, transMode);
             int startX = (scaledTemp.width() - targetSubW) / 2;
             int startY = (scaledTemp.height() - targetSubH) / 2;
-            m_scaledImage = scaledTemp.copy((std::max)(0, startX), (std::max)(0, startY), targetSubW, targetSubH);
+            m_scaledImage = scaledTemp.copy((std::max)(0, startX), (std::max)(0, startY),
+                                            targetSubW, targetSubH);
         } else {
             m_scaledImage = source.scaled(currentTargetSize, Qt::IgnoreAspectRatio, transMode);
         }
@@ -578,7 +591,8 @@ void Image::updateScaledCache(RenderMode mode) const {
         } else if (m_fillMode == FillMode::PreserveAspectFit) {
             m_scaledImage = source.scaled(currentTargetSize, Qt::KeepAspectRatio, transMode);
         } else if (m_fillMode == FillMode::PreserveAspectCrop) {
-            QImage expanded = source.scaled(currentTargetSize, Qt::KeepAspectRatioByExpanding, transMode);
+            QImage expanded =
+                source.scaled(currentTargetSize, Qt::KeepAspectRatioByExpanding, transMode);
             int cropX = (expanded.width() - targetSubW) / 2;
             int cropY = (expanded.height() - targetSubH) / 2;
             m_scaledImage = expanded.copy(cropX, cropY, targetSubW, targetSubH);
@@ -599,8 +613,7 @@ void Image::updateScaledCache(RenderMode mode) const {
 
 void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     // Loading a new frame must not blank the previously committed picture.
-    if (!visible() || effectiveImage().isNull())
-        return;
+    if (!visible() || effectiveImage().isNull()) return;
 
     int itemW = width();
     int itemH = height();
@@ -655,27 +668,27 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 int targetX = absX + cx;
                 int targetY = absY + cy;
 
-                if (!clipRect.contains(targetX, targetY))
-                    continue;
+                if (!clipRect.contains(targetX, targetY)) continue;
 
                 int topPy = cy * half_block::SubpixelsY - offsetY;
                 int botPy = cy * half_block::SubpixelsY + 1 - offsetY;
                 int px = cx - offsetX;
 
                 const QRgb top = (px >= 0 && px < subW && topPy >= 0 && topPy < subH)
-                                     ? m_scaledImage.pixel(px, topPy) : 0u;
+                                     ? m_scaledImage.pixel(px, topPy)
+                                     : 0u;
                 const QRgb bot = (px >= 0 && px < subW && botPy >= 0 && botPy < subH)
-                                     ? m_scaledImage.pixel(px, botPy) : 0u;
+                                     ? m_scaledImage.pixel(px, botPy)
+                                     : 0u;
 
-                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
-                if (!targetCell)
-                    continue;
+                Cell* targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell) continue;
                 Cell& cell = *targetCell;
                 const uint32_t behind = cellBackgroundRgb(cell.bgColor);
                 const uint32_t topShown = compositeOver(top, behind);
                 const uint32_t botShown = compositeOver(bot, behind);
                 if (topShown == 0 && botShown == 0)
-                    continue;   // both halves clear: the cell keeps its glyph and colours
+                    continue; // both halves clear: the cell keeps its glyph and colours
 
                 cell.displayWidth = 1;
                 cell.continuation = false;
@@ -687,8 +700,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 } else {
                     cell.setCharacter(block_glyphs::UpperHalf); // ▀ Upper Half Block
                     cell.fgColor = topShown;
-                    if (botShown != 0)
-                        cell.bgColor = botShown;
+                    if (botShown != 0) cell.bgColor = botShown;
                 }
             }
         }
@@ -716,31 +728,27 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 int targetX = absX + cx;
                 int targetY = absY + cy;
 
-                if (!clipRect.contains(targetX, targetY))
-                    continue;
+                if (!clipRect.contains(targetX, targetY)) continue;
 
                 int px = cx - offsetX;
                 int py = cy - offsetY;
 
-                if (px < 0 || px >= subW || py < 0 || py >= subH)
-                    continue;
+                if (px < 0 || px >= subW || py < 0 || py >= subH) continue;
 
-                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
-                if (!targetCell)
-                    continue;
+                Cell* targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell) continue;
                 Cell& cell = *targetCell;
                 // Glyph and colour both follow the composited pixel, so a faint
                 // pixel over a dark background reads as a faint glyph.
-                const uint32_t shown = compositeOver(m_scaledImage.pixel(px, py),
-                                                     cellBackgroundRgb(cell.bgColor));
-                if (shown == 0)
-                    continue;
+                const uint32_t shown =
+                    compositeOver(m_scaledImage.pixel(px, py), cellBackgroundRgb(cell.bgColor));
+                if (shown == 0) continue;
 
                 const int brightness = qGray(shown);
                 const int rampIndex = (brightness * (ASCII_RAMP_LEN - 1)) / 255;
                 cell.displayWidth = 1;
                 cell.continuation = false;
-                const char asciiChar[2] = { ASCII_RAMP[rampIndex], '\0' };
+                const char asciiChar[2] = {ASCII_RAMP[rampIndex], '\0'};
                 cell.setCharacter(asciiChar);
                 cell.fgColor = shown;
             }
@@ -770,12 +778,10 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                 int targetX = absX + cx;
                 int targetY = absY + cy;
 
-                if (!clipRect.contains(targetX, targetY))
-                    continue;
+                if (!clipRect.contains(targetX, targetY)) continue;
 
-                Cell *targetCell = buffer.tryCellAt(targetX, targetY);
-                if (!targetCell)
-                    continue;
+                Cell* targetCell = buffer.tryCellAt(targetX, targetY);
+                if (!targetCell) continue;
                 const uint32_t behind = cellBackgroundRgb(targetCell->bgColor);
 
                 uint8_t cellValue = 0;
@@ -785,8 +791,7 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                     for (int dotX = 0; dotX < braille::DotsX; ++dotX) {
                         int px = cx * braille::DotsX + dotX - offsetX;
                         int py = cy * braille::DotsY + dotY - offsetY;
-                        if (px < 0 || px >= subW || py < 0 || py >= subH)
-                            continue;
+                        if (px < 0 || px >= subW || py < 0 || py >= subH) continue;
                         // A dot is set when the composited pixel clears the dark
                         // cut-off, so a faint pixel over a dark background stays off.
                         const uint32_t shown = compositeOver(m_scaledImage.pixel(px, py), behind);
@@ -840,24 +845,29 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
         }
         cols = (std::clamp)(fitCols, 1, itemW);
         rows = (std::clamp)(fitRows, 1, itemH);
-        if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
-        else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
-        if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
-        else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
+        if (m_alignment & Qt::AlignHCenter)
+            originX += (itemW - cols) / 2;
+        else if (m_alignment & Qt::AlignRight)
+            originX += itemW - cols;
+        if (m_alignment & Qt::AlignVCenter)
+            originY += (itemH - rows) / 2;
+        else if (m_alignment & Qt::AlignBottom)
+            originY += itemH - rows;
     }
 
     // Re-upload only when the source, the upload size or session changed.
     // The placement is updated separately when placement geometry changes.
     const qint64 key = source.cacheKey();
     const QSize cellPx = root->capabilities().cellPixelSize;
-    const QSize placementPx = cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
+    const QSize placementPx =
+        cellPx.isValid() ? QSize(cols * cellPx.width(), rows * cellPx.height()) : QSize();
     const QSize uploadSize = graphics::kittyUploadSize(source.size(), placementPx, m_smooth);
     const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
 
-    if (m_imageId == 0)
-        m_imageId = graphics::nextImageId();
+    if (m_imageId == 0) m_imageId = graphics::nextImageId();
 
-    const bool needUpload = (key != m_lastKittyKey || uploadSize != m_lastKittyUpload || session != m_lastKittySession);
+    const bool needUpload =
+        (key != m_lastKittyKey || uploadSize != m_lastKittyUpload || session != m_lastKittySession);
     if (needUpload) {
         QImage upload = source;
         if (uploadSize != source.size())
@@ -907,10 +917,14 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
         }
         cols = (std::clamp)(fitCols, 1, itemW);
         rows = (std::clamp)(fitRows, 1, itemH);
-        if (m_alignment & Qt::AlignHCenter) originX += (itemW - cols) / 2;
-        else if (m_alignment & Qt::AlignRight) originX += itemW - cols;
-        if (m_alignment & Qt::AlignVCenter) originY += (itemH - rows) / 2;
-        else if (m_alignment & Qt::AlignBottom) originY += itemH - rows;
+        if (m_alignment & Qt::AlignHCenter)
+            originX += (itemW - cols) / 2;
+        else if (m_alignment & Qt::AlignRight)
+            originX += itemW - cols;
+        if (m_alignment & Qt::AlignVCenter)
+            originY += (itemH - rows) / 2;
+        else if (m_alignment & Qt::AlignBottom)
+            originY += itemH - rows;
     }
 
     // Reserve the cells so the diff clears whatever was there and nothing else
@@ -935,8 +949,8 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     // renderer switch), so the persisted sixel is gone and must be re-sent.
     const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
     const qint64 key = source.cacheKey();
-    if (key == m_lastSixelKey && QSize(cols, rows) == m_lastSixelCells
-        && session == m_lastSixelSession)
+    if (key == m_lastSixelKey && QSize(cols, rows) == m_lastSixelCells &&
+        session == m_lastSixelSession)
         return;
     m_lastSixelKey = key;
     m_lastSixelCells = QSize(cols, rows);
@@ -945,9 +959,8 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     const int pixelW = (std::min)(4096, cols * cw);
     const int pixelH = (std::min)(4096, rows * ch);
     if (pixelW <= 0 || pixelH <= 0) return;
-    QImage scaled = source.scaled(QSize(pixelW, pixelH),
-                                         Qt::IgnoreAspectRatio,
-                                         m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
+    QImage scaled = source.scaled(QSize(pixelW, pixelH), Qt::IgnoreAspectRatio,
+                                  m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
     const QByteArray sixel = graphics::sixelEncode(scaled);
     if (sixel.isEmpty()) return;
 
@@ -957,20 +970,20 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     // (not just the placement) also erases a larger previous frame when a
     // mood change shrinks the placement. SGR is reset so blanks clear to the
     // default background; the next frame's diff re-establishes style.
-    QByteArray positioned = "\033[0m\0337";            // default SGR, save cursor
+    QByteArray positioned = "\033[0m\0337"; // default SGR, save cursor
     const QByteArray blank(itemW, ' ');
     for (int r = 0; r < itemH; ++r) {
         const int rowCoord = (std::max)(1, absY + 1 + r);
         const int colCoord = (std::max)(1, absX + 1);
-        positioned += "\033[" + QByteArray::number(rowCoord) + ';'
-                    + QByteArray::number(colCoord) + 'H' + blank;
+        positioned += "\033[" + QByteArray::number(rowCoord) + ';' + QByteArray::number(colCoord) +
+                      'H' + blank;
     }
     const int origRowCoord = (std::max)(1, originY + 1);
     const int origColCoord = (std::max)(1, originX + 1);
-    positioned += "\033[" + QByteArray::number(origRowCoord) + ';'
-                + QByteArray::number(origColCoord) + 'H';    // move to the image origin
+    positioned += "\033[" + QByteArray::number(origRowCoord) + ';' +
+                  QByteArray::number(origColCoord) + 'H'; // move to the image origin
     positioned += sixel;
-    positioned += "\0338";                               // restore cursor
+    positioned += "\0338"; // restore cursor
     root->enqueuePostControlSequence(positioned);
     m_lastSixelRect = QRect(absX, absY, itemW, itemH);
 }

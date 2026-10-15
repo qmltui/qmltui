@@ -38,10 +38,12 @@ interface QmlTuiClickOptions extends QmlTuiModifierOptions {
     button?: QmlTuiMouseButton;
 }
 
-interface QmlTuiClickTextOptions extends QmlTuiClickOptions {
+interface QmlTuiOccurrenceOptions {
     /** Zero-based index into the row-major matches. */
     occurrence?: number;
 }
+
+interface QmlTuiClickTextOptions extends QmlTuiClickOptions, QmlTuiOccurrenceOptions {}
 
 /** One rendered cell, as reported by cell(). */
 interface QmlTuiCell {

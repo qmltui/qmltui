@@ -19,8 +19,10 @@ Rectangle {
     property string footerTrailing: ""
     property rgba footerTrailingColor: "default"
 
-    border.style: Border.Single
-    border.color: "default"
+    border {
+        style: Border.Single
+        color: "default"
+    }
 
     QtObject {
         id: d
@@ -30,9 +32,7 @@ Rectangle {
             if (control.titleAlignment === Qt.AlignLeft) {
                 return 2;
             }
-            let maxStartX = titleTrailingText.visible
-                ? (titleTrailingText.x - d.totalTitleWidth)
-                : (control.width - d.totalTitleWidth - 2);
+            let maxStartX = titleTrailingText.visible ? (titleTrailingText.x - d.totalTitleWidth) : (control.width - d.totalTitleWidth - 2);
             if (control.titleAlignment === Qt.AlignHCenter) {
                 let centeredX = Math.floor((control.width - d.totalTitleWidth) / 2);
                 return Math.max(1, Math.min(centeredX, maxStartX));

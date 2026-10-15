@@ -9,8 +9,7 @@ Rectangle {
     property real stepSize: 1.0
     property rgba textColor: "default"
     property bool showValue: true
-    readonly property int trackWidth: Math.max(0, control.width
-                                                - (control.showValue ? valueText.implicitWidth + 1 : 0))
+    readonly property int trackWidth: Math.max(0, control.width - (control.showValue ? valueText.implicitWidth + 1 : 0))
 
     focusable: enabled
     implicitWidth: 25
@@ -19,26 +18,26 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         x: 0
         text: {
-            const tw = control.trackWidth
+            const tw = control.trackWidth;
             if (tw <= 0)
-                return ""
-            const range = Math.max(0.001, control.to - control.from)
-            const pct = Math.min(1.0, Math.max(0.0, (control.value - control.from) / range))
-            const handlePos = Math.round(pct * (tw - 1))
-            
+                return "";
+            const range = Math.max(0.001, control.to - control.from);
+            const pct = Math.min(1.0, Math.max(0.0, (control.value - control.from) / range));
+            const handlePos = Math.round(pct * (tw - 1));
+
             // Focus is visible in the track itself: a heavy line while the
             // slider has active focus, a light one otherwise. Bold alone is
             // invisible on box-drawing glyphs in most terminals.
-            const track = control.activeFocus ? "━" : "─"
-            let str = ""
+            const track = control.activeFocus ? "━" : "─";
+            let str = "";
             for (let i = 0; i < tw; ++i) {
                 if (i === handlePos) {
-                    str += "●"
+                    str += "●";
                 } else {
-                    str += track
+                    str += track;
                 }
             }
-            return str
+            return str;
         }
         color: control.textColor
         bold: control.activeFocus
@@ -47,8 +46,10 @@ Rectangle {
     Text {
         id: valueText
         visible: control.showValue
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
+        anchors {
+            verticalCenter: parent.verticalCenter
+            right: parent.right
+        }
         text: "[" + Math.round(control.value) + "]"
         color: control.textColor
         // The readout inverts while focused, so a one-row slider shows focus
@@ -57,32 +58,56 @@ Rectangle {
         reversed: control.activeFocus
     }
 
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (!control.enabled)
-            return
+            return;
         if (event.key === Qt.Key_Left) {
-            control.value = Math.max(control.from, control.value - control.stepSize)
-            event.accepted = true
+            control.value = Math.max(control.from, control.value - control.stepSize);
+            event.accepted = true;
         } else if (event.key === Qt.Key_Right) {
-            control.value = Math.min(control.to, control.value + control.stepSize)
-            event.accepted = true
+            control.value = Math.min(control.to, control.value + control.stepSize);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Home) {
+            control.value = control.from;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_End) {
+            control.value = control.to;
+            event.accepted = true;
         }
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
-        onClicked: (event) => {
-            if (!control.enabled)
-                return
-            control.focus = true
+        function updateFromX(posX) {
             if (control.trackWidth <= 0)
-                return
-            const range = Math.max(0.001, control.to - control.from)
-            const pct = Math.min(1.0, Math.max(0.0, event.x / control.trackWidth))
-            const step = control.stepSize > 0 ? control.stepSize : 1
-            const raw = control.from + pct * range
-            control.value = Math.min(control.to, Math.max(control.from,
-                control.from + Math.round((raw - control.from) / step) * step))
+                return;
+            const range = Math.max(0.001, control.to - control.from);
+            const pct = Math.min(1.0, Math.max(0.0, posX / control.trackWidth));
+            const step = control.stepSize > 0 ? control.stepSize : 1;
+            const raw = control.from + pct * range;
+            control.value = Math.min(control.to, Math.max(control.from, control.from + Math.round((raw - control.from) / step) * step));
+        }
+        onClicked: event => {
+            if (!control.enabled)
+                return;
+            control.focus = true;
+            mouseArea.updateFromX(event.x);
+        }
+        onMouseXChanged: {
+            if (!control.enabled || !mouseArea.pressed)
+                return;
+            mouseArea.updateFromX(mouseArea.mouseX);
+        }
+        onWheel: event => {
+            if (!control.enabled)
+                return;
+            const step = control.stepSize > 0 ? control.stepSize : 1;
+            if (event.wheelDeltaY > 0 || event.wheelDeltaX > 0) {
+                control.value = Math.min(control.to, control.value + step);
+            } else if (event.wheelDeltaY < 0 || event.wheelDeltaX < 0) {
+                control.value = Math.max(control.from, control.value - step);
+            }
         }
     }
 }

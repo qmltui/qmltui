@@ -26,9 +26,7 @@ class HierarchicalTestModel : public QAbstractItemModel {
     Q_OBJECT
 
 public:
-    explicit HierarchicalTestModel(QObject *parent = nullptr)
-        : QAbstractItemModel(parent)
-    {
+    explicit HierarchicalTestModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {
         m_parentNode.text = QStringLiteral("parent");
         m_parentNode.parent = &m_root;
         m_child.text = QStringLiteral("child");
@@ -43,54 +41,42 @@ public:
     }
 
     QModelIndex index(int row, int column,
-                      const QModelIndex &parent = QModelIndex()) const override
-    {
-        if (column != 0 || row < 0)
-            return {};
-        Node *parentNode = parent.isValid()
-            ? static_cast<Node *>(parent.internalPointer()) : const_cast<Node *>(&m_root);
-        if (row >= parentNode->children.size())
-            return {};
+                      const QModelIndex& parent = QModelIndex()) const override {
+        if (column != 0 || row < 0) return {};
+        Node* parentNode = parent.isValid() ? static_cast<Node*>(parent.internalPointer())
+                                            : const_cast<Node*>(&m_root);
+        if (row >= parentNode->children.size()) return {};
         return createIndex(row, column, parentNode->children.at(row));
     }
 
-    QModelIndex parent(const QModelIndex &child) const override
-    {
-        if (!child.isValid())
-            return {};
-        Node *node = static_cast<Node *>(child.internalPointer());
-        Node *parentNode = node ? node->parent : nullptr;
-        if (!parentNode || parentNode == &m_root)
-            return {};
+    QModelIndex parent(const QModelIndex& child) const override {
+        if (!child.isValid()) return {};
+        Node* node = static_cast<Node*>(child.internalPointer());
+        Node* parentNode = node ? node->parent : nullptr;
+        if (!parentNode || parentNode == &m_root) return {};
         return createIndex(parentNode->parent->children.indexOf(parentNode), 0, parentNode);
     }
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override
-    {
-        if (parent.column() > 0)
-            return 0;
-        Node *node = parent.isValid()
-            ? static_cast<Node *>(parent.internalPointer()) : const_cast<Node *>(&m_root);
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override {
+        if (parent.column() > 0) return 0;
+        Node* node = parent.isValid() ? static_cast<Node*>(parent.internalPointer())
+                                      : const_cast<Node*>(&m_root);
         return node ? node->children.size() : 0;
     }
 
-    int columnCount(const QModelIndex & = QModelIndex()) const override { return 1; }
+    int columnCount(const QModelIndex& = QModelIndex()) const override { return 1; }
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
-    {
-        if (!index.isValid() || role != Qt::DisplayRole)
-            return {};
-        Node *node = static_cast<Node *>(index.internalPointer());
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
+        if (!index.isValid() || role != Qt::DisplayRole) return {};
+        Node* node = static_cast<Node*>(index.internalPointer());
         return node ? QVariant(node->text) : QVariant();
     }
 
-    QHash<int, QByteArray> roleNames() const override
-    {
+    QHash<int, QByteArray> roleNames() const override {
         return {{Qt::DisplayRole, QByteArrayLiteral("display")}};
     }
 
-    void renameGrandchild(const QString &text)
-    {
+    void renameGrandchild(const QString& text) {
         m_grandchild.text = text;
         const QModelIndex changed = createIndex(0, 0, &m_grandchild);
         emit dataChanged(changed, changed, {Qt::DisplayRole});
@@ -99,8 +85,8 @@ public:
 private:
     struct Node {
         QString text;
-        Node *parent = nullptr;
-        QList<Node *> children;
+        Node* parent = nullptr;
+        QList<Node*> children;
     };
 
     Node m_root;
@@ -132,15 +118,10 @@ private slots:
         table.setWidth(40);
         table.setHeight(6);
 
-        table.setColumns(QVariantList{
-            QVariantMap{{"title", "ID"}, {"width", 10}},
-            QVariantMap{{"title", "NAME"}, {"width", 20}}
-        });
+        table.setColumns(QVariantList{QVariantMap{{"title", "ID"}, {"width", 10}},
+                                      QVariantMap{{"title", "NAME"}, {"width", 20}}});
 
-        table.setModel(QVariantList{
-            QVariantList{"1", "Alice"},
-            QVariantList{"2", "Bob"}
-        });
+        table.setModel(QVariantList{QVariantList{"1", "Alice"}, QVariantList{"2", "Bob"}});
 
         TextGridBuffer buffer;
         buffer.resize(40, 6);
@@ -156,13 +137,9 @@ private slots:
         tree.setWidth(30);
         tree.setHeight(5);
 
-        tree.setRootNode(QVariantMap{
-            {"text", "root"},
-            {"expanded", true},
-            {"children", QVariantList{
-                QVariantMap{{"text", "child1"}}
-            }}
-        });
+        tree.setRootNode(QVariantMap{{"text", "root"},
+                                     {"expanded", true},
+                                     {"children", QVariantList{QVariantMap{{"text", "child1"}}}}});
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
@@ -174,7 +151,7 @@ private slots:
         QVERIFY(tree.isExpanded(0));
 
         // mousePressEvent toggles expanded state (expanded -> collapsed)
-    MouseEvent mouseEv(MouseEvent::Type::Press, 0, 0, 0);
+        MouseEvent mouseEv(MouseEvent::Type::Press, 0, 0, 0);
         tree.mousePressEvent(&mouseEv);
         QVERIFY(mouseEv.isAccepted());
         QCOMPARE(tree.selectedIndex(), 0);
@@ -208,19 +185,14 @@ private slots:
         tree.setRootNode(QVariantMap{
             {"text", "root"},
             {"expanded", true},
-            {"children", QVariantList{
-                QVariantMap{
-                    {"text", "DuplicateName"},
-                    {"expanded", true},
-                    {"children", QVariantList{ QVariantMap{{"text", "Sub1"}} }}
-                },
-                QVariantMap{
-                    {"text", "DuplicateName"},
-                    {"expanded", true},
-                    {"children", QVariantList{ QVariantMap{{"text", "Sub2"}} }}
-                }
-            }}
-        });
+            {"children",
+             QVariantList{
+                 QVariantMap{{"text", "DuplicateName"},
+                             {"expanded", true},
+                             {"children", QVariantList{QVariantMap{{"text", "Sub1"}}}}},
+                 QVariantMap{{"text", "DuplicateName"},
+                             {"expanded", true},
+                             {"children", QVariantList{QVariantMap{{"text", "Sub2"}}}}}}}});
         // Index 1 is first DuplicateName (expanded)
         // Index 3 is second DuplicateName (expanded)
         QVERIFY(tree.isExpanded(1));
@@ -238,17 +210,27 @@ private slots:
         toast.setWidth(30);
         toast.setHeight(5);
 
-        toast.showToast("Test", "Message", "info", 1000);
+        toast.showToast("TestTitle", "ToastBody", "info", 1000);
         TextGridBuffer buffer;
         buffer.resize(30, 5);
         paintItem(toast, buffer, 0, 0);
+
+        QString allText;
+        for (int y = 0; y < 5; ++y) {
+            for (int x = 0; x < 30; ++x)
+                allText += QString::fromUtf8(buffer.cellAt(x, y).character());
+            allText += QLatin1Char('\n');
+        }
+        QVERIFY2(allText.contains(QStringLiteral("TestTitle")), qPrintable(allText));
+        QVERIFY2(allText.contains(QStringLiteral("ToastBody")), qPrintable(allText));
     }
 
     void testTabBar() {
         TabBar header;
         header.setWidth(40);
         header.setHeight(1);
-        header.setTabs(QVariantList{"Overview", "Metrics", "Settings"});
+        header.setTabs(QVariantList{QStringLiteral("日本語"), QStringLiteral("Metrics"),
+                                    QStringLiteral("Settings")});
 
         QCOMPARE(header.currentIndex(), 0);
         header.setCurrentIndex(1);
@@ -257,6 +239,23 @@ private slots:
         TextGridBuffer buffer;
         buffer.resize(40, 1);
         paintItem(header, buffer, 0, 0);
+
+        QString row;
+        for (int x = 0; x < 40; ++x)
+            row += QString::fromUtf8(buffer.cellAt(x, 0).character());
+        QVERIFY2(row.contains(QStringLiteral("日本語")), qPrintable(row));
+        QVERIFY2(row.contains(QStringLiteral("Metrics")), qPrintable(row));
+        QVERIFY2(row.contains(QStringLiteral("Settings")), qPrintable(row));
+
+        // Tab 0 (" 日本語 ") has display width 1 + 6 + 1 = 8, plus 1 separator = 9.
+        // Clicking at x = 2 selects tab 0; clicking at x = 11 selects tab 1.
+        MouseEvent click0(MouseEvent::Type::Press, 2, 0, 0);
+        header.mousePressEvent(&click0);
+        QCOMPARE(header.currentIndex(), 0);
+
+        MouseEvent click1(MouseEvent::Type::Press, 11, 0, 0);
+        header.mousePressEvent(&click1);
+        QCOMPARE(header.currentIndex(), 1);
     }
 
     void testBordersBelongToRectangle() {
@@ -268,10 +267,8 @@ private slots:
         TabBar tabs;
 
         QVERIFY(rectangle.metaObject()->indexOfProperty("border") >= 0);
-        const QObject *borderlessItems[] = {
-            &text, &table, &tree, &sparkline, &tabs
-        };
-        for (const QObject *item : borderlessItems) {
+        const QObject* borderlessItems[] = {&text, &table, &tree, &sparkline, &tabs};
+        for (const QObject* item : borderlessItems) {
             QCOMPARE(item->metaObject()->indexOfProperty("border"), -1);
             QCOMPARE(item->metaObject()->indexOfProperty("borderStyle"), -1);
             QCOMPARE(item->metaObject()->indexOfProperty("borderColor"), -1);
@@ -296,17 +293,16 @@ private slots:
         engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
 
         QQmlComponent component(&engine);
-        component.setData(QByteArray(
-            "import QtQuick\n"
-            "import QmlTui\n"
-            ""
-            "Item {\n"
-            "    required property int index\n"
-            "    required property string name\n"
-            "    required property int age\n"
-            "    property string title: name + \" (\" + age + \")\"\n"
-            "}\n"
-        ), QUrl());
+        component.setData(QByteArray("import QtQuick\n"
+                                     "import QmlTui\n"
+                                     ""
+                                     "Item {\n"
+                                     "    required property int index\n"
+                                     "    required property string name\n"
+                                     "    required property int age\n"
+                                     "    property string title: name + \" (\" + age + \")\"\n"
+                                     "}\n"),
+                          QUrl());
 
         if (component.status() != QQmlComponent::Ready) {
             qWarning() << "Component error:" << component.errorString();
@@ -319,16 +315,15 @@ private slots:
         list.setHeight(5);
         QQmlEngine::setContextForObject(&list, engine.rootContext());
         list.setDelegate(&component);
-        list.setModel(QVariantList{
-            QVariantMap{{"name", "Alice"}, {"age", 30}},
-            QVariantMap{{"name", "Bob"}, {"age", 25}}
-        });
+        list.setModel(QVariantList{QVariantMap{{"name", "Alice"}, {"age", 30}},
+                                   QVariantMap{{"name", "Bob"}, {"age", 25}}});
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
         paintItem(list, buffer, 0, 0);
 
-        const QList<Item*> delegateChildren = list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item*> delegateChildren =
+            list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(delegateChildren.size(), 2);
         Item* child0 = delegateChildren.at(0);
         QCOMPARE(child0->property("index").toInt(), 0);
@@ -349,11 +344,10 @@ private slots:
         repeater.setParentItem(&parentItem);
         QQmlEngine::setContextForObject(&repeater, engine.rootContext());
         repeater.setDelegate(&component);
-        repeater.setModel(QVariantList{
-            QVariantMap{{"name", "Charlie"}, {"age", 40}}
-        });
+        repeater.setModel(QVariantList{QVariantMap{{"name", "Charlie"}, {"age", 40}}});
 
-        const QList<Item*> repChildren = parentItem.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item*> repChildren =
+            parentItem.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         Item* repChild = nullptr;
         for (Item* item : repChildren) {
             if (item != &repeater) {
@@ -367,33 +361,30 @@ private slots:
 
         // Test TreeView with required properties
         QQmlComponent treeComp(&engine);
-        treeComp.setData(QByteArray(
-            "import QtQuick\n"
-            "import QmlTui\n"
-            ""
-            "Item {\n"
-            "    required property int index\n"
-            "    required property string name\n"
-            "    required property int depth\n"
-            "}\n"
-        ), QUrl());
+        treeComp.setData(QByteArray("import QtQuick\n"
+                                    "import QmlTui\n"
+                                    ""
+                                    "Item {\n"
+                                    "    required property int index\n"
+                                    "    required property string name\n"
+                                    "    required property int depth\n"
+                                    "}\n"),
+                         QUrl());
 
         TreeView tree;
         QQmlEngine::setContextForObject(&tree, engine.rootContext());
         tree.setHeight(10);
         tree.setWidth(30);
         tree.setDelegate(&treeComp);
-        tree.setModel(QVariantMap{
-            {"name", "RootFolder"},
-            {"children", QVariantList{
-                QVariantMap{{"name", "ChildFolder"}}
-            }}
-        });
+        tree.setModel(
+            QVariantMap{{"name", "RootFolder"},
+                        {"children", QVariantList{QVariantMap{{"name", "ChildFolder"}}}}});
         paintItem(tree, buffer, 0, 0);
         tree.expand(0);
         paintItem(tree, buffer, 0, 0);
 
-        const QList<Item*> treeChildren = tree.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item*> treeChildren =
+            tree.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(treeChildren.size(), 2);
         Item* treeChild0 = treeChildren.at(0);
         QCOMPARE(treeChild0->property("name").toString(), QString("RootFolder"));
@@ -428,11 +419,12 @@ private slots:
                     property string capturedToken: view.lexicalToken
                 }
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
         std::unique_ptr<QObject> object(component.create());
-        auto *list = qobject_cast<ListView *>(object.get());
+        auto* list = qobject_cast<ListView*>(object.get());
         QVERIFY(list);
 
         TextGridBuffer buffer;
@@ -440,10 +432,10 @@ private slots:
         paintItem(list, buffer, 0, 0);
         QCOMPARE(list->currentIndex(), -1);
 
-        const QList<Item *> delegates =
-            list->findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item*> delegates =
+            list->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(delegates.size(), 2);
-        for (Item *delegate : delegates) {
+        for (Item* delegate : delegates) {
             QVERIFY(delegate->property("attachedViewMatches").toBool());
             QCOMPARE(delegate->property("capturedToken").toString(),
                      QStringLiteral("lexical-context"));
@@ -452,13 +444,13 @@ private slots:
         }
 
         list->setCurrentIndex(1);
-        for (Item *delegate : delegates) {
+        for (Item* delegate : delegates) {
             QCOMPARE(delegate->property("attachedCurrent").toBool(),
                      delegate->property("index").toInt() == 1);
         }
         list->setCurrentIndex(-1);
         QCOMPARE(list->currentIndex(), -1);
-        for (Item *delegate : delegates)
+        for (Item* delegate : delegates)
             QVERIFY(!delegate->property("attachedCurrent").toBool());
     }
 
@@ -480,21 +472,19 @@ private slots:
                 required property string display
                 required property string name
             }
-        )", QUrl());
+        )",
+                              QUrl());
         QVERIFY2(cellComponent.isReady(), qPrintable(cellComponent.errorString()));
 
         TableView table;
         QQmlEngine::setContextForObject(&table, engine.rootContext());
         table.setWidth(30);
         table.setHeight(6);
-        table.setColumns(QVariantList{
-            QVariantMap{{"title", "ID"}, {"key", "id"}, {"width", 10}},
-            QVariantMap{{"title", "Name"}, {"key", "name"}, {"width", 20}}
-        });
-        table.setModel(QVariantList{
-            QVariantMap{{"id", "1"}, {"name", "Alice"}},
-            QVariantMap{{"id", "2"}, {"name", "Bob"}}
-        });
+        table.setColumns(
+            QVariantList{QVariantMap{{"title", "ID"}, {"key", "id"}, {"width", 10}},
+                         QVariantMap{{"title", "Name"}, {"key", "name"}, {"width", 20}}});
+        table.setModel(QVariantList{QVariantMap{{"id", "1"}, {"name", "Alice"}},
+                                    QVariantMap{{"id", "2"}, {"name", "Bob"}}});
         table.setSelectedRow(1);
         table.setCurrentColumn(1);
         table.setDelegate(&cellComponent);
@@ -504,27 +494,24 @@ private slots:
         paintItem(table, buffer, 0, 0);
 
         const auto delegates = [&table] {
-            QList<Item *> items;
-            for (Item *container : table.childItems()) items.append(container->childItems());
+            QList<Item*> items;
+            for (Item* container : table.childItems())
+                items.append(container->childItems());
             return items;
         };
-        const QList<Item *> cells = delegates();
+        const QList<Item*> cells = delegates();
         QCOMPARE(cells.size(), 4);
-        Item *currentCell = nullptr;
-        for (Item *cell : cells) {
+        Item* currentCell = nullptr;
+        for (Item* cell : cells) {
             QCOMPARE(cell->property("index").toInt(),
-                     cell->property("row").toInt() * 2
-                         + cell->property("column").toInt());
-            QCOMPARE(cell->property("selected").toBool(),
-                     cell->property("current").toBool());
-            if (cell->property("current").toBool())
-                currentCell = cell;
+                     cell->property("row").toInt() * 2 + cell->property("column").toInt());
+            QCOMPARE(cell->property("selected").toBool(), cell->property("current").toBool());
+            if (cell->property("current").toBool()) currentCell = cell;
         }
         QVERIFY(currentCell);
         QCOMPARE(currentCell->property("row").toInt(), 1);
         QCOMPARE(currentCell->property("column").toInt(), 1);
-        QCOMPARE(currentCell->property("modelData").toString(),
-                 QStringLiteral("Bob"));
+        QCOMPARE(currentCell->property("modelData").toString(), QStringLiteral("Bob"));
         QCOMPARE(currentCell->property("name").toString(), QStringLiteral("Bob"));
 
         QQmlComponent rowComponent(&engine);
@@ -536,15 +523,16 @@ private slots:
                 required property var model
                 required property var modelData
             }
-        )", QUrl());
+        )",
+                             QUrl());
         QVERIFY2(rowComponent.isReady(), qPrintable(rowComponent.errorString()));
 
         table.setDelegate(nullptr);
         table.setRowDelegate(&rowComponent);
         paintItem(table, buffer, 0, 0);
-        const QList<Item *> rows = delegates();
+        const QList<Item*> rows = delegates();
         QCOMPARE(rows.size(), 2);
-        for (Item *row : rows)
+        for (Item* row : rows)
             QCOMPARE(row->property("index").toInt(), row->property("row").toInt());
     }
 
@@ -569,7 +557,8 @@ private slots:
                 required property var modelData
                 required property string display
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
         HierarchicalTestModel model;
@@ -579,26 +568,25 @@ private slots:
         tree.setWidth(30);
         tree.setHeight(10);
         tree.setDelegate(&component);
-        tree.setModel(QVariant::fromValue(static_cast<QObject *>(&model)));
+        tree.setModel(QVariant::fromValue(static_cast<QObject*>(&model)));
         tree.expandAll();
 
         TextGridBuffer buffer;
         buffer.resize(30, 10);
         paintItem(tree, buffer, 0, 0);
 
-        const QList<Item *> delegates =
-            tree.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+        const QList<Item*> delegates =
+            tree.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
         QCOMPARE(delegates.size(), 4);
         int maximumDepth = -1;
-        for (Item *delegate : delegates) {
-            QCOMPARE(delegate->property("treeView").value<QObject *>(),
-                     static_cast<QObject *>(&tree));
+        for (Item* delegate : delegates) {
+            QCOMPARE(delegate->property("treeView").value<QObject*>(),
+                     static_cast<QObject*>(&tree));
             QVERIFY(delegate->property("isTreeNode").toBool());
             QCOMPARE(delegate->property("column").toInt(), 0);
             QCOMPARE(delegate->property("selected").toBool(),
                      delegate->property("current").toBool());
-            maximumDepth = std::max(maximumDepth,
-                                    delegate->property("depth").toInt());
+            maximumDepth = std::max(maximumDepth, delegate->property("depth").toInt());
         }
         QCOMPARE(maximumDepth, 2);
         QCOMPARE(tree.depth(2), 2);
@@ -643,19 +631,19 @@ private slots:
                     }
                 }
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<Item *>(object.get());
+        auto* root = qobject_cast<Item*>(object.get());
         QVERIFY(root);
-        auto *repeater = root->findChild<Repeater *>();
+        auto* repeater = root->findChild<Repeater*>();
         QVERIFY(repeater);
 
         int delegateCount = 0;
-        for (Item *child : root->findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly)) {
-            if (child == repeater)
-                continue;
+        for (Item* child : root->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (child == repeater) continue;
             QCOMPARE(child->property("capturedToken").toString(),
                      QStringLiteral("repeater-context"));
             ++delegateCount;
@@ -666,22 +654,22 @@ private slots:
     void testDestroyedModelsAreCleared() {
         {
             ListView view;
-            auto *model = new HierarchicalTestModel;
-            view.setModel(QVariant::fromValue(static_cast<QObject *>(model)));
+            auto* model = new HierarchicalTestModel;
+            view.setModel(QVariant::fromValue(static_cast<QObject*>(model)));
             delete model;
             QVERIFY(!view.model().isValid());
         }
         {
             GridView view;
-            auto *model = new HierarchicalTestModel;
-            view.setModel(QVariant::fromValue(static_cast<QObject *>(model)));
+            auto* model = new HierarchicalTestModel;
+            view.setModel(QVariant::fromValue(static_cast<QObject*>(model)));
             delete model;
             QVERIFY(!view.model().isValid());
         }
         {
             Repeater repeater;
-            auto *model = new HierarchicalTestModel;
-            repeater.setModel(QVariant::fromValue(static_cast<QObject *>(model)));
+            auto* model = new HierarchicalTestModel;
+            repeater.setModel(QVariant::fromValue(static_cast<QObject*>(model)));
             delete model;
             QVERIFY(!repeater.model().isValid());
         }

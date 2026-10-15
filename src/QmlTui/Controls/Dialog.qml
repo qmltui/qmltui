@@ -26,14 +26,16 @@ Popup {
         id: bg
         anchors.fill: parent
         color: "default"
-        border.style: Border.Double
-        border.color: "default"
+        border {
+            style: Border.Double
+            color: "default"
+        }
     }
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            acceptButton.clicked()
-            event.accepted = true
+    Keys.onPressed: event => {
+        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !rejectButton.activeFocus) {
+            acceptButton.clicked();
+            event.accepted = true;
         }
     }
 
@@ -64,6 +66,7 @@ Popup {
             }
 
             Button {
+                id: rejectButton
                 visible: control.showRejectButton
                 text: control.rejectText
                 onClicked: control.reject()

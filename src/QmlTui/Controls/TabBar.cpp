@@ -1,5 +1,6 @@
 #include <QmlTui/Controls/TabBar.h>
 #include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <algorithm>
@@ -33,29 +34,33 @@ void TabBar::setTextColor(Color color) {
     markDirty();
 }
 
-
-TabBar::TabBar(QObject *parent) : Item(parent) {
+TabBar::TabBar(QObject* parent) : Item(parent) {
     setFocusable(true);
     setImplicitWidth(30);
     setImplicitHeight(1);
-
 }
 
-void TabBar::setTabs(const QVariant &tabs) {
+void TabBar::setTabs(const QVariant& tabs) {
     m_tabsVariant = tabs;
-    m_tabList.clear();
+    QStringList newTabList;
 
     if (tabs.userType() == QMetaType::fromType<QJSValue>().id()) {
         QVariant v = tabs.value<QJSValue>().toVariant();
-        if (v.canConvert<QStringList>()) m_tabList = v.toStringList();
+        if (v.canConvert<QStringList>())
+            newTabList = v.toStringList();
         else if (v.canConvert<QVariantList>()) {
-            for (const QVariant &item : v.toList()) m_tabList.append(item.toString());
+            for (const QVariant& item : v.toList())
+                newTabList.append(item.toString());
         }
     } else if (tabs.canConvert<QStringList>()) {
-        m_tabList = tabs.toStringList();
+        newTabList = tabs.toStringList();
     } else if (tabs.canConvert<QVariantList>()) {
-        for (const QVariant &item : tabs.toList()) m_tabList.append(item.toString());
+        for (const QVariant& item : tabs.toList())
+            newTabList.append(item.toString());
     }
+
+    if (m_tabList == newTabList) return;
+    m_tabList = std::move(newTabList);
 
     emit tabsChanged();
     // An index chosen before the tabs arrived (QML initialises properties in
@@ -74,15 +79,15 @@ void TabBar::setCurrentIndex(int index) {
     // Without tabs the index is kept as requested (never negative) and
     // clamped once setTabs() knows the range.
     const int clamped = m_tabList.isEmpty()
-        ? std::max(0, index)
-        : std::clamp(index, 0, static_cast<int>(m_tabList.size()) - 1);
+                            ? std::max(0, index)
+                            : std::clamp(index, 0, static_cast<int>(m_tabList.size()) - 1);
     if (m_currentIndex == clamped) return;
     m_currentIndex = clamped;
     emit currentIndexChanged();
     markDirty();
 }
 
-void TabBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
+void TabBar::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     Q_UNUSED(clipRect);
     if (!m_visible || m_tabList.isEmpty()) return;
 
@@ -100,17 +105,19 @@ void TabBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     for (int i = 0; i < m_tabList.size(); ++i) {
         const bool isActive = (i == m_currentIndex);
         const QString tabText = m_tabList[i];
-        const QString formatted = isActive ? QString("[ %1 ]").arg(tabText) : QString("  %1  ").arg(tabText);
+        const QString formatted =
+            isActive ? QString("[ %1 ]").arg(tabText) : QString("  %1  ").arg(tabText);
+        const int formattedW = UnicodeText::displayWidth(formatted);
 
-        if (curX + formatted.length() > absX + availW) break;
+        if (curX + formattedW > absX + availW) break;
 
-        buffer.writeText(curX, absY, formatted,
-                         isActive ? activeFg : inactiveFg,
-                         isActive ? activeBg : background,
-                         (isActive ? TextAttribute::Bold : TextAttribute::None)
-                             | (isActive && reverseSelection ? TextAttribute::Reversed : TextAttribute::None)
-                             | (!isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None));
-        curX += formatted.length();
+        buffer.writeText(
+            curX, absY, formatted, isActive ? activeFg : inactiveFg,
+            isActive ? activeBg : background,
+            (isActive ? TextAttribute::Bold : TextAttribute::None) |
+                (isActive && reverseSelection ? TextAttribute::Reversed : TextAttribute::None) |
+                (!isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None));
+        curX += formattedW;
 
         if (i < m_tabList.size() - 1 && curX < absX + availW) {
             buffer.writeText(curX, absY, "│", inactiveFg, background);
@@ -119,7 +126,7 @@ void TabBar::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &c
     }
 }
 
-void TabBar::keyPressEvent(KeyEvent *event) {
+void TabBar::keyPressEvent(KeyEvent* event) {
     if (event->key() == Qt::Key_Left) {
         setCurrentIndex(m_currentIndex - 1);
         event->setAccepted(true);
@@ -129,12 +136,12 @@ void TabBar::keyPressEvent(KeyEvent *event) {
     }
 }
 
-void TabBar::mousePressEvent(MouseEvent *event) {
+void TabBar::mousePressEvent(MouseEvent* event) {
     setFocus(true);
     const int clickX = event->x();
     int curX = 0;
     for (int i = 0; i < m_tabList.size(); ++i) {
-        const int tabW = m_tabList[i].length() + 4 + 1;
+        const int tabW = UnicodeText::displayWidth(m_tabList[i]) + 4 + 1;
         if (clickX >= curX && clickX < curX + tabW) {
             setCurrentIndex(i);
             event->setAccepted(true);

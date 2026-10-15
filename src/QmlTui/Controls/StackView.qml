@@ -30,9 +30,11 @@ Item {
             let component = Qt.createComponent(itemOrUrl);
             if (component.status === Component.Ready) {
                 newItem = component.createObject(containerItem, properties || {});
+                component.destroy();
                 created = true;
             } else {
                 console.error("StackView.push failed to load QML:", itemOrUrl, component.errorString());
+                component.destroy();
                 return null;
             }
         } else if (itemOrUrl instanceof Component) {
@@ -43,7 +45,8 @@ Item {
             newItem.parent = containerItem;
         }
 
-        if (!newItem) return null;
+        if (!newItem)
+            return null;
 
         newItem.x = 0;
         newItem.y = 0;
@@ -64,7 +67,8 @@ Item {
     }
 
     function pop() {
-        if (d.pages.length <= 1) return null;
+        if (d.pages.length <= 1)
+            return null;
 
         let popped = d.pages.pop();
         let created = d.owned.pop();

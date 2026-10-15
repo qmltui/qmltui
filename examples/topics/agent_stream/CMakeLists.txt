@@ -40,12 +40,12 @@ if(TARGET qmltui::runner)
     target_link_libraries(qmltui_agent_stream_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME agent_stream_inline TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_inline.js"
-        COLUMNS 120 ROWS 35 LABELS AgentSmoke
+        COLUMNS 120 ROWS 35 CLOCK VIRTUAL LABELS AgentSmoke
         ARTIFACT "banner.txt" ARTIFACT_CONTENT "QmlTui")
     qmltui_add_scenario(NAME agent_stream_prompt_focus TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_focus.js"
         COLUMNS 120 ROWS 35 CLOCK VIRTUAL LABELS AgentSmoke)
     qmltui_add_scenario(NAME agent_stream_mouse TARGET qmltui_agent_stream_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_mouse.js"
-        COLUMNS 120 ROWS 35 LABELS AgentSmoke)
+        COLUMNS 120 ROWS 35 CLOCK VIRTUAL LABELS AgentSmoke)
 endif()

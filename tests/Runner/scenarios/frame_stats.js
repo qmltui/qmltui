@@ -2,7 +2,7 @@
 // rendering performance can be tracked alongside behaviour.
 function main(terminal) {
     terminal.waitForText("TESTRUNNER FIXTURE", 2000);
-    terminal.sleep(250);            // let the fixture's one-shot timer commit its frame
+    terminal.waitForText("STATUS: ASYNC READY", 2000);
     const stats = terminal.frameStats();
     if (!(stats.frames > 0))
         terminal.fail("frameStats().frames should be positive, got " + JSON.stringify(stats));

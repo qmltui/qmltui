@@ -8,3 +8,6 @@ target_compile_definitions(test_terminal_host PRIVATE
     QMLTUI_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}"
 )
 add_test(NAME test_terminal_host COMMAND test_terminal_host)
+set_tests_properties(test_terminal_host PROPERTIES
+    LABELS "AgentSmoke;Unit"
+)

@@ -58,6 +58,7 @@ function main(terminal) {
     terminal.clickText("/demo 1")
 
     // 6. Wait for permission prompt and click permission choice
+    terminal.advanceTime(4000)
     terminal.waitForText("Allow once", 7000)
     terminal.expectText("Deny execution")
     terminal.captureText("mouse_permission.txt")

@@ -4,7 +4,7 @@
 // the harness requested. The fixture maps "k" to a status change.
 function main(terminal) {
     terminal.waitForText("TESTRUNNER FIXTURE", 2000);
-    terminal.sleep(250);            // let the fixture's one-shot timer settle
+    terminal.waitForText("STATUS: ASYNC READY", 2000);
     const before = terminal.frameCount();
     terminal.injectKey("k");
     terminal.expectRepaint(1000);

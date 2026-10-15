@@ -19,6 +19,7 @@ function(add_qmltui_test test_name test_source)
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
         ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+        LABELS "AgentSmoke;Unit"
     )
 endfunction()
 
@@ -123,7 +124,7 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME test_component_docs
         COMMAND "${Python3_EXECUTABLE}" "${qmltui_SOURCE_DIR}/scripts/component_docs.py" check
-                --build-dir "${CMAKE_BINARY_DIR}")
+                --build-dir "${CMAKE_BINARY_DIR}" --strict)
     set_tests_properties(test_component_docs PROPERTIES LABELS AgentSmoke TIMEOUT 30)
 endif()
 

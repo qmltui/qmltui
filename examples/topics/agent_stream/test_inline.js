@@ -29,10 +29,9 @@ function main(terminal) {
 
     console.log("Waiting for the agent to be ready...")
 
-    terminal.sleep(3000)
-
     terminal.typeText("/demo 1")
     terminal.press("Enter")
+    terminal.advanceTime(4000)
     terminal.waitForText("Allow once", 7000)
     terminal.captureText("permission.txt")
     terminal.press("3")

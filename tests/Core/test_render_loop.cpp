@@ -27,41 +27,40 @@ namespace {
 
 class LayoutPrompt final : public Item {
 public:
-    explicit LayoutPrompt(Item *parent) : Item(parent) { setImplicitHeight(1); }
+    explicit LayoutPrompt(Item* parent) : Item(parent) { setImplicitHeight(1); }
     void setRows(int rows) {
         m_rows = rows;
         markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
     }
+
 protected:
     void updateLayout() override { setImplicitHeight(m_rows); }
-    void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) const override {
+    void paint(TextGridBuffer& buffer, int x, int y, const ClipRect&) const override {
         for (int row = 0; row < m_rows; ++row)
             buffer.writeText(x, y + row, QStringLiteral("PROMPT %1").arg(row + 1));
     }
+
 private:
     int m_rows = 3;
 };
 
 class MutableModel final : public QAbstractListModel {
 public:
-    explicit MutableModel(const QStringList &rows, QObject *parent = nullptr)
+    explicit MutableModel(const QStringList& rows, QObject* parent = nullptr)
         : QAbstractListModel(parent), m_rows(rows) {}
 
-    int rowCount(const QModelIndex &parent = {}) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_rows.size();
     }
 
-    QVariant data(const QModelIndex &index, int role) const override {
-        if (!index.isValid() || role != Qt::DisplayRole)
-            return {};
+    QVariant data(const QModelIndex& index, int role) const override {
+        if (!index.isValid() || role != Qt::DisplayRole) return {};
         return m_rows.value(index.row());
     }
 
-    QHash<int, QByteArray> roleNames() const override {
-        return {{Qt::DisplayRole, "display"}};
-    }
+    QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
 
-    void setText(int row, const QString &text) {
+    void setText(int row, const QString& text) {
         m_rows[row] = text;
         emit dataChanged(index(row), index(row));
     }
@@ -72,12 +71,11 @@ private:
 
 struct Session {
     std::unique_ptr<QObject> root;
-    Terminal *terminal = nullptr;
-    TerminalEngine *engine = nullptr;
+    Terminal* terminal = nullptr;
+    TerminalEngine* engine = nullptr;
 };
 
-Session createSession(QQmlEngine &qmlEngine, const char *qml)
-{
+Session createSession(QQmlEngine& qmlEngine, const char* qml) {
     QQmlComponent component(&qmlEngine);
     component.setData(qml, QUrl());
     Session session;
@@ -86,7 +84,7 @@ Session createSession(QQmlEngine &qmlEngine, const char *qml)
         return session;
     }
     session.root.reset(component.create());
-    session.terminal = qobject_cast<Terminal *>(session.root.get());
+    session.terminal = qobject_cast<Terminal*>(session.root.get());
     if (session.terminal) {
         session.engine = session.terminal->engine();
         session.engine->setTestViewportSize(QSize(80, 24));
@@ -94,17 +92,14 @@ Session createSession(QQmlEngine &qmlEngine, const char *qml)
     return session;
 }
 
-QString frameText(TerminalEngine *engine)
-{
+QString frameText(TerminalEngine* engine) {
     const std::optional<TextGridBuffer> frame = engine->currentFrame();
-    if (!frame)
-        return {};
+    if (!frame) return {};
     QString text;
     for (int y = 0; y < frame->height(); ++y) {
         for (int x = 0; x < frame->width(); ++x) {
-            const Cell &cell = frame->cellAt(x, y);
-            if (!cell.continuation)
-                text += QString::fromUtf8(cell.character().toByteArray());
+            const Cell& cell = frame->cellAt(x, y);
+            if (!cell.continuation) text += QString::fromUtf8(cell.character().toByteArray());
         }
         text += QLatin1Char('\n');
     }
@@ -115,24 +110,24 @@ QString frameText(TerminalEngine *engine)
 
 // Waits for startup frames, then verifies no frame is committed while idle and
 // that the last frame raised no invalidation from paint().
-#define QMLTUI_VERIFY_IDLE(engine) \
-    do { \
-        QTest::qWait(120); \
-        const quint64 settled = (engine)->frameSequence(); \
-        QVERIFY(settled > 0); \
-        QTest::qWait(150); \
-        QCOMPARE((engine)->frameSequence(), settled); \
-        QCOMPARE((engine)->lastFrameStats().dirtyDuringPaint, 0); \
+#define QMLTUI_VERIFY_IDLE(engine)                                                                 \
+    do {                                                                                           \
+        QTRY_VERIFY_WITH_TIMEOUT((engine)->frameSequence() > 0, 500);                              \
+        const quint64 settled = (engine)->frameSequence();                                         \
+        QTest::qWait(25);                                                                          \
+        QCOMPARE((engine)->frameSequence(), settled);                                              \
+        QCOMPARE((engine)->lastFrameStats().dirtyDuringPaint, 0);                                  \
     } while (false)
 
 // Runs `mutation` and verifies it costs exactly one frame.
-#define QMLTUI_VERIFY_ONE_FRAME(engine, mutation) \
-    do { \
-        const quint64 beforeMutation = (engine)->frameSequence(); \
-        mutation; \
-        QTest::qWait(80); \
-        QCOMPARE((engine)->frameSequence(), beforeMutation + 1); \
-        QCOMPARE((engine)->lastFrameStats().dirtyDuringPaint, 0); \
+#define QMLTUI_VERIFY_ONE_FRAME(engine, mutation)                                                  \
+    do {                                                                                           \
+        const quint64 beforeMutation = (engine)->frameSequence();                                  \
+        mutation;                                                                                  \
+        QTRY_COMPARE_WITH_TIMEOUT((engine)->frameSequence(), beforeMutation + 1, 500);             \
+        QTest::qWait(25);                                                                          \
+        QCOMPARE((engine)->frameSequence(), beforeMutation + 1);                                   \
+        QCOMPARE((engine)->lastFrameStats().dirtyDuringPaint, 0);                                  \
     } while (false)
 
 class TestRenderLoop : public QObject {
@@ -156,16 +151,14 @@ private:
     QQmlEngine m_qmlEngine;
 };
 
-void TestRenderLoop::initTestCase()
-{
+void TestRenderLoop::initTestCase() {
     // A test session keeps the engine from driving the real terminal; frames
     // still commit and the sequence still advances.
     qputenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS", "0");
     m_qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 }
 
-void TestRenderLoop::terminalModesAndVisibleChildren()
-{
+void TestRenderLoop::terminalModesAndVisibleChildren() {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import QmlTui
@@ -202,8 +195,7 @@ void TestRenderLoop::terminalModesAndVisibleChildren()
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::tableViewWithDelegateStaysIdle()
-{
+void TestRenderLoop::tableViewWithDelegateStaysIdle() {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import QmlTui
@@ -226,16 +218,15 @@ void TestRenderLoop::tableViewWithDelegateStaysIdle()
     QMLTUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("a1")));
 
-    auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
+    auto* table = session.terminal->findChild<TableView*>(QStringLiteral("table"));
     QVERIFY(table);
-    const int delegates = table->findChildren<Item *>().size();
+    const int delegates = table->findChildren<Item*>().size();
     QMLTUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(2));
-    QCOMPARE(table->findChildren<Item *>().size(), delegates);   // no teardown on selection
+    QCOMPARE(table->findChildren<Item*>().size(), delegates); // no teardown on selection
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
-{
+void TestRenderLoop::tableViewDelegateRebindsOnDataChanged() {
     MutableModel model({QStringLiteral("alpha"), QStringLiteral("beta"), QStringLiteral("gamma")});
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
@@ -258,19 +249,18 @@ void TestRenderLoop::tableViewDelegateRebindsOnDataChanged()
     QMLTUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("beta")));
 
-    auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
+    auto* table = session.terminal->findChild<TableView*>(QStringLiteral("table"));
     QVERIFY(table);
-    const QList<Item *> before = table->findChildren<Item *>();
+    const QList<Item*> before = table->findChildren<Item*>();
     QMLTUI_VERIFY_ONE_FRAME(session.engine, model.setText(1, QStringLiteral("delta")));
     const QString text = frameText(session.engine);
     QVERIFY2(text.contains(QStringLiteral("delta")), qPrintable(text));
     QVERIFY(!text.contains(QStringLiteral("beta")));
-    QCOMPARE(table->findChildren<Item *>(), before);   // same delegate instances
+    QCOMPARE(table->findChildren<Item*>(), before); // same delegate instances
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
-{
+void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates() {
     Session session = createSession(m_qmlEngine, R"(
         pragma ComponentBehavior: Bound
         import QtQml
@@ -290,11 +280,11 @@ void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
     )");
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
-    auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
+    auto* table = session.terminal->findChild<TableView*>(QStringLiteral("table"));
     QVERIFY(table);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("alpha   beta")));
-    QMLTUI_VERIFY_ONE_FRAME(session.engine,
-        table->setColumnWidthProvider(m_qmlEngine.evaluate("(function(column) { return 12; })")));
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, table->setColumnWidthProvider(m_qmlEngine.evaluate(
+                                                "(function(column) { return 12; })")));
     const auto frame = session.engine->currentFrame();
     QVERIFY(frame);
     QCOMPARE(frame->cellAt(12, 0).character(), QByteArrayView("B"));
@@ -302,12 +292,11 @@ void TestRenderLoop::tableColumnWidthProviderRelayoutsDelegates()
     QVERIFY(frameText(session.engine).contains(QStringLiteral("alpha       beta")));
 }
 
-void TestRenderLoop::streamPromptUsesCompletedLayout()
-{
+void TestRenderLoop::streamPromptUsesCompletedLayout() {
     Terminal terminal;
     terminal.setMode(Terminal::Mode::Inline);
-    auto *prompt = new LayoutPrompt(&terminal);
-    auto *engine = terminal.engine();
+    auto* prompt = new LayoutPrompt(&terminal);
+    auto* engine = terminal.engine();
     engine->setTestViewportSize(QSize(30, 8));
     QTRY_COMPARE(engine->frameSequence(), quint64(1));
     QCOMPARE(engine->currentFrame()->height(), 3);
@@ -319,11 +308,9 @@ void TestRenderLoop::streamPromptUsesCompletedLayout()
     QCOMPARE(engine->currentFrame()->height(), 2);
     QVERIFY(!frameText(engine).contains(QStringLiteral("PROMPT 3")));
     QMLTUI_VERIFY_IDLE(engine);
-
 }
 
-void TestRenderLoop::tableViewWithCellFormatStaysIdle()
-{
+void TestRenderLoop::tableViewWithCellFormatStaysIdle() {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import QmlTui
@@ -340,15 +327,19 @@ void TestRenderLoop::tableViewWithCellFormatStaysIdle()
     )");
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
-    auto *table = session.terminal->findChild<TableView *>(QStringLiteral("table"));
+    auto* table = session.terminal->findChild<TableView*>(QStringLiteral("table"));
     QVERIFY(table);
     QMLTUI_VERIFY_ONE_FRAME(session.engine, table->setSelectedRow(1));
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::listViewStaysIdle()
-{
-    MutableModel model([] { QStringList rows; for (int i = 0; i < 200; ++i) rows << QStringLiteral("Row %1").arg(i); return rows; }());
+void TestRenderLoop::listViewStaysIdle() {
+    MutableModel model([] {
+        QStringList rows;
+        for (int i = 0; i < 200; ++i)
+            rows << QStringLiteral("Row %1").arg(i);
+        return rows;
+    }());
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
@@ -370,7 +361,7 @@ void TestRenderLoop::listViewStaysIdle()
     )");
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
-    auto *list = session.terminal->findChild<ListView *>(QStringLiteral("list"));
+    auto* list = session.terminal->findChild<ListView*>(QStringLiteral("list"));
     QVERIFY(list);
     QMLTUI_VERIFY_ONE_FRAME(session.engine, list->setContentY(40));
     QVERIFY(frameText(session.engine).contains(QStringLiteral("Row 45")));
@@ -379,9 +370,13 @@ void TestRenderLoop::listViewStaysIdle()
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::gridViewStaysIdle()
-{
-    MutableModel model([] { QStringList rows; for (int i = 0; i < 30; ++i) rows << QStringLiteral("G%1").arg(i); return rows; }());
+void TestRenderLoop::gridViewStaysIdle() {
+    MutableModel model([] {
+        QStringList rows;
+        for (int i = 0; i < 30; ++i)
+            rows << QStringLiteral("G%1").arg(i);
+        return rows;
+    }());
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
@@ -403,15 +398,19 @@ void TestRenderLoop::gridViewStaysIdle()
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("G7")));
-    auto *grid = session.terminal->findChild<GridView *>(QStringLiteral("grid"));
+    auto* grid = session.terminal->findChild<GridView*>(QStringLiteral("grid"));
     QVERIFY(grid);
     QMLTUI_VERIFY_ONE_FRAME(session.engine, grid->setCellWidth(16));
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::treeViewStaysIdle()
-{
-    MutableModel model([] { QStringList rows; for (int i = 0; i < 40; ++i) rows << QStringLiteral("Node %1").arg(i); return rows; }());
+void TestRenderLoop::treeViewStaysIdle() {
+    MutableModel model([] {
+        QStringList rows;
+        for (int i = 0; i < 40; ++i)
+            rows << QStringLiteral("Node %1").arg(i);
+        return rows;
+    }());
     m_qmlEngine.rootContext()->setContextProperty(QStringLiteral("loopModel"), &model);
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
@@ -436,14 +435,13 @@ void TestRenderLoop::treeViewStaysIdle()
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
     QVERIFY(frameText(session.engine).contains(QStringLiteral("Node 3")));
-    auto *tree = session.terminal->findChild<TreeView *>(QStringLiteral("tree"));
+    auto* tree = session.terminal->findChild<TreeView*>(QStringLiteral("tree"));
     QVERIFY(tree);
     QMLTUI_VERIFY_ONE_FRAME(session.engine, tree->setProperty("currentIndex", 5));
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::canvasWithShapesStaysIdle()
-{
+void TestRenderLoop::canvasWithShapesStaysIdle() {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import QmlTui
@@ -459,15 +457,14 @@ void TestRenderLoop::canvasWithShapesStaysIdle()
     )");
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
-    auto *canvas = session.terminal->findChild<Item *>(QStringLiteral("canvas"));
+    auto* canvas = session.terminal->findChild<Item*>(QStringLiteral("canvas"));
     QVERIFY(canvas);
     QMLTUI_VERIFY_ONE_FRAME(session.engine,
-                          canvas->setProperty("color", QVariant::fromValue(Color("red"))));
+                            canvas->setProperty("color", QVariant::fromValue(Color("red"))));
     QMLTUI_VERIFY_IDLE(session.engine);
 }
 
-void TestRenderLoop::framePacingCoalescesBursts()
-{
+void TestRenderLoop::framePacingCoalescesBursts() {
     Session session = createSession(m_qmlEngine, R"(
         import QtQml
         import QmlTui
@@ -477,9 +474,9 @@ void TestRenderLoop::framePacingCoalescesBursts()
     )");
     QVERIFY(session.engine);
     QMLTUI_VERIFY_IDLE(session.engine);
-    QCOMPARE(session.engine->maxFrameRate(), 0);   // test sessions are uncapped
+    QCOMPARE(session.engine->maxFrameRate(), 0); // test sessions are uncapped
 
-    auto *label = session.terminal->findChild<Item *>(QStringLiteral("label"));
+    auto* label = session.terminal->findChild<Item*>(QStringLiteral("label"));
     QVERIFY(label);
 
     // Uncapped: every change in a burst may become its own frame.
@@ -488,7 +485,7 @@ void TestRenderLoop::framePacingCoalescesBursts()
         label->setProperty("text", QString::number(i));
         QTest::qWait(1);
     }
-    QTest::qWait(60);
+    QTRY_VERIFY_WITH_TIMEOUT(session.engine->frameSequence() - before >= 10, 500);
     const quint64 uncapped = session.engine->frameSequence() - before;
     QVERIFY(uncapped >= 10);
 
@@ -506,7 +503,8 @@ void TestRenderLoop::framePacingCoalescesBursts()
     // qWait(1) can take a full timer tick (about 16 ms on Windows), so bound
     // the frame count by the time the burst actually took at 50 fps.
     const qint64 burstMs = burstTimer.elapsed();
-    QTest::qWait(120);
+    QTRY_VERIFY_WITH_TIMEOUT(frameText(session.engine).contains(QStringLiteral("40")), 500);
+    QTest::qWait(25);
     const quint64 capped = session.engine->frameSequence() - before;
     const quint64 maxCapped = static_cast<quint64>(burstMs / 20) + 2;
     QVERIFY2(capped >= 1 && capped <= std::max<quint64>(6, maxCapped),

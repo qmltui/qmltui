@@ -64,6 +64,7 @@ sources are also used by the [WebAssembly playground](wasm/).
 | [live_image](topics/live_image/) | [architecture](../docs/topics/architecture.md) |
 | [mouse_interaction](topics/mouse_interaction/) | [input-and-focus](../docs/topics/input-and-focus.md) |
 | [state_transitions](topics/state_transitions/) | [animation-and-states](../docs/topics/animation-and-states.md) |
+| [terminal_capabilities](topics/terminal_capabilities/) | [terminal-capabilities](../docs/qml-types/terminalcapabilities.md) |
 
 ## More examples
 

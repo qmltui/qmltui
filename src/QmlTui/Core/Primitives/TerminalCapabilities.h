@@ -11,10 +11,10 @@ namespace qmltui {
 
 // Colour resolution used when encoding cells for the terminal.
 enum class ColorDepth : uint8_t {
-    Mono,        // no colour sequences at all
-    Basic16,     // SGR 30-37 / 90-97
-    Indexed256,  // SGR 38;5;n
-    TrueColor    // SGR 38;2;r;g;b
+    Mono,       // no colour sequences at all
+    Basic16,    // SGR 30-37 / 90-97
+    Indexed256, // SGR 38;5;n
+    TrueColor   // SGR 38;2;r;g;b
 };
 
 // Environment-derived defaults, refined by output-session query replies.
@@ -28,6 +28,9 @@ struct QMLTUI_CORE_EXPORT TerminalCapabilities {
     Q_PROPERTY(bool sixelGraphics READ supportsSixelGraphics)
     Q_PROPERTY(QSize cellPixelSize READ pixelSize)
     Q_PROPERTY(bool syncOutput READ supportsSyncOutput)
+    Q_PROPERTY(QString colorDepth READ colorDepthName)
+    Q_PROPERTY(QString termProgram READ terminalProgram)
+    Q_PROPERTY(bool isTty READ isTtyStream)
 public:
     bool kittyKeyboard = false;
     bool kittyGraphics = false;
@@ -42,24 +45,27 @@ public:
     bool supportsSixelGraphics() const { return sixelGraphics; }
     QSize pixelSize() const { return cellPixelSize; }
     bool supportsSyncOutput() const { return syncOutput; }
+    QString colorDepthName() const { return TerminalCapabilities::colorDepthName(colorDepth); }
+    QString terminalProgram() const { return termProgram; }
+    bool isTtyStream() const { return isTty; }
     bool operator==(const TerminalCapabilities&) const = default;
 
     ColorDepth colorDepth = ColorDepth::TrueColor;
-    bool syncOutput = true;   // DEC private mode 2026 frame bracketing
+    bool syncOutput = true; // DEC private mode 2026 frame bracketing
     bool isTty = true;
     QString termProgram;
 
-    static TerminalCapabilities detect(
-        const QProcessEnvironment &environment = QProcessEnvironment::systemEnvironment(),
-        bool stdoutIsTty = true);
+    static TerminalCapabilities
+    detect(const QProcessEnvironment& environment = QProcessEnvironment::systemEnvironment(),
+           bool stdoutIsTty = true);
 
     // The one place QMLTUI_COLOR_DEPTH, QMLTUI_SYNC_OUTPUT, QMLTUI_KITTY_KEYBOARD and
     // QMLTUI_KITTY_GRAPHICS are honoured. detect() applies it to the environment
     // defaults; the engine applies it again after terminal replies so an
     // override wins over what the terminal claims. 0, false and off disable.
     static void applyEnvironmentOverrides(
-        TerminalCapabilities &capabilities,
-        const QProcessEnvironment &environment = QProcessEnvironment::systemEnvironment());
+        TerminalCapabilities& capabilities,
+        const QProcessEnvironment& environment = QProcessEnvironment::systemEnvironment());
 
     static QString colorDepthName(ColorDepth depth);
 };

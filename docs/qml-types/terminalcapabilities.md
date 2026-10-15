@@ -29,6 +29,9 @@ Describes capabilities detected from the host terminal environment. [More...](#d
 | `sixelGraphics` | `bool` |  | Read-only. Holds whether the terminal supports raster graphics via the Sixel protocol. |
 | `cellPixelSize` | `size` |  | Read-only. Holds the pixel dimensions (width x height) of a single character cell, or invalid if unknown. |
 | `syncOutput` | `bool` |  | Read-only. Holds whether the terminal supports synchronized output (DEC private mode 2026) for tear-free frame updates. |
+| `colorDepth` | `string` |  | Read-only. Holds the detected colour resolution name: `"mono"`, `"16"`, `"256"`, or `"truecolor"`. |
+| `termProgram` | `string` |  | Read-only. Holds the terminal program name if advertised (e.g. `"kitty"`, `"iTerm.app"`, `"wezterm"`). |
+| `isTty` | `bool` |  | Read-only. Holds whether standard output is connected to an interactive terminal rather than a pipe or file. |
 
 ## Detailed Description
 

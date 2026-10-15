@@ -19,72 +19,161 @@ Terminal {
     property double angleY: 0.0
 
     // Explicit key handling to quit and toggle features (.agents/AGENTS.md)
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-            return
+            Qt.quit();
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_Space) {
-            rootWindow.paused = !rootWindow.paused
-            event.accepted = true
-            return
+            rootWindow.paused = !rootWindow.paused;
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_1) {
-            rootWindow.showCube = !rootWindow.showCube
-            event.accepted = true
-            return
+            rootWindow.showCube = !rootWindow.showCube;
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_2) {
-            rootWindow.showSine = !rootWindow.showSine
-            event.accepted = true
-            return
+            rootWindow.showSine = !rootWindow.showSine;
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_3) {
-            rootWindow.showRadar = !rootWindow.showRadar
-            event.accepted = true
-            return
+            rootWindow.showRadar = !rootWindow.showRadar;
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_M) {
-            rootWindow.halfBlockMode = !rootWindow.halfBlockMode
-            event.accepted = true
-            return
+            rootWindow.halfBlockMode = !rootWindow.halfBlockMode;
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_C) {
-            rootWindow.averageColorMode = !rootWindow.averageColorMode
-            event.accepted = true
-            return
+            rootWindow.averageColorMode = !rootWindow.averageColorMode;
+            event.accepted = true;
+            return;
         }
     }
 
     // 3D vertices of a cube
     readonly property var vertices: [
-        {x: -1.0, y: -1.0, z: -1.0},
-        {x:  1.0, y: -1.0, z: -1.0},
-        {x:  1.0, y:  1.0, z: -1.0},
-        {x: -1.0, y:  1.0, z: -1.0},
-        {x: -1.0, y: -1.0, z:  1.0},
-        {x:  1.0, y: -1.0, z:  1.0},
-        {x:  1.0, y:  1.0, z:  1.0},
-        {x: -1.0, y:  1.0, z:  1.0}
+        {
+            x: -1.0,
+            y: -1.0,
+            z: -1.0
+        },
+        {
+            x: 1.0,
+            y: -1.0,
+            z: -1.0
+        },
+        {
+            x: 1.0,
+            y: 1.0,
+            z: -1.0
+        },
+        {
+            x: -1.0,
+            y: 1.0,
+            z: -1.0
+        },
+        {
+            x: -1.0,
+            y: -1.0,
+            z: 1.0
+        },
+        {
+            x: 1.0,
+            y: -1.0,
+            z: 1.0
+        },
+        {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0
+        },
+        {
+            x: -1.0,
+            y: 1.0,
+            z: 1.0
+        }
     ]
 
     // 12 edges connecting vertices
     readonly property var edges: [
-        {v1: 0, v2: 1}, {v1: 1, v2: 2}, {v1: 2, v2: 3}, {v1: 3, v2: 0},
-        {v1: 4, v2: 5}, {v1: 5, v2: 6}, {v1: 6, v2: 7}, {v1: 7, v2: 4},
-        {v1: 0, v2: 4}, {v1: 1, v2: 5}, {v1: 2, v2: 6}, {v1: 3, v2: 7}
+        {
+            v1: 0,
+            v2: 1
+        },
+        {
+            v1: 1,
+            v2: 2
+        },
+        {
+            v1: 2,
+            v2: 3
+        },
+        {
+            v1: 3,
+            v2: 0
+        },
+        {
+            v1: 4,
+            v2: 5
+        },
+        {
+            v1: 5,
+            v2: 6
+        },
+        {
+            v1: 6,
+            v2: 7
+        },
+        {
+            v1: 7,
+            v2: 4
+        },
+        {
+            v1: 0,
+            v2: 4
+        },
+        {
+            v1: 1,
+            v2: 5
+        },
+        {
+            v1: 2,
+            v2: 6
+        },
+        {
+            v1: 3,
+            v2: 7
+        }
     ]
 
-    ListModel { id: edgesModel }
-    ListModel { id: orbitModel }
+    ListModel {
+        id: edgesModel
+    }
+    ListModel {
+        id: orbitModel
+    }
 
     Component.onCompleted: {
         for (let i = 0; i < edges.length; i++) {
-            edgesModel.append({ "x1": 0, "y1": 0, "x2": 0, "y2": 0 })
+            edgesModel.append({
+                "x1": 0,
+                "y1": 0,
+                "x2": 0,
+                "y2": 0
+            });
         }
         for (let i = 0; i < 20; i++) {
-            orbitModel.append({ "x": 0, "y": 0 })
+            orbitModel.append({
+                "x": 0,
+                "y": 0
+            });
         }
     }
 
@@ -94,71 +183,78 @@ Terminal {
         running: !rootWindow.paused
         repeat: true
         onTriggered: {
-            rootWindow.animTime += 0.05
-            rootWindow.angleX += 0.04
-            rootWindow.angleY += 0.05
+            rootWindow.animTime += 0.05;
+            rootWindow.angleX += 0.04;
+            rootWindow.angleY += 0.05;
 
-            let sinX = Math.sin(rootWindow.angleX)
-            let cosX = Math.cos(rootWindow.angleX)
-            let sinY = Math.sin(rootWindow.angleY)
-            let cosY = Math.cos(rootWindow.angleY)
+            let sinX = Math.sin(rootWindow.angleX);
+            let cosX = Math.cos(rootWindow.angleX);
+            let sinY = Math.sin(rootWindow.angleY);
+            let cosY = Math.cos(rootWindow.angleY);
 
-            let w = mainCanvas.pixelWidth
-            let h = mainCanvas.pixelHeight
-            if (w <= 0 || h <= 0) return
-
-            let cx = w / 2
-            let cy = h / 2
-            let scale = Math.min(cx, cy) * 0.55
+            let w = mainCanvas.pixelWidth;
+            let h = mainCanvas.pixelHeight;
+            if (w <= 0 || h <= 0)
+                return;
+            let cx = w / 2;
+            let cy = h / 2;
+            let scale = Math.min(cx, cy) * 0.55;
 
             // 3D Projection
-            let projected = []
+            let projected = [];
             for (let i = 0; i < rootWindow.vertices.length; i++) {
-                let v = rootWindow.vertices[i]
-                let x1 = v.x * cosY - v.z * sinY
-                let z1 = v.x * sinY + v.z * cosY
-                let y2 = v.y * cosX - z1 * sinX
-                let z2 = v.y * sinX + z1 * cosX
-                let depth = 3.0 + z2 * 0.5
-                let px = Math.floor(cx + (x1 * scale) / depth)
-                let py = Math.floor(cy + (y2 * scale) / depth)
-                projected.push({x: px, y: py})
+                let v = rootWindow.vertices[i];
+                let x1 = v.x * cosY - v.z * sinY;
+                let z1 = v.x * sinY + v.z * cosY;
+                let y2 = v.y * cosX - z1 * sinX;
+                let z2 = v.y * sinX + z1 * cosX;
+                let depth = 3.0 + z2 * 0.5;
+                let px = Math.floor(cx + (x1 * scale) / depth);
+                let py = Math.floor(cy + (y2 * scale) / depth);
+                projected.push({
+                    x: px,
+                    y: py
+                });
             }
 
             for (let i = 0; i < rootWindow.edges.length; i++) {
-                let edge = rootWindow.edges[i]
-                let p1 = projected[edge.v1]
-                let p2 = projected[edge.v2]
-                edgesModel.setProperty(i, "x1", p1.x)
-                edgesModel.setProperty(i, "y1", p1.y)
-                edgesModel.setProperty(i, "x2", p2.x)
-                edgesModel.setProperty(i, "y2", p2.y)
+                let edge = rootWindow.edges[i];
+                let p1 = projected[edge.v1];
+                let p2 = projected[edge.v2];
+                edgesModel.setProperty(i, "x1", p1.x);
+                edgesModel.setProperty(i, "y1", p1.y);
+                edgesModel.setProperty(i, "x2", p2.x);
+                edgesModel.setProperty(i, "y2", p2.y);
             }
 
             // Orbit Ring
-            let orbitScaleX = cx * 0.85
-            let orbitScaleY = cy * 0.4
+            let orbitScaleX = cx * 0.85;
+            let orbitScaleY = cy * 0.4;
             for (let i = 0; i < 20; i++) {
-                let theta = (i / 20) * 2.0 * Math.PI + rootWindow.angleY * 0.5
-                let ox = Math.floor(cx + Math.cos(theta) * orbitScaleX)
-                let oy = Math.floor(cy + Math.sin(theta) * orbitScaleY + Math.cos(theta) * (cy * 0.2))
-                orbitModel.setProperty(i, "x", ox)
-                orbitModel.setProperty(i, "y", oy)
+                let theta = (i / 20) * 2.0 * Math.PI + rootWindow.angleY * 0.5;
+                let ox = Math.floor(cx + Math.cos(theta) * orbitScaleX);
+                let oy = Math.floor(cy + Math.sin(theta) * orbitScaleY + Math.cos(theta) * (cy * 0.2));
+                orbitModel.setProperty(i, "x", ox);
+                orbitModel.setProperty(i, "y", oy);
             }
         }
     }
 
     function getSinePoints(w: int, h: int, time: real): var {
-        if (w <= 0 || h <= 0) return []
-        let pts = []
-        let midY = h / 2
-        let amp = h * 0.3
+        if (w <= 0 || h <= 0)
+            return [];
+        let pts = [];
+        let midY = h / 2;
+        let amp = h * 0.3;
         for (let x = 0; x < w; x++) {
-            let angle = (x / w) * Math.PI * 4 + time
-            let y = midY + Math.sin(angle) * amp
-            pts.push({ x: Math.floor(x), y: Math.floor(y) })
+            let angle = (x / w) * Math.PI * 4 + time;
+            let y = midY + Math.sin(angle) * amp;
+            pts.push({
+                x: Math.floor(x),
+                y: Math.floor(y)
+            });
         }
-        return pts
+        return pts;
     }
 
     Column {
@@ -273,86 +369,64 @@ Terminal {
                 color: "#0f172a"
                 border.color: "#334155"
 
-                Column {
-                    anchors.fill: parent
-                    anchors.margins: 1
-
-                    Text {
-                        text: "CANVAS LAYERS"
-                        color: "#e2e8f0"
-                        bold: true
+                Text {
+                    anchors {
+                        fill: parent
+                        margins: 1
                     }
-
-                    Text {
-                        text: (rootWindow.showCube ? "[X]" : "[ ]") + " 1: 3D Cube"
-                        color: rootWindow.showCube ? "#00f0ff" : "#475569"
-                    }
-                    Text {
-                        text: "   Color: Cyan (#00F0FF)"
-                        color: "#94a3b8"
-                    }
-
-                    Text {
-                        text: (rootWindow.showSine ? "[X]" : "[ ]") + " 2: Sine Wave"
-                        color: rootWindow.showSine ? "#00ff66" : "#475569"
-                    }
-                    Text {
-                        text: "   Color: Green (#00FF66)"
-                        color: "#94a3b8"
-                    }
-
-                    Text {
-                        text: (rootWindow.showRadar ? "[X]" : "[ ]") + " 3: Radar Tracker"
-                        color: rootWindow.showRadar ? "#ffb000" : "#475569"
-                    }
-                    Text {
-                        text: "   Color: Yellow (#FFB000)"
-                        color: "#94a3b8"
-                    }
-
-                    Text {
-                        text: "ENGINE SETTINGS"
-                        color: "#e2e8f0"
-                        bold: true
-                    }
-                    Text {
-                        text: "[M] Mode: " + (rootWindow.halfBlockMode ? "HalfBlock" : "Braille")
-                        color: "#38bdf8"
-                    }
-                    Text {
-                        text: "[C] Color: " + (rootWindow.averageColorMode ? "Average" : "LastDot")
-                        color: "#a78bfa"
-                    }
-
-                    Text {
-                        text: "HOW IT WORKS"
-                        color: "#e2e8f0"
-                        bold: true
-                    }
-                    Text {
-                        text: "Single Canvas host"
-                        color: "#cbd5e1"
-                    }
-                    Text {
-                        text: "with 3 shape layers."
-                        color: "#cbd5e1"
-                    }
-                    Text {
-                        text: "Shapes have distinct"
-                        color: "#cbd5e1"
-                    }
-                    Text {
-                        text: "colors; dots merge"
-                        color: "#cbd5e1"
-                    }
-                    Text {
-                        text: "via bitwise OR in"
-                        color: "#cbd5e1"
-                    }
-                    Text {
-                        text: "overlapping cells."
-                        color: "#cbd5e1"
-                    }
+                    spans: [
+                        {
+                            text: "CANVAS LAYERS\n",
+                            bold: true,
+                            color: "#e2e8f0"
+                        },
+                        {
+                            text: (rootWindow.showCube ? "[X]" : "[ ]") + " 1: 3D Cube\n",
+                            color: rootWindow.showCube ? "#00f0ff" : "#475569"
+                        },
+                        {
+                            text: "   Color: Cyan (#00F0FF)\n",
+                            color: "#94a3b8"
+                        },
+                        {
+                            text: (rootWindow.showSine ? "[X]" : "[ ]") + " 2: Sine Wave\n",
+                            color: rootWindow.showSine ? "#00ff66" : "#475569"
+                        },
+                        {
+                            text: "   Color: Green (#00FF66)\n",
+                            color: "#94a3b8"
+                        },
+                        {
+                            text: (rootWindow.showRadar ? "[X]" : "[ ]") + " 3: Radar Tracker\n",
+                            color: rootWindow.showRadar ? "#ffb000" : "#475569"
+                        },
+                        {
+                            text: "   Color: Yellow (#FFB000)\n",
+                            color: "#94a3b8"
+                        },
+                        {
+                            text: "ENGINE SETTINGS\n",
+                            bold: true,
+                            color: "#e2e8f0"
+                        },
+                        {
+                            text: "[M] Mode: " + (rootWindow.halfBlockMode ? "HalfBlock" : "Braille") + "\n",
+                            color: "#38bdf8"
+                        },
+                        {
+                            text: "[C] Color: " + (rootWindow.averageColorMode ? "Average" : "LastDot") + "\n",
+                            color: "#a78bfa"
+                        },
+                        {
+                            text: "HOW IT WORKS\n",
+                            bold: true,
+                            color: "#e2e8f0"
+                        },
+                        {
+                            text: "Single Canvas host\nwith 3 shape layers.\nShapes have distinct\ncolors; dots merge\nvia bitwise OR in\noverlapping cells.",
+                            color: "#cbd5e1"
+                        }
+                    ]
                 }
             }
         }

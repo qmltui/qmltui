@@ -53,8 +53,7 @@ static CanonicalProperty resolveCanonicalProperty(QObject* target, const QString
     return result;
 }
 
-StateController::StateController(QObject* parent) : QObject(parent) {
-}
+StateController::StateController(QObject* parent) : QObject(parent) {}
 
 StateController::~StateController() {
     releaseAllOwnership();
@@ -85,13 +84,9 @@ void StateController::setComponentComplete(bool complete) {
 }
 
 QQmlListProperty<State> StateController::statesProperty() {
-    return QQmlListProperty<State>(
-        this, nullptr,
-        &StateController::appendState,
-        &StateController::stateCount,
-        &StateController::stateAt,
-        &StateController::clearStates
-    );
+    return QQmlListProperty<State>(this, nullptr, &StateController::appendState,
+                                   &StateController::stateCount, &StateController::stateAt,
+                                   &StateController::clearStates);
 }
 
 void StateController::appendState(QQmlListProperty<State>* list, State* state) {
@@ -102,12 +97,10 @@ void StateController::appendState(QQmlListProperty<State>* list, State* state) {
         connect(state, &State::whenChanged, self, &StateController::evaluateStateConditions);
 
         for (PropertyChanges* pc : state->propertyChangesList()) {
-            connect(pc, &PropertyChanges::propertiesChanged, self, [self, pc]() {
-                self->handlePropertiesChanged(pc);
-            });
-            connect(pc, &PropertyChanges::targetChanged, self, [self, pc]() {
-                self->handleTargetChanged(pc);
-            });
+            connect(pc, &PropertyChanges::propertiesChanged, self,
+                    [self, pc]() { self->handlePropertiesChanged(pc); });
+            connect(pc, &PropertyChanges::targetChanged, self,
+                    [self, pc]() { self->handleTargetChanged(pc); });
         }
 
         self->evaluateStateConditions();
@@ -122,7 +115,8 @@ qsizetype StateController::stateCount(QQmlListProperty<State>* list) {
 State* StateController::stateAt(QQmlListProperty<State>* list, qsizetype index) {
     auto* self = qobject_cast<StateController*>(list->object);
     return (self && index >= 0 && index < self->m_statesList.size())
-        ? self->m_statesList.at(index).data() : nullptr;
+               ? self->m_statesList.at(index).data()
+               : nullptr;
 }
 
 void StateController::clearStates(QQmlListProperty<State>* list) {
@@ -132,9 +126,15 @@ void StateController::clearStates(QQmlListProperty<State>* list) {
         self->m_statesList.clear();
         for (const QPointer<State>& state : states) {
             if (state) {
+                for (PropertyChanges* pc : state->propertyChangesList()) {
+                    if (pc) {
+                        disconnect(pc, nullptr, self, nullptr);
+                        self->m_appliedMaps.remove(pc);
+                        self->m_appliedTargets.remove(pc);
+                    }
+                }
                 disconnect(state, nullptr, self, nullptr);
-                if (state->parent() == self)
-                    state->setParent(nullptr);
+                if (state->parent() == self) state->setParent(nullptr);
             }
         }
         self->evaluateStateConditions();
@@ -143,12 +143,8 @@ void StateController::clearStates(QQmlListProperty<State>* list) {
 
 QQmlListProperty<Transition> StateController::transitionsProperty() {
     return QQmlListProperty<Transition>(
-        this, nullptr,
-        &StateController::appendTransition,
-        &StateController::transitionCount,
-        &StateController::transitionAt,
-        &StateController::clearTransitions
-    );
+        this, nullptr, &StateController::appendTransition, &StateController::transitionCount,
+        &StateController::transitionAt, &StateController::clearTransitions);
 }
 
 void StateController::appendTransition(QQmlListProperty<Transition>* list, Transition* transition) {
@@ -167,7 +163,8 @@ qsizetype StateController::transitionCount(QQmlListProperty<Transition>* list) {
 Transition* StateController::transitionAt(QQmlListProperty<Transition>* list, qsizetype index) {
     auto* self = qobject_cast<StateController*>(list->object);
     return (self && index >= 0 && index < self->m_transitionsList.size())
-        ? self->m_transitionsList.at(index).data() : nullptr;
+               ? self->m_transitionsList.at(index).data()
+               : nullptr;
 }
 
 void StateController::clearTransitions(QQmlListProperty<Transition>* list) {
@@ -176,18 +173,23 @@ void StateController::clearTransitions(QQmlListProperty<Transition>* list) {
         const QList<QPointer<Transition>> transitions = self->m_transitionsList;
         self->m_transitionsList.clear();
         for (const QPointer<Transition>& transition : transitions) {
-            if (transition && transition->parent() == self)
-                transition->setParent(nullptr);
+            if (transition && transition->parent() == self) transition->setParent(nullptr);
         }
     }
 }
 
 void StateController::stateRemoved(State* state) {
     if (!state) return;
+    for (PropertyChanges* pc : state->propertyChangesList()) {
+        if (pc) {
+            disconnect(pc, nullptr, this, nullptr);
+            m_appliedMaps.remove(pc);
+            m_appliedTargets.remove(pc);
+        }
+    }
     disconnect(state, nullptr, this, nullptr);
-    m_statesList.removeIf([state](const QPointer<State>& s) {
-        return s.isNull() || s.data() == state;
-    });
+    m_statesList.removeIf(
+        [state](const QPointer<State>& s) { return s.isNull() || s.data() == state; });
     evaluateStateConditions();
 }
 
@@ -239,7 +241,7 @@ void StateController::setState(const QString& newState) {
     if (m_updatingState) return;
 
     struct StateGuard {
-        bool &flag;
+        bool& flag;
         ~StateGuard() { flag = false; }
     } guard{m_updatingState};
     m_updatingState = true;
@@ -254,8 +256,7 @@ void StateController::setState(const QString& newState) {
 }
 
 void StateController::collectOverridesForState(
-    State* state, QMap<CanonicalProperty, PropertyOverride>& outOverrides)
-{
+    State* state, QMap<CanonicalProperty, PropertyOverride>& outOverrides) {
     if (!state) return;
 
     for (PropertyChanges* pc : state->propertyChangesList()) {
@@ -273,37 +274,40 @@ void StateController::collectOverridesForState(
                 QObject* baseTarget = pc->target() ? pc->target() : defaultTarget();
                 if (!pc->target() && b.propertyName.contains(QLatin1Char('.'))) {
                     QString firstPart = b.propertyName.section(QLatin1Char('.'), 0, 0);
-                    if (baseTarget && baseTarget->metaObject()->indexOfProperty(firstPart.toUtf8().constData()) < 0) {
+                    if (baseTarget && baseTarget->metaObject()->indexOfProperty(
+                                          firstPart.toUtf8().constData()) < 0) {
                         baseTarget = nullptr;
                     }
                 }
                 if (!baseTarget && !b.propertyName.contains(QLatin1Char('.'))) {
-                    qmlWarning(pc) << "PropertyChanges inside StateGroup requires explicit target or ID-qualified property";
+                    qmlWarning(pc) << "PropertyChanges inside StateGroup requires explicit target "
+                                      "or ID-qualified property";
                     continue;
                 }
 
                 QQmlContext* rawContext = qmlContext(pc);
-                if (!rawContext && parent())
-                    rawContext = qmlContext(parent());
-                if (!rawContext && baseTarget)
-                    rawContext = qmlContext(baseTarget);
+                if (!rawContext && parent()) rawContext = qmlContext(parent());
+                if (!rawContext && baseTarget) rawContext = qmlContext(baseTarget);
 
-                QQmlRefPointer<QQmlContextData> context = rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
+                QQmlRefPointer<QQmlContextData> context = rawContext
+                                                              ? QQmlContextData::get(rawContext)
+                                                              : QQmlRefPointer<QQmlContextData>();
                 QQmlProperty prop;
                 if (!context.isNull()) {
-                    prop = QQmlPropertyPrivate::create(
-                        baseTarget, b.propertyName, context,
-                        QQmlPropertyPrivate::InitFlag::AllowId);
+                    prop = QQmlPropertyPrivate::create(baseTarget, b.propertyName, context,
+                                                       QQmlPropertyPrivate::InitFlag::AllowId);
                 } else if (baseTarget) {
                     prop = QQmlProperty(baseTarget, b.propertyName);
                 }
 
                 if (!prop.isValid()) {
-                    qmlWarning(pc) << "Cannot assign to non-existent property \"" << b.propertyName << "\"";
+                    qmlWarning(pc)
+                        << "Cannot assign to non-existent property \"" << b.propertyName << "\"";
                     continue;
                 }
                 if (!prop.isWritable()) {
-                    qmlWarning(pc) << "Cannot assign to read-only property \"" << b.propertyName << "\"";
+                    qmlWarning(pc)
+                        << "Cannot assign to read-only property \"" << b.propertyName << "\"";
                     continue;
                 }
 
@@ -316,23 +320,25 @@ void StateController::collectOverridesForState(
                 if (b.isExpression) {
                     QV4::Scope scope(qmlEngine(pc)->handle());
                     QV4::Scoped<QV4::QmlContext> qmlCtxt(
-                        scope, QV4::QmlContext::create(scope.engine->rootContext(), context, prop.object()));
+                        scope, QV4::QmlContext::create(scope.engine->rootContext(), context,
+                                                       prop.object()));
 
                     std::unique_ptr<QQmlBinding> evalBinding;
                     if (b.rawBinding && b.rawBinding->isTranslationBinding()) {
                         evalBinding.reset(QQmlBinding::createTranslationBinding(
                             pc->d_func()->compilationUnit, b.rawBinding, prop.object(), context));
                     } else if (b.compiledScriptIndex != ~0u &&
-                               b.compiledScriptIndex < pc->d_func()->compilationUnit->runtimeFunctions.size()) {
-                        evalBinding.reset(QQmlBinding::create(
-                            &QQmlPropertyPrivate::get(prop)->core,
-                            pc->d_func()->compilationUnit->runtimeFunctions.at(b.compiledScriptIndex),
-                            prop.object(), context, qmlCtxt));
+                               b.compiledScriptIndex <
+                                   pc->d_func()->compilationUnit->runtimeFunctions.size()) {
+                        evalBinding.reset(
+                            QQmlBinding::create(&QQmlPropertyPrivate::get(prop)->core,
+                                                pc->d_func()->compilationUnit->runtimeFunctions.at(
+                                                    b.compiledScriptIndex),
+                                                prop.object(), context, qmlCtxt));
                     } else if (!b.expressionCode.isEmpty()) {
-                        evalBinding.reset(QQmlBinding::create(
-                            &QQmlPropertyPrivate::get(prop)->core,
-                            b.expressionCode, prop.object(), context,
-                            b.url.toString(), b.line));
+                        evalBinding.reset(QQmlBinding::create(&QQmlPropertyPrivate::get(prop)->core,
+                                                              b.expressionCode, prop.object(),
+                                                              context, b.url.toString(), b.line));
                     }
                     override.value = evalBinding ? evalBinding->evaluate() : QVariant();
 
@@ -342,17 +348,20 @@ void StateController::collectOverridesForState(
                         QQmlAnyBinding newBinding;
                         if (b.rawBinding && b.rawBinding->isTranslationBinding()) {
                             newBinding = QQmlAnyBinding::createTranslationBinding(
-                                prop, pc->d_func()->compilationUnit, b.rawBinding, prop.object(), context);
+                                prop, pc->d_func()->compilationUnit, b.rawBinding, prop.object(),
+                                context);
                         } else if (b.compiledScriptIndex != ~0u &&
-                                   b.compiledScriptIndex < pc->d_func()->compilationUnit->runtimeFunctions.size()) {
+                                   b.compiledScriptIndex <
+                                       pc->d_func()->compilationUnit->runtimeFunctions.size()) {
                             newBinding = QQmlAnyBinding::createFromFunction(
                                 prop,
-                                pc->d_func()->compilationUnit->runtimeFunctions.at(b.compiledScriptIndex),
+                                pc->d_func()->compilationUnit->runtimeFunctions.at(
+                                    b.compiledScriptIndex),
                                 prop.object(), context, qmlCtxt);
                         } else if (!b.expressionCode.isEmpty()) {
                             newBinding = QQmlAnyBinding::createFromCodeString(
-                                prop, b.expressionCode, prop.object(), context,
-                                b.url.toString(), b.line);
+                                prop, b.expressionCode, prop.object(), context, b.url.toString(),
+                                b.line);
                         }
                         override.binding = newBinding;
                         override.isBinding = true;
@@ -386,16 +395,15 @@ void StateController::collectOverridesForState(
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
             QQmlContext* rawContext = qmlContext(pc);
-            if (!rawContext && parent())
-                rawContext = qmlContext(parent());
-            if (!rawContext && target)
-                rawContext = qmlContext(target);
+            if (!rawContext && parent()) rawContext = qmlContext(parent());
+            if (!rawContext && target) rawContext = qmlContext(target);
 
-            QQmlRefPointer<QQmlContextData> context = rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
+            QQmlRefPointer<QQmlContextData> context =
+                rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
             QQmlProperty prop;
             if (!context.isNull()) {
-                prop = QQmlPropertyPrivate::create(
-                    target, propName, context, QQmlPropertyPrivate::InitFlag::AllowId);
+                prop = QQmlPropertyPrivate::create(target, propName, context,
+                                                   QQmlPropertyPrivate::InitFlag::AllowId);
             } else if (target) {
                 prop = QQmlProperty(target, propName);
             }
@@ -586,10 +594,9 @@ void StateController::revertProperty(const CanonicalProperty& key) {
 #endif
 }
 
-void StateController::applyOverride(
-    const CanonicalProperty& key, const PropertyOverride& override,
-    Transition* transitionObj, QSet<CanonicalProperty>& animatedProperties)
-{
+void StateController::applyOverride(const CanonicalProperty& key, const PropertyOverride& override,
+                                    Transition* transitionObj,
+                                    QSet<CanonicalProperty>& animatedProperties) {
     if (!override.target) return;
 
     QObject* targetObj = override.target.data();
@@ -616,16 +623,17 @@ void StateController::applyOverride(
             bool isNumberAnim = (qobject_cast<NumberAnimation*>(pAnim) != nullptr);
 
             if (isColorAnim) {
-                bool looksLikeColor = propName.contains("color", Qt::CaseInsensitive) ||
+                bool looksLikeColor =
+                    propName.contains("color", Qt::CaseInsensitive) ||
                     (toVal.userType() == QMetaType::QString && toVal.toString().startsWith('#')) ||
                     toVal.userType() == QMetaType::fromType<Color>().id();
                 if (!looksLikeColor) continue;
             } else if (isNumberAnim) {
-                bool isNumeric = (toVal.userType() == QMetaType::Int ||
-                                  toVal.userType() == QMetaType::Double ||
-                                  toVal.userType() == QMetaType::Float ||
-                                  toVal.userType() == QMetaType::LongLong ||
-                                  toVal.userType() == QMetaType::ULongLong);
+                bool isNumeric =
+                    (toVal.userType() == QMetaType::Int || toVal.userType() == QMetaType::Double ||
+                     toVal.userType() == QMetaType::Float ||
+                     toVal.userType() == QMetaType::LongLong ||
+                     toVal.userType() == QMetaType::ULongLong);
                 if (!isNumeric) continue;
             }
             matchedAnim = pAnim;
@@ -637,10 +645,10 @@ void StateController::applyOverride(
     bool endpointsEqual = (fromVal == toVal);
     if (!endpointsEqual && toVal.userType() == QMetaType::fromType<Color>().id()) {
         Color c1 = (fromVal.userType() == QMetaType::fromType<Color>().id())
-            ? fromVal.value<Color>() : Color::fromString(fromVal.toString());
+                       ? fromVal.value<Color>()
+                       : Color::fromString(fromVal.toString());
         Color c2 = toVal.value<Color>();
-        if (c1.isValid() && c2.isValid() && c1 == c2)
-            endpointsEqual = true;
+        if (c1.isValid() && c2.isValid() && c1 == c2) endpointsEqual = true;
     }
 
     if (matchedAnim && !endpointsEqual && matchedAnim->duration() > 0) {
@@ -722,8 +730,8 @@ void StateController::applyState(const QString& newState) {
     // 2. Preflight Ownership Check
     for (const CanonicalProperty& canon : requestedOverrides.keys()) {
         if (s_propertyOwners.contains(canon) && s_propertyOwners.value(canon) != this) {
-            qWarning() << "Cannot apply state" << newState << ": property"
-                       << canon.name << "is owned by another StateGroup/Item";
+            qWarning() << "Cannot apply state" << newState << ": property" << canon.name
+                       << "is owned by another StateGroup/Item";
             return; // Reject entire activation, leave current state intact!
         }
     }

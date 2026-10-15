@@ -104,6 +104,39 @@ void Terminal::copyToClipboard(const QString& text) {
         m_engine->copyToClipboard(text);
 }
 
+void Terminal::bell() {
+    if (m_engine) {
+        m_engine->ringBell();
+    }
+}
+
+void Terminal::setApplicationActive(bool active) {
+    if (m_applicationActive == active) return;
+    m_applicationActive = active;
+    emit applicationActiveChanged();
+    if (m_focusedItem) m_focusedItem->markDirty();
+    markDirty();
+}
+
+void Terminal::setProgress(qreal progress) {
+    const qreal clamped = std::clamp(progress, 0.0, 1.0);
+    if (qFuzzyCompare(1.0 + m_progress, 1.0 + clamped)) return;
+    m_progress = clamped;
+    emit progressChanged();
+    if (m_engine) {
+        m_engine->syncTerminalProgress();
+    }
+}
+
+void Terminal::setProgressState(ProgressState state) {
+    if (m_progressState == state) return;
+    m_progressState = state;
+    emit progressStateChanged();
+    if (m_engine) {
+        m_engine->syncTerminalProgress();
+    }
+}
+
 void Terminal::setTitle(const QString& title) {
     if (m_title == title) return;
     m_title = title;
@@ -344,6 +377,7 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
 }
 
 void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
+    if (m_engine) m_engine->clearHardwareCursorPosition();
     if (!m_visible) return;
 
     // Nothing is behind the root, so a terminal-default background has nothing

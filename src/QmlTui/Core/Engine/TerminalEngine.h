@@ -4,6 +4,7 @@
 
 #include <QElapsedTimer>
 #include <QObject>
+#include <QPoint>
 #include <QPointer>
 #include <QSize>
 #include <QTimer>
@@ -154,6 +155,13 @@ public:
     Color appliedBackgroundColor() const { return m_appliedBackgroundColor; }
     Color originalBackgroundColor() const { return m_originalBackgroundColor; }
 
+    void ringBell();
+    void syncTerminalProgress();
+
+    void setHardwareCursorPosition(int x, int y);
+    void clearHardwareCursorPosition();
+    std::optional<QPoint> hardwareCursorPosition() const { return m_hardwareCursorPosition; }
+
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     // Raw terminal bytes, exactly as a backend delivers them. Runner feeds
     // scripted typing here so it takes the same decoder path as a real keyboard.
@@ -273,6 +281,8 @@ private:
     Color m_appliedBackgroundColor;
     bool m_initialBgQueried = false;
     Color m_originalBackgroundColor;
+    std::optional<QPoint> m_hardwareCursorPosition;
+    bool m_terminalProgressActive = false;
     std::unique_ptr<InputRouter> m_router;
 };
 

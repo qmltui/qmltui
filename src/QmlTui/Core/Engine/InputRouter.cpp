@@ -20,8 +20,7 @@ bool InputRouter::isDescendantOf(Item* child, Item* ancestor) {
     return false;
 }
 
-InputRouter::InputRouter(Terminal* terminal)
-    : m_terminal(terminal) {}
+InputRouter::InputRouter(Terminal* terminal) : m_terminal(terminal) {}
 
 void InputRouter::setTerminal(Terminal* terminal) {
     m_terminal = terminal;
@@ -32,30 +31,32 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
 
     KeyEvent event(key, text, modifiers, paste);
 
-    for (Shortcut* sc : activeShortcuts()) {
-        if (sc && sc->enabled() && sc->sequence() == key) {
-            emit sc->activated();
-            return true;
-        }
-    }
-
     auto dispatchToItem = [](Item* item, KeyEvent& ev) {
         if (!item->isEffectivelyEnabled() || !item->isEffectivelyVisible()) return;
 
         QPointer<Item> itemGuard(item);
-        QPointer<Keys> attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, false));
+        QPointer<Keys> attached =
+            qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, false));
         bool beforeItem = attached && (attached->priority() == Keys::BeforeItem);
 
         auto emitAttachedSignals = [&]() {
             if (!attached) return;
-            if (ev.key() == Qt::Key_Return || ev.key() == Qt::Key_Enter) emit attached->returnPressed(&ev);
-            else if (ev.key() == Qt::Key_Escape) emit attached->escapePressed(&ev);
-            else if (ev.key() == Qt::Key_Space) emit attached->spacePressed(&ev);
-            else if (ev.key() == Qt::Key_Up) emit attached->upPressed(&ev);
-            else if (ev.key() == Qt::Key_Down) emit attached->downPressed(&ev);
-            else if (ev.key() == Qt::Key_Left) emit attached->leftPressed(&ev);
-            else if (ev.key() == Qt::Key_Right) emit attached->rightPressed(&ev);
-            else if (ev.key() == Qt::Key_Tab) emit attached->tabPressed(&ev);
+            if (ev.key() == Qt::Key_Return || ev.key() == Qt::Key_Enter)
+                emit attached->returnPressed(&ev);
+            else if (ev.key() == Qt::Key_Escape)
+                emit attached->escapePressed(&ev);
+            else if (ev.key() == Qt::Key_Space)
+                emit attached->spacePressed(&ev);
+            else if (ev.key() == Qt::Key_Up)
+                emit attached->upPressed(&ev);
+            else if (ev.key() == Qt::Key_Down)
+                emit attached->downPressed(&ev);
+            else if (ev.key() == Qt::Key_Left)
+                emit attached->leftPressed(&ev);
+            else if (ev.key() == Qt::Key_Right)
+                emit attached->rightPressed(&ev);
+            else if (ev.key() == Qt::Key_Tab)
+                emit attached->tabPressed(&ev);
             if (attached && !ev.isAccepted()) emit attached->pressed(&ev);
         };
 
@@ -73,9 +74,9 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
 
         if (!ev.isAccepted() && attached) {
             const QList<QPointer<Item>> forwardedItems = attached->forwardToItems();
-            for (const QPointer<Item> &forwardedGuard : forwardedItems) {
-                if (forwardedGuard && forwardedGuard->isEffectivelyEnabled()
-                    && forwardedGuard->isEffectivelyVisible()) {
+            for (const QPointer<Item>& forwardedGuard : forwardedItems) {
+                if (forwardedGuard && forwardedGuard->isEffectivelyEnabled() &&
+                    forwardedGuard->isEffectivelyVisible()) {
                     forwardedGuard->keyPressEvent(&ev);
                     if (ev.isAccepted()) return;
                     if (!forwardedGuard) return;
@@ -100,11 +101,51 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
         }
     }
 
+    Item* modalItem = activeModalScope ? activeModalScope->asItem() : nullptr;
+    Item* focusTarget = modalItem
+                            ? FocusManager::resolveModalFocusOrigin(m_terminal.data(), modalItem)
+                            : m_terminal->focusedItem();
+    const bool editableTextFocused =
+        focusTarget && focusTarget->isEffectivelyVisible() && focusTarget->isEffectivelyEnabled() &&
+        (focusTarget->inherits("qmltui::TextInput") || focusTarget->inherits("qmltui::TextArea")) &&
+        !focusTarget->property("readOnly").toBool();
+    const bool unmodifiedPrintable =
+        (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0 &&
+        !text.isEmpty() && text.at(0).isPrint() && key != Qt::Key_Escape && key != Qt::Key_Tab &&
+        key != Qt::Key_Backtab && key != Qt::Key_Return && key != Qt::Key_Enter;
+
+    if (!paste && !(unmodifiedPrintable && editableTextFocused)) {
+        const QList<Shortcut*> currentShortcuts = activeShortcuts();
+        QList<QPointer<Shortcut>> shortcutGuards;
+        shortcutGuards.reserve(currentShortcuts.size());
+        for (Shortcut* sc : currentShortcuts) {
+            shortcutGuards.append(sc);
+        }
+        for (const QPointer<Shortcut>& scGuard : shortcutGuards) {
+            Shortcut* sc = scGuard.data();
+            if (!sc || !sc->enabled()) continue;
+            const bool matches =
+                ((key | modifiers) == sc->sequence()) || (modifiers == 0 && key == sc->sequence());
+            if (!matches) continue;
+            QObject* p = sc->parent();
+            while (p && !qobject_cast<Item*>(p))
+                p = p->parent();
+            Item* scItem = qobject_cast<Item*>(p);
+            if (scItem && (!scItem->isEffectivelyVisible() || !scItem->isEffectivelyEnabled()))
+                continue;
+            if (modalItem &&
+                (!scItem || (scItem != modalItem && !isDescendantOf(scItem, modalItem))))
+                continue;
+            emit sc->activated();
+            return true;
+        }
+    }
+
     if (activeModalScope) {
-        InputScope *topScope = activeModalScope;
+        InputScope* topScope = activeModalScope;
         for (auto it = scopes.crbegin(); it != scopes.crend(); ++it)
-            if (*it && (*it)->isScopeVisible()
-                && (*it == activeModalScope || (*it)->isDescendantOfScope(activeModalScope))) {
+            if (*it && (*it)->isScopeVisible() &&
+                (*it == activeModalScope || (*it)->isDescendantOfScope(activeModalScope))) {
                 topScope = *it;
                 break;
             }
@@ -112,17 +153,16 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
             topScope->rejectScope();
             return true;
         }
-        
-        Item* modalItem = activeModalScope->asItem();
-        Item* current = FocusManager::resolveModalFocusOrigin(m_terminal.data(), modalItem);
-        
-    while (current) {
-        QPointer<Item> next = current->parentItem();
-        dispatchToItem(current, event);
-        if (event.isAccepted()) break;
 
-        if (current == modalItem) break;
-        current = next.data();
+        Item* current = FocusManager::resolveModalFocusOrigin(m_terminal.data(), modalItem);
+
+        while (current) {
+            QPointer<Item> next = current->parentItem();
+            dispatchToItem(current, event);
+            if (event.isAccepted()) break;
+
+            if (current == modalItem) break;
+            current = next.data();
         }
         if (!event.isAccepted()) {
             if (key == Qt::Key_Tab)
@@ -135,7 +175,7 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
 
     if (key == Qt::Key_Escape) {
         for (auto it = scopes.crbegin(); it != scopes.crend(); ++it) {
-            InputScope *scope = *it;
+            InputScope* scope = *it;
             if (scope && scope->isScopeVisible() && scope->closeOnEscape()) {
                 scope->rejectScope();
                 return true;
@@ -166,18 +206,17 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
     return event.isAccepted();
 }
 
-bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button,
-                                     int modifiers, bool motion, bool release,
-                                     int wheelDeltaX, int wheelDeltaY,
+bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int modifiers,
+                                     bool motion, bool release, int wheelDeltaX, int wheelDeltaY,
                                      Item* stopAncestor) {
     if (!target) return false;
 
     // Check child mouse event filters on ancestors
     const MouseEvent::Type eventType = wheelDeltaX != 0 || wheelDeltaY != 0
-        ? MouseEvent::Type::Wheel
-        : motion ? MouseEvent::Type::Move
-        : release ? MouseEvent::Type::Release
-                  : MouseEvent::Type::Press;
+                                           ? MouseEvent::Type::Wheel
+                                       : motion  ? MouseEvent::Type::Move
+                                       : release ? MouseEvent::Type::Release
+                                                 : MouseEvent::Type::Press;
 
     QList<QPointer<Item>> filteringAncestors;
     for (Item* anc = target->parentItem(); anc; anc = anc->parentItem()) {
@@ -188,27 +227,30 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button,
     }
 
     QPointer<Item> targetGuard(target);
-    for (const QPointer<Item> &filterGuard : filteringAncestors) {
-        if (!filterGuard || !targetGuard)
-            return false;
-        Item *filterItem = filterGuard.data();
+    for (const QPointer<Item>& filterGuard : filteringAncestors) {
+        if (!targetGuard) return true;
+        if (!filterGuard) continue;
+        Item* filterItem = filterGuard.data();
         int filterAbsX = filterItem->absolutePosition().x();
         int filterAbsY = filterItem->absolutePosition().y();
-        MouseEvent filterEvent(eventType, x - filterAbsX, y - filterAbsY,
-                               button, modifiers, wheelDeltaX, wheelDeltaY);
-        if (filterItem->childMouseEventFilter(target, &filterEvent) || filterEvent.isAccepted()) {
+        MouseEvent filterEvent(eventType, x - filterAbsX, y - filterAbsY, button, modifiers,
+                               wheelDeltaX, wheelDeltaY);
+        if (filterItem->childMouseEventFilter(targetGuard.data(), &filterEvent) ||
+            filterEvent.isAccepted()) {
             return true;
         }
     }
 
+    if (!targetGuard) return true;
+
     bool accepted = false;
-    Item* current = target;
+    Item* current = targetGuard.data();
     while (current) {
         int currentAbsX = current->absolutePosition().x();
         int currentAbsY = current->absolutePosition().y();
         QPointer<Item> next = current->parentItem();
-        MouseEvent currentEvent(eventType, x - currentAbsX, y - currentAbsY,
-                                button, modifiers, wheelDeltaX, wheelDeltaY);
+        MouseEvent currentEvent(eventType, x - currentAbsX, y - currentAbsY, button, modifiers,
+                                wheelDeltaX, wheelDeltaY);
 
         if (wheelDeltaX != 0 || wheelDeltaY != 0) {
             current->wheelEvent(&currentEvent);
@@ -230,8 +272,8 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button,
     return accepted;
 }
 
-void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion,
-                             int modifiers, int wheelDeltaX, int wheelDeltaY) {
+void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion, int modifiers,
+                             int wheelDeltaX, int wheelDeltaY) {
     if (!m_terminal) return;
     const auto* renderer = m_terminal->engine()->renderer();
     if (!renderer) return;
@@ -246,22 +288,23 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             m_outsidePressArmedScope = nullptr;
             if (grab) {
                 const auto pos = grab->absolutePosition();
-                dispatchMouseEvent(grab, pos.x() - 1, pos.y() - 1, button,
-                                   modifiers, false, true, 0, 0);
+                dispatchMouseEvent(grab, pos.x() - 1, pos.y() - 1, button, modifiers, false, true,
+                                   0, 0);
             }
         }
         return;
     }
     const int localY = y - *offset;
     const auto* frame = renderer->currentBuffer();
-    const bool inFrame = m_terminal->mode() != Terminal::Mode::Inline
-        || (frame && x >= 0 && x < frame->width() && localY >= 0 && localY < frame->height());
+    const bool inFrame =
+        m_terminal->mode() != Terminal::Mode::Inline ||
+        (frame && x >= 0 && x < frame->width() && localY >= 0 && localY < frame->height());
     const bool buttonMotion = motion && ((button & 3) != 3);
     const bool isWheel = (wheelDeltaX != 0 || wheelDeltaY != 0);
     const bool isButtonPress = (!release && !motion && !isWheel && (button >= 0 && button <= 2));
 
     const QList<InputScope*> scopes = m_terminal->orderedInputScopes();
-    InputScope *activeModal = m_terminal->topModalScope();
+    InputScope* activeModal = m_terminal->topModalScope();
 
     // 1. Modality check against stale grab
     if (m_implicitMouseGrabItem && activeModal) {
@@ -310,8 +353,8 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             }
 
             QPointer<Item> grabGuard(grabItem);
-            dispatchMouseEvent(grabItem, x, localY, button, modifiers, motion, release,
-                               wheelDeltaX, wheelDeltaY);
+            dispatchMouseEvent(grabItem, x, localY, button, modifiers, motion, release, wheelDeltaX,
+                               wheelDeltaY);
             if (release) {
                 m_implicitMouseGrabItem = nullptr;
             }
@@ -326,7 +369,8 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
         for (int i = scopes.size() - 1; i >= 0; --i) {
             InputScope* scope = scopes[i];
             if (!scope || !scope->isScopeVisible() || !scope->closeOnOutsideClick()) continue;
-            if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal)) continue;
+            if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal))
+                continue;
             Item* scopeItem = scope->asItem();
             if (!scopeItem) continue;
             QPoint absPos = scopeItem->absolutePosition();
@@ -345,15 +389,16 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
     for (int i = scopes.size() - 1; i >= 0; --i) {
         InputScope* scope = scopes[i];
         if (!scope || !scope->isScopeVisible()) continue;
-        if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal)) continue;
-        
+        if (activeModal && scope != activeModal && !scope->isDescendantOfScope(activeModal))
+            continue;
+
         Item* scopeItem = scope->asItem();
         if (!scopeItem) continue;
 
         QPoint absPos = scopeItem->absolutePosition();
         bool inside = (inFrame && x >= absPos.x() && x < absPos.x() + scopeItem->width() &&
                        localY >= absPos.y() && localY < absPos.y() + scopeItem->height());
-                       
+
         if (inside) {
             m_outsidePressArmedScope = nullptr;
             int parentAbsX = absPos.x() - scopeItem->x();
@@ -369,13 +414,12 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
                             break;
                         }
                     }
-                    if (!requested)
-                        return;
+                    if (!requested) return;
                 }
 
                 QPointer<Item> targetGuard(target);
-                bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers,
-                                                   motion, release, wheelDeltaX, wheelDeltaY, scopeItem);
+                bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers, motion,
+                                                   release, wheelDeltaX, wheelDeltaY, scopeItem);
                 if (accepted && isButtonPress && targetGuard) {
                     m_implicitMouseGrabItem = targetGuard.data();
                 }
@@ -406,13 +450,12 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
                     break;
                 }
             }
-            if (!requested)
-                return;
+            if (!requested) return;
         }
 
         QPointer<Item> targetGuard(target);
-        bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers,
-                                           motion, release, wheelDeltaX, wheelDeltaY);
+        bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers, motion, release,
+                                           wheelDeltaX, wheelDeltaY);
         if (accepted && isButtonPress && targetGuard) {
             m_implicitMouseGrabItem = targetGuard.data();
         }
@@ -423,14 +466,15 @@ void InputRouter::cycleFocus(bool forward, Item* scope) {
     FocusManager::cycleFocus(m_terminal.data(), forward, scope);
 }
 
-Item* InputRouter::hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const {
+Item* InputRouter::hitTestItem(Item* item, int absX, int absY, int parentAbsX,
+                               int parentAbsY) const {
     if (!item || !item->visible() || !item->isEffectivelyEnabled()) return nullptr;
 
     int itemAbsX = parentAbsX + item->x();
     int itemAbsY = parentAbsY + item->y();
 
-    bool inside = (absX >= itemAbsX && absX < itemAbsX + item->width() &&
-                   absY >= itemAbsY && absY < itemAbsY + item->height());
+    bool inside = (absX >= itemAbsX && absX < itemAbsX + item->width() && absY >= itemAbsY &&
+                   absY < itemAbsY + item->height());
 
     if (item->clip() && !inside) {
         return nullptr;
@@ -438,7 +482,7 @@ Item* InputRouter::hitTestItem(Item* item, int absX, int absY, int parentAbsX, i
 
     int childParentAbsX = itemAbsX;
     int childParentAbsY = itemAbsY;
-    
+
     QPoint offset = item->contentOffset();
     childParentAbsX -= offset.x();
     childParentAbsY -= offset.y();

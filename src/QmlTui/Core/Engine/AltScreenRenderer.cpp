@@ -1,6 +1,8 @@
 #include <QmlTui/Core/Engine/AltScreenRenderer.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
+#include <QmlTui/Core/Primitives/AnsiEncoder_p.h>
 #include <QElapsedTimer>
 
 namespace qmltui {
@@ -38,6 +40,9 @@ bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device
     QElapsedTimer timer;
     timer.start();
 
+    if (TerminalEngine* engine = rootWindow->engine()) {
+        engine->clearHardwareCursorPosition();
+    }
     m_nextBuffer.clear();
     ItemPaintTraversal::renderSubtree(rootWindow, m_nextBuffer, 0, 0);
     const qint64 paintedNs = timer.nsecsElapsed();
@@ -65,6 +70,18 @@ bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device
     // Cursor-painted graphics (sixel) go on top of the cells just written.
     const QByteArray postControls = rootWindow->takePostControlSequences();
     if (outputEnabled()) m_ansi.append(postControls.constData(), postControls.size());
+    if (outputEnabled()) {
+        if (const TerminalEngine* engine = rootWindow->engine()) {
+            if (const auto cursor = engine->hardwareCursorPosition();
+                cursor.has_value() && m_nextBuffer.contains(cursor->x(), cursor->y())) {
+                m_ansi += "\033[";
+                ansi::appendInt(m_ansi, cursor->y() + 1);
+                m_ansi += ';';
+                ansi::appendInt(m_ansi, cursor->x() + 1);
+                m_ansi += 'H';
+            }
+        }
+    }
     if (!repaintingAll && m_ansi.size() == prefixSize)
         m_ansi.clear();          // nothing changed: write nothing at all
     else if (synchronize)

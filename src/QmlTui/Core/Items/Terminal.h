@@ -58,6 +58,12 @@ class QMLTUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
   Q_PROPERTY(int terminalWidth READ terminalWidth NOTIFY terminalSizeChanged FINAL)
   /// @brief Total height of the host terminal screen in character rows.
   Q_PROPERTY(int terminalHeight READ terminalHeight NOTIFY terminalSizeChanged FINAL)
+  /// @brief Whether the host terminal window currently has focus (?1004 focus reporting).
+  Q_PROPERTY(bool applicationActive READ applicationActive NOTIFY applicationActiveChanged)
+  /// @brief Progress value in [0.0, 1.0] for OSC 9;4 terminal progress reporting.
+  Q_PROPERTY(qreal progress READ progress WRITE setProgress NOTIFY progressChanged)
+  /// @brief Progress state for OSC 9;4 terminal progress reporting.
+  Q_PROPERTY(ProgressState progressState READ progressState WRITE setProgressState NOTIFY progressStateChanged)
 
 public:
   enum class Mode {
@@ -70,6 +76,14 @@ public:
       Osc52
   };
   Q_ENUM(ClipboardMode)
+  enum ProgressState {
+      ProgressNone = 0,
+      ProgressNormal = 1,
+      ProgressError = 2,
+      ProgressIndeterminate = 3,
+      ProgressWarning = 4
+  };
+  Q_ENUM(ProgressState)
 
   using RunnerHook = void (*)(QQmlEngine*, Terminal*);
   static void registerRunnerHook(RunnerHook hook);
@@ -89,6 +103,16 @@ public:
   QByteArray takePostControlSequences();
 
   Q_INVOKABLE void copyToClipboard(const QString& text);
+  Q_INVOKABLE void bell();
+
+  bool applicationActive() const { return m_applicationActive; }
+  void setApplicationActive(bool active);
+
+  qreal progress() const { return m_progress; }
+  void setProgress(qreal progress);
+
+  ProgressState progressState() const { return m_progressState; }
+  void setProgressState(ProgressState state);
 
   QString title() const { return m_title; }
   void setTitle(const QString& title);
@@ -150,6 +174,9 @@ signals:
   void hoveredItemChanged();
   void terminalSizeChanged();
   void mouseMotionRequestedChanged(bool requested);
+  void applicationActiveChanged();
+  void progressChanged();
+  void progressStateChanged();
 
 private:
   void initializeEngine();
@@ -170,6 +197,9 @@ private:
   ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
   bool m_mouseReporting = true;
   bool m_mouseReportingExplicit = false;
+  bool m_applicationActive = true;
+  qreal m_progress = 0.0;
+  ProgressState m_progressState = ProgressNone;
 };
 
 } // namespace qmltui

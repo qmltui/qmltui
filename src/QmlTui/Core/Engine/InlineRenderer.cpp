@@ -18,8 +18,7 @@ void InlineRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
 
 void InlineRenderer::invalidateMouseOrigin() {
     m_mouseRowOffset.reset();
-    if (m_cursorQueryPending)
-        m_cursorQueryStale = true;
+    if (m_cursorQueryPending) m_cursorQueryStale = true;
 }
 
 void InlineRenderer::discardCommittedState() {
@@ -28,8 +27,7 @@ void InlineRenderer::discardCommittedState() {
 }
 
 std::optional<int> InlineRenderer::mouseRowOffset() const {
-    if (!outputEnabled())
-        return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
+    if (!outputEnabled()) return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
     return m_mouseRowOffset;
 }
 
@@ -37,16 +35,15 @@ void InlineRenderer::queryCursorPosition(TerminalDevice& device) {
     // Only one outstanding request: terminals that do not answer must not
     // accumulate queries. Column one below a nonempty prompt gives a report
     // with row >= 2 and column == 1, distinct from modified F3 (CSI 1;mod R).
-    if (outputEnabled() && m_lastPromptHeight > 0 && !m_cursorQueryPending
-        && device.write("\r\033[6n")) {
+    if (outputEnabled() && m_lastPromptHeight > 0 && !m_cursorQueryPending &&
+        device.write("\r\033[6n")) {
         m_cursorQueryPending = true;
         m_cursorQueryStale = false;
     }
 }
 
 void InlineRenderer::handleCursorPosition(int row, TerminalDevice& device) {
-    if (!m_cursorQueryPending)
-        return;
+    if (!m_cursorQueryPending) return;
     m_cursorQueryPending = false;
     if (m_cursorQueryStale) {
         queryCursorPosition(device);
@@ -58,12 +55,13 @@ void InlineRenderer::handleCursorPosition(int row, TerminalDevice& device) {
 }
 
 void InlineRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
-    if (!outputEnabled())
-        return;
+    if (!outputEnabled()) return;
     if (m_lastPromptHeight > 0) {
-        std::ostringstream oss;
-        oss << "\r\033[" << m_lastPromptHeight << "A\033[J";
-        (void)device.write(oss.str());
+        m_ansi.clear();
+        m_ansi += "\r\033[";
+        ansi::appendInt(m_ansi, m_lastPromptHeight);
+        m_ansi += "A\033[J";
+        (void)device.write(m_ansi);
         m_lastPromptHeight = 0;
     }
     m_rootWindow = nullptr;
@@ -78,9 +76,11 @@ void InlineRenderer::resize(int width, int height) {
 
 bool InlineRenderer::clearPromptRegion(TerminalDevice& device) {
     if (m_lastPromptHeight > 0) {
-        std::ostringstream oss;
-        oss << "\r\033[" << m_lastPromptHeight << "A\033[J";
-        return device.write(oss.str());
+        m_ansi.clear();
+        m_ansi += "\r\033[";
+        ansi::appendInt(m_ansi, m_lastPromptHeight);
+        m_ansi += "A\033[J";
+        return device.write(m_ansi);
     }
     return true;
 }
@@ -88,11 +88,13 @@ bool InlineRenderer::clearPromptRegion(TerminalDevice& device) {
 bool InlineRenderer::drawPromptRegion(TerminalDevice& device) {
     if (m_lastPromptHeight <= 0) return true;
 
-    std::ostringstream output;
+    m_ansi.clear();
     for (int row = 0; row < m_lastPromptHeight; ++row) {
-        output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
+        m_ansi += "\r\033[2K";
+        m_promptBuffer.appendRowAnsi(m_ansi, row, capabilities().colorDepth);
+        m_ansi += "\033[0m\r\n";
     }
-    return device.write(output.str());
+    return device.write(m_ansi);
 }
 
 std::string InlineRenderer::promptRowToAnsi(int row) const {
@@ -113,11 +115,11 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     QElapsedTimer timer;
     timer.start();
     ItemPaintTraversal::layoutSubtree(rootWindow);
-    const int requiredHeight = std::clamp(rootWindow->height(), 0, (std::max)(0, m_terminalHeight - 1));
+    const int requiredHeight =
+        std::clamp(rootWindow->height(), 0, (std::max)(0, m_terminalHeight - 1));
 
     const int previousPromptHeight = m_lastPromptHeight;
-    if (previousPromptHeight != requiredHeight || !scrollback.empty())
-        invalidateMouseOrigin();
+    if (previousPromptHeight != requiredHeight || !scrollback.empty()) invalidateMouseOrigin();
     m_lastPromptHeight = requiredHeight;
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     m_promptBuffer.clear();
@@ -133,33 +135,37 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
         return true;
     }
 
-    std::ostringstream output;
-    output.write(controls.constData(), controls.size());
+    const bool synchronize = capabilities().syncOutput;
+    m_ansi.clear();
+    if (synchronize) m_ansi += "\033[?2026h";
+    m_ansi.append(controls.constData(), static_cast<size_t>(controls.size()));
     if (previousPromptHeight > 0) {
-        output << "\r\033[" << previousPromptHeight << "A";
+        m_ansi += "\r\033[";
+        ansi::appendInt(m_ansi, previousPromptHeight);
+        m_ansi += 'A';
     }
     if (!scrollback.empty()) {
-        output << "\r\033[J";
-        output.write(scrollback.data(), static_cast<std::streamsize>(scrollback.size()));
+        m_ansi += "\r\033[J";
+        m_ansi.append(scrollback.data(), scrollback.size());
     }
     for (int row = 0; row < m_lastPromptHeight; ++row) {
-        output << "\r\033[2K" << promptRowToAnsi(row) << "\033[0m\r\n";
+        m_ansi += "\r\033[2K";
+        m_promptBuffer.appendRowAnsi(m_ansi, row, capabilities().colorDepth);
+        m_ansi += "\033[0m\r\n";
     }
     if (previousPromptHeight > m_lastPromptHeight) {
-        output << "\033[J";
+        m_ansi += "\033[J";
     }
     // Cursor-painted graphics land after the live region is drawn.
-    output.write(postControls.constData(), postControls.size());
-    const std::string ansi = output.str();
+    m_ansi.append(postControls.constData(), static_cast<size_t>(postControls.size()));
+    if (synchronize) m_ansi += "\033[?2026l";
     const qint64 encodedNs = timer.nsecsElapsed();
     stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
-    stats.diffBytes = static_cast<qint64>(ansi.size());
-    const bool written = device.write(ansi);
-    if (written && !m_mouseRowOffset)
-        queryCursorPosition(device);
+    stats.diffBytes = static_cast<qint64>(m_ansi.size());
+    const bool written = device.write(m_ansi);
+    if (written && !m_mouseRowOffset) queryCursorPosition(device);
     stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
-    if (written)
-        stats.bytesWritten = stats.diffBytes;
+    if (written) stats.bytesWritten = stats.diffBytes;
     m_lastStats = stats;
     return written;
 }

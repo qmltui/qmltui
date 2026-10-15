@@ -16,60 +16,63 @@ namespace qmltui {
 
 static double applyEasing(Easing::Type type, double t) {
     switch (type) {
-        case Easing::Linear:
-            return t;
-        case Easing::InQuad:
-            return t * t;
-        case Easing::OutQuad:
-            return t * (2.0 - t);
-        case Easing::InOutQuad:
-            return t < 0.5 ? 2.0 * t * t : -1.0 + (4.0 - 2.0 * t) * t;
-        case Easing::InCubic:
-            return t * t * t;
-        case Easing::OutCubic: {
-            double f = t - 1.0;
-            return f * f * f + 1.0;
+    case Easing::Linear:
+        return t;
+    case Easing::InQuad:
+        return t * t;
+    case Easing::OutQuad:
+        return t * (2.0 - t);
+    case Easing::InOutQuad:
+        return t < 0.5 ? 2.0 * t * t : -1.0 + (4.0 - 2.0 * t) * t;
+    case Easing::InCubic:
+        return t * t * t;
+    case Easing::OutCubic: {
+        double f = t - 1.0;
+        return f * f * f + 1.0;
+    }
+    case Easing::InOutCubic: {
+        if (t < 0.5) return 4.0 * t * t * t;
+        double f = 2.0 * t - 2.0;
+        return 0.5 * f * f * f + 1.0;
+    }
+    case Easing::OutBounce: {
+        if (t < 1.0 / 2.75) {
+            return 7.5625 * t * t;
+        } else if (t < 2.0 / 2.75) {
+            t -= 1.5 / 2.75;
+            return 7.5625 * t * t + 0.75;
+        } else if (t < 2.5 / 2.75) {
+            t -= 2.25 / 2.75;
+            return 7.5625 * t * t + 0.9375;
+        } else {
+            t -= 2.625 / 2.75;
+            return 7.5625 * t * t + 0.984375;
         }
-        case Easing::InOutCubic: {
-            if (t < 0.5) return 4.0 * t * t * t;
-            double f = 2.0 * t - 2.0;
-            return 0.5 * f * f * f + 1.0;
-        }
-        case Easing::OutBounce: {
-            if (t < 1.0 / 2.75) {
-                return 7.5625 * t * t;
-            } else if (t < 2.0 / 2.75) {
-                t -= 1.5 / 2.75;
-                return 7.5625 * t * t + 0.75;
-            } else if (t < 2.5 / 2.75) {
-                t -= 2.25 / 2.75;
-                return 7.5625 * t * t + 0.9375;
-            } else {
-                t -= 2.625 / 2.75;
-                return 7.5625 * t * t + 0.984375;
-            }
-        }
+    }
     }
     return t;
 }
 
-static void writePropertyBypassingInterceptor(QObject* target, const QString& name, const QVariant& value) {
+static void writePropertyBypassingInterceptor(QObject* target, const QString& name,
+                                              const QVariant& value) {
     if (!target || name.isEmpty()) return;
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     // Dynamic QML properties have no C++ static_metacall. A regular property
     // write would re-enter Behavior and remove the property's source binding.
     const QQmlProperty property(target, name);
-    const QVariant converted = property.propertyType() == QMetaType::QString
-            && value.metaType() == QMetaType::fromType<Color>()
-        ? QVariant(value.value<Color>().toString()) : value;
+    const QVariant converted = property.propertyType() == QMetaType::QString &&
+                                       value.metaType() == QMetaType::fromType<Color>()
+                                   ? QVariant(value.value<Color>().toString())
+                                   : value;
     QQmlPropertyPrivate::write(property, converted,
-        QQmlPropertyData::BypassInterceptor | QQmlPropertyData::DontRemoveBinding);
+                               QQmlPropertyData::BypassInterceptor |
+                                   QQmlPropertyData::DontRemoveBinding);
 #else
     const QMetaObject* meta = target->metaObject();
     int idx = meta->indexOfProperty(name.toUtf8().constData());
     if (idx >= 0) {
         QMetaProperty prop = meta->property(idx);
-        
+
         // Find the C++ class QMetaObject defining the property to get its C++ static_metacall
         const QMetaObject* definingMeta = target->metaObject();
         while (definingMeta) {
@@ -91,18 +94,21 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
 
             if (typeId == QMetaType::Int) {
                 int val = value.toInt();
-                void* argv[] = { &val };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {&val};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             } else if (typeId == QMetaType::Double) {
                 double val = value.toDouble();
-                void* argv[] = { &val };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {&val};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             } else if (typeId == QMetaType::QString) {
                 QString val = (value.userType() == QMetaType::fromType<Color>().id())
                                   ? value.value<Color>().toString()
                                   : value.toString();
-                void* argv[] = { &val };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {&val};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             } else if (typeId == QMetaType::fromType<Color>().id()) {
                 Color col;
                 if (value.userType() == typeId) {
@@ -112,15 +118,18 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
                 } else {
                     col = Color::fromArgb32(ColorMapper::fromString(value.toString()));
                 }
-                void* argv[] = { &col };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {&col};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             } else if (typeId == QMetaType::Bool) {
                 bool val = value.toBool();
-                void* argv[] = { &val };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {&val};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             } else {
-                void* argv[] = { const_cast<void*>(value.constData()) };
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId, argv);
+                void* argv[] = {const_cast<void*>(value.constData())};
+                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
+                                                argv);
             }
         } else {
             // Fallback
@@ -134,8 +143,7 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
 // Animation Base Class
 // ==========================================
 
-Animation::Animation(QObject* parent) : QObject(parent) {
-}
+Animation::Animation(QObject* parent) : QObject(parent) {}
 
 Animation::~Animation() {
     AnimationManager::instance()->unregisterAnimation(this);
@@ -195,14 +203,17 @@ void PropertyAnimation::setProperty(const QString& name) {
 }
 
 void PropertyAnimation::setDuration(int d) {
-    if (m_duration == d) return;
-    m_duration = (std::max)(0, d);
+    const int clamped = d < 0 ? 0 : d;
+    if (m_duration == clamped) return;
+    m_duration = clamped;
     emit durationChanged();
 }
 
 void PropertyAnimation::setRunning(bool r) {
     if (m_running == r) return;
     if (r && m_duration == 0) {
+        m_running = false;
+        emit runningChanged();
         writeValue(1.0);
         emit started();
         emit finished();
@@ -309,26 +320,22 @@ void PropertyAnimation::writeValue(const QVariant& value) {
 // NumberAnimation Class
 // ==========================================
 
-NumberAnimation::NumberAnimation(QObject* parent) : PropertyAnimation(parent) {
-}
+NumberAnimation::NumberAnimation(QObject* parent) : PropertyAnimation(parent) {}
 
 // ==========================================
 // ColorAnimation Class
 // ==========================================
 
-ColorAnimation::ColorAnimation(QObject* parent) : PropertyAnimation(parent) {
-}
+ColorAnimation::ColorAnimation(QObject* parent) : PropertyAnimation(parent) {}
 
 static uint32_t extractColor(const QVariant& var, uint32_t defaultColor = 0xFFFFFFFF) {
     if (var.userType() == QMetaType::fromType<Color>().id()) {
         Color c = var.value<Color>();
-        if (c.isValid())
-            return c.argb32();
+        if (c.isValid()) return c.argb32();
     }
     if (var.userType() == QMetaType::QString) {
         Color c = Color::fromString(var.toString());
-        if (c.isValid())
-            return c.argb32();
+        if (c.isValid()) return c.argb32();
     }
     return ColorMapper::fromString(var.toString(), defaultColor);
 }
@@ -357,19 +364,21 @@ void ColorAnimation::writeValue(const QVariant& value) {
     int currG = std::clamp(static_cast<int>(fromG + t * (toG - fromG)), 0, 255);
     int currB = std::clamp(static_cast<int>(fromB + t * (toB - fromB)), 0, 255);
 
-    uint32_t currArgb = (static_cast<uint32_t>(currA) << 24)
-                      | (static_cast<uint32_t>(currR) << 16)
-                      | (static_cast<uint32_t>(currG) << 8)
-                      | static_cast<uint32_t>(currB);
+    uint32_t currArgb = (static_cast<uint32_t>(currA) << 24) |
+                        (static_cast<uint32_t>(currR) << 16) | (static_cast<uint32_t>(currG) << 8) |
+                        static_cast<uint32_t>(currB);
 
     Color animatedColor = Color::fromArgb32(currArgb);
     QVariant currentProp = m_target->property(m_propertyName.toUtf8().constData());
-    if (currentProp.userType() == QMetaType::fromType<Color>().id() && currentProp.value<Color>() == animatedColor)
+    if (currentProp.userType() == QMetaType::fromType<Color>().id() &&
+        currentProp.value<Color>() == animatedColor)
         return;
-    if (currentProp.userType() == QMetaType::QString && currentProp.toString() == animatedColor.toString())
+    if (currentProp.userType() == QMetaType::QString &&
+        currentProp.toString() == animatedColor.toString())
         return;
 
-    writePropertyBypassingInterceptor(m_target.data(), m_propertyName, QVariant::fromValue(animatedColor));
+    writePropertyBypassingInterceptor(m_target.data(), m_propertyName,
+                                      QVariant::fromValue(animatedColor));
 }
 
 // ==========================================

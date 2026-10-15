@@ -36,6 +36,7 @@ private slots:
     void testKittyQueryReplyIsNotAKey();
     void testInlineCursorReportAndF3();
     void testPendingEscapeFlush();
+    void testFocusReporting();
 };
 
 void TestInputDecoder::testAsciiKeys() {
@@ -702,6 +703,18 @@ void TestInputDecoder::testPendingEscapeFlush() {
     decoder.decode("OP", 2);
     QVERIFY(!decoder.hasPendingEscape());
     QCOMPARE(keys.last(), int(Qt::Key_F1));
+}
+
+void TestInputDecoder::testFocusReporting() {
+    InputDecoder decoder;
+    QList<bool> focusEvents;
+    int keys = 0;
+    decoder.setKeyCallback([&](int, const QString&, int) { ++keys; });
+    decoder.setFocusCallback([&](bool focused) { focusEvents.append(focused); });
+
+    decoder.decode("\033[O\033[I", 6);
+    QCOMPARE(keys, 0);
+    QCOMPARE(focusEvents, (QList<bool>{false, true}));
 }
 
 QTEST_MAIN(TestInputDecoder)

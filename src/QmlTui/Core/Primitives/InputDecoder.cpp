@@ -209,6 +209,10 @@ void InputDecoder::setDetailedMouseCallback(DetailedMouseCallback cb) {
     m_detailedMouseCallback = std::move(cb);
 }
 
+void InputDecoder::setFocusCallback(FocusCallback cb) {
+    m_focusCallback = std::move(cb);
+}
+
 void InputDecoder::setReplyCallback(ReplyCallback cb) {
     m_replyCallback = std::move(cb);
 }
@@ -260,6 +264,11 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
         const int first = sequence.parameter(0);
         if (sequence.kind == Sequence::Csi && final == '~' && first == 200) {
             m_bracketedPaste = true;
+            return;
+        }
+        if (sequence.kind == Sequence::Csi && sequence.params.isEmpty()
+            && (final == 'I' || final == 'O')) {
+            if (m_focusCallback) m_focusCallback(final == 'I');
             return;
         }
         // Kitty event types apply to every key form once flag 2 is on; a

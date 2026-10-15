@@ -31,6 +31,7 @@ private:
     void invalidateMouseOrigin();
 
     TextGridBuffer m_promptBuffer;
+    std::string m_ansi;
     Terminal* m_rootWindow = nullptr;
     int m_terminalWidth = 80;
     int m_terminalHeight = 24;

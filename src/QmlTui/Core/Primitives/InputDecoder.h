@@ -26,6 +26,7 @@ public:
         int wheelDeltaY = 0;
     };
     using DetailedMouseCallback = std::function<void(const MouseInput& input)>;
+    using FocusCallback = std::function<void(bool focused)>;
 
     struct ControlSequence {
         enum Kind : uint8_t { Csi, Ss3, Apc, Osc, Dcs, } kind = Csi;
@@ -59,6 +60,7 @@ public:
     void setPasteCallback(PasteCallback cb);
     void setMouseCallback(MouseCallback cb);
     void setDetailedMouseCallback(DetailedMouseCallback cb);
+    void setFocusCallback(FocusCallback cb);
 
     void decode(const char* buffer, size_t size);
 
@@ -95,6 +97,7 @@ private:
     PasteCallback m_pasteCallback;
     MouseCallback m_mouseCallback;
     DetailedMouseCallback m_detailedMouseCallback;
+    FocusCallback m_focusCallback;
 
     std::string m_buffer;
     bool m_bracketedPaste = false;

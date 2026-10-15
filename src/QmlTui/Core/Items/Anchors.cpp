@@ -10,8 +10,12 @@ namespace {
 struct ResolvingGuard {
     bool& flag;
     bool active;
-    ResolvingGuard(bool& f) : flag(f), active(!f) { if (active) flag = true; }
-    ~ResolvingGuard() { if (active) flag = false; }
+    ResolvingGuard(bool& f) : flag(f), active(!f) {
+        if (active) flag = true;
+    }
+    ~ResolvingGuard() {
+        if (active) flag = false;
+    }
 };
 
 void connectTarget(Item* target, Anchors* anchors) {
@@ -19,13 +23,28 @@ void connectTarget(Item* target, Anchors* anchors) {
     QObject::connect(target, &Item::xChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
     QObject::connect(target, &Item::yChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
     QObject::connect(target, &Item::widthChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
-    QObject::connect(target, &Item::heightChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
-    QObject::connect(target, &Item::implicitWidthChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
-    QObject::connect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve, Qt::UniqueConnection);
+    QObject::connect(target, &Item::heightChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+    QObject::connect(target, &Item::implicitWidthChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+    QObject::connect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+}
+
+bool isReferencedBy(const Anchors* anchors, const Item* target) {
+    if (!anchors || !target) return false;
+    if (anchors->fill() == target || anchors->centerIn() == target) return true;
+    if (anchors->left() && anchors->left()->owner() == target) return true;
+    if (anchors->right() && anchors->right()->owner() == target) return true;
+    if (anchors->top() && anchors->top()->owner() == target) return true;
+    if (anchors->bottom() && anchors->bottom()->owner() == target) return true;
+    if (anchors->horizontalCenter() && anchors->horizontalCenter()->owner() == target) return true;
+    if (anchors->verticalCenter() && anchors->verticalCenter()->owner() == target) return true;
+    return false;
 }
 
 void disconnectTarget(Item* target, Anchors* anchors) {
-    if (!target) return;
+    if (!target || isReferencedBy(anchors, target)) return;
     QObject::disconnect(target, &Item::xChanged, anchors, &Anchors::resolve);
     QObject::disconnect(target, &Item::yChanged, anchors, &Anchors::resolve);
     QObject::disconnect(target, &Item::widthChanged, anchors, &Anchors::resolve);
@@ -36,14 +55,13 @@ void disconnectTarget(Item* target, Anchors* anchors) {
 
 } // namespace
 
-Anchors::Anchors(Item* owner) : QObject(owner), m_owner(owner) {
-}
+Anchors::Anchors(Item* owner) : QObject(owner), m_owner(owner) {}
 
 Anchors::~Anchors() = default;
 
 bool Anchors::hasAnchors() const {
-    return m_fillTarget || m_centerInTarget || m_left || m_right || m_top || m_bottom
-        || m_horizontalCenter || m_verticalCenter;
+    return m_fillTarget || m_centerInTarget || m_left || m_right || m_top || m_bottom ||
+           m_horizontalCenter || m_verticalCenter;
 }
 
 void Anchors::ensureOwnerConnections() {
@@ -64,11 +82,11 @@ void Anchors::setFill(QObject* target) {
     Item* itemTarget = qobject_cast<Item*>(target);
     if (m_fillTarget.data() == itemTarget) return;
 
-    if (m_fillTarget) {
-        disconnectTarget(m_fillTarget.data(), this);
-    }
-
+    Item* oldTarget = m_fillTarget.data();
     m_fillTarget = itemTarget;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
 
     if (m_fillTarget) {
         connectTarget(m_fillTarget.data(), this);
@@ -86,11 +104,11 @@ void Anchors::setCenterIn(QObject* target) {
     Item* itemTarget = qobject_cast<Item*>(target);
     if (m_centerInTarget.data() == itemTarget) return;
 
-    if (m_centerInTarget) {
-        disconnectTarget(m_centerInTarget.data(), this);
-    }
-
+    Item* oldTarget = m_centerInTarget.data();
     m_centerInTarget = itemTarget;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
 
     if (m_centerInTarget) {
         connectTarget(m_centerInTarget.data(), this);
@@ -100,13 +118,16 @@ void Anchors::setCenterIn(QObject* target) {
     resolve();
 }
 
-AnchorLine* Anchors::left() const { return m_left.data(); }
+AnchorLine* Anchors::left() const {
+    return m_left.data();
+}
 void Anchors::setLeft(AnchorLine* line) {
     if (m_left.data() == line) return;
-    if (m_left) {
-        disconnectTarget(m_left->owner(), this);
-    }
+    Item* oldTarget = m_left ? m_left->owner() : nullptr;
     m_left = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_left) {
         connectTarget(m_left->owner(), this);
     }
@@ -114,13 +135,16 @@ void Anchors::setLeft(AnchorLine* line) {
     resolve();
 }
 
-AnchorLine* Anchors::right() const { return m_right.data(); }
+AnchorLine* Anchors::right() const {
+    return m_right.data();
+}
 void Anchors::setRight(AnchorLine* line) {
     if (m_right.data() == line) return;
-    if (m_right) {
-        disconnectTarget(m_right->owner(), this);
-    }
+    Item* oldTarget = m_right ? m_right->owner() : nullptr;
     m_right = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_right) {
         connectTarget(m_right->owner(), this);
     }
@@ -128,13 +152,16 @@ void Anchors::setRight(AnchorLine* line) {
     resolve();
 }
 
-AnchorLine* Anchors::top() const { return m_top.data(); }
+AnchorLine* Anchors::top() const {
+    return m_top.data();
+}
 void Anchors::setTop(AnchorLine* line) {
     if (m_top.data() == line) return;
-    if (m_top) {
-        disconnectTarget(m_top->owner(), this);
-    }
+    Item* oldTarget = m_top ? m_top->owner() : nullptr;
     m_top = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_top) {
         connectTarget(m_top->owner(), this);
     }
@@ -142,13 +169,16 @@ void Anchors::setTop(AnchorLine* line) {
     resolve();
 }
 
-AnchorLine* Anchors::bottom() const { return m_bottom.data(); }
+AnchorLine* Anchors::bottom() const {
+    return m_bottom.data();
+}
 void Anchors::setBottom(AnchorLine* line) {
     if (m_bottom.data() == line) return;
-    if (m_bottom) {
-        disconnectTarget(m_bottom->owner(), this);
-    }
+    Item* oldTarget = m_bottom ? m_bottom->owner() : nullptr;
     m_bottom = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_bottom) {
         connectTarget(m_bottom->owner(), this);
     }
@@ -156,13 +186,16 @@ void Anchors::setBottom(AnchorLine* line) {
     resolve();
 }
 
-AnchorLine* Anchors::horizontalCenter() const { return m_horizontalCenter.data(); }
+AnchorLine* Anchors::horizontalCenter() const {
+    return m_horizontalCenter.data();
+}
 void Anchors::setHorizontalCenter(AnchorLine* line) {
     if (m_horizontalCenter.data() == line) return;
-    if (m_horizontalCenter) {
-        disconnectTarget(m_horizontalCenter->owner(), this);
-    }
+    Item* oldTarget = m_horizontalCenter ? m_horizontalCenter->owner() : nullptr;
     m_horizontalCenter = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_horizontalCenter) {
         connectTarget(m_horizontalCenter->owner(), this);
     }
@@ -170,13 +203,16 @@ void Anchors::setHorizontalCenter(AnchorLine* line) {
     resolve();
 }
 
-AnchorLine* Anchors::verticalCenter() const { return m_verticalCenter.data(); }
+AnchorLine* Anchors::verticalCenter() const {
+    return m_verticalCenter.data();
+}
 void Anchors::setVerticalCenter(AnchorLine* line) {
     if (m_verticalCenter.data() == line) return;
-    if (m_verticalCenter) {
-        disconnectTarget(m_verticalCenter->owner(), this);
-    }
+    Item* oldTarget = m_verticalCenter ? m_verticalCenter->owner() : nullptr;
     m_verticalCenter = line;
+    if (oldTarget) {
+        disconnectTarget(oldTarget, this);
+    }
     if (m_verticalCenter) {
         connectTarget(m_verticalCenter->owner(), this);
     }
@@ -250,7 +286,7 @@ void Anchors::resolve() {
     if (m_fillTarget) {
         int targetW = m_fillTarget->width();
         int targetH = m_fillTarget->height();
-        
+
         int lm = leftMargin();
         int rm = rightMargin();
         int tm = topMargin();
@@ -268,8 +304,8 @@ void Anchors::resolve() {
         m_owner->setWidth(targetW - lm - rm);
         m_owner->setHeight(targetH - tm - bm);
         return;
-    } 
-    
+    }
+
     if (m_centerInTarget) {
         int targetW = m_centerInTarget->width();
         int targetH = m_centerInTarget->height();
@@ -290,9 +326,9 @@ void Anchors::resolve() {
 
     auto isValidTarget = [this](Item* target) -> bool {
         if (!target) return false;
-        if (target == m_owner->parentItem()) return true;
         Item* parent = m_owner->parentItem();
-        if (parent && parent->childItems().contains(target)) return true;
+        if (target == parent) return true;
+        if (parent && target->parentItem() == parent) return true;
         return false;
     };
 
@@ -307,21 +343,33 @@ void Anchors::resolve() {
 
         if (target == m_owner->parentItem()) {
             switch (line->edge()) {
-                case AnchorLine::Left: return 0;
-                case AnchorLine::Right: return target->width();
-                case AnchorLine::Top: return 0;
-                case AnchorLine::Bottom: return target->height();
-                case AnchorLine::HorizontalCenter: return target->width() / 2;
-                case AnchorLine::VerticalCenter: return target->height() / 2;
+            case AnchorLine::Left:
+                return 0;
+            case AnchorLine::Right:
+                return target->width();
+            case AnchorLine::Top:
+                return 0;
+            case AnchorLine::Bottom:
+                return target->height();
+            case AnchorLine::HorizontalCenter:
+                return target->width() / 2;
+            case AnchorLine::VerticalCenter:
+                return target->height() / 2;
             }
         } else {
             switch (line->edge()) {
-                case AnchorLine::Left: return target->x();
-                case AnchorLine::Right: return target->x() + target->width();
-                case AnchorLine::Top: return target->y();
-                case AnchorLine::Bottom: return target->y() + target->height();
-                case AnchorLine::HorizontalCenter: return target->x() + target->width() / 2;
-                case AnchorLine::VerticalCenter: return target->y() + target->height() / 2;
+            case AnchorLine::Left:
+                return target->x();
+            case AnchorLine::Right:
+                return target->x() + target->width();
+            case AnchorLine::Top:
+                return target->y();
+            case AnchorLine::Bottom:
+                return target->y() + target->height();
+            case AnchorLine::HorizontalCenter:
+                return target->x() + target->width() / 2;
+            case AnchorLine::VerticalCenter:
+                return target->y() + target->height() / 2;
             }
         }
         return 0;

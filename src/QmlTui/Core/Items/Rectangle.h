@@ -24,13 +24,14 @@ class QMLTUI_CORE_EXPORT Rectangle : public Item {
 
     /// @brief Fill color of the rectangle. Defaults to "transparent".
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    /// @brief Attached border configuration (style: "single", "double", "rounded", "heavy", "none", color).
+    /// @brief Attached border configuration (style: "single", "double", "rounded", "ascii", "none",
+    /// color).
     Q_PROPERTY(qmltui::Border* border READ border CONSTANT)
     /// @brief Optional gradient fill applied across the interior.
     Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
 
 public:
-    explicit Rectangle(QObject *parent = nullptr);
+    explicit Rectangle(QObject* parent = nullptr);
     ~Rectangle() override;
 
     Color color() const { return m_color; }
@@ -48,7 +49,8 @@ public:
     int topPadding() const override;
     int bottomPadding() const override;
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void colorChanged();

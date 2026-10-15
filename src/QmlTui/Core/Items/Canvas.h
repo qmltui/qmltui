@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QPoint>
 #include <QVariant>
 #include <QVariantList>
 #include <vector>
@@ -20,22 +21,20 @@ class QMLTUI_CORE_EXPORT Canvas : public Item {
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qmltui::Color fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
-    Q_PROPERTY(CellColorMode cellColorMode READ cellColorMode WRITE setCellColorMode NOTIFY cellColorModeChanged)
+    Q_PROPERTY(CellColorMode cellColorMode READ cellColorMode WRITE setCellColorMode NOTIFY
+                   cellColorModeChanged)
     Q_PROPERTY(bool autoClear READ autoClear WRITE setAutoClear NOTIFY autoClearChanged)
     Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY pixelWidthChanged)
     Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY pixelHeightChanged)
 
 public:
-    enum class RenderMode {
-        Braille,
-        HalfBlock
-    };
+    enum class RenderMode { Braille, HalfBlock };
     Q_ENUM(RenderMode)
 
     // How a Braille cell picks its color when dots of different colors share it.
     enum class CellColorMode {
-        LastDot,    // the most recently drawn dot decides (default, cheapest)
-        Average     // mean of every colored dot drawn into the cell since clear()
+        LastDot, // the most recently drawn dot decides (default, cheapest)
+        Average  // mean of every colored dot drawn into the cell since clear()
     };
     Q_ENUM(CellColorMode)
 
@@ -71,8 +70,14 @@ public:
     void setWidth(int width) override;
     void setHeight(int height) override;
 
-    int pixelWidth() const { return m_renderMode == RenderMode::Braille ? width() * braille::DotsX : width() * half_block::SubpixelsX; }
-    int pixelHeight() const { return m_renderMode == RenderMode::Braille ? height() * braille::DotsY : height() * half_block::SubpixelsY; }
+    int pixelWidth() const {
+        return m_renderMode == RenderMode::Braille ? width() * braille::DotsX
+                                                   : width() * half_block::SubpixelsX;
+    }
+    int pixelHeight() const {
+        return m_renderMode == RenderMode::Braille ? height() * braille::DotsY
+                                                   : height() * half_block::SubpixelsY;
+    }
 
     // Scripted drawing from QML. These persist until the next frame when
     // autoClear is true, or until clear() otherwise, and schedule a repaint.
@@ -102,15 +107,15 @@ private:
     bool m_autoClear = true;
     // Pixel storage is derived rendering state: shapes write it while the
     // canvas paints, so it is mutable and never marks the item dirty.
-    mutable std::vector<uint8_t> m_cells;            // Braille mode (2x4 bits per cell)
+    mutable std::vector<uint8_t> m_cells; // Braille mode (2x4 bits per cell)
     // Braille mode ink per cell (ARGB). The last dot drawn into a cell decides its
     // color; 0 means "the canvas color at paint time", which is what setPixel() writes.
     mutable std::vector<uint32_t> m_cellColors;
     // Average mode accumulators, allocated only while that mode is active.
     mutable std::vector<CellAccumulator> m_cellAccumulators;
     CellColorMode m_cellColorMode = CellColorMode::LastDot;
-    mutable std::vector<uint8_t> m_pixelSet;       // occupancy, independent of default color 0
-    mutable std::vector<uint32_t> m_pixelColors;     // HalfBlock mode (1x2 colors per cell, ARGB)
+    mutable std::vector<uint8_t> m_pixelSet;     // occupancy, independent of default color 0
+    mutable std::vector<uint32_t> m_pixelColors; // HalfBlock mode (1x2 colors per cell, ARGB)
     // "default" is the terminal's foreground (alpha 0 -> SGR 39),
     // not invisible ink: a fixed "white" default is unreadable on a light theme.
     Color m_color = "default";
@@ -219,8 +224,6 @@ private:
     int m_y2 = 0;
 };
 
-#include <QPoint>
-
 class QMLTUI_CORE_EXPORT Polygon : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
@@ -246,7 +249,6 @@ private:
     QList<QPoint> m_parsedPoints;
     bool m_closed = true;
 };
-
 
 class QMLTUI_CORE_EXPORT CanvasRectangle : public CanvasShape {
     Q_OBJECT

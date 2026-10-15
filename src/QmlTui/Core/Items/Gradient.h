@@ -18,7 +18,8 @@ class QMLTUI_CORE_EXPORT Gradient : public QObject {
     QML_ELEMENT
     Q_PROPERTY(QQmlListProperty<qmltui::GradientStop> stops READ stops CONSTANT)
     Q_PROPERTY(qreal offset READ offset WRITE setOffset NOTIFY offsetChanged)
-    Q_PROPERTY(Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
+    Q_PROPERTY(
+        Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_CLASSINFO("DefaultProperty", "stops")
 
 public:
@@ -28,7 +29,7 @@ public:
     };
     Q_ENUM(Orientation)
 
-    explicit Gradient(QObject *parent = nullptr);
+    explicit Gradient(QObject* parent = nullptr);
 
     QQmlListProperty<GradientStop> stops() const;
     const QList<QPointer<GradientStop>>& stopsList() const { return m_stops; }
@@ -56,6 +57,8 @@ private:
     static void clearStops(QQmlListProperty<GradientStop>* list);
 
     QList<QPointer<GradientStop>> m_stops;
+    mutable QList<GradientStop*> m_sortedStops;
+    mutable bool m_stopsDirty = true;
     qreal m_offset = 0.0;
     Orientation m_orientation = Vertical;
 };

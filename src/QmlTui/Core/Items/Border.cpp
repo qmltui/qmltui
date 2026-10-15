@@ -6,27 +6,33 @@ namespace qmltui {
 namespace {
 struct RegisterBorderConverters {
     RegisterBorderConverters() {
-        QMetaType::registerConverter<QString, Border::Style>([](const QString &str) {
-            return Border::styleFromString(str, Border::None);
-        });
-        QMetaType::registerConverter<Border::Style, QString>([](Border::Style style) {
-            return Border::styleToString(style);
-        });
+        QMetaType::registerConverter<QString, Border::Style>(
+            [](const QString& str) { return Border::styleFromString(str, Border::None); });
+        QMetaType::registerConverter<Border::Style, QString>(
+            [](Border::Style style) { return Border::styleToString(style); });
     }
 } s_registerBorderConverters;
-}
+} // namespace
 
-Border::Border(Item* owner) : QObject(owner), m_owner(owner) {
-}
+Border::Border(Item* owner) : QObject(owner), m_owner(owner) {}
 
 Border::~Border() = default;
 
 void Border::setStyle(Style style) {
     if (m_style == style) return;
+    const bool paddingChanged = (m_style == None) != (style == None);
     m_style = style;
     emit styleChanged();
     if (m_owner) {
-        m_owner->markDirty();
+        if (paddingChanged) {
+            m_owner->markDirty(Item::DirtyFlag::LayoutDirty | Item::DirtyFlag::SelfDirty);
+            emit m_owner->leftPaddingChanged();
+            emit m_owner->rightPaddingChanged();
+            emit m_owner->topPaddingChanged();
+            emit m_owner->bottomPaddingChanged();
+        } else {
+            m_owner->markDirty();
+        }
     }
 }
 
@@ -45,11 +51,16 @@ Border::Style Border::styleFromString(QStringView str, Style defaultStyle) {
 
 QString Border::styleToString(Style style) {
     switch (style) {
-    case None: return QStringLiteral("none");
-    case Single: return QStringLiteral("single");
-    case Double: return QStringLiteral("double");
-    case Rounded: return QStringLiteral("rounded");
-    case Ascii: return QStringLiteral("ascii");
+    case None:
+        return QStringLiteral("none");
+    case Single:
+        return QStringLiteral("single");
+    case Double:
+        return QStringLiteral("double");
+    case Rounded:
+        return QStringLiteral("rounded");
+    case Ascii:
+        return QStringLiteral("ascii");
     }
     return QStringLiteral("none");
 }

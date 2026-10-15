@@ -32,6 +32,8 @@ struct ClipRect {
     int width = 99999;
     int height = 99999;
 
+    bool isEmpty() const { return width <= 0 || height <= 0; }
+
     bool contains(int cx, int cy) const {
         return cx >= x && cx < x + width && cy >= y && cy < y + height;
     }
@@ -73,6 +75,7 @@ public:
     SelfDirty = 1 << 0,
     DescendantDirty = 1 << 1,
     LayoutDirty = 1 << 2,
+    DescendantLayoutDirty = 1 << 4,
   };
   Q_DECLARE_FLAGS(DirtyFlags, DirtyFlag)
 
@@ -205,12 +208,12 @@ public:
   Item *parentItem() const { return qobject_cast<Item *>(QObject::parent()); }
   virtual void setParentItem(Item *parentItem);
   Anchors *anchors() const { return const_cast<Anchors*>(&m_anchors); }
-  AnchorLine *left() const { return m_leftLine; }
-  AnchorLine *right() const { return m_rightLine; }
-  AnchorLine *top() const { return m_topLine; }
-  AnchorLine *bottom() const { return m_bottomLine; }
-  AnchorLine *horizontalCenter() const { return m_horizontalCenterLine; }
-  AnchorLine *verticalCenter() const { return m_verticalCenterLine; }
+  AnchorLine *left() const;
+  AnchorLine *right() const;
+  AnchorLine *top() const;
+  AnchorLine *bottom() const;
+  AnchorLine *horizontalCenter() const;
+  AnchorLine *verticalCenter() const;
 
   bool clip() const { return m_clip; }
   void setClip(bool c);
@@ -284,6 +287,7 @@ private:
   friend class ItemPaintTraversal;
   friend class Repeater;
 
+  StateController *ensureStateController() const;
   void layoutSubtree();
   void paintSubtree(TextGridBuffer &buffer, int absX, int absY,
                     const ClipRect &clipRect = ClipRect());
@@ -406,12 +410,12 @@ protected:
   bool m_activeFocus = false;
   bool m_focusable = false;
   Anchors m_anchors;
-  AnchorLine* m_leftLine = nullptr;
-  AnchorLine* m_rightLine = nullptr;
-  AnchorLine* m_topLine = nullptr;
-  AnchorLine* m_bottomLine = nullptr;
-  AnchorLine* m_horizontalCenterLine = nullptr;
-  AnchorLine* m_verticalCenterLine = nullptr;
+  mutable AnchorLine* m_leftLine = nullptr;
+  mutable AnchorLine* m_rightLine = nullptr;
+  mutable AnchorLine* m_topLine = nullptr;
+  mutable AnchorLine* m_bottomLine = nullptr;
+  mutable AnchorLine* m_horizontalCenterLine = nullptr;
+  mutable AnchorLine* m_verticalCenterLine = nullptr;
   bool m_clip = false;
   int m_padding = 0;
   int m_leftPadding = -1;
@@ -423,7 +427,7 @@ protected:
   mutable QList<Item *> m_stackingChildren;
   mutable bool m_stackingOrderDirty = true;
 
-  std::unique_ptr<StateController> m_stateController;
+  mutable std::unique_ptr<StateController> m_stateController;
   QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
   bool m_filtersChildMouseEvents = false;
   quint8 m_itemFlags = 0;

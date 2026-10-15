@@ -6,7 +6,7 @@
 
 namespace qmltui {
 
-GridLayout::GridLayout(QObject *parent) : Item(parent) {
+GridLayout::GridLayout(QObject* parent) : Item(parent) {
     setClip(true);
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
@@ -56,29 +56,35 @@ void GridLayout::setFlow(Flow flow) {
 }
 
 struct GridItemInfo {
-    Item *item = nullptr;
+    Item* item = nullptr;
     int row = 0;
     int col = 0;
     int rowSpan = 1;
     int colSpan = 1;
-    LayoutAttached *layout = nullptr;
+    LayoutAttached* layout = nullptr;
 };
 
 void GridLayout::layoutChildren() {
-    const auto childItems = children();
-    std::vector<Item *> visibleChildren;
-    for (QObject *child : childItems) {
-        if (auto *item = qobject_cast<Item *>(child)) {
-            if (item->visible())
-                visibleChildren.push_back(item);
-        }
+    std::vector<Item*> visibleChildren;
+    for (Item* item : childItems()) {
+        if (item && item->visible()) visibleChildren.push_back(item);
     }
 
     if (visibleChildren.empty()) return;
 
     int targetCols = m_columns;
     if (targetCols <= 0) {
-        targetCols = (m_rows > 0) ? (std::max)(1, static_cast<int>((visibleChildren.size() + m_rows - 1) / m_rows)) : 2;
+        targetCols =
+            (m_rows > 0)
+                ? (std::max)(1, static_cast<int>((visibleChildren.size() + m_rows - 1) / m_rows))
+                : 2;
+    }
+    int targetRows = m_rows;
+    if (m_flow == TopToBottom && targetRows <= 0) {
+        targetRows = (m_columns > 0)
+                         ? (std::max)(1, static_cast<int>((visibleChildren.size() + m_columns - 1) /
+                                                          m_columns))
+                         : 2;
     }
 
     std::vector<GridItemInfo> itemsInfo;
@@ -87,8 +93,9 @@ void GridLayout::layoutChildren() {
     int autoRow = 0;
     int autoCol = 0;
 
-    for (Item *item : visibleChildren) {
-        auto *attached = qobject_cast<LayoutAttached *>(qmlAttachedPropertiesObject<Layout>(item, true));
+    for (Item* item : visibleChildren) {
+        auto* attached =
+            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, true));
         int r = attached ? attached->row : -1;
         int c = attached ? attached->column : -1;
         int rSpan = (std::max)(1, attached ? attached->rowSpan : 1);
@@ -104,7 +111,7 @@ void GridLayout::layoutChildren() {
                     }
                 } else {
                     autoRow++;
-                    if (m_rows > 0 && autoRow >= m_rows) {
+                    if (targetRows > 0 && autoRow >= targetRows) {
                         autoRow = 0;
                         autoCol++;
                     }
@@ -132,7 +139,7 @@ void GridLayout::layoutChildren() {
         } else {
             autoRow = r + rSpan;
             autoCol = c;
-            if (m_rows > 0 && autoRow >= m_rows) {
+            if (targetRows > 0 && autoRow >= targetRows) {
                 autoRow = 0;
                 autoCol++;
             }
@@ -141,7 +148,7 @@ void GridLayout::layoutChildren() {
 
     int maxRow = 0;
     int maxCol = 0;
-    for (const auto &info : itemsInfo) {
+    for (const auto& info : itemsInfo) {
         maxRow = (std::max)(maxRow, info.row + info.rowSpan);
         maxCol = (std::max)(maxCol, info.col + info.colSpan);
     }
@@ -151,7 +158,7 @@ void GridLayout::layoutChildren() {
     std::vector<bool> colFill(maxCol, false);
     std::vector<bool> rowFill(maxRow, false);
 
-    for (const auto &info : itemsInfo) {
+    for (const auto& info : itemsInfo) {
         int prefW = info.item->implicitWidth();
         int prefH = info.item->implicitHeight();
         if (info.layout) {
@@ -169,7 +176,7 @@ void GridLayout::layoutChildren() {
         }
     }
 
-    for (const auto &info : itemsInfo) {
+    for (const auto& info : itemsInfo) {
         int prefW = info.item->implicitWidth();
         int prefH = info.item->implicitHeight();
         if (info.layout) {
@@ -179,34 +186,41 @@ void GridLayout::layoutChildren() {
 
         if (info.colSpan > 1) {
             int current = 0;
-            for (int c = info.col; c < info.col + info.colSpan; ++c) current += colWidths[c];
+            for (int c = info.col; c < info.col + info.colSpan; ++c)
+                current += colWidths[c];
             if (prefW > current) {
                 int add = (prefW - current) / info.colSpan;
-                for (int c = info.col; c < info.col + info.colSpan; ++c) colWidths[c] += add;
+                for (int c = info.col; c < info.col + info.colSpan; ++c)
+                    colWidths[c] += add;
             }
         }
         if (info.rowSpan > 1) {
             int current = 0;
-            for (int r = info.row; r < info.row + info.rowSpan; ++r) current += rowHeights[r];
+            for (int r = info.row; r < info.row + info.rowSpan; ++r)
+                current += rowHeights[r];
             if (prefH > current) {
                 int add = (prefH - current) / info.rowSpan;
-                for (int r = info.row; r < info.row + info.rowSpan; ++r) rowHeights[r] += add;
+                for (int r = info.row; r < info.row + info.rowSpan; ++r)
+                    rowHeights[r] += add;
             }
         }
     }
 
     const int totalSpacingW = (std::max)(0, maxCol - 1) * m_columnSpacing;
     int totalColW = totalSpacingW;
-    for (int w : colWidths) totalColW += w;
+    for (int w : colWidths)
+        totalColW += w;
 
     const int totalSpacingH = (std::max)(0, maxRow - 1) * m_rowSpacing;
     int totalRowH = totalSpacingH;
-    for (int h : rowHeights) totalRowH += h;
+    for (int h : rowHeights)
+        totalRowH += h;
 
     const int availW = m_width > 0 ? (std::max)(0, m_width - leftPadding() - rightPadding()) : 0;
     if (availW > totalColW) {
         int fillColsCount = 0;
-        for (bool fill : colFill) if (fill) fillColsCount++;
+        for (bool fill : colFill)
+            if (fill) fillColsCount++;
         if (fillColsCount > 0) {
             int extraPerCol = (availW - totalColW) / fillColsCount;
             for (int c = 0; c < maxCol; ++c) {
@@ -218,7 +232,8 @@ void GridLayout::layoutChildren() {
     const int availH = m_height > 0 ? (std::max)(0, m_height - topPadding() - bottomPadding()) : 0;
     if (availH > totalRowH) {
         int fillRowsCount = 0;
-        for (bool fill : rowFill) if (fill) fillRowsCount++;
+        for (bool fill : rowFill)
+            if (fill) fillRowsCount++;
         if (fillRowsCount > 0) {
             int extraPerRow = (availH - totalRowH) / fillRowsCount;
             for (int r = 0; r < maxRow; ++r) {
@@ -237,16 +252,18 @@ void GridLayout::layoutChildren() {
         rowY[r] = rowY[r - 1] + rowHeights[r - 1] + m_rowSpacing;
     }
 
-    for (const auto &info : itemsInfo) {
+    for (const auto& info : itemsInfo) {
         int cellX = colX[info.col];
         int cellY = rowY[info.row];
 
         int cellW = 0;
-        for (int c = info.col; c < info.col + info.colSpan; ++c) cellW += colWidths[c];
+        for (int c = info.col; c < info.col + info.colSpan; ++c)
+            cellW += colWidths[c];
         cellW += (info.colSpan - 1) * m_columnSpacing;
 
         int cellH = 0;
-        for (int r = info.row; r < info.row + info.rowSpan; ++r) cellH += rowHeights[r];
+        for (int r = info.row; r < info.row + info.rowSpan; ++r)
+            cellH += rowHeights[r];
         cellH += (info.rowSpan - 1) * m_rowSpacing;
 
         int itemW = info.item->implicitWidth();
@@ -264,22 +281,30 @@ void GridLayout::layoutChildren() {
             align = info.layout->alignment;
         }
 
-        if (fillW) itemW = cellW;
-        else itemW = (std::min)(itemW, cellW);
+        if (fillW)
+            itemW = cellW;
+        else
+            itemW = (std::min)(itemW, cellW);
 
-        if (fillH) itemH = cellH;
-        else itemH = (std::min)(itemH, cellH);
+        if (fillH)
+            itemH = cellH;
+        else
+            itemH = (std::min)(itemH, cellH);
 
         int posX = cellX;
         if (!fillW) {
-            if (align & Qt::AlignRight) posX = cellX + cellW - itemW;
-            else if (align & Qt::AlignHCenter) posX = cellX + (cellW - itemW) / 2;
+            if (align & Qt::AlignRight)
+                posX = cellX + cellW - itemW;
+            else if (align & Qt::AlignHCenter)
+                posX = cellX + (cellW - itemW) / 2;
         }
 
         int posY = cellY;
         if (!fillH) {
-            if (align & Qt::AlignBottom) posY = cellY + cellH - itemH;
-            else if (align & Qt::AlignVCenter) posY = cellY + (cellH - itemH) / 2;
+            if (align & Qt::AlignBottom)
+                posY = cellY + cellH - itemH;
+            else if (align & Qt::AlignVCenter)
+                posY = cellY + (cellH - itemH) / 2;
         }
 
         info.item->setX(posX);
@@ -291,69 +316,75 @@ void GridLayout::layoutChildren() {
 }
 
 int GridLayout::implicitWidth() const {
-    const auto childItems = children();
-    int targetCols = m_columns;
-    int childCount = 0;
-    for (QObject *child : childItems) {
-        if (auto *item = qobject_cast<Item *>(child)) {
-            if (item->visible()) childCount++;
-        }
+    std::vector<Item*> visibleChildren;
+    for (Item* item : childItems()) {
+        if (item && item->visible()) visibleChildren.push_back(item);
     }
+    const int childCount = static_cast<int>(visibleChildren.size());
     if (childCount == 0) return leftPadding() + rightPadding();
-    if (targetCols <= 0) targetCols = 2;
+
+    int targetCols = m_columns;
+    if (targetCols <= 0) {
+        targetCols = (m_rows > 0) ? (std::max)(1, (childCount + m_rows - 1) / m_rows) : 2;
+    }
+    const int targetRows =
+        (m_rows > 0) ? m_rows : (std::max)(1, (childCount + targetCols - 1) / targetCols);
 
     std::vector<int> colWidths(targetCols, 0);
-    int colIndex = 0;
-    for (QObject *child : childItems) {
-        if (auto *item = qobject_cast<Item *>(child)) {
-            if (!item->visible()) continue;
-            auto *attached = qobject_cast<LayoutAttached *>(qmlAttachedPropertiesObject<Layout>(item, false));
-            int prefW = item->implicitWidth();
-            if (attached && attached->preferredWidth >= 0) prefW = attached->preferredWidth;
-            int col = (attached && attached->column >= 0) ? attached->column : (colIndex % targetCols);
-            if (col < targetCols) {
-                colWidths[col] = (std::max)(colWidths[col], prefW);
-            }
-            colIndex++;
-        }
+    int itemIndex = 0;
+    for (Item* item : visibleChildren) {
+        auto* attached =
+            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, false));
+        int prefW = item->implicitWidth();
+        if (attached && attached->preferredWidth >= 0) prefW = attached->preferredWidth;
+        int defaultCol =
+            (m_flow == TopToBottom) ? (itemIndex / targetRows) : (itemIndex % targetCols);
+        int col = (attached && attached->column >= 0) ? attached->column : defaultCol;
+        if (col >= static_cast<int>(colWidths.size())) colWidths.resize(col + 1, 0);
+        colWidths[col] = (std::max)(colWidths[col], prefW);
+        itemIndex++;
     }
 
-    int totalW = leftPadding() + rightPadding() + (std::max)(0, targetCols - 1) * m_columnSpacing;
-    for (int w : colWidths) totalW += w;
+    const int numCols = static_cast<int>(colWidths.size());
+    int totalW = leftPadding() + rightPadding() + (std::max)(0, numCols - 1) * m_columnSpacing;
+    for (int w : colWidths)
+        totalW += w;
     return totalW;
 }
 
 int GridLayout::implicitHeight() const {
-    const auto childItems = children();
-    int targetCols = m_columns;
-    int childCount = 0;
-    for (QObject *child : childItems) {
-        if (auto *item = qobject_cast<Item *>(child)) {
-            if (item->visible()) childCount++;
-        }
+    std::vector<Item*> visibleChildren;
+    for (Item* item : childItems()) {
+        if (item && item->visible()) visibleChildren.push_back(item);
     }
+    const int childCount = static_cast<int>(visibleChildren.size());
     if (childCount == 0) return topPadding() + bottomPadding();
-    if (targetCols <= 0) targetCols = 2;
 
-    int totalRows = (childCount + targetCols - 1) / targetCols;
+    int targetCols = m_columns;
+    if (targetCols <= 0) {
+        targetCols = (m_rows > 0) ? (std::max)(1, (childCount + m_rows - 1) / m_rows) : 2;
+    }
+    int totalRows =
+        (m_rows > 0) ? m_rows : (std::max)(1, (childCount + targetCols - 1) / targetCols);
     std::vector<int> rowHeights(totalRows, 0);
     int itemIndex = 0;
-    for (QObject *child : childItems) {
-        if (auto *item = qobject_cast<Item *>(child)) {
-            if (!item->visible()) continue;
-            auto *attached = qobject_cast<LayoutAttached *>(qmlAttachedPropertiesObject<Layout>(item, false));
-            int prefH = item->implicitHeight();
-            if (attached && attached->preferredHeight >= 0) prefH = attached->preferredHeight;
-            int r = (attached && attached->row >= 0) ? attached->row : (itemIndex / targetCols);
-            if (r < totalRows) {
-                rowHeights[r] = (std::max)(rowHeights[r], prefH);
-            }
-            itemIndex++;
-        }
+    for (Item* item : visibleChildren) {
+        auto* attached =
+            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, false));
+        int prefH = item->implicitHeight();
+        if (attached && attached->preferredHeight >= 0) prefH = attached->preferredHeight;
+        int defaultRow =
+            (m_flow == TopToBottom) ? (itemIndex % totalRows) : (itemIndex / targetCols);
+        int r = (attached && attached->row >= 0) ? attached->row : defaultRow;
+        if (r >= static_cast<int>(rowHeights.size())) rowHeights.resize(r + 1, 0);
+        rowHeights[r] = (std::max)(rowHeights[r], prefH);
+        itemIndex++;
     }
 
-    int totalH = topPadding() + bottomPadding() + (std::max)(0, totalRows - 1) * m_rowSpacing;
-    for (int h : rowHeights) totalH += h;
+    const int numRows = static_cast<int>(rowHeights.size());
+    int totalH = topPadding() + bottomPadding() + (std::max)(0, numRows - 1) * m_rowSpacing;
+    for (int h : rowHeights)
+        totalH += h;
     return totalH;
 }
 

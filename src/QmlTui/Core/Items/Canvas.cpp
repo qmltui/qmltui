@@ -5,7 +5,6 @@
 #include <cmath>
 #include <QJSValue>
 
-
 namespace qmltui {
 
 namespace {
@@ -19,8 +18,14 @@ void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, u
         painter.setPixelColorHex(x, y, color);
         if (x == x2 && y == y2) break;
         e2 = 2 * err;
-        if (e2 >= dy) { err += dy; x += sx; }
-        if (e2 <= dx) { err += dx; y += sy; }
+        if (e2 >= dy) {
+            err += dy;
+            x += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y += sy;
+        }
     }
 }
 
@@ -28,7 +33,8 @@ void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, u
 
 // Average mode: fold one colored dot into its cell. Colors without RGB (terminal
 // default or transparent) carry no information and are skipped.
-static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulators, size_t idx, uint32_t color) {
+static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulators, size_t idx,
+                                uint32_t color) {
     if (idx >= accumulators.size()) return;
     const uint32_t rgb = ColorMapper::toArgb(color);
     if ((rgb >> 24) == 0) return;
@@ -51,27 +57,28 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
         if (value) {
             m_canvas.m_cells[idx] |= bitMask;
             if (idx < m_canvas.m_cellColors.size())
-                m_canvas.m_cellColors[idx] = 0x00000000;   // follow the canvas color
+                m_canvas.m_cellColors[idx] = 0x00000000; // follow the canvas color
             if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
                 accumulateCellColor(m_canvas.m_cellAccumulators, idx, m_canvas.m_resolvedColor);
         } else {
             m_canvas.m_cells[idx] &= static_cast<uint8_t>(~bitMask);
         }
     } else {
-        const uint32_t color = value
-            ? m_canvas.m_resolvedColor
-            : (!m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor);
+        const uint32_t color =
+            value ? m_canvas.m_resolvedColor
+                  : (!m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor);
         setPixelColorHex(x, y, color);
-        if (!value && (m_canvas.m_resolvedFillColor >> 24) == 0
-            && x >= 0 && y >= 0 && x < pixelWidth() && y < pixelHeight()) {
+        if (!value && (m_canvas.m_resolvedFillColor >> 24) == 0 && x >= 0 && y >= 0 &&
+            x < pixelWidth() && y < pixelHeight()) {
             m_canvas.m_pixelSet[static_cast<size_t>(y * pixelWidth() + x)] = false;
         }
     }
 }
 
 void CanvasPainter::setPixelColor(int x, int y, Color color) {
-    setPixelColorHex(x, y, ColorMapper::toPaintedColor(
-        ColorMapper::fromString(color, m_canvas.m_resolvedColor)));
+    setPixelColorHex(
+        x, y,
+        ColorMapper::toPaintedColor(ColorMapper::fromString(color, m_canvas.m_resolvedColor)));
 }
 
 void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
@@ -79,11 +86,12 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
     const int h = pixelHeight();
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
-        const size_t idx = static_cast<size_t>((y / braille::DotsY) * m_canvas.width() + (x / braille::DotsX));
+        const size_t idx =
+            static_cast<size_t>((y / braille::DotsY) * m_canvas.width() + (x / braille::DotsX));
         if (idx < m_canvas.m_cells.size()) {
             m_canvas.m_cells[idx] |= braille::dotMask(x % braille::DotsX, y % braille::DotsY);
             if (idx < m_canvas.m_cellColors.size())
-                m_canvas.m_cellColors[idx] = color;         // last dot drawn wins the cell
+                m_canvas.m_cellColors[idx] = color; // last dot drawn wins the cell
             if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
                 accumulateCellColor(m_canvas.m_cellAccumulators, idx, color);
         }
@@ -97,10 +105,12 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
 }
 
 void CanvasPainter::clear() {
-    const uint32_t clearBg = !m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor;
+    const uint32_t clearBg =
+        !m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor;
     std::fill(m_canvas.m_cells.begin(), m_canvas.m_cells.end(), 0x00);
     std::fill(m_canvas.m_cellColors.begin(), m_canvas.m_cellColors.end(), 0x00000000);
-    std::fill(m_canvas.m_cellAccumulators.begin(), m_canvas.m_cellAccumulators.end(), Canvas::CellAccumulator{});
+    std::fill(m_canvas.m_cellAccumulators.begin(), m_canvas.m_cellAccumulators.end(),
+              Canvas::CellAccumulator{});
     std::fill(m_canvas.m_pixelColors.begin(), m_canvas.m_pixelColors.end(), clearBg);
     // A transparent fill clears to holes, while a drawn default-color pixel
     // is occupied and uses the terminal's foreground.
@@ -119,8 +129,7 @@ CanvasPainter Canvas::painter() const {
 void Canvas::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::toPaintedColor(
-        ColorMapper::fromString(color, 0xFFFFFFFF));
+    m_resolvedColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0xFFFFFFFF));
     emit colorChanged();
     markDirty();
 }
@@ -129,8 +138,7 @@ void Canvas::setFillColor(Color color) {
     if (m_fillColor == color) return;
     m_fillColor = color;
     // A transparent fill means no ink, which the canvas already spells 0.
-    m_resolvedFillColor = ColorMapper::toPaintedColor(
-        ColorMapper::fromString(color, 0x00000000));
+    m_resolvedFillColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0x00000000));
     emit fillColorChanged();
     markDirty();
 }
@@ -211,8 +219,7 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 
     resizeBuffer();
     CanvasPainter surface = painter();
-    if (m_autoClear)
-        surface.clear();
+    if (m_autoClear) surface.clear();
 
     // Draw all visual children shapes into the pixel surface.
     for (Item* child : childItems()) {
@@ -226,14 +233,11 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
     if (m_renderMode == RenderMode::Braille) {
         for (int y = 0; y < height(); ++y) {
             for (int x = 0; x < width(); ++x) {
-                if (!clipRect.contains(absX + x, absY + y))
-                    continue;
+                if (!clipRect.contains(absX + x, absY + y)) continue;
                 const uint8_t cellValue = m_cells[static_cast<size_t>(y * width() + x)];
-                if (cellValue == 0)
-                    continue;
-                Cell *targetCell = buffer.tryCellAt(absX + x, absY + y);
-                if (!targetCell)
-                    continue;
+                if (cellValue == 0) continue;
+                Cell* targetCell = buffer.tryCellAt(absX + x, absY + y);
+                if (!targetCell) continue;
                 Cell& cell = *targetCell;
                 cell.setCharacter(braille::utf8(cellValue));
                 cell.displayWidth = 1;
@@ -241,13 +245,12 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 const size_t cellIdx = static_cast<size_t>(y * width() + x);
                 const uint32_t ink = m_cellColors[cellIdx];
                 cell.fgColor = ink ? ink : m_resolvedColor;
-                if (m_cellColorMode == CellColorMode::Average && cellIdx < m_cellAccumulators.size()) {
+                if (m_cellColorMode == CellColorMode::Average &&
+                    cellIdx < m_cellAccumulators.size()) {
                     const CellAccumulator& acc = m_cellAccumulators[cellIdx];
                     if (acc.count > 0) {
-                        cell.fgColor = 0xFF000000u
-                            | ((acc.red / acc.count) << 16)
-                            | ((acc.green / acc.count) << 8)
-                            | (acc.blue / acc.count);
+                        cell.fgColor = 0xFF000000u | ((acc.red / acc.count) << 16) |
+                                       ((acc.green / acc.count) << 8) | (acc.blue / acc.count);
                     }
                 }
             }
@@ -257,22 +260,24 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
         const int h = height();
         for (int cellY = 0; cellY < h; ++cellY) {
             for (int cellX = 0; cellX < w; ++cellX) {
-                if (!clipRect.contains(absX + cellX, absY + cellY))
-                    continue;
+                if (!clipRect.contains(absX + cellX, absY + cellY)) continue;
                 const int topY = cellY * half_block::SubpixelsY;
                 const int bottomY = cellY * half_block::SubpixelsY + 1;
 
-                const uint32_t topColor = (topY < h * half_block::SubpixelsY) ? m_pixelColors[static_cast<size_t>(topY * w + cellX)] : 0x00000000;
-                const uint32_t bottomColor = (bottomY < h * half_block::SubpixelsY) ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)] : 0x00000000;
+                const uint32_t topColor = (topY < h * half_block::SubpixelsY)
+                                              ? m_pixelColors[static_cast<size_t>(topY * w + cellX)]
+                                              : 0x00000000;
+                const uint32_t bottomColor =
+                    (bottomY < h * half_block::SubpixelsY)
+                        ? m_pixelColors[static_cast<size_t>(bottomY * w + cellX)]
+                        : 0x00000000;
 
                 const bool topSet = m_pixelSet[static_cast<size_t>(topY * w + cellX)];
                 const bool bottomSet = m_pixelSet[static_cast<size_t>(bottomY * w + cellX)];
-                if (!topSet && !bottomSet)
-                    continue;
+                if (!topSet && !bottomSet) continue;
 
-                Cell *targetCell = buffer.tryCellAt(absX + cellX, absY + cellY);
-                if (!targetCell)
-                    continue;
+                Cell* targetCell = buffer.tryCellAt(absX + cellX, absY + cellY);
+                if (!targetCell) continue;
                 Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
@@ -316,7 +321,8 @@ void Canvas::resizeBuffer() const {
         if (m_cellAccumulators.size() != accumulatorsNeeded)
             m_cellAccumulators.assign(accumulatorsNeeded, CellAccumulator{});
     } else {
-        const size_t needed = static_cast<size_t>((std::max)(0, width()) * ((std::max)(0, height()) * half_block::SubpixelsY));
+        const size_t needed = static_cast<size_t>(
+            (std::max)(0, width()) * ((std::max)(0, height()) * half_block::SubpixelsY));
         if (m_pixelColors.size() != needed) {
             m_pixelColors.resize(needed, 0x00000000);
             m_pixelSet.resize(needed, false);
@@ -328,8 +334,7 @@ void Canvas::resizeBuffer() const {
 void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::toPaintedColor(
-        ColorMapper::fromString(color, 0xFFFFFFFF));
+    m_resolvedColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0xFFFFFFFF));
     m_hasCustomColor = true;
     emit colorChanged();
     if (parentItem()) parentItem()->markDirty();
@@ -386,7 +391,8 @@ void Line::draw(CanvasPainter& painter) const {
 Polygon::Polygon(QObject* parent) : CanvasShape(parent) {}
 
 void Polygon::setPoints(const QVariantList& points) {
-    m_parsedPoints.clear();
+    QList<QPoint> parsed;
+    parsed.reserve(points.size());
     for (const QVariant& var : points) {
         int px = 0, py = 0;
         if (var.userType() == qMetaTypeId<QJSValue>()) {
@@ -397,9 +403,15 @@ void Polygon::setPoints(const QVariantList& points) {
             QVariantMap map = var.toMap();
             px = map.value("x").toInt();
             py = map.value("y").toInt();
+        } else if (var.canConvert<QPoint>()) {
+            const QPoint pt = var.toPoint();
+            px = pt.x();
+            py = pt.y();
         }
-        m_parsedPoints.append(QPoint(px, py));
+        parsed.append(QPoint(px, py));
     }
+    if (m_points == points && m_parsedPoints == parsed) return;
+    m_parsedPoints = std::move(parsed);
     m_points = points;
     emit pointsChanged();
     if (parentItem()) parentItem()->markDirty();
@@ -427,12 +439,16 @@ void Polygon::draw(CanvasPainter& painter) const {
     }
 }
 
-
-
 // --- CanvasRectangle ---
 CanvasRectangle::CanvasRectangle(QObject* parent) : CanvasShape(parent) {}
 
-void CanvasRectangle::setFill(bool fill) { if (m_fill != fill) { m_fill = fill; emit fillChanged(); if (parentItem()) parentItem()->markDirty(); } }
+void CanvasRectangle::setFill(bool fill) {
+    if (m_fill != fill) {
+        m_fill = fill;
+        emit fillChanged();
+        if (parentItem()) parentItem()->markDirty();
+    }
+}
 
 void CanvasRectangle::draw(CanvasPainter& painter) const {
     const uint32_t col = resolvedColor(painter);
@@ -460,10 +476,34 @@ void CanvasRectangle::draw(CanvasPainter& painter) const {
 // --- Circle ---
 Circle::Circle(QObject* parent) : CanvasShape(parent) {}
 
-void Circle::setCx(int cx) { m_cx = cx; m_cxSet = true; emit cxChanged(); if (parentItem()) parentItem()->markDirty(); }
-void Circle::setCy(int cy) { m_cy = cy; m_cySet = true; emit cyChanged(); if (parentItem()) parentItem()->markDirty(); }
-void Circle::setRadius(int r) { if (m_radius != r) { m_radius = r; emit radiusChanged(); if (parentItem()) parentItem()->markDirty(); } }
-void Circle::setFill(bool fill) { if (m_fill != fill) { m_fill = fill; emit fillChanged(); if (parentItem()) parentItem()->markDirty(); } }
+void Circle::setCx(int cx) {
+    if (m_cxSet && m_cx == cx) return;
+    m_cx = cx;
+    m_cxSet = true;
+    emit cxChanged();
+    if (parentItem()) parentItem()->markDirty();
+}
+void Circle::setCy(int cy) {
+    if (m_cySet && m_cy == cy) return;
+    m_cy = cy;
+    m_cySet = true;
+    emit cyChanged();
+    if (parentItem()) parentItem()->markDirty();
+}
+void Circle::setRadius(int r) {
+    if (m_radius != r) {
+        m_radius = r;
+        emit radiusChanged();
+        if (parentItem()) parentItem()->markDirty();
+    }
+}
+void Circle::setFill(bool fill) {
+    if (m_fill != fill) {
+        m_fill = fill;
+        emit fillChanged();
+        if (parentItem()) parentItem()->markDirty();
+    }
+}
 
 void Circle::draw(CanvasPainter& painter) const {
     const uint32_t col = resolvedColor(painter);
@@ -510,6 +550,5 @@ void Circle::draw(CanvasPainter& painter) const {
         }
     }
 }
-
 
 } // namespace qmltui

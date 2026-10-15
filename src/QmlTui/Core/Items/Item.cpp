@@ -19,18 +19,7 @@
 
 namespace qmltui {
 
-Item::Item(QObject *parent) : QObject(parent), m_anchors(this),
-    m_stateController(std::make_unique<StateController>(this)) {
-    m_stateController->setDefaultTarget(this);
-    connect(m_stateController.get(), &StateController::stateChanged, this, &Item::stateChanged);
-
-    m_leftLine = new AnchorLine(AnchorLine::Left, this);
-    m_rightLine = new AnchorLine(AnchorLine::Right, this);
-    m_topLine = new AnchorLine(AnchorLine::Top, this);
-    m_bottomLine = new AnchorLine(AnchorLine::Bottom, this);
-    m_horizontalCenterLine = new AnchorLine(AnchorLine::HorizontalCenter, this);
-    m_verticalCenterLine = new AnchorLine(AnchorLine::VerticalCenter, this);
-
+Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
     if (parent) {
         if (Item* parentItem = qobject_cast<Item*>(parent)) {
             parentItem->registerChildItem(this);
@@ -48,6 +37,39 @@ Item::~Item() {
     if (term && term->focusedItem() == this) {
         term->setFocusedItem(nullptr);
     }
+}
+
+AnchorLine* Item::left() const {
+    if (!m_leftLine) m_leftLine = new AnchorLine(AnchorLine::Left, const_cast<Item*>(this));
+    return m_leftLine;
+}
+
+AnchorLine* Item::right() const {
+    if (!m_rightLine) m_rightLine = new AnchorLine(AnchorLine::Right, const_cast<Item*>(this));
+    return m_rightLine;
+}
+
+AnchorLine* Item::top() const {
+    if (!m_topLine) m_topLine = new AnchorLine(AnchorLine::Top, const_cast<Item*>(this));
+    return m_topLine;
+}
+
+AnchorLine* Item::bottom() const {
+    if (!m_bottomLine) m_bottomLine = new AnchorLine(AnchorLine::Bottom, const_cast<Item*>(this));
+    return m_bottomLine;
+}
+
+AnchorLine* Item::horizontalCenter() const {
+    if (!m_horizontalCenterLine)
+        m_horizontalCenterLine =
+            new AnchorLine(AnchorLine::HorizontalCenter, const_cast<Item*>(this));
+    return m_horizontalCenterLine;
+}
+
+AnchorLine* Item::verticalCenter() const {
+    if (!m_verticalCenterLine)
+        m_verticalCenterLine = new AnchorLine(AnchorLine::VerticalCenter, const_cast<Item*>(this));
+    return m_verticalCenterLine;
 }
 
 QQmlListProperty<QObject> Item::data() const {
@@ -282,10 +304,16 @@ void Item::markDirty(DirtyFlags flags) {
 
     if (notify)
         emit dirty();
-    // Bubble DescendantDirty up to parent
+    // Bubble DescendantDirty (and DescendantLayoutDirty when LayoutDirty) up to ancestors
+    const DirtyFlags propFlags =
+        DirtyFlag::DescendantDirty |
+        (flags.testFlag(DirtyFlag::LayoutDirty) ? DirtyFlag::DescendantLayoutDirty
+                                                : DirtyFlag::None);
     Item* p = qobject_cast<Item*>(parent());
     while (p) {
-        p->m_dirtyFlags |= DirtyFlag::DescendantDirty;
+        if ((p->m_dirtyFlags & propFlags) == propFlags && !notify)
+            break;
+        p->m_dirtyFlags |= propFlags;
         if (notify)
             emit p->dirty();
         p = qobject_cast<Item*>(p->parent());
@@ -410,10 +438,12 @@ void Item::childEvent(QChildEvent* event) {
         m_dataChildren.removeIf([childObject](const QPointer<QObject> &entry) {
             return entry.isNull() || entry.data() == childObject;
         });
-        if (State *state = qobject_cast<State *>(childObject))
-            m_stateController->stateRemoved(state);
-        else if (Transition *transition = qobject_cast<Transition *>(childObject))
-            m_stateController->transitionRemoved(transition);
+        if (m_stateController) {
+            if (State *state = qobject_cast<State *>(childObject))
+                m_stateController->stateRemoved(state);
+            else if (Transition *transition = qobject_cast<Transition *>(childObject))
+                m_stateController->transitionRemoved(transition);
+        }
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
             unregisterChildItem(childItem);
         } else {
@@ -511,6 +541,9 @@ void Item::scheduleChildGeometryInvalidation() {
 // updateLayout() that keeps invalidating itself cannot hang the frame.
 void Item::layoutSubtree() {
     if (!m_visible) return;
+    if (!(m_dirtyFlags & (DirtyFlag::LayoutDirty | DirtyFlag::DescendantLayoutDirty)))
+        return;
+    m_dirtyFlags &= ~DirtyFlags(DirtyFlag::DescendantLayoutDirty);
 
     QPointer<Item> selfGuard(this);
     constexpr int MaxLayoutPasses = 3;
@@ -523,7 +556,7 @@ void Item::layoutSubtree() {
     }
 
     const QList<Item *> &orderedChildren = stackingChildren();
-    QVarLengthArray<QPointer<Item>, 8> children;
+    QVarLengthArray<QPointer<Item>, 64> children;
     children.reserve(orderedChildren.size());
     for (Item *child : orderedChildren)
         children.append(child);
@@ -538,6 +571,7 @@ void Item::layoutSubtree() {
         m_dirtyFlags &= ~DirtyFlags(DirtyFlag::LayoutDirty);
         updateLayout();
     }
+    m_dirtyFlags &= ~DirtyFlags(DirtyFlag::DescendantLayoutDirty);
 }
 
 void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) {
@@ -561,24 +595,39 @@ void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRe
         return;
 
     const ClipRect childrenClip = clipRectForChildren(absX, absY, clipRect);
-    const QPoint offset = contentOffset();
+    if (!m_clip || !childrenClip.isEmpty()) {
+        const QPoint offset = contentOffset();
 
-    const QList<Item *> &orderedChildren = stackingChildren();
-    QVarLengthArray<QPointer<Item>, 8> children;
-    children.reserve(orderedChildren.size());
-    for (Item *child : orderedChildren)
-        children.append(child);
-    for (const QPointer<Item> &childGuard : children) {
-        Item *childItem = childGuard.data();
-        if (!childItem)
-            continue;
-        if (childItem->isPopup() && childItem->visible()) continue;   // painted by Terminal::paintOverlay
-        childItem->paintSubtree(buffer,
-                               absX + childItem->x() - offset.x(),
-                               absY + childItem->y() - offset.y(),
-                               childrenClip);
-        if (!selfGuard)
-            return;
+        const QList<Item *> &orderedChildren = stackingChildren();
+        QVarLengthArray<QPointer<Item>, 64> children;
+        children.reserve(orderedChildren.size());
+        for (Item *child : orderedChildren)
+            children.append(child);
+        for (const QPointer<Item> &childGuard : children) {
+            Item *childItem = childGuard.data();
+            if (!childItem)
+                continue;
+            if (childItem->isPopup() && childItem->visible()) continue;   // painted by Terminal::paintOverlay
+            const int childAbsX = absX + childItem->x() - offset.x();
+            const int childAbsY = absY + childItem->y() - offset.y();
+            const int childW = childItem->width();
+            const int childH = childItem->height();
+            if ((childItem->clip() || childItem->childItems().isEmpty()) &&
+                !childItem->m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty) &&
+                childW > 0 && childH > 0) {
+                if (childrenClip.intersected(ClipRect{childAbsX, childAbsY, childW, childH}).isEmpty()) {
+                    childItem->m_dirtyFlags &=
+                        ~(DirtyFlags(DirtyFlag::SelfDirty) | DirtyFlag::DescendantDirty);
+                    continue;
+                }
+            }
+            childItem->paintSubtree(buffer,
+                                   childAbsX,
+                                   childAbsY,
+                                   childrenClip);
+            if (!selfGuard)
+                return;
+        }
     }
 
     paintOverlay(buffer, absX, absY, clipRect);
@@ -708,24 +757,36 @@ bool Item::childMouseEventFilter(Item* item, class MouseEvent* event) {
     return false;
 }
 
+StateController* Item::ensureStateController() const {
+    if (!m_stateController) {
+        auto* self = const_cast<Item*>(this);
+        m_stateController = std::make_unique<StateController>(self);
+        m_stateController->setDefaultTarget(self);
+        connect(m_stateController.get(), &StateController::stateChanged, self, &Item::stateChanged);
+    }
+    return m_stateController.get();
+}
+
 QQmlListProperty<qmltui::State> Item::states() const {
-    return m_stateController->statesProperty();
+    return ensureStateController()->statesProperty();
 }
 
 QQmlListProperty<qmltui::Transition> Item::transitions() const {
-    return m_stateController->transitionsProperty();
+    return ensureStateController()->transitionsProperty();
 }
 
 QString Item::state() const {
-    return m_stateController->state();
+    return m_stateController ? m_stateController->state() : QString();
 }
 
 void Item::setState(const QString& newState) {
-    m_stateController->setState(newState);
+    if (!m_stateController && newState.isEmpty()) return;
+    ensureStateController()->setState(newState);
 }
 
 void Item::evaluateStateConditions() {
-    m_stateController->evaluateStateConditions();
+    if (m_stateController)
+        m_stateController->evaluateStateConditions();
 }
 
 } // namespace qmltui

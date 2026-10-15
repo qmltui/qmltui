@@ -5,14 +5,12 @@
 
 namespace qmltui {
 
-Gradient::Gradient(QObject *parent) : QObject(parent) {}
+Gradient::Gradient(QObject* parent) : QObject(parent) {}
 
 QQmlListProperty<GradientStop> Gradient::stops() const {
     return QQmlListProperty<GradientStop>(const_cast<Gradient*>(this), const_cast<Gradient*>(this),
-        &Gradient::appendStop,
-        &Gradient::countStops,
-        &Gradient::stopAt,
-        &Gradient::clearStops);
+                                          &Gradient::appendStop, &Gradient::countStops,
+                                          &Gradient::stopAt, &Gradient::clearStops);
 }
 
 void Gradient::appendStop(QQmlListProperty<GradientStop>* list, GradientStop* stop) {
@@ -23,9 +21,14 @@ void Gradient::appendStop(QQmlListProperty<GradientStop>* list, GradientStop* st
 void Gradient::addStop(GradientStop* stop) {
     if (!stop) return;
     m_stops.append(stop);
-    connect(stop, &GradientStop::updated, this, &Gradient::updated);
+    m_stopsDirty = true;
+    connect(stop, &GradientStop::updated, this, [this]() {
+        m_stopsDirty = true;
+        emit updated();
+    });
     connect(stop, &QObject::destroyed, this, [this, stop]() {
         m_stops.removeAll(stop);
+        m_stopsDirty = true;
         emit updated();
     });
     emit updated();
@@ -38,7 +41,8 @@ qsizetype Gradient::countStops(QQmlListProperty<GradientStop>* list) {
 
 GradientStop* Gradient::stopAt(QQmlListProperty<GradientStop>* list, qsizetype index) {
     auto* self = static_cast<Gradient*>(list->object);
-    return (self && index >= 0 && index < self->m_stops.size()) ? self->m_stops.at(index).data() : nullptr;
+    return (self && index >= 0 && index < self->m_stops.size()) ? self->m_stops.at(index).data()
+                                                                : nullptr;
 }
 
 void Gradient::clearStops(QQmlListProperty<GradientStop>* list) {
@@ -51,6 +55,8 @@ void Gradient::clearStops() {
         if (stop) disconnect(stop.data(), nullptr, this, nullptr);
     }
     m_stops.clear();
+    m_sortedStops.clear();
+    m_stopsDirty = true;
     emit updated();
 }
 
@@ -69,22 +75,26 @@ void Gradient::setOrientation(Orientation orientation) {
 }
 
 uint32_t Gradient::colorAt(qreal t) const {
-    QList<GradientStop*> sorted;
-    sorted.reserve(m_stops.size());
-    for (const auto& stop : m_stops) {
-        if (stop) sorted.append(stop.data());
+    if (m_stopsDirty) {
+        m_sortedStops.clear();
+        m_sortedStops.reserve(m_stops.size());
+        for (const auto& stop : m_stops) {
+            if (stop) m_sortedStops.append(stop.data());
+        }
+        std::sort(m_sortedStops.begin(), m_sortedStops.end(),
+                  [](const GradientStop* a, const GradientStop* b) {
+                      return a->position() < b->position();
+                  });
+        m_stopsDirty = false;
     }
 
+    const QList<GradientStop*>& sorted = m_sortedStops;
     if (sorted.isEmpty()) {
         return 0xFFFFFFFF;
     }
     if (sorted.size() == 1) {
         return sorted.first()->resolvedColor();
     }
-
-    std::sort(sorted.begin(), sorted.end(), [](const GradientStop* a, const GradientStop* b) {
-        return a->position() < b->position();
-    });
 
     qreal pos = t + m_offset;
     pos = std::fmod(pos, 1.0);

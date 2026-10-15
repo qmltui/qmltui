@@ -94,3 +94,11 @@ Terminal {
 │                                      │
 └──────────────────────────────────────┘
 ```
+
+### Interactive Demo & Recording
+
+![LogView recorded demo](../assets/casts/components/log_view.gif)
+
+- **Live Playground**: [▶ Open `LogView.qml` in the WebAssembly Playground](../playground.md?example=LogView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example LogView`
+- **Gallery Source**: [`examples/gallery/examples/LogView.qml`](../../examples/gallery/examples/LogView.qml)

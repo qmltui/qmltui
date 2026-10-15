@@ -105,3 +105,11 @@ Volume: 75%
 
 Playing
 ```
+
+### Interactive Demo & Recording
+
+![Slider recorded demo](../assets/casts/components/slider.gif)
+
+- **Live Playground**: [▶ Open `Slider.qml` in the WebAssembly Playground](../playground.md?example=Slider.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Slider`
+- **Gallery Source**: [`examples/gallery/examples/Slider.qml`](../../examples/gallery/examples/Slider.qml)

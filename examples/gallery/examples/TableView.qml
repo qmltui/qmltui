@@ -4,8 +4,7 @@ import QmlTui
 
 Terminal {
     id: root
-    width: 80
-    height: 24
+    color: "#0d1117"
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
@@ -30,7 +29,7 @@ Terminal {
         TableView {
             id: table
             objectName: "table"
-            height : 10
+            height: 10
             focus: true
             alternatingRows: true
             showColumnGrid: true
@@ -67,7 +66,7 @@ Terminal {
                 if (column === 3)
                     return {
                         text: value,
-                        color: value === "running" ? "#65e6a0" : value === "stopped" ? "#f87171" : "#6e7b8b"
+                        color: value === "running" ? "#2cde85" : value === "stopped" ? "#f87171" : "#8b949e"
                     };
                 if (column === 2 && parseFloat(value) > 10)
                     return {

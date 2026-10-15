@@ -33,17 +33,13 @@ if(QMLTUI_WASM_PLAYGROUND_IMAGE)
     # The gallery's Image tile loads qrc:/gallery/assets/panda.png and its
     # AnimatedSprite tile qrc:/gallery/assets/loading.png, so the runtime carries
     # the same resources the desktop gallery embeds.
-    set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/image")
-    set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../components/animated_sprite")
+    set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../gallery/assets")
     qt_add_resources(qmltui_playground playground_gallery_assets
         PREFIX "/gallery/assets"
         BASE "${gallery_asset_dir}"
-        FILES "${gallery_asset_dir}/panda.png"
-    )
-    qt_add_resources(qmltui_playground playground_gallery_sprite_assets
-        PREFIX "/gallery/assets"
-        BASE "${gallery_sprite_dir}"
-        FILES "${gallery_sprite_dir}/loading.png"
+        FILES
+            "${gallery_asset_dir}/panda.png"
+            "${gallery_asset_dir}/loading.png"
     )
 endif()
 

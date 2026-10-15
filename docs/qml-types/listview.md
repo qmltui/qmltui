@@ -109,3 +109,11 @@ Terminal {
 │  Zeta                      │
 └────────────────────────────┘
 ```
+
+### Interactive Demo & Recording
+
+![ListView recorded demo](../assets/casts/components/list_view.gif)
+
+- **Live Playground**: [▶ Open `ListView.qml` in the WebAssembly Playground](../playground.md?example=ListView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example ListView`
+- **Gallery Source**: [`examples/gallery/examples/ListView.qml`](../../examples/gallery/examples/ListView.qml)

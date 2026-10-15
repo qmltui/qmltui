@@ -22,8 +22,12 @@ import { createQmlCompletion } from './qmltui-completion.js';
 const $ = (id) => document.getElementById(id);
 const status = $('status');
 const problems = $('problems');
+const exampleSelect = $('exampleSelect');
+const previewFallback = $('previewFallback');
+const previewGif = $('previewGif');
+const previewLabel = $('previewLabel');
 
-const PLACEHOLDER = `// Pick a component in the gallery on the right.
+const PLACEHOLDER = `// Pick a component in the gallery (or from the "Example" dropdown above).
 //
 // Arrow keys move, Enter (or a click) opens a tile, and its file appears
 // here: a complete QmlTui app with its imports and Terminal root, exactly
@@ -32,6 +36,13 @@ const PLACEHOLDER = `// Pick a component in the gallery on the right.
 //
 // "launcher" edits gallery.qml, the grid itself.
 `;
+
+function camelToSnake(stem) {
+  return stem
+    .replace(/(.)([A-Z][a-z]+)/g, '$1_$2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase();
+}
 
 // --- URL sharing: #code=<base64url(deflate-raw(utf8))> --------------------
 const b64url = {
@@ -48,30 +59,53 @@ async function decodeShare(hash) {
 }
 
 // --- Terminal + wasm ---------------------------------------------------------
-const term = new Terminal({
-  allowProposedApi: true,
-  cursorBlink: false, scrollback: 0, fontSize: 15,
-  fontFamily: 'ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, monospace',
-  theme: { background: '#0d1117', foreground: '#c9d1d9' },
-});
-// QmlTui measures text the way modern terminals do: grapheme clusters, with
-// emoji, flags, and keycaps two columns wide. xterm.js defaults to Unicode 6
-// widths (emoji one column), which clips glyphs and shifts every row that
-// holds one. The graphemes addon applies the same rules QmlTui uses.
-if (window.UnicodeGraphemesAddon) {
-  term.loadAddon(new UnicodeGraphemesAddon.UnicodeGraphemesAddon());
-  term.unicode.activeVersion = '15-graphemes';
-}
-const fit = new FitAddon.FitAddon();
-term.loadAddon(fit);
-term.open($('terminal'));
-window.qmltuiTerm = term;   // for scripted tests
-fit.fit();
-
+let term = null;
+let fit = null;
 let instance = null;
+let hasWasmRuntime = false;
 const encoder = new TextEncoder();
 
+function initXterm() {
+  if (term || typeof window.Terminal !== 'function') return;
+  term = new Terminal({
+    allowProposedApi: true,
+    cursorBlink: false, scrollback: 0, fontSize: 15,
+    fontFamily: 'ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, monospace',
+    theme: { background: '#0d1117', foreground: '#c9d1d9' },
+  });
+  if (window.UnicodeGraphemesAddon) {
+    term.loadAddon(new UnicodeGraphemesAddon.UnicodeGraphemesAddon());
+    term.unicode.activeVersion = '15-graphemes';
+  }
+  fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open($('terminal'));
+  window.qmltuiTerm = term;
+  fit.fit();
+}
+
+function updatePreviewFallback() {
+  if (hasWasmRuntime || !previewFallback) return;
+  previewFallback.classList.add('active');
+  if (mode === 'example' && focusFile) {
+    const stem = focusFile.replace(/\.qml$/i, '');
+    const snake = camelToSnake(stem);
+    previewGif.src = `../assets/casts/components/${snake}.gif`;
+    previewLabel.textContent = `${snake}.gif`;
+  } else {
+    previewGif.src = '../assets/casts/gallery-tour.gif';
+    previewLabel.textContent = 'gallery-tour.gif';
+  }
+}
+
 async function startRuntime() {
+  if (typeof window.qmltui_playground_entry !== 'function') {
+    hasWasmRuntime = false;
+    status.textContent = 'preview mode (Wasm runtime not built locally)';
+    updatePreviewFallback();
+    return;
+  }
+  initXterm();
   status.textContent = 'loading runtime…';
   instance = await window.qmltui_playground_entry({
     noInitialRun: true,
@@ -81,6 +115,8 @@ async function startRuntime() {
     print: (t) => console.log(t),
     printErr: (t) => console.warn(t),
   });
+  hasWasmRuntime = true;
+  if (previewFallback) previewFallback.classList.remove('active');
   instance.qmltuiResize(term.cols, term.rows);
   term.onData((s) => instance.qmltuiFeedInput(encoder.encode(s)));
   term.onBinary((s) => instance.qmltuiFeedInput(Uint8Array.from(s, (c) => c.charCodeAt(0))));
@@ -106,9 +142,8 @@ let focusFile = null;       // the file in the editor for mode 'example'
 let settingDoc = false;     // suppress run-on-edit while the page replaces the document
 const editable = new Compartment();
 
-// Takes the editor's current text into the model, whatever the mode.
 function commitEditor() {
-  if (mode === 'example') sources[focusFile] = editor.state.doc.toString();
+  if (mode === 'example' && focusFile) sources[focusFile] = editor.state.doc.toString();
   else if (mode === 'launcher') launcher = editor.state.doc.toString();
 }
 
@@ -122,6 +157,7 @@ function setDoc(text, isEditable) {
 }
 
 function focusExample(file) {
+  if (!file || sources[file] === undefined) return;
   if (mode === 'example' && focusFile === file) return;
   commitEditor();
   mode = 'example';
@@ -129,6 +165,8 @@ function focusExample(file) {
   setDoc(sources[file], true);
   $('focusId').textContent = `examples/${file}`;
   $('wholeFile').textContent = 'launcher';
+  if (exampleSelect && exampleSelect.value !== file) exampleSelect.value = file;
+  updatePreviewFallback();
 }
 
 function showGrid() {
@@ -138,6 +176,8 @@ function showGrid() {
   setDoc(PLACEHOLDER, false);
   $('focusId').textContent = 'pick a component';
   $('wholeFile').textContent = 'launcher';
+  if (exampleSelect) exampleSelect.value = '';
+  updatePreviewFallback();
 }
 
 function showLauncher() {
@@ -147,11 +187,12 @@ function showLauncher() {
   setDoc(launcher, true);
   $('focusId').textContent = 'gallery.qml';
   $('wholeFile').textContent = 'back';
+  if (exampleSelect) exampleSelect.value = '';
+  updatePreviewFallback();
 }
 
 // --- Editor ------------------------------------------------------------------
 let runTimer = null;
-// Completion index; the source is registered up front and answers once loaded.
 let qmlCompletion = null;
 fetch('types.json').then((r) => r.json()).then((index) => { qmlCompletion = createQmlCompletion(index); })
   .catch((e) => addProblem('warning', `completion index unavailable: ${e.message}`));
@@ -161,8 +202,6 @@ const editor = new EditorView({
     basicSetup, javascript(), oneDark,
     editable.of(EditorView.editable.of(false)),
     autocompletion({ override: [(ctx) => (qmlCompletion ? qmlCompletion(ctx) : null)], activateOnTyping: true, icons: true }),
-    // Tab indents inside the editor instead of moving the browser's focus
-    // to the terminal (Escape then Tab still leaves, as CodeMirror documents).
     keymap.of([indentWithTab, { key: 'Mod-Enter', run: () => { run(); return true; } }]),
     EditorView.updateListener.of((u) => {
       if (!u.docChanged || settingDoc || mode === 'grid' || !$('autorun').checked) return;
@@ -172,7 +211,7 @@ const editor = new EditorView({
   ],
   parent: $('editor'),
 });
-window.qmltuiEditor = editor;   // for scripted tests
+window.qmltuiEditor = editor;
 
 function addProblem(kind, text) {
   const li = document.createElement('li');
@@ -181,19 +220,29 @@ function addProblem(kind, text) {
   problems.append(li);
 }
 
-// Compiles an edited example before the gallery gets it, then runs the
-// launcher with every source; a focused tile reopens.
+function resolveExampleFile(queryValue) {
+  if (!queryValue) return null;
+  const trimmed = queryValue.trim();
+  const candidate = trimmed.endsWith('.qml') ? trimmed : `${trimmed}.qml`;
+  if (sources[candidate] !== undefined) return candidate;
+  const lower = candidate.toLowerCase();
+  return Object.keys(sources).find((k) => k.toLowerCase() === lower) || null;
+}
+
 function run() {
-  if (!instance) return;
   problems.replaceChildren();
   commitEditor();
+  if (!instance) {
+    updatePreviewFallback();
+    return;
+  }
   if (mode === 'example') {
     const result = instance.qmltuiCheckQml(sources[focusFile], focusFile);
     if (result) {
       const errors = JSON.parse(result);
       status.textContent = `${errors.length} error${errors.length === 1 ? '' : 's'} in ${focusFile}`;
       for (const e of errors) addProblem('error', `${focusFile}:${e.line}:${e.column}: ${e.message}`);
-      return;   // the previous version keeps running
+      return;
     }
   }
   term.reset();
@@ -211,36 +260,79 @@ function run() {
 }
 
 $('run').onclick = run;
-// The terminal takes the whole width while the editor is hidden; the
-// ResizeObserver on #terminal refits xterm and the app gets the new size.
 $('toggleEditor').onclick = () => {
   const hidden = document.body.classList.toggle('editor-hidden');
   $('toggleEditor').textContent = hidden ? 'show editor' : 'hide editor';
-  term.focus();
+  if (term) term.focus();
 };
 $('wholeFile').onclick = () => (mode === 'launcher' ? showGrid() : showLauncher());
+if (exampleSelect) {
+  exampleSelect.onchange = () => {
+    const val = exampleSelect.value;
+    if (!val) showGrid();
+    else focusExample(val);
+    run();
+  };
+}
 $('share').onclick = async () => {
   commitEditor();
-  location.hash = 'code=' + await encodeShare(JSON.stringify({ launcher, sources }));
+  location.hash = 'code=' + await encodeShare(JSON.stringify({ launcher, sources, focusFile }));
   await navigator.clipboard?.writeText(location.href).catch(() => {});
-  status.textContent = 'link copied to the address bar';
+  status.textContent = 'link copied to clipboard';
 };
 
+window.addEventListener('message', (ev) => {
+  if (ev.data && ev.data.type === 'qmltui:selectExample') {
+    const file = resolveExampleFile(ev.data.example);
+    if (file) {
+      focusExample(file);
+      run();
+    } else if (!ev.data.example) {
+      showGrid();
+      run();
+    }
+  }
+});
+
 // --- Boot --------------------------------------------------------------------
-// gallery.qml and examples/*.qml are the shipped gallery; a #code= hash (a
-// shared edit: JSON of { launcher, sources }) replaces them.
 (async () => {
-  await startRuntime();
   launcher = await (await fetch('gallery.qml')).text();
   const names = await (await fetch('examples/index.json')).json();
   await Promise.all(names.map(async (name) => { sources[name] = await (await fetch(`examples/${name}`)).text(); }));
+
+  if (exampleSelect) {
+    for (const name of names) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name.replace(/\.qml$/, '');
+      exampleSelect.append(opt);
+    }
+  }
+
+  let initialExample = null;
+  const params = new URLSearchParams(location.search);
+  if (params.get('example')) {
+    initialExample = resolveExampleFile(params.get('example'));
+  } else {
+    try {
+      const parentParams = new URLSearchParams(window.parent?.location?.search || '');
+      if (parentParams.get('example')) initialExample = resolveExampleFile(parentParams.get('example'));
+    } catch { /* cross-origin ignore */ }
+  }
+
   const m = location.hash.match(/#code=([A-Za-z0-9_-]+)/);
   if (m) {
     try {
       const shared = JSON.parse(await decodeShare(m[1]));
       launcher = shared.launcher ?? launcher;
       Object.assign(sources, shared.sources ?? {});
+      if (shared.focusFile && sources[shared.focusFile]) initialExample = shared.focusFile;
     } catch { addProblem('warning', 'could not decode the shared code in the URL'); }
   }
+
+  if (initialExample) focusExample(initialExample);
+  else showGrid();
+
+  await startRuntime();
   run();
 })().catch((e) => { status.textContent = `failed: ${e.message || e}`; console.error(e); });

@@ -161,3 +161,11 @@ Terminal {
 │                                      │
 └──────────────────────────────────────┘
 ```
+
+### Interactive Demo & Recording
+
+![TextArea recorded demo](../assets/casts/components/text_area.gif)
+
+- **Live Playground**: [▶ Open `TextArea.qml` in the WebAssembly Playground](../playground.md?example=TextArea.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TextArea`
+- **Gallery Source**: [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml)

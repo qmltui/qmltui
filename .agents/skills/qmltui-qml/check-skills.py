@@ -18,9 +18,9 @@ SKILL_PATHS = (
 )
 EXAMPLE_TARGETS = (
     (
-        "examples/components/animated_sprite/main.cpp",
-        "qmltui_animated_sprite_demo",
-        "examples/components/animated_sprite/CMakeLists.txt",
+        "examples/components/status_badge/main.cpp",
+        "qmltui_status_badge_demo",
+        "examples/components/status_badge/CMakeLists.txt",
     ),
     (
         "tests/Runner/main.cpp",

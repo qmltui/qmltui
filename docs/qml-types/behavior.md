@@ -54,3 +54,11 @@ Rectangle {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Behavior recorded demo](../assets/casts/components/behavior.gif)
+
+- **Live Playground**: [▶ Open `Behavior.qml` in the WebAssembly Playground](../playground.md?example=Behavior.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Behavior`
+- **Gallery Source**: [`examples/gallery/examples/Behavior.qml`](../../examples/gallery/examples/Behavior.qml)

@@ -2,55 +2,88 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>QmlTui gallery</title>
+<title>QmlTui Playground</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-selected: #12261e;
+    --border: #30363d;
+    --brand: #2cde85;
+    --brand-bright: #00ff66;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+  }
   html, body { height: 100%; margin: 0; }
-  body { display: grid; grid-template-rows: 2.6rem minmax(0, 1fr) 7rem; height: 100vh; overflow: hidden;
-         background: #0d1117; color: #c9d1d9; font: 14px system-ui, sans-serif; }
-  header { display: flex; gap: .8rem; align-items: center; padding: 0 1rem; border-bottom: 1px solid #30363d; }
-  header h1 { font-size: 1rem; margin: 0; font-weight: 600; }
-  button { background: #161b22; color: inherit; border: 1px solid #30363d; padding: .25rem .6rem; border-radius: 4px; }
-  button:hover { border-color: #58a6ff; cursor: pointer; }
-  label, #focus { font-size: .85rem; color: #8b949e; }
-  #focus b { color: #d2a8ff; }
-  #status { margin-left: auto; color: #8b949e; font-size: .85rem; }
+  body { display: grid; grid-template-rows: 2.8rem minmax(0, 1fr) 6.5rem; height: 100vh; overflow: hidden;
+         background: var(--bg); color: var(--text); font: 14px system-ui, -apple-system, sans-serif; }
+  header { display: flex; gap: .65rem; align-items: center; padding: 0 1rem;
+           background: var(--surface); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: .95rem; margin: 0; font-weight: 700; color: var(--brand); letter-spacing: 0.01em; }
+  button, select { background: var(--bg); color: var(--text); border: 1px solid var(--border);
+                   padding: .25rem .6rem; border-radius: 5px; font-size: .82rem; }
+  button:hover, select:hover { border-color: var(--brand); cursor: pointer; }
+  button.primary { background: var(--surface-selected); border-color: var(--brand); color: var(--brand-bright); font-weight: 600; }
+  label, #focus { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: .4rem; }
+  #focus b { color: var(--brand-bright); font-family: "JetBrains Mono", ui-monospace, monospace; }
+  #status { margin-left: auto; color: var(--muted); font-size: .82rem; font-family: "JetBrains Mono", ui-monospace, monospace; }
   /* Both panes take their height from the grid row, never from their content:
      xterm's fit addon sizes the terminal from the container, so the container
      must not size itself from the terminal. */
-  main { display: grid; grid-template-columns: minmax(320px, 45%) minmax(0, 1fr); min-height: 0; overflow: hidden; }
+  main { display: grid; grid-template-columns: minmax(320px, 46%) minmax(0, 1fr); min-height: 0; overflow: hidden; }
   body.editor-hidden main { grid-template-columns: minmax(0, 1fr); }
   body.editor-hidden #editor { display: none; }
-  #editor { min-height: 0; height: 100%; overflow: hidden; border-right: 1px solid #30363d; }
-  #editor .cm-editor { height: 100%; font-size: 13px; }
-  #editor .cm-scroller { overflow: auto; }
-  #terminal { min-height: 0; height: 100%; overflow: hidden; padding: .4rem; box-sizing: border-box; }
-  footer { border-top: 1px solid #30363d; overflow: auto; }
-  #problems { list-style: none; margin: 0; padding: .3rem 1rem; font: 12px ui-monospace, monospace; }
+  #editor { min-height: 0; height: 100%; overflow: hidden; border-right: 1px solid var(--border); }
+  #editor .cm-editor { height: 100%; font-size: 13px; background: var(--bg); }
+  #editor .cm-scroller { overflow: auto; font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace; }
+  #terminal { min-height: 0; height: 100%; overflow: auto; padding: .5rem; box-sizing: border-box; position: relative; }
+  #previewFallback { display: none; flex-direction: column; align-items: center; justify-content: center;
+                     height: 100%; gap: .8rem; text-align: center; padding: 1rem; box-sizing: border-box; }
+  #previewFallback.active { display: flex; }
+  #previewFallback img { max-width: 100%; max-height: calc(100% - 4.5rem); border-radius: 8px;
+                         border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+  #previewFallback .fallback-note { font-size: .8rem; color: var(--muted); max-width: 640px; line-height: 1.45; }
+  #previewFallback code { background: var(--surface); color: var(--brand); padding: .1rem .35rem; border-radius: 4px; }
+  footer { background: var(--surface); border-top: 1px solid var(--border); overflow: auto; }
+  #problems { list-style: none; margin: 0; padding: .3rem 1rem; font: 12px "JetBrains Mono", ui-monospace, monospace; }
   #problems li.error { color: #ff7b72; }
-  #problems li.warning { color: #d29922; }
-  footer p { margin: 0; padding: .3rem 1rem; font-size: .75rem; color: #8b949e; }
+  #problems li.warning { color: #fbbf24; }
+  footer p { margin: 0; padding: .3rem 1rem; font-size: .75rem; color: var(--muted); }
 </style>
 </head>
 <body>
 <header>
-  <h1>QmlTui gallery</h1>
+  <h1>QmlTui Playground</h1>
+  <label for="exampleSelect">Example:
+    <select id="exampleSelect" title="Choose a gallery example to inspect and run">
+      <option value="">Gallery Grid (All 39 Tiles)</option>
+    </select>
+  </label>
   <span id="focus"><b id="focusId">pick a component</b> <button id="wholeFile" title="Edit gallery.qml, the grid itself">launcher</button></span>
-  <button id="run" title="Ctrl+Enter">Run</button>
+  <button id="run" class="primary" title="Ctrl+Enter">▶ Run</button>
   <label><input type="checkbox" id="autorun" checked> run on edit</label>
-  <button id="share">Share</button>
+  <button id="share">Share URL</button>
   <button id="toggleEditor" title="Hide or show the code editor">hide editor</button>
   <span id="status"></span>
 </header>
 <main>
   <div id="editor"></div>
-  <div id="terminal"></div>
+  <div id="terminal">
+    <div id="previewFallback">
+      <img id="previewGif" alt="Recorded terminal preview">
+      <div class="fallback-note">
+        Showing recorded terminal preview (<span id="previewLabel">gallery-tour.gif</span>).
+        When built with Qt for WebAssembly (<code>qt-cmake -S examples/wasm/playground -B build-wasm</code>),
+        this pane runs the live interactive WebAssembly terminal.
+      </div>
+    </div>
+  </div>
 </main>
 <footer>
   <ul id="problems"></ul>
-  <p>Open a component in the gallery on the right (arrows and Enter, or a click) and its file appears on the left:
-     a complete QmlTui app, imports and Terminal root included. Edit it and the gallery re-runs with that component open. Escape returns to the grid.
-     Runtime: Qt for WebAssembly, GPLv3 (Qt is GPLv3 or commercial only in the browser). QmlTui itself is LGPLv3, GPLv3, or commercial.</p>
+  <p>Select any of the 39 gallery components above (or click a tile in the terminal) to inspect and edit its self-contained QML source with live QmlTui autocomplete.
+     Runtime: Qt for WebAssembly (GPLv3 or commercial in browser). QmlTui is MIT / BSD-3-Clause (examples).</p>
 </footer>
 <!-- One exact version per package, and esm.sh's external mode (the * prefix)
      keeps every inter-package import bare so this map resolves them all to the
@@ -80,7 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode-graphemes@0.4.0/lib/addon-unicode-graphemes.min.js"></script>
-<script src="qmltui_playground.js"></script>
+<script src="qmltui_playground.js" onerror="window.__qmltuiNoWasmBundle = true"></script>
 <script type="module" src="qmltui-playground.js"></script>
 </body>
 </html>

@@ -94,3 +94,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![StackView recorded demo](../assets/casts/components/stack_view.gif)
+
+- **Live Playground**: [▶ Open `StackView.qml` in the WebAssembly Playground](../playground.md?example=StackView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example StackView`
+- **Gallery Source**: [`examples/gallery/examples/StackView.qml`](../../examples/gallery/examples/StackView.qml)

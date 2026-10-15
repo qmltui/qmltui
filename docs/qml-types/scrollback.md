@@ -96,3 +96,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![InlineMode recorded demo](../assets/casts/components/inline_mode.gif)
+
+- **Live Playground**: [▶ Open `InlineMode.qml` in the WebAssembly Playground](../playground.md?example=InlineMode.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example InlineMode`
+- **Gallery Source**: [`examples/gallery/examples/InlineMode.qml`](../../examples/gallery/examples/InlineMode.qml)

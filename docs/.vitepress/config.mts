@@ -1,4 +1,67 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
+
+const docsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = path.resolve(docsDir, '..')
+
+function stagePlaygroundAssets(): void {
+  const outDir = path.join(docsDir, 'public', 'playground')
+  const examplesOut = path.join(outDir, 'examples')
+  fs.mkdirSync(examplesOut, { recursive: true })
+
+  // 1. Copy playground HTML/JS/types from examples/wasm/www/
+  const wasmWwwDir = path.join(repoRoot, 'examples', 'wasm', 'www')
+  for (const name of ['index.html', 'qmltui-playground.js', 'qmltui-completion.js', 'types.json']) {
+    const src = path.join(wasmWwwDir, name)
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(outDir, name))
+  }
+
+  // 2. Copy gallery Main.qml and examples/*.qml + write examples/index.json
+  const galleryDir = path.join(repoRoot, 'examples', 'gallery')
+  const mainQml = path.join(galleryDir, 'Main.qml')
+  if (fs.existsSync(mainQml)) fs.copyFileSync(mainQml, path.join(outDir, 'gallery.qml'))
+
+  const galleryExamplesDir = path.join(galleryDir, 'examples')
+  if (fs.existsSync(galleryExamplesDir)) {
+    const qmlFiles = fs.readdirSync(galleryExamplesDir).filter((f) => f.endsWith('.qml')).sort()
+    for (const file of qmlFiles) {
+      fs.copyFileSync(path.join(galleryExamplesDir, file), path.join(examplesOut, file))
+    }
+    fs.writeFileSync(path.join(examplesOut, 'index.json'), JSON.stringify(qmlFiles, null, 2) + '\n')
+  }
+
+  // 3. Stage recorded GIFs into public/assets/casts for playground preview fallback
+  const castsSrc = path.join(docsDir, 'assets', 'casts')
+  const castsPub = path.join(docsDir, 'public', 'assets', 'casts')
+  if (fs.existsSync(castsSrc)) {
+    fs.cpSync(castsSrc, castsPub, {
+      recursive: true,
+      filter: (src) => fs.statSync(src).isDirectory() || src.endsWith('.gif')
+    })
+  }
+
+  // 4. Copy prebuilt Qt for WebAssembly runtime bundle if available
+  const wasmCandidates = [
+    process.env.QMLTUI_WASM_DIR,
+    path.join(repoRoot, 'build-wasm', 'www'),
+    path.join(repoRoot, 'build-wasm', 'playground'),
+    path.join(repoRoot, 'build-wasm')
+  ].filter((dir): dir is string => Boolean(dir))
+
+  for (const cand of wasmCandidates) {
+    if (fs.existsSync(path.join(cand, 'qmltui_playground.js'))) {
+      for (const art of ['qmltui_playground.js', 'qmltui_playground.wasm', 'qtloader.js']) {
+        const artPath = path.join(cand, art)
+        if (fs.existsSync(artPath)) fs.copyFileSync(artPath, path.join(outDir, art))
+      }
+      break
+    }
+  }
+}
+
+stagePlaygroundAssets()
 
 export default defineConfig({
   title: 'QmlTui',
@@ -33,7 +96,8 @@ export default defineConfig({
       { text: 'Guides', link: '/topics/' },
       { text: 'QML Types', link: '/qml-types/' },
       { text: 'C++ Reference', link: '/cpp-classes/' },
-      { text: 'Examples', link: '/examples' }
+      { text: 'Examples', link: '/examples' },
+      { text: 'Playground', link: '/playground' }
     ],
 
     socialLinks: [
@@ -48,6 +112,7 @@ export default defineConfig({
           { text: 'Overview', link: '/' },
           { text: 'Quickstart & Build', link: '/getting-started' },
           { text: 'Examples & Gallery', link: '/examples' },
+          { text: 'WebAssembly Playground', link: '/playground' },
           { text: 'IDE Setup (Qt Creator & qmlls)', link: '/topics/ide-setup' },
           { text: 'Qt Quick to QmlTui', link: '/topics/qt-quick-to-qmltui' },
           { text: 'TUI Framework Comparison', link: '/topics/tui-comparison' },

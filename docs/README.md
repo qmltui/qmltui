@@ -2,6 +2,8 @@
 
 **QmlTui** is a C++20 and Qt 6.8+ retained-mode terminal UI framework. Build full-screen terminal applications or inline streaming CLIs using `QtQml` and `QmlTui` modules, integer cell geometry, reactive property bindings, `QAbstractItemModel` views, and deterministic headless testing.
 
+![QmlTui Interactive Gallery](assets/casts/gallery-tour.gif)
+
 ---
 
 ## Start Here
@@ -9,8 +11,9 @@
 New to QmlTui? Follow these guides to set up your environment, run the interactive gallery, and build your first application:
 
 - **[Getting Started](getting-started.md)**: System requirements, running `qmltui_gallery`, creating a standalone 3-file application (`FetchContent` or `find_package`), CMake options, and environment variables.
+- **[Interactive Playground](playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
 - **[Six-Part Tutorial](tutorials/index.md)**: Hands-on walkthrough covering `Terminal`, layouts and rich text, focus and keyboard input, models and views, controls and styling, and automated `Runner` testing.
-- **[Examples & Component Cookbook](examples.md)**: Understand what lives in `QmlTui.Controls` versus copyable QML recipes, and browse every runnable component and topic demo.
+- **[Examples & Component Cookbook](examples.md)**: Understand the four-tier `examples/` organization (`QmlTui.Controls` vs. copyable QML recipes) and browse every recorded component and topic demo.
 - **[IDE Setup](topics/ide-setup.md)**: Configure `qmlls` and `qmllint` in Qt Creator, VS Code, Neovim, CLion, and Helix for full autocomplete and type checking.
 
 ## Coming From Another Toolkit?

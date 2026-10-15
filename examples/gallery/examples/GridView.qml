@@ -5,19 +5,22 @@ import QmlTui
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
         x: 2
         y: 1
         spacing: 1
-        Text { text: "GridView lays delegates out in cellWidth × cellHeight cells and scrolls like a ScrollView."; color: "#6e7b8b" }
+        Text {
+            text: "GridView lays delegates out in cellWidth × cellHeight cells and scrolls like a ScrollView."
+            color: "#8b949e"
+        }
         Rectangle {
             width: 66
             height: 8
@@ -30,17 +33,67 @@ Terminal {
                 cellWidth: 16
                 cellHeight: 2
                 model: [
-                    { glyph: "🍎", name: "apple" }, { glyph: "🍋", name: "lemon" }, { glyph: "🍇", name: "grape" }, { glyph: "🍓", name: "berry" },
-                    { glyph: "🥝", name: "kiwi" }, { glyph: "🍑", name: "peach" }, { glyph: "🍒", name: "cherry" }, { glyph: "🥭", name: "mango" },
-                    { glyph: "🍍", name: "pineapple" }, { glyph: "🫐", name: "blueberry" }, { glyph: "🍈", name: "melon" }, { glyph: "🍐", name: "pear" }
+                    {
+                        glyph: "🍎",
+                        name: "apple"
+                    },
+                    {
+                        glyph: "🍋",
+                        name: "lemon"
+                    },
+                    {
+                        glyph: "🍇",
+                        name: "grape"
+                    },
+                    {
+                        glyph: "🍓",
+                        name: "berry"
+                    },
+                    {
+                        glyph: "🥝",
+                        name: "kiwi"
+                    },
+                    {
+                        glyph: "🍑",
+                        name: "peach"
+                    },
+                    {
+                        glyph: "🍒",
+                        name: "cherry"
+                    },
+                    {
+                        glyph: "🥭",
+                        name: "mango"
+                    },
+                    {
+                        glyph: "🍍",
+                        name: "pineapple"
+                    },
+                    {
+                        glyph: "🫐",
+                        name: "blueberry"
+                    },
+                    {
+                        glyph: "🍈",
+                        name: "melon"
+                    },
+                    {
+                        glyph: "🍐",
+                        name: "pear"
+                    }
                 ]
                 delegate: Row {
                     id: cell
                     required property int index
                     required property var modelData
                     spacing: 1
-                    Text { text: cell.modelData.glyph }
-                    Text { text: cell.modelData.name; color: cell.index % 2 === 0 ? "#c9d1d9" : "#fbbf24" }
+                    Text {
+                        text: cell.modelData.glyph
+                    }
+                    Text {
+                        text: cell.modelData.name
+                        color: cell.index % 2 === 0 ? "#c9d1d9" : "#fbbf24"
+                    }
                 }
             }
         }

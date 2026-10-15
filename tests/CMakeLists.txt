@@ -118,19 +118,8 @@ function(add_qmltui_environment_scenario test_name executable expected_exit)
     )
 endfunction()
 
-# Every exported QML type has a reference page whose member tables match the
-# build's qmltypes metadata (scripts/component_docs.py).
-find_package(Python3 COMPONENTS Interpreter QUIET)
-if(Python3_Interpreter_FOUND)
-    add_test(NAME test_component_docs
-        COMMAND "${Python3_EXECUTABLE}" "${qmltui_SOURCE_DIR}/scripts/component_docs.py" check
-                --build-dir "${CMAKE_BINARY_DIR}" --strict)
-    set_tests_properties(test_component_docs PROPERTIES LABELS AgentSmoke TIMEOUT 30)
-endif()
-
 add_subdirectory(Core)
 add_subdirectory(Controls)
-add_subdirectory(Docs)
 if(QMLTUI_ENABLE_IMAGE)
     add_subdirectory(Image)
 endif()

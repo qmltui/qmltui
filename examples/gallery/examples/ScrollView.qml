@@ -5,19 +5,22 @@ import QmlTui
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
         x: 2
         y: 1
         spacing: 1
-        Text { text: "Up/Down, PageUp/PageDown or the wheel scroll; the bar on the right shows the position."; color: "#6e7b8b" }
+        Text {
+            text: "Up/Down, PageUp/PageDown or the wheel scroll; the bar on the right shows the position."
+            color: "#8b949e"
+        }
         Rectangle {
             width: 50
             height: 9
@@ -28,7 +31,10 @@ Terminal {
                 anchors.fill: parent
                 anchors.margins: 1
                 focus: true
+                contentHeight: contentCol.implicitHeight
                 Column {
+                    id: contentCol
+                    height: implicitHeight
                     Repeater {
                         model: 40
                         delegate: Text {
@@ -40,6 +46,9 @@ Terminal {
                 }
             }
         }
-        Text { text: "contentY " + scroller.contentY + " of " + scroller.contentHeight; color: "#67e8f9" }
+        Text {
+            text: "contentY " + scroller.contentY + " of " + scroller.contentHeight
+            color: "#67e8f9"
+        }
     }
 }

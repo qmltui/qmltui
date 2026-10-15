@@ -7,12 +7,12 @@ import QmlTui.Controls
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
@@ -22,17 +22,27 @@ Terminal {
         property bool details: false
         property int created: 0
         spacing: 1
-        Text { text: "The Loader destroys the old item and creates the new one each time sourceComponent changes."; color: "#6e7b8b" }
+        Text {
+            text: "The Loader destroys the old item and creates the new one each time sourceComponent changes."
+            color: "#8b949e"
+        }
         Row {
             spacing: 2
-            Button { text: loaderDemo.details ? "Show summary" : "Show details"; focus: true; onClicked: loaderDemo.details = !loaderDemo.details }
-            Button { text: pageLoader2.active ? "Unload" : "Load"; onClicked: pageLoader2.active = !pageLoader2.active }
+            Button {
+                text: loaderDemo.details ? "Show summary" : "Show details"
+                focus: true
+                onClicked: loaderDemo.details = !loaderDemo.details
+            }
+            Button {
+                text: pageLoader2.active ? "Unload" : "Load"
+                onClicked: pageLoader2.active = !pageLoader2.active
+            }
         }
         Rectangle {
             width: 50
             height: 5
             border.style: pageLoader2.status === Loader.Ready ? Border.Single : Border.Ascii
-            border.color: pageLoader2.status === Loader.Ready ? "#fcd34d" : "#6e7b8b"
+            border.color: pageLoader2.status === Loader.Ready ? "#fcd34d" : "#8b949e"
             Loader {
                 id: pageLoader2
                 anchors.fill: parent
@@ -41,20 +51,40 @@ Terminal {
                 onLoaded: loaderDemo.created++
             }
         }
-        Text { text: "status " + (pageLoader2.status === Loader.Ready ? "Ready" : pageLoader2.status === Loader.Null ? "Null" : "Loading") + ", items created so far: " + loaderDemo.created; color: "#fcd34d" }
+        Text {
+            text: "status " + (pageLoader2.status === Loader.Ready ? "Ready" : pageLoader2.status === Loader.Null ? "Null" : "Loading") + ", items created so far: " + loaderDemo.created
+            color: "#fcd34d"
+        }
         Component {
             id: summaryComponent
             Column {
-                Text { text: "Summary"; bold: true; color: "#fcd34d" }
-                Text { text: "3 services, all healthy"; color: "#c9d1d9" }
+                Text {
+                    text: "Summary"
+                    bold: true
+                    color: "#fcd34d"
+                }
+                Text {
+                    text: "3 services, all healthy"
+                    color: "#c9d1d9"
+                }
             }
         }
         Component {
             id: detailsComponent
             Column {
-                Text { text: "Details"; bold: true; color: "#fcd34d" }
-                Text { text: "gateway ✓   auth ✓   billing ✓"; color: "#c9d1d9" }
-                Text { text: "last check 4 s ago"; color: "#6e7b8b" }
+                Text {
+                    text: "Details"
+                    bold: true
+                    color: "#fcd34d"
+                }
+                Text {
+                    text: "gateway ✓   auth ✓   billing ✓"
+                    color: "#c9d1d9"
+                }
+                Text {
+                    text: "last check 4 s ago"
+                    color: "#8b949e"
+                }
             }
         }
     }

@@ -109,3 +109,11 @@ Terminal {
 │                                          │
 ╰─ [q] Quit ──────────────────── CPU: 42% ─╯
 ```
+
+### Interactive Demo & Recording
+
+![Panel recorded demo](../assets/casts/components/panel.gif)
+
+- **Live Playground**: [▶ Open `Panel.qml` in the WebAssembly Playground](../playground.md?example=Panel.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Panel`
+- **Gallery Source**: [`examples/gallery/examples/Panel.qml`](../../examples/gallery/examples/Panel.qml)

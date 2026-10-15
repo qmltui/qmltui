@@ -5,24 +5,33 @@ import QmlTui
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
         x: 2
         y: 1
         spacing: 1
-        Text { text: "Type to edit; Enter emits accepted(). Tab moves to the next field."; color: "#6e7b8b" }
+        Text {
+            text: "Type to edit; Enter emits accepted(). Tab moves to the next field."
+            color: "#8b949e"
+        }
         Row {
             spacing: 1
-            Text { width: 10; text: "Name"; color: "#c9d1d9" }
+            Text {
+                width: 10
+                text: "Name"
+                color: "#c9d1d9"
+            }
             Rectangle {
-                width: 30; height: 1; color: "#141b24"
+                width: 30
+                height: 1
+                color: "#161b22"
                 TextInput {
                     id: nameInput
                     anchors.fill: parent
@@ -34,9 +43,15 @@ Terminal {
         }
         Row {
             spacing: 1
-            Text { width: 10; text: "Password"; color: "#c9d1d9" }
+            Text {
+                width: 10
+                text: "Password"
+                color: "#c9d1d9"
+            }
             Rectangle {
-                width: 30; height: 1; color: "#141b24"
+                width: 30
+                height: 1
+                color: "#161b22"
                 TextInput {
                     id: passwordInput
                     anchors.fill: parent
@@ -48,9 +63,15 @@ Terminal {
         }
         Row {
             spacing: 1
-            Text { width: 10; text: "Digits"; color: "#c9d1d9" }
+            Text {
+                width: 10
+                text: "Digits"
+                color: "#c9d1d9"
+            }
             Rectangle {
-                width: 30; height: 1; color: "#141b24"
+                width: 30
+                height: 1
+                color: "#161b22"
                 TextInput {
                     id: digitsInput
                     anchors.fill: parent

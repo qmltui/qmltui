@@ -114,3 +114,11 @@ Ready.
 ║ ╚══════════╝  └──────────┘              ║
 ╚═════════════════════════════════════════╝
 ```
+
+### Interactive Demo & Recording
+
+![Dialog recorded demo](../assets/casts/components/dialog.gif)
+
+- **Live Playground**: [▶ Open `Dialog.qml` in the WebAssembly Playground](../playground.md?example=Dialog.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Dialog`
+- **Gallery Source**: [`examples/gallery/examples/Dialog.qml`](../../examples/gallery/examples/Dialog.qml)

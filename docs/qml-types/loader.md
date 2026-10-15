@@ -91,3 +91,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Loader recorded demo](../assets/casts/components/loader.gif)
+
+- **Live Playground**: [▶ Open `Loader.qml` in the WebAssembly Playground](../playground.md?example=Loader.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Loader`
+- **Gallery Source**: [`examples/gallery/examples/Loader.qml`](../../examples/gallery/examples/Loader.qml)

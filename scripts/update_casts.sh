@@ -5,7 +5,7 @@
 #   --components regenerate only component demos
 set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-build_dir=${1:-"$repo_dir/build"}
+build_dir="$repo_dir/build"
 
 do_gallery=1
 do_components=1
@@ -13,6 +13,7 @@ for arg in "$@"; do
     case "$arg" in
         --gallery)    do_components=0 ;;
         --components) do_gallery=0 ;;
+        *)            build_dir="$arg" ;;
     esac
 done
 
@@ -28,9 +29,11 @@ fi
 
 if [ "$do_components" = "1" ]; then
     echo "==> component demos"
-    ctest --test-dir "$build_dir" -L Cast -R '_demo$' --output-on-failure
-    # Copy each component cast from its artifact directory
-    for cast_file in "$build_dir"/examples/components/*/RunnerArtifacts/*_demo/components/*.cast; do
+    ctest --test-dir "$build_dir" -L Cast -E '^gallery_tour$' --output-on-failure
+    # Copy each component cast from gallery and recipe artifact directories
+    for cast_file in \
+        "$build_dir"/examples/gallery/RunnerArtifacts/*/components/*.cast \
+        "$build_dir"/examples/components/*/RunnerArtifacts/*/components/*.cast; do
         [ -f "$cast_file" ] || continue
         name=$(basename "$cast_file")
         cp "$cast_file" "$repo_dir/docs/assets/casts/components/$name"

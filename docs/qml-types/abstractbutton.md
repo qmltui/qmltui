@@ -135,3 +135,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Button recorded demo](../assets/casts/components/button.gif)
+
+- **Live Playground**: [▶ Open `Button.qml` in the WebAssembly Playground](../playground.md?example=Button.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Button`
+- **Gallery Source**: [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml)

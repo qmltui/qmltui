@@ -128,11 +128,10 @@ How the runtime differs from an app binary (`examples/wasm/playground/main.cpp`)
   pins one exact version per package and uses esm.sh's external mode (the `*`
   prefix). Without the map two copies of a CodeMirror package load and their
   extensions silently stop composing. Bump all versions together.
-- **Completion.** `scripts/qml_type_index.py` reuses the docs generator's
-  qmltypes parser to write `types.json` at build time: every exported type of
+- **Completion.** `examples/wasm/www/types.json` contains every exported type of
   `QmlTui`, `QmlTui.Controls`, `QML`, `QtQml`, and `QtQml.Models` with what it
-  inherits and its properties, signals, methods, enums, and attached members
-  (112 types, 67 KB raw). `qmltui-completion.js` adds cursor context with a brace
+  inherits and its properties, signals, methods, enums, and attached members.
+  `qmltui-completion.js` adds cursor context with a brace
   scan, and offers the enclosing type's members and `on<Signal>` handlers at
   object scope, members after `id.` or `property.`, attached handlers after
   `Keys.` or `Layout.`, and enum values, colors, booleans, and ids after

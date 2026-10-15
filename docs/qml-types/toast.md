@@ -113,3 +113,11 @@ Terminal {
 ║ Save ║  │ Quit │
 ╚══════╝  └──────┘
 ```
+
+### Interactive Demo & Recording
+
+![Toast recorded demo](../assets/casts/components/toast.gif)
+
+- **Live Playground**: [▶ Open `Toast.qml` in the WebAssembly Playground](../playground.md?example=Toast.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Toast`
+- **Gallery Source**: [`examples/gallery/examples/Toast.qml`](../../examples/gallery/examples/Toast.qml)

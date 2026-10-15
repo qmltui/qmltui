@@ -64,3 +64,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Animation recorded demo](../assets/casts/components/animation.gif)
+
+- **Live Playground**: [▶ Open `Animation.qml` in the WebAssembly Playground](../playground.md?example=Animation.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Animation`
+- **Gallery Source**: [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml)

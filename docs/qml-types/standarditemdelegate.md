@@ -122,3 +122,11 @@ row. It works as the `delegate` of `ListView`, `GridView`, `Repeater`,
 rows without a foreground role. The [models guide](../topics/models.md) lists the
 role names every view provides; see the
 [standard_item_delegate example](../../examples/components/standard_item_delegate/Main.qml).
+
+### Interactive Demo & Recording
+
+![StandardItemDelegate recorded demo](../assets/casts/components/standard_item_delegate.gif)
+
+- **Live Playground**: [▶ Open `StandardItemDelegate.qml` in the WebAssembly Playground](../playground.md?example=StandardItemDelegate.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example StandardItemDelegate`
+- **Gallery Source**: [`examples/gallery/examples/StandardItemDelegate.qml`](../../examples/gallery/examples/StandardItemDelegate.qml)

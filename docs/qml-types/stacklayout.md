@@ -91,3 +91,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![TabBar recorded demo](../assets/casts/components/tab_bar.gif)
+
+- **Live Playground**: [▶ Open `TabBar.qml` in the WebAssembly Playground](../playground.md?example=TabBar.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TabBar`
+- **Gallery Source**: [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml)

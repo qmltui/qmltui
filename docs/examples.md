@@ -1,99 +1,116 @@
 # Examples & Component Cookbook
 
-Build the example suite by configuring QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON`:
+Build and run the interactive gallery—or any standalone component demo—by configuring QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON`:
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON
-cmake --build build --target qmltui_gallery
+cmake --build build -j8 --target qmltui_gallery
+
+# Browse all 39 interactive tiles in the gallery shell:
 ./build/examples/gallery/qmltui_gallery
+
+# Open the gallery directly on a specific tile:
+./build/examples/gallery/qmltui_gallery --page Button
+
+# Run any of the 39 gallery examples as a standalone terminal app:
+./build/examples/gallery/qmltui_gallery --example Button
+
+# List all available gallery example names:
+./build/examples/gallery/qmltui_gallery --list-examples
 ```
 
-Enable `-DQMLTUI_BUILD_TESTS=ON` as well to register the automated `Runner` scenarios for each example. Full multi-screen application showcases are maintained in [qmltui-apps](https://github.com/qmltui-dev/qmltui-apps).
+![QmlTui Interactive Gallery](assets/casts/gallery-tour.gif)
+
+Enable `-DQMLTUI_BUILD_TESTS=ON` as well to register the automated `Runner` scenarios (`ctest --test-dir build -j8`). You can also edit and run all 39 gallery examples directly in your browser using the [WebAssembly Playground](playground.md).
 
 ---
 
-## Controls vs. Recipes Architecture
+## How `examples/` Is Articulated (Four-Tier Taxonomy)
 
-QmlTui draws a deliberate boundary between framework controls and application recipes:
+QmlTui organizes [`examples/`](../examples/) into four non-overlapping tiers so every example has a single source of truth:
 
-- **`QmlTui.Controls` (Framework Primitives)**: Admits a type only when it requires engine knowledge that an application cannot cleanly reproduce in user QML (such as cell-grid geometry, Unicode grapheme width measurement, viewport virtualization, or overlay z-stacking) or when it is a universal primitive across terminal toolkits: `Button`, `CheckBox`, `Dialog`, `Panel`, `Popup`, `ProgressBar`, `RadioButton`, `Slider`, `Sparkline`, `StackLayout`, `StackView`, `StandardItemDelegate`, `Switch`, `TabBar`, `Toast`, and `ToolTip`.
-- **Copyable Recipes (`examples/components/` & `examples/topics/`)**: Higher-level or domain-specific widgets—such as `Calendar`, `StatusBadge`, `BigText`, syntax-highlighted editors, and streaming coding-agent cards (`agent_stream`)—live as self-contained, BSD-3-Clause recipes under [`examples/`](../examples/).
-- **Application-Owned Styling**: Core items and `QmlTui.Controls` default to the terminal's native foreground and background (`"default"`) and expose ordinary color properties whose explicit overrides survive focus and disabled state transitions. Because QmlTui does not impose a global theme singleton, you can copy a recipe directly into your project and customize its borders, colors, and bindings to match your application's visual language.
+1. **Tier 1 — Built-in Type Gallery (`examples/gallery/examples/*.qml`)**:
+   All **39** single-file QML demos for `QmlTui`, `QmlTui.Controls`, and `QmlTui.Image` live once in [`examples/gallery/examples/`](../examples/gallery/examples/). They power the interactive `qmltui_gallery` browser, standalone `--example <Name>` execution, automated `.cast`/`.gif` documentation recordings, and the [WebAssembly Playground](playground.md).
+2. **Tier 2 — Reusable Recipes, C++ Models & PTY (`examples/components/`)**:
+   [`examples/components/`](../examples/components/) contains only the **7** multi-file component recipes, C++ `QAbstractItemModel` integrations, and Unix PTY (`TerminalView`) demos that go beyond a single self-contained `.qml` file.
+3. **Tier 3 — Architectural Topic Deep-Dives (`examples/topics/`)**:
+   [`examples/topics/`](../examples/topics/) contains **17** focused deep-dives into layout engines, focus chains, 1M-row lazy models, inline CLI streaming, color quantization, and custom C++ items.
+4. **Tier 4 — Onboarding & WebAssembly (`examples/quickstart/`, `examples/tutorials/`, `examples/wasm/`)**:
+   Starter templates, the six-chapter tutorial progression, and the browser WebAssembly host.
 
----
+### Controls vs. Recipes Boundary
 
-## 1. Interactive Gallery & Starter Projects
-
-| Project | Source Directory | CMake Target | Description |
-| :--- | :--- | :--- | :--- |
-| **Interactive Component Gallery** | [`examples/gallery/`](../examples/gallery/) | `qmltui_gallery` | Browsable catalog of 30+ live component and layout tiles with keyboard and mouse navigation. |
-| **Standalone Quickstart** | [`examples/quickstart/`](../examples/quickstart/) | `hello_qmltui` (`qmltui_quickstart_test` in-tree) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) standalone project using `FetchContent`. |
-| **Six-Part Tutorial** | [`examples/tutorials/`](../examples/tutorials/) | `qmltui_tutorial_01_first_terminal` .. `06` | Progressive source code accompanying the [Six-Part Tutorial](tutorials/index.md). |
-| **WebAssembly Playground** | [`examples/wasm/`](../examples/wasm/) | See [WebAssembly guide](topics/webassembly.md) | Browser-hosted interactive QmlTui playground sharing the gallery tiles. |
-
----
-
-## 2. Reusable QML & C++ Recipes
-
-Copy these self-contained components from [`examples/components/`](../examples/components/) or [`examples/topics/`](../examples/topics/) directly into your application module:
-
-| Recipe | Source Files | CMake Demo Target | What It Provides |
-| :--- | :--- | :--- | :--- |
-| **StatusBadge** | [`examples/components/status_badge/StatusBadge.qml`](../examples/components/status_badge/) | `qmltui_status_badge_demo` | Compact status pill (`[OK]`, `[WARN]`, `[ERR]`) with configurable icon, label, border, and color presets. |
-| **Calendar** | [`examples/components/calendar/Calendar.qml`](../examples/components/calendar/) | `qmltui_calendar_demo` | Month-grid date picker built from `Grid`, `Repeater`, keyboard navigation, and selection bindings. |
-| **BigText** | [`examples/components/big_text/`](../examples/components/big_text/) (`BigText.h`, `BigText.cpp`) | `qmltui_big_text_demo` | Custom C++ `qmltui::Item` rendering multi-row block-pixel banner typography. |
-| **Syntax Highlighting** | [`examples/components/text_area_highlighting/`](../examples/components/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | Both a QML-based highlighter (`QmlHighlighter.qml`) and a C++ JSON highlighter (`JsonHighlighter`) attached to `TextArea`. |
-| **Streaming Agent UI** | [`examples/topics/agent_stream/`](../examples/topics/agent_stream/) | `qmltui_agent_stream_demo` | Complete inline coding-agent recipe (`Terminal.Stream` + `Scrollback`) with prompt bar, tool-call/diff/permission cards, and modal pickers. |
+- **`QmlTui.Controls` (Framework Primitives)**: Admits a type only when it requires engine knowledge that an application cannot cleanly reproduce in user QML (cell-grid geometry, Unicode grapheme width measurement, viewport virtualization, or overlay z-stacking) or when it is universal across terminal toolkits.
+- **Copyable Recipes (`examples/components/` & `examples/topics/`)**: Domain-specific or higher-level widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters, and coding-agent stream cards) live as copyable BSD-3-Clause recipes under `examples/`.
+- **Application-Owned Styling**: Core items and `QmlTui.Controls` default to the terminal's native foreground and background (`"default"`), while the gallery and docs share a unified phosphor-green dark/light theme (`#0d1117` canvas, `#161b22` surface, `#2cde85` / `#00ff66` accent—toggleable live with `T` in `qmltui_gallery`).
 
 ---
 
-## 3. Component Demos (`examples/components/`)
+## 1. Built-in Component Gallery (`examples/gallery/examples/`)
 
-Each directory under [`examples/components/`](../examples/components/) builds a focused executable (`cmake --build build --target <Target>`) and includes `Runner` verification scripts:
+Every tile in [`examples/gallery/examples/`](../examples/gallery/examples/) can be run standalone via `./build/examples/gallery/qmltui_gallery --example <Name>` or opened interactively in the [WebAssembly Playground](playground.md):
 
-| Component | Directory | CMake Target | QML Reference | Key Concepts Demonstrated |
+| Example | Source File | CLI Command | QML Reference | Playground | Recorded Demo |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Button** | [`Button.qml`](../examples/gallery/examples/Button.qml) | `--example Button` | [Button](qml-types/button.md) | [▶ Open](playground.md?example=Button.qml) | [GIF](assets/casts/components/button.gif) |
+| **CheckBox** | [`CheckBox.qml`](../examples/gallery/examples/CheckBox.qml) | `--example CheckBox` | [CheckBox](qml-types/checkbox.md) | [▶ Open](playground.md?example=CheckBox.qml) | [GIF](assets/casts/components/check_box.gif) |
+| **RadioButton** | [`RadioButton.qml`](../examples/gallery/examples/RadioButton.qml) | `--example RadioButton` | [RadioButton](qml-types/radiobutton.md) | [▶ Open](playground.md?example=RadioButton.qml) | [GIF](assets/casts/components/radio_button.gif) |
+| **Switch** | [`Switch.qml`](../examples/gallery/examples/Switch.qml) | `--example Switch` | [Switch](qml-types/switch.md) | [▶ Open](playground.md?example=Switch.qml) | [GIF](assets/casts/components/switch.gif) |
+| **Slider** | [`Slider.qml`](../examples/gallery/examples/Slider.qml) | `--example Slider` | [Slider](qml-types/slider.md) | [▶ Open](playground.md?example=Slider.qml) | [GIF](assets/casts/components/slider.gif) |
+| **ProgressBar** | [`ProgressBar.qml`](../examples/gallery/examples/ProgressBar.qml) | `--example ProgressBar` | [ProgressBar](qml-types/progressbar.md) | [▶ Open](playground.md?example=ProgressBar.qml) | [GIF](assets/casts/components/progress_bar.gif) |
+| **BusyIndicator** | [`BusyIndicator.qml`](../examples/gallery/examples/BusyIndicator.qml) | `--example BusyIndicator` | [BusyIndicator](qml-types/busyindicator.md) | [▶ Open](playground.md?example=BusyIndicator.qml) | [GIF](assets/casts/components/busy_indicator.gif) |
+| **TabBar** | [`TabBar.qml`](../examples/gallery/examples/TabBar.qml) | `--example TabBar` | [TabBar](qml-types/tabbar.md) | [▶ Open](playground.md?example=TabBar.qml) | [GIF](assets/casts/components/tab_bar.gif) |
+| **Panel** | [`Panel.qml`](../examples/gallery/examples/Panel.qml) | `--example Panel` | [Panel](qml-types/panel.md) | [▶ Open](playground.md?example=Panel.qml) | [GIF](assets/casts/components/panel.gif) |
+| **Dialog** | [`Dialog.qml`](../examples/gallery/examples/Dialog.qml) | `--example Dialog` | [Dialog](qml-types/dialog.md) | [▶ Open](playground.md?example=Dialog.qml) | [GIF](assets/casts/components/dialog.gif) |
+| **Popup** | [`Popup.qml`](../examples/gallery/examples/Popup.qml) | `--example Popup` | [Popup](qml-types/popup.md) | [▶ Open](playground.md?example=Popup.qml) | [GIF](assets/casts/components/popup.gif) |
+| **Toast** | [`Toast.qml`](../examples/gallery/examples/Toast.qml) | `--example Toast` | [Toast](qml-types/toast.md) | [▶ Open](playground.md?example=Toast.qml) | [GIF](assets/casts/components/toast.gif) |
+| **ToolTip** | [`ToolTip.qml`](../examples/gallery/examples/ToolTip.qml) | `--example ToolTip` | [ToolTip](qml-types/tooltip.md) | [▶ Open](playground.md?example=ToolTip.qml) | [GIF](assets/casts/components/tool_tip.gif) |
+| **StackView** | [`StackView.qml`](../examples/gallery/examples/StackView.qml) | `--example StackView` | [StackView](qml-types/stackview.md) | [▶ Open](playground.md?example=StackView.qml) | [GIF](assets/casts/components/stack_view.gif) |
+| **Sparkline** | [`Sparkline.qml`](../examples/gallery/examples/Sparkline.qml) | `--example Sparkline` | [Sparkline](qml-types/sparkline.md) | [▶ Open](playground.md?example=Sparkline.qml) | [GIF](assets/casts/components/sparkline.gif) |
+| **StandardItemDelegate** | [`StandardItemDelegate.qml`](../examples/gallery/examples/StandardItemDelegate.qml) | `--example StandardItemDelegate` | [StandardItemDelegate](qml-types/standarditemdelegate.md) | [▶ Open](playground.md?example=StandardItemDelegate.qml) | [GIF](assets/casts/components/standard_item_delegate.gif) |
+| **TextInput** | [`TextInput.qml`](../examples/gallery/examples/TextInput.qml) | `--example TextInput` | [TextInput](qml-types/textinput.md) | [▶ Open](playground.md?example=TextInput.qml) | [GIF](assets/casts/components/text_input.gif) |
+| **TextArea** | [`TextArea.qml`](../examples/gallery/examples/TextArea.qml) | `--example TextArea` | [TextArea](qml-types/textarea.md) | [▶ Open](playground.md?example=TextArea.qml) | [GIF](assets/casts/components/text_area.gif) |
+| **ListView** | [`ListView.qml`](../examples/gallery/examples/ListView.qml) | `--example ListView` | [ListView](qml-types/listview.md) | [▶ Open](playground.md?example=ListView.qml) | [GIF](assets/casts/components/list_view.gif) |
+| **TableView** | [`TableView.qml`](../examples/gallery/examples/TableView.qml) | `--example TableView` | [TableView](qml-types/tableview.md) | [▶ Open](playground.md?example=TableView.qml) | [GIF](assets/casts/components/table_view.gif) |
+| **TreeView** | [`TreeView.qml`](../examples/gallery/examples/TreeView.qml) | `--example TreeView` | [TreeView](qml-types/treeview.md) | [▶ Open](playground.md?example=TreeView.qml) | [GIF](assets/casts/components/tree_view.gif) |
+| **GridView** | [`GridView.qml`](../examples/gallery/examples/GridView.qml) | `--example GridView` | [GridView](qml-types/gridview.md) | [▶ Open](playground.md?example=GridView.qml) | [GIF](assets/casts/components/grid_view.gif) |
+| **ScrollView** | [`ScrollView.qml`](../examples/gallery/examples/ScrollView.qml) | `--example ScrollView` | [ScrollView](qml-types/scrollview.md) | [▶ Open](playground.md?example=ScrollView.qml) | [GIF](assets/casts/components/scroll_view.gif) |
+| **LogView** | [`LogView.qml`](../examples/gallery/examples/LogView.qml) | `--example LogView` | [LogView](qml-types/logview.md) | [▶ Open](playground.md?example=LogView.qml) | [GIF](assets/casts/components/log_view.gif) |
+| **Text** | [`Text.qml`](../examples/gallery/examples/Text.qml) | `--example Text` | [Text](qml-types/text.md) | [▶ Open](playground.md?example=Text.qml) | [GIF](assets/casts/components/text.gif) |
+| **RichText** | [`RichText.qml`](../examples/gallery/examples/RichText.qml) | `--example RichText` | [Text](qml-types/text.md) | [▶ Open](playground.md?example=RichText.qml) | [GIF](assets/casts/components/rich_text.gif) |
+| **Rectangle** | [`Rectangle.qml`](../examples/gallery/examples/Rectangle.qml) | `--example Rectangle` | [Rectangle](qml-types/rectangle.md) | [▶ Open](playground.md?example=Rectangle.qml) | [GIF](assets/casts/components/rectangle.gif) |
+| **Canvas** | [`Canvas.qml`](../examples/gallery/examples/Canvas.qml) | `--example Canvas` | [Canvas](qml-types/canvas.md) | [▶ Open](playground.md?example=Canvas.qml) | [GIF](assets/casts/components/canvas.gif) |
+| **Image** | [`Image.qml`](../examples/gallery/examples/Image.qml) | `--example Image` | [Image](qml-types/image.md) | [▶ Open](playground.md?example=Image.qml) | [GIF](assets/casts/components/image.gif) |
+| **AnimatedSprite** | [`AnimatedSprite.qml`](../examples/gallery/examples/AnimatedSprite.qml) | `--example AnimatedSprite` | [AnimatedSprite](qml-types/animatedsprite.md) | [▶ Open](playground.md?example=AnimatedSprite.qml) | [GIF](assets/casts/components/animated_sprite.gif) |
+| **Layouts** | [`Layouts.qml`](../examples/gallery/examples/Layouts.qml) | `--example Layouts` | [RowLayout](qml-types/rowlayout.md) / [GridLayout](qml-types/gridlayout.md) | [▶ Open](playground.md?example=Layouts.qml) | [GIF](assets/casts/components/layouts.gif) |
+| **Repeater** | [`Repeater.qml`](../examples/gallery/examples/Repeater.qml) | `--example Repeater` | [Repeater](qml-types/repeater.md) | [▶ Open](playground.md?example=Repeater.qml) | [GIF](assets/casts/components/repeater.gif) |
+| **Loader** | [`Loader.qml`](../examples/gallery/examples/Loader.qml) | `--example Loader` | [Loader](qml-types/loader.md) | [▶ Open](playground.md?example=Loader.qml) | [GIF](assets/casts/components/loader.gif) |
+| **MouseArea** | [`MouseArea.qml`](../examples/gallery/examples/MouseArea.qml) | `--example MouseArea` | [MouseArea](qml-types/mousearea.md) | [▶ Open](playground.md?example=MouseArea.qml) | [GIF](assets/casts/components/mouse_area.gif) |
+| **Shortcut** | [`Shortcut.qml`](../examples/gallery/examples/Shortcut.qml) | `--example Shortcut` | [Shortcut](qml-types/shortcut.md) | [▶ Open](playground.md?example=Shortcut.qml) | [GIF](assets/casts/components/shortcut.gif) |
+| **Animation** | [`Animation.qml`](../examples/gallery/examples/Animation.qml) | `--example Animation` | [NumberAnimation](qml-types/numberanimation.md) | [▶ Open](playground.md?example=Animation.qml) | [GIF](assets/casts/components/animation.gif) |
+| **States** | [`States.qml`](../examples/gallery/examples/States.qml) | `--example States` | [State](qml-types/state.md) / [Transition](qml-types/transition.md) | [▶ Open](playground.md?example=States.qml) | [GIF](assets/casts/components/states.gif) |
+| **Behavior** | [`Behavior.qml`](../examples/gallery/examples/Behavior.qml) | `--example Behavior` | [Behavior](qml-types/behavior.md) | [▶ Open](playground.md?example=Behavior.qml) | [GIF](assets/casts/components/behavior.gif) |
+| **InlineMode** | [`InlineMode.qml`](../examples/gallery/examples/InlineMode.qml) | `--example InlineMode` | [Scrollback](qml-types/scrollback.md) | [▶ Open](playground.md?example=InlineMode.qml) | [GIF](assets/casts/components/inline_mode.gif) |
+
+---
+
+## 2. Reusable Recipes, C++ Models & Unix PTY (`examples/components/`)
+
+[`examples/components/`](../examples/components/) houses only the **7** multi-file QML/C++ recipes, C++ `QAbstractItemModel` showcases, and Unix PTY (`TerminalView`) executables:
+
+| Recipe / Demo | Source Directory | CMake Target | Recorded Demo | What It Provides |
 | :--- | :--- | :--- | :--- | :--- |
-| **AnimatedSprite** | [`animated_sprite/`](../examples/components/animated_sprite/) | `qmltui_animated_sprite_demo` | [AnimatedSprite](qml-types/animatedsprite.md) | Frame-based sprite sheets, playback control (`QmlTui.Image`). |
-| **BigText** | [`big_text/`](../examples/components/big_text/) | `qmltui_big_text_demo` | [Custom C++ Items](topics/custom-items.md) | Custom C++ `Item` recipe drawing multi-cell block characters. |
-| **BusyIndicator** | [`busy_indicator/`](../examples/components/busy_indicator/) | `qmltui_busy_indicator_demo` | [BusyIndicator](qml-types/busyindicator.md) | Animated Braille/spinner styles, `running` state, custom colors. |
-| **Button** | [`button/`](../examples/components/button/) | `qmltui_button_demo` | [Button](qml-types/button.md) | Focusable action buttons, double-border active focus, custom `background`/`contentItem`. |
-| **Calendar** | [`calendar/`](../examples/components/calendar/) | `qmltui_calendar_demo` | Recipe | Reusable QML calendar grid with keyboard arrow navigation. |
-| **Canvas** | [`canvas/`](../examples/components/canvas/) | `qmltui_canvas_demo` | [Canvas](qml-types/canvas.md) | Sub-cell Braille (2×4), sextant (2×3), half-block (1×2), and Kitty/Sixel pixel drawing. |
-| **CheckBox** | [`check_box/`](../examples/components/check_box/) | `qmltui_check_box_demo` | [CheckBox](qml-types/checkbox.md) | Boolean and tristate checkboxes, keyboard Space/Enter toggling. |
-| **Dialog** | [`dialog/`](../examples/components/dialog/) | `qmltui_dialog_demo` | [Dialog](qml-types/dialog.md) | Modal confirmation dialogs, `accepted`/`rejected` signals, Escape consumption. |
-| **GridView** | [`grid_view/`](../examples/components/grid_view/) | `qmltui_grid_view_demo` | [GridView](qml-types/gridview.md) | Virtualized 2D tile grid with `cellWidth`/`cellHeight` and keyboard navigation. |
-| **Image** | [`image/`](../examples/components/image/) | `qmltui_image_demo` | [Image](qml-types/image.md) | Terminal image rendering via Kitty graphics, Sixel, or Unicode half-blocks (`QmlTui.Image`). |
-| **ListView** | [`list_view/`](../examples/components/list_view/) | `qmltui_list_view_demo` | [ListView](qml-types/listview.md) | Virtualized single-column list, `ListView.isCurrentItem`, scrolling and selection. |
-| **Loader** | [`loader/`](../examples/components/loader/) | `qmltui_loader_demo` | [Loader](qml-types/loader.md) | Dynamic component instantiation via `sourceComponent` and `active`. |
-| **LogView** | [`log_view/`](../examples/components/log_view/) | `qmltui_log_view_demo` | [LogView](qml-types/logview.md) | Append-optimized streaming log viewer with auto-follow and filtering. |
-| **Panel** | [`panel/`](../examples/components/panel/) | `qmltui_panel_demo` | [Panel](qml-types/panel.md) | Bordered container with `title`, `titleBadge`, `titleTrailing`, and `footer` slots. |
-| **Popup** | [`popup/`](../examples/components/popup/) | `qmltui_popup_demo` | [Popup](qml-types/popup.md) | Overlay popup with focus trapping, backdrop dimming, and Escape dismissal. |
-| **ProgressBar** | [`progress_bar/`](../examples/components/progress_bar/) | `qmltui_progress_bar_demo` | [ProgressBar](qml-types/progressbar.md) | Horizontal progress bars with glyph styles, brackets, percentage, and `Gradient`/`thresholds`. |
-| **RadioButton** | [`radio_button/`](../examples/components/radio_button/) | `qmltui_radio_button_demo` | [RadioButton](qml-types/radiobutton.md) | Mutually exclusive option buttons coordinated with `ButtonGroup`. |
-| **Rectangle** | [`rectangle/`](../examples/components/rectangle/) | `qmltui_rectangle_demo` | [Rectangle](qml-types/rectangle.md) | Background fills, `Border` styles (`Single`, `Rounded`, `Double`, `Heavy`, `Ascii`), and `Gradient`. |
-| **Repeater** | [`repeater/`](../examples/components/repeater/) | `qmltui_repeater_demo` | [Repeater](qml-types/repeater.md) | Instantiating positioner children from a model or integer count. |
-| **ScrollView** | [`scroll_view/`](../examples/components/scroll_view/) | `qmltui_scroll_view_demo` | [ScrollView](qml-types/scrollview.md) | Clipped scrollable viewport with scrollbars and keyboard/wheel panning. |
-| **Shortcut** | [`shortcut/`](../examples/components/shortcut/) | `qmltui_shortcut_demo` | [Shortcut](qml-types/shortcut.md) | Focus-independent key sequences (`Ctrl+S`, `F5`, etc.). |
-| **Slider** | [`slider/`](../examples/components/slider/) | `qmltui_slider_demo` | [Slider](qml-types/slider.md) | Interactive range control adjusted via Left/Right arrows, Home/End, or mouse drag. |
-| **Sparkline** | [`sparkline/`](../examples/components/sparkline/) | `qmltui_sparkline_demo` | [Sparkline](qml-types/sparkline.md) | Compact inline Unicode bar/trend chart (`▁▂▃▄▅▆▇█`) with `Gradient` coloring. |
-| **StackView** | [`stack_view/`](../examples/components/stack_view/) | `qmltui_stack_view_demo` | [StackView](qml-types/stackview.md) | Push/pop/replace navigation stack for multi-screen workflows. |
-| **StandardItemDelegate** | [`standard_item_delegate/`](../examples/components/standard_item_delegate/) | `qmltui_standard_item_delegate_demo` | [StandardItemDelegate](qml-types/standarditemdelegate.md) | Ready-made view delegate with selection highlighting (`qmltui_standard_item_delegate_widgets` shows embedded controls). |
-| **StatusBadge** | [`status_badge/`](../examples/components/status_badge/) | `qmltui_status_badge_demo` | Recipe | Reusable status badge QML component. |
-| **Switch** | [`switch/`](../examples/components/switch/) | `qmltui_switch_demo` | [Switch](qml-types/switch.md) | On/Off toggle control with keyboard and mouse activation. |
-| **TabBar** | [`tab_bar/`](../examples/components/tab_bar/) | `qmltui_tab_bar_demo` | [TabBar](qml-types/tabbar.md) | Horizontal tab strip paired with `StackLayout` for tabbed workspaces. |
-| **TableView** | [`table_view/`](../examples/components/table_view/) | `qmltui_table_view_demo` | [TableView](qml-types/tableview.md) | Virtualized multi-column table with headers, grid lines, sorting, and `QAbstractTableModel`. |
-| **TerminalView** | [`terminal_view/`](../examples/components/terminal_view/) | `qmltui_terminal_view_demo` | [TerminalView](qml-types/terminalview.md) | Embedded Unix PTY shells in a split layout (`QMLTUI_ENABLE_TERMINAL_HOST=ON`). |
-| **Text** | [`text/`](../examples/components/text/) | `qmltui_text_demo` | [Text](qml-types/text.md) | Word wrapping, elision, alignment, rich-text `spans`, and OSC 8 hyperlinks. |
-| **TextArea** | [`text_area/`](../examples/components/text_area/) | `qmltui_text_area_demo` | [TextArea](qml-types/textarea.md) | Multi-line text editor with line numbers, selection, copy/paste, and scrolling. |
-| **TextArea Highlighting** | [`text_area_highlighting/`](../examples/components/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | [TextArea](qml-types/textarea.md) | Custom syntax highlighting in QML and C++ on a `TextArea`. |
-| **TextInput** | [`text_input/`](../examples/components/text_input/) | `qmltui_text_input_demo` | [TextInput](qml-types/textinput.md) | Single-line input field with cursor movement, `placeholderText`, password echo mode, and validation. |
-| **Toast** | [`toast/`](../examples/components/toast/) | `qmltui_toast_demo` | [Toast](qml-types/toast.md) | Transient non-modal notification banner with auto-dismiss timer. |
-| **ToolTip** | [`tooltip/` / `tool_tip/`](../examples/components/tool_tip/) | `qmltui_tool_tip_demo` | [ToolTip](qml-types/tooltip.md) | Contextual overlay hint attached to focused or hovered controls. |
-| **TreeView** | [`tree_view/`](../examples/components/tree_view/) | `qmltui_tree_view_demo` | [TreeView](qml-types/treeview.md) | Virtualized hierarchical tree backed by `QAbstractItemModel` with expand/collapse navigation. |
+| **BigText** | [`examples/components/big_text/`](../examples/components/big_text/) | `qmltui_big_text_demo` | ![BigText](assets/casts/components/big_text.gif) | Custom C++ `qmltui::Item` (`BigText.h`, `BigText.cpp`) rendering multi-row block-pixel banner typography. |
+| **Calendar** | [`examples/components/calendar/`](../examples/components/calendar/) | `qmltui_calendar_demo` | ![Calendar](assets/casts/components/calendar.gif) | Reusable `Calendar.qml` month-grid date picker built with `Grid`, `Repeater`, keyboard navigation, and selection bindings. |
+| **StatusBadge** | [`examples/components/status_badge/`](../examples/components/status_badge/) | `qmltui_status_badge_demo` | ![StatusBadge](assets/casts/components/status_badge.gif) | Copyable `StatusBadge.qml` pill component (`[OK]`, `[WARN]`, `[ERR]`) with configurable icon, label, border, and color presets. |
+| **TextArea Highlighting** | [`examples/components/text_area_highlighting/`](../examples/components/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | ![TextArea Highlighting](assets/casts/components/text_area_highlighting.gif) | Both a QML highlighter (`QmlHighlighter.qml`) and a C++ JSON highlighter (`JsonHighlighter`) attached to `TextArea`. |
+| **StandardItemDelegate Showcase** | [`examples/components/standard_item_delegate/`](../examples/components/standard_item_delegate/) | `qmltui_standard_item_delegate_demo` / `qmltui_standard_item_delegate_widgets` | [GIF](assets/casts/components/standard_item_delegate.gif) | Multi-executable showcase demonstrating `StandardItemDelegate` across `ListView`, `TableView`, `TreeView`, and embedded interactive controls. |
+| **C++ TableView Model** | [`examples/components/table_view/`](../examples/components/table_view/) | `qmltui_table_view_demo` | [GIF](assets/casts/components/table_view.gif) | `TableView` backed by a C++ `QAbstractTableModel` (`TaskTableModel`) with column sorting, custom cell delegates, and dynamic mutations. |
+| **Unix PTY TerminalView** | [`examples/components/terminal_view/`](../examples/components/terminal_view/) | `qmltui_terminal_view_demo` | See [TerminalView](qml-types/terminalview.md) | Embedded Unix PTY shells (`QmlTui.TerminalHost`) inside a split terminal layout (`-DQMLTUI_ENABLE_TERMINAL_HOST=ON`). |
 
 ---
 
-## 4. Topic Demos (`examples/topics/`)
+## 3. Architectural Topic Demos (`examples/topics/`)
 
 Each directory under [`examples/topics/`](../examples/topics/) illustrates an architectural pattern or subsystem in depth:
 
@@ -116,3 +133,13 @@ Each directory under [`examples/topics/`](../examples/topics/) illustrates an ar
 | **Mouse Interaction** | [`mouse_interaction/`](../examples/topics/mouse_interaction/) | `qmltui_mouse_interaction_demo` | [Input & Focus](topics/input-and-focus.md) | `MouseArea` clicks, hover tracking, drag coordinates, and wheel scrolling via SGR mouse reporting. |
 | **State Transitions** | [`state_transitions/`](../examples/topics/state_transitions/) | `qmltui_state_transitions_demo` | [Animation & States](topics/animation-and-states.md) | Declarative `State`, `PropertyChanges`, and animated `Transition` definitions. |
 | **Terminal Capabilities** | [`terminal_capabilities/`](../examples/topics/terminal_capabilities/) | `qmltui_terminal_capabilities_demo` | [TerminalCapabilities](qml-types/terminalcapabilities.md) | Inspecting runtime terminal feature detection (`colorDepth`, `unicodeSupport`, Kitty protocols, synchronized output). |
+
+---
+
+## 4. Onboarding & WebAssembly (`examples/quickstart/`, `examples/tutorials/`, `examples/wasm/`)
+
+| Project | Source Directory | CMake Target | Description |
+| :--- | :--- | :--- | :--- |
+| **Standalone Quickstart** | [`examples/quickstart/`](../examples/quickstart/) | `hello_qmltui` (`qmltui_quickstart_test` in-tree) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) standalone project using `FetchContent`. |
+| **Six-Part Tutorial** | [`examples/tutorials/`](../examples/tutorials/) | `qmltui_tutorial_01_first_terminal` .. `06` | Progressive source code accompanying the [Six-Part Tutorial](tutorials/index.md). |
+| **WebAssembly Playground** | [`examples/wasm/`](../examples/wasm/) | [Live Playground](playground.md) / [Guide](topics/webassembly.md) | Browser-hosted interactive QmlTui playground sharing the 39 gallery examples. |

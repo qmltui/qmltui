@@ -31,8 +31,10 @@ endfunction()
 # templating, because configure_file's @VAR@ substitution would eat the
 # @scope/package@version CDN URLs in them.
 function(qmltui_wasm_add_demo_page source_dir)
-    foreach(page index.html qmltui-playground.js qmltui-completion.js)
-        configure_file("${source_dir}/${page}" "${QMLTUI_WASM_WWW_DIR}/${page}" COPYONLY)
+    foreach(page index.html qmltui-playground.js qmltui-completion.js types.json)
+        if(EXISTS "${source_dir}/${page}")
+            configure_file("${source_dir}/${page}" "${QMLTUI_WASM_WWW_DIR}/${page}" COPYONLY)
+        endif()
     endforeach()
 
     find_package(Python3 COMPONENTS Interpreter QUIET)

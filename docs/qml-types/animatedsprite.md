@@ -121,3 +121,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![AnimatedSprite recorded demo](../assets/casts/components/animated_sprite.gif)
+
+- **Live Playground**: [▶ Open `AnimatedSprite.qml` in the WebAssembly Playground](../playground.md?example=AnimatedSprite.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example AnimatedSprite`
+- **Gallery Source**: [`examples/gallery/examples/AnimatedSprite.qml`](../../examples/gallery/examples/AnimatedSprite.qml)

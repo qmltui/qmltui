@@ -11,13 +11,23 @@ import QmlTui.Image
 // anywhere.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     readonly property int cellWidth: 64
     readonly property int cellHeight: 64
     readonly property var animations: [
-        { name: "loading", row: 0, firstCol: 0, frameCount: 4 },
-        { name: "loading tail", row: 0, firstCol: 2, frameCount: 2 }
+        {
+            name: "loading",
+            row: 0,
+            firstCol: 0,
+            frameCount: 4
+        },
+        {
+            name: "loading tail",
+            row: 0,
+            firstCol: 2,
+            frameCount: 2
+        }
     ]
     property int animationIndex: 0
     readonly property var animation: animations[animationIndex]
@@ -25,7 +35,7 @@ Terminal {
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
@@ -33,7 +43,10 @@ Terminal {
         y: 1
         spacing: 1
         width: Math.min(60, root.width - 4)
-        Text { text: "Left/Right pick the animation, Space pauses, R plays it backwards."; color: "#6e7b8b" }
+        Text {
+            text: "Left/Right pick the animation, Space pauses, R plays it backwards."
+            color: "#8b949e"
+        }
         // The keys are handled on the panel, which takes focus, so they also
         // work when this file is hosted inside the gallery.
         Panel {
@@ -43,18 +56,18 @@ Terminal {
             focusable: true
             focus: true
             Keys.onPressed: event => {
-                const count = root.animations.length
+                const count = root.animations.length;
                 if (event.key === Qt.Key_Right)
-                    root.animationIndex = (root.animationIndex + 1) % count
+                    root.animationIndex = (root.animationIndex + 1) % count;
                 else if (event.key === Qt.Key_Left)
-                    root.animationIndex = (root.animationIndex + count - 1) % count
+                    root.animationIndex = (root.animationIndex + count - 1) % count;
                 else if (event.key === Qt.Key_Space)
-                    sprite.paused = !sprite.paused
+                    sprite.paused = !sprite.paused;
                 else if (event.key === Qt.Key_R)
-                    sprite.reverse = !sprite.reverse
+                    sprite.reverse = !sprite.reverse;
                 else
-                    return
-                event.accepted = true
+                    return;
+                event.accepted = true;
             }
             // Braille, as in the Image tile: it keeps the figure's outline at
             // this size and reads well in the browser page too.
@@ -76,16 +89,12 @@ Terminal {
             }
         }
         Text {
-            text: root.animation.name + ": frame " + (sprite.currentFrame + 1) + "/" + sprite.frameCount
-                  + (sprite.paused ? "   paused" : "") + (sprite.reverse ? "   reverse" : "")
+            text: root.animation.name + ": frame " + (sprite.currentFrame + 1) + "/" + sprite.frameCount + (sprite.paused ? "   paused" : "") + (sprite.reverse ? "   reverse" : "")
             color: "#7ee0ff"
         }
         Text {
-            text: sprite.status === Image.Ready
-                  ? "Frame " + sprite.frameWidth + "x" + sprite.frameHeight + " px at (" + sprite.frameX + ", " + sprite.frameY + ") of a "
-                    + sprite.sourceSize.width + "x" + sprite.sourceSize.height + " sheet"
-                  : sprite.status === Image.Error ? "Sprite sheet failed to load" : "Loading"
-            color: "#65e6a0"
+            text: sprite.status === Image.Ready ? "Frame " + sprite.frameWidth + "x" + sprite.frameHeight + " px at (" + sprite.frameX + ", " + sprite.frameY + ") of a " + sprite.sourceSize.width + "x" + sprite.sourceSize.height + " sheet" : sprite.status === Image.Error ? "Sprite sheet failed to load" : "Loading"
+            color: "#2cde85"
             bold: true
         }
     }

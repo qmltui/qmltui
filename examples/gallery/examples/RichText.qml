@@ -5,12 +5,12 @@ import QmlTui
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
@@ -33,6 +33,9 @@ Terminal {
                 onLinkActivated: url => demo.link = url
             }
         }
-        Text { text: "Last link: " + demo.link; color: "#fde68a" }
+        Text {
+            text: "Last link: " + demo.link
+            color: "#fde68a"
+        }
     }
 }

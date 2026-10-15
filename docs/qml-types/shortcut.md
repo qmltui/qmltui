@@ -66,3 +66,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
+
+- **Live Playground**: [▶ Open `Shortcut.qml` in the WebAssembly Playground](../playground.md?example=Shortcut.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Shortcut`
+- **Gallery Source**: [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml)

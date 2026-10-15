@@ -122,7 +122,7 @@ endif()
 ```
 
 Use
-[`examples/components/animated_sprite/CMakeLists.txt`](../../../examples/components/animated_sprite/CMakeLists.txt)
+[`examples/components/status_badge/CMakeLists.txt`](../../../examples/components/status_badge/CMakeLists.txt)
 as the reference for this shared-target pattern. C++-created Terminals need an
 explicit environment hook, as shown in
 [`examples/topics/cpp_only/main.cpp`](../../../examples/topics/cpp_only/main.cpp).

@@ -85,3 +85,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Layouts recorded demo](../assets/casts/components/layouts.gif)
+
+- **Live Playground**: [▶ Open `Layouts.qml` in the WebAssembly Playground](../playground.md?example=Layouts.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Layouts`
+- **Gallery Source**: [`examples/gallery/examples/Layouts.qml`](../../examples/gallery/examples/Layouts.qml)

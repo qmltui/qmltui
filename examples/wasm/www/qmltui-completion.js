@@ -1,4 +1,4 @@
-// QML completion for CodeMirror 6, driven by types.json (scripts/qml_type_index.py).
+// QML completion for CodeMirror 6, driven by types.json.
 //
 // The index knows every exported type, what it inherits, and its members. This
 // file adds the part the index cannot know: where the cursor is. A cheap scan

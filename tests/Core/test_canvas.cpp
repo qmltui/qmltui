@@ -11,8 +11,6 @@
 #include "../TestPaint.h"
 #include <QmlTui/Core/Primitives/ColorMapper.h>
 
-
-
 using namespace qmltui;
 using qmltui::testing::paintItem;
 
@@ -36,8 +34,6 @@ private slots:
     void testZeroMaskPreservesUnderlyingCell();
 };
 
-
-
 void TestCanvas::testBrailleMode() {
     Canvas canvas;
     canvas.setRenderMode(Canvas::RenderMode::Braille);
@@ -57,14 +53,14 @@ void TestCanvas::testBrailleMode() {
     };
 
     const DotTest dotTests[] = {
-        { 0, 0, 0x2801 }, // Dot 1 (Left row 0)  -> bit 0 (0x01)
-        { 0, 1, 0x2802 }, // Dot 2 (Left row 1)  -> bit 1 (0x02)
-        { 0, 2, 0x2804 }, // Dot 3 (Left row 2)  -> bit 2 (0x04)
-        { 1, 0, 0x2808 }, // Dot 4 (Right row 0) -> bit 3 (0x08)
-        { 1, 1, 0x2810 }, // Dot 5 (Right row 1) -> bit 4 (0x10)
-        { 1, 2, 0x2820 }, // Dot 6 (Right row 2) -> bit 5 (0x20)
-        { 0, 3, 0x2840 }, // Dot 7 (Left row 3)  -> bit 6 (0x40)
-        { 1, 3, 0x2880 }, // Dot 8 (Right row 3) -> bit 7 (0x80)
+        {0, 0, 0x2801}, // Dot 1 (Left row 0)  -> bit 0 (0x01)
+        {0, 1, 0x2802}, // Dot 2 (Left row 1)  -> bit 1 (0x02)
+        {0, 2, 0x2804}, // Dot 3 (Left row 2)  -> bit 2 (0x04)
+        {1, 0, 0x2808}, // Dot 4 (Right row 0) -> bit 3 (0x08)
+        {1, 1, 0x2810}, // Dot 5 (Right row 1) -> bit 4 (0x10)
+        {1, 2, 0x2820}, // Dot 6 (Right row 2) -> bit 5 (0x20)
+        {0, 3, 0x2840}, // Dot 7 (Left row 3)  -> bit 6 (0x40)
+        {1, 3, 0x2880}, // Dot 8 (Right row 3) -> bit 7 (0x80)
     };
 
     for (const auto& dt : dotTests) {
@@ -111,18 +107,18 @@ void TestCanvas::testBraillePerCellColor() {
     paintItem(canvas, buf, 0, 0, clip);
     canvas.clear();
 
-    canvas.setPixelColor(0, 0, "red");               // cell 0: explicit ink
-    canvas.setPixel(2, 0, true);                      // cell 1: canvas color
-    canvas.setPixelColor(4, 0, "red");               // cell 2: red, then...
-    canvas.setPixelColor(5, 1, "lime");              // ...the last dot drawn wins
-    canvas.setPixelColor(6, 0, "red");               // cell 3: explicit, then a plain dot
-    canvas.setPixel(7, 1, true);                      // resets the cell to the canvas color
+    canvas.setPixelColor(0, 0, "red");  // cell 0: explicit ink
+    canvas.setPixel(2, 0, true);        // cell 1: canvas color
+    canvas.setPixelColor(4, 0, "red");  // cell 2: red, then...
+    canvas.setPixelColor(5, 1, "lime"); // ...the last dot drawn wins
+    canvas.setPixelColor(6, 0, "red");  // cell 3: explicit, then a plain dot
+    canvas.setPixel(7, 1, true);        // resets the cell to the canvas color
 
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);   // red
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFF0000FFu);   // blue (canvas)
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF00FF00u);   // lime
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(3, 0).fgColor), 0xFF0000FFu);   // blue (canvas)
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u); // red
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFF0000FFu); // blue (canvas)
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF00FF00u); // lime
+    QCOMPARE(ColorMapper::toArgb(buf.cellAt(3, 0).fgColor), 0xFF0000FFu); // blue (canvas)
     // Both dots of cell 2 are still set; only the ink changed.
     QCOMPARE(buf.cellAt(2, 0).character().toByteArray(), QString(QChar(0x2801 | 0x2810)).toUtf8());
 
@@ -154,10 +150,10 @@ void TestCanvas::testBrailleAverageCellColor() {
     paintItem(canvas, buf, 0, 0, clip);
     canvas.clear();
 
-    canvas.setPixelColor(0, 0, "red");                // cell 0: red + lime -> olive-ish mean
+    canvas.setPixelColor(0, 0, "red"); // cell 0: red + lime -> olive-ish mean
     canvas.setPixelColor(1, 0, "lime");
-    canvas.setPixelColor(2, 0, "red");                // cell 1: red only
-    canvas.setPixel(4, 0, true);                       // cell 2: canvas blue + red -> purple
+    canvas.setPixelColor(2, 0, "red"); // cell 1: red only
+    canvas.setPixel(4, 0, true);       // cell 2: canvas blue + red -> purple
     canvas.setPixelColor(5, 0, "red");
 
     paintItem(canvas, buf, 0, 0, clip);
@@ -194,8 +190,8 @@ void TestCanvas::testHalfBlockMode() {
     QCOMPARE(canvas.pixelHeight(), 10);
 
     // Top pixel red, bottom pixel blue in cell (0, 0)
-    canvas.setPixelColor(0, 0, "red");    // top pixel y=0 -> cell (0,0) top
-    canvas.setPixelColor(0, 1, "blue");   // bottom pixel y=1 -> cell (0,0) bottom
+    canvas.setPixelColor(0, 0, "red");  // top pixel y=0 -> cell (0,0) top
+    canvas.setPixelColor(0, 1, "blue"); // bottom pixel y=1 -> cell (0,0) bottom
 
     TextGridBuffer buffer;
     buffer.resize(10, 5);
@@ -204,25 +200,28 @@ void TestCanvas::testHalfBlockMode() {
 
     Cell c = buffer.cellAt(0, 0);
     QCOMPARE(c.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
-    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u); // Red
-    QCOMPARE(ColorMapper::toArgb(c.bgColor), 0xFF0000FFu); // Blue
+    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u);             // Red
+    QCOMPARE(ColorMapper::toArgb(c.bgColor), 0xFF0000FFu);             // Blue
 }
 
 void TestCanvas::testHalfBlockDefaultInk() {
     Canvas canvas;
-    canvas.setWidth(3); canvas.setHeight(1);
+    canvas.setWidth(3);
+    canvas.setHeight(1);
     canvas.setRenderMode(Canvas::RenderMode::HalfBlock);
     canvas.setAutoClear(false);
     canvas.setPixel(0, 0, true);
     canvas.setPixel(1, 1, true);
-    canvas.setPixel(2, 0, true); canvas.setPixel(2, 1, true);
+    canvas.setPixel(2, 0, true);
+    canvas.setPixel(2, 1, true);
     TextGridBuffer buffer;
     buffer.resize(3, 1);
     paintItem(canvas, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QStringLiteral("▀").toUtf8());
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QStringLiteral("▄").toUtf8());
     QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QStringLiteral("█").toUtf8());
-    for (int x = 0; x < 3; ++x) QCOMPARE(buffer.cellAt(x, 0).fgColor, 0u);
+    for (int x = 0; x < 3; ++x)
+        QCOMPARE(buffer.cellAt(x, 0).fgColor, 0u);
 
     canvas.setPixelColor(1, 0, "red");
     paintItem(canvas, buffer, 0, 0);
@@ -274,7 +273,6 @@ void TestCanvas::testShapesOnHalfBlock() {
     rect->setHeight(4); // 4 half-block pixels high = 2 character cells high
     rect->setFill(true);
     rect->setColor("yellow");
-
 
     TextGridBuffer buffer;
     buffer.resize(20, 10);
@@ -333,7 +331,8 @@ void TestCanvas::testQmlCanvasHalfBlock() {
                 color: "red"
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     QObject* obj = component.create();
     QVERIFY2(obj != nullptr, qPrintable(component.errorString()));
@@ -359,7 +358,9 @@ void TestCanvas::testHalfBlockDemoRendering() {
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/../..");
 
-    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(QMLTUI_SOURCE_DIR "/examples/components/canvas/Main.qml")));
+    QQmlComponent component(
+        &engine, QUrl::fromLocalFile(
+                     QStringLiteral(QMLTUI_SOURCE_DIR "/examples/gallery/examples/Canvas.qml")));
 
     QObject* obj = component.create();
     QVERIFY2(obj != nullptr, qPrintable(component.errorString()));
@@ -379,7 +380,9 @@ void TestCanvas::testHalfBlockDemoRendering() {
         QString line;
         for (int x = 0; x < 80; ++x) {
             Cell c = buffer.cellAt(x, y);
-            if (c.character().startsWith("\xE2\xA0") || c.character().toByteArray() == "\xE2\x96\x80" || c.character().toByteArray() == "\xE2\x96\x84") {
+            if (c.character().startsWith("\xE2\xA0") ||
+                c.character().toByteArray() == "\xE2\x96\x80" ||
+                c.character().toByteArray() == "\xE2\x96\x84") {
                 canvasCharCount++;
             }
             line += QString::fromUtf8(c.character().toByteArray());
@@ -411,7 +414,8 @@ void TestCanvas::testShapesDoNotInvalidateWhilePainting() {
             Line { x1: 0; y1: 0; x2: 30; y2: 30 }
             Circle { cx: 20; cy: 20; radius: 8 }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object != nullptr, qPrintable(component.errorString()));
@@ -439,8 +443,9 @@ void TestCanvas::testCircleGeometry_data() {
     QTest::addColumn<bool>("filled");
     for (int radius : {1, 2, 7, 14, 25}) {
         for (bool filled : {false, true}) {
-            QTest::newRow(qPrintable(QStringLiteral("r%1-%2").arg(radius)
-                .arg(filled ? "filled" : "outline"))) << radius << filled;
+            QTest::newRow(
+                qPrintable(QStringLiteral("r%1-%2").arg(radius).arg(filled ? "filled" : "outline")))
+                << radius << filled;
         }
     }
 }
@@ -470,8 +475,7 @@ void TestCanvas::testCircleGeometry() {
         const auto text = QString::fromUtf8(buffer.cellAt(x / 2, y / 4).character().toByteArray());
         const ushort ch = text.isEmpty() ? 0 : text.at(0).unicode();
         constexpr int bits[2][4] = {{0, 1, 2, 6}, {3, 4, 5, 7}};
-        return ch >= 0x2800 && ch <= 0x28ff
-            && ((ch - 0x2800) & (1 << bits[x % 2][y % 4])) != 0;
+        return ch >= 0x2800 && ch <= 0x28ff && ((ch - 0x2800) & (1 << bits[x % 2][y % 4])) != 0;
     };
     for (int y = -radius - 1; y <= radius + 1; ++y) {
         int rowDots = 0;
@@ -481,14 +485,11 @@ void TestCanvas::testCircleGeometry() {
             QCOMPARE(ink, inkAt(-x, y));
             QCOMPARE(ink, inkAt(x, -y));
             QCOMPARE(ink, inkAt(y, x));
-            if (distance < radius - 0.5)
-                QCOMPARE(ink, filled);
-            if (distance > radius + 0.5)
-                QVERIFY(!ink);
+            if (distance < radius - 0.5) QCOMPARE(ink, filled);
+            if (distance > radius + 0.5) QVERIFY(!ink);
             rowDots += ink;
         }
-        if (std::abs(y) <= radius)
-            QVERIFY(rowDots > 0);
+        if (std::abs(y) <= radius) QVERIFY(rowDots > 0);
     }
 }
 

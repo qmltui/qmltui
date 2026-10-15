@@ -74,3 +74,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![RadioButton recorded demo](../assets/casts/components/radio_button.gif)
+
+- **Live Playground**: [▶ Open `RadioButton.qml` in the WebAssembly Playground](../playground.md?example=RadioButton.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example RadioButton`
+- **Gallery Source**: [`examples/gallery/examples/RadioButton.qml`](../../examples/gallery/examples/RadioButton.qml)

@@ -123,3 +123,11 @@ Terminal {
 
 ●○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
 ```
+
+### Interactive Demo & Recording
+
+![ProgressBar recorded demo](../assets/casts/components/progress_bar.gif)
+
+- **Live Playground**: [▶ Open `ProgressBar.qml` in the WebAssembly Playground](../playground.md?example=ProgressBar.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example ProgressBar`
+- **Gallery Source**: [`examples/gallery/examples/ProgressBar.qml`](../../examples/gallery/examples/ProgressBar.qml)

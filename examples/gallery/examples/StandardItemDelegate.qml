@@ -6,19 +6,22 @@ import QmlTui.Controls
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
         x: 2
         y: 1
         spacing: 1
-        Text { text: "The default row: decoration glyph, check box when the model allows it, bold reverse video when current."; color: "#6e7b8b" }
+        Text {
+            text: "The default row: decoration glyph, check box when the model allows it, bold reverse video when current."
+            color: "#8b949e"
+        }
         Rectangle {
             width: 40
             height: 8
@@ -31,9 +34,14 @@ Terminal {
                 focus: true
                 currentIndex: 0
                 model: ["Build", "Run tests", "Tag release", "Publish notes", "Announce", "Celebrate"]
-                delegate: StandardItemDelegate { textColor: "#93c5fd" }
+                delegate: StandardItemDelegate {
+                    textColor: "#93c5fd"
+                }
             }
         }
-        Text { text: tasks.currentIndex >= 0 ? "Current: " + tasks.model[tasks.currentIndex] : "No current item"; color: "#93c5fd" }
+        Text {
+            text: tasks.currentIndex >= 0 ? "Current: " + tasks.model[tasks.currentIndex] : "No current item"
+            color: "#93c5fd"
+        }
     }
 }

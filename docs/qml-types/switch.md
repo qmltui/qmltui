@@ -80,3 +80,11 @@ Terminal {
 
 Theme: dark
 ```
+
+### Interactive Demo & Recording
+
+![Switch recorded demo](../assets/casts/components/switch.gif)
+
+- **Live Playground**: [▶ Open `Switch.qml` in the WebAssembly Playground](../playground.md?example=Switch.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Switch`
+- **Gallery Source**: [`examples/gallery/examples/Switch.qml`](../../examples/gallery/examples/Switch.qml)

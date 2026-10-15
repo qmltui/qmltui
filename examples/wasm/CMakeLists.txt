@@ -60,24 +60,3 @@ foreach(example IN LISTS gallery_examples)
 endforeach()
 string(REGEX REPLACE ", $" "" example_index "${example_index}")
 file(WRITE "${QMLTUI_WASM_WWW_DIR}/examples/index.json" "[${example_index}]\n")
-
-# Completion index for the editor, from the same qmltypes the docs use. The
-# QmlTui qmltypes appear at build time, so this is a build step, not configure.
-find_package(Python3 COMPONENTS Interpreter QUIET)
-if(Python3_Interpreter_FOUND)
-    set(type_index_modules --module QmlTui --module QmlTui.Controls --module QML --module QtQml --module QtQml.Models)
-    if(QMLTUI_WASM_PLAYGROUND_IMAGE)
-        list(APPEND type_index_modules --module QmlTui.Image)
-    endif()
-    add_custom_command(
-        OUTPUT "${QMLTUI_WASM_WWW_DIR}/types.json"
-        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/qml_type_index.py"
-                --build-dir "${CMAKE_BINARY_DIR}" --qt-qml-dir "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_QML}"
-                ${type_index_modules} --output "${QMLTUI_WASM_WWW_DIR}/types.json"
-        DEPENDS QmlTuiCore QmlTuiControls
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/qml_type_index.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/component_docs.py"
-        COMMENT "Generating the playground completion index"
-        VERBATIM)
-    add_custom_target(qmltui_playground_types ALL DEPENDS "${QMLTUI_WASM_WWW_DIR}/types.json")
-endif()

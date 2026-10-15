@@ -5,10 +5,6 @@ option(QMLTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, StateGroup, advanced states)" OFF)
-# Compatibility aliases
-if(QMLTUI_ENABLE_BEHAVIOR OR QMLTUI_ENABLE_ADVANCED_STATES)
-    set(QMLTUI_ENABLE_PRIVATE_QT ON CACHE BOOL "Enable features requiring private Qt modules" FORCE)
-endif()
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
 option(QMLTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" OFF)
@@ -98,8 +94,6 @@ endif()
 if(QMLTUI_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
-
-include(cmake/QmlTuiDoc.cmake)
 
 configure_package_config_file(
     cmake/QmlTuiConfig.cmake.in

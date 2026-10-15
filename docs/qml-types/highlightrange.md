@@ -53,3 +53,11 @@ Properties support reset in QML by assigning `undefined`.
 In C++, `HighlightRange` shares underlying styling storage with `TextStyle`. Nonempty ranges automatically
 expand outward to grapheme cluster boundaries so combining characters and multi-code-unit emoji are never
 partially styled.
+
+### Interactive Demo & Recording
+
+![TextArea recorded demo](../assets/casts/components/text_area.gif)
+
+- **Live Playground**: [▶ Open `TextArea.qml` in the WebAssembly Playground](../playground.md?example=TextArea.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TextArea`
+- **Gallery Source**: [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml)

@@ -5,19 +5,22 @@ import QmlTui
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
         x: 2
         y: 1
         spacing: 1
-        Text { text: "Enter inserts a line break; arrows move the cursor; Ctrl+C copies the selection."; color: "#6e7b8b" }
+        Text {
+            text: "Enter inserts a line break; arrows move the cursor; Ctrl+C copies the selection."
+            color: "#8b949e"
+        }
         Rectangle {
             width: 66
             height: 7
@@ -33,6 +36,9 @@ Terminal {
                 text: "QmlTui renders QML into terminal cells.\nThis TextArea keeps a multi-line buffer."
             }
         }
-        Text { text: notes.text.length + " characters, " + notes.text.split("\n").length + " lines"; color: "#a78bfa" }
+        Text {
+            text: notes.text.length + " characters, " + notes.text.split("\n").length + " lines"
+            color: "#a78bfa"
+        }
     }
 }

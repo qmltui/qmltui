@@ -73,3 +73,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![ScrollView recorded demo](../assets/casts/components/scroll_view.gif)
+
+- **Live Playground**: [▶ Open `ScrollView.qml` in the WebAssembly Playground](../playground.md?example=ScrollView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example ScrollView`
+- **Gallery Source**: [`examples/gallery/examples/ScrollView.qml`](../../examples/gallery/examples/ScrollView.qml)

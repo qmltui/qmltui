@@ -74,3 +74,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
+
+- **Live Playground**: [▶ Open `Rectangle.qml` in the WebAssembly Playground](../playground.md?example=Rectangle.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Rectangle`
+- **Gallery Source**: [`examples/gallery/examples/Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml)

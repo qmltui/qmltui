@@ -110,3 +110,11 @@ CPU 48%
                         ▇▄████
 ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▇▆██████
 ```
+
+### Interactive Demo & Recording
+
+![Sparkline recorded demo](../assets/casts/components/sparkline.gif)
+
+- **Live Playground**: [▶ Open `Sparkline.qml` in the WebAssembly Playground](../playground.md?example=Sparkline.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Sparkline`
+- **Gallery Source**: [`examples/gallery/examples/Sparkline.qml`](../../examples/gallery/examples/Sparkline.qml)

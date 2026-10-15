@@ -144,3 +144,11 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+![Popup recorded demo](../assets/casts/components/popup.gif)
+
+- **Live Playground**: [▶ Open `Popup.qml` in the WebAssembly Playground](../playground.md?example=Popup.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Popup`
+- **Gallery Source**: [`examples/gallery/examples/Popup.qml`](../../examples/gallery/examples/Popup.qml)

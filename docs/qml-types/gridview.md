@@ -90,3 +90,11 @@ Terminal {
 │Cell 12 │  │Cell 13 │  │Cell 14 │  │Cell 15 │  │Cell 16 │  │Cell 17 │
 └────────┘  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘
 ```
+
+### Interactive Demo & Recording
+
+![GridView recorded demo](../assets/casts/components/grid_view.gif)
+
+- **Live Playground**: [▶ Open `GridView.qml` in the WebAssembly Playground](../playground.md?example=GridView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example GridView`
+- **Gallery Source**: [`examples/gallery/examples/GridView.qml`](../../examples/gallery/examples/GridView.qml)

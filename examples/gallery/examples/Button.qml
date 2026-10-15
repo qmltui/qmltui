@@ -6,12 +6,12 @@ import QmlTui.Controls
 // and a complete app on its own: run it, or paste it into the playground.
 Terminal {
     id: root
-    color: "#0b0f14"
+    color: "#0d1117"
 
     // Q or Escape quits.
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit()
+            Qt.quit();
     }
 
     Column {
@@ -20,7 +20,10 @@ Terminal {
         y: 1
         property int clicks: 0
         spacing: 1
-        Text { text: "Tab moves focus; Enter, Space or a click activates; the pointer highlights."; color: "#6e7b8b" }
+        Text {
+            text: "Tab moves focus; Enter, Space or a click activates; the pointer highlights."
+            color: "#8b949e"
+        }
         Row {
             id: buttons
             spacing: 2
@@ -28,20 +31,34 @@ Terminal {
             // for the whole app. The label goes bold under the pointer, flips
             // to reverse video while the mouse button is held, and the double
             // border marks keyboard focus, which a click also moves here.
-            Button { text: "Primary"; focus: true; hoverEnabled: true; onClicked: buttonDemo.clicks++ }
-            Button { text: "Secondary"; hoverEnabled: true; onClicked: buttonDemo.clicks++ }
+            Button {
+                text: "Primary"
+                focus: true
+                hoverEnabled: true
+                onClicked: buttonDemo.clicks++
+            }
+            Button {
+                text: "Secondary"
+                hoverEnabled: true
+                onClicked: buttonDemo.clicks++
+            }
             Button {
                 background: Rectangle {
-                    color: "#65e6a0"
+                    color: "#2cde85"
                     border.color: "default"
                     border.style: Border.None
                 }
                 text: "Filled"
-                textColor: "#0b0f14"
+                textColor: "#0d1117"
                 hoverEnabled: true
                 onClicked: buttonDemo.clicks++
             }
-            Button { text: "Reset"; textColor: "#f87171"; hoverEnabled: true; onClicked: buttonDemo.clicks = 0 }
+            Button {
+                text: "Reset"
+                textColor: "#f87171"
+                hoverEnabled: true
+                onClicked: buttonDemo.clicks = 0
+            }
         }
         Row {
             spacing: 2
@@ -59,8 +76,8 @@ Terminal {
                 text: "Hold me"
                 hoverEnabled: true
                 background: Rectangle {
-                    color: reactive.down ? "#65e6a0" : "#1d2733"
-                    border.color: reactive.activeFocus ? "#65e6a0" : "#3a4657"
+                    color: reactive.down ? "#2cde85" : "#161b22"
+                    border.color: reactive.activeFocus ? "#2cde85" : "#30363d"
                     border.style: reactive.down ? Border.Double : Border.Single
                 }
             }
@@ -71,20 +88,26 @@ Terminal {
                 hoverEnabled: true
                 contentItem: Row {
                     spacing: 1
-                    Text { text: "💾"; }
-                    Text { text: withIcon.text; color: "#7ee0ff"; bold: withIcon.activeFocus || withIcon.hovered }
+                    Text {
+                        text: "💾"
+                    }
+                    Text {
+                        text: withIcon.text
+                        color: "#7ee0ff"
+                        bold: withIcon.activeFocus || withIcon.hovered
+                    }
                 }
             }
         }
         Text {
             text: buttonDemo.clicks === 0 ? "No clicks yet" : "Clicked " + buttonDemo.clicks + " time" + (buttonDemo.clicks === 1 ? "" : "s")
-            color: "#65e6a0"
+            color: "#2cde85"
             bold: true
         }
         Text {
             readonly property Item under: buttons.children.find(b => b.hovered) ?? null
             text: under ? "Hovering " + under.text : "Hover a button to highlight it"
-            color: "#6e7b8b"
+            color: "#8b949e"
         }
     }
 }

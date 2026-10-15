@@ -2,8 +2,9 @@
 # as a preset and the browser demo page can run it as an app.
 set(gallery_qml_files Main.qml)
 # The demos: complete standalone apps the launcher instantiates from their
-# text (see Main.qml). Plain resources, not QML module files, so their names
-# (Button.qml, ...) never shadow the QmlTui.Controls types they demonstrate.
+# text (see Main.qml) or runs directly via `qmltui_gallery --example <Name>`.
+# Plain resources, not QML module files, so their names (Button.qml, ...) never
+# shadow the QmlTui.Controls types they demonstrate.
 file(GLOB gallery_example_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.qml")
 # Behavior needs QMLTUI_ENABLE_PRIVATE_QT; without it the tile is left out and the
 # catalog hides the entry (Main.qml filters on the files it was given).
@@ -13,10 +14,7 @@ endif()
 if(NOT QMLTUI_ENABLE_IMAGE)
     list(FILTER gallery_example_files EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
-# The Image tile's picture and the AnimatedSprite tile's sheet, shared with
-# examples/components/image and examples/components/animated_sprite.
-set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../components/image")
-set(gallery_sprite_dir "${CMAKE_CURRENT_SOURCE_DIR}/../components/animated_sprite")
+set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 function(gallery_add_executable target uri main_source)
     qt_add_executable(${target} ${main_source})
@@ -42,12 +40,9 @@ function(gallery_add_executable target uri main_source)
         qt_add_resources(${target} "${target}_assets"
             PREFIX "/gallery/assets"
             BASE "${gallery_asset_dir}"
-            FILES "${gallery_asset_dir}/panda.png"
-        )
-        qt_add_resources(${target} "${target}_sprite_assets"
-            PREFIX "/gallery/assets"
-            BASE "${gallery_sprite_dir}"
-            FILES "${gallery_sprite_dir}/loading.png"
+            FILES
+                "${gallery_asset_dir}/panda.png"
+                "${gallery_asset_dir}/loading.png"
         )
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})
@@ -89,4 +84,25 @@ if(TARGET qmltui::runner)
     qmltui_add_scenario(NAME gallery_tour TARGET qmltui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery_tour.js"
         COLUMNS 100 ROWS 30 CLOCK VIRTUAL RECORD gallery-tour.cast LABELS Cast)
+
+    # Standalone smoke + .cast recording scenarios for each built-in type in examples/gallery/examples/*.qml
+    foreach(example_file IN LISTS gallery_example_files)
+        get_filename_component(example_stem "${example_file}" NAME_WE)
+        string(REGEX REPLACE "([a-z0-9])([A-Z])" "\\1_\\2" example_snake "${example_stem}")
+        string(TOLOWER "${example_snake}" example_snake)
+        set(scenario_script "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/${example_snake}.js")
+        if(EXISTS "${scenario_script}")
+            qmltui_add_scenario(
+                NAME "gallery_${example_snake}_demo"
+                TARGET qmltui_gallery
+                ARGUMENTS --example "${example_stem}"
+                SCRIPT "${scenario_script}"
+                COLUMNS 84
+                ROWS 20
+                CLOCK VIRTUAL
+                RECORD "components/${example_snake}.cast"
+                LABELS AgentSmoke
+            )
+        endif()
+    endforeach()
 endif()

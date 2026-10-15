@@ -25,7 +25,7 @@ SPDX-License-Identifier = "BSD-3-Clause"
 # Documentation, including the markdown reference pages that live next to the
 # code under src/**/doc/ and the notices in this directory.
 [[annotations]]
-path = ["docs/**", "**/*.md", "**/doc/**"]
+path = ["docs/**", "docs/package.json", "docs/.vitepress/**", "**/*.md", "**/doc/**"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "CC-BY-4.0"

@@ -77,6 +77,21 @@ blockquote {
     color: #8b949e;
     margin: 16px 0;
 }
+pre code.language-text {
+    line-height: 1.25;
+}
+details {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin: 12px 0;
+}
+summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #58a6ff;
+}
 """
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -154,10 +169,20 @@ def simple_markdown_to_html(md: str) -> str:
         if not stripped:
             continue
 
-        # Headings
-        if stripped.startswith("#"):
-            level = len(stripped.split()[0])
-            heading_text = stripped.lstrip("#").strip()
+        # Pass through <details> and <summary> tags cleanly without escaping
+        summary_match = re.match(r"^<summary(?:\s+[^>]*)?>(.*)</summary>$", stripped, re.IGNORECASE)
+        if summary_match:
+            html_lines.append(f"<summary>{format_inline(summary_match.group(1))}</summary>")
+            continue
+        if re.match(r"^</?(?:details|summary)(?:\s+[^>]*)?>$", stripped, re.IGNORECASE):
+            html_lines.append(stripped)
+            continue
+
+        # Headings (# through ######, including #### -> <h4>)
+        heading_match = re.match(r"^(#{1,6})\s+(.*)$", stripped)
+        if heading_match:
+            level = len(heading_match.group(1))
+            heading_text = heading_match.group(2).strip()
             slug = re.sub(r"[^a-zA-Z0-9_-]", "", heading_text.lower().replace(" ", "-"))
             html_lines.append(f'<h{level} id="{slug}">{format_inline(heading_text)}</h{level}>')
             continue
@@ -181,25 +206,58 @@ def simple_markdown_to_html(md: str) -> str:
     return "\n".join(html_lines)
 
 def format_inline(text: str) -> str:
-    # inline code
-    text = re.sub(r"`([^`]+)`", lambda m: f"<code>{html.escape(m.group(1))}</code>", text)
-    # bold
-    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
-    # italic
-    text = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", text)
-    # links [text](url) -> replace .md with .html
-    def link_repl(m):
-        label, url = m.group(1), m.group(2)
-        url = re.sub(r"\.md(#|$)", r".html\1", url)
+    # Protect inline code spans first so inner characters are not altered by bold/link regexes
+    code_spans: list[str] = []
+    def save_code(m: re.Match) -> str:
+        code_spans.append(f"<code>{html.escape(m.group(1))}</code>")
+        return f"\x00CODE{len(code_spans) - 1}\x00"
+
+    text = re.sub(r"`([^`]+)`", save_code, text)
+
+    # Protect <details> and <summary> tags so they pass through cleanly without escaping
+    preserved_tags: list[str] = []
+    def save_tag(m: re.Match) -> str:
+        preserved_tags.append(m.group(0))
+        return f"\x00TAG{len(preserved_tags) - 1}\x00"
+
+    text = re.sub(r"</?(?:details|summary)(?:\s+[^>]*)?>", save_tag, text, flags=re.IGNORECASE)
+
+    # Inline markdown links [text](target.md) and [text](target.md#anchor)
+    def link_repl(m: re.Match) -> str:
+        label, url = m.group(1), m.group(2).strip()
+        if not url.startswith(("http://", "https://", "mailto:")):
+            url = re.sub(r"\.md(#|$)", r".html\1", url)
+        # Format bold/italic inside link label if present
+        label = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", label)
+        label = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", label)
         return f'<a href="{html.escape(url)}">{label}</a>'
+
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", link_repl, text)
+
+    # Bold **text**
+    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    # Italic *text*
+    text = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", text)
+
+    # Restore preserved HTML tags and inline code spans
+    for idx, tag in enumerate(preserved_tags):
+        text = text.replace(f"\x00TAG{idx}\x00", tag)
+    for idx, span in enumerate(code_spans):
+        text = text.replace(f"\x00CODE{idx}\x00", span)
     return text
 
 def convert_markdown(text: str) -> str:
     text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
     try:
         import markdown
-        return markdown.markdown(text, extensions=["tables", "fenced_code", "toc"])
+        rendered = markdown.markdown(text, extensions=["tables", "fenced_code", "toc"])
+        # Ensure local .md links are converted to .html even when python-markdown is used
+        rendered = re.sub(
+            r'href="(?!https?://|mailto:)([^"]+?)\.md(#[^"]*)?"',
+            lambda m: f'href="{m.group(1)}.html{m.group(2) or ""}"',
+            rendered,
+        )
+        return rendered
     except ImportError:
         return simple_markdown_to_html(text)
 
@@ -216,12 +274,20 @@ def read_project_version(source_dir: Path) -> str:
     return "0.5.0"
 
 def main():
+    repo_root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description="Build Qt Help Project (.qhp) and HTML docs")
-    parser.add_argument("--source", required=True, help="Root of repository")
-    parser.add_argument("--out", required=True, help="Output directory for generated files")
+    parser.add_argument("--source", "--source-dir", dest="source", default=None, help="Root of repository")
+    parser.add_argument("--docs-dir", dest="docs_dir", default=None, help="Documentation directory (default: <source>/docs)")
+    parser.add_argument("--out", "--output-dir", dest="out", required=True, help="Output directory for generated files")
     args = parser.parse_args()
 
-    source_dir = Path(args.source).resolve()
+    if args.docs_dir:
+        docs_dir = Path(args.docs_dir).resolve()
+        source_dir = Path(args.source).resolve() if args.source else docs_dir.parent
+    else:
+        source_dir = Path(args.source).resolve() if args.source else repo_root
+        docs_dir = source_dir / "docs"
+
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     version = read_project_version(source_dir)
@@ -241,7 +307,7 @@ def main():
 
     # Helper to process a directory of markdown files
     def process_folder(subfolder: str, category: str):
-        in_folder = source_dir / "docs" / subfolder
+        in_folder = docs_dir / subfolder
         if not in_folder.exists():
             return
         target_folder = out_dir / subfolder
@@ -291,7 +357,7 @@ def main():
     process_folder("tutorials", "Tutorials")
 
     # Getting started
-    gs_file = source_dir / "docs/getting-started.md"
+    gs_file = docs_dir / "getting-started.md"
     if gs_file.exists():
         content = gs_file.read_text(encoding="utf-8")
         meta, body = parse_frontmatter(content)

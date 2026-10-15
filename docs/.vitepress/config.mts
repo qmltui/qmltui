@@ -1,0 +1,269 @@
+import { defineConfig } from 'vitepress'
+
+export default defineConfig({
+  title: 'QmlTui',
+  description: 'Retained-mode terminal UI framework for C++20 and Qt 6',
+  srcDir: '.',
+  srcExclude: ['contributing/**'],
+  ignoreDeadLinks: true,
+  cleanUrls: false,
+  appearance: 'dark',
+
+  rewrites: {
+    'README.md': 'index.md'
+  },
+
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/branding/qamui_mark.svg' }]
+  ],
+
+  themeConfig: {
+    logo: {
+      light: '/assets/branding/qamui_mark_light.svg',
+      dark: '/assets/branding/qamui_mark.svg'
+    },
+
+    search: {
+      provider: 'local'
+    },
+
+    nav: [
+      { text: 'Getting Started', link: '/getting-started' },
+      { text: 'Tutorials', link: '/tutorials/' },
+      { text: 'Guides', link: '/topics/' },
+      { text: 'QML Types', link: '/qml-types/' },
+      { text: 'C++ Reference', link: '/cpp-classes/' },
+      { text: 'Examples', link: '/examples' }
+    ],
+
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/qmltui-dev/qmltui' }
+    ],
+
+    sidebar: [
+      {
+        text: 'Getting Started',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/' },
+          { text: 'Quickstart & Build', link: '/getting-started' },
+          { text: 'Examples & Gallery', link: '/examples' },
+          { text: 'IDE Setup (Qt Creator & qmlls)', link: '/topics/ide-setup' },
+          { text: 'Qt Quick to QmlTui', link: '/topics/qt-quick-to-qmltui' },
+          { text: 'TUI Framework Comparison', link: '/topics/tui-comparison' },
+          { text: 'Why Declarative Bindings', link: '/topics/why-declarative-bindings' }
+        ]
+      },
+      {
+        text: 'Tutorials',
+        collapsed: false,
+        items: [
+          { text: 'Tutorial Series Overview', link: '/tutorials/' },
+          { text: '1. First Terminal', link: '/tutorials/01-first-terminal' },
+          { text: '2. Layout and Text', link: '/tutorials/02-layout-and-text' },
+          { text: '3. Input and Focus', link: '/tutorials/03-input-and-focus' },
+          { text: '4. Models and Views', link: '/tutorials/04-models-and-views' },
+          { text: '5. Controls and Styling', link: '/tutorials/05-controls-and-styling' },
+          { text: '6. Testing with Runner', link: '/tutorials/06-testing-with-runner' }
+        ]
+      },
+      {
+        text: 'Core Guides',
+        collapsed: false,
+        items: [
+          { text: 'All Topics', link: '/topics/' },
+          { text: 'Architecture', link: '/topics/architecture' },
+          { text: 'Layouts & Anchors', link: '/topics/layouts' },
+          { text: 'Input and Focus', link: '/topics/input-and-focus' },
+          { text: 'Models & Views', link: '/topics/models' },
+          { text: 'Styling and Colors', link: '/topics/styling-and-colors' },
+          { text: 'Animation and States', link: '/topics/animation-and-states' },
+          { text: 'Inline Mode & Scrollback', link: '/topics/inline-mode' },
+          { text: 'Custom C++ Items', link: '/topics/custom-items' },
+          { text: 'WebAssembly Playground', link: '/topics/webassembly' }
+        ]
+      },
+      {
+        text: 'QML Types',
+        collapsed: false,
+        items: [
+          { text: 'QML Type Index', link: '/qml-types/' },
+          {
+            text: 'QmlTui — Core & Terminal',
+            collapsed: true,
+            items: [
+              { text: 'Terminal', link: '/qml-types/terminal' },
+              { text: 'Scrollback', link: '/qml-types/scrollback' },
+              { text: 'Item', link: '/qml-types/item' },
+              { text: 'Rectangle', link: '/qml-types/rectangle' },
+              { text: 'Border', link: '/qml-types/border' },
+              { text: 'Anchors', link: '/qml-types/anchors' },
+              { text: 'AnchorLine', link: '/qml-types/anchorline' },
+              { text: 'Gradient', link: '/qml-types/gradient' },
+              { text: 'GradientStop', link: '/qml-types/gradientstop' },
+              { text: 'Clipboard', link: '/qml-types/clipboard' },
+              { text: 'QmlTui', link: '/qml-types/qmltui' },
+              { text: 'rgba', link: '/qml-types/rgba' },
+              { text: 'span', link: '/qml-types/span' },
+              { text: 'highlightRange', link: '/qml-types/highlightrange' },
+              { text: 'terminalCapabilities', link: '/qml-types/terminalcapabilities' }
+            ]
+          },
+          {
+            text: 'QmlTui — Layout & Containers',
+            collapsed: true,
+            items: [
+              { text: 'Row', link: '/qml-types/row' },
+              { text: 'Column', link: '/qml-types/column' },
+              { text: 'RowLayout', link: '/qml-types/rowlayout' },
+              { text: 'ColumnLayout', link: '/qml-types/columnlayout' },
+              { text: 'GridLayout', link: '/qml-types/gridlayout' },
+              { text: 'Layout', link: '/qml-types/layout' },
+              { text: 'Repeater', link: '/qml-types/repeater' },
+              { text: 'Loader', link: '/qml-types/loader' }
+            ]
+          },
+          {
+            text: 'QmlTui — Display & Text Inputs',
+            collapsed: true,
+            items: [
+              { text: 'Text', link: '/qml-types/text' },
+              { text: 'TextInput', link: '/qml-types/textinput' },
+              { text: 'TextArea', link: '/qml-types/textarea' }
+            ]
+          },
+          {
+            text: 'QmlTui — Data Views',
+            collapsed: true,
+            items: [
+              { text: 'TableView', link: '/qml-types/tableview' },
+              { text: 'TreeView', link: '/qml-types/treeview' },
+              { text: 'ListView', link: '/qml-types/listview' },
+              { text: 'GridView', link: '/qml-types/gridview' },
+              { text: 'ScrollView', link: '/qml-types/scrollview' },
+              { text: 'LogView', link: '/qml-types/logview' }
+            ]
+          },
+          {
+            text: 'QmlTui — Input Events',
+            collapsed: true,
+            items: [
+              { text: 'Keys', link: '/qml-types/keys' },
+              { text: 'KeyEvent', link: '/qml-types/keyevent' },
+              { text: 'MouseArea', link: '/qml-types/mousearea' },
+              { text: 'MouseEvent', link: '/qml-types/mouseevent' },
+              { text: 'Shortcut', link: '/qml-types/shortcut' }
+            ]
+          },
+          {
+            text: 'QmlTui — Canvas',
+            collapsed: true,
+            items: [
+              { text: 'Canvas', link: '/qml-types/canvas' },
+              { text: 'CanvasShape', link: '/qml-types/canvasshape' },
+              { text: 'CanvasRectangle', link: '/qml-types/canvasrectangle' },
+              { text: 'Circle', link: '/qml-types/circle' },
+              { text: 'Line', link: '/qml-types/line' },
+              { text: 'Point', link: '/qml-types/point' },
+              { text: 'Polygon', link: '/qml-types/polygon' }
+            ]
+          },
+          {
+            text: 'QmlTui — Animation & State',
+            collapsed: true,
+            items: [
+              { text: 'Animation', link: '/qml-types/animation' },
+              { text: 'PropertyAnimation', link: '/qml-types/propertyanimation' },
+              { text: 'NumberAnimation', link: '/qml-types/numberanimation' },
+              { text: 'ColorAnimation', link: '/qml-types/coloranimation' },
+              { text: 'Behavior', link: '/qml-types/behavior' },
+              { text: 'Easing', link: '/qml-types/easing' },
+              { text: 'State', link: '/qml-types/state' },
+              { text: 'StateGroup', link: '/qml-types/stategroup' },
+              { text: 'PropertyChanges', link: '/qml-types/propertychanges' },
+              { text: 'Transition', link: '/qml-types/transition' }
+            ]
+          },
+          {
+            text: 'QmlTui.Controls',
+            collapsed: true,
+            items: [
+              { text: 'AbstractButton', link: '/qml-types/abstractbutton' },
+              { text: 'Button', link: '/qml-types/button' },
+              { text: 'ButtonGroup', link: '/qml-types/buttongroup' },
+              { text: 'CheckBox', link: '/qml-types/checkbox' },
+              { text: 'RadioButton', link: '/qml-types/radiobutton' },
+              { text: 'Switch', link: '/qml-types/switch' },
+              { text: 'Slider', link: '/qml-types/slider' },
+              { text: 'ProgressBar', link: '/qml-types/progressbar' },
+              { text: 'BusyIndicator', link: '/qml-types/busyindicator' },
+              { text: 'Sparkline', link: '/qml-types/sparkline' },
+              { text: 'Panel', link: '/qml-types/panel' },
+              { text: 'Dialog', link: '/qml-types/dialog' },
+              { text: 'Popup', link: '/qml-types/popup' },
+              { text: 'Toast', link: '/qml-types/toast' },
+              { text: 'ToolTip', link: '/qml-types/tooltip' },
+              { text: 'TabBar', link: '/qml-types/tabbar' },
+              { text: 'StackLayout', link: '/qml-types/stacklayout' },
+              { text: 'StackView', link: '/qml-types/stackview' },
+              { text: 'StandardItemDelegate', link: '/qml-types/standarditemdelegate' }
+            ]
+          },
+          {
+            text: 'QmlTui.Image',
+            collapsed: true,
+            items: [
+              { text: 'Image', link: '/qml-types/image' },
+              { text: 'AnimatedSprite', link: '/qml-types/animatedsprite' }
+            ]
+          },
+          {
+            text: 'QmlTui.TerminalHost',
+            collapsed: true,
+            items: [
+              { text: 'TerminalView', link: '/qml-types/terminalview' }
+            ]
+          }
+        ]
+      },
+      {
+        text: 'C++ Classes',
+        collapsed: true,
+        items: [
+          { text: 'C++ Class Index', link: '/cpp-classes/' },
+          { text: 'TerminalEngine', link: '/cpp-classes/terminalengine' },
+          { text: 'TerminalDevice', link: '/cpp-classes/terminaldevice' },
+          { text: 'TerminalBackend', link: '/cpp-classes/terminalbackend' },
+          { text: 'MemoryTerminalBackend', link: '/cpp-classes/memoryterminalbackend' },
+          { text: 'Item', link: '/cpp-classes/item' },
+          { text: 'Rectangle', link: '/cpp-classes/rectangle' },
+          { text: 'Text', link: '/cpp-classes/text' },
+          { text: 'MouseArea', link: '/cpp-classes/mousearea' },
+          { text: 'TextGridBuffer', link: '/cpp-classes/textgridbuffer' },
+          { text: 'Cell & TextAttribute', link: '/cpp-classes/cell' },
+          { text: 'Color', link: '/cpp-classes/color' },
+          { text: 'ColorMapper', link: '/cpp-classes/colormapper' },
+          { text: 'InputDecoder', link: '/cpp-classes/inputdecoder' },
+          { text: 'ImageProvider', link: '/cpp-classes/imageprovider' },
+          { text: 'QtMessageRouting', link: '/cpp-classes/qtmessagerouting' },
+          { text: 'Runner', link: '/cpp-classes/runner' }
+        ]
+      },
+      {
+        text: 'Release Notes',
+        collapsed: true,
+        items: [
+          { text: 'Changelog', link: '/changes/changelog' },
+          { text: 'QmlTui 0.4', link: '/changes/0.4' },
+          { text: 'QmlTui 0.3', link: '/changes/0.3' },
+          { text: 'QmlTui 0.1', link: '/changes/0.1' }
+        ]
+      }
+    ],
+
+    footer: {
+      message: 'Documentation licensed under CC-BY-4.0. Library code under LGPL-3.0-only OR GPL-3.0-only.',
+      copyright: 'Copyright © 2026 Yosri Ayed'
+    }
+  }
+})

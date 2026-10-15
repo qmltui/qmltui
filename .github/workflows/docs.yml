@@ -1,10 +1,11 @@
-name: Verify Documentation
+name: Verify & Deploy Documentation
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
       - 'examples/quickstart/**'
+      - 'scripts/build_llms_txt.py'
       - 'scripts/build_qch.py'
       - 'scripts/check_doc_examples.py'
       - 'scripts/check_doc_includes.py'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'docs/**'
       - 'examples/quickstart/**'
+      - 'scripts/build_llms_txt.py'
       - 'scripts/build_qch.py'
       - 'scripts/check_doc_examples.py'
       - 'scripts/check_doc_includes.py'
@@ -22,6 +24,11 @@ on:
       - 'scripts/qml_type_index.py'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -61,3 +68,40 @@ jobs:
           --runner build/tests/Docs/qmltui_doc_example_runner
           --qml-import-path build/qml
           --artifact-dir build/tests/Docs/DocExampleArtifacts
+
+      - name: Build LLM bundles and Qt Help project
+        run: |
+          python3 scripts/build_llms_txt.py --check --output-dir build-docs/llms
+          python3 scripts/build_qch.py --docs-dir docs --output-dir build-docs/qch
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build VitePress documentation site
+        working-directory: docs
+        run: |
+          npm install --no-package-lock
+          npm run docs:build
+
+      - name: Stage LLM bundles into VitePress dist
+        run: |
+          cp build-docs/llms/llms.txt build-docs/llms/llms-full.txt docs/.vitepress/dist/
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

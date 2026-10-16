@@ -44,8 +44,6 @@ qt_add_qml_module(QmlTuiCore
         Primitives/QmlTuiExport.h
         Primitives/QmlTuiGlobal.h
         Primitives/QmlTuiGlobal.cpp
-        Primitives/ColorMapper.h
-        Primitives/ColorMapper.cpp
         Primitives/InputDecoder.cpp
         Primitives/Cell.h
         Primitives/Cell.cpp
@@ -254,8 +252,6 @@ qmltui_install_headers(QmlTui/Core/Primitives FILES
     Primitives/UnicodeText.h Primitives/Subpixel.h Primitives/TerminalCapabilities.h
     # The application-provided backend extension point (TerminalBackend::setFactory).
     Primitives/TerminalBackend.h
-    # Pulled in by the installed item headers, so it has to ship with them.
-    Primitives/ColorMapper.h
 )
 qmltui_install_headers(QmlTui/Core/Engine FILES
     Engine/KeyEvent.h Engine/MouseEvent.h

@@ -5,7 +5,6 @@
 #include <QmlTui/Core/Primitives/Color.h>
 #include "../TestPaint.h"
 #include <QString>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 #include <limits>
 
@@ -318,8 +317,8 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     // "RedBold" -> starts at 12, length 7
     QCOMPARE(QString::fromUtf8(buffer.cellAt(12, 0).character().toByteArray()), QString("R"));
     QCOMPARE(buffer.cellAt(12, 0).attributes, TextAttribute::Bold);
-    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(12, 0).fgColor), 0xFFFF0000u); // Red
-    
+    QCOMPARE(Color::toArgb(buffer.cellAt(12, 0).fgColor), 0xFFFF0000u); // Red
+
     // " Bold" -> starts at 19, length 5
     QCOMPARE(QString::fromUtf8(buffer.cellAt(20, 0).character().toByteArray()), QString("B"));
     QCOMPARE(buffer.cellAt(20, 0).attributes, TextAttribute::Bold);

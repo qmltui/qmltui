@@ -1,7 +1,6 @@
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Items/Gradient.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QRegularExpression>
 #include <QStringList>
@@ -66,7 +65,7 @@ static int parseHtmlTag(const QString& line, int startIdx, ParsedTextStyle& curr
             QRegularExpressionMatch match = regex.match(tagContent);
             if (match.hasMatch()) {
                 QString colorStr = match.captured(1);
-                currentStyle.fgColor = ColorMapper::fromString(colorStr, currentStyle.fgColor);
+                currentStyle.fgColor = Color::resolve(colorStr, currentStyle.fgColor);
             }
         } else if (tagName == "b" || tagName == "strong") {
             currentStyle.attributes = currentStyle.attributes | TextAttribute::Bold;
@@ -171,7 +170,7 @@ void Text::setText(const QString& text) {
 void Text::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     invalidateLayout(); // the base colour is the SGR reset target
     emit colorChanged();
     markDirty();
@@ -180,7 +179,7 @@ void Text::setColor(Color color) {
 void Text::setBackgroundColor(Color color) {
     if (m_backgroundColor == color) return;
     m_backgroundColor = color;
-    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    m_resolvedBackgroundColor = Color::resolve(m_backgroundColor, 0x00000000);
     invalidateLayout();
     emit backgroundColorChanged();
     markDirty();

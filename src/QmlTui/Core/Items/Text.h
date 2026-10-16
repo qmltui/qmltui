@@ -3,7 +3,6 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/Span.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QList>
@@ -191,7 +190,7 @@ private:
     Color m_color = "default";
     // Derived from m_color, never written by hand: "white" is ANSI index 15,
     // not literal RGB, and setColor() early-returns when the color is unchanged.
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;
     bool m_bold = false;

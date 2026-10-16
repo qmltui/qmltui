@@ -6,7 +6,6 @@
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Items/Popup.h>
 #include <QmlTui/Core/Engine/RenderPhase_p.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Engine/State.h>
 #include <QmlTui/Core/Engine/Transition.h>
 #include <QmlTui/Core/Engine/Animation.h>

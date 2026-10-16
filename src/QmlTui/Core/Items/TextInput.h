@@ -6,11 +6,9 @@
 #include <QmlTui/Core/Items/TextEditorState.h>
 #include <QRegularExpression>
 #include <QString>
-#include <cstdint>
 namespace qmltui {
 class ClockTimer;
 }
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -209,7 +207,7 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;

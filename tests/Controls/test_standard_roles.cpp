@@ -14,7 +14,7 @@
 #include <QmlTui/Core/Items/TableView.h>
 #include <QmlTui/Core/Items/TreeView.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include "../TestPaint.h"
 #include <memory>
 
@@ -102,9 +102,9 @@ struct Fixture {
     }
 };
 
-const uint32_t red = ColorMapper::fromString(QStringLiteral("#ff0000"), 1);
-const uint32_t blue = ColorMapper::fromString(QStringLiteral("#0000ff"), 1);
-const uint32_t green = ColorMapper::fromString(QStringLiteral("green"), 1);
+const uint32_t red = Color::resolve(QStringLiteral("#ff0000"), 1);
+const uint32_t blue = Color::resolve(QStringLiteral("#0000ff"), 1);
+const uint32_t green = Color::resolve(QStringLiteral("green"), 1);
 
 } // namespace
 

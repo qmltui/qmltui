@@ -9,7 +9,7 @@
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 
 using namespace qmltui;
 using qmltui::testing::paintItem;
@@ -74,7 +74,7 @@ void TestCanvas::testBrailleMode() {
 
         Cell c = buf.cellAt(0, 0);
         QCOMPARE(c.character().toByteArray(), QString(QChar(dt.expectedChar)).toUtf8());
-        QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u);
+        QCOMPARE(Color::toArgb(c.fgColor), 0xFFFF0000u);
     }
 
     // Test horizontal line on Row 2 (dot 3 and dot 6) -> U+2824 (⠤)
@@ -115,24 +115,24 @@ void TestCanvas::testBraillePerCellColor() {
     canvas.setPixel(7, 1, true);        // resets the cell to the canvas color
 
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u); // red
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFF0000FFu); // blue (canvas)
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF00FF00u); // lime
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(3, 0).fgColor), 0xFF0000FFu); // blue (canvas)
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u); // red
+    QCOMPARE(Color::toArgb(buf.cellAt(1, 0).fgColor), 0xFF0000FFu); // blue (canvas)
+    QCOMPARE(Color::toArgb(buf.cellAt(2, 0).fgColor), 0xFF00FF00u); // lime
+    QCOMPARE(Color::toArgb(buf.cellAt(3, 0).fgColor), 0xFF0000FFu); // blue (canvas)
     // Both dots of cell 2 are still set; only the ink changed.
     QCOMPARE(buf.cellAt(2, 0).character().toByteArray(), QString(QChar(0x2801 | 0x2810)).toUtf8());
 
     // Cells drawn with setPixel() keep following the canvas color; explicit ink does not.
     canvas.setColor("yellow");
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFFFF00u);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
+    QCOMPARE(Color::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFFFF00u);
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
 
     // clear() forgets the ink as well as the dots.
     canvas.clear();
     canvas.setPixel(0, 0, true);
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFFFF00u);
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFFFF00u);
 }
 
 void TestCanvas::testBrailleAverageCellColor() {
@@ -157,9 +157,9 @@ void TestCanvas::testBrailleAverageCellColor() {
     canvas.setPixelColor(5, 0, "red");
 
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFF7F7F00u);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFF0000u);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(2, 0).fgColor), 0xFF7F007Fu);
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFF7F7F00u);
+    QCOMPARE(Color::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFF0000u);
+    QCOMPARE(Color::toArgb(buf.cellAt(2, 0).fgColor), 0xFF7F007Fu);
 
     // Switching back to LastDot drops the accumulators and restores last-write-wins.
     canvas.setCellColorMode(Canvas::CellColorMode::LastDot);
@@ -167,7 +167,7 @@ void TestCanvas::testBrailleAverageCellColor() {
     canvas.setPixelColor(0, 0, "red");
     canvas.setPixelColor(1, 0, "lime");
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFF00FF00u);
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFF00FF00u);
 
     // Dots in the terminal default color do not pull the average.
     canvas.setCellColorMode(Canvas::CellColorMode::Average);
@@ -176,7 +176,7 @@ void TestCanvas::testBrailleAverageCellColor() {
     canvas.setPixel(0, 0, true);
     canvas.setPixelColor(1, 0, "red");
     paintItem(canvas, buf, 0, 0, clip);
-    QCOMPARE(ColorMapper::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
+    QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
 }
 
 void TestCanvas::testHalfBlockMode() {
@@ -200,8 +200,8 @@ void TestCanvas::testHalfBlockMode() {
 
     Cell c = buffer.cellAt(0, 0);
     QCOMPARE(c.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀ Upper Half Block
-    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFFFF0000u);             // Red
-    QCOMPARE(ColorMapper::toArgb(c.bgColor), 0xFF0000FFu);             // Blue
+    QCOMPARE(Color::toArgb(c.fgColor), 0xFFFF0000u);                   // Red
+    QCOMPARE(Color::toArgb(c.bgColor), 0xFF0000FFu);                   // Blue
 }
 
 void TestCanvas::testHalfBlockDefaultInk() {
@@ -282,14 +282,14 @@ void TestCanvas::testShapesOnHalfBlock() {
     // Cell (0,0): top=yellow, bottom=yellow
     Cell c00 = buffer.cellAt(0, 0);
     QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(ColorMapper::toArgb(c00.fgColor), 0xFFFFFF00u); // Yellow
-    QCOMPARE(ColorMapper::toArgb(c00.bgColor), 0xFFFFFF00u); // Yellow
+    QCOMPARE(Color::toArgb(c00.fgColor), 0xFFFFFF00u); // Yellow
+    QCOMPARE(Color::toArgb(c00.bgColor), 0xFFFFFF00u); // Yellow
 
     // Cell (0,1): top=yellow, bottom=yellow
     Cell c01 = buffer.cellAt(0, 1);
     QCOMPARE(c01.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(ColorMapper::toArgb(c01.fgColor), 0xFFFFFF00u);
-    QCOMPARE(ColorMapper::toArgb(c01.bgColor), 0xFFFFFF00u);
+    QCOMPARE(Color::toArgb(c01.fgColor), 0xFFFFFF00u);
+    QCOMPARE(Color::toArgb(c01.bgColor), 0xFFFFFF00u);
 }
 
 void TestCanvas::testAutoClear() {
@@ -308,7 +308,7 @@ void TestCanvas::testAutoClear() {
 
     // Cell (2, 1) has top pixel y=2 green
     Cell c = buffer.cellAt(2, 1);
-    QCOMPARE(ColorMapper::toArgb(c.fgColor), 0xFF008000u); // Green
+    QCOMPARE(Color::toArgb(c.fgColor), 0xFF008000u); // Green
 }
 
 void TestCanvas::testQmlCanvasHalfBlock() {
@@ -347,8 +347,8 @@ void TestCanvas::testQmlCanvasHalfBlock() {
 
     Cell c00 = buffer.cellAt(0, 0);
     QCOMPARE(c00.character().toByteArray(), QByteArray("\xE2\x96\x80"));
-    QCOMPARE(ColorMapper::toArgb(c00.fgColor), 0xFFFF0000u);
-    QCOMPARE(ColorMapper::toArgb(c00.bgColor), 0xFFFF0000u);
+    QCOMPARE(Color::toArgb(c00.fgColor), 0xFFFF0000u);
+    QCOMPARE(Color::toArgb(c00.bgColor), 0xFFFF0000u);
 
     delete obj;
 }

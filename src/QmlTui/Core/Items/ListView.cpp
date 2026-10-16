@@ -1,7 +1,6 @@
 #include <QmlTui/Core/Items/ListView.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QQmlEngine>

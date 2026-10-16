@@ -7,7 +7,6 @@
 #include <QVariant>
 #include <QVariantList>
 #include <vector>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/Subpixel.h>
 
 namespace qmltui {
@@ -122,7 +121,7 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
 };

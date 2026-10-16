@@ -6,7 +6,6 @@
 namespace qmltui { class ClockTimer; }
 #include <QList>
 #include <QString>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -88,16 +87,16 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0);
+    uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0);
 
     Color m_successColor = "default";
-    uint32_t m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0);
+    uint32_t m_resolvedSuccessColor = Color::resolve(m_successColor, 0);
 
     Color m_warningColor = "default";
-    uint32_t m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0);
+    uint32_t m_resolvedWarningColor = Color::resolve(m_warningColor, 0);
 
     Color m_errorColor = "default";
-    uint32_t m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0);
+    uint32_t m_resolvedErrorColor = Color::resolve(m_errorColor, 0);
 
     int m_toastWidth = 28;
     QString m_position = "top-right";

@@ -12,7 +12,7 @@
 #include <QIODevice>
 #include <QString>
 #include <QVariantMap>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 
 namespace qmltui::NumericItemRoles {
 
@@ -98,7 +98,7 @@ inline PaintData readForPaint(const QAbstractItemModel *model, const QModelIndex
     if (!model || !index.isValid()) return values;
     const auto color = [&](int role, uint32_t fallback) {
         const QString text = colorString(model->data(index, role));
-        return text.isEmpty() ? fallback : ColorMapper::fromString(text, fallback);
+        return text.isEmpty() ? fallback : Color::resolve(text, fallback);
     };
     if (readForeground) values.foreground = color(Qt::ForegroundRole, foreground);
     if (readBackground) values.background = color(Qt::BackgroundRole, background);
@@ -216,7 +216,7 @@ inline QString prefix(const QVariantMap &values)
 inline uint32_t color(const QVariantMap &values, const char *name, uint32_t fallback)
 {
     const QString text = values.value(QLatin1String(name)).toString();
-    return text.isEmpty() ? fallback : ColorMapper::fromString(text, fallback);
+    return text.isEmpty() ? fallback : Color::resolve(text, fallback);
 }
 
 inline bool enabled(const QVariantMap &values)

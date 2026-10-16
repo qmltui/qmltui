@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include <QmlTui/Core/Primitives/Color.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -41,7 +40,7 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
 };
 
 } // namespace qmltui

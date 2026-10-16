@@ -54,10 +54,30 @@ public:
         return Color(AnsiTag | static_cast<quint32>(index & 0x0F), true);
     }
     static constexpr Color transparent() { return Color(TransparentTag, true); }
-    constexpr bool isAnsiIndex() const { return m_valid && (m_argb >> 24) == 0x01U; }
+
+    static constexpr bool isAnsiIndex(quint32 argb) { return (argb >> 24) == 0x01U; }
+    static constexpr bool isTransparent(quint32 argb) { return (argb >> 24) == 0x04U; }
+    static constexpr uint8_t ansiIndex(quint32 argb) { return static_cast<uint8_t>(argb & 0x0FU); }
+    static constexpr quint32 paintedArgb32(quint32 argb) {
+        return isTransparent(argb) ? 0x00000000U : argb;
+    }
+    static quint32 toArgb(quint32 argb) { return fromArgb32(argb).toRgb().argb32(); }
+
+    static uint8_t toIndexed256(quint32 argb);
+    static uint8_t toBasic16(quint32 argb);
+
+    static constexpr quint32 resolve(Color color, quint32 defaultColor = 0xFFFFFFFFU) {
+        return color.isValid() ? color.argb32() : defaultColor;
+    }
+    static quint32 resolve(const QString& colorString, quint32 defaultColor = 0xFFFFFFFFU) {
+        const Color c = fromString(colorString);
+        return c.isValid() ? c.argb32() : defaultColor;
+    }
+
+    constexpr bool isAnsiIndex() const { return m_valid && isAnsiIndex(m_argb); }
     // True when nothing should be painted at all, as opposed to painting with
     // the terminal's default colour.
-    constexpr bool isTransparent() const { return m_valid && (m_argb >> 24) == 0x04U; }
+    constexpr bool isTransparent() const { return m_valid && isTransparent(m_argb); }
     // The value to store once something is being painted. Transparency is an
     // instruction to the painter, not a colour, and has no cell representation:
     // a painted cell that was asked for it shows the terminal default.
@@ -65,13 +85,22 @@ public:
     {
         return isTransparent() ? 0x00000000U : m_argb;
     }
-    constexpr int ansiIndex() const { return isAnsiIndex() ? static_cast<int>(m_argb & 0x0FU) : -1; }
+    constexpr int ansiIndex() const {
+        return isAnsiIndex() ? static_cast<int>(ansiIndex(m_argb)) : -1;
+    }
+    uint8_t toIndexed256() const { return toIndexed256(m_argb); }
+    uint8_t toBasic16() const { return toBasic16(m_argb); }
+
     // The literal RGB this color has under xterm's default palette; identity for RGB colors.
     Color toRgb() const;
 
     static Color fromRgba(qreal red, qreal green, qreal blue,
                           qreal alpha = 1.0);
     static Color fromString(const QString &value);
+    static Color fromString(const QString& value, Color defaultColor) {
+        const Color c = fromString(value);
+        return c.isValid() ? c : defaultColor;
+    }
 
     constexpr bool isValid() const { return m_valid; }
     constexpr quint32 argb32() const { return m_argb; }

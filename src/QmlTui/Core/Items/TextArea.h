@@ -5,7 +5,6 @@
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/TextEditorState.h>
 #include <QString>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/HighlightRange.h>
 #include <QMap>
 #include <vector>
@@ -189,7 +188,7 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_cursorColor;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;

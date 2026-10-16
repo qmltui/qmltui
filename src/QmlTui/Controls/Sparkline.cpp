@@ -1,5 +1,4 @@
 #include <QmlTui/Controls/Sparkline.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <algorithm>
 #include <cmath>
 
@@ -49,7 +48,7 @@ void Sparkline::setFilled(bool filled) {
 void Sparkline::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0);
+    m_resolvedColor = Color::resolve(m_color, 0);
     emit colorChanged();
     markDirty();
 }
@@ -57,7 +56,7 @@ void Sparkline::setColor(Color color) {
 void Sparkline::setBackgroundColor(Color color) {
     if (m_backgroundColor == color) return;
     m_backgroundColor = color;
-    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0);
+    m_resolvedBackgroundColor = Color::resolve(m_backgroundColor, 0);
     emit backgroundColorChanged();
     markDirty();
 }

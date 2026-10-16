@@ -31,4 +31,3 @@ QmlTui exposes C++ classes for bootstrapping terminal sessions, writing custom v
 - [TerminalBackend](terminalbackend.md) — Abstract platform seam isolating POSIX `termios`, Windows Console VT, and WebAssembly terminal I/O behind a common interface.
 - [TerminalDevice](terminaldevice.md) — Platform-neutral output queue and raw-mode state manager built on top of `TerminalBackend`.
 - [InputDecoder](inputdecoder.md) — Stateful parser that translates raw VT byte sequences and bracketed paste payloads into Qt key and SGR mouse events.
-- [ColorMapper (internal)](colormapper.md) — Internal helper bridging legacy string color parsing call sites to `qmltui::Color`.

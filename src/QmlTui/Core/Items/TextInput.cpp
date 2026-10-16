@@ -3,7 +3,6 @@
 
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
@@ -103,7 +102,7 @@ void TextInput::setText(const QString& text) {
 void TextInput::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     emit colorChanged();
     markDirty();
 }
@@ -199,7 +198,7 @@ void TextInput::setPlaceholderColor(Color color) {
     } else {
         m_hasResolvedPlaceholderColor = true;
         m_resolvedPlaceholderColor =
-            ColorMapper::fromString(m_placeholderColor, Color::fromAnsiIndex(8).argb32());
+            Color::resolve(m_placeholderColor, Color::fromAnsiIndex(8).argb32());
     }
     emit placeholderColorChanged();
     markDirty();

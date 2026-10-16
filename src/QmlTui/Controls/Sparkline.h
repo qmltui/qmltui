@@ -6,7 +6,6 @@
 #include <QVariantList>
 #include <QString>
 #include <QJSValue>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -64,7 +63,7 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = ColorMapper::fromString(m_color, 0);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0);
 
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;

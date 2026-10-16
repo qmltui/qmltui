@@ -1,6 +1,5 @@
 #include <QmlTui/Core/Items/Rectangle.h>
 #include <QmlTui/Core/Items/Gradient.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -11,7 +10,7 @@ Rectangle::~Rectangle() = default;
 void Rectangle::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedBackgroundColor = ColorMapper::fromString(m_color, Color::TransparentTag);
+    m_resolvedBackgroundColor = Color::resolve(m_color, Color::TransparentTag);
     emit colorChanged();
     markDirty();
 }
@@ -68,7 +67,7 @@ void Rectangle::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
     // Anything but explicit transparency is painted, including the terminal's
     // own default colour: a surface has to be written in order to occlude what
     // it covers, even when the terminal is the one choosing the colour.
-    const bool hasSolidBg = !ColorMapper::isTransparent(m_resolvedBackgroundColor);
+    const bool hasSolidBg = !Color::isTransparent(m_resolvedBackgroundColor);
 
     // Render background if specified via gradient or solid color
     if (hasGradient || hasSolidBg) {
@@ -103,7 +102,7 @@ void Rectangle::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
 
     // Render border if enabled
     if (m_border.style() != Border::None && w > 0 && h > 0) {
-        uint32_t borderColor = ColorMapper::fromString(m_border.color(), 0xFFFFFFFF);
+        uint32_t borderColor = Color::resolve(m_border.color(), 0xFFFFFFFF);
         const char* tl = "┌";
         const char* tr = "┐";
         const char* bl = "└";

@@ -3,7 +3,7 @@
 #include <QmlTui/Runner/MemoryTerminalBackend.h>
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/Terminal.h>
@@ -258,7 +258,7 @@ Item* findVisibleItem(Item* item, const QString& objectName) {
 }
 
 QString rgbaString(uint32_t rgba) {
-    const uint32_t argb = ColorMapper::toArgb(rgba);
+    const uint32_t argb = Color::toArgb(rgba);
     return QStringLiteral("#%1%2%3%4")
         .arg((argb >> 16) & 0xffU, 2, 16, QLatin1Char('0'))
         .arg((argb >> 8) & 0xffU, 2, 16, QLatin1Char('0'))
@@ -1547,7 +1547,7 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
                              .arg(property, expectedText));
             return false;
         }
-        if (ColorMapper::toArgb(expectedRgba) != ColorMapper::toArgb(actual)) {
+        if (Color::toArgb(expectedRgba) != Color::toArgb(actual)) {
             failScenario(QStringLiteral("Cell at (%1,%2) %3 expected %4 but got %5")
                              .arg(x)
                              .arg(y)

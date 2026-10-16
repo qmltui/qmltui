@@ -1,5 +1,4 @@
 #include <QmlTui/Core/Items/GradientStop.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -15,7 +14,7 @@ void GradientStop::setPosition(qreal pos) {
 void GradientStop::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFFFF);
+    m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     emit colorChanged();
     emit updated();
 }

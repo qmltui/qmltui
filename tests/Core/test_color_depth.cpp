@@ -3,7 +3,7 @@
 #include <QTest>
 #include <string>
 
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/AnsiEncoder_p.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
@@ -134,23 +134,23 @@ void TestColorDepth::testDimAndBoldTransitions()
 
 void TestColorDepth::testIndexed256Anchors()
 {
-    QCOMPARE(ColorMapper::toIndexed256(0xFF000000), uint8_t(16));
-    QCOMPARE(ColorMapper::toIndexed256(0xFFFFFFFF), uint8_t(231));
-    QCOMPARE(ColorMapper::toIndexed256(0xFF808080), uint8_t(244));
-    QCOMPARE(ColorMapper::toIndexed256(0xFFFF0000), uint8_t(196));
-    QCOMPARE(ColorMapper::toIndexed256(0xFF00FF00), uint8_t(46));
-    QCOMPARE(ColorMapper::toIndexed256(0xFF0000FF), uint8_t(21));
-    QCOMPARE(ColorMapper::toIndexed256(0xFF5F87AF), uint8_t(67));   // exact cube colour
+    QCOMPARE(Color::toIndexed256(0xFF000000), uint8_t(16));
+    QCOMPARE(Color::toIndexed256(0xFFFFFFFF), uint8_t(231));
+    QCOMPARE(Color::toIndexed256(0xFF808080), uint8_t(244));
+    QCOMPARE(Color::toIndexed256(0xFFFF0000), uint8_t(196));
+    QCOMPARE(Color::toIndexed256(0xFF00FF00), uint8_t(46));
+    QCOMPARE(Color::toIndexed256(0xFF0000FF), uint8_t(21));
+    QCOMPARE(Color::toIndexed256(0xFF5F87AF), uint8_t(67)); // exact cube colour
 }
 
 void TestColorDepth::testBasic16Anchors()
 {
-    QCOMPARE(ColorMapper::toBasic16(0xFF000000), uint8_t(0));
-    QCOMPARE(ColorMapper::toBasic16(0xFFFFFFFF), uint8_t(15));
-    QCOMPARE(ColorMapper::toBasic16(0xFF808080), uint8_t(8));
-    QCOMPARE(ColorMapper::toBasic16(0xFFFF0000), uint8_t(9));
-    QCOMPARE(ColorMapper::toBasic16(0xFF000080), uint8_t(4));
-    QCOMPARE(ColorMapper::toBasic16(0xFFC0C0C0), uint8_t(7));
+    QCOMPARE(Color::toBasic16(0xFF000000), uint8_t(0));
+    QCOMPARE(Color::toBasic16(0xFFFFFFFF), uint8_t(15));
+    QCOMPARE(Color::toBasic16(0xFF808080), uint8_t(8));
+    QCOMPARE(Color::toBasic16(0xFFFF0000), uint8_t(9));
+    QCOMPARE(Color::toBasic16(0xFF000080), uint8_t(4));
+    QCOMPARE(Color::toBasic16(0xFFC0C0C0), uint8_t(7));
 }
 
 void TestColorDepth::testTrueColorEncoding()
@@ -315,8 +315,8 @@ void TestColorDepth::testAnsiNamesParseToIndices()
     QVERIFY(!Color("#ff0000").isAnsiIndex());             // hex stays literal RGB
     QVERIFY(!Color("transparent").isAnsiIndex());
     QVERIFY(!Color("orange").isAnsiIndex());              // not a palette entry
-    QCOMPARE(ColorMapper::toBasic16(red.argb32()), uint8_t(9));
-    QCOMPARE(ColorMapper::toArgb(red.argb32()), 0xFFFF0000U);
+    QCOMPARE(Color::toBasic16(red.argb32()), uint8_t(9));
+    QCOMPARE(Color::toArgb(red.argb32()), 0xFFFF0000U);
 }
 
 void TestColorDepth::testAnsiNamesKeepIndexAtEveryDepth()

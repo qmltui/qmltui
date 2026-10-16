@@ -14,7 +14,6 @@
 #include <QHash>
 #include <QSet>
 #include <utility>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -366,18 +365,17 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedHeaderColor = ColorMapper::fromString(m_headerColor, 0);
+    uint32_t m_resolvedHeaderColor = Color::resolve(m_headerColor, 0);
     Color m_headerBackgroundColor = "transparent";
     uint32_t m_resolvedHeaderBackgroundColor = 0x00000000;
 
     Color m_selectionColor;
-    uint32_t m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
+    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
     Color m_selectionBackgroundColor;
-    uint32_t m_resolvedSelectionBackgroundColor =
-        ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 
     Color m_textColor = "default";
-    uint32_t m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
+    uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);
     Color m_rowBackgroundColor = "transparent";
     uint32_t m_resolvedRowBackgroundColor = 0x00000000;
 

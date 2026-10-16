@@ -1,5 +1,4 @@
 #include <QmlTui/Controls/TabBar.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
@@ -95,10 +94,10 @@ void TabBar::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
     const int availH = height();
     if (availW <= 0 || availH <= 0) return;
 
-    const uint32_t inactiveFg = ColorMapper::fromString(m_textColor, 0);
-    const uint32_t background = ColorMapper::fromString(m_color, 0);
-    const uint32_t activeFg = ColorMapper::fromString(m_selectedTextColor, inactiveFg);
-    const uint32_t activeBg = ColorMapper::fromString(m_selectionColor, background);
+    const uint32_t inactiveFg = Color::resolve(m_textColor, 0);
+    const uint32_t background = Color::resolve(m_color, 0);
+    const uint32_t activeFg = Color::resolve(m_selectedTextColor, inactiveFg);
+    const uint32_t activeBg = Color::resolve(m_selectionColor, background);
     const bool reverseSelection = !m_selectedTextColor.isValid() && !m_selectionColor.isValid();
 
     int curX = absX;

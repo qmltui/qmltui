@@ -3,7 +3,7 @@
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Image/TerminalGraphics.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/Subpixel.h>
 #include <QDebug>
 #include <QDirIterator>
@@ -51,7 +51,7 @@ static uint32_t compositeOver(QRgb pixel, uint32_t behind) {
 // the encoder uses when it quantises.
 static uint32_t cellBackgroundRgb(uint32_t bgColor) {
     if ((bgColor >> 24) == 0) return 0;
-    return 0xFF000000u | (ColorMapper::toArgb(bgColor) & 0x00FFFFFFu);
+    return 0xFF000000u | (Color::toArgb(bgColor) & 0x00FFFFFFu);
 }
 
 // Sources fetched over the network rather than read from a file or resource.

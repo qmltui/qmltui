@@ -307,7 +307,6 @@ export default defineConfig({
           { text: 'TextGridBuffer', link: '/cpp-classes/textgridbuffer' },
           { text: 'Cell & TextAttribute', link: '/cpp-classes/cell' },
           { text: 'Color', link: '/cpp-classes/color' },
-          { text: 'ColorMapper', link: '/cpp-classes/colormapper' },
           { text: 'InputDecoder', link: '/cpp-classes/inputdecoder' },
           { text: 'ImageProvider', link: '/cpp-classes/imageprovider' },
           { text: 'QtMessageRouting', link: '/cpp-classes/qtmessagerouting' },

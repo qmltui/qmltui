@@ -18,7 +18,7 @@
 #include <QSortFilterProxyModel>
 #include <QAbstractTableModel>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include "../TestPaint.h"
 #include <memory>
 #include <functional>
@@ -684,7 +684,7 @@ private slots:
         for (int x = 0; x < 40; ++x) line += QString::fromUtf8(f.buffer.cellAt(x, y).character());
         QVERIFY2(line.contains("row 0") && !line.contains("clobbered"), qPrintable(f.text()));
         const int textX = line.indexOf("row 0");
-        QCOMPARE(f.buffer.cellAt(textX, y).fgColor, ColorMapper::fromString(QStringLiteral("blue"), 1));
+        QCOMPARE(f.buffer.cellAt(textX, y).fgColor, Color::resolve(QStringLiteral("blue"), 1));
     }
 
     void rootIndexSurvivesInsertAbove()

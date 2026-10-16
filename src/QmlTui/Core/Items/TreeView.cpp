@@ -2,7 +2,6 @@
 #include <QmlTui/Core/Items/DelegateUtils.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QMetaProperty>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
@@ -242,7 +241,7 @@ QVariantMap TreeView::currentItemData() const {
 void TreeView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
+    m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
     emit selectionColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -250,7 +249,7 @@ void TreeView::setSelectionColor(Color color) {
 void TreeView::setSelectionBackgroundColor(Color color) {
     if (m_selectionBackgroundColor == color) return;
     m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
     emit selectionBackgroundColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -258,7 +257,7 @@ void TreeView::setSelectionBackgroundColor(Color color) {
 void TreeView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
-    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
+    m_resolvedTextColor = Color::resolve(m_textColor, 0);
     emit textColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
@@ -266,7 +265,7 @@ void TreeView::setTextColor(Color color) {
 void TreeView::setBranchColor(Color color) {
     if (m_branchColor == color) return;
     m_branchColor = color;
-    m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0);
+    m_resolvedBranchColor = Color::resolve(m_branchColor, 0);
     emit branchColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }

@@ -4,7 +4,6 @@
 #include <QmlTui/Core/Engine/AltScreenRenderer.h>
 #include <QmlTui/Core/Engine/InlineRenderer.h>
 #include <QmlTui/Core/Items/Popup.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <algorithm>
 #include <utility>
@@ -149,7 +148,7 @@ void Terminal::setTitle(const QString& title) {
 void Terminal::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_background = ColorMapper::fromString(color, 0x00000000);
+    m_background = Color::resolve(color, 0x00000000);
     emit colorChanged();
     markDirty();
 }
@@ -383,7 +382,7 @@ void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
     // Nothing is behind the root, so a terminal-default background has nothing
     // to occlude: skipping the fill leaves the cells at their default and emits
     // fewer bytes for the same picture.
-    if (m_background == 0 || ColorMapper::isTransparent(m_background)) return;
+    if (m_background == 0 || Color::isTransparent(m_background)) return;
     const int right = (std::min)(buffer.width(), absX + width());
     const int bottom = (std::min)(buffer.height(), absY + height());
     for (int y = (std::max)(0, absY); y < bottom; ++y) {

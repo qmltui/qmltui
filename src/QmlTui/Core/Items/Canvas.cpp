@@ -1,5 +1,4 @@
 #include <QmlTui/Core/Items/Canvas.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -36,7 +35,7 @@ void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, u
 static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulators, size_t idx,
                                 uint32_t color) {
     if (idx >= accumulators.size()) return;
-    const uint32_t rgb = ColorMapper::toArgb(color);
+    const uint32_t rgb = Color::toArgb(color);
     if ((rgb >> 24) == 0) return;
     Canvas::CellAccumulator& acc = accumulators[idx];
     acc.red += (rgb >> 16) & 0xFF;
@@ -76,9 +75,7 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
 }
 
 void CanvasPainter::setPixelColor(int x, int y, Color color) {
-    setPixelColorHex(
-        x, y,
-        ColorMapper::toPaintedColor(ColorMapper::fromString(color, m_canvas.m_resolvedColor)));
+    setPixelColorHex(x, y, Color::paintedArgb32(Color::resolve(color, m_canvas.m_resolvedColor)));
 }
 
 void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
@@ -129,7 +126,7 @@ CanvasPainter Canvas::painter() const {
 void Canvas::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0xFFFFFFFF));
+    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, 0xFFFFFFFF));
     emit colorChanged();
     markDirty();
 }
@@ -138,7 +135,7 @@ void Canvas::setFillColor(Color color) {
     if (m_fillColor == color) return;
     m_fillColor = color;
     // A transparent fill means no ink, which the canvas already spells 0.
-    m_resolvedFillColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0x00000000));
+    m_resolvedFillColor = Color::paintedArgb32(Color::resolve(color, 0x00000000));
     emit fillColorChanged();
     markDirty();
 }
@@ -334,7 +331,7 @@ void Canvas::resizeBuffer() const {
 void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::toPaintedColor(ColorMapper::fromString(color, 0xFFFFFFFF));
+    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, 0xFFFFFFFF));
     m_hasCustomColor = true;
     emit colorChanged();
     if (parentItem()) parentItem()->markDirty();

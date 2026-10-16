@@ -11,7 +11,6 @@
 #include <QStack>
 #include <QPointer>
 #include <QMetaObject>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 class QAbstractItemModel;
 

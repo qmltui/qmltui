@@ -1,5 +1,5 @@
 #include "BigText.h"
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QChar>
 #include <array>
 #include <cctype>
@@ -81,7 +81,7 @@ void BigText::setText(const QString &text) {
 void BigText::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFFFFFF00);
+    m_resolvedColor = Color::resolve(m_color, 0xFFFFFF00);
     emit colorChanged();
     markDirty();
 }
@@ -89,7 +89,7 @@ void BigText::setColor(Color color) {
 void BigText::setBackgroundColor(Color color) {
     if (m_backgroundColor == color) return;
     m_backgroundColor = color;
-    m_resolvedBackgroundColor = ColorMapper::fromString(m_backgroundColor, 0x00000000);
+    m_resolvedBackgroundColor = Color::resolve(m_backgroundColor, 0x00000000);
     emit backgroundColorChanged();
     markDirty();
 }

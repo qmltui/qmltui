@@ -85,5 +85,4 @@ QtObject {
 The equivalent C++ factory is `Color::fromRgba()`. Use `isValid()`, `argb32()`,
 the normalized `red()`/`green()`/`blue()`/`alpha()` channels, and `toString()`
 to inspect a color. `Cell::setForeground()`/`setBackground()` and the
-`TextGridBuffer` drawing helpers accept `Color` directly. `ColorMapper` remains
-an internal compatibility helper and is not part of the installed API.
+`TextGridBuffer` drawing helpers accept `Color` directly.

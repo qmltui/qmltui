@@ -1,6 +1,5 @@
 #include <QmlTui/Controls/Toast.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <algorithm>
 
@@ -38,7 +37,7 @@ void Toast::showToast(const QString& title, const QString& message, const QStrin
 void Toast::setInfoColor(Color color) {
     if (m_infoColor == color) return;
     m_infoColor = color;
-    m_resolvedInfoColor = ColorMapper::fromString(m_infoColor, 0);
+    m_resolvedInfoColor = Color::resolve(m_infoColor, 0);
     emit infoColorChanged();
     markDirty();
 }
@@ -46,7 +45,7 @@ void Toast::setInfoColor(Color color) {
 void Toast::setSuccessColor(Color color) {
     if (m_successColor == color) return;
     m_successColor = color;
-    m_resolvedSuccessColor = ColorMapper::fromString(m_successColor, 0);
+    m_resolvedSuccessColor = Color::resolve(m_successColor, 0);
     emit successColorChanged();
     markDirty();
 }
@@ -54,7 +53,7 @@ void Toast::setSuccessColor(Color color) {
 void Toast::setWarningColor(Color color) {
     if (m_warningColor == color) return;
     m_warningColor = color;
-    m_resolvedWarningColor = ColorMapper::fromString(m_warningColor, 0);
+    m_resolvedWarningColor = Color::resolve(m_warningColor, 0);
     emit warningColorChanged();
     markDirty();
 }
@@ -62,7 +61,7 @@ void Toast::setWarningColor(Color color) {
 void Toast::setErrorColor(Color color) {
     if (m_errorColor == color) return;
     m_errorColor = color;
-    m_resolvedErrorColor = ColorMapper::fromString(m_errorColor, 0);
+    m_resolvedErrorColor = Color::resolve(m_errorColor, 0);
     emit errorColorChanged();
     markDirty();
 }
@@ -108,8 +107,8 @@ void Toast::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     }
 
     int tWidth = m_toastWidth;
-    const uint32_t background = ColorMapper::fromString(m_color, 0);
-    const uint32_t messageColor = ColorMapper::fromString(m_textColor, 0);
+    const uint32_t background = Color::resolve(m_color, 0);
+    const uint32_t messageColor = Color::resolve(m_textColor, 0);
 
     for (const ToastItem& toast : m_toasts) {
         int toastX = absX + width() - tWidth;

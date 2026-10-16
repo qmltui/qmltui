@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QList>
 #include <QString>
 

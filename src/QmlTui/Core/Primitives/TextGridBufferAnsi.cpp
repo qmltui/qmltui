@@ -15,7 +15,7 @@ namespace {
 inline bool isDefaultBlank(const Cell& cell) {
     // A never-painted cell carries the transparent tag and shows the terminal
     // default, exactly like an alpha-0 one, so both count as blank here.
-    const bool defaultBg = cell.bgColor == 0 || ColorMapper::isTransparent(cell.bgColor);
+    const bool defaultBg = cell.bgColor == 0 || Color::isTransparent(cell.bgColor);
     if (cell.continuation || !defaultBg || cell.attributes != TextAttribute::None ||
         cell.linkId != 0)
         return false;

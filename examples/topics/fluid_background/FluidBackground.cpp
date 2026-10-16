@@ -8,9 +8,9 @@
 namespace qmltui {
 
 FluidBackground::FluidBackground(QObject* parent) : Item(parent) {
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFF38BDF8);
-    m_resolvedSecondaryColor = ColorMapper::fromString(m_secondaryColor, 0xFFEC4899);
-    m_resolvedBgColor = ColorMapper::fromString(m_backgroundColor, 0xFF080C14);
+    m_resolvedColor = Color::resolve(m_color, 0xFF38BDF8);
+    m_resolvedSecondaryColor = Color::resolve(m_secondaryColor, 0xFFEC4899);
+    m_resolvedBgColor = Color::resolve(m_backgroundColor, 0xFF080C14);
 
     m_timer = new ClockTimer(this);
     m_timer->setInterval(40); // 25 FPS
@@ -53,7 +53,7 @@ void FluidBackground::setCharset(const QString& cs) {
 void FluidBackground::setColor(Color c) {
     if (m_color == c) return;
     m_color = c;
-    m_resolvedColor = ColorMapper::fromString(m_color, 0xFF38BDF8);
+    m_resolvedColor = Color::resolve(m_color, 0xFF38BDF8);
     emit colorChanged();
     markDirty();
 }
@@ -61,7 +61,7 @@ void FluidBackground::setColor(Color c) {
 void FluidBackground::setSecondaryColor(Color c) {
     if (m_secondaryColor == c) return;
     m_secondaryColor = c;
-    m_resolvedSecondaryColor = ColorMapper::fromString(m_secondaryColor, 0xFFEC4899);
+    m_resolvedSecondaryColor = Color::resolve(m_secondaryColor, 0xFFEC4899);
     emit secondaryColorChanged();
     markDirty();
 }
@@ -69,7 +69,7 @@ void FluidBackground::setSecondaryColor(Color c) {
 void FluidBackground::setBackgroundColor(Color c) {
     if (m_backgroundColor == c) return;
     m_backgroundColor = c;
-    m_resolvedBgColor = ColorMapper::fromString(m_backgroundColor, 0xFF080C14);
+    m_resolvedBgColor = Color::resolve(m_backgroundColor, 0xFF080C14);
     emit backgroundColorChanged();
     markDirty();
 }

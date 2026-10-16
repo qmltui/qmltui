@@ -9,7 +9,7 @@
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 
 using namespace qmltui;
 using qmltui::testing::paintItem;
@@ -288,7 +288,8 @@ void TestTextInput::testTerminalCursorCustomization() {
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("h"));
-    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(0, 0).bgColor), static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
+    QCOMPARE(Color::toArgb(buffer.cellAt(0, 0).bgColor),
+             static_cast<uint32_t>(0xFF00FFFF)); // cyan bg highlight
 
     // Test cursor at position 5 (end of text) - delegate glyph "▋" rendered at empty position
     input.setCursorPosition(5);
@@ -297,7 +298,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
     QCOMPARE(buffer.cellAt(5, 0).character().toByteArray(), QByteArray("▋"));
-    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(5, 0).fgColor), static_cast<uint32_t>(0xFF00FFFF));
+    QCOMPARE(Color::toArgb(buffer.cellAt(5, 0).fgColor), static_cast<uint32_t>(0xFF00FFFF));
 
     input.setSelectionColor("blue");
     input.setSelectedTextColor("yellow");
@@ -307,8 +308,10 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.select(0, 3);
     paintItem(input, buffer, 0, 0, ClipRect{0, 0, 10, 1});
 
-    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(1, 0).bgColor), static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
-    QCOMPARE(ColorMapper::toArgb(buffer.cellAt(1, 0).fgColor), static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
+    QCOMPARE(Color::toArgb(buffer.cellAt(1, 0).bgColor),
+             static_cast<uint32_t>(0xFF0000FF)); // blue ARGB
+    QCOMPARE(Color::toArgb(buffer.cellAt(1, 0).fgColor),
+             static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
 
     // Test clear(), overwriteMode(), placeholderColor(), autoScroll()
     input.setPlaceholderText("Enter name...");

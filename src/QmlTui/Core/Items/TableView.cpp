@@ -3,7 +3,6 @@
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -379,7 +378,7 @@ void TableView::setStretchLastColumn(bool stretch) {
 void TableView::setHeaderColor(Color color) {
     if (m_headerColor == color) return;
     m_headerColor = color;
-    m_resolvedHeaderColor = ColorMapper::fromString(m_headerColor, 0);
+    m_resolvedHeaderColor = Color::resolve(m_headerColor, 0);
     emit headerColorChanged();
     markDirty();
 }
@@ -387,7 +386,7 @@ void TableView::setHeaderColor(Color color) {
 void TableView::setHeaderBackgroundColor(Color color) {
     if (m_headerBackgroundColor == color) return;
     m_headerBackgroundColor = color;
-    m_resolvedHeaderBackgroundColor = ColorMapper::fromString(m_headerBackgroundColor, 0);
+    m_resolvedHeaderBackgroundColor = Color::resolve(m_headerBackgroundColor, 0);
     emit headerBackgroundColorChanged();
     markDirty();
 }
@@ -395,7 +394,7 @@ void TableView::setHeaderBackgroundColor(Color color) {
 void TableView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
+    m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
     emit selectionColorChanged();
     markDirty();
 }
@@ -403,7 +402,7 @@ void TableView::setSelectionColor(Color color) {
 void TableView::setSelectionBackgroundColor(Color color) {
     if (m_selectionBackgroundColor == color) return;
     m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
     emit selectionBackgroundColorChanged();
     markDirty();
 }
@@ -411,7 +410,7 @@ void TableView::setSelectionBackgroundColor(Color color) {
 void TableView::setTextColor(Color color) {
     if (m_textColor == color) return;
     m_textColor = color;
-    m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
+    m_resolvedTextColor = Color::resolve(m_textColor, 0);
     emit textColorChanged();
     markDirty();
 }
@@ -419,7 +418,7 @@ void TableView::setTextColor(Color color) {
 void TableView::setRowBackgroundColor(Color color) {
     if (m_rowBackgroundColor == color) return;
     m_rowBackgroundColor = color;
-    m_resolvedRowBackgroundColor = ColorMapper::fromString(m_rowBackgroundColor, 0);
+    m_resolvedRowBackgroundColor = Color::resolve(m_rowBackgroundColor, 0);
     emit rowBackgroundColorChanged();
     markDirty();
 }
@@ -427,7 +426,7 @@ void TableView::setRowBackgroundColor(Color color) {
 void TableView::setAlternatingRowBackgroundColor(Color color) {
     if (m_alternatingRowBackgroundColor == color) return;
     m_alternatingRowBackgroundColor = color;
-    m_resolvedAltRowBackgroundColor = ColorMapper::fromString(m_alternatingRowBackgroundColor, 0);
+    m_resolvedAltRowBackgroundColor = Color::resolve(m_alternatingRowBackgroundColor, 0);
     emit alternatingRowBackgroundColorChanged();
     markDirty();
 }
@@ -435,7 +434,7 @@ void TableView::setAlternatingRowBackgroundColor(Color color) {
 void TableView::setGridColor(Color color) {
     if (m_gridColor == color) return;
     m_gridColor = color;
-    m_resolvedGridColor = ColorMapper::fromString(m_gridColor, 0);
+    m_resolvedGridColor = Color::resolve(m_gridColor, 0);
     emit gridColorChanged();
     markDirty();
 }
@@ -598,7 +597,7 @@ std::optional<uint32_t> TableView::columnColor(const QJSValue& callback, int row
     if (name.isEmpty()) return std::nullopt;
     const auto cached = m_columnColorCache.constFind(name);
     if (cached != m_columnColorCache.cend()) return cached.value();
-    const uint32_t parsed = ColorMapper::fromString(name, 0u);
+    const uint32_t parsed = Color::resolve(name, 0u);
     // A function that returns a new colour every cell must not grow this
     // without bound; the cache is an optimisation, not a record.
     if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
@@ -773,8 +772,8 @@ void TableView::resolveColumns() {
                 if (value.isCallable()) callable = value;
             }
             const QString text = callable.isCallable() ? QString() : entry.toString();
-            return std::make_tuple(text.isEmpty() ? 0u : ColorMapper::fromString(text, 0u),
-                                   !text.isEmpty(), callable);
+            return std::make_tuple(text.isEmpty() ? 0u : Color::resolve(text, 0u), !text.isEmpty(),
+                                   callable);
         };
         const auto [columnFg, hasColumnFg, columnFgFn] = columnStyle("color");
         const auto [columnBg, hasColumnBg, columnBgFn] = columnStyle("background");
@@ -1269,11 +1268,10 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                     if (result.isObject()) {
                         if (result.hasProperty("text")) value = result.property("text").toString();
                         if (result.hasProperty("color"))
-                            cellFg = ColorMapper::fromString(result.property("color").toString(),
-                                                             cellFg);
+                            cellFg = Color::resolve(result.property("color").toString(), cellFg);
                         if (result.hasProperty("backgroundColor"))
-                            cellBg = ColorMapper::fromString(
-                                result.property("backgroundColor").toString(), cellBg);
+                            cellBg = Color::resolve(result.property("backgroundColor").toString(),
+                                                    cellBg);
                         if (result.property("bold").toBool())
                             cellAttributes = cellAttributes | TextAttribute::Bold;
                         if (result.hasProperty("align"))

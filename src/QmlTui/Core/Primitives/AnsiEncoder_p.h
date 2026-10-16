@@ -5,7 +5,7 @@
 // std::string, with colour quantisation for the terminal's colour depth.
 
 #include <QmlTui/Core/Primitives/Cell.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 
 #include <QStringView>
@@ -28,10 +28,9 @@ inline void appendInt(std::string &out, int value)
 // FF so equal RGB values compare equal regardless of the source alpha.
 inline uint32_t normalizedColor(uint32_t color)
 {
-    if (ColorMapper::isAnsiIndex(color))
-        return Color::AnsiTag | ColorMapper::ansiIndex(color);   // keep the index, never RGB
-    if (ColorMapper::isTransparent(color))
-        return 0u;                                               // SGR 39 / 49
+    if (Color::isAnsiIndex(color))
+        return Color::AnsiTag | Color::ansiIndex(color); // keep the index, never RGB
+    if (Color::isTransparent(color)) return 0u;          // SGR 39 / 49
     return (color >> 24) != 0 ? (0xFF000000u | (color & 0x00FFFFFFu)) : 0u;
 }
 
@@ -42,19 +41,19 @@ inline uint32_t mappedColor(uint32_t normalized, ColorDepth depth)
 {
     if (normalized == 0)
         return 0;
-    if (ColorMapper::isAnsiIndex(normalized)) {
+    if (Color::isAnsiIndex(normalized)) {
         // An ANSI index is emitted as such at every depth except Mono, so the
         // terminal theme applies; on 256-color terminals indices 0-15 are the
         // same themed entries.
-        return depth == ColorDepth::Mono ? 0 : (0x02000000u | ColorMapper::ansiIndex(normalized));
+        return depth == ColorDepth::Mono ? 0 : (0x02000000u | Color::ansiIndex(normalized));
     }
     switch (depth) {
     case ColorDepth::Mono:
         return 0;
     case ColorDepth::Basic16:
-        return 0x02000000u | ColorMapper::toBasic16(normalized);
+        return 0x02000000u | Color::toBasic16(normalized);
     case ColorDepth::Indexed256:
-        return 0x01000000u | ColorMapper::toIndexed256(normalized);
+        return 0x01000000u | Color::toIndexed256(normalized);
     case ColorDepth::TrueColor:
         break;
     }

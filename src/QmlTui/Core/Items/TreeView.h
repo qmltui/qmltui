@@ -13,7 +13,6 @@
 #include <QAbstractItemModel>
 #include <QPointer>
 #include <QPersistentModelIndex>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 
 namespace qmltui {
 
@@ -220,16 +219,15 @@ private:
     // Resolved caches mirror the Color members: an ANSI-named default must not be
     // written as literal RGB, or the terminal theme stops applying to it (setters
     // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedSelectionColor = ColorMapper::fromString(m_selectionColor, 0);
+    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
     Color m_selectionBackgroundColor;
-    uint32_t m_resolvedSelectionBackgroundColor =
-        ColorMapper::fromString(m_selectionBackgroundColor, 0);
+    uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 
     Color m_textColor = "default";
-    uint32_t m_resolvedTextColor = ColorMapper::fromString(m_textColor, 0);
+    uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);
 
     Color m_branchColor = "default";
-    uint32_t m_resolvedBranchColor = ColorMapper::fromString(m_branchColor, 0);
+    uint32_t m_resolvedBranchColor = Color::resolve(m_branchColor, 0);
 
     QString m_expandedIcon = "[-] ";
     QString m_collapsedIcon = "[+] ";

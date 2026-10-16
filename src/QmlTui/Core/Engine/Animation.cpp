@@ -1,6 +1,5 @@
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QDebug>
 #include <QMetaProperty>
@@ -116,7 +115,7 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
                 } else if (value.userType() == QMetaType::QString) {
                     col = Color::fromString(value.toString());
                 } else {
-                    col = Color::fromArgb32(ColorMapper::fromString(value.toString()));
+                    col = Color::fromArgb32(Color::resolve(value.toString()));
                 }
                 void* argv[] = {&col};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
@@ -337,15 +336,15 @@ static uint32_t extractColor(const QVariant& var, uint32_t defaultColor = 0xFFFF
         Color c = Color::fromString(var.toString());
         if (c.isValid()) return c.argb32();
     }
-    return ColorMapper::fromString(var.toString(), defaultColor);
+    return Color::resolve(var.toString(), defaultColor);
 }
 
 void ColorAnimation::writeValue(const QVariant& value) {
     if (!m_target || m_propertyName.isEmpty()) return;
 
     // ANSI-indexed colors carry no RGB; interpolate their palette values.
-    uint32_t fromColor = ColorMapper::toArgb(extractColor(m_from, 0xFFFFFFFF));
-    uint32_t toColor = ColorMapper::toArgb(extractColor(m_to, 0xFFFFFFFF));
+    uint32_t fromColor = Color::toArgb(extractColor(m_from, 0xFFFFFFFF));
+    uint32_t toColor = Color::toArgb(extractColor(m_to, 0xFFFFFFFF));
 
     int fromA = (fromColor >> 24) & 0xFF;
     int fromR = (fromColor >> 16) & 0xFF;

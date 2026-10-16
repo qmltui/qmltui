@@ -1,7 +1,6 @@
 #include <QmlTui/Core/Items/ScrollView.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
-#include <QmlTui/Core/Primitives/ColorMapper.h>
 #include <algorithm>
 
 namespace qmltui {

@@ -74,24 +74,6 @@ Terminal {
 }
 ```
 
-### `test_tutorial.js`
-
-<!-- include: examples/tutorials/05_controls_and_styling/test_tutorial.js -->
-```javascript
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Logging disabled");
-    terminal.press("Space");
-    terminal.expectText("Logging enabled");
-    terminal.waitForText("40%");
-    terminal.clickText("Apply settings");
-    terminal.expectText("Save these settings now?");
-    terminal.press("Escape");
-    terminal.expectText("Settings unchanged");
-    terminal.captureText("tutorial.txt");
-}
-```
-
 ## Key Concepts in This Chapter
 
 - **Application-Owned Styling (`component AppButton: Button`)**: QmlTui controls default to `"default"` terminal colors and do not enforce a global framework theme singleton. To share styling across an application, define reusable QML components—either as inline components (`component AppButton: Button { textColor: "cyan" }`) or separate `.qml` files. Explicit color overrides survive focus and disabled state changes.

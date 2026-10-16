@@ -2,8 +2,7 @@
 
 ListModel supplies named roles. The delegate declares `service` as required,
 so the model supplies it directly. The attached `ListView.isCurrentItem` binding
-styles the selected row. Down changes selection; the scenario checks the bold
-cell in the committed frame. TableView displays a small two-dimensional model
+styles the selected row. Down changes selection and updates the active row style. TableView displays a small two-dimensional model
 with explicit column widths. Larger application datasets belong in C++ models.
 
 Build with `cmake --build build --target qmltui_tutorial_04_models_and_views` and run
@@ -81,26 +80,11 @@ Terminal {
 }
 ```
 
-### `test_tutorial.js`
-
-<!-- include: examples/tutorials/04_models_and_views/test_tutorial.js -->
-```javascript
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Gateway");
-    terminal.press("Down");
-    terminal.expectStyle(2, 4, { character: "W", bold: true });
-    terminal.captureStyled("selection.txt");
-    terminal.captureText("tutorial.txt");
-}
-```
-
 ## Key Concepts in This Chapter
 
 - **`ListModel` Roles & `required property` Delegates**: With `pragma ComponentBehavior: Bound` active, delegates declare each model role they consume as a typed `required property` (here `required property string service`). This prevents unqualified context lookups and lets `qmllint` and `qmlls` verify role bindings at compile time.
 - **`ListView.isCurrentItem` Attached Property**: `ListView` attaches `ListView.isCurrentItem` to each instantiated delegate. Binding `bold: ListView.isCurrentItem` automatically updates the visual style of the active row when **Up** or **Down** changes `currentIndex`.
 - **Multi-Column `TableView`**: `TableView` renders tabular data with configurable `columns` (`{ title, width }`), box-drawing borders (`showOuterBorder`, `showColumnGrid`), and viewport virtualization. For small static tables a 2D JavaScript array works directly; for large or dynamic datasets, expose a C++ `QAbstractTableModel` or `QAbstractListModel` subclass (see [Models & Virtualized Views](../topics/models.md)).
-- **Asserting Cell Attributes (`expectStyle`)**: In `test_tutorial.js`, `terminal.expectStyle(2, 4, { character: "W", bold: true })` verifies not just the text of the committed frame, but that pressing **Down** moved bold styling onto `"Worker"` at cell `(2, 4)`.
 
 ---
 

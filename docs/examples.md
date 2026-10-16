@@ -21,7 +21,7 @@ cmake --build build -j8 --target qmltui_gallery
 
 ![QmlTui Interactive Gallery](assets/casts/gallery-tour.gif)
 
-Enable `-DQMLTUI_BUILD_TESTS=ON` as well to register the automated `Runner` scenarios (`ctest --test-dir build -j8`). You can also edit and run all 39 gallery examples directly in your browser using the [WebAssembly Playground](playground.md).
+You can also edit and run all 39 gallery examples directly in your browser using the [WebAssembly Playground](playground.md).
 
 ---
 

@@ -69,25 +69,11 @@ Terminal {
 }
 ```
 
-### `test_tutorial.js`
-
-<!-- include: examples/tutorials/02_layout_and_text/test_tutorial.js -->
-```javascript
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Layout and text");
-    terminal.resize(60, 20);
-    terminal.expectText("source text.");
-    terminal.expectText("Ready to build");
-    terminal.captureText("tutorial.txt");
-}
-```
-
 ## Key Concepts in This Chapter
 
 - **Borders & Anchor Margins**: `Rectangle` with `border.style: Border.Single` draws a 1-cell box-drawing frame around the viewport. Setting `anchors.fill: parent` and `anchors.margins: 1` on the inner `Column` insets its content by one cell on every side so children never overwrite the border glyphs.
 - **`RowLayout` vs. `Row` Positioners**: `RowLayout` distributes available width across its children—attaching `Layout.fillWidth: true` to the left `Text` pushes `"Esc quits"` flush against the right edge. By contrast, `Row` simply places items side by side at their natural `implicitWidth` separated by `spacing: 2`.
-- **Responsive Word Wrapping (`Text.WordWrap`)**: Giving a `Text` item `width: parent.width` and `wrapMode: Text.WordWrap` reflows paragraphs automatically when the terminal resizes, updating `implicitHeight` so subsequent items in the `Column` shift down cleanly. The `Runner` scenario verifies this by calling `terminal.resize(60, 20)`.
+- **Responsive Word Wrapping (`Text.WordWrap`)**: Giving a `Text` item `width: parent.width` and `wrapMode: Text.WordWrap` reflows paragraphs automatically when the terminal resizes, updating `implicitHeight` so subsequent items in the `Column` shift down cleanly.
 - **Rich-Text `spans`**: Instead of embedding raw ANSI escape codes or HTML tags, pass an array of `{ text, bold, color, ... }` objects to `Text.spans` to style individual runs within a single text item.
 
 ---

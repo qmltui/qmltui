@@ -11,7 +11,6 @@ clear input before quitting. Q typed into an editor must remain text.
 
 Use `MouseArea` for clicks and hover. Terminal mouse reporting determines the
 available motion events; keyboard navigation must remain usable independently.
-Runner input methods wait for committed frames so tests can assert visible results.
 
 See [focus and keys](../../examples/topics/focus_and_keys/),
 [mouse interaction](../../examples/topics/mouse_interaction/),

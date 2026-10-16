@@ -32,13 +32,22 @@ function stagePlaygroundAssets(): void {
     fs.writeFileSync(path.join(examplesOut, 'index.json'), JSON.stringify(qmlFiles, null, 2) + '\n')
   }
 
-  // 3. Stage recorded GIFs into public/assets/casts for playground preview fallback
+  // 3. Stage recorded GIFs and branding SVGs into public/assets/
   const castsSrc = path.join(docsDir, 'assets', 'casts')
   const castsPub = path.join(docsDir, 'public', 'assets', 'casts')
   if (fs.existsSync(castsSrc)) {
     fs.cpSync(castsSrc, castsPub, {
       recursive: true,
       filter: (src) => fs.statSync(src).isDirectory() || src.endsWith('.gif')
+    })
+  }
+
+  const brandingSrc = path.join(docsDir, 'assets', 'branding')
+  const brandingPub = path.join(docsDir, 'public', 'assets', 'branding')
+  if (fs.existsSync(brandingSrc)) {
+    fs.cpSync(brandingSrc, brandingPub, {
+      recursive: true,
+      filter: (src) => fs.statSync(src).isDirectory() || src.endsWith('.svg') || src.endsWith('.png')
     })
   }
 

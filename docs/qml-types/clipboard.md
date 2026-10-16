@@ -69,7 +69,7 @@ Clipboard.requestText().then(function(text) {
 | `NoTerminal` | No terminal is available. |
 | `AmbiguousTerminal` | Multiple terminals exist; assign `Clipboard.terminal`. |
 | `Disabled` | The selected terminal's clipboard mode is disabled. |
-| `Unavailable` | The session is stopped, input/output is noninteractive, output is suppressed (including quiet Runner sessions), or the query could not be written. |
+| `Unavailable` | The session is stopped, input/output is noninteractive, output is suppressed, or the query could not be written. |
 | `Timeout` | No matching response arrived before the deadline. |
 | `InvalidResponse` | A clipboard reply was malformed, invalid Base64/UTF-8, or exceeded the 1 MiB decoded-text limit. |
 | `Cancelled` | Terminal selection changed, the terminal stopped or was destroyed, or clipboard integration/output was disabled while waiting. |

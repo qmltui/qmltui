@@ -134,8 +134,21 @@ endif()
 - **Single Executable, Conditional Runner (`if(TARGET qmltui::runner)`)**: Your normal application executable links `qmltui::runner` only when tests or `QMLTUI_ENABLE_RUNNER=ON` are enabled. Normal interactive startup stays completely unaffected unless Runner activation environment variables are present.
 - **Declarative CTest Integration (`qmltui_add_scenario`)**: Registers a headless CTest case with fixed `COLUMNS 80 ROWS 24` geometry and a JavaScript scenario script (`SCRIPT`).
 - **Deterministic Virtual Clock (`CLOCK VIRTUAL`)**: Replaces wall-clock waiting with deterministic virtual time so animations, timers, and `terminal.sleep()` advance instantaneously and reproducibly on any CI machine.
-- **Full-Frame Snapshot Testing (`expectSnapshot`)**: Compares the entire committed terminal frame against a checked-in baseline (`snapshots/initial.txt`). Refresh baselines intentionally with `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1`.
+- **Full-Frame Snapshot & Cell Assertions (`expectSnapshot`, `expectStyle`, `expectScrollbackText`)**: `expectSnapshot()` compares the entire committed frame against a checked-in baseline (`snapshots/initial.txt`), while `expectStyle(x, y, { character, bold, fg, ... })` verifies individual cell attributes, `resize(columns, rows)` tests responsive reflow, and `expectScrollbackText()` asserts committed inline history rows.
 - **Reproducible `.cast` Recording (`RECORD tutorial.cast`)**: Produces an Asciinema v2 `.cast` recording directly from a virtual-clock scenario (`tutorial_06_cast`) with chapter markers (`terminal.marker(...)`), eliminating shaky manual screen recordings.
+
+## JavaScript Scenario Editor Support
+
+To enable IDE autocompletion and type checking on the `terminal` facade inside scenario scripts (`*.js` or `*.mjs`):
+
+1. Call `qmltui_scenario_editor_support()` in your project's `CMakeLists.txt`:
+   ```cmake
+   if(COMMAND qmltui_scenario_editor_support)
+       qmltui_scenario_editor_support()
+   endif()
+   ```
+   This copies `.qmltui/qmltui-runner.d.ts` into your project and generates a `jsconfig.json` (if none exists) that includes `.qmltui/qmltui-runner.d.ts`.
+2. Annotate your scenario entry point with `/** @param {Terminal} terminal */` so TypeScript/JavaScript language servers (VS Code, Qt Creator, Neovim `ts_ls`, Helix) provide method completions and hover docs on `terminal.*`.
 
 ## Launch a scenario from the shell
 

@@ -111,15 +111,8 @@ coexist within an application.
 - **Precedence over Behavior**: When an animated property matches an active `Transition`,
   the transition takes precedence over any `Behavior` on that property.
 
-## Testing with Runner
-
-Register time-dependent Runner scenarios with `CLOCK VIRTUAL` and advance QmlTui
-time using `advanceTime()`. Assert committed text and styled frames at key phases:
-entry, midpoint, completion, interruption, resize, and restoration.
-
 See [independent states example](../../examples/topics/independent_states/),
 [states and transitions](../../examples/topics/state_transitions/),
 [State](../qml-types/state.md),
-[StateGroup](../qml-types/stategroup.md),
-[PropertyChanges](../qml-types/propertychanges.md), and
-[Runner](../cpp-classes/runner.md).
+[StateGroup](../qml-types/stategroup.md), and
+[PropertyChanges](../qml-types/propertychanges.md).

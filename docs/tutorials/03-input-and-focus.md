@@ -55,20 +55,6 @@ Terminal {
 }
 ```
 
-### `test_tutorial.js`
-
-<!-- include: examples/tutorials/03_input_and_focus/test_tutorial.js -->
-```javascript
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.typeText("Ada");
-    terminal.press("Tab");
-    terminal.press("Enter");
-    terminal.expectText("Hello, Ada!");
-    terminal.captureText("tutorial.txt");
-}
-```
-
 ## Key Concepts in This Chapter
 
 - **Initial Focus (`focus: true`) & Tab Traversal**: Setting `focus: true` on `nameInput` gives the `TextInput` active focus when the scene loads. Pressing **Tab** (or **Shift+Tab**) cycles focus through focusable controls (`TextInput` → `Button`) in tree order. When `Button` receives active focus, its border switches from single (`┌───┐`) to double (`╔═══╗`).

@@ -211,10 +211,12 @@ The available QML modules and CMake targets are:
 
 | QML Import | CMake Target | Description |
 | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | Core items (`Terminal`, `Item`, `Rectangle`, `Text`, layouts, views, input, animation) |
+| `import QmlTui` | `qmltui::core` | Standalone retained-mode TUI engine (`Terminal`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized views, `Canvas`, input, animation; requires only `Qt6::Core` and `Qt6::Qml`) |
 | `import QmlTui.Controls` | `qmltui::controls` | Interactive controls (`Button`, `CheckBox`, `Dialog`, `Panel`, `ProgressBar`, `Slider`, etc.) |
 | `import QmlTui.Image` | `qmltui::image` | Terminal graphics (`Image`, `AnimatedSprite`; requires `QMLTUI_ENABLE_IMAGE=ON`) |
 | `import QmlTui.TerminalHost` | `qmltui::terminal_host` | Embedded Unix PTY (`TerminalView`; requires `QMLTUI_ENABLE_TERMINAL_HOST=ON`) |
+
+See [Module Boundaries & What `QmlTui.Core` Provides Alone](topics/architecture.md#module-boundaries-what-qmltui-core-provides-alone) for a breakdown of building applications using only `qmltui::core` (`import QmlTui`).
 
 ---
 

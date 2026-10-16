@@ -1,36 +1,32 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/qmltui_lockup_dark.svg">
-    <img alt="QmlTui" src="docs/assets/branding/qmltui_lockup_light.svg" width="360">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/qamui_lockup_dark.svg">
+    <img alt="QmlTui" src="docs/assets/branding/qamui_lockup_light.svg" width="360">
   </picture>
 </p>
 
-**QmlTui** is a C++20 and Qt 6.8+ retained-mode terminal UI framework that brings declarative QML, property bindings, and Qt model/view architecture to modern terminal emulators. Build responsive full-screen dashboards or inline streaming CLIs across Linux, macOS, and Windows Terminal with zero `QtQuick` or display-server dependencies.
+**QmlTui** pairs a **retained-mode declarative QML frontend** with a **high-performance C++20 and Qt 6.8+ backend** for modern terminal emulators. Declare your cell layout, borders, focus chains, and states once in QML while driving high-frequency telemetry, worker threads, and 1M-row `QAbstractItemModel` datasets from native C++20—with O(viewport) virtualization, double-buffered cell diffing, and zero `QtQuick` or display-server dependencies.
 
-### Key Highlights
+### Why Retained Declarative QML + C++20 / Qt 6?
 
-- **Declarative QML & Reactive Bindings**: Compose terminal interfaces with `QtQml` and `QmlTui` modules, integer cell geometry, states, animations, and type-safe property bindings—without linking `QtQuick` or a GUI window system.
-- **Dual Rendering Modes (`Frame` & `Stream`)**: Run full-screen alternate-screen applications (`Terminal.Frame`) or inline CLI workflows (`Terminal.Stream`) that push completed prompts and cards into native terminal history via `Scrollback`.
-- **1M-Row Virtualized Model/View**: Bind C++ `QAbstractItemModel` datasets directly to virtualized `TableView`, `TreeView`, `ListView`, `GridView`, and `LogView` controls with O(viewport) per-frame cell diffing.
-- **Modern Terminal Protocols**: Automatic capability detection for DEC `?2026` synchronized output, Kitty keyboard disambiguation, Kitty and Sixel graphics (`Image`, `AnimatedSprite`, `Canvas`), SGR mouse tracking, OSC 8 clickable links, OSC 9;4 progress reporting, and an optional Unix PTY `TerminalView` host.
-- **Deterministic Headless Testing (`Runner`)**: Drive applications headlessly with a virtual clock, assert committed cell and style snapshots in CTest, or record deterministic Asciinema v2 `.cast` demos without a live TTY.
+- **Retained Scene Graph & Surgical Bindings**: Unlike immediate-mode TUI libraries that rebuild and re-layout the entire widget tree on every keystroke or tick, QmlTui keeps a persistent C++ cell tree in memory. Fine-grained Qt property bindings re-evaluate only the dependent expressions and mark only affected subtrees dirty.
+- **High-Performance C++20 & `QAbstractItemModel` Backend**: Expose compiled C++20 `QObject` services (`QML_ELEMENT`, `Q_PROPERTY`) and streaming `QAbstractItemModel`s directly to QML with zero serialization glue. Virtualized `TableView`, `TreeView`, `ListView`, and `GridView` items instantiate delegates only for visible terminal rows (`O(viewport)`), keeping frame times sub-millisecond over 1,000,000 rows.
+- **Complete Core Engine in a Single Import**: `import QmlTui` (`QmlTui.Core`) provides `Terminal`, `Rectangle`, layouts (`RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`), `Text`, `TextInput`, virtualized views, `Canvas`, and animations standalone; add `QmlTui.Controls`, `QmlTui.Image`, or `QmlTui.TerminalHost` only when needed.
+- **Dual Rendering Modes (`AltScreen` & `Inline`)**: Run full-screen alternate-screen applications (`Terminal.AltScreen`) or inline CLI workflows (`Terminal.Inline`) that push completed prompts and cards into native terminal history via `Scrollback`.
+- **Double-Buffered Cell Diffing & Modern Terminal Protocols**: QmlTui composites dirty subtrees into a contiguous `TextGridBuffer`, diffs cell-by-cell against the previous frame, and emits minimal ANSI/SGR sequences inside a DEC `?2026` synchronized frame—with automatic support for Kitty keyboard, Kitty & Sixel graphics, SGR mouse, and OSC 8/9;4.
+- **Deterministic Headless Testing**: Drive applications headlessly with a virtual clock, assert committed cell and style snapshots in CTest, or record deterministic Asciinema v2 `.cast` demos without a live TTY (see [Runner](docs/cpp-classes/runner.md)).
 
 ![Gallery tour](docs/assets/casts/gallery-tour.gif)
 
-## What It Looks Like
+## Hello, World!
 
-Declare your state, layout, and controls in QML; QmlTui handles focus navigation, Unicode box drawing, and minimal ANSI cell diffs automatically:
+With just `import QtQml` and `import QmlTui`, declare a centered bordered card and keyboard quit handler—QmlTui handles cell layout, Unicode box drawing, and minimal ANSI diffs automatically:
 
 ```qml
-pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
-import QmlTui.Controls
 
 Terminal {
-    id: root
-    property int usedMiB: 512
-
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit();
@@ -38,36 +34,27 @@ Terminal {
         }
     }
 
-    Panel {
+    Rectangle {
         anchors.centerIn: parent
-        width: 44
-        height: 9
-        title: "Pod Metrics"
-        titleBadge: "[RUNNING]"
-        titleBadgeColor: "green"
-        titleTrailing: "v0.5.0"
-        footer: "[q/Esc] Quit"
-        footerTrailing: "CPU: 42%"
-        border.style: Border.Rounded
+        width: 30
+        height: 4
+        border {
+            style: Border.Rounded
+            color: "cyan"
+        }
 
         Column {
-            anchors.fill: parent
-            anchors.margins: 1
-            spacing: 1
+            anchors.centerIn: parent
 
-            Text { text: "Memory: " + root.usedMiB + " / 2048 MiB" }
-            ProgressBar {
-                width: 42
-                to: 2048
-                value: root.usedMiB
-                showBrackets: true
-                showPercentage: true
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Hello, QmlTui!"
                 color: "cyan"
+                bold: true
             }
-            Button {
-                text: "Scale +256 MiB"
-                focus: true
-                onClicked: root.usedMiB = Math.min(2048, root.usedMiB + 256)
+            Text {
+                text: "Press [q] or [Esc] to quit"
+                dim: true
             }
         }
     }
@@ -76,17 +63,7 @@ Terminal {
 
 Rendered in the terminal:
 
-```text
-╭─ Pod Metrics [RUNNING] ───────── v0.5.0 ─╮
-│Memory: 512 / 2048 MiB                    │
-│                                          │
-│[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░]  25%│
-│                                          │
-│╔════════════════╗                        │
-│║ Scale +256 MiB ║                        │
-│╚════════════════╝                        │
-╰─ [q/Esc] Quit ──────────────── CPU: 42% ─╯
-```
+![Hello, QmlTui! rendered in the terminal](docs/assets/casts/hello-world.gif)
 
 ## Quickstart
 
@@ -100,7 +77,7 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
-Or try the [WebAssembly playground](docs/topics/webassembly.md) in your browser.
+Or launch the [Interactive Playground](docs/playground.md) in your browser (see also the [WebAssembly build guide](docs/topics/webassembly.md)).
 
 ### 2. Build a Standalone 3-File App
 
@@ -109,7 +86,8 @@ Follow [Getting started](docs/getting-started.md) (or copy [`examples/quickstart
 ## Documentation
 
 - **[Getting started](docs/getting-started.md)**: Requirements, 3-file standalone quickstart, `find_package(QmlTui)`, CMake options, and runtime environment variables.
-- **[Six-part tutorial](docs/tutorials/index.md)**: Step-by-step guide from your first `Terminal` to layouts, input, models, controls, and headless `Runner` testing.
+- **[Interactive playground](docs/playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
+- **[Six-part tutorial](docs/tutorials/index.md)**: Step-by-step guide from your first `Terminal` to layouts, input, models, controls, and automated testing.
 - **[Topics & guides](docs/topics/index.md)**: Architecture, layouts, input/focus, virtualized models, styling, inline/stream mode, custom C++ items, and comparisons for Qt Quick and TUI developers.
 - **[Component & recipe catalog](docs/examples.md)**: Controls vs. copyable QML recipes, runnable component demos, and topic examples (see also [`examples/README.md`](examples/README.md) and full showcases in [qmltui-apps](https://github.com/qmltui-dev/qmltui-apps)).
 - **[QML types reference](docs/qml-types/index.md)**: Complete API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.TerminalHost`.

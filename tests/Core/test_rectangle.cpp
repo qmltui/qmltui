@@ -125,11 +125,13 @@ void TestRectangle::testVerticalGradient() {
 
     TextGridBuffer buffer = paintRect(rect, 6, 4);
 
-    // Top row (y = 0) is red
+    // Top row (y = 0) is red, bottom row (y = 3) is blue
     QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xffff0000u);
     QCOMPARE(buffer.cellAt(5, 0).bgColor, 0xffff0000u);
+    QCOMPARE(buffer.cellAt(0, 3).bgColor, 0xff0000ffu);
+    QCOMPARE(buffer.cellAt(5, 3).bgColor, 0xff0000ffu);
 
-    // Bottom row has distinct blue component from gradient
+    // Intermediate rows interpolate between red and blue
     uint32_t topColor = buffer.cellAt(0, 0).bgColor;
     uint32_t midColor = buffer.cellAt(0, 1).bgColor;
     uint32_t nextColor = buffer.cellAt(0, 2).bgColor;
@@ -163,9 +165,11 @@ void TestRectangle::testHorizontalGradient() {
 
     TextGridBuffer buffer = paintRect(rect, 6, 3);
 
-    // Left column (x = 0) has red
+    // Left column (x = 0) has red, right column (x = 5) has green
     QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xffff0000u);
     QCOMPARE(buffer.cellAt(0, 2).bgColor, 0xffff0000u);
+    QCOMPARE(buffer.cellAt(5, 0).bgColor, 0xff00ff00u);
+    QCOMPARE(buffer.cellAt(5, 2).bgColor, 0xff00ff00u);
 
     // Horizontal progression across columns
     uint32_t col0 = buffer.cellAt(0, 0).bgColor;

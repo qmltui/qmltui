@@ -96,9 +96,11 @@ uint32_t Gradient::colorAt(qreal t) const {
         return sorted.first()->resolvedColor();
     }
 
-    qreal pos = t + m_offset;
-    pos = std::fmod(pos, 1.0);
-    if (pos < 0.0) pos += 1.0;
+    qreal offset = std::fmod(m_offset, 1.0);
+    if (offset < 0.0) offset += 1.0;
+
+    qreal pos = std::clamp(t, 0.0, 1.0) + offset;
+    if (pos > 1.0) pos -= 1.0;
 
     if (pos <= sorted.first()->position()) {
         return sorted.first()->resolvedColor();

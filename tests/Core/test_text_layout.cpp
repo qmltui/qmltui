@@ -204,14 +204,14 @@ void TestTextLayout::testGradientPerColumn()
     auto *text = qobject_cast<Text *>(object.get());
     QVERIFY(text);
 
-    // Gradient::colorAt wraps t through fmod, so the last column (t = 1.0)
-    // shows the first stop again; intermediate columns interpolate.
     TextGridBuffer first = paintToBuffer(*text, 6, 1);
     QCOMPARE(first.cellAt(0, 0).fgColor, 0xFFFF0000u);
     QVERIFY(first.cellAt(1, 0).fgColor != first.cellAt(0, 0).fgColor);
     QVERIFY(first.cellAt(2, 0).fgColor != first.cellAt(1, 0).fgColor);
-    QVERIFY(((first.cellAt(1, 0).fgColor >> 16) & 0xFF) > ((first.cellAt(2, 0).fgColor >> 16) & 0xFF));
+    QVERIFY(((first.cellAt(1, 0).fgColor >> 16) & 0xFF) >
+            ((first.cellAt(2, 0).fgColor >> 16) & 0xFF));
     QVERIFY((first.cellAt(1, 0).fgColor & 0xFF) < (first.cellAt(2, 0).fgColor & 0xFF));
+    QCOMPARE(first.cellAt(3, 0).fgColor, 0xFF0000FFu);
 
     TextGridBuffer second = paintToBuffer(*text, 6, 1);
     QVERIFY(buffersEqual(first, second));

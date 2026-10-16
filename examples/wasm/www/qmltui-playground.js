@@ -3,11 +3,11 @@
 // esm.sh through the import map in index.html (exact versions, single instance
 // per package).
 //
-// Every demo is a complete standalone file under examples/. The gallery
-// launcher (gallery.qml) instantiates them from their text, which it receives
-// as the qmltuiExampleSources context property, and names the open one in its
-// terminal title ("QmlTui Gallery · Button.qml"). When that arrives the editor
-// shows the file; each edit is compiled first (qmltuiCheckQml), then handed back
+// Every demo is an Item-rooted QML component under examples/. The gallery
+// launcher (gallery.qml) loads the active demo directly using a Loader and
+// names the open one in its terminal title ("QmlTui Gallery · Button.qml").
+// When that arrives the editor shows the file; each edit is compiled first
+// (qmltuiCheckQml), written to /playground/examples/<file> (qmltuiWriteFile),
 // and the gallery re-runs with the same tile open (qmltuiGalleryPage). Escape
 // in the gallery empties the editor again.
 import { EditorView, basicSetup } from 'codemirror';
@@ -30,9 +30,9 @@ const previewLabel = $('previewLabel');
 const PLACEHOLDER = `// Pick a component in the gallery (or from the "Example" dropdown above).
 //
 // Arrow keys move, Enter (or a click) opens a tile, and its file appears
-// here: a complete QmlTui app with its imports and Terminal root, exactly
-// what runs inside the gallery. Edit it and the gallery re-runs with that
-// component open. Escape in the gallery comes back to the grid.
+// here: an Item-rooted QML component loaded directly by the gallery's Loader.
+// Edit it and the gallery re-runs with that component open. Escape in the
+// gallery comes back to the grid.
 //
 // "launcher" edits gallery.qml, the grid itself.
 `;
@@ -237,16 +237,17 @@ function run() {
     return;
   }
   if (mode === 'example') {
-    const result = instance.qmltuiCheckQml(sources[focusFile], focusFile);
+    const result = instance.qmltuiCheckQml(sources[focusFile], `examples/${focusFile}`);
     if (result) {
       const errors = JSON.parse(result);
       status.textContent = `${errors.length} error${errors.length === 1 ? '' : 's'} in ${focusFile}`;
       for (const e of errors) addProblem('error', `${focusFile}:${e.line}:${e.column}: ${e.message}`);
       return;
     }
+    instance.qmltuiWriteFile(`examples/${focusFile}`, sources[focusFile]);
   }
   term.reset();
-  instance.qmltuiSetContextProperty('qmltuiExampleSources', JSON.stringify(sources));
+  instance.qmltuiSetContextProperty('qmltuiAvailableExamples', JSON.stringify(Object.keys(sources)));
   instance.qmltuiSetContextProperty('qmltuiGalleryPage', mode === 'example' ? focusFile : '');
   const result = instance.qmltuiLoadQml(launcher, 'gallery.qml');
   if (!result) {
@@ -334,5 +335,10 @@ window.addEventListener('message', (ev) => {
   else showGrid();
 
   await startRuntime();
+  if (instance) {
+    for (const [name, code] of Object.entries(sources)) {
+      instance.qmltuiWriteFile(`examples/${name}`, code);
+    }
+  }
   run();
 })().catch((e) => { status.textContent = `failed: ${e.message || e}`; console.error(e); });

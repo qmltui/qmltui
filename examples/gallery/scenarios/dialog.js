@@ -1,19 +1,25 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
+    terminal.expectText("Modal Dialog Stage");
     terminal.expectText("No decision yet");
-    terminal.sleep(800);
+    terminal.expectText("Delete report.pdf…");
+    terminal.sleep(300);
+
     terminal.press("Enter");
     terminal.expectText("report.pdf will be removed");
-    terminal.sleep(900);
+    terminal.sleep(400);
+
     terminal.press("Escape");
     terminal.expectText("Kept report.pdf");
-    terminal.sleep(800);
+    terminal.expectText("Decisions: 1");
+    terminal.sleep(300);
+
     terminal.press("Enter");
     terminal.expectText("report.pdf will be removed");
-    terminal.sleep(800);
+    terminal.sleep(400);
+
     terminal.press("Enter");
     terminal.expectText("Deleted report.pdf");
-    terminal.sleep(900);
-    terminal.captureText("dialog.txt");
-    terminal.stopRecording();
+    terminal.expectText("Decisions: 2");
+    terminal.sleep(300);
 }

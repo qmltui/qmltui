@@ -16,6 +16,9 @@ LogView::LogView(QObject* parent) : TextArea(parent) {
         }
         if (m_followTail) scrollToTail();
     });
+    connect(this, &Item::heightChanged, this, [this] {
+        if (m_followTail) scrollToTail();
+    });
 }
 
 void LogView::setMaximumLineCount(int count) {

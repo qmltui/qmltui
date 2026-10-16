@@ -1,47 +1,147 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Dialog: Modal accept/reject. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property string statusText: "No decision yet"
+    property int decisionCount: 0
+    property string lastAudit: "Awaiting confirmation"
+    property bool showReject: true
+
+    function recordDecision(outcome, tag) {
+        statusText = outcome;
+        decisionCount += 1;
+        lastAudit = "#" + decisionCount + " " + tag;
+        deleteButton.focus = true;
     }
 
-    Column {
-        id: dialogDemo
-        x: 2
-        y: 1
-        property string outcome: "No decision yet"
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "A Dialog is a Popup with a title, a message and two buttons."
-            color: "#8b949e"
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "Modal Dialog Stage"
+            titleColor: "#f87171"
+            titleBadge: "[Controls]"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: confirmDialog.visible ? "OPEN" : "IDLE"
+            titleTrailingColor: confirmDialog.visible ? "#2cde85" : "#8b949e"
+            footer: "Enter open/accept · Esc reject"
+            footerColor: "#8b949e"
+            footerTrailing: "Modal"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "Target Artifact: /var/reports/report.pdf"
+                    color: "#c9d1d9"
+                    bold: true
+                }
+
+                Text {
+                    text: "Status: " + root.statusText
+                    color: root.statusText === "Deleted report.pdf" ? "#f87171" : (root.statusText === "Kept report.pdf" ? "#2cde85" : "#fbbf24")
+                    bold: true
+                }
+
+                Text {
+                    text: "Policy: CloseOnEscape | Modal Dimming"
+                    color: "#8b949e"
+                }
+
+                Button {
+                    id: deleteButton
+
+                    focus: true
+                    text: "Delete report.pdf…"
+                    textColor: "#f87171"
+                    onClicked: confirmDialog.open()
+                }
+            }
         }
-        Button {
-            text: "Delete report.pdf"
-            focus: true
-            onClicked: confirmDialog.open()
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "dialog.visible"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + (confirmDialog.visible ? "true" : "false")
+                    color: confirmDialog.visible ? "#2cde85" : "#f0f6fc"
+                    bold: true
+                }
+
+                CheckBox {
+                    id: rejectCheck
+
+                    text: "showRejectButton"
+                    checked: root.showReject
+                    textColor: "#c9d1d9"
+                    onToggled: checked => {
+                        root.showReject = checked;
+                    }
+                }
+
+                Text {
+                    text: "Decisions: " + root.decisionCount
+                    color: "#58a6ff"
+                    bold: true
+                }
+
+                Text {
+                    text: "Audit Log:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.lastAudit
+                    color: "#c9d1d9"
+                }
+            }
         }
-        Text {
-            text: dialogDemo.outcome
-            color: "#f87171"
-            bold: true
-        }
-        Dialog {
-            id: confirmDialog
-            title: "Delete file"
-            message: "report.pdf will be removed. This cannot be undone."
-            acceptText: "Delete"
-            rejectText: "Keep"
-            onAccepted: dialogDemo.outcome = "Deleted report.pdf"
-            onRejected: dialogDemo.outcome = "Kept report.pdf"
-        }
+    }
+
+    Dialog {
+        id: confirmDialog
+
+        title: "Confirm Removal"
+        titleColor: "#f87171"
+        textColor: "#c9d1d9"
+        message: "report.pdf will be removed permanently."
+        acceptText: "Delete"
+        rejectText: "Cancel"
+        showRejectButton: root.showReject
+        onAccepted: root.recordDecision("Deleted report.pdf", "DELETED")
+        onRejected: root.recordDecision("Kept report.pdf", "KEPT")
     }
 }

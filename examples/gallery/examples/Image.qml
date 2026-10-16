@@ -1,89 +1,161 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 import QmlTui.Image
 
-// Image: pixels as cells. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own. The picture ships inside the binary as a
-// resource, so the same file works in a terminal and in the browser.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
-
-    // Braille first: eight dots per cell keep the picture's shape at any size,
-    // and in xterm.js (the gallery page) it reads far better than half-block,
-    // whose two colour bands per cell smear on a browser font.
-    readonly property var modes: [
-        {
-            mode: Image.Braille,
-            name: "Braille",
-            blurb: "eight dots per cell, one colour"
-        },
-        {
-            mode: Image.HalfBlock,
-            name: "HalfBlock",
-            blurb: "two pixels per cell, true colour"
-        },
-        {
-            mode: Image.ASCII,
-            name: "ASCII",
-            blurb: "brightness as characters"
-        },
-        {
-            mode: Image.Auto,
-            name: "Auto",
-            blurb: "kitty or sixel where the terminal has them, else half-block"
-        }
-    ]
     property int modeIndex: 0
+    property bool smoothScaling: false
+    readonly property var renderModes: [Image.HalfBlock, Image.Braille, Image.ASCII, Image.Auto]
+    readonly property var modeNames: ["Image.HalfBlock", "Image.Braille", "Image.ASCII", "Image.Auto"]
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    function cycleMode() {
+        root.modeIndex = (root.modeIndex + 1) % root.renderModes.length;
     }
 
-    Column {
-        x: 2
-        y: 1
+    function toggleSmooth() {
+        root.smoothScaling = !root.smoothScaling;
+    }
+
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        width: Math.min(60, root.width - 4)
-        Text {
-            text: "M cycles the render mode. Terminal cells stand in for pixels."
-            color: "#8b949e"
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_M) {
+                root.cycleMode();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_S) {
+                root.toggleSmooth();
+                event.accepted = true;
+            }
         }
-        // M is handled on the panel, which takes focus, so it also works when
-        // this file is hosted inside the gallery.
+
         Panel {
-            width: parent.width
-            height: 14
-            title: "Image  ·  " + root.modes[root.modeIndex].name
+            id: stage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             focusable: true
             focus: true
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_M) {
-                    root.modeIndex = (root.modeIndex + 1) % root.modes.length;
-                    event.accepted = true;
+            title: "Image"
+            titleColor: "#f9a8d4"
+            titleBadge: "[" + root.modeNames[root.modeIndex] + "]"
+            titleBadgeColor: "#2cde85"
+            titleTrailing: pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height + " px"
+            titleTrailingColor: "#8b949e"
+            footer: "[M] RenderMode  [S] Smooth"
+            footerColor: "#8b949e"
+            footerTrailing: root.smoothScaling ? "smooth: on" : "smooth: off"
+            footerTrailingColor: "#58a6ff"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "panda.png · " + root.modeNames[root.modeIndex] + " · PreserveAspectFit"
+                    bold: true
+                    color: "#c9d1d9"
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 14
+                    color: "#161b22"
+                    border {
+                        style: Border.Single
+                        color: "#30363d"
+                    }
+
+                    Image {
+                        id: pandaImage
+                        anchors {
+                            fill: parent
+                            margins: 1
+                        }
+                        source: "qrc:/gallery/assets/panda.png"
+                        fillMode: Image.PreserveAspectFit
+                        renderMode: root.renderModes[root.modeIndex]
+                        smooth: root.smoothScaling
+                    }
                 }
             }
-            Image {
-                id: picture
-                anchors.fill: parent
-                anchors.margins: 1
-                anchors.topMargin: 2
-                source: "qrc:/gallery/assets/panda.png"
-                fillMode: Image.PreserveAspectFit
-                renderMode: root.modes[root.modeIndex].mode
+        }
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
             }
-        }
-        Text {
-            text: root.modes[root.modeIndex].name + ": " + root.modes[root.modeIndex].blurb
-            color: "#7ee0ff"
-        }
-        Text {
-            text: picture.status === Image.Ready ? "Source " + picture.sourceSize.width + "x" + picture.sourceSize.height + " px" : picture.status === Image.Error ? "Image failed to load" : "Loading"
-            color: "#2cde85"
-            bold: true
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "renderMode:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.modeNames[root.modeIndex]
+                    bold: true
+                    color: "#f9a8d4"
+                }
+
+                Text {
+                    text: "sourceSize: " + pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height
+                    bold: true
+                    color: "#2cde85"
+                }
+
+                Text {
+                    text: "renderSize: " + pandaImage.renderSize.width + "x" + pandaImage.renderSize.height
+                    color: "#58a6ff"
+                }
+
+                Text {
+                    text: "smooth: " + pandaImage.smooth
+                    color: "#c9d1d9"
+                }
+
+                Text {
+                    text: "status: " + (pandaImage.status === Image.Ready ? "Image.Ready" : "Loading")
+                    color: "#8b949e"
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Cycle Mode [M]"
+                    onClicked: root.cycleMode()
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Toggle Smooth [S]"
+                    onClicked: root.toggleSmooth()
+                }
+            }
         }
     }
 }

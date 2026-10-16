@@ -26,20 +26,16 @@ between the Dark and Light documentation themes. `Escape` returns to the grid;
 
 ## Layout
 
-- `examples/*.qml`: one complete, standalone app per tile, with its own
-  imports and `Terminal` root. Each runs on its own (`qmltui_gallery --example <Name>`,
-  or in the browser playground) and is what the gallery instantiates.
-- `Main.qml`: the launcher, styled with the same brand palette (`#0d1117`,
-  `#161b22`, `#30363d`, `#2cde85`, `#00ff66`) as the VitePress documentation
-  site. It receives the example texts through the `qmltuiExampleSources`
-  context property (a JSON object `{ "Button.qml": "<qml>", ... }`), rewrites
-  the root `Terminal {` of the chosen file into an `Item` that fills the demo
-  panel, drops the root-level properties only a `Terminal` has (`title`,
-  `color`, `mode`, the quit handler), and instantiates the result with
-  `Qt.createQmlObject`. A root `mode: Terminal.Inline` makes the launcher
-  itself switch to inline mode, so `InlineMode.qml` shows the normal-buffer
-  mode inside the gallery too.
-- `scenarios/*.js`: deterministic `Runner` scenarios for each standalone
+- `examples/*.qml`: one `Item`-rooted component inspector per tile (Live
+  Component Stage + Property Inspector & Telemetry), loaded directly by
+  `Main.qml`'s `Loader` or launched standalone via `qmltui_gallery --example <Name>`.
+- `Main.qml`: the master-detail component explorer, styled with the same brand
+  palette (`#0d1117`, `#161b22`, `#30363d`, `#2cde85`, `#00ff66`) as the
+  VitePress documentation site. It loads the selected component inspector via a
+  declarative `Loader` (`source: "examples/" + current.file`), switches to
+  `Terminal.Inline` when `InlineMode.qml` is opened, and hides the master
+  header/sidebar/footer when launched in standalone `--example` mode.
+- `scenarios/*.js`: deterministic `Runner` scenarios for each component
   example in `examples/*.qml`, used for both `AgentSmoke` verification and
   automated `.cast` / `.gif` recording.
 

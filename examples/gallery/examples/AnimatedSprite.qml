@@ -1,101 +1,185 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 import QmlTui.Image
 
-// AnimatedSprite: Image plus a frame clock. One tile of the QmlTui gallery
-// (examples/gallery) and a complete app on its own. The loading sheet is
-// one row of four 64x64 px cells and an animation is a run of cells in that
-// row, so picking an animation is only new frameX/frameY/frameCount values;
-// the second entry plays the last two cells to show that the run can start
-// anywhere.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
-
-    readonly property int cellWidth: 64
-    readonly property int cellHeight: 64
+    property int animIndex: 0
     readonly property var animations: [
         {
             name: "loading",
-            row: 0,
-            firstCol: 0,
+            frameX: 0,
+            frameY: 0,
             frameCount: 4
         },
         {
             name: "loading tail",
-            row: 0,
-            firstCol: 2,
+            frameX: 128,
+            frameY: 0,
             frameCount: 2
         }
     ]
-    property int animationIndex: 0
-    readonly property var animation: animations[animationIndex]
+    readonly property var animation: animations[animIndex]
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    function switchAnimation(delta) {
+        root.animIndex = (root.animIndex + delta + root.animations.length) % root.animations.length;
+        sprite.restart();
     }
 
-    Column {
-        x: 2
-        y: 1
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        width: Math.min(60, root.width - 4)
-        Text {
-            text: "Left/Right pick the animation, Space pauses, R plays it backwards."
-            color: "#8b949e"
-        }
-        // The keys are handled on the panel, which takes focus, so they also
-        // work when this file is hosted inside the gallery.
-        Panel {
-            width: parent.width
-            height: 14
-            title: "AnimatedSprite  ·  " + root.animation.name
-            focusable: true
-            focus: true
-            Keys.onPressed: event => {
-                const count = root.animations.length;
-                if (event.key === Qt.Key_Right)
-                    root.animationIndex = (root.animationIndex + 1) % count;
-                else if (event.key === Qt.Key_Left)
-                    root.animationIndex = (root.animationIndex + count - 1) % count;
-                else if (event.key === Qt.Key_Space)
-                    sprite.paused = !sprite.paused;
-                else if (event.key === Qt.Key_R)
-                    sprite.reverse = !sprite.reverse;
-                else
-                    return;
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Space) {
+                sprite.paused = !sprite.paused;
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Right) {
+                root.switchAnimation(1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Left) {
+                root.switchAnimation(-1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                sprite.reverse = !sprite.reverse;
                 event.accepted = true;
             }
-            // Braille, as in the Image tile: it keeps the figure's outline at
-            // this size and reads well in the browser page too.
-            AnimatedSprite {
-                id: sprite
-                anchors.fill: parent
-                anchors.margins: 1
-                anchors.topMargin: 2
-                source: "qrc:/gallery/assets/loading.png"
-                fillMode: Image.PreserveAspectFit
-                renderMode: Image.Auto
-                smooth: false
-                frameX: root.animation.firstCol * root.cellWidth
-                frameY: root.animation.row * root.cellHeight
-                frameWidth: root.cellWidth
-                frameHeight: root.cellHeight
-                frameCount: root.animation.frameCount
-                frameDuration: 180
+        }
+
+        Panel {
+            id: stage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            focusable: true
+            focus: true
+            title: "AnimatedSprite"
+            titleColor: "#fdba74"
+            titleBadge: sprite.paused ? "[PAUSED]" : "[PLAYING]"
+            titleBadgeColor: sprite.paused ? "#f9c74f" : "#2cde85"
+            titleTrailing: (sprite.currentFrame + 1) + "/" + sprite.frameCount
+            titleTrailingColor: "#58a6ff"
+            footer: "[Space] Pause  [Left/Right] Clip  [R] Reverse"
+            footerColor: "#8b949e"
+            footerTrailing: "220 ms/f"
+            footerTrailingColor: "#fdba74"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: root.animation.name + ": frame " + (sprite.currentFrame + 1) + "/" + sprite.frameCount + (sprite.paused ? "   paused" : "") + (sprite.reverse ? "   reverse" : "")
+                    bold: true
+                    color: "#fdba74"
+                }
+
+                Text {
+                    text: "x=" + (sprite.frameX + sprite.currentFrame * sprite.frameWidth) + "..+" + sprite.frameWidth + " of a 256x64 sheet"
+                    color: "#8b949e"
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 12
+                    color: "#161b22"
+                    border {
+                        style: Border.Single
+                        color: "#30363d"
+                    }
+
+                    AnimatedSprite {
+                        id: sprite
+                        anchors {
+                            fill: parent
+                            margins: 1
+                        }
+                        source: "qrc:/gallery/assets/loading.png"
+                        frameX: root.animation.frameX
+                        frameY: root.animation.frameY
+                        frameWidth: 64
+                        frameHeight: 64
+                        frameCount: root.animation.frameCount
+                        frameDuration: 220
+                        fillMode: Image.PreserveAspectFit
+                        renderMode: Image.HalfBlock
+                    }
+                }
             }
         }
-        Text {
-            text: root.animation.name + ": frame " + (sprite.currentFrame + 1) + "/" + sprite.frameCount + (sprite.paused ? "   paused" : "") + (sprite.reverse ? "   reverse" : "")
-            color: "#7ee0ff"
-        }
-        Text {
-            text: sprite.status === Image.Ready ? "Frame " + sprite.frameWidth + "x" + sprite.frameHeight + " px at (" + sprite.frameX + ", " + sprite.frameY + ") of a " + sprite.sourceSize.width + "x" + sprite.sourceSize.height + " sheet" : sprite.status === Image.Error ? "Sprite sheet failed to load" : "Loading"
-            color: "#2cde85"
-            bold: true
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "clip: " + root.animation.name
+                    bold: true
+                    color: "#fdba74"
+                }
+
+                Text {
+                    text: "frameX/Y: " + sprite.frameX + ", " + sprite.frameY
+                    color: "#c9d1d9"
+                }
+
+                Text {
+                    text: "frameSize: " + sprite.frameWidth + "x" + sprite.frameHeight
+                    color: "#2cde85"
+                }
+
+                Text {
+                    text: "frameDuration: " + sprite.frameDuration + " ms"
+                    color: "#58a6ff"
+                }
+
+                Text {
+                    text: "paused: " + sprite.paused
+                    color: sprite.paused ? "#f9c74f" : "#8b949e"
+                }
+
+                Text {
+                    text: "reverse: " + sprite.reverse
+                    color: sprite.reverse ? "#f472b6" : "#8b949e"
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: sprite.paused ? "Resume [Space]" : "Pause [Space]"
+                    onClicked: sprite.paused = !sprite.paused
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Next Clip [Right]"
+                    onClicked: root.switchAnimation(1)
+                }
+            }
         }
     }
 }

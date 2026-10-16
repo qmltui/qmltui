@@ -1,64 +1,206 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Shortcut: Global key without focus. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
+    property bool shortcutsEnabled: true
+    property int activationCount: 0
+    property string activeProfile: "1: Build"
+    property string lastTriggered: "None"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    function triggerShortcut(label) {
+        root.activationCount += 1;
+        root.activeProfile = label;
+        root.lastTriggered = label + " (#" + root.activationCount + ")";
     }
 
-    Column {
-        id: shortcutDemo
-        x: 2
-        y: 1
-        property string theme: "amber"
-        property int refreshes: 0
+    function clearHistory() {
+        root.activationCount = 0;
+        root.lastTriggered = "Cleared";
+    }
+
+    Shortcut {
+        sequence: Qt.Key_1
+        enabled: root.shortcutsEnabled
+        onActivated: root.triggerShortcut("1: Build")
+    }
+
+    Shortcut {
+        sequence: Qt.Key_2
+        enabled: root.shortcutsEnabled
+        onActivated: root.triggerShortcut("2: Test")
+    }
+
+    Shortcut {
+        sequence: Qt.Key_3
+        enabled: root.shortcutsEnabled
+        onActivated: root.triggerShortcut("3: Deploy")
+    }
+
+    Shortcut {
+        sequence: Qt.Key_C
+        enabled: root.shortcutsEnabled
+        onActivated: root.clearHistory()
+    }
+
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Shortcut {
-            sequence: Qt.Key_1
-            enabled: shortcutsOn.checked
-            onActivated: shortcutDemo.theme = "amber"
-        }
-        Shortcut {
-            sequence: Qt.Key_2
-            enabled: shortcutsOn.checked
-            onActivated: shortcutDemo.theme = "mint"
-        }
-        Shortcut {
-            sequence: Qt.Key_3
-            enabled: shortcutsOn.checked
-            onActivated: shortcutDemo.theme = "rose"
-        }
-        Shortcut {
-            sequence: Qt.Key_F5
-            enabled: shortcutsOn.checked
-            onActivated: shortcutDemo.refreshes++
-        }
-        Text {
-            text: "Shortcuts fire from anywhere on the page, whatever has focus. Press 1, 2, 3 or F5."
-            color: "#8b949e"
-        }
-        CheckBox {
-            id: shortcutsOn
-            text: "Shortcuts enabled"
-            checked: true
+
+        Panel {
+            id: stage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            focusable: true
             focus: true
+            title: "Shortcut"
+            titleColor: "#fb7185"
+            titleBadge: root.shortcutsEnabled ? "[ENABLED]" : "[MUTED]"
+            titleBadgeColor: root.shortcutsEnabled ? "#2cde85" : "#f87171"
+            titleTrailing: "hits: " + root.activationCount
+            titleTrailingColor: "#8b949e"
+            footer: "[1] Build  [2] Test  [3] Deploy  [C] Clear"
+            footerColor: "#8b949e"
+            footerTrailing: root.activeProfile
+            footerTrailingColor: "#fb7185"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "Global Key Router (fires without focus)"
+                    bold: true
+                    color: "#c9d1d9"
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 3
+                    color: root.activeProfile === "1: Build" ? "#12261e" : "#161b22"
+                    border {
+                        style: root.activeProfile === "1: Build" ? Border.Double : Border.Single
+                        color: root.activeProfile === "1: Build" ? "#2cde85" : "#30363d"
+                    }
+
+                    Text {
+                        x: 1
+                        text: "[Key 1]  Build Pipeline   -> " + (root.activeProfile === "1: Build" ? "ACTIVE" : "standby")
+                        bold: root.activeProfile === "1: Build"
+                        color: root.activeProfile === "1: Build" ? "#2cde85" : "#8b949e"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 3
+                    color: root.activeProfile === "2: Test" ? "#12261e" : "#161b22"
+                    border {
+                        style: root.activeProfile === "2: Test" ? Border.Double : Border.Single
+                        color: root.activeProfile === "2: Test" ? "#58a6ff" : "#30363d"
+                    }
+
+                    Text {
+                        x: 1
+                        text: "[Key 2]  Test Suite       -> " + (root.activeProfile === "2: Test" ? "ACTIVE" : "standby")
+                        bold: root.activeProfile === "2: Test"
+                        color: root.activeProfile === "2: Test" ? "#58a6ff" : "#8b949e"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 3
+                    color: root.activeProfile === "3: Deploy" ? "#12261e" : "#161b22"
+                    border {
+                        style: root.activeProfile === "3: Deploy" ? Border.Double : Border.Single
+                        color: root.activeProfile === "3: Deploy" ? "#fb7185" : "#30363d"
+                    }
+
+                    Text {
+                        x: 1
+                        text: "[Key 3]  Deploy Release   -> " + (root.activeProfile === "3: Deploy" ? "ACTIVE" : "standby")
+                        bold: root.activeProfile === "3: Deploy"
+                        color: root.activeProfile === "3: Deploy" ? "#fb7185" : "#8b949e"
+                    }
+                }
+
+                Text {
+                    text: "Last Action: " + root.lastTriggered
+                    bold: true
+                    color: "#f9c74f"
+                }
+            }
         }
-        Rectangle {
-            width: 40
-            height: 3
-            color: shortcutDemo.theme === "amber" ? "#78350f" : shortcutDemo.theme === "mint" ? "#064e3b" : "#881337"
-            Text {
-                anchors.centerIn: parent
-                text: "theme: " + shortcutDemo.theme + "   F5 pressed " + shortcutDemo.refreshes + "×"
-                color: "#c9d1d9"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "enabled: " + root.shortcutsEnabled
+                    bold: true
+                    color: root.shortcutsEnabled ? "#2cde85" : "#f87171"
+                }
+
+                Text {
+                    text: "sequences: 1, 2, 3, C"
+                    color: "#c9d1d9"
+                }
+
+                Text {
+                    text: "activations: " + root.activationCount
+                    bold: true
+                    color: "#58a6ff"
+                }
+
+                Text {
+                    text: "route: " + root.activeProfile
+                    color: "#fb7185"
+                }
+
+                Text {
+                    text: "history: " + root.lastTriggered
+                    color: "#8b949e"
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: root.shortcutsEnabled ? "Mute Shortcuts" : "Enable Shortcuts"
+                    onClicked: root.shortcutsEnabled = !root.shortcutsEnabled
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Clear Count [C]"
+                    onClicked: root.clearHistory()
+                }
             }
         }
     }

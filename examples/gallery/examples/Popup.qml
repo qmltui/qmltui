@@ -1,82 +1,194 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Popup: Free-form modal overlay. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property bool dimBg: true
+    property int openCount: 0
+    property int closeCount: 0
+    property string lastAction: "None"
+
+    function triggerAction(label) {
+        lastAction = label;
+        commandPopup.close();
+        openPopupBtn.focus = true;
     }
 
-    Item {
-        id: popupDemo
+    RowLayout {
         anchors.fill: parent
-        property int opened: 0
-        Column {
-            spacing: 1
-            Text {
-                text: "Popups draw above everything else; modal ones dim the frame."
-                color: "#8b949e"
+        spacing: 1
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "Popup Overlay Stage"
+            titleColor: "#a3e635"
+            titleBadge: "[Controls]"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: commandPopup.visible ? "ACTIVE" : "READY"
+            titleTrailingColor: commandPopup.visible ? "#2cde85" : "#8b949e"
+            footer: "Enter open · Esc dismiss overlay"
+            footerColor: "#8b949e"
+            footerTrailing: "Popup"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
             }
-            Button {
-                text: "Open sheet"
-                focus: true
-                onClicked: sheet.open()
-            }
-            Text {
-                text: "Opened " + popupDemo.opened + " time" + (popupDemo.opened === 1 ? "" : "s")
-                color: "#a3e635"
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "Cluster Command Launcher"
+                    color: "#f0f6fc"
+                    bold: true
+                }
+
+                Text {
+                    text: "Last Command: " + root.lastAction
+                    color: "#2cde85"
+                    bold: true
+                }
+
+                Text {
+                    text: "Dim Background: " + (root.dimBg ? "enabled" : "disabled")
+                    color: "#8b949e"
+                }
+
+                Button {
+                    id: openPopupBtn
+
+                    focus: true
+                    text: "Open Command Popup"
+                    textColor: "#a3e635"
+                    onClicked: commandPopup.open()
+                }
             }
         }
-        Popup {
-            id: sheet
-            anchors.centerIn: parent
-            width: 44
-            height: 10
-            modal: true
-            onOpened: popupDemo.opened++
-            Rectangle {
-                anchors.fill: parent
-                color: "#161b22"
-                border.style: Border.Double
-                border.color: "#a3e635"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
             }
-            Text {
+
+            Column {
                 x: 2
-                y: 1
-                text: "Export options"
-                bold: true
+                y: 2
+                spacing: 1
+
+                CheckBox {
+                    id: dimCheck
+
+                    text: "dimBackground"
+                    checked: root.dimBg
+                    textColor: "#c9d1d9"
+                    onToggled: checked => {
+                        root.dimBg = checked;
+                    }
+                }
+
+                Text {
+                    text: "Opened: " + root.openCount
+                    color: "#58a6ff"
+                    bold: true
+                }
+
+                Text {
+                    text: "Closed: " + root.closeCount
+                    color: "#f0f6fc"
+                }
+
+                Text {
+                    text: "Last Action:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.lastAction
+                    color: "#2cde85"
+                    bold: true
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: commandPopup
+
+        width: 34
+        height: 10
+        anchors.centerIn: parent
+        modal: true
+        dimBackground: root.dimBg
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnOutsideClick
+        initialFocusItem: syncActionBtn
+        onOpened: root.openCount += 1
+        onClosed: {
+            root.closeCount += 1;
+            openPopupBtn.focus = true;
+        }
+
+        Panel {
+            anchors.fill: parent
+            title: "Command Palette"
+            titleColor: "#a3e635"
+            footer: "Esc to close"
+            footerColor: "#8b949e"
+            color: "#161b22"
+            border {
+                style: Border.Double
                 color: "#a3e635"
             }
-            CheckBox {
-                id: includeImages
+
+            Column {
                 x: 2
-                y: 3
-                text: "Include images"
-                checked: true
-            }
-            CheckBox {
-                x: 2
-                y: 4
-                text: "Compress output"
-            }
-            Row {
-                x: 2
-                y: 6
-                spacing: 2
-                Button {
-                    text: "Export"
-                    onClicked: sheet.accept()
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "Select a quick action:"
+                    color: "#c9d1d9"
                 }
-                Button {
-                    text: "Cancel"
-                    onClicked: sheet.reject()
+
+                Row {
+                    spacing: 1
+
+                    Button {
+                        id: syncActionBtn
+
+                        text: "Sync"
+                        textColor: "#2cde85"
+                        onClicked: root.triggerAction("Sync Nodes")
+                    }
+
+                    Button {
+                        id: drainActionBtn
+
+                        text: "Drain"
+                        textColor: "#fbbf24"
+                        onClicked: root.triggerAction("Drain Pod")
+                    }
+
+                    Button {
+                        id: closeActionBtn
+
+                        text: "Close"
+                        textColor: "#f87171"
+                        onClicked: commandPopup.close()
+                    }
                 }
             }
         }

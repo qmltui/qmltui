@@ -1,55 +1,268 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Slider: Left/Right or drag. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property real stepSize: 1
+    property bool showValue: true
+    property bool slidersEnabled: true
+    readonly property int masterLevel: Math.round((volSlider.value + bassSlider.value + trebleSlider.value) / 3)
+
+    function resetMix() {
+        volSlider.value = 42;
+        bassSlider.value = 60;
+        trebleSlider.value = 50;
     }
 
-    Column {
-        x: 2
-        y: 1
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "Left/Right step by stepSize; a click snaps the handle."
-            color: "#8b949e"
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "Slider"
+            titleColor: "#c084fc"
+            titleBadge: "Controls"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: "MIX " + root.masterLevel + "%"
+            titleTrailingColor: "#2cde85"
+            footer: "Left/Right/Home/End adjust"
+            footerColor: "#8b949e"
+            footerTrailing: "Tab channel"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "Audio & Channel Mixer"
+                    color: "#c9d1d9"
+                    bold: true
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Text {
+                        text: "Volume  " + Math.round(volSlider.value) + "%"
+                        color: "#c084fc"
+                        bold: volSlider.activeFocus
+                    }
+
+                    Slider {
+                        id: volSlider
+
+                        width: parent.width
+                        focus: true
+                        enabled: root.slidersEnabled
+                        from: 0
+                        to: 100
+                        value: 42
+                        stepSize: root.stepSize
+                        showValue: root.showValue
+                        textColor: "#c084fc"
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Text {
+                        text: "Bass    " + Math.round(bassSlider.value) + "%"
+                        color: "#38bdf8"
+                        bold: bassSlider.activeFocus
+                    }
+
+                    Slider {
+                        id: bassSlider
+
+                        width: parent.width
+                        enabled: root.slidersEnabled
+                        from: 0
+                        to: 100
+                        value: 60
+                        stepSize: root.stepSize
+                        showValue: root.showValue
+                        textColor: "#38bdf8"
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Text {
+                        text: "Treble  " + Math.round(trebleSlider.value) + "%"
+                        color: "#2cde85"
+                        bold: trebleSlider.activeFocus
+                    }
+
+                    Slider {
+                        id: trebleSlider
+
+                        width: parent.width
+                        enabled: root.slidersEnabled
+                        from: 0
+                        to: 100
+                        value: 50
+                        stepSize: root.stepSize
+                        showValue: root.showValue
+                        textColor: "#2cde85"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 3
+                    color: "#161b22"
+                    border {
+                        style: Border.Single
+                        color: "#30363d"
+                    }
+
+                    Text {
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: parent.left
+                            leftMargin: 2
+                        }
+                        text: "Master Bus: " + root.masterLevel + "%  |  Step: " + root.stepSize
+                        color: "#f9c74f"
+                        bold: true
+                    }
+                }
+            }
         }
-        Text {
-            text: "Volume  " + volume.value + "%"
-            color: "#c084fc"
-        }
-        Slider {
-            id: volume
-            width: 40
-            from: 0
-            to: 100
-            value: 42
-            focus: true
-        }
-        Text {
-            text: "Contrast  " + contrast.value
-            color: "#c084fc"
-        }
-        Slider {
-            id: contrast
-            width: 40
-            from: -10
-            to: 10
-            value: 3
-            stepSize: 1
-        }
-        Rectangle {
-            width: Math.max(1, Math.round(volume.value / 100 * 40))
-            height: 1
-            color: "#c084fc"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
+                }
+                spacing: 1
+
+                Column {
+                    spacing: 0
+
+                    Text {
+                        text: "PROPERTIES"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    CheckBox {
+                        checked: root.showValue
+                        text: "showValue"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.showValue = checked;
+                        }
+                    }
+
+                    CheckBox {
+                        checked: root.stepSize === 5
+                        text: "stepSize: 5"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.stepSize = checked ? 5 : 1;
+                        }
+                    }
+
+                    CheckBox {
+                        checked: root.slidersEnabled
+                        text: "enabled"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.slidersEnabled = checked;
+                        }
+                    }
+                }
+
+                Button {
+                    text: "Reset EQ"
+                    textColor: "#f9c74f"
+
+                    onClicked: {
+                        root.resetMix();
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Text {
+                        text: "LEVEL METER"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    ProgressBar {
+                        width: parent.width
+                        from: 0
+                        to: 100
+                        value: root.masterLevel
+                        style: "segmented"
+                        showPercentage: true
+                        color: "#2cde85"
+                    }
+
+                    Text {
+                        text: "volume: " + Math.round(volSlider.value) + "%"
+                        color: "#c084fc"
+                    }
+
+                    Text {
+                        text: "bass: " + Math.round(bassSlider.value) + "%"
+                        color: "#38bdf8"
+                    }
+
+                    Text {
+                        text: "treble: " + Math.round(trebleSlider.value) + "%"
+                        color: "#2cde85"
+                    }
+
+                    Text {
+                        text: "stepSize: " + root.stepSize
+                        color: "#8b949e"
+                    }
+                }
+            }
         }
     }
 }

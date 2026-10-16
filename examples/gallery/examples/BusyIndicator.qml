@@ -1,106 +1,272 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// BusyIndicator: Five spinner styles. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property bool running: true
+    property int interval: 100
+
+    function adjustInterval(delta) {
+        interval = Math.max(60, Math.min(200, interval + delta));
     }
 
-    Column {
-        x: 2
-        y: 1
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "Frames advance every `interval` milliseconds."
-            color: "#8b949e"
-        }
-        Row {
-            spacing: 4
-            Row {
-                spacing: 1
-                BusyIndicator {
-                    color: "#f472b6"
-                }
-                Text {
-                    text: "Dots"
-                    color: "#c9d1d9"
-                }
-            }
-            Row {
-                spacing: 1
-                BusyIndicator {
-                    frames: ["|", "/", "-", "\\"]
-                    color: "#f472b6"
-                }
-                Text {
-                    text: "Line"
-                    color: "#c9d1d9"
-                }
-            }
-            Row {
-                spacing: 1
-                BusyIndicator {
-                    frames: ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"]
-                    color: "#f472b6"
-                }
-                Text {
-                    text: "Pipe"
-                    color: "#c9d1d9"
-                }
-            }
-            Row {
-                spacing: 1
-                BusyIndicator {
-                    frames: ["▖", "▘", "▝", "▗"]
-                    color: "#f472b6"
-                }
-                Text {
-                    text: "Block"
-                    color: "#c9d1d9"
-                }
-            }
-            Row {
-                spacing: 1
-                BusyIndicator {
-                    frames: ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
-                    color: "#f472b6"
-                }
-                Text {
-                    text: "Bounce"
-                    color: "#c9d1d9"
-                }
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Minus) {
+                root.adjustInterval(-20);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) {
+                root.adjustInterval(20);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Space) {
+                root.running = !root.running;
+                event.accepted = true;
             }
         }
-        Row {
-            spacing: 1
-            BusyIndicator {
-                interval: 40
-                color: "#7ee0ff"
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "BusyIndicator"
+            titleColor: "#f472b6"
+            titleBadge: "Controls"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: root.running ? "Running" : "Paused"
+            titleTrailingColor: root.running ? "#2cde85" : "#f9c74f"
+            footer: "Space run/pause  Left/Right speed"
+            footerColor: "#8b949e"
+            footerTrailing: root.interval + "ms"
+            footerTrailingColor: "#7ee0ff"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
             }
-            Text {
-                text: "interval: 40 ms"
-                color: "#8b949e"
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "Async Pipeline Spinner Monitor"
+                    color: "#c9d1d9"
+                    bold: true
+                }
+
+                Text {
+                    text: "Pipeline: " + (root.running ? "Running" : "Paused") + "  |  Cadence: " + root.interval + "ms"
+                    color: root.running ? "#2cde85" : "#f9c74f"
+                }
+
+                Column {
+                    spacing: 1
+
+                    Row {
+                        spacing: 2
+
+                        BusyIndicator {
+                            id: brailleSpinner
+
+                            running: root.running
+                            interval: root.interval
+                            color: "#f472b6"
+                        }
+
+                        Text {
+                            text: "Braille   TLS Handshake & Ingress"
+                            color: "#c9d1d9"
+                        }
+                    }
+
+                    Row {
+                        spacing: 2
+
+                        BusyIndicator {
+                            id: lineSpinner
+
+                            running: root.running
+                            interval: root.interval
+                            frames: ["-", "\\", "|", "/"]
+                            color: "#38bdf8"
+                        }
+
+                        Text {
+                            text: "Line      Schema Migration Job"
+                            color: "#c9d1d9"
+                        }
+                    }
+
+                    Row {
+                        spacing: 2
+
+                        BusyIndicator {
+                            id: boxSpinner
+
+                            running: root.running
+                            interval: root.interval
+                            frames: ["▖", "▘", "▝", "▗"]
+                            color: "#2cde85"
+                        }
+
+                        Text {
+                            text: "Box       Shard Rebalancer"
+                            color: "#c9d1d9"
+                        }
+                    }
+
+                    Row {
+                        spacing: 2
+
+                        BusyIndicator {
+                            id: dotsSpinner
+
+                            running: root.running
+                            interval: root.interval
+                            frames: ["∙∙∙", "●∙∙", "∙●∙", "∙∙●"]
+                            color: "#f9c74f"
+                        }
+
+                        Text {
+                            text: "Dots      Artifact Upload Queue"
+                            color: "#c9d1d9"
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 3
+                    color: "#161b22"
+                    border {
+                        style: Border.Single
+                        color: "#30363d"
+                    }
+
+                    Text {
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: parent.left
+                            leftMargin: 2
+                        }
+                        text: "Glyphs: [" + brailleSpinner.text + "]  [" + lineSpinner.text + "]  [" + boxSpinner.text + "]  [" + dotsSpinner.text + "]"
+                        color: "#7ee0ff"
+                        bold: true
+                    }
+                }
             }
         }
-        Row {
-            spacing: 1
-            BusyIndicator {
-                id: paused
-                frames: ["|", "/", "-", "\\"]
-                running: false
-                color: "#8b949e"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
             }
-            Text {
-                text: "running: false keeps the current glyph"
-                color: "#8b949e"
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
+                }
+                spacing: 1
+
+                Column {
+                    spacing: 0
+
+                    Text {
+                        text: "PROPERTIES"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    CheckBox {
+                        focus: true
+                        checked: root.running
+                        text: "running"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.running = checked;
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 1
+
+                    Button {
+                        text: "-20ms"
+                        textColor: "#38bdf8"
+
+                        onClicked: {
+                            root.adjustInterval(-20);
+                        }
+                    }
+
+                    Button {
+                        text: "+20ms"
+                        textColor: "#f9c74f"
+
+                        onClicked: {
+                            root.adjustInterval(20);
+                        }
+                    }
+                }
+
+                Column {
+                    spacing: 0
+
+                    Text {
+                        text: "TELEMETRY"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    Text {
+                        text: "state: " + (root.running ? "Running" : "Paused")
+                        color: root.running ? "#2cde85" : "#f9c74f"
+                        bold: true
+                    }
+
+                    Text {
+                        text: "interval: " + root.interval + "ms"
+                        color: "#7ee0ff"
+                    }
+
+                    Text {
+                        text: "braille: " + brailleSpinner.text
+                        color: "#f472b6"
+                    }
+
+                    Text {
+                        text: "line: " + lineSpinner.text
+                        color: "#38bdf8"
+                    }
+
+                    Text {
+                        text: "box: " + boxSpinner.text
+                        color: "#2cde85"
+                    }
+                }
             }
         }
     }

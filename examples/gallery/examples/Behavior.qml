@@ -1,89 +1,237 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Behavior: animate a property whenever it changes. One tile of the QmlTui
-// gallery (examples/gallery) and a complete app on its own. Needs a build
-// with QMLTUI_ENABLE_BEHAVIOR=ON; the gallery hides this tile otherwise.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
+    property int targetX: 2
+    property int targetWidth: 10
+    property int easingIndex: 0
+    property bool warmTone: false
+    readonly property var easingTypes: [Easing.OutBounce, Easing.OutCubic, Easing.InOutQuad]
+    readonly property var easingNames: ["Easing.OutBounce", "Easing.OutCubic", "Easing.InOutQuad"]
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
-    }
-    property bool warm: false
-
-    Column {
-        x: 2
-        y: 1
-        spacing: 1
-        Text {
-            text: "Left/Right move the block, Space recolours it. Every change is animated by a Behavior."
-            color: "#8b949e"
+    function stepTarget(delta) {
+        const maxPos = Math.max(4, trackBox.width - 10);
+        let next = root.targetX + delta;
+        if (next > maxPos) {
+            next = 2;
+        } else if (next < 2) {
+            next = maxPos;
         }
-        // The keys live on a focusable item so they also work when this file
-        // is hosted inside the gallery, which owns the root's key handling.
-        Item {
-            id: stage
-            width: 60
-            height: 3
-            focusable: true
-            focus: true
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Left)
-                    block.x = Math.max(0, block.x - 12);
-                else if (event.key === Qt.Key_Right)
-                    block.x = Math.min(stage.width - block.width, block.x + 12);
-                else if (event.key === Qt.Key_Space)
-                    root.warm = !root.warm;
-                else
-                    return;
+        root.targetX = next;
+        root.targetWidth = root.targetWidth === 10 ? 24 : (root.targetWidth === 24 ? 16 : 10);
+        root.warmTone = !root.warmTone;
+    }
+
+    function cycleEasing() {
+        root.easingIndex = (root.easingIndex + 1) % root.easingTypes.length;
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        spacing: 1
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Right || event.key === Qt.Key_Space) {
+                root.stepTarget(12);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Left) {
+                root.stepTarget(-12);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_E) {
+                root.cycleEasing();
                 event.accepted = true;
             }
-            Rectangle {
-                id: block
-                x: 0
-                width: 12
-                height: 3
-                color: root.warm ? "#f87171" : "#2cde85"
-                border.style: Border.Single
-                border.color: "#0d1117"
-                // The property still jumps in your code; the Behavior turns the
-                // jump into an animation from the old value to the new one.
-                Behavior on x {
-                    NumberAnimation {
-                        duration: 250
-                        easing: Easing.OutCubic
-                    }
+        }
+
+        Panel {
+            id: stage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            focusable: true
+            focus: true
+            title: "Behavior"
+            titleColor: "#c084fc"
+            titleBadge: "[Interceptor]"
+            titleBadgeColor: "#2cde85"
+            titleTrailing: root.easingNames[root.easingIndex]
+            titleTrailingColor: "#58a6ff"
+            footer: "[Left/Right/Space] Move  [E] Easing"
+            footerColor: "#8b949e"
+            footerTrailing: "x=" + puck.x + " w=" + morphBar.width
+            footerTrailingColor: "#c084fc"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
                 }
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 400
-                    }
-                }
+                spacing: 1
+
                 Text {
-                    anchors.centerIn: parent
-                    text: "x " + block.x
-                    color: "#0d1117"
+                    text: "Behavior on x  ·  " + root.easingNames[root.easingIndex]
                     bold: true
+                    color: "#c084fc"
+                }
+
+                Rectangle {
+                    id: trackBox
+                    width: parent.width
+                    height: 5
+                    color: "#161b22"
+                    border {
+                        style: Border.Single
+                        color: "#30363d"
+                    }
+
+                    Rectangle {
+                        id: puck
+                        x: root.targetX
+                        y: 0
+                        width: 8
+                        height: 3
+                        color: root.warmTone ? "#9a3412" : "#1e3a8a"
+                        border {
+                            style: Border.Double
+                            color: root.warmTone ? "#f97316" : "#58a6ff"
+                        }
+
+                        Behavior on x {
+                            NumberAnimation {
+                                duration: 350
+                                easing: root.easingTypes[root.easingIndex]
+                            }
+                        }
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 350
+                            }
+                        }
+
+                        Text {
+                            anchors {
+                                centerIn: parent
+                            }
+                            text: "PUCK"
+                            bold: true
+                            color: "#f0f6fc"
+                        }
+                    }
+                }
+
+                Text {
+                    text: "Behavior on width + Behavior on color"
+                    bold: true
+                    color: "#38bdf8"
+                }
+
+                Rectangle {
+                    id: morphBar
+                    width: root.targetWidth
+                    height: 3
+                    color: root.warmTone ? "#065f46" : "#4c1d95"
+                    border {
+                        style: Border.Rounded
+                        color: root.warmTone ? "#2cde85" : "#c084fc"
+                    }
+
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: 350
+                            easing: root.easingTypes[root.easingIndex]
+                        }
+                    }
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 350
+                        }
+                    }
+
+                    Text {
+                        anchors {
+                            centerIn: parent
+                        }
+                        text: "w:" + morphBar.width
+                        bold: true
+                        color: "#f0f6fc"
+                    }
+                }
+
+                Text {
+                    text: "Target x: " + root.targetX + " (live x: " + puck.x + ")"
+                    color: "#8b949e"
                 }
             }
         }
-        Text {
-            text: "Behavior on x: NumberAnimation 250 ms, Easing.OutCubic"
-            color: "#7ee0ff"
-        }
-        Text {
-            text: "Behavior on color: ColorAnimation 400 ms"
-            color: "#7ee0ff"
-        }
-        Text {
-            text: "Target x: " + block.x + "   colour: " + (root.warm ? "warm" : "cool")
-            color: "#2cde85"
-            bold: true
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+                spacing: 1
+
+                Text {
+                    text: "easing:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.easingNames[root.easingIndex]
+                    bold: true
+                    color: "#c084fc"
+                }
+
+                Text {
+                    text: "puck.x: " + puck.x + " -> " + root.targetX
+                    bold: true
+                    color: "#58a6ff"
+                }
+
+                Text {
+                    text: "bar.width: " + morphBar.width + " -> " + root.targetWidth
+                    color: "#2cde85"
+                }
+
+                Text {
+                    text: "tone: " + (root.warmTone ? "Warm" : "Cool")
+                    color: "#f9c74f"
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Step Target [Space]"
+                    onClicked: root.stepTarget(12)
+                }
+
+                Button {
+                    width: parent.width
+                    height: 3
+                    text: "Cycle Easing [E]"
+                    onClicked: root.cycleEasing()
+                }
+            }
         }
     }
 }

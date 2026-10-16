@@ -1,178 +1,254 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
+import QmlTui.Controls
 
-// Layouts: Row, Column, GridLayout. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property int layoutSpacing: 1
+    property bool wideSidebar: false
+
+    function cycleSpacing() {
+        layoutSpacing = (layoutSpacing + 1) % 3;
     }
 
-    Column {
-        x: 2
-        y: 1
-        width: 66
+    function toggleSidebar() {
+        wideSidebar = !wideSidebar;
+    }
+
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "RowLayout: children size through Layout.preferredWidth and Layout.fillWidth"
-            color: "#8b949e"
-        }
-        RowLayout {
-            width: parent.width
-            height: 2
-            spacing: 1
-            Rectangle {
-                Layout.preferredWidth: 12
-                Layout.fillHeight: true
-                color: "#7c2d12"
-                Text {
-                    anchors.centerIn: parent
-                    text: "12"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: "#a16207"
-                Text {
-                    anchors.centerIn: parent
-                    text: "fillWidth"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                Layout.preferredWidth: 12
-                Layout.fillHeight: true
-                color: "#7c2d12"
-                Text {
-                    anchors.centerIn: parent
-                    text: "12"
-                    color: "#c9d1d9"
-                }
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_G) {
+                root.cycleSpacing();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_S) {
+                root.toggleSidebar();
+                event.accepted = true;
             }
         }
-        Text {
-            text: "GridLayout: 4 columns, one cell spanning two"
-            color: "#8b949e"
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "Layouts Dashboard Stage"
+            titleColor: "#fcd34d"
+            titleBadge: "[Core]"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: "gap=" + root.layoutSpacing
+            titleTrailingColor: "#2cde85"
+            footer: "G spacing · S sidebar stretch"
+            footerColor: "#8b949e"
+            footerTrailing: "Layouts"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            ColumnLayout {
+                id: dashColumn
+
+                x: 2
+                y: 2
+                width: Math.max(24, parent.width - 4)
+                height: 9
+                spacing: root.layoutSpacing
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: root.layoutSpacing
+
+                    Rectangle {
+                        id: navPane
+
+                        Layout.preferredWidth: root.wideSidebar ? 14 : 9
+                        Layout.fillHeight: true
+                        color: "#161b22"
+                        border {
+                            style: Border.Single
+                            color: "#2cde85"
+                        }
+
+                        Text {
+                            x: 1
+                            y: 1
+                            text: "Nav " + navPane.width + "x" + navPane.height
+                            color: "#2cde85"
+                            bold: true
+                        }
+                    }
+
+                    GridLayout {
+                        id: metricsGrid
+
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        columns: 2
+                        columnSpacing: root.layoutSpacing
+                        rowSpacing: root.layoutSpacing
+
+                        Rectangle {
+                            id: cpuCell
+
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: "#161b22"
+                            border {
+                                style: Border.Single
+                                color: "#58a6ff"
+                            }
+
+                            Text {
+                                x: 1
+                                y: 1
+                                text: "CPU " + cpuCell.width + "x" + cpuCell.height
+                                color: "#58a6ff"
+                                bold: true
+                            }
+                        }
+
+                        Rectangle {
+                            id: memCell
+
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: "#161b22"
+                            border {
+                                style: Border.Single
+                                color: "#fcd34d"
+                            }
+
+                            Text {
+                                x: 1
+                                y: 1
+                                text: "MEM " + memCell.width + "x" + memCell.height
+                                color: "#fcd34d"
+                                bold: true
+                            }
+                        }
+
+                        Rectangle {
+                            id: netCell
+
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: "#161b22"
+                            border {
+                                style: Border.Single
+                                color: "#e879f9"
+                            }
+
+                            Text {
+                                x: 1
+                                y: 1
+                                text: "NET " + netCell.width + "x" + netCell.height
+                                color: "#e879f9"
+                            }
+                        }
+
+                        Rectangle {
+                            id: ioCell
+
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: "#161b22"
+                            border {
+                                style: Border.Single
+                                color: "#38bdf8"
+                            }
+
+                            Text {
+                                x: 1
+                                y: 1
+                                text: "I/O " + ioCell.width + "x" + ioCell.height
+                                color: "#38bdf8"
+                            }
+                        }
+                    }
+                }
+            }
+
+            Row {
+                x: 2
+                y: 12
+                spacing: 1
+
+                Button {
+                    id: spacingBtn
+
+                    focus: true
+                    text: "Spacing (" + root.layoutSpacing + ")"
+                    textColor: "#2cde85"
+                    onClicked: root.cycleSpacing()
+                }
+
+                Button {
+                    id: sidebarBtn
+
+                    text: root.wideSidebar ? "Sidebar: Wide" : "Sidebar: Compact"
+                    textColor: "#58a6ff"
+                    onClicked: root.toggleSidebar()
+                }
+            }
         }
-        GridLayout {
-            width: parent.width
-            height: 2
-            columns: 4
-            columnSpacing: 1
-            rowSpacing: 0
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
                 Text {
-                    anchors.centerIn: parent
-                    text: "0,0"
+                    text: "spacing: " + root.layoutSpacing
+                    color: "#2cde85"
+                    bold: true
+                }
+
+                Text {
+                    text: "sidebarWidth: " + navPane.width
+                    color: "#58a6ff"
+                    bold: true
+                }
+
+                Text {
+                    text: "Computed Cells:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  Nav:  " + navPane.width + "x" + navPane.height
                     color: "#c9d1d9"
                 }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
+
                 Text {
-                    anchors.centerIn: parent
-                    text: "0,1"
+                    text: "  Grid: " + metricsGrid.width + "x" + metricsGrid.height
                     color: "#c9d1d9"
                 }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.columnSpan: 2
-                Layout.preferredHeight: 1
-                color: "#3b0764"
+
                 Text {
-                    anchors.centerIn: parent
-                    text: "0,2 span 2"
-                    color: "#c9d1d9"
+                    text: "  CPU:  " + cpuCell.width + "x" + cpuCell.height
+                    color: "#fcd34d"
                 }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
+
                 Text {
-                    anchors.centerIn: parent
-                    text: "1,0"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
-                Text {
-                    anchors.centerIn: parent
-                    text: "1,1"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
-                Text {
-                    anchors.centerIn: parent
-                    text: "1,2"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#1e3a5f"
-                Text {
-                    anchors.centerIn: parent
-                    text: "1,3"
-                    color: "#c9d1d9"
-                }
-            }
-        }
-        Text {
-            text: "Row: children keep their own width"
-            color: "#8b949e"
-        }
-        Row {
-            spacing: 2
-            Rectangle {
-                width: 10
-                height: 1
-                color: "#164e63"
-                Text {
-                    anchors.centerIn: parent
-                    text: "10"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                width: 20
-                height: 1
-                color: "#155e75"
-                Text {
-                    anchors.centerIn: parent
-                    text: "20"
-                    color: "#c9d1d9"
-                }
-            }
-            Rectangle {
-                width: 30
-                height: 1
-                color: "#0e7490"
-                Text {
-                    anchors.centerIn: parent
-                    text: "30"
-                    color: "#c9d1d9"
+                    text: "  MEM:  " + memCell.width + "x" + memCell.height
+                    color: "#fcd34d"
                 }
             }
         }

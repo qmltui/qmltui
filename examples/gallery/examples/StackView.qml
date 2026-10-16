@@ -3,68 +3,277 @@ import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// StackView: Push and pop pages. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property string deployStatus: "Configuring"
+
+    readonly property string activeStepTitle: {
+        if (stack.depth === 1) {
+            return "Environment";
+        }
+        if (stack.depth === 2) {
+            return "Replicas";
+        }
+        return "Confirm";
     }
 
-    Item {
-        id: stackDemo
-        anchors.fill: parent
-        Column {
-            spacing: 1
-            Text {
-                text: "push() adds a page on top, pop() returns to the one beneath. Depth: " + stack.depth
-                color: "#8b949e"
+    function pushStep() {
+        if (stack.depth === 1) {
+            stack.push(step2Comp);
+            deployStatus = "Sizing replicas";
+        } else if (stack.depth === 2) {
+            stack.push(step3Comp);
+            deployStatus = "Ready to commit";
+        } else {
+            deployStatus = "Deployed!";
+        }
+    }
+
+    function popStep() {
+        if (stack.depth > 1) {
+            stack.pop();
+            deployStatus = (stack.depth === 1) ? "Configuring" : "Sizing replicas";
+        }
+    }
+
+    function resetStack() {
+        while (stack.depth > 1) {
+            stack.pop();
+        }
+        deployStatus = "Configuring";
+    }
+
+    Component.onCompleted: {
+        stack.push(step1Comp);
+    }
+
+    Component {
+        id: step1Comp
+
+        Panel {
+            title: "Step 1: Environment"
+            titleColor: "#2cde85"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#2cde85"
             }
-            Row {
-                spacing: 2
-                Button {
-                    text: "Push"
-                    focus: true
-                    onClicked: stack.push(stackPage, {
-                        level: stack.depth + 1
-                    })
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "Target Cluster: prod-eu-west-1"
+                    color: "#f0f6fc"
+                    bold: true
                 }
-                Button {
-                    text: "Pop"
-                    onClicked: stack.pop()
+
+                Text {
+                    text: "Namespace:      payments-core"
+                    color: "#58a6ff"
                 }
-            }
-            Rectangle {
-                width: 50
-                height: 5
-                border.style: Border.Single
-                border.color: "#30363d"
-                StackView {
-                    id: stack
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    Component.onCompleted: push(stackPage, {
-                        level: 1
-                    })
+
+                Text {
+                    text: "Press Push / Next to configure replicas."
+                    color: "#8b949e"
                 }
             }
         }
-        Component {
-            id: stackPage
+    }
+
+    Component {
+        id: step2Comp
+
+        Panel {
+            title: "Step 2: Replicas"
+            titleColor: "#fbbf24"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#fbbf24"
+            }
+
             Column {
-                property int level: 0
+                x: 2
+                y: 2
+                spacing: 1
+
                 Text {
-                    text: "Page " + level
+                    text: "Desired Pods:   6 replicas (HPA)"
+                    color: "#f0f6fc"
                     bold: true
-                    color: "#e879f9"
                 }
+
                 Text {
-                    text: level === 1 ? "The first page; Pop does nothing here." : "Pushed with { level: " + level + " }"
-                    color: "#c9d1d9"
+                    text: "Strategy:       RollingUpdate (25%)"
+                    color: "#fbbf24"
+                }
+
+                Text {
+                    text: "Press Push for final confirmation."
+                    color: "#8b949e"
+                }
+            }
+        }
+    }
+
+    Component {
+        id: step3Comp
+
+        Panel {
+            title: "Step 3: Confirm"
+            titleColor: "#e879f9"
+            color: "#161b22"
+            border {
+                style: Border.Double
+                color: "#e879f9"
+            }
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "Ready to deploy 6 pods to prod"
+                    color: "#f0f6fc"
+                    bold: true
+                }
+
+                Text {
+                    text: "Image:          registry.io/pay:v2.4.0"
+                    color: "#2cde85"
+                }
+
+                Text {
+                    text: "Pop to revise or Reset to restart."
+                    color: "#8b949e"
+                }
+            }
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        spacing: 1
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_N) {
+                root.pushStep();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_P) {
+                root.popStep();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                root.resetStack();
+                event.accepted = true;
+            }
+        }
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "StackView Wizard"
+            titleColor: "#e879f9"
+            titleBadge: "[Controls]"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: "Depth " + stack.depth + "/3"
+            titleTrailingColor: "#2cde85"
+            footer: "N push · P pop · R reset"
+            footerColor: "#8b949e"
+            footerTrailing: "StackView"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
+            StackView {
+                id: stack
+
+                x: 2
+                y: 2
+                width: Math.max(24, parent.width - 4)
+                height: 9
+            }
+
+            Row {
+                x: 2
+                y: 12
+                spacing: 1
+
+                Button {
+                    id: pushBtn
+
+                    focus: true
+                    text: "Push"
+                    textColor: "#2cde85"
+                    onClicked: root.pushStep()
+                }
+
+                Button {
+                    id: popBtn
+
+                    text: "Pop"
+                    textColor: "#fbbf24"
+                    onClicked: root.popStep()
+                }
+
+                Button {
+                    id: resetBtn
+
+                    text: "Reset"
+                    textColor: "#f87171"
+                    onClicked: root.resetStack()
+                }
+            }
+        }
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                x: 2
+                y: 2
+                spacing: 1
+
+                Text {
+                    text: "stack.depth: " + stack.depth
+                    color: "#2cde85"
+                    bold: true
+                }
+
+                Text {
+                    text: "Active Step:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.activeStepTitle
+                    color: "#58a6ff"
+                    bold: true
+                }
+
+                Text {
+                    text: "Status:"
+                    color: "#8b949e"
+                }
+
+                Text {
+                    text: "  " + root.deployStatus
+                    color: "#f0f6fc"
                 }
             }
         }

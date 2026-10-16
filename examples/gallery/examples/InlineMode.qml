@@ -1,101 +1,99 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Inline mode: Inline + Scrollback. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
-    id: root
-    mode: Terminal.Inline
-
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
-    }
+Item {
+    id: inlineDemo
+    property int printed: 0
+    property string lastCommand: "ready"
+    implicitHeight: 6
 
     Scrollback {
-        id: history
+        id: scrollback
     }
 
-    Column {
-        id: inlineDemo
-        property int printed: 0
-        property real load: 0
-        visible: true
+    Panel {
         width: parent.width
-
-        NumberAnimation {
-            target: inlineDemo
-            property: "load"
-            from: 0
-            to: 100
-            duration: 4000
-            loops: -1
-            running: true
+        height: 6
+        title: "Inline mode · Agent CLI"
+        titleColor: "#f8fafc"
+        titleBadge: "[INLINE]"
+        titleBadgeColor: "#2cde85"
+        titleTrailing: "printed: " + inlineDemo.printed
+        titleTrailingColor: "#38bdf8"
+        footer: "Enter: commit to Scrollback · Esc: exit"
+        footerColor: "#8b949e"
+        footerTrailing: "last: " + inlineDemo.lastCommand
+        footerTrailingColor: "#2cde85"
+        color: "default"
+        border {
+            style: Border.Rounded
+            color: "#30363d"
         }
 
-        Text {
-            spans: [
-                {
-                    text: " Inline mode ",
-                    color: "#0d1117",
-                    backgroundColor: "#38bdf8",
+        Column {
+            anchors {
+                fill: parent
+                margins: 1
+            }
+            spacing: 0
+
+            Row {
+                spacing: 2
+
+                Text {
+                    text: "Inline mode · printed: " + inlineDemo.printed
                     bold: true
-                },
-                {
-                    text: "  the UI sits at the bottom of the normal buffer; printed lines scroll above it",
-                    color: "#8b949e"
+                    color: "#2cde85"
                 }
-            ]
-        }
-        Row {
-            spacing: 1
-            Text {
-                width: 8
-                text: "load"
-                color: "#c9d1d9"
+
+                ProgressBar {
+                    width: 16
+                    from: 0
+                    to: 4
+                    value: Math.min(4, inlineDemo.printed)
+                    style: "segmented"
+                    showBrackets: true
+                    color: "#38bdf8"
+                }
             }
-            ProgressBar {
-                width: 30
-                from: 0
-                to: 100
-                value: inlineDemo.load
-                style: "segmented"
-                color: "#38bdf8"
-                showPercentage: true
-            }
-            Text {
-                text: "  live value, animated while inline"
-                color: "#8b949e"
-            }
-        }
-        Row {
-            Text {
-                text: "❯ "
-                color: "#38bdf8"
-                bold: true
-            }
-            TextInput {
-                id: prompt
-                width: root.width - 2
-                height: 1
-                focus: true
-                placeholderText: "type a line and press Enter to print it into the scrollback"
-                color: "#c9d1d9"
-                onAccepted: {
-                    if (text.length === 0)
-                        return;
-                    if (history.print("❯ " + text)) {
-                        inlineDemo.printed++;
-                        text = "";
+
+            Row {
+                width: parent.width
+                spacing: 1
+
+                Text {
+                    text: "❯"
+                    bold: true
+                    color: "#38bdf8"
+                }
+
+                TextInput {
+                    id: promptInput
+                    width: Math.max(20, parent.width - 3)
+                    height: 1
+                    focus: true
+                    text: ""
+                    placeholderText: "Type a command and press Enter..."
+                    placeholderColor: "#8b949e"
+                    color: "#f8fafc"
+
+                    onAccepted: {
+                        const line = promptInput.text.length > 0 ? promptInput.text : "status --check";
+                        scrollback.print("❯ " + line + "\n  ✓ committed #" + (inlineDemo.printed + 1));
+                        inlineDemo.lastCommand = line;
+                        inlineDemo.printed += 1;
+                        promptInput.clear();
                     }
                 }
             }
-        }
-        Text {
-            text: "printed: " + inlineDemo.printed + "   Esc returns to the gallery (quits when run alone)"
-            color: "#8b949e"
+
+            Text {
+                width: parent.width
+                text: "Scrollback queue: 1 MiB · Committed rows persist in native history"
+                color: "#8b949e"
+            }
         }
     }
 }

@@ -99,16 +99,18 @@ Item {
             ci.parent = control;
             const cw = ci.implicitWidth;
             const ch = ci.implicitHeight;
-            if (control.availableWidth > 0) {
+            const availW = Math.max(0, control.width - control.leftPadding - control.rightPadding);
+            const availH = Math.max(0, control.height - control.topPadding - control.bottomPadding);
+            if (availW > 0) {
                 ci.x = control.leftPadding;
-                ci.width = control.availableWidth;
+                ci.width = availW;
             } else {
                 ci.width = Math.min(cw, control.width);
                 ci.x = Math.max(0, Math.floor((control.width - ci.width) / 2));
             }
-            if (control.availableHeight > 0) {
+            if (availH > 0) {
                 ci.y = control.topPadding;
-                ci.height = control.availableHeight;
+                ci.height = availH;
             } else {
                 ci.height = Math.min(ch, control.height);
                 ci.y = Math.max(0, Math.floor((control.height - ci.height) / 2));

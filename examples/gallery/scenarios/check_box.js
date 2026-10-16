@@ -1,17 +1,31 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("logging=true  verbose=false  colors=true");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("logging=true  verbose=true  colors=true");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("logging=true  verbose=true  colors=false");
-    terminal.sleep(900);
-    terminal.captureText("check_box.txt");
-    terminal.stopRecording();
+    terminal.waitForText("Service Security & Logging Policy");
+    terminal.expectText("2 / 4 enabled");
+    terminal.expectText("--tls --audit");
+
+    // Toggle focused TLS 1.3 checkbox off with Space
+    terminal.press("SPACE");
+    terminal.waitForText("1 / 4 enabled");
+    terminal.expectText("TLS 1.3 (off)");
+
+    // Click Verbose Trace and Strict CORS checkboxes
+    terminal.clickText("Verbose Trace");
+    terminal.waitForText("2 / 4 enabled");
+    terminal.expectText("--audit --trace");
+
+    terminal.clickText("Strict CORS");
+    terminal.waitForText("3 / 4 enabled");
+    terminal.expectText("--audit --trace --cors");
+
+    // Click All button in Inspector
+    terminal.clickText("All");
+    terminal.waitForText("4 / 4 enabled");
+    terminal.expectText("HARDENED");
+    terminal.expectText("--tls --audit --trace --cors");
+
+    // Click None button in Inspector
+    terminal.clickText("None");
+    terminal.waitForText("0 / 4 enabled");
+    terminal.expectText("UNPROTECTED");
 }

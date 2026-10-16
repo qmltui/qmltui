@@ -365,14 +365,14 @@ void TestCanvas::testHalfBlockDemoRendering() {
     QObject* obj = component.create();
     QVERIFY2(obj != nullptr, qPrintable(component.errorString()));
 
-    Terminal* term = qobject_cast<Terminal*>(obj);
-    QVERIFY(term != nullptr);
-    term->setWidth(80);
-    term->setHeight(30);
+    Item* item = qobject_cast<Item*>(obj);
+    QVERIFY(item != nullptr);
+    item->setWidth(80);
+    item->setHeight(30);
 
     TextGridBuffer buffer;
     buffer.resize(80, 30);
-    paintItem(term, buffer, 0, 0);
+    paintItem(item, buffer, 0, 0);
 
     // Count non-space cells or Upper Half Block characters rendered in the buffer
     int canvasCharCount = 0;

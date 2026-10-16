@@ -84,17 +84,16 @@ The link between the two panes needs nothing from the page beyond xterm.js:
   and xterm.js raises `onTitleChange`. `qmltui-playground.js` looks for
   `· <name>` at the end of the title; the convention is generic, any app can
   use it.
-- Page to app: before every run the page calls
-  `qmltuiSetContextProperty("qmltuiExampleSources", json)` with all example texts
-  and `qmltuiSetContextProperty("qmltuiGalleryPage", file)` (`""` for the grid);
-  the launcher reads both on startup. Natively `main.cpp` sets the first the
-  same way from the resource.
-- The launcher's `embeddable()` turns a standalone file into an embeddable
-  document: a string- and comment-aware brace scan swaps the root `Terminal {`
-  for `Item {` filling its parent and drops root-level `title`, `color`,
-  `mode`, `mouseReporting`, `clipboardMode` and `Keys.*` statements (multi-line
-  ones included). `mode: Terminal.Inline` is reported so the launcher can
-  switch its own mode for that example.
+- Page to app: on startup (and after edits), the page writes the example files
+  into Emscripten's in-memory `/playground/examples/<file>` directory via
+  `qmltuiWriteFile("examples/" + file, code)`, sets
+  `qmltuiSetContextProperty("qmltuiAvailableExamples", jsonArray)` and
+  `qmltuiSetContextProperty("qmltuiGalleryPage", file)` (`""` for the grid),
+  and loads `gallery.qml`.
+- Inside `Main.qml`, a declarative `Loader` (`source: "examples/" + current.file`)
+  resolves relative URLs against `Main.qml`'s base URL (`qrc:/qt/qml/Gallery/examples/<file>`
+  on desktop, `file:///playground/examples/<file>` in WebAssembly) and switches
+  `Terminal.mode` to `Terminal.Inline` when `InlineMode.qml` is active.
 - `Image.source` with an `http(s)` URL works in the browser too: Qt Network
   goes through the browser's `fetch`, so the picture's server must allow the
   page's origin (CORS). The gallery's own picture and sprite sheet stay

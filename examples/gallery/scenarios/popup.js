@@ -1,15 +1,26 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Opened 0 times");
-    terminal.sleep(800);
+    terminal.expectText("Popup Overlay Stage");
+    terminal.expectText("Open Command Popup");
+    terminal.expectText("Last Command: None");
+    terminal.sleep(300);
+
     terminal.press("Enter");
-    terminal.expectText("Export options");
-    terminal.expectText("Opened 1 time");
-    terminal.sleep(900);
-    terminal.clickText("Compress output");
-    terminal.sleep(700);
-    terminal.clickText("Export");
-    terminal.sleep(900);
-    terminal.captureText("popup.txt");
-    terminal.stopRecording();
+    terminal.expectText("Command Palette");
+    terminal.expectText("Select a quick action:");
+    terminal.sleep(400);
+
+    terminal.press("Enter");
+    terminal.expectText("Last Command: Sync Nodes");
+    terminal.expectText("Opened: 1");
+    terminal.expectText("Closed: 1");
+    terminal.sleep(300);
+
+    terminal.press("Enter");
+    terminal.expectText("Command Palette");
+    terminal.sleep(300);
+
+    terminal.press("Escape");
+    terminal.expectText("Closed: 2");
+    terminal.sleep(300);
 }

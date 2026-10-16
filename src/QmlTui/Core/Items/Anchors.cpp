@@ -301,8 +301,8 @@ void Anchors::resolve() {
 
         m_owner->setX(targetX + lm);
         m_owner->setY(targetY + tm);
-        m_owner->setWidth(targetW - lm - rm);
-        m_owner->setHeight(targetH - tm - bm);
+        m_owner->setWidth((std::max)(0, targetW - lm - rm));
+        m_owner->setHeight((std::max)(0, targetH - tm - bm));
         return;
     }
 

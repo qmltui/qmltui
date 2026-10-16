@@ -1,54 +1,142 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
+import QmlTui.Controls
 
-// ScrollView: Scroll any tall content. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    readonly property var blueprintRows: ["00 │ [EDGE]    TLS 1.3 Termination & WAF", "01 │ [INGRESS] Envoy L7 Load Balancer", "02 │ [AUTH]    OIDC Token Validator", "03 │ [LIMIT]   Token-Bucket Rate Limiter", "04 │ [ROUTER]  gRPC Mesh Gateway v2.4", "05 │ [SVC-A]   Order Intake Service", "06 │ [SVC-B]   Payment Ledger Engine", "07 │ [SVC-C]   Fraud Scoring Worker", "08 │ [SVC-D]   Inventory Reservation", "09 │ [CACHE-1] Redis Cluster Shard 01", "10 │ [CACHE-2] Redis Cluster Shard 02", "11 │ [QUEUE-1] Kafka Queue: orders.raw", "12 │ [QUEUE-2] Kafka Queue: payments.tx", "13 │ [STREAM]  Flink Window Aggregator", "14 │ [MESH]    mTLS Sidecar Proxy Pool", "15 │ [TRACE]   OpenTelemetry Collector", "16 │ [METRIC]  Prometheus Scraper Node", "17 │ [ALERT]   PagerDuty Rule Evaluator", "18 │ [DB-PRI]  PostgreSQL 17 Primary", "19 │ [DB-REP]  PostgreSQL Read Replica", "20 │ [POOL]    PgBouncer Connection Pool", "21 │ [SEARCH]  OpenSearch Index Cluster", "22 │ [BLOB]    S3 Object Archive Bucket", "23 │ [CDN]     Anycast Edge PoP Cache", "24 │ [KMS]     HSM Envelope Key Vault", "25 │ [AUDIT]   Immutable WORM Audit Log", "26 │ [BACKUP]  Hourly Snapshot Scheduler", "27 │ [DISK]    NVMe WAL Journal Sync"]
+
+    function jumpTo(targetY) {
+        blueprintScroll.contentY = targetY;
+        blueprintScroll.focus = true;
     }
 
-    Column {
-        x: 2
-        y: 1
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "Up/Down, PageUp/PageDown or the wheel scroll; the bar on the right shows the position."
-            color: "#8b949e"
-        }
-        Rectangle {
-            width: 50
-            height: 9
-            border.style: Border.Single
-            border.color: "#67e8f9"
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "ScrollView Blueprint"
+            titleColor: "#67e8f9"
+            titleBadge: "[Core]"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: "Y=" + blueprintScroll.contentY + "/" + blueprintScroll.contentHeight
+            titleTrailingColor: "#2cde85"
+            footer: "↑↓/PgUp/PgDn scroll · Home/End"
+            footerColor: "#8b949e"
+            footerTrailing: "ScrollView"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
+            }
+
             ScrollView {
-                id: scroller
-                anchors.fill: parent
-                anchors.margins: 1
+                id: blueprintScroll
+
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
                 focus: true
-                contentHeight: contentCol.implicitHeight
+                contentHeight: 28
+                scrollBarVisible: true
+
                 Column {
-                    id: contentCol
-                    height: implicitHeight
+                    x: 1
+                    y: 0
+                    spacing: 0
+
                     Repeater {
-                        model: 40
+                        model: root.blueprintRows
                         delegate: Text {
                             required property int index
-                            text: "line " + (index + 1) + (index % 10 === 9 ? "  ── section " + Math.floor(index / 10 + 1) : "")
-                            color: index % 10 === 9 ? "#67e8f9" : "#c9d1d9"
+                            required property string modelData
+
+                            text: modelData
+                            color: index % 2 === 0 ? "#f0f6fc" : "#58a6ff"
+                            bold: index === 0 || index === 27
                         }
                     }
                 }
             }
         }
-        Text {
-            text: "contentY " + scroller.contentY + " of " + scroller.contentHeight
-            color: "#67e8f9"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    margins: 2
+                }
+                spacing: 1
+
+                Text {
+                    text: "contentY: " + blueprintScroll.contentY
+                    color: "#2cde85"
+                    bold: true
+                }
+
+                Text {
+                    text: "contentHeight: " + blueprintScroll.contentHeight
+                    color: "#58a6ff"
+                    bold: true
+                }
+
+                Text {
+                    text: "viewportH: " + blueprintScroll.height
+                    color: "#c9d1d9"
+                }
+
+                Text {
+                    text: "Jump Presets:"
+                    color: "#8b949e"
+                }
+
+                Row {
+                    width: implicitWidth
+                    height: implicitHeight
+                    spacing: 1
+
+                    Button {
+                        id: topBtn
+
+                        text: "Top"
+                        textColor: "#2cde85"
+                        onClicked: root.jumpTo(0)
+                    }
+
+                    Button {
+                        id: midBtn
+
+                        text: "Mid"
+                        textColor: "#58a6ff"
+                        onClicked: root.jumpTo(8)
+                    }
+
+                    Button {
+                        id: endBtn
+
+                        text: "End"
+                        textColor: "#fbbf24"
+                        onClicked: root.jumpTo(28)
+                    }
+                }
+            }
         }
     }
 }

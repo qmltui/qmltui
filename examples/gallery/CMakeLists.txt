@@ -1,10 +1,10 @@
 # QmlTui Gallery: one self-contained Main.qml, so the wasm playground can load it
 # as a preset and the browser demo page can run it as an app.
 set(gallery_qml_files Main.qml)
-# The demos: complete standalone apps the launcher instantiates from their
-# text (see Main.qml) or runs directly via `qmltui_gallery --example <Name>`.
-# Plain resources, not QML module files, so their names (Button.qml, ...) never
-# shadow the QmlTui.Controls types they demonstrate.
+# The component demos: Item-rooted QML files loaded by Main.qml's Loader or run
+# standalone via `qmltui_gallery --example <Name>`. Mounted as plain resources
+# under /qt/qml/Gallery/examples (not QML_FILES) so their names (Button.qml, ...)
+# never register as QML types that would shadow QmlTui.Controls.
 file(GLOB gallery_example_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.qml")
 # Behavior needs QMLTUI_ENABLE_PRIVATE_QT; without it the tile is left out and the
 # catalog hides the entry (Main.qml filters on the files it was given).
@@ -32,7 +32,7 @@ function(gallery_add_executable target uri main_source)
         DEPENDENCIES ${gallery_dependencies}
     )
     qt_add_resources(${target} "${target}_examples"
-        PREFIX "/gallery/examples"
+        PREFIX "/qt/qml/Gallery/examples"
         BASE "${CMAKE_CURRENT_SOURCE_DIR}/examples"
         FILES ${gallery_example_files}
     )

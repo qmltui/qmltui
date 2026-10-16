@@ -1,113 +1,343 @@
 pragma ComponentBehavior: Bound
+import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// Button: Enter, Space or click; background and contentItem restyle it. One tile of the QmlTui gallery (examples/gallery)
-// and a complete app on its own: run it, or paste it into the playground.
-Terminal {
+Item {
     id: root
-    color: "#0d1117"
 
-    // Q or Escape quits.
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape)
-            Qt.quit();
+    property int clicks: 0
+    property string lastAction: "None"
+    property bool buttonsEnabled: true
+    property bool forceCheckable: false
+    readonly property bool anyDown: primaryBtn.down || secondaryBtn.down || filledBtn.down || pinBtn.down || holdBtn.down || saveBtn.down || dangerBtn.down
+    readonly property string focusedButtonName: {
+        if (primaryBtn.activeFocus)
+            return "Primary";
+        if (secondaryBtn.activeFocus)
+            return "Secondary";
+        if (filledBtn.activeFocus)
+            return "Filled";
+        if (pinBtn.activeFocus)
+            return "Pin";
+        if (holdBtn.activeFocus)
+            return "Hold me";
+        if (saveBtn.activeFocus)
+            return "Save";
+        if (dangerBtn.activeFocus)
+            return "Reset";
+        if (enabledToggle.activeFocus)
+            return "enabled";
+        if (checkableToggle.activeFocus)
+            return "checkable";
+        if (pinToggle.activeFocus)
+            return "pin.checked";
+        return "None";
+    }
+    readonly property string hoveredButtonName: {
+        if (primaryBtn.hovered)
+            return "Primary";
+        if (secondaryBtn.hovered)
+            return "Secondary";
+        if (filledBtn.hovered)
+            return "Filled";
+        if (pinBtn.hovered)
+            return "Pin";
+        if (holdBtn.hovered)
+            return "Hold me";
+        if (saveBtn.hovered)
+            return "Save";
+        if (dangerBtn.hovered)
+            return "Reset";
+        return "None";
     }
 
-    Column {
-        id: buttonDemo
-        x: 2
-        y: 1
-        property int clicks: 0
+    RowLayout {
+        anchors.fill: parent
         spacing: 1
-        Text {
-            text: "Tab moves focus; Enter, Space or a click activates; the pointer highlights."
-            color: "#8b949e"
-        }
-        Row {
-            id: buttons
-            spacing: 2
-            // hoverEnabled is opt-in: it turns on any-motion mouse reporting
-            // for the whole app. The label goes bold under the pointer, flips
-            // to reverse video while the mouse button is held, and the double
-            // border marks keyboard focus, which a click also moves here.
-            Button {
-                text: "Primary"
-                focus: true
-                hoverEnabled: true
-                onClicked: buttonDemo.clicks++
+
+        Panel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            title: "Button"
+            titleColor: "#2cde85"
+            titleBadge: "Controls"
+            titleBadgeColor: "#58a6ff"
+            titleTrailing: root.buttonsEnabled ? "ACTIVE" : "DISABLED"
+            titleTrailingColor: root.buttonsEnabled ? "#2cde85" : "#f87171"
+            footer: "Enter/Space activate"
+            footerColor: "#8b949e"
+            footerTrailing: "Tab next"
+            footerTrailingColor: "#8b949e"
+            color: "#0d1117"
+            border {
+                style: Border.Rounded
+                color: "#30363d"
             }
-            Button {
-                text: "Secondary"
-                hoverEnabled: true
-                onClicked: buttonDemo.clicks++
-            }
-            Button {
-                background: Rectangle {
-                    color: "#2cde85"
-                    border.color: "default"
-                    border.style: Border.None
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
                 }
-                text: "Filled"
-                textColor: "#0d1117"
-                hoverEnabled: true
-                onClicked: buttonDemo.clicks++
-            }
-            Button {
-                text: "Reset"
-                textColor: "#f87171"
-                hoverEnabled: true
-                onClicked: buttonDemo.clicks = 0
-            }
-        }
-        Row {
-            spacing: 2
-            // checkable: activation toggles `checked` before clicked().
-            Button {
-                id: pin
-                text: pin.checked ? "Pinned" : "Pin"
-                checkable: true
-                hoverEnabled: true
-                highlighted: pin.checked
-            }
-            // A background that reacts to the press: `down` follows the mouse.
-            Button {
-                id: reactive
-                text: "Hold me"
-                hoverEnabled: true
-                background: Rectangle {
-                    color: reactive.down ? "#2cde85" : "#161b22"
-                    border.color: reactive.activeFocus ? "#2cde85" : "#30363d"
-                    border.style: reactive.down ? Border.Double : Border.Single
+                spacing: 1
+
+                Text {
+                    text: root.clicks === 0 ? "No clicks yet" : (root.clicks === 1 ? "Clicked 1 time" : "Clicked " + root.clicks + " times")
+                    color: root.clicks > 0 ? "#2cde85" : "#8b949e"
+                    bold: true
                 }
-            }
-            // A contentItem of your own: an icon glyph before the label.
-            Button {
-                id: withIcon
-                text: "Save"
-                hoverEnabled: true
-                contentItem: Row {
+
+                Text {
+                    text: "Last action: " + root.lastAction + "  |  Pin: " + (pinBtn.checked ? "ON" : "OFF")
+                    color: "#c9d1d9"
+                }
+
+                Row {
                     spacing: 1
-                    Text {
-                        text: "💾"
+
+                    Button {
+                        id: primaryBtn
+
+                        focus: true
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        checkable: root.forceCheckable
+                        text: "Primary"
+                        textColor: "#2cde85"
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = "Primary";
+                        }
                     }
-                    Text {
-                        text: withIcon.text
-                        color: "#7ee0ff"
-                        bold: withIcon.activeFocus || withIcon.hovered
+
+                    Button {
+                        id: secondaryBtn
+
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        checkable: root.forceCheckable
+                        text: "Secondary"
+                        textColor: "#c9d1d9"
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = "Secondary";
+                        }
+                    }
+
+                    Button {
+                        id: filledBtn
+
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        checkable: root.forceCheckable
+                        text: "Filled"
+                        textColor: "#0d1117"
+                        background: Rectangle {
+                            color: "#2cde85"
+                            border {
+                                style: Border.None
+                            }
+                        }
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = "Filled";
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 1
+
+                    Button {
+                        id: pinBtn
+
+                        checkable: true
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        text: checked ? "★ Pinned" : "☆ Pin"
+                        textColor: checked ? "#f9c74f" : "#c9d1d9"
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = checked ? "Pinned" : "Unpinned";
+                        }
+                    }
+
+                    Button {
+                        id: holdBtn
+
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        text: down ? "Holding!" : "Hold me"
+                        textColor: down ? "#7ee0ff" : "#58a6ff"
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = "Hold me";
+                        }
+                    }
+
+                    Button {
+                        id: saveBtn
+
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        checkable: root.forceCheckable
+                        text: "✓ Save"
+                        textColor: "#38bdf8"
+
+                        onClicked: {
+                            root.clicks += 1;
+                            root.lastAction = "Save";
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 2
+
+                    Button {
+                        id: dangerBtn
+
+                        hoverEnabled: true
+                        enabled: root.buttonsEnabled
+                        text: "Reset"
+                        textColor: "#f87171"
+
+                        onClicked: {
+                            root.clicks = 0;
+                            pinBtn.checked = false;
+                            root.lastAction = "Reset";
+                        }
+                    }
+
+                    Column {
+                        spacing: 0
+
+                        Text {
+                            text: "Down state: " + (root.anyDown ? "PRESSED" : "IDLE")
+                            color: root.anyDown ? "#7ee0ff" : "#8b949e"
+                        }
+
+                        Text {
+                            text: "Mode: " + (root.forceCheckable ? "Checkable" : "Push")
+                            color: "#8b949e"
+                        }
                     }
                 }
             }
         }
-        Text {
-            text: buttonDemo.clicks === 0 ? "No clicks yet" : "Clicked " + buttonDemo.clicks + " time" + (buttonDemo.clicks === 1 ? "" : "s")
-            color: "#2cde85"
-            bold: true
-        }
-        Text {
-            readonly property Item under: buttons.children.find(b => b.hovered) ?? null
-            text: under ? "Hovering " + under.text : "Hover a button to highlight it"
-            color: "#8b949e"
+
+        Panel {
+            Layout.preferredWidth: 28
+            Layout.fillHeight: true
+            title: "Inspector"
+            titleColor: "#58a6ff"
+            color: "#161b22"
+            border {
+                style: Border.Single
+                color: "#30363d"
+            }
+
+            Column {
+                anchors {
+                    fill: parent
+                    leftMargin: 2
+                    rightMargin: 2
+                    topMargin: 1
+                    bottomMargin: 1
+                }
+                spacing: 1
+
+                Column {
+                    spacing: 0
+
+                    Text {
+                        text: "PROPERTIES"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    CheckBox {
+                        id: enabledToggle
+
+                        checked: root.buttonsEnabled
+                        text: "enabled"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.buttonsEnabled = checked;
+                        }
+                    }
+
+                    CheckBox {
+                        id: checkableToggle
+
+                        checked: root.forceCheckable
+                        text: "checkable"
+                        textColor: "#c9d1d9"
+
+                        onToggled: checked => {
+                            root.forceCheckable = checked;
+                        }
+                    }
+
+                    CheckBox {
+                        id: pinToggle
+
+                        checked: pinBtn.checked
+                        text: "pin.checked"
+                        textColor: "#f9c74f"
+
+                        onToggled: checked => {
+                            pinBtn.checked = checked;
+                            root.lastAction = checked ? "Pinned" : "Unpinned";
+                        }
+                    }
+                }
+
+                Column {
+                    spacing: 0
+
+                    Text {
+                        text: "TELEMETRY"
+                        color: "#58a6ff"
+                        bold: true
+                    }
+
+                    Text {
+                        text: "clicks: " + root.clicks
+                        color: "#2cde85"
+                    }
+
+                    Text {
+                        text: "pin.checked: " + (pinBtn.checked ? "true" : "false")
+                        color: pinBtn.checked ? "#f9c74f" : "#8b949e"
+                    }
+
+                    Text {
+                        text: "focus: " + root.focusedButtonName
+                        color: "#c9d1d9"
+                    }
+
+                    Text {
+                        text: "hover: " + root.hoveredButtonName
+                        color: "#7ee0ff"
+                    }
+
+                    Text {
+                        text: "last: " + root.lastAction
+                        color: "#c9d1d9"
+                    }
+                }
+            }
         }
     }
 }

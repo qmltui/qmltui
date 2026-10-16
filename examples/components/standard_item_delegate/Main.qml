@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
-import QmlTui.Controls
 
 // One QStandardItemModel, styled the Qt Widgets way, shown by three views:
 // a ListView with StandardItemDelegate, and TableView and TreeView with
@@ -9,12 +8,14 @@ import QmlTui.Controls
 Terminal {
     id: root
 
-    ReleaseChecklistModel { id: checklist }
+    ReleaseChecklistModel {
+        id: checklist
+    }
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
         }
     }
 
@@ -23,21 +24,33 @@ Terminal {
         height: 24
 
         Text {
-            x: 1; y: 0; width: 78
+            x: 1
+            y: 0
+            width: 78
             text: "STANDARD ITEM ROLES — ONE QStandardItemModel, THREE VIEWS"
             color: "cyan"
             bold: true
         }
         Text {
-            x: 1; y: 1; width: 78
+            x: 1
+            y: 1
+            width: 78
             text: "Up/Down select, Space toggles the check box in the model, q quits."
         }
 
         Rectangle {
-            x: 1; y: 3; width: 36; height: 9
+            x: 1
+            y: 3
+            width: 36
+            height: 9
             border.style: Border.Single
             border.color: "cyan"
-            Text { x: 1; y: 0; text: " ListView + StandardItemDelegate "; color: "cyan" }
+            Text {
+                x: 1
+                y: 0
+                text: " ListView + StandardItemDelegate "
+                color: "cyan"
+            }
             ListView {
                 id: list
                 objectName: "list"
@@ -53,10 +66,18 @@ Terminal {
         }
 
         Rectangle {
-            x: 37; y: 3; width: 42; height: 9
+            x: 37
+            y: 3
+            width: 42
+            height: 9
             border.style: Border.Single
             border.color: "cyan"
-            Text { x: 1; y: 0; text: " TableView, built-in painter "; color: "cyan" }
+            Text {
+                x: 1
+                y: 0
+                text: " TableView, built-in painter "
+                color: "cyan"
+            }
             TableView {
                 objectName: "table"
                 anchors.fill: parent
@@ -70,10 +91,18 @@ Terminal {
         }
 
         Rectangle {
-            x: 1; y: 13; width: 78; height: 8
+            x: 1
+            y: 13
+            width: 78
+            height: 8
             border.style: Border.Single
             border.color: "cyan"
-            Text { x: 1; y: 0; text: " TreeView, built-in painter "; color: "cyan" }
+            Text {
+                x: 1
+                y: 0
+                text: " TreeView, built-in painter "
+                color: "cyan"
+            }
             TreeView {
                 objectName: "tree"
                 anchors.fill: parent
@@ -84,7 +113,9 @@ Terminal {
         }
 
         Text {
-            x: 1; y: 22; width: 78
+            x: 1
+            y: 22
+            width: 78
             objectName: "status"
             text: checklist.doneCount + " of " + checklist.rowCount() + " tasks done"
             color: "yellow"

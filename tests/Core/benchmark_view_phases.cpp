@@ -31,20 +31,23 @@ namespace {
 class CountModel final : public QAbstractListModel {
 public:
     explicit CountModel(int count) : m_count(count) {}
-    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : m_count; }
-    QVariant data(const QModelIndex &index, int role) const override
-    {
+    int rowCount(const QModelIndex& parent = {}) const override {
+        return parent.isValid() ? 0 : m_count;
+    }
+    QVariant data(const QModelIndex& index, int role) const override {
         if (!index.isValid()) return {};
         ++reads;
-        return role == Qt::DisplayRole ? QVariant(QStringLiteral("Row %1").arg(index.row() + m_generation)) : QVariant();
+        return role == Qt::DisplayRole
+                   ? QVariant(QStringLiteral("Row %1").arg(index.row() + m_generation))
+                   : QVariant();
     }
     QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
-    void touch(int row)
-    {
+    void touch(int row) {
         ++m_generation;
         emit dataChanged(index(row), index(row), {Qt::DisplayRole});
     }
     mutable qint64 reads = 0;
+
 private:
     int m_count;
     int m_generation = 0;
@@ -52,28 +55,33 @@ private:
 
 const QHash<QString, QString> delegates = {
     {"text", "Text { required property string display; text: display }"},
-    {"rect", "Rectangle { id: d; required property string display; height: 1; width: 80; Text { text: d.display } }"},
-    {"standard", "StandardItemDelegate {}"},
+    {"rect", "Rectangle { id: d; required property string display; height: 1; width: 80; Text { "
+             "text: d.display } }"},
+    {"standard",
+     "Item { id: d; required property var model; height: 1; width: 80; Rectangle { anchors.fill: "
+     "parent } Text { anchors.fill: parent; text: d.model ? String(d.model.display) : \"\" } }"},
 };
 
-QString viewQml(const QString &view, const QString &delegateName, bool bound)
-{
+QString viewQml(const QString& view, const QString& delegateName, bool bound) {
     const QString delegate = delegates.value(delegateName);
     QString body;
     if (view == "ListView")
-        body = QStringLiteral("ListView { width: 80; height: 24; model: benchmarkModel; delegate: %1 }");
+        body = QStringLiteral(
+            "ListView { width: 80; height: 24; model: benchmarkModel; delegate: %1 }");
     else if (view == "GridView")
-        body = QStringLiteral("GridView { width: 80; height: 24; cellWidth: 20; cellHeight: 1; model: benchmarkModel; delegate: %1 }");
+        body = QStringLiteral("GridView { width: 80; height: 24; cellWidth: 20; cellHeight: 1; "
+                              "model: benchmarkModel; delegate: %1 }");
     else if (view == "TableView")
-        body = QStringLiteral("TableView { width: 80; height: 24; model: benchmarkModel; columns: [{title: \"Row\", width: 80}]; delegate: %1 }");
+        body = QStringLiteral("TableView { width: 80; height: 24; model: benchmarkModel; columns: "
+                              "[{title: \"Row\", width: 80}]; delegate: %1 }");
     else
-        body = QStringLiteral("TreeView { width: 80; height: 24; model: benchmarkModel; delegate: %1 }");
-    return (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString())
-        + QStringLiteral("import QmlTui\nimport QmlTui.Controls\n") + body.arg(delegate);
+        body = QStringLiteral(
+            "TreeView { width: 80; height: 24; model: benchmarkModel; delegate: %1 }");
+    return (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString()) +
+           QStringLiteral("import QmlTui\nimport QmlTui.Controls\n") + body.arg(delegate);
 }
 
-qint64 residentBytes()
-{
+qint64 residentBytes() {
     QFile statm(QStringLiteral("/proc/self/statm"));
     if (!statm.open(QIODevice::ReadOnly)) return -1;
     const QList<QByteArray> fields = statm.readAll().split(' ');
@@ -84,19 +92,19 @@ struct Phase {
     QString view, delegate;
     bool bound = false;
     int delegatesCreated = 0;
-    double createUs = 0;       // total, component create + first frame
+    double createUs = 0; // total, component create + first frame
     double perDelegateUs = 0;
-    double scrollUs = 0;       // per step, layout + paint included
-    double changeUs = 0;       // per dataChanged, layout + paint included
-    double idleLayoutUs = 0;   // per frame, nothing dirty
+    double scrollUs = 0;     // per step, layout + paint included
+    double changeUs = 0;     // per dataChanged, layout + paint included
+    double idleLayoutUs = 0; // per frame, nothing dirty
     double idlePaintUs = 0;
     qint64 readsPerScrollStep = 0;
 };
 
 int g_rows = 100000;
 
-Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateName, bool bound, int steps)
-{
+Phase measure(QQmlEngine& engine, const QString& view, const QString& delegateName, bool bound,
+              int steps) {
     Phase result{view, delegateName, bound};
     CountModel model(g_rows);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
@@ -112,7 +120,7 @@ Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateNa
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<qmltui::Item *>(object.get());
+    auto* root = qobject_cast<qmltui::Item*>(object.get());
     if (!root) return result;
     qmltui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     result.createUs = timer.nsecsElapsed() / 1000.0;
@@ -120,10 +128,14 @@ Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateNa
     result.perDelegateUs = result.delegatesCreated ? result.createUs / result.delegatesCreated : 0;
 
     const auto step = [&](int i) {
-        if (auto *list = qobject_cast<qmltui::ListView *>(root)) list->setContentY(i);
-        else if (auto *grid = qobject_cast<qmltui::GridView *>(root)) grid->setContentY(i);
-        else if (auto *table = qobject_cast<qmltui::TableView *>(root)) table->setSelectedRow(24 + i);
-        else if (auto *tree = qobject_cast<qmltui::TreeView *>(root)) tree->setCurrentIndex(24 + i);
+        if (auto* list = qobject_cast<qmltui::ListView*>(root))
+            list->setContentY(i);
+        else if (auto* grid = qobject_cast<qmltui::GridView*>(root))
+            grid->setContentY(i);
+        else if (auto* table = qobject_cast<qmltui::TableView*>(root))
+            table->setSelectedRow(24 + i);
+        else if (auto* tree = qobject_cast<qmltui::TreeView*>(root))
+            tree->setCurrentIndex(24 + i);
     };
     model.reads = 0;
     timer.restart();
@@ -142,23 +154,27 @@ Phase measure(QQmlEngine &engine, const QString &view, const QString &delegateNa
     result.changeUs = timer.nsecsElapsed() / 1000.0 / steps;
 
     timer.restart();
-    for (int i = 0; i < steps; ++i) qmltui::ItemPaintTraversal::layoutSubtree(root);
+    for (int i = 0; i < steps; ++i)
+        qmltui::ItemPaintTraversal::layoutSubtree(root);
     result.idleLayoutUs = timer.nsecsElapsed() / 1000.0 / steps;
     timer.restart();
-    for (int i = 0; i < steps; ++i) qmltui::ItemPaintTraversal::paintSubtree(root, buffer, 0, 0);
+    for (int i = 0; i < steps; ++i)
+        qmltui::ItemPaintTraversal::paintSubtree(root, buffer, 0, 0);
     result.idlePaintUs = timer.nsecsElapsed() / 1000.0 / steps;
     return result;
 }
 
 // Resident memory per delegate, measured on an eager Repeater.
-double bytesPerDelegate(QQmlEngine &engine, const QString &delegateName, int count)
-{
+double bytesPerDelegate(QQmlEngine& engine, const QString& delegateName, int count) {
     CountModel model(count);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
-    component.setData((QStringLiteral("import QmlTui\nimport QmlTui.Controls\n"
-                                      "Column { width: 80; Repeater { model: benchmarkModel; delegate: %1 } }")
-                           .arg(delegates.value(delegateName))).toUtf8(), QUrl());
+    component.setData(
+        (QStringLiteral("import QmlTui\nimport QmlTui.Controls\n"
+                        "Column { width: 80; Repeater { model: benchmarkModel; delegate: %1 } }")
+             .arg(delegates.value(delegateName)))
+            .toUtf8(),
+        QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
@@ -166,16 +182,19 @@ double bytesPerDelegate(QQmlEngine &engine, const QString &delegateName, int cou
     const qint64 before = residentBytes();
     std::unique_ptr<QObject> object(component.create());
     const qint64 after = residentBytes();
-    const int created = int(qobject_cast<qmltui::Item *>(object.get())->childItems().size());
+    const int created = int(qobject_cast<qmltui::Item*>(object.get())->childItems().size());
     return created > 0 ? double(after - before) / created : -1;
 }
 
 } // namespace
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     QCoreApplication application(argc, argv);
-    qmltui::ListView linkList; qmltui::GridView linkGrid; qmltui::TableView linkTable; qmltui::TreeView linkTree; qmltui::Repeater linkRepeater;
+    qmltui::ListView linkList;
+    qmltui::GridView linkGrid;
+    qmltui::TableView linkTable;
+    qmltui::TreeView linkTree;
+    qmltui::Repeater linkRepeater;
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../qml"));
     const QStringList args = application.arguments();
@@ -189,49 +208,71 @@ int main(int argc, char **argv)
         engine.rootContext()->setContextProperty("benchmarkModel", &model);
         QQmlComponent component(&engine);
         component.setData(viewQml(args[2], args[3], false).toUtf8(), QUrl());
-        if (!component.isReady()) { qCritical().noquote() << component.errorString(); return 1; }
+        if (!component.isReady()) {
+            qCritical().noquote() << component.errorString();
+            return 1;
+        }
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<qmltui::Item *>(object.get());
+        auto* root = qobject_cast<qmltui::Item*>(object.get());
         qmltui::TextGridBuffer buffer;
         buffer.resize(80, 24);
         QElapsedTimer clock;
         clock.start();
         const qint64 seconds = args[4].toLongLong();
         for (int i = 1; clock.elapsed() < seconds * 1000; ++i) {
-            if (auto *list = qobject_cast<qmltui::ListView *>(root)) list->setContentY(i % 90000);
-            else if (auto *grid = qobject_cast<qmltui::GridView *>(root)) grid->setContentY(i % 20000);
-            else if (auto *table = qobject_cast<qmltui::TableView *>(root)) table->setSelectedRow(24 + i % 90000);
-            else if (auto *tree = qobject_cast<qmltui::TreeView *>(root)) tree->setCurrentIndex(24 + i % 90000);
+            if (auto* list = qobject_cast<qmltui::ListView*>(root))
+                list->setContentY(i % 90000);
+            else if (auto* grid = qobject_cast<qmltui::GridView*>(root))
+                grid->setContentY(i % 20000);
+            else if (auto* table = qobject_cast<qmltui::TableView*>(root))
+                table->setSelectedRow(24 + i % 90000);
+            else if (auto* tree = qobject_cast<qmltui::TreeView*>(root))
+                tree->setCurrentIndex(24 + i % 90000);
             qmltui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
         }
         return 0;
     }
 
     const int steps = 1000;
-    if (const int at = int(args.indexOf("--rows")); at > 0 && at + 1 < args.size()) g_rows = args[at + 1].toInt();
+    if (const int at = int(args.indexOf("--rows")); at > 0 && at + 1 < args.size())
+        g_rows = args[at + 1].toInt();
     QTextStream out(stdout);
     out << "model rows: " << g_rows << "\n";
     out << QStringLiteral("%1 %2 %3 %4 %5 %6 %7 %8 %9\n")
-               .arg("view", -9).arg("delegate", -9).arg("bound", -5).arg("created", 7).arg("us/deleg", 9)
-               .arg("scroll us", 9).arg("change us", 9).arg("idle lay", 8).arg("idle paint");
+               .arg("view", -9)
+               .arg("delegate", -9)
+               .arg("bound", -5)
+               .arg("created", 7)
+               .arg("us/deleg", 9)
+               .arg("scroll us", 9)
+               .arg("change us", 9)
+               .arg("idle lay", 8)
+               .arg("idle paint");
     // Warm the engine once so the first row is not paying for type compilation.
     measure(engine, "ListView", "text", false, 10);
-    for (const QString &view : {"ListView", "GridView", "TableView", "TreeView"}) {
-        for (const QString &delegate : {"text", "rect", "standard"}) {
+    for (const QString& view : {"ListView", "GridView", "TableView", "TreeView"}) {
+        for (const QString& delegate : {"text", "rect", "standard"}) {
             for (bool bound : {false, true}) {
                 if (bound && delegate != "text") continue;
                 const Phase p = measure(engine, view, delegate, bound, steps);
                 out << QStringLiteral("%1 %2 %3 %4 %5 %6 %7 %8 %9\n")
-                           .arg(p.view, -9).arg(p.delegate, -9).arg(bound ? "yes" : "no", -5)
-                           .arg(p.delegatesCreated, 7).arg(p.perDelegateUs, 9, 'f', 1)
-                           .arg(p.scrollUs, 9, 'f', 1).arg(p.changeUs, 9, 'f', 1)
-                           .arg(p.idleLayoutUs, 8, 'f', 1).arg(p.idlePaintUs, 10, 'f', 1);
+                           .arg(p.view, -9)
+                           .arg(p.delegate, -9)
+                           .arg(bound ? "yes" : "no", -5)
+                           .arg(p.delegatesCreated, 7)
+                           .arg(p.perDelegateUs, 9, 'f', 1)
+                           .arg(p.scrollUs, 9, 'f', 1)
+                           .arg(p.changeUs, 9, 'f', 1)
+                           .arg(p.idleLayoutUs, 8, 'f', 1)
+                           .arg(p.idlePaintUs, 10, 'f', 1);
             }
         }
     }
     out << "\nResident bytes per delegate (Repeater, 2000 rows):\n";
-    for (const QString &delegate : {"text", "rect", "standard"})
-        out << QStringLiteral("  %1 %2\n").arg(delegate, -9).arg(bytesPerDelegate(engine, delegate, 2000), 8, 'f', 0);
+    for (const QString& delegate : {"text", "rect", "standard"})
+        out << QStringLiteral("  %1 %2\n")
+                   .arg(delegate, -9)
+                   .arg(bytesPerDelegate(engine, delegate, 2000), 8, 'f', 0);
     out.flush();
     return 0;
 }

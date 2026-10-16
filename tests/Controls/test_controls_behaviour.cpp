@@ -34,7 +34,8 @@ QString frameText(TerminalEngine* engine) {
 
 std::unique_ptr<QObject> load(QQmlEngine& qml, const char* source, Terminal** terminal) {
     QQmlComponent component(&qml);
-    component.setData(QByteArray("import QtQml\nimport QmlTui\nimport QmlTui.Controls\n") + source, QUrl());
+    component.setData(QByteArray("import QtQml\nimport QmlTui\nimport QmlTui.Controls\n") + source,
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     if (!object) qWarning() << component.errorString();
     *terminal = qobject_cast<Terminal*>(object.get());
@@ -59,7 +60,8 @@ Terminal {
     function popOne() { stack.pop() }
     function clearAll() { stack.clear() }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* stack = terminal->findChild<Item*>("stack");
         QVERIFY(stack);
@@ -84,36 +86,6 @@ Terminal {
         QVERIFY(keeper);
     }
 
-    void stackLayoutCountFollowsChildren() {
-        QQmlEngine qml;
-        Terminal* terminal = nullptr;
-        auto object = load(qml, R"(
-Terminal {
-    id: root
-    property Component page: Component { Rectangle { objectName: "late" } }
-    StackLayout { id: layout; objectName: "layout"; width: 20; height: 5
-        Rectangle { objectName: "first" }
-        Rectangle { objectName: "second" }
-    }
-    function addPage() { page.createObject(layout) }
-}
-)", &terminal);
-        QVERIFY(terminal);
-        auto* layout = terminal->findChild<Item*>("layout");
-        QVERIFY(layout);
-        QCOMPARE(layout->property("count").toInt(), 2);
-        QMetaObject::invokeMethod(terminal, "addPage");
-        QCOMPARE(layout->property("count").toInt(), 3);
-        auto* late = terminal->findChild<Item*>("late");
-        QVERIFY(late);
-        QVERIFY(!late->visible());              // index 0 is current
-        layout->setProperty("currentIndex", 2);
-        QVERIFY(late->visible());
-        QCOMPARE(late->width(), 20);
-        QCOMPARE(late->height(), 5);
-        QVERIFY(!terminal->findChild<Item*>("first")->visible());
-    }
-
     void tabBarIndexBeforeTabs() {
         QQmlEngine qml;
         Terminal* terminal = nullptr;
@@ -121,13 +93,14 @@ Terminal {
 Terminal {
     TabBar { objectName: "bar"; width: 40; height: 1; currentIndex: 2; tabs: ["A", "B", "C"] }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* bar = terminal->findChild<Item*>("bar");
         QVERIFY(bar);
         QCOMPARE(bar->property("currentIndex").toInt(), 2);
         bar->setProperty("tabs", QVariantList{"A", "B"});
-        QCOMPARE(bar->property("currentIndex").toInt(), 1);   // clamped to the new range
+        QCOMPARE(bar->property("currentIndex").toInt(), 1); // clamped to the new range
         bar->setProperty("tabs", QVariantList{});
         bar->setProperty("currentIndex", 5);
         bar->setProperty("tabs", QVariantList{"A", "B", "C"});
@@ -144,7 +117,8 @@ Terminal {
     Button { objectName: "button"; x: 0; y: 0; text: "Go"; enabled: false; onClicked: root.clicks++ }
     Slider { objectName: "slider"; x: 0; y: 4; width: 20; showValue: false; enabled: false; value: 50 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(40, 10));
@@ -165,18 +139,19 @@ Terminal {
 Terminal {
     Slider { objectName: "slider"; x: 0; y: 0; width: 20; showValue: false; from: 0; to: 100; stepSize: 10 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(40, 10));
         auto* slider = terminal->findChild<Item*>("slider");
-        engine->handleMouseInput(0, 4, 0, false);     // 4 of 20 cells = 20%
+        engine->handleMouseInput(0, 4, 0, false); // 4 of 20 cells = 20%
         engine->handleMouseInput(0, 4, 0, true);
         QCOMPARE(slider->property("value").toDouble(), 20.0);
-        engine->handleMouseInput(0, 5, 0, false);     // 25% snaps to a step
+        engine->handleMouseInput(0, 5, 0, false); // 25% snaps to a step
         engine->handleMouseInput(0, 5, 0, true);
         QCOMPARE(slider->property("value").toDouble(), 30.0);
-        engine->handleMouseInput(0, 19, 0, false);    // never past `to`
+        engine->handleMouseInput(0, 19, 0, false); // never past `to`
         engine->handleMouseInput(0, 19, 0, true);
         QCOMPARE(slider->property("value").toDouble(), 100.0);
     }
@@ -193,7 +168,8 @@ Terminal {
         ProgressBar { width: 10; value: 0.5; style: "dot" }
     }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(20, 6));
@@ -219,7 +195,8 @@ Terminal {
     }
     MouseArea { objectName: "plain"; x: 10; y: 2; width: 4; height: 2 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(40, 10));
@@ -227,18 +204,18 @@ Terminal {
         auto* plain = terminal->findChild<Item*>("plain");
         QVERIFY(terminal->hasMouseMotionRequests());
         QVERIFY(!area->property("containsMouse").toBool());
-        engine->handleMouseInput(3, 2, 2, false, true);   // motion, no button, over the inner child
+        engine->handleMouseInput(3, 2, 2, false, true); // motion, no button, over the inner child
         QVERIFY(area->property("containsMouse").toBool());
         QCOMPARE(area->property("enters").toInt(), 1);
-        engine->handleMouseInput(3, 4, 3, false, true);   // still inside: no second entered()
+        engine->handleMouseInput(3, 4, 3, false, true); // still inside: no second entered()
         QCOMPARE(area->property("enters").toInt(), 1);
-        engine->handleMouseInput(3, 11, 2, false, true);  // over the area without hover
+        engine->handleMouseInput(3, 11, 2, false, true); // over the area without hover
         QVERIFY(!area->property("containsMouse").toBool());
         QCOMPARE(area->property("exits").toInt(), 1);
         QVERIFY(!plain->property("containsMouse").toBool());
         engine->handleMouseInput(3, 3, 3, false, true);
         QVERIFY(area->property("containsMouse").toBool());
-        area->setProperty("hoverEnabled", false);         // opting out clears the state
+        area->setProperty("hoverEnabled", false); // opting out clears the state
         QVERIFY(!area->property("containsMouse").toBool());
         QCOMPARE(area->property("exits").toInt(), 2);
         QVERIFY(!terminal->hasMouseMotionRequests());
@@ -252,15 +229,16 @@ Terminal {
     Button { objectName: "plain"; x: 0; y: 0; text: "Go" }
     Button { objectName: "hover"; x: 0; y: 4; text: "Go"; hoverEnabled: true }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(40, 10));
         auto* hover = terminal->findChild<Item*>("hover");
-        QVERIFY(terminal->hasMouseMotionRequests());     // the opt-in button asked for motion
+        QVERIFY(terminal->hasMouseMotionRequests()); // the opt-in button asked for motion
         engine->handleMouseInput(3, 2, 5, false, true);
         QVERIFY(hover->property("hovered").toBool());
-        engine->handleMouseInput(3, 2, 1, false, true);   // over the button that did not opt in
+        engine->handleMouseInput(3, 2, 1, false, true); // over the button that did not opt in
         QVERIFY(!hover->property("hovered").toBool());
         QVERIFY(!terminal->findChild<Item*>("plain")->property("hovered").toBool());
     }
@@ -280,7 +258,8 @@ Terminal {
     Button { objectName: "wide"; x: 0; y: 4; width: 20; text: "Go" }
     Button { objectName: "short"; x: 0; y: 8; height: 1; text: "Row" }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(30, 10));
@@ -288,9 +267,9 @@ Terminal {
         auto* bg = terminal->findChild<Item*>("bg");
         auto* label = terminal->findChild<Item*>("label");
         QVERIFY(filled && bg && label);
-        QCOMPARE(bg->parentItem(), filled);                 // adopted as a visual child
+        QCOMPARE(bg->parentItem(), filled); // adopted as a visual child
         QVERIFY(filled->childItems().contains(bg));
-        QCOMPARE(filled->width(), 6 + 4);                    // label + paddings, unchanged from before
+        QCOMPARE(filled->width(), 6 + 4); // label + paddings, unchanged from before
         QCOMPARE(filled->height(), 3);
         QCOMPARE(QSize(bg->width(), bg->height()), QSize(10, 3));
         QCOMPARE(QPoint(label->x(), label->y()), QPoint(2, 1));
@@ -301,14 +280,15 @@ Terminal {
         QVERIFY2(text.contains("Filled"), qPrintable(text));
         // The filled button's own rows carry no default border corner.
         const QStringList rows = text.split('\n');
-        QVERIFY2(rows.size() > 2 && !rows[0].left(10).contains(QChar(0x250C))
-                 && !rows[2].left(10).contains(QChar(0x2514)), qPrintable(text));
+        QVERIFY2(rows.size() > 2 && !rows[0].left(10).contains(QChar(0x250C)) &&
+                     !rows[2].left(10).contains(QChar(0x2514)),
+                 qPrintable(text));
         auto* wide = terminal->findChild<Item*>("wide");
         QCOMPARE(wide->property("availableWidth").toInt(), 16);
         QVERIFY2(text.contains("│         Go       │") || text.contains(" Go "), qPrintable(text));
         auto* shortButton = terminal->findChild<Item*>("short");
         QCOMPARE(shortButton->property("availableHeight").toInt(), 0);
-        QVERIFY2(text.contains("Row"), qPrintable(text));      // centred despite no padded room
+        QVERIFY2(text.contains("Row"), qPrintable(text)); // centred despite no padded room
     }
 
     void abstractButtonStates() {
@@ -327,32 +307,33 @@ Terminal {
     RadioButton { id: a; objectName: "a"; x: 0; y: 8; text: "A"; checked: true }
     ButtonGroup { buttons: [a] }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(30, 12));
         auto* toggle = terminal->findChild<Item*>("toggle");
         engine->handleMouseInput(0, 2, 1, false);
         QVERIFY(toggle->property("pressed").toBool());
-        QVERIFY(toggle->property("down").toBool());          // down follows pressed
+        QVERIFY(toggle->property("down").toBool()); // down follows pressed
         engine->handleMouseInput(0, 2, 1, true);
         QVERIFY(!toggle->property("pressed").toBool());
-        QVERIFY(toggle->property("checked").toBool());        // checkable: click toggled
+        QVERIFY(toggle->property("checked").toBool()); // checkable: click toggled
         QCOMPARE(terminal->property("toggles").toInt(), 1);
         QVERIFY(terminal->property("lastState").toBool());
-        QCOMPARE(terminal->property("clicks").toInt(), 1);   // clicked() follows toggled()
-        toggle->setProperty("checked", false);               // assignment emits nothing
+        QCOMPARE(terminal->property("clicks").toInt(), 1); // clicked() follows toggled()
+        toggle->setProperty("checked", false);             // assignment emits nothing
         QCOMPARE(terminal->property("toggles").toInt(), 1);
         QMetaObject::invokeMethod(toggle, "toggle");
         QVERIFY(toggle->property("checked").toBool());
         QCOMPARE(terminal->property("toggles").toInt(), 2);
-        QCOMPARE(terminal->property("clicks").toInt(), 1);   // toggle() alone does not click
+        QCOMPARE(terminal->property("clicks").toInt(), 1); // toggle() alone does not click
         auto* styled = terminal->findChild<Item*>("styled");
-        QVERIFY(styled->property("down").toBool());           // explicit down overrides the binding
+        QVERIFY(styled->property("down").toBool()); // explicit down overrides the binding
         QVERIFY(!styled->property("pressed").toBool());
         auto* a = terminal->findChild<Item*>("a");
         QMetaObject::invokeMethod(a, "toggle");
-        QVERIFY(a->property("checked").toBool());             // autoExclusive: stays checked
+        QVERIFY(a->property("checked").toBool()); // autoExclusive: stays checked
     }
 
     // A held mouse button shows as reverse video on the label; focus stays a
@@ -364,31 +345,34 @@ Terminal {
 Terminal {
     Button { objectName: "go"; x: 0; y: 0; text: "Go" }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(20, 5));
         QTRY_VERIFY(engine->frameSequence() > 0);
         auto reversedAt = [&](int x, int y) {
             const auto frame = engine->currentFrame();
-            return frame && (frame->cellAt(x, y).attributes & TextAttribute::Reversed) != TextAttribute::None;
+            return frame && (frame->cellAt(x, y).attributes & TextAttribute::Reversed) !=
+                                TextAttribute::None;
         };
         auto cornerAt = [&](int x, int y) {
             const auto frame = engine->currentFrame();
-            return frame ? QString::fromUtf8(frame->cellAt(x, y).character().toByteArray()) : QString();
+            return frame ? QString::fromUtf8(frame->cellAt(x, y).character().toByteArray())
+                         : QString();
         };
         QVERIFY(!reversedAt(2, 1));
-        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"┌"));      // unfocused: single border
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"┌")); // unfocused: single border
         quint64 seq = engine->frameSequence();
-        engine->handleMouseInput(0, 2, 1, false);           // press and hold
+        engine->handleMouseInput(0, 2, 1, false); // press and hold
         QTRY_VERIFY(engine->frameSequence() > seq);
         QVERIFY2(reversedAt(2, 1), "label should be reversed while down");
-        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔"));      // the press also focused it
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔")); // the press also focused it
         seq = engine->frameSequence();
-        engine->handleMouseInput(0, 2, 1, true);            // release
+        engine->handleMouseInput(0, 2, 1, true); // release
         QTRY_VERIFY(engine->frameSequence() > seq);
         QVERIFY2(!reversedAt(2, 1), "release must clear the press look");
-        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔"));      // focus remains, as a double border
+        QCOMPARE(cornerAt(0, 0), QStringLiteral(u"╔")); // focus remains, as a double border
     }
 
     // Focus on a Slider is visible: heavy track, inverted readout.
@@ -400,22 +384,27 @@ Terminal {
     Slider { objectName: "a"; x: 0; y: 0; width: 12; value: 50; focus: true }
     Slider { objectName: "b"; x: 0; y: 2; width: 12; value: 50 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(20, 4));
         QTRY_VERIFY(engine->frameSequence() > 0);
         const QStringList rows = frameText(engine).split('\n');
         QVERIFY(rows.size() > 2);
-        QVERIFY2(rows[0].contains(QChar(0x2501)) && !rows[0].contains(QChar(0x2500)), qPrintable(rows[0]));  // heavy track
-        QVERIFY2(rows[2].contains(QChar(0x2500)) && !rows[2].contains(QChar(0x2501)), qPrintable(rows[2]));  // light track
+        QVERIFY2(rows[0].contains(QChar(0x2501)) && !rows[0].contains(QChar(0x2500)),
+                 qPrintable(rows[0])); // heavy track
+        QVERIFY2(rows[2].contains(QChar(0x2500)) && !rows[2].contains(QChar(0x2501)),
+                 qPrintable(rows[2])); // light track
         const auto frame = engine->currentFrame();
         QVERIFY(frame);
         const int readout = rows[0].indexOf('[');
         QVERIFY(readout > 0);
-        QVERIFY((frame->cellAt(readout, 0).attributes & TextAttribute::Reversed) != TextAttribute::None);
-        QVERIFY((frame->cellAt(readout, 2).attributes & TextAttribute::Reversed) == TextAttribute::None);
-        terminal->findChild<Item*>("b")->setFocus(true);   // focus moves, so does the look
+        QVERIFY((frame->cellAt(readout, 0).attributes & TextAttribute::Reversed) !=
+                TextAttribute::None);
+        QVERIFY((frame->cellAt(readout, 2).attributes & TextAttribute::Reversed) ==
+                TextAttribute::None);
+        terminal->findChild<Item*>("b")->setFocus(true); // focus moves, so does the look
         QTRY_VERIFY(frameText(engine).split('\n')[2].contains(QChar(0x2501)));
         QVERIFY(frameText(engine).split('\n')[0].contains(QChar(0x2500)));
     }
@@ -436,7 +425,8 @@ Terminal {
                                 && typeof busy._currentSymbol === "undefined"
     function checkB() { b.toggle() }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         QVERIFY(terminal->property("radioHelperHidden").toBool());
         QVERIFY(terminal->property("busyStateHidden").toBool());
@@ -444,10 +434,10 @@ Terminal {
         auto* b = terminal->findChild<Item*>("b");
         QMetaObject::invokeMethod(terminal, "checkB");
         QVERIFY(b->property("checked").toBool());
-        QVERIFY(!a->property("checked").toBool());   // exclusivity still works
+        QVERIFY(!a->property("checked").toBool()); // exclusivity still works
         auto* busy = terminal->findChild<Item*>("busy");
         const QString first = busy->property("text").toString();
-        QTRY_VERIFY(busy->property("text").toString() != first);   // still animates
+        QTRY_VERIFY(busy->property("text").toString() != first); // still animates
     }
 
     void panelBorderSlotsAndAlignment() {
@@ -477,7 +467,8 @@ Terminal {
         titleTrailing: "Right"
     }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         engine->setTestViewportSize(QSize(30, 8));
@@ -508,7 +499,8 @@ Terminal {
     BusyIndicator { id: b2; objectName: "b2"; frames: ["A", "B", "C"]; running: false }
     BusyIndicator { id: b3; objectName: "b3"; frames: ["X", "Y"]; interval: 10 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* b1 = terminal->findChild<Item*>("b1");
         auto* b2 = terminal->findChild<Item*>("b2");
@@ -519,19 +511,21 @@ Terminal {
         const QStringList defaultBraille = {
             QStringLiteral(u"⠋"), QStringLiteral(u"⠙"), QStringLiteral(u"⠹"), QStringLiteral(u"⠸"),
             QStringLiteral(u"⠼"), QStringLiteral(u"⠴"), QStringLiteral(u"⠦"), QStringLiteral(u"⠧"),
-            QStringLiteral(u"⠇"), QStringLiteral(u"⠏")
-        };
+            QStringLiteral(u"⠇"), QStringLiteral(u"⠏")};
         QCOMPARE(b1->property("frames").toStringList(), defaultBraille);
         QTRY_VERIFY(b1->property("text").toString() != QStringLiteral(u"⠋"));
 
         // b2 paused with custom frames shows initial frame
-        QCOMPARE(b2->property("frames").toStringList(), QStringList({QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C")}));
+        QCOMPARE(b2->property("frames").toStringList(),
+                 QStringList({QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C")}));
         QCOMPARE(b2->property("text").toString(), QStringLiteral("A"));
         b2->setProperty("running", true);
-        QTRY_VERIFY(b2->property("text").toString() == QStringLiteral("B") || b2->property("text").toString() == QStringLiteral("C"));
+        QTRY_VERIFY(b2->property("text").toString() == QStringLiteral("B") ||
+                    b2->property("text").toString() == QStringLiteral("C"));
 
         // b3 custom frames animate
-        QCOMPARE(b3->property("frames").toStringList(), QStringList({QStringLiteral("X"), QStringLiteral("Y")}));
+        QCOMPARE(b3->property("frames").toStringList(),
+                 QStringList({QStringLiteral("X"), QStringLiteral("Y")}));
         QTRY_VERIFY(b3->property("text").toString() == QStringLiteral("Y"));
     }
 };

@@ -87,9 +87,9 @@ function main(terminal) {
     // The AnimatedSprite tile (only in a QmlTui.Image build) plays a sprite
     // sheet: Space pauses the frame clock, Right picks the next animation.
     terminal.press("HOME");
-    for (let i = 0; i < 25; ++i)
+    for (let i = 0; i < 24; ++i)
         terminal.press("RIGHT");
-    terminal.waitForText(at(26));
+    terminal.waitForText(at(25));
     if (terminal.frameText().includes("Frames out of one sheet")) {
         terminal.press("ENTER");
         terminal.waitForRegex("loading: frame [0-9]+/4");

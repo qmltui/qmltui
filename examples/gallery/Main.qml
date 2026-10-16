@@ -223,14 +223,6 @@ Terminal {
             file: "TextArea.qml"
         },
         {
-            name: "LogView",
-            badge: "Views",
-            accent: "#a78bfa",
-            preview: "[INFO] ready  [WARN] retry #2",
-            blurb: "Streaming ring-buffer log viewer with tail following",
-            file: "LogView.qml"
-        },
-        {
             name: "ListView",
             badge: "Views",
             accent: "#2dd4bf",
@@ -293,14 +285,6 @@ Terminal {
             preview: "╭─ Braille 2x4 & HalfBlock 1x2 ─╮",
             blurb: "Sub-cell pixel & vector canvas (Line, Circle, Polygon)",
             file: "Canvas.qml"
-        },
-        {
-            name: "StandardItemDelegate",
-            badge: "Controls",
-            accent: "#4ade80",
-            preview: "▸ [x] Verify TLS certificates",
-            blurb: "Ready-made list delegate with check state & role styling",
-            file: "StandardItemDelegate.qml"
         },
         {
             name: "Repeater",

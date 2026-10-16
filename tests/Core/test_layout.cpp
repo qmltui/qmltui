@@ -4,6 +4,7 @@
 #include <QmlTui/Core/Items/Row.h>
 #include <QmlTui/Core/Items/Column.h>
 #include <QmlTui/Core/Items/GridLayout.h>
+#include <QmlTui/Core/Items/StackLayout.h>
 #include <QmlTui/Core/Items/Layout.h>
 #include <QmlTui/Core/Items/ScrollView.h>
 #include <QmlTui/Core/Items/Text.h>
@@ -26,6 +27,7 @@ private slots:
     void testColumnKeepsChildX();
     void testColumnPaintsChildAtItsX();
     void testGridLayout();
+    void testStackLayout();
     void testDirtyFlagsBubbling();
     void testAnchorInvalidationWithoutRender();
     void testContainerRelayoutOnMutation();
@@ -42,12 +44,12 @@ void TestLayout::testRowLayout() {
     Row row;
     row.setSpacing(2);
     row.setPadding(1);
-    
+
     Item* child1 = new Item();
     child1->setParentItem(&row);
     child1->setWidth(4);
     child1->setHeight(2);
-    
+
     Item* child2 = new Item();
     child2->setParentItem(&row);
     child2->setWidth(5);
@@ -56,13 +58,13 @@ void TestLayout::testRowLayout() {
     TextGridBuffer buffer;
     paintItem(row, buffer, 0, 0);
 
-    QCOMPARE(child1->x(), 1); // left padding
-    QCOMPARE(child1->y(), 1); // top padding
+    QCOMPARE(child1->x(), 1);         // left padding
+    QCOMPARE(child1->y(), 1);         // top padding
     QCOMPARE(child2->x(), 1 + 4 + 2); // left pad + child1 width + spacing
     QCOMPARE(child2->y(), 1);
 
     QCOMPARE(row.implicitWidth(), 1 + 1 + 4 + 5 + 2); // left + right + w1 + w2 + spacing
-    QCOMPARE(row.implicitHeight(), 1 + 1 + 2); // top + bottom + max_height
+    QCOMPARE(row.implicitHeight(), 1 + 1 + 2);        // top + bottom + max_height
 }
 
 void TestLayout::testRowKeepsChildY() {
@@ -72,9 +74,11 @@ void TestLayout::testRowKeepsChildY() {
     row.setPadding(2);
 
     Item* plain = new Item(&row);
-    plain->setWidth(1); plain->setHeight(4);
+    plain->setWidth(1);
+    plain->setHeight(4);
     Item* shifted = new Item(&row);
-    shifted->setWidth(1); shifted->setHeight(4);
+    shifted->setWidth(1);
+    shifted->setHeight(4);
     shifted->setY(3);
 
     TextGridBuffer buffer;
@@ -106,7 +110,8 @@ void TestLayout::testRowPaintsChildAtItsY() {
 
     Row row;
     Item* tall = new Item(&row);
-    tall->setWidth(2); tall->setHeight(5);
+    tall->setWidth(2);
+    tall->setHeight(5);
     Text* centred = new Text(&row);
     centred->setText("XY");
     centred->setY((tall->height() - centred->height()) / 2);
@@ -121,12 +126,12 @@ void TestLayout::testColumnLayout() {
     Column col;
     col.setSpacing(1);
     col.setPadding(2);
-    
+
     Item* child1 = new Item();
     child1->setParentItem(&col);
     child1->setWidth(4);
     child1->setHeight(3);
-    
+
     Item* child2 = new Item();
     child2->setParentItem(&col);
     child2->setWidth(5);
@@ -137,11 +142,11 @@ void TestLayout::testColumnLayout() {
 
     QCOMPARE(child1->x(), 2); // left padding
     QCOMPARE(child1->y(), 2); // top padding
-    QCOMPARE(child2->x(), 2); 
+    QCOMPARE(child2->x(), 2);
     QCOMPARE(child2->y(), 2 + 3 + 1); // top pad + child1 height + spacing
 
     QCOMPARE(col.implicitHeight(), 2 + 2 + 3 + 4 + 1); // top + bottom + h1 + h2 + spacing
-    QCOMPARE(col.implicitWidth(), 2 + 2 + 5); // left + right + max_width
+    QCOMPARE(col.implicitWidth(), 2 + 2 + 5);          // left + right + max_width
 }
 
 void TestLayout::testColumnKeepsChildX() {
@@ -151,9 +156,11 @@ void TestLayout::testColumnKeepsChildX() {
     col.setPadding(2);
 
     Item* plain = new Item(&col);
-    plain->setWidth(4); plain->setHeight(1);
+    plain->setWidth(4);
+    plain->setHeight(1);
     Item* shifted = new Item(&col);
-    shifted->setWidth(4); shifted->setHeight(1);
+    shifted->setWidth(4);
+    shifted->setHeight(1);
     shifted->setX(3);
 
     TextGridBuffer buffer;
@@ -202,19 +209,19 @@ void TestLayout::testGridLayout() {
     grid.setColumnSpacing(2);
     grid.setRowSpacing(1);
 
-    Item *label1 = new Item(&grid);
+    Item* label1 = new Item(&grid);
     label1->setImplicitWidth(10);
     label1->setImplicitHeight(1);
 
-    Item *field1 = new Item(&grid);
+    Item* field1 = new Item(&grid);
     field1->setImplicitWidth(20);
     field1->setImplicitHeight(3);
 
-    Item *label2 = new Item(&grid);
+    Item* label2 = new Item(&grid);
     label2->setImplicitWidth(10);
     label2->setImplicitHeight(1);
 
-    Item *field2 = new Item(&grid);
+    Item* field2 = new Item(&grid);
     field2->setImplicitWidth(20);
     field2->setImplicitHeight(3);
 
@@ -291,9 +298,11 @@ void TestLayout::testContainerRelayoutOnMutation() {
     col.setHeight(20);
 
     Item* a = new Item(&col);
-    a->setWidth(5); a->setHeight(2);
+    a->setWidth(5);
+    a->setHeight(2);
     Item* b = new Item(&col);
-    b->setWidth(5); b->setHeight(2);
+    b->setWidth(5);
+    b->setHeight(2);
 
     paintItem(col, buffer, 0, 0);
     QCOMPARE(a->y(), 0);
@@ -307,7 +316,8 @@ void TestLayout::testContainerRelayoutOnMutation() {
 
     // 2. Add child c: c should be laid out at y=6
     Item* c = new Item(&col);
-    c->setWidth(5); c->setHeight(2);
+    c->setWidth(5);
+    c->setHeight(2);
     paintItem(col, buffer, 0, 0);
     QCOMPARE(c->y(), 6);
 
@@ -357,7 +367,8 @@ void TestLayout::testAnchorImplicitTargetResizing() {
 
     Row* row = new Row(&root);
     Item* a = new Item(row);
-    a->setWidth(5); a->setHeight(2);
+    a->setWidth(5);
+    a->setHeight(2);
 
     Item* overlay = new Item(&root);
     overlay->anchors()->setFill(row);
@@ -367,7 +378,8 @@ void TestLayout::testAnchorImplicitTargetResizing() {
 
     // Add another item to row: row's implicit width grows to 10
     Item* b = new Item(row);
-    b->setWidth(5); b->setHeight(2);
+    b->setWidth(5);
+    b->setHeight(2);
 
     paintItem(root, buffer, 0, 0);
     QCOMPARE(overlay->width(), row->implicitWidth());
@@ -375,51 +387,43 @@ void TestLayout::testAnchorImplicitTargetResizing() {
 
 class PaintProbe : public Item {
 public:
-    PaintProbe(char glyph, QStringList *order, QObject *parent = nullptr)
-        : Item(parent), m_glyph(glyph), m_order(order)
-    {
+    PaintProbe(char glyph, QStringList* order, QObject* parent = nullptr)
+        : Item(parent), m_glyph(glyph), m_order(order) {
         setWidth(1);
         setHeight(1);
     }
 
     int layoutCount = 0;
     bool invalidateDuringLayout = false;
-    Item *invalidateDuringPaint = nullptr;   // paint() is const: mutate through a pointer, as a bug would
+    Item* invalidateDuringPaint =
+        nullptr; // paint() is const: mutate through a pointer, as a bug would
     QPointer<Item> deleteDuringPaint;
 
 protected:
-    void updateLayout() override
-    {
+    void updateLayout() override {
         ++layoutCount;
-        if (invalidateDuringLayout)
-            markDirty(DirtyFlag::SelfDirty);
+        if (invalidateDuringLayout) markDirty(DirtyFlag::SelfDirty);
     }
 
-    void paint(TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect &) const override {
-        if (m_order)
-            m_order->append(QChar::fromLatin1(m_glyph));
-        if (Cell *cell = buffer.tryCellAt(absX, absY))
-            cell->setCharacter(QByteArray(1, m_glyph));
-        if (invalidateDuringPaint)
-            invalidateDuringPaint->markDirty(DirtyFlag::SelfDirty);
-        if (deleteDuringPaint)
-            delete deleteDuringPaint.data();
+    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&) const override {
+        if (m_order) m_order->append(QChar::fromLatin1(m_glyph));
+        if (Cell* cell = buffer.tryCellAt(absX, absY)) cell->setCharacter(QByteArray(1, m_glyph));
+        if (invalidateDuringPaint) invalidateDuringPaint->markDirty(DirtyFlag::SelfDirty);
+        if (deleteDuringPaint) delete deleteDuringPaint.data();
     }
 
 private:
     char m_glyph;
-    QStringList *m_order;
+    QStringList* m_order;
 };
 
-void TestLayout::testFrameworkOwnedPaintTraversal()
-{
+void TestLayout::testFrameworkOwnedPaintTraversal() {
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(3, 1));
     QStringList order;
 
     PaintProbe parent('P', &order);
-    auto *child = new PaintProbe('C', &order, &parent);
+    auto* child = new PaintProbe('C', &order, &parent);
     child->setX(1);
     paintItem(parent, buffer, 0, 0);
 
@@ -427,8 +431,8 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("P"));
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("C"));
 
-    auto *killer = new PaintProbe('K', nullptr, &parent);
-    auto *victim = new PaintProbe('V', nullptr, &parent);
+    auto* killer = new PaintProbe('K', nullptr, &parent);
+    auto* victim = new PaintProbe('V', nullptr, &parent);
     killer->setZ(1);
     victim->setZ(2);
     killer->deleteDuringPaint = victim;
@@ -436,16 +440,14 @@ void TestLayout::testFrameworkOwnedPaintTraversal()
     QVERIFY(killer->deleteDuringPaint.isNull());
 }
 
-void TestLayout::testRenderPreservesNewInvalidations()
-{
+void TestLayout::testRenderPreservesNewInvalidations() {
     // Invalidations raised from updateLayout() belong to the frame being
     // rendered: the layout pass precedes the paint pass, which consumes them.
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(1, 1));
     PaintProbe item('X', nullptr);
-    item.clearDirty(Item::DirtyFlags(Item::DirtyFlag::SelfDirty)
-                    | Item::DirtyFlag::DescendantDirty
-                    | Item::DirtyFlag::LayoutDirty);
+    item.clearDirty(Item::DirtyFlags(Item::DirtyFlag::SelfDirty) |
+                    Item::DirtyFlag::DescendantDirty | Item::DirtyFlag::LayoutDirty);
     item.invalidateDuringLayout = true;
     item.markDirty(Item::DirtyFlag::LayoutDirty);
     QSignalSpy dirtySpy(&item, &Item::dirty);
@@ -474,8 +476,7 @@ void TestLayout::testRenderPreservesNewInvalidations()
     QCOMPARE(RenderPhase::current(), RenderPhase::Idle);
 }
 
-void TestLayout::testSizeChangeSchedulesLayout()
-{
+void TestLayout::testSizeChangeSchedulesLayout() {
     // A container whose own size changes must lay out its children again even
     // when no child geometry changed.
     TextGridBuffer buffer;
@@ -503,12 +504,11 @@ void TestLayout::testSizeChangeSchedulesLayout()
     QVERIFY(item.dirtyFlags().testFlag(Item::DirtyFlag::LayoutDirty));
 }
 
-void TestLayout::testImplicitSizeSignalsOnlyOnChange()
-{
+void TestLayout::testImplicitSizeSignalsOnlyOnChange() {
     // A container reports an implicit size change only when the value moved,
     // so a child's height change does not fan out as a width change.
     Row row;
-    Item *child = new Item(&row);
+    Item* child = new Item(&row);
     child->setWidth(4);
     child->setHeight(2);
 
@@ -523,13 +523,13 @@ void TestLayout::testImplicitSizeSignalsOnlyOnChange()
     QCOMPARE(widthSpy.count(), 1);
     QCOMPARE(heightSpy.count(), 1);
 
-    child->setX(5);            // position does not affect the row's implicit size
+    child->setX(5); // position does not affect the row's implicit size
     QCOMPARE(widthSpy.count(), 1);
 
-    row.setSpacing(2);         // one child: spacing does not change the width
+    row.setSpacing(2); // one child: spacing does not change the width
     QCOMPARE(widthSpy.count(), 1);
 
-    Item *second = new Item(&row);
+    Item* second = new Item(&row);
     second->setWidth(1);
     QVERIFY(widthSpy.count() >= 2);
     QCOMPARE(row.implicitWidth(), 9 + 2 + 1);
@@ -538,21 +538,20 @@ void TestLayout::testImplicitSizeSignalsOnlyOnChange()
     Item parent;
     parent.setWidth(20);
     parent.setHeight(5);
-    Item *late = new Item(&parent);
+    Item* late = new Item(&parent);
     late->anchors()->setFill(&parent);
     QCOMPARE(late->width(), 20);
     parent.setWidth(25);
     QCOMPARE(late->width(), 25);
 }
 
-void TestLayout::testGuardedDataStateAndTransitionLists()
-{
+void TestLayout::testGuardedDataStateAndTransitionLists() {
     Item item;
 
-    auto *object = new QObject;
+    auto* object = new QObject;
     auto data = item.data();
     data.append(&data, object);
-    QCOMPARE(object->parent(), static_cast<QObject *>(&item));
+    QCOMPARE(object->parent(), static_cast<QObject*>(&item));
     QCOMPARE(data.count(&data), qsizetype(1));
     delete object;
     QCOMPARE(data.count(&data), qsizetype(0));
@@ -580,6 +579,51 @@ void TestLayout::testGuardedDataStateAndTransitionLists()
     transitions.clear(&transitions);
     QCOMPARE(transition.parent(), nullptr);
     QCOMPARE(transitions.count(&transitions), qsizetype(0));
+}
+
+void TestLayout::testStackLayout() {
+    StackLayout stack;
+    stack.setWidth(20);
+    stack.setHeight(5);
+
+    auto* first = new Item(&stack);
+    first->setImplicitWidth(10);
+    first->setImplicitHeight(2);
+
+    auto* second = new Item(&stack);
+    second->setImplicitWidth(14);
+    second->setImplicitHeight(4);
+
+    QCOMPARE(stack.count(), 2);
+    QVERIFY(first->visible());
+    QVERIFY(!second->visible());
+    QCOMPARE(first->width(), 20);
+    QCOMPARE(first->height(), 5);
+    QCOMPARE(stack.implicitWidth(), 10);
+    QCOMPARE(stack.implicitHeight(), 2);
+
+    auto* late = new Item(&stack);
+    late->setImplicitWidth(18);
+    late->setImplicitHeight(3);
+    QCOMPARE(stack.count(), 3);
+    QVERIFY(!late->visible());
+
+    stack.setCurrentIndex(2);
+    QVERIFY(!first->visible());
+    QVERIFY(!second->visible());
+    QVERIFY(late->visible());
+    QCOMPARE(late->width(), 20);
+    QCOMPARE(late->height(), 5);
+    QCOMPARE(stack.implicitWidth(), 18);
+    QCOMPARE(stack.implicitHeight(), 3);
+
+    stack.setPadding(1);
+    QCOMPARE(late->x(), 1);
+    QCOMPARE(late->y(), 1);
+    QCOMPARE(late->width(), 18);
+    QCOMPARE(late->height(), 3);
+    QCOMPARE(stack.implicitWidth(), 20);
+    QCOMPARE(stack.implicitHeight(), 5);
 }
 
 QTEST_MAIN(TestLayout)

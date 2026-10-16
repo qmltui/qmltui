@@ -46,7 +46,6 @@
 
 - [GridView](gridview.md)
 - [ListView](listview.md)
-- [LogView](logview.md)
 - [ScrollView](scrollview.md)
 - [TableView](tableview.md)
 - [TreeView](treeview.md)
@@ -78,10 +77,7 @@
 - [Repeater](repeater.md)
 - [Row](row.md)
 - [RowLayout](rowlayout.md)
-
-## QmlTui.Controls — data views
-
-- [StandardItemDelegate](standarditemdelegate.md)
+- [StackLayout](stacklayout.md)
 
 ## QmlTui.Controls — display
 
@@ -98,10 +94,6 @@
 - [RadioButton](radiobutton.md)
 - [Slider](slider.md)
 - [Switch](switch.md)
-
-## QmlTui.Controls — layout
-
-- [StackLayout](stacklayout.md)
 
 ## QmlTui.Controls — overlays and navigation
 

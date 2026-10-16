@@ -144,14 +144,15 @@ changes or a pooled delegate is rebound to another row, every name is
 published, including cleared ones, so read them with a fallback
 (`model.foreground || textColor`) rather than as required properties.
 
-`StandardItemDelegate` from `QmlTui.Controls` renders them: decoration glyph,
-`[x]`, `[ ]`, or `[-]` for checkable items, colored and aligned text, dimmed
-text for disabled items, and reversed text for the current row. Its
-`toggle()` writes `Qt::CheckStateRole` back through the model's `setData()`,
-on Space when the delegate has focus and on mouse click.
+The `StandardItemDelegate` recipe in
+`examples/components/standard_item_delegate/StandardItemDelegate.qml` renders
+them: decoration glyph, `[x]`, `[ ]`, or `[-]` for checkable items, colored and
+aligned text, dimmed text for disabled items, and reversed text for the current
+row. Its `toggle()` writes `Qt::CheckStateRole` back through the model's
+`setData()`, on Space when the delegate has focus and on mouse click.
 
 ```qml
-// A delegate for an application-provided C++ model:
+// Copy StandardItemDelegate.qml from examples/components/standard_item_delegate/:
 ListView {
     model: standardItemModel
     delegate: StandardItemDelegate {}

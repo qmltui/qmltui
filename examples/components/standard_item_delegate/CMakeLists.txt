@@ -9,12 +9,14 @@ qt_add_executable(qmltui_standard_item_delegate_demo main.cpp)
 qt_add_qml_module(qmltui_standard_item_delegate_demo
     URI StandardItemDelegateDemo
     VERSION 1.0
-    QML_FILES Main.qml
+    QML_FILES
+        Main.qml
+        StandardItemDelegate.qml
     SOURCES ReleaseChecklistModel.h ReleaseChecklistModel.cpp
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
+    DEPENDENCIES TARGET qmltui::core
 )
 target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE
-    Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::controls)
+    Qt6::Core Qt6::Gui Qt6::Qml qmltui::core)
 
 if(TARGET qmltui::runner)
     target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE qmltui::runner)

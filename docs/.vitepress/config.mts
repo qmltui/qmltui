@@ -183,6 +183,7 @@ export default defineConfig({
               { text: 'RowLayout', link: '/qml-types/rowlayout' },
               { text: 'ColumnLayout', link: '/qml-types/columnlayout' },
               { text: 'GridLayout', link: '/qml-types/gridlayout' },
+              { text: 'StackLayout', link: '/qml-types/stacklayout' },
               { text: 'Layout', link: '/qml-types/layout' },
               { text: 'Repeater', link: '/qml-types/repeater' },
               { text: 'Loader', link: '/qml-types/loader' }
@@ -205,8 +206,7 @@ export default defineConfig({
               { text: 'TreeView', link: '/qml-types/treeview' },
               { text: 'ListView', link: '/qml-types/listview' },
               { text: 'GridView', link: '/qml-types/gridview' },
-              { text: 'ScrollView', link: '/qml-types/scrollview' },
-              { text: 'LogView', link: '/qml-types/logview' }
+              { text: 'ScrollView', link: '/qml-types/scrollview' }
             ]
           },
           {
@@ -269,9 +269,7 @@ export default defineConfig({
               { text: 'Toast', link: '/qml-types/toast' },
               { text: 'ToolTip', link: '/qml-types/tooltip' },
               { text: 'TabBar', link: '/qml-types/tabbar' },
-              { text: 'StackLayout', link: '/qml-types/stacklayout' },
-              { text: 'StackView', link: '/qml-types/stackview' },
-              { text: 'StandardItemDelegate', link: '/qml-types/standarditemdelegate' }
+              { text: 'StackView', link: '/qml-types/stackview' }
             ]
           },
           {

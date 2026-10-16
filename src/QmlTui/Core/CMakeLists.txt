@@ -118,8 +118,8 @@ qt_add_qml_module(QmlTuiCore
         Items/TextArea.h
         Items/TextArea.cpp
         Items/TextCursorPainter.h
-        Items/LogView.h
-        Items/LogView.cpp
+        Items/StackLayout.h
+        Items/StackLayout.cpp
         Items/ScrollView.h
         Items/ScrollView.cpp
         Items/GridLayout.h
@@ -244,7 +244,7 @@ qmltui_install_headers(QmlTui/Core/Items FILES
     Items/Item.h Items/Anchors.h Items/AnchorLine.h Items/Border.h
     Items/TableView.h Items/TreeView.h Items/Terminal.h Items/Rectangle.h
     Items/Gradient.h Items/GradientStop.h Items/Canvas.h Items/Popup.h
-    Items/TextArea.h Items/TextEditorState.h
+    Items/TextArea.h Items/TextEditorState.h Items/StackLayout.h
 )
 qmltui_install_headers(QmlTui/Core/Primitives FILES
     Primitives/Span.h Primitives/TextStyle.h Primitives/HighlightRange.h Primitives/QmlTuiGlobal.h

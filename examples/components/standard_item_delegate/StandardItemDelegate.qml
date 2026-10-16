@@ -15,36 +15,38 @@ Item {
     property rgba textColor: "default"
 
     readonly property string display: {
-        if (typeof model === "string" || typeof model === "number") return String(model)
-        if (!model) return ""
-        if (model.display !== undefined && model.display !== null) return String(model.display)
-        if (model.text !== undefined && model.text !== null) return String(model.text)
-        return ""
+        if (typeof model === "string" || typeof model === "number")
+            return String(model);
+        if (!model)
+            return "";
+        if (model.display !== undefined && model.display !== null)
+            return String(model.display);
+        if (model.text !== undefined && model.text !== null)
+            return String(model.text);
+        return "";
     }
     readonly property bool checkable: !!model && model.checkable === true
-    readonly property int checkState: !!model && model.checkState !== undefined && model.checkState !== null
-                                      ? Number(model.checkState) : -1
+    readonly property int checkState: !!model && model.checkState !== undefined && model.checkState !== null ? Number(model.checkState) : -1
     readonly property bool itemEnabled: !(!!model && model.enabled === false)
     readonly property string foreground: !!model && typeof model.foreground === "string" ? model.foreground : ""
     readonly property string background: !!model && typeof model.background === "string" ? model.background : ""
     readonly property string decoration: !!model && typeof model.decoration === "string" ? model.decoration : ""
-    readonly property string alignment: !!model && typeof model.textAlignment === "string" && model.textAlignment !== ""
-                                        ? model.textAlignment : "left"
-    readonly property string prefix: (decoration !== "" ? decoration + " " : "")
-        + (checkState < 0 ? ""
-           : checkState === Qt.Checked ? "[x] "
-           : checkState === Qt.PartiallyChecked ? "[-] " : "[ ] ")
+    readonly property string alignment: !!model && typeof model.textAlignment === "string" && model.textAlignment !== "" ? model.textAlignment : "left"
+    readonly property string prefix: (decoration !== "" ? decoration + " " : "") + (checkState < 0 ? "" : checkState === Qt.Checked ? "[x] " : checkState === Qt.PartiallyChecked ? "[-] " : "[ ] ")
 
     signal toggled(int checkState)
 
     function toggle() {
-        if (!checkable || !itemEnabled || !model) return false
-        const index = model.modelIndex
-        if (!index || !index.valid || !index.model) return false
-        const next = checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
-        if (!index.model.setData(index, next, Qt.CheckStateRole)) return false
-        toggled(next)
-        return true
+        if (!checkable || !itemEnabled || !model)
+            return false;
+        const index = model.modelIndex;
+        if (!index || !index.valid || !index.model)
+            return false;
+        const next = checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked;
+        if (!index.model.setData(index, next, Qt.CheckStateRole))
+            return false;
+        toggled(next);
+        return true;
     }
 
     implicitWidth: label.implicitWidth
@@ -67,12 +69,12 @@ Item {
         dim: !delegate.itemEnabled
         bold: delegate.current
         reversed: delegate.current
-        horizontalAlignment: delegate.alignment === "right" ? Qt.AlignRight
-                           : delegate.alignment === "center" ? Qt.AlignHCenter : Qt.AlignLeft
+        horizontalAlignment: delegate.alignment === "right" ? Qt.AlignRight : delegate.alignment === "center" ? Qt.AlignHCenter : Qt.AlignLeft
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Space && delegate.toggle()) event.accepted = true
+        if (event.key === Qt.Key_Space && delegate.toggle())
+            event.accepted = true;
     }
 
     MouseArea {

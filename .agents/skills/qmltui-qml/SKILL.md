@@ -243,9 +243,9 @@ toolkits. Status badges, calendars, and banner text are recipes under
 
 **`import QmlTui`** (C++ in `src/QmlTui/Core/Items` and `src/QmlTui/Core/Engine`)
 `Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`,
-`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`, `LogView`,
+`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`,
 `Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,
-`Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `Repeater`,
+`Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `Repeater`,
 `Loader`, `MouseArea`, `Shortcut`, `Keys` (attached), `State`,
 `Transition`, `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`,
 `Animation`, `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`.
@@ -254,7 +254,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 
 **`import QmlTui.Controls`** (QML and C++ in `src/QmlTui/Controls`)
 `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`,
-`ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `StackLayout`, `Panel`,
+`ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `Panel`,
 `Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
 no palette singleton: colours are set per item, and an inherited palette
 property is a Plan 06 section 7 proposal, not a shipped type.

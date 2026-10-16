@@ -49,10 +49,10 @@ Item {
             desc: "2D cell GridView"
         },
         {
-            code: "LOGS",
+            code: "SCRL",
             icon: "▼",
             accent: "#a3e635",
-            desc: "Streaming tail LogView"
+            desc: "Viewport ScrollView"
         },
         {
             code: "INPT",

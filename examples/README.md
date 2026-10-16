@@ -33,7 +33,6 @@ Run any built-in type demo standalone with `./build/examples/gallery/qmltui_gall
 | **Layouts** | [`Layouts.qml`](gallery/examples/Layouts.qml) | `qmltui_gallery --example Layouts` | [RowLayout](../docs/qml-types/rowlayout.md) |
 | **ListView** | [`ListView.qml`](gallery/examples/ListView.qml) | `qmltui_gallery --example ListView` | [ListView](../docs/qml-types/listview.md) |
 | **Loader** | [`Loader.qml`](gallery/examples/Loader.qml) | `qmltui_gallery --example Loader` | [Loader](../docs/qml-types/loader.md) |
-| **LogView** | [`LogView.qml`](gallery/examples/LogView.qml) | `qmltui_gallery --example LogView` | [LogView](../docs/qml-types/logview.md) |
 | **MouseArea** | [`MouseArea.qml`](gallery/examples/MouseArea.qml) | `qmltui_gallery --example MouseArea` | [MouseArea](../docs/qml-types/mousearea.md) |
 | **Panel** | [`Panel.qml`](gallery/examples/Panel.qml) | `qmltui_gallery --example Panel` | [Panel](../docs/qml-types/panel.md) |
 | **Popup** | [`Popup.qml`](gallery/examples/Popup.qml) | `qmltui_gallery --example Popup` | [Popup](../docs/qml-types/popup.md) |
@@ -47,7 +46,6 @@ Run any built-in type demo standalone with `./build/examples/gallery/qmltui_gall
 | **Slider** | [`Slider.qml`](gallery/examples/Slider.qml) | `qmltui_gallery --example Slider` | [Slider](../docs/qml-types/slider.md) |
 | **Sparkline** | [`Sparkline.qml`](gallery/examples/Sparkline.qml) | `qmltui_gallery --example Sparkline` | [Sparkline](../docs/qml-types/sparkline.md) |
 | **StackView** | [`StackView.qml`](gallery/examples/StackView.qml) | `qmltui_gallery --example StackView` | [StackView](../docs/qml-types/stackview.md) |
-| **StandardItemDelegate** | [`StandardItemDelegate.qml`](gallery/examples/StandardItemDelegate.qml) | `qmltui_gallery --example StandardItemDelegate` | [StandardItemDelegate](../docs/qml-types/standarditemdelegate.md) |
 | **States** | [`States.qml`](gallery/examples/States.qml) | `qmltui_gallery --example States` | [State](../docs/qml-types/state.md) |
 | **Switch** | [`Switch.qml`](gallery/examples/Switch.qml) | `qmltui_gallery --example Switch` | [Switch](../docs/qml-types/switch.md) |
 | **TabBar** | [`TabBar.qml`](gallery/examples/TabBar.qml) | `qmltui_gallery --example TabBar` | [TabBar](../docs/qml-types/tabbar.md) |

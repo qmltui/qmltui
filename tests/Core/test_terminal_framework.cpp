@@ -18,7 +18,6 @@
 #include <QmlTui/Core/Items/TextArea.h>
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Engine/State.h>
-#include <QmlTui/Core/Items/LogView.h>
 #include <QmlTui/Core/Items/Scrollback.h>
 #include <QmlTui/Core/Items/LinearLayout.h>
 #include <QmlTui/Core/Items/Layout.h>
@@ -38,24 +37,18 @@ namespace {
 
 QStringList* capturedMessages = nullptr;
 
-void captureMessage(QtMsgType, const QMessageLogContext&, const QString& message)
-{
-    if (capturedMessages)
-        capturedMessages->append(message);
+void captureMessage(QtMsgType, const QMessageLogContext&, const QString& message) {
+    if (capturedMessages) capturedMessages->append(message);
 }
 
-class ScopedMessageCapture
-{
+class ScopedMessageCapture {
 public:
-    ScopedMessageCapture()
-        : m_previousHandler(qInstallMessageHandler(captureMessage))
-    {
+    ScopedMessageCapture() : m_previousHandler(qInstallMessageHandler(captureMessage)) {
         Q_ASSERT(!capturedMessages);
         capturedMessages = &messages;
     }
 
-    ~ScopedMessageCapture()
-    {
+    ~ScopedMessageCapture() {
         qInstallMessageHandler(m_previousHandler);
         capturedMessages = nullptr;
     }
@@ -73,23 +66,23 @@ class MutableListModel : public QAbstractListModel {
 public:
     enum { NameRole = Qt::UserRole + 1 };
 
-    int rowCount(const QModelIndex &parent = {}) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_values.size();
     }
-    QVariant data(const QModelIndex &index, int role) const override {
+    QVariant data(const QModelIndex& index, int role) const override {
         if (!index.isValid() || index.row() >= m_values.size()) return {};
         return role == Qt::DisplayRole || role == NameRole ? m_values[index.row()] : QVariant();
     }
     QHash<int, QByteArray> roleNames() const override {
         return {{Qt::DisplayRole, "display"}, {NameRole, "name"}};
     }
-    void append(const QString &value) {
+    void append(const QString& value) {
         const int row = m_values.size();
         beginInsertRows({}, row, row);
         m_values.append(value);
         endInsertRows();
     }
-    void insertAt(int row, const QString &value) {
+    void insertAt(int row, const QString& value) {
         beginInsertRows({}, row, row);
         m_values.insert(row, value);
         endInsertRows();
@@ -99,7 +92,7 @@ public:
         m_values.removeAt(row);
         endRemoveRows();
     }
-    void renameFirst(const QString &value) {
+    void renameFirst(const QString& value) {
         m_values[0] = value;
         emit dataChanged(index(0), index(0), {Qt::DisplayRole, NameRole});
     }
@@ -118,14 +111,12 @@ class DelegateRecorder : public QObject {
     Q_OBJECT
 
 public:
-    Q_INVOKABLE void record(int index, const QVariant &model,
-                            const QVariant &modelData, const QString &display)
-    {
+    Q_INVOKABLE void record(int index, const QVariant& model, const QVariant& modelData,
+                            const QString& display) {
         indexes.append(index);
         displays.append(display);
         modelValues.append(model.toMap().value(QStringLiteral("display")).toString());
-        modelDataValues.append(
-            modelData.toMap().value(QStringLiteral("display")).toString());
+        modelDataValues.append(modelData.toMap().value(QStringLiteral("display")).toString());
     }
 
     QList<int> indexes;
@@ -139,7 +130,7 @@ class InstanceTracker : public QObject {
 
 public:
     Q_INVOKABLE void instanceCreated() { ++createdCount; }
-    Q_INVOKABLE void itemRendered(const QString &val) { renderedItems.append(val); }
+    Q_INVOKABLE void itemRendered(const QString& val) { renderedItems.append(val); }
 
     int createdCount = 0;
     QStringList renderedItems;
@@ -162,7 +153,6 @@ private slots:
     void mouseDragSelection();
     void responsiveLayout();
     void layoutInvalidation();
-    void boundedLog();
     void osc52Encoding();
     void treeDelegateIdentity();
     void listModelMutationContract();
@@ -313,11 +303,12 @@ void TestTerminalFramework::dialogDefaultAndCancelActions() {
                 message: "Continue?"
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *terminal = qobject_cast<Terminal*>(object.get());
-    auto *dialog = terminal ? terminal->findChild<Popup*>(QStringLiteral("dialog")) : nullptr;
+    auto* terminal = qobject_cast<Terminal*>(object.get());
+    auto* dialog = terminal ? terminal->findChild<Popup*>(QStringLiteral("dialog")) : nullptr;
     QVERIFY(dialog);
     TerminalEngine engine(terminal);
 
@@ -381,9 +372,9 @@ void TestTerminalFramework::reentrantStateChange() {
     Text label(&terminal);
     label.setText(QStringLiteral("idle"));
     for (const QString name : {QStringLiteral("loading"), QStringLiteral("ready")}) {
-        auto *state = new State(&label);
+        auto* state = new State(&label);
         state->setName(name);
-        auto *change = new PropertyChanges(state);
+        auto* change = new PropertyChanges(state);
         change->setTarget(&label);
         change->setProperties({{QStringLiteral("text"), name}});
         auto changes = state->changes();
@@ -392,8 +383,7 @@ void TestTerminalFramework::reentrantStateChange() {
         states.append(&states, state);
     }
     const auto redirect = connect(&label, &Item::stateChanged, &label, [&] {
-        if (label.state() == QStringLiteral("loading"))
-            label.setState(QStringLiteral("ready"));
+        if (label.state() == QStringLiteral("loading")) label.setState(QStringLiteral("ready"));
     });
     label.setState(QStringLiteral("loading"));
     QCOMPARE(label.state(), QStringLiteral("ready"));
@@ -420,10 +410,9 @@ void TestTerminalFramework::reentrantStateChange() {
 
     // Property application can also trigger State.when reevaluation.
     auto states = label.states();
-    State *ready = states.at(&states, 1);
+    State* ready = states.at(&states, 1);
     connect(&label, &Text::textChanged, &label, [&] {
-        if (label.text() == QStringLiteral("loading"))
-            ready->setWhen(true);
+        if (label.text() == QStringLiteral("loading")) ready->setWhen(true);
     });
     label.setState(QStringLiteral("loading"));
     QCOMPARE(label.state(), QStringLiteral("ready"));
@@ -501,10 +490,10 @@ void TestTerminalFramework::responsiveLayout() {
     Item second(&layout);
     first.setImplicitWidth(2);
     second.setImplicitWidth(2);
-    auto *firstInfo = qobject_cast<LayoutAttached*>(
-        qmlAttachedPropertiesObject<Layout>(&first, true));
-    auto *secondInfo = qobject_cast<LayoutAttached*>(
-        qmlAttachedPropertiesObject<Layout>(&second, true));
+    auto* firstInfo =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(&first, true));
+    auto* secondInfo =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(&second, true));
     firstInfo->fillWidth = true;
     secondInfo->fillWidth = true;
     TextGridBuffer buffer;
@@ -522,8 +511,7 @@ void TestTerminalFramework::layoutInvalidation() {
     layout.setHeight(1);
     Item child(&layout);
     child.setImplicitWidth(1);
-    auto *info = qobject_cast<LayoutAttached*>(
-        qmlAttachedPropertiesObject<Layout>(&child, true));
+    auto* info = qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(&child, true));
     QSignalSpy dirtySpy(&layout, &Item::dirty);
     QVERIFY(info->setProperty("minimumWidth", 5));
     QVERIFY(dirtySpy.count() > 0);
@@ -533,15 +521,6 @@ void TestTerminalFramework::layoutInvalidation() {
     paintItem(layout, buffer, 0, 0);
     QCOMPARE(child.width(), 5);
     QVERIFY(layout.clip());
-}
-
-void TestTerminalFramework::boundedLog() {
-    LogView log;
-    log.setMaximumLineCount(2);
-    log.appendLine(QStringLiteral("one"));
-    log.appendLine(QStringLiteral("two"));
-    log.appendLine(QStringLiteral("three"));
-    QCOMPARE(log.text(), QStringLiteral("two\nthree"));
 }
 
 void TestTerminalFramework::osc52Encoding() {
@@ -574,31 +553,35 @@ void TestTerminalFramework::treeDelegateIdentity() {
                 required property var modelData
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *tree = qobject_cast<TreeView*>(object.get());
+    auto* tree = qobject_cast<TreeView*>(object.get());
     QVERIFY(tree);
     TextGridBuffer buffer;
     buffer.resize(30, 5);
     paintItem(tree, buffer, 0, 0);
-    const QList<Item*> initialItems = tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
+    const QList<Item*> initialItems =
+        tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
     QVERIFY(!initialItems.isEmpty());
-    Item *firstDelegate = initialItems.first();
+    Item* firstDelegate = initialItems.first();
 
     model.renameFirst(QStringLiteral("renamed"));
     paintItem(tree, buffer, 0, 0);
-    QVERIFY(tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
+    QVERIFY(
+        tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
 
     model.append(QStringLiteral("third"));
     paintItem(tree, buffer, 0, 0);
-    QVERIFY(tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
+    QVERIFY(
+        tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).contains(firstDelegate));
 
     model.moveFirstToEnd();
     paintItem(tree, buffer, 0, 0);
-    Item *firstVisible = nullptr;
+    Item* firstVisible = nullptr;
     const QList<Item*> delegates = tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
-    for (Item *delegate : delegates) {
+    for (Item* delegate : delegates) {
         if (delegate->y() == 0) {
             firstVisible = delegate;
             break;
@@ -611,7 +594,7 @@ void TestTerminalFramework::treeDelegateIdentity() {
     tree->setCurrentIndex(2);
     paintItem(tree, buffer, 0, 0);
     bool selectedDelegateWasMaterialized = false;
-    for (Item *delegate : tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
+    for (Item* delegate : tree->findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
         if (delegate->property("index").toInt() == 2 && delegate->visible()) {
             selectedDelegateWasMaterialized = true;
             break;
@@ -634,7 +617,8 @@ void TestTerminalFramework::listModelMutationContract() {
             required property var modelData
             property bool attachedCurrent: ListView.isCurrentItem
         }
-    )", QUrl());
+    )",
+                     QUrl());
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     MutableListModel model;
@@ -647,7 +631,7 @@ void TestTerminalFramework::listModelMutationContract() {
     list.setWidth(30);
     list.setHeight(5);
     list.setDelegate(&delegate);
-    list.setModel(QVariant::fromValue(static_cast<QObject *>(&model)));
+    list.setModel(QVariant::fromValue(static_cast<QObject*>(&model)));
     QCOMPARE(list.currentIndex(), -1);
 
     list.setCurrentIndex(1);
@@ -659,8 +643,8 @@ void TestTerminalFramework::listModelMutationContract() {
     model.moveFirstToEnd();
     QCOMPARE(list.currentIndex(), 0);
 
-    Item *currentDelegate = nullptr;
-    for (Item *item : list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly)) {
+    Item* currentDelegate = nullptr;
+    for (Item* item : list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
         if (item->property("attachedCurrent").toBool()) {
             currentDelegate = item;
             break;
@@ -688,7 +672,8 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
             required property string display
             height: 2
         }
-    )", QUrl());
+    )",
+                     QUrl());
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     MutableListModel model;
@@ -700,28 +685,28 @@ void TestTerminalFramework::listViewVirtualizesLargeModels() {
     list.setWidth(30);
     list.setHeight(5);
     list.setDelegate(&delegate);
-    list.setModel(QVariant::fromValue(static_cast<QObject *>(&model)));
+    list.setModel(QVariant::fromValue(static_cast<QObject*>(&model)));
 
     TextGridBuffer buffer;
     buffer.resize(30, 5);
     paintItem(list, buffer, 0, 0);
     QCOMPARE(list.contentHeight(), 1000);
-    QVERIFY(list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly).size() <= 7);
+    QVERIFY(list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly).size() <= 7);
 
     list.setContentY(400);
     paintItem(list, buffer, 0, 0);
-    const QList<Item *> scrolledDelegates =
-        list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly);
+    const QList<Item*> scrolledDelegates =
+        list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly);
     QVERIFY(scrolledDelegates.size() <= 7);
     QVERIFY(std::any_of(scrolledDelegates.cbegin(), scrolledDelegates.cend(),
-                        [](Item *item) { return item->property("index").toInt() >= 200; }));
+                        [](Item* item) { return item->property("index").toInt() >= 200; }));
 
     list.setCurrentIndex(450);
     paintItem(list, buffer, 0, 0);
     QCOMPARE(list.currentIndex(), 450);
     QVERIFY(list.contentY() > 800);
     bool currentWasMaterialized = false;
-    for (Item *item : list.findChildren<Item *>(QString(), Qt::FindDirectChildrenOnly)) {
+    for (Item* item : list.findChildren<Item*>(QString(), Qt::FindDirectChildrenOnly)) {
         if (item->property("index").toInt() == 450) {
             currentWasMaterialized = true;
             break;
@@ -740,7 +725,8 @@ void TestTerminalFramework::scrollbackDelegateContract() {
     invalidDelegate.setData(R"(
         import QtQml
         QtObject {}
-    )", QUrl());
+    )",
+                            QUrl());
     QVERIFY2(invalidDelegate.isReady(), qPrintable(invalidDelegate.errorString()));
 
     QQmlComponent validDelegate(&engine);
@@ -762,7 +748,8 @@ void TestTerminalFramework::scrollbackDelegateContract() {
                     delegateRecorder.record(index, model, modelData, display);
             }
         }
-    )", QUrl());
+    )",
+                          QUrl());
     QVERIFY2(validDelegate.isReady(), qPrintable(validDelegate.errorString()));
 
     Terminal terminal;
@@ -772,17 +759,15 @@ void TestTerminalFramework::scrollbackDelegateContract() {
     model.append(QStringLiteral("first"));
     model.append(QStringLiteral("second"));
 
-    QTest::ignoreMessage(
-        QtWarningMsg,
-        QRegularExpression(QStringLiteral(".*Delegate root must derive from QmlTui.Item.*")));
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(QStringLiteral(
+                                           ".*Delegate root must derive from QmlTui.Item.*")));
     scrollback.setDelegate(&invalidDelegate);
     scrollback.setModel(&model);
     QVERIFY(recorder.indexes.isEmpty());
 
     scrollback.setDelegate(&validDelegate);
     QCOMPARE(recorder.indexes, QList<int>({0, 1}));
-    QCOMPARE(recorder.displays,
-             QStringList({QStringLiteral("first"), QStringLiteral("second")}));
+    QCOMPARE(recorder.displays, QStringList({QStringLiteral("first"), QStringLiteral("second")}));
     QCOMPARE(recorder.modelValues, recorder.displays);
     QCOMPARE(recorder.modelDataValues, recorder.displays);
 }
@@ -812,7 +797,8 @@ void TestTerminalFramework::scrollbackDelegateReuse() {
                     tracker.itemRendered(display);
             }
         }
-    )", QUrl());
+    )",
+                     QUrl());
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     Terminal terminal;
@@ -829,7 +815,8 @@ void TestTerminalFramework::scrollbackDelegateReuse() {
     scrollback.setModel(&model);
 
     QCOMPARE(tracker.createdCount, 1);
-    QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("item1"), QStringLiteral("item2"), QStringLiteral("item3")}));
+    QCOMPARE(tracker.renderedItems, QStringList({QStringLiteral("item1"), QStringLiteral("item2"),
+                                                 QStringLiteral("item3")}));
 
     tracker.createdCount = 0;
     tracker.renderedItems.clear();
@@ -872,7 +859,8 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
             required property string display
             Text { text: display }
         }
-    )", QUrl());
+    )",
+                         QUrl());
     QVERIFY2(itemDelegate.isReady(), qPrintable(itemDelegate.errorString()));
 
     QQmlComponent sepDelegate(&engine);
@@ -884,7 +872,8 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
             height: 1
             Text { text: "-----" }
         }
-    )", QUrl());
+    )",
+                        QUrl());
     QVERIFY2(sepDelegate.isReady(), qPrintable(sepDelegate.errorString()));
 
     Terminal terminal;
@@ -915,7 +904,8 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
             required property string display
             Text { text: display }
         }
-    )", QUrl());
+    )",
+                             QUrl());
     QVERIFY2(overrideDelegate.isReady(), qPrintable(overrideDelegate.errorString()));
 
     Scrollback overrideScrollback(&terminal);
@@ -938,9 +928,11 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
         for (int x = 0; x < rows.width(); ++x) {
             const Cell& cell = rows.cellAt(x, y);
             if (cell.continuation) continue;
-            text += cell.character().isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character());
+            text += cell.character().isEmpty() ? QStringLiteral(" ")
+                                               : QString::fromUtf8(cell.character());
         }
-        while (text.endsWith(QLatin1Char(' '))) text.chop(1);
+        while (text.endsWith(QLatin1Char(' ')))
+            text.chop(1);
         return text;
     };
     QCOMPARE(rows.height(), 6);
@@ -969,7 +961,8 @@ void TestTerminalFramework::scrollbackImperativeMethods() {
             required property string text
             Text { text: text }
         }
-    )", QUrl());
+    )",
+                     QUrl());
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     Terminal terminal;
@@ -1030,7 +1023,7 @@ void TestTerminalFramework::terminalVisibleChildrenAndAutoImplicitHeight() {
 
 void TestTerminalFramework::destroyedTreeModelIsCleared() {
     TreeView tree;
-    auto *model = new MutableListModel;
+    auto* model = new MutableListModel;
     model->append(QStringLiteral("row"));
     tree.setModel(QVariant::fromValue(static_cast<QObject*>(model)));
     QVERIFY(tree.model().isValid());
@@ -1122,10 +1115,11 @@ void TestTerminalFramework::keyHandlingImprovements() {
                 }
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *terminal = qobject_cast<Terminal*>(object.get());
+    auto* terminal = qobject_cast<Terminal*>(object.get());
     QVERIFY(terminal);
     TerminalEngine engine(terminal);
 
@@ -1168,8 +1162,7 @@ void TestTerminalFramework::keyHandlingImprovements() {
     QCOMPARE(terminal->property("shortcutFired").toBool(), true);
 }
 
-void TestTerminalFramework::alternateScreenDefersMessages()
-{
+void TestTerminalFramework::alternateScreenDefersMessages() {
     ScopedMessageCapture capture;
     const QString deferred = QStringLiteral("qmltui-deferred-message");
     const QString afterStop = QStringLiteral("qmltui-message-after-stop");
@@ -1178,9 +1171,7 @@ void TestTerminalFramework::alternateScreenDefersMessages()
     {
         QStringList presented;
         auto routing = QtMessageRouting::install(
-            [](const QtMessage&) {},
-            [&](const QtMessage& msg) { presented.append(msg.message); }
-        );
+            [](const QtMessage&) {}, [&](const QtMessage& msg) { presented.append(msg.message); });
 
         Terminal terminal;
         terminal.engine()->setTestViewportSize(QSize(10, 3));
@@ -1200,14 +1191,11 @@ void TestTerminalFramework::alternateScreenDefersMessages()
     QVERIFY(capture.messages.contains(afterDestroy));
 }
 
-void TestTerminalFramework::nestedAlternateScreensDelayFlush()
-{
+void TestTerminalFramework::nestedAlternateScreensDelayFlush() {
     const QString deferred = QStringLiteral("qmltui-nested-deferred-message");
     QStringList presented;
     auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {},
-        [&](const QtMessage& msg) { presented.append(msg.message); }
-    );
+        [](const QtMessage&) {}, [&](const QtMessage& msg) { presented.append(msg.message); });
 
     Terminal first;
     Terminal second;
@@ -1226,14 +1214,11 @@ void TestTerminalFramework::nestedAlternateScreensDelayFlush()
     QVERIFY(presented.contains(deferred));
 }
 
-void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
-{
+void TestTerminalFramework::normalScreenForwardsMessagesImmediately() {
     const QString immediate = QStringLiteral("qmltui-immediate-message");
     QStringList presented;
     auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {},
-        [&](const QtMessage& msg) { presented.append(msg.message); }
-    );
+        [](const QtMessage&) {}, [&](const QtMessage& msg) { presented.append(msg.message); });
 
     Terminal terminal;
     terminal.setMode(Terminal::Mode::Inline);
@@ -1244,8 +1229,7 @@ void TestTerminalFramework::normalScreenForwardsMessagesImmediately()
     QVERIFY(presented.contains(immediate));
 }
 
-void TestTerminalFramework::terminalTitle()
-{
+void TestTerminalFramework::terminalTitle() {
     Terminal terminal;
     QCOMPARE(terminal.title(), QString());
 
@@ -1273,7 +1257,8 @@ void TestTerminalFramework::terminalTitle()
             property string appName: "QmlTui"
             title: appName + " - Dashboard"
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     auto* root = qobject_cast<Terminal*>(component.create());
     QVERIFY(root);
@@ -1284,8 +1269,7 @@ void TestTerminalFramework::terminalTitle()
     delete root;
 }
 
-void TestTerminalFramework::terminalBackgroundColor()
-{
+void TestTerminalFramework::terminalBackgroundColor() {
     // 1. Test helper formats sequence
     QCOMPARE(TerminalEngine::osc11Sequence(Color("#1e1e2e")), std::string("\033]11;#1e1e2e\a"));
     QCOMPARE(TerminalEngine::osc11Sequence(Color("blue")), std::string("\033]11;#0000ff\a"));
@@ -1359,7 +1343,8 @@ void TestTerminalFramework::terminalBackgroundColor()
             property string themeColor: "#282a36"
             color: themeColor
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     auto* root = qobject_cast<Terminal*>(component.create());
     QVERIFY(root);

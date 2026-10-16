@@ -148,9 +148,6 @@ signals:
     void highlightsChanged();
     void accepted();
 
-protected:
-    void replaceTextPreservingHighlights(const QString& text, int trimmedLeadingChars = 0);
-
 private:
     struct HighlightLayer {
         int priority = 0;

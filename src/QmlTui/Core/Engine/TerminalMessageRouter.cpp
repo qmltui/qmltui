@@ -18,23 +18,16 @@ namespace {
 
 thread_local bool s_inCallback = false;
 
-struct PresentationRecord
-{
+struct PresentationRecord {
     uint64_t seq = 0;
     QtMessage message;
     bool eligible = false;
     uint64_t registrationId = 0;
 };
 
-enum class RegistrationState
-{
-    None,
-    Active,
-    Retiring
-};
+enum class RegistrationState { None, Active, Retiring };
 
-struct RouterState
-{
+struct RouterState {
     QMutex mutex;
     QWaitCondition retirementWaitCondition;
     int engineCount = 0;
@@ -56,30 +49,26 @@ struct RouterState
     bool isDraining = false;
 };
 
-RouterState& state()
-{
+RouterState& state() {
     static RouterState* routerState = new RouterState;
     return *routerState;
 }
 
-void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock)
-{
-    if (router.isDraining)
-        return;
+void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
+    if (router.isDraining) return;
 
     router.isDraining = true;
     while (router.alternateScreenSessionCount == 0 && !router.presentationQueue.isEmpty()) {
-        if (!router.presentationQueue.first().eligible)
-            break;
+        if (!router.presentationQueue.first().eligible) break;
 
         PresentationRecord rec = router.presentationQueue.takeFirst();
         QtMessageSink sink = nullptr;
         if (router.regState == RegistrationState::Active) {
-            if (rec.registrationId == router.activeRegistrationId && router.hasExplicitPresentationSink)
+            if (rec.registrationId == router.activeRegistrationId &&
+                router.hasExplicitPresentationSink)
                 sink = router.presentationSink;
         } else if (router.regState == RegistrationState::None) {
-            if (rec.registrationId == 0)
-                sink = stderrPresentationSink();
+            if (rec.registrationId == 0) sink = stderrPresentationSink();
         }
 
         if (sink) {
@@ -106,9 +95,9 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock)
 
         if (sink) {
             --router.activePresentationDeliveries;
-            if (router.regState == RegistrationState::Retiring
-                && router.activePresentationDeliveries == 0
-                && router.activeDiagnosticDeliveries == 0) {
+            if (router.regState == RegistrationState::Retiring &&
+                router.activePresentationDeliveries == 0 &&
+                router.activeDiagnosticDeliveries == 0) {
                 router.retirementWaitCondition.wakeAll();
             }
         }
@@ -116,9 +105,7 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock)
     router.isDraining = false;
 }
 
-void routeMessage(QtMsgType type, const QMessageLogContext& context,
-                  const QString& message)
-{
+void routeMessage(QtMsgType type, const QMessageLogContext& context, const QString& message) {
     if (s_inCallback) {
         const QString formatted = qFormatLogMessage(type, context, message);
         std::fprintf(stderr, "%s\n", qPrintable(formatted));
@@ -133,12 +120,9 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
         msg.type = type;
         msg.message = message;
         msg.timestampUtc = QDateTime::currentDateTimeUtc();
-        if (context.category)
-            msg.category = QByteArray(context.category);
-        if (context.file)
-            msg.file = QByteArray(context.file);
-        if (context.function)
-            msg.function = QByteArray(context.function);
+        if (context.category) msg.category = QByteArray(context.category);
+        if (context.file) msg.file = QByteArray(context.file);
+        if (context.function) msg.function = QByteArray(context.function);
         msg.line = context.line;
         msg.formattedText = qFormatLogMessage(type, context, message);
 
@@ -148,8 +132,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
             QMutexLocker lock(&router.mutex);
             if (router.regState == RegistrationState::Active) {
                 diagSink = router.diagnosticSink;
-                if (router.hasExplicitPresentationSink)
-                    presSink = router.presentationSink;
+                if (router.hasExplicitPresentationSink) presSink = router.presentationSink;
             } else {
                 presSink = stderrPresentationSink();
             }
@@ -157,10 +140,14 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
 
         s_inCallback = true;
         if (diagSink) {
-            try { diagSink(msg); } catch (...) {}
+            try {
+                diagSink(msg);
+            } catch (...) {}
         }
         if (presSink) {
-            try { presSink(msg); } catch (...) {}
+            try {
+                presSink(msg);
+            } catch (...) {}
         }
         std::fflush(stderr);
         s_inCallback = false;
@@ -179,12 +166,9 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
         msg.type = type;
         msg.message = message;
         msg.timestampUtc = QDateTime::currentDateTimeUtc();
-        if (context.category)
-            msg.category = QByteArray(context.category);
-        if (context.file)
-            msg.file = QByteArray(context.file);
-        if (context.function)
-            msg.function = QByteArray(context.function);
+        if (context.category) msg.category = QByteArray(context.category);
+        if (context.file) msg.file = QByteArray(context.file);
+        if (context.function) msg.function = QByteArray(context.function);
         msg.line = context.line;
         msg.formattedText = qFormatLogMessage(type, context, message);
 
@@ -199,16 +183,11 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
 
         if (hasPresentation) {
             constexpr int kMaxPresentationMessages = 500;
-            if (router.alternateScreenSessionCount > 0
-                && router.presentationQueue.size() >= kMaxPresentationMessages) {
+            if (router.alternateScreenSessionCount > 0 &&
+                router.presentationQueue.size() >= kMaxPresentationMessages) {
                 router.presentationQueue.removeFirst();
             }
-            router.presentationQueue.append(PresentationRecord{
-                seq,
-                msg,
-                false,
-                regId
-            });
+            router.presentationQueue.append(PresentationRecord{seq, msg, false, regId});
         }
 
         if (diagSink) {
@@ -234,9 +213,9 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
         QMutexLocker lock(&router.mutex);
         if (diagSink) {
             --router.activeDiagnosticDeliveries;
-            if (router.regState == RegistrationState::Retiring
-                && router.activeDiagnosticDeliveries == 0
-                && router.activePresentationDeliveries == 0) {
+            if (router.regState == RegistrationState::Retiring &&
+                router.activeDiagnosticDeliveries == 0 &&
+                router.activePresentationDeliveries == 0) {
                 router.retirementWaitCondition.wakeAll();
             }
         }
@@ -258,8 +237,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context,
 
 } // namespace
 
-void registerEngine()
-{
+void registerEngine() {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
     ++router.engineCount;
@@ -269,12 +247,10 @@ void registerEngine()
     }
 }
 
-void unregisterEngine()
-{
+void unregisterEngine() {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
-    if (router.engineCount <= 0)
-        return;
+    if (router.engineCount <= 0) return;
 
     --router.engineCount;
     if (router.engineCount == 0) {
@@ -288,19 +264,16 @@ void unregisterEngine()
     }
 }
 
-void beginAlternateScreenSession()
-{
+void beginAlternateScreenSession() {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
     ++router.alternateScreenSessionCount;
 }
 
-void endAlternateScreenSession()
-{
+void endAlternateScreenSession() {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
-    if (router.alternateScreenSessionCount <= 0)
-        return;
+    if (router.alternateScreenSessionCount <= 0) return;
 
     --router.alternateScreenSessionCount;
     if (router.alternateScreenSessionCount == 0) {
@@ -308,15 +281,11 @@ void endAlternateScreenSession()
     }
 }
 
-bool installRegistration(uint64_t registrationId,
-                         QtMessageSink diagnosticSink,
-                         QtMessageSink presentationSink,
-                         bool hasPresentationSink)
-{
+bool installRegistration(uint64_t registrationId, QtMessageSink diagnosticSink,
+                         QtMessageSink presentationSink, bool hasPresentationSink) {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
-    if (router.regState != RegistrationState::None)
-        return false;
+    if (router.regState != RegistrationState::None) return false;
 
     router.presentationQueue.clear();
     router.regState = RegistrationState::Active;
@@ -333,12 +302,11 @@ bool installRegistration(uint64_t registrationId,
     return true;
 }
 
-void resetRegistration(uint64_t registrationId)
-{
+void resetRegistration(uint64_t registrationId) {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
-    if (router.activeRegistrationId != registrationId
-        || router.regState != RegistrationState::Active) {
+    if (router.activeRegistrationId != registrationId ||
+        router.regState != RegistrationState::Active) {
         return;
     }
 
@@ -362,8 +330,7 @@ void resetRegistration(uint64_t registrationId)
     }
 }
 
-QtMessageSink stderrPresentationSink()
-{
+QtMessageSink stderrPresentationSink() {
     return [](const QtMessage& msg) {
         RouterState& router = state();
         QtMessageHandler prev = nullptr;
@@ -373,8 +340,7 @@ QtMessageSink stderrPresentationSink()
         }
         if (prev) {
             const QMessageLogContext context(
-                msg.file.isNull() ? nullptr : msg.file.constData(),
-                msg.line,
+                msg.file.isNull() ? nullptr : msg.file.constData(), msg.line,
                 msg.function.isNull() ? nullptr : msg.function.constData(),
                 msg.category.isNull() ? nullptr : msg.category.constData());
             prev(msg.type, context, msg.message);

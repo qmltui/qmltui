@@ -13,7 +13,7 @@ Terminal {
     id: root
     title: showingDemo && current ? "QmlTui Gallery · " + current.file : "QmlTui Gallery"
     property bool lightTheme: false
-    color: lightTheme ? "#ffffff" : "#0d1117"
+    color: inlineMode ? "default" : (lightTheme ? "#ffffff" : "#0d1117")
 
     readonly property string brandPrimary: lightTheme ? "#00a651" : "#2cde85"
     readonly property string brandAccent: lightTheme ? "#008f45" : "#00ff66"
@@ -38,7 +38,7 @@ Terminal {
     readonly property string standaloneFile: typeof qmltuiStandaloneExample === "string" ? qmltuiStandaloneExample : ""
     readonly property bool standalone: standaloneFile !== ""
     readonly property string initialPageFile: typeof qmltuiGalleryPage === "string" ? qmltuiGalleryPage : ""
-    readonly property var availableFiles: typeof qmltuiAvailableExamples !== "undefined" && Array.isArray(qmltuiAvailableExamples) ? qmltuiAvailableExamples : null
+    readonly property var availableFiles: typeof qmltuiAvailableExamples !== "undefined" && qmltuiAvailableExamples !== null && typeof qmltuiAvailableExamples.length === "number" ? qmltuiAvailableExamples : null
 
     readonly property int sidebarWidth: (fullscreenStage || standalone) ? 0 : 26
     readonly property int sidebarVisibleRows: Math.max(1, bodyArea.height - 2)
@@ -559,14 +559,13 @@ Terminal {
             bold: true
         }
 
-        Rectangle {
+        Item {
             anchors {
                 bottom: parent.bottom
                 left: parent.left
                 right: parent.right
             }
             height: 1
-            color: root.lineColor
         }
     }
 

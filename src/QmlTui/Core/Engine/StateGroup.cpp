@@ -8,7 +8,8 @@ namespace qmltui {
 StateGroup::StateGroup(QObject* parent)
     : QObject(parent), m_stateController(std::make_unique<StateController>(this)) {
     m_stateController->setDefaultTarget(nullptr);
-    connect(m_stateController.get(), &StateController::stateChanged, this, &StateGroup::stateChanged);
+    connect(m_stateController.get(), &StateController::stateChanged, this,
+            &StateGroup::stateChanged);
 }
 
 StateGroup::~StateGroup() = default;

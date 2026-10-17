@@ -49,6 +49,43 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  coverage:
+    name: coverage (linux / clang / llvm-cov)
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build-coverage -G Ninja
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DQMLTUI_BUILD_TESTS=ON
+          -DQMLTUI_BUILD_EXAMPLES=ON
+          -DQMLTUI_ENABLE_RUNNER=ON
+          -DQMLTUI_ENABLE_PRIVATE_QT=ON
+          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
+          -DQMLTUI_ENABLE_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build-coverage --parallel 4
+
+      - name: Run tests and generate coverage report
+        run: cmake --build build-coverage --target coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            build-coverage/coverage/html/
+            build-coverage/coverage/summary.md
+            build-coverage/coverage/summary.txt
+            build-coverage/coverage/summary.json
+            build-coverage/coverage/lcov.info
+          retention-days: 14
+
   windows:
     name: windows / Behavior ON
     # A self-hosted Windows runner provides QMLTUI_QT_WINDOWS (the msvc2022_64

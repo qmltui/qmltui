@@ -17,8 +17,9 @@ it comes back.
 
 ## Linux runner (WSL)
 
-The workflow expects the Qt prefix in `QMLTUI_QT_LINUX`; CMake and Ninja come
-from the distribution.
+The workflow expects the Qt prefix in `QMLTUI_QT_LINUX`; CMake, Ninja, and
+`clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage` job) come from the
+distribution.
 
 ```bash
 mkdir -p ~/actions-runner && cd ~/actions-runner
@@ -81,6 +82,7 @@ same settings page.
 | Job | Runner | Trigger |
 | :--- | :--- | :--- |
 | `linux` (Behavior on and off) | self-hosted `linux` | every push and pull request |
+| `coverage` (Clang `llvm-cov`) | self-hosted `linux` | every push and pull request |
 | `windows` (Behavior on) | self-hosted `windows` | every push and pull request |
 | `quickstart` | self-hosted `linux` | every push and pull request |
 | `macos` | hosted `macos-14` | `workflow_dispatch` and `v*` tags |

@@ -8,6 +8,7 @@ option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (B
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
 option(QMLTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
 option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" OFF)
+option(QMLTUI_ENABLE_COVERAGE "Instrument QmlTui targets for Clang source-based code coverage" OFF)
 option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid QmlTui Commercial License" OFF)
 
 if(QMLTUI_COMMERCIAL_LICENSE)
@@ -83,6 +84,11 @@ endif()
 add_subdirectory(src/QmlTui)
 if(TARGET qmltui::runner AND NOT EMSCRIPTEN)
     add_subdirectory(tools/qmltui-runner)
+endif()
+
+if(QMLTUI_ENABLE_COVERAGE)
+    include(cmake/QmlTuiCoverage.cmake)
+    qmltui_register_coverage_targets()
 endif()
 
 # Example executable to test the library

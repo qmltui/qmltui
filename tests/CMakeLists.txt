@@ -141,6 +141,7 @@ add_test(
         "-DQt6_DIR=${Qt6_DIR}"
         "-DCONSUMER_GENERATOR=${CMAKE_GENERATOR}"
         "-DCONSUMER_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCONSUMER_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
 )
 set_tests_properties(test_installed_custom_item_consumer PROPERTIES

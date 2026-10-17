@@ -26,7 +26,7 @@ Item {
         footerColor: "#8b949e"
         footerTrailing: "last: " + inlineDemo.lastCommand
         footerTrailingColor: "#2cde85"
-        color: "default"
+
         border {
             style: Border.Rounded
             color: "#30363d"

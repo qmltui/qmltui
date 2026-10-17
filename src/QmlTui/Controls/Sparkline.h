@@ -9,13 +9,18 @@
 
 namespace qmltui {
 
+// Compact inline time-series chart rendered with Unicode vertical block glyphs
+// (` `..`█`). When `from >= to` (including the 0..0 default), the vertical range
+// auto-scales to the minimum and maximum of `values`.
 class QMLTUI_CONTROLS_EXPORT Sparkline : public Item {
     Q_OBJECT
     QML_ELEMENT
 
     Q_PROPERTY(QVariant values READ values WRITE setValues NOTIFY valuesChanged)
+    // Explicit vertical bounds; when `from >= to`, the chart auto-scales to `values`.
     Q_PROPERTY(double from READ from WRITE setFrom NOTIFY fromChanged)
     Q_PROPERTY(double to READ to WRITE setTo NOTIFY toChanged)
+    // When true in multi-row sparklines, rows below the sample row are filled with `█`.
     Q_PROPERTY(bool filled READ filled WRITE setFilled NOTIFY filledChanged)
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
@@ -57,13 +62,10 @@ private:
     QVariantList m_values;
 
     double m_from = 0.0;
-    double m_to = 0.0; // 0.0 means auto-scale
+    double m_to = 0.0; // <= m_from means auto-scale
     bool m_filled = false;
     Color m_color = "default";
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0); // see Color.h
 
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;

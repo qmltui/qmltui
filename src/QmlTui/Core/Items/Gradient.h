@@ -13,6 +13,9 @@
 
 namespace qmltui {
 
+// Multi-stop linear color gradient used by Rectangle.gradient and Text.gradient.
+// Interpolates RGB colors across sorted GradientStops along Vertical or
+// Horizontal orientation, shifted by `offset` (wrapping in [0.0, 1.0)).
 class QMLTUI_CORE_EXPORT Gradient : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -43,6 +46,7 @@ public:
     void addStop(GradientStop* stop);
     void clearStops();
 
+    // Evaluates the interpolated ARGB color at normalized position t in [0.0, 1.0].
     uint32_t colorAt(qreal t) const;
 
 signals:

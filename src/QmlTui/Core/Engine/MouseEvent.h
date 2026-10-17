@@ -7,6 +7,9 @@
 
 namespace qmltui {
 
+// Mouse press, release, motion, or wheel event delivered to Item mouse
+// handlers and MouseArea signals. Coordinates (x, y) are in the receiving
+// item's local cell space.
 class QMLTUI_CORE_EXPORT MouseEvent : public QObject {
     Q_OBJECT
     QML_ELEMENT

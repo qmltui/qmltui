@@ -1,6 +1,8 @@
 import QtQml
 import QmlTui
 
+// Single-cell braille spinner that cycles through `frames` every `interval` ms
+// while `running` and `visible` are both true.
 Text {
     id: control
 
@@ -23,7 +25,7 @@ Text {
         repeat: true
         onTriggered: {
             if (control.frames.length > 0) {
-                timer.index = (timer.index + 1) % control.frames.length
+                timer.index = (timer.index + 1) % control.frames.length;
             }
         }
     }

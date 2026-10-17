@@ -12,6 +12,8 @@ class ClockTimer;
 
 namespace qmltui {
 
+// Single-line editable text item with horizontal auto-scrolling, echo modes
+// (Normal/Password/NoEcho), regex validation, selection, and undo/redo history.
 class QMLTUI_CORE_EXPORT TextInput : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -33,6 +35,7 @@ class QMLTUI_CORE_EXPORT TextInput : public Item {
     Q_PROPERTY(QString selectedText READ selectedText NOTIFY selectionChanged)
     Q_PROPERTY(bool readOnly READ readOnly WRITE setReadOnly NOTIFY readOnlyChanged)
     Q_PROPERTY(int contentX READ contentX WRITE setContentX NOTIFY contentXChanged)
+    // Maximum length in extended grapheme clusters (0 means unlimited).
     Q_PROPERTY(
         int maximumLength READ maximumLength WRITE setMaximumLength NOTIFY maximumLengthChanged)
     Q_PROPERTY(
@@ -195,8 +198,7 @@ private:
     void updateTerminalConnection();
 
     TextEditorState m_editor;
-    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
-    // not invisible ink: a fixed "white" default is unreadable on a light theme.
+    // Defaults to the terminal's foreground ("default" -> SGR 39); see Color.h.
     Color m_color = "default";
     QString m_placeholderText;
     Color m_placeholderColor;
@@ -204,10 +206,7 @@ private:
     bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
     QRegularExpression m_validator;
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;

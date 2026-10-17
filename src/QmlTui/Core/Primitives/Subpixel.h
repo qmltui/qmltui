@@ -7,6 +7,7 @@
 
 namespace qmltui {
 
+// 2x4 Braille dot matrix per terminal cell (U+2800..U+28FF).
 namespace braille {
 inline constexpr int DotsX = 2;
 inline constexpr int DotsY = 4;
@@ -21,16 +22,17 @@ constexpr std::uint8_t dotMask(int dotX, int dotY) noexcept {
     return masks[dotX][dotY];
 }
 
-// Returns exactly three UTF-8 bytes.
-// The returned view remains valid for the process lifetime.
+// Returns the 3-byte UTF-8 Braille glyph for mask; view is valid for the process lifetime.
 QMLTUI_CORE_EXPORT QByteArrayView utf8(std::uint8_t mask) noexcept;
 } // namespace braille
 
+// 1x2 vertical half-block subpixel grid per terminal cell.
 namespace half_block {
 inline constexpr int SubpixelsX = 1;
 inline constexpr int SubpixelsY = 2;
 } // namespace half_block
 
+// UTF-8 block-element glyphs used by half-block and bar painters.
 namespace block_glyphs {
 inline constexpr char UpperHalf[] = "\xE2\x96\x80";
 inline constexpr char LowerHalf[] = "\xE2\x96\x84";

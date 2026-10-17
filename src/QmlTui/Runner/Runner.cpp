@@ -78,8 +78,8 @@ public:
 
     ~RunnerHardWatchdog() { stop(); }
 
-    /// Signals the thread, joins it, and reports whether it interrupted the
-    /// JavaScript engine before the scenario finished.
+    // Signals the thread, joins it, and reports whether it interrupted the
+    // JavaScript engine before the scenario finished.
     bool stop() {
         {
             std::lock_guard<std::mutex> lock(m_mutex);

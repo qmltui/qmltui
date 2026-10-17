@@ -5,6 +5,8 @@
 
 namespace qmltui {
 
+// Layout that shows only the child item at `currentIndex`, sizing that active
+// child to fill the layout's padded content area.
 class QMLTUI_CORE_EXPORT StackLayout : public Item {
     Q_OBJECT
     QML_ELEMENT

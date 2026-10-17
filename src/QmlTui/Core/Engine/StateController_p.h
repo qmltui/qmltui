@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: state machine engine backing Item::states and StateGroup.
+
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QObject>
@@ -25,6 +27,7 @@ class Transition;
 class PropertyChanges;
 class Animation;
 
+// Identifies a (target QObject, property name) pair managed by StateController.
 struct CanonicalProperty {
     QPointer<QObject> target;
     QString name;
@@ -42,6 +45,9 @@ struct CanonicalProperty {
     }
 };
 
+// Evaluates State::when conditions, applies and reverts PropertyChanges
+// overrides (preserving base values and bindings across state transitions),
+// and triggers matching Transition animations.
 class QMLTUI_CORE_EXPORT StateController : public QObject {
     Q_OBJECT
 

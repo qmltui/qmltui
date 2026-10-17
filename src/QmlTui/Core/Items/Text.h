@@ -15,50 +15,29 @@
 
 namespace qmltui {
 
-/**
- * @brief Terminal text rendering element with Unicode formatting and alignment.
- *
- * Text renders a single-line or styled string into character cells. Supports
- * ANSI escape parsing, rich text spans, horizontal and vertical alignments,
- * bold/dim/italic/underline/reverse video attributes, and color gradients.
- *
- * Automatically measures implicit width and height based on string character
- * length and East Asian full-width Unicode characters.
- *
- * @thread_safety Main/engine thread only.
- * @see Span, Item
- */
+// Terminal text item supporting plain text, ANSI escape sequences, subset HTML
+// rich text (<b>, <i>, <u>, <font color>, <a href>), structured Span lists,
+// wrapping, alignment, and foreground gradients.
 class QMLTUI_CORE_EXPORT Text : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    /// @brief Formatted text spans with individual colors and attributes.
+    // Structured text runs; when non-empty, takes precedence over `text`.
     Q_PROPERTY(QList<qmltui::Span> spans READ spans WRITE setSpans NOTIFY spansChanged)
-    /// @brief Plain or formatted text content to display.
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
-    /// @brief Text foreground color. Defaults to "default" (host terminal foreground).
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    /// @brief Whether text is rendered with the bold / bright attribute.
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
-    /// @brief Whether text is rendered with dim / faint attribute.
     Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
-    /// @brief Whether text is rendered in italics (requires terminal emulator support).
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
-    /// @brief Whether text is rendered with an underline.
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
-    /// @brief Whether text is rendered in reverse video (swapped foreground/background).
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
-    /// @brief Horizontal alignment: Text.AlignLeft, Text.AlignRight, Text.AlignHCenter.
-    Q_PROPERTY(int horizontalAlignment READ horizontalAlignment WRITE setHorizontalAlignment NOTIFY horizontalAlignmentChanged)
-    /// @brief Vertical alignment: Text.AlignTop, Text.AlignBottom, Text.AlignVCenter.
-    Q_PROPERTY(int verticalAlignment READ verticalAlignment WRITE setVerticalAlignment NOTIFY verticalAlignmentChanged)
-    /// @brief Text parsing format (PlainText, RichText, AnsiText, AutoText).
+    Q_PROPERTY(int horizontalAlignment READ horizontalAlignment WRITE setHorizontalAlignment NOTIFY
+                   horizontalAlignmentChanged)
+    Q_PROPERTY(int verticalAlignment READ verticalAlignment WRITE setVerticalAlignment NOTIFY
+                   verticalAlignmentChanged)
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
-    /// @brief Optional color gradient applied across the characters.
     Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
-    /// @brief Text wrapping mode: Text.NoWrap, Text.WordWrap, Text.WrapAnywhere, Text.Wrap.
     Q_PROPERTY(WrapMode wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
-    /// @brief Background color of character cells. Defaults to "transparent".
     Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
@@ -185,12 +164,8 @@ private:
     mutable std::vector<QString> m_links;
     mutable QByteArray m_glyphBytes;
     mutable bool m_layoutDirty = true;
-    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
-    // not invisible ink: a fixed "white" default is unreadable on a light theme.
     Color m_color = "default";
-    // Derived from m_color, never written by hand: "white" is ANSI index 15,
-    // not literal RGB, and setColor() early-returns when the color is unchanged.
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;
     bool m_bold = false;

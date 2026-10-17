@@ -6,6 +6,10 @@
 
 namespace qmltui {
 
+// Stream renderer for Terminal.Inline mode. Prints queued Scrollback blocks
+// into the normal terminal buffer above a live, in-place prompt region at the
+// current cursor position, querying DSR 6n to map terminal mouse rows into the
+// prompt region.
 class InlineRenderer : public Renderer {
 public:
     InlineRenderer();

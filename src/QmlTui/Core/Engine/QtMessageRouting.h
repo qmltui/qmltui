@@ -13,6 +13,7 @@
 
 namespace qmltui {
 
+// Captured Qt log message delivered to a QtMessageSink.
 struct QMLTUI_CORE_EXPORT QtMessage {
     QtMsgType type = QtDebugMsg;
     QString message;
@@ -28,6 +29,13 @@ struct QMLTUI_CORE_EXPORT QtMessage {
 
 using QtMessageSink = std::function<void(const QtMessage &)>;
 
+// RAII registration routing qDebug/qInfo/qWarning/qCritical messages through
+// application-supplied sinks while a TerminalEngine is active.
+//
+// While an alternate-screen session owns the terminal, presentation output to
+// stderr is suppressed so log lines do not overwrite the TUI frame; diagnosticSink
+// still receives every message. Destroying the returned handle or calling
+// reset() restores the previous message handler.
 class QMLTUI_CORE_EXPORT QtMessageRouting {
 public:
     QtMessageRouting(const QtMessageRouting &) = delete;
@@ -36,12 +44,16 @@ public:
     QtMessageRouting &operator=(QtMessageRouting &&) = delete;
     ~QtMessageRouting();
 
+    // Installs diagnosticSink (always called) and an optional presentationSink
+    // (called only when no alternate-screen session is active).
     [[nodiscard]] static std::unique_ptr<QtMessageRouting> install(
         QtMessageSink diagnosticSink,
         QtMessageSink presentationSink = {});
 
+    // Default presentation sink that writes formattedText to stderr.
     static QtMessageSink stderrPresentationSink();
 
+    // Unregisters this routing handle early; idempotent.
     void reset();
 
     struct Token { explicit Token() = default; };

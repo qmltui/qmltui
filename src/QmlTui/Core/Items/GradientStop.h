@@ -11,6 +11,7 @@
 
 namespace qmltui {
 
+// Color stop at normalized position [0.0, 1.0] inside a Gradient.
 class QMLTUI_CORE_EXPORT GradientStop : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -37,10 +38,7 @@ signals:
 private:
     qreal m_position = 0.0;
     Color m_color = "white";
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
 };
 
 } // namespace qmltui

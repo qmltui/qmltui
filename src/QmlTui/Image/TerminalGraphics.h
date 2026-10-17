@@ -2,15 +2,15 @@
 
 // Terminal graphics protocols for the Image item.
 //
-// This is the extension seam for pixel-accurate image output. Today only the
-// kitty graphics protocol is implemented; sixel and the iTerm2 inline-image
-// protocol are meant to slot in here without touching Image. To add one:
-//   1. detect it into TerminalCapabilities (sixel is already detected),
+// This is the extension seam for pixel-accurate image output. Kitty and Sixel
+// are implemented here; additional protocols (such as iTerm2 inline images) can
+// slot in without touching Image's public API. To add one:
+//   1. detect it into TerminalCapabilities,
 //   2. add its case to resolve() in preference order,
-//   3. add its encoder(s) beside the kitty ones,
+//   3. add its encoder(s) beside the kitty and sixel ones,
 //   4. teach Image::paint() to call them for that Protocol.
 // Everything else, the Auto render mode and the capability plumbing, already
-// accounts for more than one protocol.
+// accounts for multiple protocols.
 
 #include <QmlTui/Core/Items/Item.h>                 // ClipRect
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
@@ -23,9 +23,9 @@
 namespace qmltui::graphics {
 
 enum class Protocol : uint8_t {
-    None,    // no pixel protocol; the caller falls back to half-block or braille
-    Kitty,   // kitty graphics with Unicode virtual placements (implemented)
-    Sixel,   // detected, not yet rendered; resolve() will return it once encoded
+    None,  // no pixel protocol; the caller falls back to half-block, braille, or ASCII
+    Kitty, // kitty graphics with Unicode virtual placements
+    Sixel, // sixel graphics (DCS ... ST) painted at the cursor after cell diffing
 };
 
 // The best pixel protocol the terminal supports, in preference order. Kitty

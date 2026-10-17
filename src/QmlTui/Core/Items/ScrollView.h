@@ -6,6 +6,8 @@
 
 namespace qmltui {
 
+// Clips child items to its padded viewport, shifts them vertically by
+// `contentY`, and paints an optional single-column scrollbar overlay on the right.
 class QMLTUI_CORE_EXPORT ScrollView : public Item {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(ScrollView)
@@ -28,6 +30,7 @@ public:
     bool scrollBarVisible() const { return m_scrollBarVisible; }
     void setScrollBarVisible(bool visible);
 
+    // Explicit `contentHeight` if positive, otherwise the bounding bottom of visible children.
     int effectiveContentHeight() const;
 
     QPoint contentOffset() const override { return QPoint(0, m_contentY); }
@@ -37,6 +40,7 @@ public:
     void wheelEvent(class MouseEvent* event) override;
     void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
+    // Adjusts `contentY` minimally so `childItem`'s vertical span is within the viewport.
     void ensureChildVisible(Item* childItem);
 
 signals:

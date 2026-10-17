@@ -14,6 +14,9 @@
 
 namespace qmltui {
 
+// Dynamically instantiates a QML component from a URL (`source`) or inline
+// `Component` (`sourceComponent`) when `active` is true, mirroring its implicit
+// size or resizing the loaded item to fill explicit Loader dimensions.
 class QMLTUI_CORE_EXPORT Loader : public Item, public QQmlParserStatus {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Loader)

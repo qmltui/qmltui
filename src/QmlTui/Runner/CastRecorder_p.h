@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: asciicast v2 writer used by Runner::startRecording().
+
 #include <QFile>
 #include <QString>
 

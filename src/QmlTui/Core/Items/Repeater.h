@@ -17,6 +17,8 @@ class QQmlPropertyMap;
 
 namespace qmltui {
 
+// Instantiates one `delegate` item per model entry and inserts those items as
+// visual children of the Repeater's parent Item (for use inside Row, Column, etc.).
 class QMLTUI_CORE_EXPORT Repeater : public Item {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Repeater)

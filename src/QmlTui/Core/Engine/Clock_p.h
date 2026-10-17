@@ -1,19 +1,13 @@
 #pragma once
 
+// Internal: process-wide real and virtual time source for QmlTui timers and
+// animations.
+
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QList>
 #include <QObject>
 #include <QTimer>
-
-//
-//  W A R N I N G
-//  -------------
-//
-// This file is not part of the QmlTui API. It exists purely as an
-// implementation detail and may change from version to version without
-// notice, or even be removed.
-//
 
 class QVariantAnimation;
 

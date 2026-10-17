@@ -16,6 +16,10 @@ namespace qmltui {
 class UnixPtySession;
 class VTermAdapter;
 
+// Embedded Unix PTY terminal item backed by `UnixPtySession` and `libvterm`.
+// Spawns a child process inside a pseudo-terminal, decodes its VT output into
+// the QmlTui cell grid with scrollback, and forwards keyboard/mouse events
+// while focused.
 class QMLTUI_TERMINALHOST_EXPORT TerminalView : public Item, public QQmlParserStatus {
     Q_OBJECT
     QML_NAMED_ELEMENT(TerminalView)
@@ -26,7 +30,9 @@ class QMLTUI_TERMINALHOST_EXPORT TerminalView : public Item, public QQmlParserSt
     Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged)
     Q_PROPERTY(QVariantMap environment READ environment WRITE setEnvironment NOTIFY environmentChanged)
     Q_PROPERTY(bool inheritEnvironment READ inheritEnvironment WRITE setInheritEnvironment NOTIFY inheritEnvironmentChanged)
+    // Value assigned to the child process's `TERM` environment variable (default "xterm-256color").
     Q_PROPERTY(QString terminalType READ terminalType WRITE setTerminalType NOTIFY terminalTypeChanged)
+    // When true, starts the child process automatically once componentComplete() runs.
     Q_PROPERTY(bool autoStart READ autoStart WRITE setAutoStart NOTIFY autoStartChanged)
     Q_PROPERTY(ProcessState processState READ processState NOTIFY processStateChanged)
     Q_PROPERTY(bool running READ running NOTIFY runningChanged)
@@ -38,9 +44,12 @@ class QMLTUI_TERMINALHOST_EXPORT TerminalView : public Item, public QQmlParserSt
     Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
     Q_PROPERTY(QList<qmltui::Color> palette READ palette WRITE setPalette NOTIFY paletteChanged)
     Q_PROPERTY(int scrollbackLimit READ scrollbackLimit WRITE setScrollbackLimit NOTIFY scrollbackLimitChanged)
+    // Rows scrolled back into history (0 shows the live bottom screen).
     Q_PROPERTY(int scrollOffset READ scrollOffset WRITE setScrollOffset NOTIFY scrollOffsetChanged)
     Q_PROPERTY(int scrollbackSize READ scrollbackSize NOTIFY scrollbackSizeChanged)
     Q_PROPERTY(bool showScrollbar READ showScrollbar WRITE setShowScrollbar NOTIFY showScrollbarChanged)
+    // Opt-in permissions for child-process OSC escape sequences (title, OSC 52
+    // clipboard write, OSC 9/777 notifications).
     Q_PROPERTY(bool allowTitleChanges READ allowTitleChanges WRITE setAllowTitleChanges NOTIFY allowTitleChangesChanged)
     Q_PROPERTY(bool allowClipboardWrite READ allowClipboardWrite WRITE setAllowClipboardWrite NOTIFY allowClipboardWriteChanged)
     Q_PROPERTY(bool allowNotifications READ allowNotifications WRITE setAllowNotifications NOTIFY allowNotificationsChanged)
@@ -57,6 +66,7 @@ public:
     explicit TerminalView(QObject* parent = nullptr);
     ~TerminalView() override;
 
+    // Resolves the current user's login shell from `$SHELL`, `getpwuid`, or `/bin/sh`.
     Q_INVOKABLE static QString defaultUserShell();
 
     QString program() const { return m_program; }
@@ -102,9 +112,13 @@ public:
     bool allowNotifications() const { return m_allowNotifications; }
     void setAllowNotifications(bool value);
 
+    // Spawns `program` (or `defaultUserShell()` when empty) in a fresh PTY session.
     Q_INVOKABLE void start();
+    // Sends SIGTERM to the child process group.
     Q_INVOKABLE void terminate();
+    // Sends SIGKILL to the child process group.
     Q_INVOKABLE void kill();
+    // Writes UTF-8 `text` directly to the PTY master.
     Q_INVOKABLE void sendText(const QString& text);
     Q_INVOKABLE void clearScrollback();
     Q_INVOKABLE void scrollToBottom();

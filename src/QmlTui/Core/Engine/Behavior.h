@@ -11,6 +11,9 @@
 
 namespace qmltui {
 
+// QML property value interceptor (`Behavior on <prop>`) that runs a child
+// Animation whenever the intercepted property is written. Available when built
+// with QMLTUI_ENABLE_PRIVATE_QT=ON.
 class QMLTUI_CORE_EXPORT Behavior : public QObject, public QQmlPropertyValueInterceptor {
     Q_OBJECT
     Q_INTERFACES(QQmlPropertyValueInterceptor)

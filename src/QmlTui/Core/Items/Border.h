@@ -12,6 +12,8 @@ namespace qmltui {
 
 class Item;
 
+// Grouped property on Rectangle (`border { style: ...; color: ... }`) drawing
+// Unicode or ASCII box-drawing characters around the rectangle perimeter.
 class QMLTUI_CORE_EXPORT Border : public QObject {
     Q_OBJECT
     QML_ELEMENT

@@ -8,10 +8,13 @@
 
 namespace qmltui {
 
+// Attached layout constraints and grid cell placement hints read by
+// RowLayout, ColumnLayout, and GridLayout.
 class QMLTUI_CORE_EXPORT LayoutAttached : public QObject {
     Q_OBJECT
     Q_PROPERTY(int minimumWidth MEMBER minimumWidth NOTIFY changed)
     Q_PROPERTY(int minimumHeight MEMBER minimumHeight NOTIFY changed)
+    // -1 falls back to the item's implicitWidth / implicitHeight.
     Q_PROPERTY(int preferredWidth MEMBER preferredWidth NOTIFY changed)
     Q_PROPERTY(int preferredHeight MEMBER preferredHeight NOTIFY changed)
     Q_PROPERTY(int maximumWidth MEMBER maximumWidth NOTIFY changed)
@@ -20,6 +23,7 @@ class QMLTUI_CORE_EXPORT LayoutAttached : public QObject {
     Q_PROPERTY(bool fillHeight MEMBER fillHeight NOTIFY changed)
     Q_PROPERTY(int horizontalStretch MEMBER horizontalStretch NOTIFY changed)
     Q_PROPERTY(int verticalStretch MEMBER verticalStretch NOTIFY changed)
+    // -1 lets GridLayout auto-place the item according to its flow.
     Q_PROPERTY(int row MEMBER row NOTIFY changed)
     Q_PROPERTY(int column MEMBER column NOTIFY changed)
     Q_PROPERTY(int rowSpan MEMBER rowSpan NOTIFY changed)
@@ -49,6 +53,7 @@ signals:
     void changed();
 };
 
+// Uncreatable QML attached-property provider for LayoutAttached (`Layout.*`).
 class QMLTUI_CORE_EXPORT Layout : public QObject {
     Q_OBJECT
     QML_ELEMENT

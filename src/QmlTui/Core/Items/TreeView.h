@@ -16,16 +16,26 @@
 
 namespace qmltui {
 
+// Hierarchical tree view with virtualized row delegates.
+//
+// Supports QAbstractItemModel (from rootIndex) and nested QVariantMap / JS
+// object trees (`rootNode`), tracking expanded state by persistent model index
+// or "/" path and drawing Unicode branch connectors when no custom delegate is
+// set.
 class QMLTUI_CORE_EXPORT TreeView : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_CLASSINFO("DefaultProperty", "delegate")
 
     Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
+    // Legacy map-tree root (`{ text, children: [...] }`); prefer `model`.
     Q_PROPERTY(QVariant rootNode READ rootNode WRITE setRootNode NOTIFY rootNodeChanged)
+    // Parent QModelIndex whose children form the top level of the tree.
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
 
+    // Index in the flattened visible-row list (-1 for no selection);
+    // selectedIndex and currentRow are aliases.
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(
         int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -216,10 +226,7 @@ private:
     int m_scrollTop = 0;
 
     Color m_selectionColor;
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
+    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0); // see Color.h
     Color m_selectionBackgroundColor;
     uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 

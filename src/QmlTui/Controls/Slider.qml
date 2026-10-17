@@ -1,6 +1,8 @@
 import QtQml
 import QmlTui
 
+// Interactive single-row slider over `[from, to]` in increments of `stepSize`,
+// controlled with Left/Right/Home/End keys, mouse click/drag, or mouse wheel.
 Rectangle {
     id: control
     property real value: 0.0

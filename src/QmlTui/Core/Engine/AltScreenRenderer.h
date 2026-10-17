@@ -5,6 +5,9 @@
 
 namespace qmltui {
 
+// Full-viewport renderer using the terminal's alternate screen buffer (?1049h).
+// Double-buffers the cell grid and emits minimal absolute-cursor ANSI diffs
+// bracketed by synchronized-output sequences (?2026h/?2026l) when supported.
 class AltScreenRenderer : public Renderer {
 public:
     void start(Terminal* rootWindow, TerminalDevice& device) override;
@@ -13,7 +16,6 @@ public:
     bool renderFrame(Terminal* rootWindow, TerminalDevice& device) override;
     bool usesAlternateScreen(Terminal* rootWindow) const override;
 
-    // For exposure to engine if needed
     int terminalWidth() const { return m_currentBuffer.width(); }
     int terminalHeight() const { return m_currentBuffer.height(); }
     const TextGridBuffer* currentBuffer() const override { return &m_currentBuffer; }

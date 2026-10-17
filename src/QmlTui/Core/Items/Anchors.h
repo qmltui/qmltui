@@ -11,6 +11,9 @@ namespace qmltui {
 class Item;
 class AnchorLine;
 
+// Grouped property on Item (`anchors { ... }`) that positions and sizes the
+// owner relative to its parent or sibling AnchorLines in integer cell units.
+// Respects the parent's padding when anchoring to parent edges.
 class QMLTUI_CORE_EXPORT Anchors : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -22,8 +25,11 @@ class QMLTUI_CORE_EXPORT Anchors : public QObject {
     Q_PROPERTY(qmltui::AnchorLine* right READ right WRITE setRight NOTIFY rightChanged)
     Q_PROPERTY(qmltui::AnchorLine* top READ top WRITE setTop NOTIFY topChanged)
     Q_PROPERTY(qmltui::AnchorLine* bottom READ bottom WRITE setBottom NOTIFY bottomChanged)
-    Q_PROPERTY(qmltui::AnchorLine* horizontalCenter READ horizontalCenter WRITE setHorizontalCenter NOTIFY horizontalCenterChanged)
-    Q_PROPERTY(qmltui::AnchorLine* verticalCenter READ verticalCenter WRITE setVerticalCenter NOTIFY verticalCenterChanged)
+    Q_PROPERTY(qmltui::AnchorLine* horizontalCenter READ horizontalCenter WRITE setHorizontalCenter
+                   NOTIFY horizontalCenterChanged)
+    Q_PROPERTY(qmltui::AnchorLine* verticalCenter READ verticalCenter WRITE setVerticalCenter NOTIFY
+                   verticalCenterChanged)
+    // Uniform margin in cells; side-specific margins override when >= 0.
     Q_PROPERTY(int margins READ margins WRITE setMargins NOTIFY marginsChanged)
     Q_PROPERTY(int leftMargin READ leftMargin WRITE setLeftMargin NOTIFY leftMarginChanged)
     Q_PROPERTY(int rightMargin READ rightMargin WRITE setRightMargin NOTIFY rightMarginChanged)

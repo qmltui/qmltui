@@ -7,6 +7,9 @@
 
 namespace qmltui {
 
+// Keyboard or bracketed-paste event delivered to Item::keyPressEvent() and Keys
+// attached signal handlers. Setting accepted to true stops propagation up the
+// parent chain and prevents default Tab focus navigation.
 class QMLTUI_CORE_EXPORT KeyEvent : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -15,6 +18,8 @@ class QMLTUI_CORE_EXPORT KeyEvent : public QObject {
     Q_PROPERTY(int key READ key CONSTANT)
     Q_PROPERTY(QString text READ text CONSTANT)
     Q_PROPERTY(int modifiers READ modifiers CONSTANT)
+    // True when text arrived inside a bracketed-paste sequence (?2004h) rather
+    // than as an individual keystroke.
     Q_PROPERTY(bool paste READ isPaste CONSTANT)
     Q_PROPERTY(bool accepted READ isAccepted WRITE setAccepted NOTIFY acceptedChanged)
 

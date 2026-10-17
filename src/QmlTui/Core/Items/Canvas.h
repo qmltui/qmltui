@@ -14,6 +14,9 @@ namespace qmltui {
 class CanvasPainter;
 class CanvasShape;
 
+// Subpixel drawing surface backed by Braille (2x4 dots/cell) or HalfBlock
+// (1x2 blocks/cell) glyphs. Driven declaratively by child CanvasShape items
+// and/or imperatively from QML via setPixel() and setPixelColor().
 class QMLTUI_CORE_EXPORT Canvas : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -22,6 +25,8 @@ class QMLTUI_CORE_EXPORT Canvas : public Item {
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(CellColorMode cellColorMode READ cellColorMode WRITE setCellColorMode NOTIFY
                    cellColorModeChanged)
+    // When true, the pixel buffer is cleared at the start of each paint() pass
+    // before child CanvasShapes draw.
     Q_PROPERTY(bool autoClear READ autoClear WRITE setAutoClear NOTIFY autoClearChanged)
     Q_PROPERTY(int pixelWidth READ pixelWidth NOTIFY pixelWidthChanged)
     Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY pixelHeightChanged)
@@ -115,13 +120,8 @@ private:
     CellColorMode m_cellColorMode = CellColorMode::LastDot;
     mutable std::vector<uint8_t> m_pixelSet;     // occupancy, independent of default color 0
     mutable std::vector<uint32_t> m_pixelColors; // HalfBlock mode (1x2 colors per cell, ARGB)
-    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
-    // not invisible ink: a fixed "white" default is unreadable on a light theme.
     Color m_color = "default";
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
     Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
 };
@@ -135,7 +135,7 @@ public:
     int pixelHeight() const { return m_canvas.pixelHeight(); }
     Canvas::RenderMode renderMode() const { return m_canvas.m_renderMode; }
 
-    // Colour used by shapes that do not set their own.
+    // Color used by shapes that do not set their own.
     uint32_t defaultColor() const { return m_canvas.m_resolvedColor; }
 
     void setPixel(int x, int y, bool value = true);
@@ -149,6 +149,8 @@ private:
     const Canvas& m_canvas;
 };
 
+// Abstract base class for declarative subpixel shapes placed inside a Canvas.
+// Coordinates on shapes are in Canvas subpixels (0..pixelWidth, 0..pixelHeight).
 class QMLTUI_CORE_EXPORT CanvasShape : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -179,6 +181,7 @@ private:
     bool m_hasCustomColor = false;
 };
 
+// Single subpixel dot at (x, y).
 class QMLTUI_CORE_EXPORT Point : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
@@ -188,6 +191,7 @@ public:
     void draw(CanvasPainter& painter) const override;
 };
 
+// Bresenham line segment between subpixel coordinates (x1, y1) and (x2, y2).
 class QMLTUI_CORE_EXPORT Line : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
@@ -223,6 +227,7 @@ private:
     int m_y2 = 0;
 };
 
+// Polyline or closed polygon through a list of {x, y} or QPoint vertices.
 class QMLTUI_CORE_EXPORT Polygon : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
@@ -249,6 +254,7 @@ private:
     bool m_closed = true;
 };
 
+// Stroked or filled subpixel rectangle at (x, y) with size (width, height).
 class QMLTUI_CORE_EXPORT CanvasRectangle : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT
@@ -269,6 +275,8 @@ private:
     bool m_fill = false;
 };
 
+// Stroked or filled subpixel circle centered at (cx, cy) (falling back to x, y
+// when cx/cy are unset) with the given radius.
 class QMLTUI_CORE_EXPORT Circle : public CanvasShape {
     Q_OBJECT
     QML_ELEMENT

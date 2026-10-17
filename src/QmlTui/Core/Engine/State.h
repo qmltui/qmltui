@@ -13,6 +13,12 @@ namespace qmltui {
 
 class PropertyChangesPrivate;
 
+// Declarative property overrides applied when the enclosing State is active.
+//
+// With QMLTUI_ENABLE_PRIVATE_QT=ON, direct QML property assignments on
+// PropertyChanges are captured by PropertyChangesParser (bound unless
+// `explicit: true`). Without Private Qt, overrides are supplied through the
+// `properties` variant map.
 class QMLTUI_CORE_EXPORT PropertyChanges : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -20,11 +26,15 @@ class QMLTUI_CORE_EXPORT PropertyChanges : public QObject {
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QML_CUSTOMPARSER
     Q_CLASSINFO("ImmediatePropertyNames", "target,restoreEntryValues,explicit,properties,objectName")
+    // When true, expressions on PropertyChanges are evaluated once on state
+    // entry instead of establishing live bindings.
     Q_PROPERTY(bool explicit READ isExplicit WRITE setIsExplicit NOTIFY explicitChanged)
 #endif
 
     Q_PROPERTY(QObject* target READ target WRITE setTarget NOTIFY targetChanged)
     Q_PROPERTY(QVariantMap properties READ properties WRITE setProperties NOTIFY propertiesChanged)
+    // When false, modified properties keep their overridden values after
+    // leaving the state instead of reverting to their base values.
     Q_PROPERTY(bool restoreEntryValues READ restoreEntryValues WRITE setRestoreEntryValues NOTIFY restoreEntryValuesChanged)
 
 public:
@@ -63,6 +73,9 @@ private:
     std::unique_ptr<PropertyChangesPrivate> d;
 };
 
+// Named set of PropertyChanges belonging to an Item or StateGroup. Activated
+// either by assigning its name to `state` or automatically when `when` becomes
+// true.
 class QMLTUI_CORE_EXPORT State : public QObject {
     Q_OBJECT
     QML_ELEMENT

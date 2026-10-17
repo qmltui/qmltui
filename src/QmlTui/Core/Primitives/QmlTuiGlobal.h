@@ -12,6 +12,8 @@
 
 namespace qmltui {
 
+// QmlTui QML singleton providing value-type factory helpers (QmlTui.span and
+// QmlTui.rgba).
 class QMLTUI_CORE_EXPORT QmlTuiGlobal : public QObject
 {
     Q_OBJECT

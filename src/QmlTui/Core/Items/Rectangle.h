@@ -9,25 +9,15 @@
 
 namespace qmltui {
 
-/**
- * @brief Filled or bordered rectangular terminal area with optional gradient.
- *
- * Renders a rectangular region with a fill color or vertical/horizontal gradient,
- * and an optional outer border drawn with Unicode box-drawing characters.
- *
- * @thread_safety Main/engine thread only.
- * @see Border, Gradient, Item
- */
+// Filled or bordered rectangular terminal item with optional gradient fill.
+// When border.style is not Border.None, the border adds 1 cell of implicit
+// padding on each side unless overridden on the Item.
 class QMLTUI_CORE_EXPORT Rectangle : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    /// @brief Fill color of the rectangle. Defaults to "transparent".
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    /// @brief Attached border configuration (style: "single", "double", "rounded", "ascii", "none",
-    /// color).
     Q_PROPERTY(qmltui::Border* border READ border CONSTANT)
-    /// @brief Optional gradient fill applied across the interior.
     Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
 
 public:

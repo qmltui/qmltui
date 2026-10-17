@@ -2,6 +2,10 @@ pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
+// Single-row horizontal progress bar for `value` in `[from, to]`. Supports
+// glyph presets (`style`), custom `fillCharacter`/`emptyCharacter`, optional
+// `[` `]` brackets and percentage readout, and opt-in `gradient` or step
+// `thresholds`. Uses a single Text fast path when no gradient or threshold is active.
 Item {
     id: control
 
@@ -22,19 +26,15 @@ Item {
     // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
     property rgba color: "default"
 
-    // Custom arbitrary character properties (override style presets when set)
     property string fillCharacter: ""
     property string emptyCharacter: ""
 
-    // Opt-in Gradient type integration (uses QmlTui Gradient & GradientStop)
     property Gradient gradient: null
-
-    // Opt-in Step Thresholds array [{ value: 60, color: "#34d399" }]
+    // Step thresholds array, e.g. `[{ value: 60, color: "#34d399" }]`.
     property var thresholds: []
 
     readonly property bool hasGradient: (control.gradient && control.gradient.stops && control.gradient.stops.length > 0) || (control.thresholds && control.thresholds.length > 0)
 
-    // Effective filled character
     readonly property string effectiveFillChar: {
         if (fillCharacter && fillCharacter.length > 0)
             return fillCharacter;
@@ -49,7 +49,6 @@ Item {
         return "█"; // "block" and any unknown preset
     }
 
-    // Effective empty character
     readonly property string effectiveEmptyChar: {
         if (emptyCharacter && emptyCharacter.length > 0)
             return emptyCharacter;
@@ -70,7 +69,6 @@ Item {
         return Math.max(0.0, Math.min(1.0, (value - from) / (to - from)));
     }
 
-    // Function to calculate color at a normalized position (0.0 to 1.0) along the progress bar
     function getColorAt(pos) {
         if (control.gradient && control.gradient.stops && control.gradient.stops.length > 0) {
             let stops = control.gradient.stops;
@@ -97,7 +95,6 @@ Item {
         return control.color;
     }
 
-    // Calculate colored text segments from left to right across the progress bar length
     readonly property var segments: {
         if (!control.hasGradient)
             return [];

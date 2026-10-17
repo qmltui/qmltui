@@ -9,6 +9,7 @@ namespace qmltui { class ClockTimer; }
 
 namespace qmltui {
 
+// Single queued notification entry managed by Toast.
 struct QMLTUI_CONTROLS_EXPORT ToastItem {
     QString title;
     QString message;
@@ -29,6 +30,7 @@ class QMLTUI_CONTROLS_EXPORT Toast : public Item {
     Q_PROPERTY(qmltui::Color warningColor READ warningColor WRITE setWarningColor NOTIFY warningColorChanged)
     Q_PROPERTY(qmltui::Color errorColor READ errorColor WRITE setErrorColor NOTIFY errorColorChanged)
     Q_PROPERTY(int toastWidth READ toastWidth WRITE setToastWidth NOTIFY toastWidthChanged)
+    // Corner placement: "top-right" (default), "top-left", "bottom-right", or "bottom-left".
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY positionChanged)
 
 public:
@@ -84,10 +86,7 @@ private:
     ClockTimer* m_timer = nullptr;
 
     Color m_infoColor = "default";
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0);
+    uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0); // see Color.h
 
     Color m_successColor = "default";
     uint32_t m_resolvedSuccessColor = Color::resolve(m_successColor, 0);

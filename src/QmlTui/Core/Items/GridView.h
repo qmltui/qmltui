@@ -16,6 +16,8 @@ class QAbstractItemModel;
 
 namespace qmltui {
 
+// Virtualized 2D cell grid view that instantiates delegates only for the
+// visible viewport rows (plus overscan) and optionally recycles scrolled-out items.
 class QMLTUI_CORE_EXPORT GridView : public ScrollView {
     Q_OBJECT
     QML_ELEMENT

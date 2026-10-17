@@ -74,6 +74,12 @@
 - In QML signal handlers with parameters, always use arrow functions: `Keys.onPressed: event => { ... }`.
 - In QML, prefer grouped property notation (e.g. `anchors { left: ...; top: ... }`, `border { color: ...; style: ... }`)
   over repetitive dot notation when specifying multiple grouped properties.
+- In C++ headers and sources, write comments as plain `//` prose (no `/** @brief */`,
+  `///`, `@param`, `@thread_safety`, or `\a` doc tags). Give every class or struct a
+  concise purpose and contract comment, comment only non-obvious `Q_PROPERTY`
+  declarations and methods (skipping self-explanatory getters/setters), and start
+  `*_p.h` or internal headers with a one-line `// Internal: ...` note instead of
+  ASCII warning banners.
 
 ## Handoff
 

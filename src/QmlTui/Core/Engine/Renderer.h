@@ -23,15 +23,20 @@ struct FrameStats {
     int dirtyDuringPaint = 0;     // invalidations raised while painting
 };
 
+// Strategy interface for painting the Terminal item tree and committing ANSI
+// output to a TerminalDevice. Implemented by AltScreenRenderer and InlineRenderer.
 class Renderer {
 public:
     virtual ~Renderer() = default;
 
     const FrameStats& lastFrameStats() const { return m_lastStats; }
 
+    // Enters the renderer's screen mode and prepares initial terminal state.
     virtual void start(Terminal* rootWindow, TerminalDevice& device) = 0;
+    // Restores terminal screen state and cursor visibility on shutdown or mode switch.
     virtual void stop(Terminal* rootWindow, TerminalDevice& device) = 0;
     virtual void resize(int width, int height) = 0;
+    // Layouts, paints, diffs, and writes one frame. Returns false if the device write failed.
     virtual bool renderFrame(Terminal* rootWindow, TerminalDevice& device) = 0;
     virtual bool usesAlternateScreen(Terminal*) const { return false; }
     virtual const TextGridBuffer* currentBuffer() const { return nullptr; }

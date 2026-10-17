@@ -18,6 +18,8 @@ namespace qmltui {
 
 class ListView;
 
+// Attached properties (`ListView.view`, `ListView.isCurrentItem`) and pooling
+// signals (`pooled`, `reused`) exposed to ListView delegate roots.
 class QMLTUI_CORE_EXPORT ListViewAttached : public QObject {
     Q_OBJECT
     QML_ANONYMOUS
@@ -42,6 +44,8 @@ private:
     bool m_isCurrentItem = false;
 };
 
+// Virtualized vertical or horizontal list view that materializes delegates
+// inside the viewport window and supports delegate pooling (`reuseItems`).
 class QMLTUI_CORE_EXPORT ListView : public ScrollView {
     Q_OBJECT
     QML_ELEMENT

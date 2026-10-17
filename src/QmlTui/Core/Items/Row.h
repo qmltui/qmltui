@@ -8,6 +8,8 @@
 
 namespace qmltui {
 
+// Positions visible child items horizontally with optional spacing, preserving
+// each child's own y offset relative to topPadding.
 class QMLTUI_CORE_EXPORT Row : public Item {
     Q_OBJECT
     QML_ELEMENT

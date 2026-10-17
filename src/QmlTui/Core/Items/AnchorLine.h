@@ -9,6 +9,8 @@
 
 namespace qmltui {
 
+// Edge or center line handle of an Item (left, right, top, bottom,
+// horizontalCenter, verticalCenter) referenced by Anchors bindings.
 class QMLTUI_CORE_EXPORT AnchorLine : public QObject {
     Q_OBJECT
     QML_ELEMENT

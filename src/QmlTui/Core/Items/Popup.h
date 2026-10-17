@@ -9,15 +9,22 @@
 
 namespace qmltui {
 
+// Floating overlay container painted in the Terminal's overlay pass above
+// normal scene items.
+//
+// Implements InputScope for modal focus trapping, background dimming, and
+// Escape / outside-click dismissal, and restores previous keyboard focus when
+// closed. Registered in QML by QmlTui.Controls (see Controls/ForeignTypes.h)
+// while living in Core so Terminal can manage popup stacking and input scopes.
 class QMLTUI_CORE_EXPORT Popup : public Item, public InputScope {
     Q_OBJECT
-    // Registered as a QML type by QmlTui.Controls (see Controls/ForeignTypes.h);
-    // the class stays in Core because Terminal manages popups.
 
     Q_PROPERTY(bool modal READ modal WRITE setModal NOTIFY modalChanged)
     Q_PROPERTY(bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)
     Q_PROPERTY(int closePolicy READ closePolicy WRITE setClosePolicy NOTIFY closePolicyChanged)
     Q_PROPERTY(qmltui::Item* initialFocusItem READ initialFocusItem WRITE setInitialFocusItem NOTIFY initialFocusItemChanged)
+    // Logical opener Item used to nest popups (parentPopup) when the popup is
+    // parented directly to the root Terminal.
     Q_PROPERTY(qmltui::Item* owner READ owner WRITE setOwner NOTIFY ownerChanged)
     Q_PROPERTY(qmltui::Popup* parentPopup READ parentPopup NOTIFY ownerChanged)
 

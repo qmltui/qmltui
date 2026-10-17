@@ -18,6 +18,8 @@ class Item;
 class Terminal;
 class TextGridBuffer;
 
+// Appends rendered delegate items or plain text rows into the host terminal's
+// native scrollback buffer above the live `Terminal.Inline` viewport.
 class QMLTUI_CORE_EXPORT Scrollback : public QObject, public QQmlParserStatus {
     Q_OBJECT
     QML_ELEMENT
@@ -52,6 +54,9 @@ public:
     bool reuseItems() const { return m_reuseItems; }
     void setReuseItems(bool reuse);
 
+    // Renders a single model payload through `delegate` (or a standalone Item)
+    // and commits its cells to scrollback. Emits `outputRejected` if the
+    // terminal is not in Inline mode or the item cannot be rendered.
     Q_INVOKABLE void append(const QVariant& data);
     Q_INVOKABLE void append(qmltui::Item* item);
     Q_INVOKABLE bool print(const QString& text);

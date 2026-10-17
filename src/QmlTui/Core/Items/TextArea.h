@@ -13,6 +13,8 @@ namespace qmltui {
 
 class ClockTimer;
 
+// Multi-line editable text item with 2D scrolling (`contentX`/`contentY`),
+// selection, undo/redo, and revision-checked syntax/diagnostic highlight layers.
 class QMLTUI_CORE_EXPORT TextArea : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -45,6 +47,8 @@ class QMLTUI_CORE_EXPORT TextArea : public Item {
                    NOTIFY selectedTextColorChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY canUndoChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
+    // Monotonically incremented on every text mutation; pass to `setHighlightLayer`
+    // so stale async highlight results are rejected.
     Q_PROPERTY(quint64 textRevision READ textRevision NOTIFY textRevisionChanged)
     Q_PROPERTY(bool tabChangesFocus READ tabChangesFocus WRITE setTabChangesFocus NOTIFY
                    tabChangesFocusChanged)
@@ -104,6 +108,8 @@ public:
     int tabStopDistance() const { return m_tabStopDistance; }
     void setTabStopDistance(int distance);
 
+    // Replaces the named highlight layer if `revision == textRevision()`;
+    // higher `priority` layers win when styles overlap. Returns false on revision mismatch.
     Q_INVOKABLE bool setHighlightLayer(const QString& name, const QList<HighlightRange>& ranges,
                                        quint64 revision, int priority = 0);
     Q_INVOKABLE void clearHighlightLayer(const QString& name);
@@ -178,14 +184,10 @@ private:
     void recomposeHighlightRuns();
 
     TextEditorState m_editor;
-    // "default" is the terminal's foreground (alpha 0 -> SGR 39),
-    // not invisible ink: a fixed "white" default is unreadable on a light theme.
+    // Defaults to the terminal's foreground ("default" -> SGR 39); see Color.h.
     Color m_color = "default";
     QString m_placeholderText;
-    // Resolved caches mirror the Color members: an ANSI-named default must not be
-    // written as literal RGB, or the terminal theme stops applying to it (setters
-    // early-return when the color is unchanged, so the initializer is the only chance).
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
     Color m_cursorColor;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;

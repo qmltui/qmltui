@@ -10,6 +10,8 @@
 
 namespace qmltui {
 
+// Declarative transition that runs its child Animations when an Item or
+// StateGroup changes from `from` state to `to` state ("*" matches any state).
 class QMLTUI_CORE_EXPORT Transition : public QObject {
     Q_OBJECT
     QML_ELEMENT

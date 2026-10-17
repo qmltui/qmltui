@@ -31,6 +31,9 @@ class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
 
+// Drives whole-application QmlTui scenarios from a JavaScript scenario file,
+// injecting keyboard/mouse/paste input, stepping the virtual clock, asserting
+// committed terminal frames and scrollback, and writing artifacts/recordings.
 class QMLTUI_RUNNER_EXPORT Runner final : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Runner)
@@ -41,260 +44,264 @@ public:
            int scenarioTimeoutMs, QString configurationError);
     ~Runner() override;
 
+    // Starts a Runner session if `QMLTUI_RUNNER_SCENARIO` (or related
+    // `QMLTUI_RUNNER_*` environment variables) is set; returns nullptr for
+    // normal interactive execution.
     static Runner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);
 
-    /// Selects the virtual clock for the whole process, as QMLTUI_RUNNER_CLOCK=virtual
-    /// does. Call it before loading QML; once any QmlTui timer or animation
-    /// exists the process aborts with a diagnostic instead of mixing timelines.
+    // Selects the virtual clock for the whole process, as QMLTUI_RUNNER_CLOCK=virtual
+    // does. Call it before loading QML; once any QmlTui timer or animation
+    // exists the process aborts with a diagnostic instead of mixing timelines.
     static void useVirtualClock();
 
-    /// Marks this process as a scenario run driven by a directly constructed
-    /// Runner, as QMLTUI_RUNNER_EMBEDDED_SCENARIO=1 does: every Terminal created
-    /// afterwards stays quiet (no ANSI output, no frame pacing) unless
-    /// liveOutput is true or QMLTUI_RUNNER_LIVE is set. Call it before loading
-    /// QML, like useVirtualClock(). A Runner constructed without it still
-    /// silences its engine, but only from its construction on; the terminal's
-    /// startup sequences have been written by then.
+    // Marks this process as a scenario run driven by a directly constructed
+    // Runner, as QMLTUI_RUNNER_EMBEDDED_SCENARIO=1 does: every Terminal created
+    // afterwards stays quiet (no ANSI output, no frame pacing) unless
+    // liveOutput is true or QMLTUI_RUNNER_LIVE is set. Call it before loading
+    // QML, like useVirtualClock(). A Runner constructed without it still
+    // silences its engine, but only from its construction on; the terminal's
+    // startup sequences have been written by then.
     static void useEmbeddedScenario(bool liveOutput = false);
 
-    /// Renders the scenario to the real terminal instead of committing frames
-    /// quietly, as QMLTUI_RUNNER_LIVE=1 does. Takes effect immediately.
+    // Renders the scenario to the real terminal instead of committing frames
+    // quietly, as QMLTUI_RUNNER_LIVE=1 does. Takes effect immediately.
     void setLiveOutput(bool live);
 
-    /// Rewrites snapshot baselines instead of failing on a mismatch, as
-    /// QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 does. An explicit value wins over the
-    /// environment. Call it before start().
+    // Rewrites snapshot baselines instead of failing on a mismatch, as
+    // QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 does. An explicit value wins over the
+    // environment. Call it before start().
     void setUpdateSnapshots(bool update);
 
+    // Evaluates the configured JavaScript scenario file on the next event-loop turn.
     void start();
 
-    /// Sends one key with optional Shift, Ctrl, Alt, or Meta modifiers and waits
-    /// for the resulting frame to be committed.
+    // Sends one key with optional Shift, Ctrl, Alt, or Meta modifiers and waits
+    // for the resulting frame to be committed.
     Q_INVOKABLE void press(const QString& key, const QStringList& modifiers = {});
 
-    /// Feeds non-empty text through the input decoder — one key event per
-    /// character, as a real keyboard would produce — and waits once for the
-    /// resulting frame to be committed.
+    // Feeds non-empty text through the input decoder — one key event per
+    // character, as a real keyboard would produce — and waits once for the
+    // resulting frame to be committed.
     Q_INVOKABLE void typeText(const QString& text);
 
-    /// Processes Qt events for durationMs without blocking application timers or
-    /// rendering. The duration must be between 1 and 30000 milliseconds. Under
-    /// the virtual clock this is advanceTime(durationMs).
+    // Processes Qt events for durationMs without blocking application timers or
+    // rendering. The duration must be between 1 and 30000 milliseconds. Under
+    // the virtual clock this is advanceTime(durationMs).
     Q_INVOKABLE void sleep(int durationMs);
 
-    /// Virtual clock only: advances QmlTui time by durationMs in steps of at
-    /// most 16 ms (or to the next timer deadline when that is sooner), firing
-    /// QmlTui timers, animations, and QML Timers, and committing frames for
-    /// whatever they invalidated. Nothing scheduled means no frame.
+    // Virtual clock only: advances QmlTui time by durationMs in steps of at
+    // most 16 ms (or to the next timer deadline when that is sooner), firing
+    // QmlTui timers, animations, and QML Timers, and committing frames for
+    // whatever they invalidated. Nothing scheduled means no frame.
     Q_INVOKABLE void advanceTime(int durationMs);
 
-    /// Milliseconds on the QmlTui clock: virtual time under the virtual clock,
-    /// wall time since process start otherwise.
+    // Milliseconds on the QmlTui clock: virtual time under the virtual clock,
+    // wall time since process start otherwise.
     Q_INVOKABLE double now() const;
 
-    /// Waits for a committed frame newer than the current frame.
+    // Waits for a committed frame newer than the current frame.
     Q_INVOKABLE void waitForFrame(int timeoutMs = 2000);
 
-    /// Sends text without waiting for a frame, so a following expectRepaint()
-    /// can observe whether the application scheduled the repaint itself.
+    // Sends text without waiting for a frame, so a following expectRepaint()
+    // can observe whether the application scheduled the repaint itself.
     Q_INVOKABLE void injectText(const QString& text);
 
-    /// Sends non-empty text as one bracketed paste through the input decoder
-    /// and waits for the resulting committed frame. Newlines and tabs inside
-    /// the paste arrive untranslated, exactly as a terminal delivers them.
+    // Sends non-empty text as one bracketed paste through the input decoder
+    // and waits for the resulting committed frame. Newlines and tabs inside
+    // the paste arrive untranslated, exactly as a terminal delivers them.
     Q_INVOKABLE void paste(const QString& text);
 
-    /// paste() without the implicit frame wait, for use with expectRepaint().
+    // paste() without the implicit frame wait, for use with expectRepaint().
     Q_INVOKABLE void injectPaste(const QString& text);
 
-    /// press() without the implicit frame wait, for use with expectRepaint().
+    // press() without the implicit frame wait, for use with expectRepaint().
     Q_INVOKABLE void injectKey(const QString& key, const QStringList& modifiers = {});
 
-    /// Fails unless the application commits a new frame on its own. Unlike
-    /// waitForFrame(), this never requests a render, so it verifies that a
-    /// change actually invalidated the scene rather than only that the scene
-    /// paints correctly when a render is forced.
+    // Fails unless the application commits a new frame on its own. Unlike
+    // waitForFrame(), this never requests a render, so it verifies that a
+    // change actually invalidated the scene rather than only that the scene
+    // paints correctly when a render is forced.
     Q_INVOKABLE void expectRepaint(int timeoutMs = 2000);
 
-    /// Resizes the test viewport to columns x rows (each 1 through 1000) and
-    /// waits until a frame with the new dimensions is committed.
+    // Resizes the test viewport to columns x rows (each 1 through 1000) and
+    // waits until a frame with the new dimensions is committed.
     Q_INVOKABLE void resize(int columns, int rows);
 
-    /// Returns {columns, rows} of the current committed frame.
+    // Returns {columns, rows} of the current committed frame.
     Q_INVOKABLE QVariantMap size();
 
-    /// Sequence number of the most recently committed frame. Use it to assert
-    /// that an interaction did not cause any repaint at all.
+    // Sequence number of the most recently committed frame. Use it to assert
+    // that an interaction did not cause any repaint at all.
     Q_INVOKABLE int frameCount() const;
 
-    /// Cost of the most recently committed frame and totals for the session:
-    /// frame, paintMicros, diffMicros, writeMicros, diffBytes, bytesWritten,
-    /// dirtyDuringPaint, frames, paintMicrosAvg, paintMicrosMax, diffMicrosAvg,
-    /// bytesTotal, dirtyDuringPaintTotal. bytesTotal sums encoded diff bytes,
-    /// so it is meaningful in quiet sessions where nothing reaches a terminal.
+    // Cost of the most recently committed frame and totals for the session:
+    // frame, paintMicros, diffMicros, writeMicros, diffBytes, bytesWritten,
+    // dirtyDuringPaint, frames, paintMicrosAvg, paintMicrosMax, diffMicrosAvg,
+    // bytesTotal, dirtyDuringPaintTotal. bytesTotal sums encoded diff bytes,
+    // so it is meaningful in quiet sessions where nothing reaches a terminal.
     Q_INVOKABLE QVariantMap frameStats() const;
 
-    /// Polls a synchronous JavaScript callback until it returns a truthy value.
-    /// The callback receives the current frame text and elapsed milliseconds.
+    // Polls a synchronous JavaScript callback until it returns a truthy value.
+    // The callback receives the current frame text and elapsed milliseconds.
     Q_INVOKABLE void waitForCondition(const QJSValue& condition, int timeoutMs = 2000);
 
-    /// Waits until the committed terminal frame contains text.
+    // Waits until the committed terminal frame contains text.
     Q_INVOKABLE void waitForText(const QString& text, int timeoutMs = 2000);
 
-    /// Fails unless the next committed terminal frame contains text. A
-    /// negative timeout means the configured operation timeout.
+    // Fails unless the next committed terminal frame contains text. A
+    // negative timeout means the configured operation timeout.
     Q_INVOKABLE void expectText(const QString& text, int timeoutMs = -1);
 
-    /// Fails unless the next committed terminal frame does not contain text.
+    // Fails unless the next committed terminal frame does not contain text.
     Q_INVOKABLE void expectNoText(const QString& text, int timeoutMs = -1);
 
-    /// Writes the next committed frame as normalized UTF-8 text beneath the
-    /// configured artifact directory.
+    // Writes the next committed frame as normalized UTF-8 text beneath the
+    // configured artifact directory.
     Q_INVOKABLE void captureText(const QString& relativePath);
 
-    /// Writes the next committed frame as styled text (see styledText())
-    /// beneath the configured artifact directory. Use it to record the baseline
-    /// for expectStyled().
+    // Writes the next committed frame as styled text (see styledText())
+    // beneath the configured artifact directory. Use it to record the baseline
+    // for expectStyled().
     Q_INVOKABLE void captureStyled(const QString& relativePath);
 
-    /// Rows the application has committed to the scrollback (Inline mode).
-    /// The count is monotonic and survives history trimming; pass it as the
-    /// fromRow of the other scrollback methods to look only at rows a step
-    /// appended.
+    // Rows the application has committed to the scrollback (Inline mode).
+    // The count is monotonic and survives history trimming; pass it as the
+    // fromRow of the other scrollback methods to look only at rows a step
+    // appended.
     Q_INVOKABLE int scrollbackRowCount();
 
-    /// Normalized text of the committed scrollback rows from a total-row mark
-    /// onwards, without waiting. Empty when nothing has been committed.
+    // Normalized text of the committed scrollback rows from a total-row mark
+    // onwards, without waiting. Empty when nothing has been committed.
     Q_INVOKABLE QString scrollbackText(int fromRow = 0);
 
-    /// Waits until the committed scrollback contains text.
+    // Waits until the committed scrollback contains text.
     Q_INVOKABLE void waitForScrollbackText(const QString& text, int timeoutMs = 2000);
 
-    /// Fails unless the scrollback committed by the next frame contains text.
+    // Fails unless the scrollback committed by the next frame contains text.
     Q_INVOKABLE void expectScrollbackText(const QString& text, int timeoutMs = -1);
 
-    /// Fails if the scrollback committed by the next frame contains text.
+    // Fails if the scrollback committed by the next frame contains text.
     Q_INVOKABLE void expectNoScrollbackText(const QString& text, int timeoutMs = -1);
 
-    /// Writes the committed scrollback rows from fromRow onwards as normalized
-    /// text beneath the configured artifact directory.
+    // Writes the committed scrollback rows from fromRow onwards as normalized
+    // text beneath the configured artifact directory.
     Q_INVOKABLE void captureScrollback(const QString& relativePath, int fromRow = 0);
 
-    /// Like captureScrollback(), in the styledText() format.
+    // Like captureScrollback(), in the styledText() format.
     Q_INVOKABLE void captureScrollbackStyled(const QString& relativePath, int fromRow = 0);
 
-    /// Compares the committed scrollback rows from fromRow onwards against a
-    /// snapshot resolved relative to the scenario; update mode rewrites it.
+    // Compares the committed scrollback rows from fromRow onwards against a
+    // snapshot resolved relative to the scenario; update mode rewrites it.
     Q_INVOKABLE void expectScrollbackSnapshot(const QString& snapshotRelativePath,
                                               int fromRow = 0, int timeoutMs = -1);
 
-    /// Starts an asciicast recording at relativePath beneath the artifact
-    /// directory, closing any recording in progress, and opens it with a full
-    /// repaint. Recording sessions are armed by QMLTUI_RUNNER_RECORD (CMake
-    /// RECORD); without it the call fails.
+    // Starts an asciicast recording at relativePath beneath the artifact
+    // directory, closing any recording in progress, and opens it with a full
+    // repaint. Recording sessions are armed by QMLTUI_RUNNER_RECORD (CMake
+    // RECORD); without it the call fails.
     Q_INVOKABLE void startRecording(const QString& relativePath);
 
-    /// Closes the recording in progress.
+    // Closes the recording in progress.
     Q_INVOKABLE void stopRecording();
 
-    /// Writes a labelled marker event into the recording in progress.
+    // Writes a labelled marker event into the recording in progress.
     Q_INVOKABLE void marker(const QString& label);
 
-    /// Returns normalized text for the current committed frame without waiting.
+    // Returns normalized text for the current committed frame without waiting.
     Q_INVOKABLE QString frameText();
 
-    /// Returns the current committed frame as normalized text followed by a
-    /// "--- styles" section with one line per run of adjacent cells that share
-    /// a non-default foreground, background, or attribute set. The result is
-    /// plain text, so snapshot diffs stay readable and platform independent.
+    // Returns the current committed frame as normalized text followed by a
+    // "--- styles" section with one line per run of adjacent cells that share
+    // a non-default foreground, background, or attribute set. The result is
+    // plain text, so snapshot diffs stay readable and platform independent.
     Q_INVOKABLE QString styledText();
 
-    /// Returns the rendered cell at (x, y), including colors and attributes.
+    // Returns the rendered cell at (x, y), including colors and attributes.
     Q_INVOKABLE QVariantMap cell(int x, int y);
 
-    /// Returns every visible single-row occurrence of text in row-major order.
+    // Returns every visible single-row occurrence of text in row-major order.
     Q_INVOKABLE QVariantList findText(const QString& text);
 
-    /// Returns normalized text for the sub-grid [x, y, width, height] of the
-    /// current committed frame, without waiting. Trailing spaces are trimmed
-    /// from each row. Bounds outside the frame fail the scenario.
+    // Returns normalized text for the sub-grid [x, y, width, height] of the
+    // current committed frame, without waiting. Trailing spaces are trimmed
+    // from each row. Bounds outside the frame fail the scenario.
     Q_INVOKABLE QString regionText(int x, int y, int width, int height);
 
-    /// Returns {x, y, width, height} in terminal cells of the first visible
-    /// item with the given objectName, clipped to the viewport. A missing,
-    /// hidden, or fully off-screen item fails the scenario.
+    // Returns {x, y, width, height} in terminal cells of the first visible
+    // item with the given objectName, clipped to the viewport. A missing,
+    // hidden, or fully off-screen item fails the scenario.
     Q_INVOKABLE QVariantMap itemRect(const QString& objectName);
 
-    /// Waits until an item with the given objectName is visible inside the
-    /// committed viewport.
+    // Waits until an item with the given objectName is visible inside the
+    // committed viewport.
     Q_INVOKABLE void waitForItem(const QString& objectName, int timeoutMs = 2000);
 
-    /// Compares the region's normalized text against a golden baseline, with
-    /// the same artifacts and update mode as expectSnapshot().
+    // Compares the region's normalized text against a golden baseline, with
+    // the same artifacts and update mode as expectSnapshot().
     Q_INVOKABLE void expectRegionSnapshot(int x, int y, int width, int height,
                                           const QString& snapshotRelativePath,
                                           int timeoutMs = -1);
 
-    /// Clicks the center of a rendered text match and waits for the resulting frame.
+    // Clicks the center of a rendered text match and waits for the resulting frame.
     Q_INVOKABLE void clickText(const QString& text, int occurrence = 0,
                                const QString& button = QStringLiteral("left"),
                                const QStringList& modifiers = {});
 
-    /// Moves the mouse to the center of a rendered text match with no button held.
+    // Moves the mouse to the center of a rendered text match with no button held.
     Q_INVOKABLE void hoverText(const QString& text, int occurrence = 0,
                                const QStringList& modifiers = {});
 
-    /// Sends a mouse click at (x, y) with optional button ("left", "middle", "right") and modifiers.
+    // Sends a mouse click at (x, y) with optional button ("left", "middle", "right") and modifiers.
     Q_INVOKABLE void click(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
-    /// Moves the mouse to (x, y) with no button held. The event is delivered
-    /// only while the application has hover (any-motion) reporting enabled,
-    /// exactly as a real terminal sends it; otherwise it is dropped.
+    // Moves the mouse to (x, y) with no button held. The event is delivered
+    // only while the application has hover (any-motion) reporting enabled,
+    // exactly as a real terminal sends it; otherwise it is dropped.
     Q_INVOKABLE void hover(int x, int y, const QStringList& modifiers = {});
 
-    /// Presses a mouse button at (x, y) without releasing it.
+    // Presses a mouse button at (x, y) without releasing it.
     Q_INVOKABLE void mouseDown(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
-    /// Releases a mouse button at (x, y).
+    // Releases a mouse button at (x, y).
     Q_INVOKABLE void mouseUp(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
-    /// Sends a double click at (x, y) with optional button and modifiers.
+    // Sends a double click at (x, y) with optional button and modifiers.
     Q_INVOKABLE void doubleClick(int x, int y, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
-    /// Drags from (startX, startY) to (endX, endY) with optional button and modifiers.
+    // Drags from (startX, startY) to (endX, endY) with optional button and modifiers.
     Q_INVOKABLE void drag(int startX, int startY, int endX, int endY, const QString& button = QStringLiteral("left"), const QStringList& modifiers = {});
 
-    /// Sends a mouse wheel scroll at (x, y) with deltaX and deltaY.
+    // Sends a mouse wheel scroll at (x, y) with deltaX and deltaY.
     Q_INVOKABLE void scroll(int x, int y, int deltaX, int deltaY, const QStringList& modifiers = {});
 
-    /// Waits until a committed frame matches the regex pattern.
+    // Waits until a committed frame matches the regex pattern.
     Q_INVOKABLE void waitForRegex(const QString& pattern, int timeoutMs = 2000);
 
-    /// Fails unless the next committed frame matches the regex pattern.
+    // Fails unless the next committed frame matches the regex pattern.
     Q_INVOKABLE void expectRegex(const QString& pattern, int timeoutMs = -1);
 
-    /// Fails unless the specified sub-region contains text.
+    // Fails unless the specified sub-region contains text.
     Q_INVOKABLE void expectTextInRegion(int x, int y, int width, int height,
                                         const QString& text, int timeoutMs = -1);
 
-    /// Fails unless cell attributes at (x, y) match expectedStyle properties.
+    // Fails unless cell attributes at (x, y) match expectedStyle properties.
     Q_INVOKABLE void expectStyle(int x, int y, const QJSValue& expectedStyle,
                                  int timeoutMs = -1);
 
-    /// Compares the committed frame against a golden baseline text snapshot.
+    // Compares the committed frame against a golden baseline text snapshot.
     Q_INVOKABLE void expectSnapshot(const QString& snapshotRelativePath, int timeoutMs = -1);
 
-    /// Compares styledText() against a golden baseline, so colors and
-    /// attributes are verified in addition to the characters.
+    // Compares styledText() against a golden baseline, so colors and
+    // attributes are verified in addition to the characters.
     Q_INVOKABLE void expectStyled(const QString& snapshotRelativePath, int timeoutMs = -1);
 
-    /// Fails the scenario immediately with message.
+    // Fails the scenario immediately with message.
     Q_INVOKABLE void fail(const QString& message);
 
-    /// Returns the root Terminal QML object for state inspection and automation.
+    // Returns the root Terminal QML object for state inspection and automation.
     Q_INVOKABLE QJSValue rootObject();
 
-    /// Marks the scenario successful after the JavaScript file returns normally.
+    // Marks the scenario successful after the JavaScript file returns normally.
     Q_INVOKABLE void finish();
 
 signals:

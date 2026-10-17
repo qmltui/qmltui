@@ -1,5 +1,8 @@
 #pragma once
 
+// Internal: shared delegate instantiation, context binding, DelegateChooser
+// resolution, and lazy-model helpers used by QmlTui views and Repeater.
+
 #include <QmlTui/Core/Items/Item.h>
 
 #include <QAbstractItemModel>

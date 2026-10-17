@@ -8,9 +8,12 @@
 
 namespace qmltui {
 
+// Application-wide keyboard shortcut evaluated by InputRouter before focused
+// item key dispatch.
 class QMLTUI_CORE_EXPORT Shortcut : public QObject {
     Q_OBJECT
     QML_ELEMENT
+    // Combined Qt::Key and Qt::KeyboardModifiers bitmask (e.g. Qt.CTRL | Qt.Key_S).
     Q_PROPERTY(int sequence READ sequence WRITE setSequence NOTIFY sequenceChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
 

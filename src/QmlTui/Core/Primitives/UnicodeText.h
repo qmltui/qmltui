@@ -44,11 +44,16 @@ private:
     bool m_sanitizeControls = false;
 };
 
+// Unicode grapheme segmentation, terminal column display width (utf8proc),
+// text elision, and UTF-8 encoding helpers.
 class UnicodeText {
 public:
     static QVector<Grapheme> graphemes(QStringView text);
+    // Total terminal column width of text (0, 1, or 2 columns per grapheme cluster).
     static int displayWidth(QStringView text);
+    // Truncates text with a trailing ellipsis so its display width fits in maxColumns.
     static QString elideText(QStringView text, int maxColumns);
+    // Next or previous grapheme cluster boundary relative to a UTF-16 code unit offset.
     static int nextBoundary(QStringView text, int utf16Position);
     static int previousBoundary(QStringView text, int utf16Position);
 

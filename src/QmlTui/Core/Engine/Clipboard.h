@@ -9,11 +9,14 @@
 
 namespace qmltui {
 
+// QML singleton exposing OSC 52 clipboard access on the active Terminal (or an
+// explicitly assigned terminal override).
 class QMLTUI_CORE_EXPORT Clipboard : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
     Q_PROPERTY(qmltui::Terminal* terminal READ terminal WRITE setTerminal NOTIFY terminalChanged)
+    // Timeout in milliseconds for pending requestText() OSC 52 read queries.
     Q_PROPERTY(int readTimeout READ readTimeout WRITE setReadTimeout NOTIFY readTimeoutChanged)
 
 public:
@@ -24,7 +27,9 @@ public:
     void setTerminal(Terminal* terminal);
     int readTimeout() const { return m_readTimeout; }
     void setReadTimeout(int milliseconds);
+    // Writes text to the host clipboard via OSC 52 when Terminal.clipboardMode allows it.
     Q_INVOKABLE void copy(const QString& text);
+    // Queries the host clipboard via OSC 52 and returns a JS Promise resolving to the text.
     Q_INVOKABLE QJSValue requestText();
 
 signals:

@@ -1,6 +1,9 @@
 import QtQml
 import QmlTui
 
+// Centered modal confirmation Popup with a double border, title, body message,
+// and OK / Cancel buttons. Enter triggers accept unless the reject button has
+// active focus; Escape rejects via Popup.CloseOnEscape.
 Popup {
     id: control
 

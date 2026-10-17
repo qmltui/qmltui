@@ -13,6 +13,7 @@
 
 namespace qmltui {
 
+// Easing curve enum namespace exposed to QML for PropertyAnimation.
 class QMLTUI_CORE_EXPORT Easing : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -31,12 +32,15 @@ public:
     Q_ENUM(Type)
 };
 
+// Abstract base class for QmlTui animations stepped by AnimationManager on the
+// QmlTui Clock timeline.
 class QMLTUI_CORE_EXPORT Animation : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Animation is an abstract base class")
 
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
+    // Number of iterations to run; negative values loop indefinitely.
     Q_PROPERTY(int loops READ loops WRITE setLoops NOTIFY loopsChanged)
 
 public:
@@ -52,6 +56,7 @@ public:
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
 
+    // Advances the animation by elapsedMs milliseconds.
     virtual void tick(qint64 elapsedMs) = 0;
 
 signals:
@@ -66,6 +71,8 @@ protected:
     int m_loops = 1;
 };
 
+// Interpolates a target QObject property from `from` to `to` over `duration`
+// milliseconds using `easing`.
 class QMLTUI_CORE_EXPORT PropertyAnimation : public Animation {
     Q_OBJECT
     QML_ELEMENT
@@ -123,6 +130,7 @@ protected:
     qint64 m_accumulatedTime = 0;
 };
 
+// Numeric property interpolator (integer and floating-point QML properties).
 class QMLTUI_CORE_EXPORT NumberAnimation : public PropertyAnimation {
     Q_OBJECT
     QML_ELEMENT
@@ -131,6 +139,7 @@ public:
     ~NumberAnimation() override = default;
 };
 
+// RGB channel interpolator for qmltui::Color properties.
 class QMLTUI_CORE_EXPORT ColorAnimation : public PropertyAnimation {
     Q_OBJECT
     QML_ELEMENT
@@ -144,6 +153,8 @@ protected:
 
 class ClockTimer;
 
+// Process-wide animation driver that ticks all running Animation instances at
+// ~60 Hz on the QmlTui Clock.
 class QMLTUI_CORE_EXPORT AnimationManager : public QObject {
     Q_OBJECT
 public:

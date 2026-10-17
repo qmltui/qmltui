@@ -7,6 +7,8 @@
 
 namespace qmltui {
 
+// Two-dimensional layout that places visible child items into grid cells using
+// explicit `Layout.row`/`Layout.column` coordinates or automatic `flow` placement.
 class QMLTUI_CORE_EXPORT GridLayout : public Item {
     Q_OBJECT
     QML_ELEMENT

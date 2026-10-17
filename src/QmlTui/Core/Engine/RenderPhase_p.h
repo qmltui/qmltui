@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: frame execution phase tracker used by Item::markDirty.
+
 #include <QtGlobal>
 #include <cstdint>
 

@@ -28,6 +28,13 @@ namespace qmltui {
 class Terminal;
 class Item;
 class InputRouter;
+// Runtime coordinator for a root Terminal item.
+//
+// Owns the TerminalDevice, InputDecoder, and InputRouter, drives the active
+// Renderer (AltScreenRenderer or InlineRenderer), paces frame commits, handles
+// terminal capability queries and OSC sequences (title, background color,
+// clipboard, progress), and records scrollback history in test sessions.
+// Main/engine thread only.
 class QMLTUI_CORE_EXPORT TerminalEngine : public QObject {
     Q_OBJECT
 
@@ -50,7 +57,7 @@ public:
         qint64 writeMicrosTotal = 0;
         qint64 bytesTotal = 0;
         qint64 dirtyDuringPaintTotal = 0;
-        qint64 skippedForBackpressure = 0;   // renders deferred while output was queued
+        qint64 skippedForBackpressure = 0; // renders deferred while output was queued
     };
     FrameStats lastFrameStats() const { return m_lastFrameStats; }
     FrameStatsTotals frameStatsTotals() const { return m_frameStatsTotals; }
@@ -133,7 +140,9 @@ public:
     // Rows committed since the engine was created (monotonic, survives
     // trimming) and how many of them are still retained.
     quint64 committedScrollbackTotal() const { return m_committedScrollbackTotal; }
-    int committedScrollbackRowCount() const { return static_cast<int>(m_committedScrollbackRows.size()); }
+    int committedScrollbackRowCount() const {
+        return static_cast<int>(m_committedScrollbackRows.size());
+    }
     size_t pendingScrollbackRowCount() const { return m_pendingScrollbackRows.size(); }
     // Retained rows from a total-row index onwards (clamped to the oldest
     // retained row), padded to the widest row. Empty when nothing qualifies.
@@ -193,7 +202,7 @@ private:
     class ClockTimer* m_clipboardTimer = nullptr;
     bool m_clipboardReadPending = false;
     friend class ::TestScrollView;
-    friend class ::TestTerminalFramework;   // reaches renderFrame() and mouse-motion state
+    friend class ::TestTerminalFramework; // reaches renderFrame() and mouse-motion state
     friend class ::TestQtMessageRouting;
 
     void startRenderer();
@@ -255,7 +264,7 @@ private:
     bool m_maxFrameRateFromEnvironment = false;
     bool m_mouseMotionReportingEnabled = false;
     QPointer<Terminal> m_rootWindow;
-    
+
     std::atomic<bool> m_renderPending{false};
     QSize m_testViewportSize;
     quint64 m_frameSequence = 0;

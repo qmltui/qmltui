@@ -1,6 +1,9 @@
 import QtQml
 import QmlTui
 
+// Bordered container that draws optional `title`, `titleBadge`, and
+// `titleTrailing` labels inline on the top border row, plus `footer` and
+// `footerTrailing` on the bottom border row.
 Rectangle {
     id: control
     property string title: ""

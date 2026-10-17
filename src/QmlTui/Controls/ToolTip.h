@@ -12,6 +12,10 @@ namespace qmltui { class Item; class Terminal; class Popup; class Text; class Re
 
 namespace qmltui::controls {
 
+// Attached tooltip overlay (`ToolTip.text`, `ToolTip.visible`, `ToolTip.delay`,
+// `ToolTip.timeout`) that automatically opens a non-modal Popup near the target
+// item after `delay` ms of hover or active focus, or immediately when `visible`
+// is set to true.
 class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -21,7 +25,9 @@ class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     QML_ATTACHED(ToolTip)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
+    // Milliseconds to wait after hover/focus before showing (<= 0 shows immediately).
     Q_PROPERTY(int delay READ delay WRITE setDelay NOTIFY delayChanged)
+    // Milliseconds before an open tooltip auto-hides (<= 0 disables auto-hide).
     Q_PROPERTY(int timeout READ timeout WRITE setTimeout NOTIFY timeoutChanged)
     Q_PROPERTY(qreal z READ z WRITE setZ NOTIFY zChanged)
 

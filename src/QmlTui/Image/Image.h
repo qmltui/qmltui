@@ -17,6 +17,9 @@ namespace qmltui {
 
 class ImageResponse;
 
+// Displays a raster image from a file/network/provider URL (`source`) or a
+// direct `QImage` (`image`), rendering either through terminal pixel protocols
+// (Kitty, Sixel) or cell glyph approximations (HalfBlock, Braille, ASCII).
 class QMLTUI_IMAGE_EXPORT Image : public Item {
     Q_OBJECT
     QML_ELEMENT

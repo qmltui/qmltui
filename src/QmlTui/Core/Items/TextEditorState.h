@@ -6,6 +6,9 @@
 
 namespace qmltui {
 
+// Grapheme-boundary-aware text buffer, cursor/selection model, and undo/redo
+// stack shared by TextInput and TextArea. All positions are UTF-16 code-unit
+// offsets snapped to extended grapheme cluster boundaries.
 class QMLTUI_CORE_EXPORT TextEditorState {
 public:
     struct Snapshot {
@@ -54,10 +57,13 @@ public:
     int nextWordPosition() const;
     int nextWordEndPosition() const;
 
+    // Clamps `position` into `[0, text.size()]` and snaps it to the nearest
+    // valid grapheme boundary at or before `position`.
     static int snapToBoundary(const QString &text, int position);
     static int graphemeCount(const QString &text);
     static QString truncateToGraphemes(const QString &text, int maximumLength);
     static QString sanitizeSingleLine(const QString &text);
+    // Converts between UTF-16 code-unit offsets and terminal display columns.
     static int columnForPosition(const QString &text, int position);
     static int positionForColumn(const QString &text, int column);
 

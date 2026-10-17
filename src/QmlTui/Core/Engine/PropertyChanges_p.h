@@ -1,5 +1,8 @@
 #pragma once
 
+// Internal: private storage and QQmlCustomParser implementation for
+// PropertyChanges.
+
 #include <QmlTui/Core/Engine/State.h>
 #include <QString>
 #include <QVariant>
@@ -14,6 +17,8 @@
 
 namespace qmltui {
 
+// One property assignment or binding expression decoded from a PropertyChanges
+// QML block by PropertyChangesParser.
 struct DecodedBinding {
     QString propertyName;
     QVariant literalValue;
@@ -51,6 +56,9 @@ public:
 };
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
+// Intercepts direct property assignments on PropertyChanges in QML so they are
+// deferred until the owning State becomes active rather than evaluated on the
+// PropertyChanges object itself.
 class PropertyChangesParser : public QT_PREPEND_NAMESPACE(QQmlCustomParser) {
 public:
     PropertyChangesParser() : QT_PREPEND_NAMESPACE(QQmlCustomParser)(AcceptsAttachedProperties) {}

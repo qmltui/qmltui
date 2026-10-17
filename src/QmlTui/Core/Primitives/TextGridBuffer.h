@@ -16,48 +16,36 @@ struct AnsiEncodeOptions {
     int eraseMinimumCells = 4;    // only when at least this many blanks remain
 };
 
-/**
- * @brief Double-buffered 2D character grid representing the terminal matrix.
- *
- * TextGridBuffer holds an array of @ref Cell elements indexed by (column, row).
- * Visual items paint into a TextGridBuffer during frame commit. The terminal
- * engine compares the front and back buffers via @ref diff() to produce minimal
- * VT/ANSI escape sequences that update only modified cells.
- *
- * Supports full-width Unicode characters, East Asian ambiguous width, grapheme
- * clustering, and 24-bit TrueColor/ANSI 256 color mapping.
- *
- * @thread_safety Not thread-safe. Manipulated on the QmlTui engine render thread.
- * @see Cell, Color, TextAttribute
- */
+// 2D character cell grid backing a rendered terminal frame.
+//
+// Visual items paint into a back TextGridBuffer during each frame commit, and
+// the renderer compares front and back buffers via diff() or diffRelative() to
+// emit minimal VT/ANSI escape sequences for modified cells. Main/engine thread
+// only.
 class TextGridBuffer {
 public:
     TextGridBuffer();
 
-    /// @brief Resizes buffer to given columns and rows, clearing contents. Returns true if size
-    /// changed.
+    // Resizes the grid to width x height columns/rows and clears all cells.
+    // Returns true when the dimensions changed.
     bool resize(int width, int height);
-    /// @brief Resets all cells to blank spaces with default background and foreground.
+    // Resets all cells to blank spaces with default foreground/background and clears the link
+    // table.
     void clear();
-    /// @brief Swaps contents with another buffer in O(1) time without copying cell vectors.
+    // Swaps contents with other in O(1) without copying cell storage.
     void swap(TextGridBuffer& other) noexcept;
 
-    /// @brief Width of the buffer in character columns.
     int width() const { return m_width; }
-    /// @brief Height of the buffer in character rows.
     int height() const { return m_height; }
 
-    /// @brief Returns true if (x, y) column/row coordinates are within bounds [0, width) x [0,
-    /// height).
+    // True when (x, y) is within [0, width) x [0, height).
     bool contains(int x, int y) const;
-    /// @brief Returns pointer to cell at (x, y), or nullptr if out of bounds.
+    // Pointer to the cell at (x, y), or nullptr when out of bounds.
     Cell* tryCellAt(int x, int y);
-    /// @brief Const overload of tryCellAt(). Returns nullptr if out of bounds.
     const Cell* tryCellAt(int x, int y) const;
 
-    /// @brief Returns reference to cell at (x, y). Undefined behavior if out of bounds.
+    // Reference to the cell at (x, y); caller must ensure contains(x, y) holds.
     Cell& cellAt(int x, int y);
-    /// @brief Const overload of cellAt(). Undefined behavior if out of bounds.
     const Cell& cellAt(int x, int y) const;
 
     // Writes one already-segmented grapheme cluster of the given display width
@@ -117,31 +105,20 @@ public:
         fillRect(x, y, width, height, character, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
 
-    /**
-     * @brief Generates minimal VT/ANSI escape sequences to update a terminal
-     * from this buffer's state to @p nextBuffer's state.
-     *
-     * Uses absolute cursor positioning. Appends to caller-owned string in the
-     * second overload to avoid heap allocations across frames.
-     */
+    // Minimal VT/ANSI escape sequence diff from this buffer to nextBuffer using
+    // 1-based absolute cursor addressing (alt-screen rendering). The second
+    // overload appends to out so callers can reuse capacity across frames.
     std::string diff(const TextGridBuffer& nextBuffer) const;
     void diff(const TextGridBuffer& nextBuffer, std::string& out,
               const AnsiEncodeOptions& options = {}) const;
 
-    /**
-     * @brief Computes relative ANSI cursor diff from top-left corner.
-     *
-     * Used for inline stream rendering where the cursor origin is relative.
-     */
+    // Like diff(), but uses cursor movement relative to (0, 0) for inline
+    // stream rendering.
     std::string diffRelative(const TextGridBuffer& nextBuffer) const;
     void diffRelative(const TextGridBuffer& nextBuffer, std::string& out,
                       const AnsiEncodeOptions& options = {}) const;
 
-    /**
-     * @brief Formats the entire buffer as a complete ANSI text string with newlines.
-     *
-     * Suitable for full-screen flushes, headless snapshots, or terminal dump logging.
-     */
+    // Serializes the full buffer as newline-separated ANSI rows.
     std::string toAnsiString() const;
     void toAnsiString(std::string& out) const;
 
@@ -153,6 +130,8 @@ public:
     // a style reset. No cursor movement or line break is emitted.
     void appendRowAnsi(std::string& out, int row, ColorDepth depth) const;
 
+    // Per-frame OSC 8 hyperlink table (1..255; 0 means no link). Cells written
+    // while activeLinkId() is non-zero inherit that link ID.
     uint8_t registerLink(const QString& url);
     QString linkUrl(uint8_t linkId) const;
     void setActiveLinkId(uint8_t linkId) { m_activeLinkId = linkId; }

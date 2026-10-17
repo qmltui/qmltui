@@ -10,6 +10,10 @@
 
 namespace qmltui {
 
+// Streaming parser that turns raw terminal input bytes into key events, SGR
+// and legacy mouse events, bracketed pastes, focus notifications, and framed
+// terminal query replies (CSI, SS3, OSC, DCS, APC). Buffers incomplete UTF-8
+// code points and multi-byte escape sequences across decode() calls.
 class InputDecoder {
 public:
     using KeyCallback = std::function<void(int qtKey, const QString& text, int modifiers)>;
@@ -72,10 +76,10 @@ public:
     bool hasPendingEscape() const;
     void flushPendingEscape();
 
-    /// The Qt key code a keypress producing \a codepoint carries. Letters map to
-    /// Qt::Key_A..Qt::Key_Z whatever their case; every other character carries
-    /// its code point, which matches Qt::Key_0..Key_9 and ASCII punctuation.
-    /// Inline so qmltui::runner can synthesize the same events as raw input.
+    // The Qt key code a keypress producing codepoint carries. Letters map to
+    // Qt::Key_A..Qt::Key_Z whatever their case; every other character carries
+    // its code point, which matches Qt::Key_0..Key_9 and ASCII punctuation.
+    // Inline so qmltui::runner can synthesize the same events as raw input.
     static constexpr int keyForCharacter(char32_t codepoint)
     {
         if (codepoint >= U'a' && codepoint <= U'z')

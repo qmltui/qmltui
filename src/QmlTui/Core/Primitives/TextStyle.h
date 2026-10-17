@@ -7,6 +7,11 @@
 
 namespace qmltui {
 
+// Sparse character style overlay shared by Span and HighlightRange.
+//
+// Each boolean attribute tracks both its value (m_values) and whether it was
+// explicitly set (m_specified), so unset attributes inherit from the owning
+// item while an explicit false clears an inherited attribute.
 class QMLTUI_CORE_EXPORT TextStyle
 {
 public:
@@ -51,7 +56,9 @@ public:
         return !m_color.isValid() && !m_backgroundColor.isValid() && m_specified == 0;
     }
 
+    // Applies specified attributes onto base, clearing bits explicitly set to false.
     TextAttribute resolveAttributes(TextAttribute base) const;
+    // Overwrites only the colors and attributes that overlay explicitly specifies.
     void applyOverlay(const TextStyle &overlay);
 
     friend bool operator==(const TextStyle &, const TextStyle &) = default;

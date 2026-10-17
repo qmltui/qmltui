@@ -8,6 +8,9 @@
 
 namespace qmltui {
 
+// UTF-16 character range [start, start + length) paired with a TextStyle
+// overlay, used by TextArea::highlights for syntax and search highlighting.
+// Unspecified style attributes inherit from the owning TextArea.
 class QMLTUI_CORE_EXPORT HighlightRange
 {
     Q_GADGET

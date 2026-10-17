@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QmlTui/Core/Primitives/Cell.h>
+#include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 #include <vector>
 #include <string>
@@ -22,7 +23,7 @@ struct AnsiEncodeOptions {
 // the renderer compares front and back buffers via diff() or diffRelative() to
 // emit minimal VT/ANSI escape sequences for modified cells. Main/engine thread
 // only.
-class TextGridBuffer {
+class QMLTUI_CORE_EXPORT TextGridBuffer {
 public:
     TextGridBuffer();
 

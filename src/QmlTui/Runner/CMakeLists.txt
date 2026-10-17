@@ -18,7 +18,12 @@ include("${PROJECT_SOURCE_DIR}/cmake/QmlTuiRunner.cmake")
 set(QMLTUI_RUNNER_DECLARATIONS "${CMAKE_CURRENT_SOURCE_DIR}/qmltui-runner.d.ts"
     CACHE INTERNAL "Source location of the Runner scenario API declarations")
 
-target_compile_definitions(QmlTuiRunner PRIVATE QMLTUI_RUNNER_LIBRARY)
+get_target_property(qmltui_runner_library_type QmlTuiRunner TYPE)
+if(qmltui_runner_library_type STREQUAL "STATIC_LIBRARY")
+    target_compile_definitions(QmlTuiRunner PUBLIC QMLTUI_RUNNER_STATIC)
+else()
+    target_compile_definitions(QmlTuiRunner PRIVATE QMLTUI_RUNNER_LIBRARY)
+endif()
 add_library(qmltui::runner ALIAS QmlTuiRunner)
 add_library(QmlTui::Runner ALIAS QmlTuiRunner)
 set_target_properties(QmlTuiRunner PROPERTIES EXPORT_NAME Runner)

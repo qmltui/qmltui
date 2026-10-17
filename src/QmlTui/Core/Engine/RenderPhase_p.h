@@ -2,6 +2,7 @@
 
 // Internal: frame execution phase tracker used by Item::markDirty.
 
+#include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QtGlobal>
 #include <cstdint>
 
@@ -21,7 +22,7 @@ class Item;
 //          QMLTUI_DEBUG_PAINT_DIRTY=1, reported once per item class/name.
 //
 // Rendering is single-threaded; the state is process-global.
-class RenderPhase final
+class QMLTUI_CORE_EXPORT RenderPhase final
 {
 public:
     enum Phase : uint8_t { Idle, Layout, Paint, };
@@ -34,7 +35,7 @@ public:
 
     static void recordDirtyDuringPaint(const Item *item);
 
-    class Scope final
+    class QMLTUI_CORE_EXPORT Scope final
     {
     public:
         explicit Scope(Phase phase);

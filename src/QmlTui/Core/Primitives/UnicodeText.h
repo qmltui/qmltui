@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QByteArray>
 #include <QString>
 #include <QStringView>
@@ -30,7 +31,7 @@ struct GraphemeRef {
 // With sanitizeControls, C0 controls, DEL and C1 controls take part in
 // cluster breaking and width as their visible replacements (U+2400 + code,
 // U+2421, U+FFFD), matching what TextGridBuffer writes for them.
-class GraphemeIterator {
+class QMLTUI_CORE_EXPORT GraphemeIterator {
 public:
     explicit GraphemeIterator(QStringView text, bool sanitizeControls = false) noexcept;
 
@@ -46,7 +47,7 @@ private:
 
 // Unicode grapheme segmentation, terminal column display width (utf8proc),
 // text elision, and UTF-8 encoding helpers.
-class UnicodeText {
+class QMLTUI_CORE_EXPORT UnicodeText {
 public:
     static QVector<Grapheme> graphemes(QStringView text);
     // Total terminal column width of text (0, 1, or 2 columns per grapheme cluster).

@@ -6,6 +6,7 @@
 #include <QByteArrayView>
 
 #include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 namespace qmltui {
 
@@ -36,7 +37,7 @@ inline TextAttribute operator&(TextAttribute a, TextAttribute b) {
 // flags and keycaps). Longer clusters such as ZWJ sequences are interned in a
 // process-wide append-only table and referenced by index, so cells still
 // compare and copy by value across buffers and the table is never freed.
-struct Cell {
+struct QMLTUI_CORE_EXPORT Cell {
     static constexpr int InlineGlyphCapacity = 11;
 
     uint32_t fgColor = 0x00000000; // Terminal default foreground

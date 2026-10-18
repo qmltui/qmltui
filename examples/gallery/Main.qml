@@ -12,9 +12,9 @@ import QmlTui.Controls
 Terminal {
     id: root
     title: showingDemo && current ? "QmlTui Gallery · " + current.file : "QmlTui Gallery"
-    property bool lightTheme: false
     color: inlineMode ? "default" : (lightTheme ? "#ffffff" : "#0d1117")
 
+    property bool lightTheme: false
     readonly property string brandPrimary: lightTheme ? "#00a651" : "#2cde85"
     readonly property string brandAccent: lightTheme ? "#008f45" : "#00ff66"
     readonly property string panelColor: "default"

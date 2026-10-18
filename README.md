@@ -89,7 +89,7 @@ Follow [Getting started](docs/getting-started.md) (or copy [`examples/quickstart
 - **[Interactive playground](docs/playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
 - **[Six-part tutorial](docs/tutorials/index.md)**: Step-by-step guide from your first `Terminal` to layouts, input, models, controls, and automated testing.
 - **[Topics & guides](docs/topics/index.md)**: Architecture, layouts, input/focus, virtualized models, styling, inline/stream mode, custom C++ items, and comparisons for Qt Quick and TUI developers.
-- **[Component & recipe catalog](docs/examples.md)**: Controls vs. copyable QML recipes, runnable component demos, and topic examples (see also [`examples/README.md`](examples/README.md) and full showcases in [qmltui-apps](https://github.com/qmltui-dev/qmltui-apps)).
+- **[Component & recipe catalog](docs/examples.md)**: Controls vs. copyable QML recipes, runnable component demos, and topic examples (see also [`examples/README.md`](examples/README.md) and full showcases in [qml-tui/apps](https://github.com/qml-tui/apps)).
 - **[QML types reference](docs/qml-types/index.md)**: Complete API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.TerminalHost`.
 - **[C++ classes reference](docs/cpp-classes/index.md)**: Engine, custom `Item` subclassing, rendering primitives, and `Runner` APIs.
 - **[Changelog & release notes](docs/changes/changelog.md)**: Version history and migration notes.

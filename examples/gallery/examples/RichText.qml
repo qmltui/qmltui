@@ -56,7 +56,7 @@ Item {
             titleBadgeColor: "#fde68a"
             titleTrailing: root.accentName
             titleTrailingColor: root.accentHex
-            footer: "T theme · B base bold · W wrap · click link"
+            footer: "T theme · B bold · W wrap · click link"
             footerColor: "#8b949e"
             footerTrailing: "3 formats"
             footerTrailingColor: "#58a6ff"
@@ -136,7 +136,7 @@ Item {
                         width: Math.max(10, parent.width - 2)
                         textFormat: Text.RichText
                         wrapMode: root.wrapRich ? Text.WordWrap : Text.NoWrap
-                        text: "Tags: <b>bold</b> <i>italic</i> <u>underline</u> <font color=\"" + root.accentHex + "\">accent</font> <a href=\"docs://text\">[docs://text]</a>"
+                        text: "Tags: <b>bold</b> <i>italic</i> <u>underline</u> <font color=\"" + root.accentHex + "\">accent</font> <a href=\"https://qt.io\">[qt.io]</a> [docs](https://qmltui.org)"
                         color: "#c9d1d9"
                         onLinkActivated: link => {
                             root.lastLink = link;
@@ -172,7 +172,7 @@ Item {
         }
 
         Panel {
-            Layout.preferredWidth: 26
+            Layout.preferredWidth: 27
             Layout.fillHeight: true
             title: "Inspector"
             titleColor: "#58a6ff"

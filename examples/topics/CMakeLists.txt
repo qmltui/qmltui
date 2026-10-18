@@ -1,5 +1,3 @@
-
-add_subdirectory(agent_stream)
 add_subdirectory(anchors)
 add_subdirectory(inline_repl)
 add_subdirectory(animation)

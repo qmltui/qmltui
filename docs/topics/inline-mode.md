@@ -19,5 +19,4 @@ resumes or the session stops. The shared queue is limited to 1 MiB; watch
 `outputRejected(reason)` when producers can outrun output.
 
 See [Terminal](../qml-types/terminal.md),
-[Scrollback](../qml-types/scrollback.md), the [inline REPL](../../examples/topics/inline_repl/),
-and the [streaming agent example](../../examples/topics/agent_stream/).
+[Scrollback](../qml-types/scrollback.md), and the [inline REPL](../../examples/topics/inline_repl/).

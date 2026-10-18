@@ -233,7 +233,7 @@ cmake --build build --target qmltui_terminal_view_demo
 
 See [TerminalView](qml-types/terminalview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
 
-- `qmltui_agent_stream_demo` ([`examples/topics/agent_stream`](../examples/topics/agent_stream/)) demonstrates an inline coding-agent session with scrollback, prompts, and permission cards using `Terminal.Stream`—it does **not** require `TerminalHost`.
+- `qmltui_inline_repl_demo` ([`examples/topics/inline_repl`](../examples/topics/inline_repl/)) demonstrates an inline session with scrollback and prompt input using `Terminal.Inline`—it does **not** require `TerminalHost`.
 - `qmltui_terminal_view_demo` ([`examples/components/terminal_view`](../examples/components/terminal_view/)) embeds interactive PTY shells inside a full-screen layout (`QMLTUI_ENABLE_TERMINAL_HOST=ON`; press `Ctrl+Q` to quit).
 
 ### Headless Testing & `.cast` Recording (`Runner`)

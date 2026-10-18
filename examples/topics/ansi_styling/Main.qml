@@ -1,21 +1,29 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
 Terminal {
-    Keys.onPressed: (event) => {
+    id: rootWindow
+    property string lastActivatedLink: "none"
+
+    color: "black"
+
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_Q) || event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_M) {
+            rootWindow.mouseReporting = !rootWindow.mouseReporting;
+            event.accepted = true;
         }
     }
 
-    id: rootWindow
-    color: "black"
-
     Column {
-        anchors.fill: parent
-        anchors.margins: 1
-        spacing: 1
+        anchors {
+            fill: parent
+            margins: 1
+        }
+        spacing: 0
 
         // Header
         Rectangle {
@@ -118,6 +126,35 @@ Terminal {
         Text {
             width: parent.width
             text: "Reversed Attribute: <reversed><font color='yellow'>Reversed Yellow Text</font></reversed>"
+        }
+
+        // Section 4: Hyperlinks (OSC 8 & linkActivated)
+        Text {
+            width: parent.width
+            text: "\n4. Terminal Hyperlinks (OSC 8 Browser Links & In-App Clicks):"
+            color: "cyan"
+            underline: true
+        }
+
+        Text {
+            width: parent.width
+            textFormat: Text.RichText
+            text: "HTML & Markdown: <a href=\"https://qt.io\">Qt Project</a> | [QmlTui Docs](https://qmltui.org)"
+            onLinkActivated: link => {
+                rootWindow.lastActivatedLink = link;
+            }
+        }
+
+        Text {
+            width: parent.width
+            text: rootWindow.mouseReporting ? "Mouse reporting ('m' to toggle): ON  -> Ctrl+Shift+Hover/Click in terminal, or click in-app" : "Mouse reporting ('m' to toggle): OFF -> Ctrl+Hover/Click in terminal"
+            color: "green"
+        }
+
+        Text {
+            width: parent.width
+            text: "Last activated link: " + rootWindow.lastActivatedLink
+            color: "yellow"
         }
 
         Text {

@@ -19,8 +19,8 @@ function main(terminal) {
     terminal.sleep(300);
 
     // Activate the embedded hyperlink in the RichText specimen.
-    terminal.clickText("[docs://text]");
-    terminal.waitForText("Link:     docs://text");
+    terminal.clickText("[qt.io]");
+    terminal.waitForText("Link:     https://qt.io");
     terminal.marker("Activated hyperlink");
     terminal.sleep(400);
 

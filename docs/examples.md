@@ -114,7 +114,6 @@ Each directory under [`examples/topics/`](../examples/topics/) illustrates an ar
 
 | Topic | Directory | CMake Target | Related Guide | What It Demonstrates |
 | :--- | :--- | :--- | :--- | :--- |
-| **Agent Stream** | [`agent_stream/`](../examples/topics/agent_stream/) | `qmltui_agent_stream_demo` | [Inline / Stream Mode](topics/inline-mode.md) | Interactive coding-agent session combining `Terminal.Stream`, `Scrollback`, prompt input, and modal dialogs. |
 | **Anchors** | [`anchors/`](../examples/topics/anchors/) | `qmltui_anchors_demo` | [Layouts & Geometry](topics/layouts.md) | Relative cell positioning with `anchors.fill`, `centerIn`, `margins`, and edge attachment. |
 | **Animation** | [`animation/`](../examples/topics/animation/) | `qmltui_animation_demo` | [Animation & States](topics/animation-and-states.md) | `NumberAnimation`, `ColorAnimation`, `SequentialAnimation`, and `ParallelAnimation` on cell properties. |
 | **ANSI Styling** | [`ansi_styling/`](../examples/topics/ansi_styling/) | `qmltui_ansi_styling_demo` | [Styling & Colors](topics/styling-and-colors.md) | Text attributes (bold, italic, underline, dim, blink, reverse, strikethrough) and ANSI colors. |

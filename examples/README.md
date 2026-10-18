@@ -10,7 +10,7 @@ Every directory under `examples/` has a single, non-overlapping purpose:
 | :--- | :--- |
 | **[`gallery/`](gallery/)** | **Single source of truth for all built-in QML types** (`QmlTui`, `QmlTui.Controls`, `QmlTui.Image`). Contains `Main.qml` (the interactive launcher) and `examples/*.qml` (39 standalone `Terminal` apps). Run the full grid with `qmltui_gallery`, open a tile directly with `qmltui_gallery --page Button`, or launch any example standalone with `qmltui_gallery --example Button`. |
 | **[`components/`](components/)** | **Copyable recipes, C++ custom items/models & PTY host.** Contains only components that are not pure-QML built-in types: multi-file recipes (`calendar`, `status_badge`), C++ `Item` and `SyntaxHighlighter` extensions (`big_text`, `text_area_highlighting`), C++ `QAbstractItemModel` / `QSortFilterProxyModel` setups (`standard_item_delegate`, `table_view`), and the Unix PTY multiplexer (`terminal_view`). |
-| **[`topics/`](topics/)** | **End-to-end application & protocol showcases.** Multi-view apps and engine feature deep-dives (`agent_stream`, `inline_progress`, `industrial_plc`, `master_detail`, `async_worker`, `file_browser`, `json_viewer`, `log_viewer`, `system_monitor`, `fluid_background`, `independent_states`). |
+| **[`topics/`](topics/)** | **End-to-end application & protocol showcases.** Multi-view apps and engine feature deep-dives (`inline_progress`, `industrial_plc`, `master_detail`, `async_worker`, `file_browser`, `json_viewer`, `log_viewer`, `system_monitor`, `fluid_background`, `independent_states`). |
 | **[`tutorials/`](tutorials/)** & **[`quickstart/`](quickstart/)** | **Step-by-step learning progression (`01`–`06`)** and the minimal 3-file `FetchContent` starter template. |
 
 ## Built-in Type Demos (`examples/gallery/examples/*.qml`)
@@ -73,7 +73,6 @@ Run any built-in type demo standalone with `./build/examples/gallery/qmltui_gall
 
 | Example | Guide |
 | :--- | :--- |
-| [agent_stream](topics/agent_stream/) | [inline-mode](../docs/topics/inline-mode.md) |
 | [anchors](topics/anchors/) | [layouts](../docs/topics/layouts.md) |
 | [animation](topics/animation/) | [animation-and-states](../docs/topics/animation-and-states.md) |
 | [ansi_styling](topics/ansi_styling/) | [styling-and-colors](../docs/topics/styling-and-colors.md) |

@@ -11,7 +11,7 @@ texts are in [`LICENSES/`](LICENSES/).
 
 | Path | License |
 | :--- | :--- |
-| `src/` (Core, Controls, Extras, Canvas, Image, TerminalHost, Runner) and `tests/` | `LGPL-3.0-only OR GPL-3.0-only` |
+| `src/` (Core, Controls, Extras, Canvas, Image, PtyView, Runner) and `tests/` | `LGPL-3.0-only OR GPL-3.0-only` |
 | `examples/` | `BSD-3-Clause` |
 | `cmake/`, `scripts/`, `.github/`, root `CMakeLists.txt` | `BSD-3-Clause` |
 | `docs/`, every `*.md`, the `doc/` directories under `src/` | `CC-BY-4.0` |

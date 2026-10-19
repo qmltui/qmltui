@@ -2,7 +2,7 @@ include(CTest)
 enable_testing()
 
 # One directory per library, mirroring src/QmlTui: Core, Controls, Image,
-# Runner and TerminalHost each register their own tests. The installed
+# Runner and PtyView each register their own tests. The installed
 # consumer below is a separate CMake project built against an install tree.
 # The helpers here are shared by every subdirectory.
 
@@ -124,8 +124,8 @@ if(QMLTUI_ENABLE_IMAGE)
     add_subdirectory(Image)
 endif()
 add_subdirectory(Runner)
-if(QMLTUI_ENABLE_TERMINAL_HOST)
-    add_subdirectory(TerminalHost)
+if(QMLTUI_ENABLE_PTY_VIEW)
+    add_subdirectory(PtyView)
 endif()
 
 # Installs this build into a private prefix, then configures, builds and runs

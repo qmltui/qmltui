@@ -66,7 +66,7 @@ gallery launcher (`examples/gallery/Main.qml`, copied to
 `www/gallery.qml`) with the gallery example files (`examples/gallery/examples/*.qml`,
 copied to `www/examples/` with an `index.json`: `39` total across all 4 modules,
 `38` in non-PTY builds such as WebAssembly, or `35` when `Behavior`, `Image`,
-and `TerminalHost` are disabled). On the left, a CodeMirror
+and `PtyView` are disabled). On the left, a CodeMirror
 editor with QML completion starts out with a hint. Open a tile in the gallery
 (arrows and Enter, or a click) and that tile's file appears in the editor: an
 `Item`-rooted component loaded dynamically by `Main.qml`'s `Loader`. Edit it: about 400 ms after the last keystroke the file is
@@ -250,11 +250,11 @@ sets them. Do not add `-sASYNCIFY`; it is not needed.
 
 Force these off in a wasm configure: `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`,
 `QMLTUI_ENABLE_RUNNER` (TestRunner owns a `std::thread`), and
-`QMLTUI_ENABLE_TERMINAL_HOST` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` works when the kit
+`QMLTUI_ENABLE_PTY_VIEW` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` works when the kit
 ships `Qt6QmlPrivate`, which the official 6.11 kit does (pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` otherwise).
 
 What cannot work in the browser: `QProcess`, `/proc`, D-Bus, sockets other than
-WebSockets, `QmlTui.TerminalHost`, and anything reading host files. `QFile`
+WebSockets, `QmlTui.PtyView`, and anything reading host files. `QFile`
 sees Emscripten's in-memory filesystem, so it does not crash, it just finds
 nothing.
 

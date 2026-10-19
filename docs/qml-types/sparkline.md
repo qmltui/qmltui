@@ -36,7 +36,7 @@ Sparkline paints directly into the terminal grid, with an `implicitWidth` of
 20 cells and an `implicitHeight` of 1 row. Each column is one value. When the
 series has at least `width` entries the last `width` values are shown, so a
 growing history scrolls left. When it has fewer, the values are right-aligned
-and the unused columns on the left repeat the first value. Nothing is painted
+and the unused columns on the left are left blank. Nothing is painted
 while `values` is empty.
 
 The range is `from`..`to` when `to` is non-zero. When `to` is `0.0` the range
@@ -103,12 +103,12 @@ Terminal {
 ```text
 CPU 48%
 
-▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▂▃▃▅▆▄▄
+                    ▁▂▂▂▃▃▅▆▄▄
 
                           ▁█
                           ██▇▃
                         ▇▄████
-▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▇▆██████
+                    ▁▄▇▆██████
 ```
 
 ### Interactive Demo & Recording

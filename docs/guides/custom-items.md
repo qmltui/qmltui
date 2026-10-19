@@ -99,6 +99,6 @@ void CustomBlock::setLabel(const QString& label) {
 
 You can also construct and drive a `qmltui::Terminal` and `qmltui::Item` hierarchy directly from C++ without loading any `.qml` files. See:
 
-- [`examples/guides/custom_cpp_item/`](../../examples/guides/custom_cpp_item/): Registering a custom `qmltui::Item` subclass (`QML_ELEMENT`) and instantiating it from QML.
-- [`examples/guides/cpp_only/`](../../examples/guides/cpp_only/): Building a complete QmlTui scene in pure C++20 without QML files.
-- [`examples/components/big_text/`](../../examples/components/big_text/): A reusable component combining custom cell painting and QML properties.
+- [`examples/recipes/custom_cpp_item/`](../../examples/recipes/custom_cpp_item/): Registering a custom `qmltui::Item` subclass (`QML_ELEMENT`) and instantiating it from QML.
+- [`examples/recipes/cpp_only/`](../../examples/recipes/cpp_only/): Building a complete QmlTui scene in pure C++20 without QML files.
+- [`examples/recipes/big_text/`](../../examples/recipes/big_text/): A reusable component combining custom cell painting and QML properties.

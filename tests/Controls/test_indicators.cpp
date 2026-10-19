@@ -110,7 +110,10 @@ private slots:
         buffer.resize(10, 1);
         paintItem(sparkline, buffer, 0, 0);
 
-        QVERIFY(buffer.cellAt(4, 0).character()[0] != ' ');
+        for (int x = 0; x < 5; ++x)
+            QCOMPARE(buffer.cellAt(x, 0).character(), QByteArray(" "));
+        for (int x = 5; x < 10; ++x)
+            QVERIFY(buffer.cellAt(x, 0).character() != QByteArray(" "));
     }
 
     void testTableView() {

@@ -2,6 +2,7 @@
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
@@ -28,10 +29,133 @@ static int resolveItemSpacing(Item* item, int defaultSpacing) {
     return defaultSpacing;
 }
 
+static QList<Span> normalizeSpansForScrollback(const QList<Span>& spans) {
+    QList<Span> normalized = spans;
+    for (Span& span : normalized) {
+        if (span.text().contains(u'\r')) {
+            QString text = span.text();
+            text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+            text.remove(u'\r');
+            span.setText(text);
+        }
+    }
+    for (qsizetype i = normalized.size() - 1; i >= 0; --i) {
+        const QString text = normalized[i].text();
+        if (!text.isEmpty()) {
+            if (text.endsWith(u'\n')) {
+                normalized[i].setText(text.chopped(1));
+            }
+            break;
+        }
+    }
+    if (normalized.isEmpty()) {
+        normalized.append(Span());
+    }
+    return normalized;
+}
+
+static bool spanFromVariantMap(const QVariantMap& map, Span& out) {
+    if (!map.contains(QStringLiteral("text"))) return false;
+    Span result(map.value(QStringLiteral("text")).toString());
+    for (auto it = map.cbegin(); it != map.cend(); ++it) {
+        const QString& key = it.key();
+        const QVariant& value = it.value();
+        if (key == QStringLiteral("text")) continue;
+        if (key == QStringLiteral("color") || key == QStringLiteral("backgroundColor")) {
+            Color color;
+            if (value.metaType() == QMetaType::fromType<Color>())
+                color = value.value<Color>();
+            else if (value.metaType() == QMetaType::fromType<QString>())
+                color = Color(value.toString());
+            if (color.isValid()) {
+                if (key == QStringLiteral("color"))
+                    result.setColor(color);
+                else
+                    result.setBackgroundColor(color);
+            }
+        } else if (key == QStringLiteral("bold") &&
+                   value.metaType() == QMetaType::fromType<bool>()) {
+            result.setBold(value.toBool());
+        } else if (key == QStringLiteral("dim") &&
+                   value.metaType() == QMetaType::fromType<bool>()) {
+            result.setDim(value.toBool());
+        } else if (key == QStringLiteral("italic") &&
+                   value.metaType() == QMetaType::fromType<bool>()) {
+            result.setItalic(value.toBool());
+        } else if (key == QStringLiteral("underline") &&
+                   value.metaType() == QMetaType::fromType<bool>()) {
+            result.setUnderline(value.toBool());
+        } else if (key == QStringLiteral("reversed") &&
+                   value.metaType() == QMetaType::fromType<bool>()) {
+            result.setReversed(value.toBool());
+        }
+    }
+    out = std::move(result);
+    return true;
+}
+
+static bool tryExtractSpans(const QVariant& data, bool allowVariantMap, QList<Span>& outSpans) {
+    if (data.metaType() == QMetaType::fromType<Span>()) {
+        outSpans = {data.value<Span>()};
+        return true;
+    }
+    if (data.metaType() == QMetaType::fromType<QList<Span>>()) {
+        outSpans = data.value<QList<Span>>();
+        return true;
+    }
+    if (data.metaType() != QMetaType::fromType<QString>() &&
+        data.metaType() != QMetaType::fromType<QVariantMap>() && data.canConvert<QVariantList>()) {
+        const QVariantList list = data.toList();
+        if (!list.isEmpty()) {
+            QList<Span> converted;
+            converted.reserve(list.size());
+            bool allSpans = true;
+            for (const QVariant& elem : list) {
+                if (elem.metaType() == QMetaType::fromType<Span>()) {
+                    converted.append(elem.value<Span>());
+                } else if (allowVariantMap && elem.metaType() != QMetaType::fromType<QString>() &&
+                           elem.canConvert<QVariantMap>()) {
+                    Span span;
+                    if (spanFromVariantMap(elem.toMap(), span)) {
+                        converted.append(std::move(span));
+                    } else {
+                        allSpans = false;
+                        break;
+                    }
+                } else {
+                    allSpans = false;
+                    break;
+                }
+            }
+            if (allSpans) {
+                outSpans = std::move(converted);
+                return true;
+            }
+        }
+    }
+    if (allowVariantMap && data.metaType() != QMetaType::fromType<QString>() &&
+        data.canConvert<QVariantMap>()) {
+        Span span;
+        if (spanFromVariantMap(data.toMap(), span)) {
+            outSpans = {std::move(span)};
+            return true;
+        }
+    }
+    return false;
+}
+
 Scrollback::Scrollback(QObject* parent) : QObject(parent) {}
 
 Scrollback::~Scrollback() {
     clearDelegateCache();
+}
+
+void Scrollback::componentComplete() {
+    if (auto* parentItem = qobject_cast<Item*>(parent())) {
+        connect(parentItem, &Item::ancestryChanged, this, &Scrollback::appendExistingRows,
+                Qt::UniqueConnection);
+    }
+    appendExistingRows();
 }
 
 void Scrollback::setModel(QAbstractItemModel* model) {
@@ -363,6 +487,23 @@ int Scrollback::appendRows(int first, int last) {
 }
 
 void Scrollback::append(const QVariant& data) {
+    if (auto* item = qvariant_cast<Item*>(data)) {
+        append(item);
+        return;
+    }
+    if (data.canConvert<QObject*>()) {
+        if (auto* item = qobject_cast<Item*>(data.value<QObject*>())) {
+            append(item);
+            return;
+        }
+    }
+
+    QList<Span> spans;
+    if (tryExtractSpans(data, !m_delegate, spans)) {
+        append(spans);
+        return;
+    }
+
     Terminal* output = terminal();
     if (!m_delegate || !output) return;
 
@@ -448,12 +589,75 @@ void Scrollback::append(qmltui::Item* item) {
     ++m_consumedRowCount;
 }
 
+void Scrollback::append(const qmltui::Span& span) {
+    append(QList<Span>{span});
+}
+
+void Scrollback::append(const QList<qmltui::Span>& spans) {
+    Terminal* output = terminal();
+    if (!output) {
+        reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
+        return;
+    }
+
+    Text textItem;
+    textItem.setSpans(normalizeSpansForScrollback(spans));
+    textItem.setWidth((std::max)(1, textItem.implicitWidth()));
+    textItem.setHeight((std::max)(1, textItem.implicitHeight()));
+
+    if (!submitBatch(&textItem, output)) return;
+    ++m_consumedRowCount;
+}
+
+bool Scrollback::print(const QVariant& value) {
+    if (value.metaType() == QMetaType::fromType<QString>()) {
+        return print(value.toString());
+    }
+    QList<Span> spans;
+    if (tryExtractSpans(value, /*allowVariantMap=*/true, spans)) {
+        return print(spans);
+    }
+    if (value.canConvert<QString>()) {
+        return print(value.toString());
+    }
+    return reportRejection(QStringLiteral("Scrollback.print: unsupported value type"));
+}
+
 bool Scrollback::print(const QString& text) {
     Terminal* output = terminal();
     if (!output) return reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
     if (!output->engine())
         return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
     if (!output->engine()->submitScrollback(text))
+        return reportRejection(
+            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+    return true;
+}
+
+bool Scrollback::print(const qmltui::Span& span) {
+    return print(QList<Span>{span});
+}
+
+bool Scrollback::print(const QList<qmltui::Span>& spans) {
+    Terminal* output = terminal();
+    if (!output) return reportRejection(QStringLiteral("Scrollback must belong to a Terminal"));
+    TerminalEngine* engine = output->engine();
+    if (!engine)
+        return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
+
+    Text textItem;
+    textItem.setSpans(normalizeSpansForScrollback(spans));
+    const int itemWidth = (std::max)(1, textItem.implicitWidth());
+    const int itemHeight = (std::max)(1, textItem.implicitHeight());
+    textItem.setWidth(itemWidth);
+    textItem.setHeight(itemHeight);
+
+    TextGridBuffer buffer;
+    if (!buffer.resize(itemWidth, itemHeight))
+        return reportRejection(QStringLiteral("Scrollback item is too large to paint"));
+    ItemPaintTraversal::paintSubtree(&textItem, buffer, 0, 0,
+                                     ClipRect{0, 0, itemWidth, itemHeight});
+    if (!engine->submitScrollback(buffer))
         return reportRejection(
             QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
     return true;

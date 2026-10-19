@@ -41,7 +41,7 @@ jobs:
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=${{ matrix.behavior }}
-          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
+          -DQMLTUI_ENABLE_PTY_VIEW=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -65,7 +65,7 @@ jobs:
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
-          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
+          -DQMLTUI_ENABLE_PTY_VIEW=ON
           -DQMLTUI_ENABLE_COVERAGE=ON
 
       - name: Build
@@ -149,7 +149,7 @@ jobs:
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
-          -DQMLTUI_ENABLE_TERMINAL_HOST=ON
+          -DQMLTUI_ENABLE_PTY_VIEW=ON
 
       - name: Build
         run: cmake --build build --parallel

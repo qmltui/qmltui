@@ -242,6 +242,13 @@ void TextArea::setTabStopDistance(int distance) {
     emit tabStopDistanceChanged();
 }
 
+void TextArea::setShowWhitespace(bool show) {
+    if (m_showWhitespace == show) return;
+    m_showWhitespace = show;
+    emit showWhitespaceChanged();
+    markDirty();
+}
+
 void TextArea::selectAll() {
     applyEditorChange(m_editor.selectAll());
 }
@@ -783,9 +790,14 @@ void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
 
         const int y = absY + topPadding() + visibleLine;
         int displayColumn = 0;
+        bool leadingWhitespace = m_showWhitespace && !isPlaceholder;
         GraphemeIterator iterator(lineView, /*sanitizeControls=*/true);
         GraphemeRef cluster;
         while (iterator.next(cluster)) {
+            const bool isLeadingSpace = leadingWhitespace && cluster.utf16 == u" ";
+            if (cluster.utf16 != u" " && cluster.utf16 != u"\t") {
+                leadingWhitespace = false;
+            }
             const int x = absX + leftPadding() + displayColumn - m_contentX;
             const int width = (std::max)(1, cluster.width);
             if (x >= absX + leftPadding() && x + width <= absX + leftPadding() + viewportWidth &&
@@ -809,7 +821,10 @@ void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                     }
                 }
 
-                buffer.setGrapheme(x, y, cluster.utf16, cluster.width, fg, bg, attrs);
+                const QStringView graphemeView = isLeadingSpace ? QStringView(u"·") : cluster.utf16;
+                const TextAttribute cellAttrs =
+                    isLeadingSpace ? (attrs | TextAttribute::Dim) : attrs;
+                buffer.setGrapheme(x, y, graphemeView, cluster.width, fg, bg, cellAttrs);
 
                 if (!m_editor.text().isEmpty() && clusterEnd > selectionStart() &&
                     clusterStart < selectionEnd()) {

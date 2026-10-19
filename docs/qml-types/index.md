@@ -110,6 +110,6 @@
 - [AnimatedSprite](animatedsprite.md)
 - [Image](image.md)
 
-## QmlTui.TerminalHost — display
+## QmlTui.PtyView — display
 
-- [TerminalView](terminalview.md)
+- [PtyView](ptyview.md)

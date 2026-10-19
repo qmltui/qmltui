@@ -1,9 +1,11 @@
 #pragma once
 
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
+#include <QmlTui/Core/Primitives/Span.h>
 
 #include <QAbstractItemModel>
 #include <QHash>
+#include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QQmlComponent>
@@ -36,7 +38,7 @@ public:
     explicit Scrollback(QObject* parent = nullptr);
     ~Scrollback() override;
     void classBegin() override {}
-    void componentComplete() override { appendExistingRows(); }
+    void componentComplete() override;
 
     QVariant model() const { return m_modelVariant; }
     void setModel(const QVariant& model);
@@ -54,12 +56,18 @@ public:
     bool reuseItems() const { return m_reuseItems; }
     void setReuseItems(bool reuse);
 
-    // Renders a single model payload through `delegate` (or a standalone Item)
-    // and commits its cells to scrollback. Emits `outputRejected` if the
-    // terminal is not in Inline mode or the item cannot be rendered.
+    // Renders a single model payload through `delegate` (or a standalone Item
+    // or styled Span run) and commits its cells to scrollback. Emits
+    // `outputRejected` if the terminal is not in Inline mode or the item cannot
+    // be rendered.
     Q_INVOKABLE void append(const QVariant& data);
-    Q_INVOKABLE void append(qmltui::Item* item);
-    Q_INVOKABLE bool print(const QString& text);
+    void append(qmltui::Item* item);
+    void append(const qmltui::Span& span);
+    void append(const QList<qmltui::Span>& spans);
+    Q_INVOKABLE bool print(const QVariant& value);
+    bool print(const QString& text);
+    bool print(const qmltui::Span& span);
+    bool print(const QList<qmltui::Span>& spans);
     Q_INVOKABLE void clear();
 
 signals:
@@ -81,7 +89,8 @@ private:
     QQmlComponent* delegateForRow(int row) const;
     Terminal* terminal() const;
 
-    CachedDelegate getOrCreateDelegate(QQmlComponent* component, const QVariantMap& initialProperties);
+    CachedDelegate getOrCreateDelegate(QQmlComponent* component,
+                                       const QVariantMap& initialProperties);
     CachedDelegate getOrCreateSeparator();
     void clearDelegateCache();
     // Separator (after the first item), spacing rows and the item are painted
@@ -93,7 +102,7 @@ private:
     static int resolvedHeight(Item* item);
     bool reportRejection(const QString& reason);
     void applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,
-                                 int index, const QVariantMap& modelMap, const QVariant& rawData);
+                                  int index, const QVariantMap& modelMap, const QVariant& rawData);
 
     QVariant m_modelVariant;
     QPointer<QAbstractItemModel> m_model;

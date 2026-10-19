@@ -168,7 +168,7 @@ Views call `canFetchMore()` and `fetchMore()` the way `QTreeView` and
 - `Scrollback` asks for the next page once it has written every loaded row.
 
 A model that fetches asynchronously simply emits `rowsInserted` later; the view
-resumes from there. See `examples/guides/lazy_model/` for a directory tree
+resumes from there. See `examples/recipes/lazy_model/` for a directory tree
 that loads on expansion and counts its fetches.
 
 ## TreeView state across model changes
@@ -214,14 +214,14 @@ published, including cleared ones, so read them with a fallback
 (`model.foreground || textColor`) rather than as required properties.
 
 The `StandardItemDelegate` recipe in
-`examples/components/standard_item_delegate/StandardItemDelegate.qml` renders
+`examples/recipes/standard_item_delegate/StandardItemDelegate.qml` renders
 them: decoration glyph, `[x]`, `[ ]`, or `[-]` for checkable items, colored and
 aligned text, dimmed text for disabled items, and reversed text for the current
 row. Its `toggle()` writes `Qt::CheckStateRole` back through the model's
 `setData()`, on Space when the delegate has focus and on mouse click.
 
 ```qml
-// Copy StandardItemDelegate.qml from examples/components/standard_item_delegate/:
+// Copy StandardItemDelegate.qml from examples/recipes/standard_item_delegate/:
 ListView {
     model: standardItemModel
     delegate: StandardItemDelegate {}
@@ -231,7 +231,7 @@ ListView {
 The built-in painters of `TableView` and `TreeView` apply the same roles, so
 `TableView { model: m }` without a delegate matches the delegate's look. The
 selected row keeps the view's selection colors.
-`examples/components/standard_item_delegate/` shows one styled
+`examples/recipes/standard_item_delegate/` shows one styled
 `QStandardItemModel` in all three views, with Space toggling a check box
 through the model. When Qt Widgets is available it also builds
 `qmltui_standard_item_delegate_widgets`, the same model in `QListView`,

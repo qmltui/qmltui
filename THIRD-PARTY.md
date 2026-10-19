@@ -6,7 +6,7 @@ not part of the QmlTui license; each keeps its upstream license, reproduced here
 | Library | Version | Fetched by | License |
 | :--- | :--- | :--- | :--- |
 | [utf8proc](https://github.com/JuliaStrings/utf8proc) | 2.11.3 | `cmake/QmlTuiUtf8proc.cmake` | MIT |
-| [libvterm](https://www.leonerd.org.uk/code/libvterm/) | 0.3.3 | `cmake/QmlTuiLibvterm.cmake` (only with `QmlTui.TerminalHost`) | MIT |
+| [libvterm](https://www.leonerd.org.uk/code/libvterm/) | 0.3.3 | `cmake/QmlTuiLibvterm.cmake` (only with `QmlTui.PtyView`) | MIT |
 
 Qt itself is a build and runtime dependency and is licensed by The Qt Company
 under its own terms, see <https://www.qt.io/licensing>. Qt for WebAssembly is

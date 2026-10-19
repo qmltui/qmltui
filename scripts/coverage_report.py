@@ -17,7 +17,7 @@ MODULES = [
     ("Controls", "src/QmlTui/Controls/"),
     ("Image", "src/QmlTui/Image/"),
     ("Runner", "src/QmlTui/Runner/"),
-    ("TerminalHost", "src/QmlTui/TerminalHost/"),
+    ("PtyView", "src/QmlTui/PtyView/"),
     ("qmltui-runner CLI", "tools/qmltui-runner/"),
 ]
 

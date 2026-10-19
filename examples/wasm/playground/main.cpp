@@ -17,6 +17,7 @@
 #include <QQmlError>
 #include <QRegularExpression>
 #include <QUrl>
+#include <QVariantMap>
 
 #include <emscripten.h>
 #include <emscripten/bind.h>
@@ -28,6 +29,7 @@ namespace {
 
 QQmlEngine* g_engine = nullptr;
 QObject* g_root = nullptr;
+QVariantMap g_exampleSources;
 
 // Page callbacks; each is optional.
 EM_JS(void, playground_js_quit, (), {
@@ -105,12 +107,20 @@ std::string checkQml(const std::string& source, const std::string& fileName) {
 // Writes a file into Emscripten's in-memory /playground/ directory so relative
 // Loader URLs (e.g. "examples/Button.qml") resolve inside the running gallery.
 void writeFile(const std::string& fileName, const std::string& content) {
-    const QString fullPath = QStringLiteral("/playground/") + QString::fromStdString(fileName);
+    const QString relPath = QString::fromStdString(fileName);
+    const QString fullPath = QStringLiteral("/playground/") + relPath;
     const QFileInfo info(fullPath);
     QDir().mkpath(info.absolutePath());
     QFile file(fullPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Truncate))
         file.write(content.data(), static_cast<qint64>(content.size()));
+    if (relPath.startsWith(QStringLiteral("examples/"))) {
+        g_exampleSources.insert(info.fileName(), QString::fromStdString(content));
+        if (g_engine) {
+            g_engine->rootContext()->setContextProperty(QStringLiteral("qmltuiExampleSources"),
+                                                        g_exampleSources);
+        }
+    }
 }
 
 // Page-defined state the next root can read as a context property, e.g. the

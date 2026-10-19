@@ -19,11 +19,11 @@ AbstractButton {
         // to programmatic and initial checked: true.
         function uncheckGroup() {
             if (control.buttonGroup && control.buttonGroup.buttons) {
-                const groupButtons = control.buttonGroup.buttons
+                const groupButtons = control.buttonGroup.buttons;
                 for (let i = 0; i < groupButtons.length; ++i) {
-                    const b = groupButtons[i]
-                    if (b !== control && b.checked !== undefined)
-                        b.checked = false
+                    const b = groupButtons[i];
+                    if (b && b !== control && (b.buttonGroup === undefined || b.buttonGroup === control.buttonGroup) && b.checked !== undefined)
+                        b.checked = false;
                 }
             }
         }
@@ -31,7 +31,12 @@ AbstractButton {
 
     onCheckedChanged: {
         if (control.checked)
-            d.uncheckGroup()
+            d.uncheckGroup();
+    }
+
+    onButtonGroupChanged: {
+        if (control.checked)
+            d.uncheckGroup();
     }
 
     contentItem: Row {

@@ -160,7 +160,7 @@ coexist within an application.
 - **Precedence over Behavior**: When an animated property matches an active `Transition`,
   the transition takes precedence over any `Behavior` on that property.
 
-See the [independent states guide example](../../examples/guides/independent_states/),
+See the [independent states recipe example](../../examples/recipes/independent_states/),
 the gallery examples [`States.qml`](../../examples/gallery/examples/States.qml),
 [`Animation.qml`](../../examples/gallery/examples/Animation.qml), and
 [`Behavior.qml`](../../examples/gallery/examples/Behavior.qml), and the

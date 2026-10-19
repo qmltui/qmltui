@@ -10,7 +10,7 @@
 - `QmlTui.Controls` admits a type only if it needs engine knowledge an
   application cannot reproduce in QML (cell geometry, Unicode width,
   virtualization, overlays) or is universal in terminal toolkits. Everything
-  else is a recipe under `examples/components/`. Core items and Controls default to the terminal's foreground and background.
+  else is a recipe under `examples/recipes/`. Core items and Controls default to the terminal's foreground and background.
   Expose ordinary color properties where useful; explicit overrides must survive
   focus and disabled states. Applications own shared styling through QML bindings
   and reusable components; do not add a framework palette or theme singleton.
@@ -18,7 +18,7 @@
   `QtQuick` import or Qt Quick dependency to QmlTui applications or modules.
 - Keep optional subsystems gated. `QMLTUI_ENABLE_PRIVATE_QT=ON` requires
   `Qt6::QmlPrivate` (enabling Behavior, StateGroup, and advanced states);
-  `QMLTUI_ENABLE_TERMINAL_HOST=ON` is the Unix PTY module and is
+  `QMLTUI_ENABLE_PTY_VIEW=ON` is the Unix PTY module and is
   supported only on Linux and macOS; `QMLTUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
   and `Qt6::Network`.
 

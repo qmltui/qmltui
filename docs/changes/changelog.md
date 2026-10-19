@@ -4,9 +4,10 @@ The framework and QML modules use the QmlTui name. Environment settings use
 `QMLTUI_*`, including Runner's `QMLTUI_RUNNER_*` variables. Frame logging uses
 `qmltui.frames`. Consult the porting guides for removed APIs and previous names.
 
-The gallery now lives under `examples/gallery`; `examples/concepts` became
-`examples/guides`. Example targets consistently use `qmltui_<directory>_demo`.
-Full applications moved to the separate qmltui-apps project.
+The gallery now lives under `examples/gallery`; standalone recipes and guide
+examples live under `examples/recipes`. Example targets consistently use
+`qmltui_<directory>_demo`. Full applications moved to the separate qmltui-apps
+project.
 
 Documentation now has Getting Started, Guides, QML Types, C++ Classes,
 Examples, and Changes entry points. Reference documentation no longer lives

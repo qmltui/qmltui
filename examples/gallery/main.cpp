@@ -1,8 +1,10 @@
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTextStream>
+#include <QVariantMap>
 
 static QString normalizeKey(QString name) {
     if (name.endsWith(QStringLiteral(".qml"), Qt::CaseInsensitive)) name.chop(4);
@@ -14,6 +16,17 @@ static QString normalizeKey(QString name) {
 static QStringList availableExamples() {
     const QDir dir(QStringLiteral(":/qt/qml/Gallery/examples"));
     return dir.entryList({QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
+}
+
+static QVariantMap loadExampleSources(const QStringList& files) {
+    QVariantMap sources;
+    for (const QString& fileName : files) {
+        QFile file(QStringLiteral(":/qt/qml/Gallery/examples/") + fileName);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            sources.insert(fileName, QString::fromUtf8(file.readAll()));
+        }
+    }
+    return sources;
 }
 
 static QString resolveExampleFile(const QString& query, const QStringList& files) {
@@ -55,6 +68,8 @@ int main(int argc, char* argv[]) {
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("qmltuiAvailableExamples"), examples);
+    engine.rootContext()->setContextProperty(QStringLiteral("qmltuiExampleSources"),
+                                             loadExampleSources(examples));
 
     if (!requestedExample.isEmpty()) {
         const QString resolved = resolveExampleFile(requestedExample, examples);

@@ -54,6 +54,8 @@ class QMLTUI_CORE_EXPORT TextArea : public Item {
                    tabChangesFocusChanged)
     Q_PROPERTY(int tabStopDistance READ tabStopDistance WRITE setTabStopDistance NOTIFY
                    tabStopDistanceChanged)
+    Q_PROPERTY(bool showWhitespace READ showWhitespace WRITE setShowWhitespace NOTIFY
+                   showWhitespaceChanged)
 
 public:
     enum CursorShape : uint8_t {
@@ -107,6 +109,8 @@ public:
     void setTabChangesFocus(bool tabChangesFocus);
     int tabStopDistance() const { return m_tabStopDistance; }
     void setTabStopDistance(int distance);
+    bool showWhitespace() const { return m_showWhitespace; }
+    void setShowWhitespace(bool show);
 
     // Replaces the named highlight layer if `revision == textRevision()`;
     // higher `priority` layers win when styles overlap. Returns false on revision mismatch.
@@ -151,6 +155,7 @@ signals:
     void textRevisionChanged();
     void tabChangesFocusChanged();
     void tabStopDistanceChanged();
+    void showWhitespaceChanged();
     void highlightsChanged();
     void accepted();
 
@@ -210,6 +215,7 @@ private:
     bool m_readOnly = false;
     bool m_tabChangesFocus = false;
     int m_tabStopDistance = 4;
+    bool m_showWhitespace = false;
 
     quint64 m_textRevision = 0;
     QMap<QString, HighlightLayer> m_highlightLayers;

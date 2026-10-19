@@ -38,8 +38,8 @@ rtk cmake --build build
 
 `QMLTUI_BUILD_TESTS=ON` builds `qmltui::runner` and the repository test suites.
 Use `-DQMLTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
-without the repository tests. Use `-DQMLTUI_ENABLE_TERMINAL_HOST=ON` only for the
-optional PTY-backed `TerminalView` module.
+without the repository tests. Use `-DQMLTUI_ENABLE_PTY_VIEW=ON` only for the
+optional PTY-backed `PtyView` module.
 
 Features requiring private Qt headers (Behavior, StateGroup, and advanced states)
 require `-DQMLTUI_ENABLE_PRIVATE_QT=ON`. For changes to private Qt features or
@@ -121,10 +121,10 @@ endif()
 ```
 
 Use
-[`examples/components/status_badge/CMakeLists.txt`](../../../examples/components/status_badge/CMakeLists.txt)
+[`examples/recipes/status_badge/CMakeLists.txt`](../../../examples/recipes/status_badge/CMakeLists.txt)
 as the reference for this shared-target pattern. C++-created Terminals need an
 explicit environment hook, as shown in
-[`examples/guides/cpp_only/main.cpp`](../../../examples/guides/cpp_only/main.cpp).
+[`examples/recipes/cpp_only/main.cpp`](../../../examples/recipes/cpp_only/main.cpp).
 Use [`tests/Runner/main.cpp`](../../../tests/Runner/main.cpp) for explicitly
 constructed embedded runners and framework scenarios and failure contracts.
 

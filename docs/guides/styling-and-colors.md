@@ -113,7 +113,7 @@ Rectangle {
 }
 ```
 
-See the gallery examples [`Text.qml`](../../examples/gallery/examples/Text.qml) and [`RichText.qml`](../../examples/gallery/examples/RichText.qml), and the [`TextArea` highlighting example](../../examples/components/text_area_highlighting/).
+See the gallery examples [`Text.qml`](../../examples/gallery/examples/Text.qml) and [`RichText.qml`](../../examples/gallery/examples/RichText.qml), and the [`TextArea` highlighting example](../../examples/recipes/text_area_highlighting/).
 
 ### TextArea Highlighting Layers
 

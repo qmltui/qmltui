@@ -33,7 +33,7 @@ if [ "$do_components" = "1" ]; then
     # Copy each component cast from gallery and recipe artifact directories
     for cast_file in \
         "$build_dir"/examples/gallery/RunnerArtifacts/*/components/*.cast \
-        "$build_dir"/examples/components/*/RunnerArtifacts/*/components/*.cast; do
+        "$build_dir"/examples/recipes/*/RunnerArtifacts/*/components/*.cast; do
         [ -f "$cast_file" ] || continue
         name=$(basename "$cast_file")
         cp "$cast_file" "$repo_dir/docs/assets/casts/components/$name"

@@ -28,7 +28,7 @@ Rectangle {
 
 Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) fire on the item with `activeFocus`. If `event.accepted` is left `false`, the event bubbles up through parent items to the root `Terminal`.
 
-- **`Keys.priority: Keys.BeforeItem`**: Intercepts keys before the item's built-in C++ handler runs (useful for overriding keys inside `TextInput` or `TerminalView`).
+- **`Keys.priority: Keys.BeforeItem`**: Intercepts keys before the item's built-in C++ handler runs (useful for overriding keys inside `TextInput` or `PtyView`).
 - **`Keys.forwardTo: [targetItem]`**: Forwards unhandled key events from a container or search bar directly to another item such as a `ListView` or `TableView`.
 
 ---

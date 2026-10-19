@@ -222,7 +222,7 @@ QmlTui emits a warning.
 
 Selection properties are `currentRow` (read-only alias of `selectedRow`),
 `selectedRow`, and `currentColumn`. See the
-[TableView example](../../examples/components/table_view/Main.qml).
+[TableView example](../../examples/recipes/table_view/Main.qml).
 
 ### Sorting, filtering, and model coordinates
 

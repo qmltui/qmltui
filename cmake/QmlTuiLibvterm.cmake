@@ -1,14 +1,14 @@
-# Provides the `qmltui_libvterm` target the optional qmltui::terminal_host module
+# Provides the `qmltui_libvterm` target the optional qmltui::pty_view module
 # links for its embedded terminal emulator: the system libvterm through
 # pkg-config when QMLTUI_USE_SYSTEM_LIBVTERM is on, otherwise the pinned 0.3.3
-# release tarball compiled as a static library inside this tree. TerminalHost
+# release tarball compiled as a static library inside this tree. PtyView
 # is the only consumer, so its CMakeLists.txt is the only caller.
 #
 # A macro, not a function: enable_language() must run at directory scope.
 
 macro(qmltui_provide_libvterm)
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux|Darwin")
-        message(FATAL_ERROR "QMLTUI_ENABLE_TERMINAL_HOST currently supports only Linux and macOS")
+        message(FATAL_ERROR "QMLTUI_ENABLE_PTY_VIEW currently supports only Linux and macOS")
     endif()
     if(TARGET qmltui_libvterm)
         # already provided

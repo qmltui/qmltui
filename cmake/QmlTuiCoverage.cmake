@@ -47,7 +47,7 @@ function(qmltui_register_coverage_targets)
         QmlTuiControls
         QmlTuiImage
         QmlTuiRunner
-        QmlTuiTerminalHost
+        QmlTuiPtyView
         qmltui-runner
     )
 

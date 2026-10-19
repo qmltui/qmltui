@@ -1,176 +1,80 @@
 pragma ComponentBehavior: Bound
-import QtQml
 import QmlTui
-import QmlTui.Controls
 import QmlTui.Image
 
-Item {
-    id: root
+// Image: Renders bitmaps into terminal cells via Braille, HalfBlock, ASCII,
+// or native terminal graphics protocols (Kitty / Sixel in Image.Auto mode).
+Column {
+    id: imageDemo
+
+    readonly property var modes: [
+        {
+            mode: Image.Braille,
+            name: "Braille",
+            blurb: "eight dots per cell, one colour"
+        },
+        {
+            mode: Image.HalfBlock,
+            name: "HalfBlock",
+            blurb: "two pixels per cell, true colour"
+        },
+        {
+            mode: Image.ASCII,
+            name: "ASCII",
+            blurb: "brightness as characters"
+        },
+        {
+            mode: Image.Auto,
+            name: "Auto",
+            blurb: "kitty or sixel where supported, else half-block"
+        }
+    ]
     property int modeIndex: 0
-    property bool smoothScaling: false
-    readonly property var renderModes: [Image.HalfBlock, Image.Braille, Image.ASCII, Image.Auto]
-    readonly property var modeNames: ["Image.HalfBlock", "Image.Braille", "Image.ASCII", "Image.Auto"]
 
-    function cycleMode() {
-        root.modeIndex = (root.modeIndex + 1) % root.renderModes.length;
+    spacing: 1
+    focusable: true
+    focus: true
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_M) {
+            imageDemo.modeIndex = (imageDemo.modeIndex + 1) % imageDemo.modes.length;
+            event.accepted = true;
+        }
     }
 
-    function toggleSmooth() {
-        root.smoothScaling = !root.smoothScaling;
+    Text {
+        text: "Press M to cycle renderMode."
+        color: "#8b949e"
     }
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 1
-
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_M) {
-                root.cycleMode();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_S) {
-                root.toggleSmooth();
-                event.accepted = true;
-            }
+    Rectangle {
+        width: Math.min(44, parent.width)
+        height: 11
+        border {
+            style: Border.Single
+            color: "#30363d"
         }
 
-        Panel {
-            id: stage
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            focusable: true
-            focus: true
-            color: "#0d1117"
-            border {
-                style: Border.Rounded
-                color: "#30363d"
+        Image {
+            id: picture
+            anchors {
+                fill: parent
+                margins: 1
             }
-
-            title: Row {
-                spacing: 1
-                Text {
-                    text: "Image"
-                    color: "#f9a8d4"
-                }
-                Text {
-                    text: "[" + root.modeNames[root.modeIndex] + "]"
-                    color: "#2cde85"
-                }
-            }
-            titleTrailing: Text {
-                text: pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height + " px"
-                color: "#8b949e"
-            }
-            footer: Text {
-                text: "[M] RenderMode  [S] Smooth"
-                color: "#8b949e"
-            }
-            footerTrailing: Text {
-                text: root.smoothScaling ? "smooth: on" : "smooth: off"
-                color: "#58a6ff"
-            }
-            Column {
-                anchors {
-                    fill: parent
-                    margins: 1
-                }
-                spacing: 1
-
-                Text {
-                    text: "panda.png · " + root.modeNames[root.modeIndex] + " · PreserveAspectFit"
-                    bold: true
-                    color: "#c9d1d9"
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 14
-                    color: "#161b22"
-                    border {
-                        style: Border.Single
-                        color: "#30363d"
-                    }
-
-                    Image {
-                        id: pandaImage
-                        anchors {
-                            fill: parent
-                            margins: 1
-                        }
-                        source: "qrc:/gallery/assets/panda.png"
-                        fillMode: Image.PreserveAspectFit
-                        renderMode: root.renderModes[root.modeIndex]
-                        smooth: root.smoothScaling
-                    }
-                }
-            }
+            source: "qrc:/gallery/assets/panda.png"
+            fillMode: Image.PreserveAspectFit
+            renderMode: imageDemo.modes[imageDemo.modeIndex].mode
         }
+    }
 
-        Panel {
-            Layout.preferredWidth: 28
-            Layout.fillHeight: true
-            color: "#161b22"
-            border {
-                style: Border.Single
-                color: "#30363d"
-            }
+    Text {
+        text: imageDemo.modes[imageDemo.modeIndex].name + ": " + imageDemo.modes[imageDemo.modeIndex].blurb
+        color: "#7ee0ff"
+    }
 
-            title: Text {
-                text: "Inspector"
-                color: "#58a6ff"
-            }
-            Column {
-                anchors {
-                    fill: parent
-                    margins: 1
-                }
-                spacing: 1
-
-                Text {
-                    text: "renderMode:"
-                    color: "#8b949e"
-                }
-
-                Text {
-                    text: "  " + root.modeNames[root.modeIndex]
-                    bold: true
-                    color: "#f9a8d4"
-                }
-
-                Text {
-                    text: "sourceSize: " + pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height
-                    bold: true
-                    color: "#2cde85"
-                }
-
-                Text {
-                    text: "renderSize: " + pandaImage.renderSize.width + "x" + pandaImage.renderSize.height
-                    color: "#58a6ff"
-                }
-
-                Text {
-                    text: "smooth: " + pandaImage.smooth
-                    color: "#c9d1d9"
-                }
-
-                Text {
-                    text: "status: " + (pandaImage.status === Image.Ready ? "Image.Ready" : "Loading")
-                    color: "#8b949e"
-                }
-
-                Button {
-                    width: parent.width
-                    height: 3
-                    text: "Cycle Mode [M]"
-                    onClicked: root.cycleMode()
-                }
-
-                Button {
-                    width: parent.width
-                    height: 3
-                    text: "Toggle Smooth [S]"
-                    onClicked: root.toggleSmooth()
-                }
-            }
-        }
+    Text {
+        text: picture.status === Image.Ready ? "Source " + picture.sourceSize.width + "x" + picture.sourceSize.height + " px" : picture.status === Image.Error ? "Image failed to load" : "Loading"
+        color: "#2cde85"
+        bold: true
     }
 }

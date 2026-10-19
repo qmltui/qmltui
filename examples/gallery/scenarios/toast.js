@@ -1,23 +1,16 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Toast Dispatcher");
-    terminal.expectText("Last Toast: None");
-    terminal.sleep(300);
-
+    terminal.expectText("Toasts stack in a corner");
+    terminal.sleep(700);
     terminal.press("Enter");
-    terminal.expectText("Last Toast: [info] Syncing");
-    terminal.expectText("Total Sent: 1");
-    terminal.sleep(300);
-
+    terminal.expectText("Background sync started");
+    terminal.sleep(700);
     terminal.clickText("Success");
-    terminal.expectText("Last Toast: [success] Saved");
-    terminal.expectText("Total Sent: 2");
-    terminal.sleep(300);
-
-    terminal.press("p");
-    terminal.expectText("bottom-right");
+    terminal.expectText("All changes written");
+    terminal.sleep(700);
     terminal.clickText("Warning");
-    terminal.expectText("Last Toast: [warning] Quota");
-    terminal.expectText("Total Sent: 3");
-    terminal.sleep(400);
+    terminal.expectText("Heap above 80%");
+    terminal.sleep(900);
+    terminal.captureText("toast.txt");
+    terminal.stopRecording();
 }

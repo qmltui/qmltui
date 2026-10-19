@@ -948,6 +948,15 @@ void TestTerminalFramework::scrollbackSpacingAndSeparator() {
 }
 
 void TestTerminalFramework::scrollbackImperativeMethods() {
+    const QByteArray previousScript = qgetenv("QMLTUI_RUNNER_SCRIPT");
+    qputenv("QMLTUI_RUNNER_SCRIPT", QByteArrayLiteral("quiet-test.js"));
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousScript.isEmpty())
+            qunsetenv("QMLTUI_RUNNER_SCRIPT");
+        else
+            qputenv("QMLTUI_RUNNER_SCRIPT", previousScript);
+    });
+
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
@@ -956,16 +965,23 @@ void TestTerminalFramework::scrollbackImperativeMethods() {
         import QtQml
         import QmlTui
         Item {
+            id: delegateRoot
             width: 10
             height: 1
             required property string text
-            Text { text: text }
+            Text { text: delegateRoot.text }
         }
     )",
                      QUrl());
     QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
 
     Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    auto* terminalEngine = terminal.engine();
+    terminalEngine->setTestViewportSize(QSize(30, 8));
+    QVERIFY(terminalEngine->testSession());
+    QVERIFY(terminalEngine->scrollbackHistoryEnabled());
+
     Scrollback scrollback(&terminal);
     QQmlEngine::setContextForObject(&scrollback, engine.rootContext());
     scrollback.setDelegate(&delegate);
@@ -974,12 +990,183 @@ void TestTerminalFramework::scrollbackImperativeMethods() {
     data.insert(QStringLiteral("text"), QStringLiteral("hello"));
     scrollback.append(data);
 
-    scrollback.print(QStringLiteral("direct-ansi\n"));
+    QVERIFY(scrollback.print(QStringLiteral("direct-ansi\n")));
 
-    Item customItem;
+    Span greenSpan(QStringLiteral("span-print\n"), Color(QStringLiteral("#00ff00")));
+    greenSpan.setBold(true);
+    QVERIFY(scrollback.print(greenSpan));
+
+    Span redPart(QStringLiteral("AB"), Color(QStringLiteral("#ff0000")));
+    Span bluePart(QStringLiteral("CD"), Color(QStringLiteral("#0000ff")),
+                  Color(QStringLiteral("#112233")));
+    bluePart.setUnderline(true);
+    QVERIFY(scrollback.print(QList<Span>{redPart, bluePart}));
+
+    Span appendSpan(QStringLiteral("span-append"), Color(QStringLiteral("#ffaa00")));
+    appendSpan.setItalic(true);
+    scrollback.append(appendSpan);
+
+    Span multiA(QStringLiteral("M1"), Color(QStringLiteral("#abcdef")));
+    Span multiB(QStringLiteral("M2"));
+    multiB.setDim(true);
+    scrollback.append(QList<Span>{multiA, multiB});
+
+    Text customItem;
+    customItem.setText(QStringLiteral("item-row"));
     customItem.setWidth(8);
     customItem.setHeight(1);
     scrollback.append(&customItem);
+
+    terminalEngine->renderFrame();
+    const TextGridBuffer rows = terminalEngine->committedScrollback();
+    const auto rowText = [&](int y) {
+        QString text;
+        for (int x = 0; x < rows.width(); ++x) {
+            const Cell& cell = rows.cellAt(x, y);
+            if (cell.continuation) continue;
+            text += cell.character().isEmpty() ? QStringLiteral(" ")
+                                               : QString::fromUtf8(cell.character());
+        }
+        while (text.endsWith(QLatin1Char(' ')))
+            text.chop(1);
+        return text;
+    };
+
+    QCOMPARE(rows.height(), 7);
+    QCOMPARE(rowText(0), QStringLiteral("hello"));
+    QCOMPARE(rowText(1), QStringLiteral("direct-ansi"));
+    QCOMPARE(rowText(2), QStringLiteral("span-print"));
+    QCOMPARE(rows.cellAt(0, 2).fgColor, Color(QStringLiteral("#00ff00")).paintedArgb32());
+    QCOMPARE(rows.cellAt(0, 2).attributes, TextAttribute::Bold);
+    QCOMPARE(rowText(3), QStringLiteral("ABCD"));
+    QCOMPARE(rows.cellAt(0, 3).fgColor, Color(QStringLiteral("#ff0000")).paintedArgb32());
+    QCOMPARE(rows.cellAt(2, 3).fgColor, Color(QStringLiteral("#0000ff")).paintedArgb32());
+    QCOMPARE(rows.cellAt(2, 3).bgColor, Color(QStringLiteral("#112233")).paintedArgb32());
+    QCOMPARE(rows.cellAt(2, 3).attributes, TextAttribute::Underline);
+    QCOMPARE(rowText(4), QStringLiteral("span-append"));
+    QCOMPARE(rows.cellAt(0, 4).fgColor, Color(QStringLiteral("#ffaa00")).paintedArgb32());
+    QCOMPARE(rows.cellAt(0, 4).attributes, TextAttribute::Italic);
+    QCOMPARE(rowText(5), QStringLiteral("M1M2"));
+    QCOMPARE(rows.cellAt(0, 5).fgColor, Color(QStringLiteral("#abcdef")).paintedArgb32());
+    QCOMPARE(rows.cellAt(2, 5).attributes, TextAttribute::Dim);
+    QCOMPARE(rowText(6), QStringLiteral("item-row"));
+
+    // Verify QML invocation of print() and append() with QmlTui.span, arrays of spans, and delegate
+    // objects.
+    QQmlComponent qmlDoc(&engine);
+    qmlDoc.setData(R"(
+        import QtQml
+        import QmlTui
+        Terminal {
+            mode: Terminal.Inline
+            Scrollback {
+                id: sb
+                spacing: 1
+            }
+            Scrollback {
+                id: delegatedSb
+                delegate: Text {
+                    required property string label
+                    text: label
+                }
+            }
+            Component.onCompleted: {
+                sb.print(QmlTui.span("qml-print", { color: "#123456", bold: true }));
+                sb.print([
+                    QmlTui.span("P1", { color: "#654321" }),
+                    QmlTui.span("P2", { underline: true })
+                ]);
+                sb.print({ text: "literal-print", color: "#112233" });
+                sb.print([
+                    { text: "L1", color: "#332211" },
+                    { text: "L2", italic: true }
+                ]);
+                sb.append(QmlTui.span("qml-append-1", { color: "#22aa44" }));
+                sb.append([
+                    QmlTui.span("A1", { italic: true }),
+                    QmlTui.span("A2", { reversed: true })
+                ]);
+                delegatedSb.append({ label: "from-delegate" });
+            }
+        }
+    )",
+                   QUrl());
+    QVERIFY2(qmlDoc.isReady(), qPrintable(qmlDoc.errorString()));
+    std::unique_ptr<QObject> rootObj(qmlDoc.create());
+    auto* qmlTerminal = qobject_cast<Terminal*>(rootObj.get());
+    QVERIFY(qmlTerminal != nullptr);
+    qmlTerminal->engine()->setTestViewportSize(QSize(30, 8));
+    qmlTerminal->engine()->renderFrame();
+
+    const TextGridBuffer qmlRows = qmlTerminal->engine()->committedScrollback();
+    const auto qmlRowText = [&](int y) {
+        QString text;
+        for (int x = 0; x < qmlRows.width(); ++x) {
+            const Cell& cell = qmlRows.cellAt(x, y);
+            if (cell.continuation) continue;
+            text += cell.character().isEmpty() ? QStringLiteral(" ")
+                                               : QString::fromUtf8(cell.character());
+        }
+        while (text.endsWith(QLatin1Char(' ')))
+            text.chop(1);
+        return text;
+    };
+    QCOMPARE(qmlRows.height(), 8);
+    QCOMPARE(qmlRowText(0), QStringLiteral("qml-print"));
+    QCOMPARE(qmlRows.cellAt(0, 0).fgColor, Color(QStringLiteral("#123456")).paintedArgb32());
+    QCOMPARE(qmlRows.cellAt(0, 0).attributes, TextAttribute::Bold);
+    QCOMPARE(qmlRowText(1), QStringLiteral("P1P2"));
+    QCOMPARE(qmlRows.cellAt(0, 1).fgColor, Color(QStringLiteral("#654321")).paintedArgb32());
+    QCOMPARE(qmlRows.cellAt(2, 1).attributes, TextAttribute::Underline);
+    QCOMPARE(qmlRowText(2), QStringLiteral("literal-print"));
+    QCOMPARE(qmlRows.cellAt(0, 2).fgColor, Color(QStringLiteral("#112233")).paintedArgb32());
+    QCOMPARE(qmlRowText(3), QStringLiteral("L1L2"));
+    QCOMPARE(qmlRows.cellAt(0, 3).fgColor, Color(QStringLiteral("#332211")).paintedArgb32());
+    QCOMPARE(qmlRows.cellAt(2, 3).attributes, TextAttribute::Italic);
+    QCOMPARE(qmlRowText(4), QStringLiteral("qml-append-1"));
+    QCOMPARE(qmlRows.cellAt(0, 4).fgColor, Color(QStringLiteral("#22aa44")).paintedArgb32());
+    QCOMPARE(qmlRowText(5), QString());
+    QCOMPARE(qmlRowText(6), QStringLiteral("A1A2"));
+    QCOMPARE(qmlRows.cellAt(0, 6).attributes, TextAttribute::Italic);
+    QCOMPARE(qmlRows.cellAt(2, 6).attributes, TextAttribute::Reversed);
+    QCOMPARE(qmlRowText(7), QStringLiteral("from-delegate"));
+
+    MutableListModel loaderModel;
+    loaderModel.append(QStringLiteral("loader-row-1"));
+    loaderModel.append(QStringLiteral("loader-row-2"));
+    engine.rootContext()->setContextProperty(QStringLiteral("loaderModel"), &loaderModel);
+
+    ScopedMessageCapture capture;
+    QQmlComponent loaderDoc(&engine);
+    loaderDoc.setData(R"(
+        import QtQml
+        import QmlTui
+        Terminal {
+            mode: Terminal.Inline
+            Loader {
+                sourceComponent: Item {
+                    Scrollback {
+                        model: loaderModel
+                        delegate: Text {
+                            required property string display
+                            text: display
+                        }
+                    }
+                }
+            }
+        }
+    )",
+                      QUrl());
+    QVERIFY2(loaderDoc.isReady(), qPrintable(loaderDoc.errorString()));
+    std::unique_ptr<QObject> loaderRoot(loaderDoc.create());
+    auto* loaderTerminal = qobject_cast<Terminal*>(loaderRoot.get());
+    QVERIFY(loaderTerminal != nullptr);
+    QVERIFY2(capture.messages.isEmpty(), qPrintable(capture.messages.join(QLatin1Char('\n'))));
+    loaderTerminal->engine()->setTestViewportSize(QSize(30, 8));
+    loaderTerminal->engine()->renderFrame();
+
+    const TextGridBuffer loaderRows = loaderTerminal->engine()->committedScrollback();
+    QCOMPARE(loaderRows.height(), 2);
 }
 
 void TestTerminalFramework::terminalVisibleChildrenAndAutoImplicitHeight() {

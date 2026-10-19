@@ -1,23 +1,18 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.expectText("Loader Workbench");
-    terminal.expectText("SystemCard");
-    terminal.expectText("loader.active: true");
-    terminal.expectText("loader.status: Ready");
-    terminal.sleep(300);
-
-    terminal.press("2");
-    terminal.expectText("NetworkCard");
-    terminal.expectText("Ingress:    1.42 GB/s");
-    terminal.sleep(300);
-
-    terminal.press("3");
-    terminal.expectText("loader.active: false");
-    terminal.expectText("loader.status: Null");
-    terminal.sleep(300);
-
-    terminal.press("1");
-    terminal.expectText("loader.status: Ready");
-    terminal.expectText("CPU Load:   24.8%");
-    terminal.sleep(300);
+    terminal.expectText("3 services, all healthy");
+    terminal.sleep(800);
+    terminal.press("Enter");
+    terminal.expectText("gateway");
+    terminal.sleep(800);
+    terminal.press("Tab");
+    terminal.sleep(500);
+    terminal.press("Enter");
+    terminal.expectText("status Null");
+    terminal.sleep(700);
+    terminal.press("Enter");
+    terminal.expectText("status Ready");
+    terminal.sleep(900);
+    terminal.captureText("loader.txt");
+    terminal.stopRecording();
 }

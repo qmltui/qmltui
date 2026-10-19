@@ -1,12 +1,24 @@
 # QmlTui Gallery
 
-A full-screen grid of every user-facing type in `QmlTui`, `QmlTui.Controls`,
-`QmlTui.Image`, and `QmlTui.TerminalHost` (39 tiles with Private Qt `Behavior`,
-`QmlTui.Image`, and `QmlTui.TerminalHost` enabled; 35 without). Move the
-selection with the arrow keys (or `hjkl`), open a tile with `Enter`, `Space`,
-or a mouse click, and press `T` in the grid to toggle between the Dark and
-Light documentation themes. `Escape` returns to the grid; `Q` quits from the
-grid or from a demo that has no text input focused.
+An interactive component catalog and live-editable QML playground for every
+user-facing type in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and
+`QmlTui.PtyView` (39 components when Private Qt `Behavior`, `QmlTui.Image`, and
+`QmlTui.PtyView` are enabled).
+
+- **Component `GridView` with Previews & On-Demand Header Search**: Browse all
+  components in a virtualized `GridView` showing each component's name, module
+  badge, glyph preview content, and description blurb. Press `/` or click
+  `/ Search` on the `Panel` top border to reveal and focus the inline search
+  `TextInput` and filter components in real time.
+- **Gallery-Owned Example Container & Live Editable Code Panel**: Press `Enter`,
+  `Space`, or click a tile to open the side-by-side split view:
+  - **Left Pane**: The Gallery-owned container `Panel` hosting the live
+    interactive component example.
+  - **Right Pane**: An editable `TextArea` displaying the QML source of the
+    active example with QML syntax highlighting. When you stop typing for
+    `500 ms`, the Gallery automatically reloads the live preview from your
+    edited QML source (`F6` toggles focus between preview and code; `F5` resets
+    the source).
 
 ## Command-Line Options
 
@@ -14,31 +26,28 @@ grid or from a demo that has no text input focused.
 # Run the full interactive gallery grid
 ./build/examples/gallery/qmltui_gallery
 
-# List all 39 standalone example names
+# List all available example names
 ./build/examples/gallery/qmltui_gallery --list-examples
 
-# Launch a single example directly as a standalone Terminal app
+# Launch a single example directly in standalone mode
 ./build/examples/gallery/qmltui_gallery --example Button
 ./build/examples/gallery/qmltui_gallery --example table_view
 
-# Open the gallery shell directly on a specific component tile
+# Open the gallery directly on a specific component example
 ./build/examples/gallery/qmltui_gallery --page Button.qml
 ```
 
 ## Layout
 
-- `examples/*.qml`: one `Item`-rooted component inspector per tile (Live
-  Component Stage + Property Inspector & Telemetry), loaded directly by
-  `Main.qml`'s `Loader` or launched standalone via `qmltui_gallery --example <Name>`.
-- `Main.qml`: the master-detail component explorer, styled with the same brand
-  palette (`#0d1117`, `#161b22`, `#30363d`, `#2cde85`, `#00ff66`) as the
-  VitePress documentation site. It loads the selected component inspector via a
-  declarative `Loader` (`source: "examples/" + current.file`), switches to
-  `Terminal.Inline` when `InlineMode.qml` is opened, and hides the master
-  header/sidebar/footer when launched in standalone `--example` mode.
-- `scenarios/*.js`: deterministic `Runner` scenarios for each component
-  example in `examples/*.qml`, used for both `AgentSmoke` verification and
-  automated `.cast` / `.gif` recording.
+- `examples/*.qml`: minimalistic, representative, commented QML examples focused
+  solely on the target component (no outer container `Panel` or boilerplate).
+- `Main.qml`: the Gallery shell hosting the searchable `GridView` (with the
+  on-demand `Panel.titleTrailing` search input) and the split `[Example Panel |
+  Editable Code Panel]` view that compiles and reloads edited QML via
+  `Qt.createQmlObject` after a `500 ms` debounce timeout.
+- `scenarios/*.js`: deterministic `Runner` scenarios for each component example
+  in `examples/*.qml`, used for both `AgentSmoke` verification and automated
+  `.cast` / `.gif` recording.
 
 ## In the Browser
 

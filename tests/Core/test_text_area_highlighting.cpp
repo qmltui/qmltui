@@ -13,8 +13,7 @@
 
 using namespace qmltui;
 
-static TextGridBuffer frame(TextArea &area, int width = 40, int height = 10)
-{
+static TextGridBuffer frame(TextArea& area, int width = 40, int height = 10) {
     TextGridBuffer buffer;
     buffer.resize(width, height);
     area.setWidth(width);
@@ -23,8 +22,7 @@ static TextGridBuffer frame(TextArea &area, int width = 40, int height = 10)
     return buffer;
 }
 
-class TestTextAreaHighlighting : public QObject
-{
+class TestTextAreaHighlighting : public QObject {
     Q_OBJECT
 private slots:
     void valuesAndResets();
@@ -39,11 +37,11 @@ private slots:
     void cursorPropertiesAndRendering();
     void acceptedSignal();
     void tabHandling();
+    void showWhitespaceRendering();
     void performance();
 };
 
-void TestTextAreaHighlighting::valuesAndResets()
-{
+void TestTextAreaHighlighting::valuesAndResets() {
     HighlightRange r;
     QCOMPARE(r.start(), 0);
     QCOMPARE(r.length(), 0);
@@ -93,8 +91,7 @@ void TestTextAreaHighlighting::valuesAndResets()
     QVERIFY(copy != r);
 }
 
-void TestTextAreaHighlighting::qmlStructuredValue()
-{
+void TestTextAreaHighlighting::qmlStructuredValue() {
     QQmlEngine engine;
     QQmlComponent component(&engine);
     component.setData(R"(
@@ -109,11 +106,12 @@ void TestTextAreaHighlighting::qmlStructuredValue()
                 ], textRevision)
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto *area = qobject_cast<TextArea *>(object.get());
+    auto* area = qobject_cast<TextArea*>(object.get());
     QVERIFY(area);
 
     bool result = false;
@@ -126,8 +124,7 @@ void TestTextAreaHighlighting::qmlStructuredValue()
     QCOMPARE(buffer.cellAt(6, 0).bgColor, 0xff0000ffu);
 }
 
-void TestTextAreaHighlighting::validationAndRejection()
-{
+void TestTextAreaHighlighting::validationAndRejection() {
     TextArea area;
     area.setText(QStringLiteral("0123456789"));
     const quint64 rev = area.textRevision();
@@ -183,8 +180,7 @@ void TestTextAreaHighlighting::validationAndRejection()
     QVERIFY(area.setHighlightLayer(QStringLiteral("zero"), {zeroLen}, rev));
 }
 
-void TestTextAreaHighlighting::layerPrecedence()
-{
+void TestTextAreaHighlighting::layerPrecedence() {
     TextArea area;
     area.setText(QStringLiteral("abcdefghij"));
     const quint64 rev = area.textRevision();
@@ -229,8 +225,7 @@ void TestTextAreaHighlighting::layerPrecedence()
     QCOMPARE(buffer.cellAt(2, 0).fgColor, Color("magenta").argb32());
 }
 
-void TestTextAreaHighlighting::graphemeSnapping()
-{
+void TestTextAreaHighlighting::graphemeSnapping() {
     TextArea area;
     // Combining character: 'e' + combining acute (U+0301) at index 0..2
     area.setText(QString::fromUtf8("e\xcc\x81xyz"));
@@ -249,8 +244,7 @@ void TestTextAreaHighlighting::graphemeSnapping()
     QCOMPARE(buffer.cellAt(1, 0).fgColor, area.color().argb32());
 }
 
-void TestTextAreaHighlighting::textEditInvalidation()
-{
+void TestTextAreaHighlighting::textEditInvalidation() {
     TextArea area;
     area.setText(QStringLiteral("Initial text"));
     QSignalSpy spyRev(&area, &TextArea::textRevisionChanged);
@@ -278,8 +272,8 @@ void TestTextAreaHighlighting::textEditInvalidation()
     bool synchronousRehighlightSuccess = false;
     QObject::connect(&area, &TextArea::textChanged, [&]() {
         HighlightRange newRange(0, 5, Color("blue"));
-        synchronousRehighlightSuccess = area.setHighlightLayer(
-            QStringLiteral("sync"), {newRange}, area.textRevision());
+        synchronousRehighlightSuccess =
+            area.setHighlightLayer(QStringLiteral("sync"), {newRange}, area.textRevision());
     });
 
     area.setText(QStringLiteral("Fresh document content"));
@@ -295,8 +289,7 @@ void TestTextAreaHighlighting::textEditInvalidation()
     QCOMPARE(buffer.cellAt(0, 0).fgColor, Color("blue").argb32());
 }
 
-void TestTextAreaHighlighting::rendering()
-{
+void TestTextAreaHighlighting::rendering() {
     TextArea area;
     area.setText(QStringLiteral("Line1\nLine2\nLine3"));
     const quint64 rev = area.textRevision();
@@ -338,15 +331,15 @@ void TestTextAreaHighlighting::rendering()
     // text is empty
     HighlightRange phRange(0, 10, Color("red"));
     // submitting for empty text with length > 0 is rejected (0 + 10 > 0)
-    QVERIFY(!placeholderArea.setHighlightLayer(QStringLiteral("h"), {phRange}, placeholderArea.textRevision()));
+    QVERIFY(!placeholderArea.setHighlightLayer(QStringLiteral("h"), {phRange},
+                                               placeholderArea.textRevision()));
     buffer = frame(placeholderArea);
     QCOMPARE(buffer.cellAt(0, 0).character(), QByteArrayView("E"));
     // Default placeholder styling (Dim), not red
     QVERIFY(buffer.cellAt(0, 0).fgColor != Color("red").argb32());
 }
 
-void TestTextAreaHighlighting::scrolledRendering()
-{
+void TestTextAreaHighlighting::scrolledRendering() {
     TextArea area;
     area.setText(QStringLiteral("Row0-alpha\nRow1-beta\nRow2-gamma\nRow3-delta"));
     area.setWidth(40);
@@ -357,7 +350,7 @@ void TestTextAreaHighlighting::scrolledRendering()
     // Row 0: "Row0-alpha\n" -> 11 chars
     // Row 1: "Row1-beta\n"  -> 10 chars (start 11)
     // Row 2: "Row2-gamma\n" -> 11 chars (start 21)
-    HighlightRange r0(0, 4, Color("red")); // "Row0"
+    HighlightRange r0(0, 4, Color("red"));    // "Row0"
     HighlightRange r2(21, 4, Color("green")); // "Row2"
     QVERIFY(area.setHighlightLayer(QStringLiteral("hl"), {r0, r2}, rev));
 
@@ -377,8 +370,7 @@ void TestTextAreaHighlighting::scrolledRendering()
     QCOMPARE(buffer.cellAt(0, 1).fgColor, area.color().argb32());
 }
 
-void TestTextAreaHighlighting::transparentHighlights()
-{
+void TestTextAreaHighlighting::transparentHighlights() {
     TextArea area;
     area.setText(QStringLiteral("Transparent test"));
     const quint64 rev = area.textRevision();
@@ -395,8 +387,7 @@ void TestTextAreaHighlighting::transparentHighlights()
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Bold);
 }
 
-void TestTextAreaHighlighting::cursorPropertiesAndRendering()
-{
+void TestTextAreaHighlighting::cursorPropertiesAndRendering() {
     TextArea area;
     QSignalSpy spyShape(&area, &TextArea::cursorShapeChanged);
     QSignalSpy spyColor(&area, &TextArea::cursorColorChanged);
@@ -437,7 +428,8 @@ void TestTextAreaHighlighting::cursorPropertiesAndRendering()
     QCOMPARE(buffer.cellAt(0, 0).character(), QByteArrayView("a"));
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Reversed);
 
-    // Focused with Block cursor and explicit color: sets bgColor to cursorColor and fgColor to black
+    // Focused with Block cursor and explicit color: sets bgColor to cursorColor and fgColor to
+    // black
     area.setCursorColor(Color("#00ffff")); // cyan
     buffer = frame(area);
     QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xff00ffffu);
@@ -503,8 +495,7 @@ void TestTextAreaHighlighting::cursorPropertiesAndRendering()
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::None);
 }
 
-void TestTextAreaHighlighting::acceptedSignal()
-{
+void TestTextAreaHighlighting::acceptedSignal() {
     TextArea area;
     area.setActiveFocus(true);
     QSignalSpy spy(&area, &TextArea::accepted);
@@ -528,8 +519,7 @@ void TestTextAreaHighlighting::acceptedSignal()
     QVERIFY(ctrlEnterEv.isAccepted());
 }
 
-void TestTextAreaHighlighting::tabHandling()
-{
+void TestTextAreaHighlighting::tabHandling() {
     TextArea area;
     area.setActiveFocus(true);
     QSignalSpy spyFocusChange(&area, &TextArea::tabChangesFocusChanged);
@@ -586,7 +576,8 @@ void TestTextAreaHighlighting::tabHandling()
     QCOMPARE(area.text(), QStringLiteral(""));
     QCOMPARE(area.cursorPosition(), 0);
 
-    // 6. Backtab at col 0 has nothing to unindent: leaves event unaccepted so InputRouter can cycle focus backward
+    // 6. Backtab at col 0 has nothing to unindent: leaves event unaccepted so InputRouter can cycle
+    // focus backward
     KeyEvent backtabEv3(Qt::Key_Backtab, "", Qt::ShiftModifier);
     area.keyPressEvent(&backtabEv3);
     QVERIFY(!backtabEv3.isAccepted());
@@ -616,8 +607,45 @@ void TestTextAreaHighlighting::tabHandling()
     QCOMPARE(area.text(), QStringLiteral("ab  "));
 }
 
-void TestTextAreaHighlighting::performance()
-{
+void TestTextAreaHighlighting::showWhitespaceRendering() {
+    TextArea area;
+    area.setText(QStringLiteral("  hello world\n    indented"));
+    QCOMPARE(area.showWhitespace(), false);
+
+    auto defaultBuf = frame(area, 20, 4);
+    QCOMPARE(defaultBuf.cellAt(0, 0).character(), QByteArrayView(" "));
+    QCOMPARE(defaultBuf.cellAt(1, 0).character(), QByteArrayView(" "));
+    QCOMPARE(defaultBuf.cellAt(2, 0).character(), QByteArrayView("h"));
+
+    QSignalSpy spy(&area, &TextArea::showWhitespaceChanged);
+    area.setShowWhitespace(true);
+    QCOMPARE(area.showWhitespace(), true);
+    QCOMPARE(spy.count(), 1);
+
+    auto wsBuf = frame(area, 20, 4);
+    // Leading indentation spaces on line 0 render as dim middle dots
+    QCOMPARE(wsBuf.cellAt(0, 0).character(), QByteArrayView("\xc2\xb7"));
+    QVERIFY((wsBuf.cellAt(0, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
+    QCOMPARE(wsBuf.cellAt(1, 0).character(), QByteArrayView("\xc2\xb7"));
+    QVERIFY((wsBuf.cellAt(1, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
+    // Non-space character and interior space after non-space are normal
+    QCOMPARE(wsBuf.cellAt(2, 0).character(), QByteArrayView("h"));
+    QVERIFY((wsBuf.cellAt(2, 0).attributes & TextAttribute::Dim) == TextAttribute::None);
+    QCOMPARE(wsBuf.cellAt(7, 0).character(), QByteArrayView(" "));
+    QVERIFY((wsBuf.cellAt(7, 0).attributes & TextAttribute::Dim) == TextAttribute::None);
+
+    // Line 1 leading indentation spaces also render as dim middle dots
+    for (int col = 0; col < 4; ++col) {
+        QCOMPARE(wsBuf.cellAt(col, 1).character(), QByteArrayView("\xc2\xb7"));
+        QVERIFY((wsBuf.cellAt(col, 1).attributes & TextAttribute::Dim) != TextAttribute::None);
+    }
+    QCOMPARE(wsBuf.cellAt(4, 1).character(), QByteArrayView("i"));
+
+    // Underlying text remains unmodified spaces
+    QCOMPARE(area.text(), QStringLiteral("  hello world\n    indented"));
+}
+
+void TestTextAreaHighlighting::performance() {
     TextArea area;
     QString longText;
     for (int i = 0; i < 500; ++i) {
@@ -663,10 +691,7 @@ void TestTextAreaHighlighting::performance()
           "  1000 syntax ranges layer: %lld µs\n"
           "  1000 nested overlapping ranges layer: %lld µs\n"
           "  20 viewport repaints: %lld µs (%lld µs/frame)",
-          syntaxTimeNs / 1000,
-          nestedTimeNs / 1000,
-          repaintTimeNs / 1000,
-          repaintTimeNs / 20000);
+          syntaxTimeNs / 1000, nestedTimeNs / 1000, repaintTimeNs / 1000, repaintTimeNs / 20000);
 }
 
 QTEST_GUILESS_MAIN(TestTextAreaHighlighting)

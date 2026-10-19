@@ -24,14 +24,14 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # Only what the browser can run. Runner owns a std::thread and the kit is
-# single-threaded; TerminalHost is a Unix PTY. Behavior is on: the wasm kit
+# single-threaded; PtyView is a Unix PTY. Behavior is on: the wasm kit
 # ships Qt6QmlPrivate, and the gallery has a Behavior tile. QmlTui.Image is on
 # too for the Image tile; it adds Qt Gui to the download (see playground/).
 set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 set(QMLTUI_ENABLE_RUNNER OFF CACHE BOOL "" FORCE)
-set(QMLTUI_ENABLE_TERMINAL_HOST OFF CACHE BOOL "" FORCE)
+set(QMLTUI_ENABLE_PTY_VIEW OFF CACHE BOOL "" FORCE)
 option(QMLTUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior, StateGroup (needs Qt QmlPrivate)" ON)
 option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" ON)
 
@@ -52,8 +52,8 @@ endif()
 if(NOT QMLTUI_WASM_PLAYGROUND_IMAGE OR NOT QMLTUI_ENABLE_IMAGE)
     list(FILTER gallery_examples EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
-if(NOT QMLTUI_ENABLE_TERMINAL_HOST)
-    list(FILTER gallery_examples EXCLUDE REGEX "/TerminalView\\.qml$")
+if(NOT QMLTUI_ENABLE_PTY_VIEW)
+    list(FILTER gallery_examples EXCLUDE REGEX "/PtyView\\.qml$")
 endif()
 set(example_index "")
 foreach(example IN LISTS gallery_examples)

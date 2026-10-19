@@ -90,6 +90,12 @@ Rectangle {
             const raw = control.from + pct * range;
             control.value = Math.min(control.to, Math.max(control.from, control.from + Math.round((raw - control.from) / step) * step));
         }
+        onPressed: event => {
+            if (!control.enabled)
+                return;
+            control.focus = true;
+            mouseArea.updateFromX(event.x);
+        }
         onClicked: event => {
             if (!control.enabled)
                 return;

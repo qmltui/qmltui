@@ -53,11 +53,11 @@ A response the item no longer wants receives
 `cancel()` and is deleted; a late `finished()` after that is ignored.
 Returning null from `requestImageResponse()` reports `Error` at once, as does
 a finished response whose `image()` is null (its `errorString()` is logged).
-`examples/guides/live_image` renders its radar sweep this way on a dedicated
+`examples/recipes/live_image` renders its radar sweep this way on a dedicated
 `QThread`.
 
 Each change of `source` asks the provider again, so a counter in the query
-drives a live picture. `examples/guides/live_image` is a complete
+drives a live picture. `examples/recipes/live_image` is a complete
 application doing exactly this. For a picture the C++ side owns outright, assign
 `Image::setImage()` (the `image` property) instead; it needs no URL and no
 registry.

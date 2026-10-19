@@ -147,7 +147,7 @@ or a decoded video frame:
 
 Frequent updates are cheap in the glyph modes; kitty re-uploads and sixel
 re-encodes the picture on every change, so a stream of frames is best shown
-with `Image.HalfBlock` or `Image.Braille`. `examples/guides/live_image`
+with `Image.HalfBlock` or `Image.Braille`. `examples/recipes/live_image`
 renders a live radar sweep served by an asynchronous provider.
 
 ### Sprite sheets

@@ -105,20 +105,29 @@ void Sparkline::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
 
     int valCount = static_cast<int>(m_values.size());
     int totalLevels = availH * 8;
+    int fillOffset = std::max(0, availW - valCount);
 
     for (int dx = 0; dx < availW; ++dx) {
-        double val = computedMin;
-        if (valCount >= availW) {
-            int idx = valCount - availW + dx;
-            val = m_values[idx].toDouble();
-        } else {
-            int fillOffset = availW - valCount;
-            if (dx >= fillOffset) {
-                val = m_values[dx - fillOffset].toDouble();
-            } else {
-                val = m_values[0].toDouble();
+        if (dx < fillOffset) {
+            for (int ry = 0; ry < availH; ++ry) {
+                int cy = startY + (availH - 1 - ry); // ry=0 is bottom row
+                int cx = startX + dx;
+
+                if (clipRect.contains(cx, cy)) {
+                    Cell* targetCell = buffer.tryCellAt(cx, cy);
+                    if (!targetCell) continue;
+                    Cell& cell = *targetCell;
+                    cell.fgColor = m_resolvedColor;
+                    cell.bgColor = m_resolvedBackgroundColor;
+                    cell.setCharacter(" ");
+                    cell.displayWidth = 1;
+                    cell.continuation = false;
+                }
             }
+            continue;
         }
+
+        double val = m_values[valCount - availW + dx].toDouble();
 
         double pct = std::clamp((val - computedMin) / range, 0.0, 1.0);
         int totalSubCells = static_cast<int>(pct * (totalLevels - 1));

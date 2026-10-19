@@ -13,7 +13,7 @@ for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
 this document. Check `src/QmlTui/Core/Items`, `src/QmlTui/Core/Engine`, `src/QmlTui/Controls`,
-`src/QmlTui/Image`, `src/QmlTui/TerminalHost`, and `docs/qml-types/index.md`
+`src/QmlTui/Image`, `src/QmlTui/PtyView`, and `docs/qml-types/index.md`
 before using a type or property you have not seen in a nearby file.
 
 ## 1. Imports
@@ -28,7 +28,7 @@ dependency. `AGENTS.md` forbids it.
 import QmlTui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
 import QmlTui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
 import QmlTui.Image           // Image, AnimatedSprite
-import QmlTui.TerminalHost    // TerminalView (PTY, Linux/macOS only, optional build)
+import QmlTui.PtyView         // PtyView (PTY, Linux/macOS only, optional build)
 
 // Qt foundational modules
 import QtQml                // Timer, Component, QtObject, Connections, Binding
@@ -238,7 +238,7 @@ sources listed at the top.
 Admission rule: a type enters `QmlTui.Controls` only if it needs engine
 knowledge an application cannot reproduce in QML, or is universal in terminal
 toolkits. Status badges, calendars, and banner text are recipes under
-`examples/components/`, not library types; copy them into your module.
+`examples/recipes/`, not library types; copy them into your module.
 
 **`import QmlTui`** (C++ in `src/QmlTui/Core/Items` and `src/QmlTui/Core/Engine`)
 `Terminal`, `Scrollback`, `Item`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
@@ -264,8 +264,8 @@ property is a Plan 06 section 7 proposal, not a shipped type.
 **`import QmlTui.Image`**
 `Image`, `AnimatedSprite`.
 
-**`import QmlTui.TerminalHost`**
-`TerminalView`.
+**`import QmlTui.PtyView`**
+`PtyView`.
 
 ## 7. Checklist
 

@@ -18,7 +18,7 @@ Follow these guides in order to understand how QmlTui structures, lays out, styl
 Extend QmlTui into streaming CLIs, embedded PTY panes, custom C++20 items, deterministic headless tests, IDE language servers, and browser builds:
 
 7. **[Inline Mode & Scrollback](inline-mode.md)**: Building streaming CLIs and coding agents with `Terminal.Inline` and `Scrollback` alongside a live bottom viewport.
-8. **[Embedded PTY Shells (`QmlTui.TerminalHost`)](terminal-host.md)**: Hosting interactive login shells and CLI processes inside `TerminalView` on Linux and macOS.
+8. **[Embedded PTY Shells (`QmlTui.PtyView`)](pty-view.md)**: Hosting interactive login shells and CLI processes inside `PtyView` on Linux and macOS.
 9. **[Custom C++ Items](custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer` in C++, exposing QML types with `QML_ELEMENT`, or building C++-only scenes.
 10. **[Testing & Recording with Runner](testing.md)**: Deterministic headless testing with a virtual clock, golden frame/style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
 11. **[IDE Setup & Tooling](ide-setup.md)**: Configuring `qmlls`, `qmllint`, and `qmltui-runner.d.ts` scenario autocomplete in VS Code, Qt Creator, Neovim, and Helix.

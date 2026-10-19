@@ -8,6 +8,7 @@ function main(terminal) {
     for (let i = 0; i < catalog.length - 1; ++i) {
         terminal.press("Enter");
         terminal.expectText("back to grid");
+        terminal.expectNoText("✗ Error");
         terminal.marker(catalog[i].name);
         terminal.sleep(1000);
         terminal.captureText("gallery/page_" + i + ".txt");

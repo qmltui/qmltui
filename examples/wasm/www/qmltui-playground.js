@@ -247,8 +247,8 @@ function run() {
     instance.qmltuiWriteFile(`examples/${focusFile}`, sources[focusFile]);
   }
   term.reset();
-  instance.qmltuiSetContextProperty('qmltuiAvailableExamples', JSON.stringify(Object.keys(sources).filter((f) => f !== 'TerminalView.qml')));
-  instance.qmltuiSetContextProperty('qmltuiGalleryPage', mode === 'example' && focusFile !== 'TerminalView.qml' ? focusFile : '');
+  instance.qmltuiSetContextProperty('qmltuiAvailableExamples', JSON.stringify(Object.keys(sources).filter((f) => f !== 'PtyView.qml')));
+  instance.qmltuiSetContextProperty('qmltuiGalleryPage', mode === 'example' && focusFile !== 'PtyView.qml' ? focusFile : '');
   const result = instance.qmltuiLoadQml(launcher, 'gallery.qml');
   if (!result) {
     status.textContent = 'running';

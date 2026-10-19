@@ -131,7 +131,7 @@ New to QmlTui? Follow these guides to set up your environment, run the interacti
 
 - **[Getting Started](getting-started.md)**: System requirements, running `qmltui_gallery`, creating a standalone 3-file application (`FetchContent` or `find_package`), CMake options, and environment variables.
 - **[Interactive Playground](playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
-- **[Examples & Component Cookbook](examples.md)**: Understand the four-tier `examples/` organization (`QmlTui.Controls` vs. copyable QML recipes) and browse every recorded component and guide demo.
+- **[Examples & Component Cookbook](examples.md)**: Understand the three-tier `examples/` organization (`QmlTui.Controls` vs. copyable QML recipes) and browse every recorded component and recipe demo.
 - **[IDE Setup](guides/ide-setup.md)**: Configure `qmlls`, `qmllint`, and `qmltui-runner.d.ts` in Qt Creator, VS Code, Neovim, and Helix for full autocomplete and type checking.
 - **[QmlTui for Qt Quick Developers](guides/qt-quick-to-qmltui.md)**: Map your `QtQuick` mental model to integer cell coordinates, terminal borders, `AltScreen` vs. `Inline` mode, and zero-`QtQuick` imports.
 
@@ -146,15 +146,15 @@ Deep-dive into QmlTui's subsystems and architectural patterns (or view the [Guid
 - **[Models in QmlTui Views](guides/models.md)**: Connecting `ListModel` and C++ `QAbstractItemModel` subclasses to virtualized `ListView`, `TableView`, `TreeView`, and `GridView`.
 - **[Animation & States](guides/animation-and-states.md)**: `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, `State`, `Transition`, and Private Qt `Behavior` / `StateGroup`.
 - **[Inline Mode & Scrollback](guides/inline-mode.md)**: Building streaming CLIs and coding agents with `Terminal.Inline` and `Scrollback` alongside a live bottom viewport.
-- **[Embedded PTY Shells (`QmlTui.TerminalHost`)](guides/terminal-host.md)**: Hosting interactive login shells and CLI processes inside `TerminalView` on Linux and macOS.
+- **[Embedded PTY Shells (`QmlTui.PtyView`)](guides/pty-view.md)**: Hosting interactive login shells and CLI processes inside `PtyView` on Linux and macOS.
 - **[Custom C++ Items](guides/custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer` in C++, exposing QML types with `QML_ELEMENT`, or building C++-only scenes.
 - **[Testing & Recording with Runner](guides/testing.md)**: Deterministic headless testing with a virtual clock, golden frame/style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
 - **[WebAssembly Playground](guides/webassembly.md)**: Compiling and embedding QmlTui applications in the browser.
 
 ## API Reference
 
-- **[QML Types Reference](qml-types/index.md)**: Complete property, method, and signal documentation for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.TerminalHost`.
-- **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `TerminalEngine`, `TextGridBuffer`, `Cell`, `Color`, `TerminalCapabilities`, `TerminalView`, and `Runner`.
+- **[QML Types Reference](qml-types/index.md)**: Complete property, method, and signal documentation for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
+- **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `TerminalEngine`, `TextGridBuffer`, `Cell`, `Color`, `TerminalCapabilities`, `PtyView`, and `Runner`.
 - **[Release Notes & Changelog](changes/changelog.md)**: Version history, new features, and migration guides.
 
 ## Contributing & Internals

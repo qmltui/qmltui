@@ -6,7 +6,7 @@ option(QMLTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, StateGroup, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
-option(QMLTUI_ENABLE_TERMINAL_HOST "Build the optional Unix PTY TerminalView module" OFF)
+option(QMLTUI_ENABLE_PTY_VIEW  "Build the optional Unix PTY PtyView module" OFF)
 option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" OFF)
 option(QMLTUI_ENABLE_COVERAGE "Instrument QmlTui targets for Clang source-based code coverage" OFF)
 option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid QmlTui Commercial License" OFF)
@@ -41,10 +41,10 @@ set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml" CACHE PATH
 # Third-party code: each option picks a system library or the pinned in-tree
 # copy; the mechanics live in cmake/QmlTuiUtf8proc.cmake and cmake/QmlTuiLibvterm.cmake.
 option(QMLTUI_USE_SYSTEM_UTF8PROC "Use system utf8proc library" OFF)
-option(QMLTUI_USE_SYSTEM_LIBVTERM  "Use system libvterm library (TerminalHost only)" OFF)
+option(QMLTUI_USE_SYSTEM_LIBVTERM  "Use system libvterm library (PtyView only)" OFF)
 include(cmake/QmlTuiUtf8proc.cmake)
 include(cmake/QmlTuiLibvterm.cmake)
-qmltui_provide_utf8proc()   # qmltui::core links it; TerminalHost provides libvterm itself
+qmltui_provide_utf8proc()   # qmltui::core links it; PtyView provides libvterm itself
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -149,7 +149,7 @@ export default defineConfig({
           { text: 'Models & Views', link: '/guides/models' },
           { text: 'Animation & States', link: '/guides/animation-and-states' },
           { text: 'Inline Mode & Scrollback', link: '/guides/inline-mode' },
-          { text: 'Embedded PTY (TerminalHost)', link: '/guides/terminal-host' },
+          { text: 'Embedded PTY (PtyView)', link: '/guides/pty-view' },
           { text: 'Custom C++ Items', link: '/guides/custom-items' },
           { text: 'Testing with Runner', link: '/guides/testing' },
           { text: 'WebAssembly Playground', link: '/guides/webassembly' },
@@ -289,10 +289,10 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui.TerminalHost',
+            text: 'QmlTui.PtyView',
             collapsed: true,
             items: [
-              { text: 'TerminalView', link: '/qml-types/terminalview' }
+              { text: 'PtyView', link: '/qml-types/ptyview' }
             ]
           }
         ]
@@ -318,7 +318,7 @@ export default defineConfig({
           { text: 'InputDecoder', link: '/cpp-classes/inputdecoder' },
           { text: 'ImageProvider', link: '/cpp-classes/imageprovider' },
           { text: 'QtMessageRouting', link: '/cpp-classes/qtmessagerouting' },
-          { text: 'TerminalView', link: '/cpp-classes/terminalview' },
+          { text: 'PtyView', link: '/cpp-classes/ptyview' },
           { text: 'Runner', link: '/cpp-classes/runner' }
         ]
       },

@@ -27,7 +27,8 @@ inherited from [AbstractButton](abstractbutton.md).
 Button is an [AbstractButton](abstractbutton.md) with a bordered
 [Rectangle](rectangle.md) as `background` and a centred [Text](text.md) label
 as `contentItem`, with paddings of 2 cells horizontally and 1 row vertically
-so the implicit size is the label width plus 4 by 3 rows. Enter or Space while
+so the implicit size is the label width plus 4 by 3 rows (or 1 row when a
+custom `background` uses `Border.None`). Enter or Space while
 focused, or a mouse press and release inside it, emits `clicked()`; a press
 also gives the button focus and holds `pressed`. Nothing happens while
 `enabled` is false. Tab and Shift+Tab move focus between focusable items.

@@ -18,9 +18,9 @@ SKILL_PATHS = (
 )
 EXAMPLE_TARGETS = (
     (
-        "examples/components/status_badge/main.cpp",
+        "examples/recipes/status_badge/main.cpp",
         "qmltui_status_badge_demo",
-        "examples/components/status_badge/CMakeLists.txt",
+        "examples/recipes/status_badge/CMakeLists.txt",
     ),
     (
         "tests/Runner/main.cpp",
@@ -33,7 +33,7 @@ QMLTYPE_FILES = {
     "QmlTui": "qml/QmlTui/QmlTuiCore.qmltypes",
     "QmlTui.Controls": "qml/QmlTui/Controls/QmlTuiControls.qmltypes",
     "QmlTui.Image": "qml/QmlTui/Image/QmlTuiImage.qmltypes",
-    "QmlTui.TerminalHost": "qml/QmlTui/TerminalHost/QmlTuiTerminalHost.qmltypes",
+    "QmlTui.PtyView": "qml/QmlTui/PtyView/QmlTuiPtyView.qmltypes",
 }
 
 
@@ -115,7 +115,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
     if private_qt_enabled is None:
         private_qt_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_BEHAVIOR")
     image_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_IMAGE")
-    terminal_host_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_TERMINAL_HOST")
+    pty_view_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PTY_VIEW")
     checked = 0
     for module, types in modules.items():
         relative_qmltypes = QMLTYPE_FILES.get(module)
@@ -124,7 +124,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
         qmltypes_path = build_dir / relative_qmltypes
         if module == "QmlTui.Image" and image_enabled is False:
             continue
-        if module == "QmlTui.TerminalHost" and terminal_host_enabled is False:
+        if module == "QmlTui.PtyView" and pty_view_enabled is False:
             continue
         if not qmltypes_path.is_file():
             errors.append(f"missing generated metadata for {module}: {qmltypes_path}")

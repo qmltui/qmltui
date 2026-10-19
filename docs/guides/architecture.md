@@ -86,9 +86,9 @@ Everything outside `QmlTui.Core` is layered as an optional or higher-level QML m
 
 | Module / Target | QML Import | Responsibility & Boundary |
 | :--- | :--- | :--- |
-| **`QmlTui.Controls`** (`qmltui::controls`) | `import QmlTui.Controls` | Ready-made controls (`Button`, `AbstractButton`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Popup`, `Toast`, `ToolTip`). Admits a type only if it needs engine knowledge (`Popup` overlay stacking, cell geometry) or is universal across terminal toolkits; domain-specific widgets live as copyable recipes under `examples/components/`. |
+| **`QmlTui.Controls`** (`qmltui::controls`) | `import QmlTui.Controls` | Ready-made controls (`Button`, `AbstractButton`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Popup`, `Toast`, `ToolTip`). Admits a type only if it needs engine knowledge (`Popup` overlay stacking, cell geometry) or is universal across terminal toolkits; domain-specific widgets live as copyable recipes under `examples/recipes/`. |
 | **`QmlTui.Image`** (`qmltui::image`) | `import QmlTui.Image` | Pixel-to-terminal image and sprite rendering (`Image`, `AnimatedSprite` via Kitty graphics or half-block cells). Requires `Qt6::Gui` and `Qt6::Network` (`-DQMLTUI_ENABLE_IMAGE=ON`). |
-| **`QmlTui.TerminalHost`** (`qmltui::terminal_host`) | `import QmlTui.TerminalHost` | Embedded Unix PTY terminal widget (`TerminalView`) backed by `libvterm` on Linux and macOS (`-DQMLTUI_ENABLE_TERMINAL_HOST=ON`). |
+| **`QmlTui.PtyView`** (`qmltui::pty_view`) | `import QmlTui.PtyView` | Embedded Unix PTY terminal widget (`PtyView`) backed by `libvterm` on Linux and macOS (`-DQMLTUI_ENABLE_PTY_VIEW=ON`). |
 
 ### 3. Minimal Standalone `QmlTui.Core` Example
 

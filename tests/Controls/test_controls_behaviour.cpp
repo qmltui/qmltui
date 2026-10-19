@@ -9,9 +9,11 @@
 #include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlError>
 #include <memory>
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/Rectangle.h>
 #include <QmlTui/Core/Primitives/Cell.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
@@ -269,20 +271,26 @@ Terminal {
         QVERIFY(filled && bg && label);
         QCOMPARE(bg->parentItem(), filled); // adopted as a visual child
         QVERIFY(filled->childItems().contains(bg));
-        QCOMPARE(filled->width(), 6 + 4); // label + paddings, unchanged from before
-        QCOMPARE(filled->height(), 3);
-        QCOMPARE(QSize(bg->width(), bg->height()), QSize(10, 3));
-        QCOMPARE(QPoint(label->x(), label->y()), QPoint(2, 1));
+        QCOMPARE(filled->width(), 6 + 4); // label + horizontal paddings
+        QCOMPARE(filled->height(), 1);    // Border.None background drops vertical padding
+        QCOMPARE(QSize(bg->width(), bg->height()), QSize(10, 1));
+        QCOMPARE(QPoint(label->x(), label->y()), QPoint(2, 0));
         QCOMPARE(QSize(label->width(), label->height()), QSize(6, 1));
         QCOMPARE(bg->z(), -1.0);
         QTRY_VERIFY(engine->frameSequence() > 0);
         const QString text = frameText(engine);
         QVERIFY2(text.contains("Filled"), qPrintable(text));
-        // The filled button's own rows carry no default border corner.
+        // The filled button occupies a single row with no border corners.
         const QStringList rows = text.split('\n');
-        QVERIFY2(rows.size() > 2 && !rows[0].left(10).contains(QChar(0x250C)) &&
-                     !rows[2].left(10).contains(QChar(0x2514)),
+        QVERIFY2(!rows.isEmpty() && rows[0].left(10) == QStringLiteral("  Filled  "),
                  qPrintable(text));
+        // Switching the custom background to a visible border restores 3-row height.
+        auto* bgRect = qobject_cast<Rectangle*>(bg);
+        QVERIFY(bgRect);
+        bgRect->border()->setStyle(Border::Single);
+        QCOMPARE(filled->height(), 3);
+        QCOMPARE(QSize(bg->width(), bg->height()), QSize(10, 3));
+        QCOMPARE(QPoint(label->x(), label->y()), QPoint(2, 1));
         auto* wide = terminal->findChild<Item*>("wide");
         QCOMPARE(wide->property("availableWidth").toInt(), 16);
         QVERIFY2(text.contains("│         Go       │") || text.contains(" Go "), qPrintable(text));
@@ -543,6 +551,62 @@ Terminal {
         QCOMPARE(b3->property("frames").toStringList(),
                  QStringList({QStringLiteral("X"), QStringLiteral("Y")}));
         QTRY_VERIFY(b3->property("text").toString() == QStringLiteral("Y"));
+    }
+
+    void radioButtonGroupForwardReferenceNoNullWarning() {
+        QQmlEngine qml;
+        QList<QQmlError> warnings;
+        connect(&qml, &QQmlEngine::warnings, this,
+                [&warnings](const QList<QQmlError>& errs) { warnings.append(errs); });
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ButtonGroup {
+        id: profileGroup
+        buttons: [debugRadio, releaseRadio, sizeRadio]
+    }
+    Column {
+        RadioButton {
+            id: debugRadio
+            objectName: "debugRadio"
+            text: "Debug"
+            buttonGroup: profileGroup
+            checked: true
+        }
+        RadioButton {
+            id: releaseRadio
+            objectName: "releaseRadio"
+            text: "Release"
+            buttonGroup: profileGroup
+        }
+        RadioButton {
+            id: sizeRadio
+            objectName: "sizeRadio"
+            text: "MinSizeRel"
+            buttonGroup: profileGroup
+        }
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        QVERIFY2(warnings.isEmpty(),
+                 qPrintable(warnings.isEmpty() ? QString() : warnings.first().toString()));
+        auto* debugRadio = terminal->findChild<Item*>("debugRadio");
+        auto* releaseRadio = terminal->findChild<Item*>("releaseRadio");
+        auto* sizeRadio = terminal->findChild<Item*>("sizeRadio");
+        QVERIFY(debugRadio && releaseRadio && sizeRadio);
+        QVERIFY(debugRadio->property("checked").toBool());
+        QVERIFY(!releaseRadio->property("checked").toBool());
+        QVERIFY(!sizeRadio->property("checked").toBool());
+
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 6));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const QString text = frameText(engine);
+        QVERIFY2(text.contains(QStringLiteral("(*) Debug")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("( ) Release")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("( ) MinSizeRel")), qPrintable(text));
     }
 };
 

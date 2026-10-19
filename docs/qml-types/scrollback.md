@@ -41,7 +41,11 @@ Manages committing rendered output lines into the terminal's native scrollback b
 | :--- | :--- |
 | `void append(var data)` | Renders the delegate using the provided data object and commits it to scrollback. |
 | `void append(Item item)` | Renders and commits a snapshot of the given Item into scrollback. |
+| `void append(span span)` | Renders a styled span (`{ text, color, ... }` or `QmlTui.span()`) and commits it to scrollback (honoring `spacing` and `separator`). |
+| `void append(list<span> spans)` | Renders a list of styled spans as a single entry and commits it to scrollback. |
 | `bool print(string text)` | Appends plain text directly into the terminal scrollback buffer. Returns `true` on success. |
+| `bool print(span span)` | Appends a styled span (`{ text, color, ... }` or `QmlTui.span()`) directly into the terminal scrollback buffer, bypassing `delegate`, `spacing`, and `separator`. Returns `true` on success. |
+| `bool print(list<span> spans)` | Appends a list of styled spans directly into the terminal scrollback buffer, bypassing `delegate`, `spacing`, and `separator`. Returns `true` on success. |
 | `void clear()` | Resets the internal delegate cache and consumed position. |
 
 ## Detailed Description

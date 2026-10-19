@@ -18,7 +18,7 @@ To build QmlTui or a QmlTui application, you need:
 | :--- | :--- | :--- | :--- |
 | **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for a headless server build without GUI/network packages) |
 | **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` | `Qt6::QmlPrivate` headers (couples build to the exact Qt minor version; set `OFF` for strict public-Qt builds) |
-| **`QmlTui.TerminalHost`** (`TerminalView`) | `-DQMLTUI_ENABLE_TERMINAL_HOST=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
+| **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTY_VIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 
 ---
 
@@ -215,7 +215,7 @@ The available QML modules and CMake targets are:
 | `import QmlTui` | `qmltui::core` | Standalone retained-mode TUI engine (`Terminal`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized views, `Canvas`, input, animation; requires only `Qt6::Core` and `Qt6::Qml`) |
 | `import QmlTui.Controls` | `qmltui::controls` | Interactive controls (`Button`, `CheckBox`, `Dialog`, `Panel`, `ProgressBar`, `Slider`, etc.) |
 | `import QmlTui.Image` | `qmltui::image` | Terminal graphics (`Image`, `AnimatedSprite`; requires `QMLTUI_ENABLE_IMAGE=ON`) |
-| `import QmlTui.TerminalHost` | `qmltui::terminal_host` | Embedded Unix PTY (`TerminalView`; requires `QMLTUI_ENABLE_TERMINAL_HOST=ON`) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | Embedded Unix PTY (`PtyView`; requires `QMLTUI_ENABLE_PTY_VIEW=ON`) |
 
 See [Module Boundaries & What `QmlTui.Core` Provides Alone](guides/architecture.md#module-boundaries-what-qmltui-core-provides-alone) for a breakdown of building applications using only `qmltui::core` (`import QmlTui`).
 
@@ -223,20 +223,20 @@ See [Module Boundaries & What `QmlTui.Core` Provides Alone](guides/architecture.
 
 ## 5. Optional Modules & Features
 
-### Embedded PTY Shells (`QmlTui.TerminalHost`)
+### Embedded PTY Shells (`QmlTui.PtyView`)
 
-The Unix PTY host (`TerminalView`) is opt-in on Linux and macOS:
+The Unix PTY view (`PtyView`) is opt-in on Linux and macOS:
 
 ```sh
-cmake -S . -B build -DQMLTUI_ENABLE_TERMINAL_HOST=ON -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -DQMLTUI_ENABLE_PTY_VIEW=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target qmltui_gallery
-./build/examples/gallery/qmltui_gallery --example TerminalView
+./build/examples/gallery/qmltui_gallery --example PtyView
 ```
 
-See [Embedded PTY Shells](guides/terminal-host.md) and the [TerminalView QML Reference](qml-types/terminalview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
+See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qml-types/ptyview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
 
-- `qmltui_inline_repl_demo` ([`examples/guides/inline_repl`](../examples/guides/inline_repl/)) and `qmltui_gallery --example InlineMode` ([`examples/gallery/examples/InlineMode.qml`](../examples/gallery/examples/InlineMode.qml)) demonstrate inline sessions with scrollback and prompt input using `Terminal.Inline`—they do **not** require `TerminalHost`.
-- `qmltui_gallery --example TerminalView` embeds an interactive PTY shell inside a full-screen layout (`QMLTUI_ENABLE_TERMINAL_HOST=ON`).
+- `qmltui_inline_repl_demo` ([`examples/recipes/inline_repl`](../examples/recipes/inline_repl/)) and `qmltui_gallery --example InlineMode` ([`examples/gallery/examples/InlineMode.qml`](../examples/gallery/examples/InlineMode.qml)) demonstrate inline sessions with scrollback and prompt input using `Terminal.Inline`—they do **not** require `PtyView`.
+- `qmltui_gallery --example PtyView` embeds an interactive PTY shell inside a full-screen layout (`QMLTUI_ENABLE_PTY_VIEW=ON`).
 
 ### Headless Testing & `.cast` Recording (`Runner`)
 
@@ -264,11 +264,11 @@ Run `benchmark_render` before and after rendering changes when contributing. See
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build performance benchmark executables |
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` | Enable `Behavior`, `StateGroup`, and advanced states (`Qt6::QmlPrivate`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
-| `QMLTUI_ENABLE_TERMINAL_HOST` | `OFF` | Build the Unix PTY `QmlTui.TerminalHost` module (Linux/macOS) |
+| `QMLTUI_ENABLE_PTY_VIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `OFF` | Build and install `qmltui::runner` and the `qmltui-runner` CLI |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install directory for QmlTui QML modules (`<prefix>/lib/qml`) |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of the bundled copy |
-| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of the fetched source (`TerminalHost` only) |
+| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of the fetched source (`PtyView` only) |
 | `QMLTUI_COMMERCIAL_LICENSE` | `OFF` | Acknowledge building under a commercial QmlTui license |
 
 ### Runtime Environment Variables

@@ -55,22 +55,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "Shortcut"
-            titleColor: "#fb7185"
-            titleBadge: root.shortcutsEnabled ? "[ENABLED]" : "[MUTED]"
-            titleBadgeColor: root.shortcutsEnabled ? "#2cde85" : "#f87171"
-            titleTrailing: "hits: " + root.activationCount
-            titleTrailingColor: "#8b949e"
-            footer: "[1] Build  [2] Test  [3] Deploy  [C] Clear"
-            footerColor: "#8b949e"
-            footerTrailing: root.activeProfile
-            footerTrailingColor: "#fb7185"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Shortcut"
+                    color: "#fb7185"
+                }
+                Text {
+                    text: root.shortcutsEnabled ? "[ENABLED]" : "[MUTED]"
+                    color: root.shortcutsEnabled ? "#2cde85" : "#f87171"
+                }
+            }
+            titleTrailing: Text {
+                text: "hits: " + root.activationCount
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "[1] Build  [2] Test  [3] Deploy  [C] Clear"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.activeProfile
+                color: "#fb7185"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -146,14 +159,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

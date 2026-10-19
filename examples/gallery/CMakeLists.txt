@@ -14,6 +14,9 @@ endif()
 if(NOT QMLTUI_ENABLE_IMAGE)
     list(FILTER gallery_example_files EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
+if(NOT QMLTUI_ENABLE_TERMINAL_HOST)
+    list(FILTER gallery_example_files EXCLUDE REGEX "/TerminalView\\.qml$")
+endif()
 set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 function(gallery_add_executable target uri main_source)
@@ -23,6 +26,10 @@ function(gallery_add_executable target uri main_source)
     if(QMLTUI_ENABLE_IMAGE)
         list(APPEND gallery_dependencies TARGET qmltui::image)
         list(APPEND gallery_link_libraries qmltui::image)
+    endif()
+    if(QMLTUI_ENABLE_TERMINAL_HOST)
+        list(APPEND gallery_dependencies TARGET qmltui::terminal_host)
+        list(APPEND gallery_link_libraries qmltui::terminal_host)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
@@ -47,8 +54,8 @@ function(gallery_add_executable target uri main_source)
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})
     foreach(plugin_target IN ITEMS
-            QmlTuiCoreplugin QmlTuiControlsplugin QmlTuiImageplugin
-            qmltui::corePlugin qmltui::controlsPlugin qmltui::imagePlugin)
+            QmlTuiCoreplugin QmlTuiControlsplugin QmlTuiImageplugin QmlTuiTerminalHostplugin
+            qmltui::corePlugin qmltui::controlsPlugin qmltui::imagePlugin qmltui::terminal_hostPlugin)
         if(TARGET ${plugin_target})
             add_dependencies(${target} ${plugin_target})
         endif()
@@ -57,7 +64,7 @@ endfunction()
 
 gallery_add_executable(qmltui_gallery Gallery main.cpp)
 
-if(COMMAND qmltui_wasm_app)   # browser build, see examples/wasm and docs/topics/webassembly.md
+if(COMMAND qmltui_wasm_app)   # browser build, see examples/wasm and docs/guides/webassembly.md
     qmltui_wasm_app(qmltui_gallery)
 endif()
 
@@ -101,7 +108,7 @@ if(TARGET qmltui::runner)
                 ROWS 20
                 CLOCK VIRTUAL
                 RECORD "components/${example_snake}.cast"
-                LABELS AgentSmoke
+                LABELS "AgentSmoke;Cast"
             )
         endif()
     endforeach()

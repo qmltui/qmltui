@@ -81,22 +81,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "TextArea · Highlight Layer Editor"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#a78bfa"
-            titleTrailing: "rev:" + editor.textRevision
-            titleTrailingColor: "#8b949e"
-            footer: "Type multi-line QML · Tab inspector · Esc quit"
-            footerColor: "#8b949e"
-            footerTrailing: editor.readOnly ? "READ-ONLY" : "EDITABLE"
-            footerTrailingColor: editor.readOnly ? "#fbbf24" : "#2cde85"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "TextArea · Highlight Layer Editor"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#a78bfa"
+                }
+            }
+            titleTrailing: Text {
+                text: "rev:" + editor.textRevision
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "Type multi-line QML · Tab inspector · Esc quit"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: editor.readOnly ? "READ-ONLY" : "EDITABLE"
+                color: editor.readOnly ? "#fbbf24" : "#2cde85"
+            }
             TextArea {
                 id: editor
                 anchors {
@@ -116,16 +129,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "TextArea API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "TextArea API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

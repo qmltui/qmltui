@@ -24,7 +24,7 @@ A navigation stack that shows only its topmost page and creates pages on demand 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `currentItem` | `alias` |  | Read-only. Holds the page on top of the stack, or `null` when the stack is empty. |
-| `depth` | `int` |  | Read-only. Holds the number of pages on the stack; `push()`, `pop()` and `clear()` keep it current. |
+| `depth` | `alias` |  | Read-only (`int`). Holds the number of pages on the stack; `push()`, `pop()` and `clear()` keep it current. |
 
 ## Methods
 
@@ -87,8 +87,9 @@ Terminal {
     Component {
         id: detailPage
         Panel {
+            id: pagePanel
             property string label: ""
-            title: label
+            title: Text { text: pagePanel.label }
             Button { x: 2; y: 1; text: "Back"; focus: true; onClicked: pages.pop() }
         }
     }

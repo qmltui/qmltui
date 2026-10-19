@@ -446,25 +446,35 @@ Terminal {
         auto object = load(qml, R"(
 Terminal {
     id: root
+    property bool footerClicked: false
     Panel {
         id: p1
         objectName: "p1"
         x: 0; y: 0; width: 30; height: 3
         border.style: Border.Rounded
-        title: "Speed"
-        titleBadge: "[active]"
-        titleTrailing: "0.0 km/h"
-        footer: "0"
-        footerTrailing: "250"
+        title: Row {
+            spacing: 1
+            Text { text: "Speed" }
+            Text { text: "[active]" }
+        }
+        titleTrailing: Text { text: "0.0 km/h" }
+        footer: Text {
+            text: "0"
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.footerClicked = true
+            }
+        }
+        footerTrailing: Text { text: "250" }
     }
     Panel {
         id: p2
         objectName: "p2"
         x: 0; y: 4; width: 25; height: 3
         border.style: Border.Rounded
-        title: "LongTitle"
+        title: Text { text: "LongTitle" }
         titleAlignment: Qt.AlignHCenter
-        titleTrailing: "Right"
+        titleTrailing: Text { text: "Right" }
     }
 }
 )",
@@ -476,7 +486,7 @@ Terminal {
         const QStringList rows = frameText(engine).split('\n');
         QVERIFY(rows.size() >= 7);
 
-        // p1 top row: rounded corners, title, badge, trailing
+        // p1 top row: rounded corners, composite Row title + badge, trailing
         QCOMPARE(rows[0], QString::fromUtf8("╭─ Speed [active]  0.0 km/h ─╮"));
         // p1 middle row: rounded vertical borders
         QCOMPARE(rows[1], QString::fromUtf8("│                            │"));
@@ -487,6 +497,12 @@ Terminal {
         // Ideal center for 11 chars in width 25 is x=7, but trailing starts at x=16,
         // so title is clamped to x=5:
         QCOMPARE(rows[4].left(25), QString::fromUtf8("╭──── LongTitle  Right ─╮"));
+
+        // Clicking on the footer item ("0" at x=3, y=2) triggers its child MouseArea:
+        QCOMPARE(terminal->property("footerClicked").toBool(), false);
+        engine->handleMouseInput(0, 3, 2, false);
+        engine->handleMouseInput(0, 3, 2, true);
+        QCOMPARE(terminal->property("footerClicked").toBool(), true);
     }
 
     void busyIndicatorFramesBehaviour() {

@@ -33,22 +33,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "BusyIndicator"
-            titleColor: "#f472b6"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.running ? "Running" : "Paused"
-            titleTrailingColor: root.running ? "#2cde85" : "#f9c74f"
-            footer: "Space run/pause  Left/Right speed"
-            footerColor: "#8b949e"
-            footerTrailing: root.interval + "ms"
-            footerTrailingColor: "#7ee0ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "BusyIndicator"
+                    color: "#f472b6"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.running ? "Running" : "Paused"
+                color: root.running ? "#2cde85" : "#f9c74f"
+            }
+            footer: Text {
+                text: "Space run/pause  Left/Right speed"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.interval + "ms"
+                color: "#7ee0ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -143,6 +156,24 @@ Item {
                             color: "#c9d1d9"
                         }
                     }
+
+                    Row {
+                        spacing: 2
+
+                        BusyIndicator {
+                            id: twodotsSpinner
+
+                            running: root.running
+                            interval: root.interval * 2
+                            frames: ["●", "○"]
+                            color: "#f9c74f"
+                        }
+
+                        Text {
+                            text: "Dots      Artifact Upload Queue"
+                            color: "#c9d1d9"
+                        }
+                    }
                 }
 
                 Rectangle {
@@ -171,14 +202,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

@@ -72,22 +72,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "ListView · Deployment Pipeline"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#f472b6"
-            titleTrailing: (listView.currentIndex + 1) + "/" + root.jobs.length
-            titleTrailingColor: "#8b949e"
-            footer: "↑↓ select · Enter run · S spacing"
-            footerColor: "#8b949e"
-            footerTrailing: "spacing:" + listView.spacing
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "ListView · Deployment Pipeline"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#f472b6"
+                }
+            }
+            titleTrailing: Text {
+                text: (listView.currentIndex + 1) + "/" + root.jobs.length
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "↑↓ select · Enter run · S spacing"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "spacing:" + listView.spacing
+                color: "#58a6ff"
+            }
             ListView {
                 id: listView
                 anchors {
@@ -160,16 +173,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "ListView API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "ListView API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

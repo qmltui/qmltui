@@ -319,6 +319,22 @@ Terminal {
             file: "Shortcut.qml"
         },
         {
+            name: "TerminalCapabilities",
+            badge: "Core",
+            accent: "#38bdf8",
+            preview: "TrueColor · SyncOutput · Kitty · Sixel",
+            blurb: "Runtime host terminal feature detection and diagnostics",
+            file: "TerminalCapabilities.qml"
+        },
+        {
+            name: "TerminalView",
+            badge: "PTY",
+            accent: "#a6e3a1",
+            preview: "┌ [T1] /bin/sh ┐ ┌ [T2] /bin/sh ┐",
+            blurb: "Embedded Unix PTY shell panes with command dispatch",
+            file: "TerminalView.qml"
+        },
+        {
             name: "States",
             badge: "Motion",
             accent: "#d946ef",
@@ -698,14 +714,18 @@ Terminal {
             }
             width: root.sidebarWidth
             visible: !root.fullscreenStage && !root.standalone
-            title: "Components"
-            titleColor: !root.showingDemo ? root.brandPrimary : root.mutedColor
-            titleTrailing: (root.currentIndex + 1) + "/" + root.catalog.length
-            titleTrailingColor: root.mutedColor
             color: root.tileColor
             border {
                 style: !root.showingDemo ? Border.Double : Border.Single
                 color: !root.showingDemo ? root.brandPrimary : root.lineColor
+            }
+            title: Text {
+                text: "Components"
+                color: !root.showingDemo ? root.brandPrimary : root.mutedColor
+            }
+            titleTrailing: Text {
+                text: (root.currentIndex + 1) + "/" + root.catalog.length
+                color: root.mutedColor
             }
 
             Item {
@@ -787,20 +807,36 @@ Terminal {
                 Panel {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
-                    title: root.current ? root.current.name + "  ·  examples/" + root.current.file : "Component Spotlight"
-                    titleColor: root.current ? root.current.accent : root.brandPrimary
-                    titleBadge: root.current ? "[" + root.current.badge + "]" : ""
-                    titleBadgeColor: root.brandPrimary
-                    titleTrailing: "Enter ▸ Launch"
-                    titleTrailingColor: root.brandPrimary
-                    footer: "CLI: qmltui_gallery --example " + (root.current ? root.current.name : "")
-                    footerColor: root.mutedColor
-                    footerTrailing: "F2 Fullscreen"
-                    footerTrailingColor: root.mutedColor
                     color: root.tileColor
                     border {
                         style: Border.Rounded
                         color: root.current ? root.current.accent : root.lineColor
+                    }
+                    title: Row {
+                        spacing: 1
+
+                        Text {
+                            text: root.current ? root.current.name + "  ·  examples/" + root.current.file : "Component Spotlight"
+                            color: root.current ? root.current.accent : root.brandPrimary
+                        }
+
+                        Text {
+                            visible: root.current !== null
+                            text: root.current ? "[" + root.current.badge + "]" : ""
+                            color: root.brandPrimary
+                        }
+                    }
+                    titleTrailing: Text {
+                        text: "Enter ▸ Launch"
+                        color: root.brandPrimary
+                    }
+                    footer: Text {
+                        text: "CLI: qmltui_gallery --example " + (root.current ? root.current.name : "")
+                        color: root.mutedColor
+                    }
+                    footerTrailing: Text {
+                        text: "F2 Fullscreen"
+                        color: root.mutedColor
                     }
 
                     Column {

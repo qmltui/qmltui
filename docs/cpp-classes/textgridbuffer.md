@@ -24,13 +24,25 @@ Zero-alpha drawing backgrounds preserve the surface underneath.
 - **Base Class**: None (standalone value/utility class).
 - **Role**: Serves as the memory buffer for 2D terminal character rendering and ANSI delta calculations.
 
+## Public Types
+
+### AnsiEncodeOptions Struct
+
+Controls how `diff()` and `diffRelative()` encode cells into VT/ANSI escape sequences:
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `colorDepth` | `ColorDepth` | `ColorDepth::TrueColor` | Target terminal color resolution (`Mono`, `Basic16`, `Indexed256`, or `TrueColor`). |
+| `eraseToEndOfLine` | `bool` | `true` | Emit `\033[K` (EL) instead of a trailing run of default-background spaces. |
+| `eraseMinimumCells` | `int` | `4` | Minimum number of trailing blank cells required before `\033[K` is used. |
+
 ## Public Methods
 
 #### bool resize(int width, int height)
 Resizes the 2D cell grid buffer to the specified width and height in terminal character columns and rows. All cells are reset to empty spaces with default formatting. Returns `true` if the size changed, otherwise `false`.
 
 #### void clear()
-Clears the contents of the buffer, filling every cell with space characters and resetting colors and attributes to defaults.
+Clears the contents of the buffer, filling every cell with space characters, resetting colors and attributes to defaults, and clearing the per-frame OSC 8 link table.
 
 #### void swap(TextGridBuffer& other) noexcept
 Efficiently swaps the internal state of this buffer with another `TextGridBuffer` instance.
@@ -55,27 +67,44 @@ must be valid; debug builds assert this precondition.
 #### const Cell& cellAt(int x, int y) const
 Returns a read-only reference to the cell at grid coordinates (x, y).
 
+#### int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
+#### int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
+Writes one already-segmented UTF-8 or UTF-16 grapheme cluster of display width `width` at `(x, y)` (the base cell plus `width - 1` continuation cells), returning the number of columns to advance (`width`, `0` when a zero-width cluster is appended to the preceding base cell, or `-1` when it does not fit before the right edge). Overloads accepting `Color` foreground and background values are also provided.
+
 #### void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)
 Writes a UTF-8 encoded string horizontally starting at coordinate (x, y). An
 overload accepts public `Color` foreground and background values.
 
 #### void drawLine(int x1, int y1, int x2, int y2, const char* character = "*", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
-Draws a straight line from (x1, y1) to (x2, y2) using Bresenham's line algorithm with the specified character string and colors.
+Draws a straight line from (x1, y1) to (x2, y2) using Bresenham's line algorithm with the specified character string and colors. An overload accepts `Color` values.
 
 #### void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
-Draws a hollow rectangular box with single-line UTF-8 box-drawing border characters (`┌ ┐ └ ┘ ─ │`).
+Draws a hollow rectangular box with single-line UTF-8 box-drawing border characters (`┌ ┐ └ ┘ ─ │`). An overload accepts `Color` values.
 
 #### void fillRect(int x, int y, int width, int height, const char* character = " ", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)
-Fills a rectangular area starting at (x, y) with the given character and background/foreground colors.
+Fills a rectangular area starting at (x, y) with the given character and background/foreground colors. An overload accepts `Color` values.
 
 #### std::string diff(const TextGridBuffer& nextBuffer) const
-Compares this buffer with `nextBuffer` cell-by-cell and returns an ANSI escape sequence string using absolute cursor positioning commands to update only modified cells.
+#### void diff(const TextGridBuffer& nextBuffer, std::string& out, const AnsiEncodeOptions& options = {}) const
+Compares this buffer with `nextBuffer` cell-by-cell and produces an ANSI escape sequence string using 1-based absolute cursor positioning commands to update only modified cells. The second overload appends into `out` using `options`.
 
 #### std::string diffRelative(const TextGridBuffer& nextBuffer) const
-Compares this buffer with `nextBuffer` and returns relative cursor movement ANSI escape sequences.
+#### void diffRelative(const TextGridBuffer& nextBuffer, std::string& out, const AnsiEncodeOptions& options = {}) const
+Compares this buffer with `nextBuffer` and produces relative cursor movement ANSI escape sequences for inline stream rendering.
 
-#### std::string toAnsiString() const
+#### std::string toAnsiString() const / void toAnsiString(std::string& out) const
 Serializes the entire grid buffer into a formatted ANSI string complete with newline characters per row.
+
+#### int lastContentColumn(int row) const
+Returns the column index of the last cell in `row` that has visible content (a non-space glyph, non-default background, or attribute), or `-1` when the row is blank.
+
+#### void appendRowAnsi(std::string& out, int row, ColorDepth depth) const
+Appends `row` as ANSI text up to `lastContentColumn(row)` starting from a style reset, without emitting cursor movement or line breaks.
+
+#### uint8_t registerLink(const QString& url)
+#### QString linkUrl(uint8_t linkId) const
+#### void setActiveLinkId(uint8_t linkId) / uint8_t activeLinkId() const
+Manages the per-frame OSC 8 hyperlink table (`1..255`; `0` means no link). Cells written while `activeLinkId()` is non-zero inherit that hyperlink ID and are wrapped in `\033]8;;<url>\033\\` sequences when encoded.
 
 ## Ownership and Lifecycle
 

@@ -1,23 +1,23 @@
 # InputDecoder
 
-## 1. Class Overview
+## Class Overview
 
 `InputDecoder` parses raw byte streams read from standard terminal input (`stdin`) and translates ANSI escape sequences into structured Qt key events (`Qt::Key_*`) and mouse event coordinates (SGR mouse mode tracking).
 
 `InputDecoder` is used internally by `TerminalEngine` to process keyboard presses and mouse actions in real time.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
-- **Header**: `src/QmlTui/Core/Primitives/InputDecoder.h`
+- **Header**: `src/QmlTui/Core/Primitives/InputDecoder.h` *(in-tree protocol header; not part of the installed `<QmlTui/...>` public header set for external C++ consumers)*
 - **Implementation**: `src/QmlTui/Core/Primitives/InputDecoder.cpp`
 - **Dependencies**: `<functional>`, `<string>`, `<QString>`, Qt Core (`Qt::Key`).
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: None.
 - **Role**: Input parser turning raw byte streams into Qt key codes and mouse coordinates via std::function callbacks.
 
-## 9. Public Methods
+## Public Methods
 
 #### void setKeyCallback(KeyCallback cb)
 Registers a callback function invoked whenever a valid key sequence is decoded from the input buffer. The callback receives `int qtKey`, `const QString& text`, and `int modifiers`.
@@ -44,7 +44,7 @@ when it expires with the ESC still alone, delivering `Qt::Key_Escape`. Nothing
 is pending inside a bracketed paste or a partial sequence. Terminals with the
 kitty disambiguate flag pushed report Escape as `CSI 27 u` and never need this.
 
-## 10. Kitty Keyboard Protocol
+## Kitty Keyboard Protocol
 
 `CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u`
 is decoded as a key. The first parameter is the code point (letters map through
@@ -67,20 +67,20 @@ or Alt is held, so `Ctrl+A` never inserts an `a`. Explicitly reported text
 (flag 16) wins when present. `CSI ? flags u` is a query reply, not a key, and
 reaches the reply callback.
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 `InputDecoder` is owned by `TerminalEngine`.
 
-## 12. Thread Safety
+## Thread Safety
 
 `InputDecoder` must be called on the main application thread where terminal I/O notifications are received.
 
-## 15. External Communication
+## External Communication
 
 - **Input Source**: Reads raw VT100 / ANSI terminal escape sequences from standard input (`stdin`).
 - **Data Protocol**: Parses ANSI CSI sequences (e.g. `\033[A` for Up Arrow, `\033[<0;10;5M` for SGR mouse press).
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Primitives/InputDecoder.h>

@@ -64,22 +64,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Sparkline"
-            titleColor: "#22d3ee"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.filled ? "FILLED" : "OUTLINE"
-            titleTrailingColor: "#2cde85"
-            footer: "Space push sample  F toggle fill"
-            footerColor: "#8b949e"
-            footerTrailing: "samples: +" + root.sampleCount
-            footerTrailingColor: "#7ee0ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Sparkline"
+                    color: "#22d3ee"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.filled ? "FILLED" : "OUTLINE"
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "Space push sample  F toggle fill"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "samples: +" + root.sampleCount
+                color: "#7ee0ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -169,14 +182,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

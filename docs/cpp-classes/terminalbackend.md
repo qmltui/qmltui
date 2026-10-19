@@ -1,6 +1,6 @@
 # TerminalBackend
 
-## 1. Class Overview
+## Class Overview
 
 `TerminalBackend` is the platform seam between QmlTui and the operating system's terminal. Everything above it is shared code: `TerminalDevice` owns the output queue and raw-mode bookkeeping, `TerminalEngine` decodes input bytes and drives the renderers. Everything below it is platform code, one class per platform:
 
@@ -12,19 +12,19 @@
 
 Input is always delivered as raw VT byte sequences, so `InputDecoder` needs no platform knowledge. On Windows the console itself performs that translation once virtual-terminal input is enabled.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `src/QmlTui/Core/Primitives/TerminalBackend.h`, installed as `<QmlTui/Core/Primitives/TerminalBackend.h>`
 - **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/QmlTui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
 - **Factory**: `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` in `TerminalBackend.cpp`
 - **Dependencies**: QtCore only. Platform headers are confined to the implementation files; `<windows.h>` never reaches a public header.
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: `QObject`
 - **Role**: Abstract interface. `TerminalDevice` owns one instance and exposes it through `TerminalDevice::backend()`.
 
-## 9. Public Methods
+## Public Methods
 
 #### bool enterRawMode() / bool leaveRawMode()
 Switch the terminal between its normal line-oriented mode and raw mode (no echo, no line buffering, no signal generation, VT sequences for special keys). `TerminalDevice` tracks the current state and flushes queued output before leaving raw mode.
@@ -56,7 +56,7 @@ True when output goes to a real terminal rather than a pipe or file. Feeds `Term
 #### void startInput() / void stopInput()
 Begin and end delivery of `inputReceived()` and `resized()`. Idempotent. `TerminalEngine` calls `startInput()` once during construction.
 
-## 10. Signals
+## Signals
 
 | Signal | Meaning |
 | :--- | :--- |
@@ -64,17 +64,17 @@ Begin and end delivery of `inputReceived()` and `resized()`. Idempotent. `Termin
 | `inputReceived(const QByteArray& bytes)` | Raw VT bytes read from the terminal. |
 | `resized()` | The terminal geometry changed; call `size()`. |
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 Created by `TerminalDevice`'s constructor through `createTerminalBackend()` and destroyed with it. Destruction stops input and restores the output channel; raw mode is restored by `TerminalDevice` before that.
 
-## 12. Thread Safety
+## Thread Safety
 
 Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIGWINCH` bridge is installed while at least one backend is listening and removed with the last one.
 
-## 14. Application-provided backends
+## Application-provided backends
 
-`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/topics/webassembly.md](../topics/webassembly.md).
+`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/guides/webassembly.md](../guides/webassembly.md).
 
 ```cpp
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
@@ -88,7 +88,7 @@ qmltui::TerminalBackend::setFactory([](int) {
 
 This is a C++ extension point and may still change before 1.0, like custom items.
 
-## 15. Windows notes
+## Windows notes
 
 - Windows Terminal is the target. Legacy `conhost.exe` gets whatever its VT support provides.
 - Raw mode clears `ENABLE_QUICK_EDIT_MODE` and `ENABLE_MOUSE_INPUT` so the console does not intercept mouse selection; mouse reporting requested through VT sequences arrives as SGR sequences like on POSIX.

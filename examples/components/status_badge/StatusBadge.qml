@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -22,30 +23,40 @@ Rectangle {
     readonly property string resolvedStatus: status.toLowerCase()
 
     readonly property string activeColor: {
-        if (badgeColor !== "") return badgeColor
-        if (resolvedStatus === "success") return successColor
-        if (resolvedStatus === "warning") return warningColor
-        if (resolvedStatus === "error") return errorColor
-        if (resolvedStatus === "info") return infoColor
-        return "white"
+        if (badgeColor !== "")
+            return badgeColor;
+        if (resolvedStatus === "success")
+            return successColor;
+        if (resolvedStatus === "warning")
+            return warningColor;
+        if (resolvedStatus === "error")
+            return errorColor;
+        if (resolvedStatus === "info")
+            return infoColor;
+        return "white";
     }
 
     readonly property string resolvedIcon: {
-        if (icon !== "") return icon
-        if (resolvedStatus === "success") return "✓"
-        if (resolvedStatus === "warning") return "⚠"
-        if (resolvedStatus === "error") return "✖"
-        if (resolvedStatus === "info") return "ℹ"
-        return "●"
+        if (icon !== "")
+            return icon;
+        if (resolvedStatus === "success")
+            return "✓";
+        if (resolvedStatus === "warning")
+            return "⚠";
+        if (resolvedStatus === "error")
+            return "✖";
+        if (resolvedStatus === "info")
+            return "ℹ";
+        return "●";
     }
 
     readonly property string displayText: text !== "" ? text : status.toUpperCase()
 
     color: {
         if (variant === "filled") {
-            return badgeBackgroundColor !== "" ? badgeBackgroundColor : activeColor
+            return badgeBackgroundColor !== "" ? badgeBackgroundColor : activeColor;
         }
-        return badgeBackgroundColor !== "" ? badgeBackgroundColor : "transparent"
+        return badgeBackgroundColor !== "" ? badgeBackgroundColor : "transparent";
     }
 
     border.style: variant === "outlined" ? Border.Single : Border.None
@@ -53,11 +64,11 @@ Rectangle {
 
     implicitWidth: {
         if (variant === "outlined") {
-            return badgeRow.implicitWidth + (horizontalPadding * 2) + 2
+            return badgeRow.implicitWidth + (horizontalPadding * 2) + 2;
         } else if (variant === "filled") {
-            return badgeRow.implicitWidth + (horizontalPadding * 2)
+            return badgeRow.implicitWidth + (horizontalPadding * 2);
         } else {
-            return badgeRow.implicitWidth
+            return badgeRow.implicitWidth;
         }
     }
     implicitHeight: variant === "outlined" ? 3 : 1

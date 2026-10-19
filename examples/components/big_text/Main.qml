@@ -1,14 +1,12 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
-
 Terminal {
- 
-
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
         }
     }
 
@@ -17,56 +15,65 @@ Terminal {
         spacing: 1
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: "🅰 BIGTEXT BANNER DEMO"
             color: "yellow"
             bold: true
-            anchors.horizontalCenter: parent.horizontalCenter
         }
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: "Press Q or ESC to quit"
             color: "gray"
-            anchors.horizontalCenter: parent.horizontalCenter
         }
 
         Rectangle {
             width: parent.width
             height: 14
-            border.style: Border.Double
-            border.color: "yellow"
+            border {
+                style: Border.Double
+                color: "yellow"
+            }
 
             Column {
-                anchors.fill: parent
-                anchors.margins: 1
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
                 spacing: 1
 
                 Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: "HEADER BANNER:"
                     color: "cyan"
-                    anchors.horizontalCenter: parent.horizontalCenter
                 }
+
                 BigText {
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: "QMLTUI 2026"
                     color: "cyan"
-                    anchors.horizontalCenter: parent.horizontalCenter
                 }
 
                 Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: "DIGITAL CLOCK:"
                     color: "green"
-                    anchors.horizontalCenter: parent.horizontalCenter
                 }
+
                 BigText {
                     id: clock
-                    text: Qt.formatDateTime(new Date(), "hh:mm:ss")
-                    color: "green"
+
+                    property string currentTime: Qt.formatDateTime(new Date(), "hh:mm:ss")
+
                     anchors.horizontalCenter: parent.horizontalCenter
+                    text: currentTime
+                    color: "green"
 
                     Timer {
                         interval: 1000
                         running: true
                         repeat: true
-                        onTriggered: clock.text = Qt.formatDateTime(new Date(), "hh:mm:ss")
+                        onTriggered: clock.currentTime = Qt.formatDateTime(new Date(), "hh:mm:ss")
                     }
                 }
             }

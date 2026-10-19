@@ -50,22 +50,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "RichText · Spans, HTML & ANSI"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#fde68a"
-            titleTrailing: root.accentName
-            titleTrailingColor: root.accentHex
-            footer: "T theme · B bold · W wrap · click link"
-            footerColor: "#8b949e"
-            footerTrailing: "3 formats"
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "RichText · Spans, HTML & ANSI"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#fde68a"
+                }
+            }
+            titleTrailing: Text {
+                text: root.accentName
+                color: root.accentHex
+            }
+            footer: Text {
+                text: "T theme · B bold · W wrap · click link"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "3 formats"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -174,16 +187,20 @@ Item {
         Panel {
             Layout.preferredWidth: 27
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "RichText API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "RichText API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

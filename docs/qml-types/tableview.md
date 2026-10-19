@@ -33,7 +33,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `headerColor` | `rgba` |  | Holds the foreground text color used for column headers. |
 | `headerBackgroundColor` | `rgba` |  | Holds the background color used for column headers. |
 | `selectionColor` | `rgba` |  | Holds the foreground text color for the selected row. |
-| `selectionKeepsCellColors` | bool | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
+| `selectionKeepsCellColors` | `bool` | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
 | `selectionBackgroundColor` | `rgba` |  | Holds the background highlight color for the selected row. |
 | `textColor` | `rgba` |  | Holds the default text color for data cells. |
 | `rowBackgroundColor` | `rgba` |  | Holds the default background color for table rows. |
@@ -42,7 +42,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |
-| `gridStyle` | `enumeration` | `TableView.Single` | Style of all borders and grid lines: `TableView.Single`, `TableView.Double`, or `TableView.Ascii`. |
+| `gridStyle` | `GridStyle` | `TableView.Single` | Style of all borders and grid lines: `TableView.Single`, `TableView.Double`, or `TableView.Ascii`. |
 | `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
 | `cellFormat` | `var` |  | JS callback `(row, column, value) => ({ text, color, backgroundColor, bold, align, padding, leftPadding, rightPadding })`. |
 | `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
@@ -61,12 +61,20 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | :--- | :--- |
 | `void forceLayout()` | Recalculates column widths, layout geometry, and visible rows immediately. |
 
+## Enumeration TableView.GridStyle
+
+| Value | Description |
+| :--- | :--- |
+| `TableView.Single` | Draws connected borders and grid separators using single-line box-drawing characters (`┌`, `┬`, `┼`, `─`, `│`). |
+| `TableView.Double` | Draws connected borders and grid separators using double-line box-drawing characters (`╔`, `╦`, `╬`, `═`, `║`). |
+| `TableView.Ascii` | Draws connected borders and grid separators using ASCII characters (`+`, `-`, `|`). |
+
 ## Detailed Description
 
 `showColumnGrid`, `showRowGrid`, and `showOuterBorder` are independent and default
 to `false`. Enable all three for a complete box-art table. The header underline
 is always present when a header is shown. `gridStyle` accepts `TableView.Single`,
-`TableView.Double`, and `TableView.Ascii`. Structural lines, including the header underline, use `textColor`
+`TableView.Double`, and `TableView.Ascii`. Structural lines, including the header underline, use `gridColor` (falling back to `textColor`)
 and the terminal background; `headerColor` applies to heading text only.
 
 ### Columns and sizing
@@ -200,12 +208,9 @@ Terminal {
 
 ## Usage guide
 
-Grid controls are `showColumnGrid`, `showRowGrid`, and `showOuterBorder`, all
-`false` by default. Enable all three for connected box-art tables. `gridStyle`
-is `"single"`, `"double"`, or `"ascii"`. Column widths include padding and exclude
-separators; `headerAlign` can override header alignment independently of cells.
-`showGrid` has been removed. See [TableView](tableview.md) for sizing,
-clipping, and input details.
+Set `gridStyle` to `TableView.Single`, `TableView.Double`, or `TableView.Ascii`
+to select the box-drawing character set (`showGrid` has been removed in favor of
+`showColumnGrid`, `showRowGrid`, and `showOuterBorder`).
 
 `delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
 `selected` identify the represented cell. QmlTui's `columns` descriptors continue

@@ -36,7 +36,7 @@ A modal, centred message box with a title, a message and accept and reject butto
 
 Dialog is a preconfigured [Popup](popup.md): it is `modal`, dims the
 background, is anchored to the centre of its parent, and composes an opaque
-[Rectangle](rectangle.md) accessible via `background` with a `"double"`
+[Rectangle](rectangle.md) accessible via `background` with a `Border.Double`
 border and default terminal colors. Its `closePolicy` is `Popup.CloseOnEscape` only,
 so Escape calls `reject()` but clicking outside the dialog does nothing.
 Callers customize the visual surface through `background.color`,

@@ -42,7 +42,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `selectedTextColor` | `rgba` |  | Holds the foreground text color for selected text. |
 | `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
 | `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
-| `textRevision` | `quint64` | `0` | Read-only. Incremented on each text change. Validates highlight layer submissions. |
+| `textRevision` | `int` | `0` | Read-only. Incremented on each text change. Validates highlight layer submissions. |
 | `tabChangesFocus` | `bool` | `false` | Whether Tab changes focus or is accepted as text input. When `false`, Tab inserts spaces to the next tab stop. |
 | `tabStopDistance` | `int` | `4` | Number of character columns per tab stop. Tab inserts spaces aligning to multiples of this distance. |
 
@@ -73,7 +73,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `void paste(string text)` | Inserts text at the current cursor position. |
 | `void undo()` | Reverts the last edit operation. |
 | `void redo()` | Reapplies the last undone edit operation. |
-| `bool setHighlightLayer(string name, list<highlightRange> ranges, quint64 revision, int priority = 0)` | Sets or updates a named highlight layer. Rejects stale revisions, empty names, or invalid bounds. Returns `true` on success. |
+| `bool setHighlightLayer(string name, list<highlightRange> ranges, int revision, int priority = 0)` | Sets or updates a named highlight layer. Rejects stale revisions, empty names, or invalid bounds. Returns `true` on success. |
 | `void clearHighlightLayer(string name)` | Removes the named highlight layer and schedules a repaint. |
 | `void clearHighlights()` | Clears all highlight layers on the editor. |
 

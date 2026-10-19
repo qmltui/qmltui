@@ -24,22 +24,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Popup Overlay Stage"
-            titleColor: "#a3e635"
-            titleBadge: "[Controls]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: commandPopup.visible ? "ACTIVE" : "READY"
-            titleTrailingColor: commandPopup.visible ? "#2cde85" : "#8b949e"
-            footer: "Enter open · Esc dismiss overlay"
-            footerColor: "#8b949e"
-            footerTrailing: "Popup"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Popup Overlay Stage"
+                    color: "#a3e635"
+                }
+                Text {
+                    text: "[Controls]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: commandPopup.visible ? "ACTIVE" : "READY"
+                color: commandPopup.visible ? "#2cde85" : "#8b949e"
+            }
+            footer: Text {
+                text: "Enter open · Esc dismiss overlay"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Popup"
+                color: "#8b949e"
+            }
             Column {
                 x: 2
                 y: 2
@@ -76,14 +89,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2
@@ -143,16 +158,20 @@ Item {
 
         Panel {
             anchors.fill: parent
-            title: "Command Palette"
-            titleColor: "#a3e635"
-            footer: "Esc to close"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Double
                 color: "#a3e635"
             }
 
+            title: Text {
+                text: "Command Palette"
+                color: "#a3e635"
+            }
+            footer: Text {
+                text: "Esc to close"
+                color: "#8b949e"
+            }
             Column {
                 x: 2
                 y: 2

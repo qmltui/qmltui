@@ -75,12 +75,12 @@ Terminal {
             currentIndex: tabs.currentIndex
 
             Panel {
-                title: "Status"
+                title: Text { text: "Status" }
                 Text { x: 2; y: 1; text: "All services healthy." }
             }
 
             Panel {
-                title: "Actions"
+                title: Text { text: "Actions" }
                 Button { x: 2; y: 1; text: "Quit"; onClicked: Qt.quit() }
             }
         }

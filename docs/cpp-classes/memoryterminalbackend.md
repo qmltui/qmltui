@@ -1,13 +1,13 @@
 # MemoryTerminalBackend
 
-## 1. Class Overview
+## Class Overview
 
 `MemoryTerminalBackend` is an in-memory [`TerminalBackend`](terminalbackend.md). It captures every byte the engine writes and lets a test inject input bytes and terminal resizes, so the whole path from `TerminalEngine` through `InputDecoder` to QML key handlers can be exercised without a pipe, a pseudo terminal, or a console. It is also the reference implementation of the application-facing backend extension point.
 
 - **Header**: `#include <QmlTui/Runner/MemoryTerminalBackend.h>` (target `qmltui::runner`)
 - **Inherits**: `qmltui::TerminalBackend`
 
-## 9. Public Methods
+## Public Methods
 
 #### MemoryTerminalBackend(QSize size = QSize(80, 24), QObject* parent = nullptr)
 The size reported to the engine until `setSize()` changes it.
@@ -27,7 +27,7 @@ Whether the engine entered raw mode and started input delivery.
 #### void setInteractive(bool)
 What `isInteractive()` reports; affects `TerminalCapabilities::detect()`.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 static qmltui::MemoryTerminalBackend* g_backend = nullptr;

@@ -1,23 +1,23 @@
 # TerminalDevice
 
-## 1. Class Overview
+## Class Overview
 
 `TerminalDevice` is the platform-neutral output side of the terminal session. It tracks raw-mode state, toggles cursor visibility, queries dimensions, and owns an ordered output queue that can drain from the Qt event loop when the terminal is slow. All operating-system calls are delegated to a [`TerminalBackend`](terminalbackend.md) chosen at construction: `PosixTerminalBackend` on Linux and macOS, `Win32ConsoleBackend` on Windows.
 
 `TerminalDevice` is used by `TerminalEngine`, which also reaches the backend through `backend()` to receive input bytes and resize notifications.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
-- **Header**: `src/QmlTui/Core/Primitives/TerminalDevice.h`
+- **Header**: `src/QmlTui/Core/Primitives/TerminalDevice.h` *(in-tree protocol header; not part of the installed `<QmlTui/...>` public header set for external C++ consumers)*
 - **Implementation**: `src/QmlTui/Core/Primitives/TerminalDevice.cpp`
 - **Dependencies**: `<string>`, `<functional>`, `<memory>`, and `TerminalBackend.h`. No platform headers; those live in the backend implementations.
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: None.
 - **Role**: Output queue and raw-mode bookkeeping over a `TerminalBackend`.
 
-## 9. Public Methods
+## Public Methods
 
 #### TerminalBackend* backend() const
 The platform backend owned by this device. `TerminalEngine` connects to its `inputReceived()` and `resized()` signals.
@@ -49,19 +49,19 @@ Switches to a non-blocking output channel drained from the event loop. Requires 
 #### bool flushBlocking(int timeoutMs = 2000) / bool finishOutput(int timeoutMs = 2000)
 Deliver queued bytes within a deadline. `finishOutput()` also queues cursor and style restoration and restores the output channel; it is idempotent and called from the destructor.
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 `TerminalDevice` uses RAII to automatically call `disableRawMode()` and `showCursor()` in its destructor upon application shutdown.
 
-## 12. Thread Safety
+## Thread Safety
 
 Single-threaded. Must be invoked from the thread managing terminal I/O.
 
-## 15. External Communication
+## External Communication
 
 - **OS layer**: Only through `TerminalBackend`. See [TerminalBackend](terminalbackend.md) for the POSIX and Windows mechanisms.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Primitives/TerminalDevice.h>

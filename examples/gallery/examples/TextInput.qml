@@ -21,22 +21,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "TextInput · Single-Line Workbench"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#4ade80"
-            titleTrailing: "pos:" + nameInput.cursorPosition
-            titleTrailingColor: "#8b949e"
-            footer: "Type text · Tab next control · Esc quit"
-            footerColor: "#8b949e"
-            footerTrailing: root.cursorShapeName
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "TextInput · Single-Line Workbench"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#4ade80"
+                }
+            }
+            titleTrailing: Text {
+                text: "pos:" + nameInput.cursorPosition
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "Type text · Tab next control · Esc quit"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.cursorShapeName
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -131,16 +144,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "TextInput API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "TextInput API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

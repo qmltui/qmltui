@@ -24,7 +24,7 @@ Renders a filled rectangular area on the character grid with optional borders an
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `color` | `rgba` | `"transparent"` | Holds the background fill color of the rectangle. |
-| `border` | `Border` |  | Read-only. Holds the border configuration ([Border](border.md)), including style, color, and individual edge visibility. |
+| `border` | `Border` |  | Read-only. Holds the border configuration ([Border](border.md)), including `style` and `color`. |
 | `gradient` | `Gradient` | `null` | Holds an optional [Gradient](gradient.md) applied across the rectangle background. |
 
 ## Detailed Description
@@ -34,10 +34,10 @@ region of character cells with an optional background `color`, an optional
 [Gradient](gradient.md), and a configurable [Border](border.md).
 
 When `border.style` is anything other than `Border.None`, the perimeter cells are drawn
-with box-drawing glyphs (`single`, `double`, `rounded`, `bold`, etc.). The presence
-of a border automatically introduces 1 character cell of internal padding along each
-bordered edge, ensuring child items anchored within `anchors.fill: parent` or
-`anchors.centerIn: parent` do not overlap the border perimeter.
+with box-drawing glyphs (`Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Heavy`, or `Border.Ascii`). The presence
+of a border automatically adds 1 character cell of internal padding along each
+edge for positioners and layouts (`Row`, `Column`, `*Layout`), while anchored children
+using `anchors.fill: parent` require `anchors.margins: 1` to inset inside the border perimeter.
 
 Background color defaults to `"transparent"`, which lets content beneath show through.
 Set `color: "default"` to paint using the terminal's native background color, or specify

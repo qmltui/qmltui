@@ -46,22 +46,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "ToolTip Stage"
-            titleColor: "#fda4af"
-            titleBadge: "[Controls]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.pinTip ? "PINNED" : "AUTO"
-            titleTrailingColor: root.pinTip ? "#2cde85" : "#8b949e"
-            footer: "Tab move · P pin · D delay"
-            footerColor: "#8b949e"
-            footerTrailing: "ToolTip"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "ToolTip Stage"
+                    color: "#fda4af"
+                }
+                Text {
+                    text: "[Controls]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.pinTip ? "PINNED" : "AUTO"
+                color: root.pinTip ? "#2cde85" : "#8b949e"
+            }
+            footer: Text {
+                text: "Tab move · P pin · D delay"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "ToolTip"
+                color: "#8b949e"
+            }
             Column {
                 x: 2
                 y: 2
@@ -137,14 +150,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2

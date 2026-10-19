@@ -48,7 +48,8 @@ Developers subclass `Item` when creating new C++ terminal components.
 | `rightPadding` | `int` | `rightPadding` | `setRightPadding` | `rightPaddingChanged` | Inner right padding. |
 | `topPadding` | `int` | `topPadding` | `setTopPadding` | `topPaddingChanged` | Inner top padding. |
 | `bottomPadding` | `int` | `bottomPadding` | `setBottomPadding` | `bottomPaddingChanged` | Inner bottom padding. |
-| `data` | `QQmlListProperty<QObject>` | `data` | — | — | List of QML visual/logical child objects. |
+| `data` | `QQmlListProperty<QObject>` | `data` | — | — | List of QML visual/logical child objects (default property). |
+| `children` | `QQmlListProperty<qmltui::Item>` | `childrenProperty` | — | `childrenChanged` | Read-only list of visual child `Item` objects. |
 | `states` | `QQmlListProperty<qmltui::State>` | `states` | — | — | List of states defined on the item. |
 | `transitions` | `QQmlListProperty<qmltui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
 | `state` | `QString` | `state` | `setState` | `stateChanged` | Current active state name. |
@@ -71,6 +72,9 @@ Returns `true` if coordinates (cx, cy) are inside the clipping rectangle.
 Returns a new `ClipRect` representing the intersection of this rectangle and the other.
 
 ## Signals
+
+#### void childrenChanged()
+Emitted when visual child items are added to or removed from `children`.
 
 #### void xChanged()
 Emitted when `x` coordinate changes.
@@ -101,6 +105,9 @@ Emitted when enabled state toggles.
 
 #### void parentChanged()
 Emitted when the visual parent changes.
+
+#### void ancestryChanged()
+Emitted when this item or any visual ancestor is attached to or detached from a parent, indicating that the resolved `terminal()` may have changed across the subtree.
 
 #### void focusChanged()
 Emitted when focus state changes.

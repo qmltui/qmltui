@@ -1,6 +1,6 @@
 # TerminalEngine
 
-## 1. Class Overview
+## Class Overview
 
 `TerminalEngine` is the central runtime coordinator for QmlTui applications. It initializes raw terminal I/O via `TerminalDevice`, hooks into Qt's event loop via `QSocketNotifier` for non-blocking stdin input decoding (`InputDecoder`), manages window resize signals (`SIGWINCH`), dispatches keyboard (`KeyEvent`) and mouse events (`MouseEvent`), and manages off-screen double-buffered frame rendering (`Renderer`).
 
@@ -10,18 +10,18 @@ a `MouseArea` with `hoverEnabled` or an attached tooltip with non-empty text.
 
 Developers interact with `TerminalEngine` when setting up top-level application windows or requesting manual frame renders.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
-- **Header**: `src/QmlTui/Core/Engine/TerminalEngine.h`
+- **Header**: `src/QmlTui/Core/Engine/TerminalEngine.h` *(in-tree engine header; not part of the installed `<QmlTui/...>` public header set for external C++ consumers — use [`qmltui::Terminal`](terminal.md) in external C++ applications)*
 - **Implementation**: `src/QmlTui/Core/Engine/TerminalEngine.cpp`
 - **Dependencies**: `TerminalDevice.h`, `InputDecoder.h`, `Renderer.h`, `Terminal.h`, `Item.h`.
 
-## 3. Class Hierarchy and Role
+## Class Hierarchy and Role
 
 - **Base Class**: `QObject`
   - Leverages Qt slots, meta-object invocation, and event loop integration.
 
-## 7. Signals
+## Signals
 
 #### void frameRendered(quint64 sequence)
 Emitted after a frame is painted and committed, passing the monotonically increasing frame sequence number.
@@ -41,12 +41,12 @@ Emitted when an immediate frame write or asynchronous output drain fails.
 #### void clipboardReadFinished(const QString& text, const QString& code)
 Emitted when an OSC 52 clipboard read completes (`code` is empty on success, or an error identifier otherwise).
 
-## 8. Public Slots and Q_INVOKABLE Methods
+## Public Slots and Q_INVOKABLE Methods
 
 #### void requestRender() [Q_INVOKABLE]
 Schedules an asynchronous frame re-render on the next event loop tick. Safe to call from QML or C++.
 
-## 9. Public Methods
+## Public Methods
 
 #### explicit TerminalEngine(Terminal* rootWindow, QObject* parent = nullptr)
 Constructs the terminal engine instance bound to the given root `Terminal` window.
@@ -97,26 +97,26 @@ Generates the ANSI escape sequence (`\033]11;#rrggbb\a`) for setting the termina
 #### static std::string osc111Sequence()
 Generates the ANSI escape sequence (`\033]111\a`) for resetting the terminal background color back to the terminal default using the OSC 111 protocol.
 
-## 11. Ownership and Lifecycle
+## Ownership and Lifecycle
 
 `TerminalEngine` is owned by `Terminal` or parent `QObject`. On destruction, it restores standard terminal POSIX/Windows mode and shows the cursor.
 
-## 12. Thread Safety
+## Thread Safety
 
 Single-threaded. Runs on the main Qt event loop thread.
 
-## 14. Inter-Class Interactions
+## Inter-Class Interactions
 
 - **`TerminalDevice`**: Manages low-level TTY raw mode and stdout writes.
 - **`InputDecoder`**: Receives stdin bytes from `QSocketNotifier` and emits key/mouse callbacks.
 - **`Terminal` / `Item`**: Dispatches key events (`keyPressEvent`) and mouse events (`hitTestItem`, `mousePressEvent`).
 
-## 15. External Communication
+## External Communication
 
 - **POSIX Signals**: Captures `SIGWINCH` signal on POSIX to handle terminal window resizing.
 - **Standard I/O**: Reads `stdin` asynchronously via `QSocketNotifier` and writes ANSI buffer sequences to `stdout`.
 
-## 16. Usage Example
+## Usage Example
 
 ```cpp
 #include <QmlTui/Core/Items/Terminal.h>

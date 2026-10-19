@@ -39,22 +39,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "Image"
-            titleColor: "#f9a8d4"
-            titleBadge: "[" + root.modeNames[root.modeIndex] + "]"
-            titleBadgeColor: "#2cde85"
-            titleTrailing: pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height + " px"
-            titleTrailingColor: "#8b949e"
-            footer: "[M] RenderMode  [S] Smooth"
-            footerColor: "#8b949e"
-            footerTrailing: root.smoothScaling ? "smooth: on" : "smooth: off"
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Image"
+                    color: "#f9a8d4"
+                }
+                Text {
+                    text: "[" + root.modeNames[root.modeIndex] + "]"
+                    color: "#2cde85"
+                }
+            }
+            titleTrailing: Text {
+                text: pandaImage.sourceSize.width + "x" + pandaImage.sourceSize.height + " px"
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "[M] RenderMode  [S] Smooth"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.smoothScaling ? "smooth: on" : "smooth: off"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -95,14 +108,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

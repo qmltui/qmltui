@@ -1,11 +1,12 @@
 # QmlTui Gallery
 
-A full-screen grid of every user-facing type in `QmlTui`, `QmlTui.Controls`, and
-`QmlTui.Image` (39 tiles with Private Qt `Behavior` and `QmlTui.Image` enabled,
-36 without). Move the selection with the arrow keys (or `hjkl`), open a tile
-with `Enter`, `Space`, or a mouse click, and press `T` in the grid to toggle
-between the Dark and Light documentation themes. `Escape` returns to the grid;
-`Q` quits from the grid or from a demo that has no text input focused.
+A full-screen grid of every user-facing type in `QmlTui`, `QmlTui.Controls`,
+`QmlTui.Image`, and `QmlTui.TerminalHost` (39 tiles with Private Qt `Behavior`,
+`QmlTui.Image`, and `QmlTui.TerminalHost` enabled; 35 without). Move the
+selection with the arrow keys (or `hjkl`), open a tile with `Enter`, `Space`,
+or a mouse click, and press `T` in the grid to toggle between the Dark and
+Light documentation themes. `Escape` returns to the grid; `Q` quits from the
+grid or from a demo that has no text input focused.
 
 ## Command-Line Options
 
@@ -44,4 +45,4 @@ between the Dark and Light documentation themes. `Escape` returns to the grid;
 `examples/wasm` and the documentation site's `/playground` page embed this
 gallery: the gallery runs in xterm.js on the right, and opening a tile (or
 following an `"▶ Open in Playground"` link from the docs) loads that tile's
-file in a CodeMirror 6 editor on the left. See `docs/topics/webassembly.md`.
+file in a CodeMirror 6 editor on the left. See `docs/guides/webassembly.md`.

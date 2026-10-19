@@ -13,6 +13,6 @@
 # 5. CLI Startup Banner: QmlTui
   ⢀⣠⣤⣀      QmlTui  ·  retained-mode terminal UI for Qt 6
  ⣔⠕⠁ ⠑⢕⡄    QML items, layouts, controls and views in text cells
-⠸⣇   ⢀⣀⡿    docs/README.md  ·  examples/gallery  ·  docs/tutorials
+⠸⣇   ⢀⣀⡿    docs/README.md  ·  examples/gallery  ·  docs/guides
  ⠑⢕⣄⣀⣔⠝⢧⡀   Ctrl+Q quits  ·  Esc quits when the prompt is empty
    ⠈⠉⢀⡴⠋

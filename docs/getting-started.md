@@ -17,7 +17,7 @@ To build QmlTui or a QmlTui application, you need:
 | Feature / Module | CMake Option | Default | Additional Requirement |
 | :--- | :--- | :--- | :--- |
 | **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for a headless server build without GUI/network packages) |
-| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `OFF` | `Qt6::QmlPrivate` headers (couples build to the exact Qt minor version) |
+| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` | `Qt6::QmlPrivate` headers (couples build to the exact Qt minor version; set `OFF` for strict public-Qt builds) |
 | **`QmlTui.TerminalHost`** (`TerminalView`) | `-DQMLTUI_ENABLE_TERMINAL_HOST=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 
 ---
@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
 ### `Main.qml`
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 import QmlTui.Controls
@@ -216,7 +217,7 @@ The available QML modules and CMake targets are:
 | `import QmlTui.Image` | `qmltui::image` | Terminal graphics (`Image`, `AnimatedSprite`; requires `QMLTUI_ENABLE_IMAGE=ON`) |
 | `import QmlTui.TerminalHost` | `qmltui::terminal_host` | Embedded Unix PTY (`TerminalView`; requires `QMLTUI_ENABLE_TERMINAL_HOST=ON`) |
 
-See [Module Boundaries & What `QmlTui.Core` Provides Alone](topics/architecture.md#module-boundaries-what-qmltui-core-provides-alone) for a breakdown of building applications using only `qmltui::core` (`import QmlTui`).
+See [Module Boundaries & What `QmlTui.Core` Provides Alone](guides/architecture.md#module-boundaries-what-qmltui-core-provides-alone) for a breakdown of building applications using only `qmltui::core` (`import QmlTui`).
 
 ---
 
@@ -228,17 +229,18 @@ The Unix PTY host (`TerminalView`) is opt-in on Linux and macOS:
 
 ```sh
 cmake -S . -B build -DQMLTUI_ENABLE_TERMINAL_HOST=ON -DQMLTUI_BUILD_EXAMPLES=ON
-cmake --build build --target qmltui_terminal_view_demo
+cmake --build build --target qmltui_gallery
+./build/examples/gallery/qmltui_gallery --example TerminalView
 ```
 
-See [TerminalView](qml-types/terminalview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
+See [Embedded PTY Shells](guides/terminal-host.md) and the [TerminalView QML Reference](qml-types/terminalview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
 
-- `qmltui_inline_repl_demo` ([`examples/topics/inline_repl`](../examples/topics/inline_repl/)) demonstrates an inline session with scrollback and prompt input using `Terminal.Inline`—it does **not** require `TerminalHost`.
-- `qmltui_terminal_view_demo` ([`examples/components/terminal_view`](../examples/components/terminal_view/)) embeds interactive PTY shells inside a full-screen layout (`QMLTUI_ENABLE_TERMINAL_HOST=ON`; press `Ctrl+Q` to quit).
+- `qmltui_inline_repl_demo` ([`examples/guides/inline_repl`](../examples/guides/inline_repl/)) and `qmltui_gallery --example InlineMode` ([`examples/gallery/examples/InlineMode.qml`](../examples/gallery/examples/InlineMode.qml)) demonstrate inline sessions with scrollback and prompt input using `Terminal.Inline`—they do **not** require `TerminalHost`.
+- `qmltui_gallery --example TerminalView` embeds an interactive PTY shell inside a full-screen layout (`QMLTUI_ENABLE_TERMINAL_HOST=ON`).
 
 ### Headless Testing & `.cast` Recording (`Runner`)
 
-Enable `-DQMLTUI_ENABLE_RUNNER=ON` (or `-DQMLTUI_BUILD_TESTS=ON` in-tree) to build `qmltui::runner` and the `qmltui-runner` CLI launcher for deterministic headless testing and Asciinema recording. See [Chapter 06: Testing with Runner](tutorials/06-testing-with-runner.md) and the [Runner C++ reference](cpp-classes/runner.md).
+Enable `-DQMLTUI_ENABLE_RUNNER=ON` (or `-DQMLTUI_BUILD_TESTS=ON` in-tree) to build `qmltui::runner` and the `qmltui-runner` CLI launcher for deterministic headless testing and Asciinema recording. See [Testing and Recording with Runner](guides/testing.md) and the [Runner C++ reference](cpp-classes/runner.md).
 
 ### Performance Benchmarks
 
@@ -257,10 +259,10 @@ Run `benchmark_render` before and after rendering changes when contributing. See
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
-| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and tutorial executables |
+| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and guide executables |
 | `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build performance benchmark executables |
-| `QMLTUI_ENABLE_PRIVATE_QT` | `OFF` | Enable `Behavior`, `StateGroup`, and advanced states (`Qt6::QmlPrivate`) |
+| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` | Enable `Behavior`, `StateGroup`, and advanced states (`Qt6::QmlPrivate`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
 | `QMLTUI_ENABLE_TERMINAL_HOST` | `OFF` | Build the Unix PTY `QmlTui.TerminalHost` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `OFF` | Build and install `qmltui::runner` and the `qmltui-runner` CLI |
@@ -286,8 +288,7 @@ Run `benchmark_render` before and after rendering changes when contributing. See
 
 ## 7. Next Steps
 
-- **Follow the [Six-Part Tutorial](tutorials/index.md)**: Start with [01: First terminal](tutorials/01-first-terminal.md) and progress through layouts, focus, models, controls, and `Runner` testing.
-- **Set up your editor**: Read the [IDE setup guide](topics/ide-setup.md) to configure `qmlls` and `qmllint`.
-- **Coming from Qt Quick?** Read [QmlTui for Qt Quick developers](topics/qt-quick-to-qmltui.md).
-- **Coming from Ratatui, Bubble Tea, or Textual?** Read [QmlTui for TUI developers](topics/tui-comparison.md).
+- **Read the [Guides](guides/index.md)**: Explore [Layouts & Cell Geometry](guides/layouts.md), [Input & Focus](guides/input-and-focus.md), [Models in QmlTui Views](guides/models.md), [Styling & Colors](guides/styling-and-colors.md), and [Testing with Runner](guides/testing.md).
+- **Set up your editor**: Read the [IDE setup guide](guides/ide-setup.md) to configure `qmlls`, `qmllint`, and `qmltui-runner.d.ts`.
+- **Coming from Qt Quick?** Read [QmlTui for Qt Quick developers](guides/qt-quick-to-qmltui.md).
 - **Explore components and recipes**: Browse the [Examples & Component Cookbook](examples.md).

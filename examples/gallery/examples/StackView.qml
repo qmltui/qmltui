@@ -52,14 +52,16 @@ Item {
         id: step1Comp
 
         Panel {
-            title: "Step 1: Environment"
-            titleColor: "#2cde85"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#2cde85"
             }
 
+            title: Text {
+                text: "Step 1: Environment"
+                color: "#2cde85"
+            }
             Column {
                 x: 2
                 y: 2
@@ -88,14 +90,16 @@ Item {
         id: step2Comp
 
         Panel {
-            title: "Step 2: Replicas"
-            titleColor: "#fbbf24"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#fbbf24"
             }
 
+            title: Text {
+                text: "Step 2: Replicas"
+                color: "#fbbf24"
+            }
             Column {
                 x: 2
                 y: 2
@@ -124,14 +128,16 @@ Item {
         id: step3Comp
 
         Panel {
-            title: "Step 3: Confirm"
-            titleColor: "#e879f9"
             color: "#161b22"
             border {
                 style: Border.Double
                 color: "#e879f9"
             }
 
+            title: Text {
+                text: "Step 3: Confirm"
+                color: "#e879f9"
+            }
             Column {
                 x: 2
                 y: 2
@@ -176,22 +182,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "StackView Wizard"
-            titleColor: "#e879f9"
-            titleBadge: "[Controls]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: "Depth " + stack.depth + "/3"
-            titleTrailingColor: "#2cde85"
-            footer: "N push · P pop · R reset"
-            footerColor: "#8b949e"
-            footerTrailing: "StackView"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "StackView Wizard"
+                    color: "#e879f9"
+                }
+                Text {
+                    text: "[Controls]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: "Depth " + stack.depth + "/3"
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "N push · P pop · R reset"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "StackView"
+                color: "#8b949e"
+            }
             StackView {
                 id: stack
 
@@ -236,14 +255,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2

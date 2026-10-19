@@ -8,13 +8,13 @@
 #   cmake --build build-wasm
 #   cmake --build build-wasm --target serve        # http://localhost:8000/
 #
-# See docs/topics/webassembly.md. WebAssembly builds are GPLv3 or commercial only.
+# See docs/guides/webassembly.md. WebAssembly builds are GPLv3 or commercial only.
 cmake_minimum_required(VERSION 3.21)
 project(qmltuiWasmPlayground LANGUAGES CXX)
 
 if(NOT EMSCRIPTEN)
     message(FATAL_ERROR "Configure this project with the Qt for WebAssembly kit's qt-cmake; "
-                        "see docs/topics/webassembly.md")
+                        "see docs/guides/webassembly.md")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -51,6 +51,9 @@ if(NOT QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 if(NOT QMLTUI_WASM_PLAYGROUND_IMAGE OR NOT QMLTUI_ENABLE_IMAGE)
     list(FILTER gallery_examples EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
+endif()
+if(NOT QMLTUI_ENABLE_TERMINAL_HOST)
+    list(FILTER gallery_examples EXCLUDE REGEX "/TerminalView\\.qml$")
 endif()
 set(example_index "")
 foreach(example IN LISTS gallery_examples)

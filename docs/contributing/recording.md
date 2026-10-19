@@ -22,10 +22,10 @@ Use the Behavior-enabled, Image-enabled tree; those modules change which tiles a
 
 ## Component demos
 
-Every component in `examples/components/` has a `test_demo.js` scenario with pacing and
-representative interactions, registered with `CLOCK VIRTUAL RECORD components/<name>.cast`.
+Every gallery component tile has a scenario in `examples/gallery/scenarios/*.js` with pacing and
+representative interactions, registered against `qmltui_gallery` with `CLOCK VIRTUAL RECORD components/<name>.cast`.
 
-Regenerate all 30 component casts:
+Regenerate all 39 gallery component casts:
 
 ```sh
 cmake --build build-qmltui -j$(nproc)

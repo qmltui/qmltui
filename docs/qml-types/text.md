@@ -65,7 +65,8 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 ## Detailed Description
 
 `Text` caches glyphs and line layouts. Newlines start lines; content does not
-wrap automatically. `implicitWidth` is the widest line in terminal cells and
+wrap automatically by default (`Text.NoWrap`), and wraps when `wrapMode` is set
+to `Text.WordWrap`, `Text.WrapAnywhere`, or `Text.Wrap`. `implicitWidth` is the widest line in terminal cells and
 `implicitHeight` counts lines, including consecutive and trailing empty lines.
 Horizontal alignment applies per line; vertical alignment positions the whole
 block. Content outside the available dimensions is clipped.
@@ -116,7 +117,7 @@ Terminal {
 
 ### C++
 
-Use `qmltui::Text` from `<QmlTui/Text.h>`. Construct it with an optional parent
+Use `qmltui::Text` from `<QmlTui/Core/Items/Text.h>`. Construct it with an optional parent
 `QObject`, set properties directly, and use `paint()` during the text grid
 render pass.
 

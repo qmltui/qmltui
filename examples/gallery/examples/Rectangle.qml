@@ -39,22 +39,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "Rectangle"
-            titleColor: "#60a5fa"
-            titleBadge: "[Surface Studio]"
-            titleBadgeColor: "#2cde85"
-            titleTrailing: root.borderEnums[root.borderIndex]
-            titleTrailingColor: "#8b949e"
-            footer: "[B] Border  [G] Orientation"
-            footerColor: "#8b949e"
-            footerTrailing: root.horizontalGradient ? "Grad: Horizontal" : "Grad: Vertical"
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Rectangle"
+                    color: "#60a5fa"
+                }
+                Text {
+                    text: "[Surface Studio]"
+                    color: "#2cde85"
+                }
+            }
+            titleTrailing: Text {
+                text: root.borderEnums[root.borderIndex]
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "[B] Border  [G] Orientation"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.horizontalGradient ? "Grad: Horizontal" : "Grad: Vertical"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -224,14 +237,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

@@ -19,8 +19,8 @@ hero:
       text: ▶ Try Live Playground
       link: ./playground
     - theme: alt
-      text: 6-Part Tutorial
-      link: ./tutorials/
+      text: Guides
+      link: ./guides/
     - theme: alt
       text: 39 Components
       link: ./examples
@@ -29,32 +29,32 @@ features:
   - icon: ⚡
     title: Retained Declarative QML
     details: Declare layouts, borders, focus chains, and states once. Fine-grained Qt property bindings update only the affected cells—no immediate-mode full-tree rebuilds on every tick.
-    link: ./topics/why-declarative-bindings
-    linkText: Why declarative bindings
+    link: ./guides/architecture
+    linkText: Retained architecture
   - icon: 🚀
     title: High-Performance C++20 & Qt 6 Backend
     details: Drive UIs directly from compiled C++20 QObjects, worker threads, and 1M-row QAbstractItemModels with O(viewport) virtualized views and double-buffered cell diffing.
-    link: ./topics/architecture
-    linkText: Engine architecture
+    link: ./guides/models
+    linkText: Models & views
   - icon: 🧱
     title: Complete Core in a Single Import
     details: "import QmlTui provides Terminal, Rectangle, layouts, Text, TextInput, virtualized ListView/TableView/TreeView, Canvas, and animations standalone—with zero QtQuick dependency."
-    link: ./topics/architecture#module-boundaries-what-qmltui-core-provides-alone
+    link: ./guides/architecture#module-boundaries-what-qmltui-core-provides-alone
     linkText: What QmlTui.Core provides
   - icon: 🖥️
     title: AltScreen & Inline Modes
     details: Run full-screen alternate-screen dashboards (Terminal.AltScreen) or streaming CLI workflows (Terminal.Inline) with native Scrollback history.
-    link: ./topics/inline-mode
+    link: ./guides/inline-mode
     linkText: Explore inline mode
   - icon: 🎨
     title: Modern Terminal Protocols
     details: Automatic capability detection for DEC ?2026 sync output, Kitty keyboard, Kitty & Sixel graphics, Canvas Braille/half-block drawing, and SGR mouse.
-    link: ./topics/styling-and-colors
+    link: ./guides/styling-and-colors
     linkText: Styling & protocols
   - icon: 🧪
     title: Deterministic Headless Testing
     details: Drive applications headlessly with a virtual clock, assert committed cell and style frames in CTest, or record Asciinema .cast demos.
-    link: ./tutorials/06-testing-with-runner
+    link: ./guides/testing
     linkText: Testing guide
 ---
 
@@ -131,36 +131,30 @@ New to QmlTui? Follow these guides to set up your environment, run the interacti
 
 - **[Getting Started](getting-started.md)**: System requirements, running `qmltui_gallery`, creating a standalone 3-file application (`FetchContent` or `find_package`), CMake options, and environment variables.
 - **[Interactive Playground](playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
-- **[Six-Part Tutorial](tutorials/index.md)**: Hands-on walkthrough covering `Terminal`, layouts and rich text, focus and keyboard input, models and views, controls and styling, and automated testing.
-- **[Examples & Component Cookbook](examples.md)**: Understand the four-tier `examples/` organization (`QmlTui.Controls` vs. copyable QML recipes) and browse every recorded component and topic demo.
-- **[IDE Setup](topics/ide-setup.md)**: Configure `qmlls` and `qmllint` in Qt Creator, VS Code, Neovim, CLion, and Helix for full autocomplete and type checking.
+- **[Examples & Component Cookbook](examples.md)**: Understand the four-tier `examples/` organization (`QmlTui.Controls` vs. copyable QML recipes) and browse every recorded component and guide demo.
+- **[IDE Setup](guides/ide-setup.md)**: Configure `qmlls`, `qmllint`, and `qmltui-runner.d.ts` in Qt Creator, VS Code, Neovim, and Helix for full autocomplete and type checking.
+- **[QmlTui for Qt Quick Developers](guides/qt-quick-to-qmltui.md)**: Map your `QtQuick` mental model to integer cell coordinates, terminal borders, `AltScreen` vs. `Inline` mode, and zero-`QtQuick` imports.
 
-## Coming From Another Toolkit?
+## Guides
 
-Already familiar with Qt Quick or terminal UI libraries in Rust, Python, or Go? Start with the guide tailored to your background:
+Deep-dive into QmlTui's subsystems and architectural patterns (or view the [Guides index](guides/index.md)):
 
-- **[QmlTui for Qt Quick Developers](topics/qt-quick-to-qmltui.md)**: Map your `QtQuick` mental model to integer cell coordinates, terminal borders, `AltScreen` vs. `Inline` mode, and zero-`QtQuick` imports.
-- **[QmlTui for Ratatui, Textual, and Bubble Tea Developers](topics/tui-comparison.md)**: Compare retained-mode QML property bindings and `QAbstractItemModel` views against immediate-mode rendering, CSS-styled widgets, and Elm-style update loops.
-- **[Why Declarative Bindings?](topics/why-declarative-bindings.md)**: How fine-grained property dependencies and retained cell trees eliminate manual dirty tracking and boilerplate state synchronization.
-
-## Core Guides
-
-Deep-dive into QmlTui's subsystems and architectural patterns (or view the [Topics index](topics/index.md)):
-
-- **[Architecture](topics/architecture.md)**: Retained item tree, double-buffered `TextGridBuffer` diffing, platform backends (`PosixTerminalBackend`, `Win32ConsoleBackend`), and what `QmlTui.Core` provides standalone vs. companion modules.
-- **[Layouts & Geometry](topics/layouts.md)**: Integer cell coordinates, `anchors`, `Row`/`Column` positioners, `RowLayout`/`ColumnLayout`/`GridLayout`/`StackLayout` engines.
-- **[Input & Focus](topics/input-and-focus.md)**: Active focus chains, `Keys.onPressed` bubbling, `Shortcut`, SGR mouse events, and bracketed paste.
-- **[Models & Virtualized Views](topics/models.md)**: Connecting `ListModel` and C++ `QAbstractItemModel` subclasses to virtualized `ListView`, `TableView`, `TreeView`, and `GridView`.
-- **[Styling & Colors](topics/styling-and-colors.md)**: Terminal-default colors, ANSI 16/256/TrueColor quantization, `Gradient`, `Border` styles, and application-owned QML component styling.
-- **[Animation & States](topics/animation-and-states.md)**: `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, `State`, `Transition`, and optional Private Qt `Behavior`.
-- **[Inline / Stream Mode](topics/inline-mode.md)**: Building streaming CLIs and coding agents with `Terminal.Inline` and `Scrollback` alongside a live bottom viewport.
-- **[Custom C++ Items](topics/custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer` in C++, exposing QML types with `QML_ELEMENT`, or building C++-only scenes.
-- **[WebAssembly Playground](topics/webassembly.md)**: Compiling and embedding QmlTui applications in the browser.
+- **[Architecture](guides/architecture.md)**: Retained item tree, double-buffered `TextGridBuffer` diffing, platform backends (`PosixTerminalBackend`, `Win32ConsoleBackend`), and what `QmlTui.Core` provides standalone vs. companion modules.
+- **[Layouts & Cell Geometry](guides/layouts.md)**: Integer cell coordinates, `anchors`, `Row`/`Column` positioners, `RowLayout`/`ColumnLayout`/`GridLayout`/`StackLayout` engines.
+- **[Input & Focus](guides/input-and-focus.md)**: Active focus chains, `Keys.onPressed` bubbling, `Shortcut`, SGR mouse events, and bracketed paste.
+- **[Styling & Colors](guides/styling-and-colors.md)**: Terminal-default colors, ANSI 16/256/TrueColor quantization, `Gradient`, `Border` styles, and application-owned QML component styling.
+- **[Models in QmlTui Views](guides/models.md)**: Connecting `ListModel` and C++ `QAbstractItemModel` subclasses to virtualized `ListView`, `TableView`, `TreeView`, and `GridView`.
+- **[Animation & States](guides/animation-and-states.md)**: `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, `State`, `Transition`, and Private Qt `Behavior` / `StateGroup`.
+- **[Inline Mode & Scrollback](guides/inline-mode.md)**: Building streaming CLIs and coding agents with `Terminal.Inline` and `Scrollback` alongside a live bottom viewport.
+- **[Embedded PTY Shells (`QmlTui.TerminalHost`)](guides/terminal-host.md)**: Hosting interactive login shells and CLI processes inside `TerminalView` on Linux and macOS.
+- **[Custom C++ Items](guides/custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer` in C++, exposing QML types with `QML_ELEMENT`, or building C++-only scenes.
+- **[Testing & Recording with Runner](guides/testing.md)**: Deterministic headless testing with a virtual clock, golden frame/style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
+- **[WebAssembly Playground](guides/webassembly.md)**: Compiling and embedding QmlTui applications in the browser.
 
 ## API Reference
 
 - **[QML Types Reference](qml-types/index.md)**: Complete property, method, and signal documentation for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.TerminalHost`.
-- **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `Painter`, `ScreenBuffer`, `Style`, `Color`, `TerminalCapabilities`, and `Runner`.
+- **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `TerminalEngine`, `TextGridBuffer`, `Cell`, `Color`, `TerminalCapabilities`, `TerminalView`, and `Runner`.
 - **[Release Notes & Changelog](changes/changelog.md)**: Version history, new features, and migration guides.
 
 ## Contributing & Internals

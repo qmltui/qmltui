@@ -54,22 +54,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "AnimatedSprite"
-            titleColor: "#fdba74"
-            titleBadge: sprite.paused ? "[PAUSED]" : "[PLAYING]"
-            titleBadgeColor: sprite.paused ? "#f9c74f" : "#2cde85"
-            titleTrailing: (sprite.currentFrame + 1) + "/" + sprite.frameCount
-            titleTrailingColor: "#58a6ff"
-            footer: "[Space] Pause  [Left/Right] Clip  [R] Reverse"
-            footerColor: "#8b949e"
-            footerTrailing: "220 ms/f"
-            footerTrailingColor: "#fdba74"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "AnimatedSprite"
+                    color: "#fdba74"
+                }
+                Text {
+                    text: sprite.paused ? "[PAUSED]" : "[PLAYING]"
+                    color: sprite.paused ? "#f9c74f" : "#2cde85"
+                }
+            }
+            titleTrailing: Text {
+                text: (sprite.currentFrame + 1) + "/" + sprite.frameCount
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "[Space] Pause  [Left/Right] Clip  [R] Reverse"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "220 ms/f"
+                color: "#fdba74"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -120,14 +133,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

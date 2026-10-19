@@ -76,22 +76,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Repeater Node Matrix"
-            titleColor: "#c4b5fd"
-            titleBadge: "[Core]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.nodes.length + " nodes"
-            titleTrailingColor: root.accentColor
-            footer: "+/A add · -/D remove · C accent"
-            footerColor: "#8b949e"
-            footerTrailing: "Repeater"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Repeater Node Matrix"
+                    color: "#c4b5fd"
+                }
+                Text {
+                    text: "[Core]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.nodes.length + " nodes"
+                color: root.accentColor
+            }
+            footer: Text {
+                text: "+/A add · -/D remove · C accent"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Repeater"
+                color: "#8b949e"
+            }
             GridLayout {
                 x: 2
                 y: 2
@@ -132,14 +145,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2

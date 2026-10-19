@@ -41,10 +41,9 @@ Use `-DQMLTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
 without the repository tests. Use `-DQMLTUI_ENABLE_TERMINAL_HOST=ON` only for the
 optional PTY-backed `TerminalView` module.
 
-Features requiring private Qt headers (Behavior, StateGroup, advanced states,
-and the Industrial PLC HMI) require `-DQMLTUI_ENABLE_PRIVATE_QT=ON`. For changes to
-private Qt features or their gating, validate both an enabled build and a separate
-disabled build. Do not assume the PLC target exists in a disabled tree.
+Features requiring private Qt headers (Behavior, StateGroup, and advanced states)
+require `-DQMLTUI_ENABLE_PRIVATE_QT=ON`. For changes to private Qt features or
+their gating, validate both an enabled build and a separate disabled build.
 
 After an edit, build the affected target first. Rebuild the configured tree
 after Core, public API, QML-module, or CMake changes:
@@ -125,7 +124,7 @@ Use
 [`examples/components/status_badge/CMakeLists.txt`](../../../examples/components/status_badge/CMakeLists.txt)
 as the reference for this shared-target pattern. C++-created Terminals need an
 explicit environment hook, as shown in
-[`examples/topics/cpp_only/main.cpp`](../../../examples/topics/cpp_only/main.cpp).
+[`examples/guides/cpp_only/main.cpp`](../../../examples/guides/cpp_only/main.cpp).
 Use [`tests/Runner/main.cpp`](../../../tests/Runner/main.cpp) for explicitly
 constructed embedded runners and framework scenarios and failure contracts.
 

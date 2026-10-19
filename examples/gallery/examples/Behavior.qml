@@ -52,22 +52,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "Behavior"
-            titleColor: "#c084fc"
-            titleBadge: "[Interceptor]"
-            titleBadgeColor: "#2cde85"
-            titleTrailing: root.easingNames[root.easingIndex]
-            titleTrailingColor: "#58a6ff"
-            footer: "[Left/Right/Space] Move  [E] Easing"
-            footerColor: "#8b949e"
-            footerTrailing: "x=" + puck.x + " w=" + morphBar.width
-            footerTrailingColor: "#c084fc"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Behavior"
+                    color: "#c084fc"
+                }
+                Text {
+                    text: "[Interceptor]"
+                    color: "#2cde85"
+                }
+            }
+            titleTrailing: Text {
+                text: root.easingNames[root.easingIndex]
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "[Left/Right/Space] Move  [E] Easing"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "x=" + puck.x + " w=" + morphBar.width
+                color: "#c084fc"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -176,14 +189,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

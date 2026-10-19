@@ -74,3 +74,9 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+- **Live Playground**: [▶ Open `TerminalCapabilities.qml` in the WebAssembly Playground](../playground.md?example=TerminalCapabilities.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TerminalCapabilities`
+- **Gallery Source**: [`examples/gallery/examples/TerminalCapabilities.qml`](../../examples/gallery/examples/TerminalCapabilities.qml)

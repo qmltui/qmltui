@@ -21,4 +21,8 @@ function main(terminal) {
     terminal.press("g");
     terminal.expectText("no-badge");
     terminal.sleep(300);
+
+    terminal.clickText("region: eu-central-1");
+    terminal.expectText("Border Style: Ascii");
+    terminal.sleep(300);
 }

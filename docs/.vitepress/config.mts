@@ -77,7 +77,20 @@ export default defineConfig({
   description: 'Retained-mode terminal UI framework for C++20 and Qt 6',
   srcDir: '.',
   srcExclude: ['contributing/**'],
-  ignoreDeadLinks: true,
+  ignoreDeadLinks: [
+    (url: string) => {
+      const clean = url.replace(/[?#].*$/, '').replace(/^(?:\.\/|\.\.\/)+/, '')
+      if (!/^(?:examples\/|scripts\/|contributing\/|LICENSE$)/.test(clean)) return false
+      const base = clean.startsWith('contributing/') ? docsDir : repoRoot
+      const target = path.join(base, clean)
+      const dirTarget = clean.endsWith('/index') ? path.join(base, clean.slice(0, -6)) : null
+      return (
+        fs.existsSync(target) ||
+        fs.existsSync(`${target}.md`) ||
+        (dirTarget !== null && fs.existsSync(dirTarget))
+      )
+    }
+  ],
   cleanUrls: false,
   appearance: 'dark',
 
@@ -101,8 +114,7 @@ export default defineConfig({
 
     nav: [
       { text: 'Getting Started', link: '/getting-started' },
-      { text: 'Tutorials', link: '/tutorials/' },
-      { text: 'Guides', link: '/topics/' },
+      { text: 'Guides', link: '/guides/' },
       { text: 'QML Types', link: '/qml-types/' },
       { text: 'C++ Reference', link: '/cpp-classes/' },
       { text: 'Examples', link: '/examples' },
@@ -120,41 +132,28 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Quickstart & Build', link: '/getting-started' },
+          { text: 'IDE Setup (Qt Creator & qmlls)', link: '/guides/ide-setup' },
           { text: 'Examples & Gallery', link: '/examples' },
-          { text: 'WebAssembly Playground', link: '/playground' },
-          { text: 'IDE Setup (Qt Creator & qmlls)', link: '/topics/ide-setup' },
-          { text: 'Qt Quick to QmlTui', link: '/topics/qt-quick-to-qmltui' },
-          { text: 'TUI Framework Comparison', link: '/topics/tui-comparison' },
-          { text: 'Why Declarative Bindings', link: '/topics/why-declarative-bindings' }
+          { text: 'WebAssembly Playground', link: '/playground' }
         ]
       },
       {
-        text: 'Tutorials',
+        text: 'Guides',
         collapsed: false,
         items: [
-          { text: 'Tutorial Series Overview', link: '/tutorials/' },
-          { text: '1. First Terminal', link: '/tutorials/01-first-terminal' },
-          { text: '2. Layout and Text', link: '/tutorials/02-layout-and-text' },
-          { text: '3. Input and Focus', link: '/tutorials/03-input-and-focus' },
-          { text: '4. Models and Views', link: '/tutorials/04-models-and-views' },
-          { text: '5. Controls and Styling', link: '/tutorials/05-controls-and-styling' },
-          { text: '6. Testing with Runner', link: '/tutorials/06-testing-with-runner' }
-        ]
-      },
-      {
-        text: 'Core Guides',
-        collapsed: false,
-        items: [
-          { text: 'All Topics', link: '/topics/' },
-          { text: 'Architecture', link: '/topics/architecture' },
-          { text: 'Layouts & Anchors', link: '/topics/layouts' },
-          { text: 'Input and Focus', link: '/topics/input-and-focus' },
-          { text: 'Models & Views', link: '/topics/models' },
-          { text: 'Styling and Colors', link: '/topics/styling-and-colors' },
-          { text: 'Animation and States', link: '/topics/animation-and-states' },
-          { text: 'Inline Mode & Scrollback', link: '/topics/inline-mode' },
-          { text: 'Custom C++ Items', link: '/topics/custom-items' },
-          { text: 'WebAssembly Playground', link: '/topics/webassembly' }
+          { text: 'All Guides', link: '/guides/' },
+          { text: 'Architecture', link: '/guides/architecture' },
+          { text: 'Layouts & Geometry', link: '/guides/layouts' },
+          { text: 'Input & Focus', link: '/guides/input-and-focus' },
+          { text: 'Styling & Colors', link: '/guides/styling-and-colors' },
+          { text: 'Models & Views', link: '/guides/models' },
+          { text: 'Animation & States', link: '/guides/animation-and-states' },
+          { text: 'Inline Mode & Scrollback', link: '/guides/inline-mode' },
+          { text: 'Embedded PTY (TerminalHost)', link: '/guides/terminal-host' },
+          { text: 'Custom C++ Items', link: '/guides/custom-items' },
+          { text: 'Testing with Runner', link: '/guides/testing' },
+          { text: 'WebAssembly Playground', link: '/guides/webassembly' },
+          { text: 'Qt Quick to QmlTui', link: '/guides/qt-quick-to-qmltui' }
         ]
       },
       {
@@ -303,10 +302,12 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'C++ Class Index', link: '/cpp-classes/' },
+          { text: 'Terminal', link: '/cpp-classes/terminal' },
           { text: 'TerminalEngine', link: '/cpp-classes/terminalengine' },
           { text: 'TerminalDevice', link: '/cpp-classes/terminaldevice' },
           { text: 'TerminalBackend', link: '/cpp-classes/terminalbackend' },
           { text: 'MemoryTerminalBackend', link: '/cpp-classes/memoryterminalbackend' },
+          { text: 'TerminalCapabilities', link: '/cpp-classes/terminalcapabilities' },
           { text: 'Item', link: '/cpp-classes/item' },
           { text: 'Rectangle', link: '/cpp-classes/rectangle' },
           { text: 'Text', link: '/cpp-classes/text' },
@@ -317,6 +318,7 @@ export default defineConfig({
           { text: 'InputDecoder', link: '/cpp-classes/inputdecoder' },
           { text: 'ImageProvider', link: '/cpp-classes/imageprovider' },
           { text: 'QtMessageRouting', link: '/cpp-classes/qtmessagerouting' },
+          { text: 'TerminalView', link: '/cpp-classes/terminalview' },
           { text: 'Runner', link: '/cpp-classes/runner' }
         ]
       },

@@ -33,7 +33,7 @@ also gives the button focus and holds `pressed`. Nothing happens while
 `enabled` is false. Tab and Shift+Tab move focus between focusable items.
 
 State shows in the border and the label, and each state has its own look.
-The border style is `"single"`, or `"double"` while the button has active
+The border style is `Border.Single`, or `Border.Double` while the button has active
 focus, and it is dropped on a button shorter than 3 rows, where the label is
 centred on the single row and shows focus by boldness alone. While `down`,
 that is while a mouse button is held on it, the label is drawn in reverse

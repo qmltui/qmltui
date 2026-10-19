@@ -40,22 +40,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "MouseArea"
-            titleColor: "#f97316"
-            titleBadge: padArea.containsMouse ? "[HOVER]" : "[IDLE]"
-            titleBadgeColor: padArea.containsMouse ? "#2cde85" : "#8b949e"
-            titleTrailing: "clicks: " + root.clicks
-            titleTrailingColor: "#58a6ff"
-            footer: "Click / Hover / Scroll inside pad  [R] Reset"
-            footerColor: "#8b949e"
-            footerTrailing: root.lastEvent
-            footerTrailingColor: "#f97316"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "MouseArea"
+                    color: "#f97316"
+                }
+                Text {
+                    text: padArea.containsMouse ? "[HOVER]" : "[IDLE]"
+                    color: padArea.containsMouse ? "#2cde85" : "#8b949e"
+                }
+            }
+            titleTrailing: Text {
+                text: "clicks: " + root.clicks
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "Click / Hover / Scroll inside pad  [R] Reset"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.lastEvent
+                color: "#f97316"
+            }
             Rectangle {
                 id: padSurface
                 anchors {
@@ -121,14 +134,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

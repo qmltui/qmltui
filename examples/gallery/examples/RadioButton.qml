@@ -75,22 +75,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "RadioButton"
-            titleColor: "#f9c74f"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.selectedProfile
-            titleTrailingColor: "#2cde85"
-            footer: "Space select  1-4 jump"
-            footerColor: "#8b949e"
-            footerTrailing: "Tab next"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "RadioButton"
+                    color: "#f9c74f"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.selectedProfile
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "Space select  1-4 jump"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Tab next"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -184,14 +197,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

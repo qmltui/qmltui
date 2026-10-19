@@ -54,20 +54,35 @@ Item {
 
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Panel Chrome Stage"
-            titleColor: "#2cde85"
-            titleBadge: "[Controls]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.borderStyleName + " · " + root.alignName
-            titleTrailingColor: "#8b949e"
-            footer: "B border · A align · G badge · F footer"
-            footerColor: "#8b949e"
-            footerTrailing: "Esc quit"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
+            }
+            title: Row {
+                spacing: 1
+
+                Text {
+                    text: "Panel Chrome Stage"
+                    color: "#2cde85"
+                }
+
+                Text {
+                    text: "[Controls]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.borderStyleName + " · " + root.alignName
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "B border · A align · G badge · F footer"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Esc quit"
+                color: "#8b949e"
             }
 
             Panel {
@@ -77,21 +92,49 @@ Item {
                 y: 2
                 width: Math.max(24, parent.width - 4)
                 height: 9
-                title: "Service Telemetry"
                 titleAlignment: root.alignValue
-                titleColor: "#f0f6fc"
-                titleBadge: root.showBadge ? "[LIVE]" : ""
-                titleBadgeColor: "#2cde85"
-                titleTrailing: "v2.4"
-                titleTrailingColor: "#58a6ff"
-                footer: root.showFooter ? "region: eu-central-1" : ""
-                footerColor: "#8b949e"
-                footerTrailing: root.showFooter ? "99.98% SLA" : ""
-                footerTrailingColor: "#2cde85"
                 color: "#161b22"
                 border {
                     style: root.borderStyleValue
                     color: "#58a6ff"
+                }
+                title: Row {
+                    spacing: 1
+
+                    Text {
+                        text: "Service Telemetry"
+                        color: "#f0f6fc"
+                    }
+
+                    Text {
+                        visible: root.showBadge
+                        text: "[LIVE]"
+                        color: "#2cde85"
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.showBadge = !root.showBadge
+                        }
+                    }
+                }
+                titleTrailing: Text {
+                    text: "v2.4"
+                    color: "#58a6ff"
+                }
+                footer: Text {
+                    visible: root.showFooter
+                    text: "region: eu-central-1"
+                    color: "#8b949e"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: root.cycleBorder()
+                    }
+                }
+                footerTrailing: Text {
+                    visible: root.showFooter
+                    text: "99.98% SLA"
+                    color: "#2cde85"
                 }
 
                 Column {
@@ -144,12 +187,14 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
+            }
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
             }
 
             Column {
@@ -182,7 +227,7 @@ Item {
                 CheckBox {
                     id: badgeCheck
 
-                    text: "titleBadge"
+                    text: "badge"
                     checked: root.showBadge
                     textColor: "#c9d1d9"
                     onToggled: checked => {

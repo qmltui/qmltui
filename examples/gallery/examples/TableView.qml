@@ -31,22 +31,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "TableView · Process Monitor"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#fb923c"
-            titleTrailing: (tableView.currentRow + 1) + "/" + root.processRows.length
-            titleTrailingColor: "#8b949e"
-            footer: "↑↓ row · Enter activate · G grid · A alt"
-            footerColor: "#8b949e"
-            footerTrailing: root.gridLines ? "grid:on" : "grid:off"
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "TableView · Process Monitor"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#fb923c"
+                }
+            }
+            titleTrailing: Text {
+                text: (tableView.currentRow + 1) + "/" + root.processRows.length
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "↑↓ row · Enter activate · G grid · A alt"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.gridLines ? "grid:on" : "grid:off"
+                color: "#58a6ff"
+            }
             TableView {
                 id: tableView
                 anchors {
@@ -148,16 +161,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "TableView API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "TableView API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

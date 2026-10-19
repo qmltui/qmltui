@@ -52,22 +52,35 @@ Item {
             Layout.fillHeight: true
             focusable: true
             focus: true
-            title: "States"
-            titleColor: "#34d399"
-            titleBadge: "[" + serviceCard.state + "]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: "transitions: " + root.transitionCount
-            titleTrailingColor: "#8b949e"
-            footer: "[1] nominal  [2] degraded  [3] maintenance"
-            footerColor: "#8b949e"
-            footerTrailing: "300 ms"
-            footerTrailingColor: "#34d399"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "States"
+                    color: "#34d399"
+                }
+                Text {
+                    text: "[" + serviceCard.state + "]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: "transitions: " + root.transitionCount
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "[1] nominal  [2] degraded  [3] maintenance"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "300 ms"
+                color: "#34d399"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -254,14 +267,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

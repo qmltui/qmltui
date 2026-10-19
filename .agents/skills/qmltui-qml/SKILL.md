@@ -145,12 +145,12 @@ that a `Row`, `Column`, or `*Layout` is already positioning.
 
 Keep borders compatible with Qt Quick's `Rectangle` API. The grouped `border`
 property belongs exclusively to `Rectangle` and Rectangle-derived controls such
-as `Panel`; its style is a string:
+as `Panel`; its style is a `Border.Style` enum value:
 
 ```qml
 Panel {
-    title: "Pod Metrics"
-    border.style: "double"      // "none", "single", "double", "rounded", "ascii"
+    title: Text { text: "Pod Metrics" }
+    border.style: Border.Double // Border.None, Border.Single, Border.Double, Border.Rounded, Border.Heavy, Border.Ascii
     border.color: "#555555"
 }
 ```
@@ -177,10 +177,9 @@ Rectangle {
 }
 ```
 
-`Panel` exposes `title`, `titleAlignment`, `titleColor`, `titleBadge`,
-`titleBadgeColor`, `titleTrailing`, `titleTrailingColor`, `footer`,
-`footerColor`, `footerTrailing`, and `footerTrailingColor` in addition to the
-inherited `Rectangle.border` group.
+`Panel` exposes `Item` border slots (`title`, `titleTrailing`, `footer`, and
+`footerTrailing`) plus `titleAlignment` in addition to the inherited
+`Rectangle.border` group.
 
 QmlTui C++ items expose colors as `qmltui::Color` (QML value type `rgba`), which
 accepts named colors (`"cyan"`, `"default"`, `"transparent"`), hex strings
@@ -242,19 +241,22 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `examples/components/`, not library types; copy them into your module.
 
 **`import QmlTui`** (C++ in `src/QmlTui/Core/Items` and `src/QmlTui/Core/Engine`)
-`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`,
-`TableView`, `TreeView`, `ListView`, `GridView`, `ScrollView`,
-`Canvas`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon`,
-`Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `Repeater`,
-`Loader`, `MouseArea`, `Shortcut`, `Keys` (attached), `State`,
-`Transition`, `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`,
-`Animation`, `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`.
+`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
+`Text`, `TextInput`, `TextArea`, `TableView`, `TreeView`, `ListView`, `GridView`,
+`ScrollView`, `Canvas`, `CanvasShape`, `CanvasRectangle`, `Circle`, `Line`,
+`Point`, `Polygon`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`,
+`StackLayout`, `Layout` (attached), `Repeater`, `Loader`, `MouseArea`, `Shortcut`,
+`Keys` (attached), `KeyEvent`, `MouseEvent`, `State`, `Transition`,
+`PropertyChanges`, `Gradient`, `GradientStop`, `Easing`, `Animation`,
+`PropertyAnimation`, `NumberAnimation`, `ColorAnimation`, `QmlTui` (singleton),
+`Clipboard` (singleton), `terminalCapabilities` (singleton), `rgba` (value type),
+`span` (value type), `highlightRange` (value type).
 
 `Behavior` and `StateGroup` are available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
 
 **`import QmlTui.Controls`** (QML and C++ in `src/QmlTui/Controls`)
-`Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`,
-`ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `Panel`,
+`AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`,
+`Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `Panel`,
 `Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
 no palette singleton: colours are set per item, and an inherited palette
 property is a Plan 06 section 7 proposal, not a shipped type.

@@ -119,3 +119,9 @@ Terminal {
     }
 }
 ```
+
+### Interactive Demo & Recording
+
+- **Live Playground**: [▶ Open `TerminalView.qml` in the WebAssembly Playground](../playground.md?example=TerminalView.qml)
+- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TerminalView`
+- **Gallery Source**: [`examples/gallery/examples/TerminalView.qml`](../../examples/gallery/examples/TerminalView.qml)

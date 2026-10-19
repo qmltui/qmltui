@@ -42,22 +42,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "TreeView · Project Explorer"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#86efac"
-            titleTrailing: "row " + treeView.currentIndex
-            titleTrailingColor: "#8b949e"
-            footer: "↑↓←→ nav · Space toggle · E expand · C collapse"
-            footerColor: "#8b949e"
-            footerTrailing: "d:" + root.activeDepth
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "TreeView · Project Explorer"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#86efac"
+                }
+            }
+            titleTrailing: Text {
+                text: "row " + treeView.currentIndex
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "↑↓←→ nav · Space toggle · E expand · C collapse"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "d:" + root.activeDepth
+                color: "#58a6ff"
+            }
             TreeView {
                 id: treeView
                 anchors {
@@ -148,16 +161,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "TreeView API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "TreeView API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

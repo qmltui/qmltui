@@ -16,22 +16,35 @@ Item {
     Panel {
         width: parent.width
         height: 6
-        title: "Inline mode · Agent CLI"
-        titleColor: "#f8fafc"
-        titleBadge: "[INLINE]"
-        titleBadgeColor: "#2cde85"
-        titleTrailing: "printed: " + inlineDemo.printed
-        titleTrailingColor: "#38bdf8"
-        footer: "Enter: commit to Scrollback · Esc: exit"
-        footerColor: "#8b949e"
-        footerTrailing: "last: " + inlineDemo.lastCommand
-        footerTrailingColor: "#2cde85"
 
         border {
             style: Border.Rounded
             color: "#30363d"
         }
 
+        title: Row {
+            spacing: 1
+            Text {
+                text: "Inline mode · Agent CLI"
+                color: "#f8fafc"
+            }
+            Text {
+                text: "[INLINE]"
+                color: "#2cde85"
+            }
+        }
+        titleTrailing: Text {
+            text: "printed: " + inlineDemo.printed
+            color: "#38bdf8"
+        }
+        footer: Text {
+            text: "Enter: commit to Scrollback · Esc: exit"
+            color: "#8b949e"
+        }
+        footerTrailing: Text {
+            text: "last: " + inlineDemo.lastCommand
+            color: "#2cde85"
+        }
         Column {
             anchors {
                 fill: parent

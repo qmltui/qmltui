@@ -26,6 +26,7 @@ private slots:
     void explicitColorsSurviveStates();
     void selectionColors();
     void toastAndTooltipOverrides();
+
 private:
     QQmlEngine engine;
     std::unique_ptr<Item> load(const QByteArray& body) {
@@ -39,10 +40,12 @@ private:
 void TestTerminalColors::defaultInk_data() {
     QTest::addColumn<QByteArray>("qml");
     QTest::newRow("text") << QByteArray("Text { text: 'Ink' }");
-    QTest::newRow("text_wrap") << QByteArray("Text { text: '[Link](url) `code`'; wrapMode: Text.WordWrap; width: 30; height: 2 }");
+    QTest::newRow("text_wrap") << QByteArray(
+        "Text { text: '[Link](url) `code`'; wrapMode: Text.WordWrap; width: 30; height: 2 }");
     QTest::newRow("input") << QByteArray("TextInput { text: 'Ink'; width: 8; height: 1 }");
     QTest::newRow("area") << QByteArray("TextArea { text: 'Ink'; width: 8; height: 1 }");
-    QTest::newRow("placeholder") << QByteArray("TextInput { placeholderText: 'Hint'; width: 8; height: 1 }");
+    QTest::newRow("placeholder") << QByteArray(
+        "TextInput { placeholderText: 'Hint'; width: 8; height: 1 }");
     QTest::newRow("button") << QByteArray("Button { text: 'Ink' }");
     QTest::newRow("check") << QByteArray("CheckBox { text: 'Ink'; checked: true }");
     QTest::newRow("radio") << QByteArray("RadioButton { text: 'Ink'; checked: true }");
@@ -50,11 +53,14 @@ void TestTerminalColors::defaultInk_data() {
     QTest::newRow("slider") << QByteArray("Slider { value: 50 }");
     QTest::newRow("progress") << QByteArray("ProgressBar { value: 0.5; showPercentage: true }");
     QTest::newRow("busy") << QByteArray("BusyIndicator { running: false }");
-    QTest::newRow("panel") << QByteArray("Panel { title: 'Ink'; width: 12; height: 3 }");
-    QTest::newRow("border") << QByteArray("Rectangle { border.style: Border.Single; width: 8; height: 3 }");
+    QTest::newRow("panel") << QByteArray(
+        "Panel { width: 12; height: 3; title: Text { text: 'Ink' } }");
+    QTest::newRow("border") << QByteArray(
+        "Rectangle { border.style: Border.Single; width: 8; height: 3 }");
     QTest::newRow("tabs") << QByteArray("TabBar { tabs: ['One', 'Two']; width: 24 }");
     QTest::newRow("sparkline") << QByteArray("Sparkline { values: [1, 2, 3]; width: 8 }");
-    QTest::newRow("toast") << QByteArray("Toast { width: 28; height: 4; Component.onCompleted: showToast('Title', 'Body', 'warning') }");
+    QTest::newRow("toast") << QByteArray("Toast { width: 28; height: 4; Component.onCompleted: "
+                                         "showToast('Title', 'Body', 'warning') }");
     QTest::newRow("canvas") << QByteArray("Canvas { width: 2; height: 1; Point {} }");
 }
 
@@ -99,7 +105,9 @@ void TestTerminalColors::explicitColorsSurviveStates() {
         QVERIFY(glyphs > 0);
     }
     for (const char* type : {"TextInput", "TextArea"}) {
-        auto item = load(QByteArray(type) + " { text: 'Custom'; color: '#123456'; width: 20; height: 1; enabled: false }");
+        auto item =
+            load(QByteArray(type) +
+                 " { text: 'Custom'; color: '#123456'; width: 20; height: 1; enabled: false }");
         QVERIFY(item);
         TextGridBuffer buffer;
         buffer.resize(24, 1);
@@ -113,11 +121,13 @@ void TestTerminalColors::selectionColors() {
     QStandardItemModel model;
     model.appendRow(new QStandardItem("Selected"));
     TableView table;
-    table.setWidth(24); table.setHeight(5);
+    table.setWidth(24);
+    table.setHeight(5);
     table.setModel(QVariant::fromValue(static_cast<QObject*>(&model)));
     table.setSelectedRow(0);
     TreeView tree;
-    tree.setWidth(24); tree.setHeight(5);
+    tree.setWidth(24);
+    tree.setHeight(5);
     tree.setModel(QVariant::fromValue(static_cast<QObject*>(&model)));
     tree.setCurrentIndex(0);
     for (Item* item : {static_cast<Item*>(&table), static_cast<Item*>(&tree)}) {
@@ -128,10 +138,13 @@ void TestTerminalColors::selectionColors() {
         for (int y = 0; y < 5; ++y)
             for (int x = 0; x < 24; ++x) {
                 const Cell& cell = buffer.cellAt(x, y);
-                if (cell.character() == " " && (cell.attributes & TextAttribute::Reversed) == TextAttribute::None) continue;
+                if (cell.character() == " " &&
+                    (cell.attributes & TextAttribute::Reversed) == TextAttribute::None)
+                    continue;
                 QCOMPARE(cell.fgColor, 0u);
                 QCOMPARE(cell.bgColor, 0u);
-                if ((cell.attributes & TextAttribute::Reversed) != TextAttribute::None) ++selectedGlyphs;
+                if ((cell.attributes & TextAttribute::Reversed) != TextAttribute::None)
+                    ++selectedGlyphs;
             }
         QVERIFY(selectedGlyphs > 0);
         item->setProperty("selectionColor", QVariant::fromValue(Color("#ffffff")));
@@ -154,8 +167,10 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     TabBar tabs;
     tabs.setTabs(QStringList{"One", "Two"});
     tabs.setWidth(28);
-    tabs.setTextColor("#123456"); tabs.setColor("#654321");
-    tabs.setSelectedTextColor("#ffffff"); tabs.setSelectionColor("#102030");
+    tabs.setTextColor("#123456");
+    tabs.setColor("#654321");
+    tabs.setSelectedTextColor("#ffffff");
+    tabs.setSelectionColor("#102030");
     TextGridBuffer tabBuffer;
     tabBuffer.resize(28, 1);
     paintItem(tabs, tabBuffer, 0, 0);
@@ -166,14 +181,16 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     QCOMPARE(tabBuffer.cellAt(10, 0).bgColor, 0xff654321u);
 
     Toast toast;
-    toast.setWidth(28); toast.setHeight(4);
+    toast.setWidth(28);
+    toast.setHeight(4);
     toast.showToast("Title", "Body");
     TextGridBuffer buffer;
     buffer.resize(28, 4);
     paintItem(toast, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 1).fgColor, 0u);
     QCOMPARE(buffer.cellAt(1, 1).bgColor, 0u);
-    toast.setTextColor("#123456"); toast.setColor("#654321");
+    toast.setTextColor("#123456");
+    toast.setColor("#654321");
     paintItem(toast, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 1).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 1).bgColor, 0xff654321u);
@@ -182,7 +199,8 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     Item target(&terminal);
     target.setHeight(1);
     controls::ToolTip tip(&target);
-    tip.setText("Tip"); tip.setVisible(true);
+    tip.setText("Tip");
+    tip.setVisible(true);
     Popup* popup = nullptr;
     for (Item* item : terminal.childItems())
         if (auto* candidate = qobject_cast<Popup*>(item)) popup = candidate;
@@ -191,7 +209,8 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0u);
-    tip.setTextColor("#123456"); tip.setColor("#654321");
+    tip.setTextColor("#123456");
+    tip.setColor("#654321");
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0xff654321u);

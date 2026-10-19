@@ -26,7 +26,7 @@ Loads and instantiates components or QML documents dynamically on demand. [More.
 | `active` | `bool` | `true` | Holds whether the component should be instantiated. Setting to `false` destroys the loaded item. |
 | `source` | `url` |  | Holds the URL of a QML document to load. Setting it clears `sourceComponent`. |
 | `sourceComponent` | `Component` |  | Holds an inline component to instantiate. Setting it clears `source`. |
-| `item` | `Item` |  | Read-only. Holds the instantiated visual item, or `null` if nothing is loaded. |
+| `item` | `QtObject` |  | Read-only. Holds the instantiated visual item or QObject, or `null` if nothing is loaded. |
 | `status` | `Status` |  | Read-only. Holds the current loading status: `Loader.Null`, `Loader.Ready`, `Loader.Loading`, or `Loader.Error`. |
 | `progress` | `real` |  | Read-only. Holds the loading progress from `0.0` to `1.0`. |
 | `asynchronous` | `bool` | `false` | Whether the QML component should be compiled and instantiated asynchronously in a background thread. |

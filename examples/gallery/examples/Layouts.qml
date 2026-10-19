@@ -34,22 +34,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Layouts Dashboard Stage"
-            titleColor: "#fcd34d"
-            titleBadge: "[Core]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: "gap=" + root.layoutSpacing
-            titleTrailingColor: "#2cde85"
-            footer: "G spacing · S sidebar stretch"
-            footerColor: "#8b949e"
-            footerTrailing: "Layouts"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Layouts Dashboard Stage"
+                    color: "#fcd34d"
+                }
+                Text {
+                    text: "[Core]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: "gap=" + root.layoutSpacing
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "G spacing · S sidebar stretch"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Layouts"
+                color: "#8b949e"
+            }
             ColumnLayout {
                 id: dashColumn
 
@@ -201,14 +214,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2

@@ -27,16 +27,20 @@ Item {
         id: systemCardComp
 
         Panel {
-            title: "SystemCard"
-            titleColor: "#2cde85"
-            titleTrailing: "ACTIVE"
-            titleTrailingColor: "#2cde85"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#2cde85"
             }
 
+            title: Text {
+                text: "SystemCard"
+                color: "#2cde85"
+            }
+            titleTrailing: Text {
+                text: "ACTIVE"
+                color: "#2cde85"
+            }
             Column {
                 x: 2
                 y: 2
@@ -65,16 +69,20 @@ Item {
         id: networkCardComp
 
         Panel {
-            title: "NetworkCard"
-            titleColor: "#38bdf8"
-            titleTrailing: "ACTIVE"
-            titleTrailingColor: "#38bdf8"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#38bdf8"
             }
 
+            title: Text {
+                text: "NetworkCard"
+                color: "#38bdf8"
+            }
+            titleTrailing: Text {
+                text: "ACTIVE"
+                color: "#38bdf8"
+            }
             Column {
                 x: 2
                 y: 2
@@ -119,22 +127,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Loader Workbench"
-            titleColor: "#fcd34d"
-            titleBadge: "[Core]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.modeName
-            titleTrailingColor: "#8b949e"
-            footer: "1 System · 2 Network · 3 Unload"
-            footerColor: "#8b949e"
-            footerTrailing: "Loader"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Loader Workbench"
+                    color: "#fcd34d"
+                }
+                Text {
+                    text: "[Core]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.modeName
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "1 System · 2 Network · 3 Unload"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Loader"
+                color: "#8b949e"
+            }
             Row {
                 x: 2
                 y: 2
@@ -191,14 +212,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 x: 2
                 y: 2

@@ -37,22 +37,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "ProgressBar"
-            titleColor: "#38bdf8"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.progressValue + "%"
-            titleTrailingColor: "#2cde85"
-            footer: "Left/Right or +/- adjust"
-            footerColor: "#8b949e"
-            footerTrailing: "Home/End 0/100"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "ProgressBar"
+                    color: "#38bdf8"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.progressValue + "%"
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "Left/Right or +/- adjust"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Home/End 0/100"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -191,14 +204,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

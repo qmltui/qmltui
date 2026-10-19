@@ -7,7 +7,10 @@
 #include <QmlTui/TerminalHost/VTermAdapter.h>
 
 #include <QFile>
+#include <QFileInfo>
+#include <QProcess>
 #include <QProcessEnvironment>
+#include <QStandardPaths>
 #include <QTimer>
 
 #if defined(Q_OS_UNIX)
@@ -217,10 +220,18 @@ void TerminalView::start() {
         return;
     }
     QString prog = m_program.trimmed();
+    QStringList args = m_arguments;
     if (prog.isEmpty()) prog = defaultUserShell();
     if (prog.isEmpty()) {
         setError(QStringLiteral("program must not be empty"));
         return;
+    }
+    if (!QFileInfo::exists(prog) && QStandardPaths::findExecutable(prog).isEmpty()) {
+        const QStringList split = QProcess::splitCommand(prog);
+        if (split.size() > 1) {
+            prog = split.first();
+            args = split.mid(1) + args;
+        }
     }
 
     QProcessEnvironment processEnvironment =
@@ -252,7 +263,7 @@ void TerminalView::start() {
     m_adapter->reset();
     setScrollOffset(0);
     setProcessState(Starting);
-    if (!m_session->start(prog, m_arguments, m_workingDirectory, processEnvironment, initialRows,
+    if (!m_session->start(prog, args, m_workingDirectory, processEnvironment, initialRows,
                           initialCols))
         setProcessState(NotRunning);
 }

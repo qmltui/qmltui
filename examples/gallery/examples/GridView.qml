@@ -90,22 +90,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "GridView · Module Matrix"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#fbbf24"
-            titleTrailing: (gridView.currentIndex + 1) + "/" + root.modules.length
-            titleTrailingColor: "#8b949e"
-            footer: "↑↓←→ navigate tiles · click to select"
-            footerColor: "#8b949e"
-            footerTrailing: gridView.cellWidth + "x" + gridView.cellHeight
-            footerTrailingColor: "#58a6ff"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "GridView · Module Matrix"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#fbbf24"
+                }
+            }
+            titleTrailing: Text {
+                text: (gridView.currentIndex + 1) + "/" + root.modules.length
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "↑↓←→ navigate tiles · click to select"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: gridView.cellWidth + "x" + gridView.cellHeight
+                color: "#58a6ff"
+            }
             GridView {
                 id: gridView
                 property int currentIndex: 0
@@ -182,16 +195,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "GridView API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "GridView API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

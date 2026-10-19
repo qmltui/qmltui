@@ -33,22 +33,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "TabBar"
-            titleColor: "#fbbf24"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.activeTabName
-            titleTrailingColor: "#2cde85"
-            footer: "Left/Right or 1-4 switch tab"
-            footerColor: "#8b949e"
-            footerTrailing: (workspaceTabs.currentIndex + 1) + " / 4"
-            footerTrailingColor: "#fbbf24"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "TabBar"
+                    color: "#fbbf24"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.activeTabName
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "Left/Right or 1-4 switch tab"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: (workspaceTabs.currentIndex + 1) + " / 4"
+                color: "#fbbf24"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -190,14 +203,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

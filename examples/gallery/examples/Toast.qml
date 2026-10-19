@@ -34,22 +34,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Toast Dispatcher"
-            titleColor: "#34d399"
-            titleBadge: "[Controls]"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: root.toastPos
-            titleTrailingColor: "#8b949e"
-            footer: "Enter dispatch · P toggle corner"
-            footerColor: "#8b949e"
-            footerTrailing: "Toast"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Toast Dispatcher"
+                    color: "#34d399"
+                }
+                Text {
+                    text: "[Controls]"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: root.toastPos
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "Enter dispatch · P toggle corner"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Toast"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -132,14 +145,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

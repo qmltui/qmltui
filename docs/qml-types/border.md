@@ -24,20 +24,24 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `style` | `enumeration` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), or `Border.Ascii` (`+`, `-`, `|`). |
+| `style` | `Style` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), `Border.Heavy` (heavy-line `┏`, `┓`, `┗`, `┛`, `━`, `┃`), or `Border.Ascii` (`+`, `-`, `|`). |
 | `color` | `rgba` | `"default"` | Holds the colour of the border glyphs. |
+
+## Enumeration Border.Style
+
+| Value | Description |
+| :--- | :--- |
+| `Border.None` | No border is rendered. |
+| `Border.Single` | Standard single-line box-drawing characters (`┌`, `┐`, `└`, `┘`, `─`, `│`). |
+| `Border.Double` | Double-line box-drawing characters (`╔`, `╗`, `╚`, `╝`, `═`, `║`). |
+| `Border.Rounded` | Single-line border with curved corner glyphs (`╭`, `╮`, `╰`, `╯`). |
+| `Border.Heavy` | Heavy-line box-drawing characters (`┏`, `┓`, `┗`, `┛`, `━`, `┃`). |
+| `Border.Ascii` | ASCII fallback characters (`+`, `-`, `|`). |
 
 ## Detailed Description
 
 `Border` is a grouped property available on [Rectangle](rectangle.md). It
 controls the box-drawing characters used to frame the item.
-
-Supported styles via the `Border.Style` enumeration are:
-- `Border.None`: no border is rendered.
-- `Border.Single`: standard box-drawing characters (`┌`, `┐`, `└`, `┘`, `─`, `│`).
-- `Border.Double`: double-line box-drawing characters (`╔`, `╗`, `╚`, `╝`, `═`, `║`).
-- `Border.Rounded`: single-line border with curved corner glyphs (`╭`, `╮`, `╰`, `╯`).
-- `Border.Ascii`: ASCII fallback characters (`+`, `-`, `|`).
 
 ### Example
 

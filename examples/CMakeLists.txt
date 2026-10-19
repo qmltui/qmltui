@@ -1,5 +1,4 @@
 add_subdirectory(quickstart_test)
 add_subdirectory(components)
-add_subdirectory(topics)
+add_subdirectory(guides)
 add_subdirectory(gallery)
-add_subdirectory(tutorials)

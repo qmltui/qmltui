@@ -1,6 +1,6 @@
 # QtMessageRouting
 
-## 1. Class Overview
+## Class Overview
 
 `QtMessageRouting` provides a unified routing pipeline for Qt diagnostics (`qDebug`, `qInfo`, `qWarning`, `qCritical`, `qFatal`) in QmlTui applications. It cleanly decouples **immediate application diagnostic logging** (e.g., writing to a log file or telemetry engine) from **deferred terminal screen presentation** (preventing log text from garbling full-screen alternate-screen terminal sessions).
 
@@ -9,13 +9,13 @@ Scope:
 - Does **not** intercept libc `printf`, `std::cout`, or raw file descriptor writes (which bypass Qt).
 - Pure C++20 and `Qt6::Core`; introduces no Qt Quick or QML dependencies.
 
-## 2. Project Structure and Dependencies
+## Project Structure and Dependencies
 
 - **Header**: `<QmlTui/Core/Engine/QtMessageRouting.h>`
 - **Namespace**: `qmltui`
 - **Dependencies**: `Qt6::Core`
 
-## 3. Architecture and Defaults
+## Architecture and Defaults
 
 ```
                           Qt emits log message (qDebug, qWarning, ...)
@@ -43,7 +43,7 @@ An application registers an explicit configuration via `QtMessageRouting::instal
 - **Diagnostic Sink**: Required. Receives every message synchronously on the emitting thread, unbounded and unbuffered.
 - **Presentation Sink**: Optional. If omitted, terminal presentation is disabled. If provided (e.g. `stderrPresentationSink()` or custom callback), messages outside alternate-screen sessions present immediately, while alternate-screen messages buffer until clean restoration.
 
-## 4. API Reference
+## API Reference
 
 ### Struct `QtMessage`
 An owning value snapshot captured upon router receipt:
@@ -87,7 +87,7 @@ Idempotently unregisters the token:
 
 ---
 
-## 5. Threading, Ordering, and Safety
+## Threading, Ordering, and Safety
 
 - **FIFO Guarantee**: Records are assigned monotonic 64-bit sequence numbers under the router mutex. A record becomes eligible for presentation only after its synchronous diagnostic callback finishes. A serialized drainer delivers presentation messages in strict sequence order.
 - **Callback Invocations**: Invoked outside the router mutex. Callbacks must be thread-safe.
@@ -98,7 +98,7 @@ Idempotently unregisters the token:
 
 ---
 
-## 6. C++ Integration Example
+## C++ Integration Example
 
 ```cpp
 #include <QCoreApplication>

@@ -41,6 +41,12 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 Every [Image](image.md) property applies to the current frame: `fillMode`,
 `renderMode`, `smooth`, `alignment`, `source`, `image`, and so on.
 
+## Enumeration AnimatedSprite.Loops
+
+| Value | Description |
+| :--- | :--- |
+| `AnimatedSprite.Infinite` | Loop the animation indefinitely (`-1`). |
+
 ## Enumeration AnimatedSprite.FinishBehavior
 
 | Value | Description |
@@ -58,12 +64,13 @@ Every [Image](image.md) property applies to the current frame: `fillMode`,
 
 | Method | Description |
 | :--- | :--- |
-| `start()` | Rewinds to the first frame of a run and plays. Nothing happens when already running. |
-| `stop()` | Stops playing, keeping the current frame. |
-| `restart()` | `stop()` then `start()`. |
-| `pause()` | Sets `paused`. |
-| `resume()` | Clears `paused`. |
-| `advance(int frames)` | Steps by hand, loops and finishing included; works while paused or stopped. The count defaults to `1`. |
+| `void start()` | Rewinds to the first frame of a run and plays. Nothing happens when already running. |
+| `void stop()` | Stops playing, keeping the current frame. |
+| `void restart()` | `stop()` then `start()`. |
+| `void pause()` | Sets `paused`. |
+| `void resume()` | Clears `paused`. |
+| `void advance()` | Steps one frame by hand, loops and finishing included; works while paused or stopped. |
+| `void advance(int frames)` | Steps `frames` frames by hand, loops and finishing included; works while paused or stopped. |
 
 ## Detailed Description
 

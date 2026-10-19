@@ -24,22 +24,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Slider"
-            titleColor: "#c084fc"
-            titleBadge: "Controls"
-            titleBadgeColor: "#58a6ff"
-            titleTrailing: "MIX " + root.masterLevel + "%"
-            titleTrailingColor: "#2cde85"
-            footer: "Left/Right/Home/End adjust"
-            footerColor: "#8b949e"
-            footerTrailing: "Tab channel"
-            footerTrailingColor: "#8b949e"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Slider"
+                    color: "#c084fc"
+                }
+                Text {
+                    text: "Controls"
+                    color: "#58a6ff"
+                }
+            }
+            titleTrailing: Text {
+                text: "MIX " + root.masterLevel + "%"
+                color: "#2cde85"
+            }
+            footer: Text {
+                text: "Left/Right/Home/End adjust"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: "Tab channel"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -155,14 +168,16 @@ Item {
         Panel {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
             Column {
                 anchors {
                     fill: parent

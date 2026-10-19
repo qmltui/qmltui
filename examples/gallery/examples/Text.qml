@@ -37,22 +37,35 @@ Item {
         Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Text · Typography & Wrapping Lab"
-            titleColor: "#f8fafc"
-            titleBadge: "[CORE]"
-            titleBadgeColor: "#38bdf8"
-            titleTrailing: sampleText.implicitWidth + "x" + sampleText.implicitHeight
-            titleTrailingColor: "#8b949e"
-            footer: "A cycle align · W cycle wrap · Q quit"
-            footerColor: "#8b949e"
-            footerTrailing: root.alignName + " · " + root.wrapName
-            footerTrailingColor: "#2cde85"
             color: "#0d1117"
             border {
                 style: Border.Rounded
                 color: "#30363d"
             }
 
+            title: Row {
+                spacing: 1
+                Text {
+                    text: "Text · Typography & Wrapping Lab"
+                    color: "#f8fafc"
+                }
+                Text {
+                    text: "[CORE]"
+                    color: "#38bdf8"
+                }
+            }
+            titleTrailing: Text {
+                text: sampleText.implicitWidth + "x" + sampleText.implicitHeight
+                color: "#8b949e"
+            }
+            footer: Text {
+                text: "A cycle align · W cycle wrap · Q quit"
+                color: "#8b949e"
+            }
+            footerTrailing: Text {
+                text: root.alignName + " · " + root.wrapName
+                color: "#2cde85"
+            }
             Column {
                 anchors {
                     fill: parent
@@ -151,16 +164,20 @@ Item {
         Panel {
             Layout.preferredWidth: 26
             Layout.fillHeight: true
-            title: "Inspector"
-            titleColor: "#58a6ff"
-            footer: "Text API"
-            footerColor: "#8b949e"
             color: "#161b22"
             border {
                 style: Border.Single
                 color: "#30363d"
             }
 
+            title: Text {
+                text: "Inspector"
+                color: "#58a6ff"
+            }
+            footer: Text {
+                text: "Text API"
+                color: "#8b949e"
+            }
             Column {
                 anchors {
                     fill: parent

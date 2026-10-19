@@ -33,8 +33,8 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | `terminalWidth` | `int` |  | Read-only. Holds the host terminal screen width in columns. |
 | `terminalHeight` | `int` |  | Read-only. Holds the host terminal screen height in rows. |
 | `applicationActive` | `bool` | `true` | Read-only. Whether the terminal window currently holds host focus (updated via DECSET 1004 focus-in/out events). |
-| `progress` | `int` | `-1` | Holds the terminal progress indicator percentage (`0`–`100`), or `-1` when hidden, emitted via OSC 9;4. |
-| `progressState` | `ProgressState` | `Terminal.ProgressNone` | Holds the OSC 9;4 progress indicator state (`ProgressNone`, `ProgressNormal`, `ProgressError`, `ProgressIndeterminate`, or `ProgressPaused`). |
+| `progress` | `real` | `0.0` | Progress value (`0.0`–`1.0`) for OSC 9;4 terminal progress reporting. |
+| `progressState` | `ProgressState` | `Terminal.ProgressNone` | Holds the OSC 9;4 progress indicator state (`ProgressNone`, `ProgressNormal`, `ProgressError`, `ProgressIndeterminate`, or `ProgressWarning`). |
 
 ## Signals
 
@@ -64,6 +64,16 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | :--- | :--- |
 | `Terminal.Disabled` | Disables terminal clipboard escape sequence integration. |
 | `Terminal.Osc52` | Enables OSC 52 clipboard writes and explicit asynchronous reads through [Clipboard](clipboard.md). |
+
+## Enumeration Terminal.ProgressState
+
+| Value | Description |
+| :--- | :--- |
+| `Terminal.ProgressNone` | Hides the terminal progress indicator (`0`). |
+| `Terminal.ProgressNormal` | Displays normal progress using `progress` (`1`). |
+| `Terminal.ProgressError` | Displays error progress state using `progress` (`2`). |
+| `Terminal.ProgressIndeterminate` | Displays an indeterminate pulsing progress indicator (`3`). |
+| `Terminal.ProgressWarning` | Displays paused or warning progress state using `progress` (`4`). |
 
 ## Detailed Description
 

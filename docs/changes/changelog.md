@@ -5,10 +5,10 @@ The framework and QML modules use the QmlTui name. Environment settings use
 `qmltui.frames`. Consult the porting guides for removed APIs and previous names.
 
 The gallery now lives under `examples/gallery`; `examples/concepts` became
-`examples/topics`. Example targets consistently use `qmltui_<directory>_demo`.
+`examples/guides`. Example targets consistently use `qmltui_<directory>_demo`.
 Full applications moved to the separate qmltui-apps project.
 
-Documentation now has Getting Started, Tutorials, Topics, QML Types, C++ Classes,
+Documentation now has Getting Started, Guides, QML Types, C++ Classes,
 Examples, and Changes entry points. Reference documentation no longer lives
 beside implementation files.
 

@@ -44,7 +44,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |
 | `gridStyle` | `GridStyle` | `TableView.Single` | Style of all borders and grid lines: `TableView.Single`, `TableView.Double`, or `TableView.Ascii`. |
 | `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
-| `cellFormat` | `var` |  | JS callback `(row, column, value) => ({ text, color, backgroundColor, bold, align, padding, leftPadding, rightPadding })`. |
+| `cellFormat` | `var` |  | JS callback `(row, column, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed, align, padding, leftPadding, rightPadding }`. |
 | `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
 | `rowDelegate` | `Component` |  | Holds an optional custom component for rendering entire rows. |
 
@@ -283,12 +283,19 @@ Geometry is refreshed after size, descriptor, provider, or structural model
 changes. Call `forceLayout()` when values captured by an unchanged provider
 function change. This API also marks the view for repaint.
 
-`cellFormat(row, column, value)` applies only to built-in painting. Its optional
-result keys are `text`, `color`, `backgroundColor`, `bold`, and `align`. Custom delegates
-own their styling. Callback exceptions produce diagnostics and fall back to
-the unformatted value or descriptor width. Repeated identical callback errors
-are suppressed until success or callback replacement; the remembered set is
-bounded.
+`cellFormat(row, column, value)` applies only to built-in painting. It may return
+a `QmlTui.span(...)`, a `list<Span>` (or array of span objects), or a descriptor
+object with optional keys `text`, `spans`, `color`, `backgroundColor`, `bold`,
+`dim`, `italic`, `underline`, `reversed`, `align`, `padding`, `leftPadding`, and
+`rightPadding`. Model cells in built-in painting may also supply a `Span` or
+`QList<Span>` directly through `Qt::DisplayRole` (or a 2D array / row map),
+allowing multi-span cells to be painted without delegate items or JavaScript
+callbacks; model-supplied `Span` colors respect `selectionKeepsCellColors` on
+the selected row, while `cellFormat` results always override selection colors.
+Custom delegates own their styling. Callback exceptions produce diagnostics and
+fall back to the unformatted value or descriptor width. Repeated identical
+callback errors are suppressed until success or callback replacement; the
+remembered set is bounded.
 
 For compatibility, array/map cell delegates receive stringified `modelData`;
 C++ models with named roles provide a role map, and those without named roles

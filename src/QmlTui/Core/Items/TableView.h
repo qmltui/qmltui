@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/Span.h>
 #include <QVariantList>
 #include <QVariantMap>
 #include <QAbstractItemModel>
@@ -69,7 +70,8 @@ class QMLTUI_CORE_EXPORT TableView : public Item {
     // Optional JS callback `(columnIndex) => widthInColumns`.
     Q_PROPERTY(QJSValue columnWidthProvider READ columnWidthProvider WRITE setColumnWidthProvider
                    NOTIFY columnWidthProviderChanged)
-    // Optional JS callback `(value, row, column) => formattedString`.
+    // Optional JS callback `(row, column, value) => Span | list<Span> | { text, spans, color, ...
+    // }`.
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
     Q_PROPERTY(
@@ -266,7 +268,25 @@ private:
         QJSValue foregroundFn;
         QJSValue backgroundFn;
     };
+    struct BuiltInCell {
+        QModelIndex index;
+        QString rawValue;
+        QString text;
+        QList<Span> spans;
+        QList<int> spanWidths;
+        int totalWidth = 0;
+        QString standardAlignment;
+        bool enabled = true;
+        bool spansOverrideSelection = false;
+        Color formatFg;
+        Color formatBg;
+        TextStyle formatStyle;
+        QString formatAlignment;
+        int leftPadding = -1;
+        int rightPadding = -1;
+    };
     QModelIndex sourceIndex(int row, int column) const;
+    const BuiltInCell& resolveBuiltInCell(int row, int column) const;
     void updateDelegate(DelegateRecord& record, int row, int column);
     void updateDelegateState(DelegateRecord& record, int row, int column);
     void refreshDelegateStates(Position previous);
@@ -275,7 +295,9 @@ private:
     void clearSelection();
     void handleDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
                            const QList<int>& roles);
+    QVariant cellRawValue(int row, int col) const;
     QString cellText(int row, int col) const;
+    uint32_t resolveCachedColor(const QString& name, uint32_t fallback) const;
     QVariant modelHeader(int column, int role) const;
     void refreshModelRoles();
     // Calls a column's colour function for one cell and parses what it
@@ -336,6 +358,7 @@ private:
     mutable QHash<QString, uint32_t> m_columnColorCache;
     mutable QSet<QString> m_columnColorErrors;
     mutable QSet<QString> m_formatErrors;
+    mutable QHash<Position, BuiltInCell> m_builtInCells;
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 
     Color m_headerColor = "default";

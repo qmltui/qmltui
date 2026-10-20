@@ -30,16 +30,22 @@ namespace {
 
 class CountModel final : public QAbstractListModel {
 public:
-    explicit CountModel(int count) : m_count(count) {}
+    explicit CountModel(int count, bool returnSpans = false)
+        : m_count(count), m_returnSpans(returnSpans) {}
     int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_count;
     }
     QVariant data(const QModelIndex& index, int role) const override {
         if (!index.isValid()) return {};
         ++reads;
-        return role == Qt::DisplayRole
-                   ? QVariant(QStringLiteral("Row %1").arg(index.row() + m_generation))
-                   : QVariant();
+        if (role != Qt::DisplayRole) return {};
+        if (m_returnSpans) {
+            return QVariant::fromValue(
+                QList<qmltui::Span>{qmltui::Span(QStringLiteral("Row "), qmltui::Color("#00ff88")),
+                                    qmltui::Span(QString::number(index.row() + m_generation),
+                                                 qmltui::Color("#ff8800"))});
+        }
+        return QVariant(QStringLiteral("Row %1").arg(index.row() + m_generation));
     }
     QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
     void touch(int row) {
@@ -50,6 +56,7 @@ public:
 
 private:
     int m_count;
+    bool m_returnSpans = false;
     int m_generation = 0;
 };
 
@@ -60,9 +67,32 @@ const QHash<QString, QString> delegates = {
     {"standard",
      "Item { id: d; required property var model; height: 1; width: 80; Rectangle { anchors.fill: "
      "parent } Text { anchors.fill: parent; text: d.model ? String(d.model.display) : \"\" } }"},
+    {"dlg-span", "Text { required property string display; spans: [QmlTui.span(\"Row \", {color: "
+                 "\"#00ff88\"}), QmlTui.span(display, {color: \"#ff8800\"})] }"},
 };
 
 QString viewQml(const QString& view, const QString& delegateName, bool bound) {
+    if (delegateName == "builtin" || delegateName == "cpp-span") {
+        if (view == "TableView")
+            return QStringLiteral(
+                "import QmlTui\nTableView { width: 80; height: 24; model: benchmarkModel; columns: "
+                "[{title: \"Row\", width: 80}] }");
+        if (view == "TreeView")
+            return QStringLiteral(
+                "import QmlTui\nTreeView { width: 80; height: 24; model: benchmarkModel }");
+    }
+    if (delegateName == "js-span") {
+        if (view == "TableView")
+            return QStringLiteral(
+                "import QmlTui\nTableView { width: 80; height: 24; model: benchmarkModel; columns: "
+                "[{title: \"Row\", width: 80}]; cellFormat: (r, c, v) => [QmlTui.span(\"Row \", "
+                "{color: \"#00ff88\"}), QmlTui.span(v, {color: \"#ff8800\"})] }");
+        if (view == "TreeView")
+            return QStringLiteral(
+                "import QmlTui\nTreeView { width: 80; height: 24; model: benchmarkModel; "
+                "nodeFormat: (r, v) => [QmlTui.span(\"Row \", {color: \"#00ff88\"}), "
+                "QmlTui.span(v, {color: \"#ff8800\"})] }");
+    }
     const QString delegate = delegates.value(delegateName);
     QString body;
     if (view == "ListView")
@@ -106,7 +136,7 @@ int g_rows = 100000;
 Phase measure(QQmlEngine& engine, const QString& view, const QString& delegateName, bool bound,
               int steps) {
     Phase result{view, delegateName, bound};
-    CountModel model(g_rows);
+    CountModel model(g_rows, delegateName == "cpp-span");
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
     component.setData(viewQml(view, delegateName, bound).toUtf8(), QUrl());
@@ -137,18 +167,19 @@ Phase measure(QQmlEngine& engine, const QString& view, const QString& delegateNa
         else if (auto* tree = qobject_cast<qmltui::TreeView*>(root))
             tree->setCurrentIndex(24 + i);
     };
+    const int scrollSteps = (std::min)(steps, (std::max)(1, g_rows - 25));
     model.reads = 0;
     timer.restart();
-    for (int i = 1; i <= steps; ++i) {
+    for (int i = 1; i <= scrollSteps; ++i) {
         step(i);
         qmltui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     }
-    result.scrollUs = timer.nsecsElapsed() / 1000.0 / steps;
-    result.readsPerScrollStep = model.reads / steps;
+    result.scrollUs = timer.nsecsElapsed() / 1000.0 / scrollSteps;
+    result.readsPerScrollStep = model.reads / scrollSteps;
 
     timer.restart();
     for (int i = 0; i < steps; ++i) {
-        model.touch(steps + 5 + (i % 10)); // a visible row after the scroll
+        model.touch(scrollSteps + 5 + (i % 10)); // a visible row after the scroll
         qmltui::ItemPaintTraversal::renderSubtree(root, buffer, 0, 0);
     }
     result.changeUs = timer.nsecsElapsed() / 1000.0 / steps;
@@ -161,6 +192,8 @@ Phase measure(QQmlEngine& engine, const QString& view, const QString& delegateNa
     for (int i = 0; i < steps; ++i)
         qmltui::ItemPaintTraversal::paintSubtree(root, buffer, 0, 0);
     result.idlePaintUs = timer.nsecsElapsed() / 1000.0 / steps;
+    object.reset();
+    engine.collectGarbage();
     return result;
 }
 
@@ -251,9 +284,14 @@ int main(int argc, char** argv) {
     // Warm the engine once so the first row is not paying for type compilation.
     measure(engine, "ListView", "text", false, 10);
     for (const QString& view : {"ListView", "GridView", "TableView", "TreeView"}) {
-        for (const QString& delegate : {"text", "rect", "standard"}) {
+        for (const QString& delegate :
+             {"text", "rect", "standard", "dlg-span", "builtin", "cpp-span", "js-span"}) {
+            if ((delegate == "builtin" || delegate == "cpp-span" || delegate == "js-span") &&
+                view != "TableView" && view != "TreeView")
+                continue;
             for (bool bound : {false, true}) {
-                if (bound && delegate != "text") continue;
+                if (bound && delegate != "text" && delegate != "dlg-span") continue;
+                if (!bound && delegate == "dlg-span") continue;
                 const Phase p = measure(engine, view, delegate, bound, steps);
                 out << QStringLiteral("%1 %2 %3 %4 %5 %6 %7 %8 %9\n")
                            .arg(p.view, -9)

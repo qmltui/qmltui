@@ -14,11 +14,10 @@
 using namespace qmltui;
 
 // Answers Qt::ForegroundRole, so a column function can be shown deferring to it.
-class ColoredRows final : public QAbstractListModel
-{
+class ColoredRows final : public QAbstractListModel {
 public:
-    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 4; }
-    QVariant data(const QModelIndex &index, int role) const override {
+    int rowCount(const QModelIndex& parent = {}) const override { return parent.isValid() ? 0 : 4; }
+    QVariant data(const QModelIndex& index, int role) const override {
         if (!index.isValid()) return {};
         if (role == Qt::DisplayRole) return QString::number(index.row());
         if (role == Qt::ForegroundRole) return QStringLiteral("#abcdef");
@@ -26,16 +25,17 @@ public:
     }
 };
 
-class CountingTableList final : public QAbstractListModel
-{
+class CountingTableList final : public QAbstractListModel {
 public:
     enum { Detail = Qt::UserRole + 1, Kind };
     int count = 1'000'000;
     int kind = 0;
     QString first = QStringLiteral("old");
     mutable QHash<int, int> reads;
-    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : count; }
-    QVariant data(const QModelIndex &index, int role) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
+        return parent.isValid() ? 0 : count;
+    }
+    QVariant data(const QModelIndex& index, int role) const override {
         ++reads[role];
         if (!index.isValid()) return {};
         if (role == Qt::DisplayRole) return index.row() == 0 ? first : QString::number(index.row());
@@ -46,23 +46,30 @@ public:
     QHash<int, QByteArray> roleNames() const override {
         return {{Qt::DisplayRole, "display"}, {Detail, "detail"}, {Kind, "kind"}};
     }
-    void change(int firstRow, int lastRow, const QList<int> &roles) {
+    void change(int firstRow, int lastRow, const QList<int>& roles) {
         emit dataChanged(index(firstRow, 0), index(lastRow, 0), roles);
     }
-    void resetTo(int rows) { beginResetModel(); count = rows; endResetModel(); }
+    void resetTo(int rows) {
+        beginResetModel();
+        count = rows;
+        endResetModel();
+    }
 };
 
-class FetchingTableList final : public QAbstractListModel
-{
+class FetchingTableList final : public QAbstractListModel {
 public:
     int count = 0;
     int fetches = 0;
-    int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : count; }
-    QVariant data(const QModelIndex &index, int role) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
+        return parent.isValid() ? 0 : count;
+    }
+    QVariant data(const QModelIndex& index, int role) const override {
         return role == Qt::DisplayRole ? QVariant(QString::number(index.row())) : QVariant();
     }
-    bool canFetchMore(const QModelIndex &parent) const override { return !parent.isValid() && count < 1000; }
-    void fetchMore(const QModelIndex &) override {
+    bool canFetchMore(const QModelIndex& parent) const override {
+        return !parent.isValid() && count < 1000;
+    }
+    void fetchMore(const QModelIndex&) override {
         beginInsertRows({}, count, count + 1);
         count += 2;
         ++fetches;
@@ -70,85 +77,104 @@ public:
     }
 };
 
-class TableFixture
-{
+class TableFixture {
 public:
     QQmlEngine engine;
     QQmlComponent component{&engine};
     std::unique_ptr<QObject> object;
-    TableView *table = nullptr;
+    TableView* table = nullptr;
     TextGridBuffer buffer;
-    bool create(QObject *model, const QString &delegate, bool bound = true) {
-        const QString qml = (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString())
-            + QStringLiteral("import QtQml\nimport QmlTui\nimport Qt.labs.qmlmodels\n"
-                "TableView { required property var inputModel; model: inputModel; width: 40; height: 8; "
-                "columns: [{title:'A',width:12},{title:'B',width:12},{title:'C',width:12}]; ")
-            + delegate + QStringLiteral(" }");
+    bool create(QObject* model, const QString& delegate, bool bound = true) {
+        const QString qml =
+            (bound ? QStringLiteral("pragma ComponentBehavior: Bound\n") : QString()) +
+            QStringLiteral(
+                "import QtQml\nimport QmlTui\nimport Qt.labs.qmlmodels\n"
+                "TableView { required property var inputModel; model: inputModel; width: 40; "
+                "height: 8; "
+                "columns: [{title:'A',width:12},{title:'B',width:12},{title:'C',width:12}]; ") +
+            delegate + QStringLiteral(" }");
         component.setData(qml.toUtf8(), QUrl());
         if (!component.isReady()) return false;
-        object.reset(component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
-        table = qobject_cast<TableView *>(object.get());
+        object.reset(
+            component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
+        table = qobject_cast<TableView*>(object.get());
         if (!table || !buffer.resize(40, 8)) return false;
         paint();
         return true;
     }
     // Same as create(), but the caller supplies the whole TableView body, so
     // tests can omit the columns descriptors.
-    bool createBody(QObject *model, const QString &body, int initialHeight = 8) {
-        const QString qml = QStringLiteral("pragma ComponentBehavior: Bound\nimport QtQml\nimport QmlTui\n"
-                "TableView { required property var inputModel; model: inputModel; width: 40; height: %1; ").arg(initialHeight)
-            + body + QStringLiteral(" }");
+    bool createBody(QObject* model, const QString& body, int initialHeight = 8) {
+        const QString qml =
+            QStringLiteral("pragma ComponentBehavior: Bound\nimport QtQml\nimport QmlTui\n"
+                           "TableView { required property var inputModel; model: inputModel; "
+                           "width: 40; height: %1; ")
+                .arg(initialHeight) +
+            body + QStringLiteral(" }");
         component.setData(qml.toUtf8(), QUrl());
         if (!component.isReady()) return false;
-        object.reset(component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
-        table = qobject_cast<TableView *>(object.get());
+        object.reset(
+            component.createWithInitialProperties({{"inputModel", QVariant::fromValue(model)}}));
+        table = qobject_cast<TableView*>(object.get());
         if (!table || !buffer.resize(40, 8)) return false;
         paint();
         return true;
     }
-    void paint() { buffer.clear(); testing::paintItem(table, buffer, 0, 0); }
+    void paint() {
+        buffer.clear();
+        testing::paintItem(table, buffer, 0, 0);
+    }
     QString line(int y) const {
         QString result;
-        for (int x = 0; x < 40; ++x) result += QString::fromUtf8(buffer.cellAt(x, y).character());
+        for (int x = 0; x < 40; ++x)
+            result += QString::fromUtf8(buffer.cellAt(x, y).character());
         return result;
     }
-    QList<Item *> items() const {
-        QList<Item *> result;
-        for (Item *container : table->childItems()) result.append(container->childItems());
+    QList<Item*> items() const {
+        QList<Item*> result;
+        for (Item* container : table->childItems())
+            result.append(container->childItems());
         return result;
     }
 };
 
-static const QString textDelegate = QStringLiteral(
-    "delegate: Text { required property string display; text: display }");
+static const QString textDelegate =
+    QStringLiteral("delegate: Text { required property string display; text: display }");
 
-class TestTableViewHardening : public QObject
-{
+class TestTableViewHardening : public QObject {
     Q_OBJECT
 private slots:
     void modelResetRefreshesRoleNamesAndClaims() {
         class ResetRolesModel : public QAbstractListModel {
         public:
             int generation = 0;
-            int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 1; }
+            int rowCount(const QModelIndex& parent = {}) const override {
+                return parent.isValid() ? 0 : 1;
+            }
             QHash<int, QByteArray> roleNames() const override {
                 QHash<int, QByteArray> names{{Qt::UserRole + generation, "display"}};
                 if (generation == 1) names.insert(Qt::UserRole + 10, "foreground");
                 return names;
             }
-            QVariant data(const QModelIndex &, int role) const override {
-                if (role == Qt::UserRole + generation) return QStringLiteral("value%1").arg(generation);
+            QVariant data(const QModelIndex&, int role) const override {
+                if (role == Qt::UserRole + generation)
+                    return QStringLiteral("value%1").arg(generation);
                 if (role == Qt::UserRole + 10) return QStringLiteral("#00ffff");
                 if (role == Qt::ForegroundRole) return QStringLiteral("#ff0000");
                 return {};
             }
-            void reset() { beginResetModel(); ++generation; endResetModel(); }
+            void reset() {
+                beginResetModel();
+                ++generation;
+                endResetModel();
+            }
         } model;
         TableFixture f;
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "columns: [{title:'A',width:12}]; delegate: Text { "
-            "required property string display; required property string foreground; "
-            "text: display; color: foreground }")));
+        QVERIFY(f.createBody(
+            &model,
+            QStringLiteral("columns: [{title:'A',width:12}]; delegate: Text { "
+                           "required property string display; required property string foreground; "
+                           "text: display; color: foreground }")));
         QVERIFY(f.line(2).startsWith("value0"));
         QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xffff0000u);
         model.reset();
@@ -166,31 +192,48 @@ private slots:
         public:
             mutable QHash<int, int> reads;
             QString foreground = QStringLiteral("#ff0000");
-            int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 1; }
-            int columnCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : 4; }
-            Qt::ItemFlags flags(const QModelIndex &) const override { return Qt::ItemIsUserCheckable; }
-            QVariant data(const QModelIndex &, int role) const override {
+            int rowCount(const QModelIndex& parent = {}) const override {
+                return parent.isValid() ? 0 : 1;
+            }
+            int columnCount(const QModelIndex& parent = {}) const override {
+                return parent.isValid() ? 0 : 4;
+            }
+            Qt::ItemFlags flags(const QModelIndex&) const override {
+                return Qt::ItemIsUserCheckable;
+            }
+            QVariant data(const QModelIndex&, int role) const override {
                 ++reads[role];
                 switch (role) {
-                case Qt::DisplayRole: return QStringLiteral("v");
-                case Qt::ForegroundRole: return foreground;
-                case Qt::BackgroundRole: return QStringLiteral("#00ff00");
-                case Qt::TextAlignmentRole: return int(Qt::AlignRight);
-                case Qt::CheckStateRole: return int(Qt::Checked);
-                case Qt::DecorationRole: return QStringLiteral("*");
-                default: return {};
+                case Qt::DisplayRole:
+                    return QStringLiteral("v");
+                case Qt::ForegroundRole:
+                    return foreground;
+                case Qt::BackgroundRole:
+                    return QStringLiteral("#00ff00");
+                case Qt::TextAlignmentRole:
+                    return int(Qt::AlignRight);
+                case Qt::CheckStateRole:
+                    return int(Qt::Checked);
+                case Qt::DecorationRole:
+                    return QStringLiteral("*");
+                default:
+                    return {};
                 }
             }
         } model;
         TableFixture f;
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "selectionColor: '#ffffff'; selectionBackgroundColor: '#222222'; "
-            "columns: [{title:'A',width:10,color:'#00ffff'},"
-            "{title:'B',width:10,background:'#0000ff'},"
-            "{title:'C',width:10,color:'#00ffff',background:'#0000ff'},"
-            "{title:'D',width:10}]")));
+        QVERIFY(f.createBody(
+            &model,
+            QStringLiteral("selectionColor: '#ffffff'; selectionBackgroundColor: '#222222'; "
+                           "columns: [{title:'A',width:10,color:'#00ffff'},"
+                           "{title:'B',width:10,background:'#0000ff'},"
+                           "{title:'C',width:10,color:'#00ffff',background:'#0000ff'},"
+                           "{title:'D',width:10}]")));
         f.table->setSelectedRow(-1);
-        const auto paint = [&] { model.reads.clear(); f.paint(); };
+        const auto paint = [&] {
+            model.reads.clear();
+            f.paint();
+        };
         paint();
         QCOMPARE(model.reads.value(Qt::ForegroundRole), 2);
         QCOMPARE(model.reads.value(Qt::BackgroundRole), 2);
@@ -232,15 +275,15 @@ private slots:
         CountingTableList model;
         model.count = 3;
         TableFixture f;
-        QVERIFY(f.createBody(&model,
-            QStringLiteral("textColor: '#cccccc'; headerColor: '#ffffff'; "
-                           "columns: [{title:'A',width:12,color:'#ff00ff'},"
-                           "{title:'B',width:12,background:'#003366'},"
-                           "{title:'C',width:12}]")));
+        QVERIFY(
+            f.createBody(&model, QStringLiteral("textColor: '#cccccc'; headerColor: '#ffffff'; "
+                                                "columns: [{title:'A',width:12,color:'#ff00ff'},"
+                                                "{title:'B',width:12,background:'#003366'},"
+                                                "{title:'C',width:12}]")));
         // The header is two rows, a title and a rule, so the body starts at y=2.
-        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFFFF00FFU);   // column A's ink
-        QCOMPARE(f.buffer.cellAt(12, 2).bgColor, 0xFF003366U);  // column B's fill
-        QCOMPARE(f.buffer.cellAt(24, 2).fgColor, 0xFFCCCCCCU);  // C falls back to textColor
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFFFF00FFU);  // column A's ink
+        QCOMPARE(f.buffer.cellAt(12, 2).bgColor, 0xFF003366U); // column B's fill
+        QCOMPARE(f.buffer.cellAt(24, 2).fgColor, 0xFFCCCCCCU); // C falls back to textColor
     }
 
     // A column whose ink depends on the row supplies a function instead of a
@@ -251,16 +294,16 @@ private slots:
         model.count = 4;
         model.first = QStringLiteral("old");
         TableFixture f;
-        QVERIFY(f.createBody(&model,
-            QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
-                           "columns: [{title:'A',width:12,"
-                           "color: (row, column, value) => value === 'old' ? '#0000ff' "
-                           ": row % 2 ? '#ff0000' : '#00ff00'},"
-                           "{title:'B',width:12}]")));
+        QVERIFY(f.createBody(
+            &model, QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
+                                   "columns: [{title:'A',width:12,"
+                                   "color: (row, column, value) => value === 'old' ? '#0000ff' "
+                                   ": row % 2 ? '#ff0000' : '#00ff00'},"
+                                   "{title:'B',width:12}]")));
         // The body starts at y=2, under the two header rows.
-        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFF0000FFU);   // row 0, by its text
-        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFFFF0000U);   // row 1, odd
-        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFF00FF00U);   // row 2, even
+        QCOMPARE(f.buffer.cellAt(0, 2).fgColor, 0xFF0000FFU); // row 0, by its text
+        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFFFF0000U); // row 1, odd
+        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFF00FF00U); // row 2, even
         // A column that declares nothing is untouched.
         QCOMPARE(f.buffer.cellAt(12, 3).fgColor, 0xFFCCCCCCU);
     }
@@ -270,12 +313,12 @@ private slots:
     void columnColourFunctionMayDeferToTheModel() {
         ColoredRows model;
         TableFixture f;
-        QVERIFY(f.createBody(&model,
-            QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
-                           "columns: [{title:'A',width:12,"
-                           "color: (row) => row === 1 ? '#00ff00' : undefined}]")));
-        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFF00FF00U);   // row 1: the view decides
-        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFFABCDEFU);   // row 2: the model still does
+        QVERIFY(f.createBody(
+            &model, QStringLiteral("textColor: '#cccccc'; selectionKeepsCellColors: true; "
+                                   "columns: [{title:'A',width:12,"
+                                   "color: (row) => row === 1 ? '#00ff00' : undefined}]")));
+        QCOMPARE(f.buffer.cellAt(0, 3).fgColor, 0xFF00FF00U); // row 1: the view decides
+        QCOMPARE(f.buffer.cellAt(0, 4).fgColor, 0xFFABCDEFU); // row 2: the model still does
     }
 
     void alignedGridCells_data() {
@@ -283,10 +326,14 @@ private slots:
         QTest::addColumn<QString>("alignment");
         QTest::addColumn<QString>("header");
         QTest::addColumn<QString>("body");
-        QTest::newRow("right-grid") << true << "right" << QString::fromUtf8("LATENCY│") << QString::fromUtf8("  12 ms│");
-        QTest::newRow("right-no-grid") << false << "right" << QStringLiteral(" LATENCY") << QStringLiteral("   12 ms");
-        QTest::newRow("center-grid") << true << "center" << QString::fromUtf8("LATENCY│") << QString::fromUtf8(" 12 ms │");
-        QTest::newRow("left-grid") << true << "left" << QString::fromUtf8("LATENCY│") << QString::fromUtf8("12 ms  │");
+        QTest::newRow("right-grid")
+            << true << "right" << QString::fromUtf8("LATENCY│") << QString::fromUtf8("  12 ms│");
+        QTest::newRow("right-no-grid")
+            << false << "right" << QStringLiteral(" LATENCY") << QStringLiteral("   12 ms");
+        QTest::newRow("center-grid")
+            << true << "center" << QString::fromUtf8("LATENCY│") << QString::fromUtf8(" 12 ms │");
+        QTest::newRow("left-grid")
+            << true << "left" << QString::fromUtf8("LATENCY│") << QString::fromUtf8("12 ms  │");
     }
 
     void alignedGridCells() {
@@ -298,15 +345,17 @@ private slots:
         model.first = "12 ms";
         TableFixture f;
         QVERIFY(f.create(&model, QString()));
-        f.table->setColumns({QVariantMap{{"title", "LATENCY"}, {"width", grid ? 7 : 8}, {"align", alignment}},
-                             QVariantMap{{"title", "TAIL"}, {"width", 8}, {"align", "right"}}});
+        f.table->setColumns(
+            {QVariantMap{{"title", "LATENCY"}, {"width", grid ? 7 : 8}, {"align", alignment}},
+             QVariantMap{{"title", "TAIL"}, {"width", 8}, {"align", "right"}}});
         f.table->setShowColumnGrid(grid);
         f.table->setHeaderBackgroundColor(Color("#224466"));
-        f.table->setCellFormat(f.engine.evaluate(
-            "(function() { return {backgroundColor: '#446688'}; })"));
+        f.table->setCellFormat(
+            f.engine.evaluate("(function() { return {backgroundColor: '#446688'}; })"));
         f.paint();
         QCOMPARE(f.line(0).left(16), header + "    TAIL");
-        QCOMPARE(f.line(1).left(16), grid ? QString::fromUtf8("───────┼────────") : QString::fromUtf8("────────────────"));
+        QCOMPARE(f.line(1).left(16), grid ? QString::fromUtf8("───────┼────────")
+                                          : QString::fromUtf8("────────────────"));
         QCOMPARE(f.line(2).left(16), body + "   12 ms");
         QCOMPARE(f.buffer.cellAt(7, 0).bgColor, 0xff224466u);
         QCOMPARE(f.buffer.cellAt(7, 2).bgColor, grid ? 0u : 0xff446688u);
@@ -374,11 +423,13 @@ private slots:
         f.table->setShowColumnGrid(true);
         // Column 0: left-aligned with padding 1
         // Column 1: right-aligned with padding 1
-        f.table->setColumns({QVariantMap{{"title", "NAME"}, {"width", 7}, {"padding", 1}},
-                             QVariantMap{{"title", "NUM"}, {"width", 8}, {"align", "right"}, {"padding", 1}}});
+        f.table->setColumns(
+            {QVariantMap{{"title", "NAME"}, {"width", 7}, {"padding", 1}},
+             QVariantMap{{"title", "NUM"}, {"width", 8}, {"align", "right"}, {"padding", 1}}});
         f.paint();
-        // Col 0: seven content cells plus one separator. Title "NAME" (4), pad 1 -> 1 space + "NAME" + 2 spaces = 7 chars + │
-        // Col 1: width 8, sep 0 (last col) -> textWidth 8. Title "NUM" (3), pad 1, align right -> 4 spaces + "NUM" + 1 space = 8 chars
+        // Col 0: seven content cells plus one separator. Title "NAME" (4), pad 1 -> 1 space +
+        // "NAME" + 2 spaces = 7 chars + │ Col 1: width 8, sep 0 (last col) -> textWidth 8. Title
+        // "NUM" (3), pad 1, align right -> 4 spaces + "NUM" + 1 space = 8 chars
         QCOMPARE(f.line(0).left(16), QString::fromUtf8(" NAME  │    NUM "));
         // Body row 0:
         // Col 0: "12" (2), pad 1 -> 1 space + "12" + 4 spaces = 7 chars + │
@@ -401,7 +452,8 @@ private slots:
     void boxGrid_data() {
         QTest::addColumn<int>("switches");
         QTest::addColumn<QString>("style");
-        for (const QString &style : {QStringLiteral("single"), QStringLiteral("double"), QStringLiteral("ascii")})
+        for (const QString& style :
+             {QStringLiteral("single"), QStringLiteral("double"), QStringLiteral("ascii")})
             for (int switches = 0; switches < 8; ++switches)
                 QTest::newRow(qPrintable(style + QString::number(switches))) << switches << style;
     }
@@ -414,10 +466,11 @@ private slots:
         TableFixture f;
         QVERIFY(f.create(&model, QString()));
         const bool columns = switches & 1, rows = switches & 2, frame = switches & 4;
-        const QString g = style == "double" ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
-            : style == "ascii" ? QStringLiteral("-|+++++++++") : QStringLiteral("─│┌┐└┘┬┴├┤┼");
-        f.table->setColumns({QVariantMap{{"title", "A"}, {"width", 3}},
-                             QVariantMap{{"title", "B"}, {"width", 3}}});
+        const QString g = style == "double"  ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
+                          : style == "ascii" ? QStringLiteral("-|+++++++++")
+                                             : QStringLiteral("─│┌┐└┘┬┴├┤┼");
+        f.table->setColumns(
+            {QVariantMap{{"title", "A"}, {"width", 3}}, QVariantMap{{"title", "B"}, {"width", 3}}});
         f.table->setShowColumnGrid(columns);
         f.table->setShowRowGrid(rows);
         f.table->setShowOuterBorder(frame);
@@ -427,14 +480,14 @@ private slots:
         f.table->setWidth(width);
         f.table->setHeight(height);
         f.paint();
-        const auto content = [&](const QString &a, const QString &b) {
-            return (frame ? QString(g[1]) : QString()) + a + (columns ? QString(g[1]) : QString())
-                + b + (frame ? QString(g[1]) : QString());
+        const auto content = [&](const QString& a, const QString& b) {
+            return (frame ? QString(g[1]) : QString()) + a + (columns ? QString(g[1]) : QString()) +
+                   b + (frame ? QString(g[1]) : QString());
         };
         const auto line = [&](int left, int middle, int right) {
-            return (frame ? QString(g[left]) : QString()) + QString(3, g[0])
-                + (columns ? QString(g[middle]) : QString()) + QString(3, g[0])
-                + (frame ? QString(g[right]) : QString());
+            return (frame ? QString(g[left]) : QString()) + QString(3, g[0]) +
+                   (columns ? QString(g[middle]) : QString()) + QString(3, g[0]) +
+                   (frame ? QString(g[right]) : QString());
         };
         int y = 0;
         if (frame) QCOMPARE(f.line(y++).left(width), line(2, 6, 3));
@@ -451,8 +504,8 @@ private slots:
         CountingTableList model;
         TableFixture f;
         QVERIFY(f.create(&model, textDelegate));
-        f.table->setColumns({QVariantMap{{"title", "A"}, {"width", 3}},
-                             QVariantMap{{"title", "B"}, {"width", 3}}});
+        f.table->setColumns(
+            {QVariantMap{{"title", "A"}, {"width", 3}}, QVariantMap{{"title", "B"}, {"width", 3}}});
         f.table->setShowOuterBorder(true);
         f.table->setShowRowGrid(true);
         f.table->setShowColumnGrid(true);
@@ -464,8 +517,8 @@ private slots:
         QCOMPARE(f.items().size(), 10); // Three visible plus two overscan, two columns.
         QSignalSpy headers(f.table, &TableView::headerClicked);
         QSignalSpy activated(f.table, &TableView::rowActivated);
-        for (const QPoint &point : {QPoint(0, 3), QPoint(8, 3), QPoint(2, 0), QPoint(2, 8),
-                                   QPoint(4, 3), QPoint(2, 2), QPoint(2, 4)}) {
+        for (const QPoint& point : {QPoint(0, 3), QPoint(8, 3), QPoint(2, 0), QPoint(2, 8),
+                                    QPoint(4, 3), QPoint(2, 2), QPoint(2, 4)}) {
             MouseEvent click(MouseEvent::Type::Press, point.x(), point.y(), 0);
             f.table->mousePressEvent(&click);
             QVERIFY(!click.isAccepted());
@@ -488,7 +541,8 @@ private slots:
         f.table->setHeight(8); // Four body lines: two rows and one empty line.
         f.paint();
         QCOMPARE(f.line(3).left(9), QStringLiteral("│4  │4  │"));
-        QCOMPARE(f.line(6).left(9), QStringLiteral("│   │   │")); // Unused line keeps its separators.
+        QCOMPARE(f.line(6).left(9),
+                 QStringLiteral("│   │   │")); // Unused line keeps its separators.
         MouseEvent empty(MouseEvent::Type::Press, 2, 6, 0);
         f.table->mousePressEvent(&empty);
         QVERIFY(!empty.isAccepted());
@@ -514,20 +568,25 @@ private slots:
         CountingTableList model;
         model.count = 2;
         TableFixture f;
-        const QString delegate = (rowDelegate ? "rowDelegate" : "delegate") + QStringLiteral(R"(: Item {
+        const QString delegate =
+            (rowDelegate ? "rowDelegate" : "delegate") + QStringLiteral(R"(: Item {
             required property int row
             width: 99; height: 99
             Rectangle { x: -2; y: -2; width: 99; height: 99; color: "#123456" }
             Text { text: "ABCDEFGHIJKLM"; width: 99 }
         })");
         QVERIFY2(f.create(&model, delegate), qPrintable(f.component.errorString()));
-        f.table->setColumns({QVariantMap{{"title", "A"}, {"width", 3}},
-                             QVariantMap{{"title", "B"}, {"width", 3}}});
-        f.table->setWidth(9); f.table->setHeight(7);
-        f.table->setShowColumnGrid(true); f.table->setShowRowGrid(true); f.table->setShowOuterBorder(true);
+        f.table->setColumns(
+            {QVariantMap{{"title", "A"}, {"width", 3}}, QVariantMap{{"title", "B"}, {"width", 3}}});
+        f.table->setWidth(9);
+        f.table->setHeight(7);
+        f.table->setShowColumnGrid(true);
+        f.table->setShowRowGrid(true);
+        f.table->setShowOuterBorder(true);
         f.paint();
         QCOMPARE(f.line(0).left(9), QStringLiteral("┌───┬───┐"));
-        QCOMPARE(f.line(3).left(9), rowDelegate ? QStringLiteral("│ABC│EFG│") : QStringLiteral("│ABC│ABC│"));
+        QCOMPARE(f.line(3).left(9),
+                 rowDelegate ? QStringLiteral("│ABC│EFG│") : QStringLiteral("│ABC│ABC│"));
         QCOMPARE(f.line(4).left(9), QStringLiteral("├───┼───┤"));
         QCOMPARE(f.line(6).left(9), QStringLiteral("└───┴───┘"));
         QCOMPARE(f.buffer.cellAt(2, 3).bgColor, 0xff123456u);
@@ -543,15 +602,18 @@ private slots:
         model.count = 1;
         for (bool rowMode : {false, true}) {
             TableFixture f;
-            const QString delegate = (rowMode ? "rowDelegate" : "delegate") + QStringLiteral(R"(: Item {
+            const QString delegate =
+                (rowMode ? "rowDelegate" : "delegate") + QStringLiteral(R"(: Item {
                 Text { x: 2; width: 20; text: "界" }
                 Text { y: 1; width: 20; text: "overflow" }
             })");
             QVERIFY(f.create(&model, delegate));
             f.table->setColumns({QVariantMap{{"title", "A"}, {"width", 3}},
                                  QVariantMap{{"title", "B"}, {"width", 3}}});
-            f.table->setWidth(9); f.table->setHeight(5);
-            f.table->setShowOuterBorder(true); f.table->setShowColumnGrid(true);
+            f.table->setWidth(9);
+            f.table->setHeight(5);
+            f.table->setShowOuterBorder(true);
+            f.table->setShowColumnGrid(true);
             f.paint();
             QCOMPARE(f.line(3).left(9), QStringLiteral("│   │   │"));
             QCOMPARE(f.line(4).left(9), QStringLiteral("└───┴───┘"));
@@ -572,7 +634,7 @@ private slots:
     void gridSelectionCanKeepCellColors() {
         QStandardItemModel model;
         for (int i = 0; i < 3; ++i) {
-            auto *item = new QStandardItem(QString::number(i));
+            auto* item = new QStandardItem(QString::number(i));
             item->setData(QColor(QStringLiteral("#00ff88")), Qt::ForegroundRole);
             model.appendRow(item);
         }
@@ -595,12 +657,12 @@ private slots:
         };
 
         // Off by default: nothing changes for anyone who has not asked.
-        QCOMPARE(glyph(2), 0xffffffffu);        // selected row, selection colour
-        QCOMPARE(glyph(1), 0xff00ff88u);        // unselected row keeps its own
+        QCOMPARE(glyph(2), 0xffffffffu); // selected row, selection colour
+        QCOMPARE(glyph(1), 0xff00ff88u); // unselected row keeps its own
 
         f.table->setSelectionKeepsCellColors(true);
         f.paint();
-        QCOMPARE(glyph(2), 0xff00ff88u);        // now the selected row keeps it too
+        QCOMPARE(glyph(2), 0xff00ff88u); // now the selected row keeps it too
         QCOMPARE(glyph(1), 0xff00ff88u);
     }
 
@@ -624,7 +686,8 @@ private slots:
 
         // Four presses walk the cursor to the top line without moving the view.
         KeyEvent up(Qt::Key_Up, QString());
-        for (int i = 0; i < 4; ++i) f.table->keyPressEvent(&up);
+        for (int i = 0; i < 4; ++i)
+            f.table->keyPressEvent(&up);
         QCOMPARE(f.table->selectedRow(), 6);
         f.paint();
         QCOMPARE(f.line(1).left(6), QStringLiteral("│6   │"));
@@ -639,7 +702,8 @@ private slots:
 
         // Symmetrically downwards: inside the window nothing moves.
         KeyEvent down(Qt::Key_Down, QString());
-        for (int i = 0; i < 4; ++i) f.table->keyPressEvent(&down);
+        for (int i = 0; i < 4; ++i)
+            f.table->keyPressEvent(&down);
         QCOMPARE(f.table->selectedRow(), 9);
         f.paint();
         QCOMPARE(f.line(1).left(6), QStringLiteral("│5   │"));
@@ -702,27 +766,35 @@ private slots:
 
     void gridModelMutations() {
         QStandardItemModel model;
-        for (const QString &label : {"c", "a", "b"}) model.appendRow(new QStandardItem(label));
+        for (const QString& label : {"c", "a", "b"})
+            model.appendRow(new QStandardItem(label));
         QSortFilterProxyModel proxy;
-        proxy.setSourceModel(&model); proxy.sort(0);
+        proxy.setSourceModel(&model);
+        proxy.sort(0);
         TableFixture f;
         QVERIFY(f.createBody(&proxy, "showOuterBorder: true; showRowGrid: true; " + textDelegate));
-        f.table->setWidth(6); f.table->setHeight(7);
-        f.table->setSelectedRow(1); f.paint();
+        f.table->setWidth(6);
+        f.table->setHeight(7);
+        f.table->setSelectedRow(1);
+        f.paint();
         QCOMPARE(f.line(3).left(6), QStringLiteral("│b   │"));
         const auto items = f.items();
-        QSet<Item *> before(items.cbegin(), items.cend());
-        proxy.sort(0, Qt::DescendingOrder); f.paint();
+        QSet<Item*> before(items.cbegin(), items.cend());
+        proxy.sort(0, Qt::DescendingOrder);
+        f.paint();
         const auto reordered = f.items();
-        QCOMPARE(QSet<Item *>(reordered.cbegin(), reordered.cend()), before);
+        QCOMPARE(QSet<Item*>(reordered.cbegin(), reordered.cend()), before);
         QCOMPARE(f.line(1).left(6), QStringLiteral("│c   │"));
-        model.insertRow(0, new QStandardItem("d")); f.paint();
+        model.insertRow(0, new QStandardItem("d"));
+        f.paint();
         QCOMPARE(f.table->selectedRow(), 2);
         QCOMPARE(f.line(5).left(6), QStringLiteral("│b   │"));
-        model.removeRow(0); f.paint();
+        model.removeRow(0);
+        f.paint();
         QCOMPARE(f.table->selectedRow(), 1);
         QCOMPARE(f.line(3).left(6), QStringLiteral("│b   │"));
-        model.clear(); f.paint();
+        model.clear();
+        f.paint();
         QCOMPARE(f.table->selectedRow(), -1);
         QVERIFY(f.items().isEmpty());
         QCOMPARE(f.line(1).left(6), QStringLiteral("│    │"));
@@ -734,11 +806,13 @@ private slots:
         QVERIFY(f.createBody(&model, "showRowGrid: true; showOuterBorder: true", 0));
         QCOMPARE(model.fetches, 0);
         f.table->setHeight(7); // Headerless: three visible content rows.
-        f.paint(); f.paint();
+        f.paint();
+        f.paint();
         QCOMPARE(model.count, 8); // Three visible, two overscan, threshold two, batches of two.
         QCOMPARE(f.line(5).mid(1, 3).trimmed(), QStringLiteral("2"));
         f.table->setSelectedRow(7);
-        f.paint(); f.paint();
+        f.paint();
+        f.paint();
         QCOMPARE(model.count, 14);
         QCOMPARE(f.line(5).mid(1, 3).trimmed(), QStringLiteral("7"));
         f.table->setWidth(0);
@@ -750,14 +824,17 @@ private slots:
 
     void gridWidthsAndClipping() {
         CountingTableList model;
-        model.count = 1; model.first = QStringLiteral("界ab");
+        model.count = 1;
+        model.first = QStringLiteral("界ab");
         TableFixture f;
         QVERIFY(f.create(&model, QString()));
         f.table->setColumns({QVariantMap{{"title", "X"}, {"width", 4}, {"headerAlign", "center"}},
                              QVariantMap{{"title", "HIDDEN"}, {"width", 0}},
                              QVariantMap{{"title", "Y"}, {"width", 4}}});
-        f.table->setWidth(11); f.table->setHeight(5);
-        f.table->setShowColumnGrid(true); f.table->setShowOuterBorder(true);
+        f.table->setWidth(11);
+        f.table->setHeight(5);
+        f.table->setShowColumnGrid(true);
+        f.table->setShowOuterBorder(true);
         f.paint();
         QCOMPARE(f.line(0).left(11), QStringLiteral("┌────┬────┐"));
         QCOMPARE(f.line(1).left(11), QStringLiteral("│ X  │Y   │"));
@@ -779,7 +856,8 @@ private slots:
         f.paint();
         QCOMPARE(f.line(0).left(10), QStringLiteral("┌────────┐"));
         QCOMPARE(f.line(1).left(10), QStringLiteral("│ X  Y   │"));
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*Unsupported TableView gridStyle:.*bogus.*"));
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(".*Unsupported TableView gridStyle:.*bogus.*"));
         f.table->setGridStyle("bogus");
         QCOMPARE(f.table->gridStyle(), TableView::Single);
     }
@@ -789,23 +867,35 @@ private slots:
         model.count = 0;
         TableFixture f;
         QVERIFY(f.create(&model, textDelegate));
-        f.table->setShowOuterBorder(true); f.table->setShowRowGrid(true);
-        f.table->setWidth(5); f.table->setHeight(7);
+        f.table->setShowOuterBorder(true);
+        f.table->setShowRowGrid(true);
+        f.table->setWidth(5);
+        f.table->setHeight(7);
         f.paint();
         QCOMPARE(f.line(0).left(5), QStringLiteral("┌───┐"));
         QCOMPARE(f.line(3).left(5), QStringLiteral("│   │"));
         QCOMPARE(f.line(6).left(5), QStringLiteral("└───┘"));
         for (int width = 0; width <= 3; ++width) {
             for (int height = 0; height <= 3; ++height) {
-                f.table->setWidth(width); f.table->setHeight(height); f.paint();
+                f.table->setWidth(width);
+                f.table->setHeight(height);
+                f.paint();
                 QVERIFY(f.items().isEmpty());
-                if (width == 0 || height == 0) QVERIFY(f.line(0).trimmed().isEmpty());
-                else if (width == 1 && height == 1) QCOMPARE(f.line(0).left(1), QStringLiteral("┼"));
-                else if (width == 1) QCOMPARE(f.line(0).left(1), QStringLiteral("│"));
-                else if (height == 1) QCOMPARE(f.line(0).left(width), QString(width, QChar(u'─')));
+                if (width == 0 || height == 0)
+                    QVERIFY(f.line(0).trimmed().isEmpty());
+                else if (width == 1 && height == 1)
+                    QCOMPARE(f.line(0).left(1), QStringLiteral("┼"));
+                else if (width == 1)
+                    QCOMPARE(f.line(0).left(1), QStringLiteral("│"));
+                else if (height == 1)
+                    QCOMPARE(f.line(0).left(width), QString(width, QChar(u'─')));
                 else {
-                    QCOMPARE(f.line(0).left(width), QStringLiteral("┌") + QString(width - 2, QChar(u'─')) + QStringLiteral("┐"));
-                    QCOMPARE(f.line(height - 1).left(width), QStringLiteral("└") + QString(width - 2, QChar(u'─')) + QStringLiteral("┘"));
+                    QCOMPARE(f.line(0).left(width), QStringLiteral("┌") +
+                                                        QString(width - 2, QChar(u'─')) +
+                                                        QStringLiteral("┐"));
+                    QCOMPARE(f.line(height - 1).left(width), QStringLiteral("└") +
+                                                                 QString(width - 2, QChar(u'─')) +
+                                                                 QStringLiteral("┘"));
                 }
             }
         }
@@ -814,8 +904,11 @@ private slots:
         headerless.setData(headerless.index(0, 0), "L");
         headerless.setData(headerless.index(0, 1), "R");
         TableFixture other;
-        QVERIFY(other.createBody(&headerless, "showOuterBorder: true; showColumnGrid: true; showRowGrid: true"));
-        other.table->setWidth(9); other.table->setHeight(3); other.paint();
+        QVERIFY(other.createBody(&headerless,
+                                 "showOuterBorder: true; showColumnGrid: true; showRowGrid: true"));
+        other.table->setWidth(9);
+        other.table->setHeight(3);
+        other.paint();
         QCOMPARE(other.line(1).left(9), QStringLiteral("│L  │R  │"));
     }
 
@@ -875,7 +968,8 @@ private slots:
                     required property string display; text: "B:" + display
                 } }
             }
-        )")), qPrintable(f.component.errorString()));
+        )")),
+                 qPrintable(f.component.errorString()));
         QCOMPARE(f.line(2).count("A:old"), 3);
         QPointer<Item> original = f.items().first();
         model.kind = 1;
@@ -896,7 +990,7 @@ private slots:
 
     void proxySelectionAndIdentity() {
         QStandardItemModel source;
-        for (const QString &label : {"charlie", "alpha", "bravo"})
+        for (const QString& label : {"charlie", "alpha", "bravo"})
             source.appendRow(new QStandardItem(label));
         QSortFilterProxyModel proxy;
         proxy.setSourceModel(&source);
@@ -907,12 +1001,12 @@ private slots:
         f.table->setSelectedRow(0);
         f.paint();
         const auto items = f.items();
-        QSet<Item *> before(items.cbegin(), items.cend());
+        QSet<Item*> before(items.cbegin(), items.cend());
         proxy.sort(0, Qt::DescendingOrder);
         QCOMPARE(f.table->selectedRow(), 2);
         f.paint();
         const auto reordered = f.items();
-        QCOMPARE(QSet<Item *>(reordered.cbegin(), reordered.cend()), before);
+        QCOMPARE(QSet<Item*>(reordered.cbegin(), reordered.cend()), before);
         QVERIFY(f.line(4).contains("alpha"));
         QSignalSpy activated(f.table, &TableView::rowActivated);
         KeyEvent enter(Qt::Key_Return, QString());
@@ -1000,7 +1094,8 @@ private slots:
         QVERIFY(f.create(&model, textDelegate));
         f.engine.globalObject().setProperty("widthCalls", 0);
         f.engine.globalObject().setProperty("cellWidth", 12);
-        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { ++widthCalls; return c === 1 ? 0 : cellWidth; })"));
+        f.table->setColumnWidthProvider(
+            f.engine.evaluate("(function(c) { ++widthCalls; return c === 1 ? 0 : cellWidth; })"));
         f.paint();
         QCOMPARE(f.engine.globalObject().property("widthCalls").toInt(), 3);
         QCOMPARE(f.items().size(), 16);
@@ -1024,7 +1119,8 @@ private slots:
         f.table->setHeight(8);
         f.table->setColumnWidthProvider(QJSValue());
         f.table->setDelegate(nullptr);
-        f.table->setColumns({QVariantMap{{"title", "wide"}, {"width", (std::numeric_limits<int>::max)()}}});
+        f.table->setColumns(
+            {QVariantMap{{"title", "wide"}, {"width", (std::numeric_limits<int>::max)()}}});
         f.paint();
         QVERIFY(f.line(0).startsWith("wide"));
     }
@@ -1033,22 +1129,30 @@ private slots:
         CountingTableList model;
         TableFixture f;
         QVERIFY(f.create(&model, QString()));
-        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { return c === 0 ? -1 : undefined; })"));
+        f.table->setColumnWidthProvider(
+            f.engine.evaluate("(function(c) { return c === 0 ? -1 : undefined; })"));
         f.paint();
         QVERIFY(f.line(0).startsWith("A           B"));
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*columnWidthProvider: Error: width-failure.*", QRegularExpression::DotMatchesEverythingOption));
-        f.table->setColumnWidthProvider(f.engine.evaluate("(function(c) { throw new Error('width-failure'); })"));
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(".*columnWidthProvider: Error: width-failure.*",
+                                                QRegularExpression::DotMatchesEverythingOption));
+        f.table->setColumnWidthProvider(
+            f.engine.evaluate("(function(c) { throw new Error('width-failure'); })"));
         f.paint();
         f.table->forceLayout();
         f.paint(); // No repeat of the same exception.
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*cellFormat: Error: format-failure.*", QRegularExpression::DotMatchesEverythingOption));
-        f.table->setCellFormat(f.engine.evaluate("(function(r,c,v) { throw new Error('format-failure'); })"));
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(".*cellFormat: Error: format-failure.*",
+                                                QRegularExpression::DotMatchesEverythingOption));
+        f.table->setCellFormat(
+            f.engine.evaluate("(function(r,c,v) { throw new Error('format-failure'); })"));
         f.paint();
         f.paint();
         QVERIFY(f.line(2).contains("old"));
         f.table->setColumnWidthProvider(QJSValue());
         f.table->setColumns({QVariantMap{{"title", "bad"}, {"width", -3}}});
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(".*Invalid TableView column width; using 12.*"));
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(".*Invalid TableView column width; using 12.*"));
         f.paint();
         QVERIFY(f.line(0).startsWith("bad"));
     }
@@ -1057,7 +1161,10 @@ private slots:
         CountingTableList model;
         model.count = 2;
         TableFixture f;
-        QVERIFY2(f.create(&model, QStringLiteral("rowDelegate: Text { required property string display; text: display }")),
+        QVERIFY2(
+            f.create(&model,
+                     QStringLiteral(
+                         "rowDelegate: Text { required property string display; text: display }")),
             qPrintable(f.component.errorString()));
         const auto before = f.items();
         model.first = "changed";
@@ -1072,7 +1179,9 @@ private slots:
         QStandardItemModel model(2, 3);
         for (int row = 0; row < 2; ++row)
             for (int column = 0; column < 3; ++column)
-                model.setItem(row, column, new QStandardItem(QStringLiteral("%1%2").arg(QChar('a' + column)).arg(row)));
+                model.setItem(
+                    row, column,
+                    new QStandardItem(QStringLiteral("%1%2").arg(QChar('a' + column)).arg(row)));
         model.setHorizontalHeaderLabels({"Name", "Size", "Kind"});
         TableFixture f;
         QVERIFY2(f.createBody(&model, QString()), qPrintable(f.component.errorString()));
@@ -1089,7 +1198,8 @@ private slots:
         f.paint();
         QCOMPARE(f.line(0).mid(0, 13).trimmed(), QStringLiteral("Path"));
         // Header alignment role becomes the column default for header and cells.
-        model.setHeaderData(1, Qt::Horizontal, int(Qt::AlignRight | Qt::AlignVCenter), Qt::TextAlignmentRole);
+        model.setHeaderData(1, Qt::Horizontal, int(Qt::AlignRight | Qt::AlignVCenter),
+                            Qt::TextAlignmentRole);
         f.paint();
         QVERIFY2(f.line(0).mid(13, 13).endsWith("Size"), qPrintable(f.line(0)));
         QVERIFY2(f.line(2).mid(13, 13).endsWith("b0"), qPrintable(f.line(2)));
@@ -1145,10 +1255,8 @@ private slots:
         QSignalSpy spy(&table, &TableView::implicitWidthChanged);
 
         // Columns define implicit width
-        table.setColumns(QVariantList{
-            QVariantMap{{"title", "ID"}, {"width", 10}},
-            QVariantMap{{"title", "NAME"}, {"width", 20}}
-        });
+        table.setColumns(QVariantList{QVariantMap{{"title", "ID"}, {"width", 10}},
+                                      QVariantMap{{"title", "NAME"}, {"width", 20}}});
         QCOMPARE(table.implicitWidth(), 30);
         QCOMPARE(spy.count(), 1);
 
@@ -1167,11 +1275,9 @@ private slots:
         QCOMPARE(spy.count(), 3);
 
         // Hidden column (width <= 0) is excluded from total width and grid separator count
-        table.setColumns(QVariantList{
-            QVariantMap{{"title", "A"}, {"width", 10}},
-            QVariantMap{{"title", "B"}, {"width", 0}},
-            QVariantMap{{"title", "C"}, {"width", 15}}
-        });
+        table.setColumns(QVariantList{QVariantMap{{"title", "A"}, {"width", 10}},
+                                      QVariantMap{{"title", "B"}, {"width", 0}},
+                                      QVariantMap{{"title", "C"}, {"width", 15}}});
         // 2 visible columns (width 10 + 15 = 25), 1 separator, 2 outer borders = 28
         QCOMPARE(table.implicitWidth(), 28);
         QCOMPARE(spy.count(), 4);
@@ -1190,10 +1296,11 @@ private slots:
     void gridRenderedWhenHeightExceedsRows() {
         TableFixture f;
         QStandardItemModel model;
-        model.appendRow({new QStandardItem(QStringLiteral("1")), new QStandardItem(QStringLiteral("2"))});
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "showOuterBorder: true; showColumnGrid: true; "
-            "columns: [{title: 'A', width: 4}, {title: 'B', width: 4}]")));
+        model.appendRow(
+            {new QStandardItem(QStringLiteral("1")), new QStandardItem(QStringLiteral("2"))});
+        QVERIFY(f.createBody(
+            &model, QStringLiteral("showOuterBorder: true; showColumnGrid: true; "
+                                   "columns: [{title: 'A', width: 4}, {title: 'B', width: 4}]")));
         f.table->setWidth(11);
         f.table->setHeight(6);
         f.paint();
@@ -1208,10 +1315,12 @@ private slots:
         // Now test with showRowGrid: true and height 7
         TableFixture f2;
         QStandardItemModel model2;
-        model2.appendRow({new QStandardItem(QStringLiteral("1")), new QStandardItem(QStringLiteral("2"))});
-        QVERIFY(f2.createBody(&model2, QStringLiteral(
-            "showOuterBorder: true; showColumnGrid: true; showRowGrid: true; "
-            "columns: [{title: 'A', width: 4}, {title: 'B', width: 4}]")));
+        model2.appendRow(
+            {new QStandardItem(QStringLiteral("1")), new QStandardItem(QStringLiteral("2"))});
+        QVERIFY(f2.createBody(
+            &model2,
+            QStringLiteral("showOuterBorder: true; showColumnGrid: true; showRowGrid: true; "
+                           "columns: [{title: 'A', width: 4}, {title: 'B', width: 4}]")));
         f2.table->setWidth(11);
         f2.table->setHeight(7);
         f2.paint();
@@ -1225,10 +1334,12 @@ private slots:
     void stretchLastColumn() {
         TableFixture f;
         QStandardItemModel model;
-        model.appendRow({new QStandardItem(QStringLiteral("A1")), new QStandardItem(QStringLiteral("B1"))});
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "stretchLastColumn: true; showColumnGrid: true; showOuterBorder: false; "
-            "columns: [{title: 'COL1', width: 8}, {title: 'COL2', width: 6}]")));
+        model.appendRow(
+            {new QStandardItem(QStringLiteral("A1")), new QStandardItem(QStringLiteral("B1"))});
+        QVERIFY(f.createBody(
+            &model,
+            QStringLiteral("stretchLastColumn: true; showColumnGrid: true; showOuterBorder: false; "
+                           "columns: [{title: 'COL1', width: 8}, {title: 'COL2', width: 6}]")));
         f.table->setWidth(30);
         f.table->setHeight(5);
         f.paint();
@@ -1246,10 +1357,13 @@ private slots:
     void columnDescriptorStretch() {
         TableFixture f;
         QStandardItemModel model;
-        model.appendRow({new QStandardItem(QStringLiteral("A")), new QStandardItem(QStringLiteral("B")), new QStandardItem(QStringLiteral("C"))});
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "showColumnGrid: true; showOuterBorder: false; "
-            "columns: [{title: 'A', width: 4}, {title: 'B', stretch: true}, {title: 'C', width: 5}]")));
+        model.appendRow({new QStandardItem(QStringLiteral("A")),
+                         new QStandardItem(QStringLiteral("B")),
+                         new QStandardItem(QStringLiteral("C"))});
+        QVERIFY(
+            f.createBody(&model, QStringLiteral("showColumnGrid: true; showOuterBorder: false; "
+                                                "columns: [{title: 'A', width: 4}, {title: 'B', "
+                                                "stretch: true}, {title: 'C', width: 5}]")));
         f.table->setWidth(25);
         f.table->setHeight(5);
         f.paint();
@@ -1266,10 +1380,12 @@ private slots:
     void gridColorOption() {
         TableFixture f;
         QStandardItemModel model;
-        model.appendRow({new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "showColumnGrid: true; showOuterBorder: true; textColor: '#00ff00'; gridColor: '#ff0000'; "
-            "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
+        model.appendRow(
+            {new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
+        QVERIFY(f.createBody(
+            &model, QStringLiteral("showColumnGrid: true; showOuterBorder: true; textColor: "
+                                   "'#00ff00'; gridColor: '#ff0000'; "
+                                   "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
         f.table->setWidth(13);
         f.table->setHeight(5);
         f.paint();
@@ -1285,11 +1401,13 @@ private slots:
     void continuousRowAndHeaderBackground() {
         TableFixture f;
         QStandardItemModel model;
-        model.appendRow({new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
-        QVERIFY(f.createBody(&model, QStringLiteral(
-            "showColumnGrid: true; showOuterBorder: true; "
-            "headerBackgroundColor: '#224466'; rowBackgroundColor: '#335577'; "
-            "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
+        model.appendRow(
+            {new QStandardItem(QStringLiteral("val1")), new QStandardItem(QStringLiteral("val2"))});
+        QVERIFY(f.createBody(
+            &model,
+            QStringLiteral("showColumnGrid: true; showOuterBorder: true; "
+                           "headerBackgroundColor: '#224466'; rowBackgroundColor: '#335577'; "
+                           "columns: [{title: 'A', width: 5}, {title: 'B', width: 5}]")));
         f.table->setWidth(20); // wider than 5+5+3 = 13
         f.table->setHeight(5);
         f.paint();
@@ -1302,6 +1420,116 @@ private slots:
         for (int x = 1; x < 19; ++x) {
             QCOMPARE(f.buffer.cellAt(x, 3).bgColor, 0xff335577u);
         }
+    }
+
+    void spansInModelAndCellFormat() {
+        QStandardItemModel model;
+        Span s1(QStringLiteral("AB"), Color("#ff0000"), Color("#112233"));
+        s1.setBold(true);
+        Span s2(QStringLiteral("CD"), Color("#00ff00"));
+        s2.setUnderline(true);
+
+        auto* row0Col0 = new QStandardItem();
+        row0Col0->setData(QVariant::fromValue(QList<Span>{s1, s2}), Qt::DisplayRole);
+        auto* row0Col1 = new QStandardItem(QStringLiteral("raw"));
+        model.appendRow({row0Col0, row0Col1});
+
+        Span sSingle(QStringLiteral("XY"), Color("#0000ff"));
+        sSingle.setItalic(true);
+        auto* row1Col0 = new QStandardItem();
+        row1Col0->setData(QVariant::fromValue(sSingle), Qt::DisplayRole);
+        auto* row1Col1 = new QStandardItem(QStringLiteral("fmt"));
+        model.appendRow({row1Col0, row1Col1});
+
+        TableFixture f;
+        QVERIFY2(f.createBody(&model, QStringLiteral(R"(
+            showOuterBorder: false
+            showColumnGrid: false
+            selectionColor: "#ffffff"
+            selectionBackgroundColor: "#444444"
+            columns: [
+                { title: "C0", width: 8, alignment: "right", rightPadding: 1 },
+                { title: "C1", width: 8 }
+            ]
+            cellFormat: (row, col, val) => {
+                if (col === 1 && row === 0) {
+                    return [
+                        QmlTui.span("[" + val, { color: "#ff8800", bold: true }),
+                        QmlTui.span("]", { color: "#88ff00", dim: true })
+                    ];
+                }
+                if (col === 1 && row === 1) {
+                    return QmlTui.span(val.toUpperCase(), {
+                        color: "#ff00ff",
+                        backgroundColor: "#220022",
+                        italic: true,
+                        underline: true
+                    });
+                }
+                return undefined;
+            }
+        )")),
+                 qPrintable(f.component.errorString()));
+        f.table->setWidth(16);
+        f.table->setHeight(6);
+        f.table->setSelectedRow(-1);
+        f.paint();
+
+        // Header takes y=0..1, row 0 is at y=2, row 1 is at y=3.
+        // Col 0 width=8, alignment="right", rightPadding=1 => innerWidth=7, "ABCD" width=4 => left
+        // offset = 3.
+        QCOMPARE(f.line(2).left(16), QStringLiteral("   ABCD [raw]   "));
+        QCOMPARE(f.buffer.cellAt(3, 2).fgColor, 0xffff0000u);
+        QCOMPARE(f.buffer.cellAt(3, 2).bgColor, 0xff112233u);
+        QCOMPARE(f.buffer.cellAt(3, 2).attributes, TextAttribute::Bold);
+        QCOMPARE(f.buffer.cellAt(5, 2).fgColor, 0xff00ff00u);
+        QCOMPARE(f.buffer.cellAt(5, 2).attributes, TextAttribute::Underline);
+
+        // Col 1 at x=8..15: "[raw]" from cellFormat list<Span>
+        QCOMPARE(f.buffer.cellAt(8, 2).fgColor, 0xffff8800u);
+        QCOMPARE(f.buffer.cellAt(8, 2).attributes, TextAttribute::Bold);
+        QCOMPARE(f.buffer.cellAt(12, 2).fgColor, 0xff88ff00u);
+        QCOMPARE(f.buffer.cellAt(12, 2).attributes, TextAttribute::Dim);
+
+        // Row 1 at y=3: Col 0 has single Span "XY" right-aligned at x=5..6
+        QCOMPARE(f.line(3).left(16), QStringLiteral("     XY FMT     "));
+        QCOMPARE(f.buffer.cellAt(5, 3).fgColor, 0xff0000ffu);
+        QCOMPARE(f.buffer.cellAt(5, 3).attributes, TextAttribute::Italic);
+        // Col 1 at x=8..10: single Span "FMT" from cellFormat
+        QCOMPARE(f.buffer.cellAt(8, 3).fgColor, 0xffff00ffu);
+        QCOMPARE(f.buffer.cellAt(8, 3).bgColor, 0xff220022u);
+        QCOMPARE(f.buffer.cellAt(8, 3).attributes,
+                 TextAttribute::Italic | TextAttribute::Underline);
+
+        // Selection behavior: when row 0 is selected and selectionKeepsCellColors is false,
+        // model-supplied Span colors in col 0 yield to selection colors, while cellFormat
+        // Span colors in col 1 still apply.
+        f.table->setSelectedRow(0);
+        f.paint();
+        QCOMPARE(f.buffer.cellAt(3, 2).fgColor, 0xffffffffu);
+        QCOMPARE(f.buffer.cellAt(3, 2).bgColor, 0xff444444u);
+        QCOMPARE(f.buffer.cellAt(8, 2).fgColor, 0xffff8800u);
+
+        // With selectionKeepsCellColors: true, model-supplied Span colors are preserved on the
+        // selected row.
+        f.table->setSelectionKeepsCellColors(true);
+        f.paint();
+        QCOMPARE(f.buffer.cellAt(3, 2).fgColor, 0xffff0000u);
+        QCOMPARE(f.buffer.cellAt(3, 2).bgColor, 0xff112233u);
+        QCOMPARE(f.buffer.cellAt(5, 2).fgColor, 0xff00ff00u);
+
+        // Built-in cell cache: idle repaints reuse cached cellFormat results without re-invoking
+        // V4, and dataChanged invalidates only the affected row.
+        f.engine.globalObject().setProperty("formatCalls", 0);
+        f.table->setCellFormat(f.engine.evaluate("(function(row, col, val) { ++formatCalls; return "
+                                                 "col === 1 ? '[' + val + ']' : undefined; })"));
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("formatCalls").toInt(), 4);
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("formatCalls").toInt(), 4);
+        row0Col1->setText(QStringLiteral("upd"));
+        f.paint();
+        QCOMPARE(f.engine.globalObject().property("formatCalls").toInt(), 6);
     }
 };
 

@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/Span.h>
 #include <QVariantMap>
 #include <QVariantList>
 #include <QSet>
@@ -33,6 +34,8 @@ class QMLTUI_CORE_EXPORT TreeView : public Item {
     // Parent QModelIndex whose children form the top level of the tree.
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
+    // Optional JS callback `(row, value) => Span | list<Span> | { text, spans, color, ... }`.
+    Q_PROPERTY(QJSValue nodeFormat READ nodeFormat WRITE setNodeFormat NOTIFY nodeFormatChanged)
 
     // Index in the flattened visible-row list (-1 for no selection);
     // selectedIndex and currentRow are aliases.
@@ -70,6 +73,9 @@ public:
 
     QQmlComponent* delegate() const { return m_delegate; }
     void setDelegate(QQmlComponent* delegate);
+
+    QJSValue nodeFormat() const { return m_nodeFormat; }
+    void setNodeFormat(const QJSValue& format);
 
     int currentIndex() const { return m_selectedIndex; }
     void setCurrentIndex(int index);
@@ -121,6 +127,7 @@ signals:
     void rootNodeChanged();
     void rootIndexChanged();
     void delegateChanged();
+    void nodeFormatChanged();
     void currentIndexChanged();
     void selectedIndexChanged();
     void currentItemDataChanged();
@@ -148,6 +155,7 @@ private:
     // 100k-row model costs no role reads until rows become visible.
     struct VisibleNode {
         QString text;
+        QList<Span> spans;
         QString path;
         QString key;
         int depth = 0;
@@ -156,6 +164,17 @@ private:
         bool loaded = true;
         QVariantMap rawData;
         QModelIndex modelIndex;
+        Color roleFg;
+        Color roleBg;
+        bool roleEnabled = true;
+        QString rolePrefix;
+        int formattedAtRow = -1;
+        QString formattedText;
+        QList<Span> formattedSpans;
+        Color formatFg;
+        Color formatBg;
+        TextStyle formatStyle;
+        bool spansOverrideSelection = false;
     };
 
     void flattenTree(const QVariantMap& map, const QString& parentPath, const QString& parentKey,
@@ -167,7 +186,10 @@ private:
                            bool includeUnsetRoles = false);
     static QString modelPath(const QAbstractItemModel* model, const QModelIndex& index);
     void ensureLoaded(VisibleNode& node);
+    void ensureFormatted(VisibleNode& node, int row);
     static bool sameNode(const VisibleNode& a, const VisibleNode& b);
+    Color resolveCachedColor(const QString& name) const;
+    void callbackWarning(const QString& message, QSet<QString>& errors) const;
     // Writes only index, row, current and selected to a delegate that still
     // shows the same, unchanged node after a re-flatten (the scroll path).
     void updateDelegatePosition(Item* item, int index);
@@ -200,6 +222,9 @@ private:
     QVariantMap m_rootNodeMap;
 
     QPointer<QQmlComponent> m_delegate;
+    QJSValue m_nodeFormat;
+    mutable QHash<QString, uint32_t> m_colorCache;
+    mutable QSet<QString> m_formatErrors;
     QList<Item*> m_delegateItems;
     QList<QPersistentModelIndex> m_delegateModelIndexes;
     QStringList m_delegatePaths;

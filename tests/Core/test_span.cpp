@@ -9,8 +9,7 @@
 
 using namespace qmltui;
 
-static TextGridBuffer frame(Text &text, int width = 30, int height = 5)
-{
+static TextGridBuffer frame(Text& text, int width = 30, int height = 5) {
     TextGridBuffer buffer;
     buffer.resize(width, height);
     testing::paintItem(text, buffer, 0, 0);
@@ -29,6 +28,7 @@ private slots:
     void qmlResetAndMutation();
     void factoryValidation();
     void gradient();
+    void extractListAndPlainText();
 };
 
 void TestSpan::values() {
@@ -52,9 +52,17 @@ void TestSpan::values() {
     a.resetBackgroundColor();
     QVERIFY(!a.color().isValid());
     QVERIFY(!a.backgroundColor().isValid());
-    a.setDim(false); a.setItalic(false); a.setUnderline(false); a.setReversed(false);
-    QCOMPARE(a.resolveAttributes(TextAttribute::Dim | TextAttribute::Italic | TextAttribute::Underline | TextAttribute::Reversed), TextAttribute::None);
-    a.resetDim(); a.resetItalic(); a.resetUnderline(); a.resetReversed();
+    a.setDim(false);
+    a.setItalic(false);
+    a.setUnderline(false);
+    a.setReversed(false);
+    QCOMPARE(a.resolveAttributes(TextAttribute::Dim | TextAttribute::Italic |
+                                 TextAttribute::Underline | TextAttribute::Reversed),
+             TextAttribute::None);
+    a.resetDim();
+    a.resetItalic();
+    a.resetUnderline();
+    a.resetReversed();
     QCOMPARE(a, Span(QStringLiteral("x")));
 }
 
@@ -79,14 +87,16 @@ void TestSpan::inheritanceAndUpdates() {
     QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::Italic | TextAttribute::Underline);
     text.setEnabled(false);
     buffer = frame(text);
-    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::Italic | TextAttribute::Underline | TextAttribute::Dim);
+    QCOMPARE(buffer.cellAt(1, 0).attributes,
+             TextAttribute::Italic | TextAttribute::Underline | TextAttribute::Dim);
 }
 
 void TestSpan::precedenceAndLines() {
     Text text;
     QSignalSpy spy(&text, &Text::spansChanged);
     text.setText(QStringLiteral("fallback"));
-    const QList<Span> spans{Span(QStringLiteral("ab")), Span(QStringLiteral("c\n\nx\n"), Color("#123456"))};
+    const QList<Span> spans{Span(QStringLiteral("ab")),
+                            Span(QStringLiteral("c\n\nx\n"), Color("#123456"))};
     text.setSpans(spans);
     text.setSpans(spans);
     QCOMPARE(spy.count(), 1);
@@ -166,10 +176,11 @@ void TestSpan::qmlIntegration() {
                      QmlTui.span("B", { color: QmlTui.rgba(1, 0, 0, 1), backgroundColor: "#123456", dim: true }),
                      QmlTui.span("C"), { text: "D", color: "green" } ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto *text = qobject_cast<Text *>(object.get());
+    auto* text = qobject_cast<Text*>(object.get());
     QVERIFY(text);
     QCOMPARE(text->spans().size(), 4);
     auto buffer = frame(*text);
@@ -197,10 +208,11 @@ void TestSpan::qmlResetAndMutation() {
                 spans[0].text = "BC"
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto *text = qobject_cast<Text *>(object.get());
+    auto* text = qobject_cast<Text*>(object.get());
     QVERIFY(text);
     QSignalSpy spy(text, &Text::spansChanged);
     QVERIFY(QMetaObject::invokeMethod(text, "resetFirst"));
@@ -219,7 +231,8 @@ void TestSpan::factoryValidation() {
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: expected boolean for bold");
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: invalid color for color");
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: unknown option typo");
-    auto span = global.span(QStringLiteral("x"), {{"bold", "false"}, {"color", "bad-color"}, {"typo", true}});
+    auto span = global.span(QStringLiteral("x"),
+                            {{"bold", "false"}, {"color", "bad-color"}, {"typo", true}});
     QVERIFY(!span.hasBold());
     QVERIFY(!span.color().isValid());
 }
@@ -237,12 +250,54 @@ void TestSpan::gradient() {
                 GradientStop { position: 1; color: "#0000ff" }
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    auto *text = qobject_cast<Text *>(object.get());
+    auto* text = qobject_cast<Text*>(object.get());
     QVERIFY(text);
     QCOMPARE(frame(*text).cellAt(0, 0).fgColor, 0xffff0000u);
+}
+
+void TestSpan::extractListAndPlainText() {
+    Span single(QStringLiteral("hello"), Color("#ff0000"), Color("#00ff00"));
+    single.setBold(true);
+
+    QList<Span> out;
+    QVERIFY(Span::tryExtractList(QVariant::fromValue(single), false, out));
+    QCOMPARE(out.size(), 1);
+    QCOMPARE(out.first(), single);
+    QCOMPARE(Span::plainText(out), QStringLiteral("hello"));
+
+    const QList<Span> listInput = {Span(QStringLiteral("ab")), Span(QStringLiteral("cd"))};
+    QVERIFY(Span::tryExtractList(QVariant::fromValue(listInput), false, out));
+    QCOMPARE(out, listInput);
+    QCOMPARE(Span::plainText(out), QStringLiteral("abcd"));
+
+    QVariantMap mapElem{
+        {QStringLiteral("text"), QStringLiteral("map")},
+        {QStringLiteral("color"), QStringLiteral("#112233")},
+        {QStringLiteral("backgroundColor"), QVariant::fromValue(Color("#445566"))},
+        {QStringLiteral("italic"), true},
+        {QStringLiteral("underline"), true},
+    };
+    QVERIFY(!Span::tryExtractList(mapElem, false, out));
+    QVERIFY(Span::tryExtractList(mapElem, true, out));
+    QCOMPARE(out.size(), 1);
+    QCOMPARE(out.first().text(), QStringLiteral("map"));
+    QCOMPARE(out.first().color(), Color("#112233"));
+    QCOMPARE(out.first().backgroundColor(), Color("#445566"));
+    QVERIFY(out.first().italic());
+    QVERIFY(out.first().underline());
+
+    const QVariantList mixedList = {QVariant::fromValue(single), mapElem};
+    QVERIFY(!Span::tryExtractList(mixedList, false, out));
+    QVERIFY(Span::tryExtractList(mixedList, true, out));
+    QCOMPARE(out.size(), 2);
+    QCOMPARE(Span::plainText(out), QStringLiteral("hellomap"));
+
+    QVERIFY(!Span::tryExtractList(QStringLiteral("plain"), true, out));
+    QVERIFY(!Span::tryExtractList(QVariantList{QStringLiteral("not-a-span")}, true, out));
 }
 QTEST_GUILESS_MAIN(TestSpan)
 #include "test_span.moc"

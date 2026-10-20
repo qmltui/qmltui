@@ -27,6 +27,7 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 | `rootNode` | `var` |  | Holds the root object of a nested JavaScript tree structure (`{ label, children: [...] }`). |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose children the view shows when using `QAbstractItemModel`. |
 | `delegate` | `Component` |  | Holds the component instantiated for each visible tree row. This is the default property. |
+| `nodeFormat` | `var` |  | Optional JS callback `(row, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed }` for built-in painting. |
 | `currentIndex` | `int` | `-1` | Holds the index of the currently active tree row. |
 | `selectedIndex` | `int` | `-1` | Holds the index of the currently selected tree row. |
 | `currentRow` | `int` |  | Read-only. Holds the current row index. |
@@ -78,7 +79,10 @@ Left arrow collapses an open node or jumps to its parent. Pressing Enter or clic
 emits `itemActivated` and `nodeActivated`.
 
 Nodes are indented according to their `depth`. Branch icons and connectors are
-rendered using `branchColor`.
+rendered using `branchColor`. In built-in painting (when `delegate` is unset),
+nodes may supply a `QmlTui.span(...)` or `list<Span>` through `Qt::DisplayRole`,
+a `"spans"` role, or a `rootNode` map (`spans`, `text`, or `display`), or format
+labels per visible row via `nodeFormat(row, value)`.
 
 ### Example
 

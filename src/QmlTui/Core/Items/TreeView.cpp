@@ -7,6 +7,7 @@
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQmlInfo>
 #include <QQmlProperty>
 #include <algorithm>
 #include <functional>
@@ -169,6 +170,34 @@ void TreeView::setDelegate(QQmlComponent* delegate) {
     m_treeDirty = true;
     emit delegateChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+}
+
+void TreeView::setNodeFormat(const QJSValue& format) {
+    m_nodeFormat = format;
+    m_formatErrors.clear();
+    for (VisibleNode& node : m_visibleNodes)
+        node.formattedAtRow = -1;
+    emit nodeFormatChanged();
+    markDirty(DirtyFlag::SelfDirty);
+}
+
+void TreeView::callbackWarning(const QString& message, QSet<QString>& errors) const {
+    if (!errors.contains(message) && errors.size() < 16) {
+        errors.insert(message);
+        qmlWarning(this) << message;
+    }
+}
+
+Color TreeView::resolveCachedColor(const QString& name) const {
+    if (name.isEmpty()) return {};
+    const auto cached = m_colorCache.constFind(name);
+    if (cached != m_colorCache.cend()) return Color::fromArgb32(cached.value());
+    const Color parsed = Color::fromString(name);
+    if (!parsed.isValid()) return {};
+    const uint32_t resolved = parsed.argb32();
+    if (m_colorCache.size() >= 256) m_colorCache.clear();
+    m_colorCache.insert(name, resolved);
+    return parsed;
 }
 
 void TreeView::adjustScrollTop() {
@@ -407,8 +436,41 @@ void TreeView::expandToIndex(const QModelIndex& index) {
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
+static void extractMapLabel(const QVariantMap& map, QString& text, QList<Span>& spans) {
+    spans.clear();
+    if (map.contains(QStringLiteral("spans"))) {
+        Span::tryExtractList(map.value(QStringLiteral("spans")), /*allowVariantMap=*/true, spans);
+    }
+    const QVariant labelVar =
+        map.value(QStringLiteral("text"), map.value(QStringLiteral("display")));
+    if (labelVar.isValid() && !labelVar.isNull()) {
+        if (labelVar.metaType() == QMetaType::fromType<QString>()) {
+            text = labelVar.toString();
+            return;
+        }
+        if (spans.isEmpty() && Span::tryExtractList(labelVar, /*allowVariantMap=*/true, spans)) {
+            text = Span::plainText(spans);
+            return;
+        }
+        text = labelVar.toString();
+        return;
+    }
+    if (!spans.isEmpty()) {
+        text = Span::plainText(spans);
+        return;
+    }
+    text = QStringLiteral("node");
+}
+
+static QString extractMapName(const QVariantMap& map) {
+    QString text;
+    QList<Span> spans;
+    extractMapLabel(map, text, spans);
+    return text;
+}
+
 static void collectAllKeys(const QVariantMap& map, const QString& parentKey, QStringList& keys) {
-    QString name = map.value("text", map.value("display", "node")).toString();
+    QString name = extractMapName(map);
     QString currentKey = parentKey.isEmpty() ? name + "#0" : parentKey;
     keys.append(currentKey);
 
@@ -425,7 +487,7 @@ static void collectAllKeys(const QVariantMap& map, const QString& parentKey, QSt
             cVar = cVar.value<QJSValue>().toVariant();
         }
         QVariantMap childMap = cVar.toMap();
-        QString childName = childMap.value("text", childMap.value("display", "node")).toString();
+        QString childName = extractMapName(childMap);
         QString childKey = currentKey + "/" + childName + "#" + QString::number(childIdx);
         collectAllKeys(childMap, childKey, keys);
         childIdx++;
@@ -492,7 +554,9 @@ void TreeView::clearDelegateItems() {
 
 void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
                            const QString& parentKey, int depth, QList<VisibleNode>& list) {
-    QString name = map.value("text", map.value("display", "node")).toString();
+    QString name;
+    QList<Span> spans;
+    extractMapLabel(map, name, spans);
     QString currentPath = parentPath.isEmpty() ? name : parentPath + "/" + name;
     QString currentKey = parentKey;
 
@@ -520,12 +584,17 @@ void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
 
     VisibleNode node;
     node.text = name;
+    node.spans = std::move(spans);
     node.path = currentPath;
     node.key = currentKey;
     node.depth = depth;
     node.hasChildren = hasChildren;
     node.expanded = expanded;
     node.rawData = map;
+    node.roleFg = Color::fromString(map.value(QStringLiteral("foreground")).toString());
+    node.roleBg = Color::fromString(map.value(QStringLiteral("background")).toString());
+    node.roleEnabled = NumericItemRoles::enabled(map);
+    node.rolePrefix = NumericItemRoles::prefix(map);
 
     list.append(node);
 
@@ -537,8 +606,7 @@ void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
                 cVar = cVar.value<QJSValue>().toVariant();
             }
             QVariantMap childMap = cVar.toMap();
-            QString childName =
-                childMap.value("text", childMap.value("display", "node")).toString();
+            QString childName = extractMapName(childMap);
             QString childKey = currentKey + "/" + childName + "#" + QString::number(childIdx);
             flattenTree(childMap, currentPath, childKey, depth + 1, list);
             childIdx++;
@@ -548,8 +616,17 @@ void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
 
 void TreeView::fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& index,
                                  VisibleNode& node, bool includeUnsetRoles) {
-    QString name = model->data(index, Qt::DisplayRole).toString();
-    if (name.isEmpty()) name = QStringLiteral("Item %1").arg(index.row());
+    QList<Span> spans;
+    const QVariant displayVar = model->data(index, Qt::DisplayRole);
+    QString name;
+    if (displayVar.metaType() == QMetaType::fromType<QString>()) {
+        name = displayVar.toString();
+    } else if (Span::tryExtractList(displayVar, /*allowVariantMap=*/false, spans)) {
+        name = Span::plainText(spans);
+    } else {
+        name = displayVar.toString();
+    }
+    if (name.isEmpty() && spans.isEmpty()) name = QStringLiteral("Item %1").arg(index.row());
     QVariantMap rawData;
     if (m_roleNameStrings.isEmpty()) {
         const QHash<int, QByteArray> roles = model->roleNames();
@@ -557,13 +634,25 @@ void TreeView::fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& i
             m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
         m_claimedNames = NumericItemRoles::claimedNames(model);
     }
-    for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it)
-        rawData[it.value()] = model->data(index, it.key());
+    for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it) {
+        const QVariant roleVal = model->data(index, it.key());
+        rawData[it.value()] = roleVal;
+        if (spans.isEmpty() && it.value() == QStringLiteral("spans")) {
+            Span::tryExtractList(roleVal, /*allowVariantMap=*/true, spans);
+        }
+    }
+    if (name.isEmpty() && !spans.isEmpty()) name = Span::plainText(spans);
     rawData[QStringLiteral("display")] = name;
     rawData[QStringLiteral("text")] = name;
     NumericItemRoles::apply(model, index, rawData, includeUnsetRoles, m_claimedNames);
     node.text = name;
+    node.spans = std::move(spans);
     node.rawData = rawData;
+    node.roleFg = Color::fromString(rawData.value(QStringLiteral("foreground")).toString());
+    node.roleBg = Color::fromString(rawData.value(QStringLiteral("background")).toString());
+    node.roleEnabled = NumericItemRoles::enabled(rawData);
+    node.rolePrefix = NumericItemRoles::prefix(rawData);
+    node.formattedAtRow = -1;
     node.hasChildren = model->hasChildren(index) || model->rowCount(index) > 0;
     node.modelIndex = index;
     node.loaded = true;
@@ -572,7 +661,16 @@ void TreeView::fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& i
 QString TreeView::modelPath(const QAbstractItemModel* model, const QModelIndex& index) {
     QStringList names;
     for (QModelIndex at = index; at.isValid(); at = at.parent()) {
-        QString name = model->data(at, Qt::DisplayRole).toString();
+        const QVariant displayVar = model->data(at, Qt::DisplayRole);
+        QString name;
+        QList<Span> spans;
+        if (displayVar.metaType() == QMetaType::fromType<QString>()) {
+            name = displayVar.toString();
+        } else if (Span::tryExtractList(displayVar, /*allowVariantMap=*/false, spans)) {
+            name = Span::plainText(spans);
+        } else {
+            name = displayVar.toString();
+        }
         if (name.isEmpty()) name = QStringLiteral("Item %1").arg(at.row());
         names.prepend(name);
     }
@@ -585,10 +683,111 @@ void TreeView::ensureLoaded(VisibleNode& node) {
     node.path = modelPath(m_cppModel.data(), node.modelIndex);
 }
 
+void TreeView::ensureFormatted(VisibleNode& node, int row) {
+    if (node.formattedAtRow == row || !m_nodeFormat.isCallable()) return;
+    node.formattedAtRow = row;
+    node.formattedText = node.text;
+    node.formattedSpans = node.spans;
+    node.formatFg = {};
+    node.formatBg = {};
+    node.formatStyle = {};
+    node.spansOverrideSelection = false;
+
+    const QJSValue result = m_nodeFormat.call({row, node.text});
+    if (result.isError()) {
+        callbackWarning(QStringLiteral("nodeFormat: ") + result.toString() + QLatin1Char('\n') +
+                            result.property("stack").toString(),
+                        m_formatErrors);
+        return;
+    }
+    m_formatErrors.clear();
+    if (result.isArray()) {
+        QList<Span> formattedSpans;
+        if (Span::tryExtractList(result.toVariant(), /*allowVariantMap=*/true, formattedSpans)) {
+            node.formattedSpans = std::move(formattedSpans);
+            node.spansOverrideSelection = true;
+        }
+    } else if (result.isObject()) {
+        const QVariant retained = result.toVariant(QJSValue::RetainJSObjects);
+        if (retained.metaType() == QMetaType::fromType<Span>()) {
+            const Span s = retained.value<Span>();
+            node.formattedText = s.text();
+            if (s.color().isValid() && !s.color().isTransparent()) node.formatFg = s.color();
+            if (s.backgroundColor().isValid() && !s.backgroundColor().isTransparent())
+                node.formatBg = s.backgroundColor();
+            node.formatStyle = s.style();
+            node.formattedSpans.clear();
+        } else {
+            const QJSValue textProp = result.property(QStringLiteral("text"));
+            if (!textProp.isUndefined()) {
+                node.formattedText = textProp.toString();
+                node.formattedSpans.clear();
+            }
+            const QJSValue spansProp = result.property(QStringLiteral("spans"));
+            if (!spansProp.isUndefined()) {
+                QList<Span> formattedSpans;
+                if (Span::tryExtractList(spansProp.toVariant(), /*allowVariantMap=*/true,
+                                         formattedSpans)) {
+                    node.formattedSpans = std::move(formattedSpans);
+                    node.spansOverrideSelection = true;
+                }
+            }
+            bool formatGaveFg = false;
+            bool formatGaveBg = false;
+            const QJSValue cProp = result.property(QStringLiteral("color"));
+            if (!cProp.isUndefined()) {
+                if (cProp.isString()) {
+                    node.formatFg = resolveCachedColor(cProp.toString());
+                } else {
+                    const QVariant cv = cProp.toVariant(QJSValue::RetainJSObjects);
+                    if (cv.metaType() == QMetaType::fromType<Color>())
+                        node.formatFg = cv.value<Color>();
+                    else
+                        node.formatFg = resolveCachedColor(cProp.toString());
+                }
+                formatGaveFg = node.formatFg.isValid();
+            }
+            const QJSValue bgProp = result.property(QStringLiteral("backgroundColor"));
+            if (!bgProp.isUndefined()) {
+                if (bgProp.isString()) {
+                    node.formatBg = resolveCachedColor(bgProp.toString());
+                } else {
+                    const QVariant bgv = bgProp.toVariant(QJSValue::RetainJSObjects);
+                    if (bgv.metaType() == QMetaType::fromType<Color>())
+                        node.formatBg = bgv.value<Color>();
+                    else
+                        node.formatBg = resolveCachedColor(bgProp.toString());
+                }
+                formatGaveBg = node.formatBg.isValid();
+            }
+            const auto applyFlag = [&](const QString& key, void (TextStyle::*setter)(bool)) {
+                const QJSValue p = result.property(key);
+                if (!p.isUndefined()) (node.formatStyle.*setter)(p.toBool());
+            };
+            applyFlag(QStringLiteral("bold"), &TextStyle::setBold);
+            applyFlag(QStringLiteral("dim"), &TextStyle::setDim);
+            applyFlag(QStringLiteral("italic"), &TextStyle::setItalic);
+            applyFlag(QStringLiteral("underline"), &TextStyle::setUnderline);
+            applyFlag(QStringLiteral("reversed"), &TextStyle::setReversed);
+            if (!node.spansOverrideSelection && !node.formattedSpans.isEmpty()) {
+                for (Span& s : node.formattedSpans) {
+                    if (formatGaveFg) s.resetColor();
+                    if (formatGaveBg) s.resetBackgroundColor();
+                    if (!node.formatStyle.isEmpty()) {
+                        TextStyle st = s.style();
+                        st.applyOverlay(node.formatStyle);
+                        s.setStyle(st);
+                    }
+                }
+            }
+        }
+    }
+}
+
 bool TreeView::sameNode(const VisibleNode& a, const VisibleNode& b) {
     return a.loaded && b.loaded && a.depth == b.depth && a.expanded == b.expanded &&
-           a.hasChildren == b.hasChildren && a.text == b.text && a.path == b.path &&
-           a.rawData == b.rawData;
+           a.hasChildren == b.hasChildren && a.text == b.text && a.spans == b.spans &&
+           a.path == b.path && a.rawData == b.rawData;
 }
 
 void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
@@ -715,8 +914,7 @@ void TreeView::updateTree() {
             if (expanded.isValid()) m_expandedSnapshot.insert(QModelIndex(expanded));
         flattenCppModel(m_cppModel.data(), m_rootIndex, "", "", 0, m_visibleNodes);
     } else if (!m_rootNodeMap.isEmpty()) {
-        QString rootName =
-            m_rootNodeMap.value("text", m_rootNodeMap.value("display", "node")).toString();
+        QString rootName = extractMapName(m_rootNodeMap);
         QString rootKey = rootName + "#0";
         flattenTree(m_rootNodeMap, "", rootKey, 0, m_visibleNodes);
     }
@@ -839,8 +1037,7 @@ void TreeView::updateDelegateItem(Item* item, int index) {
     modelMap["modelData"] = node.rawData;
     setDelegateProperty(item, "model", modelMap);
 
-    if (!roleData.contains(QStringLiteral("icon")))
-        setPropertyIfExists(item, "icon", QString());
+    if (!roleData.contains(QStringLiteral("icon"))) setPropertyIfExists(item, "icon", QString());
     if (!roleData.contains(QStringLiteral("status")))
         setPropertyIfExists(item, "status", QString());
 
@@ -1141,9 +1338,11 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
 
     // Default Rendering (No Delegate)
     auto* self = const_cast<TreeView*>(this);
+    const bool hasNodeFormat = m_nodeFormat.isCallable();
     for (int idx = m_scrollTop; idx < m_visibleNodes.size() && (idx - m_scrollTop) < availH;
          ++idx) {
         self->ensureLoaded(self->m_visibleNodes[idx]);
+        if (hasNodeFormat) self->ensureFormatted(self->m_visibleNodes[idx], idx);
         const VisibleNode& node = m_visibleNodes[idx];
         int rowY = startY + (idx - m_scrollTop);
         bool isSelected = (idx == m_selectedIndex);
@@ -1163,34 +1362,71 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                 if (Cell* cell = buffer.tryCellAt(startX + x, rowY)) cell->attributes = attr;
         }
 
-        QString indent = QString(node.depth * 2, ' ');
-        QString prefix =
-            node.hasChildren ? (node.expanded ? m_expandedIcon : m_collapsedIcon) : "    ";
-        // Standard item roles (check box, decoration glyph, colors, disabled).
-        QString label = indent + prefix + NumericItemRoles::prefix(node.rawData) + node.text;
         if (!isSelected) {
-            fg = NumericItemRoles::color(node.rawData, "foreground", fg);
-            bg = NumericItemRoles::color(node.rawData, "background", bg);
+            if (node.roleFg.isValid()) fg = node.roleFg.argb32();
+            if (node.roleBg.isValid()) bg = node.roleBg.argb32();
         }
-        if (!NumericItemRoles::enabled(node.rawData)) attr = attr | TextAttribute::Dim;
+        if (!node.roleEnabled) attr = attr | TextAttribute::Dim;
 
-        QString clippedLabel;
-        if (UnicodeText::displayWidth(label) <= availW) {
-            clippedLabel = label;
-        } else {
-            GraphemeIterator it(label);
-            GraphemeRef cluster;
-            int w = 0;
-            int utf16End = 0;
-            while (it.next(cluster)) {
-                const int cw = (std::max)(1, cluster.width);
-                if (w + cw > availW) break;
-                w += cw;
-                utf16End = cluster.utf16Start + static_cast<int>(cluster.utf16.size());
-            }
-            clippedLabel = label.left(utf16End);
+        const QString prefix = node.hasChildren ? (node.expanded ? m_expandedIcon : m_collapsedIcon)
+                                                : QStringLiteral("    ");
+        const uint32_t branchFg = (!isSelected && m_resolvedBranchColor != 0 &&
+                                   !Color::isTransparent(m_resolvedBranchColor))
+                                      ? m_resolvedBranchColor
+                                      : fg;
+
+        const QString& labelText = hasNodeFormat ? node.formattedText : node.text;
+        const QList<Span>& labelSpans = hasNodeFormat ? node.formattedSpans : node.spans;
+        uint32_t labelFg = fg;
+        uint32_t labelBg = bg;
+        TextAttribute labelAttr = attr;
+        bool spansOverrideSelection = false;
+
+        if (hasNodeFormat) {
+            if (node.formatFg.isValid()) labelFg = node.formatFg.argb32();
+            if (node.formatBg.isValid()) labelBg = node.formatBg.argb32();
+            labelAttr = node.formatStyle.resolveAttributes(labelAttr);
+            spansOverrideSelection = node.spansOverrideSelection;
         }
-        buffer.writeText(startX, rowY, clippedLabel, fg, bg, attr);
+
+        int curX = 0;
+        for (int i = 0; i < node.depth * 2 && curX < availW; ++i) {
+            buffer.setGrapheme(startX + curX++, rowY, QByteArrayView(" ", 1), 1, fg, bg, attr);
+        }
+        const auto writeSegment = [&](QStringView segText, uint32_t segFg, uint32_t segBg,
+                                      TextAttribute segAttr) {
+            if (curX >= availW || segText.isEmpty()) return;
+            GraphemeIterator it(segText, /*sanitizeControls=*/true);
+            GraphemeRef cluster;
+            while (it.next(cluster)) {
+                if (cluster.width > availW - curX) break;
+                const int advance = buffer.setGrapheme(startX + curX, rowY, cluster.utf16,
+                                                       cluster.width, segFg, segBg, segAttr);
+                if (advance < 0) break;
+                curX += advance;
+            }
+        };
+
+        writeSegment(prefix, branchFg, bg, attr);
+        writeSegment(node.rolePrefix, fg, bg, attr);
+        if (labelSpans.isEmpty()) {
+            writeSegment(labelText, labelFg, labelBg, labelAttr);
+        } else {
+            const bool useSpanColors = !isSelected || spansOverrideSelection;
+            for (const Span& span : labelSpans) {
+                if (curX >= availW) break;
+                uint32_t spanFg = labelFg;
+                uint32_t spanBg = labelBg;
+                if (useSpanColors) {
+                    const Color fgColor = span.color();
+                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
+                    const Color bgColor = span.backgroundColor();
+                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
+                }
+                const TextAttribute spanAttr = span.resolveAttributes(labelAttr);
+                writeSegment(span.text(), spanFg, spanBg, spanAttr);
+            }
+        }
     }
 }
 

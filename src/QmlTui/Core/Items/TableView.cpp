@@ -123,6 +123,7 @@ void TableView::setColumns(const QVariantList& columns) {
     if (m_columns == normalized) return;
     m_columns = std::move(normalized);
     m_widthErrors.clear();
+    m_builtInCells.clear();
     updateImplicitWidth();
     refreshModelHeader();
     if (!m_cppModel)
@@ -156,6 +157,7 @@ void TableView::setModel(const QVariant& model) {
     m_roleNames.clear();
     m_roleNameStrings.clear();
     m_claimedNames = 0;
+    m_builtInCells.clear();
     if (model.metaType() == QMetaType::fromType<QJSValue>())
         m_listModel = unpack(model).toList();
     else if (model.canConvert<QVariantList>())
@@ -182,6 +184,7 @@ void TableView::setModel(const QVariant& model) {
             m_roleNames.clear();
             m_roleNameStrings.clear();
             m_claimedNames = 0;
+            m_builtInCells.clear();
             m_modelProvidesHeader = false;
             resetViewport();
             clearSelection();
@@ -215,6 +218,7 @@ void TableView::setModel(const QVariant& model) {
             refreshModelRoles();
             refreshModelHeader();
             m_structureDirty = true;
+            m_builtInCells.clear();
             resetViewport();
             if (m_selectedRow >= 0) {
                 if (rowCount() > 0) {
@@ -349,6 +353,7 @@ void TableView::synchronizeSelection() {
 }
 void TableView::handleStructureChanged() {
     m_structureDirty = true;
+    m_builtInCells.clear();
     updateImplicitWidth();
     refreshModelHeader();
     // Before the selection: synchronizeSelection() returns early when nothing
@@ -514,6 +519,7 @@ void TableView::setColumnWidthProvider(const QJSValue& provider) {
 void TableView::setCellFormat(const QJSValue& format) {
     m_cellFormat = format;
     m_formatErrors.clear();
+    m_builtInCells.clear();
     emit cellFormatChanged();
     markDirty();
 }
@@ -577,6 +583,19 @@ void TableView::callbackWarning(const QString& message, QSet<QString>& errors) c
         qmlWarning(this) << message;
     }
 }
+uint32_t TableView::resolveCachedColor(const QString& name, uint32_t fallback) const {
+    if (name.isEmpty()) return fallback;
+    const auto cached = m_columnColorCache.constFind(name);
+    if (cached != m_columnColorCache.cend()) return cached.value();
+    const Color parsed = Color::fromString(name);
+    if (!parsed.isValid()) return fallback;
+    const uint32_t resolved = parsed.argb32();
+    // A function that returns a new colour every cell must not grow this
+    // without bound; the cache is an optimisation, not a record.
+    if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
+    m_columnColorCache.insert(name, resolved);
+    return resolved;
+}
 std::optional<uint32_t> TableView::columnColor(const QJSValue& callback, int row, int column,
                                                const QString& text) const {
     if (!callback.isCallable()) return std::nullopt;
@@ -595,14 +614,7 @@ std::optional<uint32_t> TableView::columnColor(const QJSValue& callback, int row
     if (result.isUndefined() || result.isNull()) return std::nullopt;
     const QString name = result.toString();
     if (name.isEmpty()) return std::nullopt;
-    const auto cached = m_columnColorCache.constFind(name);
-    if (cached != m_columnColorCache.cend()) return cached.value();
-    const uint32_t parsed = Color::resolve(name, 0u);
-    // A function that returns a new colour every cell must not grow this
-    // without bound; the cache is an optimisation, not a record.
-    if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
-    m_columnColorCache.insert(name, parsed);
-    return parsed;
+    return resolveCachedColor(name, 0u);
 }
 int TableView::resolveColumnWidth(int column, const QVariantMap& descriptor) {
     const auto valid = [](double value) {
@@ -788,10 +800,10 @@ void TableView::resolveColumns() {
         }
     }
 }
-QString TableView::cellText(int row, int col) const {
+QVariant TableView::cellRawValue(int row, int col) const {
     if (m_cppModel) {
         const QModelIndex idx = sourceIndex(row, col);
-        return m_cppModel->data(idx, Qt::DisplayRole).toString();
+        return m_cppModel->data(idx, Qt::DisplayRole);
     }
     if (row >= 0 && row < m_listModel.size()) {
         QVariant r = m_listModel[row];
@@ -799,29 +811,48 @@ QString TableView::cellText(int row, int col) const {
             r = r.value<QJSValue>().toVariant();
         }
         if (r.canConvert<QVariantList>()) {
-            QVariantList rowList = r.toList();
-            if (col >= 0 && col < rowList.size()) return rowList[col].toString();
+            const QVariantList rowList = r.toList();
+            if (col >= 0 && col < rowList.size()) return unpack(rowList[col]);
         } else if (r.canConvert<QVariantMap>()) {
-            QVariantMap rowMap = r.toMap();
+            const QVariantMap rowMap = r.toMap();
             if (col >= 0 && col < m_columns.size()) {
-                QVariant colVal = m_columns[col];
+                const QVariant colVal = m_columns[col];
                 QString key;
                 if (colVal.canConvert<QVariantMap>()) {
-                    QVariantMap colMap = colVal.toMap();
+                    const QVariantMap colMap = colVal.toMap();
                     key = colMap.value("key", colMap.value("title")).toString();
                 } else {
                     key = colVal.toString();
                 }
-                return rowMap.value(key).toString();
+                return unpack(rowMap.value(key));
             }
         }
     }
-    return QString();
+    return {};
+}
+QString TableView::cellText(int row, int col) const {
+    const QVariant raw = cellRawValue(row, col);
+    if (!raw.isValid()) return {};
+    if (raw.metaType() == QMetaType::fromType<QString>()) return raw.toString();
+    if (raw.metaType() == QMetaType::fromType<Span>()) return raw.value<Span>().text();
+    QList<Span> spans;
+    if (Span::tryExtractList(raw, /*allowVariantMap=*/false, spans)) return Span::plainText(spans);
+    return raw.toString();
 }
 
 void TableView::handleDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
                                   const QList<int>& roles) {
     m_fetchedRoles.clear();
+    if (!topLeft.isValid() || !bottomRight.isValid() || topLeft.parent().isValid()) {
+        m_builtInCells.clear();
+    } else if (!m_builtInCells.isEmpty()) {
+        for (auto it = m_builtInCells.begin(); it != m_builtInCells.end();) {
+            if (it.key().first >= topLeft.row() && it.key().first <= bottomRight.row())
+                it = m_builtInCells.erase(it);
+            else
+                ++it;
+        }
+    }
     bool affected = false;
     for (auto& record : m_createdDelegateItems) {
         const QModelIndex index = record.source;
@@ -1125,6 +1156,170 @@ void TableView::layoutDelegates() {
     m_fetchedRoles.clear();
 }
 
+const TableView::BuiltInCell& TableView::resolveBuiltInCell(int row, int column) const {
+    const Position key{row, column};
+    const auto existing = m_builtInCells.constFind(key);
+    if (existing != m_builtInCells.cend()) return existing.value();
+
+    BuiltInCell entry;
+    entry.index = sourceIndex(row, column);
+    const QVariant rawCell =
+        m_cppModel ? m_cppModel->data(entry.index, Qt::DisplayRole) : cellRawValue(row, column);
+    if (rawCell.metaType() == QMetaType::fromType<QString>()) {
+        entry.rawValue = rawCell.toString();
+    } else if (rawCell.metaType() == QMetaType::fromType<Span>()) {
+        const Span s = rawCell.value<Span>();
+        entry.rawValue = s.text();
+        entry.spans = {s};
+    } else if (Span::tryExtractList(rawCell, /*allowVariantMap=*/false, entry.spans)) {
+        entry.rawValue = Span::plainText(entry.spans);
+    } else {
+        entry.rawValue = rawCell.toString();
+    }
+    entry.text = entry.rawValue;
+
+    if (m_cppModel && entry.index.isValid()) {
+        entry.standardAlignment =
+            NumericItemRoles::alignmentName(m_cppModel->data(entry.index, Qt::TextAlignmentRole));
+        const QVariant check = m_cppModel->data(entry.index, Qt::CheckStateRole);
+        const QString glyph =
+            NumericItemRoles::decorationGlyph(m_cppModel->data(entry.index, Qt::DecorationRole));
+        QString prefix;
+        if (!glyph.isEmpty()) prefix = glyph + QLatin1Char(' ');
+        if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
+            const int state = check.toInt();
+            prefix += state == Qt::Checked            ? QStringLiteral("[x] ")
+                      : state == Qt::PartiallyChecked ? QStringLiteral("[-] ")
+                                                      : QStringLiteral("[ ] ");
+        }
+        if (!prefix.isEmpty()) {
+            entry.text.prepend(prefix);
+            if (!entry.spans.isEmpty()) entry.spans.prepend(Span(prefix));
+        }
+        entry.enabled = m_cppModel->flags(entry.index).testFlag(Qt::ItemIsEnabled);
+    }
+
+    if (m_cellFormat.isCallable()) {
+        const QJSValue result = m_cellFormat.call({row, column, entry.text});
+        if (result.isError()) {
+            callbackWarning(QStringLiteral("cellFormat: ") + result.toString() + QLatin1Char('\n') +
+                                result.property("stack").toString(),
+                            m_formatErrors);
+        } else {
+            m_formatErrors.clear();
+            if (result.isArray()) {
+                QList<Span> formattedSpans;
+                if (Span::tryExtractList(result.toVariant(), /*allowVariantMap=*/true,
+                                         formattedSpans)) {
+                    entry.spans = std::move(formattedSpans);
+                    entry.spansOverrideSelection = true;
+                }
+            } else if (result.isObject()) {
+                const QVariant retained = result.toVariant(QJSValue::RetainJSObjects);
+                if (retained.metaType() == QMetaType::fromType<Span>()) {
+                    const Span s = retained.value<Span>();
+                    entry.text = s.text();
+                    if (s.color().isValid() && !s.color().isTransparent())
+                        entry.formatFg = s.color();
+                    if (s.backgroundColor().isValid() && !s.backgroundColor().isTransparent())
+                        entry.formatBg = s.backgroundColor();
+                    entry.formatStyle = s.style();
+                    entry.spans.clear();
+                } else {
+                    const QJSValue textProp = result.property(QStringLiteral("text"));
+                    if (!textProp.isUndefined()) {
+                        entry.text = textProp.toString();
+                        entry.spans.clear();
+                    }
+                    const QJSValue spansProp = result.property(QStringLiteral("spans"));
+                    if (!spansProp.isUndefined()) {
+                        QList<Span> formattedSpans;
+                        if (Span::tryExtractList(spansProp.toVariant(), /*allowVariantMap=*/true,
+                                                 formattedSpans)) {
+                            entry.spans = std::move(formattedSpans);
+                            entry.spansOverrideSelection = true;
+                        }
+                    }
+                    const auto parseColorProp = [&](const QJSValue& prop) -> Color {
+                        if (prop.isUndefined()) return {};
+                        if (prop.isString()) {
+                            const QString str = prop.toString();
+                            if (str.isEmpty()) return {};
+                            const auto cached = m_columnColorCache.constFind(str);
+                            if (cached != m_columnColorCache.cend())
+                                return Color::fromArgb32(cached.value());
+                            const Color parsed = Color::fromString(str);
+                            if (!parsed.isValid()) return {};
+                            if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
+                            m_columnColorCache.insert(str, parsed.argb32());
+                            return parsed;
+                        }
+                        const QVariant cv = prop.toVariant(QJSValue::RetainJSObjects);
+                        if (cv.metaType() == QMetaType::fromType<Color>()) return cv.value<Color>();
+                        return Color::fromString(prop.toString());
+                    };
+                    entry.formatFg = parseColorProp(result.property(QStringLiteral("color")));
+                    entry.formatBg =
+                        parseColorProp(result.property(QStringLiteral("backgroundColor")));
+                    const bool formatGaveFg = entry.formatFg.isValid();
+                    const bool formatGaveBg = entry.formatBg.isValid();
+                    const auto applyFlag = [&](const QString& flagKey,
+                                               void (TextStyle::*setter)(bool)) {
+                        const QJSValue p = result.property(flagKey);
+                        if (!p.isUndefined()) (entry.formatStyle.*setter)(p.toBool());
+                    };
+                    applyFlag(QStringLiteral("bold"), &TextStyle::setBold);
+                    applyFlag(QStringLiteral("dim"), &TextStyle::setDim);
+                    applyFlag(QStringLiteral("italic"), &TextStyle::setItalic);
+                    applyFlag(QStringLiteral("underline"), &TextStyle::setUnderline);
+                    applyFlag(QStringLiteral("reversed"), &TextStyle::setReversed);
+                    if (!entry.spansOverrideSelection && !entry.spans.isEmpty()) {
+                        for (Span& s : entry.spans) {
+                            if (formatGaveFg) s.resetColor();
+                            if (formatGaveBg) s.resetBackgroundColor();
+                            if (!entry.formatStyle.isEmpty()) {
+                                TextStyle st = s.style();
+                                st.applyOverlay(entry.formatStyle);
+                                s.setStyle(st);
+                            }
+                        }
+                    }
+                    const QJSValue alignProp = result.property(QStringLiteral("align"));
+                    if (!alignProp.isUndefined()) entry.formatAlignment = alignProp.toString();
+                    const QJSValue padProp = result.property(QStringLiteral("padding"));
+                    if (!padProp.isUndefined()) {
+                        entry.leftPadding = entry.rightPadding = (std::max)(0, padProp.toInt());
+                    }
+                    const QJSValue lPadProp = result.property(QStringLiteral("leftPadding"));
+                    if (!lPadProp.isUndefined()) {
+                        entry.leftPadding = (std::max)(0, lPadProp.toInt());
+                    }
+                    const QJSValue rPadProp = result.property(QStringLiteral("rightPadding"));
+                    if (!rPadProp.isUndefined()) {
+                        entry.rightPadding = (std::max)(0, rPadProp.toInt());
+                    }
+                }
+            }
+        }
+    }
+
+    if (entry.spans.isEmpty()) {
+        entry.totalWidth = UnicodeText::displayWidth(entry.text);
+    } else {
+        entry.spanWidths.reserve(entry.spans.size());
+        int sum = 0;
+        for (const Span& s : std::as_const(entry.spans)) {
+            const int w = UnicodeText::displayWidth(s.text());
+            entry.spanWidths.append(w);
+            sum += w;
+        }
+        entry.totalWidth = sum;
+    }
+
+    if (m_builtInCells.size() >= 1024) m_builtInCells.clear();
+    return m_builtInCells.insert(key, std::move(entry)).value();
+}
+
 void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     if (!m_visible) return;
     const auto view = viewGeometry();
@@ -1150,8 +1345,121 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
             x += cluster.width;
         }
     };
+    const auto fillSpaces = [&](int x, int y, int count, uint32_t spaceFg, uint32_t spaceBg,
+                                TextAttribute spaceAttributes) {
+        if (count <= 0 || y < clip.y || y >= clip.y + clip.height) return;
+        const int begin = (std::max)(clip.x, x);
+        const int end = (std::min)(clip.x + clip.width, x + count);
+        if (end <= begin) return;
+        if (begin > 0 && buffer.cellAt(begin, y).continuation) {
+            Cell& prev = buffer.cellAt(begin - 1, y);
+            prev.setCharacter(" ");
+            prev.displayWidth = 1;
+            prev.continuation = false;
+        }
+        if (end < buffer.width() && buffer.cellAt(end - 1, y).displayWidth == 2) {
+            Cell& next = buffer.cellAt(end, y);
+            next.setCharacter(" ");
+            next.displayWidth = 1;
+            next.continuation = false;
+        }
+        buffer.fillRect(begin, y, end - begin, 1, " ", spaceFg, spaceBg);
+        for (int cx = begin; cx < end; ++cx) {
+            Cell& c = buffer.cellAt(cx, y);
+            c.attributes = spaceAttributes;
+            c.linkId = 0;
+        }
+    };
     const auto visibleWidth = [&](const ColumnGeometry& geometry) {
         return (std::max)(0, (std::min)(geometry.width, clip.x + clip.width - absX - geometry.x));
+    };
+    const auto paintSpans = [&](const QList<Span>& spans, const QList<int>& spanWidths,
+                                int totalSpanWidth, int x, int y, int width, int visWidth,
+                                const QString& alignment, int leftPadding, int rightPadding,
+                                uint32_t baseFg, uint32_t baseBg, TextAttribute baseAttributes,
+                                bool useSpanColors) {
+        if (width <= 0 || visWidth <= 0 || y < clip.y || y >= clip.y + clip.height) return;
+        int leftPad = (std::max)(0, leftPadding);
+        int rightPad = (std::max)(0, rightPadding);
+        if (leftPad > width) leftPad = width;
+        if (rightPad > width - leftPad) rightPad = width - leftPad;
+        const int innerWidth = width - leftPad - rightPad;
+
+        int used = totalSpanWidth;
+        if (used > innerWidth) {
+            used = 0;
+            for (const Span& span : spans) {
+                GraphemeIterator measure(span.text());
+                GraphemeRef cluster;
+                bool full = false;
+                while (measure.next(cluster)) {
+                    if (cluster.width > innerWidth - used) {
+                        full = true;
+                        break;
+                    }
+                    used += cluster.width;
+                }
+                if (full) break;
+            }
+        }
+        const int extraSpace = innerWidth - used;
+        const int alignOffset = alignment == QLatin1String("right")    ? extraSpace
+                                : alignment == QLatin1String("center") ? extraSpace / 2
+                                                                       : 0;
+        const int left = leftPad + alignOffset;
+        const int leadSpaces = (std::min)(left, visWidth);
+        if (leadSpaces > 0) {
+            fillSpaces(x, y, leadSpaces, baseFg, baseBg, baseAttributes);
+        }
+
+        int position = left;
+        const int maxContentPos = (std::min)(width - rightPad, visWidth);
+        if (totalSpanWidth <= innerWidth && left + totalSpanWidth <= maxContentPos) {
+            for (qsizetype i = 0; i < spans.size(); ++i) {
+                const Span& span = spans[i];
+                const int spanW = spanWidths[i];
+                if (span.text().isEmpty()) continue;
+                uint32_t spanFg = baseFg;
+                uint32_t spanBg = baseBg;
+                if (useSpanColors) {
+                    const Color fgColor = span.color();
+                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
+                    const Color bgColor = span.backgroundColor();
+                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
+                }
+                const TextAttribute spanAttr = span.resolveAttributes(baseAttributes);
+                write(x + position, y, span.text(), spanFg, spanBg, spanAttr);
+                position += spanW;
+            }
+        } else {
+            for (const Span& span : spans) {
+                if (position >= maxContentPos) break;
+                uint32_t spanFg = baseFg;
+                uint32_t spanBg = baseBg;
+                if (useSpanColors) {
+                    const Color fgColor = span.color();
+                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
+                    const Color bgColor = span.backgroundColor();
+                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
+                }
+                const TextAttribute spanAttr = span.resolveAttributes(baseAttributes);
+                QString runText;
+                const int runStart = position;
+                GraphemeIterator draw(span.text());
+                GraphemeRef cluster;
+                while (position < maxContentPos && draw.next(cluster)) {
+                    if (cluster.width > maxContentPos - position) break;
+                    runText.append(cluster.utf16);
+                    position += cluster.width;
+                }
+                if (!runText.isEmpty()) {
+                    write(x + runStart, y, runText, spanFg, spanBg, spanAttr);
+                }
+            }
+        }
+        if (position < visWidth) {
+            fillSpaces(x + position, y, visWidth - position, baseFg, baseBg, baseAttributes);
+        }
     };
     if (headerRows()) {
         const uint32_t headerBg = m_resolvedHeaderBackgroundColor;
@@ -1207,15 +1515,17 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 }
             }
         }
+        if (m_delegate || m_rowDelegate) continue;
         for (const auto& geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
-            if (m_delegate || m_rowDelegate) continue;
-            const QModelIndex index = sourceIndex(row, geometry.column);
-            QString value = m_cppModel ? m_cppModel->data(index, Qt::DisplayRole).toString()
-                                       : cellText(row, geometry.column);
-            QString alignment = geometry.alignment;
-            int cellLeftPadding = geometry.leftPadding;
-            int cellRightPadding = geometry.rightPadding;
+            const BuiltInCell& cell = resolveBuiltInCell(row, geometry.column);
+            const QString& alignment = !cell.formatAlignment.isEmpty()     ? cell.formatAlignment
+                                       : !cell.standardAlignment.isEmpty() ? cell.standardAlignment
+                                                                           : geometry.alignment;
+            const int cellLeftPadding =
+                cell.leftPadding >= 0 ? cell.leftPadding : geometry.leftPadding;
+            const int cellRightPadding =
+                cell.rightPadding >= 0 ? cell.rightPadding : geometry.rightPadding;
             uint32_t cellFg = fg;
             uint32_t cellBg = bg;
             TextAttribute cellAttributes = attributes;
@@ -1232,66 +1542,80 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 if (geometry.hasForeground) {
                     cellFg = geometry.foreground;
                     columnGaveFg = true;
-                } else if (const auto ink =
-                               columnColor(geometry.foregroundFn, row, geometry.column, value)) {
+                } else if (const auto ink = columnColor(geometry.foregroundFn, row, geometry.column,
+                                                        cell.rawValue)) {
                     cellFg = *ink;
                     columnGaveFg = true;
                 }
                 if (geometry.hasBackground) {
                     cellBg = geometry.background;
                     columnGaveBg = true;
-                } else if (const auto fill =
-                               columnColor(geometry.backgroundFn, row, geometry.column, value)) {
+                } else if (const auto fill = columnColor(geometry.backgroundFn, row,
+                                                         geometry.column, cell.rawValue)) {
                     cellBg = *fill;
                     columnGaveBg = true;
                 }
             }
-            if (m_cppModel) {
-                // Standard item roles, as QStyledItemDelegate would paint them.
-                const auto standard = NumericItemRoles::readForPaint(
-                    m_cppModel.data(), index, cellFg, cellBg, keepCellColors && !columnGaveFg,
-                    keepCellColors && !columnGaveBg);
-                if (!standard.prefix.isEmpty()) value.prepend(standard.prefix);
-                cellFg = standard.foreground;
-                cellBg = standard.background;
-                if (!standard.alignment.isEmpty()) alignment = standard.alignment;
-                if (!standard.enabled) cellAttributes = cellAttributes | TextAttribute::Dim;
-            }
-            if (m_cellFormat.isCallable()) {
-                const QJSValue result = m_cellFormat.call({row, geometry.column, value});
-                if (result.isError()) {
-                    callbackWarning(QStringLiteral("cellFormat: ") + result.toString() +
-                                        QLatin1Char('\n') + result.property("stack").toString(),
-                                    m_formatErrors);
-                } else {
-                    m_formatErrors.clear();
-                    if (result.isObject()) {
-                        if (result.hasProperty("text")) value = result.property("text").toString();
-                        if (result.hasProperty("color"))
-                            cellFg = Color::resolve(result.property("color").toString(), cellFg);
-                        if (result.hasProperty("backgroundColor"))
-                            cellBg = Color::resolve(result.property("backgroundColor").toString(),
-                                                    cellBg);
-                        if (result.property("bold").toBool())
-                            cellAttributes = cellAttributes | TextAttribute::Bold;
-                        if (result.hasProperty("align"))
-                            alignment = result.property("align").toString();
-                        if (result.hasProperty("padding")) {
-                            cellLeftPadding = cellRightPadding = result.property("padding").toInt();
-                        }
-                        if (result.hasProperty("leftPadding")) {
-                            cellLeftPadding = result.property("leftPadding").toInt();
-                        }
-                        if (result.hasProperty("rightPadding")) {
-                            cellRightPadding = result.property("rightPadding").toInt();
-                        }
-                    }
+            if (m_cppModel && cell.index.isValid()) {
+                if (keepCellColors && !columnGaveFg) {
+                    const QString text = NumericItemRoles::colorString(
+                        m_cppModel->data(cell.index, Qt::ForegroundRole));
+                    if (!text.isEmpty()) cellFg = resolveCachedColor(text, cellFg);
                 }
+                if (keepCellColors && !columnGaveBg) {
+                    const QString text = NumericItemRoles::colorString(
+                        m_cppModel->data(cell.index, Qt::BackgroundRole));
+                    if (!text.isEmpty()) cellBg = resolveCachedColor(text, cellBg);
+                }
+                if (!cell.enabled) cellAttributes = cellAttributes | TextAttribute::Dim;
             }
-            write(absX + geometry.x, y,
-                  alignedPrefix(value, geometry.width, visibleWidth(geometry), alignment,
-                                cellLeftPadding, cellRightPadding),
-                  cellFg, cellBg, cellAttributes);
+            if (cell.formatFg.isValid()) cellFg = cell.formatFg.argb32();
+            if (cell.formatBg.isValid()) cellBg = cell.formatBg.argb32();
+            cellAttributes = cell.formatStyle.resolveAttributes(cellAttributes);
+
+            const int visW = visibleWidth(geometry);
+            if (cell.spans.isEmpty()) {
+                const int width = geometry.width;
+                if (width <= 0 || visW <= 0) continue;
+                int leftPad = (std::max)(0, cellLeftPadding);
+                int rightPad = (std::max)(0, cellRightPadding);
+                if (leftPad > width) leftPad = width;
+                if (rightPad > width - leftPad) rightPad = width - leftPad;
+                const int innerWidth = width - leftPad - rightPad;
+                const int maxContentPos = (std::min)(width - rightPad, visW);
+                const int extraSpace = innerWidth - cell.totalWidth;
+                const int alignOffset = alignment == QLatin1String("right")    ? extraSpace
+                                        : alignment == QLatin1String("center") ? extraSpace / 2
+                                                                               : 0;
+                const int left = leftPad + alignOffset;
+                if (cell.totalWidth <= innerWidth && left + cell.totalWidth <= maxContentPos &&
+                    (cell.totalWidth > 0 || cell.text.isEmpty())) {
+                    const int leadSpaces = (std::min)(left, visW);
+                    if (leadSpaces > 0) {
+                        fillSpaces(absX + geometry.x, y, leadSpaces, cellFg, cellBg,
+                                   cellAttributes);
+                    }
+                    if (!cell.text.isEmpty()) {
+                        write(absX + geometry.x + left, y, cell.text, cellFg, cellBg,
+                              cellAttributes);
+                    }
+                    const int position = (std::max)(leadSpaces, left + cell.totalWidth);
+                    if (position < visW) {
+                        fillSpaces(absX + geometry.x + position, y, visW - position, cellFg, cellBg,
+                                   cellAttributes);
+                    }
+                } else {
+                    write(absX + geometry.x, y,
+                          alignedPrefix(cell.text, geometry.width, visW, alignment, cellLeftPadding,
+                                        cellRightPadding),
+                          cellFg, cellBg, cellAttributes);
+                }
+            } else {
+                paintSpans(cell.spans, cell.spanWidths, cell.totalWidth, absX + geometry.x, y,
+                           geometry.width, visW, alignment, cellLeftPadding, cellRightPadding,
+                           cellFg, cellBg, cellAttributes,
+                           keepCellColors || cell.spansOverrideSelection);
+            }
         }
     }
 }

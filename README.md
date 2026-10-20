@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/qamui_lockup_dark.svg">
-    <img alt="QmlTui" src="docs/assets/branding/qamui_lockup_light.svg" width="360">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/qmltui_lockup_dark.svg">
+    <img alt="QmlTui" src="docs/assets/branding/qmltui_lockup_light.svg" width="360">
   </picture>
 </p>
 

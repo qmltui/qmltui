@@ -52,6 +52,12 @@ def letter(ch, x0, ink, accent):
         g += '<circle cx="40" cy="80" r="31"/><line x1="71" y1="49" x2="71" y2="111"/>'; adv = 96
     elif ch == "m":
         g += '<path d="M9,111 V64.5 A15.5,15.5 0 0 1 40,64.5 V111 M40,64.5 A15.5,15.5 0 0 1 71,64.5 V111"/>'; adv = 96
+    elif ch == "l":
+        g += '<line x1="9" y1="19" x2="9" y2="111"/>'; adv = 36
+    elif ch == "T":
+        g += '<line x1="9" y1="19" x2="67" y2="19"/><line x1="38" y1="19" x2="38" y2="111"/>'; adv = 88
+    elif ch == "t":
+        g += '<line x1="25" y1="25" x2="25" y2="111"/><line x1="9" y1="49" x2="45" y2="49"/>'; adv = 64
     elif ch == "u":
         g += '<path d="M9,49 V80 A31,31 0 0 0 71,80 V49 M71,80 V111"/>'; adv = 96
     elif ch == "i":
@@ -76,7 +82,7 @@ def lockup(ink, accent):
     tx = 10 - (CX - R - SW / 2) * s
     mark = f'<g transform="translate({tx:.1f} {ty:.1f}) scale({s:.4f})">\n  {mark_body(ink, accent)}\n  </g>'
     right = (polar(VERTEX_R, 45)[0] + SW / 2) * s + tx
-    w, end = word("amui", round(right + 12), ink, accent)
+    w, end = word("mlTui", round(right + 12), ink, accent)
     return f"{mark}\n  {w}", end + 10
 
 def main():

@@ -99,13 +99,13 @@ export default defineConfig({
   },
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/branding/qamui_mark.svg' }]
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/branding/qmltui_mark.svg' }]
   ],
 
   themeConfig: {
     logo: {
-      light: '/assets/branding/qamui_mark_light.svg',
-      dark: '/assets/branding/qamui_mark.svg'
+      light: '/assets/branding/qmltui_mark_light.svg',
+      dark: '/assets/branding/qmltui_mark.svg'
     },
 
     search: {

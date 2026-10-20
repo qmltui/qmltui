@@ -8,8 +8,8 @@ hero:
   text: Declarative QML Terminal UIs on a High-Performance C++20 & Qt 6 Engine
   tagline: Combine the ergonomics of a retained-mode declarative QML scene graph and reactive property bindings with native C++20 backends, 1M-row QAbstractItemModel virtualization, and O(viewport) double-buffered cell diffing.
   image:
-    light: /assets/branding/qamui_mark_light.svg
-    dark: /assets/branding/qamui_mark.svg
+    light: /assets/branding/qmltui_mark_light.svg
+    dark: /assets/branding/qmltui_mark.svg
     alt: QmlTui
   actions:
     - theme: brand

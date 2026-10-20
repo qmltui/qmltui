@@ -8,8 +8,7 @@
 
 namespace qmltui {
 
-class QMLTUI_CORE_EXPORT Color
-{
+class QMLTUI_CORE_EXPORT Color {
     Q_GADGET
     QML_VALUE_TYPE(rgba)
     QML_CONSTRUCTIBLE_VALUE
@@ -42,15 +41,11 @@ public:
     static constexpr quint32 TransparentTag = 0x04000000U;
 
     constexpr Color() = default;
-    Q_INVOKABLE Color(const QString &value);
-    Color(const char *value);
+    Q_INVOKABLE Color(const QString& value);
+    Color(const char* value);
 
-    static constexpr Color fromArgb32(quint32 argb)
-    {
-        return Color(argb, true);
-    }
-    static constexpr Color fromAnsiIndex(int index)
-    {
+    static constexpr Color fromArgb32(quint32 argb) { return Color(argb, true); }
+    static constexpr Color fromAnsiIndex(int index) {
         return Color(AnsiTag | static_cast<quint32>(index & 0x0F), true);
     }
     static constexpr Color transparent() { return Color(TransparentTag, true); }
@@ -81,10 +76,7 @@ public:
     // The value to store once something is being painted. Transparency is an
     // instruction to the painter, not a colour, and has no cell representation:
     // a painted cell that was asked for it shows the terminal default.
-    constexpr quint32 paintedArgb32() const
-    {
-        return isTransparent() ? 0x00000000U : m_argb;
-    }
+    constexpr quint32 paintedArgb32() const { return isTransparent() ? 0x00000000U : m_argb; }
     constexpr int ansiIndex() const {
         return isAnsiIndex() ? static_cast<int>(ansiIndex(m_argb)) : -1;
     }
@@ -94,9 +86,8 @@ public:
     // The literal RGB this color has under xterm's default palette; identity for RGB colors.
     Color toRgb() const;
 
-    static Color fromRgba(qreal red, qreal green, qreal blue,
-                          qreal alpha = 1.0);
-    static Color fromString(const QString &value);
+    static Color fromRgba(qreal red, qreal green, qreal blue, qreal alpha = 1.0);
+    static Color fromString(const QString& value);
     static Color fromString(const QString& value, Color defaultColor) {
         const Color c = fromString(value);
         return c.isValid() ? c : defaultColor;
@@ -111,16 +102,15 @@ public:
 
     QString toString() const;
 
-    friend constexpr bool operator==(Color lhs, Color rhs) = default;
+    friend constexpr bool operator==(Color lhs, Color rhs) noexcept {
+        return lhs.m_argb == rhs.m_argb && lhs.m_valid == rhs.m_valid;
+    }
+    friend constexpr bool operator!=(Color lhs, Color rhs) noexcept { return !(lhs == rhs); }
 
 private:
-    constexpr Color(quint32 argb, bool valid)
-        : m_argb(argb), m_valid(valid)
-    {
-    }
+    constexpr Color(quint32 argb, bool valid) : m_argb(argb), m_valid(valid) {}
 
-    constexpr qreal channel(int shift) const
-    {
+    constexpr qreal channel(int shift) const {
         return static_cast<qreal>((m_argb >> shift) & 0xffU) / 255.0;
     }
 

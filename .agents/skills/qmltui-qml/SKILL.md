@@ -5,7 +5,7 @@ description: Applies QmlTui retained-mode terminal QML conventions. Covers allow
 
 # QmlTui QML Guidelines
 
-QmlTui is a C++20, Qt 6.8+ retained-mode terminal UI framework built on `QtQml`
+QmlTui is a Qt 6.8+ retained-mode terminal UI framework built on `QtQml`
 and a custom text-grid renderer. It does not use Qt Quick, a display server, or
 pixel rasterization. These rules describe how QmlTui QML is written in this
 repository. When a rule and an existing file disagree, match the file's style

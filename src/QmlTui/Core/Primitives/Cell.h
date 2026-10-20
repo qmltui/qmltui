@@ -11,11 +11,11 @@
 namespace qmltui {
 
 enum class TextAttribute : uint8_t {
-    None      = 0,
-    Bold      = 1 << 0,
-    Italic    = 1 << 1,
+    None = 0,
+    Bold = 1 << 0,
+    Italic = 1 << 1,
     Underline = 1 << 2,
-    Reversed  = 1 << 3,
+    Reversed = 1 << 3,
     Blink = 1 << 4,
     Conceal = 1 << 5,
     Strikethrough = 1 << 6,
@@ -50,21 +50,17 @@ struct QMLTUI_CORE_EXPORT Cell {
     // UTF-8 bytes of the cluster (empty for continuation cells). The view is
     // valid until this cell is modified or its buffer is resized, cleared,
     // swapped or destroyed; views of interned clusters live for the process.
-    QByteArrayView character() const noexcept
-    {
-        if (m_glyphLength != InternedTag)
-            return QByteArrayView(m_glyph, m_glyphLength);
+    QByteArrayView character() const noexcept {
+        if (m_glyphLength != InternedTag) return QByteArrayView(m_glyph, m_glyphLength);
         return internedGlyph(internIndex());
     }
 
     // Replaces the cluster. Accepts literals, QByteArray and views, including
     // a view of this cell's own bytes.
-    void setCharacter(QByteArrayView utf8)
-    {
+    void setCharacter(QByteArrayView utf8) {
         if (utf8.size() <= InlineGlyphCapacity) {
             const auto length = static_cast<size_t>(utf8.size());
-            if (length > 0)
-                std::memmove(m_glyph, utf8.data(), length);
+            if (length > 0) std::memmove(m_glyph, utf8.data(), length);
             std::memset(m_glyph + length, 0, sizeof m_glyph - length);
             m_glyphLength = static_cast<uint8_t>(length);
         } else {
@@ -87,7 +83,14 @@ struct QMLTUI_CORE_EXPORT Cell {
     Color background() const { return Color::fromArgb32(bgColor); }
 
     // Unused inline bytes are always zero, so a memberwise compare is exact.
-    bool operator==(const Cell &other) const noexcept = default;
+    bool operator==(const Cell& other) const noexcept {
+        return fgColor == other.fgColor && bgColor == other.bgColor &&
+               displayWidth == other.displayWidth && continuation == other.continuation &&
+               attributes == other.attributes && linkId == other.linkId &&
+               m_glyphLength == other.m_glyphLength &&
+               std::memcmp(m_glyph, other.m_glyph, sizeof(m_glyph)) == 0;
+    }
+    bool operator!=(const Cell& other) const noexcept { return !(*this == other); }
 
 private:
     static constexpr uint8_t InternedTag = 0xFF;
@@ -95,15 +98,14 @@ private:
     static uint32_t internGlyph(QByteArrayView utf8);
     static QByteArrayView internedGlyph(uint32_t index) noexcept;
 
-    uint32_t internIndex() const noexcept
-    {
+    uint32_t internIndex() const noexcept {
         uint32_t index = 0;
         std::memcpy(&index, m_glyph, sizeof index);
         return index;
     }
 
-    uint8_t m_glyphLength = 1;            // 0..InlineGlyphCapacity, or InternedTag
-    char m_glyph[InlineGlyphCapacity] = {' '};  // interned: bytes 0..3 hold the index
+    uint8_t m_glyphLength = 1;                 // 0..InlineGlyphCapacity, or InternedTag
+    char m_glyph[InlineGlyphCapacity] = {' '}; // interned: bytes 0..3 hold the index
 };
 
 static_assert(sizeof(Cell) == 24, "Cell must stay 24 bytes");

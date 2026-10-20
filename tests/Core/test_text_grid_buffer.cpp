@@ -64,7 +64,7 @@ void TestTextGridBuffer::testResize() {
     QVERIFY(buffer.contains(0, 0));
     QVERIFY(!buffer.contains(100, 100));
     QCOMPARE(buffer.tryCellAt(100, 100), nullptr);
-    const TextGridBuffer &constBuffer = buffer;
+    const TextGridBuffer& constBuffer = buffer;
     QCOMPARE(constBuffer.tryCellAt(100, 100), nullptr);
 }
 
@@ -98,7 +98,7 @@ void TestTextGridBuffer::testCellAccess() {
     QCOMPARE(buffer.tryCellAt(-1, 0), nullptr);
     QCOMPARE(buffer.tryCellAt(2, 1), nullptr);
 
-    const TextGridBuffer &constBuffer = buffer;
+    const TextGridBuffer& constBuffer = buffer;
     QVERIFY(constBuffer.tryCellAt(0, 1));
     QCOMPARE(constBuffer.tryCellAt(0, 2), nullptr);
 }
@@ -106,7 +106,7 @@ void TestTextGridBuffer::testCellAccess() {
 void TestTextGridBuffer::testColorValue() {
     const Color red(" red ");
     QVERIFY(red.isValid());
-    QVERIFY(red.isAnsiIndex());                       // "red" is palette entry 9, not RGB
+    QVERIFY(red.isAnsiIndex()); // "red" is palette entry 9, not RGB
     QCOMPARE(red.toRgb().argb32(), 0xffff0000U);
     QCOMPARE(red.toString(), QStringLiteral("red"));
     QCOMPARE(Color("#ff0000").toString(), QStringLiteral("#ff0000"));
@@ -118,20 +118,18 @@ void TestTextGridBuffer::testColorValue() {
     QCOMPARE(Color::fromRgba(0.2, 0.4, 0.6, 0.5).argb32(), 0x80336699U);
     QCOMPARE(Color::fromRgba(-1.0, 2.0, 0.5, 2.0).argb32(), 0xff00ff80U);
     QCOMPARE(Color::fromRgba(1.0, 0.0, 0.0).argb32(), 0xffff0000U);
-    QVERIFY(!Color::fromRgba(std::numeric_limits<qreal>::quiet_NaN(),
-                             0.0, 0.0, 1.0).isValid());
+    QVERIFY(!Color::fromRgba(std::numeric_limits<qreal>::quiet_NaN(), 0.0, 0.0, 1.0).isValid());
     QVERIFY(!Color().isValid());
     QVERIFY(!Color("not-a-color").isValid());
     QVERIFY(!Color("#xyz").isValid());
 
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(2, 1));
-    buffer.writeText(0, 0, QStringLiteral("X"), Color("tomato"),
-                     Color("navy"));
+    buffer.writeText(0, 0, QStringLiteral("X"), Color("tomato"), Color("navy"));
     QCOMPARE(buffer.cellAt(0, 0).foreground(), Color("tomato"));
     QCOMPARE(buffer.cellAt(0, 0).background(), Color("navy"));
 
-    Cell &cell = buffer.cellAt(1, 0);
+    Cell& cell = buffer.cellAt(1, 0);
     cell.setForeground(Color("gold"));
     cell.setBackground(Color("transparent"));
     QCOMPARE(cell.fgColor, 0xffffd700U);
@@ -144,7 +142,7 @@ void TestTextGridBuffer::testDiff() {
     b2.resize(2, 2);
 
     b2.cellAt(0, 0).setCharacter("A");
-    
+
     std::string diff = b1.diff(b2);
     QVERIFY(diff.find("A") != std::string::npos);
     QVERIFY(b2.diff(b2).empty());
@@ -231,7 +229,7 @@ void TestTextGridBuffer::testDiffEmitsStyleTransitions() {
     QVERIFY(diff.find("38;2;255;0;0") != std::string::npos);
     QVERIFY(diff.find("48;2;0;0;255") != std::string::npos);
     QVERIFY(diff.find("39;49;22m") != std::string::npos);
-    QVERIFY(diff.ends_with("B"));
+    QVERIFY(QByteArray::fromStdString(diff).endsWith("B"));
 }
 
 void TestTextGridBuffer::testDiffHandlesWideCharacterTransitions() {
@@ -248,7 +246,7 @@ void TestTextGridBuffer::testDiffHandlesWideCharacterTransitions() {
 
     const std::string toNarrow = wide.diff(narrow);
     QCOMPARE(occurrenceCount(toNarrow, "H"), 1);
-    QVERIFY(toNarrow.ends_with("A  "));
+    QVERIFY(QByteArray::fromStdString(toNarrow).endsWith("A  "));
 }
 
 void TestTextGridBuffer::testRelativeDiffBatchesContiguousCells() {
@@ -281,8 +279,7 @@ void TestTextGridBuffer::testExtendedAttributeSerialization() {
     QVERIFY(buffer.resize(1, 1));
     Cell& cell = buffer.cellAt(0, 0);
     cell.setCharacter("X");
-    cell.attributes = TextAttribute::Blink | TextAttribute::Conceal
-        | TextAttribute::Strikethrough;
+    cell.attributes = TextAttribute::Blink | TextAttribute::Conceal | TextAttribute::Strikethrough;
 
     const std::string ansi = buffer.toAnsiString();
     QVERIFY(ansi.find("\033[5m") != std::string::npos);
@@ -293,27 +290,27 @@ void TestTextGridBuffer::testExtendedAttributeSerialization() {
 void TestTextGridBuffer::testHtmlTagParsing() {
     Text text;
     text.setText("Normal <b>Bold <font color='red'>RedBold</font> Bold</b> Normal");
-    
+
     // Check that tags are omitted from width
     // Visible text is: "Normal Bold RedBold Bold Normal" -> length: 31
     QCOMPARE(text.width(), 31);
-    
+
     TextGridBuffer buffer;
     buffer.resize(text.width(), text.height());
     paintItem(text, buffer, 0, 0);
-    
+
     // Check characters inside the buffer
     // "Normal " -> 7 chars
     QCOMPARE(QString::fromUtf8(buffer.cellAt(6, 0).character().toByteArray()), QString(" "));
     QCOMPARE(buffer.cellAt(6, 0).attributes, TextAttribute::None);
-    
+
     // "Bold " -> starts at 7, length 5 (7 to 11)
     QCOMPARE(QString::fromUtf8(buffer.cellAt(7, 0).character().toByteArray()), QString("B"));
     QCOMPARE(buffer.cellAt(7, 0).attributes, TextAttribute::Bold);
     // Text's default colour is the terminal's own foreground (0 -> SGR 39), not
     // a literal RGB white that would vanish on a light theme.
     QCOMPARE(buffer.cellAt(7, 0).fgColor, 0u);
-    
+
     // "RedBold" -> starts at 12, length 7
     QCOMPARE(QString::fromUtf8(buffer.cellAt(12, 0).character().toByteArray()), QString("R"));
     QCOMPARE(buffer.cellAt(12, 0).attributes, TextAttribute::Bold);
@@ -323,7 +320,7 @@ void TestTextGridBuffer::testHtmlTagParsing() {
     QCOMPARE(QString::fromUtf8(buffer.cellAt(20, 0).character().toByteArray()), QString("B"));
     QCOMPARE(buffer.cellAt(20, 0).attributes, TextAttribute::Bold);
     QCOMPARE(buffer.cellAt(20, 0).fgColor, 0u); // restored to the terminal default
-    
+
     // " Normal" -> starts at 24
     QCOMPARE(QString::fromUtf8(buffer.cellAt(25, 0).character().toByteArray()), QString("N"));
     QCOMPARE(buffer.cellAt(25, 0).attributes, TextAttribute::None); // Restored to None
@@ -332,23 +329,23 @@ void TestTextGridBuffer::testHtmlTagParsing() {
 void TestTextGridBuffer::testTextFormatModes() {
     Text text;
     text.setText("<b>Bold</b>");
-    
+
     // AutoText mode (default): parses <b> and hides it
     text.setTextFormat(Text::AutoText);
     QCOMPARE(text.width(), 4);
-    
+
     // PlainText mode: shows <b> verbatim
     text.setTextFormat(Text::PlainText);
     QCOMPARE(text.width(), 11); // "<b>Bold</b>" is 11 chars
-    
+
     // RichText mode: parses HTML but ignores ANSI (represented as \033[1m)
     text.setText("<b>Bold</b>\033[1mAnsi");
     text.setTextFormat(Text::RichText);
-    // Visible text should be: "Bold\033[1mAnsi" -> 4 (Bold) + 4 (\033[1) + 4 (mAns) + 1 (i) = 13 (Wait, \033[1m is 4 chars)
-    // Actually: "Bold" is 4 chars. "\033[1mAnsi" is 8 chars (\033, [, 1, m, A, n, s, i).
-    // So 4 + 8 = 12 characters.
+    // Visible text should be: "Bold\033[1mAnsi" -> 4 (Bold) + 4 (\033[1) + 4 (mAns) + 1 (i) = 13
+    // (Wait, \033[1m is 4 chars) Actually: "Bold" is 4 chars. "\033[1mAnsi" is 8 chars (\033, [, 1,
+    // m, A, n, s, i). So 4 + 8 = 12 characters.
     QCOMPARE(text.width(), 11); // ESC is a zero-width control character.
-    
+
     // AnsiText mode: parses ANSI but ignores HTML tags
     text.setTextFormat(Text::AnsiText);
     // HTML tags are not parsed: "<b>Bold</b>" (11 chars) + "Ansi" (4 chars) = 15 chars.
@@ -399,7 +396,8 @@ void TestTextGridBuffer::testControlCharactersAreVisible() {
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(4, 1));
     buffer.writeText(0, 0, QString(QChar(0x1b)));
-    QCOMPARE(QString::fromUtf8(buffer.cellAt(0, 0).character().toByteArray()), QString(QChar(0x241b)));
+    QCOMPARE(QString::fromUtf8(buffer.cellAt(0, 0).character().toByteArray()),
+             QString(QChar(0x241b)));
 }
 
 void TestTextGridBuffer::testWriteTextAppendsZeroWidthCluster() {
@@ -417,7 +415,8 @@ void TestTextGridBuffer::testWriteTextAppendsZeroWidthCluster() {
 void TestTextGridBuffer::testWriteTextLongCluster() {
     // A ZWJ emoji sequence (18 UTF-8 bytes) occupies one wide cell plus one
     // continuation cell and keeps every byte.
-    const QString family = QString::fromUtf8("\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7");
+    const QString family = QString::fromUtf8(
+        "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7");
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(4, 1));
     buffer.writeText(1, 0, family, 0xFF00FF00, 0xFF000080);
@@ -436,7 +435,8 @@ void TestTextGridBuffer::testWriteTextLongCluster() {
 void TestTextGridBuffer::testCopiedBufferComparesEqual() {
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(6, 2));
-    buffer.writeText(0, 0, QString::fromUtf8("A\xE4\xB8\xAD\xF0\x9F\x91\x8D\xF0\x9F\x8F\xBD"), 0xFFFF0000, 0xFF0000FF, TextAttribute::Bold);
+    buffer.writeText(0, 0, QString::fromUtf8("A\xE4\xB8\xAD\xF0\x9F\x91\x8D\xF0\x9F\x8F\xBD"),
+                     0xFFFF0000, 0xFF0000FF, TextAttribute::Bold);
     buffer.fillRect(0, 1, 6, 1, "#", 0xFF00FF00);
 
     const TextGridBuffer copy = buffer;
@@ -458,9 +458,8 @@ void TestTextGridBuffer::testToAnsiStringExactRow() {
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(3, 1));
     buffer.writeText(0, 0, "AB", 0xFFFF0000, 0xFF0000FF, TextAttribute::Bold);
-    const std::string expected =
-        "\033[0m\033[38;2;255;0;0m\033[48;2;0;0;255m\033[1mAB"
-        "\033[0m \033[0m";
+    const std::string expected = "\033[0m\033[38;2;255;0;0m\033[48;2;0;0;255m\033[1mAB"
+                                 "\033[0m \033[0m";
     QCOMPARE(QByteArray::fromStdString(buffer.toAnsiString()), QByteArray::fromStdString(expected));
 }
 
@@ -482,7 +481,9 @@ void TestTextGridBuffer::testFillRectPreservesAttributes() {
 void TestTextGridBuffer::testSetGraphemeWideAndContinuation() {
     TextGridBuffer buffer;
     QVERIFY(buffer.resize(4, 1));
-    QCOMPARE(buffer.setGrapheme(1, 0, "\xE4\xB8\xAD", 2, 0xFF00FF00, 0xFF000080, TextAttribute::Bold), 2);
+    QCOMPARE(
+        buffer.setGrapheme(1, 0, "\xE4\xB8\xAD", 2, 0xFF00FF00, 0xFF000080, TextAttribute::Bold),
+        2);
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("\xE4\xB8\xAD"));
     QCOMPARE(buffer.cellAt(1, 0).displayWidth, uint8_t(2));
     QVERIFY(!buffer.cellAt(1, 0).continuation);
@@ -559,7 +560,7 @@ void TestTextGridBuffer::testDiffUsesEraseToEndOfLine() {
     // Row 0 was blue-backed: the erase must not inherit that background.
     QVERIFY(diff.find("\033[0m") != std::string::npos);
     QVERIFY(diff.find("abc") != std::string::npos);
-    QCOMPARE(occurrenceCount(diff, "\033[K"), 2);   // one per row
+    QCOMPARE(occurrenceCount(diff, "\033[K"), 2); // one per row
 
     AnsiEncodeOptions noErase;
     noErase.eraseToEndOfLine = false;
@@ -584,7 +585,7 @@ void TestTextGridBuffer::testDiffEraseNotUsedWhenTailStyled() {
     QVERIFY(before.resize(10, 1));
     QVERIFY(after.resize(10, 1));
     before.fillRect(0, 0, 10, 1, "X");
-    after.fillRect(0, 0, 10, 1, " ", 0xFFFFFFFF, 0xFF102030);   // blank but coloured
+    after.fillRect(0, 0, 10, 1, " ", 0xFFFFFFFF, 0xFF102030); // blank but coloured
     const std::string diff = before.diff(after);
     QVERIFY(diff.find("\033[K") == std::string::npos);
     QVERIFY(diff.find(std::string(10, ' ')) != std::string::npos);
@@ -598,7 +599,7 @@ void TestTextGridBuffer::testDiffAppendsIntoCallerString() {
     after.writeText(0, 0, QStringLiteral("hi"));
     std::string out = "prefix";
     before.diff(after, out);
-    QVERIFY(out.starts_with("prefix"));
+    QVERIFY(QByteArray::fromStdString(out).startsWith("prefix"));
     QCOMPARE(out.substr(6), before.diff(after));
 }
 
@@ -609,7 +610,7 @@ void TestTextGridBuffer::testDiffLargeCoordinates() {
     after.writeText(119, 99, QStringLiteral("Z"));
     const std::string diff = before.diff(after);
     QVERIFY(diff.find("\033[100;120H") != std::string::npos);
-    QVERIFY(diff.ends_with("Z"));
+    QVERIFY(QByteArray::fromStdString(diff).endsWith("Z"));
 }
 
 void TestTextGridBuffer::testRowAnsiTrimsDefaultBlanks() {
@@ -621,7 +622,8 @@ void TestTextGridBuffer::testRowAnsiTrimsDefaultBlanks() {
     buffer.fillRect(5, 0, 1, 1, " ", uint32_t(0), 0xFF336699u);
     QCOMPARE(buffer.lastContentColumn(0), 5);
     QCOMPARE(buffer.lastContentColumn(1), -1);
-    buffer.setGrapheme(2, 2, QByteArrayView(" "), 1, uint32_t(0), uint32_t(0), TextAttribute::Underline);
+    buffer.setGrapheme(2, 2, QByteArrayView(" "), 1, uint32_t(0), uint32_t(0),
+                       TextAttribute::Underline);
     QCOMPARE(buffer.lastContentColumn(2), 2);
 
     std::string row;
@@ -631,7 +633,8 @@ void TestTextGridBuffer::testRowAnsiTrimsDefaultBlanks() {
     std::string visible;
     for (size_t i = 0; i < row.size(); ++i) {
         if (row[i] == '\033') {
-            while (i < row.size() && row[i] != 'm') ++i;
+            while (i < row.size() && row[i] != 'm')
+                ++i;
             continue;
         }
         visible += row[i];

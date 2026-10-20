@@ -85,7 +85,10 @@ public:
         return m_style.resolveAttributes(base);
     }
 
-    friend bool operator==(const Span&, const Span&) = default;
+    friend bool operator==(const Span& lhs, const Span& rhs) noexcept {
+        return lhs.m_text == rhs.m_text && lhs.m_style == rhs.m_style;
+    }
+    friend bool operator!=(const Span& lhs, const Span& rhs) noexcept { return !(lhs == rhs); }
 
 private:
     QString m_text;

@@ -15,12 +15,16 @@ enum class ParseResult { Complete, Incomplete, Invalid, Oversized };
 
 bool isFinalByte(unsigned char c);
 
-ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& consumed, size_t stringScanOffset) {
+ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& consumed,
+                          size_t stringScanOffset) {
     const char introducer = bytes[1];
-    sequence.kind = introducer == '[' ? Sequence::Csi : introducer == 'O' ? Sequence::Ss3
-        : introducer == '_' ? Sequence::Apc : introducer == ']' ? Sequence::Osc : Sequence::Dcs;
+    sequence.kind = introducer == '['   ? Sequence::Csi
+                    : introducer == 'O' ? Sequence::Ss3
+                    : introducer == '_' ? Sequence::Apc
+                    : introducer == ']' ? Sequence::Osc
+                                        : Sequence::Dcs;
     const bool string = sequence.kind >= Sequence::Apc;
-    const bool clipboard = bytes.starts_with("\033]52;");
+    const bool clipboard = bytes.rfind("\033]52;", 0) == 0;
     constexpr size_t ClipboardFrameLimit = 4 * ((InputDecoder::MaxClipboardTextBytes + 2) / 3) + 32;
     const size_t limit = clipboard ? ClipboardFrameLimit : string ? 4096 : 64;
     bool intermediates = false;
@@ -28,8 +32,7 @@ ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& co
     for (size_t pos = string ? stringScanOffset : 2; pos < bytes.size(); ++pos) {
         const unsigned char c = bytes[pos];
         consumed = pos + 1;
-        if (c == 0x18 || c == 0x1a)
-            return ParseResult::Invalid;
+        if (c == 0x18 || c == 0x1a) return ParseResult::Invalid;
         if (c == 0x1b) {
             if (string) {
                 if (pos + 1 == bytes.size()) {
@@ -59,7 +62,8 @@ ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& co
         if (isFinalByte(c)) {
             sequence.finalByte = c;
             if (intermediates)
-                sequence.intermediates = QByteArrayView(bytes.data() + intermediateStart, pos - intermediateStart);
+                sequence.intermediates =
+                    QByteArrayView(bytes.data() + intermediateStart, pos - intermediateStart);
             return ParseResult::Complete;
         }
         if (c >= 0x20 && c <= 0x2f) {
@@ -79,15 +83,18 @@ ParseResult parseSequence(std::string_view bytes, Sequence& sequence, size_t& co
             continue;
         }
         if (sequence.params.empty()) sequence.params.append({-1});
-        if (c == ';') sequence.params.append({-1});
-        else if (c == ':') sequence.params.last().append(-1);
+        if (c == ';')
+            sequence.params.append({-1});
+        else if (c == ':')
+            sequence.params.last().append(-1);
         else if (c >= '0' && c <= '9') {
             int& value = sequence.params.last().last();
             if (value < 0) value = 0;
             if (value > ((std::numeric_limits<int>::max)() - (c - '0')) / 10)
                 return ParseResult::Oversized;
             value = value * 10 + c - '0';
-        } else return ParseResult::Oversized;
+        } else
+            return ParseResult::Oversized;
     }
     return ParseResult::Incomplete;
 }
@@ -102,11 +109,15 @@ bool isFinalByte(unsigned char c) {
 // terminal and must never swallow the typing that follows it.
 bool looksLikeReply(unsigned char introducer, unsigned char first) {
     switch (introducer) {
-    case '_': return first == 'G';                      // kitty graphics
-    case 'P': return first == '$' || first == '>'       // DECRPSS, XTVERSION
-                  || first == '!' || first == '+';      // DECRPTUI, XTGETTCAP
-    case ']': return first >= '0' && first <= '9';      // OSC colour and clipboard replies
-    default: return false;
+    case '_':
+        return first == 'G'; // kitty graphics
+    case 'P':
+        return first == '$' || first == '>'     // DECRPSS, XTVERSION
+               || first == '!' || first == '+'; // DECRPTUI, XTGETTCAP
+    case ']':
+        return first >= '0' && first <= '9'; // OSC colour and clipboard replies
+    default:
+        return false;
     }
 }
 
@@ -132,10 +143,14 @@ enum class KeyEventType { Press, Repeat, Release, Unknown };
 
 KeyEventType keyEventType(const Sequence& sequence) {
     switch (sequence.parameter(1, 1, 1)) {
-    case 1: return KeyEventType::Press;
-    case 2: return KeyEventType::Repeat;
-    case 3: return KeyEventType::Release;
-    default: return KeyEventType::Unknown;
+    case 1:
+        return KeyEventType::Press;
+    case 2:
+        return KeyEventType::Repeat;
+    case 3:
+        return KeyEventType::Release;
+    default:
+        return KeyEventType::Unknown;
     }
 }
 
@@ -153,37 +168,63 @@ struct FunctionalKey {
 };
 
 FunctionalKey kittyFunctionalKey(int codepoint) {
-    if (codepoint >= 57376 && codepoint <= 57398)
-        return {Qt::Key_F13 + (codepoint - 57376)};
+    if (codepoint >= 57376 && codepoint <= 57398) return {Qt::Key_F13 + (codepoint - 57376)};
     if (codepoint >= 57399 && codepoint <= 57408)
-        return {Qt::Key_0 + (codepoint - 57399), static_cast<char32_t>(U'0' + (codepoint - 57399)), true};
+        return {Qt::Key_0 + (codepoint - 57399), static_cast<char32_t>(U'0' + (codepoint - 57399)),
+                true};
     switch (codepoint) {
-    case 57358: return {Qt::Key_CapsLock};
-    case 57359: return {Qt::Key_ScrollLock};
-    case 57360: return {Qt::Key_NumLock};
-    case 57361: return {Qt::Key_Print};
-    case 57362: return {Qt::Key_Pause};
-    case 57363: return {Qt::Key_Menu};
-    case 57409: return {Qt::Key_Period, U'.', true};
-    case 57410: return {Qt::Key_Slash, U'/', true};
-    case 57411: return {Qt::Key_Asterisk, U'*', true};
-    case 57412: return {Qt::Key_Minus, U'-', true};
-    case 57413: return {Qt::Key_Plus, U'+', true};
-    case 57414: return {Qt::Key_Enter, U'\n', true};
-    case 57415: return {Qt::Key_Equal, U'=', true};
-    case 57416: return {Qt::Key_Comma, U',', true};
-    case 57417: return {Qt::Key_Left, 0, true};
-    case 57418: return {Qt::Key_Right, 0, true};
-    case 57419: return {Qt::Key_Up, 0, true};
-    case 57420: return {Qt::Key_Down, 0, true};
-    case 57421: return {Qt::Key_PageUp, 0, true};
-    case 57422: return {Qt::Key_PageDown, 0, true};
-    case 57423: return {Qt::Key_Home, 0, true};
-    case 57424: return {Qt::Key_End, 0, true};
-    case 57425: return {Qt::Key_Insert, 0, true};
-    case 57426: return {Qt::Key_Delete, 0, true};
-    case 57427: return {Qt::Key_Clear, 0, true};
-    default: return {};
+    case 57358:
+        return {Qt::Key_CapsLock};
+    case 57359:
+        return {Qt::Key_ScrollLock};
+    case 57360:
+        return {Qt::Key_NumLock};
+    case 57361:
+        return {Qt::Key_Print};
+    case 57362:
+        return {Qt::Key_Pause};
+    case 57363:
+        return {Qt::Key_Menu};
+    case 57409:
+        return {Qt::Key_Period, U'.', true};
+    case 57410:
+        return {Qt::Key_Slash, U'/', true};
+    case 57411:
+        return {Qt::Key_Asterisk, U'*', true};
+    case 57412:
+        return {Qt::Key_Minus, U'-', true};
+    case 57413:
+        return {Qt::Key_Plus, U'+', true};
+    case 57414:
+        return {Qt::Key_Enter, U'\n', true};
+    case 57415:
+        return {Qt::Key_Equal, U'=', true};
+    case 57416:
+        return {Qt::Key_Comma, U',', true};
+    case 57417:
+        return {Qt::Key_Left, 0, true};
+    case 57418:
+        return {Qt::Key_Right, 0, true};
+    case 57419:
+        return {Qt::Key_Up, 0, true};
+    case 57420:
+        return {Qt::Key_Down, 0, true};
+    case 57421:
+        return {Qt::Key_PageUp, 0, true};
+    case 57422:
+        return {Qt::Key_PageDown, 0, true};
+    case 57423:
+        return {Qt::Key_Home, 0, true};
+    case 57424:
+        return {Qt::Key_End, 0, true};
+    case 57425:
+        return {Qt::Key_Insert, 0, true};
+    case 57426:
+        return {Qt::Key_Delete, 0, true};
+    case 57427:
+        return {Qt::Key_Clear, 0, true};
+    default:
+        return {};
     }
 }
 
@@ -225,16 +266,15 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
     const char final = sequence.finalByte;
     // Inline rendering queries from column one after a nonempty prompt.
     // Its CPR cannot be a modified F3 key, whose first parameter is one.
-    if (sequence.kind == Sequence::Csi && !sequence.privateMarker
-        && sequence.intermediates.isEmpty() && final == 'R'
-        && sequence.params.size() == 2 && sequence.params[0].size() == 1
-        && sequence.params[1].size() == 1
-        && sequence.parameter(0) > 1 && sequence.parameter(1) == 1) {
+    if (sequence.kind == Sequence::Csi && !sequence.privateMarker &&
+        sequence.intermediates.isEmpty() && final == 'R' && sequence.params.size() == 2 &&
+        sequence.params[0].size() == 1 && sequence.params[1].size() == 1 &&
+        sequence.parameter(0) > 1 && sequence.parameter(1) == 1) {
         if (m_replyCallback) m_replyCallback(sequence);
         return;
     }
-    if (sequence.kind == Sequence::Csi && sequence.privateMarker == '<'
-        && sequence.intermediates.isEmpty() && (final == 'M' || final == 'm')) {
+    if (sequence.kind == Sequence::Csi && sequence.privateMarker == '<' &&
+        sequence.intermediates.isEmpty() && (final == 'M' || final == 'm')) {
         if (sequence.params.size() != 3) return;
         for (const auto& field : sequence.params)
             if (field.size() != 1 || field[0] < 0 || field[0] > 1'000'000) return;
@@ -259,15 +299,15 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
         }
         return;
     }
-    if (!sequence.privateMarker && sequence.intermediates.isEmpty()
-        && (sequence.kind == Sequence::Csi || sequence.kind == Sequence::Ss3)) {
+    if (!sequence.privateMarker && sequence.intermediates.isEmpty() &&
+        (sequence.kind == Sequence::Csi || sequence.kind == Sequence::Ss3)) {
         const int first = sequence.parameter(0);
         if (sequence.kind == Sequence::Csi && final == '~' && first == 200) {
             m_bracketedPaste = true;
             return;
         }
-        if (sequence.kind == Sequence::Csi && sequence.params.isEmpty()
-            && (final == 'I' || final == 'O')) {
+        if (sequence.kind == Sequence::Csi && sequence.params.isEmpty() &&
+            (final == 'I' || final == 'O')) {
             if (m_focusCallback) m_focusCallback(final == 'I');
             return;
         }
@@ -280,29 +320,32 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
         }
         int key = 0;
         int modifiers = keyModifiers(sequence);
-        if (final == 'Z' || (final == '~' && first == 27 && sequence.parameter(1) == 2
-                && sequence.parameter(2) == 9)) {
+        if (final == 'Z' || (final == '~' && first == 27 && sequence.parameter(1) == 2 &&
+                             sequence.parameter(2) == 9)) {
             key = Qt::Key_Backtab;
             modifiers = Qt::ShiftModifier;
         } else if (final == '~') {
             static constexpr std::pair<int, int> keys[] = {
-                {1, Qt::Key_Home}, {2, Qt::Key_Insert}, {3, Qt::Key_Delete},
-                {4, Qt::Key_End}, {5, Qt::Key_PageUp}, {6, Qt::Key_PageDown},
-                {7, Qt::Key_Home}, {8, Qt::Key_End},
-                {11, Qt::Key_F1}, {12, Qt::Key_F2}, {13, Qt::Key_F3}, {14, Qt::Key_F4},
-                {15, Qt::Key_F5}, {17, Qt::Key_F6}, {18, Qt::Key_F7}, {19, Qt::Key_F8},
-                {20, Qt::Key_F9}, {21, Qt::Key_F10}, {23, Qt::Key_F11}, {24, Qt::Key_F12}
-            };
+                {1, Qt::Key_Home},   {2, Qt::Key_Insert},   {3, Qt::Key_Delete}, {4, Qt::Key_End},
+                {5, Qt::Key_PageUp}, {6, Qt::Key_PageDown}, {7, Qt::Key_Home},   {8, Qt::Key_End},
+                {11, Qt::Key_F1},    {12, Qt::Key_F2},      {13, Qt::Key_F3},    {14, Qt::Key_F4},
+                {15, Qt::Key_F5},    {17, Qt::Key_F6},      {18, Qt::Key_F7},    {19, Qt::Key_F8},
+                {20, Qt::Key_F9},    {21, Qt::Key_F10},     {23, Qt::Key_F11},   {24, Qt::Key_F12}};
             for (const auto& [parameter, value] : keys)
-                if (first == parameter) { key = value; break; }
+                if (first == parameter) {
+                    key = value;
+                    break;
+                }
         } else {
             static constexpr std::pair<char, int> keys[] = {
-                {'A', Qt::Key_Up}, {'B', Qt::Key_Down}, {'C', Qt::Key_Right},
-                {'D', Qt::Key_Left}, {'H', Qt::Key_Home}, {'F', Qt::Key_End},
-                {'P', Qt::Key_F1}, {'Q', Qt::Key_F2}, {'R', Qt::Key_F3}, {'S', Qt::Key_F4}
-            };
+                {'A', Qt::Key_Up},   {'B', Qt::Key_Down}, {'C', Qt::Key_Right}, {'D', Qt::Key_Left},
+                {'H', Qt::Key_Home}, {'F', Qt::Key_End},  {'P', Qt::Key_F1},    {'Q', Qt::Key_F2},
+                {'R', Qt::Key_F3},   {'S', Qt::Key_F4}};
             for (const auto& [character, value] : keys)
-                if (final == character) { key = value; break; }
+                if (final == character) {
+                    key = value;
+                    break;
+                }
         }
         if (key) {
             if (m_keyCallback) m_keyCallback(key, QString(), modifiers);
@@ -324,27 +367,36 @@ bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence) {
     int key = 0;
     QString text;
     switch (codepoint) {
-    case 27: key = Qt::Key_Escape; break;
-    case 13: key = Qt::Key_Return; text = QStringLiteral("\n"); break;
+    case 27:
+        key = Qt::Key_Escape;
+        break;
+    case 13:
+        key = Qt::Key_Return;
+        text = QStringLiteral("\n");
+        break;
     case 9:
         key = (modifiers & Qt::ShiftModifier) ? Qt::Key_Backtab : Qt::Key_Tab;
         break;
     case 8:
-    case 127: key = Qt::Key_Backspace; break;
+    case 127:
+        key = Qt::Key_Backspace;
+        break;
     default:
         if (codepoint >= 57344 && codepoint <= 63743) {
             const FunctionalKey functional = kittyFunctionalKey(codepoint);
-            if (!functional.key) return true;   // media or modifier key: consumed
+            if (!functional.key) return true; // media or modifier key: consumed
             key = functional.key;
             if (functional.keypad) modifiers |= Qt::KeypadModifier;
             if (functional.text) text = QString::fromUcs4(&functional.text, 1);
         } else if (codepoint < 32) {
-            return true;   // a C0 control has no key of its own; consumed
+            return true; // a C0 control has no key of its own; consumed
         } else {
             key = keyForCharacter(static_cast<char32_t>(codepoint));
             const int shifted = sequence.parameter(0, 1, 0);
             const char32_t character = static_cast<char32_t>(
-                (modifiers & Qt::ShiftModifier) && shifted >= 32 && isUnicodeScalar(shifted) ? shifted : codepoint);
+                (modifiers & Qt::ShiftModifier) && shifted >= 32 && isUnicodeScalar(shifted)
+                    ? shifted
+                    : codepoint);
             text = QString::fromUcs4(&character, 1);
         }
     }
@@ -358,8 +410,10 @@ bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence) {
             const char32_t character = static_cast<char32_t>(value);
             reported += QString::fromUcs4(&character, 1);
         }
-        if (!reported.isEmpty()) text = reported;
-        else if (shortcut) text.clear();
+        if (!reported.isEmpty())
+            text = reported;
+        else if (shortcut)
+            text.clear();
     } else if (shortcut) {
         text.clear();
     }
@@ -398,8 +452,8 @@ void InputDecoder::processBuffer() {
     while (i < m_buffer.size()) {
         if (m_discardKind) {
             const unsigned char c = m_buffer[i];
-            if (c == 0x18 || c == 0x1a || (m_discardKind == 3 && c == 7)
-                || (m_discardEscape && c == '\\')) {
+            if (c == 0x18 || c == 0x1a || (m_discardKind == 3 && c == 7) ||
+                (m_discardEscape && c == '\\')) {
                 m_discardKind = 0;
                 m_discardEscape = false;
                 ++i;
@@ -420,8 +474,7 @@ void InputDecoder::processBuffer() {
         if (m_bracketedPaste) {
             constexpr std::string_view PasteEnd = "\033[201~";
             const size_t end = m_buffer.find(PasteEnd, i);
-            if (end == std::string::npos)
-                break;
+            if (end == std::string::npos) break;
             const QString text = QString::fromUtf8(m_buffer.data() + i, end - i);
             if (m_pasteCallback)
                 m_pasteCallback(text);
@@ -467,14 +520,16 @@ void InputDecoder::processBuffer() {
                     break;
                 }
                 m_stringScanOffset = 2;
-                if (result != ParseResult::Complete && bytes.starts_with("\033]52;")
-                    && m_clipboardErrorCallback)
+                if (result != ParseResult::Complete && bytes.rfind("\033]52;", 0) == 0 &&
+                    m_clipboardErrorCallback)
                     m_clipboardErrorCallback();
                 i += consumed;
-                if (result == ParseResult::Complete) dispatchSequence(sequence);
+                if (result == ParseResult::Complete)
+                    dispatchSequence(sequence);
                 else if (result == ParseResult::Oversized)
-                    m_discardKind = sequence.kind == ControlSequence::Osc ? 3
-                        : sequence.kind >= ControlSequence::Apc ? 2 : 1;
+                    m_discardKind = sequence.kind == ControlSequence::Osc   ? 3
+                                    : sequence.kind >= ControlSequence::Apc ? 2
+                                                                            : 1;
                 continue;
             }
             if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
@@ -502,8 +557,7 @@ void InputDecoder::processBuffer() {
 
         if (c >= 1 && c <= 26) {
             const int key = Qt::Key_A + (c - 1);
-            if (m_keyCallback)
-                m_keyCallback(key, QString(), Qt::ControlModifier);
+            if (m_keyCallback) m_keyCallback(key, QString(), Qt::ControlModifier);
             i++;
             continue;
         }
@@ -511,10 +565,13 @@ void InputDecoder::processBuffer() {
         // Decode UTF-8 multi-byte characters
         if ((c & 0x80) != 0) {
             size_t len = 1;
-            if ((c & 0xE0) == 0xC0) len = 2;
-            else if ((c & 0xF0) == 0xE0) len = 3;
-            else if ((c & 0xF8) == 0xF0) len = 4;
-            
+            if ((c & 0xE0) == 0xC0)
+                len = 2;
+            else if ((c & 0xF0) == 0xE0)
+                len = 3;
+            else if ((c & 0xF8) == 0xF0)
+                len = 4;
+
             if (i + len <= m_buffer.size()) {
                 QString text = QString::fromUtf8(m_buffer.data() + i, len);
                 const auto codepoints = text.toUcs4();

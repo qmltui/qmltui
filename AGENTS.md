@@ -2,7 +2,7 @@
 
 ## Architecture Boundaries
 
-- QmlTui is a C++20, Qt 6.8+ retained-mode terminal UI framework. Its runtime
+- QmlTui is a Qt 6.8+ retained-mode terminal UI framework. Its runtime
   targets are Linux, macOS, and Windows Terminal. Platform code lives only in
   `src/QmlTui/Core/Primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.

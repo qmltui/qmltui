@@ -46,7 +46,9 @@ include(cmake/QmlTuiUtf8proc.cmake)
 include(cmake/QmlTuiLibvterm.cmake)
 qmltui_provide_utf8proc()   # qmltui::core links it; PtyView provides libvterm itself
 
-set(CMAKE_CXX_STANDARD 20)
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(qt_required_components Core Qml)

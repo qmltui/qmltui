@@ -12,8 +12,7 @@ namespace qmltui {
 // Each boolean attribute tracks both its value (m_values) and whether it was
 // explicitly set (m_specified), so unset attributes inherit from the owning
 // item while an explicit false clears an inherited attribute.
-class QMLTUI_CORE_EXPORT TextStyle
-{
+class QMLTUI_CORE_EXPORT TextStyle {
 public:
     TextStyle() = default;
     TextStyle(Color foreground, Color background = {})
@@ -59,9 +58,15 @@ public:
     // Applies specified attributes onto base, clearing bits explicitly set to false.
     TextAttribute resolveAttributes(TextAttribute base) const;
     // Overwrites only the colors and attributes that overlay explicitly specifies.
-    void applyOverlay(const TextStyle &overlay);
+    void applyOverlay(const TextStyle& overlay);
 
-    friend bool operator==(const TextStyle &, const TextStyle &) = default;
+    friend bool operator==(const TextStyle& lhs, const TextStyle& rhs) noexcept {
+        return lhs.m_color == rhs.m_color && lhs.m_backgroundColor == rhs.m_backgroundColor &&
+               lhs.m_values == rhs.m_values && lhs.m_specified == rhs.m_specified;
+    }
+    friend bool operator!=(const TextStyle& lhs, const TextStyle& rhs) noexcept {
+        return !(lhs == rhs);
+    }
 
 private:
     static constexpr quint8 bit(TextAttribute attribute) { return static_cast<quint8>(attribute); }

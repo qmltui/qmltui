@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <QScopeGuard>
 #include <string>
+#include <atomic>
 #include <thread>
 #include <termios.h>
 #include <unistd.h>
@@ -31,24 +32,20 @@ namespace {
 struct Pipe {
     int readEnd = -1;
     int writeEnd = -1;
-    bool open()
-    {
+    bool open() {
         int fds[2];
-        if (::pipe(fds) != 0)
-            return false;
+        if (::pipe(fds) != 0) return false;
         readEnd = fds[0];
         writeEnd = fds[1];
 #ifdef F_SETPIPE_SZ
-        ::fcntl(writeEnd, F_SETPIPE_SZ, 4096);   // keep the kernel buffer small
+        ::fcntl(writeEnd, F_SETPIPE_SZ, 4096); // keep the kernel buffer small
 #endif
         return true;
     }
-    bool openPty()
-    {
+    bool openPty() {
         readEnd = ::posix_openpt(O_RDWR | O_NOCTTY);
-        if (readEnd < 0 || ::grantpt(readEnd) != 0 || ::unlockpt(readEnd) != 0)
-            return false;
-        const char *name = ::ptsname(readEnd);
+        if (readEnd < 0 || ::grantpt(readEnd) != 0 || ::unlockpt(readEnd) != 0) return false;
+        const char* name = ::ptsname(readEnd);
         if (!name) return false;
         writeEnd = ::open(name, O_RDWR | O_NOCTTY);
         if (writeEnd < 0) return false;
@@ -57,15 +54,13 @@ struct Pipe {
         ::cfmakeraw(&mode);
         return ::tcsetattr(writeEnd, TCSANOW, &mode) == 0;
     }
-    ~Pipe()
-    {
+    ~Pipe() {
         if (readEnd >= 0) ::close(readEnd);
         if (writeEnd >= 0) ::close(writeEnd);
     }
 };
 
-std::string payloadOf(size_t size)
-{
+std::string payloadOf(size_t size) {
     std::string payload(size, 'x');
     for (size_t i = 0; i < size; ++i)
         payload[i] = static_cast<char>('a' + i % 26);
@@ -73,16 +68,14 @@ std::string payloadOf(size_t size)
 }
 
 // Reads whatever is available without blocking.
-std::string readAvailable(int fd)
-{
+std::string readAvailable(int fd) {
     const int flags = ::fcntl(fd, F_GETFL);
     ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     std::string data;
     char buffer[65536];
     for (;;) {
         const ssize_t count = ::read(fd, buffer, sizeof buffer);
-        if (count <= 0)
-            break;
+        if (count <= 0) break;
         data.append(buffer, static_cast<size_t>(count));
     }
     ::fcntl(fd, F_SETFL, flags);
@@ -114,13 +107,12 @@ private slots:
     void testResizeRepaint();
 };
 
-void TestTerminalDevice::initTestCase()
-{
-    qputenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS", "0");   // a test-session variable keeps Terminal off stdout
+void TestTerminalDevice::initTestCase() {
+    qputenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS",
+            "0"); // a test-session variable keeps Terminal off stdout
 }
 
-void TestTerminalDevice::testBlockingWriteUnchanged()
-{
+void TestTerminalDevice::testBlockingWriteUnchanged() {
     Pipe pipe;
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
@@ -130,8 +122,7 @@ void TestTerminalDevice::testBlockingWriteUnchanged()
     QCOMPARE(readAvailable(pipe.readEnd), std::string("hello"));
 }
 
-void TestTerminalDevice::testAsyncWriteQueuesAndDrainsFromEventLoop()
-{
+void TestTerminalDevice::testAsyncWriteQueuesAndDrainsFromEventLoop() {
     Pipe pipe;
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
@@ -146,7 +137,7 @@ void TestTerminalDevice::testAsyncWriteQueuesAndDrainsFromEventLoop()
     QVERIFY(device.write(payload));
     QVERIFY2(timer.elapsed() < 500, "write() must not block on a full pipe");
     QVERIFY(device.pendingBytes() > 0);
-    QVERIFY(device.write("tail"));            // ordering is preserved behind the queue
+    QVERIFY(device.write("tail")); // ordering is preserved behind the queue
     QCOMPARE(drained, 0);
 
     std::string received;
@@ -164,11 +155,10 @@ void TestTerminalDevice::testAsyncWriteQueuesAndDrainsFromEventLoop()
 
     device.setAsyncOutput(false);
     QVERIFY(!device.asyncOutput());
-    QVERIFY((::fcntl(pipe.writeEnd, F_GETFL) & O_NONBLOCK) == 0);   // flags restored
+    QVERIFY((::fcntl(pipe.writeEnd, F_GETFL) & O_NONBLOCK) == 0); // flags restored
 }
 
-void TestTerminalDevice::testFlushBlockingCompletesQueue()
-{
+void TestTerminalDevice::testFlushBlockingCompletesQueue() {
     Pipe pipe;
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
@@ -182,8 +172,7 @@ void TestTerminalDevice::testFlushBlockingCompletesQueue()
         char buffer[65536];
         while (received.size() < payload.size()) {
             const ssize_t count = ::read(pipe.readEnd, buffer, sizeof buffer);
-            if (count <= 0)
-                break;
+            if (count <= 0) break;
             received.append(buffer, static_cast<size_t>(count));
         }
     });
@@ -193,15 +182,13 @@ void TestTerminalDevice::testFlushBlockingCompletesQueue()
     QVERIFY(received == payload);
 }
 
-void TestTerminalDevice::testDisableTimeoutPreservesQueue_data()
-{
+void TestTerminalDevice::testDisableTimeoutPreservesQueue_data() {
     QTest::addColumn<bool>("pty");
     QTest::newRow("pipe") << false;
     QTest::newRow("pty") << true;
 }
 
-void TestTerminalDevice::testDisableTimeoutPreservesQueue()
-{
+void TestTerminalDevice::testDisableTimeoutPreservesQueue() {
     QFETCH(bool, pty);
     Pipe pipe;
     QVERIFY(pty ? pipe.openPty() : pipe.open());
@@ -231,16 +218,14 @@ void TestTerminalDevice::testDisableTimeoutPreservesQueue()
     QVERIFY(device.write("blocking"));
     QCOMPARE(readAvailable(pipe.readEnd), std::string("blocking"));
     QVERIFY(device.finishOutput(100));
-    QVERIFY(readAvailable(pipe.readEnd).ends_with("\033[?25h\033[0m"));
+    QVERIFY(QByteArray::fromStdString(readAvailable(pipe.readEnd)).endsWith("\033[?25h\033[0m"));
 }
 
-void TestTerminalDevice::testFinishTimeoutRestoresFlags_data()
-{
+void TestTerminalDevice::testFinishTimeoutRestoresFlags_data() {
     testDisableTimeoutPreservesQueue_data();
 }
 
-void TestTerminalDevice::testFinishTimeoutRestoresFlags()
-{
+void TestTerminalDevice::testFinishTimeoutRestoresFlags() {
     QFETCH(bool, pty);
     Pipe pipe;
     QVERIFY(pty ? pipe.openPty() : pipe.open());
@@ -265,21 +250,20 @@ void TestTerminalDevice::testFinishTimeoutRestoresFlags()
     QVERIFY(timer.elapsed() < 1000); // no second blocking write in the destructor
 }
 
-void TestTerminalDevice::testFlushDeadlineWithSlowReader()
-{
+void TestTerminalDevice::testFlushDeadlineWithSlowReader() {
     Pipe pipe;
     QVERIFY(pipe.open());
     TerminalDevice device(pipe.writeEnd);
     QVERIFY(device.setAsyncOutput(true));
     QVERIFY(device.write(payloadOf(1 << 20)));
-    std::jthread reader([&](std::stop_token stop) {
+    std::atomic<bool> stop{false};
+    std::thread reader([&]() {
         const int flags = ::fcntl(pipe.readEnd, F_GETFL);
         ::fcntl(pipe.readEnd, F_SETFL, flags | O_NONBLOCK);
         char buffer[4096];
-        while (!stop.stop_requested()) {
+        while (!stop.load()) {
             const ssize_t count = ::read(pipe.readEnd, buffer, sizeof buffer);
-            if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
-                break;
+            if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) break;
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     });
@@ -287,7 +271,7 @@ void TestTerminalDevice::testFlushDeadlineWithSlowReader()
     timer.start();
     const bool flushed = device.flushBlocking(40);
     const qint64 elapsed = timer.elapsed();
-    reader.request_stop();
+    stop = true;
     reader.join();
     // Explicitly finish to avoid spending the default shutdown deadline here.
     (void)device.finishOutput(0);
@@ -295,14 +279,14 @@ void TestTerminalDevice::testFlushDeadlineWithSlowReader()
     QVERIFY2(elapsed < 500, "the timeout must apply to the entire flush, not each poll");
 }
 
-void TestTerminalDevice::testStreamPrintLaysOutPrompt()
-{
+void TestTerminalDevice::testStreamPrintLaysOutPrompt() {
     class Prompt final : public Item {
     public:
-        explicit Prompt(Item *parent) : Item(parent) { setImplicitHeight(1); }
+        explicit Prompt(Item* parent) : Item(parent) { setImplicitHeight(1); }
+
     protected:
         void updateLayout() override { setImplicitHeight(3); }
-        void paint(TextGridBuffer &buffer, int x, int y, const ClipRect &) const override {
+        void paint(TextGridBuffer& buffer, int x, int y, const ClipRect&) const override {
             buffer.writeText(x, y + 2, QStringLiteral("THIRD ROW"));
         }
     };
@@ -322,8 +306,7 @@ void TestTerminalDevice::testStreamPrintLaysOutPrompt()
     QCOMPARE(renderer.currentBuffer()->height(), 3);
 }
 
-void TestTerminalDevice::testPtyShutdownRestoresRawMode()
-{
+void TestTerminalDevice::testPtyShutdownRestoresRawMode() {
     Pipe pty;
     QVERIFY(pty.openPty());
     termios original;
@@ -351,8 +334,7 @@ void TestTerminalDevice::testPtyShutdownRestoresRawMode()
     QCOMPARE(restored.c_cflag, original.c_cflag);
 }
 
-void TestTerminalDevice::testDestructorUsesBoundedShutdown()
-{
+void TestTerminalDevice::testDestructorUsesBoundedShutdown() {
     Pipe pty;
     QVERIFY(pty.openPty());
     const int originalFlags = ::fcntl(pty.writeEnd, F_GETFL);
@@ -368,8 +350,7 @@ void TestTerminalDevice::testDestructorUsesBoundedShutdown()
     QCOMPARE(::fcntl(pty.writeEnd, F_GETFL), originalFlags);
 }
 
-void TestTerminalDevice::testSyncOutputBracketsFrame()
-{
+void TestTerminalDevice::testSyncOutputBracketsFrame() {
     Terminal terminal;
     terminal.setColor(Color("#123456"));
     terminal.engine()->setTestViewportSize(QSize(8, 1));
@@ -385,13 +366,13 @@ void TestTerminalDevice::testSyncOutputBracketsFrame()
         renderer.setCapabilities(capabilities);
         renderer.resize(8, 1);
         renderer.start(&terminal, device);
-        (void)readAvailable(pipe.readEnd);   // discard the clear-screen prologue
+        (void)readAvailable(pipe.readEnd); // discard the clear-screen prologue
 
         QVERIFY(renderer.renderFrame(&terminal, device));
         const std::string frame = readAvailable(pipe.readEnd);
         QVERIFY(!frame.empty());
-        QCOMPARE(frame.starts_with("\033[?2026h"), synchronize);
-        QCOMPARE(frame.ends_with("\033[?2026l"), synchronize);
+        QCOMPARE(QByteArray::fromStdString(frame).startsWith("\033[?2026h"), synchronize);
+        QCOMPARE(QByteArray::fromStdString(frame).endsWith("\033[?2026l"), synchronize);
         QVERIFY(frame.find("48;2;18;52;86") != std::string::npos);
 
         // An unchanged frame writes nothing, not even the bracketing.
@@ -401,8 +382,7 @@ void TestTerminalDevice::testSyncOutputBracketsFrame()
     }
 }
 
-void TestTerminalDevice::testScrollbackAcrossModes()
-{
+void TestTerminalDevice::testScrollbackAcrossModes() {
     Pipe pipe;
     QVERIFY(pipe.open());
     const int savedOutput = ::dup(STDOUT_FILENO);
@@ -416,7 +396,9 @@ void TestTerminalDevice::testScrollbackAcrossModes()
     auto* engine = terminal.engine();
     engine->setTestViewportSize(QSize(30, 8));
     engine->setTerminalOutputEnabled(true);
-    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    auto commit = [&] {
+        return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection);
+    };
     QVERIFY(commit());
     QVERIFY(readAvailable(pipe.readEnd).find("\033[?1049h") != std::string::npos);
 
@@ -425,7 +407,8 @@ void TestTerminalDevice::testScrollbackAcrossModes()
         QVERIFY(history.print(QString::fromUtf8("first café\n")));
         QVERIFY(history.print(QStringLiteral("second")));
         QSignalSpy rejected(&history, &Scrollback::outputRejected);
-        QTest::ignoreMessage(QtWarningMsg, "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Scrollback queue limit (1 MiB) exceeded; submission rejected");
         QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
         QCOMPARE(rejected.count(), 1);
     } // Accepted bytes belong to the session, not the output object.
@@ -461,8 +444,7 @@ void TestTerminalDevice::testScrollbackAcrossModes()
     QVERIFY(readAvailable(pipe.readEnd).empty());
 }
 
-void TestTerminalDevice::testScrollbackHistoryRows()
-{
+void TestTerminalDevice::testScrollbackHistoryRows() {
     // The test-session variable from initTestCase keeps output off and turns
     // history recording on: rows commit with their bytes, without a terminal.
     Terminal terminal;
@@ -471,31 +453,36 @@ void TestTerminalDevice::testScrollbackHistoryRows()
     QVERIFY(engine->testSession());
     QVERIFY(!engine->terminalOutputEnabled());
     QVERIFY(engine->scrollbackHistoryEnabled());
-    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    auto commit = [&] {
+        return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection);
+    };
     const auto rowText = [](const TextGridBuffer& rows, int y) {
         QString text;
         for (int x = 0; x < rows.width(); ++x) {
             const Cell& cell = rows.cellAt(x, y);
             if (cell.continuation) continue;
-            text += cell.character().isEmpty() ? QStringLiteral(" ") : QString::fromUtf8(cell.character());
+            text += cell.character().isEmpty() ? QStringLiteral(" ")
+                                               : QString::fromUtf8(cell.character());
         }
-        while (text.endsWith(QLatin1Char(' '))) text.chop(1);
+        while (text.endsWith(QLatin1Char(' ')))
+            text.chop(1);
         return text;
     };
     QSignalSpy committed(engine, &TerminalEngine::scrollbackCommitted);
 
     Scrollback history(&terminal);
-    QVERIFY(history.print(QStringLiteral("\033[1;31mred\033[0m\tx\n")));   // escapes dropped, tab expanded, one row
-    QVERIFY(history.print(QStringLiteral("a\nb")));                          // two rows
+    QVERIFY(history.print(
+        QStringLiteral("\033[1;31mred\033[0m\tx\n"))); // escapes dropped, tab expanded, one row
+    QVERIFY(history.print(QStringLiteral("a\nb")));    // two rows
     TextGridBuffer painted;
     QVERIFY(painted.resize(12, 2));
     painted.writeText(0, 0, QString::fromUtf8("wide 世界"));
-    painted.fillRect(0, 1, 3, 1, " ", uint32_t(0), 0xFF0000FFu);             // coloured blanks are content
+    painted.fillRect(0, 1, 3, 1, " ", uint32_t(0), 0xFF0000FFu); // coloured blanks are content
     QVERIFY(engine->submitScrollback(painted));
     QCOMPARE(engine->pendingScrollbackRowCount(), size_t(5));
     QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
 
-    QVERIFY(commit());                                                       // AltScreen keeps rows pending
+    QVERIFY(commit()); // AltScreen keeps rows pending
     QCOMPARE(committed.count(), 0);
     QCOMPARE(engine->committedScrollbackTotal(), quint64(0));
 
@@ -515,20 +502,21 @@ void TestTerminalDevice::testScrollbackHistoryRows()
     QCOMPARE(rowText(rows, 3), QString::fromUtf8("wide 世界"));
     QCOMPARE(rowText(rows, 4), QString());
     QCOMPARE(rows.cellAt(2, 4).bgColor, uint32_t(0xFF0000FF));
-    QCOMPARE(rows.cellAt(3, 4).bgColor, uint32_t(0));                        // the row was stored trimmed
+    QCOMPARE(rows.cellAt(3, 4).bgColor, uint32_t(0)); // the row was stored trimmed
 
-    QCOMPARE(engine->committedScrollback(3).height(), 2);                    // from a total-row mark
+    QCOMPARE(engine->committedScrollback(3).height(), 2); // from a total-row mark
     QCOMPARE(engine->committedScrollback(99).height(), 0);
 
-    engine->setScrollbackHistoryLimit(2);                                    // retention drops the oldest rows
+    engine->setScrollbackHistoryLimit(2); // retention drops the oldest rows
     QCOMPARE(engine->committedScrollbackRowCount(), 2);
     QCOMPARE(engine->committedScrollbackTotal(), quint64(5));
-    QCOMPARE(engine->committedScrollback(0).height(), 2);                    // clamped to the oldest retained row
+    QCOMPARE(engine->committedScrollback(0).height(), 2); // clamped to the oldest retained row
     QCOMPARE(rowText(engine->committedScrollback(0), 0), QString::fromUtf8("wide 世界"));
 
-    QTest::ignoreMessage(QtWarningMsg, "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+    QTest::ignoreMessage(QtWarningMsg,
+                         "Scrollback queue limit (1 MiB) exceeded; submission rejected");
     QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
-    QCOMPARE(engine->pendingScrollbackRowCount(), size_t(0));                // rejected as one unit
+    QCOMPARE(engine->pendingScrollbackRowCount(), size_t(0)); // rejected as one unit
     QCOMPARE(engine->pendingScrollbackBytes(), size_t(0));
 
     engine->setScrollbackHistoryEnabled(false);
@@ -538,8 +526,7 @@ void TestTerminalDevice::testScrollbackHistoryRows()
     QCOMPARE(engine->committedScrollbackRowCount(), 0);
 }
 
-void TestTerminalDevice::testOsc11BackgroundOutput()
-{
+void TestTerminalDevice::testOsc11BackgroundOutput() {
     Pipe pipe;
     QVERIFY(pipe.open());
     const int savedOutput = ::dup(STDOUT_FILENO);
@@ -556,7 +543,9 @@ void TestTerminalDevice::testOsc11BackgroundOutput()
     engine->setTestViewportSize(QSize(20, 5));
     engine->setTerminalOutputEnabled(true);
 
-    auto commit = [&] { return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection); };
+    auto commit = [&] {
+        return QMetaObject::invokeMethod(engine, "renderFrame", Qt::DirectConnection);
+    };
     QVERIFY(commit());
 
     const std::string startOutput = readAvailable(pipe.readEnd);
@@ -583,8 +572,7 @@ void TestTerminalDevice::testOsc11BackgroundOutput()
     QVERIFY(stopOutput.find("\033]111\a") != std::string::npos);
 }
 
-void TestTerminalDevice::testResizeRepaint()
-{
+void TestTerminalDevice::testResizeRepaint() {
     Terminal terminal;
     terminal.setColor(Color("#123456"));
     terminal.engine()->setTestViewportSize(QSize(8, 1));

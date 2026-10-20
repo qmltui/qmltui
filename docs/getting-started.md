@@ -9,7 +9,6 @@ This guide walks you through checking system requirements, running the interacti
 To build QmlTui or a QmlTui application, you need:
 
 - **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree)
-- **A C++20 compiler** (GCC 11+, Clang 14+, Apple Clang, or MSVC 2022)
 - **Qt 6.8 or newer** with the `Core` and `Qml` development packages
 
 ### Optional Qt & System Dependencies
@@ -56,7 +55,7 @@ Create a new directory with the following three files:
 cmake_minimum_required(VERSION 3.21)
 project(hello_qmltui LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
@@ -184,7 +183,7 @@ Then consume it in your project's `CMakeLists.txt` via `find_package(QmlTui 0.5 
 cmake_minimum_required(VERSION 3.21)
 project(hello_qmltui LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)

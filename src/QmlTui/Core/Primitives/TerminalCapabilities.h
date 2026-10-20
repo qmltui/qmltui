@@ -48,7 +48,14 @@ public:
     QString colorDepthName() const { return TerminalCapabilities::colorDepthName(colorDepth); }
     QString terminalProgram() const { return termProgram; }
     bool isTtyStream() const { return isTty; }
-    bool operator==(const TerminalCapabilities&) const = default;
+    bool operator==(const TerminalCapabilities& other) const noexcept {
+        return kittyKeyboard == other.kittyKeyboard && kittyGraphics == other.kittyGraphics &&
+               sixelGraphics == other.sixelGraphics && cellPixelSize == other.cellPixelSize &&
+               mayProbeGraphics == other.mayProbeGraphics && colorDepth == other.colorDepth &&
+               syncOutput == other.syncOutput && isTty == other.isTty &&
+               termProgram == other.termProgram;
+    }
+    bool operator!=(const TerminalCapabilities& other) const noexcept { return !(*this == other); }
 
     ColorDepth colorDepth = ColorDepth::TrueColor;
     bool syncOutput = true; // DEC private mode 2026 frame bracketing

@@ -19,7 +19,12 @@ class TextInput;
 struct ServiceEntry {
     QString name;
     int latencyMs = 0;
-    friend bool operator==(const ServiceEntry&, const ServiceEntry&) = default;
+    friend bool operator==(const ServiceEntry& lhs, const ServiceEntry& rhs) noexcept {
+        return lhs.name == rhs.name && lhs.latencyMs == rhs.latencyMs;
+    }
+    friend bool operator!=(const ServiceEntry& lhs, const ServiceEntry& rhs) noexcept {
+        return !(lhs == rhs);
+    }
 };
 
 // The root Terminal is the last stop for keyboard events, so subclassing it is

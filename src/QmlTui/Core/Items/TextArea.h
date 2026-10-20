@@ -163,14 +163,20 @@ private:
     struct HighlightLayer {
         int priority = 0;
         QList<HighlightRange> ranges;
-        bool operator==(const HighlightLayer&) const = default;
+        bool operator==(const HighlightLayer& other) const noexcept {
+            return priority == other.priority && ranges == other.ranges;
+        }
+        bool operator!=(const HighlightLayer& other) const noexcept { return !(*this == other); }
     };
 
     struct ComposedRun {
         int start = 0;
         int end = 0;
         TextStyle style;
-        bool operator==(const ComposedRun&) const = default;
+        bool operator==(const ComposedRun& other) const noexcept {
+            return start == other.start && end == other.end && style == other.style;
+        }
+        bool operator!=(const ComposedRun& other) const noexcept { return !(*this == other); }
     };
 
     void applyEditorChange(const TextEditorState::Change& change);

@@ -5,12 +5,12 @@
   </picture>
 </p>
 
-**QmlTui** pairs a **retained-mode declarative QML frontend** with a **high-performance C++20 and Qt 6.8+ backend** for modern terminal emulators. Declare your cell layout, borders, focus chains, and states once in QML while driving high-frequency telemetry, worker threads, and 1M-row `QAbstractItemModel` datasets from native C++20—with O(viewport) virtualization, double-buffered cell diffing, and zero `QtQuick` or display-server dependencies.
+**QmlTui** pairs a **retained-mode declarative QML frontend** with a **high-performance Qt 6.8+ backend** for modern terminal emulators. Declare your cell layout, borders, focus chains, and states once in QML while driving high-frequency telemetry, worker threads, and 1M-row `QAbstractItemModel` datasets from native C++—with O(viewport) virtualization, double-buffered cell diffing, and zero `QtQuick` or display-server dependencies.
 
-### Why Retained Declarative QML + C++20 / Qt 6?
+### Why Retained Declarative QML + Qt 6?
 
 - **Retained Scene Graph & Surgical Bindings**: Unlike immediate-mode TUI libraries that rebuild and re-layout the entire widget tree on every keystroke or tick, QmlTui keeps a persistent C++ cell tree in memory. Fine-grained Qt property bindings re-evaluate only the dependent expressions and mark only affected subtrees dirty.
-- **High-Performance C++20 & `QAbstractItemModel` Backend**: Expose compiled C++20 `QObject` services (`QML_ELEMENT`, `Q_PROPERTY`) and streaming `QAbstractItemModel`s directly to QML with zero serialization glue. Virtualized `TableView`, `TreeView`, `ListView`, and `GridView` items instantiate delegates only for visible terminal rows (`O(viewport)`), keeping frame times sub-millisecond over 1,000,000 rows.
+- **High-Performance C++ & `QAbstractItemModel` Backend**: Expose compiled C++ `QObject` services (`QML_ELEMENT`, `Q_PROPERTY`) and streaming `QAbstractItemModel`s directly to QML with zero serialization glue. Virtualized `TableView`, `TreeView`, `ListView`, and `GridView` items instantiate delegates only for visible terminal rows (`O(viewport)`), keeping frame times sub-millisecond over 1,000,000 rows.
 - **Complete Core Engine in a Single Import**: `import QmlTui` (`QmlTui.Core`) provides `Terminal`, `Rectangle`, layouts (`RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`), `Text`, `TextInput`, virtualized views, `Canvas`, and animations standalone; add `QmlTui.Controls`, `QmlTui.Image`, or `QmlTui.PtyView` only when needed.
 - **Dual Rendering Modes (`AltScreen` & `Inline`)**: Run full-screen alternate-screen applications (`Terminal.AltScreen`) or inline CLI workflows (`Terminal.Inline`) that push completed prompts and cards into native terminal history via `Scrollback`.
 - **Double-Buffered Cell Diffing & Modern Terminal Protocols**: QmlTui composites dirty subtrees into a contiguous `TextGridBuffer`, diffs cell-by-cell against the previous frame, and emits minimal ANSI/SGR sequences inside a DEC `?2026` synchronized frame—with automatic support for Kitty keyboard, Kitty & Sixel graphics, SGR mouse, and OSC 8/9;4.
@@ -69,7 +69,7 @@ Rendered in the terminal:
 
 ### 1. Run the Interactive Component Gallery
 
-Requires CMake 3.21+, a C++20 compiler, and Qt 6.8+ (`Core` and `Qml`; plus `Gui` and `Network` for the default `QmlTui.Image` module):
+Requires CMake 3.21+ and Qt 6.8+ (`Core` and `Qml`; plus `Gui` and `Network` for the default `QmlTui.Image` module):
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON

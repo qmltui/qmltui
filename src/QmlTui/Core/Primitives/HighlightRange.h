@@ -11,8 +11,7 @@ namespace qmltui {
 // UTF-16 character range [start, start + length) paired with a TextStyle
 // overlay, used by TextArea::highlights for syntax and search highlighting.
 // Unspecified style attributes inherit from the owning TextArea.
-class QMLTUI_CORE_EXPORT HighlightRange
-{
+class QMLTUI_CORE_EXPORT HighlightRange {
     Q_GADGET
     QML_VALUE_TYPE(highlightRange)
     QML_STRUCTURED_VALUE
@@ -20,7 +19,8 @@ class QMLTUI_CORE_EXPORT HighlightRange
     Q_PROPERTY(int start READ start WRITE setStart)
     Q_PROPERTY(int length READ length WRITE setLength)
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor RESET resetColor)
-    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor RESET resetBackgroundColor)
+    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor RESET
+                   resetBackgroundColor)
     Q_PROPERTY(bool bold READ bold WRITE setBold RESET resetBold)
     Q_PROPERTY(bool dim READ dim WRITE setDim RESET resetDim)
     Q_PROPERTY(bool italic READ italic WRITE setItalic RESET resetItalic)
@@ -41,7 +41,7 @@ public:
     void setLength(int length) { m_length = length; }
 
     TextStyle style() const { return m_style; }
-    void setStyle(const TextStyle &style) { m_style = style; }
+    void setStyle(const TextStyle& style) { m_style = style; }
 
     Color color() const { return m_style.color(); }
     void setColor(Color color) { m_style.setColor(color); }
@@ -80,7 +80,13 @@ public:
         return m_style.resolveAttributes(base);
     }
 
-    friend bool operator==(const HighlightRange &, const HighlightRange &) = default;
+    friend bool operator==(const HighlightRange& lhs, const HighlightRange& rhs) noexcept {
+        return lhs.m_start == rhs.m_start && lhs.m_length == rhs.m_length &&
+               lhs.m_style == rhs.m_style;
+    }
+    friend bool operator!=(const HighlightRange& lhs, const HighlightRange& rhs) noexcept {
+        return !(lhs == rhs);
+    }
 
 private:
     int m_start = 0;

@@ -238,8 +238,8 @@ void TestTerminalFramework::disabledAndModalFocus() {
     terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item first(&terminal);
     Item second(&terminal);
-    first.setFocusable(true);
-    second.setFocusable(true);
+    first.setFocusPolicy(Qt::StrongFocus);
+    second.setFocusPolicy(Qt::StrongFocus);
     first.setEnabled(false);
 
     TerminalEngine engine(&terminal);
@@ -250,8 +250,8 @@ void TestTerminalFramework::disabledAndModalFocus() {
     popup.setModal(true);
     Item dialogFirst(&popup);
     Item dialogSecond(&popup);
-    dialogFirst.setFocusable(true);
-    dialogSecond.setFocusable(true);
+    dialogFirst.setFocusPolicy(Qt::StrongFocus);
+    dialogSecond.setFocusPolicy(Qt::StrongFocus);
     popup.open();
     QCOMPARE(terminal.focusedItem(), &dialogFirst);
     engine.handleKeyInput(Qt::Key_Tab, {}, 0);
@@ -266,19 +266,19 @@ void TestTerminalFramework::nestedModalFocus() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item background(&terminal);
-    background.setFocusable(true);
+    background.setFocusPolicy(Qt::StrongFocus);
     terminal.setFocusedItem(&background);
 
     Popup first(&terminal);
     first.setModal(true);
     Item firstField(&first);
-    firstField.setFocusable(true);
+    firstField.setFocusPolicy(Qt::StrongFocus);
     first.open();
 
     Popup second(&terminal);
     second.setModal(true);
     Item secondField(&second);
-    secondField.setFocusable(true);
+    secondField.setFocusPolicy(Qt::StrongFocus);
     second.open();
     QCOMPARE(terminal.focusedItem(), &secondField);
     second.close();

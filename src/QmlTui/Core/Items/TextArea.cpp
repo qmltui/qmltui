@@ -23,7 +23,7 @@ static_assert(int(TextArea::Block) == int(detail::TextCursorShape::Block) &&
               int(TextArea::HollowBlock) == int(detail::TextCursorShape::HollowBlock));
 
 TextArea::TextArea(QObject* parent) : Item(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     setClip(true);
     setImplicitWidth(20);
     setImplicitHeight(5);
@@ -520,7 +520,7 @@ void TextArea::mouseMoveEvent(MouseEvent* event) {
 
 void TextArea::wheelEvent(MouseEvent* event) {
     if (!event || event->wheelDeltaY() == 0) return;
-    if (focusable() && !focus()) setFocus(true);
+    if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     setContentY(m_contentY - event->wheelDeltaY());
     event->setAccepted(true);
 }

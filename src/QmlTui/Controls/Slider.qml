@@ -13,7 +13,7 @@ Rectangle {
     property bool showValue: true
     readonly property int trackWidth: Math.max(0, control.width - (control.showValue ? valueText.implicitWidth + 1 : 0))
 
-    focusable: enabled
+    focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
     implicitWidth: 25
     implicitHeight: 1
     Text {
@@ -93,13 +93,11 @@ Rectangle {
         onPressed: event => {
             if (!control.enabled)
                 return;
-            control.focus = true;
             mouseArea.updateFromX(event.x);
         }
         onClicked: event => {
             if (!control.enabled)
                 return;
-            control.focus = true;
             mouseArea.updateFromX(event.x);
         }
         onMouseXChanged: {

@@ -20,7 +20,7 @@ Column {
         id: stage
         width: 40
         height: 3
-        focusable: true
+        focusPolicy: Qt.StrongFocus
         focus: true
 
         Keys.onPressed: event => {

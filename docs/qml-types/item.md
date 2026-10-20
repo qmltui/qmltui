@@ -34,7 +34,7 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 | `enabled` | `bool` | `true` | Whether the item receives user input events. |
 | `focus` | `bool` | `false` | Requests keyboard focus within its focus scope. |
 | `activeFocus` | `bool` |  | Read-only. Whether the item currently has active keyboard input focus. |
-| `focusable` | `bool` | `false` | Whether the item can participate in keyboard focus navigation (e.g. Tab traversal). |
+| `focusPolicy` | `enumeration` | `Qt.NoFocus` | The way the item accepts focus (`Qt.NoFocus`, `Qt.TabFocus`, `Qt.ClickFocus`, `Qt.StrongFocus`, `Qt.WheelFocus`). |
 | `parent` | `Item` | `null` | Holds the visual parent item in the scene graph hierarchy. |
 | `anchors` | `Anchors` |  | Read-only. Holds the anchor configuration ([Anchors](anchors.md)) for relative positioning. |
 | `left` | `AnchorLine` |  | Read-only. Holds the left edge anchor line. |

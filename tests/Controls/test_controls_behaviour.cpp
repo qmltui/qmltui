@@ -131,7 +131,7 @@ Terminal {
         engine->handleMouseInput(0, 2, 4, false);
         engine->handleMouseInput(0, 2, 4, true);
         QCOMPARE(slider->property("value").toDouble(), 50.0);
-        QVERIFY(!slider->focusable());
+        QCOMPARE(slider->focusPolicy(), Qt::NoFocus);
     }
 
     void sliderClickSnapsToStep() {

@@ -82,7 +82,8 @@ void Popup::open() {
     }
     if (Terminal *term = terminal()) {
         Item *target = m_initialFocusItem;
-        if (!target || !target->visible() || !target->isEffectivelyEnabled() || !target->focusable()) {
+        if (!target || !target->visible() || !target->isEffectivelyEnabled() ||
+            (target->focusPolicy() & Qt::TabFocus) == 0) {
             QList<Item*> focusable;
             term->findFocusableItems(this, focusable);
             target = focusable.isEmpty() ? nullptr : focusable.first();
@@ -115,7 +116,8 @@ void Popup::close() {
             focusInsidePopup = item == this;
         if (focusInsidePopup) {
             Item *target = m_previousFocusItem;
-            if (target && target->visible() && target->isEffectivelyEnabled() && target->focusable())
+            if (target && target->visible() && target->isEffectivelyEnabled() &&
+                target->focusPolicy() != Qt::NoFocus)
                 term->setFocusedItem(target);
             else
                 term->setFocusedItem(nullptr);

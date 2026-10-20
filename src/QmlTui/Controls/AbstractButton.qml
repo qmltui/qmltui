@@ -45,7 +45,7 @@ Item {
     signal clicked
     signal toggled(bool checked)
 
-    focusable: enabled
+    focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
     implicitWidth: Math.max(background ? background.implicitWidth : 0, leftPadding + (contentItem ? contentItem.implicitWidth : 0) + rightPadding)
     implicitHeight: Math.max(background ? background.implicitHeight : 0, topPadding + (contentItem ? contentItem.implicitHeight : 0) + bottomPadding)
 
@@ -154,7 +154,6 @@ Item {
         onPressed: event => {
             if (!control.enabled)
                 return;
-            control.focus = true;
             control.pressed = true;
         }
         onReleased: event => {

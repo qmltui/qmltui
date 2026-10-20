@@ -1,4 +1,5 @@
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Items/AnchorLine.h>
 #include <QmlTui/Core/Engine/Keys.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
@@ -18,7 +19,7 @@
 
 namespace qmltui {
 
-Item::Item(QObject *parent) : QObject(parent), m_anchors(this) {
+Item::Item(QObject* parent) : QObject(parent), m_anchors(this) {
     if (parent) {
         if (Item* parentItem = qobject_cast<Item*>(parent)) {
             parentItem->registerChildItem(this);
@@ -72,15 +73,12 @@ AnchorLine* Item::verticalCenter() const {
 }
 
 QQmlListProperty<QObject> Item::data() const {
-    return QQmlListProperty<QObject>(const_cast<Item*>(this), nullptr,
-        &Item::appendData,
-        &Item::dataCount,
-        &Item::dataAt,
-        &Item::clearData);
+    return QQmlListProperty<QObject>(const_cast<Item*>(this), nullptr, &Item::appendData,
+                                     &Item::dataCount, &Item::dataAt, &Item::clearData);
 }
 
-void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
-    Item *self = qobject_cast<Item*>(list->object);
+void Item::appendData(QQmlListProperty<QObject>* list, QObject* obj) {
+    Item* self = qobject_cast<Item*>(list->object);
     if (self && obj) {
         obj->setParent(self);
         self->m_dataChildren.append(obj);
@@ -90,43 +88,44 @@ void Item::appendData(QQmlListProperty<QObject> *list, QObject *obj) {
     }
 }
 
-qsizetype Item::dataCount(QQmlListProperty<QObject> *list) {
-    Item *self = qobject_cast<Item*>(list->object);
+qsizetype Item::dataCount(QQmlListProperty<QObject>* list) {
+    Item* self = qobject_cast<Item*>(list->object);
     return self ? self->m_dataChildren.size() : 0;
 }
 
-QObject *Item::dataAt(QQmlListProperty<QObject> *list, qsizetype index) {
-    Item *self = qobject_cast<Item*>(list->object);
+QObject* Item::dataAt(QQmlListProperty<QObject>* list, qsizetype index) {
+    Item* self = qobject_cast<Item*>(list->object);
     return (self && index >= 0 && index < self->m_dataChildren.size())
-        ? self->m_dataChildren.at(index).data() : nullptr;
+               ? self->m_dataChildren.at(index).data()
+               : nullptr;
 }
 
-void Item::clearData(QQmlListProperty<QObject> *list) {
-    Item *self = qobject_cast<Item*>(list->object);
+void Item::clearData(QQmlListProperty<QObject>* list) {
+    Item* self = qobject_cast<Item*>(list->object);
     if (self) {
         const QList<QPointer<QObject>> children = self->m_dataChildren;
         self->m_dataChildren.clear();
-        for (const QPointer<QObject> &child : children)
-            if (child && child->parent() == self)
-                child->setParent(nullptr);
+        for (const QPointer<QObject>& child : children)
+            if (child && child->parent() == self) child->setParent(nullptr);
     }
 }
 
 QQmlListProperty<Item> Item::childrenProperty() const {
     return QQmlListProperty<Item>(
         const_cast<Item*>(this), nullptr,
-        [](QQmlListProperty<Item> *list) -> qsizetype {
-            Item *self = qobject_cast<Item*>(list->object);
+        [](QQmlListProperty<Item>* list) -> qsizetype {
+            Item* self = qobject_cast<Item*>(list->object);
             return self ? self->childItems().size() : 0;
         },
-        [](QQmlListProperty<Item> *list, qsizetype index) -> Item* {
-            Item *self = qobject_cast<Item*>(list->object);
-            return (self && index >= 0 && index < self->childItems().size()) ? self->childItems().at(index) : nullptr;
-        }
-    );
+        [](QQmlListProperty<Item>* list, qsizetype index) -> Item* {
+            Item* self = qobject_cast<Item*>(list->object);
+            return (self && index >= 0 && index < self->childItems().size())
+                       ? self->childItems().at(index)
+                       : nullptr;
+        });
 }
 
-void Item::setParentItem(Item *parentItem) {
+void Item::setParentItem(Item* parentItem) {
     if (this->parentItem() == parentItem) {
         // An object QML created for an Item-typed property (Button.background,
         // contentItem) already has this parent, but the ChildAdded event ran
@@ -165,7 +164,7 @@ void Item::setY(int y) {
 void Item::setZ(qreal z) {
     if (qFuzzyCompare(m_z, z)) return;
     m_z = z;
-    if (Item *p = parentItem()) p->invalidateStackingOrder();
+    if (Item* p = parentItem()) p->invalidateStackingOrder();
     emit zChanged();
     markDirty();
 }
@@ -174,11 +173,12 @@ void Item::invalidateStackingOrder() {
     m_stackingOrderDirty = true;
 }
 
-const QList<Item *> &Item::stackingChildren() const {
+const QList<Item*>& Item::stackingChildren() const {
     if (!m_stackingOrderDirty) return m_stackingChildren;
     m_stackingChildren = m_visualChildren;
-    std::stable_sort(m_stackingChildren.begin(), m_stackingChildren.end(),
-        [](const Item *a, const Item *b) { return a && b ? a->z() < b->z() : a != nullptr; });
+    std::stable_sort(
+        m_stackingChildren.begin(), m_stackingChildren.end(),
+        [](const Item* a, const Item* b) { return a && b ? a->z() < b->z() : a != nullptr; });
     m_stackingOrderDirty = false;
     return m_stackingChildren;
 }
@@ -243,9 +243,9 @@ void Item::setVisible(bool visible) {
     m_visible = visible;
     emit visibleChanged();
     if (!visible) {
-        Terminal *term = terminal();
+        Terminal* term = terminal();
         if (term) {
-            for (Item *current = term->focusedItem(); current; current = current->parentItem()) {
+            for (Item* current = term->focusedItem(); current; current = current->parentItem()) {
                 if (current == this) {
                     term->setFocusedItem(nullptr);
                     break;
@@ -261,9 +261,9 @@ void Item::setEnabled(bool enabled) {
     m_enabled = enabled;
     emit enabledChanged();
     if (!enabled) {
-        Terminal *term = terminal();
+        Terminal* term = terminal();
         if (term) {
-            for (Item *current = term->focusedItem(); current; current = current->parentItem()) {
+            for (Item* current = term->focusedItem(); current; current = current->parentItem()) {
                 if (current == this) {
                     term->setFocusedItem(nullptr);
                     break;
@@ -275,17 +275,15 @@ void Item::setEnabled(bool enabled) {
 }
 
 bool Item::isEffectivelyEnabled() const {
-    for (const Item *current = this; current; current = current->parentItem()) {
-        if (!current->enabled())
-            return false;
+    for (const Item* current = this; current; current = current->parentItem()) {
+        if (!current->enabled()) return false;
     }
     return true;
 }
 
 bool Item::isEffectivelyVisible() const {
-    for (const Item *current = this; current; current = current->parentItem()) {
-        if (!current->visible())
-            return false;
+    for (const Item* current = this; current; current = current->parentItem()) {
+        if (!current->visible()) return false;
     }
     return true;
 }
@@ -297,12 +295,10 @@ void Item::markDirty(DirtyFlags flags) {
     // paint pass, and paint-time invalidations must not schedule another
     // frame. Only idle invalidations notify the engine.
     const RenderPhase::Phase phase = RenderPhase::current();
-    if (phase == RenderPhase::Paint)
-        RenderPhase::recordDirtyDuringPaint(this);
+    if (phase == RenderPhase::Paint) RenderPhase::recordDirtyDuringPaint(this);
     const bool notify = phase == RenderPhase::Idle;
 
-    if (notify)
-        emit dirty();
+    if (notify) emit dirty();
     // Bubble DescendantDirty (and DescendantLayoutDirty when LayoutDirty) up to ancestors
     const DirtyFlags propFlags =
         DirtyFlag::DescendantDirty |
@@ -310,11 +306,9 @@ void Item::markDirty(DirtyFlags flags) {
                                                 : DirtyFlag::None);
     Item* p = qobject_cast<Item*>(parent());
     while (p) {
-        if ((p->m_dirtyFlags & propFlags) == propFlags && !notify)
-            break;
+        if ((p->m_dirtyFlags & propFlags) == propFlags && !notify) break;
         p->m_dirtyFlags |= propFlags;
-        if (notify)
-            emit p->dirty();
+        if (notify) emit p->dirty();
         p = qobject_cast<Item*>(p->parent());
     }
 }
@@ -323,23 +317,49 @@ void Item::clearDirty(DirtyFlags flags) {
     m_dirtyFlags &= ~flags;
 }
 
+FocusScope* Item::enclosingFocusScope() const {
+    for (Item* p = parentItem(); p; p = p->parentItem()) {
+        if (p->isFocusScope()) {
+            return static_cast<FocusScope*>(p);
+        }
+    }
+    return nullptr;
+}
+
 void Item::setFocus(bool focus) {
-    if (focus && (!isEffectivelyVisible() || !isEffectivelyEnabled()))
-        return;
+    if (focus && (!isEffectivelyVisible() || !isEffectivelyEnabled())) return;
+
+    FocusScope* scope = enclosingFocusScope();
+
     if (m_focus == focus) {
-        Terminal* term = terminal();
-        if (term && focus && term->focusedItem() != this) {
-            term->setFocusedItem(this);
+        if (focus) {
+            if (scope) {
+                scope->setSubFocusItem(this);
+            }
+            Terminal* term = terminal();
+            if (term && term->focusedItem() != this && (!scope || scope->activeFocus())) {
+                term->setFocusedItem(this);
+            }
         }
         return;
     }
     m_focus = focus;
     emit focusChanged();
-    
+
+    if (scope) {
+        if (m_focus) {
+            scope->setSubFocusItem(this);
+        } else if (scope->subFocusItem() == this) {
+            scope->setSubFocusItem(nullptr);
+        }
+    }
+
     Terminal* term = terminal();
     if (term) {
         if (m_focus) {
-            term->setFocusedItem(this);
+            if (!scope || scope->activeFocus()) {
+                term->setFocusedItem(this);
+            }
         } else if (term->focusedItem() == this) {
             term->setFocusedItem(nullptr);
         }
@@ -353,34 +373,51 @@ void Item::setActiveFocus(bool active) {
     markDirty();
 }
 
-void Item::setFocusable(bool focusable) {
-    if (m_focusable == focusable) return;
-    m_focusable = focusable;
-    emit focusableChanged();
-    Terminal *term = terminal();
-    if (!focusable && term && term->focusedItem() == this)
+void Item::setFocusPolicy(Qt::FocusPolicy policy) {
+    if (m_focusPolicy == policy) return;
+    m_focusPolicy = policy;
+    emit focusPolicyChanged();
+    Terminal* term = terminal();
+    if (m_focusPolicy == Qt::NoFocus && term && term->focusedItem() == this)
         term->setFocusedItem(nullptr);
 }
 
-
+void Item::forceActiveFocus() {
+    setFocus(true);
+    if (Terminal* term = terminal()) {
+        term->setFocusedItem(this);
+    }
+}
 
 // Depth-first: the first focusable descendant that asked for focus.
 Item* Item::findFocusRequest() const {
     for (Item* child : m_visualChildren) {
-        if (child->m_focus && child->m_focusable)
-            return child;
-        if (Item* nested = child->findFocusRequest())
-            return nested;
+        if (child->isFocusScope()) {
+            auto* scope = static_cast<FocusScope*>(child);
+            if (scope->focus()) {
+                if (Item* sub = scope->subFocusItem()) {
+                    if (Item* nested = sub->findFocusRequest()) return nested;
+                    return sub;
+                }
+                if (Item* nested = scope->findFocusRequest()) return nested;
+                return scope;
+            }
+            continue;
+        }
+        if (child->m_focus && child->m_focusPolicy != Qt::NoFocus) return child;
+        if (Item* nested = child->findFocusRequest()) return nested;
     }
     return nullptr;
 }
 
 void Item::applyPendingFocus() {
     Terminal* term = isTerminalRoot() ? static_cast<Terminal*>(this) : terminal();
-    if (!term || term->focusedItem())
-        return;
-    if (Item* request = findFocusRequest())
-        term->setFocusedItem(request);
+    if (!term || term->focusedItem()) return;
+    if (FocusScope* scope =
+            isFocusScope() ? static_cast<FocusScope*>(this) : enclosingFocusScope()) {
+        if (!scope->focus() || (scope->enclosingFocusScope() && !scope->activeFocus())) return;
+    }
+    if (Item* request = findFocusRequest()) term->setFocusedItem(request);
 }
 
 Terminal* Item::terminal() const {
@@ -402,7 +439,7 @@ QPoint Item::contentOffset() const {
 QPoint Item::absolutePosition() const {
     int ax = m_x;
     int ay = m_y;
-    
+
     Item* p = qobject_cast<Item*>(parent());
     while (p) {
         // If parent is a Terminal element, we do NOT add its x and y,
@@ -410,14 +447,14 @@ QPoint Item::absolutePosition() const {
         if (p->isTerminalRoot()) {
             break;
         }
-        
+
         ax += p->x();
         ay += p->y();
-        
+
         QPoint offset = p->contentOffset();
         ax -= offset.x();
         ay -= offset.y();
-        
+
         p = qobject_cast<Item*>(p->parent());
     }
     return QPoint(ax, ay);
@@ -433,14 +470,14 @@ void Item::childEvent(QChildEvent* event) {
             }
         }
     } else if (event->removed()) {
-        QObject *childObject = event->child();
-        m_dataChildren.removeIf([childObject](const QPointer<QObject> &entry) {
+        QObject* childObject = event->child();
+        m_dataChildren.removeIf([childObject](const QPointer<QObject>& entry) {
             return entry.isNull() || entry.data() == childObject;
         });
         if (m_stateController) {
-            if (State *state = qobject_cast<State *>(childObject))
+            if (State* state = qobject_cast<State*>(childObject))
                 m_stateController->stateRemoved(state);
-            else if (Transition *transition = qobject_cast<Transition *>(childObject))
+            else if (Transition* transition = qobject_cast<Transition*>(childObject))
                 m_stateController->transitionRemoved(transition);
         }
         if (Item* childItem = qobject_cast<Item*>(event->child())) {
@@ -463,14 +500,13 @@ void Item::registerChildItem(Item* childItem) {
     m_visualChildren.append(childItem);
     invalidateStackingOrder();
 
-    auto childGeometryChanged = [this]() {
-        scheduleChildGeometryInvalidation();
-    };
+    auto childGeometryChanged = [this]() { scheduleChildGeometryInvalidation(); };
     QList<QMetaObject::Connection> connections;
     connections.append(connect(childItem, &Item::widthChanged, this, childGeometryChanged));
     connections.append(connect(childItem, &Item::heightChanged, this, childGeometryChanged));
     connections.append(connect(childItem, &Item::implicitWidthChanged, this, childGeometryChanged));
-    connections.append(connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
+    connections.append(
+        connect(childItem, &Item::implicitHeightChanged, this, childGeometryChanged));
     connections.append(connect(childItem, &Item::visibleChanged, this, childGeometryChanged));
     if (isTerminalRoot())
         connections.append(connect(childItem, &Item::yChanged, this, childGeometryChanged));
@@ -511,7 +547,7 @@ void Item::unregisterChildItem(Item* childItem) {
     if (!childItem) return;
     if (m_visualChildren.removeOne(childItem)) {
         const auto connections = m_childGeometryConnections.take(childItem);
-        for (const QMetaObject::Connection &connection : connections)
+        for (const QMetaObject::Connection& connection : connections)
             disconnect(connection);
         invalidateStackingOrder();
         emit childrenChanged();
@@ -540,30 +576,27 @@ void Item::scheduleChildGeometryInvalidation() {
 // updateLayout() that keeps invalidating itself cannot hang the frame.
 void Item::layoutSubtree() {
     if (!m_visible) return;
-    if (!(m_dirtyFlags & (DirtyFlag::LayoutDirty | DirtyFlag::DescendantLayoutDirty)))
-        return;
+    if (!(m_dirtyFlags & (DirtyFlag::LayoutDirty | DirtyFlag::DescendantLayoutDirty))) return;
     m_dirtyFlags &= ~DirtyFlags(DirtyFlag::DescendantLayoutDirty);
 
     QPointer<Item> selfGuard(this);
     constexpr int MaxLayoutPasses = 3;
 
-    for (int pass = 0; pass < MaxLayoutPasses && m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty); ++pass) {
+    for (int pass = 0; pass < MaxLayoutPasses && m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty);
+         ++pass) {
         m_dirtyFlags &= ~DirtyFlags(DirtyFlag::LayoutDirty);
         updateLayout();
-        if (!selfGuard)
-            return;
+        if (!selfGuard) return;
     }
 
-    const QList<Item *> &orderedChildren = stackingChildren();
+    const QList<Item*>& orderedChildren = stackingChildren();
     QVarLengthArray<QPointer<Item>, 64> children;
     children.reserve(orderedChildren.size());
-    for (Item *child : orderedChildren)
+    for (Item* child : orderedChildren)
         children.append(child);
-    for (const QPointer<Item> &childGuard : children) {
-        if (Item *childItem = childGuard.data())
-            childItem->layoutSubtree();
-        if (!selfGuard)
-            return;
+    for (const QPointer<Item>& childGuard : children) {
+        if (Item* childItem = childGuard.data()) childItem->layoutSubtree();
+        if (!selfGuard) return;
     }
 
     if (m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty)) {
@@ -585,78 +618,67 @@ void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRe
     m_dirtyFlags &= ~consumedFlags;
     if (consumedFlags.testFlag(DirtyFlag::LayoutDirty)) {
         updateLayout();
-        if (!selfGuard)
-            return;
+        if (!selfGuard) return;
     }
 
     paint(buffer, absX, absY, clipRect);
-    if (!selfGuard)
-        return;
+    if (!selfGuard) return;
 
     const ClipRect childrenClip = clipRectForChildren(absX, absY, clipRect);
     if (!m_clip || !childrenClip.isEmpty()) {
         const QPoint offset = contentOffset();
 
-        const QList<Item *> &orderedChildren = stackingChildren();
+        const QList<Item*>& orderedChildren = stackingChildren();
         QVarLengthArray<QPointer<Item>, 64> children;
         children.reserve(orderedChildren.size());
-        for (Item *child : orderedChildren)
+        for (Item* child : orderedChildren)
             children.append(child);
-        for (const QPointer<Item> &childGuard : children) {
-            Item *childItem = childGuard.data();
-            if (!childItem)
-                continue;
-            if (childItem->isPopup() && childItem->visible()) continue;   // painted by Terminal::paintOverlay
+        for (const QPointer<Item>& childGuard : children) {
+            Item* childItem = childGuard.data();
+            if (!childItem) continue;
+            if (childItem->isPopup() && childItem->visible())
+                continue; // painted by Terminal::paintOverlay
             const int childAbsX = absX + childItem->x() - offset.x();
             const int childAbsY = absY + childItem->y() - offset.y();
             const int childW = childItem->width();
             const int childH = childItem->height();
             if ((childItem->clip() || childItem->childItems().isEmpty()) &&
-                !childItem->m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty) &&
-                childW > 0 && childH > 0) {
-                if (childrenClip.intersected(ClipRect{childAbsX, childAbsY, childW, childH}).isEmpty()) {
+                !childItem->m_dirtyFlags.testFlag(DirtyFlag::LayoutDirty) && childW > 0 &&
+                childH > 0) {
+                if (childrenClip.intersected(ClipRect{childAbsX, childAbsY, childW, childH})
+                        .isEmpty()) {
                     childItem->m_dirtyFlags &=
                         ~(DirtyFlags(DirtyFlag::SelfDirty) | DirtyFlag::DescendantDirty);
                     continue;
                 }
             }
-            childItem->paintSubtree(buffer,
-                                   childAbsX,
-                                   childAbsY,
-                                   childrenClip);
-            if (!selfGuard)
-                return;
+            childItem->paintSubtree(buffer, childAbsX, childAbsY, childrenClip);
+            if (!selfGuard) return;
         }
     }
 
     paintOverlay(buffer, absX, absY, clipRect);
 }
 
-void Item::updateLayout()
-{
-}
+void Item::updateLayout() {}
 
-void Item::paint(TextGridBuffer &buffer, int absX, int absY,
-                 const ClipRect &clipRect) const {
+void Item::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     Q_UNUSED(buffer);
     Q_UNUSED(absX);
     Q_UNUSED(absY);
     Q_UNUSED(clipRect);
 }
 
-void Item::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                        const ClipRect &clipRect) const {
+void Item::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
+                        const ClipRect& clipRect) const {
     Q_UNUSED(buffer);
     Q_UNUSED(absX);
     Q_UNUSED(absY);
     Q_UNUSED(clipRect);
 }
 
-ClipRect Item::clipRectForChildren(int absX, int absY,
-                                  const ClipRect &clipRect) const
-{
-    if (!m_clip)
-        return clipRect;
+ClipRect Item::clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const {
+    if (!m_clip) return clipRect;
     return clipRect.intersected(ClipRect{absX, absY, width(), height()});
 }
 
@@ -784,8 +806,7 @@ void Item::setState(const QString& newState) {
 }
 
 void Item::evaluateStateConditions() {
-    if (m_stateController)
-        m_stateController->evaluateStateConditions();
+    if (m_stateController) m_stateController->evaluateStateConditions();
 }
 
 } // namespace qmltui

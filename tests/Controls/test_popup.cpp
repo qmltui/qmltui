@@ -117,11 +117,9 @@ void TestPopup::testModalInputBlocking() {
     bgMouseArea->setY(0);
     bgMouseArea->setWidth(10);
     bgMouseArea->setHeight(10);
-    
+
     bool bgClicked = false;
-    connect(bgMouseArea, &MouseArea::clicked, [&]() {
-        bgClicked = true;
-    });
+    connect(bgMouseArea, &MouseArea::clicked, [&]() { bgClicked = true; });
 
     // Add a modal popup on top
     Popup* popup = new Popup(&terminal);
@@ -136,15 +134,14 @@ void TestPopup::testModalInputBlocking() {
     popupMouseArea->setY(0);
     popupMouseArea->setWidth(5);
     popupMouseArea->setHeight(2);
-    
-    bool popupClicked = false;
-    connect(popupMouseArea, &MouseArea::clicked, [&]() {
-        popupClicked = true;
-    });
 
-    // Instantiate engine (m_notifier will be null/skipped if stdin is not raw, but constructor works)
+    bool popupClicked = false;
+    connect(popupMouseArea, &MouseArea::clicked, [&]() { popupClicked = true; });
+
+    // Instantiate engine (m_notifier will be null/skipped if stdin is not raw, but constructor
+    // works)
     TerminalEngine engine(&terminal);
-    
+
     // Open popup
     popup->open();
 
@@ -198,7 +195,7 @@ void TestPopup::testBaseVisibilityDispatchAndParentNotification() {
     Popup popup(&firstTerminal);
     QSignalSpy parentSpy(&popup, &Item::parentChanged);
 
-    Item *base = &popup;
+    Item* base = &popup;
     base->setVisible(true);
     QCOMPARE(firstTerminal.activePopups().size(), 1);
 
@@ -263,18 +260,19 @@ void TestPopup::testAttachedToolTipOnFocus() {
             Item {
                 id: target
                 objectName: "target"
-                width: 4; height: 1; focusable: true
+                width: 4; height: 1; focusPolicy: Qt.StrongFocus
                 ToolTip.text: "Helpful"
                 ToolTip.delay: 0
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *terminal = qobject_cast<Terminal*>(object.get());
+    auto* terminal = qobject_cast<Terminal*>(object.get());
     QVERIFY(terminal);
     QVERIFY(terminal->hasMouseMotionRequests());
-    auto *target = terminal ? terminal->findChild<Item*>(QStringLiteral("target")) : nullptr;
+    auto* target = terminal ? terminal->findChild<Item*>(QStringLiteral("target")) : nullptr;
     QVERIFY(target);
     terminal->setFocusedItem(target);
     QTRY_COMPARE(terminal->activePopups().size(), 1);
@@ -290,20 +288,20 @@ void TestPopup::testCloseWhenNotOpenKeepsFocus() {
     Item* field = new Item(&terminal);
     field->setWidth(4);
     field->setHeight(1);
-    field->setFocusable(true);
+    field->setFocusPolicy(Qt::StrongFocus);
     terminal.setFocusedItem(field);
     QCOMPARE(terminal.focusedItem(), field);
 
     Popup* popup = new Popup(&terminal);
     popup->setWidth(10);
     popup->setHeight(3);
-    popup->close();                       // never opened: nothing to restore
+    popup->close(); // never opened: nothing to restore
     QCOMPARE(terminal.focusedItem(), field);
 
     popup->open();
     popup->close();
-    QCOMPARE(terminal.focusedItem(), field);   // restored once
-    popup->close();                            // second close is a no-op
+    QCOMPARE(terminal.focusedItem(), field); // restored once
+    popup->close();                          // second close is a no-op
     QCOMPARE(terminal.focusedItem(), field);
 }
 
@@ -313,19 +311,19 @@ void TestPopup::testCloseWithoutTakingFocusLeavesFocusAlone() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item* first = new Item(&terminal);
-    first->setFocusable(true);
+    first->setFocusPolicy(Qt::StrongFocus);
     Item* second = new Item(&terminal);
-    second->setFocusable(true);
+    second->setFocusPolicy(Qt::StrongFocus);
     terminal.setFocusedItem(first);
 
     Popup* popup = new Popup(&terminal);
     popup->setModal(false);
     popup->open();
-    QCOMPARE(terminal.focusedItem(), first);    // opening took nothing
+    QCOMPARE(terminal.focusedItem(), first); // opening took nothing
 
     terminal.setFocusedItem(second);
     popup->close();
-    QCOMPARE(terminal.focusedItem(), second);   // closing must not yank it back
+    QCOMPARE(terminal.focusedItem(), second); // closing must not yank it back
 }
 
 // An application binding reacting to the popup's `visible` may clear the
@@ -334,14 +332,13 @@ void TestPopup::testModalRestoresFocusClearedDuringOpen() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(40, 10));
     Item* field = new Item(&terminal);
-    field->setFocusable(true);
+    field->setFocusPolicy(Qt::StrongFocus);
     terminal.setFocusedItem(field);
 
     Popup* popup = new Popup(&terminal);
     popup->setModal(true);
     connect(popup, &Item::visibleChanged, &terminal, [&]() {
-        if (popup->visible())
-            terminal.setFocusedItem(nullptr);
+        if (popup->visible()) terminal.setFocusedItem(nullptr);
     });
     popup->open();
     QCOMPARE(terminal.focusedItem(), nullptr);
@@ -370,16 +367,17 @@ void TestPopup::testAttachedToolTipFollowsTarget() {
                 ToolTip.timeout: 0
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     std::unique_ptr<QObject> object(component.create());
-    auto *terminal = qobject_cast<Terminal*>(object.get());
+    auto* terminal = qobject_cast<Terminal*>(object.get());
     QVERIFY(terminal);
     terminal->engine()->setTestViewportSize(QSize(40, 10));
-    auto *target = terminal->findChild<Item*>(QStringLiteral("target"));
+    auto* target = terminal->findChild<Item*>(QStringLiteral("target"));
     QVERIFY(target);
     QTRY_COMPARE(terminal->activePopups().size(), 1);
-    Popup *tip = terminal->activePopups().first();
+    Popup* tip = terminal->activePopups().first();
     QCOMPARE(tip->x(), 5);
     QCOMPARE(tip->y(), 3);
 
@@ -409,7 +407,8 @@ void TestPopup::testUnpaintedPopupLeavesBackgroundIntact() {
     QVERIFY(QMetaObject::invokeMethod(terminal.engine(), "renderFrame", Qt::DirectConnection));
     auto frame = terminal.engine()->currentFrame();
     QVERIFY(frame);
-    // Because popup is unpainted and dimBackground is false, the cells within popup bounds remain unchanged
+    // Because popup is unpainted and dimBackground is false, the cells within popup bounds remain
+    // unchanged
     QCOMPARE(frame->cellAt(2, 2).bgColor, 0xff334455u);
 
     // Composing an opaque surface occludes the background
@@ -463,8 +462,8 @@ void TestPopup::testTransparentInteriorClickAndOutsideDismissal() {
     engine.handleMouseInput(0, 30, 10, true);
 
     QCOMPARE(innerClicks, 0);
-    QCOMPARE(bgClicks, 0);      // Blocked by modal popup!
-    QVERIFY(modal.visible());   // Not dismissed, click was inside popup bounds!
+    QCOMPARE(bgClicks, 0);    // Blocked by modal popup!
+    QVERIFY(modal.visible()); // Not dismissed, click was inside popup bounds!
 
     // 2. Click on child item inside popup: absolute (23, 8)
     engine.handleMouseInput(0, 23, 8, false);
@@ -478,8 +477,8 @@ void TestPopup::testTransparentInteriorClickAndOutsideDismissal() {
     engine.handleMouseInput(0, 5, 5, false);
     engine.handleMouseInput(0, 5, 5, true);
 
-    QCOMPARE(bgClicks, 0);      // Swallowed by modal outside-click dismissal
-    QVERIFY(!modal.visible());  // Dismissed by outside click!
+    QCOMPARE(bgClicks, 0);     // Swallowed by modal outside-click dismissal
+    QVERIFY(!modal.visible()); // Dismissed by outside click!
 }
 
 void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
@@ -487,7 +486,7 @@ void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
     terminal.engine()->setTestViewportSize(QSize(40, 10));
 
     Item bgField(&terminal);
-    bgField.setFocusable(true);
+    bgField.setFocusPolicy(Qt::StrongFocus);
     terminal.setFocusedItem(&bgField);
     QCOMPARE(terminal.focusedItem(), &bgField);
 
@@ -498,7 +497,7 @@ void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
     parentBg.setHeight(8);
     parentBg.setColor(QStringLiteral("#111111"));
     Item parentField(&parentPopup);
-    parentField.setFocusable(true);
+    parentField.setFocusPolicy(Qt::StrongFocus);
     parentPopup.setInitialFocusItem(&parentField);
 
     Popup childPopup(&terminal);
@@ -509,7 +508,7 @@ void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
     childBg.setHeight(4);
     childBg.setColor(QStringLiteral("#222222"));
     Item childField(&childPopup);
-    childField.setFocusable(true);
+    childField.setFocusPolicy(Qt::StrongFocus);
     childPopup.setInitialFocusItem(&childField);
 
     parentPopup.open();

@@ -79,7 +79,7 @@ it, first calls `toggle()` if `checkable`, then emits `clicked()`. A mouse
 press also gives the control focus and holds `pressed` until the release;
 `down` mirrors `pressed` unless a style assigns it. Nothing happens while
 `enabled` is false, and the engine withholds keys and clicks from disabled
-items anyway; the control is `focusable` exactly while `enabled`.
+items anyway; the control's `focusPolicy` is `Qt.StrongFocus` while `enabled`.
 
 Use this type directly only to build a new control. To restyle an existing
 one, assign `background` and `contentItem` on the control itself. The

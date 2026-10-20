@@ -2,7 +2,7 @@
 
 ## Class Overview
 
-`Item` is the base visual class for all QML elements in QmlTui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusable`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
+`Item` is the base visual class for all QML elements in QmlTui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusPolicy`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
 
 Developers subclass `Item` when creating new C++ terminal components.
 
@@ -33,7 +33,7 @@ Developers subclass `Item` when creating new C++ terminal components.
 | `enabled` | `bool` | `enabled` | `setEnabled` | `enabledChanged` | Controls whether the item receives input events. |
 | `focus` | `bool` | `focus` | `setFocus` | `focusChanged` | Requested focus state. |
 | `activeFocus` | `bool` | `activeFocus` | — | `activeFocusChanged` | Read-only property indicating if the item has active input focus. |
-| `focusable` | `bool` | `focusable` | `setFocusable` | `focusableChanged` | Whether the item participates in Tab focus cycling. |
+| `focusPolicy` | `Qt::FocusPolicy` | `focusPolicy` | `setFocusPolicy` | `focusPolicyChanged` | How the item accepts keyboard/mouse focus (Tab, Click, Strong, None). |
 | `parent` | `qmltui::Item*` | `parentItem` | `setParentItem` | `parentChanged` | Parent visual item. |
 | `anchors` | `qmltui::Anchors*` | `anchors` | — | — | Attached anchor configuration object. |
 | `left` | `qmltui::AnchorLine*` | `left` | — | — | Left anchor line constraint of the item. |
@@ -115,8 +115,8 @@ Emitted when focus state changes.
 #### void activeFocusChanged()
 Emitted when active keyboard focus changes.
 
-#### void focusableChanged()
-Emitted when focusable state changes.
+#### void focusPolicyChanged()
+Emitted when focus policy changes.
 
 #### void paddingChanged()
 Emitted when uniform padding changes.

@@ -116,7 +116,7 @@ Terminal {
                     id: card1
                     width: 36
                     height: 7
-                    focusable: true
+                    focusPolicy: Qt.StrongFocus
                     focus: true
                     color: "#1e1e1e"
                     border.style: Border.Single
@@ -174,7 +174,7 @@ Terminal {
                     id: card2
                     width: 36
                     height: 7
-                    focusable: true
+                    focusPolicy: Qt.StrongFocus
                     focus: false
                     color: "#1e1e1e"
                     border.style: Border.Single

@@ -170,5 +170,5 @@ ListView {
 | `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Uses box-drawing glyphs |
 | `font.pixelSize: 14` | `N/A (use bold, dim, italic, underline)` | Implicit cell height |
 | `color: Material.accent` | `color: "cyan"` or `color: "#2CDE85"` | No theme singletons |
-| `focus: true` | `focus: true`, `focusable: true` | Explicit Tab navigation |
+| `focus: true` | `focus: true`, `focusPolicy: Qt.StrongFocus` | Explicit Tab/Click focus |
 | Window Manager `[X]` | `Keys.onPressed: event => ...` | Explicit keyboard quit path |

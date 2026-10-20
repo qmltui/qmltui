@@ -32,7 +32,7 @@ Column {
     property int modeIndex: 0
 
     spacing: 1
-    focusable: true
+    focusPolicy: Qt.StrongFocus
     focus: true
 
     Keys.onPressed: event => {

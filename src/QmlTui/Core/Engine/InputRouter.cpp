@@ -243,6 +243,17 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int
 
     if (!targetGuard) return true;
 
+    if (eventType == MouseEvent::Type::Press) {
+        for (Item* item = targetGuard.data(); item && item != stopAncestor;
+             item = item->parentItem()) {
+            if ((item->focusPolicy() & Qt::ClickFocus) && item->isEffectivelyVisible() &&
+                item->isEffectivelyEnabled()) {
+                item->forceActiveFocus();
+                break;
+            }
+        }
+    }
+
     bool accepted = false;
     Item* current = targetGuard.data();
     while (current) {

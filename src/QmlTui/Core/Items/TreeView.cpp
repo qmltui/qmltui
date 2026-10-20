@@ -23,7 +23,7 @@ static QQmlContext* delegateContext(Item* item) {
 }
 
 TreeView::TreeView(QObject* parent) : Item(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     setFocus(true);
     setImplicitWidth(30);
     setImplicitHeight(10);
@@ -1518,7 +1518,7 @@ void TreeView::mousePressEvent(MouseEvent* event) {
 
 void TreeView::wheelEvent(MouseEvent* event) {
     if (!event || event->wheelDeltaY() == 0) return;
-    if (focusable() && !focus()) setFocus(true);
+    if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     updateTree();
     const int total = static_cast<int>(m_visibleNodes.size());
     const int availH = height() > 0 ? height() : 10;

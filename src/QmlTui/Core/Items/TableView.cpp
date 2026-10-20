@@ -84,7 +84,7 @@ QString alignedPrefix(const QString& text, int width, int visibleWidth, const QS
 } // namespace
 
 TableView::TableView(QObject* parent) : Item(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     connect(this, &Item::widthChanged, this, &TableView::forceLayout);
     connect(this, &Item::heightChanged, this, &TableView::forceLayout);
     forceLayout();
@@ -1778,7 +1778,7 @@ void TableView::mousePressEvent(MouseEvent* event) {
 }
 void TableView::wheelEvent(MouseEvent* event) {
     if (!event || event->wheelDeltaY() == 0) return;
-    if (focusable() && !focus()) setFocus(true);
+    if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     const int visibleRows = viewGeometry().capacity;
     const int maxFirst = (std::max)(0, rowCount() - visibleRows);
     const int nextFirst = std::clamp(m_firstVisibleRow - event->wheelDeltaY(), 0, maxFirst);

@@ -102,6 +102,8 @@ qt_add_qml_module(QmlTuiCore
         ${qmltui_private_qt_sources}
         Items/Item.h
         Items/Item.cpp
+        Items/FocusScope.h
+        Items/FocusScope.cpp
         Items/Canvas.h
         Items/Canvas.cpp
         Items/Rectangle.h
@@ -241,7 +243,7 @@ install(FILES
 # too; qmltui_check_public_headers() enforces it at configure time.
 qmltui_install_headers(QmlTui/Core/Items FILES
     Items/Text.h
-    Items/Item.h Items/Anchors.h Items/AnchorLine.h Items/Border.h
+    Items/Item.h Items/FocusScope.h Items/Anchors.h Items/AnchorLine.h Items/Border.h
     Items/TableView.h Items/TreeView.h Items/Terminal.h Items/Rectangle.h
     Items/Gradient.h Items/GradientStop.h Items/Canvas.h Items/Popup.h
     Items/TextArea.h Items/TextEditorState.h Items/StackLayout.h

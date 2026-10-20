@@ -6,7 +6,7 @@ Terminal applications rely first on keyboard navigation. QmlTui maintains an exp
 
 ## 1. Active Focus and Tab Chains
 
-Set `focus: true` on the initial interactive item. Focusable items (`focusable: true`, enabled by default on interactive controls and `TextInput`/`TextArea`) participate in the **Tab** / **Shift+Tab** focus ring in tree order.
+Set `focus: true` on the initial interactive item. Focusable items (`focusPolicy: Qt.StrongFocus` or `Qt.TabFocus`, enabled by default on interactive controls and `TextInput`/`TextArea`) participate in the **Tab** / **Shift+Tab** focus ring in tree order.
 
 Always provide clear visual feedback for `activeFocus` using borders or text attributes:
 
@@ -14,7 +14,7 @@ Always provide clear visual feedback for `activeFocus` using borders or text att
 Rectangle {
     width: 24
     height: 3
-    focusable: true
+    focusPolicy: Qt.StrongFocus
     border {
         style: activeFocus ? Border.Double : Border.Single
         color: activeFocus ? "cyan" : "gray"

@@ -40,7 +40,7 @@ ListViewAttached* ListView::qmlAttachedProperties(QObject* object) {
 }
 
 ListView::ListView(QObject* parent) : ScrollView(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     connect(this, &ScrollView::contentYChanged, this,
             [this]() { markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty); });
     connect(this, &Item::heightChanged, this,

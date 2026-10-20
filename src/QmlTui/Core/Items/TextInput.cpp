@@ -19,7 +19,7 @@ static_assert(int(TextInput::Block) == int(detail::TextCursorShape::Block) &&
               int(TextInput::HollowBlock) == int(detail::TextCursorShape::HollowBlock));
 
 TextInput::TextInput(QObject* parent) : Item(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     setClip(true);
     setImplicitWidth(10);
     setImplicitHeight(1);

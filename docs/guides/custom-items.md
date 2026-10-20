@@ -19,7 +19,7 @@ class CustomBlock : public Item {
 
 public:
     explicit CustomBlock(QObject *parent = nullptr) : Item(parent) {
-        // e.g., setFocusable(true) if your item accepts input
+        // e.g., setFocusPolicy(Qt::StrongFocus) if your item accepts input
     }
     
     QString label() const { return m_label; }

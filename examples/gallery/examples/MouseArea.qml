@@ -8,7 +8,7 @@ Column {
     property string last: "nothing yet"
 
     spacing: 1
-    focusable: true
+    focusPolicy: Qt.StrongFocus
     focus: true
 
     Text {

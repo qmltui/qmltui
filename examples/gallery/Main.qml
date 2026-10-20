@@ -486,11 +486,11 @@ Terminal {
     function focusExample(item) {
         codeEditor.focus = false;
         if (!item) {
-            demoHost.focusable = true;
+            demoHost.focusPolicy = Qt.StrongFocus;
             demoHost.focus = true;
             return;
         }
-        if (item.focusable && item.visible && item.enabled) {
+        if ((item.focusPolicy & Qt.TabFocus) && item.visible && item.enabled) {
             item.focus = true;
             return;
         }
@@ -500,7 +500,7 @@ Terminal {
                     const child = node.children[i];
                     if (child.focus && child.visible && child.enabled)
                         return child;
-                    if (!fallback && child.focusable && child.visible && child.enabled)
+                    if (!fallback && (child.focusPolicy & Qt.TabFocus) && child.visible && child.enabled)
                         fallback = child;
                     const found = visit(child);
                     if (found)
@@ -510,10 +510,12 @@ Terminal {
             })(item);
         const target = marked || fallback;
         if (target) {
-            target.focusable = true;
+            if (target.focusPolicy === Qt.NoFocus)
+                target.focusPolicy = Qt.StrongFocus;
             target.focus = true;
         } else {
-            item.focusable = true;
+            if (item.focusPolicy === Qt.NoFocus)
+                item.focusPolicy = Qt.StrongFocus;
             item.focus = true;
         }
     }
@@ -1158,7 +1160,7 @@ Terminal {
                     rightMargin: 2
                 }
                 height: 1
-                focusable: false
+                focusPolicy: Qt.NoFocus
                 tabs: root.categoryNames
                 color: root.tileColor
                 textColor: root.mutedColor

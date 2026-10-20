@@ -26,7 +26,7 @@ Column {
     readonly property var animation: animations[animationIndex]
 
     spacing: 1
-    focusable: true
+    focusPolicy: Qt.StrongFocus
     focus: true
 
     Keys.onPressed: event => {

@@ -5,8 +5,8 @@
 
 namespace qmltui {
 
-ScrollView::ScrollView(QObject *parent) : Item(parent) {
-    setFocusable(true);
+ScrollView::ScrollView(QObject* parent) : Item(parent) {
+    setFocusPolicy(Qt::StrongFocus);
     setClip(true);
 }
 
@@ -27,7 +27,7 @@ void ScrollView::setContentHeight(int h) {
     if (m_contentHeight == h) return;
     m_contentHeight = h;
     emit contentHeightChanged();
-    
+
     // Clamp contentY
     int viewportH = height() - topPadding() - bottomPadding();
     int effectiveH = effectiveContentHeight();
@@ -86,7 +86,7 @@ constexpr int MouseWheelUp = 64;
 constexpr int MouseWheelDown = 65;
 
 void ScrollView::mousePressEvent(MouseEvent* event) {
-    if (focusable() && !focus()) {
+    if ((focusPolicy() & Qt::ClickFocus) && !focus()) {
         setFocus(true);
     }
     if (event->nativeButton() == MouseWheelUp) {
@@ -101,10 +101,8 @@ void ScrollView::mousePressEvent(MouseEvent* event) {
 }
 
 void ScrollView::wheelEvent(MouseEvent* event) {
-    if (event->wheelDeltaY() == 0)
-        return;
-    if (focusable() && !focus())
-        setFocus(true);
+    if (event->wheelDeltaY() == 0) return;
+    if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     setContentY(m_contentY - event->wheelDeltaY());
     event->setAccepted(true);
 }
@@ -167,16 +165,13 @@ void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
     }
 }
 
-ClipRect ScrollView::clipRectForChildren(int absX, int absY,
-                                        const ClipRect &clipRect) const
-{
+ClipRect ScrollView::clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const {
     const int lp = leftPadding();
     const int rp = rightPadding();
     const int tp = topPadding();
     const int bp = bottomPadding();
-    return clipRect.intersected(ClipRect{absX + lp, absY + tp,
-                                        width() - lp - rp,
-                                        height() - tp - bp});
+    return clipRect.intersected(
+        ClipRect{absX + lp, absY + tp, width() - lp - rp, height() - tp - bp});
 }
 
 } // namespace qmltui

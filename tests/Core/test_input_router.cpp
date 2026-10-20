@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/MouseArea.h>
 #include <QmlTui/Core/Items/Popup.h>
@@ -20,6 +21,7 @@ private slots:
     void testImplicitMouseGrab();
     void testPressArmedPopupDismissal();
     void testFocusCycling();
+    void testClickFocusDispatch();
     void testChildMouseEventFilter();
     void testWheelDoesNotAcquireGrab();
     void testDismissalWithBackgroundMouseArea();
@@ -56,13 +58,13 @@ void TestInputRouter::testImplicitMouseGrab() {
     int lastMouseX = -1;
     int lastMouseY = -1;
 
-    connect(&ma, &MouseArea::pressed, [&](MouseEvent *ev) {
+    connect(&ma, &MouseArea::pressed, [&](MouseEvent* ev) {
         pressCount++;
         lastMouseX = ev->x();
         lastMouseY = ev->y();
     });
 
-    connect(&ma, &MouseArea::released, [&](MouseEvent *ev) {
+    connect(&ma, &MouseArea::released, [&](MouseEvent* ev) {
         releaseCount++;
         lastMouseX = ev->x();
         lastMouseY = ev->y();
@@ -123,11 +125,11 @@ void TestInputRouter::testFocusCycling() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     Item item1(&terminal);
-    item1.setFocusable(true);
+    item1.setFocusPolicy(Qt::TabFocus);
     Item item2(&terminal);
-    item2.setFocusable(true);
+    item2.setFocusPolicy(Qt::TabFocus);
     Item item3(&terminal);
-    item3.setFocusable(true);
+    item3.setFocusPolicy(Qt::TabFocus);
 
     InputRouter router(&terminal);
 
@@ -146,6 +148,80 @@ void TestInputRouter::testFocusCycling() {
     // Backtab -> item2
     router.routeKey(Qt::Key_Backtab, {}, 0);
     QCOMPARE(terminal.focusedItem(), &item2);
+}
+
+void TestInputRouter::testClickFocusDispatch() {
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(80, 24));
+
+    Item noFocusItem(&terminal);
+    noFocusItem.setX(0);
+    noFocusItem.setY(0);
+    noFocusItem.setWidth(10);
+    noFocusItem.setHeight(2);
+    noFocusItem.setFocusPolicy(Qt::NoFocus);
+
+    Item tabFocusItem(&terminal);
+    tabFocusItem.setX(10);
+    tabFocusItem.setY(0);
+    tabFocusItem.setWidth(10);
+    tabFocusItem.setHeight(2);
+    tabFocusItem.setFocusPolicy(Qt::TabFocus);
+
+    Item clickFocusItem(&terminal);
+    clickFocusItem.setX(20);
+    clickFocusItem.setY(0);
+    clickFocusItem.setWidth(10);
+    clickFocusItem.setHeight(2);
+    clickFocusItem.setFocusPolicy(Qt::ClickFocus);
+
+    Item strongFocusItem(&terminal);
+    strongFocusItem.setX(30);
+    strongFocusItem.setY(0);
+    strongFocusItem.setWidth(10);
+    strongFocusItem.setHeight(2);
+    strongFocusItem.setFocusPolicy(Qt::StrongFocus);
+
+    InputRouter router(&terminal);
+
+    // Click on NoFocus item (5, 1) -> should NOT focus
+    router.routeMouse(1, 5, 1, false, false);
+    router.routeMouse(1, 5, 1, true, false);
+    QCOMPARE(terminal.focusedItem(), nullptr);
+
+    // Click on TabFocus item (15, 1) -> should NOT focus
+    router.routeMouse(1, 15, 1, false, false);
+    router.routeMouse(1, 15, 1, true, false);
+    QCOMPARE(terminal.focusedItem(), nullptr);
+
+    // Click on ClickFocus item (25, 1) -> SHOULD focus
+    router.routeMouse(1, 25, 1, false, false);
+    router.routeMouse(1, 25, 1, true, false);
+    QCOMPARE(terminal.focusedItem(), &clickFocusItem);
+
+    // Click on StrongFocus item (35, 1) -> SHOULD focus
+    router.routeMouse(1, 35, 1, false, false);
+    router.routeMouse(1, 35, 1, true, false);
+    QCOMPARE(terminal.focusedItem(), &strongFocusItem);
+
+    FocusScope clickScope(&terminal);
+    Item scopedClickItem(&clickScope);
+    scopedClickItem.setX(40);
+    scopedClickItem.setY(0);
+    scopedClickItem.setWidth(10);
+    scopedClickItem.setHeight(2);
+    scopedClickItem.setFocusPolicy(Qt::ClickFocus);
+
+    // Initial: clickScope has no active focus
+    QCOMPARE(clickScope.activeFocus(), false);
+    QCOMPARE(scopedClickItem.activeFocus(), false);
+
+    // Click on scopedClickItem (45, 1) -> SHOULD focus scopedClickItem AND activate clickScope
+    router.routeMouse(1, 45, 1, false, false);
+    router.routeMouse(1, 45, 1, true, false);
+    QCOMPARE(terminal.focusedItem(), &scopedClickItem);
+    QCOMPARE(clickScope.activeFocus(), true);
+    QCOMPARE(scopedClickItem.activeFocus(), true);
 }
 
 class FilterParent : public Item {
@@ -204,14 +280,20 @@ void TestInputRouter::testWheelDoesNotAcquireGrab() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     ScrollView sv(&terminal);
-    sv.setX(0); sv.setY(0); sv.setWidth(40); sv.setHeight(10);
+    sv.setX(0);
+    sv.setY(0);
+    sv.setWidth(40);
+    sv.setHeight(10);
     sv.setContentHeight(100);
 
     MouseArea ma(&terminal);
-    ma.setX(50); ma.setY(15); ma.setWidth(10); ma.setHeight(5);
+    ma.setX(50);
+    ma.setY(15);
+    ma.setWidth(10);
+    ma.setHeight(5);
     int maPress = 0, maClick = 0;
-    connect(&ma, &MouseArea::pressed, [&](MouseEvent*){ maPress++; });
-    connect(&ma, &MouseArea::clicked, [&](MouseEvent*){ maClick++; });
+    connect(&ma, &MouseArea::pressed, [&](MouseEvent*) { maPress++; });
+    connect(&ma, &MouseArea::clicked, [&](MouseEvent*) { maClick++; });
 
     InputRouter router(&terminal);
 
@@ -232,10 +314,16 @@ void TestInputRouter::testDismissalWithBackgroundMouseArea() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea bg(&terminal);
-    bg.setX(0); bg.setY(0); bg.setWidth(80); bg.setHeight(24);
+    bg.setX(0);
+    bg.setY(0);
+    bg.setWidth(80);
+    bg.setHeight(24);
 
     Popup popup(&terminal);
-    popup.setX(10); popup.setY(10); popup.setWidth(20); popup.setHeight(10);
+    popup.setX(10);
+    popup.setY(10);
+    popup.setWidth(20);
+    popup.setHeight(10);
     popup.setClosePolicy(Popup::CloseOnOutsideClick);
     popup.open();
     QCOMPARE(popup.visible(), true);
@@ -255,7 +343,10 @@ void TestInputRouter::testSynchronousItemDeletionDuringDispatch() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea* ma = new MouseArea(&terminal);
-    ma->setX(0); ma->setY(0); ma->setWidth(10); ma->setHeight(5);
+    ma->setX(0);
+    ma->setY(0);
+    ma->setWidth(10);
+    ma->setHeight(5);
 
     InputRouter router(&terminal);
     connect(ma, &MouseArea::pressed, [&](MouseEvent*) {
@@ -271,14 +362,14 @@ class SelfDeletingMouseItem : public Item {
 public:
     using Item::Item;
 
-    void mousePressEvent(MouseEvent *) override { delete this; }
+    void mousePressEvent(MouseEvent*) override { delete this; }
 };
 
 void TestInputRouter::testUnacceptedMouseDeletionDuringDispatch() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(20, 5));
 
-    auto *item = new SelfDeletingMouseItem(&terminal);
+    auto* item = new SelfDeletingMouseItem(&terminal);
     item->setWidth(10);
     item->setHeight(3);
 
@@ -294,15 +385,15 @@ class SelfDeletingKeyItem : public Item {
 public:
     using Item::Item;
 
-    void keyPressEvent(KeyEvent *) override { delete this; }
+    void keyPressEvent(KeyEvent*) override { delete this; }
 };
 
 void TestInputRouter::testKeyDeletionDuringDispatch() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(20, 5));
 
-    auto *item = new SelfDeletingKeyItem(&terminal);
-    item->setFocusable(true);
+    auto* item = new SelfDeletingKeyItem(&terminal);
+    item->setFocusPolicy(Qt::StrongFocus);
     item->setFocus(true);
 
     InputRouter router(&terminal);
@@ -317,13 +408,12 @@ void TestInputRouter::testAttachedKeysDeletionDuringDispatch() {
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(20, 5));
 
-    auto *item = new Item(&terminal);
-    item->setFocusable(true);
+    auto* item = new Item(&terminal);
+    item->setFocusPolicy(Qt::StrongFocus);
     item->setFocus(true);
-    auto *keys = qobject_cast<Keys *>(
-        qmlAttachedPropertiesObject<Keys>(item, true));
+    auto* keys = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, true));
     QVERIFY(keys);
-    connect(keys, &Keys::pressed, item, [item](KeyEvent *) { delete item; });
+    connect(keys, &Keys::pressed, item, [item](KeyEvent*) { delete item; });
 
     InputRouter router(&terminal);
     QPointer<Item> guard(item);
@@ -338,7 +428,7 @@ public:
     using Item::Item;
     int keyCount = 0;
 
-    void keyPressEvent(KeyEvent *) override { ++keyCount; }
+    void keyPressEvent(KeyEvent*) override { ++keyCount; }
 };
 
 void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
@@ -348,7 +438,7 @@ void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
     parent.setWidth(20);
     parent.setHeight(5);
     CountingKeyItem child(&parent);
-    child.setFocusable(true);
+    child.setFocusPolicy(Qt::StrongFocus);
     child.setWidth(5);
     child.setHeight(1);
 
@@ -358,7 +448,7 @@ void TestInputRouter::testHiddenAncestorRejectsFocusAndKeys() {
 
     parent.setVisible(true);
     child.setFocus(true);
-    QCOMPARE(terminal.focusedItem(), static_cast<Item *>(&child));
+    QCOMPARE(terminal.focusedItem(), static_cast<Item*>(&child));
     parent.setVisible(false);
     QCOMPARE(terminal.focusedItem(), nullptr);
 
@@ -379,7 +469,7 @@ void TestInputRouter::testHiddenAncestorInvalidatesMouseGrab() {
 
     InputRouter router(&terminal);
     router.routeMouse(0, 1, 1, false, false);
-    QCOMPARE(router.implicitMouseGrabItem(), static_cast<Item *>(&child));
+    QCOMPARE(router.implicitMouseGrabItem(), static_cast<Item*>(&child));
 
     parent.setVisible(false);
     router.routeMouse(0, 2, 1, false, true);
@@ -391,12 +481,15 @@ void TestInputRouter::testMouseAreaClickOnlyOnReleaseInside() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea ma(&terminal);
-    ma.setX(5); ma.setY(5); ma.setWidth(10); ma.setHeight(5);
+    ma.setX(5);
+    ma.setY(5);
+    ma.setWidth(10);
+    ma.setHeight(5);
 
     int clicks = 0;
     int releases = 0;
-    connect(&ma, &MouseArea::clicked, [&](MouseEvent*){ clicks++; });
-    connect(&ma, &MouseArea::released, [&](MouseEvent*){ releases++; });
+    connect(&ma, &MouseArea::clicked, [&](MouseEvent*) { clicks++; });
+    connect(&ma, &MouseArea::released, [&](MouseEvent*) { releases++; });
 
     InputRouter router(&terminal);
 
@@ -416,15 +509,17 @@ void TestInputRouter::testAcceptedButtonsAndQtButtonValues() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea behind(&terminal);
-    behind.setWidth(20); behind.setHeight(10);
+    behind.setWidth(20);
+    behind.setHeight(10);
     behind.setAcceptedButtons(Qt::RightButton);
     Qt::MouseButton behindButton = Qt::NoButton;
-    connect(&behind, &MouseArea::pressed, [&](MouseEvent *ev) { behindButton = ev->button(); });
+    connect(&behind, &MouseArea::pressed, [&](MouseEvent* ev) { behindButton = ev->button(); });
 
     MouseArea front(&behind);
-    front.setWidth(20); front.setHeight(10);
+    front.setWidth(20);
+    front.setHeight(10);
     Qt::MouseButton frontButton = Qt::NoButton;
-    connect(&front, &MouseArea::pressed, [&](MouseEvent *ev) { frontButton = ev->button(); });
+    connect(&front, &MouseArea::pressed, [&](MouseEvent* ev) { frontButton = ev->button(); });
 
     InputRouter router(&terminal);
 
@@ -446,7 +541,10 @@ void TestInputRouter::testPressedPropertyAndContainsPress() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea ma(&terminal);
-    ma.setX(5); ma.setY(5); ma.setWidth(10); ma.setHeight(5);
+    ma.setX(5);
+    ma.setY(5);
+    ma.setWidth(10);
+    ma.setHeight(5);
 
     InputRouter router(&terminal);
     QCOMPARE(ma.isPressed(), false);
@@ -481,17 +579,19 @@ void TestInputRouter::testWheelSignalConsumesOnlyWhenConnected() {
     terminal.engine()->setTestViewportSize(QSize(40, 10));
 
     ScrollView* view = new ScrollView(&terminal);
-    view->setWidth(20); view->setHeight(5);
+    view->setWidth(20);
+    view->setHeight(5);
     view->setContentHeight(50);
 
     MouseArea* area = new MouseArea(view);
-    area->setWidth(20); area->setHeight(5);
+    area->setWidth(20);
+    area->setHeight(5);
 
     InputRouter router(&terminal);
 
     // A handler takes the wheel; the view behind must not scroll.
     int wheelDeltaY = 0;
-    connect(area, &MouseArea::wheel, [&](MouseEvent *ev) { wheelDeltaY = ev->wheelDeltaY(); });
+    connect(area, &MouseArea::wheel, [&](MouseEvent* ev) { wheelDeltaY = ev->wheelDeltaY(); });
     router.routeMouse(1, 2, 2, false, false, 0, 0, -1);
     QCOMPARE(wheelDeltaY, -1);
     QCOMPARE(view->contentY(), 0);
@@ -502,11 +602,13 @@ void TestInputRouter::testLegacyWheelEventsNotSwallowedByMouseArea() {
     terminal.engine()->setTestViewportSize(QSize(40, 10));
 
     ScrollView* view = new ScrollView(&terminal);
-    view->setWidth(20); view->setHeight(5);
+    view->setWidth(20);
+    view->setHeight(5);
     view->setContentHeight(50);
 
     MouseArea* area = new MouseArea(view);
-    area->setWidth(20); area->setHeight(5);
+    area->setWidth(20);
+    area->setHeight(5);
 
     InputRouter router(&terminal);
 
@@ -520,12 +622,18 @@ void TestInputRouter::testModalPopupDiscardsStaleBackgroundGrab() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     MouseArea bg(&terminal);
-    bg.setX(0); bg.setY(0); bg.setWidth(40); bg.setHeight(10);
+    bg.setX(0);
+    bg.setY(0);
+    bg.setWidth(40);
+    bg.setHeight(10);
     int bgPress = 0;
-    connect(&bg, &MouseArea::pressed, [&](MouseEvent*){ bgPress++; });
+    connect(&bg, &MouseArea::pressed, [&](MouseEvent*) { bgPress++; });
 
     Popup modal(&terminal);
-    modal.setX(20); modal.setY(12); modal.setWidth(30); modal.setHeight(8);
+    modal.setX(20);
+    modal.setY(12);
+    modal.setWidth(30);
+    modal.setHeight(8);
     modal.setModal(true);
     modal.setClosePolicy(Popup::NoAutoClose);
 
@@ -550,12 +658,18 @@ void TestInputRouter::testTopmostPopupDismissalOrder() {
     terminal.engine()->setTestViewportSize(QSize(80, 24));
 
     Popup low(&terminal);
-    low.setX(10); low.setY(10); low.setWidth(10); low.setHeight(5);
+    low.setX(10);
+    low.setY(10);
+    low.setWidth(10);
+    low.setHeight(5);
     low.setClosePolicy(Popup::CloseOnOutsideClick);
     low.open();
 
     Popup high(&terminal);
-    high.setX(40); high.setY(10); high.setWidth(10); high.setHeight(5);
+    high.setX(40);
+    high.setY(10);
+    high.setWidth(10);
+    high.setHeight(5);
     high.setClosePolicy(Popup::CloseOnOutsideClick);
     high.open();
 
@@ -585,7 +699,7 @@ void TestInputRouter::testInlineModeMouseOffset() {
     int pressCount = 0;
     int clickLocalX = -1;
     int clickLocalY = -1;
-    connect(&ma, &MouseArea::pressed, [&](MouseEvent *ev) {
+    connect(&ma, &MouseArea::pressed, [&](MouseEvent* ev) {
         pressCount++;
         clickLocalX = ev->x();
         clickLocalY = ev->y();

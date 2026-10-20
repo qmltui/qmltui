@@ -107,7 +107,7 @@ Rectangle {
         selectDate(now);
     }
 
-    focusable: enabled
+    focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
     implicitWidth: 34
     implicitHeight: showFooter ? 13 : 11
     color: "transparent"

@@ -34,7 +34,7 @@ void TabBar::setTextColor(Color color) {
 }
 
 TabBar::TabBar(QObject* parent) : Item(parent) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     setImplicitWidth(30);
     setImplicitHeight(1);
 }

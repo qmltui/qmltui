@@ -1,5 +1,7 @@
 #include <QTest>
+#include <QSignalSpy>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 
 using namespace qmltui;
@@ -11,6 +13,10 @@ private slots:
     void testForceActiveFocus();
     void testFocusChain();
     void testTerminalGeometry();
+    void testFocusPolicy();
+    void testFocusScopeEncapsulation();
+    void testFocusScopeNested();
+    void testFocusScopeNoDescendantsRecursion();
 };
 
 void TestFocus::testForceActiveFocus() {
@@ -62,6 +68,124 @@ void TestFocus::testTerminalGeometry() {
     term.setMode(Terminal::Mode::AltScreen);
     QCOMPARE(term.engine(), engine);
     QCOMPARE(term.height(), 20);
+}
+
+void TestFocus::testFocusPolicy() {
+    Item item;
+    QCOMPARE(item.focusPolicy(), Qt::NoFocus);
+
+    QSignalSpy spy(&item, &Item::focusPolicyChanged);
+    item.setFocusPolicy(Qt::StrongFocus);
+    QCOMPARE(item.focusPolicy(), Qt::StrongFocus);
+    QCOMPARE(spy.count(), 1);
+
+    Terminal term;
+    Item child(&term);
+    child.setFocusPolicy(Qt::StrongFocus);
+    child.setFocus(true);
+    QCOMPARE(term.focusedItem(), &child);
+    QCOMPARE(child.activeFocus(), true);
+
+    // Setting policy to NoFocus clears focused item
+    child.setFocusPolicy(Qt::NoFocus);
+    QCOMPARE(term.focusedItem(), nullptr);
+    QCOMPARE(child.activeFocus(), false);
+}
+
+void TestFocus::testFocusScopeEncapsulation() {
+    Terminal term;
+    FocusScope scope1(&term);
+    FocusScope scope2(&term);
+
+    Item child1A(&scope1);
+    child1A.setFocusPolicy(Qt::StrongFocus);
+    child1A.setFocus(true); // Internal focus preference
+
+    Item child1B(&scope1);
+    child1B.setFocusPolicy(Qt::StrongFocus);
+
+    Item child2A(&scope2);
+    child2A.setFocusPolicy(Qt::StrongFocus);
+    child2A.setFocus(true); // Internal focus preference
+
+    Item child2B(&scope2);
+    child2B.setFocusPolicy(Qt::StrongFocus);
+
+    // Initial state: neither scope is active globally
+    QCOMPARE(scope1.activeFocus(), false);
+    QCOMPARE(scope2.activeFocus(), false);
+    QCOMPARE(child1A.activeFocus(), false);
+    QCOMPARE(child2A.activeFocus(), false);
+    QCOMPARE(child1A.focus(), true);
+    QCOMPARE(child2A.focus(), true);
+
+    // Focus scope1
+    scope1.setFocus(true);
+    QCOMPARE(scope1.activeFocus(), true);
+    QCOMPARE(child1A.activeFocus(), true);
+    QCOMPARE(term.focusedItem(), &child1A);
+    QCOMPARE(scope2.activeFocus(), false);
+    QCOMPARE(child2A.activeFocus(), false);
+    QCOMPARE(child2A.focus(), true); // Retains internal focus
+
+    // Switch focus to scope2
+    scope2.setFocus(true);
+    QCOMPARE(scope1.activeFocus(), false);
+    QCOMPARE(child1A.activeFocus(), false);
+    QCOMPARE(child1A.focus(), true); // Retains internal focus!
+    QCOMPARE(scope2.activeFocus(), true);
+    QCOMPARE(child2A.activeFocus(), true);
+    QCOMPARE(term.focusedItem(), &child2A);
+
+    // Switch focus within scope2 from child2A to child2B
+    child2B.setFocus(true);
+    QCOMPARE(child2B.activeFocus(), true);
+    QCOMPARE(child2B.focus(), true);
+    QCOMPARE(child2A.activeFocus(), false);
+    QCOMPARE(child2A.focus(), false);
+    QCOMPARE(scope2.activeFocus(), true);
+    QCOMPARE(term.focusedItem(), &child2B);
+
+    // Switch focus back to scope1 -> restores child1A!
+    scope1.setFocus(true);
+    QCOMPARE(scope1.activeFocus(), true);
+    QCOMPARE(child1A.activeFocus(), true);
+    QCOMPARE(term.focusedItem(), &child1A);
+    QCOMPARE(scope2.activeFocus(), false);
+    QCOMPARE(child2B.activeFocus(), false);
+    QCOMPARE(child2B.focus(), true); // scope2 now remembers child2B
+}
+
+void TestFocus::testFocusScopeNested() {
+    Terminal term;
+    FocusScope outer(&term);
+    Item container(&outer); // transparent layout container
+    FocusScope inner(&container);
+    Item leaf(&inner);
+    leaf.setFocusPolicy(Qt::StrongFocus);
+    leaf.setFocus(true); // leaf is the focused child of inner
+
+    QCOMPARE(outer.activeFocus(), false);
+    QCOMPARE(inner.activeFocus(), false);
+    QCOMPARE(leaf.activeFocus(), false);
+    QCOMPARE(leaf.focus(), true);
+
+    outer.setFocus(true);
+    QCOMPARE(outer.activeFocus(), true);
+    QCOMPARE(container.activeFocus(), false);
+    QCOMPARE(inner.activeFocus(), true);
+    QCOMPARE(leaf.activeFocus(), true);
+    QCOMPARE(term.focusedItem(), &leaf);
+}
+
+void TestFocus::testFocusScopeNoDescendantsRecursion() {
+    Terminal term;
+    FocusScope standalone(&term);
+    standalone.setFocusPolicy(Qt::StrongFocus);
+    standalone.setFocus(true);
+
+    QCOMPARE(term.focusedItem(), &standalone);
+    QCOMPARE(standalone.activeFocus(), true);
 }
 
 QTEST_MAIN(TestFocus)

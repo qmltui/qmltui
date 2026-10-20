@@ -42,7 +42,7 @@ QString PtyView::defaultUserShell() {
 PtyView::PtyView(QObject* parent)
     : Item(parent), m_program(defaultUserShell()), m_adapter(std::make_unique<VTermAdapter>(1, 1)),
       m_session(std::make_unique<UnixPtySession>()) {
-    setFocusable(true);
+    setFocusPolicy(Qt::StrongFocus);
     setClip(true);
     m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
     m_adapter->setScrollbackLimit(m_scrollbackLimit);

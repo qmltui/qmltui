@@ -1,4 +1,5 @@
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Engine/Clipboard.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Engine/AltScreenRenderer.h>
@@ -30,7 +31,7 @@ void Terminal::componentComplete() {
     }
 }
 
-Terminal::Terminal(QObject *parent) : Item(parent) {
+Terminal::Terminal(QObject* parent) : Item(parent) {
     setItemFlag(ItemFlag::IsTerminalRoot);
     // QML parentage and mode are not established in the constructor. C++
     // applications can initialize synchronously through engine().
@@ -99,8 +100,7 @@ Terminal::~Terminal() {
 
 void Terminal::copyToClipboard(const QString& text) {
     emit clipboardCopyRequested(text);
-    if (m_engine && m_clipboardMode == ClipboardMode::Osc52)
-        m_engine->copyToClipboard(text);
+    if (m_engine && m_clipboardMode == ClipboardMode::Osc52) m_engine->copyToClipboard(text);
 }
 
 void Terminal::bell() {
@@ -172,19 +172,22 @@ void Terminal::unregisterPopup(Popup* popup) {
 
 QList<Popup*> Terminal::orderedPopups() const {
     QList<Popup*> result = m_popups;
-    std::stable_sort(result.begin(), result.end(), [](const Popup *a, const Popup *b) {
+    std::stable_sort(result.begin(), result.end(), [](const Popup* a, const Popup* b) {
         if (!a || !b) return a != nullptr;
         if (!qFuzzyCompare(a->z(), b->z())) return a->z() < b->z();
         return a->openSerial() < b->openSerial();
     });
-    Popup *modalBarrier = nullptr;
+    Popup* modalBarrier = nullptr;
     for (auto it = result.crbegin(); it != result.crend(); ++it) {
-        if (*it && (*it)->visible() && (*it)->modal()) { modalBarrier = *it; break; }
+        if (*it && (*it)->visible() && (*it)->modal()) {
+            modalBarrier = *it;
+            break;
+        }
     }
     if (modalBarrier) {
         QList<Popup*> below;
         QList<Popup*> group;
-        for (Popup *popup : result) {
+        for (Popup* popup : result) {
             if (popup == modalBarrier || (popup && popup->isDescendantOfPopup(modalBarrier)))
                 group.append(popup);
             else
@@ -196,7 +199,7 @@ QList<Popup*> Terminal::orderedPopups() const {
     return result;
 }
 
-Popup *Terminal::topModalPopup() const {
+Popup* Terminal::topModalPopup() const {
     const QList<Popup*> ordered = orderedPopups();
     for (auto it = ordered.crbegin(); it != ordered.crend(); ++it)
         if (*it && (*it)->visible() && (*it)->modal()) return *it;
@@ -217,25 +220,62 @@ InputScope* Terminal::topModalScope() const {
     return topModalPopup();
 }
 
+static QList<FocusScope*> getScopeChain(Item* item) {
+    QList<FocusScope*> chain;
+    for (Item* p = item ? item->parentItem() : nullptr; p; p = p->parentItem()) {
+        if (p->isFocusScope()) {
+            chain.append(static_cast<FocusScope*>(p));
+        }
+    }
+    return chain;
+}
+
 void Terminal::setFocusedItem(Item* item) {
-    if (item && (!item->focusable() || !item->visible() || !item->isEffectivelyEnabled()))
-        item = nullptr;
+    if (item && (!item->visible() || !item->isEffectivelyEnabled())) item = nullptr;
     if (m_focusedItem == item) return;
-    
+
     Item* oldFocus = m_focusedItem;
     m_focusedItem = item;
-    
+
+    QList<FocusScope*> oldScopes = getScopeChain(oldFocus);
+    QList<FocusScope*> newScopes = getScopeChain(m_focusedItem);
+
     if (oldFocus) {
-        oldFocus->setFocus(false);
         oldFocus->setActiveFocus(false);
+        if (oldScopes.isEmpty()) {
+            oldFocus->setFocus(false);
+        }
     }
+
+    for (FocusScope* scope : oldScopes) {
+        if (!newScopes.contains(scope)) {
+            scope->setActiveFocus(false);
+        }
+    }
+
+    // Update subFocusItem along the scope hierarchy
+    for (Item* leaf = m_focusedItem; leaf;) {
+        FocusScope* scope = leaf->enclosingFocusScope();
+        if (scope) {
+            scope->setSubFocusItem(leaf);
+        }
+        leaf = scope;
+    }
+
+    for (FocusScope* scope : newScopes) {
+        if (!oldScopes.contains(scope)) {
+            scope->setActiveFocus(true);
+        }
+    }
+
     if (m_focusedItem) {
         m_focusedItem->setActiveFocus(true);
+        m_focusedItem->setFocus(true);
     }
     emit focusedItemChanged();
 }
 
-void Terminal::setHoveredItem(Item *item) {
+void Terminal::setHoveredItem(Item* item) {
     if (m_hoveredItem == item) return;
     m_hoveredItem = item;
     emit hoveredItemChanged();
@@ -247,8 +287,8 @@ void Terminal::setMouseMotionRequested(QObject* requester, bool requested) {
     const bool wasRequested = hasMouseMotionRequests();
     if (requested) {
         if (m_mouseMotionRequesters.contains(requester)) return;
-        const QMetaObject::Connection connection = connect(
-            requester, &QObject::destroyed, this, [this, requester] {
+        const QMetaObject::Connection connection =
+            connect(requester, &QObject::destroyed, this, [this, requester] {
                 if (m_mouseMotionRequesters.remove(requester) > 0 &&
                     m_mouseMotionRequesters.isEmpty()) {
                     emit mouseMotionRequestedChanged(false);
@@ -263,17 +303,16 @@ void Terminal::setMouseMotionRequested(QObject* requester, bool requested) {
     }
 
     const bool isRequested = hasMouseMotionRequests();
-    if (wasRequested != isRequested)
-        emit mouseMotionRequestedChanged(isRequested);
+    if (wasRequested != isRequested) emit mouseMotionRequestedChanged(isRequested);
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
     if (!root || !root->visible() || !root->isEffectivelyEnabled()) return;
-    
-    if (root->focusable()) {
+
+    if (root->focusPolicy() & Qt::TabFocus) {
         list.append(root);
     }
-    
+
     for (Item* child : root->childItems()) {
         findFocusableItems(child, list);
     }
@@ -290,7 +329,7 @@ void Terminal::setHeight(int) {
 void Terminal::setMode(Mode mode) {
     if (m_mode == mode) return;
     m_mode = mode;
-    
+
     if (!m_mouseReportingExplicit) {
         bool autoReporting = (m_mode == Mode::AltScreen);
         if (m_mouseReporting != autoReporting) {
@@ -309,7 +348,7 @@ void Terminal::setMode(Mode mode) {
             m_engine->setRenderer(new InlineRenderer());
         }
     }
-    
+
     emit modeChanged();
     emit heightChanged();
     markDirty();
@@ -337,8 +376,7 @@ int Terminal::width() const {
 }
 
 int Terminal::implicitHeight() const {
-    if (m_implicitHeight > 0)
-        return m_implicitHeight;
+    if (m_implicitHeight > 0) return m_implicitHeight;
 
     int maxBottom = 0;
 
@@ -397,8 +435,8 @@ void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
     }
 }
 
-void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
-                            const ClipRect &clipRect) const {
+void Terminal::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
+                            const ClipRect& clipRect) const {
     Q_UNUSED(absX);
     Q_UNUSED(absY);
     for (Popup* popup : orderedPopups()) {
@@ -406,11 +444,10 @@ void Terminal::paintOverlay(TextGridBuffer &buffer, int absX, int absY,
             if (popup->modal() && popup->dimBackground()) {
                 dimBuffer(buffer, clipRect);
             }
-            
+
             QPoint absPos = popup->absolutePosition();
             // Pass the absolute terminal bounds as clipRect (clipRect is usually full screen)
-            ItemPaintTraversal::paintSubtree(popup, buffer, absPos.x(),
-                                             absPos.y(), clipRect);
+            ItemPaintTraversal::paintSubtree(popup, buffer, absPos.x(), absPos.y(), clipRect);
         }
     }
 }

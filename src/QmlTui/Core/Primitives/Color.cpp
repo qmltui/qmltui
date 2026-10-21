@@ -12,26 +12,24 @@ namespace {
 // ANSI-indexed color an RGB value where one is unavoidable (gradients, dimming,
 // image capture); the encoder never converts an index to RGB.
 constexpr quint32 ansiPaletteRgb[16] = {
-    0xff000000U, 0xff800000U, 0xff008000U, 0xff808000U,
-    0xff000080U, 0xff800080U, 0xff008080U, 0xffc0c0c0U,
-    0xff808080U, 0xffff0000U, 0xff00ff00U, 0xffffff00U,
+    0xff000000U, 0xff800000U, 0xff008000U, 0xff808000U, 0xff000080U, 0xff800080U,
+    0xff008080U, 0xffc0c0c0U, 0xff808080U, 0xffff0000U, 0xff00ff00U, 0xffffff00U,
     0xff0000ffU, 0xffff00ffU, 0xff00ffffU, 0xffffffffU,
 };
 
 // The CSS names whose RGB is exactly an xterm default palette entry. They parse
 // to that ANSI index so the user's terminal theme decides their appearance.
-const QHash<QString, int> &ansiNamedColors()
-{
-    static const QHash<QString, int> names {
-        {QStringLiteral("black"), 0},   {QStringLiteral("maroon"), 1},
-        {QStringLiteral("green"), 2},   {QStringLiteral("olive"), 3},
-        {QStringLiteral("navy"), 4},    {QStringLiteral("purple"), 5},
-        {QStringLiteral("teal"), 6},    {QStringLiteral("silver"), 7},
-        {QStringLiteral("gray"), 8},    {QStringLiteral("grey"), 8},
-        {QStringLiteral("red"), 9},     {QStringLiteral("lime"), 10},
-        {QStringLiteral("yellow"), 11}, {QStringLiteral("blue"), 12},
+const QHash<QString, int>& ansiNamedColors() {
+    static const QHash<QString, int> names{
+        {QStringLiteral("black"), 0},    {QStringLiteral("maroon"), 1},
+        {QStringLiteral("green"), 2},    {QStringLiteral("olive"), 3},
+        {QStringLiteral("navy"), 4},     {QStringLiteral("purple"), 5},
+        {QStringLiteral("teal"), 6},     {QStringLiteral("silver"), 7},
+        {QStringLiteral("gray"), 8},     {QStringLiteral("grey"), 8},
+        {QStringLiteral("red"), 9},      {QStringLiteral("lime"), 10},
+        {QStringLiteral("yellow"), 11},  {QStringLiteral("blue"), 12},
         {QStringLiteral("fuchsia"), 13}, {QStringLiteral("magenta"), 13},
-        {QStringLiteral("aqua"), 14},   {QStringLiteral("cyan"), 14},
+        {QStringLiteral("aqua"), 14},    {QStringLiteral("cyan"), 14},
         {QStringLiteral("white"), 15},
     };
     return names;
@@ -44,25 +42,33 @@ const QHash<QString, int> &ansiNamedColors()
 // so lands on index 9. CSS-only words (maroon, olive, navy, purple, teal,
 // silver, lime, fuchsia, aqua) are not ANSI names and are rejected here; they
 // already work without the prefix.
-const QHash<QString, int> &ansiSemanticNames()
-{
-    static const QHash<QString, int> names {
+const QHash<QString, int>& ansiSemanticNames() {
+    static const QHash<QString, int> names{
         // Standard (0-7): SGR 30-37. "dark" is accepted as a synonym of the
         // base word for people coming from Windows console naming.
         {QStringLiteral("black"), 0},
-        {QStringLiteral("red"), 1},         {QStringLiteral("darkred"), 1},
-        {QStringLiteral("green"), 2},       {QStringLiteral("darkgreen"), 2},
-        {QStringLiteral("yellow"), 3},      {QStringLiteral("darkyellow"), 3},
-        {QStringLiteral("blue"), 4},        {QStringLiteral("darkblue"), 4},
-        {QStringLiteral("magenta"), 5},     {QStringLiteral("darkmagenta"), 5},
-        {QStringLiteral("cyan"), 6},        {QStringLiteral("darkcyan"), 6},
-        {QStringLiteral("white"), 7},       {QStringLiteral("lightgray"), 7},
+        {QStringLiteral("red"), 1},
+        {QStringLiteral("darkred"), 1},
+        {QStringLiteral("green"), 2},
+        {QStringLiteral("darkgreen"), 2},
+        {QStringLiteral("yellow"), 3},
+        {QStringLiteral("darkyellow"), 3},
+        {QStringLiteral("blue"), 4},
+        {QStringLiteral("darkblue"), 4},
+        {QStringLiteral("magenta"), 5},
+        {QStringLiteral("darkmagenta"), 5},
+        {QStringLiteral("cyan"), 6},
+        {QStringLiteral("darkcyan"), 6},
+        {QStringLiteral("white"), 7},
+        {QStringLiteral("lightgray"), 7},
         {QStringLiteral("lightgrey"), 7},
 
         // Bright (8-15): SGR 90-97. Index 8 is ANSI's "bright black"; the gray
         // spellings are accepted for it because that is what it renders as.
-        {QStringLiteral("brightblack"), 8}, {QStringLiteral("gray"), 8},
-        {QStringLiteral("grey"), 8},        {QStringLiteral("darkgray"), 8},
+        {QStringLiteral("brightblack"), 8},
+        {QStringLiteral("gray"), 8},
+        {QStringLiteral("grey"), 8},
+        {QStringLiteral("darkgray"), 8},
         {QStringLiteral("darkgrey"), 8},
         {QStringLiteral("brightred"), 9},
         {QStringLiteral("brightgreen"), 10},
@@ -75,14 +81,13 @@ const QHash<QString, int> &ansiSemanticNames()
     return names;
 }
 
-const char *const ansiCanonicalNames[16] = {
-    "black", "maroon", "green", "olive", "navy", "purple", "teal", "silver",
-    "gray", "red", "lime", "yellow", "blue", "magenta", "cyan", "white",
+const char* const ansiCanonicalNames[16] = {
+    "black", "maroon", "green", "olive",  "navy", "purple",  "teal", "silver",
+    "gray",  "red",    "lime",  "yellow", "blue", "magenta", "cyan", "white",
 };
 
-const QHash<QString, quint32> &namedColors()
-{
-    static const QHash<QString, quint32> colors {
+const QHash<QString, quint32>& namedColors() {
+    static const QHash<QString, quint32> colors{
         // These two differ only in whether the cell is painted. "default" is
         // alpha 0: the cell is written and the terminal picks the colour
         // (SGR 39 for a foreground, SGR 49 for a background), so the surface
@@ -224,20 +229,13 @@ const QHash<QString, quint32> &namedColors()
 
 } // namespace
 
-Color::Color(const QString &value)
-    : Color(fromString(value))
-{
-}
+Color::Color(const QString& value) : Color(fromString(value)) {}
 
-Color::Color(const char *value)
-    : Color(QString::fromLatin1(value ? value : ""))
-{
-}
+Color::Color(const char* value) : Color(QString::fromLatin1(value ? value : "")) {}
 
-Color Color::fromRgba(qreal red, qreal green, qreal blue, qreal alpha)
-{
-    if (!std::isfinite(red) || !std::isfinite(green)
-        || !std::isfinite(blue) || !std::isfinite(alpha)) {
+Color Color::fromRgba(qreal red, qreal green, qreal blue, qreal alpha) {
+    if (!std::isfinite(red) || !std::isfinite(green) || !std::isfinite(blue) ||
+        !std::isfinite(alpha)) {
         return {};
     }
 
@@ -246,41 +244,31 @@ Color Color::fromRgba(qreal red, qreal green, qreal blue, qreal alpha)
             std::lround(std::clamp(value, qreal(0), qreal(1)) * qreal(255)));
     };
 
-    return fromArgb32((channel(alpha) << 24)
-                      | (channel(red) << 16)
-                      | (channel(green) << 8)
-                      | channel(blue));
+    return fromArgb32((channel(alpha) << 24) | (channel(red) << 16) | (channel(green) << 8) |
+                      channel(blue));
 }
 
-Color Color::fromString(const QString &value)
-{
+Color Color::fromString(const QString& value) {
     const QString text = value.trimmed();
-    if (text.isEmpty())
-        return {};
+    if (text.isEmpty()) return {};
 
     if (text.startsWith(QLatin1Char('#'))) {
         bool ok = false;
         if (text.size() == 4) {
             const quint32 r = text.mid(1, 1).toUInt(&ok, 16);
-            if (!ok)
-                return {};
+            if (!ok) return {};
             const quint32 g = text.mid(2, 1).toUInt(&ok, 16);
-            if (!ok)
-                return {};
+            if (!ok) return {};
             const quint32 b = text.mid(3, 1).toUInt(&ok, 16);
-            if (!ok)
-                return {};
-            return fromArgb32(0xff000000U | (r << 20) | (r << 16)
-                              | (g << 12) | (g << 8) | (b << 4) | b);
+            if (!ok) return {};
+            return fromArgb32(0xff000000U | (r << 20) | (r << 16) | (g << 12) | (g << 8) |
+                              (b << 4) | b);
         }
 
         const quint32 parsed = text.mid(1).toUInt(&ok, 16);
-        if (!ok)
-            return {};
-        if (text.size() == 7)
-            return fromArgb32(0xff000000U | parsed);
-        if (text.size() == 9)
-            return fromArgb32(parsed);
+        if (!ok) return {};
+        if (text.size() == 7) return fromArgb32(0xff000000U | parsed);
+        if (text.size() == 9) return fromArgb32(parsed);
         return {};
     }
 
@@ -289,45 +277,32 @@ Color Color::fromString(const QString &value)
         QString suffix = lower.mid(5);
         bool ok = false;
         const int index = suffix.toInt(&ok);
-        if (ok && index >= 0 && index < 16)
-            return fromAnsiIndex(index);
-        suffix.remove(QLatin1Char('-'))
-              .remove(QLatin1Char('_'))
-              .remove(QLatin1Char(' '));
+        if (ok && index >= 0 && index < 16) return fromAnsiIndex(index);
+        suffix.remove(QLatin1Char('-')).remove(QLatin1Char('_')).remove(QLatin1Char(' '));
         const auto it = ansiSemanticNames().constFind(suffix);
-        if (it != ansiSemanticNames().cend())
-            return fromAnsiIndex(it.value());
+        if (it != ansiSemanticNames().cend()) return fromAnsiIndex(it.value());
         return {};
     }
     const auto ansi = ansiNamedColors().constFind(lower);
-    if (ansi != ansiNamedColors().cend())
-        return fromAnsiIndex(ansi.value());
+    if (ansi != ansiNamedColors().cend()) return fromAnsiIndex(ansi.value());
     const auto it = namedColors().constFind(lower);
     return it == namedColors().cend() ? Color() : fromArgb32(it.value());
 }
 
-Color Color::toRgb() const
-{
-    if (isAnsiIndex())
-        return fromArgb32(ansiPaletteRgb[m_argb & 0x0FU]);
+Color Color::toRgb() const {
+    if (isAnsiIndex()) return fromArgb32(ansiPaletteRgb[m_argb & 0x0FU]);
     // Transparency has no RGB; it reads as fully unset.
-    if (isTransparent())
-        return fromArgb32(0x00000000U);
+    if (isTransparent()) return fromArgb32(0x00000000U);
     return *this;
 }
 
-QString Color::toString() const
-{
-    if (!m_valid)
-        return {};
-    if (isAnsiIndex())
-        return QLatin1String(ansiCanonicalNames[m_argb & 0x0FU]);
-    if (isTransparent())
-        return QStringLiteral("transparent");
+QString Color::toString() const {
+    if (!m_valid) return {};
+    if (isAnsiIndex()) return QLatin1String(ansiCanonicalNames[m_argb & 0x0FU]);
+    if (isTransparent()) return QStringLiteral("transparent");
     // Alpha 0 with no RGB is the terminal's own colour, and "default" is the
     // spelling that parses back to it; "#00000000" would not.
-    if (m_argb == 0)
-        return QStringLiteral("default");
+    if (m_argb == 0) return QStringLiteral("default");
     if ((m_argb >> 24) == 0xffU)
         return QStringLiteral("#%1").arg(m_argb & 0x00ffffffU, 6, 16, QLatin1Char('0'));
     return QStringLiteral("#%1").arg(m_argb, 8, 16, QLatin1Char('0'));
@@ -342,13 +317,6 @@ struct Rgb {
 };
 
 constexpr int cubeLevels[6] = {0, 95, 135, 175, 215, 255};
-
-// xterm's default 16-colour palette.
-constexpr Rgb basic16Palette[16] = {
-    {0, 0, 0},     {128, 0, 0},     {0, 128, 0},     {128, 128, 0},   {0, 0, 128}, {128, 0, 128},
-    {0, 128, 128}, {192, 192, 192}, {128, 128, 128}, {255, 0, 0},     {0, 255, 0}, {255, 255, 0},
-    {0, 0, 255},   {255, 0, 255},   {0, 255, 255},   {255, 255, 255},
-};
 
 inline int squaredDistance(const Rgb& a, const Rgb& b) {
     const int dr = a.r - b.r;
@@ -404,7 +372,7 @@ uint8_t Color::toBasic16(quint32 argb) {
     int best = 0;
     int bestDistance = 1 << 30;
     for (int index = 0; index < 16; ++index) {
-        const int distance = squaredDistance(color, basic16Palette[index]);
+        const int distance = squaredDistance(color, rgbOf(ansiPaletteRgb[index]));
         if (distance < bestDistance) {
             bestDistance = distance;
             best = index;

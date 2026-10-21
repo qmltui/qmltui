@@ -45,30 +45,34 @@ struct WidthAccumulator {
     }
 };
 
-inline int encodeCodePoint(char32_t codePoint, char* out) noexcept {
+} // namespace
+
+int UnicodeText::encodeCodePointUtf8(char32_t codePoint, char out[4]) noexcept {
     if (codePoint < 0x80) {
         out[0] = static_cast<char>(codePoint);
         return 1;
     }
     if (codePoint < 0x800) {
-        out[0] = static_cast<char>(0xC0 | (codePoint >> 6));
+        out[0] = static_cast<char>(0xC0 | ((codePoint >> 6) & 0x1F));
         out[1] = static_cast<char>(0x80 | (codePoint & 0x3F));
         return 2;
     }
     if (codePoint < 0x10000) {
-        out[0] = static_cast<char>(0xE0 | (codePoint >> 12));
+        if (codePoint >= 0xD800 && codePoint <= 0xDFFF) return 0;
+        out[0] = static_cast<char>(0xE0 | ((codePoint >> 12) & 0x0F));
         out[1] = static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F));
         out[2] = static_cast<char>(0x80 | (codePoint & 0x3F));
         return 3;
     }
-    out[0] = static_cast<char>(0xF0 | (codePoint >> 18));
-    out[1] = static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F));
-    out[2] = static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F));
-    out[3] = static_cast<char>(0x80 | (codePoint & 0x3F));
-    return 4;
+    if (codePoint <= 0x10FFFF) {
+        out[0] = static_cast<char>(0xF0 | ((codePoint >> 18) & 0x07));
+        out[1] = static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F));
+        out[2] = static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F));
+        out[3] = static_cast<char>(0x80 | (codePoint & 0x3F));
+        return 4;
+    }
+    return 0;
 }
-
-} // namespace
 
 char32_t UnicodeText::sanitizeCodePoint(char32_t codePoint) noexcept {
     if (codePoint <= 0x1f) return 0x2400 + codePoint;
@@ -140,7 +144,7 @@ int UnicodeText::encodeUtf8(QStringView cluster, char* out, int capacity,
         char32_t codePoint = decodeAt(cluster, position);
         if (sanitizeControls) codePoint = sanitizeCodePoint(codePoint);
         char bytes[4];
-        const int count = encodeCodePoint(codePoint, bytes);
+        const int count = encodeCodePointUtf8(codePoint, bytes);
         if (length + count > capacity) return -1;
         std::memcpy(out + length, bytes, static_cast<size_t>(count));
         length += count;
@@ -156,7 +160,7 @@ QByteArray UnicodeText::toUtf8(QStringView cluster, bool sanitizeControls) {
         char32_t codePoint = decodeAt(cluster, position);
         if (sanitizeControls) codePoint = sanitizeCodePoint(codePoint);
         char bytes[4];
-        result.append(bytes, encodeCodePoint(codePoint, bytes));
+        result.append(bytes, encodeCodePointUtf8(codePoint, bytes));
     }
     return result;
 }

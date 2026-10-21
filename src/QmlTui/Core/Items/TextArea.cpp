@@ -519,7 +519,7 @@ void TextArea::mouseMoveEvent(MouseEvent* event) {
 }
 
 void TextArea::wheelEvent(MouseEvent* event) {
-    if (!event || event->wheelDeltaY() == 0) return;
+    if (event->wheelDeltaY() == 0) return;
     if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     setContentY(m_contentY - event->wheelDeltaY());
     event->setAccepted(true);
@@ -754,6 +754,7 @@ void TextArea::recomposeHighlightRuns() {
 }
 
 void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
+    if (!m_visible) return;
     const int viewportWidth = (std::max)(0, width() - leftPadding() - rightPadding());
     const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
     const ClipRect contentClip = clipRect.intersected(
@@ -831,18 +832,9 @@ void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                     for (int dx = 0; dx < width; ++dx) {
                         Cell* selectionCell = buffer.tryCellAt(x + dx, y);
                         if (!selectionCell) continue;
-                        Cell& selCell = *selectionCell;
-                        if (m_hasResolvedSelectionColor) {
-                            selCell.bgColor = m_resolvedSelectionColor;
-                            if (m_hasResolvedSelectedTextColor) {
-                                selCell.fgColor = m_resolvedSelectedTextColor;
-                            }
-                        } else {
-                            if (m_hasResolvedSelectedTextColor) {
-                                selCell.fgColor = m_resolvedSelectedTextColor;
-                            }
-                            selCell.attributes = selCell.attributes | TextAttribute::Reversed;
-                        }
+                        detail::paintSelectionCell(
+                            *selectionCell, m_hasResolvedSelectionColor, m_resolvedSelectionColor,
+                            m_hasResolvedSelectedTextColor, m_resolvedSelectedTextColor);
                     }
                 }
             }

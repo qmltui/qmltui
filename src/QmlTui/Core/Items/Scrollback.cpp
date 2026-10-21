@@ -96,7 +96,8 @@ void Scrollback::setModel(const QVariant& model) {
         connect(m_model, &QAbstractItemModel::rowsInserted, this,
                 [this](const QModelIndex& parent, int first, int last) {
                     if (parent.isValid()) {
-                        qWarning("Scrollback ignores rows inserted below the model root.");
+                        qmlWarning(this)
+                            << "Scrollback ignores rows inserted below the model root.";
                         return;
                     }
                     Q_UNUSED(first);
@@ -574,7 +575,7 @@ bool Scrollback::print(const QList<qmltui::Span>& spans) {
 }
 
 bool Scrollback::reportRejection(const QString& reason) {
-    qWarning("%s", qPrintable(reason));
+    qmlWarning(this) << reason;
     emit outputRejected(reason);
     return false;
 }

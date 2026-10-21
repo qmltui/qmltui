@@ -4,7 +4,7 @@
 #include <QmlTui/Core/Engine/Transition.h>
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Primitives/Color.h>
-#include <qqmlinfo.h>
+#include <QQmlInfo>
 #include <QQmlProperty>
 #include <QQmlContext>
 #include <QMetaProperty>
@@ -725,8 +725,9 @@ void StateController::applyState(const QString& newState) {
     // 2. Preflight Ownership Check
     for (const CanonicalProperty& canon : requestedOverrides.keys()) {
         if (s_propertyOwners.contains(canon) && s_propertyOwners.value(canon) != this) {
-            qWarning() << "Cannot apply state" << newState << ": property" << canon.name
-                       << "is owned by another StateGroup/Item";
+            qmlWarning(m_defaultTarget ? m_defaultTarget.data() : this)
+                << "Cannot apply state " << newState << ": property " << canon.name
+                << " is owned by another StateGroup/Item";
             return; // Reject entire activation, leave current state intact!
         }
     }

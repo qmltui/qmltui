@@ -39,12 +39,19 @@ struct RegisterTableConverters {
     }
 } s_registerTableConverters;
 
-QQmlContext* delegateContext(Item* item) {
-    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
-}
+using DelegateUtils::delegateContext;
+
 QVariant unpack(QVariant value) {
     return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant()
                                                                : value;
+}
+
+QString columnRoleKey(const QVariantList& columns, int col) {
+    if (col < 0 || col >= columns.size()) return {};
+    const QVariant colVal = columns[col];
+    if (!colVal.canConvert<QVariantMap>()) return {};
+    const QVariantMap colMap = colVal.toMap();
+    return colMap.value(QStringLiteral("key"), colMap.value(QStringLiteral("role"))).toString();
 }
 // Compute alignment against the logical width, but allocate only the visible prefix.
 QString alignedPrefix(const QString& text, int width, int visibleWidth, const QString& alignment,
@@ -126,9 +133,8 @@ void TableView::setColumns(const QVariantList& columns) {
     m_builtInCells.clear();
     updateImplicitWidth();
     refreshModelHeader();
-    if (!m_cppModel)
-        for (auto& record : m_createdDelegateItems)
-            record.allRolesDirty = true;
+    for (auto& record : m_createdDelegateItems)
+        record.allRolesDirty = true;
     setCurrentColumn(m_currentColumn);
     emit columnsChanged();
     forceLayout();
@@ -352,6 +358,7 @@ void TableView::synchronizeSelection() {
     }
 }
 void TableView::handleStructureChanged() {
+    if (m_cppModel && m_roleNames.isEmpty()) refreshModelRoles();
     m_structureDirty = true;
     m_builtInCells.clear();
     updateImplicitWidth();
@@ -802,6 +809,15 @@ void TableView::resolveColumns() {
 }
 QVariant TableView::cellRawValue(int row, int col) const {
     if (m_cppModel) {
+        const QString roleName = columnRoleKey(m_columns, col);
+        if (!roleName.isEmpty()) {
+            const QByteArray roleUtf8 = roleName.toUtf8();
+            const QHash<int, QByteArray> roles =
+                m_roleNames.isEmpty() ? m_cppModel->roleNames() : m_roleNames;
+            for (auto it = roles.cbegin(); it != roles.cend(); ++it) {
+                if (it.value() == roleUtf8) return m_cppModel->data(sourceIndex(row, 0), it.key());
+            }
+        }
         const QModelIndex idx = sourceIndex(row, col);
         return m_cppModel->data(idx, Qt::DisplayRole);
     }
@@ -820,7 +836,11 @@ QVariant TableView::cellRawValue(int row, int col) const {
                 QString key;
                 if (colVal.canConvert<QVariantMap>()) {
                     const QVariantMap colMap = colVal.toMap();
-                    key = colMap.value("key", colMap.value("title")).toString();
+                    key = colMap
+                              .value(QStringLiteral("key"),
+                                     colMap.value(QStringLiteral("role"),
+                                                  colMap.value(QStringLiteral("title"))))
+                              .toString();
                 } else {
                     key = colVal.toString();
                 }
@@ -928,6 +948,11 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
             modelData = cellMode ? QVariant(cellText(row, column)) : value;
             if (cellMode) values.insert(QStringLiteral("display"), modelData);
         }
+    }
+    if (m_cppModel && cellMode) {
+        const QString roleKey = columnRoleKey(m_columns, column);
+        if (!roleKey.isEmpty() && values.contains(roleKey))
+            values.insert(QStringLiteral("display"), cellText(row, column));
     }
     QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
     QQmlComponent* component = record.component;
@@ -1163,8 +1188,7 @@ const TableView::BuiltInCell& TableView::resolveBuiltInCell(int row, int column)
 
     BuiltInCell entry;
     entry.index = sourceIndex(row, column);
-    const QVariant rawCell =
-        m_cppModel ? m_cppModel->data(entry.index, Qt::DisplayRole) : cellRawValue(row, column);
+    const QVariant rawCell = cellRawValue(row, column);
     if (rawCell.metaType() == QMetaType::fromType<QString>()) {
         entry.rawValue = rawCell.toString();
     } else if (rawCell.metaType() == QMetaType::fromType<Span>()) {
@@ -1179,11 +1203,22 @@ const TableView::BuiltInCell& TableView::resolveBuiltInCell(int row, int column)
     entry.text = entry.rawValue;
 
     if (m_cppModel && entry.index.isValid()) {
-        entry.standardAlignment =
-            NumericItemRoles::alignmentName(m_cppModel->data(entry.index, Qt::TextAlignmentRole));
-        const QVariant check = m_cppModel->data(entry.index, Qt::CheckStateRole);
+        const QHash<int, QByteArray>& roles =
+            m_roleNames.isEmpty() ? m_cppModel->roleNames() : m_roleNames;
+        if (NumericItemRoles::hasStandardNumericRole(roles, Qt::TextAlignmentRole,
+                                                     "textAlignment")) {
+            entry.standardAlignment = NumericItemRoles::alignmentName(
+                m_cppModel->data(entry.index, Qt::TextAlignmentRole));
+        }
+        const QVariant check =
+            NumericItemRoles::hasStandardNumericRole(roles, Qt::CheckStateRole, "checkState")
+                ? m_cppModel->data(entry.index, Qt::CheckStateRole)
+                : QVariant();
         const QString glyph =
-            NumericItemRoles::decorationGlyph(m_cppModel->data(entry.index, Qt::DecorationRole));
+            NumericItemRoles::hasStandardNumericRole(roles, Qt::DecorationRole, "decoration")
+                ? NumericItemRoles::decorationGlyph(
+                      m_cppModel->data(entry.index, Qt::DecorationRole))
+                : QString();
         QString prefix;
         if (!glyph.isEmpty()) prefix = glyph + QLatin1Char(' ');
         if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
@@ -1545,12 +1580,18 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 }
             }
             if (m_cppModel && cell.index.isValid()) {
-                if (keepCellColors && !columnGaveFg) {
+                const QHash<int, QByteArray>& roles =
+                    m_roleNames.isEmpty() ? m_cppModel->roleNames() : m_roleNames;
+                if (keepCellColors && !columnGaveFg &&
+                    NumericItemRoles::hasStandardNumericRole(roles, Qt::ForegroundRole,
+                                                             "foreground")) {
                     const QString text = NumericItemRoles::colorString(
                         m_cppModel->data(cell.index, Qt::ForegroundRole));
                     if (!text.isEmpty()) cellFg = resolveCachedColor(text, cellFg);
                 }
-                if (keepCellColors && !columnGaveBg) {
+                if (keepCellColors && !columnGaveBg &&
+                    NumericItemRoles::hasStandardNumericRole(roles, Qt::BackgroundRole,
+                                                             "background")) {
                     const QString text = NumericItemRoles::colorString(
                         m_cppModel->data(cell.index, Qt::BackgroundRole));
                     if (!text.isEmpty()) cellBg = resolveCachedColor(text, cellBg);
@@ -1765,7 +1806,7 @@ void TableView::mousePressEvent(MouseEvent* event) {
     }
 }
 void TableView::wheelEvent(MouseEvent* event) {
-    if (!event || event->wheelDeltaY() == 0) return;
+    if (event->wheelDeltaY() == 0) return;
     if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     const int visibleRows = viewGeometry().capacity;
     const int maxFirst = (std::max)(0, rowCount() - visibleRows);

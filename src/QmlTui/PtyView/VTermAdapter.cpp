@@ -1,4 +1,5 @@
 #include <QmlTui/PtyView/VTermAdapter.h>
+#include <QmlTui/Core/Primitives/UnicodeText.h>
 
 #include <Qt>
 
@@ -44,30 +45,6 @@ TextAttribute attributesFor(const VTermScreenCell& cell) {
     if (cell.attrs.conceal) attributes = attributes | TextAttribute::Conceal;
     if (cell.attrs.strike) attributes = attributes | TextAttribute::Strikethrough;
     return attributes;
-}
-
-inline int encodeCodepointUtf8(uint32_t cp, char* out) noexcept {
-    if (cp <= 0x7F) {
-        out[0] = static_cast<char>(cp);
-        return 1;
-    } else if (cp <= 0x7FF) {
-        out[0] = static_cast<char>(0xC0 | ((cp >> 6) & 0x1F));
-        out[1] = static_cast<char>(0x80 | (cp & 0x3F));
-        return 2;
-    } else if (cp <= 0xFFFF) {
-        if (cp >= 0xD800 && cp <= 0xDFFF) return 0;
-        out[0] = static_cast<char>(0xE0 | ((cp >> 12) & 0x0F));
-        out[1] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-        out[2] = static_cast<char>(0x80 | (cp & 0x3F));
-        return 3;
-    } else if (cp <= 0x10FFFF) {
-        out[0] = static_cast<char>(0xF0 | ((cp >> 18) & 0x07));
-        out[1] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
-        out[2] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-        out[3] = static_cast<char>(0x80 | (cp & 0x3F));
-        return 4;
-    }
-    return 0;
 }
 
 } // namespace
@@ -286,7 +263,7 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
                 int utf8Len = 0;
                 for (uint32_t codepoint : source.chars) {
                     if (codepoint == 0) break;
-                    utf8Len += encodeCodepointUtf8(codepoint, utf8 + utf8Len);
+                    utf8Len += UnicodeText::encodeCodePointUtf8(codepoint, utf8 + utf8Len);
                 }
                 if (utf8Len == 0)
                     target.setCharacter(QByteArrayView(" ", 1));

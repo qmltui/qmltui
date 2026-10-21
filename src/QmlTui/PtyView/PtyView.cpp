@@ -102,7 +102,7 @@ PtyView::PtyView(QObject* parent)
 }
 
 PtyView::~PtyView() {
-    if (m_session) m_session->disconnect(this);
+    m_session->disconnect(this);
     if (Terminal* root = terminal()) root->setMouseMotionRequested(this, false);
 }
 
@@ -139,7 +139,7 @@ void PtyView::setAutoStart(bool value) {
 }
 
 qint64 PtyView::processId() const {
-    return m_session ? m_session->processId() : 0;
+    return m_session->processId();
 }
 
 void PtyView::setForegroundColor(Color value) {
@@ -186,7 +186,7 @@ void PtyView::setScrollOffset(int value) {
 }
 
 int PtyView::scrollbackSize() const {
-    return m_adapter ? m_adapter->scrollbackSize() : 0;
+    return m_adapter->scrollbackSize();
 }
 
 void PtyView::setShowScrollbar(bool value) {
@@ -325,7 +325,7 @@ void PtyView::setHeight(int value) {
 void PtyView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     const int w = (std::max)(0, width());
     const int h = (std::max)(0, height());
-    const int scrollback = m_adapter ? m_adapter->scrollbackSize() : 0;
+    const int scrollback = m_adapter->scrollbackSize();
     const bool drawScrollbar = m_showScrollbar && (scrollback > 0) && (w > 2);
     const int contentWidth = drawScrollbar ? (w - 1) : w;
 
@@ -354,7 +354,7 @@ void PtyView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
 }
 
 void PtyView::keyPressEvent(KeyEvent* event) {
-    if (!event || m_processState != Running) return;
+    if (m_processState != Running) return;
 
     // Shift+PageUp / Shift+PageDown / Shift+Up / Shift+Down local scrollback navigation
     if ((event->modifiers() & Qt::ShiftModifier) && event->key() == Qt::Key_PageUp) {
@@ -387,11 +387,9 @@ void PtyView::keyPressEvent(KeyEvent* event) {
 }
 
 void PtyView::mousePressEvent(MouseEvent* event) {
-    if (!event) return;
     if (!focus()) setFocus(true);
 
-    if (m_showScrollbar && m_adapter && m_adapter->scrollbackSize() > 0 &&
-        event->x() >= width() - 1) {
+    if (m_showScrollbar && m_adapter->scrollbackSize() > 0 && event->x() >= width() - 1) {
         const int h = (std::max)(1, height());
         const int totalLines = m_adapter->scrollbackSize() + h;
         const int sbH = (std::max)(1, (h * h) / totalLines);
@@ -411,7 +409,7 @@ void PtyView::mousePressEvent(MouseEvent* event) {
 }
 
 void PtyView::mouseReleaseEvent(MouseEvent* event) {
-    if (event && m_processState == Running && m_adapter->mouseReporting()) {
+    if (m_processState == Running && m_adapter->mouseReporting()) {
         m_adapter->sendMouseMove(event->y(), event->x(), event->modifiers());
         m_adapter->sendMouseButton(event->nativeButton(), false, event->modifiers());
         event->setAccepted(true);
@@ -419,14 +417,14 @@ void PtyView::mouseReleaseEvent(MouseEvent* event) {
 }
 
 void PtyView::mouseMoveEvent(MouseEvent* event) {
-    if (event && m_processState == Running && m_adapter->mouseReporting()) {
+    if (m_processState == Running && m_adapter->mouseReporting()) {
         m_adapter->sendMouseMove(event->y(), event->x(), event->modifiers());
         event->setAccepted(true);
     }
 }
 
 void PtyView::wheelEvent(MouseEvent* event) {
-    if (!event || event->wheelDeltaY() == 0) return;
+    if (event->wheelDeltaY() == 0) return;
     const bool localScroll = (event->modifiers() & Qt::ShiftModifier) ||
                              !m_adapter->mouseReporting() || m_processState != Running;
     if (localScroll)

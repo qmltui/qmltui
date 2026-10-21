@@ -173,6 +173,7 @@ public:
 
     Item* parentItem() const { return qobject_cast<Item*>(QObject::parent()); }
     virtual void setParentItem(Item* parentItem);
+    bool isDescendantOf(const Item* ancestor) const noexcept;
     Anchors* anchors() const { return const_cast<Anchors*>(&m_anchors); }
     AnchorLine* left() const;
     AnchorLine* right() const;

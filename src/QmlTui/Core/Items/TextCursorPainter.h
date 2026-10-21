@@ -97,4 +97,15 @@ inline void paintTextCursor(Cell& cell, TextCursorShape shape, std::optional<uin
     }
 }
 
+inline void paintSelectionCell(Cell& selCell, bool hasSelectionColor, uint32_t selectionColor,
+                               bool hasSelectedTextColor, uint32_t selectedTextColor) {
+    if (hasSelectionColor) {
+        selCell.bgColor = selectionColor;
+        if (hasSelectedTextColor) selCell.fgColor = selectedTextColor;
+    } else {
+        if (hasSelectedTextColor) selCell.fgColor = selectedTextColor;
+        selCell.attributes = selCell.attributes | TextAttribute::Reversed;
+    }
+}
+
 } // namespace qmltui::detail

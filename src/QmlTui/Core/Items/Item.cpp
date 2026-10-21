@@ -145,6 +145,14 @@ void Item::setParentItem(Item* parentItem) {
     markDirty();
 }
 
+bool Item::isDescendantOf(const Item* ancestor) const noexcept {
+    if (!ancestor) return false;
+    for (const QObject* p = this; p; p = p->parent()) {
+        if (p == ancestor) return true;
+    }
+    return false;
+}
+
 void Item::setX(int x) {
     if (m_x == x) return;
     m_x = x;

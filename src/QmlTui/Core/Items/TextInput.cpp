@@ -610,18 +610,9 @@ void TextInput::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                     for (int dx = 0; dx < width; ++dx) {
                         Cell* selectionCell = buffer.tryCellAt(x + dx, y);
                         if (!selectionCell) continue;
-                        Cell& selCell = *selectionCell;
-                        if (m_hasResolvedSelectionColor) {
-                            selCell.bgColor = m_resolvedSelectionColor;
-                            if (m_hasResolvedSelectedTextColor) {
-                                selCell.fgColor = m_resolvedSelectedTextColor;
-                            }
-                        } else {
-                            if (m_hasResolvedSelectedTextColor) {
-                                selCell.fgColor = m_resolvedSelectedTextColor;
-                            }
-                            selCell.attributes = selCell.attributes | TextAttribute::Reversed;
-                        }
+                        detail::paintSelectionCell(
+                            *selectionCell, m_hasResolvedSelectionColor, m_resolvedSelectionColor,
+                            m_hasResolvedSelectedTextColor, m_resolvedSelectedTextColor);
                     }
                 }
             }

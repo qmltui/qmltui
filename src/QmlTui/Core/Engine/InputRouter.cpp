@@ -11,15 +11,6 @@
 
 namespace qmltui {
 
-bool InputRouter::isDescendantOf(Item* child, Item* ancestor) {
-    QObject* p = child;
-    while (p) {
-        if (p == ancestor) return true;
-        p = p->parent();
-    }
-    return false;
-}
-
 InputRouter::InputRouter(Terminal* terminal) : m_terminal(terminal) {}
 
 void InputRouter::setTerminal(Terminal* terminal) {
@@ -133,9 +124,7 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
             Item* scItem = qobject_cast<Item*>(p);
             if (scItem && (!scItem->isEffectivelyVisible() || !scItem->isEffectivelyEnabled()))
                 continue;
-            if (modalItem &&
-                (!scItem || (scItem != modalItem && !isDescendantOf(scItem, modalItem))))
-                continue;
+            if (modalItem && (!scItem || !scItem->isDescendantOf(modalItem))) continue;
             emit sc->activated();
             return true;
         }
@@ -319,7 +308,7 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
 
     // 1. Modality check against stale grab
     if (m_implicitMouseGrabItem && activeModal) {
-        if (!isDescendantOf(m_implicitMouseGrabItem.data(), activeModal->asItem())) {
+        if (!m_implicitMouseGrabItem->isDescendantOf(activeModal->asItem())) {
             m_implicitMouseGrabItem = nullptr;
         }
     }

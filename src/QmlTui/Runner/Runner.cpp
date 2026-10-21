@@ -1,5 +1,5 @@
 #include <QmlTui/Runner/Runner.h>
-#include "CastRecorder_p.h"
+#include <QmlTui/Runner/CastRecorder_p.h>
 #include <QmlTui/Runner/MemoryTerminalBackend.h>
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
@@ -318,11 +318,16 @@ static RunnerAutoHook s_autoHookRegistration;
 // device owns it.
 QPointer<MemoryTerminalBackend> s_recordingBackend;
 
+bool environmentFlagEnabled(const char* name) {
+    const QByteArray value = qgetenv(name).trimmed().toLower();
+    return !value.isEmpty() && value != "0" && value != "false" && value != "off";
+}
+
 bool environmentRequestsScenario() {
     return !qgetenv("QMLTUI_RUNNER_SCRIPT").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_EVAL").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty() ||
-           !qgetenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO").trimmed().isEmpty();
+           environmentFlagEnabled("QMLTUI_RUNNER_EMBEDDED_SCENARIO");
 }
 
 int environmentDimension(const char* name, int fallback) {
@@ -523,8 +528,7 @@ void Runner::start() {
     } else {
         // Inherited from the environment so `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest`
         // also refreshes baselines of embedded runs.
-        const QByteArray updateSnapshots = qgetenv("QMLTUI_RUNNER_UPDATE_SNAPSHOTS").trimmed();
-        m_updateSnapshots = !updateSnapshots.isEmpty() && updateSnapshots != "0";
+        m_updateSnapshots = environmentFlagEnabled("QMLTUI_RUNNER_UPDATE_SNAPSHOTS");
     }
     if (!QDir().mkpath(m_artifactDirectory)) {
         m_configurationError =

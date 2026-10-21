@@ -58,14 +58,7 @@ void FocusScope::setFocus(bool focus) {
     } else {
         if (Terminal* term = terminal()) {
             Item* curr = term->focusedItem();
-            bool inside = false;
-            for (Item* p = curr; p; p = p->parentItem()) {
-                if (p == this) {
-                    inside = true;
-                    break;
-                }
-            }
-            if (inside) {
+            if (curr && curr->isDescendantOf(this)) {
                 term->setFocusedItem(nullptr);
             }
         }

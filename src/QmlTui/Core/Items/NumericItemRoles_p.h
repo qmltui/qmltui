@@ -72,6 +72,16 @@ inline QString decorationGlyph(const QVariant& decoration) {
     return {};
 }
 
+// QQmlListModel assigns custom role IDs starting from 0, colliding with Qt's
+// numeric ItemDataRole values (e.g. role 1 = Qt::DecorationRole). A numeric
+// standard role is only valid when roleNames() does not map that integer to a
+// different role name.
+inline bool hasStandardNumericRole(const QHash<int, QByteArray>& roleNames, int role,
+                                   QByteArrayView standardName) {
+    const auto it = roleNames.constFind(role);
+    return it == roleNames.cend() || it.value() == standardName;
+}
+
 // Built-in painters need only these values, not a delegate's property map or
 // modelIndex. Read live on each paint so time-dependent model colors stay fresh.
 struct PaintData {
@@ -87,15 +97,22 @@ inline PaintData readForPaint(const QAbstractItemModel* model, const QModelIndex
                               bool readBackground) {
     PaintData values{foreground, background, {}, {}};
     if (!model || !index.isValid()) return values;
-    const auto color = [&](int role, uint32_t fallback) {
+    const QHash<int, QByteArray> roles = model->roleNames();
+    const auto color = [&](int role, QByteArrayView roleName, uint32_t fallback) {
+        if (!hasStandardNumericRole(roles, role, roleName)) return fallback;
         const QString text = colorString(model->data(index, role));
         return text.isEmpty() ? fallback : Color::resolve(text, fallback);
     };
-    if (readForeground) values.foreground = color(Qt::ForegroundRole, foreground);
-    if (readBackground) values.background = color(Qt::BackgroundRole, background);
-    values.alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
-    const QVariant check = model->data(index, Qt::CheckStateRole);
-    const QString glyph = decorationGlyph(model->data(index, Qt::DecorationRole));
+    if (readForeground) values.foreground = color(Qt::ForegroundRole, "foreground", foreground);
+    if (readBackground) values.background = color(Qt::BackgroundRole, "background", background);
+    if (hasStandardNumericRole(roles, Qt::TextAlignmentRole, "textAlignment"))
+        values.alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
+    const QVariant check = hasStandardNumericRole(roles, Qt::CheckStateRole, "checkState")
+                               ? model->data(index, Qt::CheckStateRole)
+                               : QVariant();
+    const QString glyph = hasStandardNumericRole(roles, Qt::DecorationRole, "decoration")
+                              ? decorationGlyph(model->data(index, Qt::DecorationRole))
+                              : QString();
     if (!glyph.isEmpty()) values.prefix = glyph + QLatin1Char(' ');
     if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
         const int state = check.toInt();

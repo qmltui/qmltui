@@ -1,6 +1,7 @@
 #include <QmlTui/Core/Items/Anchors.h>
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/AnchorLine.h>
+#include <QQmlInfo>
 
 namespace qmltui {
 
@@ -336,7 +337,7 @@ void Anchors::resolve() {
         Item* target = line->owner();
         if (!target) return 0;
         if (!isValidTarget(target)) {
-            qWarning() << "Anchors: target item must be the parent or a sibling.";
+            qmlWarning(m_owner) << "Anchors: target item must be the parent or a sibling.";
             return 0;
         }
 

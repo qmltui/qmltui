@@ -1,5 +1,6 @@
 #include <QmlTui/Image/AnimatedSprite.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
+#include <QQmlInfo>
 
 #include <algorithm>
 #include <cmath>
@@ -48,8 +49,7 @@ QRect AnimatedSprite::frameRect(int index) const {
 
 void AnimatedSprite::applyFrame() {
     const QRect rect = frameRect((std::clamp)(m_currentFrame, 0, (std::max)(0, m_frameCount - 1)));
-    if (!rect.isNull())
-        setSourceClipRect(rect);
+    if (!rect.isNull()) setSourceClipRect(rect);
 }
 
 int AnimatedSprite::initialFrame() const {
@@ -62,8 +62,7 @@ void AnimatedSprite::step(int frames) {
     int frame = m_currentFrame;
     for (int i = 0; i < frames; ++i) {
         frame += direction;
-        if (frame >= 0 && frame < m_frameCount)
-            continue;
+        if (frame >= 0 && frame < m_frameCount) continue;
         ++m_completedLoops;
         if (m_loops != Infinite && m_completedLoops >= m_loops) {
             frame = (m_finishBehavior == FinishBehavior::FinishAtFinalFrame)
@@ -108,7 +107,8 @@ void AnimatedSprite::updateTimer() {
     m_timer->stop();
     if (m_running && !m_paused && m_frameCount > 1 && interval <= 0 && !m_warnedNoDuration) {
         m_warnedNoDuration = true;
-        qWarning("AnimatedSprite: set frameRate or frameDuration, the animation cannot advance without one");
+        qmlWarning(this) << "AnimatedSprite: set frameRate or frameDuration, the animation cannot "
+                            "advance without one";
     }
 }
 
@@ -161,7 +161,7 @@ void AnimatedSprite::setFrameRate(qreal rate) {
     m_frameRate = rate;
     if (rate > 0.0) m_warnedNoDuration = false;
     emit frameRateChanged();
-    updateTimer();   // restarts the tick with the new pace
+    updateTimer(); // restarts the tick with the new pace
 }
 
 void AnimatedSprite::setFrameDuration(int duration) {
@@ -173,8 +173,7 @@ void AnimatedSprite::setFrameDuration(int duration) {
 }
 
 void AnimatedSprite::setCurrentFrame(int frame) {
-    if (m_frameCount > 0)
-        frame = ((frame % m_frameCount) + m_frameCount) % m_frameCount;
+    if (m_frameCount > 0) frame = ((frame % m_frameCount) + m_frameCount) % m_frameCount;
     if (m_currentFrame != frame) {
         m_currentFrame = frame;
         emit currentFrameChanged();
@@ -197,8 +196,7 @@ void AnimatedSprite::setPaused(bool paused) {
 }
 
 void AnimatedSprite::setLoops(int loops) {
-    if (loops < 0)
-        loops = Infinite;
+    if (loops < 0) loops = Infinite;
     if (m_loops == loops) return;
     m_loops = loops;
     emit loopsChanged();
@@ -253,8 +251,7 @@ void AnimatedSprite::resume() {
 }
 
 void AnimatedSprite::advance(int frames) {
-    if (frames > 0)
-        step(frames);
+    if (frames > 0) step(frames);
 }
 
 } // namespace qmltui

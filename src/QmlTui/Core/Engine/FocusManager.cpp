@@ -4,15 +4,6 @@
 
 namespace qmltui {
 
-static bool isDescendant(Item* child, Item* ancestor) {
-    QObject* p = child;
-    while (p) {
-        if (p == ancestor) return true;
-        p = p->parent();
-    }
-    return false;
-}
-
 void FocusManager::cycleFocus(Terminal* terminal, bool forward, Item* scope) {
     if (!terminal) return;
 
@@ -42,7 +33,7 @@ void FocusManager::cycleFocus(Terminal* terminal, bool forward, Item* scope) {
 Item* FocusManager::resolveModalFocusOrigin(Terminal* terminal, Item* activeModalScope) {
     if (!terminal) return activeModalScope;
     Item* focused = terminal->focusedItem();
-    if (focused && activeModalScope && isDescendant(focused, activeModalScope)) {
+    if (focused && focused->isDescendantOf(activeModalScope)) {
         return focused;
     }
     return activeModalScope;

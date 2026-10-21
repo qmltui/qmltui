@@ -99,47 +99,10 @@ void Repeater::generateItems() {
     if (!parentVis) return;
 
     QVariantList list;
-    bool isList = false;
     int count = 0;
-    bool isCount = false;
+    const bool isStatic = DelegateUtils::unpackStaticModel(m_model, count, list);
 
-    if (!m_model.isValid() || m_model.isNull()) {
-        // Empty model
-    } else if (m_model.userType() == qMetaTypeId<QJSValue>()) {
-        QJSValue val = m_model.value<QJSValue>();
-        if (val.isArray()) {
-            quint32 len = val.property("length").toUInt();
-            for (quint32 i = 0; i < len; ++i) {
-                list.append(val.property(i).toVariant());
-            }
-            isList = true;
-        } else if (val.isNumber()) {
-            count = std::clamp(val.toInt(), 0, 10000);
-            isCount = true;
-        } else {
-            QVariant v = val.toVariant();
-            if (v.typeId() == QMetaType::QVariantList || v.canConvert<QVariantList>()) {
-                list = v.toList();
-                isList = true;
-            }
-        }
-    } else if (m_model.typeId() == QMetaType::QVariantList ||
-               m_model.typeId() == QMetaType::QStringList || m_model.canConvert<QVariantList>()) {
-        list = m_model.toList();
-        isList = true;
-    } else if (m_model.canConvert<QStringList>()) {
-        QStringList strList = m_model.toStringList();
-        for (const QString& s : strList) {
-            list.append(s);
-        }
-        isList = true;
-    } else if (m_model.typeId() == QMetaType::Int || m_model.typeId() == QMetaType::UInt ||
-               m_model.typeId() == QMetaType::Double || m_model.canConvert<int>()) {
-        count = std::clamp(m_model.toInt(), 0, 10000);
-        isCount = true;
-    }
-
-    if (isList) {
+    if (isStatic && !list.isEmpty()) {
         for (int i = 0; i < list.size(); ++i) {
             QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
             if (!context) {
@@ -186,7 +149,7 @@ void Repeater::generateItems() {
                 m_contexts.append(nullptr);
             }
         }
-    } else if (isCount) {
+    } else if (isStatic) {
         for (int i = 0; i < count; ++i) {
             QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
             if (!context) {

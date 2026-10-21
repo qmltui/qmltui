@@ -23,8 +23,7 @@ void ToolTip::setTextColor(Color color) {
     updateAppearance();
 }
 
-
-ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*>(target)) {
+ToolTip::ToolTip(QObject* target) : QObject(target), m_target(qobject_cast<Item*>(target)) {
     m_delayTimer = new ClockTimer(this);
     m_timeoutTimer = new ClockTimer(this);
     m_delayTimer->setSingleShot(true);
@@ -43,8 +42,7 @@ ToolTip::ToolTip(QObject *target) : QObject(target), m_target(qobject_cast<Item*
 }
 
 ToolTip::~ToolTip() {
-    if (m_terminal && !m_text.isEmpty())
-        m_terminal->setMouseMotionRequested(this, false);
+    if (m_terminal && !m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
         delete m_popup.data();
@@ -55,10 +53,12 @@ void ToolTip::bindTerminal() {
     // The ancestor chain may change without the terminal changing (an item
     // moved between containers), so re-track it before the early return.
     trackAncestryGeometry();
-    Terminal *terminal = m_target ? m_target->terminal() : nullptr;
-    if (m_terminal == terminal) { updatePosition(); return; }
-    if (m_terminal && !m_text.isEmpty())
-        m_terminal->setMouseMotionRequested(this, false);
+    Terminal* terminal = m_target ? m_target->terminal() : nullptr;
+    if (m_terminal == terminal) {
+        updatePosition();
+        return;
+    }
+    if (m_terminal && !m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
         delete m_popup.data();
@@ -69,11 +69,12 @@ void ToolTip::bindTerminal() {
     if (m_terminal) disconnect(m_terminal, nullptr, this, nullptr);
     m_terminal = terminal;
     if (m_terminal) {
-        connect(m_terminal, &Terminal::hoveredItemChanged, this, &ToolTip::updateAutomaticVisibility);
-        connect(m_terminal, &Terminal::focusedItemChanged, this, &ToolTip::updateAutomaticVisibility);
+        connect(m_terminal, &Terminal::hoveredItemChanged, this,
+                &ToolTip::updateAutomaticVisibility);
+        connect(m_terminal, &Terminal::focusedItemChanged, this,
+                &ToolTip::updateAutomaticVisibility);
         connect(m_terminal, &Terminal::terminalSizeChanged, this, &ToolTip::updatePosition);
-        if (!m_text.isEmpty())
-            m_terminal->setMouseMotionRequested(this, true);
+        if (!m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, true);
     }
     updateAutomaticVisibility();
 }
@@ -82,15 +83,19 @@ void ToolTip::bindTerminal() {
 // position of every ancestor decide the absolute anchor, and a tip pinned
 // with `visible: true` opens before Row/Column have placed the target at all.
 void ToolTip::trackAncestryGeometry() {
-    for (const auto &connection : std::as_const(m_geometryConnections))
+    for (const auto& connection : std::as_const(m_geometryConnections))
         disconnect(connection);
     m_geometryConnections.clear();
     if (!m_target) return;
-    m_geometryConnections.append(connect(m_target, &Item::widthChanged, this, &ToolTip::updatePosition));
-    m_geometryConnections.append(connect(m_target, &Item::heightChanged, this, &ToolTip::updatePosition));
-    for (Item *item = m_target; item; item = item->parentItem()) {
-        m_geometryConnections.append(connect(item, &Item::xChanged, this, &ToolTip::updatePosition));
-        m_geometryConnections.append(connect(item, &Item::yChanged, this, &ToolTip::updatePosition));
+    m_geometryConnections.append(
+        connect(m_target, &Item::widthChanged, this, &ToolTip::updatePosition));
+    m_geometryConnections.append(
+        connect(m_target, &Item::heightChanged, this, &ToolTip::updatePosition));
+    for (Item* item = m_target; item; item = item->parentItem()) {
+        m_geometryConnections.append(
+            connect(item, &Item::xChanged, this, &ToolTip::updatePosition));
+        m_geometryConnections.append(
+            connect(item, &Item::yChanged, this, &ToolTip::updatePosition));
     }
 }
 
@@ -98,17 +103,22 @@ void ToolTip::updatePosition() {
     if (visible()) reposition();
 }
 
-void ToolTip::setText(const QString &text) {
+void ToolTip::setText(const QString& text) {
     if (m_text == text) return;
     const bool requestedMotion = !m_text.isEmpty();
     m_text = text;
     if (m_terminal && requestedMotion != !m_text.isEmpty())
         m_terminal->setMouseMotionRequested(this, !m_text.isEmpty());
     emit textChanged();
-    if (m_text.isEmpty()) hide(); else updateAutomaticVisibility();
+    if (m_text.isEmpty())
+        hide();
+    else
+        updateAutomaticVisibility();
 }
 
-bool ToolTip::visible() const { return m_popup && m_popup->visible(); }
+bool ToolTip::visible() const {
+    return m_popup && m_popup->visible();
+}
 
 void ToolTip::setVisible(bool visible) {
     m_explicitVisible = visible;
@@ -139,14 +149,19 @@ void ToolTip::setZ(qreal z) {
 bool ToolTip::targetIsActive() const {
     if (!m_target || !m_terminal || !m_target->visible()) return false;
     if (m_target->activeFocus()) return true;
-    for (Item *item = m_terminal->hoveredItem(); item; item = item->parentItem())
-        if (item == m_target) return true;
-    return false;
+    Item* hovered = m_terminal->hoveredItem();
+    return hovered && hovered->isDescendantOf(m_target);
 }
 
 void ToolTip::updateAutomaticVisibility() {
-    if (m_explicitVisible) { showNow(); return; }
-    if (!targetIsActive() || m_text.isEmpty()) { hide(); return; }
+    if (m_explicitVisible) {
+        showNow();
+        return;
+    }
+    if (!targetIsActive() || m_text.isEmpty()) {
+        hide();
+        return;
+    }
     if (visible() || m_delayTimer->isActive()) return;
     m_delayTimer->start(m_delay);
 }
@@ -202,8 +217,7 @@ void ToolTip::reposition() {
 
 void ToolTip::updateAppearance() {
     if (!m_target || !m_popup || !m_label) return;
-    if (m_background)
-        m_background->setColor(m_color);
+    if (m_background) m_background->setColor(m_color);
     m_label->setColor(m_textColor);
 }
 

@@ -6,6 +6,7 @@
 #include <QmlTui/Core/Engine/InlineRenderer.h>
 #include <QmlTui/Core/Items/Popup.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
+#include <QQmlInfo>
 #include <algorithm>
 #include <utility>
 
@@ -71,7 +72,7 @@ void Terminal::initializeEngine() {
     if (m_engine) return;
     for (QObject* ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
         if (qobject_cast<Terminal*>(ancestor)) {
-            qWarning("Terminal must be a root; use ordinary Items for pages.");
+            qmlWarning(this) << "Terminal must be a root; use ordinary Items for pages.";
             return;
         }
     }
@@ -318,11 +319,11 @@ void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
 }
 
 void Terminal::setWidth(int) {
-    qWarning("Terminal width is managed by the session; size an inner Item instead.");
+    qmlWarning(this) << "Terminal width is managed by the session; size an inner Item instead.";
 }
 
 void Terminal::setHeight(int) {
-    qWarning("Terminal height is managed by mode; size an inner Item instead.");
+    qmlWarning(this) << "Terminal height is managed by mode; size an inner Item instead.";
 }
 
 void Terminal::setMode(Mode mode) {

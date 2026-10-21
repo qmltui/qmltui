@@ -2,8 +2,6 @@
 
 // Internal: POSIX pseudo-terminal (`openpty`) and child QProcess session manager.
 
-#include <QmlTui/Core/Primitives/QmlTuiExport.h>
-
 #include <QByteArray>
 #include <QObject>
 #include <QProcess>
@@ -15,7 +13,7 @@ namespace qmltui {
 // Manages a POSIX pseudo-terminal (`openpty`) and child `QProcess` session,
 // bridging non-blocking master-fd reads/writes to Qt signals and forwarding
 // window size (`TIOCSWINSZ`) and process-group signals.
-class QMLTUI_PTYVIEW_EXPORT UnixPtySession final : public QObject {
+class UnixPtySession final : public QObject {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(UnixPtySession)
 

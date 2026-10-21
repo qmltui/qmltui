@@ -58,6 +58,10 @@ public:
     static int nextBoundary(QStringView text, int utf16Position);
     static int previousBoundary(QStringView text, int utf16Position);
 
+    // Encodes a single Unicode scalar value into `out` (1 to 4 UTF-8 bytes),
+    // returning 0 for surrogates or out-of-range values.
+    static int encodeCodePointUtf8(char32_t codePoint, char out[4]) noexcept;
+
     // Encodes a cluster as UTF-8 into out. Returns the byte count, or -1 when
     // capacity is insufficient (nothing is written in that case).
     static int encodeUtf8(QStringView cluster, char* out, int capacity,

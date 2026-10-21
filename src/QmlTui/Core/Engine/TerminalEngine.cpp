@@ -563,18 +563,17 @@ void TerminalEngine::handleResume() {
     updateKittyKeyboard();
     reapplyBackgroundColor(); // after the alternate screen is re-entered
     syncTerminalProgress();
-    handleResize();           // the window may have been resized while stopped
+    handleResize(); // the window may have been resized while stopped
     requestRender();
 }
 
 void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste) {
-    if (m_router) m_router->routeKey(key, text, modifiers, paste);
+    m_router->routeKey(key, text, modifiers, paste);
 }
 
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion,
                                       int modifiers, int wheelDeltaX, int wheelDeltaY) {
-    if (m_router)
-        m_router->routeMouse(button, x, y, release, motion, modifiers, wheelDeltaX, wheelDeltaY);
+    m_router->routeMouse(button, x, y, release, motion, modifiers, wheelDeltaX, wheelDeltaY);
 }
 
 void TerminalEngine::renderFrame() {

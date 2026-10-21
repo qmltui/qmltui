@@ -36,7 +36,6 @@ public:
     Item* implicitMouseGrabItem() const { return m_implicitMouseGrabItem.data(); }
 
 private:
-    static bool isDescendantOf(Item* child, Item* ancestor);
     bool dispatchMouseEvent(Item* target, int x, int y, int button, int modifiers, bool motion,
                             bool release, int wheelDeltaX, int wheelDeltaY,
                             Item* stopAncestor = nullptr);

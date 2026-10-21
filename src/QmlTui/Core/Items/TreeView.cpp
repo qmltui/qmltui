@@ -14,12 +14,9 @@
 
 namespace qmltui {
 
+using DelegateUtils::delegateContext;
 using DelegateUtils::setDelegateProperty;
 using DelegateUtils::setPropertyIfExists;
-
-static QQmlContext* delegateContext(Item* item) {
-    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
-}
 
 TreeView::TreeView(QObject* parent) : Item(parent) {
     setFocusPolicy(Qt::StrongFocus);
@@ -1507,7 +1504,7 @@ void TreeView::mousePressEvent(MouseEvent* event) {
 }
 
 void TreeView::wheelEvent(MouseEvent* event) {
-    if (!event || event->wheelDeltaY() == 0) return;
+    if (event->wheelDeltaY() == 0) return;
     if ((focusPolicy() & (Qt::ClickFocus | Qt::WheelFocus)) && !focus()) setFocus(true);
     updateTree();
     const int total = static_cast<int>(m_visibleNodes.size());

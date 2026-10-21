@@ -18,6 +18,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPainter>
+#include <QQmlInfo>
 #include <cmath>
 
 namespace qmltui {
@@ -263,15 +264,14 @@ void Image::loadFromNetwork(const QUrl& url) {
             QImageReader reader(&buffer);
             image = reader.read();
             if (image.isNull()) {
-                qWarning("Image: %s: %s", qPrintable(url.toString()),
-                         qPrintable(reader.errorString()));
+                qmlWarning(this) << "Image: " << url.toString() << ": " << reader.errorString();
             } else {
                 image = image.convertToFormat(QImage::Format_ARGB32);
                 remoteCache().insert(url.toString(), new QImage(image),
                                      static_cast<qsizetype>(image.sizeInBytes()));
             }
         } else {
-            qWarning("Image: %s: %s", qPrintable(url.toString()), qPrintable(reply->errorString()));
+            qmlWarning(this) << "Image: " << url.toString() << ": " << reply->errorString();
         }
         adoptImage(image, Status::Error);
     });
@@ -382,7 +382,7 @@ QImage Image::loadFromProvider(const QUrl& url, bool* found, bool* pending) {
             m_pendingResponse.clear();
             const QImage image = response->image();
             if (image.isNull() && !response->errorString().isEmpty())
-                qWarning("Image: %s", qPrintable(response->errorString()));
+                qmlWarning(this) << "Image: " << response->errorString();
             response->deleteLater();
             adoptImage(image.isNull() ? QImage() : image.convertToFormat(QImage::Format_ARGB32),
                        Status::Error);
@@ -508,10 +508,13 @@ void Image::loadImage() {
             return; // Loading until the response finishes
         }
         if (!found)
-            qWarning("Image: no qmltui::ImageProvider named \"%s\" on this engine",
-                     qPrintable(m_source.host()));
+            qmlWarning(this) << "Image: no qmltui::ImageProvider named \"" << m_source.host()
+                             << "\" on this engine";
     } else {
-        loaded.load(resolvePath(m_source));
+        const QString resolvedPath = resolvePath(m_source);
+        loaded.load(resolvedPath);
+        if (loaded.isNull())
+            qmlWarning(this) << "Image: failed to load \"" << m_source.toString() << "\"";
     }
     adoptImage(loaded.isNull() ? QImage() : loaded.convertToFormat(QImage::Format_ARGB32),
                Status::Error);

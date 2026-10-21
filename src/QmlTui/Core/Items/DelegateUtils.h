@@ -72,6 +72,10 @@ inline QQmlComponent* resolveDelegate(QQmlComponent* delegate, int row, int colu
     return nullptr;
 }
 
+inline QQmlContext* delegateContext(Item* item) {
+    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
+}
+
 inline QQmlContext* createContext(QQmlComponent* component, QObject* owner) {
     if (!component || !owner) return nullptr;
 
@@ -195,25 +199,50 @@ constexpr int MaxMaterializedModelItems = 10000;
 
 inline bool unpackStaticModel(const QVariant& modelVariant, int& modelCount,
                               QVariantList& listValues) {
-    if (modelVariant.canConvert<int>() && modelVariant.userType() != qMetaTypeId<QJSValue>()) {
-        modelCount = std::clamp(modelVariant.toInt(), 0, MaxMaterializedModelItems);
+    if (!modelVariant.isValid() || modelVariant.isNull()) return false;
+    if (modelVariant.userType() == qMetaTypeId<QJSValue>()) {
+        const QJSValue value = modelVariant.value<QJSValue>();
+        if (value.isArray()) {
+            const int length =
+                std::clamp(value.property("length").toInt(), 0, MaxMaterializedModelItems);
+            listValues.reserve(length);
+            for (int index = 0; index < length; ++index)
+                listValues.append(value.property(index).toVariant());
+            modelCount = static_cast<int>(listValues.size());
+            return true;
+        }
+        if (value.isNumber()) {
+            modelCount = std::clamp(value.toInt(), 0, MaxMaterializedModelItems);
+            return true;
+        }
+        const QVariant v = value.toVariant();
+        if (v.typeId() == QMetaType::QVariantList || v.canConvert<QVariantList>()) {
+            listValues = v.toList().mid(0, MaxMaterializedModelItems);
+            modelCount = static_cast<int>(listValues.size());
+            return true;
+        }
+        return false;
+    }
+    if (modelVariant.typeId() == QMetaType::QVariantList ||
+        modelVariant.typeId() == QMetaType::QStringList ||
+        modelVariant.canConvert<QVariantList>()) {
+        listValues = modelVariant.toList().mid(0, MaxMaterializedModelItems);
+        modelCount = static_cast<int>(listValues.size());
         return true;
     }
-    if (modelVariant.canConvert<QVariantList>() ||
-        modelVariant.userType() == qMetaTypeId<QJSValue>()) {
-        if (modelVariant.userType() == qMetaTypeId<QJSValue>()) {
-            const QJSValue value = modelVariant.value<QJSValue>();
-            if (value.isArray()) {
-                const int length =
-                    std::clamp(value.property("length").toInt(), 0, MaxMaterializedModelItems);
-                listValues.reserve(length);
-                for (int index = 0; index < length; ++index)
-                    listValues.append(value.property(index).toVariant());
-            }
-        } else {
-            listValues = modelVariant.toList().mid(0, MaxMaterializedModelItems);
-        }
-        modelCount = static_cast<int>(listValues.size());
+    if (modelVariant.canConvert<QStringList>()) {
+        const QStringList strList = modelVariant.toStringList();
+        const int length =
+            std::clamp(static_cast<int>(strList.size()), 0, MaxMaterializedModelItems);
+        listValues.reserve(length);
+        for (int index = 0; index < length; ++index)
+            listValues.append(strList.at(index));
+        modelCount = length;
+        return true;
+    }
+    if (modelVariant.typeId() == QMetaType::Int || modelVariant.typeId() == QMetaType::UInt ||
+        modelVariant.typeId() == QMetaType::Double || modelVariant.canConvert<int>()) {
+        modelCount = std::clamp(modelVariant.toInt(), 0, MaxMaterializedModelItems);
         return true;
     }
     return false;

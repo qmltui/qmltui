@@ -14,10 +14,7 @@
 
 namespace qmltui {
 
-static QQmlContext* delegateContext(Item* item) {
-    return item ? item->findChild<QQmlContext*>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
-}
-
+using DelegateUtils::delegateContext;
 using DelegateUtils::setPropertyIfExists;
 
 ListView* ListViewAttached::view() const {
@@ -481,9 +478,10 @@ void ListView::generateItems() {
         return;
     }
 
-    if (DelegateUtils::unpackStaticModel(m_model, m_modelCount, m_listValues)) {
-        // Model count and list values unpacked
-    } else if (auto* model = qobject_cast<QAbstractItemModel*>(m_objectModel.data())) {
+    auto* model = DelegateUtils::unpackStaticModel(m_model, m_modelCount, m_listValues)
+                      ? nullptr
+                      : qobject_cast<QAbstractItemModel*>(m_objectModel.data());
+    if (model) {
         DelegateUtils::warnIfNested(model, m_rootIndex, this, m_nestedWarned);
         const QHash<int, QByteArray> roles = model->roleNames();
         for (auto it = roles.cbegin(); it != roles.cend(); ++it)

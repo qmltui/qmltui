@@ -120,8 +120,6 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
-- **Live Playground**: [▶ Open `PtyView.qml` in the WebAssembly Playground](../playground.md?example=PtyView.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example PtyView`
-- **Gallery Source**: [`examples/gallery/examples/PtyView.qml`](../../examples/gallery/examples/PtyView.qml)
+See [`examples/gallery/examples/PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`, or open in the [WebAssembly Playground](../playground.md?example=PtyView.qml)).

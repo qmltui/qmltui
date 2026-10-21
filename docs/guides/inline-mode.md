@@ -1,12 +1,10 @@
 # Inline Mode and Scrollback
 
-By default, `Terminal.mode` is `Terminal.AltScreen`, which switches to the terminal's alternate screen buffer (`\033[?1049h`) and fills the full viewport. Setting `mode: Terminal.Inline` keeps your application in the normal terminal buffer: it renders a live interactive region at the bottom of the terminal while streaming permanent output into the native terminal scrollback above it via [`Scrollback`](../qml-types/scrollback.md).
+By default, `Terminal.mode` is `Terminal.AltScreen`, which switches to the terminal's alternate screen buffer (`\033[?1049h`) and fills the viewport. Setting `mode: Terminal.Inline` keeps the session in the normal screen buffer: it renders a live interactive region at the bottom of the terminal while writing completed output into the terminal's native scrollback above it through [`Scrollback`](../qml-types/scrollback.md).
 
----
+## Minimal Inline Prompt
 
-## 1. Minimal Inline REPL Example
-
-In `Terminal.Inline` mode, the root `Terminal` sizes its height dynamically to its visible children (up to `terminalRows - 1`). Give your root layout a finite implicit or explicit height, and use `Scrollback` to commit completed lines above the live prompt:
+In `Terminal.Inline` mode, the root `Terminal` sizes its height from its visible children (capped at `terminalRows - 1`). Give the root layout a finite implicit or explicit height and use `Scrollback` to commit completed lines above the live prompt:
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -67,36 +65,34 @@ Terminal {
 }
 ```
 
----
+## Committing Output with `Scrollback`
 
-## 2. `Scrollback` APIs: `print()`, `append()`, and `model` + `delegate`
+`Scrollback` is a non-visual object with three ways to emit rows above the live viewport:
 
-`Scrollback` is a non-visual object with three ways to commit permanent history rows:
+### Direct Output with `print()`
 
-### A. Fast Direct Output with `print()`
-Bypasses delegates, spacing, and separators to send text or styled spans directly above the live viewport:
+`print()` bypasses delegates, spacing, and separators to write plain text or styled span literals directly into scrollback:
 
 ```qml
-// Plain string:
 scrollback.print("Simple log line");
 
-// Single styled span literal:
 scrollback.print({ text: "Build succeeded", color: "green", bold: true });
 
-// Array of styled span literals:
 scrollback.print([
-    { text: "❯ ", color: "#38bdf8", bold: true },
-    { text: "deploy --prod\n", color: "#f8fafc" },
-    { text: "  ✓ done in 0.4s", color: "#2cde85" }
+    { text: "> ", color: "cyan", bold: true },
+    { text: "deploy --prod\n" },
+    { text: "  done in 0.4s", color: "green" }
 ]);
 ```
 
-### B. Declarative Streaming with `model` + `delegate`
-Bind a `ListModel` or C++ `QAbstractItemModel`. As rows are inserted, `Scrollback` instantiates the delegate item off-screen, paints it once, and commits it into terminal history:
+### Model-Driven Output (`model` + `delegate`)
+
+When bound to a `ListModel` or C++ `QAbstractItemModel`, `Scrollback` renders each newly appended model row through `delegate` once and commits the resulting cells into terminal history:
 
 ```qml
 pragma ComponentBehavior: Bound
 import QtQml
+import QtQml.Models
 import QmlTui
 
 Terminal {
@@ -121,12 +117,12 @@ Terminal {
 
             Text {
                 text: "[" + rowRoot.time + "]"
-                color: "#8b949e"
+                dim: true
             }
             Text {
                 text: rowRoot.sender + ":"
                 bold: true
-                color: rowRoot.sender === "User" ? "#38bdf8" : "#2cde85"
+                color: rowRoot.sender === "User" ? "cyan" : "green"
             }
             Text {
                 text: rowRoot.message
@@ -134,7 +130,6 @@ Terminal {
         }
     }
 
-    // Appending a row to the model commits it directly to scrollback:
     function addMessage(sender, message) {
         messageLog.append({
             sender: sender,
@@ -145,8 +140,9 @@ Terminal {
 }
 ```
 
-### C. Imperative Templating with `delegate` + `append(data)`
-When you don't need a persistent `ListModel`, define a `delegate` component template on `Scrollback` and feed data objects directly via `append(data)`:
+### Template Output (`delegate` + `append(data)`)
+
+When a persistent model is unnecessary, set `delegate` on `Scrollback` and pass JS objects to `append(data)`:
 
 ```qml
 Scrollback {
@@ -160,18 +156,18 @@ Scrollback {
         required property bool success
 
         Text {
-            text: (entryDelegate.success ? "✓ " : "✗ ") + entryDelegate.title
-            color: entryDelegate.success ? "#2cde85" : "#f87171"
+            text: (entryDelegate.success ? "[OK] " : "[FAIL] ") + entryDelegate.title
+            color: entryDelegate.success ? "green" : "red"
             bold: true
         }
         Text {
             text: "  " + entryDelegate.detail
-            color: "#8b949e"
+            dim: true
         }
     }
 }
 
-// In JavaScript / signal handlers:
+// In a signal handler:
 buildLog.append({
     title: "Compilation",
     detail: "Finished in 1.4s (42 targets)",
@@ -179,18 +175,17 @@ buildLog.append({
 });
 ```
 
-### Key Considerations for Delegates
-- **`required property` Declarations**: Under `pragma ComponentBehavior: Bound`, declare `required property <Type> <roleName>` on the delegate root for every model or data property.
-- **Append-Only Contract**: `Scrollback` renders each entry once upon insertion/call and submits it immediately into the terminal emulator's native scrollback. Subsequent property or model modifications to previously emitted rows are not redrawn.
-- **Pooling with `reuseItems`**: Enabled by default (`reuseItems: true`), which pools and reuses the delegate instance across entries to minimize allocations during high-volume output streaming.
-- **`separator` and `spacing`**: You can set `spacing: N` for blank lines between entries, and provide a `separator: Component { ... }` (e.g. a dashed line or divider) rendered between successive items.
+### Delegate Rules
 
----
+- Declare `required property <Type> <roleName>` on the delegate root for each role read under `pragma ComponentBehavior: Bound`.
+- `Scrollback` is append-only: each entry is painted once and written to the terminal's scrollback buffer. Later modifications to already-emitted model rows are not redrawn.
+- `reuseItems` defaults to `true`, pooling the delegate instance across entries.
+- `spacing` inserts blank rows between entries, and `separator: Component { ... }` renders an optional divider item between consecutive entries.
 
-## 3. Inline Geometry, Mouse Origin (`CSI 6 n`), and Queue Limits
+## Inline Geometry, Cursor Origin (`CSI 6 n`), and Queue Limits
 
-- **Finite Child Height**: Never set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`—size the live region from its content (`Column`, fixed `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height.
-- **Cursor Position Reporting (`CSI 6 n`)**: Because inline output starts at whatever row the shell cursor occupied when the process launched, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to translate terminal mouse coordinates to the live region's screen origin. While a cursor report is pending, mouse clicks do not activate items.
-- **Bounded 1 MiB Queue**: Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode). If a producer exceeds the limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
+- Do not set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`. Size the live region from its content (`Column`, explicit `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height.
+- Because inline output begins at whatever row the shell cursor occupied when the process started, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to map terminal mouse coordinates to the live region's screen origin. While a cursor report is pending, mouse clicks do not activate items.
+- Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode). If a producer exceeds the limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
 
-See the runnable recipe example in [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/), the gallery demo [`InlineMode.qml`](../../examples/gallery/examples/InlineMode.qml), and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
+See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/) and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.

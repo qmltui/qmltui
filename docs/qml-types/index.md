@@ -30,6 +30,7 @@
 - [Anchors](anchors.md)
 - [Border](border.md)
 - [Clipboard](clipboard.md)
+- [FocusScope](focusscope.md)
 - [Gradient](gradient.md)
 - [GradientStop](gradientstop.md)
 - [Item](item.md)

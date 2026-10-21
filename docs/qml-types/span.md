@@ -74,10 +74,8 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![RichText recorded demo](../assets/casts/components/rich_text.gif)
 
-- **Live Playground**: [▶ Open `RichText.qml` in the WebAssembly Playground](../playground.md?example=RichText.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example RichText`
-- **Gallery Source**: [`examples/gallery/examples/RichText.qml`](../../examples/gallery/examples/RichText.qml)
+See [`examples/gallery/examples/RichText.qml`](../../examples/gallery/examples/RichText.qml) (`./build/examples/gallery/qmltui_gallery --example RichText`, or open in the [WebAssembly Playground](../playground.md?example=RichText.qml)).

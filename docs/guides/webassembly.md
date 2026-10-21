@@ -64,8 +64,8 @@ factor of four.
 `index.html` is the whole site. On the right, xterm.js runs the component
 gallery launcher (`examples/gallery/Main.qml`, copied to
 `www/gallery.qml`) with the gallery example files (`examples/gallery/examples/*.qml`,
-copied to `www/examples/` with an `index.json`: `39` total across all 4 modules,
-`38` in non-PTY builds such as WebAssembly, or `35` when `Behavior`, `Image`,
+copied to `www/examples/` with an `index.json`: `38` total across all 4 modules,
+`37` in non-PTY builds such as WebAssembly, or `34` when `Behavior`, `Image`,
 and `PtyView` are disabled). On the left, a CodeMirror
 editor with QML completion starts out with a hint. Open a tile in the gallery
 (arrows and Enter, or a click) and that tile's file appears in the editor: an
@@ -91,10 +91,9 @@ The link between the two panes needs nothing from the page beyond xterm.js:
   `qmltuiSetContextProperty("qmltuiAvailableExamples", jsonArray)` and
   `qmltuiSetContextProperty("qmltuiGalleryPage", file)` (`""` for the grid),
   and loads `gallery.qml`.
-- Inside `Main.qml`, a declarative `Loader` (`source: "examples/" + current.file`)
-  resolves relative URLs against `Main.qml`'s base URL (`qrc:/qt/qml/Gallery/examples/<file>`
-  on desktop, `file:///playground/examples/<file>` in WebAssembly) and switches
-  `Terminal.mode` to `Terminal.Inline` when `InlineMode.qml` is active.
+- Inside `Main.qml`, the active component file is resolved against `Main.qml`'s
+  base URL (`qrc:/qt/qml/Gallery/examples/<file>` on desktop,
+  `file:///playground/examples/<file>` in WebAssembly).
 - `Image.source` with an `http(s)` URL works in the browser too: Qt Network
   goes through the browser's `fetch`, so the picture's server must allow the
   page's origin (CORS). The gallery's own picture and sprite sheet stay

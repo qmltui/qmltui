@@ -74,7 +74,7 @@ stagePlaygroundAssets()
 
 export default defineConfig({
   title: 'QmlTui',
-  description: 'Retained-mode terminal UI framework for C++20 and Qt 6',
+  description: 'Retained-mode terminal UI framework for C++17 and Qt 6',
   srcDir: '.',
   srcExclude: ['contributing/**'],
   ignoreDeadLinks: [
@@ -132,7 +132,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Quickstart & Build', link: '/getting-started' },
-          { text: 'IDE Setup (Qt Creator & qmlls)', link: '/guides/ide-setup' },
+          { text: 'Qt Creator Setup & Tooling', link: '/guides/qt-creator' },
           { text: 'Examples & Gallery', link: '/examples' },
           { text: 'WebAssembly Playground', link: '/playground' }
         ]
@@ -168,6 +168,7 @@ export default defineConfig({
               { text: 'Terminal', link: '/qml-types/terminal' },
               { text: 'Scrollback', link: '/qml-types/scrollback' },
               { text: 'Item', link: '/qml-types/item' },
+              { text: 'FocusScope', link: '/qml-types/focusscope' },
               { text: 'Rectangle', link: '/qml-types/rectangle' },
               { text: 'Border', link: '/qml-types/border' },
               { text: 'Anchors', link: '/qml-types/anchors' },

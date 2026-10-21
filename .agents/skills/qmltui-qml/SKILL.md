@@ -241,7 +241,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `examples/recipes/`, not library types; copy them into your module.
 
 **`import QmlTui`** (C++ in `src/QmlTui/Core/Items` and `src/QmlTui/Core/Engine`)
-`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
+`Terminal`, `Scrollback`, `Item`, `FocusScope`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
 `Text`, `TextInput`, `TextArea`, `TableView`, `TreeView`, `ListView`, `GridView`,
 `ScrollView`, `Canvas`, `CanvasShape`, `CanvasRectangle`, `Circle`, `Line`,
 `Point`, `Polygon`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`,

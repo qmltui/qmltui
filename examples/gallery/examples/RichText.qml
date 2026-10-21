@@ -25,7 +25,7 @@ Column {
             }
             wrapMode: Text.WordWrap
             textFormat: Text.RichText
-            text: "<b>Text</b> wraps long content and understands HTML tags: <font color='#7ee0ff'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/yosri/qml-tui'>the QmlTui repository</a>. Click a link to activate it."
+            text: "<b>Text</b> wraps long content and understands HTML tags: <font color='#7ee0ff'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/qmltui-dev/qmltui'>the QmlTui repository</a>. Click a link to activate it."
             onLinkActivated: url => {
                 demo.link = url;
             }

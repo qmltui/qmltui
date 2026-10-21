@@ -111,10 +111,8 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![Canvas recorded demo](../assets/casts/components/canvas.gif)
 
-- **Live Playground**: [▶ Open `Canvas.qml` in the WebAssembly Playground](../playground.md?example=Canvas.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Canvas`
-- **Gallery Source**: [`examples/gallery/examples/Canvas.qml`](../../examples/gallery/examples/Canvas.qml)
+See [`examples/gallery/examples/Canvas.qml`](../../examples/gallery/examples/Canvas.qml) (`./build/examples/gallery/qmltui_gallery --example Canvas`, or open in the [WebAssembly Playground](../playground.md?example=Canvas.qml)).

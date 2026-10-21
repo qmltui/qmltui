@@ -1,44 +1,49 @@
 # Input and Focus
 
-Terminal applications rely first on keyboard navigation. QmlTui maintains an explicit active focus chain, routes decoded keystrokes from the focused item up to the root `Terminal`, and supports SGR mouse tracking and bracketed paste.
+QmlTui maintains an explicit focus chain, routes decoded key events from the active item up to the root `Terminal`, and translates SGR mouse sequences and bracketed paste blocks into QML events.
 
----
+## Active Focus, Tab Chains, and `FocusScope`
 
-## 1. Active Focus and Tab Chains
+Set `focus: true` on the initial interactive item. Items with `focusPolicy: Qt.StrongFocus` or `Qt.TabFocus` (the default on interactive controls, `TextInput`, and `TextArea`) participate in the **Tab** / **Shift+Tab** ring in tree order.
 
-Set `focus: true` on the initial interactive item. Focusable items (`focusPolicy: Qt.StrongFocus` or `Qt.TabFocus`, enabled by default on interactive controls and `TextInput`/`TextArea`) participate in the **Tab** / **Shift+Tab** focus ring in tree order.
-
-Always provide clear visual feedback for `activeFocus` using borders or text attributes:
+Use [`FocusScope`](../qml-types/focusscope.md) when building a composite component that needs to remember which internal child is focused and gain `activeFocus` as a unit when focused from outside:
 
 ```qml
-Rectangle {
-    width: 24
+FocusScope {
+    id: searchBox
+    width: 30
     height: 3
-    focusPolicy: Qt.StrongFocus
-    border {
-        style: activeFocus ? Border.Double : Border.Single
-        color: activeFocus ? "cyan" : "gray"
+
+    Rectangle {
+        anchors.fill: parent
+        border {
+            style: searchBox.activeFocus ? Border.Double : Border.Single
+            color: searchBox.activeFocus ? "cyan" : "gray"
+        }
+
+        TextInput {
+            anchors {
+                fill: parent
+                margins: 1
+            }
+            focus: true
+        }
     }
 }
 ```
 
----
+## Key Event Propagation
 
-## 2. Key Event Bubbling and Interception
+Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) run on the item with `activeFocus`. When `event.accepted` is left `false`, the event bubbles up through ancestor items to the root `Terminal`.
 
-Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) fire on the item with `activeFocus`. If `event.accepted` is left `false`, the event bubbles up through parent items to the root `Terminal`.
+Set `Keys.priority: Keys.BeforeItem` to intercept keys before an item's built-in C++ handler runs (for example, to catch a shortcut before `TextInput` or `PtyView` consumes the keystroke). Set `Keys.forwardTo: [targetItem]` to forward unhandled keys from a search field or container directly to another item such as a `ListView` or `TableView`.
 
-- **`Keys.priority: Keys.BeforeItem`**: Intercepts keys before the item's built-in C++ handler runs (useful for overriding keys inside `TextInput` or `PtyView`).
-- **`Keys.forwardTo: [targetItem]`**: Forwards unhandled key events from a container or search bar directly to another item such as a `ListView` or `TableView`.
+## Shortcuts and the Application Quit Path
 
----
+In terminal raw mode, `Ctrl+C` does not generate `SIGINT`—`TextInput` and `TextArea` use `Ctrl+C` for copying to the clipboard—and a root `Terminal` does not exit automatically on `Q` or `Escape`. Every application must provide an explicit keyboard quit path:
 
-## 3. Global `Shortcut` vs. Contextual `Escape` Quit Path
-
-In terminal raw mode, `Ctrl+C` does **not** send `SIGINT` (allowing `TextInput` and `TextArea` to use `Ctrl+C` for clipboard copy), and the root `Terminal` never exits automatically on `Q` or `Escape`. Every application must define an explicit keyboard quit path:
-
-- Never bind bare `"Q"` as a global [`Shortcut`](../qml-types/shortcut.md) when the scene contains a `TextInput` or `TextArea`, or typing `q` into the editor will quit the app. Use `Shortcut { key: "Ctrl+Q"; onActivated: Qt.quit() }` or handle `Qt.Key_Q` on the root `Terminal` after editable inputs have had a chance to consume it.
-- Preserve contextual `Escape` order: close open [`Dialog`](../qml-types/dialog.md) / [`Popup`](../qml-types/popup.md) overlays first, clear active filter text second, and quit only when nothing else consumed `Escape`:
+- Do not bind bare `"Q"` as a global [`Shortcut`](../qml-types/shortcut.md) when the scene contains an editable `TextInput` or `TextArea`, or typing `q` will quit the process. Use `Shortcut { key: "Ctrl+Q"; onActivated: Qt.quit() }` or handle `Qt.Key_Q` on the root `Terminal` after focused inputs have had a chance to accept the key.
+- Handle `Escape` contextually: close open [`Dialog`](../qml-types/dialog.md) or [`Popup`](../qml-types/popup.md) overlays first, clear active filter text or cancel an in-progress action second, and call `Qt.quit()` only when nothing else consumed `Escape`.
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -90,10 +95,8 @@ Terminal {
 }
 ```
 
----
+## Mouse Input (`MouseArea`)
 
-## 4. Mouse Input (`MouseArea`)
+[`MouseArea`](../qml-types/mousearea.md) converts SGR 1006 terminal mouse events into cell-coordinate `onClicked`, `onDoubleClicked`, `onPressed`, `onReleased`, `onPositionChanged` (drag), `onWheel`, and `containsMouse` (when `hoverEnabled: true`). Always pair mouse handlers with keyboard navigation so the interface remains usable without a mouse.
 
-[`MouseArea`](../qml-types/mousearea.md) translates SGR 1006 terminal mouse sequences into cell-coordinate `onClicked`, `onDoubleClicked`, `onPressed`, `onReleased`, `onPositionChanged` (drag), `onWheel`, and `containsMouse` (when `hoverEnabled: true`). Always pair mouse interactions with keyboard equivalents so the UI remains operable over any terminal session.
-
-See the gallery examples [`Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml), [`MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml), and [`Dialog.qml`](../../examples/gallery/examples/Dialog.qml), plus the [`Keys`](../qml-types/keys.md), [`Shortcut`](../qml-types/shortcut.md), and [`MouseArea`](../qml-types/mousearea.md) references.
+See [`Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml), [`MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml), and [`Dialog.qml`](../../examples/gallery/examples/Dialog.qml), and the [`FocusScope`](../qml-types/focusscope.md), [`Keys`](../qml-types/keys.md), [`Shortcut`](../qml-types/shortcut.md), and [`MouseArea`](../qml-types/mousearea.md) references.

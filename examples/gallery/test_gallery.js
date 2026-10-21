@@ -64,10 +64,10 @@ function main(terminal) {
     terminal.waitForText("QmlTui Gallery");
     terminal.expectNoText("Clicked 1 time");
 
-    // End jumps to the last tile (InlineMode in CLI) and scrolls the grid to it.
+    // End jumps to the last tile in CLI and scrolls the grid to it.
     terminal.press("END");
     terminal.waitForText(at(total));
-    terminal.expectText("InlineMode");
+    terminal.expectText("TerminalCapabilities");
     terminal.captureText("gallery/grid_end.txt");
 
     // Topic TabBar: clicking or pressing Tab filters by topic (Controls, Layout,
@@ -140,7 +140,7 @@ function main(terminal) {
     terminal.waitForText(at(1));
 
     // Every page must instantiate without error: open each one in turn.
-    for (let i = 0; i < total - 1; ++i) {
+    for (let i = 0; i < total; ++i) {
         terminal.press("ENTER");
         terminal.waitForText("back to grid");
         terminal.expectNoText("✗ Error");
@@ -151,30 +151,6 @@ function main(terminal) {
         terminal.press("RIGHT");
     }
     terminal.captureText("gallery/after_tour.txt");
-
-    // The last tile switches the whole app to Terminal.Inline; the prompt
-    // prints into the scrollback and Escape restores full-screen mode.
-    terminal.press("END");
-    terminal.waitForText(at(total));
-    terminal.press("ENTER");
-    terminal.waitForText("Inline mode");
-    terminal.expectNoText("QmlTui Gallery");
-    terminal.typeText("hello from inline");
-    terminal.press("ENTER");
-    terminal.waitForText("printed: 1");
-    terminal.captureText("gallery/inline.txt");
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
-    terminal.captureText("gallery/after_inline.txt");
-
-    // Full-screen mode is fully restored: another demo opens and closes.
-    terminal.clickText("Animation");
-    terminal.waitForText("Components · Animation");
-    terminal.press("END");
-    terminal.press("ENTER");
-    terminal.waitForRegex("Easing.OutBounce|Behavior on x");
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
 
     terminal.finish();
 }

@@ -1,29 +1,24 @@
 # Getting Started
 
-This guide walks you through checking system requirements, running the interactive component gallery, and creating your first standalone QmlTui application.
+This guide covers system requirements, running the component gallery, and setting up a standalone QmlTui application with CMake.
 
----
-
-## 1. Requirements
-
-To build QmlTui or a QmlTui application, you need:
+## Requirements
 
 - **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree)
-- **Qt 6.8 or newer** with the `Core` and `Qml` development packages
+- **C++17** compiler
+- **Qt 6.8 or newer** with the `Core` and `Qml` components
 
-### Optional Qt & System Dependencies
+### Optional Dependencies
 
-| Feature / Module | CMake Option | Default | Additional Requirement |
+| Feature / Module | CMake Option | Default | Requirement |
 | :--- | :--- | :--- | :--- |
-| **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for a headless server build without GUI/network packages) |
-| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` | `Qt6::QmlPrivate` headers (couples build to the exact Qt minor version; set `OFF` for strict public-Qt builds) |
+| **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for headless builds without GUI/network packages) |
+| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` | `Qt6::QmlPrivate` headers (ties build to the Qt minor version; set `OFF` for public-Qt-only builds) |
 | **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTY_VIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 
----
+## Build and Run the Gallery
 
-## 2. Try the Interactive Gallery in 30 Seconds
-
-Clone the repository and build `qmltui_gallery` to explore over 35 interactive controls, virtualized views, canvas demos, and animations in your terminal:
+Clone the repository and build `qmltui_gallery` to inspect the built-in controls, views, layouts, and canvas primitives:
 
 ```sh
 git clone https://github.com/qmltui-dev/qmltui.git
@@ -33,7 +28,7 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
-To build the entire repository and run the automated test suite:
+To build the full repository and run the test suite:
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
@@ -41,13 +36,9 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
----
+## Standalone Application (`FetchContent`)
 
-## 3. Create Your First Standalone Application (3 Files)
-
-The fastest way to start a new project is with CMake's `FetchContent` (also available ready-to-build in [`examples/quickstart/`](../examples/quickstart/)). You only need Qt 6.8+ installed—CMake fetches and builds QmlTui automatically.
-
-Create a new directory with the following three files:
+A minimal standalone project requires three files (also available in [`examples/quickstart/`](../examples/quickstart/)). With `FetchContent`, CMake downloads and builds QmlTui alongside your target.
 
 ### `CMakeLists.txt`
 
@@ -61,7 +52,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 
-# Fetch QmlTui at a release tag: nothing to install besides Qt.
 set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
@@ -151,7 +141,7 @@ cmake --build build
 ./build/hello_qmltui
 ```
 
-Your terminal switches to the alternate screen and renders:
+The terminal switches to the alternate screen and renders:
 
 ```text
 Welcome to QmlTui
@@ -163,13 +153,11 @@ Welcome to QmlTui
 Status: ready
 ```
 
-Press **Enter** or **Space** to activate the focused button (updating the label to `Status: Clicked!`), or press **Q** / **Escape** to exit cleanly.
+Press **Enter** or **Space** to activate the focused button, or **Q** / **Escape** to exit.
 
----
+## Using an Installed Build (`find_package(QmlTui)`)
 
-## 4. Consuming an Installed QmlTui (`find_package(QmlTui)`)
-
-If you prefer installing QmlTui once onto your system or sysroot instead of fetching it per project:
+To install QmlTui once and consume it across multiple projects:
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=OFF -DQMLTUI_BUILD_TESTS=OFF
@@ -177,7 +165,7 @@ cmake --build build
 cmake --install build --prefix /your/prefix
 ```
 
-Then consume it in your project's `CMakeLists.txt` via `find_package(QmlTui 0.5 REQUIRED)`:
+Then locate it in `CMakeLists.txt` with `find_package(QmlTui 0.5 REQUIRED)`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -204,27 +192,23 @@ target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltu
 
 ### In-Tree (`FetchContent` / `add_subdirectory`) vs. Installed (`find_package`)
 
-- **In-tree (`add_subdirectory` or `FetchContent`)**: Pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` to `qt_add_qml_module(...)` so CMake orders QML module generation and `qmllint` finds the build-tree modules under `QT_QML_OUTPUT_DIRECTORY`.
-- **Installed (`find_package(QmlTui)`)**: Qt's `qt_add_qml_module(DEPENDENCIES TARGET ...)` does not accept `IMPORTED` targets. Instead, link `qmltui::core`, `qmltui::controls`, and (if needed) `qmltui::image` via `target_link_libraries()`, and append the exported `QmlTui_QML_IMPORT_PATH` variable to `QT_QML_IMPORT_PATH` (or `QML_IMPORT_PATH` at runtime). Installed QML modules live under `<prefix>/lib/qml` by default (configurable via `QMLTUI_INSTALL_QMLDIR`).
-
-The available QML modules and CMake targets are:
+- **In-tree (`add_subdirectory` or `FetchContent`)**: Pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` to `qt_add_qml_module(...)` so CMake orders QML module generation and `qmllint` resolves the build-tree modules under `QT_QML_OUTPUT_DIRECTORY`.
+- **Installed (`find_package(QmlTui)`)**: Qt's `qt_add_qml_module(DEPENDENCIES TARGET ...)` does not accept `IMPORTED` targets. Link `qmltui::core`, `qmltui::controls`, and (if needed) `qmltui::image` via `target_link_libraries()`, and append `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` (or `QML_IMPORT_PATH` at runtime). Installed QML modules default to `<prefix>/lib/qml` (configurable via `QMLTUI_INSTALL_QMLDIR`).
 
 | QML Import | CMake Target | Description |
 | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | Standalone retained-mode TUI engine (`Terminal`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized views, `Canvas`, input, animation; requires only `Qt6::Core` and `Qt6::Qml`) |
-| `import QmlTui.Controls` | `qmltui::controls` | Interactive controls (`Button`, `CheckBox`, `Dialog`, `Panel`, `ProgressBar`, `Slider`, etc.) |
+| `import QmlTui` | `qmltui::core` | Core engine (`Terminal`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, data views, `Canvas`, input, animation; requires `Qt6::Core` and `Qt6::Qml`) |
+| `import QmlTui.Controls` | `qmltui::controls` | Interactive controls (`Button`, `CheckBox`, `Dialog`, `Panel`, `ProgressBar`, `Slider`, `TabBar`, etc.) |
 | `import QmlTui.Image` | `qmltui::image` | Terminal graphics (`Image`, `AnimatedSprite`; requires `QMLTUI_ENABLE_IMAGE=ON`) |
 | `import QmlTui.PtyView` | `qmltui::pty_view` | Embedded Unix PTY (`PtyView`; requires `QMLTUI_ENABLE_PTY_VIEW=ON`) |
 
-See [Module Boundaries & What `QmlTui.Core` Provides Alone](guides/architecture.md#module-boundaries-what-qmltui-core-provides-alone) for a breakdown of building applications using only `qmltui::core` (`import QmlTui`).
+See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake-targets) for details on what each module provides.
 
----
-
-## 5. Optional Modules & Features
+## Optional Modules and Tooling
 
 ### Embedded PTY Shells (`QmlTui.PtyView`)
 
-The Unix PTY view (`PtyView`) is opt-in on Linux and macOS:
+`PtyView` is opt-in on Linux and macOS:
 
 ```sh
 cmake -S . -B build -DQMLTUI_ENABLE_PTY_VIEW=ON -DQMLTUI_BUILD_EXAMPLES=ON
@@ -232,35 +216,33 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery --example PtyView
 ```
 
-See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qml-types/ptyview.md) for its API, security defaults, offline `libvterm` setup, and compatibility notes. Note that QmlTui separates inline streaming output from hosted PTY shells:
+See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qml-types/ptyview.md). Note the distinction between inline output and hosted PTYs:
 
-- `qmltui_inline_repl_demo` ([`examples/recipes/inline_repl`](../examples/recipes/inline_repl/)) and `qmltui_gallery --example InlineMode` ([`examples/gallery/examples/InlineMode.qml`](../examples/gallery/examples/InlineMode.qml)) demonstrate inline sessions with scrollback and prompt input using `Terminal.Inline`—they do **not** require `PtyView`.
-- `qmltui_gallery --example PtyView` embeds an interactive PTY shell inside a full-screen layout (`QMLTUI_ENABLE_PTY_VIEW=ON`).
+- `qmltui_inline_repl_demo` ([`examples/recipes/inline_repl`](../examples/recipes/inline_repl/)) uses `Terminal.Inline` and `Scrollback` and does not require `PtyView`.
+- `qmltui_gallery --example PtyView` hosts a child process inside a pseudo-terminal (`QMLTUI_ENABLE_PTY_VIEW=ON`).
 
-### Headless Testing & `.cast` Recording (`Runner`)
+### Headless Testing and Recording (`Runner`)
 
-Enable `-DQMLTUI_ENABLE_RUNNER=ON` (or `-DQMLTUI_BUILD_TESTS=ON` in-tree) to build `qmltui::runner` and the `qmltui-runner` CLI launcher for deterministic headless testing and Asciinema recording. See [Testing and Recording with Runner](guides/testing.md) and the [Runner C++ reference](cpp-classes/runner.md).
+Enable `-DQMLTUI_ENABLE_RUNNER=ON` (or `-DQMLTUI_BUILD_TESTS=ON` in-tree) to build `qmltui::runner` and the `qmltui-runner` CLI. See [Testing and Recording with Runner](guides/testing.md) and the [Runner C++ reference](cpp-classes/runner.md).
 
-### Performance Benchmarks
+### Benchmarks
 
-Benchmarks are built when `-DQMLTUI_BUILD_BENCHMARKS=ON`:
+Build benchmarks with `-DQMLTUI_BUILD_BENCHMARKS=ON`:
 
-- `benchmark_views` records 1,000- and 10,000-row view creation time.
-- `benchmark_render` records per-frame paint and diff cost for representative scenes at 80×24 and 240×70 (`--json <path>` for trending, `--frames <count>` to adjust sample count from the default 200 after 5 warm-up frames). JSON output also includes setter time (`updateMedianUs`) and median combined setter/paint cost (`updatePaintMedianUs`) so text-cache rebuilds are accounted for in changing-text workloads.
+- `benchmark_views` measures 1,000- and 10,000-row view creation time.
+- `benchmark_render` measures per-frame paint and diff cost at 80×24 and 240×70 (`--json <path>`, `--frames <count>`). JSON output includes `updateMedianUs` and `updatePaintMedianUs`.
 
-Run `benchmark_render` before and after rendering changes when contributing. See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for methodology and baseline numbers.
+See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for baseline numbers.
 
----
-
-## 6. CMake Options & Runtime Environment Variables
+## CMake Options and Environment Variables
 
 ### Top-Level CMake Options
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
-| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and guide executables |
+| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and recipe executables |
 | `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
-| `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build performance benchmark executables |
+| `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` | Enable `Behavior`, `StateGroup`, and advanced states (`Qt6::QmlPrivate`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
 | `QMLTUI_ENABLE_PTY_VIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
@@ -283,11 +265,9 @@ Run `benchmark_render` before and after rendering changes when contributing. See
 | `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) Kitty keyboard protocol negotiation |
 | `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) Kitty graphics protocol detection |
 
----
+## Next Steps
 
-## 7. Next Steps
-
-- **Read the [Guides](guides/index.md)**: Explore [Layouts & Cell Geometry](guides/layouts.md), [Input & Focus](guides/input-and-focus.md), [Models in QmlTui Views](guides/models.md), [Styling & Colors](guides/styling-and-colors.md), and [Testing with Runner](guides/testing.md).
-- **Set up your editor**: Read the [IDE setup guide](guides/ide-setup.md) to configure `qmlls`, `qmllint`, and `qmltui-runner.d.ts`.
-- **Coming from Qt Quick?** Read [QmlTui for Qt Quick developers](guides/qt-quick-to-qmltui.md).
-- **Explore components and recipes**: Browse the [Examples & Component Cookbook](examples.md).
+- **[Guides](guides/index.md)**: [Layouts & Cell Geometry](guides/layouts.md), [Input & Focus](guides/input-and-focus.md), [Models in QmlTui Views](guides/models.md), [Styling & Colors](guides/styling-and-colors.md), and [Testing with Runner](guides/testing.md).
+- **[Qt Creator Setup](guides/qt-creator.md)**: Project wizards, offline `F1` documentation, `qmlls`, `qmllint`, and `qmltui-runner.d.ts`.
+- **[QmlTui for Qt Quick Developers](guides/qt-quick-to-qmltui.md)**: Differences from `QtQuick`.
+- **[Examples and Recipes](examples.md)**: Gallery components and standalone recipes.

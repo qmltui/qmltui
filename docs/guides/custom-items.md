@@ -1,10 +1,10 @@
 # Creating Custom Items
 
-You can extend QmlTui by creating custom C++ classes that inherit from `qmltui::Item` and registering them with the QML engine.
+You can extend QmlTui in C++ by subclassing `qmltui::Item` and registering the class with the QML type system.
 
-## 1. Class Definition
-Inherit from `qmltui::Item`. Ensure you have the `Q_OBJECT` and `QML_ELEMENT` macros for QML integration.
-If your item has custom properties, define them using `Q_PROPERTY`.
+## Class Definition
+
+Inherit from `qmltui::Item` and add `Q_OBJECT` and `QML_ELEMENT`. Call `markDirty()` whenever a property setter changes the item's visual output:
 
 ```cpp
 #pragma once
@@ -18,87 +18,68 @@ class CustomBlock : public Item {
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
 
 public:
-    explicit CustomBlock(QObject *parent = nullptr) : Item(parent) {
-        // e.g., setFocusPolicy(Qt::StrongFocus) if your item accepts input
-    }
-    
+    explicit CustomBlock(QObject *parent = nullptr) : Item(parent) {}
+
     QString label() const { return m_label; }
-    void setLabel(const QString& label) {
-        if (m_label == label) return;
+    void setLabel(const QString &label) {
+        if (m_label == label)
+            return;
         m_label = label;
+        setImplicitWidth(m_label.size() + leftPadding() + rightPadding());
+        setImplicitHeight(1 + topPadding() + bottomPadding());
         emit labelChanged();
-        markDirty(); // Tells the engine to re-render this item
+        markDirty();
     }
 
 signals:
     void labelChanged();
 
+protected:
+    void paint(TextGridBuffer &buffer, int absX, int absY,
+               const ClipRect &clipRect) const override;
+
 private:
     QString m_label;
 };
 
-}
+} // namespace qmltui
 ```
 
-## 2. Painting
-Override the protected `paint(TextGridBuffer&, int absX, int absY, const ClipRect&) const`
-hook. The framework calls `paint()`, then traverses children in stacking order,
-applies content offsets and clipping, and finally calls `paintOverlay()`. Tree
-painting is private framework behavior; custom items must not traverse or paint
-their children themselves.
+## Painting
 
-Respect `clipRect` and prefer `TextGridBuffer::writeText()` (or `setGrapheme()` / `fillRect()`) for zero-allocation grapheme cluster painting. When writing individual cells directly, use `tryCellAt()` when coordinates may fall outside the buffer, or `cellAt()` for coordinates already verified against `clipRect`:
+Override the protected `paint(TextGridBuffer &, int absX, int absY, const ClipRect &) const` hook. During each frame, the engine calls `paint()`, traverses visible children in stacking order with content offsets and clipping applied, and finally calls `paintOverlay()`. Child traversal is owned by the engine; custom items must not iterate or paint their children directly.
+
+Respect `clipRect` and use `TextGridBuffer::writeText()`, `setGrapheme()`, or `fillRect()` for grapheme-aware cell writes. When accessing individual cells, use `tryCellAt()` if coordinates may fall outside the buffer, or `cellAt()` when coordinates are already bounded by `clipRect`:
 
 ```cpp
-void CustomBlock::paint(TextGridBuffer& buffer, int absX, int absY,
-                        const ClipRect& clipRect) const {
+void CustomBlock::paint(TextGridBuffer &buffer, int absX, int absY,
+                        const ClipRect &clipRect) const {
     Q_UNUSED(clipRect)
     const Color foreground("red");
     buffer.writeText(absX + leftPadding(), absY + topPadding(), m_label, foreground);
 }
 ```
 
-Override `updateLayout()` for work that positions or creates children. Each
-frame runs a layout pass over the tree before any painting, so geometry changed
-in `updateLayout()` is painted in the same frame. A size change on the item
-itself marks it `LayoutDirty` automatically.
+Override `updateLayout()` for work that positions or creates children. Each frame runs a layout pass over the tree before painting, so geometry updated in `updateLayout()` is painted in the same frame. A size change on the item itself marks it `LayoutDirty` automatically.
 
-`paint()` and `paintOverlay()` are `const`: they write cells and nothing else.
-Keep lazily computed layout caches in `mutable` members. Invalidations that
-still reach the tree while painting (through pointers to other items) are
-retained but do not schedule a frame; run with `QMLTUI_DEBUG_PAINT_DIRTY=1` to
-have each offending item reported once.
+`paint()` and `paintOverlay()` are `const`: they must only write cells to `buffer`. Store lazily computed layout caches in `mutable` members. Invalidations that reach the tree during painting are retained for the next frame without scheduling an immediate repaint; set `QMLTUI_DEBUG_PAINT_DIRTY=1` in the environment to log any item that dirties the tree during paint.
 
-Override the optional protected `paintOverlay()` hook only for content that
-must appear above the item's children, such as a scrollbar or focus decoration.
+Override `paintOverlay()` only for chrome that must appear above the item's children, such as a scrollbar or focus frame.
 
-## 3. Event Handling
-If your custom component handles input, declare `keyPressEvent(KeyEvent* event) override` in the class header and implement it in your source file:
+## Event Handling
+
+To handle keyboard or mouse input directly in C++, set a focus policy (such as `setFocusPolicy(Qt::StrongFocus)`) and override `keyPressEvent(KeyEvent *event)`:
+
 ```cpp
-void CustomBlock::keyPressEvent(KeyEvent* event) {
+void CustomBlock::keyPressEvent(KeyEvent *event) {
     if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return) {
-        qDebug() << "Custom block activated!";
-        event->setAccepted(true); // Stop propagation
+        event->setAccepted(true);
     }
 }
 ```
 
-## 4. Layout Sizing
-It's good practice to set `implicitWidth` and `implicitHeight` based on your content, so `Row` and `Column` layouts can accurately arrange your custom item.
+## Complete Examples
 
-```cpp
-void CustomBlock::setLabel(const QString& label) {
-    // ...
-    setImplicitWidth(label.length() + leftPadding() + rightPadding());
-    setImplicitHeight(1 + topPadding() + bottomPadding());
-    markDirty();
-}
-```
-
-## 5. C++-Only Applications & Complete Examples
-
-You can also construct and drive a `qmltui::Terminal` and `qmltui::Item` hierarchy directly from C++ without loading any `.qml` files. See:
-
-- [`examples/recipes/custom_cpp_item/`](../../examples/recipes/custom_cpp_item/): Registering a custom `qmltui::Item` subclass (`QML_ELEMENT`) and instantiating it from QML.
-- [`examples/recipes/cpp_only/`](../../examples/recipes/cpp_only/): Building a complete QmlTui scene in pure C++20 without QML files.
-- [`examples/recipes/big_text/`](../../examples/recipes/big_text/): A reusable component combining custom cell painting and QML properties.
+- [`examples/recipes/custom_cpp_item/`](../../examples/recipes/custom_cpp_item/): Subclassing `qmltui::Item` (`ProgressGauge`), registering with `QML_ELEMENT`, and instantiating from QML.
+- [`examples/recipes/big_text/`](../../examples/recipes/big_text/): Custom C++ item painting 3×5 block-pixel banner text into `TextGridBuffer`.
+- [`examples/recipes/cpp_only/`](../../examples/recipes/cpp_only/): Constructing and driving a `qmltui::Terminal` and `qmltui::Item` hierarchy directly in C++ without `.qml` files.

@@ -1,78 +1,37 @@
 # Rectangle
 
-## Class Overview
+`qmltui::Rectangle` is a visual `Item` that paints a background color or `Gradient` fill and optional Unicode or ASCII box-drawing borders (`Border::Single`, `Border::Double`, `Border::Rounded`, `Border::Heavy`, `Border::Ascii`).
 
-`Rectangle` is a visual QML item that renders a background color or gradient fill and optional single (`Border::Single`), double (`Border::Double`), rounded (`Border::Rounded`), heavy (`Border::Heavy`), or ASCII (`Border::Ascii`) borders in the terminal grid.
+- **Header**: `<QmlTui/Core/Items/Rectangle.h>`
+- **Inherits**: `qmltui::Item`
+- **Target**: `qmltui::core`
 
-Developers use `Rectangle` for containers, cards, panels, and borders.
+## Properties (`Q_PROPERTY`)
 
-## Project Structure and Dependencies
-
-- **Header**: `src/QmlTui/Core/Items/Rectangle.h` (installed as `<QmlTui/Core/Items/Rectangle.h>`)
-- **Implementation**: `src/QmlTui/Core/Items/Rectangle.cpp`
-- **Dependencies**: `Item.h`, `Border.h`, `Gradient.h`, `Color.h`.
-
-## Class Hierarchy and Role
-
-- **Base Class**: `Item`
-  - Inherits spatial positioning, cell-grid sizing, anchoring, padding, and rendering interfaces.
-
-## Q_PROPERTY Declarations
-
-| Property | Type | READ | WRITE | NOTIFY | Description |
-|----------|------|------|-------|--------|-------------|
-| `color` | `qmltui::Color` | `color` | `setColor` | `colorChanged` | Background color of the rectangle (defaults to `"transparent"`). |
-| `border` | `qmltui::Border*` | `border` | — | — | Grouped border configuration (`style`, `color`). |
-| `gradient` | `qmltui::Gradient*` | `gradient` | `setGradient` | `gradientChanged` | Optional background gradient fill across the rectangle. |
-
-## Signals
-
-#### void colorChanged()
-Emitted when the background color changes.
-
-#### void gradientChanged()
-Emitted when the background gradient changes.
+| Property | Type | Access | Notify Signal | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `color` | `qmltui::Color` | read/write | `colorChanged` | Background fill color (`"transparent"` by default). |
+| `border` | `qmltui::Border*` | read-only | — | Grouped border configuration (`style`, `color`). |
+| `gradient` | `qmltui::Gradient*` | read/write | `gradientChanged` | Optional background gradient fill across the rectangle. |
 
 ## Public Methods
 
-#### uint32_t resolvedBackgroundColor() const
-Returns the 32-bit ARGB integer value of the background color.
+- `uint32_t resolvedBackgroundColor() const` — returns the 32-bit ARGB value of `color()`.
+- `Border *border() const` — returns the grouped `Border` object (`style()` and `color()`).
+- `Gradient *gradient() const` / `void setGradient(Gradient *gradient)` — returns or sets the optional background gradient.
+- `int leftPadding() const override` (and `rightPadding()`, `topPadding()`, `bottomPadding()`) — adds 1 cell of interior padding on each edge when `border()->style() != Border::None`.
 
-#### Border* border() const
-Returns a pointer to the grouped `Border` object configuring border style (`Border::None`, `Border::Single`, `Border::Double`, `Border::Rounded`, `Border::Heavy`, `Border::Ascii`) and border color.
-
-#### Gradient* gradient() const / void setGradient(Gradient* gradient)
-Returns or sets the optional `Gradient` used to fill the rectangle background.
-
-#### int leftPadding() const [override]
-Returns the left padding, accounting for the left border width (adds 1 cell when `border()->style() != Border::None`).
-
-#### int rightPadding() const [override]
-Returns the right padding, accounting for the right border width.
-
-#### int topPadding() const [override]
-Returns the top padding, accounting for the top border width.
-
-#### int bottomPadding() const [override]
-Returns the bottom padding, accounting for the bottom border width.
-
-## Protected Virtual Methods / Event Handlers
-
-#### void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const [override]
-Paints the background color or gradient fill and borders into `buffer`; the framework
-traverses children afterward.
-
-## Usage Example
+## Example
 
 ```cpp
 #include <QmlTui/Core/Items/Rectangle.h>
 
-using namespace qmltui;
-
-Rectangle* rect = new Rectangle(parentItem);
-rect->setColor("#1e1e1e");
+auto *rect = new qmltui::Rectangle(parentItem);
+rect->setWidth(24);
+rect->setHeight(5);
+rect->setColor(qmltui::Color(QStringLiteral("#1e1e1e")));
 rect->border()->setStyle(qmltui::Border::Single);
-rect->border()->setColor("yellow");
+rect->border()->setColor(qmltui::Color(QStringLiteral("cyan")));
 ```
 
-See the [QML type reference](../qml-types/rectangle.md) for QML usage.
+See the [Rectangle QML type reference](../qml-types/rectangle.md).

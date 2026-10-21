@@ -9,70 +9,17 @@ Terminal {
     property int currentYear: 2026
     property date todayDate: new Date()
     property date selectedDate: new Date()
-    property int activeThemeIndex: 0
     property string statusMessage: "Select a day or type DD/MM/YYYY"
-    property int columnMode: 0
-
-    readonly property int gridColumns: columnMode > 0 ? columnMode : 2
-    readonly property var themes: [
-        {
-            name: "Cyber Cyan",
-            accent: "cyan",
-            today: "magenta",
-            header: "cyan",
-            title: "yellow",
-            border: "cyan",
-            selectedBg: "cyan",
-            selectedText: "black",
-            panelBorder: "cyan"
-        },
-        {
-            name: "Amber Glow",
-            accent: "#ffaa00",
-            today: "#ffff55",
-            header: "#ffaa00",
-            title: "#ffcc00",
-            border: "#ffaa00",
-            selectedBg: "#ffaa00",
-            selectedText: "black",
-            panelBorder: "#ffaa00"
-        },
-        {
-            name: "Emerald Matrix",
-            accent: "#50fa7b",
-            today: "#f1fa8c",
-            header: "#50fa7b",
-            title: "#8be9fd",
-            border: "#50fa7b",
-            selectedBg: "#50fa7b",
-            selectedText: "black",
-            panelBorder: "#50fa7b"
-        },
-        {
-            name: "Nord Frost",
-            accent: "#88c0d0",
-            today: "#ebcb8b",
-            header: "#81a1c1",
-            title: "#eceff4",
-            border: "#88c0d0",
-            selectedBg: "#88c0d0",
-            selectedText: "#2e3440",
-            panelBorder: "#88c0d0"
-        }
-    ]
-    readonly property var currentTheme: themes[activeThemeIndex]
 
     property var notesMap: {
         const map = {};
         const now = new Date();
         const todayKey = root.formatDateKey(now);
         const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        map[todayKey] = ["Team Sprint Planning & Standup", "Review Year Calendar & Planner"];
-        map[root.formatDateKey(tomorrow)] = ["Architecture sync with core team"];
-        map["2026-08-18"] = ["QmlTui v2.0 Release Meeting"];
-        map["2026-10-31"] = ["Halloween Hackathon"];
-        map["2026-12-25"] = ["Holiday Celebration"];
-        map["2026-12-31"] = ["New Year's Eve Retrospective"];
+        map[todayKey] = ["Review release checklist", "Run test suite"];
+        map[root.formatDateKey(tomorrow)] = ["Tag release candidate"];
+        map["2026-08-18"] = ["Milestone review"];
+        map["2026-12-25"] = ["Holiday release freeze"];
         return map;
     }
 
@@ -199,7 +146,7 @@ Terminal {
         root.statusMessage = "Deleted note";
     }
 
-    title: "QmlTui Year Calendar & Day Planner"
+    title: "Calendar & Day Notes"
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
@@ -230,13 +177,6 @@ Terminal {
             root.shiftYear(1);
         } else if (event.key === Qt.Key_T || event.key === Qt.Key_Home) {
             root.goToToday();
-        } else if (event.key === Qt.Key_C) {
-            root.columnMode = root.columnMode === 0 ? 3 : (root.columnMode === 3 ? 4 : (root.columnMode === 4 ? 2 : 0));
-            const modeStr = root.columnMode === 0 ? "Auto (" + root.gridColumns + ")" : String(root.columnMode);
-            root.statusMessage = "Grid: " + modeStr + " columns";
-        } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_4) {
-            root.activeThemeIndex = event.key - Qt.Key_1;
-            root.statusMessage = "Theme: " + root.currentTheme.name;
         } else {
             return;
         }
@@ -260,8 +200,8 @@ Terminal {
         }
         height: 3
         border {
-            style: Border.Double
-            color: root.currentTheme.border
+            style: Border.Single
+            color: "cyan"
         }
 
         Row {
@@ -273,8 +213,8 @@ Terminal {
             spacing: 2
 
             Text {
-                text: "📅 YEAR CALENDAR & PLANNER"
-                color: root.currentTheme.accent
+                text: "Calendar & Day Notes"
+                color: "cyan"
                 bold: true
             }
 
@@ -282,7 +222,7 @@ Terminal {
                 status: "info"
                 text: String(root.currentYear)
                 variant: "filled"
-                badgeColor: root.currentTheme.accent
+                badgeColor: "cyan"
             }
         }
 
@@ -297,13 +237,6 @@ Terminal {
             Text {
                 text: root.totalNotesCount + " notes in " + root.currentYear
                 color: "yellow"
-            }
-
-            StatusBadge {
-                status: "success"
-                text: root.currentTheme.name
-                variant: "subtle"
-                badgeColor: root.currentTheme.accent
             }
         }
     }
@@ -322,11 +255,11 @@ Terminal {
             Layout.fillHeight: true
             border {
                 style: Border.Single
-                color: root.currentTheme.panelBorder
+                color: "gray"
             }
             title: Text {
                 text: "Calendar (" + root.currentYear + ")"
-                color: root.currentTheme.accent
+                color: "cyan"
             }
 
             Calendar {
@@ -335,13 +268,6 @@ Terminal {
                 height: 13
                 selectedDate: root.selectedDate
                 todayDate: root.todayDate
-                titleColor: root.currentTheme.title
-                dayHeaderColor: root.currentTheme.header
-                todayColor: root.currentTheme.today
-                selectedBackgroundColor: root.currentTheme.selectedBg
-                selectedTextColor: root.currentTheme.selectedText
-                focusBorderColor: root.currentTheme.border
-                normalBorderColor: root.currentTheme.panelBorder
                 onDateSelected: d => root.selectDate(d)
             }
         }
@@ -356,11 +282,11 @@ Terminal {
                 Layout.preferredHeight: 4
                 border {
                     style: Border.Single
-                    color: root.currentTheme.panelBorder
+                    color: "gray"
                 }
                 title: Text {
                     text: "Jump & Navigate"
-                    color: root.currentTheme.accent
+                    color: "cyan"
                 }
 
                 Column {
@@ -432,11 +358,11 @@ Terminal {
                 Layout.preferredHeight: 4
                 border {
                     style: Border.Single
-                    color: root.currentTheme.panelBorder
+                    color: "gray"
                 }
                 title: Text {
                     text: "Selected Date"
-                    color: root.currentTheme.accent
+                    color: "cyan"
                 }
 
                 Column {
@@ -450,8 +376,8 @@ Terminal {
                         spacing: 1
 
                         Text {
-                            text: "🗓 " + root.formatShortDate(root.selectedDate)
-                            color: root.currentTheme.accent
+                            text: root.formatShortDate(root.selectedDate)
+                            color: "cyan"
                             bold: true
                         }
 
@@ -474,11 +400,11 @@ Terminal {
                 Layout.fillHeight: true
                 border {
                     style: Border.Single
-                    color: root.currentTheme.panelBorder
+                    color: "gray"
                 }
                 title: Text {
                     text: "Day Notes & Reminders"
-                    color: root.currentTheme.accent
+                    color: "cyan"
                 }
 
                 Column {
@@ -493,7 +419,7 @@ Terminal {
 
                         Text {
                             text: "+"
-                            color: root.currentTheme.accent
+                            color: "cyan"
                             bold: true
                         }
 
@@ -558,8 +484,8 @@ Terminal {
         }
         height: 3
         border {
-            style: Border.Double
-            color: root.currentTheme.border
+            style: Border.Single
+            color: "gray"
         }
 
         Row {
@@ -578,7 +504,7 @@ Terminal {
 
             Text {
                 text: root.statusMessage
-                color: root.currentTheme.accent
+                color: "cyan"
                 bold: true
             }
         }

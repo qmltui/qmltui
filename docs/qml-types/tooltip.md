@@ -103,10 +103,8 @@ Terminal {
  Compile the current project
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![ToolTip recorded demo](../assets/casts/components/tool_tip.gif)
 
-- **Live Playground**: [▶ Open `ToolTip.qml` in the WebAssembly Playground](../playground.md?example=ToolTip.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example ToolTip`
-- **Gallery Source**: [`examples/gallery/examples/ToolTip.qml`](../../examples/gallery/examples/ToolTip.qml)
+See [`examples/gallery/examples/ToolTip.qml`](../../examples/gallery/examples/ToolTip.qml) (`./build/examples/gallery/qmltui_gallery --example ToolTip`, or open in the [WebAssembly Playground](../playground.md?example=ToolTip.qml)).

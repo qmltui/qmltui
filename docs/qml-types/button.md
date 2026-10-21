@@ -112,10 +112,8 @@ Terminal {
 Idle
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![Button recorded demo](../assets/casts/components/button.gif)
 
-- **Live Playground**: [▶ Open `Button.qml` in the WebAssembly Playground](../playground.md?example=Button.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Button`
-- **Gallery Source**: [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml)
+See [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml) (`./build/examples/gallery/qmltui_gallery --example Button`, or open in the [WebAssembly Playground](../playground.md?example=Button.qml)).

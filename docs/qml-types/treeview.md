@@ -142,10 +142,8 @@ Terminal {
 └─────────────────────────────────┘
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![TreeView recorded demo](../assets/casts/components/tree_view.gif)
 
-- **Live Playground**: [▶ Open `TreeView.qml` in the WebAssembly Playground](../playground.md?example=TreeView.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TreeView`
-- **Gallery Source**: [`examples/gallery/examples/TreeView.qml`](../../examples/gallery/examples/TreeView.qml)
+See [`examples/gallery/examples/TreeView.qml`](../../examples/gallery/examples/TreeView.qml) (`./build/examples/gallery/qmltui_gallery --example TreeView`, or open in the [WebAssembly Playground](../playground.md?example=TreeView.qml)).

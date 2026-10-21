@@ -1,6 +1,6 @@
 ---
 # QmlTui C++ Clang-Format Configuration
-# Retained-mode terminal UI framework (Qt 6.8+, C++20)
+# Retained-mode terminal UI framework (Qt 6.8+, C++17)
 Language: Cpp
 BasedOnStyle: LLVM
 Standard: c++20

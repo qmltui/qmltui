@@ -317,10 +317,8 @@ The sorting demo now uses typed source values, an external C++ proxy, a filter
 input, and activation mapped back to the source PID. Header clicks on an
 unconnected table have no sorting side effects.
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![TableView recorded demo](../assets/casts/components/table_view.gif)
 
-- **Live Playground**: [▶ Open `TableView.qml` in the WebAssembly Playground](../playground.md?example=TableView.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TableView`
-- **Gallery Source**: [`examples/gallery/examples/TableView.qml`](../../examples/gallery/examples/TableView.qml)
+See [`examples/gallery/examples/TableView.qml`](../../examples/gallery/examples/TableView.qml) (`./build/examples/gallery/qmltui_gallery --example TableView`, or open in the [WebAssembly Playground](../playground.md?example=TableView.qml)).

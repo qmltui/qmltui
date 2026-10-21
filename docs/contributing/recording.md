@@ -25,7 +25,7 @@ Use the Behavior-enabled, Image-enabled tree; those modules change which tiles a
 Every gallery component tile has a scenario in `examples/gallery/scenarios/*.js` with pacing and
 representative interactions, registered against `qmltui_gallery` with `CLOCK VIRTUAL RECORD components/<name>.cast`.
 
-Regenerate all 39 gallery component casts:
+Regenerate all 38 gallery component casts:
 
 ```sh
 cmake --build build-qmltui -j$(nproc)
@@ -56,5 +56,4 @@ svg-term --in docs/assets/casts/gallery-tour.cast \
 ```
 
 Inspect the GIFs for Unicode glyphs, colors, and animation pacing.
-The gallery cast ends before its inline-mode demo; the regular gallery scenario
-still tests inline behavior. Additional application casts are maintained in qmltui-apps.
+Additional application casts are maintained in qmltui-apps.

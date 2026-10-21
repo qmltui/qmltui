@@ -5,22 +5,22 @@
   </picture>
 </p>
 
-**QmlTui** pairs a **retained-mode declarative QML frontend** with a **high-performance Qt 6.8+ backend** for modern terminal emulators. Declare your cell layout, borders, focus chains, and states once in QML while driving high-frequency telemetry, worker threads, and 1M-row `QAbstractItemModel` datasets from native C++—with O(viewport) virtualization, double-buffered cell diffing, and zero `QtQuick` or display-server dependencies.
-
-### Why Retained Declarative QML + Qt 6?
-
-- **Retained Scene Graph & Surgical Bindings**: Unlike immediate-mode TUI libraries that rebuild and re-layout the entire widget tree on every keystroke or tick, QmlTui keeps a persistent C++ cell tree in memory. Fine-grained Qt property bindings re-evaluate only the dependent expressions and mark only affected subtrees dirty.
-- **High-Performance C++ & `QAbstractItemModel` Backend**: Expose compiled C++ `QObject` services (`QML_ELEMENT`, `Q_PROPERTY`) and streaming `QAbstractItemModel`s directly to QML with zero serialization glue. Virtualized `TableView`, `TreeView`, `ListView`, and `GridView` items instantiate delegates only for visible terminal rows (`O(viewport)`), keeping frame times sub-millisecond over 1,000,000 rows.
-- **Complete Core Engine in a Single Import**: `import QmlTui` (`QmlTui.Core`) provides `Terminal`, `Rectangle`, layouts (`RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`), `Text`, `TextInput`, virtualized views, `Canvas`, and animations standalone; add `QmlTui.Controls`, `QmlTui.Image`, or `QmlTui.PtyView` only when needed.
-- **Dual Rendering Modes (`AltScreen` & `Inline`)**: Run full-screen alternate-screen applications (`Terminal.AltScreen`) or inline CLI workflows (`Terminal.Inline`) that push completed prompts and cards into native terminal history via `Scrollback`.
-- **Double-Buffered Cell Diffing & Modern Terminal Protocols**: QmlTui composites dirty subtrees into a contiguous `TextGridBuffer`, diffs cell-by-cell against the previous frame, and emits minimal ANSI/SGR sequences inside a DEC `?2026` synchronized frame—with automatic support for Kitty keyboard, Kitty & Sixel graphics, SGR mouse, and OSC 8/9;4.
-- **Deterministic Headless Testing**: Drive applications headlessly with a virtual clock, assert committed cell and style snapshots in CTest, or record deterministic Asciinema v2 `.cast` demos without a live TTY (see [Runner](docs/cpp-classes/runner.md)).
+**QmlTui** is a retained-mode terminal UI framework for C++17 and Qt 6.8+. Applications declare layouts, borders, focus chains, and states in QML and bind them to C++ `QObject`s and `QAbstractItemModel`s. `QmlTui` renders the scene into a double-buffered character-cell grid (`TextGridBuffer`), diffs against the previous frame, and writes only the changed cells and SGR attributes to the terminal—without depending on `QtQuick` or a display server.
 
 ![Gallery tour](docs/assets/casts/gallery-tour.gif)
 
+## Overview
+
+- **Retained cell scene graph**: Items (`Rectangle`, `Row`, `Column`, `GridLayout`, `Text`, `ListView`, `TableView`, `TreeView`) live in a persistent C++ item tree. Property bindings mark only the affected subtrees dirty.
+- **Qt models and C++ integration**: Expose C++ types with `QML_ELEMENT` and drive virtualized views (`ListView`, `TableView`, `TreeView`, `GridView`) from `QAbstractItemModel` or `QSortFilterProxyModel`. Only visible rows are instantiated.
+- **Modular QML imports**: `import QmlTui` (`qmltui::core`) provides the terminal window, layout engine, text inputs, data views, `Canvas`, and animations using only `Qt6::Core` and `Qt6::Qml`. Companion modules add controls (`QmlTui.Controls`), terminal images (`QmlTui.Image`), and embedded Unix PTYs (`QmlTui.PtyView`).
+- **Alternate-screen and inline modes**: Run full-screen applications (`Terminal.AltScreen`) or inline CLI sessions (`Terminal.Inline`) that append completed output to native terminal history through `Scrollback`.
+- **Terminal protocol support**: Automatic detection for DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, bracketed paste, Kitty and Sixel graphics (with Unicode half-block fallback), and OSC 8 hyperlinks.
+- **Headless testing and recording**: Drive applications deterministically with `qmltui::Runner`, assert committed text and style snapshots in CTest, or record Asciinema v2 `.cast` files without a live TTY.
+
 ## Hello, World!
 
-With just `import QtQml` and `import QmlTui`, declare a centered bordered card and keyboard quit handler—QmlTui handles cell layout, Unicode box drawing, and minimal ANSI diffs automatically:
+A minimal application using `import QtQml` and `import QmlTui`:
 
 ```qml
 import QtQml
@@ -67,9 +67,9 @@ Rendered in the terminal:
 
 ## Quickstart
 
-### 1. Run the Interactive Component Gallery
+### Build and Run the Gallery
 
-Requires CMake 3.21+ and Qt 6.8+ (`Core` and `Qml`; plus `Gui` and `Network` for the default `QmlTui.Image` module):
+Requires CMake 3.21+ and Qt 6.8+ (`Core` and `Qml`, plus `Gui` and `Network` when `QMLTUI_ENABLE_IMAGE=ON`):
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON
@@ -77,23 +77,21 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
-Or launch the [Interactive Playground](docs/playground.md) in your browser (see also the [WebAssembly build guide](docs/guides/webassembly.md)).
+You can also open the [WebAssembly Playground](docs/playground.md) in a browser (see the [WebAssembly build guide](docs/guides/webassembly.md)).
 
-### 2. Build a Standalone 3-File App
+### Standalone Application
 
-Follow [Getting started](docs/getting-started.md) (or copy [`examples/quickstart/`](examples/quickstart/)) to bootstrap a standalone `CMakeLists.txt` + `main.cpp` + `Main.qml` project using CMake `FetchContent` or `find_package(QmlTui)`.
+See [Getting Started](docs/getting-started.md) or copy [`examples/quickstart/`](examples/quickstart/) for a 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) project using CMake `FetchContent` or `find_package(QmlTui)`.
 
 ## Documentation
 
-- **[Getting started](docs/getting-started.md)**: Requirements, 3-file standalone quickstart, `find_package(QmlTui)`, CMake options, and runtime environment variables.
-- **[Interactive playground](docs/playground.md)**: Inspect, edit, and run all 39 gallery components directly in your browser with QmlTui autocomplete.
-- **[Guides](docs/guides/index.md)**: Architecture, layouts, input/focus, virtualized models, styling, animations/states, inline/scrollback mode, embedded PTY (`PtyView`), custom C++ items, testing with `Runner`, and Qt Quick migration.
-- **[Component & recipe catalog](docs/examples.md)**: Controls vs. copyable QML recipes, runnable component demos, and guide examples (see also [`examples/README.md`](examples/README.md) and full showcases in [qml-tui/apps](https://github.com/qml-tui/apps)).
-- **[QML types reference](docs/qml-types/index.md)**: Complete API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
-- **[C++ classes reference](docs/cpp-classes/index.md)**: Engine, custom `Item` subclassing, rendering primitives, and `Runner` APIs.
-- **[Changelog & release notes](docs/changes/changelog.md)**: Version history and migration notes.
-
-See the [documentation home page](docs/README.md) for the full reading order by background.
+- **[Getting started](docs/getting-started.md)**: Requirements, standalone setup (`FetchContent` and `find_package(QmlTui)`), CMake options, and environment variables.
+- **[Interactive playground](docs/playground.md)**: Inspect, edit, and run the gallery components in the browser.
+- **[Guides](docs/guides/index.md)**: Architecture, layouts, input and focus, models and views, styling, animations and states, inline mode, `PtyView`, custom C++ items, testing with `Runner`, and Qt Quick differences.
+- **[Examples and recipes](docs/examples.md)**: Gallery demos and copyable QML/C++ recipes (see [`examples/README.md`](examples/README.md) and standalone applications in [qmltui-dev/qmltui-apps](https://github.com/qmltui-dev/qmltui-apps)).
+- **[QML types reference](docs/qml-types/index.md)**: API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
+- **[C++ classes reference](docs/cpp-classes/index.md)**: Public C++ APIs for `Item`, `Terminal`, `TextGridBuffer`, `Cell`, `Color`, `PtyView`, and `Runner`.
+- **[Changelog](docs/changes/changelog.md)**: Release history and migration notes.
 
 ## License
 

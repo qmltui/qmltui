@@ -1,6 +1,6 @@
 
  ┌────────────────────────────────────────────────────────────────────────────┐
- │                  ⚡ INDEPENDENT STATES & TRANSITIONS DEMO                  │
+ │                   INDEPENDENT STATES & TRANSITIONS DEMO                    │
  └────────────────────────────────────────────────────────────────────────────┘
 
  ┌────────────────────────────────────────────────────────────────────────────┐
@@ -29,9 +29,9 @@ y=1 x=1-78 fg=#3B4252FF bg=#1A1A24FF
 y=1 x=79-79 fg=default bg=#000000FF
 y=2 x=0-0 fg=default bg=#000000FF
 y=2 x=1-1 fg=#3B4252FF bg=#1A1A24FF
-y=2 x=2-19 fg=default bg=#1A1A24FF
-y=2 x=20-59 fg=#00FFFFFF bg=#1A1A24FF bold
-y=2 x=60-77 fg=default bg=#1A1A24FF
+y=2 x=2-20 fg=default bg=#1A1A24FF
+y=2 x=21-57 fg=#00FFFFFF bg=#1A1A24FF bold
+y=2 x=58-77 fg=default bg=#1A1A24FF
 y=2 x=78-78 fg=#3B4252FF bg=#1A1A24FF
 y=2 x=79-79 fg=default bg=#000000FF
 y=3 x=0-0 fg=default bg=#000000FF

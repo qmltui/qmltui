@@ -117,10 +117,8 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![States recorded demo](../assets/casts/components/states.gif)
 
-- **Live Playground**: [▶ Open `States.qml` in the WebAssembly Playground](../playground.md?example=States.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example States`
-- **Gallery Source**: [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml)
+See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`, or open in the [WebAssembly Playground](../playground.md?example=States.qml)).

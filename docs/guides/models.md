@@ -65,8 +65,6 @@ Terminal {
 }
 ```
 
----
-
 ## Support matrix
 
 Everything below is exercised by `tests/Core/test_model_contracts.cpp` (the

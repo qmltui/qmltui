@@ -72,7 +72,7 @@ Terminal {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "⚡ INDEPENDENT STATES & TRANSITIONS DEMO"
+                    text: "INDEPENDENT STATES & TRANSITIONS DEMO"
                     color: "cyan"
                     bold: true
                 }

@@ -70,10 +70,8 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![Repeater recorded demo](../assets/casts/components/repeater.gif)
 
-- **Live Playground**: [▶ Open `Repeater.qml` in the WebAssembly Playground](../playground.md?example=Repeater.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Repeater`
-- **Gallery Source**: [`examples/gallery/examples/Repeater.qml`](../../examples/gallery/examples/Repeater.qml)
+See [`examples/gallery/examples/Repeater.qml`](../../examples/gallery/examples/Repeater.qml) (`./build/examples/gallery/qmltui_gallery --example Repeater`, or open in the [WebAssembly Playground](../playground.md?example=Repeater.qml)).

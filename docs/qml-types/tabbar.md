@@ -95,10 +95,8 @@ Terminal {
 Everything is running.
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![TabBar recorded demo](../assets/casts/components/tab_bar.gif)
 
-- **Live Playground**: [▶ Open `TabBar.qml` in the WebAssembly Playground](../playground.md?example=TabBar.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TabBar`
-- **Gallery Source**: [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml)
+See [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml) (`./build/examples/gallery/qmltui_gallery --example TabBar`, or open in the [WebAssembly Playground](../playground.md?example=TabBar.qml)).

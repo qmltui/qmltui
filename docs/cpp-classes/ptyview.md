@@ -1,103 +1,76 @@
 # PtyView
 
-## Class Overview
+`qmltui::PtyView` is an embedded terminal emulator item that spawns a child process inside a Unix pseudo-terminal (PTY) and decodes its VT output stream into the QmlTui cell grid using `libvterm`. It supports scrollback history, 16-color palette overrides, keyboard and SGR mouse forwarding while focused, and opt-in OSC title, clipboard, and notification signals.
 
-`qmltui::PtyView` is an embedded terminal emulator item that spawns a child process inside a Unix pseudo-terminal (PTY) via `UnixPtySession` and decodes its VT stream into the QmlTui cell grid using `libvterm`. It supports scrollback history, 16-color palette customization, keyboard and SGR mouse forwarding while focused, and opt-in OSC title, clipboard, and notification signals.
-
-## Project Structure and Dependencies
-
-- **Header**: `src/QmlTui/PtyView/PtyView.h` (installed as `<QmlTui/PtyView/PtyView.h>`)
-- **Implementation**: `src/QmlTui/PtyView/PtyView.cpp`
-- **CMake Target**: `qmltui::pty_view` (`QmlTui::PtyView`)
-- **Feature Gate**: Built and installed only on Linux and macOS when `QMLTUI_ENABLE_PTY_VIEW=ON`.
+- **Header**: `<QmlTui/PtyView/PtyView.h>`
+- **Inherits**: `qmltui::Item`, `QQmlParserStatus`
+- **Target**: `qmltui::pty_view` (`QMLTUI_ENABLE_PTY_VIEW=ON`, Linux and macOS)
 - **QML Import**: `import QmlTui.PtyView`
 
-## Class Hierarchy and Role
-
-- **Base Classes**: `qmltui::Item`, `QQmlParserStatus`
-- **Role**: Visual item hosting an interactive child PTY session inside a QmlTui layout.
-
-## Enumerations
-
-### ProcessState
+## `ProcessState`
 
 | Value | Description |
 | :--- | :--- |
 | `PtyView::NotRunning` | No child process is running. |
-| `PtyView::Starting` | The PTY session and child process are being initialized. |
+| `PtyView::Starting` | The PTY session and child process are initializing. |
 | `PtyView::Running` | The child process is active inside the PTY. |
-| `PtyView::Stopping` | Termination has been requested (`terminate()` or `kill()`) and the process is shutting down. |
+| `PtyView::Stopping` | Termination has been requested (`terminate()` or `kill()`). |
 
-## Q_PROPERTY Declarations
+## Properties (`Q_PROPERTY`)
 
-| Property | Type | READ | WRITE | NOTIFY | Description |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `program` | `QString` | `program` | `setProgram` | `programChanged` | Executable path or command name to launch (falls back to `defaultUserShell()` when empty). |
-| `arguments` | `QStringList` | `arguments` | `setArguments` | `argumentsChanged` | Arguments passed directly to `program` without shell expansion. |
-| `workingDirectory` | `QString` | `workingDirectory` | `setWorkingDirectory` | `workingDirectoryChanged` | Initial working directory for the child process. |
-| `environment` | `QVariantMap` | `environment` | `setEnvironment` | `environmentChanged` | Extra environment variables merged into the child environment. |
-| `inheritEnvironment` | `bool` | `inheritEnvironment` | `setInheritEnvironment` | `inheritEnvironmentChanged` | Whether the child inherits the parent process environment (`true` by default). |
-| `terminalType` | `QString` | `terminalType` | `setTerminalType` | `terminalTypeChanged` | Value assigned to the child's `TERM` variable (`"xterm-256color"` by default). |
-| `autoStart` | `bool` | `autoStart` | `setAutoStart` | `autoStartChanged` | Starts the child automatically when `componentComplete()` runs (`false` by default). |
-| `processState` | `ProcessState` | `processState` | — | `processStateChanged` | Current lifecycle state (`NotRunning`, `Starting`, `Running`, `Stopping`). |
-| `running` | `bool` | `running` | — | `runningChanged` | True while `processState == Running`. |
-| `processId` | `qint64` | `processId` | — | `processIdChanged` | OS process ID (PID) of the child process, or `-1` when not running. |
-| `exitCode` | `int` | `exitCode` | — | `exitCodeChanged` | Exit status code of the last terminated child process (`-1` before exit). |
-| `errorString` | `QString` | `errorString` | — | `errorStringChanged` | Diagnostic message from the last PTY or spawn error. |
-| `title` | `QString` | `title` | — | `titleChanged` | Window title set by the child process via OSC 0/2 when `allowTitleChanges` is true. |
-| `foregroundColor` | `qmltui::Color` | `foregroundColor` | `setForegroundColor` | `foregroundColorChanged` | Default foreground color (`"white"` by default). |
-| `backgroundColor` | `qmltui::Color` | `backgroundColor` | `setBackgroundColor` | `backgroundColorChanged` | Default background color (`"black"` by default). |
-| `palette` | `QList<qmltui::Color>` | `palette` | `setPalette` | `paletteChanged` | Optional 16-entry ANSI color palette override. |
-| `scrollbackLimit` | `int` | `scrollbackLimit` | `setScrollbackLimit` | `scrollbackLimitChanged` | Maximum retained scrollback lines (`10000` by default). |
-| `scrollOffset` | `int` | `scrollOffset` | `setScrollOffset` | `scrollOffsetChanged` | Rows scrolled back into history (`0` shows the live screen). |
-| `scrollbackSize` | `int` | `scrollbackSize` | — | `scrollbackSizeChanged` | Current number of lines stored in the scrollback buffer. |
-| `showScrollbar` | `bool` | `showScrollbar` | `setShowScrollbar` | `showScrollbarChanged` | Whether to draw a scrollbar thumb when scrollback history is present (`true` by default). |
-| `allowTitleChanges` | `bool` | `allowTitleChanges` | `setAllowTitleChanges` | `allowTitleChangesChanged` | Allows child OSC title sequences to update `title` (`true` by default). |
-| `allowClipboardWrite` | `bool` | `allowClipboardWrite` | `setAllowClipboardWrite` | `allowClipboardWriteChanged` | Allows child OSC 52 sequences to emit `clipboardWriteRequested()` (`false` by default). |
-| `allowNotifications` | `bool` | `allowNotifications` | `setAllowNotifications` | `allowNotificationsChanged` | Allows child OSC 9/777 sequences to emit `notificationRequested()` (`false` by default). |
+| Property | Type | Access | Notify Signal | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `program` | `QString` | read/write | `programChanged` | Executable path or name (falls back to `defaultUserShell()` when empty). |
+| `arguments` | `QStringList` | read/write | `argumentsChanged` | Arguments passed directly to `execvp` without shell expansion. |
+| `workingDirectory` | `QString` | read/write | `workingDirectoryChanged` | Initial working directory for the child process. |
+| `environment` | `QVariantMap` | read/write | `environmentChanged` | Extra environment variables merged into the child environment. |
+| `inheritEnvironment` | `bool` | read/write | `inheritEnvironmentChanged` | Whether the child inherits the parent environment (`true` by default). |
+| `terminalType` | `QString` | read/write | `terminalTypeChanged` | Value assigned to `TERM` (`"xterm-256color"` by default). |
+| `autoStart` | `bool` | read/write | `autoStartChanged` | Starts the process automatically on `componentComplete()` (`false` by default). |
+| `processState` | `ProcessState` | read-only | `processStateChanged` | Current lifecycle state. |
+| `running` | `bool` | read-only | `runningChanged` | `true` while `processState == Running`. |
+| `processId` | `qint64` | read-only | `processIdChanged` | OS process ID (PID) of the child, or `-1` when not running. |
+| `exitCode` | `int` | read-only | `exitCodeChanged` | Exit status of the last terminated child process (`-1` before exit). |
+| `errorString` | `QString` | read-only | `errorStringChanged` | Diagnostic message from the last PTY or spawn error. |
+| `title` | `QString` | read-only | `titleChanged` | Window title set via OSC 0/2 when `allowTitleChanges` is `true`. |
+| `foregroundColor` | `qmltui::Color` | read/write | `foregroundColorChanged` | Default foreground color (`"white"` by default). |
+| `backgroundColor` | `qmltui::Color` | read/write | `backgroundColorChanged` | Default background color (`"black"` by default). |
+| `palette` | `QList<qmltui::Color>` | read/write | `paletteChanged` | Optional 16-entry ANSI color palette override. |
+| `scrollbackLimit` | `int` | read/write | `scrollbackLimitChanged` | Maximum retained scrollback lines (`10000` by default). |
+| `scrollOffset` | `int` | read/write | `scrollOffsetChanged` | Rows scrolled back into history (`0` shows the live screen). |
+| `scrollbackSize` | `int` | read-only | `scrollbackSizeChanged` | Number of lines currently stored in scrollback. |
+| `showScrollbar` | `bool` | read/write | `showScrollbarChanged` | Draws a scrollbar thumb when scrollback history is present (`true` by default). |
+| `allowTitleChanges` | `bool` | read/write | `allowTitleChangesChanged` | Allows child OSC 0/2 sequences to update `title` (`true` by default). |
+| `allowClipboardWrite` | `bool` | read/write | `allowClipboardWriteChanged` | Allows child OSC 52 sequences to emit `clipboardWriteRequested()` (`false` by default). |
+| `allowNotifications` | `bool` | read/write | `allowNotificationsChanged` | Allows child OSC 9/777 sequences to emit `notificationRequested()` (`false` by default). |
 
-## Public and Q_INVOKABLE Methods
+## Public and `Q_INVOKABLE` Methods
 
-#### static QString defaultUserShell() [Q_INVOKABLE]
-Resolves the current user's login shell from `$SHELL`, `getpwuid()`, or `/bin/sh`.
-
-#### void start() [Q_INVOKABLE]
-Spawns `program()` (or `defaultUserShell()` when `program()` is empty) in a fresh PTY sized to the item's cell geometry.
-
-#### void terminate() [Q_INVOKABLE]
-Sends `SIGTERM` to the child process group to request graceful shutdown.
-
-#### void kill() [Q_INVOKABLE]
-Sends `SIGKILL` to the child process group for immediate termination.
-
-#### void sendText(const QString& text) [Q_INVOKABLE]
-Writes UTF-8 `text` directly to the PTY master descriptor.
-
-#### void clearScrollback() [Q_INVOKABLE]
-Clears all retained scrollback lines and resets `scrollOffset` to `0`.
-
-#### void scrollToBottom() [Q_INVOKABLE]
-Resets `scrollOffset` to `0` so the live bottom viewport is shown.
+- `static QString defaultUserShell()` — resolves the current user's login shell from `$SHELL`, `getpwuid()`, or `/bin/sh`.
+- `void start()` — spawns `program()` (or `defaultUserShell()`) in a PTY sized to the item's cell geometry.
+- `void terminate()` — sends `SIGTERM` to the child process group.
+- `void kill()` — sends `SIGKILL` to the child process group.
+- `void sendText(const QString &text)` — writes UTF-8 `text` to the PTY master descriptor.
+- `void clearScrollback()` — clears retained scrollback lines and resets `scrollOffset` to `0`.
+- `void scrollToBottom()` — resets `scrollOffset` to `0`.
 
 ## Signals
 
 | Signal | Description |
 | :--- | :--- |
-| `started()` | Emitted when the child process has launched inside the PTY. |
-| `finished(int exitCode)` | Emitted when the child process exits, providing its exit code. |
-| `errorOccurred(const QString& error)` | Emitted when PTY creation or process launch fails. |
-| `bell()` | Emitted when the child process writes `BEL` (`\a`). |
-| `clipboardWriteRequested(const QString& text)` | Emitted when `allowClipboardWrite` is true and the child sends an OSC 52 write sequence. |
-| `notificationRequested(const QString& title, const QString& message)` | Emitted when `allowNotifications` is true and the child sends an OSC 9 or OSC 777 notification. |
+| `started()` | Emitted when the child process has launched. |
+| `finished(int exitCode)` | Emitted when the child process exits. |
+| `errorOccurred(const QString &error)` | Emitted when PTY creation or process launch fails. |
+| `bell()` | Emitted when the child writes `BEL` (`\a`). |
+| `clipboardWriteRequested(const QString &text)` | Emitted when `allowClipboardWrite` is `true` and the child sends an OSC 52 write sequence. |
+| `notificationRequested(const QString &title, const QString &message)` | Emitted when `allowNotifications` is `true` and the child sends an OSC 9 or OSC 777 notification. |
 
-## Usage Example
-
-Link against `qmltui::pty_view` when `QMLTUI_ENABLE_PTY_VIEW` is enabled:
+## Example
 
 ```cpp
 #include <QmlTui/PtyView/PtyView.h>
 
-auto* view = new qmltui::PtyView(parentItem);
+auto *view = new qmltui::PtyView(parentItem);
 view->setWidth(80);
 view->setHeight(24);
 view->setProgram(qmltui::PtyView::defaultUserShell());
@@ -106,4 +79,4 @@ view->setFocus(true);
 view->start();
 ```
 
-See the [QML type reference](../qml-types/ptyview.md) for QML usage.
+See [Embedded PTY Shells](../guides/pty-view.md) and the [PtyView QML type reference](../qml-types/ptyview.md).

@@ -1,54 +1,31 @@
 # QmlTui for Qt Quick Developers
 
-If you already know Qt Quick and QML, you will feel immediately at home in QmlTui.
-However, because QmlTui renders retained-mode terminal character grids rather than
-GPU/software pixels, a few fundamental assumptions change.
+QmlTui uses Qt's QML language (`QtQml`), property bindings, and `QAbstractItemModel` views, but renders to a character-cell grid rather than a pixel scene graph. This guide summarizes the practical differences when moving from `QtQuick` to `QmlTui`.
 
-This guide bridges the gap between Qt Quick and QmlTui.
+## Imports: Do Not Import `QtQuick`
 
----
-
-## 1. Imports: No `QtQuick`
-
-QmlTui is built on `QtQml`, **not** `QtQuick`. Never import `QtQuick` or
-`QtQuick.Controls` in a QmlTui application:
+QmlTui is built on `QtQml` and registers its own `Item`, `Rectangle`, `Text`, `MouseArea`, `Loader`, layouts, and controls. Do not import `QtQuick` or `QtQuick.Controls`: importing `QtQuick` pulls in a GUI runtime dependency and collides with QmlTui's visual types.
 
 ```qml
-// ❌ WRONG (Qt Quick)
-// import QtQuick
-// import QtQuick.Controls
-
-// ✅ CORRECT (QmlTui)
-// import QtQml
-// import QmlTui
-// import QmlTui.Controls
+import QtQml
+import QmlTui
+import QmlTui.Controls
 ```
 
-QmlTui provides its own `Item`, `Rectangle`, `Text`, `MouseArea`, `Loader`, and
-Controls suite tailored specifically for terminal character geometry.
+Note that `import QmlTui` does not re-export `QtQml`; add `import QtQml` when using `Timer`, `Component`, `QtObject`, `Connections`, or `Binding`, and `import QtQml.Models` when using `ListModel` or `DelegateModel`.
 
----
+## Integer Cell Geometry
 
-## 2. Integer Cell Geometry vs Pixels
+In `QtQuick`, coordinates and sizes are floating-point pixel values (`qreal`). In QmlTui:
 
-In Qt Quick, coordinates and dimensions are real numbers (`qreal`) representing
-screen device pixels. In QmlTui:
-
-- **1 unit = 1 character cell**. `width: 40` means 40 character columns;
-  `height: 10` means 10 rows.
-- **No floating-point geometry**. Fractional coordinates (`x: 10.5`) do not exist.
-  All layout math resolves to integer columns and rows.
-- **Non-square aspect ratio**. Terminal character cells are typically twice as
-  tall as they are wide (e.g., an 80×24 terminal window). Sizing and diagonal lines
-  must account for cell proportions.
+- Every coordinate (`x`, `y`) and dimension (`width`, `height`, `spacing`, `margins`, `padding`) is an integer number of terminal character cells (columns and rows).
+- Terminal cells are roughly twice as tall as they are wide (for example, an 80×24 viewport), so horizontal and vertical cell counts are not visually square.
 
 ```qml
 Terminal {
-    width: 80     // 80 columns wide
-    height: 24    // 24 rows tall
-
     Rectangle {
-        x: 2; y: 1
+        x: 2
+        y: 1
         width: 30
         height: 5
         border.style: Border.Rounded
@@ -56,63 +33,47 @@ Terminal {
 }
 ```
 
----
+## Box-Drawing Borders
 
-## 3. Borders and Styling
-
-In Qt Quick, a rectangle's border is specified by pixel width and color. In
-terminal cells, a border is drawn using Unicode box-drawing characters:
+Instead of pixel-width strokes, `Rectangle.border` draws Unicode or ASCII box-drawing characters around the outer 1-cell perimeter of the rectangle:
 
 ```qml
 Rectangle {
-    color: "#0d1117"
-    border.style: Border.Single   // or Border.Double, Border.Rounded, Border.Heavy, Border.Ascii, Border.None
-    border.color: "cyan"
+    border {
+        style: Border.Single
+        color: "cyan"
+    }
 }
 ```
 
-| Border Style | Visual Output in Terminal |
+| Style | Glyphs |
 | :--- | :--- |
-| `"single"` (`Border.Single`) | `┌───┐` / `│   │` / `└───┘` |
-| `"double"` (`Border.Double`) | `╔═══╗` / `║   ║` / `╚═══╝` |
-| `"rounded"` (`Border.Rounded`) | `╭───╮` / `│   │` / `╰───╯` |
-| `"heavy"` (`Border.Heavy`) | `┏━━━┓` / `┃   ┃` / `┗━━━┛` |
-| `"ascii"` (`Border.Ascii`) | `+---+` / `|   |` / `+---+` |
-| `"none"` (`Border.None`) | No border characters drawn |
+| `Border.Single` (`"single"`) | `┌───┐` / `│   │` / `└───┘` |
+| `Border.Double` (`"double"`) | `╔═══╗` / `║   ║` / `╚═══╝` |
+| `Border.Rounded` (`"rounded"`) | `╭───╮` / `│   │` / `╰───╯` |
+| `Border.Heavy` (`"heavy"`) | `┏━━━┓` / `┃   ┃` / `┗━━━┛` |
+| `Border.Ascii` (`"ascii"`) | `+---+` / `|   |` / `+---+` |
+| `Border.None` (`"none"`) | No border drawn |
 
-Borders consume exactly 1 cell on each outer edge. A 10×5 rectangle with a border
-has an interior content area of 8 columns by 3 rows.
+A border occupies 1 cell on each edge: a 10×5 bordered `Rectangle` has an 8×3 interior. `TableView` draws connected table grid intersections through `showOuterBorder`, `showColumnGrid`, `showRowGrid`, and `gridStyle` rather than `Rectangle.border`.
 
----
+## Colors and Styling
 
-## 4. Colors: Terminal Defaults vs Themes
+QmlTui does not use `QColor` or a global theme singleton (such as `Material` or `Palette`):
 
-Qt Quick Controls often relies on palette singletons (like `Material` or `Universal`).
-QmlTui intentionally **does not provide a global theme singleton**:
+- Colors use `qmltui::Color` (`rgba` in QML). Items and controls default to `"default"` (the host terminal's foreground and background).
+- Named ANSI colors (`"cyan"`, `"red"`, `"yellow"`, `"gray"`, etc.) emit palette SGR indices so the user's terminal theme controls their appearance.
+- Hex strings (`"#2cde85"`) and `QmlTui.rgba(r, g, b, a)` specify 24-bit RGB colors, which QmlTui quantizes automatically when running on 256-color or 16-color terminals.
+- Shared styling is expressed with QML property bindings and reusable QML components; see [Styling and Colors](styling-and-colors.md).
 
-- By default, all controls and items inherit `"default"`, which is the user's
-  host terminal background and foreground color.
-- You can specify named ANSI colors (`"black"`, `"red"`, `"green"`, `"yellow"`,
-  `"blue"`, `"magenta"`, `"cyan"`, `"white"`), ANSI 256 indices, or TrueColor
-  24-bit hex strings (`"#2CDE85"`).
-- QmlTui automatically degrades TrueColor hex values to 256-color or 16-color
-  palettes if the host terminal lacks 24-bit direct color support.
-- Custom styling is declared directly via component properties or reusable QML
-  wrappers.
+## Keyboard Quit Path
 
----
-
-## 5. Keyboard Navigation and the Quit Path
-
-In a GUI desktop application, the window manager provides a close button (`[X]`).
-In a terminal application, the root `Terminal` does not automatically map `Escape`
-or `Q` to exit. **Applications must provide an explicit keyboard quit path**:
+Desktop windows have a window-manager close button; terminal applications in raw mode do not, and `Ctrl+C` is used by `TextInput`/`TextArea` for clipboard copy rather than `SIGINT`. A root `Terminal` never exits on `Q` or `Escape` unless the application handles it:
 
 ```qml
 Terminal {
     id: root
 
-    // Central application quit handler
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
             Qt.quit();
@@ -122,23 +83,17 @@ Terminal {
 }
 ```
 
-If your application has modals or popups, consume `Escape` in the modal first
-to close it, and only exit the process when no focused control consumes it.
+When modals, popups, or filter inputs are present, consume `Escape` to close or clear them first, and call `Qt.quit()` only when nothing else handled the key.
 
----
+## Models and Delegates
 
-## 6. Models and Delegates
-
-Like Qt Quick, QmlTui uses Qt's model/view architecture (`QAbstractItemModel`,
-`QAbstractListModel`, `QStringList`, etc.) with `ListView`, `TableView`, and
-`TreeView`.
-
-In QmlTui, modern QML conventions are strictly followed:
-1. Always enable `pragma ComponentBehavior: Bound` at the top of your QML file.
-2. Declare delegate roles as **required properties** rather than accessing them
-   via dynamic context properties.
+`ListView`, `TableView`, `TreeView`, and `GridView` bind to `QAbstractItemModel` subclasses and `ListModel`. Start QML files with `pragma ComponentBehavior: Bound` and declare model roles as `required property` on the delegate:
 
 ```qml
+pragma ComponentBehavior: Bound
+import QtQml
+import QmlTui
+
 ListView {
     anchors.fill: parent
     model: processModel
@@ -159,16 +114,13 @@ ListView {
 }
 ```
 
----
+## Quick Reference
 
-## Quick Reference / Translation Cheatsheet
-
-| Qt Quick | QmlTui Equivalent | Notes |
+| Qt Quick | QmlTui | Notes |
 | :--- | :--- | :--- |
-| `import QtQuick` | `import QtQml` + `import QmlTui` | No Qt Quick dependency |
-| `Item { width: 100.0 }` | `Item { width: 10 }` | Integer cells, no decimals |
-| `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Uses box-drawing glyphs |
-| `font.pixelSize: 14` | `N/A (use bold, dim, italic, underline)` | Implicit cell height |
-| `color: Material.accent` | `color: "cyan"` or `color: "#2CDE85"` | No theme singletons |
-| `focus: true` | `focus: true`, `focusPolicy: Qt.StrongFocus` | Explicit Tab/Click focus |
-| Window Manager `[X]` | `Keys.onPressed: event => ...` | Explicit keyboard quit path |
+| `import QtQuick` | `import QtQml` + `import QmlTui` | No `QtQuick` or `QtGui` requirement in Core |
+| `Item { width: 100.0 }` | `Item { width: 10 }` | Integer character cells |
+| `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | 1-cell box-drawing border |
+| `font.pixelSize: 14` | `bold`, `dim`, `italic`, `underline` | Terminal controls glyph size; use SGR attributes |
+| `Qt.rgba(...)` / `QColor` | `QmlTui.rgba(...)` / `"#rrggbb"` / `"cyan"` | `qmltui::Color` (`rgba` value type) |
+| Window close button | Root `Keys.onPressed` / `Shortcut` | Explicit keyboard quit path required |

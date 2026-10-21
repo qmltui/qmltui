@@ -2,7 +2,7 @@
 
 An interactive component catalog and live-editable QML playground for every
 user-facing type in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and
-`QmlTui.PtyView` (39 components when Private Qt `Behavior`, `QmlTui.Image`, and
+`QmlTui.PtyView` (38 components when Private Qt `Behavior`, `QmlTui.Image`, and
 `QmlTui.PtyView` are enabled).
 
 - **Component `GridView` with Previews & On-Demand Header Search**: Browse all

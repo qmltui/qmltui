@@ -1,241 +1,118 @@
 # Item
 
-## Class Overview
+`qmltui::Item` is the base visual class for all elements in a QmlTui scene. It provides integer character-cell geometry (`x`, `y`, `z`, `width`, `height`, `implicitWidth`, `implicitHeight`, padding), anchoring, focus navigation (`focus`, `focusPolicy`, `activeFocus`), state machines (`states`, `transitions`, `state`), and virtual layout, painting, and input hooks.
 
-`Item` is the base visual class for all QML elements in QmlTui (equivalent to `QQuickItem` in Qt Quick). It provides spatial geometry (positioning `x`, `y`, `z`, sizing `width`, `height`, padding), focus navigation (`focus`, `focusPolicy`, `activeFocus`), declarative state machine integration (`states`, `transitions`, `state`), anchoring primitives, and virtual rendering/input event handling contracts.
+- **Header**: `<QmlTui/Core/Items/Item.h>`
+- **Inherits**: `QObject`
+- **Target**: `qmltui::core`
 
-Developers subclass `Item` when creating new C++ terminal components.
+## Properties (`Q_PROPERTY`)
 
-## Project Structure and Dependencies
+| Property | Type | Access | Notify Signal | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `x`, `y` | `int` | read/write | `xChanged`, `yChanged` | Position in cells relative to the parent item. |
+| `z` | `qreal` | read/write | `zChanged` | Stacking order among siblings (ascending). |
+| `width`, `height` | `int` | read/write | `widthChanged`, `heightChanged` | Item dimensions in character columns and rows. |
+| `implicitWidth`, `implicitHeight` | `int` | read/write | `implicitWidthChanged`, `implicitHeightChanged` | Natural content size in columns and rows. |
+| `visible` | `bool` | read/write | `visibleChanged` | Whether the item and its subtree are painted. |
+| `enabled` | `bool` | read/write | `enabledChanged` | Whether the item accepts input events. |
+| `focus` | `bool` | read/write | `focusChanged` | Requested focus state within the enclosing focus scope. |
+| `activeFocus` | `bool` | read-only | `activeFocusChanged` | Whether the item currently holds active keyboard focus. |
+| `focusPolicy` | `Qt::FocusPolicy` | read/write | `focusPolicyChanged` | Focus acceptance policy (`Qt::TabFocus`, `Qt::ClickFocus`, `Qt::StrongFocus`, `Qt::NoFocus`). |
+| `parent` | `qmltui::Item*` | read/write | `parentChanged` | Visual parent item. |
+| `anchors` | `qmltui::Anchors*` | read-only | — | Grouped anchor constraints (`fill`, `centerIn`, edges, margins). |
+| `left`, `right`, `top`, `bottom`, `horizontalCenter`, `verticalCenter` | `qmltui::AnchorLine*` | read-only | — | Anchor lines for relative positioning. |
+| `clip` | `bool` | read/write | `clipChanged` | Clips child painting to this item's bounds. |
+| `padding`, `leftPadding`, `rightPadding`, `topPadding`, `bottomPadding` | `int` | read/write | `*PaddingChanged` | Interior cell padding on all or individual edges. |
+| `data` | `QQmlListProperty<QObject>` | read-only | — | Default QML property accepting child items and non-visual objects. |
+| `children` | `QQmlListProperty<qmltui::Item>` | read-only | `childrenChanged` | Visual child items. |
+| `states` | `QQmlListProperty<qmltui::State>` | read-only | — | Declarative states attached to this item. |
+| `transitions` | `QQmlListProperty<qmltui::Transition>` | read-only | — | State transitions attached to this item. |
+| `state` | `QString` | read/write | `stateChanged` | Name of the active state. |
 
-- **Header**: `src/QmlTui/Core/Items/Item.h`
-- **Implementation**: `src/QmlTui/Core/Items/Item.cpp`
-- **Dependencies**: `TextGridBuffer.h`, `Anchors.h`, `Border.h`, Qt Core (`QObject`, `QQmlEngine`, `QPoint`, `QList`).
+In addition to the property notification signals above, `Item` emits `ancestryChanged()` when the item or any visual ancestor changes parent, and `dirty()` when a visual invalidation occurs.
 
-## Class Hierarchy and Role
+## `ClipRect`
 
-- **Base Class**: `QObject`
-  - Provides parent-child hierarchy, properties, signal/slot communication, and QML meta-object registration.
-- **Derived Classes**: `Rectangle`, `Text`, `MouseArea`, `Row`, `Column`, `Terminal`, `ScrollView`, `ListView`, etc.
+```cpp
+struct ClipRect {
+    int x = 0;
+    int y = 0;
+    int width = 99999;
+    int height = 99999;
 
-## Q_PROPERTY Declarations
-
-| Property | Type | READ | WRITE | NOTIFY | Description |
-|----------|------|------|-------|--------|-------------|
-| `x` | `int` | `x` | `setX` | `xChanged` | X coordinate relative to parent item. |
-| `y` | `int` | `y` | `setY` | `yChanged` | Y coordinate relative to parent item. |
-| `z` | `qreal` | `z` | `setZ` | `zChanged` | Visual stacking order. Siblings render by ascending `z`. |
-| `width` | `int` | `width` | `setWidth` | `widthChanged` | Width of the item in terminal columns. |
-| `height` | `int` | `height` | `setHeight` | `heightChanged` | Height of the item in terminal rows. |
-| `implicitWidth` | `int` | `implicitWidth` | `setImplicitWidth` | `implicitWidthChanged` | Natural width of the item based on content. |
-| `implicitHeight` | `int` | `implicitHeight` | `setImplicitHeight` | `implicitHeightChanged` | Natural height of the item based on content. |
-| `visible` | `bool` | `visible` | `setVisible` | `visibleChanged` | Controls whether the item is rendered. |
-| `enabled` | `bool` | `enabled` | `setEnabled` | `enabledChanged` | Controls whether the item receives input events. |
-| `focus` | `bool` | `focus` | `setFocus` | `focusChanged` | Requested focus state. |
-| `activeFocus` | `bool` | `activeFocus` | — | `activeFocusChanged` | Read-only property indicating if the item has active input focus. |
-| `focusPolicy` | `Qt::FocusPolicy` | `focusPolicy` | `setFocusPolicy` | `focusPolicyChanged` | How the item accepts keyboard/mouse focus (Tab, Click, Strong, None). |
-| `parent` | `qmltui::Item*` | `parentItem` | `setParentItem` | `parentChanged` | Parent visual item. |
-| `anchors` | `qmltui::Anchors*` | `anchors` | — | — | Attached anchor configuration object. |
-| `left` | `qmltui::AnchorLine*` | `left` | — | — | Left anchor line constraint of the item. |
-| `right` | `qmltui::AnchorLine*` | `right` | — | — | Right anchor line constraint of the item. |
-| `top` | `qmltui::AnchorLine*` | `top` | — | — | Top anchor line constraint of the item. |
-| `bottom` | `qmltui::AnchorLine*` | `bottom` | — | — | Bottom anchor line constraint of the item. |
-| `horizontalCenter` | `qmltui::AnchorLine*` | `horizontalCenter` | — | — | Horizontal center anchor line constraint of the item. |
-| `verticalCenter` | `qmltui::AnchorLine*` | `verticalCenter` | — | — | Vertical center anchor line constraint of the item. |
-| `clip` | `bool` | `clip` | `setClip` | `clipChanged` | Enables clipping of child rendering to item bounds. |
-| `padding` | `int` | `padding` | `setPadding` | `paddingChanged` | Uniform inner padding for all sides. |
-| `leftPadding` | `int` | `leftPadding` | `setLeftPadding` | `leftPaddingChanged` | Inner left padding. |
-| `rightPadding` | `int` | `rightPadding` | `setRightPadding` | `rightPaddingChanged` | Inner right padding. |
-| `topPadding` | `int` | `topPadding` | `setTopPadding` | `topPaddingChanged` | Inner top padding. |
-| `bottomPadding` | `int` | `bottomPadding` | `setBottomPadding` | `bottomPaddingChanged` | Inner bottom padding. |
-| `data` | `QQmlListProperty<QObject>` | `data` | — | — | List of QML visual/logical child objects (default property). |
-| `children` | `QQmlListProperty<qmltui::Item>` | `childrenProperty` | — | `childrenChanged` | Read-only list of visual child `Item` objects. |
-| `states` | `QQmlListProperty<qmltui::State>` | `states` | — | — | List of states defined on the item. |
-| `transitions` | `QQmlListProperty<qmltui::Transition>` | `transitions` | — | — | List of transitions defined on the item. |
-| `state` | `QString` | `state` | `setState` | `stateChanged` | Current active state name. |
-
-## Public Types and Member Variables
-
-### ClipRect Struct
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `x` | `int` | X coordinate of the clipping bounds (default: `0`). |
-| `y` | `int` | `y` coordinate of the clipping bounds (default: `0`). |
-| `width` | `int` | Width of the clipping bounds (default: `99999`). |
-| `height` | `int` | Height of the clipping bounds (default: `99999`). |
-
-#### bool contains(int cx, int cy) const
-Returns `true` if coordinates (cx, cy) are inside the clipping rectangle.
-
-#### ClipRect intersected(const ClipRect& other) const
-Returns a new `ClipRect` representing the intersection of this rectangle and the other.
-
-## Signals
-
-#### void childrenChanged()
-Emitted when visual child items are added to or removed from `children`.
-
-#### void xChanged()
-Emitted when `x` coordinate changes.
-
-#### void yChanged()
-Emitted when `y` coordinate changes.
-
-#### void zChanged()
-Emitted when `z` order changes.
-
-#### void widthChanged()
-Emitted when `width` changes.
-
-#### void heightChanged()
-Emitted when `height` changes.
-
-#### void implicitWidthChanged()
-Emitted when `implicitWidth` changes.
-
-#### void implicitHeightChanged()
-Emitted when `implicitHeight` changes.
-
-#### void visibleChanged()
-Emitted when visibility toggles.
-
-#### void enabledChanged()
-Emitted when enabled state toggles.
-
-#### void parentChanged()
-Emitted when the visual parent changes.
-
-#### void ancestryChanged()
-Emitted when this item or any visual ancestor is attached to or detached from a parent, indicating that the resolved `terminal()` may have changed across the subtree.
-
-#### void focusChanged()
-Emitted when focus state changes.
-
-#### void activeFocusChanged()
-Emitted when active keyboard focus changes.
-
-#### void focusPolicyChanged()
-Emitted when focus policy changes.
-
-#### void paddingChanged()
-Emitted when uniform padding changes.
-
-#### void leftPaddingChanged()
-Emitted when left padding changes.
-
-#### void rightPaddingChanged()
-Emitted when right padding changes.
-
-#### void topPaddingChanged()
-Emitted when top padding changes.
-
-#### void bottomPaddingChanged()
-Emitted when bottom padding changes.
-
-#### void clipChanged()
-Emitted when clipping setting changes.
-
-#### void stateChanged()
-Emitted when active state changes.
-
-#### void dirty()
-Emitted to request a frame re-render when item visual state changes.
+    bool contains(int cx, int cy) const;
+    ClipRect intersected(const ClipRect &other) const;
+};
+```
 
 ## Public Methods
 
-#### explicit Item(QObject *parent = nullptr)
-Constructs an `Item` with the optional parent visual item.
+#### `explicit Item(QObject *parent = nullptr)`
+Constructs an `Item` with an optional parent (`Item` or `QObject`).
 
-#### virtual ~Item()
-Destroys the `Item`, cleaning up child items.
+#### `void markDirty()`
+Marks this item dirty and schedules a frame render on the owning `TerminalEngine`.
 
-#### void markDirty()
-Notifies the parent item and rendering engine that this item needs to be redrawn.
+#### `QPoint absolutePosition() const`
+Returns the item's `(x, y)` cell coordinates relative to the root `Terminal`.
 
-#### QPoint absolutePosition() const
-Calculates and returns the absolute (x, y) coordinates of the item relative to the root window.
+#### `const QList<Item *> &childItems() const`
+Returns the visual child items in declaration order.
 
-#### const QList<Item *> &childItems() const
-Returns the list of visual child items.
+#### `const QList<Item *> &stackingChildren() const`
+Returns the visual child items sorted by ascending `z`.
 
-#### const QList<Item *> &stackingChildren() const
-Returns the list of visual child items sorted by stacking order (`z`).
+#### `bool isEffectivelyEnabled() const`
+Returns `true` if this item and all of its visual ancestors have `enabled() == true`.
 
-#### bool isEffectivelyEnabled() const
-Returns whether this item is enabled, considering the parent's enabled state hierarchy.
+#### `Terminal *terminal() const`
+Returns the root `Terminal` for this item's tree, or `nullptr` if unattached.
 
-#### Terminal *terminal() const
-Returns the root `Terminal` object this item is associated with.
+#### `void evaluateStateConditions()`
+Evaluates `when` conditions on the item's declarative `states`.
 
-#### void evaluateStateConditions()
-Re-evaluates declarative states to update values according to state constraints.
+## Protected Virtual Hooks
 
-## Protected Virtual Methods / Event Handlers
+#### `virtual void updateLayout()`
+Runs during the pre-paint layout pass when the item is marked `LayoutDirty` (for example after `setWidth()`, `setHeight()`, or implicit size changes). Geometry changes made in `updateLayout()` take effect in the same frame.
 
-#### virtual void updateLayout()
-Performs layout work when the item has `LayoutDirty` set. The framework runs a
-top-down layout pass over the whole tree before the paint pass of each frame,
-so geometry changed here is painted in the same frame. `setWidth()`,
-`setHeight()`, and effective implicit-size changes mark `LayoutDirty`.
-Invalidations raised from `paint()` are retained but do not schedule a frame.
+#### `virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const`
+Paints this item's own content into `buffer`. The engine traverses children afterward. `paint()` is `const` and must not mutate item state; store lazy layout caches in `mutable` members.
 
-#### virtual void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const
-Paints only this item's own content. The framework privately traverses children
-afterward. The method is `const`: painting writes cells, never item state.
-Lazily computed layout caches belong in `mutable` members.
+#### `virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const`
+Paints foreground chrome (such as a scrollbar or focus frame) after all children have painted.
 
-#### virtual void paintOverlay(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect) const
-Paints this item's foreground decoration after its children. The default
-implementation does nothing.
+#### `virtual void keyPressEvent(KeyEvent *event)`
+Called when a key is pressed while the item has active focus. Call `event->setAccepted(true)` to stop propagation.
 
-#### virtual void keyPressEvent(KeyEvent* event)
-Called when a key is pressed while the item has focus.
+#### `virtual void mousePressEvent(MouseEvent *event)`
+#### `virtual void mouseReleaseEvent(MouseEvent *event)`
+#### `virtual void mouseMoveEvent(MouseEvent *event)`
+#### `virtual void wheelEvent(MouseEvent *event)`
+Mouse event handlers in item-local or absolute coordinates. Passive motion without a held button is delivered only while hover tracking is active (`MouseArea.hoverEnabled` or attached `ToolTip`).
 
-#### virtual void mousePressEvent(MouseEvent* event)
-Called when a mouse button is pressed over the item.
-
-#### virtual void mouseReleaseEvent(MouseEvent* event)
-Called when a mouse button is released over the item.
-
-#### virtual void mouseMoveEvent(MouseEvent* event)
-Called when the mouse cursor moves over the item while a button is held. Passive
-hover tracking is requested through `MouseArea.hoverEnabled` or by components
-such as attached tooltips.
-
-#### virtual void wheelEvent(MouseEvent* event)
-Called when mouse wheel scrolling occurs over the item.
-
-## Ownership and Lifecycle
-
-`Item` objects pass `QObject* parent` to the constructor and are parent-owned. Deletion of a parent `Item` deletes all child items.
-
-## Thread Safety
-
-Single-threaded. Must be instantiated and used on the main GUI thread.
-
-## Usage Example
+## Subclassing Example
 
 ```cpp
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
-using namespace qmltui;
-
-class CustomWidget : public Item {
+class BoxItem : public qmltui::Item {
     Q_OBJECT
 public:
-    explicit CustomWidget(QObject* parent = nullptr) : Item(parent) {
+    explicit BoxItem(QObject *parent = nullptr) : qmltui::Item(parent) {
         setImplicitWidth(10);
         setImplicitHeight(3);
     }
 
 protected:
-    void paint(TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect& clipRect) const override {
-        buffer.drawBox(absX, absY, width(), height(), Color("green"));
+    void paint(qmltui::TextGridBuffer &buffer, int absX, int absY,
+               const ClipRect &clipRect) const override {
+        Q_UNUSED(clipRect)
+        buffer.drawBox(absX, absY, width(), height(), qmltui::Color(QStringLiteral("green")));
     }
 };
 ```
 
-See the [QML type reference](../qml-types/item.md) for QML usage.
+See [Creating Custom Items](../guides/custom-items.md) and the [Item QML type reference](../qml-types/item.md).

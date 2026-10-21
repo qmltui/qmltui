@@ -12,7 +12,7 @@ import QmlTui.Controls
 Terminal {
     id: root
     title: showingDemo && current ? "QmlTui Gallery · " + current.file : "QmlTui Gallery"
-    color: inlineMode ? "default" : "#161b22"
+    color: "#161b22"
 
     readonly property string brandPrimary: "#2cde85"
     readonly property string brandAccent: "#00ff66"
@@ -53,9 +53,6 @@ Terminal {
 
     readonly property bool showingDemo: openIndex >= 0
     readonly property var current: showingDemo ? filteredCatalog[openIndex] : (filteredCatalog.length > 0 ? filteredCatalog[currentIndex] : null)
-    readonly property bool isInlineExample: showingDemo && current !== null && current.file === "InlineMode.qml"
-    mode: isInlineExample ? Terminal.Inline : Terminal.AltScreen
-    readonly property bool inlineMode: mode === Terminal.Inline
 
     readonly property string standaloneFile: typeof qmltuiStandaloneExample === "string" ? qmltuiStandaloneExample : ""
     readonly property bool standalone: standaloneFile !== ""
@@ -404,7 +401,7 @@ Terminal {
             blurb: "Automatic property transitions when values change",
             file: "Behavior.qml"
         },
-        // 7. CLI (3)
+        // 7. CLI (2)
         {
             name: "TerminalCapabilities",
             badge: "CLI",
@@ -420,14 +417,6 @@ Terminal {
             preview: "┌ [sh] $ echo hello ──────────┐",
             blurb: "Embedded Unix pseudo-terminal process viewport",
             file: "PtyView.qml"
-        },
-        {
-            name: "InlineMode",
-            badge: "CLI",
-            accent: "#38bdf8",
-            preview: "❯ hello from inline  (printed: 1)",
-            blurb: "Terminal.Inline mode with persistent Scrollback output",
-            file: "InlineMode.qml"
         }
     ]
 
@@ -536,7 +525,6 @@ Terminal {
         if (!showingDemo || current === null)
             return;
         const editorHadFocus = codeEditor.activeFocus;
-        const host = isInlineExample ? inlineHost : demoHost;
         if (liveExampleItem !== null) {
             const old = liveExampleItem;
             liveExampleItem = null;
@@ -546,14 +534,13 @@ Terminal {
         }
         try {
             const url = "qrc:/qt/qml/Gallery/examples/" + current.file;
-            const obj = Qt.createQmlObject(qmlSource, host, url);
+            const obj = Qt.createQmlObject(qmlSource, demoHost, url);
             if (obj) {
                 liveExampleItem = obj;
                 obj.x = 0;
                 obj.y = 0;
-                obj.width = Qt.binding(() => host.width);
-                if (!isInlineExample)
-                    obj.height = Qt.binding(() => host.height);
+                obj.width = Qt.binding(() => demoHost.width);
+                obj.height = Qt.binding(() => demoHost.height);
                 codeError = "";
                 if (editorHadFocus)
                     codeEditor.focus = true;
@@ -736,7 +723,7 @@ Terminal {
                 event.accepted = true;
                 return;
             }
-            if (event.key === Qt.Key_F6 && !standalone && !isInlineExample) {
+            if (event.key === Qt.Key_F6 && !standalone) {
                 if (codeEditor.activeFocus)
                     focusExample(liveExampleItem);
                 else
@@ -828,7 +815,7 @@ Terminal {
             right: parent.right
         }
         height: 2
-        visible: !root.inlineMode && !root.standalone
+        visible: !root.standalone
         color: root.tileColor
 
         Text {
@@ -906,7 +893,7 @@ Terminal {
             right: parent.right
         }
         height: 1
-        visible: !root.inlineMode && !root.standalone
+        visible: !root.standalone
         color: root.tileColor
 
         Text {
@@ -1023,7 +1010,6 @@ Terminal {
             left: parent.left
             right: parent.right
         }
-        visible: !root.inlineMode
 
         // Screen 1: Full-width Component GridView Panel with topic TabBar & inline header search
         Panel {
@@ -1497,13 +1483,5 @@ Terminal {
                 }
             }
         }
-    }
-
-    // Inline mode host (used when InlineMode.qml is opened)
-    Item {
-        id: inlineHost
-        visible: root.inlineMode
-        width: parent.width
-        height: root.liveExampleItem ? root.liveExampleItem.implicitHeight : 0
     }
 }

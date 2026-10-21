@@ -113,10 +113,8 @@ attached group (build drags from `pressed` plus `mouseX`/`mouseY`),
 `propagateComposedEvents`/`preventStealing` (QmlTui's propagation is the plain
 unaccepted-events-bubble model), and `scrollGestureEnabled` (no gestures).
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![MouseArea recorded demo](../assets/casts/components/mouse_area.gif)
 
-- **Live Playground**: [▶ Open `MouseArea.qml` in the WebAssembly Playground](../playground.md?example=MouseArea.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example MouseArea`
-- **Gallery Source**: [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml)
+See [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml) (`./build/examples/gallery/qmltui_gallery --example MouseArea`, or open in the [WebAssembly Playground](../playground.md?example=MouseArea.qml)).

@@ -5,7 +5,7 @@ function main(terminal) {
     terminal.captureText("gallery/grid.txt");
     terminal.sleep(1500);
     const catalog = terminal.rootObject().catalog;
-    for (let i = 0; i < catalog.length - 1; ++i) {
+    for (let i = 0; i < catalog.length; ++i) {
         terminal.press("Enter");
         terminal.expectText("back to grid");
         terminal.expectNoText("✗ Error");
@@ -18,7 +18,5 @@ function main(terminal) {
     }
     terminal.marker("Tour complete");
     terminal.sleep(1500);
-    // Inline mode is exercised by test_gallery.js; end this full-screen tour
-    // before switching buffers so GIF and SVG renderers agree on the result.
     terminal.stopRecording();
 }

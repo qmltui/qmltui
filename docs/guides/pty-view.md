@@ -1,15 +1,12 @@
 # Embedded PTY Shells (`QmlTui.PtyView`)
 
-`QmlTui.PtyView` provides the [`PtyView`](../qml-types/ptyview.md) item, an embedded terminal emulator backed by a Unix pseudo-terminal (PTY) and `libvterm`. Use it when your QmlTui application needs to host an interactive login shell, SSH session, build task, or external CLI tool inside a layout pane.
+`QmlTui.PtyView` provides [`PtyView`](../qml-types/ptyview.md), an embedded terminal emulator backed by a Unix pseudo-terminal (PTY) and `libvterm`. Use it when a QmlTui application needs to host an interactive shell, SSH session, or external CLI process inside a layout pane.
 
-> [!NOTE]
-> If your application only needs to stream its own output into the parent terminal's scrollback history while keeping a live prompt at the bottom, use [`Terminal.Inline` and `Scrollback`](inline-mode.md) instead—that mode works on all platforms and does not require a PTY.
+If your application only needs to stream its own output into the parent terminal's scrollback while keeping a live prompt at the bottom, use [`Terminal.Inline` and `Scrollback`](inline-mode.md) instead; inline mode works on all platforms and does not require a PTY.
 
----
+## Enabling `QmlTui.PtyView` in CMake
 
-## 1. Enabling `QmlTui.PtyView` in CMake
-
-`QmlTui.PtyView` is supported on **Linux and macOS** and is opt-in via `-DQMLTUI_ENABLE_PTY_VIEW=ON`. By default, CMake fetches a pinned copy of `libvterm`; pass `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON` for offline or distro-packaged builds:
+`QmlTui.PtyView` is supported on Linux and macOS and is enabled with `-DQMLTUI_ENABLE_PTY_VIEW=ON`. By default, CMake fetches a pinned copy of `libvterm`; pass `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON` to link a system-installed `libvterm`:
 
 ```bash
 cmake -S . -B build \
@@ -17,7 +14,7 @@ cmake -S . -B build \
   -DQMLTUI_USE_SYSTEM_LIBVTERM=OFF
 ```
 
-Link `qmltui::pty_view` in your application's `CMakeLists.txt` and import `QmlTui.PtyView` in QML:
+Link `qmltui::pty_view` in `CMakeLists.txt` and import `QmlTui.PtyView` in QML:
 
 ```cmake
 qt_add_qml_module(my_app
@@ -29,23 +26,19 @@ qt_add_qml_module(my_app
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::pty_view)
 ```
 
----
-
-## 2. Spawning Processes Without Shell Expansion
+## Process Configuration
 
 `PtyView` executes `program` and `arguments` directly via `execvp` without invoking an intermediate shell or expanding shell metacharacters:
 
-- **`program` & `arguments`**: Executable path/name and string list of arguments. Call `pty.defaultUserShell()` to resolve the current user's login shell.
-- **`workingDirectory`**: Initial working directory for the child process.
-- **`environment` & `inheritEnvironment`**: Map of extra environment variables (`{ "MY_VAR": "1" }`), merged with the parent environment when `inheritEnvironment: true` (default).
-- **`terminalType`**: Sets `TERM` inside the PTY (defaults to `"xterm-256color"`, alongside `COLORTERM=truecolor` and `TERM_PROGRAM=qmltui`).
-- **`autoStart`**: Automatically starts the child process when the QML component completes, or call `start()`, `terminate()` (`SIGTERM`), and `kill()` (`SIGKILL`) explicitly.
+- `program` and `arguments`: executable path/name and argument list. Call `pty.defaultUserShell()` to query the current user's login shell.
+- `workingDirectory`: initial working directory for the child process.
+- `environment` and `inheritEnvironment`: map of extra environment variables (`{ "MY_VAR": "1" }`), merged with the parent process environment when `inheritEnvironment: true` (default).
+- `terminalType`: sets `TERM` inside the PTY (defaults to `"xterm-256color"`, along with `COLORTERM=truecolor` and `TERM_PROGRAM=qmltui`).
+- `autoStart`: starts the child process automatically when the QML component completes, or call `start()`, `terminate()` (`SIGTERM`), and `kill()` (`SIGKILL`) explicitly.
 
----
+## Key Interception, `sendText()`, and Scrollback
 
-## 3. Complete QML Example: Key Interception, `sendText()`, and Scrollback
-
-Because an active `PtyView` forwards ordinary keystrokes (`Q`, `Escape`, arrows, `Ctrl+C`) to the child PTY, intercept host application shortcuts before the PTY consumes them using `Keys.priority: Keys.BeforeItem`:
+Because a focused `PtyView` forwards ordinary keystrokes (`Q`, `Escape`, arrows, `Ctrl+C`) to the child PTY, attach `Keys.priority: Keys.BeforeItem` to intercept host application shortcuts before the PTY consumes them:
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -111,16 +104,14 @@ Terminal {
 }
 ```
 
----
+## Security Defaults and OSC Permissions
 
-## 4. Security Defaults & OSC Permissions
-
-Untrusted terminal output can emit Operating System Command (OSC) sequences. `PtyView` restricts side-effecting sequences by default:
+Child processes can emit Operating System Command (OSC) sequences. `PtyView` gates side-effecting sequences by default:
 
 | Property | Default | Behavior |
 | :--- | :--- | :--- |
 | `allowTitleChanges` | `true` | Updates the read-only `title` property when the child emits OSC 0 / OSC 2 window title sequences. |
-| `allowClipboardWrite` | `false` | When enabled, OSC 52 clipboard requests emit `clipboardWriteRequested(string text)` instead of writing silently. |
-| `allowNotifications` | `false` | When enabled, OSC 9 / OSC 777 desktop notification requests emit `notificationRequested(string title, string message)`. |
+| `allowClipboardWrite` | `false` | When enabled, OSC 52 clipboard requests emit `clipboardWriteRequested(string text)` rather than writing to the host clipboard directly. |
+| `allowNotifications` | `false` | When enabled, OSC 9 / OSC 777 notification requests emit `notificationRequested(string title, string message)`. |
 
-See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), and the interactive Gallery example (`./build/examples/gallery/qmltui_gallery --example PtyView`).
+See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), and [`PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`).

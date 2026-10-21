@@ -88,10 +88,8 @@ Terminal {
 Logging: on
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![CheckBox recorded demo](../assets/casts/components/check_box.gif)
 
-- **Live Playground**: [▶ Open `CheckBox.qml` in the WebAssembly Playground](../playground.md?example=CheckBox.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example CheckBox`
-- **Gallery Source**: [`examples/gallery/examples/CheckBox.qml`](../../examples/gallery/examples/CheckBox.qml)
+See [`examples/gallery/examples/CheckBox.qml`](../../examples/gallery/examples/CheckBox.qml) (`./build/examples/gallery/qmltui_gallery --example CheckBox`, or open in the [WebAssembly Playground](../playground.md?example=CheckBox.qml)).

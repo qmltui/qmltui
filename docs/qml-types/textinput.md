@@ -156,10 +156,8 @@ Terminal {
 Type a name and press Enter
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![TextInput recorded demo](../assets/casts/components/text_input.gif)
 
-- **Live Playground**: [▶ Open `TextInput.qml` in the WebAssembly Playground](../playground.md?example=TextInput.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example TextInput`
-- **Gallery Source**: [`examples/gallery/examples/TextInput.qml`](../../examples/gallery/examples/TextInput.qml)
+See [`examples/gallery/examples/TextInput.qml`](../../examples/gallery/examples/TextInput.qml) (`./build/examples/gallery/qmltui_gallery --example TextInput`, or open in the [WebAssembly Playground](../playground.md?example=TextInput.qml)).

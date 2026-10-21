@@ -1,80 +1,45 @@
 # TerminalBackend
 
-## Class Overview
+`TerminalBackend` is the platform abstraction between QmlTui and the operating system's terminal. `TerminalDevice` owns the output queue and raw-mode bookkeeping on top of it, and `TerminalEngine` decodes input bytes and drives the renderers.
 
-`TerminalBackend` is the platform seam between QmlTui and the operating system's terminal. Everything above it is shared code: `TerminalDevice` owns the output queue and raw-mode bookkeeping, `TerminalEngine` decodes input bytes and drives the renderers. Everything below it is platform code, one class per platform:
+- **Header**: `<QmlTui/Core/Primitives/TerminalBackend.h>`
+- **Inherits**: `QObject`
+- **Target**: `qmltui::core` (`Qt6::Core` only; platform headers stay inside implementation files)
 
-| Implementation | Platform | Mechanisms |
+## Built-In Implementations
+
+| Implementation | Platform | Mechanism |
 | :--- | :--- | :--- |
-| `PosixTerminalBackend` | Linux, macOS, other POSIX | `termios` raw mode on standard input, `write(2)` and `poll(2)` on the output descriptor, a `QSocketNotifier` on standard input, a process-wide `SIGWINCH` self-pipe bridge |
-| `Win32ConsoleBackend` | Windows (Windows Terminal, VT-capable conhost) | `SetConsoleMode` with `ENABLE_VIRTUAL_TERMINAL_INPUT`, `ENABLE_WINDOW_INPUT`, and `ENABLE_VIRTUAL_TERMINAL_PROCESSING`; UTF-8 code pages; `WriteFile`; `ReadConsoleInputW` driven by a `QWinEventNotifier` on the console input handle |
-| `WasmTerminalBackend` | Qt for WebAssembly (any browser, xterm.js on the page) | Output bytes through the `Module.qmltuiOnOutput` JS callback (`EM_JS`), key bytes and geometry through the embind entry points `qmltuiFeedInput` / `qmltuiResize`; sets `TERM`/`COLORTERM` when the environment is empty; synchronous output |
+| `PosixTerminalBackend` | Linux, macOS, POSIX | `termios` raw mode on `stdin`, `write(2)` and `poll(2)` on the output descriptor, `QSocketNotifier` on `stdin`, and a `SIGWINCH` self-pipe bridge. |
+| `Win32ConsoleBackend` | Windows (Windows Terminal, VT-capable conhost) | `SetConsoleMode` (`ENABLE_VIRTUAL_TERMINAL_INPUT`, `ENABLE_WINDOW_INPUT`, `ENABLE_VIRTUAL_TERMINAL_PROCESSING`), UTF-8 code pages, `WriteFile`, and `ReadConsoleInputW` driven by `QWinEventNotifier`. |
+| `WasmTerminalBackend` | Qt for WebAssembly | Emits output bytes via `Module.qmltuiOnOutput` (`EM_JS`) and receives input bytes and resize events through `qmltuiFeedInput` / `qmltuiResize`. |
 
-Input is always delivered as raw VT byte sequences, so `InputDecoder` needs no platform knowledge. On Windows the console itself performs that translation once virtual-terminal input is enabled.
-
-## Project Structure and Dependencies
-
-- **Header**: `src/QmlTui/Core/Primitives/TerminalBackend.h`, installed as `<QmlTui/Core/Primitives/TerminalBackend.h>`
-- **Implementations**: `PosixTerminalBackend.{h,cpp}`, `Win32ConsoleBackend.{h,cpp}`, `WasmTerminalBackend.{h,cpp}` (selected in `src/QmlTui/Core/CMakeLists.txt` by `WIN32`, `EMSCRIPTEN`, else POSIX)
-- **Factory**: `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` in `TerminalBackend.cpp`
-- **Dependencies**: QtCore only. Platform headers are confined to the implementation files; `<windows.h>` never reaches a public header.
-
-## Class Hierarchy and Role
-
-- **Base Class**: `QObject`
-- **Role**: Abstract interface. `TerminalDevice` owns one instance and exposes it through `TerminalDevice::backend()`.
+Input is always delivered as raw VT byte sequences so `InputDecoder` needs no platform-specific logic.
 
 ## Public Methods
 
-#### bool enterRawMode() / bool leaveRawMode()
-Switch the terminal between its normal line-oriented mode and raw mode (no echo, no line buffering, no signal generation, VT sequences for special keys). `TerminalDevice` tracks the current state and flushes queued output before leaving raw mode.
-
-#### bool needsUtf8Designation() const
-True when the terminal parser must be told the byte stream is UTF-8 (`ESC % G`) after entering raw mode. POSIX terminals want it; the Windows console uses code pages instead.
-
-#### WriteStatus writeSome(const char* data, size_t size, size_t& offset)
-Writes as much as the terminal accepts right now and advances `offset`. Returns `Done`, `WouldBlock` (only possible after `setNonBlockingOutput(true)`), or `Error`.
-
-#### bool writeAll(std::string& pending, int timeoutMs)
-Delivers everything in `pending`, erasing delivered bytes, waiting for the terminal as needed but never past `timeoutMs`. False on error or timeout.
-
-#### bool supportsAsyncOutput() const
-Whether output can be made non-blocking and drained from the event loop. True on POSIX. False on Windows, where console writes complete synchronously and `TerminalDevice::setAsyncOutput(true)` therefore returns false.
-
-#### bool setNonBlockingOutput(bool enabled)
-Toggles the output channel between blocking and non-blocking. Disabling when already blocking succeeds.
-
-#### void setWritableNotifications(bool enabled)
-Enables or disables `writable()` for a non-blocking channel.
-
-#### QSize size() const
-Terminal size in cells, or an invalid `QSize` when unknown. `TerminalDevice` substitutes 80 by 24.
-
-#### bool isInteractive() const
-True when output goes to a real terminal rather than a pipe or file. Feeds `TerminalCapabilities::detect()`.
-
-#### void startInput() / void stopInput()
-Begin and end delivery of `inputReceived()` and `resized()`. Idempotent. `TerminalEngine` calls `startInput()` once during construction.
+- `bool enterRawMode()` / `bool leaveRawMode()` — switches the terminal between line-buffered mode and raw mode. `TerminalDevice` flushes queued output before leaving raw mode.
+- `bool needsUtf8Designation() const` — `true` on POSIX terminals that expect `ESC % G` after entering raw mode; `false` on Windows where code pages are used.
+- `WriteStatus writeSome(const char *data, size_t size, size_t &offset)` — writes as many bytes as the terminal accepts immediately (`Done`, `WouldBlock`, or `Error`).
+- `bool writeAll(std::string &pending, int timeoutMs)` — writes all bytes in `pending` within `timeoutMs`, erasing delivered bytes.
+- `bool supportsAsyncOutput() const` — `true` on POSIX where output can drain non-blockingly from the event loop; `false` on Windows.
+- `bool setNonBlockingOutput(bool enabled)` — toggles non-blocking output mode.
+- `void setWritableNotifications(bool enabled)` — enables or disables `writable()` notifications on a non-blocking channel.
+- `QSize size() const` — terminal dimensions in cells, or an invalid `QSize` when unknown (`TerminalDevice` falls back to 80×24).
+- `bool isInteractive() const` — `true` when attached to a live TTY rather than a pipe or file.
+- `void startInput()` / `void stopInput()` — starts and stops delivery of `inputReceived()` and `resized()`.
 
 ## Signals
 
-| Signal | Meaning |
+| Signal | Description |
 | :--- | :--- |
-| `writable()` | The non-blocking output channel can accept more bytes. |
-| `inputReceived(const QByteArray& bytes)` | Raw VT bytes read from the terminal. |
-| `resized()` | The terminal geometry changed; call `size()`. |
+| `writable()` | The non-blocking output descriptor can accept more bytes. |
+| `inputReceived(const QByteArray &bytes)` | Raw VT bytes read from the terminal. |
+| `resized()` | Terminal geometry changed; query `size()`. |
 
-## Ownership and Lifecycle
+## Custom Application Backends
 
-Created by `TerminalDevice`'s constructor through `createTerminalBackend()` and destroyed with it. Destruction stops input and restores the output channel; raw mode is restored by `TerminalDevice` before that.
-
-## Thread Safety
-
-Single-threaded. Create and use on the `QCoreApplication` thread. The POSIX `SIGWINCH` bridge is installed while at least one backend is listening and removed with the last one.
-
-## Application-provided backends
-
-`TerminalBackend::setFactory()` installs a factory that replaces the platform backend for every `TerminalDevice` created afterwards. Install it before the first `Terminal` completes; pass `nullptr` to restore the default. Typical uses: a serial console on a device without a tty layer (write to a `QSerialPort`, feed its bytes back through `inputReceived()`), hosting sessions inside another process over a socket or ConPTY, or an in-memory backend in tests. The browser case is covered by the built-in `WasmTerminalBackend`; see [docs/guides/webassembly.md](../guides/webassembly.md).
+`TerminalBackend::setFactory()` installs a custom backend factory for every `TerminalDevice` created afterward. Install it before the first `Terminal` completes; pass `nullptr` to restore the default platform factory.
 
 ```cpp
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
@@ -84,13 +49,11 @@ qmltui::TerminalBackend::setFactory([](int) {
 });
 ```
 
-`qmltui::MemoryTerminalBackend` in `qmltui::runner` is the reference implementation and the test tool: it captures output bytes and lets a test inject input bytes and resizes. See `tests/Core/test_terminal_backend.cpp` for the end-to-end pattern.
+See [`MemoryTerminalBackend`](memoryterminalbackend.md) in `qmltui::runner` for an in-memory reference implementation used in unit tests.
 
-This is a C++ extension point and may still change before 1.0, like custom items.
+## Windows Notes
 
-## Windows notes
-
-- Windows Terminal is the target. Legacy `conhost.exe` gets whatever its VT support provides.
-- Raw mode clears `ENABLE_QUICK_EDIT_MODE` and `ENABLE_MOUSE_INPUT` so the console does not intercept mouse selection; mouse reporting requested through VT sequences arrives as SGR sequences like on POSIX.
-- `WINDOW_BUFFER_SIZE_EVENT` records become `resized()`. Focus and menu records are dropped.
-- Code pages are set to UTF-8 while in raw mode and restored on exit.
+- Windows Terminal is the supported runtime target; legacy `conhost.exe` receives whatever its VT implementation supports.
+- Raw mode clears `ENABLE_QUICK_EDIT_MODE` and `ENABLE_MOUSE_INPUT` so the console does not intercept mouse clicks; mouse reporting requested through VT sequences arrives as SGR sequences.
+- `WINDOW_BUFFER_SIZE_EVENT` records emit `resized()`.
+- Console code pages are set to UTF-8 on entering raw mode and restored on exit.

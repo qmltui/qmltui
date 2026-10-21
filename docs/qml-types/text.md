@@ -121,10 +121,8 @@ Use `qmltui::Text` from `<QmlTui/Core/Items/Text.h>`. Construct it with an optio
 `QObject`, set properties directly, and use `paint()` during the text grid
 render pass.
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![Text recorded demo](../assets/casts/components/text.gif)
 
-- **Live Playground**: [▶ Open `Text.qml` in the WebAssembly Playground](../playground.md?example=Text.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Text`
-- **Gallery Source**: [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml)
+See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`, or open in the [WebAssembly Playground](../playground.md?example=Text.qml)).

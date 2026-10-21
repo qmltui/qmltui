@@ -210,10 +210,8 @@ Terminal {
 }
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![Image recorded demo](../assets/casts/components/image.gif)
 
-- **Live Playground**: [▶ Open `Image.qml` in the WebAssembly Playground](../playground.md?example=Image.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example Image`
-- **Gallery Source**: [`examples/gallery/examples/Image.qml`](../../examples/gallery/examples/Image.qml)
+See [`examples/gallery/examples/Image.qml`](../../examples/gallery/examples/Image.qml) (`./build/examples/gallery/qmltui_gallery --example Image`, or open in the [WebAssembly Playground](../playground.md?example=Image.qml)).

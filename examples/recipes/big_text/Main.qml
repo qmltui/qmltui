@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
+import QmlTui.Controls
 
 Terminal {
     Keys.onPressed: event => {
@@ -11,70 +12,68 @@ Terminal {
     }
 
     Column {
-        anchors.fill: parent
+        anchors {
+            fill: parent
+            margins: 1
+        }
         spacing: 1
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "🅰 BIGTEXT BANNER DEMO"
-            color: "yellow"
+            text: "BigText — 3x5 Block Glyph Item"
+            color: "cyan"
             bold: true
         }
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "Press Q or ESC to quit"
-            color: "gray"
+            text: "Custom C++ Item painting 3x5 block glyphs into TextGridBuffer. Press Q or Esc to quit."
+            dim: true
         }
 
-        Rectangle {
-            width: parent.width
-            height: 14
+        Panel {
+            width: Math.min(parent.width, 54)
+            height: 7
             border {
-                style: Border.Double
-                color: "yellow"
+                style: Border.Single
+                color: "gray"
+            }
+            title: Text {
+                text: "Banner"
+                bold: true
             }
 
-            Column {
-                anchors {
-                    fill: parent
-                    margins: 1
-                }
-                spacing: 1
+            BigText {
+                anchors.centerIn: parent
+                text: "QMLTUI 2026"
+                color: "cyan"
+            }
+        }
 
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "HEADER BANNER:"
-                    color: "cyan"
-                }
+        Panel {
+            width: Math.min(parent.width, 54)
+            height: 7
+            border {
+                style: Border.Single
+                color: "gray"
+            }
+            title: Text {
+                text: "Clock"
+                bold: true
+            }
 
-                BigText {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "QMLTUI 2026"
-                    color: "cyan"
-                }
+            BigText {
+                id: clock
 
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "DIGITAL CLOCK:"
-                    color: "green"
-                }
+                property string currentTime: Qt.formatDateTime(new Date(), "hh:mm:ss")
 
-                BigText {
-                    id: clock
+                anchors.centerIn: parent
+                text: currentTime
+                color: "green"
 
-                    property string currentTime: Qt.formatDateTime(new Date(), "hh:mm:ss")
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: currentTime
-                    color: "green"
-
-                    Timer {
-                        interval: 1000
-                        running: true
-                        repeat: true
-                        onTriggered: clock.currentTime = Qt.formatDateTime(new Date(), "hh:mm:ss")
-                    }
+                Timer {
+                    interval: 1000
+                    running: true
+                    repeat: true
+                    onTriggered: clock.currentTime = Qt.formatDateTime(new Date(), "hh:mm:ss")
                 }
             }
         }

@@ -1,9 +1,10 @@
-# Animation and states
+# Animation and States
 
-QmlTui provides declarative states, property changes, and transitions tailored for
-retained-mode terminal user interfaces.
+QmlTui supports declarative states, property changes, transitions, and property animations on the character-cell grid.
 
-## Feature Matrix
+## Public Qt vs. Private Qt Builds
+
+`QMLTUI_ENABLE_PRIVATE_QT=ON` (enabled by default) links `Qt6::QmlPrivate` to provide `Behavior`, `StateGroup`, and binding-aware `PropertyChanges`. Pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when building strictly against public Qt headers.
 
 | Feature | Public Qt Only (`PRIVATE_QT=OFF`) | Private Qt (`PRIVATE_QT=ON`) |
 | :--- | :--- | :--- |
@@ -21,12 +22,9 @@ retained-mode terminal user interfaces.
 | Interrupted transition starts from displayed value | Supported | Supported |
 | `Behavior on property` | Not available | Supported |
 
-The unified option `QMLTUI_ENABLE_PRIVATE_QT=ON` (enabled by default in `CMakeLists.txt`) enables both `Behavior` and advanced
-states/`StateGroup` support via `Qt6::QmlPrivate`. Pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when a strict public-Qt build with zero private header dependencies is required.
+## States, Transitions, and `Behavior`
 
-## States, Transitions, and `Behavior` in QML
-
-Use [`State`](../qml-types/state.md) and [`Transition`](../qml-types/transition.md) to coordinate multi-property changes, or attach [`Behavior`](../qml-types/behavior.md) (when `QMLTUI_ENABLE_PRIVATE_QT=ON`) to animate individual property writes automatically:
+Use [`State`](../qml-types/state.md) and [`Transition`](../qml-types/transition.md) to coordinate multi-property changes, or attach [`Behavior`](../qml-types/behavior.md) (when `QMLTUI_ENABLE_PRIVATE_QT=ON`) to animate individual property writes:
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -40,8 +38,10 @@ Rectangle {
     width: 24
     height: 3
     color: "#16202a"
-    border.style: Border.Rounded
-    border.color: "gray"
+    border {
+        style: Border.Rounded
+        color: "gray"
+    }
 
     Behavior on width {
         NumberAnimation { duration: 150 }
@@ -74,12 +74,11 @@ Rectangle {
 }
 ```
 
-## Syntax Forms
+## `PropertyChanges` Syntax Forms
 
-### 1. Direct Assignment (Private Qt Builds)
+### Direct Assignment (`QMLTUI_ENABLE_PRIVATE_QT=ON`)
 
-In builds with `QMLTUI_ENABLE_PRIVATE_QT=ON`, properties can be declared directly
-on targets or qualified by item IDs:
+When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, properties can be assigned directly on a `target` or qualified by item `id`:
 
 ```qml
 PropertyChanges {
@@ -94,15 +93,11 @@ PropertyChanges {
 }
 ```
 
-- By default (`explicit: false`), expressions remain reactive: if `root.status` changes
-  while the state is active, `label.text` updates immediately.
-- When `explicit: true`, the expression is evaluated once on entry and frozen.
-- Mixing direct assignments and map-based `properties: { ... }` in a single
-  `PropertyChanges` object is rejected at compile time.
+By default (`explicit: false`), expressions remain reactive while the state is active: if `root.status` changes, `label.text` updates. When `explicit: true`, the expression is evaluated once on state entry. Mixing direct assignments and map-based `properties: { ... }` in a single `PropertyChanges` object is rejected at compile time.
 
-### 2. Map-Based Declarations (All Builds)
+### Map-Based Declarations (All Builds)
 
-Supported across all configurations:
+The map form works in both public-Qt and private-Qt builds:
 
 ```qml
 PropertyChanges {
@@ -114,55 +109,22 @@ PropertyChanges {
 }
 ```
 
-Within an `Item`, omitting `target` defaults to the containing item. Within `StateGroup`,
-an explicit `target` or ID-qualified property is required.
+Inside an `Item`, omitting `target` defaults to the enclosing item. Inside a `StateGroup`, an explicit `target` or `id`-qualified property is required.
 
 ## Binding and Restoration Lifecycle
 
-- **Binding Suspension**: Preexisting bindings on modified properties are suspended
-  rather than overwritten when entering a state.
-- **Exit Restoration**: On exiting to base (or another state), if `restoreEntryValues` is
-  `true` (default), the original binding or snapshot value is restored and re-evaluated.
-- **Chained Transitions**: Across chained transitions (A → B → base), the original base
-  state is preserved across all hops until base is reached.
-- **Retained Values**: When `restoreEntryValues: false` is set on a state, modified
-  properties retain their active state values upon exit, and previous entry values are
-  discarded.
+When entering a state, preexisting bindings on modified properties are suspended rather than overwritten. On exiting to the base state (or transitioning through chained states `A -> B -> base`), `restoreEntryValues: true` (the default) restores the original base binding or value. Setting `restoreEntryValues: false` on a `State` leaves the modified properties at their state values upon exit.
 
-## Independent Groups and Atomic Overlap Rejection
+## Independent State Controllers
 
-Multiple state controllers (an item's `states` and one or more `StateGroup` objects) can
-coexist within an application.
+An application can combine `Item.states` with one or more [`StateGroup`](../qml-types/stategroup.md) instances for orthogonal state machines. Each `Item` and `StateGroup` tracks the properties it currently owns (resolving QML property aliases to their underlying target property). Before applying a state change, the controller checks whether any target property is already owned by another active controller; if a collision is detected, a warning is logged and the activation is rejected atomically without partially mutating the scene.
 
-- Each `Item` and `StateGroup` acts as an independent property owner.
-- Property aliases are canonicalized to their underlying target property before ownership
-  checks.
-- **Preflight Check**: Before applying any property changes or stopping animations,
-  the controller verifies whether any requested property is currently owned by another
-  active controller.
-- If an overlap collision occurs, a warning is issued and the **entire activation is
-  atomically rejected**, leaving the current state unchanged.
-- Ownership is released when state exit restoration completes.
+## Transition Semantics on the Cell Grid
 
-## Terminal-Specific Transition Semantics
+- Geometry animations (`NumberAnimation` on `x`, `y`, `width`, `height`) step through integer character cells.
+- When an animated property's destination equals its current displayed value, writes are suppressed.
+- Setting `duration: 0` applies the destination value synchronously without scheduling timer ticks.
+- If a state change interrupts a running transition, the new transition interpolates from the currently displayed value.
+- When a property is covered by both an active `Transition` and a `Behavior`, the `Transition` takes precedence.
 
-- **Integer Cell Geometry**: Geometry animations (`NumberAnimation` on `x`, `y`, `width`,
-  `height`) operate on integer character cells, preventing sub-cell fractional jitter.
-- **Duplicate Write Suppression**: When an animated property endpoint equals the current
-  displayed value, animation writes and allocations are suppressed.
-- **Zero Duration**: Setting `duration: 0` applies the destination value synchronously
-  and completes without registering clock work or busy-looping.
-- **Interruption Continuity**: If a state change interrupts an in-progress transition,
-  the new transition starts interpolating smoothly from the currently displayed value.
-- **Binding Overrides**: For destination properties bound to expressions, the endpoint
-  is evaluated at transition start, suspended during interpolation, and reattached upon
-  transition completion.
-- **Precedence over Behavior**: When an animated property matches an active `Transition`,
-  the transition takes precedence over any `Behavior` on that property.
-
-See the [independent states recipe example](../../examples/recipes/independent_states/),
-the gallery examples [`States.qml`](../../examples/gallery/examples/States.qml),
-[`Animation.qml`](../../examples/gallery/examples/Animation.qml), and
-[`Behavior.qml`](../../examples/gallery/examples/Behavior.qml), and the
-[`State`](../qml-types/state.md), [`StateGroup`](../qml-types/stategroup.md), and
-[`PropertyChanges`](../qml-types/propertychanges.md) references.
+See [`examples/recipes/independent_states/`](../../examples/recipes/independent_states/), the gallery examples [`States.qml`](../../examples/gallery/examples/States.qml), [`Animation.qml`](../../examples/gallery/examples/Animation.qml), and [`Behavior.qml`](../../examples/gallery/examples/Behavior.qml), and the [`State`](../qml-types/state.md), [`StateGroup`](../qml-types/stategroup.md), and [`PropertyChanges`](../qml-types/propertychanges.md) references.

@@ -80,10 +80,8 @@ Terminal {
 ⠋ Fetching results
 ```
 
-### Interactive Demo & Recording
+### Gallery Example
 
 ![BusyIndicator recorded demo](../assets/casts/components/busy_indicator.gif)
 
-- **Live Playground**: [▶ Open `BusyIndicator.qml` in the WebAssembly Playground](../playground.md?example=BusyIndicator.qml)
-- **Standalone CLI**: `./build/examples/gallery/qmltui_gallery --example BusyIndicator`
-- **Gallery Source**: [`examples/gallery/examples/BusyIndicator.qml`](../../examples/gallery/examples/BusyIndicator.qml)
+See [`examples/gallery/examples/BusyIndicator.qml`](../../examples/gallery/examples/BusyIndicator.qml) (`./build/examples/gallery/qmltui_gallery --example BusyIndicator`, or open in the [WebAssembly Playground](../playground.md?example=BusyIndicator.qml)).

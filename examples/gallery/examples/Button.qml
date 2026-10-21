@@ -94,7 +94,8 @@ Column {
                 spacing: 1
 
                 Text {
-                    text: "💾"
+                    text: "◆"
+                    color: "#7ee0ff"
                 }
 
                 Text {

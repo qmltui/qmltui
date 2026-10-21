@@ -1,100 +1,71 @@
 # Cell & TextAttribute
 
-## Class Overview
+`Cell` and `TextAttribute` represent a single character-grid position in `TextGridBuffer`. A `Cell` stores the UTF-8 bytes of one grapheme cluster, its display column width, a continuation flag for wide characters, 32-bit ARGB foreground and background colors, and SGR formatting attributes.
 
-`Cell` and `TextAttribute` define the primitive data structures representing a single terminal grid position in QmlTui. A `Cell` stores the UTF-8 bytes of one grapheme cluster, its visual display width, a continuation flag (for multi-column characters), 32-bit ARGB foreground and background colors, and styling attributes (bold, italic, underline, reversed, blink, conceal, and strikethrough).
-
-Developers interact with `Cell` when implementing custom C++ terminal UI items.
-
-## Project Structure and Dependencies
-
-- **Header**: `src/QmlTui/Core/Primitives/Cell.h` (installed as `<QmlTui/Core/Primitives/Cell.h>`)
-- **Dependencies**: `<cstdint>`, `<cstring>`, `QByteArrayView`, `Color.h`.
-- **Module**: Part of the core QmlTui library layer.
+- **Header**: `<QmlTui/Core/Primitives/Cell.h>`
+- **Target**: `qmltui::core`
 
 ## Storage Model
 
-`Cell` is 24 bytes and trivially copyable. The grapheme cluster is stored inline when it fits in `Cell::InlineGlyphCapacity` (12) bytes, which covers every single code point, emoji with skin tone or variation selector, flags and keycaps. Longer clusters (for example ZWJ emoji sequences) are interned once in a process-wide, append-only table and referenced by index. Cells therefore copy and compare by value across buffers, `TextGridBuffer::clear()` is a plain fill, and painting never allocates for ordinary text.
+`Cell` is 24 bytes and trivially copyable. Grapheme clusters up to `Cell::InlineGlyphCapacity` (12 bytes) are stored inline, covering single code points, emoji with skin tones or variation selectors, flags, and keycaps. Longer clusters (such as multi-person ZWJ sequences) are interned in a process-wide append-only table and referenced by index. Because `Cell` has no per-instance heap allocation, cells copy and compare by value and `TextGridBuffer::clear()` is a contiguous fill.
 
-## Enumerations
-
-### TextAttribute
+## `TextAttribute`
 
 | Value | Integer | Description |
-|-------|---------|-------------|
-| `None` | `0` | Default plain text with no special styling attributes. |
-| `Bold` | `1` | Renders text in bold font. |
-| `Italic` | `2` | Renders text in italic font. |
-| `Underline` | `4` | Renders text with an underline. |
-| `Reversed` | `8` | Inverts foreground and background colors. |
-| `Blink` | `16` | Requests blinking text. |
-| `Conceal` | `32` | Conceals the cell contents. |
-| `Strikethrough` | `64` | Draws a line through the text. |
-| `Dim` | `128` | Uses the terminal's faint intensity (SGR 2). |
+| :--- | :--- | :--- |
+| `None` | `0` | Default plain text. |
+| `Bold` | `1` | Bold intensity (SGR 1). |
+| `Italic` | `2` | Italic style (SGR 3). |
+| `Underline` | `4` | Underlined text (SGR 4). |
+| `Reversed` | `8` | Swaps foreground and background colors (SGR 7). |
+| `Blink` | `16` | Blinking text (SGR 5). |
+| `Conceal` | `32` | Concealed text (SGR 8). |
+| `Strikethrough` | `64` | Crossed-out text (SGR 9). |
+| `Dim` | `128` | Faint intensity (SGR 2). |
 
-Bitwise operators `|` and `&` are overloaded to allow combining multiple `TextAttribute` flags (e.g. `TextAttribute::Bold | TextAttribute::Underline`).
+Bitwise `|` and `&` operators combine and test `TextAttribute` flags (for example, `TextAttribute::Bold | TextAttribute::Underline`).
 
-## Public Member Variables
+## Public Member Variables (`Cell`)
 
-### Cell Struct
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `displayWidth` | `uint8_t` | Visual column width occupied by the cluster (default: `1`). |
-| `continuation` | `bool` | True if this cell is a continuation of a multi-column character (default: `false`). |
-| `fgColor` | `uint32_t` | 32-bit ARGB foreground color value (default: `0x00000000`, the terminal foreground). |
-| `bgColor` | `uint32_t` | 32-bit ARGB background color value (default: `0x00000000` transparent). |
-| `attributes` | `TextAttribute` | Bitwise combination of formatting flags applied to this cell (default: `TextAttribute::None`). |
+| Member | Type | Description |
+| :--- | :--- | :--- |
+| `displayWidth` | `uint8_t` | Column width occupied by the grapheme cluster (default `1`). |
+| `continuation` | `bool` | `true` on trailing cells of a multi-column character (default `false`). |
+| `fgColor` | `uint32_t` | 32-bit ARGB foreground color (`0x00000000` represents the terminal default foreground). |
+| `bgColor` | `uint32_t` | 32-bit ARGB background color (`0x00000000` represents transparent / terminal default background). |
+| `attributes` | `TextAttribute` | Bitwise combination of formatting flags (default `TextAttribute::None`). |
 
 ## Public Methods
 
-#### QByteArrayView character() const
-Returns the UTF-8 bytes of the cluster (default `" "`; empty for continuation cells). The view is valid until the cell is modified or its buffer is resized, cleared, swapped or destroyed. Convert with `toByteArray()` or `QString::fromUtf8()` to keep the bytes.
+#### `QByteArrayView character() const`
+Returns the UTF-8 bytes of the grapheme cluster (default `" "`; empty on continuation cells). The view remains valid until the cell is mutated or its containing buffer is resized, cleared, swapped, or destroyed.
 
-#### void setCharacter(QByteArrayView utf8)
-Replaces the cluster. Accepts string literals, `QByteArray`, and views, including a view of the cell's own bytes.
+#### `void setCharacter(QByteArrayView utf8)`
+Replaces the cell's grapheme cluster bytes.
 
-#### void appendCharacter(QByteArrayView utf8)
-Appends bytes to the cluster, used for combining marks and variation selectors that belong to the preceding base character.
+#### `void appendCharacter(QByteArrayView utf8)`
+Appends UTF-8 bytes to the existing cluster (used for combining marks and variation selectors).
 
-#### void clearCharacter()
-Empties the cluster (continuation cells).
+#### `void clearCharacter()`
+Empties the cluster bytes (used when marking continuation cells).
 
-#### bool hasCharacter() const
-True unless the cluster is empty.
+#### `bool hasCharacter() const`
+Returns `true` if the cluster is non-empty.
 
-#### void setForeground(Color) / void setBackground(Color)
-#### Color foreground() const / Color background() const
-Colour accessors converting between `Color` and the ARGB fields.
+#### `void setForeground(Color)` / `void setBackground(Color)`
+#### `Color foreground() const` / `Color background() const`
+Read and write `fgColor` and `bgColor` using `qmltui::Color`.
 
-#### bool operator==(const Cell& other) const
-Compares all fields, including the cluster bytes.
+#### `bool operator==(const Cell &other) const`
+Compares all fields, including grapheme cluster bytes.
 
-## Ownership and Lifecycle
-
-`Cell` is a trivially copyable value type with no heap allocation of its own; `TextGridBuffer` stores cells in a contiguous `std::vector<Cell>`. Interned long clusters live in a process-wide table that is never freed.
-
-## Thread Safety
-
-`Cell` has no internal synchronisation and inherits the thread-safety profile of its containing `TextGridBuffer`. The interning table used for long clusters is mutex-protected.
-
-## Usage Example
+## Example
 
 ```cpp
 #include <QmlTui/Core/Primitives/Cell.h>
-#include <iostream>
 
-using namespace qmltui;
-
-int main() {
-    Cell cell;
-    cell.setCharacter("X");
-    cell.fgColor = 0xFFFF0000; // Red
-    cell.attributes = TextAttribute::Bold | TextAttribute::Underline;
-
-    if ((cell.attributes & TextAttribute::Bold) != TextAttribute::None) {
-        std::cout << "Cell is bold: " << cell.character().data() << std::endl;
-    }
-    return 0;
-}
+qmltui::Cell cell;
+cell.setCharacter("X");
+cell.setForeground(qmltui::Color(QStringLiteral("red")));
+cell.attributes = qmltui::TextAttribute::Bold | qmltui::TextAttribute::Underline;
 ```

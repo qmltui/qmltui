@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: streaming parser for terminal VT input bytes, mouse events, pastes, and query replies.
+
 #include <QString>
 #include <QByteArrayView>
 #include <QVarLengthArray>
@@ -33,7 +35,13 @@ public:
     using FocusCallback = std::function<void(bool focused)>;
 
     struct ControlSequence {
-        enum Kind : uint8_t { Csi, Ss3, Apc, Osc, Dcs, } kind = Csi;
+        enum Kind : uint8_t {
+            Csi,
+            Ss3,
+            Apc,
+            Osc,
+            Dcs,
+        } kind = Csi;
         char privateMarker = 0;
         QVarLengthArray<QVarLengthArray<int, 3>, 8> params;
         QByteArrayView intermediates;
@@ -41,8 +49,10 @@ public:
         QByteArrayView payload;
 
         int parameter(qsizetype index, qsizetype sub = 0, int fallback = 0) const {
-            return index >= 0 && sub >= 0 && index < params.size() && sub < params[index].size()
-                && params[index][sub] >= 0 ? params[index][sub] : fallback;
+            return index >= 0 && sub >= 0 && index < params.size() && sub < params[index].size() &&
+                           params[index][sub] >= 0
+                       ? params[index][sub]
+                       : fallback;
         }
     };
     // Views are valid only during this synchronous callback. Unhandled framed
@@ -55,7 +65,6 @@ public:
     static constexpr qsizetype MaxClipboardTextBytes = 1024 * 1024;
     // Malformed/oversized OSC 52 frames are discarded, never keyboard input.
     void setClipboardErrorCallback(std::function<void()> cb);
-
 
     InputDecoder();
     ~InputDecoder();
@@ -80,8 +89,7 @@ public:
     // Qt::Key_A..Qt::Key_Z whatever their case; every other character carries
     // its code point, which matches Qt::Key_0..Key_9 and ASCII punctuation.
     // Inline so qmltui::runner can synthesize the same events as raw input.
-    static constexpr int keyForCharacter(char32_t codepoint)
-    {
+    static constexpr int keyForCharacter(char32_t codepoint) {
         if (codepoint >= U'a' && codepoint <= U'z')
             return static_cast<int>(Qt::Key_A) + static_cast<int>(codepoint - U'a');
         return static_cast<int>(codepoint);

@@ -136,7 +136,6 @@ Item {
             });
         }
 
-        // Add empty portion
         if (emptyLen > 0) {
             let emptyStr = "";
             for (let j = 0; j < emptyLen; ++j)
@@ -153,7 +152,6 @@ Item {
     implicitHeight: 1
     implicitWidth: 15
 
-    // Fast Single-Text element for standard single color (default mode - 0 Repeater overhead)
     Text {
         visible: !control.hasGradient
         anchors.fill: parent
@@ -185,7 +183,6 @@ Item {
         }
     }
 
-    // Segmented Row for Left-to-Right Gradient mode (only active when gradient is set)
     Row {
         visible: control.hasGradient
         anchors.fill: parent

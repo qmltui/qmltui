@@ -42,7 +42,6 @@ static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulato
     ++acc.count;
 }
 
-// --- CanvasPainter ---
 void CanvasPainter::setPixel(int x, int y, bool value) {
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
         const int cellX = x / braille::DotsX;
@@ -112,7 +111,6 @@ void CanvasPainter::clear() {
     std::fill(m_canvas.m_pixelSet.begin(), m_canvas.m_pixelSet.end(), (clearBg >> 24) != 0);
 }
 
-// --- Canvas ---
 Canvas::Canvas(QObject* parent) : Item(parent) {
     resizeBuffer();
 }
@@ -325,7 +323,6 @@ void Canvas::resizeBuffer() const {
     }
 }
 
-// --- CanvasShape ---
 void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
@@ -340,14 +337,12 @@ uint32_t CanvasShape::resolvedColor(const CanvasPainter& painter) const {
     return painter.defaultColor();
 }
 
-// --- Point ---
 Point::Point(QObject* parent) : CanvasShape(parent) {}
 
 void Point::draw(CanvasPainter& painter) const {
     painter.setPixelColorHex(x(), y(), resolvedColor(painter));
 }
 
-// --- Line ---
 Line::Line(QObject* parent) : CanvasShape(parent) {}
 
 void Line::setX1(int x1) {
@@ -382,7 +377,6 @@ void Line::draw(CanvasPainter& painter) const {
     drawBresenhamLine(painter, m_x1, m_y1, m_x2, m_y2, resolvedColor(painter));
 }
 
-// --- Polygon ---
 Polygon::Polygon(QObject* parent) : CanvasShape(parent) {}
 
 void Polygon::setPoints(const QVariantList& points) {
@@ -434,7 +428,6 @@ void Polygon::draw(CanvasPainter& painter) const {
     }
 }
 
-// --- CanvasRectangle ---
 CanvasRectangle::CanvasRectangle(QObject* parent) : CanvasShape(parent) {}
 
 void CanvasRectangle::setFill(bool fill) {
@@ -468,7 +461,6 @@ void CanvasRectangle::draw(CanvasPainter& painter) const {
     }
 }
 
-// --- Circle ---
 Circle::Circle(QObject* parent) : CanvasShape(parent) {}
 
 void Circle::setCx(int cx) {

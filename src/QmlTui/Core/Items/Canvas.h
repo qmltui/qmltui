@@ -119,7 +119,7 @@ private:
     mutable std::vector<uint8_t> m_pixelSet;     // occupancy, independent of default color 0
     mutable std::vector<uint32_t> m_pixelColors; // HalfBlock mode (1x2 colors per cell, ARGB)
     Color m_color = "default";
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_fillColor;
     uint32_t m_resolvedFillColor = 0x00000000;
 };

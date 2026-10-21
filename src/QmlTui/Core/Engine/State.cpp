@@ -13,10 +13,6 @@
 
 namespace qmltui {
 
-// ==========================================
-// PropertyChanges Class
-// ==========================================
-
 PropertyChanges::PropertyChanges(QObject* parent)
     : QObject(parent), d(std::make_unique<PropertyChangesPrivate>()) {
     d->q = this;
@@ -54,12 +50,7 @@ void PropertyChanges::setIsExplicit(bool e) {
 }
 #endif
 
-// ==========================================
-// State Class
-// ==========================================
-
-State::State(QObject* parent) : QObject(parent) {
-}
+State::State(QObject* parent) : QObject(parent) {}
 
 void State::setName(const QString& n) {
     if (m_name == n) return;
@@ -74,14 +65,8 @@ void State::setWhen(bool w) {
 }
 
 QQmlListProperty<QObject> State::changes() const {
-    return QQmlListProperty<QObject>(
-        const_cast<State*>(this),
-        nullptr,
-        &State::appendChange,
-        &State::changeCount,
-        &State::changeAt,
-        &State::clearChanges
-    );
+    return QQmlListProperty<QObject>(const_cast<State*>(this), nullptr, &State::appendChange,
+                                     &State::changeCount, &State::changeAt, &State::clearChanges);
 }
 
 void State::appendChange(QQmlListProperty<QObject>* list, QObject* obj) {
@@ -99,7 +84,8 @@ qsizetype State::changeCount(QQmlListProperty<QObject>* list) {
 QObject* State::changeAt(QQmlListProperty<QObject>* list, qsizetype index) {
     auto* self = qobject_cast<State*>(list->object);
     return (self && index >= 0 && index < self->m_changesList.size())
-        ? self->m_changesList.at(index).data() : nullptr;
+               ? self->m_changesList.at(index).data()
+               : nullptr;
 }
 
 void State::clearChanges(QQmlListProperty<QObject>* list) {
@@ -121,15 +107,9 @@ QList<PropertyChanges*> State::propertyChangesList() const {
     return result;
 }
 
-// ==========================================
-// PropertyChangesPrivate & Custom Parser
-// ==========================================
-
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
-void PropertyChangesPrivate::setBindings(
-    const QQmlRefPointer<QV4::ExecutableCompilationUnit> &unit,
-    const QList<const QV4::CompiledData::Binding *> &bindings)
-{
+void PropertyChangesPrivate::setBindings(const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
+                                         const QList<const QV4::CompiledData::Binding*>& bindings) {
     compilationUnit = unit;
     rawBindings = bindings;
     hasCustomBindings = !rawBindings.isEmpty();
@@ -137,31 +117,27 @@ void PropertyChangesPrivate::setBindings(
     decode();
 }
 
-void PropertyChangesPrivate::decode()
-{
-    if (hasDecoded || !compilationUnit)
-        return;
+void PropertyChangesPrivate::decode() {
+    if (hasDecoded || !compilationUnit) return;
     hasDecoded = true;
     decodedBindings.clear();
 
-    for (const auto *b : rawBindings) {
+    for (const auto* b : rawBindings) {
         decodeBinding(QString(), compilationUnit, b);
     }
 }
 
 void PropertyChangesPrivate::decodeBinding(
-    const QString &propertyPrefix,
-    const QQmlRefPointer<QV4::ExecutableCompilationUnit> &unit,
-    const QV4::CompiledData::Binding *binding)
-{
+    const QString& propertyPrefix, const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
+    const QV4::CompiledData::Binding* binding) {
     QString propertyName = propertyPrefix + unit->stringAt(binding->propertyNameIndex);
 
     switch (binding->type()) {
     case QV4::CompiledData::Binding::Type_GroupProperty:
     case QV4::CompiledData::Binding::Type_AttachedProperty: {
         QString pre = propertyName + QLatin1Char('.');
-        const QV4::CompiledData::Object *subObj = unit->objectAt(binding->value.objectIndex);
-        const QV4::CompiledData::Binding *subBinding = subObj->bindingTable();
+        const QV4::CompiledData::Object* subObj = unit->objectAt(binding->value.objectIndex);
+        const QV4::CompiledData::Binding* subBinding = subObj->bindingTable();
         for (quint32 i = 0; i < subObj->nBindings; ++i, ++subBinding) {
             decodeBinding(pre, unit, subBinding);
         }
@@ -173,8 +149,7 @@ void PropertyChangesPrivate::decodeBinding(
 
     if (propertyName == QLatin1String("target") ||
         propertyName == QLatin1String("restoreEntryValues") ||
-        propertyName == QLatin1String("explicit") ||
-        propertyName == QLatin1String("properties") ||
+        propertyName == QLatin1String("explicit") || propertyName == QLatin1String("properties") ||
         propertyName == QLatin1String("objectName")) {
         return;
     }
@@ -183,13 +158,14 @@ void PropertyChangesPrivate::decodeBinding(
     decoded.propertyName = propertyName;
     decoded.rawBinding = binding;
 
-    if (binding->type() == QV4::CompiledData::Binding::Type_Script || binding->isTranslationBinding()) {
+    if (binding->type() == QV4::CompiledData::Binding::Type_Script ||
+        binding->isTranslationBinding()) {
         decoded.isExpression = true;
         if (!binding->isTranslationBinding()) {
             decoded.expressionCode = unit->bindingValueAsString(binding);
             decoded.compiledScriptIndex = binding->value.compiledScriptIndex;
         }
-        QQmlData *ddata = QQmlData::get(q);
+        QQmlData* ddata = QQmlData::get(q);
         if (ddata && ddata->outerContext && !ddata->outerContext->url().isEmpty()) {
             decoded.url = ddata->outerContext->url();
             decoded.line = ddata->lineNumber;
@@ -222,30 +198,28 @@ void PropertyChangesPrivate::decodeBinding(
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 
 void PropertyChangesParser::verifyList(
-    const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
-    const QV4::CompiledData::Binding *binding,
-    bool &hasPropertiesMap,
-    bool &hasDirectProps)
-{
+    const QQmlRefPointer<QV4::CompiledData::CompilationUnit>& compilationUnit,
+    const QV4::CompiledData::Binding* binding, bool& hasPropertiesMap, bool& hasDirectProps) {
     QString name = compilationUnit->stringAt(binding->propertyNameIndex);
     if (name == QLatin1String("properties")) {
         hasPropertiesMap = true;
-    } else if (name != QLatin1String("target") &&
-               name != QLatin1String("restoreEntryValues") &&
-               name != QLatin1String("explicit") &&
-               name != QLatin1String("objectName")) {
+    } else if (name != QLatin1String("target") && name != QLatin1String("restoreEntryValues") &&
+               name != QLatin1String("explicit") && name != QLatin1String("objectName")) {
         hasDirectProps = true;
     }
 
     switch (binding->type()) {
     case QV4::CompiledData::Binding::Type_Object:
         error(compilationUnit->objectAt(binding->value.objectIndex),
-              QCoreApplication::translate("PropertyChanges", "PropertyChanges does not support creating state-specific objects."));
+              QCoreApplication::translate(
+                  "PropertyChanges",
+                  "PropertyChanges does not support creating state-specific objects."));
         break;
     case QV4::CompiledData::Binding::Type_GroupProperty:
     case QV4::CompiledData::Binding::Type_AttachedProperty: {
-        const QV4::CompiledData::Object *subObj = compilationUnit->objectAt(binding->value.objectIndex);
-        const QV4::CompiledData::Binding *subBinding = subObj->bindingTable();
+        const QV4::CompiledData::Object* subObj =
+            compilationUnit->objectAt(binding->value.objectIndex);
+        const QV4::CompiledData::Binding* subBinding = subObj->bindingTable();
         for (quint32 i = 0; i < subObj->nBindings; ++i, ++subBinding) {
             verifyList(compilationUnit, subBinding, hasPropertiesMap, hasDirectProps);
         }
@@ -257,22 +231,22 @@ void PropertyChangesParser::verifyList(
 }
 
 void PropertyChangesParser::verifyBindings(
-    const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
-    const QList<const QV4::CompiledData::Binding *> &props)
-{
+    const QQmlRefPointer<QV4::CompiledData::CompilationUnit>& compilationUnit,
+    const QList<const QV4::CompiledData::Binding*>& props) {
     bool hasPropertiesMap = false;
     bool hasDirectProps = false;
-    for (const auto *b : props) {
+    for (const auto* b : props) {
         verifyList(compilationUnit, b, hasPropertiesMap, hasDirectProps);
     }
 
     if (!props.isEmpty()) {
-        const QV4::CompiledData::Binding *firstBinding = props.first();
+        const QV4::CompiledData::Binding* firstBinding = props.first();
         for (quint32 i = 0; i < compilationUnit->objectCount(); ++i) {
-            const QV4::CompiledData::Object *obj = compilationUnit->objectAt(i);
-            if (firstBinding >= obj->bindingTable() && firstBinding < obj->bindingTable() + obj->nBindings) {
+            const QV4::CompiledData::Object* obj = compilationUnit->objectAt(i);
+            if (firstBinding >= obj->bindingTable() &&
+                firstBinding < obj->bindingTable() + obj->nBindings) {
                 for (quint32 j = 0; j < obj->nBindings; ++j) {
-                    const QV4::CompiledData::Binding *b = obj->bindingTable() + j;
+                    const QV4::CompiledData::Binding* b = obj->bindingTable() + j;
                     QString name = compilationUnit->stringAt(b->propertyNameIndex);
                     if (name == QLatin1String("properties")) {
                         hasPropertiesMap = true;
@@ -286,23 +260,22 @@ void PropertyChangesParser::verifyBindings(
 
     if (hasPropertiesMap && hasDirectProps) {
         error(props.first(),
-              QCoreApplication::translate("PropertyChanges", "Cannot mix properties map and direct assignments in PropertyChanges."));
+              QCoreApplication::translate(
+                  "PropertyChanges",
+                  "Cannot mix properties map and direct assignments in PropertyChanges."));
     }
 }
 
 void PropertyChangesParser::applyBindings(
-    QObject *obj,
-    const QQmlRefPointer<QV4::ExecutableCompilationUnit> &compilationUnit,
-    const QList<const QV4::CompiledData::Binding *> &bindings)
-{
-    auto *pc = qobject_cast<PropertyChanges*>(obj);
+    QObject* obj, const QQmlRefPointer<QV4::ExecutableCompilationUnit>& compilationUnit,
+    const QList<const QV4::CompiledData::Binding*>& bindings) {
+    auto* pc = qobject_cast<PropertyChanges*>(obj);
     if (pc && pc->d_func()) {
         pc->d_func()->setBindings(compilationUnit, bindings);
     }
 
-    QQmlData *data = QQmlData::get(obj);
-    if (data && !data->wasDeleted(obj))
-        data->releaseDeferredData();
+    QQmlData* data = QQmlData::get(obj);
+    if (data && !data->wasDeleted(obj)) data->releaseDeferredData();
 }
 #endif
 
@@ -310,9 +283,7 @@ void PropertyChangesParser::applyBindings(
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 QT_BEGIN_NAMESPACE
-template<>
-QQmlCustomParser *qmlCreateCustomParser<qmltui::PropertyChanges>()
-{
+template <> QQmlCustomParser* qmlCreateCustomParser<qmltui::PropertyChanges>() {
     return new qmltui::PropertyChangesParser;
 }
 QT_END_NAMESPACE

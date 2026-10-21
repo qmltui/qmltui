@@ -20,7 +20,7 @@ class QMLTUI_CORE_EXPORT GradientStop : public QObject {
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
 
 public:
-    explicit GradientStop(QObject *parent = nullptr);
+    explicit GradientStop(QObject* parent = nullptr);
 
     qreal position() const { return m_position; }
     void setPosition(qreal pos);
@@ -38,7 +38,7 @@ signals:
 private:
     qreal m_position = 0.0;
     Color m_color = "white";
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
 };
 
 } // namespace qmltui

@@ -124,10 +124,8 @@ void Toast::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         else if (toast.type == "error")
             borderColor = m_resolvedErrorColor;
 
-        // Draw Box
         buffer.drawBox(toastX, curY, tWidth, 3, borderColor, background);
 
-        // Header Title
         QString prefix =
             (toast.type == "error"
                  ? "✖ "
@@ -136,7 +134,6 @@ void Toast::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
                          prefix + UnicodeText::elideText(toast.title, (std::max)(0, tWidth - 4)),
                          borderColor, background, TextAttribute::Bold);
 
-        // Body message.
         buffer.writeText(toastX + 1, curY + 1,
                          UnicodeText::elideText(toast.message, (std::max)(0, tWidth - 3)),
                          messageColor, background);

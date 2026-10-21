@@ -362,7 +362,7 @@ private:
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 
     Color m_headerColor = "default";
-    uint32_t m_resolvedHeaderColor = Color::resolve(m_headerColor, 0); // see Color.h
+    uint32_t m_resolvedHeaderColor = Color::resolve(m_headerColor, 0);
     Color m_headerBackgroundColor = "transparent";
     uint32_t m_resolvedHeaderBackgroundColor = 0x00000000;
 

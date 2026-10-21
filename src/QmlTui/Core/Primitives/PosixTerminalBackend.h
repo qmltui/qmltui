@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: POSIX termios, poll/write, and signal-bridge implementation of TerminalBackend.
+
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 
 #include <termios.h>

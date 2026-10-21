@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: Qt for WebAssembly embind/JS callback implementation of TerminalBackend.
+
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 
@@ -27,21 +29,21 @@ public:
     ~WasmTerminalBackend() override;
 
     // TerminalBackend
-    bool enterRawMode() override { return true; }   // xterm.js has no cooked mode
+    bool enterRawMode() override { return true; } // xterm.js has no cooked mode
     bool leaveRawMode() override { return true; }
     WriteStatus writeSome(const char* data, size_t size, size_t& offset) override;
     bool writeAll(std::string& pending, int timeoutMs) override;
     bool supportsAsyncOutput() const override { return false; }
     bool setNonBlockingOutput(bool enabled) override { return !enabled; }
     void setWritableNotifications(bool) override {}
-    QSize size() const override;                    // last size pushed from JS, 80x24 until then
+    QSize size() const override; // last size pushed from JS, 80x24 until then
     bool isInteractive() const override { return true; }
     void startInput() override { m_inputStarted = true; }
     void stopInput() override { m_inputStarted = false; }
 
     // Bridge side, called from the embind entry points.
-    void deliverInput(const QByteArray& bytes);     // emits inputReceived() once started
-    void deliverResize();                           // emits resized()
+    void deliverInput(const QByteArray& bytes); // emits inputReceived() once started
+    void deliverResize();                       // emits resized()
 
 private:
     bool m_inputStarted = false;

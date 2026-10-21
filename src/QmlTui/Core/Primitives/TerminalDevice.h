@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: terminal output queue, raw-mode state, and dimension helper over TerminalBackend.
+
 #include <cstddef>
 #include <functional>
 #include <memory>

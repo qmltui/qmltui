@@ -1,5 +1,8 @@
 #pragma once
 
+// Internal: abstract rendering strategy interface implemented by AltScreenRenderer and
+// InlineRenderer.
+
 #include <QmlTui/Core/Primitives/TerminalDevice.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 #include <QtGlobal>
@@ -14,13 +17,13 @@ class TextGridBuffer;
 // few clock reads per frame; the engine assigns the sequence number.
 struct FrameStats {
     quint64 sequence = 0;
-    qint64 paintMicros = 0;       // item tree traversal into the cell buffer
-    qint64 diffMicros = 0;        // cell diff and ANSI encoding
-    qint64 writeMicros = 0;       // time spent in TerminalDevice::write
-    qint64 diffBytes = 0;         // encoded bytes, recorded even when output is disabled
-    qint64 bytesWritten = 0;      // bytes handed to the terminal device
-    qint64 queuedBytes = 0;       // bytes still waiting in the device's output queue
-    int dirtyDuringPaint = 0;     // invalidations raised while painting
+    qint64 paintMicros = 0;   // item tree traversal into the cell buffer
+    qint64 diffMicros = 0;    // cell diff and ANSI encoding
+    qint64 writeMicros = 0;   // time spent in TerminalDevice::write
+    qint64 diffBytes = 0;     // encoded bytes, recorded even when output is disabled
+    qint64 bytesWritten = 0;  // bytes handed to the terminal device
+    qint64 queuedBytes = 0;   // bytes still waiting in the device's output queue
+    int dirtyDuringPaint = 0; // invalidations raised while painting
 };
 
 // Strategy interface for painting the Terminal item tree and committing ANSI
@@ -49,7 +52,9 @@ public:
     virtual void discardCommittedState() {}
 
     // Terminal capabilities the encoder should target (colour depth, sync).
-    virtual void setCapabilities(const TerminalCapabilities& capabilities) { m_capabilities = capabilities; }
+    virtual void setCapabilities(const TerminalCapabilities& capabilities) {
+        m_capabilities = capabilities;
+    }
     const TerminalCapabilities& capabilities() const { return m_capabilities; }
 
 protected:

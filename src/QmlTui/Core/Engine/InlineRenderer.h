@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: normal-buffer stream renderer for Terminal.Inline mode.
+
 #include <QmlTui/Core/Engine/Renderer.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <string>

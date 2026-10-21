@@ -32,19 +32,15 @@ class SignalBridge : public QObject {
 public:
     enum Code : char { WindowChanged = 1, Continued = 2 };
 
-    static SignalBridge* instance()
-    {
-        if (!qApp || QThread::currentThread() != qApp->thread())
-            return nullptr;
+    static SignalBridge* instance() {
+        if (!qApp || QThread::currentThread() != qApp->thread()) return nullptr;
         static QPointer<SignalBridge> bridge;
-        if (!bridge)
-            bridge = new SignalBridge(qApp);
+        if (!bridge) bridge = new SignalBridge(qApp);
         return bridge.data();
     }
 
     // Async-signal-safe: one write(2) on the self-pipe.
-    static void notify(Code code)
-    {
+    static void notify(Code code) {
         const int fd = s_pipe[1].load(std::memory_order_relaxed);
         if (fd != -1) {
             const char wake = code;
@@ -53,34 +49,27 @@ public:
         }
     }
 
-    void addListener(QObject* listener)
-    {
-        if (m_listeners.contains(listener))
-            return;
+    void addListener(QObject* listener) {
+        if (m_listeners.contains(listener)) return;
         m_listeners.insert(listener);
-        if (m_listeners.size() == 1)
-            install();
+        if (m_listeners.size() == 1) install();
     }
 
-    void removeListener(QObject* listener)
-    {
+    void removeListener(QObject* listener) {
         m_listeners.remove(listener);
-        if (m_listeners.isEmpty())
-            uninstall();
+        if (m_listeners.isEmpty()) uninstall();
     }
 
 signals:
-    void received();      // SIGWINCH
-    void continued();     // SIGCONT after a job-control stop
+    void received();  // SIGWINCH
+    void continued(); // SIGCONT after a job-control stop
 
 private:
     explicit SignalBridge(QObject* parent) : QObject(parent) {}
     ~SignalBridge() override { uninstall(); }
 
-    void install()
-    {
-        if (m_installed)
-            return;
+    void install() {
+        if (m_installed) return;
         int fds[2] = {-1, -1};
         if (::pipe(fds) != 0) {
             s_pipe[0].store(-1, std::memory_order_relaxed);
@@ -89,15 +78,13 @@ private:
         }
         for (int fd : fds) {
             int flags = ::fcntl(fd, F_GETFD);
-            if (flags != -1)
-                ::fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+            if (flags != -1) ::fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
             flags = ::fcntl(fd, F_GETFL);
-            if (flags != -1)
-                ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+            if (flags != -1) ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
         }
         s_pipe[0].store(fds[0], std::memory_order_release);
         s_pipe[1].store(fds[1], std::memory_order_release);
-        struct sigaction action {};
+        struct sigaction action{};
         action.sa_handler = &SignalBridge::handler;
         sigemptyset(&action.sa_mask);
         action.sa_flags = SA_RESTART;
@@ -106,7 +93,8 @@ private:
             return;
         }
         m_installed = true;
-        m_notifier = new QSocketNotifier(s_pipe[0].load(std::memory_order_relaxed), QSocketNotifier::Read, this);
+        m_notifier = new QSocketNotifier(s_pipe[0].load(std::memory_order_relaxed),
+                                         QSocketNotifier::Read, this);
         connect(m_notifier, &QSocketNotifier::activated, this, [this] {
             char buffer[128];
             bool windowChanged = false;
@@ -116,8 +104,10 @@ private:
             while (readFd != -1 && (count = ::read(readFd, buffer, sizeof buffer)) > 0) {
                 // Drain every pending wake-up before notifying once per kind.
                 for (ssize_t i = 0; i < count; ++i) {
-                    if (buffer[i] == Continued) resumed = true;
-                    else windowChanged = true;
+                    if (buffer[i] == Continued)
+                        resumed = true;
+                    else
+                        windowChanged = true;
                 }
             }
             if (resumed) emit continued();
@@ -125,8 +115,7 @@ private:
         });
     }
 
-    void uninstall()
-    {
+    void uninstall() {
         if (m_notifier) {
             m_notifier->setEnabled(false);
             delete m_notifier;
@@ -139,8 +128,7 @@ private:
         closePipe();
     }
 
-    void closePipe()
-    {
+    void closePipe() {
         for (auto& fd : s_pipe) {
             const int val = fd.exchange(-1, std::memory_order_acq_rel);
             if (val != -1) {
@@ -149,8 +137,7 @@ private:
         }
     }
 
-    static void handler(int)
-    {
+    static void handler(int) {
         const int savedErrno = errno;
         notify(WindowChanged);
         errno = savedErrno;
@@ -159,13 +146,12 @@ private:
     static std::atomic<int> s_pipe[2];
     QSet<QObject*> m_listeners;
     QSocketNotifier* m_notifier = nullptr;
-    struct sigaction m_previousAction {};
+    struct sigaction m_previousAction{};
     bool m_installed = false;
 };
 
 std::atomic<int> SignalBridge::s_pipe[2] = {{-1}, {-1}};
 
-// Emergency restore ----------------------------------------------------------
 // While a backend is in raw mode the terminal belongs to the application:
 // alternate screen, hidden cursor, mouse and paste reporting, no echo. A
 // crash, a kill, or Ctrl+Z would otherwise hand the user's shell a terminal
@@ -190,9 +176,8 @@ EmergencyState g_emergency;
 // Everything TerminalEngine enables, undone in one write. Order: reporting
 // modes off, cursor shown, attributes reset, background restored, normal
 // screen. Unknown sequences are ignored by terminals that lack a mode.
-constexpr char kResetSequence[] =
-    "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
-    "\033[?25h\033[0m\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
+constexpr char kResetSequence[] = "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
+                                  "\033[?25h\033[0m\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
 constexpr char kKeyboardPopSequence[] = "\033[<u";
 
 constexpr int kFatalSignals[] = {SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT,
@@ -202,8 +187,7 @@ struct sigaction g_previousTstp;
 struct sigaction g_previousCont;
 bool g_handlersInstalled = false;
 
-void writeFromSignal(int fd, const char* data, size_t size)
-{
+void writeFromSignal(int fd, const char* data, size_t size) {
     // The descriptor may be non-blocking; retry a bounded number of times
     // rather than spin forever in a handler.
     for (int attempt = 0; size > 0 && attempt < 10000; ++attempt) {
@@ -213,22 +197,20 @@ void writeFromSignal(int fd, const char* data, size_t size)
             size -= static_cast<size_t>(written);
             continue;
         }
-        if (written < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
-            continue;
+        if (written < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) continue;
         break;
     }
 }
 
-void restoreTerminalFromSignal()
-{
-    if (!g_emergency.active)
-        return;
+void restoreTerminalFromSignal() {
+    if (!g_emergency.active) return;
     std::atomic_thread_fence(std::memory_order_acquire);
     if (g_emergency.keyboardProtocol) {
         // Pop our own entry only, and only once: after a stop the engine
         // pushes again on resume and re-arms this flag.
         g_emergency.keyboardProtocol = 0;
-        writeFromSignal(g_emergency.outputFd, kKeyboardPopSequence, sizeof kKeyboardPopSequence - 1);
+        writeFromSignal(g_emergency.outputFd, kKeyboardPopSequence,
+                        sizeof kKeyboardPopSequence - 1);
     }
     writeFromSignal(g_emergency.outputFd, kResetSequence, sizeof kResetSequence - 1);
     ::tcsetattr(g_emergency.inputFd, TCSANOW, &g_emergency.original);
@@ -236,15 +218,13 @@ void restoreTerminalFromSignal()
 
 void installTstpHandler();
 
-void fatalHandler(int signo)
-{
+void fatalHandler(int signo) {
     restoreTerminalFromSignal();
     ::signal(signo, SIG_DFL);
-    ::raise(signo);   // pending until this handler returns, then the default action
+    ::raise(signo); // pending until this handler returns, then the default action
 }
 
-void tstpHandler(int)
-{
+void tstpHandler(int) {
     const int savedErrno = errno;
     restoreTerminalFromSignal();
     ::signal(SIGTSTP, SIG_DFL);
@@ -252,8 +232,7 @@ void tstpHandler(int)
     errno = savedErrno;
 }
 
-void contHandler(int)
-{
+void contHandler(int) {
     const int savedErrno = errno;
     if (g_emergency.active) {
         // The shell restored the terminal modes it saved when the job stopped,
@@ -266,26 +245,24 @@ void contHandler(int)
     errno = savedErrno;
 }
 
-void installTstpHandler()
-{
-    struct sigaction action {};
+void installTstpHandler() {
+    struct sigaction action{};
     action.sa_handler = &tstpHandler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;
     ::sigaction(SIGTSTP, &action, nullptr);
 }
 
-void installEmergencyHandlers(int inputFd, int outputFd, const termios& original, const termios& raw)
-{
+void installEmergencyHandlers(int inputFd, int outputFd, const termios& original,
+                              const termios& raw) {
     g_emergency.inputFd = inputFd;
     g_emergency.outputFd = outputFd;
     g_emergency.original = original;
     g_emergency.raw = raw;
     std::atomic_thread_fence(std::memory_order_release);
     g_emergency.active = 1;
-    if (g_handlersInstalled)
-        return;   // a second backend in raw mode takes over the state only
-    struct sigaction action {};
+    if (g_handlersInstalled) return; // a second backend in raw mode takes over the state only
+    struct sigaction action{};
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;
     action.sa_handler = &fatalHandler;
@@ -298,13 +275,11 @@ void installEmergencyHandlers(int inputFd, int outputFd, const termios& original
     g_handlersInstalled = true;
 }
 
-void uninstallEmergencyHandlers()
-{
+void uninstallEmergencyHandlers() {
     g_emergency.active = 0;
     g_emergency.keyboardProtocol = 0;
     std::atomic_thread_fence(std::memory_order_release);
-    if (!g_handlersInstalled)
-        return;
+    if (!g_handlersInstalled) return;
     for (size_t i = 0; i < std::size(kFatalSignals); ++i)
         ::sigaction(kFatalSignals[i], &g_previousFatal[i], nullptr);
     ::sigaction(SIGTSTP, &g_previousTstp, nullptr);
@@ -315,23 +290,18 @@ void uninstallEmergencyHandlers()
 } // namespace
 
 PosixTerminalBackend::PosixTerminalBackend(int outputFd, QObject* parent)
-    : TerminalBackend(parent)
-    , m_outputFd(outputFd < 0 ? STDOUT_FILENO : outputFd)
-    , m_inputFd(STDIN_FILENO)
-{
+    : TerminalBackend(parent), m_outputFd(outputFd < 0 ? STDOUT_FILENO : outputFd),
+      m_inputFd(STDIN_FILENO) {
     m_termiosValid = ::tcgetattr(m_inputFd, &m_originalTermios) == 0;
 }
 
-PosixTerminalBackend::~PosixTerminalBackend()
-{
+PosixTerminalBackend::~PosixTerminalBackend() {
     stopInput();
     setNonBlockingOutput(false);
 }
 
-bool PosixTerminalBackend::enterRawMode()
-{
-    if (!m_termiosValid)
-        return false;
+bool PosixTerminalBackend::enterRawMode() {
+    if (!m_termiosValid) return false;
     termios raw = m_originalTermios;
     // Disable echo, canonical mode, extended input processing, and signals.
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
@@ -341,136 +311,110 @@ bool PosixTerminalBackend::enterRawMode()
     raw.c_cflag |= CS8;
     // Disable output processing.
     raw.c_oflag &= ~OPOST;
-    if (::tcsetattr(m_inputFd, TCSAFLUSH, &raw) != 0)
-        return false;
+    if (::tcsetattr(m_inputFd, TCSAFLUSH, &raw) != 0) return false;
     installEmergencyHandlers(m_inputFd, m_outputFd, m_originalTermios, raw);
     return true;
 }
 
-void PosixTerminalBackend::setKeyboardProtocolActive(bool active)
-{
+void PosixTerminalBackend::setKeyboardProtocolActive(bool active) {
     if (g_emergency.active && g_emergency.outputFd == m_outputFd)
         g_emergency.keyboardProtocol = active ? 1 : 0;
 }
 
-bool PosixTerminalBackend::leaveRawMode()
-{
-    if (!m_termiosValid)
-        return false;
+bool PosixTerminalBackend::leaveRawMode() {
+    if (!m_termiosValid) return false;
     uninstallEmergencyHandlers();
     return ::tcsetattr(m_inputFd, TCSAFLUSH, &m_originalTermios) == 0;
 }
 
-TerminalBackend::WriteStatus PosixTerminalBackend::writeSome(const char* data, size_t size, size_t& offset)
-{
+TerminalBackend::WriteStatus PosixTerminalBackend::writeSome(const char* data, size_t size,
+                                                             size_t& offset) {
     while (offset < size) {
         const ssize_t written = ::write(m_outputFd, data + offset, size - offset);
         if (written < 0) {
-            if (errno == EINTR)
-                continue;
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return WriteStatus::WouldBlock;
+            if (errno == EINTR) continue;
+            if (errno == EAGAIN || errno == EWOULDBLOCK) return WriteStatus::WouldBlock;
             return WriteStatus::Error;
         }
-        if (written == 0)
-            return WriteStatus::Error;
+        if (written == 0) return WriteStatus::Error;
         offset += static_cast<size_t>(written);
     }
     return WriteStatus::Done;
 }
 
-bool PosixTerminalBackend::writeAll(std::string& pending, int timeoutMs)
-{
-    if (pending.empty())
-        return true;
-    if (timeoutMs < 0)
-        return false;
+bool PosixTerminalBackend::writeAll(std::string& pending, int timeoutMs) {
+    if (pending.empty()) return true;
+    if (timeoutMs < 0) return false;
 
     // Even a caller-owned descriptor may have been switched back to blocking
     // mode. Keep every write non-blocking so the deadline also bounds write().
     const int flags = ::fcntl(m_outputFd, F_GETFL);
-    if (flags == -1 || ::fcntl(m_outputFd, F_SETFL, flags | O_NONBLOCK) == -1)
-        return false;
+    if (flags == -1 || ::fcntl(m_outputFd, F_SETFL, flags | O_NONBLOCK) == -1) return false;
     const auto restoreFlags = qScopeGuard([&] { ::fcntl(m_outputFd, F_SETFL, flags); });
 
     QElapsedTimer timer;
     timer.start();
     while (!pending.empty()) {
-        const ssize_t written = ::write(m_outputFd, pending.data(),
-                                        (std::min)(pending.size(), size_t(65536)));
+        const ssize_t written =
+            ::write(m_outputFd, pending.data(), (std::min)(pending.size(), size_t(65536)));
         if (written > 0)
             pending.erase(0, static_cast<size_t>(written));
         else if (written == 0 || (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK))
             return false;
         if (!pending.empty()) {
             const qint64 remaining = timeoutMs - timer.elapsed();
-            if (remaining <= 0)
-                return false;
+            if (remaining <= 0) return false;
             pollfd descriptor{m_outputFd, POLLOUT, 0};
             const int ready = ::poll(&descriptor, 1, static_cast<int>(remaining));
-            if (ready < 0 && errno == EINTR)
-                continue;
-            if (ready <= 0 || (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)))
-                return false;
+            if (ready < 0 && errno == EINTR) continue;
+            if (ready <= 0 || (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL))) return false;
         }
     }
     return true;
 }
 
-bool PosixTerminalBackend::setNonBlockingOutput(bool enabled)
-{
+bool PosixTerminalBackend::setNonBlockingOutput(bool enabled) {
     if (enabled) {
-        if (m_originalFlags != -1)
-            return true;
+        if (m_originalFlags != -1) return true;
         const int flags = ::fcntl(m_outputFd, F_GETFL);
-        if (flags == -1)
-            return false;
-        if (::fcntl(m_outputFd, F_SETFL, flags | O_NONBLOCK) == -1)
-            return false;
+        if (flags == -1) return false;
+        if (::fcntl(m_outputFd, F_SETFL, flags | O_NONBLOCK) == -1) return false;
         m_originalFlags = flags;
         return true;
     }
-    if (m_originalFlags == -1)
-        return true;
+    if (m_originalFlags == -1) return true;
     const bool restored = ::fcntl(m_outputFd, F_SETFL, m_originalFlags) != -1;
     m_originalFlags = -1;
     return restored;
 }
 
-void PosixTerminalBackend::setWritableNotifications(bool enabled)
-{
+void PosixTerminalBackend::setWritableNotifications(bool enabled) {
     if (enabled && !m_writeNotifier) {
-        if (!QCoreApplication::instance())
-            return;   // nothing to drain the queue from
+        if (!QCoreApplication::instance()) return; // nothing to drain the queue from
         m_writeNotifier = std::make_unique<QSocketNotifier>(m_outputFd, QSocketNotifier::Write);
-        connect(m_writeNotifier.get(), &QSocketNotifier::activated, this, [this] { emit writable(); });
+        connect(m_writeNotifier.get(), &QSocketNotifier::activated, this,
+                [this] { emit writable(); });
     }
-    if (m_writeNotifier)
-        m_writeNotifier->setEnabled(enabled);
+    if (m_writeNotifier) m_writeNotifier->setEnabled(enabled);
 }
 
-QSize PosixTerminalBackend::size() const
-{
+QSize PosixTerminalBackend::size() const {
     winsize ws{};
     if (::ioctl(m_outputFd, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0 || ws.ws_row == 0)
         return QSize();
     return QSize(ws.ws_col, ws.ws_row);
 }
 
-bool PosixTerminalBackend::isInteractive() const
-{
+bool PosixTerminalBackend::isInteractive() const {
     return ::isatty(m_outputFd) == 1;
 }
 
-bool PosixTerminalBackend::isInputInteractive() const
-{
+bool PosixTerminalBackend::isInputInteractive() const {
     return ::isatty(m_inputFd) == 1;
 }
 
-void PosixTerminalBackend::startInput()
-{
-    if (m_inputStarted)
-        return;
+void PosixTerminalBackend::startInput() {
+    if (m_inputStarted) return;
     m_inputStarted = true;
     if (QCoreApplication::instance()) {
         m_readNotifier = std::make_unique<QSocketNotifier>(m_inputFd, QSocketNotifier::Read);
@@ -485,10 +429,8 @@ void PosixTerminalBackend::startInput()
     }
 }
 
-void PosixTerminalBackend::stopInput()
-{
-    if (!m_inputStarted)
-        return;
+void PosixTerminalBackend::stopInput() {
+    if (!m_inputStarted) return;
     m_inputStarted = false;
     m_readNotifier.reset();
     if (SignalBridge* bridge = SignalBridge::instance()) {
@@ -497,20 +439,16 @@ void PosixTerminalBackend::stopInput()
     }
 }
 
-void PosixTerminalBackend::readInput()
-{
+void PosixTerminalBackend::readInput() {
     char buffer[1024];
     const ssize_t count = ::read(m_inputFd, buffer, sizeof buffer);
     if (count == 0) {
-        if (m_readNotifier)
-            m_readNotifier->setEnabled(false);
+        if (m_readNotifier) m_readNotifier->setEnabled(false);
         return;
     }
     if (count < 0) {
-        if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-            return;
-        if (m_readNotifier)
-            m_readNotifier->setEnabled(false);
+        if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) return;
+        if (m_readNotifier) m_readNotifier->setEnabled(false);
         qWarning("Terminal input failed: %s", std::strerror(errno));
         return;
     }

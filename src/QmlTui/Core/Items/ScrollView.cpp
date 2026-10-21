@@ -28,7 +28,6 @@ void ScrollView::setContentHeight(int h) {
     m_contentHeight = h;
     emit contentHeightChanged();
 
-    // Clamp contentY
     int viewportH = height() - topPadding() - bottomPadding();
     int effectiveH = effectiveContentHeight();
     int maxScroll = (std::max)(0, effectiveH - viewportH);

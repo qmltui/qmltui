@@ -794,15 +794,11 @@ void StateController::applyState(const QString& newState) {
             m_baseRecords[canon].restore = false;
         }
 
-        // Claim ownership
         s_propertyOwners.insert(canon, this);
         m_ownedProperties.insert(canon);
-
-        // Apply override
         applyOverride(canon, override, transitionObj, animatedProperties);
     }
 
-    // Prune dead records
     for (auto it = m_baseRecords.begin(); it != m_baseRecords.end();) {
         if (it.key().target.isNull()) {
             it = m_baseRecords.erase(it);

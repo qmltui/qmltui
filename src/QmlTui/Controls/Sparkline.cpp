@@ -71,7 +71,6 @@ void Sparkline::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
 
     if (availW <= 0 || availH <= 0) return;
 
-    // Determine min/max range
     double computedMin = m_from;
     double computedMax = m_to;
 
@@ -148,20 +147,18 @@ void Sparkline::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 cell.bgColor = m_resolvedBackgroundColor;
 
                 if (availH == 1) {
-                    // Single row sparkline mode
                     cell.setCharacter(blockGlyphs[targetLevel]);
                 } else {
-                    // Multi-row chart mode
                     if (ry == targetRow) {
                         cell.setCharacter(blockGlyphs[targetLevel]);
                     } else if (ry < targetRow) {
                         if (m_filled) {
-                            cell.setCharacter("\xE2\x96\x88"); // Solid fill
+                            cell.setCharacter("\xE2\x96\x88");
                         } else {
-                            cell.setCharacter(" "); // Blank space for clean curve outline
+                            cell.setCharacter(" ");
                         }
                     } else {
-                        cell.setCharacter(" "); // Blank space above curve
+                        cell.setCharacter(" ");
                     }
                 }
                 cell.displayWidth = 1;

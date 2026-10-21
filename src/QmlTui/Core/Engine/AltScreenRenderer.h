@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: alternate-screen (?1049h) double-buffered cell renderer.
+
 #include <QmlTui/Core/Engine/Renderer.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
@@ -24,7 +26,7 @@ public:
 private:
     TextGridBuffer m_currentBuffer;
     TextGridBuffer m_nextBuffer;
-    std::string m_ansi;   // reused across frames
+    std::string m_ansi; // reused across frames
     bool m_repaintAll = false;
 };
 

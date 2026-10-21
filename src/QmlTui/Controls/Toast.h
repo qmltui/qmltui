@@ -3,7 +3,9 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-namespace qmltui { class ClockTimer; }
+namespace qmltui {
+class ClockTimer;
+}
 #include <QList>
 #include <QString>
 
@@ -26,18 +28,22 @@ class QMLTUI_CONTROLS_EXPORT Toast : public Item {
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
 
     Q_PROPERTY(qmltui::Color infoColor READ infoColor WRITE setInfoColor NOTIFY infoColorChanged)
-    Q_PROPERTY(qmltui::Color successColor READ successColor WRITE setSuccessColor NOTIFY successColorChanged)
-    Q_PROPERTY(qmltui::Color warningColor READ warningColor WRITE setWarningColor NOTIFY warningColorChanged)
-    Q_PROPERTY(qmltui::Color errorColor READ errorColor WRITE setErrorColor NOTIFY errorColorChanged)
+    Q_PROPERTY(qmltui::Color successColor READ successColor WRITE setSuccessColor NOTIFY
+                   successColorChanged)
+    Q_PROPERTY(qmltui::Color warningColor READ warningColor WRITE setWarningColor NOTIFY
+                   warningColorChanged)
+    Q_PROPERTY(
+        qmltui::Color errorColor READ errorColor WRITE setErrorColor NOTIFY errorColorChanged)
     Q_PROPERTY(int toastWidth READ toastWidth WRITE setToastWidth NOTIFY toastWidthChanged)
     // Corner placement: "top-right" (default), "top-left", "bottom-right", or "bottom-left".
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY positionChanged)
 
 public:
-    explicit Toast(QObject *parent = nullptr);
+    explicit Toast(QObject* parent = nullptr);
     ~Toast() override = default;
 
-    Q_INVOKABLE void showToast(const QString &title, const QString &message, const QString &type = "info", int timeoutMs = 3000);
+    Q_INVOKABLE void showToast(const QString& title, const QString& message,
+                               const QString& type = "info", int timeoutMs = 3000);
 
     Color infoColor() const { return m_infoColor; }
     void setInfoColor(Color color);
@@ -55,9 +61,10 @@ public:
     void setToastWidth(int width);
 
     QString position() const { return m_position; }
-    void setPosition(const QString &pos);
+    void setPosition(const QString& pos);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
@@ -86,7 +93,7 @@ private:
     ClockTimer* m_timer = nullptr;
 
     Color m_infoColor = "default";
-    uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0); // see Color.h
+    uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0);
 
     Color m_successColor = "default";
     uint32_t m_resolvedSuccessColor = Color::resolve(m_successColor, 0);

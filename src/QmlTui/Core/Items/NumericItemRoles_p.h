@@ -1,11 +1,6 @@
 #pragma once
 
-// Internal. Reads Qt's numeric standard item roles and item flags for a model
-// index and turns them into terminal-ready values under Widgets-style names,
-// the part of QStyledItemDelegate that a QML delegate cannot do itself because
-// these roles have no entry in roleNames(). QmlTuiCore does not link QtGui: a
-// QColor is decoded through the QVariant string converter QtGui registers
-// when it is loaded, QBrush/QIcon/QFont are ignored.
+// Internal: decodes Qt's numeric standard item roles and flags without QtGui.
 
 #include <QAbstractItemModel>
 #include <QDataStream>
@@ -22,8 +17,7 @@ namespace qmltui::NumericItemRoles {
 // byte (1 = RGB) followed by 16-bit alpha, red, green, blue. QStandardItem's
 // setForeground()/setBackground() store brushes, custom models usually store
 // colors. HSV, HSL, CMYK and extended-RGB specs are rare in models and ignored.
-inline QString colorFromStreamedQColor(const QVariant &value)
-{
+inline QString colorFromStreamedQColor(const QVariant& value) {
     const QMetaType type = value.metaType();
     const bool isColor = qstrcmp(type.name(), "QColor") == 0;
     const bool isBrush = qstrcmp(type.name(), "QBrush") == 0;
@@ -49,8 +43,7 @@ inline QString colorFromStreamedQColor(const QVariant &value)
         .arg(blue >> 8, 2, 16, QLatin1Char('0'));
 }
 
-inline QString colorString(const QVariant &value)
-{
+inline QString colorString(const QVariant& value) {
     if (!value.isValid() || value.isNull()) return {};
     if (value.metaType() == QMetaType::fromType<QString>()) return value.toString();
     const QString streamed = colorFromStreamedQColor(value);
@@ -58,12 +51,12 @@ inline QString colorString(const QVariant &value)
     if (!value.canConvert<QString>()) return {};
     QString text = value.toString();
     // Some converters stringify colors as #aarrggbb; terminals have no alpha.
-    if (text.size() == 9 && text.startsWith(QLatin1Char('#'))) text = QLatin1Char('#') + text.mid(3);
+    if (text.size() == 9 && text.startsWith(QLatin1Char('#')))
+        text = QLatin1Char('#') + text.mid(3);
     return text;
 }
 
-inline QString alignmentName(const QVariant &alignment)
-{
+inline QString alignmentName(const QVariant& alignment) {
     if (!alignment.isValid() || !alignment.canConvert<int>()) return {};
     const auto flags = Qt::Alignment(alignment.toInt());
     if (flags & Qt::AlignRight) return QStringLiteral("right");
@@ -73,8 +66,7 @@ inline QString alignmentName(const QVariant &alignment)
 }
 
 // Terminals draw glyphs, not images: only string and character decorations.
-inline QString decorationGlyph(const QVariant &decoration)
-{
+inline QString decorationGlyph(const QVariant& decoration) {
     const int type = decoration.metaType().id();
     if (type == QMetaType::QString || type == QMetaType::QChar) return decoration.toString();
     return {};
@@ -90,10 +82,9 @@ struct PaintData {
     bool enabled = true;
 };
 
-inline PaintData readForPaint(const QAbstractItemModel *model, const QModelIndex &index,
-                             uint32_t foreground, uint32_t background,
-                             bool readForeground, bool readBackground)
-{
+inline PaintData readForPaint(const QAbstractItemModel* model, const QModelIndex& index,
+                              uint32_t foreground, uint32_t background, bool readForeground,
+                              bool readBackground) {
     PaintData values{foreground, background, {}, {}};
     if (!model || !index.isValid()) return values;
     const auto color = [&](int role, uint32_t fallback) {
@@ -108,8 +99,9 @@ inline PaintData readForPaint(const QAbstractItemModel *model, const QModelIndex
     if (!glyph.isEmpty()) values.prefix = glyph + QLatin1Char(' ');
     if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
         const int state = check.toInt();
-        values.prefix += state == Qt::Checked ? QStringLiteral("[x] ")
-                       : state == Qt::PartiallyChecked ? QStringLiteral("[-] ") : QStringLiteral("[ ] ");
+        values.prefix += state == Qt::Checked            ? QStringLiteral("[x] ")
+                         : state == Qt::PartiallyChecked ? QStringLiteral("[-] ")
+                                                         : QStringLiteral("[ ] ");
     }
     values.enabled = model->flags(index).testFlag(Qt::ItemIsEnabled);
     return values;
@@ -125,32 +117,39 @@ inline PaintData readForPaint(const QAbstractItemModel *model, const QModelIndex
 // A plain bit mask rather than a struct, so a public header can cache one
 // without including this private header.
 enum ClaimedName : quint16 {
-    ClaimsNothing     = 0,
-    ClaimsForeground  = 1u << 0,
-    ClaimsBackground  = 1u << 1,
-    ClaimsAlignment   = 1u << 2,
-    ClaimsCheckState  = 1u << 3,
-    ClaimsDecoration  = 1u << 4,
-    ClaimsEnabled     = 1u << 5,
-    ClaimsCheckable   = 1u << 6,
-    ClaimsModelIndex  = 1u << 7,
+    ClaimsNothing = 0,
+    ClaimsForeground = 1u << 0,
+    ClaimsBackground = 1u << 1,
+    ClaimsAlignment = 1u << 2,
+    ClaimsCheckState = 1u << 3,
+    ClaimsDecoration = 1u << 4,
+    ClaimsEnabled = 1u << 5,
+    ClaimsCheckable = 1u << 6,
+    ClaimsModelIndex = 1u << 7,
 };
 
-inline quint16 claimedNames(const QAbstractItemModel *model)
-{
+inline quint16 claimedNames(const QAbstractItemModel* model) {
     if (!model) return ClaimsNothing;
     quint16 claimed = ClaimsNothing;
     const QHash<int, QByteArray> names = model->roleNames();
     for (auto it = names.cbegin(); it != names.cend(); ++it) {
-        const QByteArray &name = it.value();
-        if (name == "foreground") claimed |= ClaimsForeground;
-        else if (name == "background") claimed |= ClaimsBackground;
-        else if (name == "textAlignment") claimed |= ClaimsAlignment;
-        else if (name == "checkState") claimed |= ClaimsCheckState;
-        else if (name == "decoration") claimed |= ClaimsDecoration;
-        else if (name == "enabled") claimed |= ClaimsEnabled;
-        else if (name == "checkable") claimed |= ClaimsCheckable;
-        else if (name == "modelIndex") claimed |= ClaimsModelIndex;
+        const QByteArray& name = it.value();
+        if (name == "foreground")
+            claimed |= ClaimsForeground;
+        else if (name == "background")
+            claimed |= ClaimsBackground;
+        else if (name == "textAlignment")
+            claimed |= ClaimsAlignment;
+        else if (name == "checkState")
+            claimed |= ClaimsCheckState;
+        else if (name == "decoration")
+            claimed |= ClaimsDecoration;
+        else if (name == "enabled")
+            claimed |= ClaimsEnabled;
+        else if (name == "checkable")
+            claimed |= ClaimsCheckable;
+        else if (name == "modelIndex")
+            claimed |= ClaimsModelIndex;
     }
     return claimed;
 }
@@ -162,11 +161,10 @@ inline quint16 claimedNames(const QAbstractItemModel *model)
 // unstyled rows cost no per-delegate properties. Callers that refresh or
 // rebind an existing delegate pass includeUnset so a cleared style is
 // published as cleared.
-inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVariantMap &values,
-                  bool includeUnset, quint16 claimed)
-{
+inline void apply(const QAbstractItemModel* model, const QModelIndex& index, QVariantMap& values,
+                  bool includeUnset, quint16 claimed) {
     if (!model || !index.isValid()) return;
-    const auto put = [&](const QString &name, quint16 claim, const QVariant &value, bool unset) {
+    const auto put = [&](const QString& name, quint16 claim, const QVariant& value, bool unset) {
         if (!includeUnset && unset) return;
         if (claimed & claim) return;
         values.insert(name, value);
@@ -187,40 +185,37 @@ inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVa
     const bool checkable = flags.testFlag(Qt::ItemIsUserCheckable);
     put(QStringLiteral("enabled"), ClaimsEnabled, enabled, enabled);
     put(QStringLiteral("checkable"), ClaimsCheckable, checkable, !checkable);
-    put(QStringLiteral("modelIndex"), ClaimsModelIndex,
-        QVariant::fromValue(QModelIndex(index)), !index.isValid());
+    put(QStringLiteral("modelIndex"), ClaimsModelIndex, QVariant::fromValue(QModelIndex(index)),
+        !index.isValid());
 }
 
 // For callers with nowhere to cache the mask; resolves it per call, as before.
-inline void apply(const QAbstractItemModel *model, const QModelIndex &index, QVariantMap &values,
-                  bool includeUnset = false)
-{
+inline void apply(const QAbstractItemModel* model, const QModelIndex& index, QVariantMap& values,
+                  bool includeUnset = false) {
     apply(model, index, values, includeUnset, claimedNames(model));
 }
 
 // "[x] " / "[ ] " / "[-] " and the decoration glyph, for built-in painters.
-inline QString prefix(const QVariantMap &values)
-{
+inline QString prefix(const QVariantMap& values) {
     QString result;
     const QString glyph = values.value(QStringLiteral("decoration")).toString();
     if (!glyph.isEmpty()) result += glyph + QLatin1Char(' ');
     const QVariant check = values.value(QStringLiteral("checkState"));
     if (check.isValid() && check.canConvert<int>() && check.toInt() >= 0) {
         const int state = check.toInt();
-        result += state == Qt::Checked ? QStringLiteral("[x] ")
-                : state == Qt::PartiallyChecked ? QStringLiteral("[-] ") : QStringLiteral("[ ] ");
+        result += state == Qt::Checked            ? QStringLiteral("[x] ")
+                  : state == Qt::PartiallyChecked ? QStringLiteral("[-] ")
+                                                  : QStringLiteral("[ ] ");
     }
     return result;
 }
 
-inline uint32_t color(const QVariantMap &values, const char *name, uint32_t fallback)
-{
+inline uint32_t color(const QVariantMap& values, const char* name, uint32_t fallback) {
     const QString text = values.value(QLatin1String(name)).toString();
     return text.isEmpty() ? fallback : Color::resolve(text, fallback);
 }
 
-inline bool enabled(const QVariantMap &values)
-{
+inline bool enabled(const QVariantMap& values) {
     return values.value(QStringLiteral("enabled"), true).toBool();
 }
 

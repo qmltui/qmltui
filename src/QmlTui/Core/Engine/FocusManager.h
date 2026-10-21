@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: keyboard focus traversal helpers for InputRouter and TerminalEngine.
+
 namespace qmltui {
 
 class Terminal;

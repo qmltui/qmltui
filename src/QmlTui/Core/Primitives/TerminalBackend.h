@@ -40,7 +40,6 @@ public:
     explicit TerminalBackend(QObject* parent = nullptr);
     ~TerminalBackend() override;
 
-    // Application-provided backends -----------------------------------------
     // A factory installed here replaces the platform backend for every
     // TerminalDevice created afterwards: serial consoles, in-process hosts,
     // WebAssembly bridges, or an in-memory backend for tests. Install it before
@@ -50,51 +49,33 @@ public:
     static void setFactory(Factory factory);
     static const Factory& factory();
 
-    // Mode ----------------------------------------------------------------
-    // Switches the terminal into raw mode (echo and canonical input off).
     virtual bool enterRawMode() = 0;
-
-    // Restores the terminal modes saved by enterRawMode().
     virtual bool leaveRawMode() = 0;
 
     // True when the terminal parser must be told the stream is UTF-8 (ESC % G) right after raw
     // mode.
     virtual bool needsUtf8Designation() const { return false; }
 
-    // Informs the backend whether the kitty keyboard protocol is currently active.
     virtual void setKeyboardProtocolActive(bool) {}
 
-    // Output --------------------------------------------------------------
     // Writes bytes from data[offset..size) and advances offset by the count written.
     virtual WriteStatus writeSome(const char* data, size_t size, size_t& offset) = 0;
 
     // Writes all pending bytes (erasing as written), waiting up to timeoutMs (-1 for indefinite).
     virtual bool writeAll(std::string& pending, int timeoutMs) = 0;
 
-    // Whether the output channel supports non-blocking writes and writable() notifications.
     virtual bool supportsAsyncOutput() const = 0;
-
-    // Switches the output channel between blocking and non-blocking modes.
     virtual bool setNonBlockingOutput(bool enabled) = 0;
-
-    // Enables or disables writable() notifications on the output channel.
     virtual void setWritableNotifications(bool enabled) = 0;
 
-    // Geometry and identity ----------------------------------------------
     // Terminal window geometry in character cells (columns, rows).
     virtual QSize size() const = 0;
 
     // True when output is connected to an interactive terminal rather than a pipe or file.
     virtual bool isInteractive() const = 0;
-
-    // True when standard input is connected to an interactive terminal device.
     virtual bool isInputInteractive() const { return isInteractive(); }
 
-    // Input ---------------------------------------------------------------
-    // Starts monitoring standard input and terminal resize notifications.
     virtual void startInput() = 0;
-
-    // Stops monitoring standard input and resize notifications.
     virtual void stopInput() = 0;
 
 signals:

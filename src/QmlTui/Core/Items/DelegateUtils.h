@@ -1,7 +1,6 @@
 #pragma once
 
-// Internal: shared delegate instantiation, context binding, DelegateChooser
-// resolution, and lazy-model helpers used by QmlTui views and Repeater.
+// Internal: shared delegate instantiation, context binding, and model helpers for views.
 
 #include <QmlTui/Core/Items/Item.h>
 
@@ -23,43 +22,35 @@ namespace qmltui::DelegateUtils {
 // Rectangle.color or Item.enabled. Views publish model data only to the
 // former: the latter are the type's own API, usually carry a binding, and a
 // role that happens to share the name must not overwrite it.
-inline bool isDeclaredInQml(const QObject *object, int propertyIndex)
-{
-    const QMetaObject *meta = object->metaObject();
-    while (meta && propertyIndex < meta->propertyOffset()) meta = meta->superClass();
+inline bool isDeclaredInQml(const QObject* object, int propertyIndex) {
+    const QMetaObject* meta = object->metaObject();
+    while (meta && propertyIndex < meta->propertyOffset())
+        meta = meta->superClass();
     // Inline objects with declared members are named "<Type>_QML_<n>", file
     // components "<Name>_QMLTYPE_<n>".
     return meta && QByteArrayView(meta->className()).contains("_QML");
 }
 
-inline void setPropertyIfExists(QObject *object, const char *name, const QVariant &value)
-{
+inline void setPropertyIfExists(QObject* object, const char* name, const QVariant& value) {
     if (!object) return;
     const int index = object->metaObject()->indexOfProperty(name);
     if (index >= 0 && isDeclaredInQml(object, index))
         object->metaObject()->property(index).write(object, value);
 }
 
-
-inline QQmlComponent *resolveDelegate(QQmlComponent *delegate,
-                                      int row,
-                                      int column,
-                                      const QVariantMap &modelMap)
-{
-    if (!delegate)
-        return nullptr;
+inline QQmlComponent* resolveDelegate(QQmlComponent* delegate, int row, int column,
+                                      const QVariantMap& modelMap) {
+    if (!delegate) return nullptr;
 
     QQmlListReference choices(delegate, "choices");
-    if (!choices.isValid())
-        return delegate;
+    if (!choices.isValid()) return delegate;
 
     const QString roleName = delegate->property("role").toString();
     const QVariant roleValue = !roleName.isEmpty() ? modelMap.value(roleName) : QVariant();
 
     for (qsizetype choiceIndex = 0; choiceIndex < choices.count(); ++choiceIndex) {
-        QObject *choice = choices.at(choiceIndex);
-        if (!choice)
-            continue;
+        QObject* choice = choices.at(choiceIndex);
+        if (!choice) continue;
 
         const QVariant choiceRowVar = choice->property("row");
         const QVariant choiceColVar = choice->property("column");
@@ -70,77 +61,55 @@ inline QQmlComponent *resolveDelegate(QQmlComponent *delegate,
         const bool rowMatches = choiceRow < 0 || choiceRow == row;
         const bool columnMatches = choiceColumn < 0 || choiceColumn == column;
         const bool roleMatches = !choiceValue.isValid() || choiceValue == roleValue;
-        if (!rowMatches || !columnMatches || !roleMatches)
-            continue;
+        if (!rowMatches || !columnMatches || !roleMatches) continue;
 
         const QVariant prop = choice->property("delegate");
-        if (auto *comp = prop.value<QQmlComponent *>())
-            return comp;
-        if (auto *obj = prop.value<QObject *>()) {
-            if (auto *comp = qobject_cast<QQmlComponent *>(obj))
-                return comp;
+        if (auto* comp = prop.value<QQmlComponent*>()) return comp;
+        if (auto* obj = prop.value<QObject*>()) {
+            if (auto* comp = qobject_cast<QQmlComponent*>(obj)) return comp;
         }
     }
     return nullptr;
 }
 
-inline QQmlContext *createContext(QQmlComponent *component, QObject *owner)
-{
-    if (!component || !owner)
-        return nullptr;
+inline QQmlContext* createContext(QQmlComponent* component, QObject* owner) {
+    if (!component || !owner) return nullptr;
 
-    QQmlContext *parentContext = component->creationContext();
-    if (component->isBound())
-        return parentContext;
-    if (!parentContext)
-        parentContext = qmlContext(owner);
-    if (!parentContext && component->engine())
-        parentContext = component->engine()->rootContext();
+    QQmlContext* parentContext = component->creationContext();
+    if (component->isBound()) return parentContext;
+    if (!parentContext) parentContext = qmlContext(owner);
+    if (!parentContext && component->engine()) parentContext = component->engine()->rootContext();
     return parentContext ? new QQmlContext(parentContext, owner) : nullptr;
 }
 
-inline void setContextProperty(QQmlComponent *component, QQmlContext *context,
-                               const QString &name, const QVariant &value)
-{
-    if (component && context && !component->isBound())
-        context->setContextProperty(name, value);
+inline void setContextProperty(QQmlComponent* component, QQmlContext* context, const QString& name,
+                               const QVariant& value) {
+    if (component && context && !component->isBound()) context->setContextProperty(name, value);
 }
 
-inline void setContextProperty(QQmlComponent *component, QQmlContext *context,
-                               const QString &name, QObject *value)
-{
-    if (component && context && !component->isBound())
-        context->setContextProperty(name, value);
+inline void setContextProperty(QQmlComponent* component, QQmlContext* context, const QString& name,
+                               QObject* value) {
+    if (component && context && !component->isBound()) context->setContextProperty(name, value);
 }
 
-inline bool isReady(QQmlComponent *component, QObject *owner)
-{
-    if (!component)
-        return false;
+inline bool isReady(QQmlComponent* component, QObject* owner) {
+    if (!component) return false;
     QQmlListReference choices(component, "choices");
-    if (choices.isValid())
-        return true;
-    if (component->status() == QQmlComponent::Ready)
-        return true;
-    if (component->status() == QQmlComponent::Error)
-        qmlWarning(owner) << component->errorString();
+    if (choices.isValid()) return true;
+    if (component->status() == QQmlComponent::Ready) return true;
+    if (component->status() == QQmlComponent::Error) qmlWarning(owner) << component->errorString();
     return false;
 }
 
-inline Item *createItem(QQmlComponent *component,
-                        const QVariantMap &initialProperties,
-                        QQmlContext *context,
-                        Item *parentItem,
-                        QObject *owner)
-{
-    if (!component || !context || !parentItem || !owner)
-        return nullptr;
+inline Item* createItem(QQmlComponent* component, const QVariantMap& initialProperties,
+                        QQmlContext* context, Item* parentItem, QObject* owner) {
+    if (!component || !context || !parentItem || !owner) return nullptr;
 
     const bool ownsContext = context != component->creationContext();
-    QObject *object = component->beginCreate(context);
+    QObject* object = component->beginCreate(context);
     if (object) {
         QVariantMap filteredProperties;
-        const QMetaObject *metaObject = object->metaObject();
+        const QMetaObject* metaObject = object->metaObject();
         for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it) {
             const int idx = metaObject->indexOfProperty(it.key().toUtf8().constData());
             // Only QML-declared properties (required or plain) receive model
@@ -157,33 +126,30 @@ inline Item *createItem(QQmlComponent *component,
     if (object && !component->errors().isEmpty()) {
         qmlWarning(owner) << component->errorString();
         delete object;
-        if (ownsContext)
-            delete context;
+        if (ownsContext) delete context;
         return nullptr;
     }
-    Item *item = qobject_cast<Item *>(object);
+    Item* item = qobject_cast<Item*>(object);
     if (!item) {
         if (!component->errors().isEmpty())
             qmlWarning(owner) << component->errorString();
         else if (object)
             qmlWarning(owner) << "Delegate root must derive from QmlTui.Item";
         delete object;
-        if (ownsContext)
-            delete context;
+        if (ownsContext) delete context;
         return nullptr;
     }
 
     item->setParentItem(parentItem);
     item->setParent(parentItem);
-    if (ownsContext)
-        context->setParent(item);
+    if (ownsContext) context->setParent(item);
     return item;
 }
 
 // Flat views show one level of a model. Warn once when the level shown has
 // nested rows that the view will silently skip.
-inline void warnIfNested(QAbstractItemModel *model, const QModelIndex &root, QObject *owner, bool &warned)
-{
+inline void warnIfNested(QAbstractItemModel* model, const QModelIndex& root, QObject* owner,
+                         bool& warned) {
     if (warned || !model) return;
     const QModelIndex first = model->index(0, 0, root);
     if (!first.isValid() || !model->hasChildren(first)) return;
@@ -200,9 +166,8 @@ inline void warnIfNested(QAbstractItemModel *model, const QModelIndex &root, QOb
 // re-entrancy guard, `lastShown()` the highest row index it currently shows
 // (-1 for none) and `threshold` how close to the end counts as "at the end".
 template <typename LastShownFn>
-inline void fetchMoreIfNeeded(QAbstractItemModel *model, const QModelIndex &parent,
-                              int threshold, bool &fetching, LastShownFn lastShown)
-{
+inline void fetchMoreIfNeeded(QAbstractItemModel* model, const QModelIndex& parent, int threshold,
+                              bool& fetching, LastShownFn lastShown) {
     if (!model || fetching) return;
     fetching = true;
     for (int guard = 0; guard < 4096; ++guard) {
@@ -217,29 +182,30 @@ inline void fetchMoreIfNeeded(QAbstractItemModel *model, const QModelIndex &pare
 // TreeView's historical contract: a name the delegate does not declare is
 // published as a dynamic property; a declared one is written; a C++ property
 // of the root type is left alone.
-inline void setDelegateProperty(QObject *object, const char *name, const QVariant &value)
-{
+inline void setDelegateProperty(QObject* object, const char* name, const QVariant& value) {
     if (!object) return;
     const int index = object->metaObject()->indexOfProperty(name);
-    if (index < 0) object->setProperty(name, value);
-    else if (isDeclaredInQml(object, index)) object->metaObject()->property(index).write(object, value);
+    if (index < 0)
+        object->setProperty(name, value);
+    else if (isDeclaredInQml(object, index))
+        object->metaObject()->property(index).write(object, value);
 }
 
 constexpr int MaxMaterializedModelItems = 10000;
 
-inline bool unpackStaticModel(const QVariant &modelVariant,
-                              int &modelCount,
-                              QVariantList &listValues)
-{
+inline bool unpackStaticModel(const QVariant& modelVariant, int& modelCount,
+                              QVariantList& listValues) {
     if (modelVariant.canConvert<int>() && modelVariant.userType() != qMetaTypeId<QJSValue>()) {
         modelCount = std::clamp(modelVariant.toInt(), 0, MaxMaterializedModelItems);
         return true;
     }
-    if (modelVariant.canConvert<QVariantList>() || modelVariant.userType() == qMetaTypeId<QJSValue>()) {
+    if (modelVariant.canConvert<QVariantList>() ||
+        modelVariant.userType() == qMetaTypeId<QJSValue>()) {
         if (modelVariant.userType() == qMetaTypeId<QJSValue>()) {
             const QJSValue value = modelVariant.value<QJSValue>();
             if (value.isArray()) {
-                const int length = std::clamp(value.property("length").toInt(), 0, MaxMaterializedModelItems);
+                const int length =
+                    std::clamp(value.property("length").toInt(), 0, MaxMaterializedModelItems);
                 listValues.reserve(length);
                 for (int index = 0; index < length; ++index)
                     listValues.append(value.property(index).toVariant());

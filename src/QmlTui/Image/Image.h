@@ -34,7 +34,8 @@ class QMLTUI_IMAGE_EXPORT Image : public Item {
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     // Keep the previous picture visible during an asynchronous source change.
     // Opt-in, matching Qt Quick Image; useful for live image providers.
-    Q_PROPERTY(bool retainWhileLoading READ retainWhileLoading WRITE setRetainWhileLoading NOTIFY retainWhileLoadingChanged)
+    Q_PROPERTY(bool retainWhileLoading READ retainWhileLoading WRITE setRetainWhileLoading NOTIFY
+                   retainWhileLoadingChanged)
     // How much of a remote (http, https) source has arrived, 0.0 to 1.0; 1.0
     // once any picture is ready, 0.0 while nothing is shown.
     Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
@@ -45,7 +46,8 @@ class QMLTUI_IMAGE_EXPORT Image : public Item {
     // only the clipped region; the implicit size follows the clip while
     // sourceSize keeps reporting the full picture. Out-of-bounds parts are
     // cut off; a clip entirely outside the picture draws nothing.
-    Q_PROPERTY(QRect sourceClipRect READ sourceClipRect WRITE setSourceClipRect RESET resetSourceClipRect NOTIFY sourceClipRectChanged)
+    Q_PROPERTY(QRect sourceClipRect READ sourceClipRect WRITE setSourceClipRect RESET
+                   resetSourceClipRect NOTIFY sourceClipRectChanged)
     // Nearest-neighbour sampling by default keeps cell-sized edges crisp.
     // Opt in to filtering when softer transitions are wanted.
     Q_PROPERTY(bool smooth READ smooth WRITE setSmooth NOTIFY smoothChanged)
@@ -69,12 +71,12 @@ public:
     Q_ENUM(FillMode)
 
     enum class RenderMode : uint8_t {
-        HalfBlock,  // 1x2 TrueColor subpixels per cell using ▀
-        Braille,    // 2x4 dot subpixel grid
-        ASCII,      // Brightness gradient mapping to ASCII characters
-        Kitty,      // true pixels via the kitty graphics protocol
-        Sixel,      // true pixels via the sixel protocol (e.g. Windows Terminal)
-        Auto,       // best pixel protocol the terminal supports, else HalfBlock
+        HalfBlock, // 1x2 TrueColor subpixels per cell using ▀
+        Braille,   // 2x4 dot subpixel grid
+        ASCII,     // Brightness gradient mapping to ASCII characters
+        Kitty,     // true pixels via the kitty graphics protocol
+        Sixel,     // true pixels via the sixel protocol (e.g. Windows Terminal)
+        Auto,      // best pixel protocol the terminal supports, else HalfBlock
     };
     Q_ENUM(RenderMode)
 
@@ -123,7 +125,8 @@ public:
     int implicitWidth() const override;
     int implicitHeight() const override;
 
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void sourceChanged();
@@ -145,7 +148,6 @@ private:
     // item's QML engine under the URL's host. Returns false when no provider
     // exists; sets *pending when an asynchronous provider took the request.
     QImage loadFromProvider(const QUrl& url, bool* found, bool* pending);
-    // Drops interest in an outstanding asynchronous response.
     void cancelPendingResponse();
     // Fetches an http(s) source through the QML engine's network access
     // manager (a shared one without an engine). Loading until the reply
@@ -153,30 +155,21 @@ private:
     // pictures are cached by URL so a relayout or a second item does not
     // refetch.
     void loadFromNetwork(const QUrl& url);
-    // Aborts and forgets an outstanding download.
     void cancelPendingReply();
     void setProgress(qreal progress);
-    // Installs a decoded picture (or a null one) as the source and publishes
-    // the status, size and geometry changes it implies.
     void adoptImage(const QImage& image, Status statusIfNull);
     // Scales the source for the mode that will actually paint. The declared
     // mode may be Auto, Kitty or Sixel and fall back to HalfBlock; the cell
     // geometry (2 pixel rows per cell, 2x4 for Braille, 1x1 for ASCII) must
     // follow the resolved mode or the picture is fitted to the wrong grid.
     void updateScaledCache(RenderMode mode) const;
-    // Emits transmission, placement and placeholder cells for the kitty
-    // protocol; replaces pixels under the same id when the source changes.
     void paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
-    // Reserves the image cells and enqueues a positioned sixel after the diff.
     void paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const;
-    // Frees the current kitty upload if the terminal is still reachable.
     void releaseKittyImage();
-    // Erases the persisted sixel when the picture is discarded.
     void releaseSixelImage();
     // The pixel protocol paint() will use for the current mode and terminal:
     // None means a glyph mode (half-block, Braille or ASCII).
     graphics::Protocol activeProtocol() const;
-    // Re-emits renderSizeChanged() when the terminal's capabilities change.
     void watchCapabilities() const;
     // The picture the paint paths consume: the source itself, or, with a
     // sourceClipRect, a cached copy of the clipped region. Null when the clip
@@ -208,7 +201,7 @@ private:
     // kitty graphics state. m_imageId is 0 until the first upload.
     mutable quint32 m_imageId = 0;
     mutable qint64 m_lastKittyKey = 0;
-    mutable QSize m_lastKittyUpload;   // pixel size of the current upload
+    mutable QSize m_lastKittyUpload; // pixel size of the current upload
     mutable quint64 m_lastKittySession = 0;
     QPointer<ImageResponse> m_pendingResponse;
     QPointer<QNetworkReply> m_reply;
@@ -217,8 +210,7 @@ private:
     mutable QMetaObject::Connection m_capabilitiesConnection;
     mutable QSize m_lastKittyCells;
 
-    // sixel state. m_lastSixelSignature encodes source, geometry and output
-    // session so the image is re-emitted after any of them change.
+    // Sixel cache keys: re-emit when source key, cell size, or output session changes.
     mutable qint64 m_lastSixelKey = 0;
     mutable QSize m_lastSixelCells;
     mutable quint64 m_lastSixelSession = 0;

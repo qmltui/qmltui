@@ -1,7 +1,6 @@
 #pragma once
 
-// Internal: dispatches decoded key, paste, and mouse events across the Item
-// tree, modal InputScopes, Shortcuts, and focus chain.
+// Internal: dispatches decoded key, paste, and mouse events across the Item tree.
 
 #include <QPointer>
 #include <QString>
@@ -26,8 +25,8 @@ public:
     // Dispatches a key or bracketed-paste event; returns true if accepted.
     bool routeKey(int key, const QString& text, int modifiers, bool paste = false);
     // Updates hover state and dispatches press, release, drag, or wheel events.
-    void routeMouse(int button, int x, int y, bool release, bool motion = false,
-                    int modifiers = 0, int wheelDeltaX = 0, int wheelDeltaY = 0);
+    void routeMouse(int button, int x, int y, bool release, bool motion = false, int modifiers = 0,
+                    int wheelDeltaX = 0, int wheelDeltaY = 0);
 
     // Topmost visible, enabled descendant of item containing (absX, absY) in
     // stacking order, respecting clip rects.
@@ -38,9 +37,8 @@ public:
 
 private:
     static bool isDescendantOf(Item* child, Item* ancestor);
-    bool dispatchMouseEvent(Item* target, int x, int y, int button,
-                            int modifiers, bool motion, bool release,
-                            int wheelDeltaX, int wheelDeltaY,
+    bool dispatchMouseEvent(Item* target, int x, int y, int button, int modifiers, bool motion,
+                            bool release, int wheelDeltaX, int wheelDeltaY,
                             Item* stopAncestor = nullptr);
 
     QPointer<Terminal> m_terminal;

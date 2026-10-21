@@ -250,7 +250,7 @@ private:
     int m_scrollTop = 0;
 
     Color m_selectionColor;
-    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0); // see Color.h
+    uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
     Color m_selectionBackgroundColor;
     uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 

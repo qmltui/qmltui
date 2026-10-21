@@ -7,6 +7,8 @@
 
 namespace qmltui {
 
+// Invisible input item that handles mouse press, release, click, double-click,
+// drag, wheel, and hover events within its cell bounds.
 class QMLTUI_CORE_EXPORT MouseArea : public Item {
     Q_OBJECT
     QML_ELEMENT
@@ -15,7 +17,8 @@ class QMLTUI_CORE_EXPORT MouseArea : public Item {
     Q_PROPERTY(int mouseY READ mouseY NOTIFY mouseYChanged)
     // The buttons this area reacts to, Qt Quick style: a press with another
     // button is left unaccepted, so an area behind can take it.
-    Q_PROPERTY(Qt::MouseButtons acceptedButtons READ acceptedButtons WRITE setAcceptedButtons NOTIFY acceptedButtonsChanged)
+    Q_PROPERTY(Qt::MouseButtons acceptedButtons READ acceptedButtons WRITE setAcceptedButtons NOTIFY
+                   acceptedButtonsChanged)
     // True while an accepted button is held after pressing this area. Works
     // on every terminal; unlike containsMouse it needs no motion reporting.
     Q_PROPERTY(bool pressed READ isPressed NOTIFY pressedChanged)
@@ -32,7 +35,7 @@ class QMLTUI_CORE_EXPORT MouseArea : public Item {
     Q_PROPERTY(bool containsMouse READ containsMouse NOTIFY containsMouseChanged)
 
 public:
-    explicit MouseArea(QObject *parent = nullptr);
+    explicit MouseArea(QObject* parent = nullptr);
     ~MouseArea() override;
 
     int mouseX() const { return m_mouseX; }
@@ -48,10 +51,10 @@ public:
 
     void setMousePosition(int x, int y);
 
-    void mousePressEvent(MouseEvent *event) override;
-    void mouseReleaseEvent(MouseEvent *event) override;
-    void mouseMoveEvent(MouseEvent *event) override;
-    void wheelEvent(MouseEvent *event) override;
+    void mousePressEvent(MouseEvent* event) override;
+    void mouseReleaseEvent(MouseEvent* event) override;
+    void mouseMoveEvent(MouseEvent* event) override;
+    void wheelEvent(MouseEvent* event) override;
 
 signals:
     void mouseXChanged();
@@ -66,12 +69,12 @@ signals:
     void exited();
     // The signal shares its name with the bool property, as in Qt Quick:
     // onPressed binds here, `area.pressed` reads the property.
-    void pressed(qmltui::MouseEvent *event);
-    void released(qmltui::MouseEvent *event);
-    void clicked(qmltui::MouseEvent *event);
+    void pressed(qmltui::MouseEvent* event);
+    void released(qmltui::MouseEvent* event);
+    void clicked(qmltui::MouseEvent* event);
     // Emitted only while a handler is connected; otherwise the event stays
     // unaccepted so a ScrollView behind keeps scrolling.
-    void wheel(qmltui::MouseEvent *event);
+    void wheel(qmltui::MouseEvent* event);
 
 private:
     void updateMotionRegistration();

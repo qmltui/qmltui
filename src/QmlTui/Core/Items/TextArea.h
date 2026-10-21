@@ -195,10 +195,9 @@ private:
     void recomposeHighlightRuns();
 
     TextEditorState m_editor;
-    // Defaults to the terminal's foreground ("default" -> SGR 39); see Color.h.
     Color m_color = "default";
     QString m_placeholderText;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_cursorColor;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;

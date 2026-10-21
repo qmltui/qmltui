@@ -129,16 +129,11 @@ static void writePropertyBypassingInterceptor(QObject* target, const QString& na
                                                 argv);
             }
         } else {
-            // Fallback
             prop.write(target, value);
         }
     }
 #endif
 }
-
-// ==========================================
-// Animation Base Class
-// ==========================================
 
 Animation::Animation(QObject* parent) : QObject(parent) {}
 
@@ -173,10 +168,6 @@ void Animation::start() {
 void Animation::stop() {
     setRunning(false);
 }
-
-// ==========================================
-// PropertyAnimation Class
-// ==========================================
 
 PropertyAnimation::PropertyAnimation(QObject* parent) : Animation(parent) {
     connect(this, &Animation::started, this, [this]() {
@@ -260,7 +251,6 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
 
     if (t >= 1.0) {
         if (m_loops == -1) {
-            // Infinite looping
             m_accumulatedTime = m_accumulatedTime % m_duration;
             t = static_cast<double>(m_accumulatedTime) / m_duration;
         } else if (m_loops > 1) {
@@ -279,8 +269,6 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
     }
 
     double easedT = applyEasing(m_easing, t);
-
-    // Write the eased value using the virtual method
     writeValue(easedT);
 
     if (finishedAnimation) {
@@ -313,15 +301,7 @@ void PropertyAnimation::writeValue(const QVariant& value) {
     writePropertyBypassingInterceptor(m_target.data(), m_propertyName, typedVal);
 }
 
-// ==========================================
-// NumberAnimation Class
-// ==========================================
-
 NumberAnimation::NumberAnimation(QObject* parent) : PropertyAnimation(parent) {}
-
-// ==========================================
-// ColorAnimation Class
-// ==========================================
 
 ColorAnimation::ColorAnimation(QObject* parent) : PropertyAnimation(parent) {}
 
@@ -377,10 +357,6 @@ void ColorAnimation::writeValue(const QVariant& value) {
     writePropertyBypassingInterceptor(m_target.data(), m_propertyName,
                                       QVariant::fromValue(animatedColor));
 }
-
-// ==========================================
-// AnimationManager Class
-// ==========================================
 
 AnimationManager::AnimationManager(QObject* parent) : QObject(parent) {
     m_timer = new ClockTimer(this);

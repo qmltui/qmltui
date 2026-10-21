@@ -1,7 +1,6 @@
 #pragma once
 
-// Internal: private storage and QQmlCustomParser implementation for
-// PropertyChanges.
+// Internal: private storage and QQmlCustomParser implementation for PropertyChanges.
 
 #include <QmlTui/Core/Engine/State.h>
 #include <QString>
@@ -29,10 +28,11 @@ struct DecodedBinding {
     int line = -1;
     int column = -1;
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    const QV4::CompiledData::Binding *rawBinding = nullptr;
+    const QV4::CompiledData::Binding* rawBinding = nullptr;
 #endif
 };
 
+// Private state and decoded custom-parser bindings owned by a PropertyChanges instance.
 class PropertyChangesPrivate {
 public:
     PropertyChanges* q = nullptr;
@@ -43,14 +43,14 @@ public:
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QQmlRefPointer<QV4::ExecutableCompilationUnit> compilationUnit;
-    QList<const QV4::CompiledData::Binding *> rawBindings;
+    QList<const QV4::CompiledData::Binding*> rawBindings;
 
-    void setBindings(const QQmlRefPointer<QV4::ExecutableCompilationUnit> &unit,
-                     const QList<const QV4::CompiledData::Binding *> &bindings);
+    void setBindings(const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
+                     const QList<const QV4::CompiledData::Binding*>& bindings);
     void decode();
-    void decodeBinding(const QString &propertyPrefix,
-                       const QQmlRefPointer<QV4::ExecutableCompilationUnit> &unit,
-                       const QV4::CompiledData::Binding *binding);
+    void decodeBinding(const QString& propertyPrefix,
+                       const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
+                       const QV4::CompiledData::Binding* binding);
 #endif
 };
 
@@ -62,17 +62,16 @@ class PropertyChangesParser : public QT_PREPEND_NAMESPACE(QQmlCustomParser) {
 public:
     PropertyChangesParser() : QT_PREPEND_NAMESPACE(QQmlCustomParser)(AcceptsAttachedProperties) {}
 
-    void verifyList(const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
-                    const QV4::CompiledData::Binding *binding,
-                    bool &hasPropertiesMap,
-                    bool &hasDirectProps);
+    void verifyList(const QQmlRefPointer<QV4::CompiledData::CompilationUnit>& compilationUnit,
+                    const QV4::CompiledData::Binding* binding, bool& hasPropertiesMap,
+                    bool& hasDirectProps);
 
-    void verifyBindings(const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
-                        const QList<const QV4::CompiledData::Binding *> &props) override;
+    void verifyBindings(const QQmlRefPointer<QV4::CompiledData::CompilationUnit>& compilationUnit,
+                        const QList<const QV4::CompiledData::Binding*>& props) override;
 
-    void applyBindings(QObject *obj,
-                       const QQmlRefPointer<QV4::ExecutableCompilationUnit> &compilationUnit,
-                       const QList<const QV4::CompiledData::Binding *> &bindings) override;
+    void applyBindings(QObject* obj,
+                       const QQmlRefPointer<QV4::ExecutableCompilationUnit>& compilationUnit,
+                       const QList<const QV4::CompiledData::Binding*>& bindings) override;
 };
 #endif
 

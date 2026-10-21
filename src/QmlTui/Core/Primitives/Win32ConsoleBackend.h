@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: Windows Console VT implementation of TerminalBackend.
+
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 
 #include <memory>
@@ -49,11 +51,11 @@ public:
 private:
     void readInput();
 
-    void* m_input = nullptr;    // HANDLE, kept opaque so <windows.h> stays out of headers
+    void* m_input = nullptr; // HANDLE, kept opaque so <windows.h> stays out of headers
     void* m_output = nullptr;
-    unsigned long m_originalInputMode = 0;   // DWORD
+    unsigned long m_originalInputMode = 0; // DWORD
     unsigned long m_originalOutputMode = 0;
-    unsigned int m_originalInputCodePage = 0;   // UINT
+    unsigned int m_originalInputCodePage = 0; // UINT
     unsigned int m_originalOutputCodePage = 0;
     bool m_inputModeValid = false;
     bool m_outputModeValid = false;

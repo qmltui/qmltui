@@ -32,8 +32,7 @@ struct CanonicalProperty {
     QString name;
 
     bool operator<(const CanonicalProperty& other) const {
-        if (target != other.target)
-            return target < other.target;
+        if (target != other.target) return target < other.target;
         return name < other.name;
     }
     bool operator==(const CanonicalProperty& other) const {
@@ -74,7 +73,6 @@ public:
     void stateRemoved(State* state);
     void transitionRemoved(Transition* transition);
 
-    // Release all property ownership tracked by this controller
     void releaseAllOwnership();
 
 signals:
@@ -108,7 +106,8 @@ private:
     };
 
     void applyState(const QString& newState);
-    void collectOverridesForState(State* state, QMap<CanonicalProperty, PropertyOverride>& outOverrides);
+    void collectOverridesForState(State* state,
+                                  QMap<CanonicalProperty, PropertyOverride>& outOverrides);
     void revertProperty(const CanonicalProperty& key);
     void applyOverride(const CanonicalProperty& key, const PropertyOverride& override,
                        Transition* transitionObj, QSet<CanonicalProperty>& animatedProperties);
@@ -129,7 +128,6 @@ private:
     std::optional<QString> m_pendingState;
     bool m_componentComplete = true;
 
-    // Automatic 'when' state tracking
     bool m_isAutomatic = false;
     QString m_automaticState;
     bool m_evaluatingWhenConditions = false;
@@ -137,20 +135,12 @@ private:
     QList<QPointer<State>> m_statesList;
     QList<QPointer<Transition>> m_transitionsList;
 
-    // Base state records (survives across A -> B -> base transitions)
+    // Preserves pre-state values and bindings across A -> B -> base transitions.
     QMap<CanonicalProperty, BasePropertyRecord> m_baseRecords;
-
-    // Properties currently owned by this controller
     QSet<CanonicalProperty> m_ownedProperties;
-
-    // Running animations for active transitions
     QList<QPointer<Animation>> m_runningTransitionAnimations;
-
-    // Previous maps for active map updates
     QMap<PropertyChanges*, QVariantMap> m_appliedMaps;
     QMap<PropertyChanges*, QPointer<QObject>> m_appliedTargets;
-
-    // Global registry of property ownership across all controllers
     static QMap<CanonicalProperty, StateController*> s_propertyOwners;
 };
 

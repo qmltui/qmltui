@@ -198,7 +198,6 @@ private:
     void updateTerminalConnection();
 
     TextEditorState m_editor;
-    // Defaults to the terminal's foreground ("default" -> SGR 39); see Color.h.
     Color m_color = "default";
     QString m_placeholderText;
     Color m_placeholderColor;
@@ -206,7 +205,7 @@ private:
     bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
     QRegularExpression m_validator;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;

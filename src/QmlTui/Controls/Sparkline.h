@@ -21,14 +21,15 @@ class QMLTUI_CONTROLS_EXPORT Sparkline : public Item {
     // When true in multi-row sparklines, rows below the sample row are filled with `█`.
     Q_PROPERTY(bool filled READ filled WRITE setFilled NOTIFY filledChanged)
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
+                   backgroundColorChanged)
 
 public:
-    explicit Sparkline(QObject *parent = nullptr);
+    explicit Sparkline(QObject* parent = nullptr);
     ~Sparkline() override = default;
 
     QVariant values() const { return m_valuesVariant; }
-    void setValues(const QVariant &values);
+    void setValues(const QVariant& values);
 
     double from() const { return m_from; }
     void setFrom(double from);
@@ -45,7 +46,8 @@ public:
     Color backgroundColor() const { return m_backgroundColor; }
     void setBackgroundColor(Color color);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
 
 signals:
     void valuesChanged();
@@ -63,7 +65,7 @@ private:
     double m_to = 0.0; // <= m_from means auto-scale
     bool m_filled = false;
     Color m_color = "default";
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0);
 
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;

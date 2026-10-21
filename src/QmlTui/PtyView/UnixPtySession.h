@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal: POSIX pseudo-terminal (`openpty`) and child QProcess session manager.
+
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QByteArray>

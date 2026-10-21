@@ -175,7 +175,7 @@ private:
     mutable QByteArray m_glyphBytes;
     mutable bool m_layoutDirty = true;
     Color m_color = "default";
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF); // see Color.h
+    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
     Color m_backgroundColor = "transparent";
     uint32_t m_resolvedBackgroundColor = 0x00000000;
     bool m_bold = false;

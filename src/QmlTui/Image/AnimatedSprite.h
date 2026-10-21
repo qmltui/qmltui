@@ -5,7 +5,9 @@
 #include <QmlTui/Image/Image.h>
 #include <QRect>
 #include <QQmlParserStatus>
-namespace qmltui { class ClockTimer; }
+namespace qmltui {
+class ClockTimer;
+}
 
 namespace qmltui {
 
@@ -33,13 +35,15 @@ class QMLTUI_IMAGE_EXPORT AnimatedSprite : public Image, public QQmlParserStatus
     // Frames per second; when > 0 it takes precedence over frameDuration.
     Q_PROPERTY(qreal frameRate READ frameRate WRITE setFrameRate NOTIFY frameRateChanged)
     // Milliseconds per frame, used when frameRate is not set.
-    Q_PROPERTY(int frameDuration READ frameDuration WRITE setFrameDuration NOTIFY frameDurationChanged)
+    Q_PROPERTY(
+        int frameDuration READ frameDuration WRITE setFrameDuration NOTIFY frameDurationChanged)
     Q_PROPERTY(int currentFrame READ currentFrame WRITE setCurrentFrame NOTIFY currentFrameChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
     Q_PROPERTY(int loops READ loops WRITE setLoops NOTIFY loopsChanged)
     Q_PROPERTY(bool reverse READ reverse WRITE setReverse NOTIFY reverseChanged)
-    Q_PROPERTY(FinishBehavior finishBehavior READ finishBehavior WRITE setFinishBehavior NOTIFY finishBehaviorChanged)
+    Q_PROPERTY(FinishBehavior finishBehavior READ finishBehavior WRITE setFinishBehavior NOTIFY
+                   finishBehaviorChanged)
     Q_PROPERTY(bool interpolate READ interpolate WRITE setInterpolate NOTIFY interpolateChanged)
 
 public:
@@ -119,15 +123,10 @@ signals:
 private:
     // Frame size after the square-frames fallback; invalid without a sheet.
     QSize resolvedFrameSize() const;
-    // The clip rectangle of frame `index` inside the sheet.
     QRect frameRect(int index) const;
-    // Points the inherited sourceClipRect at the current frame.
     void applyFrame();
-    // One animation step: wraps at the ends, counts loops, finishes.
     void step(int frames);
-    // Starts or stops the tick timer to match the current state.
     void updateTimer();
-    // The first frame of a run: 0 forward, the last frame in reverse.
     int initialFrame() const;
 
     // On the QmlTui Clock so frame stepping is deterministic in tests.

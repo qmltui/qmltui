@@ -1,9 +1,6 @@
 #pragma once
 
-// Internal: process-wide Qt message handler registry bridging TerminalEngine
-// alternate-screen sessions and QtMessageRouting. Suppresses default stderr
-// output while an alternate-screen session is active so qDebug/qWarning calls
-// do not corrupt the rendered frame.
+// Internal: process-wide Qt message handler registry for alternate-screen sessions.
 
 #include <QmlTui/Core/Engine/QtMessageRouting.h>
 

@@ -6,39 +6,9 @@ namespace qmltui {
 bool Span::fromVariantMap(const QVariantMap& map, Span& out) {
     if (!map.contains(QStringLiteral("text"))) return false;
     Span result(map.value(QStringLiteral("text")).toString());
-    for (auto it = map.cbegin(); it != map.cend(); ++it) {
-        const QString& key = it.key();
-        const QVariant& value = it.value();
-        if (key == QStringLiteral("text")) continue;
-        if (key == QStringLiteral("color") || key == QStringLiteral("backgroundColor")) {
-            Color color;
-            if (value.metaType() == QMetaType::fromType<Color>())
-                color = value.value<Color>();
-            else if (value.metaType() == QMetaType::fromType<QString>())
-                color = Color(value.toString());
-            if (color.isValid()) {
-                if (key == QStringLiteral("color"))
-                    result.setColor(color);
-                else
-                    result.setBackgroundColor(color);
-            }
-        } else if (key == QStringLiteral("bold") &&
-                   value.metaType() == QMetaType::fromType<bool>()) {
-            result.setBold(value.toBool());
-        } else if (key == QStringLiteral("dim") &&
-                   value.metaType() == QMetaType::fromType<bool>()) {
-            result.setDim(value.toBool());
-        } else if (key == QStringLiteral("italic") &&
-                   value.metaType() == QMetaType::fromType<bool>()) {
-            result.setItalic(value.toBool());
-        } else if (key == QStringLiteral("underline") &&
-                   value.metaType() == QMetaType::fromType<bool>()) {
-            result.setUnderline(value.toBool());
-        } else if (key == QStringLiteral("reversed") &&
-                   value.metaType() == QMetaType::fromType<bool>()) {
-            result.setReversed(value.toBool());
-        }
-    }
+    TextStyle style;
+    style.applyVariantMap(map, /*warnOnInvalid=*/false);
+    result.setStyle(style);
     out = std::move(result);
     return true;
 }

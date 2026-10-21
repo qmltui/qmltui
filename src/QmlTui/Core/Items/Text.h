@@ -38,7 +38,8 @@ class QMLTUI_CORE_EXPORT Text : public Item {
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
     Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
     Q_PROPERTY(WrapMode wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
-    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
+    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
+                   backgroundColorChanged)
 
 public:
     enum TextFormat : uint8_t {
@@ -57,11 +58,11 @@ public:
     };
     Q_ENUM(WrapMode)
 
-    explicit Text(QObject *parent = nullptr);
+    explicit Text(QObject* parent = nullptr);
     ~Text() override;
 
     QList<Span> spans() const { return m_spans; }
-    void setSpans(const QList<Span> &spans);
+    void setSpans(const QList<Span>& spans);
 
     QString text() const { return m_text; }
     void setText(const QString& text);
@@ -101,10 +102,11 @@ public:
     Gradient* gradient() const { return m_gradient.data(); }
     void setGradient(Gradient* gradient);
 
-    int visualLength(const QString &line) const;
+    int visualLength(const QString& line) const;
 
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
-    void mousePressEvent(class MouseEvent *event) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
+    void mousePressEvent(class MouseEvent* event) override;
 
 signals:
     void spansChanged();
@@ -121,18 +123,22 @@ signals:
     void textFormatChanged();
     void wrapModeChanged();
     void gradientChanged();
-    void linkActivated(const QString &link);
+    void linkActivated(const QString& link);
 
 private:
-    // One grapheme cluster after inline ANSI/HTML markup has been resolved.
+    struct StyleRun {
+        qsizetype endOffset = 0;
+        TextStyle style;
+        uint16_t linkIndex = 0;
+    };
+
+    // One grapheme cluster after inline ANSI/HTML markup or Span runs have been segmented.
     struct GlyphEntry {
-        uint32_t fgColor = 0xFFFFFFFF;
-        uint32_t bgColor = 0x00000000;
-        TextAttribute attributes = TextAttribute::None;
-        uint8_t advance = 1;    // raw cluster width: drives layout and clipping
-        uint8_t cellWidth = 1;  // width written to the cell (controls become visible glyphs)
-        uint16_t linkIndex = 0; // 0 = no link, 1-based index into m_links
-        uint32_t glyphOffset = 0;   // into m_glyphBytes
+        TextStyle style;
+        uint8_t advance = 1;      // raw cluster width: drives layout and clipping
+        uint8_t cellWidth = 1;    // width written to the cell (controls become visible glyphs)
+        uint16_t linkIndex = 0;   // 0 = no link, 1-based index into m_links
+        uint32_t glyphOffset = 0; // into m_glyphBytes
         uint32_t glyphLength = 0;
     };
     struct LineLayout {
@@ -143,15 +149,19 @@ private:
 
     // Parses one line of markup into glyph entries (when entries is non-null)
     // and returns its visual width.
-    int parseLine(const QString &line, std::vector<GlyphEntry> *entries,
-                  QByteArray *bytes) const;
+    int parseLine(QStringView line, std::vector<GlyphEntry>* entries, QByteArray* bytes) const;
+    int layoutLineRuns(QStringView line, const StyleRun* runs, qsizetype runCount,
+                       qsizetype lineStartOffset, std::vector<GlyphEntry>* entries,
+                       QByteArray* bytes) const;
+    void commitLine(int firstGlyph, int lineVisualWidth, int availW) const;
     TextAttribute baseAttributes() const;
-    int appendGrapheme(const GraphemeRef &cluster, uint32_t fg, uint32_t bg,
-                       TextAttribute attributes, const QString &href,
-                       std::vector<GlyphEntry> *entries, QByteArray *bytes) const;
-    bool isSpaceGlyph(const GlyphEntry &g) const;
+    int appendGrapheme(const GraphemeRef& cluster, const TextStyle& style, uint16_t linkIndex,
+                       std::vector<GlyphEntry>* entries, QByteArray* bytes) const;
+    bool isSpaceGlyph(const GlyphEntry& g) const;
     void wrapGlyphs(int startGlyph, int glyphCount, int availW) const;
-    uint16_t registerLink(const QString &href) const;
+    uint16_t registerLink(QStringView href) const;
+    int contentStartY(int availH, int lineCount) const;
+    int lineStartX(int leftLimit, int availW, int visLen) const;
     void layoutSpans() const;
     void ensureLayout() const;
     void invalidateLayout() { m_layoutDirty = true; }

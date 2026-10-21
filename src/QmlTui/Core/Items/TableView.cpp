@@ -1419,14 +1419,8 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 const Span& span = spans[i];
                 const int spanW = spanWidths[i];
                 if (span.text().isEmpty()) continue;
-                uint32_t spanFg = baseFg;
-                uint32_t spanBg = baseBg;
-                if (useSpanColors) {
-                    const Color fgColor = span.color();
-                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
-                    const Color bgColor = span.backgroundColor();
-                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
-                }
+                const uint32_t spanFg = useSpanColors ? span.resolveForeground(baseFg) : baseFg;
+                const uint32_t spanBg = useSpanColors ? span.resolveBackground(baseBg) : baseBg;
                 const TextAttribute spanAttr = span.resolveAttributes(baseAttributes);
                 write(x + position, y, span.text(), spanFg, spanBg, spanAttr);
                 position += spanW;
@@ -1434,14 +1428,8 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         } else {
             for (const Span& span : spans) {
                 if (position >= maxContentPos) break;
-                uint32_t spanFg = baseFg;
-                uint32_t spanBg = baseBg;
-                if (useSpanColors) {
-                    const Color fgColor = span.color();
-                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
-                    const Color bgColor = span.backgroundColor();
-                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
-                }
+                const uint32_t spanFg = useSpanColors ? span.resolveForeground(baseFg) : baseFg;
+                const uint32_t spanBg = useSpanColors ? span.resolveBackground(baseBg) : baseBg;
                 const TextAttribute spanAttr = span.resolveAttributes(baseAttributes);
                 QString runText;
                 const int runStart = position;

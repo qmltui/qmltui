@@ -84,6 +84,8 @@ public:
     TextAttribute resolveAttributes(TextAttribute base) const {
         return m_style.resolveAttributes(base);
     }
+    uint32_t resolveForeground(uint32_t baseFg) const { return m_style.resolveForeground(baseFg); }
+    uint32_t resolveBackground(uint32_t baseBg) const { return m_style.resolveBackground(baseBg); }
 
     friend bool operator==(const Span& lhs, const Span& rhs) noexcept {
         return lhs.m_text == rhs.m_text && lhs.m_style == rhs.m_style;

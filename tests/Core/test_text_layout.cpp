@@ -22,27 +22,22 @@ using qmltui::testing::paintItem;
 
 namespace {
 
-TextGridBuffer paintToBuffer(Text &text, int width = 40, int height = 3)
-{
+TextGridBuffer paintToBuffer(Text& text, int width = 40, int height = 3) {
     TextGridBuffer buffer;
     buffer.resize(width, height);
     paintItem(text, buffer, 0, 0);
     return buffer;
 }
 
-bool buffersEqual(const TextGridBuffer &a, const TextGridBuffer &b)
-{
-    if (a.width() != b.width() || a.height() != b.height())
-        return false;
+bool buffersEqual(const TextGridBuffer& a, const TextGridBuffer& b) {
+    if (a.width() != b.width() || a.height() != b.height()) return false;
     for (int y = 0; y < a.height(); ++y)
         for (int x = 0; x < a.width(); ++x)
-            if (!(a.cellAt(x, y) == b.cellAt(x, y)))
-                return false;
+            if (!(a.cellAt(x, y) == b.cellAt(x, y))) return false;
     return true;
 }
 
-QString rowText(const TextGridBuffer &buffer, int y)
-{
+QString rowText(const TextGridBuffer& buffer, int y) {
     QString text;
     for (int x = 0; x < buffer.width(); ++x)
         if (!buffer.cellAt(x, y).continuation)
@@ -65,26 +60,28 @@ private slots:
     void testGradientPerColumn();
     void testWordWrap();
     void testLinkActivated();
+    void testGraphemeAcrossMarkupBoundaries();
+    void testBaseStyleAndSgrReset();
 };
 
-void TestTextLayout::testRepaintMatchesFreshItem()
-{
-    const QString markup = QStringLiteral("Mixed <b>bold</b> \033[32mgreen\033[0m ") + QString::fromUtf8("中é👍🏽");
-    using Step = std::function<void(Text &)>;
+void TestTextLayout::testRepaintMatchesFreshItem() {
+    const QString markup =
+        QStringLiteral("Mixed <b>bold</b> \033[32mgreen\033[0m ") + QString::fromUtf8("中é👍🏽");
+    using Step = std::function<void(Text&)>;
     const QList<Step> steps = {
-        [&](Text &t) { t.setText(markup); },
-        [](Text &t) { t.setBold(true); },
-        [](Text &t) { t.setItalic(true); },
-        [](Text &t) { t.setUnderline(true); },
-        [](Text &t) { t.setReversed(true); },
-        [](Text &t) { t.setColor(Color("#123456")); },
-        [](Text &t) { t.setTextFormat(Text::RichText); },
-        [](Text &t) { t.setTextFormat(Text::AnsiText); },
-        [](Text &t) { t.setTextFormat(Text::PlainText); },
-        [](Text &t) { t.setHorizontalAlignment(Qt::AlignRight); },
-        [](Text &t) { t.setWidth(30); },
-        [](Text &t) { t.setText(QStringLiteral("changed\nsecond line")); },
-        [](Text &t) { t.setBold(false); },
+        [&](Text& t) { t.setText(markup); },
+        [](Text& t) { t.setBold(true); },
+        [](Text& t) { t.setItalic(true); },
+        [](Text& t) { t.setUnderline(true); },
+        [](Text& t) { t.setReversed(true); },
+        [](Text& t) { t.setColor(Color("#123456")); },
+        [](Text& t) { t.setTextFormat(Text::RichText); },
+        [](Text& t) { t.setTextFormat(Text::AnsiText); },
+        [](Text& t) { t.setTextFormat(Text::PlainText); },
+        [](Text& t) { t.setHorizontalAlignment(Qt::AlignRight); },
+        [](Text& t) { t.setWidth(30); },
+        [](Text& t) { t.setText(QStringLiteral("changed\nsecond line")); },
+        [](Text& t) { t.setBold(false); },
     };
 
     Text cached;
@@ -97,15 +94,15 @@ void TestTextLayout::testRepaintMatchesFreshItem()
             steps[i](fresh);
         const TextGridBuffer freshFrame = paintToBuffer(fresh);
         QVERIFY2(buffersEqual(cachedFrame, freshFrame),
-                 qPrintable(QStringLiteral("step %1: '%2' vs '%3'").arg(applied)
-                            .arg(rowText(cachedFrame, 0), rowText(freshFrame, 0))));
+                 qPrintable(QStringLiteral("step %1: '%2' vs '%3'")
+                                .arg(applied)
+                                .arg(rowText(cachedFrame, 0), rowText(freshFrame, 0))));
         QCOMPARE(cached.implicitWidth(), fresh.implicitWidth());
         QCOMPARE(cached.implicitHeight(), fresh.implicitHeight());
     }
 }
 
-void TestTextLayout::testStyleChangeInvalidatesCache()
-{
+void TestTextLayout::testStyleChangeInvalidatesCache() {
     Text text;
     text.setText(QStringLiteral("x"));
     TextGridBuffer first = paintToBuffer(text, 2, 1);
@@ -125,48 +122,47 @@ void TestTextLayout::testStyleChangeInvalidatesCache()
     QVERIFY(buffersEqual(red, again));
 }
 
-void TestTextLayout::testTextChangeUpdatesImplicitSize()
-{
+void TestTextLayout::testTextChangeUpdatesImplicitSize() {
     Text text;
-    text.setText(QStringLiteral("ab\n") + QString::fromUtf8("中文字") + QStringLiteral("\n<b>x</b>"));
+    text.setText(QStringLiteral("ab\n") + QString::fromUtf8("中文字") +
+                 QStringLiteral("\n<b>x</b>"));
     QCOMPARE(text.implicitHeight(), 3);
-    QCOMPARE(text.implicitWidth(), 6);   // 3 wide characters
+    QCOMPARE(text.implicitWidth(), 6); // 3 wide characters
     text.setTextFormat(Text::PlainText);
-    QCOMPARE(text.implicitWidth(), 8);   // "<b>x</b>" is now literal
+    QCOMPARE(text.implicitWidth(), 8); // "<b>x</b>" is now literal
     text.setText(QString());
     QCOMPARE(text.implicitHeight(), 1);
     QCOMPARE(text.implicitWidth(), 0);
 }
 
-void TestTextLayout::testAnsiAndHtmlMarkup()
-{
+void TestTextLayout::testAnsiAndHtmlMarkup() {
     Text text;
     text.setColor(Color("#00ff00"));
-    text.setText(QStringLiteral("\033[1;31mRe\033[0md <font color='blue'>b</font>\033[48;2;1;2;3mZ"));
+    text.setText(
+        QStringLiteral("\033[1;31mRe\033[0md <font color='blue'>b</font>\033[48;2;1;2;3mZ"));
     TextGridBuffer frame = paintToBuffer(text, 12, 1);
     QCOMPARE(rowText(frame, 0).trimmed(), QStringLiteral("Red bZ"));
-    QCOMPARE(frame.cellAt(0, 0).fgColor, Color::fromAnsiIndex(1).argb32());   // SGR 31 is palette red
+    QCOMPARE(frame.cellAt(0, 0).fgColor, Color::fromAnsiIndex(1).argb32()); // SGR 31 is palette red
     QCOMPARE(frame.cellAt(0, 0).attributes, TextAttribute::Bold);
-    QCOMPARE(frame.cellAt(2, 0).fgColor, 0xFF00FF00u);       // SGR 0 restores the item colour
+    QCOMPARE(frame.cellAt(2, 0).fgColor, 0xFF00FF00u); // SGR 0 restores the item colour
     QCOMPARE(frame.cellAt(2, 0).attributes, TextAttribute::None);
-    QCOMPARE(frame.cellAt(4, 0).fgColor, Color("blue").argb32());   // <font color> by name
-    QCOMPARE(frame.cellAt(5, 0).bgColor, 0xFF010203u);       // 48;2;r;g;b
+    QCOMPARE(frame.cellAt(4, 0).fgColor, Color("blue").argb32()); // <font color> by name
+    QCOMPARE(frame.cellAt(5, 0).bgColor, 0xFF010203u);            // 48;2;r;g;b
 }
 
-void TestTextLayout::testEscapeAdvanceQuirk()
-{
+void TestTextLayout::testEscapeAdvanceQuirk() {
     // A raw control character has zero advance, so the following cluster
     // overwrites its visible replacement; width and cells match 0.3.
     Text text;
     text.setTextFormat(Text::PlainText);
-    text.setText(QStringLiteral("a\x1b" "b"));
+    text.setText(QStringLiteral("a\x1b"
+                                "b"));
     QCOMPARE(text.implicitWidth(), 2);
     TextGridBuffer frame = paintToBuffer(text, 4, 1);
     QCOMPARE(rowText(frame, 0), QStringLiteral("ab  "));
 }
 
-void TestTextLayout::testAlignmentAndClippingUseCachedWidth()
-{
+void TestTextLayout::testAlignmentAndClippingUseCachedWidth() {
     Text text;
     text.setText(QStringLiteral("abc"));
     text.setWidth(7);
@@ -184,8 +180,7 @@ void TestTextLayout::testAlignmentAndClippingUseCachedWidth()
     QCOMPARE(rowText(clipped, 0), QStringLiteral("ab     "));
 }
 
-void TestTextLayout::testGradientPerColumn()
-{
+void TestTextLayout::testGradientPerColumn() {
     QQmlEngine engine;
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
     QQmlComponent component(&engine);
@@ -198,10 +193,11 @@ void TestTextLayout::testGradientPerColumn()
                 GradientStop { position: 1.0; color: "#0000ff" }
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object != nullptr, qPrintable(component.errorString()));
-    auto *text = qobject_cast<Text *>(object.get());
+    auto* text = qobject_cast<Text*>(object.get());
     QVERIFY(text);
 
     TextGridBuffer first = paintToBuffer(*text, 6, 1);
@@ -217,8 +213,7 @@ void TestTextLayout::testGradientPerColumn()
     QVERIFY(buffersEqual(first, second));
 }
 
-void TestTextLayout::testWordWrap()
-{
+void TestTextLayout::testWordWrap() {
     Text text;
     text.setWrapMode(Text::WordWrap);
     text.setWidth(10);
@@ -239,8 +234,7 @@ void TestTextLayout::testWordWrap()
     QCOMPARE(text.implicitHeight(), 2);
 }
 
-void TestTextLayout::testLinkActivated()
-{
+void TestTextLayout::testLinkActivated() {
     // HTML link
     {
         Text text;
@@ -274,6 +268,58 @@ void TestTextLayout::testLinkActivated()
         QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qmltui.org"));
         QVERIFY(event.isAccepted());
     }
+}
+
+void TestTextLayout::testGraphemeAcrossMarkupBoundaries() {
+    Text text;
+    text.setText(QString::fromUtf8("<b>e</b>\xcc\x81\033[34m👍\033[0m🏽"));
+    QCOMPARE(text.implicitWidth(), 3);
+    const TextGridBuffer buffer = paintToBuffer(text, 6, 1);
+    QCOMPARE(buffer.cellAt(0, 0).character(), QByteArrayView("e\xcc\x81"));
+    QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Bold);
+    QCOMPARE(buffer.cellAt(1, 0).character(), QByteArrayView("👍🏽"));
+    QCOMPARE(buffer.cellAt(1, 0).fgColor, Color::fromAnsiIndex(4).argb32());
+    QVERIFY(buffer.cellAt(2, 0).continuation);
+}
+
+void TestTextLayout::testBaseStyleAndSgrReset() {
+    Text text;
+    text.setBold(true);
+    text.setDim(true);
+    text.setColor(Color("#112233"));
+    text.setBackgroundColor(Color("#445566"));
+    text.setText(QStringLiteral("A\033[22;31;42mB\033[39;49mC\033[0mD"));
+
+    TextGridBuffer buffer = paintToBuffer(text, 6, 1);
+    QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Bold | TextAttribute::Dim);
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xFF112233u);
+    QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xFF445566u);
+
+    // SGR 22 clears both Bold and Dim even when inherited from Text
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(1, 0).fgColor, Color::fromAnsiIndex(1).argb32());
+    QCOMPARE(buffer.cellAt(1, 0).bgColor, Color::fromAnsiIndex(2).argb32());
+
+    // SGR 39/49 restore Text's base fg/bg while keeping SGR 22 attribute override
+    QCOMPARE(buffer.cellAt(2, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(2, 0).fgColor, 0xFF112233u);
+    QCOMPARE(buffer.cellAt(2, 0).bgColor, 0xFF445566u);
+
+    // SGR 0 restores Text's base attributes and colors
+    QCOMPARE(buffer.cellAt(3, 0).attributes, TextAttribute::Bold | TextAttribute::Dim);
+    QCOMPARE(buffer.cellAt(3, 0).fgColor, 0xFF112233u);
+    QCOMPARE(buffer.cellAt(3, 0).bgColor, 0xFF445566u);
+
+    // Updating base color/background/attributes updates painted cells without re-layout
+    text.setColor(Color("#abcdef"));
+    text.setBackgroundColor(Color("#fedcba"));
+    text.setItalic(true);
+    buffer = paintToBuffer(text, 6, 1);
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::Italic);
+    QCOMPARE(buffer.cellAt(2, 0).fgColor, 0xFFABCDEFu);
+    QCOMPARE(buffer.cellAt(2, 0).bgColor, 0xFFFEDCBAu);
+    QCOMPARE(buffer.cellAt(3, 0).attributes,
+             TextAttribute::Bold | TextAttribute::Dim | TextAttribute::Italic);
 }
 
 QTEST_MAIN(TestTextLayout)

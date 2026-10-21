@@ -1415,14 +1415,8 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
             const bool useSpanColors = !isSelected || spansOverrideSelection;
             for (const Span& span : labelSpans) {
                 if (curX >= availW) break;
-                uint32_t spanFg = labelFg;
-                uint32_t spanBg = labelBg;
-                if (useSpanColors) {
-                    const Color fgColor = span.color();
-                    if (fgColor.isValid() && !fgColor.isTransparent()) spanFg = fgColor.argb32();
-                    const Color bgColor = span.backgroundColor();
-                    if (bgColor.isValid() && !bgColor.isTransparent()) spanBg = bgColor.argb32();
-                }
+                const uint32_t spanFg = useSpanColors ? span.resolveForeground(labelFg) : labelFg;
+                const uint32_t spanBg = useSpanColors ? span.resolveBackground(labelBg) : labelBg;
                 const TextAttribute spanAttr = span.resolveAttributes(labelAttr);
                 writeSegment(span.text(), spanFg, spanBg, spanAttr);
             }

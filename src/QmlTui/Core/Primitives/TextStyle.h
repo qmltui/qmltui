@@ -3,7 +3,9 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/Cell.h>
+#include <QVariant>
 #include <QtGlobal>
+#include <cstdint>
 
 namespace qmltui {
 
@@ -57,8 +59,19 @@ public:
 
     // Applies specified attributes onto base, clearing bits explicitly set to false.
     TextAttribute resolveAttributes(TextAttribute base) const;
+    uint32_t resolveForeground(uint32_t baseFg) const {
+        return m_color.isValid() && !m_color.isTransparent() ? m_color.argb32() : baseFg;
+    }
+    uint32_t resolveBackground(uint32_t baseBg) const {
+        return m_backgroundColor.isValid() && !m_backgroundColor.isTransparent()
+                   ? m_backgroundColor.argb32()
+                   : baseBg;
+    }
     // Overwrites only the colors and attributes that overlay explicitly specifies.
     void applyOverlay(const TextStyle& overlay);
+    // Applies style properties from a QVariantMap ({ color, backgroundColor, bold, dim, italic,
+    // underline, reversed }).
+    void applyVariantMap(const QVariantMap& map, bool warnOnInvalid = false);
 
     friend bool operator==(const TextStyle& lhs, const TextStyle& rhs) noexcept {
         return lhs.m_color == rhs.m_color && lhs.m_backgroundColor == rhs.m_backgroundColor &&

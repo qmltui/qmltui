@@ -30,7 +30,6 @@ private slots:
     void testOverrideWins();
     void testSyncOutput();
     void testDepthNames();
-    void testPropertyGetters();
 };
 
 void TestTerminalCapabilities::testDefaultsToTrueColor() {
@@ -105,7 +104,10 @@ void TestTerminalCapabilities::testTermProgramTable() {
     const TerminalCapabilities kitty = TerminalCapabilities::detect(
         environmentWith({{"TERM", "xterm-kitty"}, {"TERM_PROGRAM", "kitty"}}));
     QCOMPARE(kitty.colorDepth, ColorDepth::TrueColor);
+    QCOMPARE(kitty.colorDepthName(), QStringLiteral("truecolor"));
     QCOMPARE(kitty.termProgram, QStringLiteral("kitty"));
+    QCOMPARE(kitty.terminalProgram(), QStringLiteral("kitty"));
+    QVERIFY(kitty.isTtyStream());
 }
 
 void TestTerminalCapabilities::testMonoFromNoColorAndDumb() {
@@ -158,17 +160,6 @@ void TestTerminalCapabilities::testDepthNames() {
     QCOMPARE(TerminalCapabilities::colorDepthName(ColorDepth::Indexed256), QStringLiteral("256"));
     QCOMPARE(TerminalCapabilities::colorDepthName(ColorDepth::TrueColor),
              QStringLiteral("truecolor"));
-}
-
-void TestTerminalCapabilities::testPropertyGetters() {
-    TerminalCapabilities caps;
-    caps.colorDepth = ColorDepth::Indexed256;
-    caps.termProgram = QStringLiteral("alacritty");
-    caps.isTty = true;
-
-    QCOMPARE(caps.colorDepthName(), QStringLiteral("256"));
-    QCOMPARE(caps.terminalProgram(), QStringLiteral("alacritty"));
-    QVERIFY(caps.isTtyStream());
 }
 
 QTEST_MAIN(TestTerminalCapabilities)

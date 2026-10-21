@@ -10,7 +10,6 @@ private slots:
     void testDotMask();
     void testUtf8AllMasks();
     void testBlockGlyphs();
-    void testDimensions();
 };
 
 void TestSubpixel::testDotMask() {
@@ -28,6 +27,17 @@ void TestSubpixel::testDotMask() {
     QCOMPARE(braille::dotMask(1, 1), static_cast<uint8_t>(0x10));
     QCOMPARE(braille::dotMask(1, 2), static_cast<uint8_t>(0x20));
     QCOMPARE(braille::dotMask(1, 3), static_cast<uint8_t>(0x80));
+
+    // All 8 in-bounds dot masks must be pairwise disjoint and cover all 8 bits.
+    uint8_t combined = 0;
+    for (int x = 0; x < braille::DotsX; ++x) {
+        for (int y = 0; y < braille::DotsY; ++y) {
+            const uint8_t m = braille::dotMask(x, y);
+            QCOMPARE(combined & m, static_cast<uint8_t>(0x00));
+            combined |= m;
+        }
+    }
+    QCOMPARE(combined, static_cast<uint8_t>(0xFF));
 }
 
 void TestSubpixel::testUtf8AllMasks() {
@@ -62,13 +72,6 @@ void TestSubpixel::testBlockGlyphs() {
     // U+2588: Full Block █
     const char32_t full = 0x2588;
     QCOMPARE(QByteArray(block_glyphs::Full), QString::fromUcs4(&full, 1).toUtf8());
-}
-
-void TestSubpixel::testDimensions() {
-    QCOMPARE(braille::DotsX, 2);
-    QCOMPARE(braille::DotsY, 4);
-    QCOMPARE(half_block::SubpixelsX, 1);
-    QCOMPARE(half_block::SubpixelsY, 2);
 }
 
 QTEST_MAIN(TestSubpixel)

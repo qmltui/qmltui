@@ -11,8 +11,11 @@
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/Loader.h>
 #include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
+#include "../TestPaint.h"
 
 using namespace qmltui;
+using qmltui::testing::paintItem;
 
 class TestLoader : public QObject {
     Q_OBJECT
@@ -26,11 +29,11 @@ private slots:
     void replacingComponentDestroysItem();
     void followsLoadedImplicitSize();
     void propagatesExplicitSize();
+    void reportsErrorOnInvalidSource();
 };
 
-static void addQmlTuiImportPath(QQmlEngine &engine) {
-    engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../QmlTui"));
+static void addQmlTuiImportPath(QQmlEngine& engine) {
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
 }
 
 void TestLoader::loadsInlineComponent() {
@@ -46,20 +49,29 @@ void TestLoader::loadsInlineComponent() {
                 text: "loaded"
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *loader = qobject_cast<Loader *>(object.get());
+    auto* loader = qobject_cast<Loader*>(object.get());
     QVERIFY(loader);
     QCOMPARE(loader->status(), Loader::Ready);
     QVERIFY(loader->item());
     QCOMPARE(loader->item()->objectName(), QStringLiteral("content"));
-    auto *content = qobject_cast<Item *>(loader->item());
+    auto* content = qobject_cast<Item*>(loader->item());
     QVERIFY(content);
     QCOMPARE(content->parentItem(), loader);
     QCOMPARE(loader->implicitWidth(), 6);
     QCOMPARE(loader->implicitHeight(), 1);
+
+    TextGridBuffer buffer;
+    buffer.resize(10, 1);
+    paintItem(loader, buffer, 0, 0);
+    QString rendered;
+    for (int x = 0; x < 6; ++x)
+        rendered += QString::fromUtf8(buffer.cellAt(x, 0).character());
+    QCOMPARE(rendered, QStringLiteral("loaded"));
 }
 
 void TestLoader::loadsRelativeUrl() {
@@ -82,11 +94,12 @@ void TestLoader::loadsRelativeUrl() {
     component.setData(R"(
         import QmlTui
         Loader { source: "Loaded.qml" }
-    )", QUrl::fromLocalFile(directory.filePath(QStringLiteral("Host.qml"))));
+    )",
+                      QUrl::fromLocalFile(directory.filePath(QStringLiteral("Host.qml"))));
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *loader = qobject_cast<Loader *>(object.get());
+    auto* loader = qobject_cast<Loader*>(object.get());
     QVERIFY(loader);
     QCOMPARE(loader->status(), Loader::Ready);
     QVERIFY(loader->item());
@@ -108,19 +121,20 @@ void TestLoader::loadsNonVisualObject() {
                 property string accent: "cyan"
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *loader = qobject_cast<Loader *>(object.get());
+    auto* loader = qobject_cast<Loader*>(object.get());
     QVERIFY(loader);
     QCOMPARE(loader->status(), Loader::Ready);
     QVERIFY(loader->errorString().isEmpty());
 
-    QObject *loadedObject = loader->item();
+    QObject* loadedObject = loader->item();
     QVERIFY(loadedObject);
     QCOMPARE(loadedObject->objectName(), QStringLiteral("theme"));
-    QVERIFY(!qobject_cast<Item *>(loadedObject));
+    QVERIFY(!qobject_cast<Item*>(loadedObject));
     QCOMPARE(loadedObject->property("accent").toString(), QStringLiteral("cyan"));
 
     // The object is owned by the loader but is not part of its visual tree.
@@ -146,7 +160,8 @@ void TestLoader::leavesNonVisualObjectUnsized() {
     component.setData(R"(
         import QtQml
         QtObject { objectName: "controller" }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     Loader loader;
@@ -177,11 +192,12 @@ void TestLoader::activeControlsLifetime() {
             active: false
             sourceComponent: Item { implicitWidth: 4; implicitHeight: 2 }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *loader = qobject_cast<Loader *>(object.get());
+    auto* loader = qobject_cast<Loader*>(object.get());
     QVERIFY(loader);
     QCOMPARE(loader->status(), Loader::Null);
     QVERIFY(!loader->item());
@@ -207,14 +223,16 @@ void TestLoader::replacingComponentDestroysItem() {
     first.setData(R"(
         import QmlTui
         Item { objectName: "first" }
-    )", QUrl());
+    )",
+                  QUrl());
     QVERIFY2(first.isReady(), qPrintable(first.errorString()));
 
     QQmlComponent second(&engine);
     second.setData(R"(
         import QmlTui
         Item { objectName: "second" }
-    )", QUrl());
+    )",
+                   QUrl());
     QVERIFY2(second.isReady(), qPrintable(second.errorString()));
 
     Loader loader;
@@ -237,7 +255,8 @@ void TestLoader::followsLoadedImplicitSize() {
     component.setData(R"(
         import QmlTui
         Item { implicitWidth: 3; implicitHeight: 2 }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     Loader loader;
@@ -245,7 +264,7 @@ void TestLoader::followsLoadedImplicitSize() {
     QCOMPARE(loader.implicitWidth(), 3);
     QCOMPARE(loader.implicitHeight(), 2);
 
-    auto *loadedItem = qobject_cast<Item *>(loader.item());
+    auto* loadedItem = qobject_cast<Item*>(loader.item());
     QVERIFY(loadedItem);
     loadedItem->setImplicitWidth(8);
     loadedItem->setImplicitHeight(5);
@@ -261,7 +280,8 @@ void TestLoader::propagatesExplicitSize() {
     component.setData(R"(
         import QmlTui
         Item { implicitWidth: 3; implicitHeight: 2 }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     Loader loader;
@@ -269,12 +289,32 @@ void TestLoader::propagatesExplicitSize() {
     loader.setHeight(7);
     loader.setSourceComponent(&component);
 
-    auto *loadedItem = qobject_cast<Item *>(loader.item());
+    auto* loadedItem = qobject_cast<Item*>(loader.item());
     QVERIFY(loadedItem);
     QCOMPARE(loadedItem->width(), 20);
     QCOMPARE(loadedItem->height(), 7);
     QCOMPARE(loader.implicitWidth(), 3);
     QCOMPARE(loader.implicitHeight(), 2);
+}
+
+void TestLoader::reportsErrorOnInvalidSource() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QmlTui
+        Loader { source: "missing_component_file.qml" }
+    )",
+                      QUrl::fromLocalFile(QStringLiteral("/tmp/Host.qml")));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* loader = qobject_cast<Loader*>(object.get());
+    QVERIFY(loader);
+    QCOMPARE(loader->status(), Loader::Error);
+    QVERIFY(!loader->errorString().isEmpty());
+    QVERIFY(!loader->item());
 }
 
 QTEST_MAIN(TestLoader)

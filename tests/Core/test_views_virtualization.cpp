@@ -41,6 +41,7 @@ class TestViewsVirtualization : public QObject {
 private slots:
     void testListViewPooling();
     void testTableView2DVirtualization();
+    void testTableViewListModelRoleColumns();
     void testTableViewDelegateChooser();
     void testGridViewVirtualization();
 };
@@ -132,6 +133,74 @@ void TestViewsVirtualization::testTableView2DVirtualization() {
     // x 5 cols = 70) are created!
     const int childCount = tableView->findChildren<Item*>().size();
     QVERIFY(childCount > 0 && childCount <= 70);
+
+    auto rowText = [&buffer](int y) {
+        QString line;
+        for (int x = 0; x < buffer.width(); ++x)
+            line += QString::fromUtf8(buffer.cellAt(x, y).character());
+        return line;
+    };
+    QVERIFY2(rowText(0).contains(QStringLiteral("Item 0")), qPrintable(rowText(0)));
+
+    tableView->setSelectedRow(2500);
+    buffer.clear();
+    paintItem(tableView, buffer, 0, 0);
+    QVERIFY(tableView->findChildren<Item*>().size() <= 70);
+    bool foundScrolledRow = false;
+    for (int y = 0; y < buffer.height(); ++y) {
+        if (rowText(y).contains(QStringLiteral("Item 2500"))) {
+            foundScrolledRow = true;
+            break;
+        }
+    }
+    QVERIFY(foundScrolledRow);
+}
+
+void TestViewsVirtualization::testTableViewListModelRoleColumns() {
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QtQml.Models
+        import QmlTui
+
+        TableView {
+            width: 40
+            height: 6
+            columns: [
+                { title: "Service", role: "service", width: 14 },
+                { title: "Status", key: "status", width: 10 },
+                { title: "CPU", role: "cpu", width: 6 }
+            ]
+            model: ListModel {
+                ListElement { service: "api-gateway"; status: "Running"; cpu: "12%" }
+                ListElement { service: "auth-worker"; status: "Idle"; cpu: "0%" }
+            }
+        }
+    )",
+                      QUrl());
+
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto* tableView = qobject_cast<TableView*>(object.get());
+    QVERIFY(tableView != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(40, 6);
+    paintItem(tableView, buffer, 0, 0);
+
+    auto rowText = [&buffer](int y) {
+        QString line;
+        for (int x = 0; x < buffer.width(); ++x)
+            line += QString::fromUtf8(buffer.cellAt(x, y).character());
+        return line;
+    };
+    QVERIFY2(rowText(2).contains(QStringLiteral("api-gateway")), qPrintable(rowText(2)));
+    QVERIFY2(rowText(2).contains(QStringLiteral("Running")), qPrintable(rowText(2)));
+    QVERIFY2(rowText(2).contains(QStringLiteral("12%")), qPrintable(rowText(2)));
+    QVERIFY2(rowText(3).contains(QStringLiteral("auth-worker")), qPrintable(rowText(3)));
+    QVERIFY2(rowText(3).contains(QStringLiteral("Idle")), qPrintable(rowText(3)));
+    QVERIFY2(rowText(3).contains(QStringLiteral("0%")), qPrintable(rowText(3)));
 }
 
 void TestViewsVirtualization::testTableViewDelegateChooser() {
@@ -194,7 +263,6 @@ void TestViewsVirtualization::testTableViewDelegateChooser() {
     QVERIFY(rowText.contains("Col1:Item 0"));
 }
 
-QTEST_MAIN(TestViewsVirtualization)
 void TestViewsVirtualization::testGridViewVirtualization() {
     QQmlEngine engine;
     TestCountModel model(100000);
@@ -262,4 +330,5 @@ void TestViewsVirtualization::testGridViewVirtualization() {
     QCOMPARE(gridView->contentHeight(), 100000 / 2 * 2);
 }
 
+QTEST_MAIN(TestViewsVirtualization)
 #include "test_views_virtualization.moc"

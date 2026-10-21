@@ -21,7 +21,6 @@ class TestImage : public QObject {
     Q_OBJECT
 
 private slots:
-    void testInitialState();
     void testLoadValidImage();
     void testLoadInvalidImage();
     void testRenderHalfBlock();
@@ -79,17 +78,15 @@ static void primeCell(qmltui::Cell& cell, uint32_t bgColor) {
     cell.bgColor = bgColor;
 }
 
-void TestImage::testInitialState() {
-    qmltui::Image img;
-    QCOMPARE(img.status(), qmltui::Image::Status::Null);
-    QCOMPARE(img.fillMode(), qmltui::Image::FillMode::Stretch);
-    QCOMPARE(img.renderMode(), qmltui::Image::RenderMode::Auto);  // resolves to HalfBlock without a kitty terminal
-    QCOMPARE(img.smooth(), false);
-    QCOMPARE(img.source().isEmpty(), true);
-    QCOMPARE(img.retainWhileLoading(), false);
-}
-
 void TestImage::testLoadValidImage() {
+    qmltui::Image initial;
+    QCOMPARE(initial.status(), qmltui::Image::Status::Null);
+    QCOMPARE(initial.fillMode(), qmltui::Image::FillMode::Stretch);
+    QCOMPARE(initial.renderMode(), qmltui::Image::RenderMode::Auto);
+    QCOMPARE(initial.smooth(), false);
+    QVERIFY(initial.source().isEmpty());
+    QCOMPARE(initial.retainWhileLoading(), false);
+
     // Generate a 4x4 test PNG: top row red, bottom row blue
     QImage testImg(4, 4, QImage::Format_ARGB32);
     testImg.fill(Qt::blue);
@@ -118,6 +115,7 @@ void TestImage::testLoadValidImage() {
 
 void TestImage::testLoadInvalidImage() {
     qmltui::Image img;
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("failed to load"));
     img.setSource(QUrl::fromLocalFile("/non_existent_path_12345.png"));
     QCOMPARE(img.status(), qmltui::Image::Status::Error);
 }
@@ -210,7 +208,8 @@ void TestImage::testHalfBlockSampling() {
     const bool resized = QSize(cells.width(), cells.height() * 2) != source.size();
     QCOMPARE(blendedHalves(filtered) > 0, resized);
     img.setSmooth(false);
-    QCOMPARE(render().toAnsiString(), sharp.toAnsiString()); // changing sampling invalidates the cache
+    QCOMPARE(render().toAnsiString(),
+             sharp.toAnsiString()); // changing sampling invalidates the cache
 }
 
 // Auto resolves to HalfBlock on a terminal without kitty or sixel; the picture
@@ -234,7 +233,7 @@ void TestImage::testAutoFitsLikeHalfBlock() {
         img.setRenderMode(mode);
         img.setFillMode(qmltui::Image::FillMode::PreserveAspectFit);
         img.setWidth(8);
-        img.setHeight(4);   // 8 pixel rows: the 2x2 picture fits as 8x8 pixels = 8 cells x 4 rows
+        img.setHeight(4); // 8 pixel rows: the 2x2 picture fits as 8x8 pixels = 8 cells x 4 rows
         qmltui::TextGridBuffer buffer;
         buffer.resize(8, 4);
         qmltui::testing::paintItem(img, buffer, 0, 0);
@@ -242,7 +241,9 @@ void TestImage::testAutoFitsLikeHalfBlock() {
         for (int y = 0; y < 4; ++y) {
             for (int x = 0; x < 8; ++x) {
                 const qmltui::Cell& cell = buffer.cellAt(x, y);
-                picture += QString::fromUtf8(cell.character().toByteArray()) + QString::number(cell.fgColor, 16) + "/" + QString::number(cell.bgColor, 16) + " ";
+                picture += QString::fromUtf8(cell.character().toByteArray()) +
+                           QString::number(cell.fgColor, 16) + "/" +
+                           QString::number(cell.bgColor, 16) + " ";
             }
             picture += "\n";
         }
@@ -250,7 +251,8 @@ void TestImage::testAutoFitsLikeHalfBlock() {
     };
     const QString halfBlock = paintWith(qmltui::Image::RenderMode::HalfBlock);
     const QString automatic = paintWith(qmltui::Image::RenderMode::Auto);
-    QVERIFY2(halfBlock.count(QStringLiteral("\u2580")) == 32, qPrintable(halfBlock));   // every cell painted
+    QVERIFY2(halfBlock.count(QStringLiteral("\u2580")) == 32,
+             qPrintable(halfBlock)); // every cell painted
     QCOMPARE(automatic, halfBlock);
     QFile::remove(fileName);
 }
@@ -319,7 +321,7 @@ public:
         return image;
     }
 };
-}
+} // namespace
 
 // Shape 2: an image:// URL resolves through the ImageProvider installed on
 // the item's engine; the id carries path and query; unknown ids and unknown
@@ -340,7 +342,8 @@ Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 4; height: 2; renderMode: Image.HalfBlock
             source: "image://test/solid?frame=1" }
 }
-)", QUrl());
+)",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
@@ -362,7 +365,7 @@ Terminal {
     picture->setSource(QUrl(QStringLiteral("image://test/solid-blue?frame=2")));
     QCOMPARE(provider->ids.size(), 2);
     QCOMPARE(provider->ids.last(), QStringLiteral("solid-blue?frame=2"));
-    QCOMPARE(provider->lastRequested, QSize(4, 4));      // 4 columns, 2 rows of half-blocks
+    QCOMPARE(provider->lastRequested, QSize(4, 4)); // 4 columns, 2 rows of half-blocks
     const quint64 before = engine->frameSequence();
     engine->requestRender();
     QTRY_VERIFY(engine->frameSequence() > before);
@@ -372,7 +375,8 @@ Terminal {
     picture->setSource(QUrl(QStringLiteral("image://test/missing")));
     QCOMPARE(picture->status(), qmltui::Image::Status::Error);
     // Unknown provider: Error as well, and a warning.
-    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("no qmltui::ImageProvider named \"nobody\""));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("no qmltui::ImageProvider named \"nobody\""));
     picture->setSource(QUrl(QStringLiteral("image://nobody/x")));
     QCOMPARE(picture->status(), qmltui::Image::Status::Error);
 
@@ -393,7 +397,10 @@ public:
     bool cancelled = false;
     QImage image() const override { return img; }
     void cancel() override { cancelled = true; }
-    void complete(const QImage& picture) { img = picture; emit finished(); }
+    void complete(const QImage& picture) {
+        img = picture;
+        emit finished();
+    }
 };
 class LaterProvider : public qmltui::AsyncImageProvider {
 public:
@@ -412,7 +419,7 @@ QImage solid(Qt::GlobalColor colour) {
     image.fill(colour);
     return image;
 }
-}
+} // namespace
 
 // The asynchronous shape: the item reports Loading and keeps its current
 // picture until the response finishes; a superseded response is cancelled and
@@ -431,7 +438,8 @@ Terminal {
             retainWhileLoading: true
             source: "image://later/first" }
 }
-)", QUrl());
+)",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
@@ -445,7 +453,7 @@ Terminal {
     QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
     QCOMPARE(picture->sourceSize(), QSize(4, 4));
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    QVERIFY(!provider->responses[0]);            // the item deleted the finished response
+    QVERIFY(!provider->responses[0]); // the item deleted the finished response
 
     // A new request keeps the old picture on screen while it is pending.
     picture->setSource(QUrl(QStringLiteral("image://later/second")));
@@ -625,28 +633,68 @@ void TestImage::testZeroMaskPreservesUnderlyingCell() {
 }
 
 void TestImage::testFillModeScaling() {
-    QImage testImg(100, 50, QImage::Format_ARGB32);
-    testImg.fill(Qt::green);
-
-    QTemporaryFile tempFile;
-    QVERIFY(tempFile.open());
-    QString fileName = tempFile.fileName() + ".png";
-    tempFile.close();
-    QVERIFY(testImg.save(fileName, "PNG"));
+    QImage redSquare(2, 2, QImage::Format_ARGB32);
+    redSquare.fill(QColor(255, 0, 0));
 
     qmltui::Image img;
-    img.setSource(QUrl::fromLocalFile(fileName));
+    img.setImage(redSquare);
+    img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
+
+    // 1. Stretch: 2x2 image stretches to fill the entire 6x3 cell box (6x6 subpixels).
+    img.setFillMode(qmltui::Image::FillMode::Stretch);
+    img.setWidth(6);
+    img.setHeight(3);
+    qmltui::TextGridBuffer stretchBuf;
+    stretchBuf.resize(6, 3);
+    qmltui::testing::paintItem(img, stretchBuf, 0, 0);
+    QCOMPARE(stretchBuf.cellAt(0, 0).fgColor, 0xFFFF0000u);
+    QCOMPARE(stretchBuf.cellAt(5, 2).fgColor, 0xFFFF0000u);
+    QCOMPARE(stretchBuf.cellAt(5, 2).bgColor, 0xFFFF0000u);
+
+    // 2. PreserveAspectFit: 2x2 square in 8x2 cells (8x4 subpixels) fits as 4x4 subpixels
+    // centered at x = [2..5], leaving columns 0..1 and 6..7 untouched.
     img.setFillMode(qmltui::Image::FillMode::PreserveAspectFit);
-    img.setWidth(20);
-    img.setHeight(10);
+    img.setWidth(8);
+    img.setHeight(2);
+    qmltui::TextGridBuffer fitBuf;
+    fitBuf.resize(8, 2);
+    qmltui::testing::paintItem(img, fitBuf, 0, 0);
+    QCOMPARE(fitBuf.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(fitBuf.cellAt(1, 1).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(fitBuf.cellAt(2, 0).fgColor, 0xFFFF0000u);
+    QCOMPARE(fitBuf.cellAt(5, 1).fgColor, 0xFFFF0000u);
+    QCOMPARE(fitBuf.cellAt(6, 0).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(fitBuf.cellAt(7, 1).character().toByteArray(), QByteArray(" "));
 
-    qmltui::TextGridBuffer buffer;
-    buffer.resize(20, 10);
-    qmltui::testing::paintItem(img, buffer, 0, 0);
+    // 3. Pad: 2x2 source unscaled at center of 6x3 cell box (6x6 subpixels -> x=[2..3], y=1).
+    img.setFillMode(qmltui::Image::FillMode::Pad);
+    img.setWidth(6);
+    img.setHeight(3);
+    qmltui::TextGridBuffer padBuf;
+    padBuf.resize(6, 3);
+    qmltui::testing::paintItem(img, padBuf, 0, 0);
+    QCOMPARE(padBuf.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(padBuf.cellAt(2, 1).fgColor, 0xFFFF0000u);
+    QCOMPARE(padBuf.cellAt(3, 1).bgColor, 0xFFFF0000u);
+    QCOMPARE(padBuf.cellAt(5, 2).character().toByteArray(), QByteArray(" "));
 
-    QCOMPARE(img.status(), qmltui::Image::Status::Ready);
-
-    QFile::remove(fileName);
+    // 4. Tile: 2x2 stripe (col 0 red, col 1 blue) repeats across a 4x1 cell box.
+    QImage stripe(2, 2, QImage::Format_ARGB32);
+    for (int y = 0; y < 2; ++y) {
+        stripe.setPixelColor(0, y, QColor(255, 0, 0));
+        stripe.setPixelColor(1, y, QColor(0, 0, 255));
+    }
+    img.setImage(stripe);
+    img.setFillMode(qmltui::Image::FillMode::Tile);
+    img.setWidth(4);
+    img.setHeight(1);
+    qmltui::TextGridBuffer tileBuf;
+    tileBuf.resize(4, 1);
+    qmltui::testing::paintItem(img, tileBuf, 0, 0);
+    QCOMPARE(tileBuf.cellAt(0, 0).fgColor, 0xFFFF0000u);
+    QCOMPARE(tileBuf.cellAt(1, 0).fgColor, 0xFF0000FFu);
+    QCOMPARE(tileBuf.cellAt(2, 0).fgColor, 0xFFFF0000u);
+    QCOMPARE(tileBuf.cellAt(3, 0).fgColor, 0xFF0000FFu);
 }
 
 void TestImage::testSourceClipRect() {
@@ -655,8 +703,9 @@ void TestImage::testSourceClipRect() {
     QImage sheet(4, 4, QImage::Format_ARGB32);
     for (int y = 0; y < 4; ++y)
         for (int x = 0; x < 4; ++x)
-            sheet.setPixel(x, y, y < 2 ? (x < 2 ? qRgb(255, 0, 0) : qRgb(0, 255, 0))
-                                       : (x < 2 ? qRgb(0, 0, 255) : qRgb(255, 255, 0)));
+            sheet.setPixel(x, y,
+                           y < 2 ? (x < 2 ? qRgb(255, 0, 0) : qRgb(0, 255, 0))
+                                 : (x < 2 ? qRgb(0, 0, 255) : qRgb(255, 255, 0)));
 
     qmltui::Image img;
     img.setImage(sheet);
@@ -664,7 +713,7 @@ void TestImage::testSourceClipRect() {
     QCOMPARE(img.implicitWidth(), 4);
 
     QSignalSpy clipSpy(&img, &qmltui::Image::sourceClipRectChanged);
-    img.setSourceClipRect(QRect(2, 2, 2, 2));   // the yellow quadrant
+    img.setSourceClipRect(QRect(2, 2, 2, 2)); // the yellow quadrant
     QCOMPARE(clipSpy.count(), 1);
     // The implicit size follows the clip; sourceSize keeps the full picture.
     QCOMPARE(img.implicitWidth(), 2);
@@ -679,7 +728,7 @@ void TestImage::testSourceClipRect() {
     qmltui::testing::paintItem(img, buffer, 0, 0);
     for (int x = 0; x < 2; ++x) {
         const qmltui::Cell& cell = buffer.cellAt(x, 0);
-        QCOMPARE(cell.fgColor, 0xFFFFFF00u);   // both halves yellow
+        QCOMPARE(cell.fgColor, 0xFFFFFF00u); // both halves yellow
         QCOMPARE(cell.bgColor, 0xFFFFFF00u);
     }
 
@@ -702,7 +751,7 @@ void TestImage::testSourceClipRectOutside() {
     qmltui::Image img;
     img.setImage(sheet);
     img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
-    img.setSourceClipRect(QRect(10, 10, 2, 2));   // entirely outside
+    img.setSourceClipRect(QRect(10, 10, 2, 2)); // entirely outside
     img.setWidth(2);
     img.setHeight(1);
 
@@ -719,8 +768,19 @@ void TestImage::testSourceClipRectOutside() {
 
 void TestImage::testQrcResourceUrl() {
     qmltui::Image img;
-    img.setSource(QUrl("qrc:/qt/qml/ImageDemo/demo_image.png"));
-    QVERIFY(img.status() == qmltui::Image::Status::Error || img.status() == qmltui::Image::Status::Ready);
+    img.setWidth(4);
+    img.setHeight(2);
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("failed to load"));
+    img.setSource(QUrl("qrc:/non_existent_module/missing_image.png"));
+    QCOMPARE(img.status(), qmltui::Image::Status::Error);
+    QCOMPARE(img.progress(), 0.0);
+
+    qmltui::TextGridBuffer buffer;
+    buffer.resize(4, 2);
+    primeCell(buffer.cellAt(0, 0), 0xFF223344u);
+    qmltui::testing::paintItem(img, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("X"));
+    QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xFF223344u);
 }
 
 // The transparency rule: zero alpha draws nothing, partial alpha composites
@@ -734,10 +794,17 @@ void TestImage::testTransparencyOverKnownBackground() {
     constexpr uint32_t blue = 0xFF0000FFu;
 
     qmltui::Image img;
-    const QString fileName = loadPixels(img, 4, {
-        halfRed, clear, clear, halfWhite,   // top row
-        clear,   green, clear, clear,       // bottom row
-    });
+    const QString fileName = loadPixels(img, 4,
+                                        {
+                                            halfRed,
+                                            clear,
+                                            clear,
+                                            halfWhite, // top row
+                                            clear,
+                                            green,
+                                            clear,
+                                            clear, // bottom row
+                                        });
     QVERIFY(!fileName.isEmpty());
     QCOMPARE(img.status(), qmltui::Image::Status::Ready);
     img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
@@ -789,10 +856,13 @@ void TestImage::testTransparencyOverUnknownBackground() {
     constexpr QRgb mostlyGreen = qRgba(0, 255, 0, 200);
 
     qmltui::Image img;
-    const QString fileName = loadPixels(img, 2, {
-        faintRed,    mostlyGreen,  // top row
-        mostlyGreen, faintRed,     // bottom row
-    });
+    const QString fileName = loadPixels(img, 2,
+                                        {
+                                            faintRed,
+                                            mostlyGreen, // top row
+                                            mostlyGreen,
+                                            faintRed, // bottom row
+                                        });
     QVERIFY(!fileName.isEmpty());
     img.setRenderMode(qmltui::Image::RenderMode::HalfBlock);
     img.setWidth(2);
@@ -807,8 +877,8 @@ void TestImage::testTransparencyOverUnknownBackground() {
 
     const qmltui::Cell& lowerOnly = buffer.cellAt(0, 0);
     QCOMPARE(lowerOnly.character().toByteArray(), QByteArray("\xE2\x96\x84")); // ▄
-    QCOMPARE(lowerOnly.fgColor, 0xFF00FF00u);   // unblended, stored opaque
-    QCOMPARE(lowerOnly.bgColor, 0x00000000u);   // the faint pixel drew nothing
+    QCOMPARE(lowerOnly.fgColor, 0xFF00FF00u); // unblended, stored opaque
+    QCOMPARE(lowerOnly.bgColor, 0x00000000u); // the faint pixel drew nothing
 
     const qmltui::Cell& upperOnly = buffer.cellAt(1, 0);
     QCOMPARE(upperOnly.character().toByteArray(), QByteArray("\xE2\x96\x80")); // ▀
@@ -827,7 +897,7 @@ void TestImage::testTransparencyAsciiAndBraille() {
 
     {
         qmltui::Image img;
-        const QString fileName = loadPixels(img, 2, { halfWhite, 0x00000000u });
+        const QString fileName = loadPixels(img, 2, {halfWhite, 0x00000000u});
         QVERIFY(!fileName.isEmpty());
         img.setRenderMode(qmltui::Image::RenderMode::ASCII);
         img.setWidth(2);
@@ -849,12 +919,17 @@ void TestImage::testTransparencyAsciiAndBraille() {
         // One Braille cell is 2x4 pixels: the left column is faint, the right
         // column is half white. Only the right column clears the dark cut-off.
         qmltui::Image img;
-        const QString fileName = loadPixels(img, 2, {
-            faintWhite, halfWhite,
-            faintWhite, halfWhite,
-            faintWhite, halfWhite,
-            faintWhite, halfWhite,
-        });
+        const QString fileName = loadPixels(img, 2,
+                                            {
+                                                faintWhite,
+                                                halfWhite,
+                                                faintWhite,
+                                                halfWhite,
+                                                faintWhite,
+                                                halfWhite,
+                                                faintWhite,
+                                                halfWhite,
+                                            });
         QVERIFY(!fileName.isEmpty());
         img.setRenderMode(qmltui::Image::RenderMode::Braille);
         img.setWidth(1);
@@ -894,10 +969,16 @@ public:
                 ++requests;
                 const bool found = request.startsWith("GET /picture.png ");
                 const QByteArray body = found ? png : QByteArray("missing");
-                socket->write("HTTP/1.1 " + QByteArray(found ? "200 OK" : "404 Not Found") + "\r\n"
-                              "Content-Type: " + QByteArray(found ? "image/png" : "text/plain") + "\r\n"
-                              "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
-                              "Connection: close\r\n\r\n" + body);
+                socket->write("HTTP/1.1 " + QByteArray(found ? "200 OK" : "404 Not Found") +
+                              "\r\n"
+                              "Content-Type: " +
+                              QByteArray(found ? "image/png" : "text/plain") +
+                              "\r\n"
+                              "Content-Length: " +
+                              QByteArray::number(body.size()) +
+                              "\r\n"
+                              "Connection: close\r\n\r\n" +
+                              body);
                 socket->disconnectFromHost();
             });
             connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
@@ -905,10 +986,12 @@ public:
         server.listen(QHostAddress::LocalHost);
     }
     QString url(const char* path) const {
-        return QStringLiteral("http://127.0.0.1:%1%2").arg(server.serverPort()).arg(QLatin1String(path));
+        return QStringLiteral("http://127.0.0.1:%1%2")
+            .arg(server.serverPort())
+            .arg(QLatin1String(path));
     }
 };
-}
+} // namespace
 
 // An http source is fetched asynchronously: Loading with progress while the
 // reply is in flight, Ready with the decoded picture afterwards, Error on a
@@ -933,7 +1016,8 @@ Terminal {
     Image { objectName: "picture"; x: 0; y: 0; width: 6; height: 2; renderMode: Image.HalfBlock }
     Image { objectName: "second"; x: 0; y: 2; width: 6; height: 2; renderMode: Image.HalfBlock }
 }
-)", QUrl());
+)",
+                      QUrl());
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
@@ -959,7 +1043,8 @@ Terminal {
     QCOMPARE(server.requests, 1);
 
     // A missing picture reports Error and clears the item.
-    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("Image: http://127\\.0\\.0\\.1:\\d+/missing\\.png: .*"));
+    QTest::ignoreMessage(
+        QtWarningMsg, QRegularExpression("Image: http://127\\.0\\.0\\.1:\\d+/missing\\.png: .*"));
     picture->setSource(QUrl(server.url("/missing.png")));
     QCOMPARE(picture->status(), qmltui::Image::Status::Loading);
     QCOMPARE(picture->image().isNull(), !retain);
@@ -970,9 +1055,9 @@ Terminal {
 
     // Superseding a download drops it: the later source wins.
     picture->setSource(QUrl(server.url("/also-missing.png")));
-    picture->setSource(QUrl(server.url("/picture.png")));   // cached: Ready at once
+    picture->setSource(QUrl(server.url("/picture.png"))); // cached: Ready at once
     QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
-    QTest::qWait(50);   // the aborted reply must not change anything
+    QTest::qWait(50); // the aborted reply must not change anything
     QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
 }
 

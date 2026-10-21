@@ -18,7 +18,6 @@ class TestTextInput : public QObject {
     Q_OBJECT
 
 private slots:
-    void testInitialState();
     void testKeyPress();
     void testBackspace();
     void testCursorMovement();
@@ -34,14 +33,11 @@ private slots:
     void testQmlSurface();
 };
 
-void TestTextInput::testInitialState() {
+void TestTextInput::testKeyPress() {
     TextInput input;
     QCOMPARE(input.text(), QString(""));
     QCOMPARE(input.cursorPosition(), 0);
-}
 
-void TestTextInput::testKeyPress() {
-    TextInput input;
     KeyEvent ev1(Qt::Key_A, "a", 0);
     input.keyPressEvent(&ev1);
 
@@ -85,7 +81,7 @@ void TestTextInput::testCursorMovement() {
     input.keyPressEvent(&evRight);
     QCOMPARE(input.cursorPosition(), 5);
 
-    input.keyPressEvent(&evRight); // try to go past end
+    input.keyPressEvent(&evRight);       // try to go past end
     QCOMPARE(input.cursorPosition(), 5); // shouldn't go past length
 }
 
@@ -170,8 +166,7 @@ void TestTextInput::testNavigationSelection() {
     QCOMPARE(input.selectedText(), QString(" two"));
 
     input.setCursorPosition(7);
-    KeyEvent controlShiftLeft(
-        Qt::Key_Left, "", Qt::ControlModifier | Qt::ShiftModifier);
+    KeyEvent controlShiftLeft(Qt::Key_Left, "", Qt::ControlModifier | Qt::ShiftModifier);
     input.keyPressEvent(&controlShiftLeft);
     QCOMPARE(input.selectionStart(), 4);
     QCOMPARE(input.selectionEnd(), 7);
@@ -183,8 +178,7 @@ void TestTextInput::testNavigationSelection() {
     QCOMPARE(input.selectionStart(), input.selectionEnd());
 
     input.setCursorPosition(0);
-    KeyEvent controlShiftRight(
-        Qt::Key_Right, "", Qt::ControlModifier | Qt::ShiftModifier);
+    KeyEvent controlShiftRight(Qt::Key_Right, "", Qt::ControlModifier | Qt::ShiftModifier);
     input.keyPressEvent(&controlShiftRight);
     QCOMPARE(input.cursorPosition(), 3);
     QCOMPARE(input.selectedText(), QString("one"));
@@ -203,8 +197,7 @@ void TestTextInput::testWordEditing() {
     input.keyPressEvent(&wordLeft);
     QCOMPARE(input.cursorPosition(), 4);
 
-    KeyEvent wordBackspace(
-        Qt::Key_Backspace, "", Qt::ControlModifier);
+    KeyEvent wordBackspace(Qt::Key_Backspace, "", Qt::ControlModifier);
     input.keyPressEvent(&wordBackspace);
     QCOMPARE(input.text(), QString("two"));
     QCOMPARE(input.cursorPosition(), 0);
@@ -226,8 +219,7 @@ void TestTextInput::testHorizontalViewport() {
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("d"));
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("e"));
     QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QByteArray("f"));
-    QVERIFY((buffer.cellAt(3, 0).attributes & TextAttribute::Reversed)
-            != TextAttribute::None);
+    QVERIFY((buffer.cellAt(3, 0).attributes & TextAttribute::Reversed) != TextAttribute::None);
 }
 
 void TestTextInput::testFieldPropertiesAndPasswordRendering() {
@@ -314,6 +306,8 @@ void TestTextInput::testTerminalCursorCustomization() {
              static_cast<uint32_t>(0xFFFFFF00)); // yellow ARGB
 
     // Test clear(), overwriteMode(), placeholderColor(), autoScroll()
+    input.setWidth(15);
+    input.setHeight(1);
     input.setPlaceholderText("Enter name...");
     input.setPlaceholderColor("gray");
     QCOMPARE(input.placeholderColor(), QString("gray"));
@@ -321,6 +315,17 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.clear();
     QCOMPARE(input.text(), QString(""));
     QCOMPARE(input.cursorPosition(), 0);
+
+    input.setActiveFocus(false);
+    TextGridBuffer placeholderBuf;
+    placeholderBuf.resize(15, 1);
+    paintItem(input, placeholderBuf, 0, 0, ClipRect{0, 0, 15, 1});
+    QString placeholderRendered;
+    for (int x = 0; x < 13; ++x)
+        placeholderRendered += QString::fromUtf8(placeholderBuf.cellAt(x, 0).character());
+    QCOMPARE(placeholderRendered, QStringLiteral("Enter name..."));
+    QCOMPARE(placeholderBuf.cellAt(0, 0).fgColor, Color::fromString("gray").paintedArgb32());
+    input.setActiveFocus(true);
 
     input.setOverwriteMode(true);
     QCOMPARE(input.overwriteMode(), true);
@@ -363,11 +368,12 @@ void TestTextInput::testQmlSurface() {
             echoMode: TextInput.Password
             validator: /[0-9]+/
         }
-    )", QUrl());
+    )",
+                      QUrl());
 
     std::unique_ptr<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
-    TextInput *input = qobject_cast<TextInput *>(object.get());
+    TextInput* input = qobject_cast<TextInput*>(object.get());
     QVERIFY(input);
     QCOMPARE(input->text(), QString("12"));
     QCOMPARE(input->placeholderText(), QString("digits"));

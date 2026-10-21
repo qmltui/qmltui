@@ -7,20 +7,19 @@
 // Four 2x2 frames in one 8x2 row: red, green, blue, yellow.
 static QImage rowSheet() {
     QImage sheet(8, 2, QImage::Format_ARGB32);
-    const QRgb colors[4] = { qRgb(255, 0, 0), qRgb(0, 255, 0), qRgb(0, 0, 255), qRgb(255, 255, 0) };
+    const QRgb colors[4] = {qRgb(255, 0, 0), qRgb(0, 255, 0), qRgb(0, 0, 255), qRgb(255, 255, 0)};
     for (int y = 0; y < 2; ++y)
         for (int x = 0; x < 8; ++x)
             sheet.setPixel(x, y, colors[x / 2]);
     return sheet;
 }
 
-static const QRgb rowColors[4] = { 0xFFFF0000u, 0xFF00FF00u, 0xFF0000FFu, 0xFFFFFF00u };
+static const QRgb rowColors[4] = {0xFFFF0000u, 0xFF00FF00u, 0xFF0000FFu, 0xFFFFFF00u};
 
 class TestAnimatedSprite : public QObject {
     Q_OBJECT
 
 private slots:
-    void testInitialState();
     void testFrameRendering();
     void testRowWrapping();
     void testDerivedSquareFrames();
@@ -32,7 +31,7 @@ private slots:
     void testTimerAdvancesFrames();
 };
 
-void TestAnimatedSprite::testInitialState() {
+void TestAnimatedSprite::testFrameRendering() {
     qmltui::AnimatedSprite sprite;
     QCOMPARE(sprite.frameCount(), 1);
     QCOMPARE(sprite.frameWidth(), 0);
@@ -43,10 +42,7 @@ void TestAnimatedSprite::testInitialState() {
     QCOMPARE(sprite.loops(), static_cast<int>(qmltui::AnimatedSprite::Infinite));
     QCOMPARE(sprite.reverse(), false);
     QCOMPARE(sprite.finishBehavior(), qmltui::AnimatedSprite::FinishBehavior::FinishAtInitialFrame);
-}
 
-void TestAnimatedSprite::testFrameRendering() {
-    qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameWidth(2);
     sprite.setFrameHeight(2);
@@ -94,7 +90,7 @@ void TestAnimatedSprite::testDerivedSquareFrames() {
     qmltui::AnimatedSprite sprite;
     sprite.setRunning(false);
     sprite.setFrameCount(4);
-    sprite.setImage(rowSheet());   // 8x2, so 2x2 frames
+    sprite.setImage(rowSheet()); // 8x2, so 2x2 frames
 
     sprite.setCurrentFrame(1);
     QCOMPARE(sprite.sourceClipRect(), QRect(2, 0, 2, 2));
@@ -116,7 +112,7 @@ void TestAnimatedSprite::testFrameOrigin() {
 
     sprite.setCurrentFrame(1);
     QCOMPARE(sprite.sourceClipRect(), QRect(6, 2, 2, 2));
-    sprite.setCurrentFrame(2);   // first row ran out
+    sprite.setCurrentFrame(2); // first row ran out
     QCOMPARE(sprite.sourceClipRect(), QRect(0, 4, 2, 2));
     sprite.setCurrentFrame(5);
     QCOMPARE(sprite.sourceClipRect(), QRect(6, 4, 2, 2));
@@ -131,11 +127,11 @@ void TestAnimatedSprite::testAdvanceWrapsAndReverses() {
     sprite.advance();
     QCOMPARE(sprite.currentFrame(), 1);
     sprite.advance(2);
-    QCOMPARE(sprite.currentFrame(), 0);   // wrapped past the end
+    QCOMPARE(sprite.currentFrame(), 0); // wrapped past the end
 
     sprite.setReverse(true);
     sprite.advance();
-    QCOMPARE(sprite.currentFrame(), 2);   // wrapped past the start
+    QCOMPARE(sprite.currentFrame(), 2); // wrapped past the start
     sprite.advance();
     QCOMPARE(sprite.currentFrame(), 1);
 }
@@ -155,7 +151,7 @@ void TestAnimatedSprite::testFiniteLoopsFinish() {
     QCOMPARE(finishedSpy.count(), 1);
     QCOMPARE(sprite.running(), false);
     QCOMPARE(runningSpy.count(), 1);
-    QCOMPARE(sprite.currentFrame(), 0);   // FinishAtInitialFrame
+    QCOMPARE(sprite.currentFrame(), 0); // FinishAtInitialFrame
 
     // Finished for good: stepping further does not run another loop.
     sprite.advance();
@@ -191,7 +187,7 @@ void TestAnimatedSprite::testStartRestartsFromInitialFrame() {
     sprite.stop();
     sprite.setReverse(true);
     sprite.start();
-    QCOMPARE(sprite.currentFrame(), 3);   // reverse runs start at the end
+    QCOMPARE(sprite.currentFrame(), 3); // reverse runs start at the end
 }
 
 void TestAnimatedSprite::testTimerAdvancesFrames() {

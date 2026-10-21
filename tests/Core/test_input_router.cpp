@@ -613,7 +613,7 @@ void TestInputRouter::testLegacyWheelEventsNotSwallowedByMouseArea() {
     InputRouter router(&terminal);
 
     // Legacy wheel-down sent as button 65 press over the MouseArea
-    router.routeMouse(1, 2, 2, false, false, 0, 0, -1);
+    router.routeMouse(65, 2, 2, false, false, 0, 0, -1);
     QVERIFY(view->contentY() > 0);
 }
 

@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QObject>
+#include <QRegularExpression>
 #include <QTest>
 #include <QSignalSpy>
 #include <fcntl.h>
@@ -407,8 +408,9 @@ void TestTerminalDevice::testScrollbackAcrossModes() {
         QVERIFY(history.print(QString::fromUtf8("first café\n")));
         QVERIFY(history.print(QStringLiteral("second")));
         QSignalSpy rejected(&history, &Scrollback::outputRejected);
-        QTest::ignoreMessage(QtWarningMsg,
-                             "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(1 MiB\\) exceeded; submission rejected")));
         QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
         QCOMPARE(rejected.count(), 1);
     } // Accepted bytes belong to the session, not the output object.
@@ -514,7 +516,8 @@ void TestTerminalDevice::testScrollbackHistoryRows() {
     QCOMPARE(rowText(engine->committedScrollback(0), 0), QString::fromUtf8("wide 世界"));
 
     QTest::ignoreMessage(QtWarningMsg,
-                         "Scrollback queue limit (1 MiB) exceeded; submission rejected");
+                         QRegularExpression(QStringLiteral(
+                             "Scrollback queue limit \\(1 MiB\\) exceeded; submission rejected")));
     QVERIFY(!history.print(QString(TerminalEngine::ScrollbackQueueLimit, 'x')));
     QCOMPARE(engine->pendingScrollbackRowCount(), size_t(0)); // rejected as one unit
     QCOMPARE(engine->pendingScrollbackBytes(), size_t(0));

@@ -306,9 +306,20 @@ void TestCanvas::testAutoClear() {
     ClipRect clip{0, 0, 10, 5};
     paintItem(canvas, buffer, 0, 0, clip);
 
-    // Cell (2, 1) has top pixel y=2 green
-    Cell c = buffer.cellAt(2, 1);
-    QCOMPARE(Color::toArgb(c.fgColor), 0xFF008000u); // Green
+    // Frame 1: cell (2, 1) has top pixel y=2 green
+    QCOMPARE(Color::toArgb(buffer.cellAt(2, 1).fgColor), 0xFF008000u);
+
+    // Frame 2 with autoClear=false: pixel persists across frames without redrawing
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0, clip);
+    QCOMPARE(Color::toArgb(buffer.cellAt(2, 1).fgColor), 0xFF008000u);
+
+    // Frame 3 with autoClear=true: canvas clears its pixel buffer before painting
+    canvas.setAutoClear(true);
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0, clip);
+    QCOMPARE(buffer.cellAt(2, 1).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(buffer.cellAt(2, 1).fgColor, 0u);
 }
 
 void TestCanvas::testQmlCanvasHalfBlock() {
@@ -317,7 +328,7 @@ void TestCanvas::testQmlCanvasHalfBlock() {
 
     QQmlComponent component(&engine);
     component.setData(R"(
-        import QtQuick
+        import QtQml
         import QmlTui
 
         Canvas {
@@ -374,10 +385,8 @@ void TestCanvas::testHalfBlockDemoRendering() {
     buffer.resize(80, 30);
     paintItem(item, buffer, 0, 0);
 
-    // Count non-space cells or Upper Half Block characters rendered in the buffer
     int canvasCharCount = 0;
     for (int y = 0; y < 30; ++y) {
-        QString line;
         for (int x = 0; x < 80; ++x) {
             Cell c = buffer.cellAt(x, y);
             if (c.character().startsWith("\xE2\xA0") ||
@@ -385,12 +394,8 @@ void TestCanvas::testHalfBlockDemoRendering() {
                 c.character().toByteArray() == "\xE2\x96\x84") {
                 canvasCharCount++;
             }
-            line += QString::fromUtf8(c.character().toByteArray());
         }
-        qDebug().noquote() << QString("Row %1: %2").arg(y, 2).arg(line);
     }
-
-    qDebug() << "Total Canvas graphics characters rendered in frame:" << canvasCharCount;
     QVERIFY(canvasCharCount > 0);
 
     delete obj;

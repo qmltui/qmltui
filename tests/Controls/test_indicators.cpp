@@ -130,9 +130,24 @@ private slots:
         buffer.resize(40, 6);
         paintItem(table, buffer, 0, 0);
 
+        auto rowString = [&buffer](int y) {
+            QString row;
+            for (int x = 0; x < buffer.width(); ++x)
+                row += QString::fromUtf8(buffer.cellAt(x, y).character());
+            return row;
+        };
+        QVERIFY2(rowString(0).contains(QStringLiteral("ID")), qPrintable(rowString(0)));
+        QVERIFY2(rowString(0).contains(QStringLiteral("NAME")), qPrintable(rowString(0)));
+        QVERIFY2(rowString(2).contains(QStringLiteral("Alice")), qPrintable(rowString(2)));
+        QVERIFY2(rowString(3).contains(QStringLiteral("Bob")), qPrintable(rowString(3)));
+
         QCOMPARE(table.selectedRow(), -1);
         table.setSelectedRow(1);
         QCOMPARE(table.selectedRow(), 1);
+        buffer.clear();
+        paintItem(table, buffer, 0, 0);
+        QVERIFY((buffer.cellAt(0, 3).attributes & TextAttribute::Reversed) != TextAttribute::None ||
+                buffer.cellAt(0, 3).bgColor != buffer.cellAt(0, 2).bgColor);
     }
 
     void testTreeView() {
@@ -148,6 +163,15 @@ private slots:
         buffer.resize(30, 5);
         paintItem(tree, buffer, 0, 0);
 
+        auto rowString = [&buffer](int y) {
+            QString row;
+            for (int x = 0; x < buffer.width(); ++x)
+                row += QString::fromUtf8(buffer.cellAt(x, y).character());
+            return row;
+        };
+        QVERIFY2(rowString(0).contains(QStringLiteral("root")), qPrintable(rowString(0)));
+        QVERIFY2(rowString(1).contains(QStringLiteral("child1")), qPrintable(rowString(1)));
+
         QCOMPARE(tree.selectedIndex(), 0);
 
         // Verify initial state (expanded)
@@ -159,6 +183,10 @@ private slots:
         QVERIFY(mouseEv.isAccepted());
         QCOMPARE(tree.selectedIndex(), 0);
         QVERIFY(!tree.isExpanded(0));
+        buffer.clear();
+        paintItem(tree, buffer, 0, 0);
+        QVERIFY2(rowString(0).contains(QStringLiteral("root")), qPrintable(rowString(0)));
+        QVERIFY2(!rowString(1).contains(QStringLiteral("child1")), qPrintable(rowString(1)));
 
         // Click again toggles collapsed -> expanded
         tree.mousePressEvent(&mouseEv);
@@ -288,6 +316,18 @@ private slots:
         TextGridBuffer buffer;
         buffer.resize(20, 5);
         paintItem(p, buffer, 0, 0);
+
+        auto rowString = [&buffer](int y) {
+            QString row;
+            for (int x = 0; x < buffer.width(); ++x)
+                row += QString::fromUtf8(buffer.cellAt(x, y).character());
+            return row.trimmed();
+        };
+        QCOMPARE(rowString(0), QStringLiteral("QmlTui is a modern"));
+        QCOMPARE(rowString(1), QStringLiteral("reactive QML"));
+        QCOMPARE(rowString(2), QStringLiteral("Terminal UI"));
+        QCOMPARE(rowString(3), QStringLiteral("framework."));
+        QCOMPARE(p.implicitHeight(), 4);
     }
 
     void testRequiredProperties() {
@@ -296,7 +336,7 @@ private slots:
         engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
 
         QQmlComponent component(&engine);
-        component.setData(QByteArray("import QtQuick\n"
+        component.setData(QByteArray("import QtQml\n"
                                      "import QmlTui\n"
                                      ""
                                      "Item {\n"
@@ -364,7 +404,7 @@ private slots:
 
         // Test TreeView with required properties
         QQmlComponent treeComp(&engine);
-        treeComp.setData(QByteArray("import QtQuick\n"
+        treeComp.setData(QByteArray("import QtQml\n"
                                     "import QmlTui\n"
                                     ""
                                     "Item {\n"

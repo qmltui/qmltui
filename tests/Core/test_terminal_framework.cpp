@@ -1437,7 +1437,7 @@ void TestTerminalFramework::terminalTitle() {
     QQmlEngine qmlEngine;
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
-        import QtQuick
+        import QtQml
         import QmlTui
 
         Terminal {
@@ -1522,7 +1522,7 @@ void TestTerminalFramework::terminalBackgroundColor() {
     QQmlEngine qmlEngine;
     QQmlComponent component(&qmlEngine);
     component.setData(R"(
-        import QtQuick
+        import QtQml
         import QmlTui
 
         Terminal {

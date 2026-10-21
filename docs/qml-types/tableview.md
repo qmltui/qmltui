@@ -23,7 +23,7 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, width, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
+| `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, key, role, width, stretch, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
 | `model` | `var` |  | Holds the data model providing tabular entries: 2D array, TableModel, or QAbstractItemModel. |
 | `selectedRow` | `int` |  | Holds the index of the currently selected row, or -1 if no row is selected. |
 | `currentRow` | `int` |  | Read-only. Holds the index of the currently active row. |
@@ -264,16 +264,20 @@ current cell. This is not Qt Quick's `ItemSelectionModel` API.
 
 ### Column geometry and formatting
 
-Column descriptor maps accept `title`, `key`, `width`, and `alignment` (or the
-compatibility spelling `align`). The default width is 12 cells. When no
+Column descriptor maps accept `title`, `key`, `role`, `width`, `stretch`, and
+`alignment` (or the compatibility spelling `align`). Setting `stretch: true` on
+a descriptor stretches that column to absorb remaining interior width (or use
+`stretchLastColumn: true` to stretch the final visible column). When `key` or
+`role` is set on a descriptor, `TableView` reads that property from JavaScript
+row maps or resolves the matching role name in `QAbstractItemModel::roleNames()`
+on source column zero (allowing multi-role `ListModel` and `QAbstractListModel`
+instances to populate multiple table columns). The default width is 12 cells. When no
 descriptors are provided, a C++ model supplies the column count through
 `columnCount()`, titles through `headerData(section, Qt::Horizontal)`, and a
 default alignment through `Qt::TextAlignmentRole` on the header; width is
 shared evenly across the columns. The header row appears only when at least
 one section returns a string title. JavaScript array models without
-descriptors keep the compatibility column count of five. A one-column C++
-list model can still supply roles for multiple visual columns through
-descriptors, all backed by source column zero.
+descriptors keep the compatibility column count of five.
 
 `columnWidthProvider(column)` is evaluated once per needed column when geometry
 is invalidated, not once per row. Return a finite non-negative integer: zero

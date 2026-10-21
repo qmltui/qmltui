@@ -1,11 +1,20 @@
 qt_add_executable(qmltui_calendar_demo main.cpp)
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../status_badge/StatusBadge.qml"
+    "${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"
+    COPYONLY
+)
+set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"
+    PROPERTIES QT_RESOURCE_ALIAS StatusBadge.qml
+)
+
 qt_add_qml_module(qmltui_calendar_demo
     URI CalendarDemo
     VERSION 1.0
     QML_FILES
         Calendar.qml
-        StatusBadge.qml
+        "${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"
         Main.qml
 
     DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls

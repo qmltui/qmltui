@@ -4,9 +4,7 @@
 // No user C++ is possible here by design; everything QmlTui.* offers is linked.
 
 #include <QCoreApplication>
-#include <QDir>
 #include <QEvent>
-#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -64,8 +62,6 @@ std::string loadQml(const std::string& source, const std::string& fileName) {
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     g_engine->clearComponentCache();
 
-    // file:///playground/ is Emscripten's in-memory filesystem; the page writes
-    // examples/<Name>.qml there so Loader in gallery.qml resolves relative URLs.
     const QUrl url(QStringLiteral("file:///playground/") + QString::fromStdString(fileName));
     QQmlComponent component(g_engine);
     component.setData(QByteArray::fromStdString(source), url);
@@ -104,17 +100,12 @@ std::string checkQml(const std::string& source, const std::string& fileName) {
     return component.isError() ? errorsToJson(component.errors()) : std::string();
 }
 
-// Writes a file into Emscripten's in-memory /playground/ directory so relative
-// Loader URLs (e.g. "examples/Button.qml") resolve inside the running gallery.
+// Publishes an example's QML source in the qmltuiExampleSources context map read
+// by gallery.qml when instantiating demos with Qt.createQmlObject.
 void writeFile(const std::string& fileName, const std::string& content) {
     const QString relPath = QString::fromStdString(fileName);
-    const QString fullPath = QStringLiteral("/playground/") + relPath;
-    const QFileInfo info(fullPath);
-    QDir().mkpath(info.absolutePath());
-    QFile file(fullPath);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        file.write(content.data(), static_cast<qint64>(content.size()));
     if (relPath.startsWith(QStringLiteral("examples/"))) {
+        const QFileInfo info(relPath);
         g_exampleSources.insert(info.fileName(), QString::fromStdString(content));
         if (g_engine) {
             g_engine->rootContext()->setContextProperty(QStringLiteral("qmltuiExampleSources"),

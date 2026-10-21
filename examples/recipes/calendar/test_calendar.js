@@ -1,6 +1,6 @@
 /** @param {Terminal} terminal */
 function main(terminal) {
-    terminal.waitForText("Calendar & Day Notes", 2000);
+    terminal.waitForText("CALENDAR & DAY PLANNER", 2000);
     terminal.expectText("Jump & Navigate");
     terminal.expectText("Selected Date");
     terminal.expectText("Day Notes & Reminders");

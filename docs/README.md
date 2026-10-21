@@ -131,6 +131,15 @@ See the [Guides index](guides/index.md) for the full reading order:
 - **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `TerminalEngine`, `TextGridBuffer`, `Cell`, `Color`, `TerminalCapabilities`, `PtyView`, and `Runner`.
 - **[Release Notes & Changelog](changes/changelog.md)**: Version history and migration notes.
 
+## Constraints & Limitations
+
+- **Integer character-cell geometry**: Item coordinates (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells. `Canvas` and `Image` render sub-cell glyphs (2x4 Braille, 1x2 half-blocks) or pixel protocols inside those integer cell bounds.
+- **Terminal capability variance**: Protocol support depends on the host terminal emulator. `TerminalCapabilities` probes DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades when a feature is absent (for example, `Image.Auto` falls back from Kitty to Sixel to Unicode half-blocks).
+- **Platform targets**: Runtime targets are Linux, macOS, and Windows Terminal (`Win32ConsoleBackend` over Virtual Terminal sequences). Legacy `conhost.exe` receives whatever its VT layer supports and is not a target.
+- **Flat views vs. hierarchical trees**: `ListView`, `TableView`, `GridView`, and `Repeater` present a single model level (`rootIndex` on `ListView`/`GridView`/`Repeater`, or top-level rows on `TableView`). Hierarchical models require `TreeView`.
+- **Optional private Qt headers**: `Behavior` and `StateGroup` require `QMLTUI_ENABLE_PRIVATE_QT=ON` (`Qt6::QmlPrivate`), which ties binary builds of that option to the minor Qt release. `State`, `Transition`, `PropertyChanges`, `NumberAnimation`, `ColorAnimation`, and `SequentialAnimation`/`ParallelAnimation` use only public `Qt6::Qml` APIs.
+- **POSIX-only `PtyView`**: `QmlTui.PtyView` spawns child processes inside Unix pseudo-terminals (`forkpty`) backed by `libvterm` and is supported only on Linux and macOS (not Windows or WebAssembly).
+
 ## Contributing
 
 - **[CI Runners](contributing/ci-runners.md)**: Continuous integration setup and headless test execution.

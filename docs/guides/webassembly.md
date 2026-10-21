@@ -69,7 +69,7 @@ copied to `www/examples/` with an `index.json`: `38` total across all 4 modules,
 and `PtyView` are disabled). On the left, a CodeMirror
 editor with QML completion starts out with a hint. Open a tile in the gallery
 (arrows and Enter, or a click) and that tile's file appears in the editor: an
-`Item`-rooted component loaded dynamically by `Main.qml`'s `Loader`. Edit it: about 400 ms after the last keystroke the file is
+`Item`-rooted component instantiated dynamically by `Main.qml` via `Qt.createQmlObject`. Edit it: about 400 ms after the last keystroke the file is
 compiled (`qmltuiCheckQml`; errors show up with line and column and the old
 version keeps running), then handed back and the gallery re-runs with the
 same tile open. Escape in the gallery returns to the grid and empties the
@@ -85,15 +85,15 @@ The link between the two panes needs nothing from the page beyond xterm.js:
   and xterm.js raises `onTitleChange`. `qmltui-playground.js` looks for
   `· <name>` at the end of the title; the convention is generic, any app can
   use it.
-- Page to app: on startup (and after edits), the page writes the example files
-  into Emscripten's in-memory `/playground/examples/<file>` directory via
-  `qmltuiWriteFile("examples/" + file, code)`, sets
+- Page to app: on startup (and after edits), the page passes the example files
+  via `qmltuiWriteFile("examples/" + file, code)`, which populates the
+  `qmltuiExampleSources` context map read by `Main.qml`, sets
   `qmltuiSetContextProperty("qmltuiAvailableExamples", jsonArray)` and
   `qmltuiSetContextProperty("qmltuiGalleryPage", file)` (`""` for the grid),
   and loads `gallery.qml`.
-- Inside `Main.qml`, the active component file is resolved against `Main.qml`'s
-  base URL (`qrc:/qt/qml/Gallery/examples/<file>` on desktop,
-  `file:///playground/examples/<file>` in WebAssembly).
+- Inside `Main.qml`, the active component source is looked up from
+  `qmltuiExampleSources[current.file]` (or embedded resources on desktop) and
+  instantiated into the preview stage with `Qt.createQmlObject`.
 - `Image.source` with an `http(s)` URL works in the browser too: Qt Network
   goes through the browser's `fetch`, so the picture's server must allow the
   page's origin (CORS). The gallery's own picture and sprite sheet stay

@@ -207,6 +207,13 @@ Terminal {
         text: root.capabilities.kittyGraphics ? "kitty: real pixels" : "half-block fallback"
         color: "#94a3b8"
     }
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
+        }
+    }
 }
 ```
 

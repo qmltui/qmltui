@@ -148,7 +148,10 @@ count. `Qt::TextAlignmentRole` on a header section becomes the default
 alignment for that column's cells. `headerDataChanged` repaints the header.
 
 Explicit `columns` descriptors always win, and JavaScript array models keep the
-historical default of five columns.
+historical default of five columns. When a column descriptor specifies `role` or
+`key` (as in the `ListModel` quickstart above), `TableView` resolves that named
+role from `roleNames()` on column `0` of the C++ model, or reads the matching
+property from a JavaScript row map.
 
 ## Lazily populated models
 

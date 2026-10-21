@@ -13,7 +13,6 @@ Rectangle {
     property date todayDate: new Date()
 
     property bool showHeader: true
-    property bool showGridBorders: false
     property bool showFooter: true
     property bool highlightToday: true
 
@@ -54,6 +53,14 @@ Rectangle {
         if (!d1 || !d2)
             return false;
         return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+    }
+
+    function formatIsoDate(d) {
+        if (!d)
+            return "";
+        const m = d.getMonth() + 1;
+        const day = d.getDate();
+        return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
     }
 
     function selectDate(d) {
@@ -341,7 +348,7 @@ Rectangle {
             spacing: 1
 
             Text {
-                text: "Sel: " + (control.selectedDate ? control.selectedDate.toISOString().slice(0, 10) : "")
+                text: "Sel: " + control.formatIsoDate(control.selectedDate)
                 color: "yellow"
             }
         }

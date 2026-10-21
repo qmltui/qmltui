@@ -4,10 +4,10 @@
 // per package).
 //
 // Every demo is an Item-rooted QML component under examples/. The gallery
-// launcher (gallery.qml) loads the active demo directly using a Loader and
+// launcher (gallery.qml) instantiates the active demo via Qt.createQmlObject and
 // names the open one in its terminal title ("QmlTui Gallery · Button.qml").
 // When that arrives the editor shows the file; each edit is compiled first
-// (qmltuiCheckQml), written to /playground/examples/<file> (qmltuiWriteFile),
+// (qmltuiCheckQml), stored in qmltuiExampleSources (qmltuiWriteFile),
 // and the gallery re-runs with the same tile open (qmltuiGalleryPage). Escape
 // in the gallery empties the editor again.
 import { EditorView, basicSetup } from 'codemirror';
@@ -30,7 +30,7 @@ const previewLabel = $('previewLabel');
 const PLACEHOLDER = `// Pick a component in the gallery (or from the "Example" dropdown above).
 //
 // Arrow keys move, Enter (or a click) opens a tile, and its file appears
-// here: an Item-rooted QML component loaded directly by the gallery's Loader.
+// here: an Item-rooted QML component instantiated by the gallery launcher.
 // Edit it and the gallery re-runs with that component open. Escape in the
 // gallery comes back to the grid.
 //

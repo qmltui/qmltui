@@ -74,14 +74,10 @@ Terminal {
         if (!d)
             return;
         root.selectedDate = new Date(d.getTime());
+        cal.selectedDate = root.selectedDate;
         root.currentYear = root.selectedDate.getFullYear();
         const count = (root.notesMap[root.formatDateKey(root.selectedDate)] || []).length;
         root.statusMessage = "Selected " + root.formatShortDate(root.selectedDate) + " (" + count + " notes)";
-    }
-
-    function moveSelection(deltaDays: int) {
-        const curr = root.selectedDate ? root.selectedDate : new Date();
-        selectDate(new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() + deltaDays));
     }
 
     function shiftYear(delta: int) {
@@ -146,13 +142,23 @@ Terminal {
         root.statusMessage = "Deleted note";
     }
 
-    title: "Calendar & Day Notes"
+    title: "CALENDAR & DAY PLANNER"
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            if (jumpInput.activeFocus || noteInput.activeFocus) {
-                jumpInput.focus = false;
-                noteInput.focus = false;
+        if (event.key === Qt.Key_Escape) {
+            if (jumpInput.activeFocus) {
+                if (jumpInput.text !== "")
+                    jumpInput.text = "";
+                else
+                    cal.focus = true;
+                event.accepted = true;
+                return;
+            }
+            if (noteInput.activeFocus) {
+                if (noteInput.text !== "")
+                    noteInput.text = "";
+                else
+                    cal.focus = true;
                 event.accepted = true;
                 return;
             }
@@ -160,18 +166,17 @@ Terminal {
             event.accepted = true;
             return;
         }
+        if (event.key === Qt.Key_Q) {
+            if (!jumpInput.activeFocus && !noteInput.activeFocus) {
+                Qt.quit();
+                event.accepted = true;
+            }
+            return;
+        }
         if (jumpInput.activeFocus || noteInput.activeFocus)
             return;
 
-        if (event.key === Qt.Key_Left || event.key === Qt.Key_H) {
-            root.moveSelection(-1);
-        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_L) {
-            root.moveSelection(1);
-        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
-            root.moveSelection(-7);
-        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
-            root.moveSelection(7);
-        } else if (event.key === Qt.Key_BracketLeft) {
+        if (event.key === Qt.Key_BracketLeft) {
             root.shiftYear(-1);
         } else if (event.key === Qt.Key_BracketRight) {
             root.shiftYear(1);
@@ -213,7 +218,7 @@ Terminal {
             spacing: 2
 
             Text {
-                text: "Calendar & Day Notes"
+                text: "CALENDAR & DAY PLANNER"
                 color: "cyan"
                 bold: true
             }
@@ -263,9 +268,12 @@ Terminal {
             }
 
             Calendar {
+                id: cal
+
                 anchors.centerIn: parent
                 width: 34
                 height: 13
+                focus: true
                 selectedDate: root.selectedDate
                 todayDate: root.todayDate
                 onDateSelected: d => root.selectDate(d)
@@ -316,7 +324,7 @@ Terminal {
                             onAccepted: {
                                 if (root.jumpToTypedDate(text)) {
                                     text = "";
-                                    jumpInput.focus = false;
+                                    cal.focus = true;
                                 }
                             }
                         }
@@ -326,7 +334,7 @@ Terminal {
                             onClicked: {
                                 if (root.jumpToTypedDate(jumpInput.text)) {
                                     jumpInput.text = "";
-                                    jumpInput.focus = false;
+                                    cal.focus = true;
                                 }
                             }
                         }
@@ -435,6 +443,7 @@ Terminal {
                                 if (text.trim() !== "") {
                                     root.addNote(root.formatDateKey(root.selectedDate), text);
                                     text = "";
+                                    cal.focus = true;
                                 }
                             }
                         }
@@ -445,6 +454,7 @@ Terminal {
                                 if (noteInput.text.trim() !== "") {
                                     root.addNote(root.formatDateKey(root.selectedDate), noteInput.text);
                                     noteInput.text = "";
+                                    cal.focus = true;
                                 }
                             }
                         }

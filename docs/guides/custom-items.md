@@ -9,6 +9,7 @@ Inherit from `qmltui::Item` and add `Q_OBJECT` and `QML_ELEMENT`. Call `markDirt
 ```cpp
 #pragma once
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/UnicodeText.h>
 
 namespace qmltui {
 
@@ -25,7 +26,7 @@ public:
         if (m_label == label)
             return;
         m_label = label;
-        setImplicitWidth(m_label.size() + leftPadding() + rightPadding());
+        setImplicitWidth(UnicodeText::displayWidth(m_label) + leftPadding() + rightPadding());
         setImplicitHeight(1 + topPadding() + bottomPadding());
         emit labelChanged();
         markDirty();

@@ -8,8 +8,7 @@ Terminal {
     property bool alternatePalette: false
     property bool isQmlMode: false
 
-    readonly property string jsonSample:
-`{
+    readonly property string jsonSample: `{
   // Server configuration with comments
   "service": "terminal-daemon",
   "port": 8080,
@@ -20,8 +19,7 @@ Terminal {
   "fallback": null
 }`
 
-    readonly property string qmlSample:
-`import QtQml
+    readonly property string qmlSample: `import QtQml
 import QmlTui
 
 Terminal {
@@ -49,39 +47,54 @@ Terminal {
 
     function toggleDocumentMode() {
         if (root.isQmlMode) {
-            root.qmlText = editor.text
-            root.isQmlMode = false
-            editor.text = root.jsonText
+            root.qmlText = editor.text;
+            root.isQmlMode = false;
+            editor.text = root.jsonText;
         } else {
-            root.jsonText = editor.text
-            root.isQmlMode = true
-            editor.text = root.qmlText
+            root.jsonText = editor.text;
+            root.isQmlMode = true;
+            editor.text = root.qmlText;
         }
     }
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+            if (searchInput.activeFocus) {
+                if (searchInput.text !== "")
+                    searchInput.text = "";
+                else
+                    editor.focus = true;
+            } else if (searchInput.text !== "") {
+                searchInput.text = "";
+            } else {
+                Qt.quit();
+            }
+            event.accepted = true;
+        } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_F) {
+            searchInput.focus = true;
+            event.accepted = true;
         } else if (event.key === Qt.Key_F2 || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_T)) {
-            root.alternatePalette = !root.alternatePalette
-            event.accepted = true
+            root.alternatePalette = !root.alternatePalette;
+            event.accepted = true;
         } else if (event.key === Qt.Key_F3 || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_M)) {
-            root.toggleDocumentMode()
-            event.accepted = true
+            root.toggleDocumentMode();
+            event.accepted = true;
         }
     }
 
     Rectangle {
         anchors.fill: parent
-        border.style: Border.Single
-        border.color: "gray"
+        border {
+            style: Border.Single
+            color: "gray"
+        }
 
         Column {
-            anchors.fill: parent
-            anchors.margins: 1
+            anchors {
+                fill: parent
+                margins: 1
+            }
 
-            // Header / Search Bar & Actions
             Row {
                 width: parent.width
                 height: 1
@@ -132,7 +145,6 @@ Terminal {
                 color: "gray"
             }
 
-            // Editor
             TextArea {
                 id: editor
                 width: parent.width
@@ -143,22 +155,18 @@ Terminal {
                 text: root.jsonSample
             }
 
-            // Status bar
             Rectangle {
                 width: parent.width
                 height: 1
                 color: "default"
                 Text {
-                    text: " Mode: " + (root.isQmlMode ? "QML (Pure QML Highlighter)" : "JSON (C++ Highlighter)")
-                        + " | Rev: " + editor.textRevision
-                        + " | [F2: Theme | F3: Mode | Esc: Quit]"
+                    text: " Mode: " + (root.isQmlMode ? "QML (Pure QML Highlighter)" : "JSON (C++ Highlighter)") + " | Rev: " + editor.textRevision + " | [Ctrl+F: Search | F2: Theme | F3: Mode | Esc: Quit]"
                     color: "gray"
                 }
             }
         }
     }
 
-    // C++ Highlighter for JSON documents
     JsonHighlighter {
         id: jsonHighlighter
         target: root.isQmlMode ? null : editor
@@ -170,7 +178,6 @@ Terminal {
         searchTerm: searchInput.text
     }
 
-    // Pure QML Highlighter for QML documents
     QmlHighlighter {
         id: qmlHighlighter
         target: root.isQmlMode ? editor : null

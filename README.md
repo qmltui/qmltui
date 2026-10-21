@@ -83,6 +83,15 @@ You can also open the [WebAssembly Playground](docs/playground.md) in a browser 
 
 See [Getting Started](docs/getting-started.md) or copy [`examples/quickstart/`](examples/quickstart/) for a 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) project using CMake `FetchContent` or `find_package(QmlTui)`.
 
+## Constraints & Limitations
+
+- **Integer character-cell geometry**: Item coordinates (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells. `Canvas` and `Image` render sub-cell glyphs (2x4 Braille, 1x2 half-blocks) or pixel protocols inside those integer cell bounds.
+- **Terminal capability variance**: Protocol support depends on the host terminal emulator. `TerminalCapabilities` probes DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades when a feature is absent (for example, `Image.Auto` falls back from Kitty to Sixel to Unicode half-blocks).
+- **Platform targets**: Runtime targets are Linux, macOS, and Windows Terminal (`Win32ConsoleBackend` over Virtual Terminal sequences). Legacy `conhost.exe` receives whatever its VT layer supports and is not a target.
+- **Flat views vs. hierarchical trees**: `ListView`, `TableView`, `GridView`, and `Repeater` present a single model level (`rootIndex` on `ListView`/`GridView`/`Repeater`, or top-level rows on `TableView`). Hierarchical models require `TreeView`.
+- **Optional private Qt headers**: `Behavior` and `StateGroup` require `QMLTUI_ENABLE_PRIVATE_QT=ON` (`Qt6::QmlPrivate`), which ties binary builds of that option to the minor Qt release. `State`, `Transition`, `PropertyChanges`, `NumberAnimation`, `ColorAnimation`, and `SequentialAnimation`/`ParallelAnimation` use only public `Qt6::Qml` APIs.
+- **POSIX-only `PtyView`**: `QmlTui.PtyView` spawns child processes inside Unix pseudo-terminals (`forkpty`) backed by `libvterm` and is supported only on Linux and macOS (not Windows or WebAssembly).
+
 ## Documentation
 
 - **[Getting started](docs/getting-started.md)**: Requirements, standalone setup (`FetchContent` and `find_package(QmlTui)`), CMake options, and environment variables.

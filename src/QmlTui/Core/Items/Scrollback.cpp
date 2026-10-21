@@ -54,10 +54,6 @@ static QList<Span> normalizeSpansForScrollback(const QList<Span>& spans) {
     return normalized;
 }
 
-static bool tryExtractSpans(const QVariant& data, bool allowVariantMap, QList<Span>& outSpans) {
-    return Span::tryExtractList(data, allowVariantMap, outSpans);
-}
-
 Scrollback::Scrollback(QObject* parent) : QObject(parent) {}
 
 Scrollback::~Scrollback() {
@@ -413,7 +409,7 @@ void Scrollback::append(const QVariant& data) {
     }
 
     QList<Span> spans;
-    if (tryExtractSpans(data, !m_delegate, spans)) {
+    if (Span::tryExtractList(data, !m_delegate, spans)) {
         append(spans);
         return;
     }
@@ -528,7 +524,7 @@ bool Scrollback::print(const QVariant& value) {
         return print(value.toString());
     }
     QList<Span> spans;
-    if (tryExtractSpans(value, /*allowVariantMap=*/true, spans)) {
+    if (Span::tryExtractList(value, /*allowVariantMap=*/true, spans)) {
         return print(spans);
     }
     if (value.canConvert<QString>()) {

@@ -10,7 +10,6 @@
 #include <io.h>
 
 #include <QCoreApplication>
-#include <QElapsedTimer>
 #include <QString>
 #include <QWinEventNotifier>
 

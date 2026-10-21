@@ -1,7 +1,5 @@
 #include <QmlTui/Core/Items/Canvas.h>
 #include <algorithm>
-#include <array>
-#include <cmath>
 #include <QJSValue>
 
 namespace qmltui {

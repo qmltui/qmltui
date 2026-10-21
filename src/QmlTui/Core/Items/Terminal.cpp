@@ -8,7 +8,6 @@
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <algorithm>
 #include <utility>
-#include <cstring>
 
 namespace qmltui {
 

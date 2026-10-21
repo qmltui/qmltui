@@ -3,7 +3,6 @@
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QmlTui/Core/Primitives/AnsiEncoder_p.h>
 #include <QElapsedTimer>
-#include <sstream>
 #include <algorithm>
 
 namespace qmltui {
@@ -72,35 +71,6 @@ void InlineRenderer::resize(int width, int height) {
     m_terminalWidth = width;
     m_terminalHeight = height;
     m_promptBuffer.resize(width, m_lastPromptHeight);
-}
-
-bool InlineRenderer::clearPromptRegion(TerminalDevice& device) {
-    if (m_lastPromptHeight > 0) {
-        m_ansi.clear();
-        m_ansi += "\r\033[";
-        ansi::appendInt(m_ansi, m_lastPromptHeight);
-        m_ansi += "A\033[J";
-        return device.write(m_ansi);
-    }
-    return true;
-}
-
-bool InlineRenderer::drawPromptRegion(TerminalDevice& device) {
-    if (m_lastPromptHeight <= 0) return true;
-
-    m_ansi.clear();
-    for (int row = 0; row < m_lastPromptHeight; ++row) {
-        m_ansi += "\r\033[2K";
-        m_promptBuffer.appendRowAnsi(m_ansi, row, capabilities().colorDepth);
-        m_ansi += "\033[0m\r\n";
-    }
-    return device.write(m_ansi);
-}
-
-std::string InlineRenderer::promptRowToAnsi(int row) const {
-    std::string output;
-    m_promptBuffer.appendRowAnsi(output, row, capabilities().colorDepth);
-    return output;
 }
 
 bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {

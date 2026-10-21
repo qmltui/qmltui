@@ -38,7 +38,6 @@ qt_add_qml_module(QmlTuiCore
         Primitives/TextStyle.h
         Primitives/TextStyle.cpp
         Primitives/HighlightRange.h
-        Primitives/HighlightRange.cpp
         Primitives/Color.h
         Primitives/Color.cpp
         Primitives/QmlTuiExport.h

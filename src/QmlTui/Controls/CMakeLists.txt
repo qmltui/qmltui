@@ -37,7 +37,7 @@ target_include_directories(QmlTuiControls
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
-target_link_libraries(QmlTuiControls PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(QmlTuiControls PUBLIC qmltui::core)
 set_target_properties(QmlTuiControls PROPERTIES EXPORT_NAME Controls)
 set_target_properties(QmlTuiControlsplugin PROPERTIES EXPORT_NAME ControlsPlugin)
 file(RELATIVE_PATH _qmltui_rel_libdir

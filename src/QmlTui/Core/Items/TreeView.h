@@ -180,8 +180,7 @@ private:
     void flattenTree(const QVariantMap& map, const QString& parentPath, const QString& parentKey,
                      int depth, QList<VisibleNode>& list);
     void flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
-                         const QString& parentPath, const QString& parentKey, int depth,
-                         QList<VisibleNode>& list);
+                         const QString& parentKey, int depth, QList<VisibleNode>& list);
     void fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& index, VisibleNode& node,
                            bool includeUnsetRoles = false);
     static QString modelPath(const QAbstractItemModel* model, const QModelIndex& index);

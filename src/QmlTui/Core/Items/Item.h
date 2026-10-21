@@ -5,25 +5,19 @@
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QObject>
 #include <QQmlEngine>
-#include <vector>
-#include <utility>
-#include <QMap>
 #include <QPointer>
 #include <QPoint>
 #include <QHash>
 #include <QMetaObject>
 #include <algorithm>
-#include <optional>
 
 #include <QmlTui/Core/Items/Anchors.h>
-#include <QmlTui/Core/Items/Border.h>
 
 namespace qmltui {
 
 class State;
 class Transition;
 class StateController;
-class Animation;
 class ItemPaintTraversal;
 
 // Axis-aligned bounding rectangle in absolute terminal cell coordinates.
@@ -48,7 +42,6 @@ struct ClipRect {
     }
 };
 
-class Keys;
 class Terminal;
 class FocusScope;
 class AnchorLine;

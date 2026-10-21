@@ -4,7 +4,6 @@
 #include <QmlTui/Core/Engine/Transition.h>
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Primitives/Color.h>
-#include <QDebug>
 #include <qqmlinfo.h>
 #include <QQmlProperty>
 #include <QQmlContext>
@@ -710,14 +709,10 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
 }
 
 void StateController::applyState(const QString& newState) {
-    QString oldState = m_stateName;
-
-    // Find State objects
-    State* oldStateObj = nullptr;
+    const QString oldState = m_stateName;
     State* newStateObj = nullptr;
     for (const QPointer<State>& s : m_statesList) {
         if (!s) continue;
-        if (s->name() == oldState) oldStateObj = s.data();
         if (s->name() == newState) newStateObj = s.data();
     }
 

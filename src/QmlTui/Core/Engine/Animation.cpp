@@ -1,10 +1,8 @@
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
 #include <QmlTui/Core/Primitives/Color.h>
-#include <QDebug>
 #include <QMetaProperty>
 #include <QMetaType>
-#include <QPointer>
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 #include <QtQml/private/qqmlproperty_p.h>
 #endif
@@ -184,7 +182,7 @@ PropertyAnimation::PropertyAnimation(QObject* parent) : Animation(parent) {
     connect(this, &Animation::started, this, [this]() {
         // Behavior may stop and restart an animation at an intermediate value.
         // The new interpolation must not inherit the previous elapsed time.
-        m_timer.invalidate();
+        m_initialized = false;
         m_accumulatedTime = 0;
     });
 }
@@ -242,8 +240,8 @@ void PropertyAnimation::setEasing(Easing::Type e) {
 void PropertyAnimation::tick(qint64 elapsedMs) {
     if (!m_running) return;
 
-    if (!m_timer.isValid()) {
-        m_timer.start();
+    if (!m_initialized) {
+        m_initialized = true;
         m_accumulatedTime = 0;
     } else {
         m_accumulatedTime += elapsedMs;
@@ -251,7 +249,7 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
 
     if (m_duration <= 0) {
         writeValue(1.0);
-        m_timer.invalidate();
+        m_initialized = false;
         setRunning(false);
         emit finished();
         return;
@@ -286,7 +284,7 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
     writeValue(easedT);
 
     if (finishedAnimation) {
-        m_timer.invalidate();
+        m_initialized = false;
         setRunning(false);
         emit finished();
     }

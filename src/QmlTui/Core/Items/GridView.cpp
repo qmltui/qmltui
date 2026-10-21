@@ -574,11 +574,4 @@ void GridView::updateLayout() {
   layoutChildren();
 }
 
-void GridView::paint(TextGridBuffer &buffer, int absX, int absY,
-                      const ClipRect &clipRect) const {
-  if (!visible())
-    return;
-  ScrollView::paint(buffer, absX, absY, clipRect);
-}
-
 } // namespace qmltui

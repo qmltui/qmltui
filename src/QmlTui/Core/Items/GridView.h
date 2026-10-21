@@ -55,7 +55,6 @@ public:
     void setReuseItems(bool reuse);
 
     void layoutChildren();
-    void paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
     int implicitWidth() const override;
     int implicitHeight() const override;
 

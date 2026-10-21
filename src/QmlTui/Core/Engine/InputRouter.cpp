@@ -363,7 +363,6 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
                 }
             }
 
-            QPointer<Item> grabGuard(grabItem);
             dispatchMouseEvent(grabItem, x, localY, button, modifiers, motion, release, wheelDeltaX,
                                wheelDeltaY);
             if (release) {
@@ -471,10 +470,6 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             m_implicitMouseGrabItem = targetGuard.data();
         }
     }
-}
-
-void InputRouter::cycleFocus(bool forward, Item* scope) {
-    FocusManager::cycleFocus(m_terminal.data(), forward, scope);
 }
 
 Item* InputRouter::hitTestItem(Item* item, int absX, int absY, int parentAbsX,

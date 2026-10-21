@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
-#include <iterator>
 #include <cstring>
 #include <fcntl.h>
 #include <poll.h>

@@ -229,7 +229,6 @@ private:
     void applyMouseModes();
     bool mouseReportingWanted() const;
     void handleResize();
-    void cycleFocus(bool forward, Item* scope = nullptr);
     using ScrollbackRow = std::vector<Cell>;
     bool enqueueScrollback(std::string&& bytes, std::deque<ScrollbackRow>&& rows);
     void commitScrollbackRows(std::deque<ScrollbackRow>&& rows);
@@ -237,7 +236,6 @@ private:
     static std::deque<ScrollbackRow> textToScrollbackRows(const QString& text);
     static ScrollbackRow trimmedRow(const TextGridBuffer& buffer, int row);
     void queryInitialBackgroundColor();
-    class Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
 
     TerminalDevice m_device;
     InputDecoder m_inputDecoder;

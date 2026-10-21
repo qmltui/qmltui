@@ -1,7 +1,6 @@
 #include <QmlTui/Image/AnimatedSprite.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
 
-#include <QDebug>
 #include <algorithm>
 #include <cmath>
 

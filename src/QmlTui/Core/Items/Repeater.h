@@ -12,7 +12,6 @@
 #include <QMetaObject>
 #include <QHash>
 
-class QAbstractItemModel;
 class QQmlPropertyMap;
 
 namespace qmltui {

@@ -25,7 +25,7 @@ target_include_directories(QmlTuiPtyView
 )
 
 target_link_libraries(QmlTuiPtyView
-    PUBLIC QmlTuiCore
+    PUBLIC qmltui::core
     PRIVATE qmltui_libvterm
 )
 

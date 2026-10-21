@@ -1,6 +1,6 @@
 #include <QmlTui/Controls/Sparkline.h>
+#include <QJSValue>
 #include <algorithm>
-#include <cmath>
 
 namespace qmltui {
 

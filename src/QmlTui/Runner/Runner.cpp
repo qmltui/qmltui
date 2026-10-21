@@ -27,7 +27,6 @@
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QTextBoundaryFinder>
-#include <QTextStream>
 
 #include <chrono>
 #include <condition_variable>
@@ -110,7 +109,6 @@ constexpr int conditionPollIntervalMs = 10;
 
 int environmentInteger(const char* name, int fallback, int minimum, int maximum, QString* error) {
     const QByteArray value = qgetenv(name);
-    const char* usedName = name;
     if (value.isEmpty()) return fallback;
 
     bool ok = false;
@@ -118,7 +116,7 @@ int environmentInteger(const char* name, int fallback, int minimum, int maximum,
     if (!ok || parsed < minimum || parsed > maximum) {
         if (error && error->isEmpty()) {
             *error = QStringLiteral("%1 must be an integer between %2 and %3")
-                         .arg(QString::fromLatin1(usedName))
+                         .arg(QString::fromLatin1(name))
                          .arg(minimum)
                          .arg(maximum);
         }
@@ -1630,7 +1628,6 @@ void Runner::compareSnapshot(const QString& snapshotRelativePath, const QString&
                              .arg(snapshotPath, actualArtifactPath));
             return;
         }
-        QString writeError;
         if (!QDir().mkpath(QFileInfo(snapshotPath).absolutePath())) {
             failScenario(
                 QStringLiteral("Cannot create snapshot directory for %1").arg(snapshotPath));

@@ -1,11 +1,8 @@
 #include <QmlTui/Core/Items/Text.h>
-#include <QmlTui/Core/Items/Gradient.h>
-#include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QStringTokenizer>
 #include <QVarLengthArray>
 #include <algorithm>
-#include <vector>
 
 namespace qmltui {
 

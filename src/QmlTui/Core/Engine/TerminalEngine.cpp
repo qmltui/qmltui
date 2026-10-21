@@ -5,28 +5,20 @@
 #include <QmlTui/Core/Engine/AltScreenRenderer.h>
 #include <QmlTui/Core/Engine/InlineRenderer.h>
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QmlTui/Core/Items/Terminal.h>
-#include <QmlTui/Core/Engine/KeyEvent.h>
-#include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Engine/InputRouter_p.h>
 #include <QmlTui/Core/Engine/TerminalMessageRouter_p.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
-#include <QmlTui/Core/Engine/Keys.h>
-#include <QmlTui/Core/Engine/Shortcut.h>
 #include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <QProcessEnvironment>
-#include <QSet>
 #include <QThread>
 #include <QPointer>
 #include <QtGlobal>
 #include <algorithm>
 #include <cmath>
-#include <iostream>
-#include <cstring>
 
 #include <QmlTui/Core/Primitives/TerminalBackend.h>
 
@@ -583,15 +575,6 @@ void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bo
                                       int modifiers, int wheelDeltaX, int wheelDeltaY) {
     if (m_router)
         m_router->routeMouse(button, x, y, release, motion, modifiers, wheelDeltaX, wheelDeltaY);
-}
-
-void TerminalEngine::cycleFocus(bool forward, Item* scope) {
-    if (m_router) m_router->cycleFocus(forward, scope);
-}
-
-Item* TerminalEngine::hitTestItem(Item* item, int absX, int absY, int parentAbsX,
-                                  int parentAbsY) const {
-    return m_router ? m_router->hitTestItem(item, absX, absY, parentAbsX, parentAbsY) : nullptr;
 }
 
 void TerminalEngine::renderFrame() {

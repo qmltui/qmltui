@@ -38,7 +38,6 @@ public:
     void keyPressEvent(class KeyEvent* event) override;
     void mousePressEvent(class MouseEvent* event) override;
     void wheelEvent(class MouseEvent* event) override;
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect& clipRect = ClipRect()) const override;
 
     // Adjusts `contentY` minimally so `childItem`'s vertical span is within the viewport.
     void ensureChildVisible(Item* childItem);

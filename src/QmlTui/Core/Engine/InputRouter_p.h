@@ -5,7 +5,6 @@
 
 #include <QPointer>
 #include <QString>
-#include <QPoint>
 
 namespace qmltui {
 
@@ -33,7 +32,6 @@ public:
     // Topmost visible, enabled descendant of item containing (absX, absY) in
     // stacking order, respecting clip rects.
     Item* hitTestItem(Item* item, int absX, int absY, int parentAbsX, int parentAbsY) const;
-    void cycleFocus(bool forward, Item* scope = nullptr);
 
     // Item currently holding the implicit grab from a mouse press until release.
     Item* implicitMouseGrabItem() const { return m_implicitMouseGrabItem.data(); }

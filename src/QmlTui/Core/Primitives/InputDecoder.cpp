@@ -555,13 +555,6 @@ void InputDecoder::processBuffer() {
             continue;
         }
 
-        if (c >= 1 && c <= 26) {
-            const int key = Qt::Key_A + (c - 1);
-            if (m_keyCallback) m_keyCallback(key, QString(), Qt::ControlModifier);
-            i++;
-            continue;
-        }
-
         // Decode UTF-8 multi-byte characters
         if ((c & 0x80) != 0) {
             size_t len = 1;

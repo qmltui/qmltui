@@ -3,9 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QVariantList>
 #include <QStringList>
-#include <QJSValue>
 
 namespace qmltui {
 

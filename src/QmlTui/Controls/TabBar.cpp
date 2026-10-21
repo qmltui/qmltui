@@ -2,6 +2,8 @@
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
+#include <QJSValue>
+#include <QVariantList>
 #include <algorithm>
 
 namespace qmltui {

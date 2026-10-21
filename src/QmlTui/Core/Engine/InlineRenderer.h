@@ -28,9 +28,6 @@ public:
     void discardCommittedState() override;
 
 private:
-    bool clearPromptRegion(TerminalDevice& device);
-    bool drawPromptRegion(TerminalDevice& device);
-    std::string promptRowToAnsi(int row) const;
     void queryCursorPosition(TerminalDevice& device);
     void invalidateMouseOrigin();
 

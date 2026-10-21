@@ -5,7 +5,6 @@
 #include <QObject>
 #include <QQmlListProperty>
 #include <QtQml/qqmlregistration.h>
-#include <QString>
 #include <QList>
 #include <cstdint>
 #include <QPointer>

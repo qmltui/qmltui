@@ -82,21 +82,10 @@ void ScrollView::keyPressEvent(KeyEvent* event) {
     }
 }
 
-constexpr int MouseWheelUp = 64;
-constexpr int MouseWheelDown = 65;
-
 void ScrollView::mousePressEvent(MouseEvent* event) {
+    Q_UNUSED(event);
     if ((focusPolicy() & Qt::ClickFocus) && !focus()) {
         setFocus(true);
-    }
-    if (event->nativeButton() == MouseWheelUp) {
-        // Scroll Up
-        setContentY(m_contentY - 1);
-        event->setAccepted(true);
-    } else if (event->nativeButton() == MouseWheelDown) {
-        // Scroll Down
-        setContentY(m_contentY + 1);
-        event->setAccepted(true);
     }
 }
 
@@ -119,21 +108,11 @@ void ScrollView::ensureChildVisible(Item* childItem) {
     }
 }
 
-void ScrollView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    // Anchors resolve synchronously when their targets change; nothing may be
-    // laid out from paint().
-    Q_UNUSED(buffer);
-    Q_UNUSED(absX);
-    Q_UNUSED(absY);
-    Q_UNUSED(clipRect);
-}
-
 void ScrollView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
                               const ClipRect& clipRect) const {
     int w = width();
     int h = height();
 
-    int lp = leftPadding();
     int rp = rightPadding();
     int tp = topPadding();
     int bp = bottomPadding();

@@ -46,8 +46,6 @@ public:
     // Terminal dimensions in cells, with 80x24 as the fallback.
     int width() const;
     int height() const;
-    [[deprecated("Use width()")]] int getWidth() const { return width(); }
-    [[deprecated("Use height()")]] int getHeight() const { return height(); }
 
     int outputFd() const { return m_outputFd; }
 

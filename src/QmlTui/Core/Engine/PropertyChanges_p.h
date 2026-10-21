@@ -8,7 +8,6 @@
 #include <QVariant>
 #include <QList>
 #include <QUrl>
-#include <memory>
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 #include <private/qv4compileddata_p.h>

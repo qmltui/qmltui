@@ -14,7 +14,6 @@
 #include <QVariant>
 #include <QQmlListProperty>
 #include <optional>
-#include <utility>
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 #include <private/qqmlanybinding_p.h>

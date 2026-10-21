@@ -1,7 +1,5 @@
 #include <QmlTui/Core/Primitives/QmlTuiGlobal.h>
 
-#include <QDebug>
-
 namespace qmltui {
 
 Color QmlTuiGlobal::rgba(qreal red, qreal green, qreal blue, qreal alpha) const {

@@ -6,7 +6,6 @@
 #include <QJSValue>
 #include <QAbstractItemModel>
 #include <QQmlPropertyMap>
-#include <QQmlProperty>
 #include <utility>
 
 namespace qmltui {

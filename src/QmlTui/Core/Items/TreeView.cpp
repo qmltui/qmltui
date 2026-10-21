@@ -8,7 +8,6 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlInfo>
-#include <QQmlProperty>
 #include <algorithm>
 #include <functional>
 #include <utility>
@@ -498,9 +497,8 @@ void TreeView::expandAll() {
     m_collapsedPaths.clear();
     QStringList keys;
     if (m_cppModel) {
-        std::function<void(const QModelIndex&, const QString&)> collectModelKeys;
-        collectModelKeys = [this, &collectModelKeys](const QModelIndex& parent,
-                                                     const QString& parentKey) {
+        std::function<void(const QModelIndex&)> collectModelKeys;
+        collectModelKeys = [this, &collectModelKeys](const QModelIndex& parent) {
             const int rows = m_cppModel->rowCount(parent);
             for (int row = 0; row < rows; ++row) {
                 const QModelIndex index = m_cppModel->index(row, 0, parent);
@@ -508,11 +506,11 @@ void TreeView::expandAll() {
                 // Only rows that are already loaded; expandAll() never fetches.
                 if (m_cppModel->rowCount(index) > 0) {
                     m_expandedIndexes.insert(QPersistentModelIndex(index));
-                    collectModelKeys(index, parentKey);
+                    collectModelKeys(index);
                 }
             }
         };
-        collectModelKeys(m_rootIndex, QString());
+        collectModelKeys(m_rootIndex);
     } else if (!m_rootNodeMap.isEmpty()) {
         collectAllKeys(m_rootNodeMap, "", keys);
         for (const QString& k : keys) {
@@ -791,9 +789,7 @@ bool TreeView::sameNode(const VisibleNode& a, const VisibleNode& b) {
 }
 
 void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
-                               const QString& parentPath, const QString& parentKey, int depth,
-                               QList<VisibleNode>& list) {
-    Q_UNUSED(parentPath);
+                               const QString& parentKey, int depth, QList<VisibleNode>& list) {
     // Shape only. Keys are row paths ("#2/#0"), unique within one pass and
     // hierarchical, which is all expandRecursively() and delegate reuse need;
     // no role is read here (see ensureLoaded()).
@@ -813,7 +809,7 @@ void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& par
         node.expanded = node.hasChildren && m_expandedSnapshot.contains(idx);
         list.append(node);
 
-        if (node.expanded) flattenCppModel(model, idx, QString(), node.key, depth + 1, list);
+        if (node.expanded) flattenCppModel(model, idx, node.key, depth + 1, list);
     }
 }
 
@@ -912,7 +908,7 @@ void TreeView::updateTree() {
         m_expandedSnapshot.clear();
         for (const QPersistentModelIndex& expanded : std::as_const(m_expandedIndexes))
             if (expanded.isValid()) m_expandedSnapshot.insert(QModelIndex(expanded));
-        flattenCppModel(m_cppModel.data(), m_rootIndex, "", "", 0, m_visibleNodes);
+        flattenCppModel(m_cppModel.data(), m_rootIndex, "", 0, m_visibleNodes);
     } else if (!m_rootNodeMap.isEmpty()) {
         QString rootName = extractMapName(m_rootNodeMap);
         QString rootKey = rootName + "#0";

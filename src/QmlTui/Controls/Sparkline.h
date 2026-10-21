@@ -4,8 +4,6 @@
 
 #include <QmlTui/Core/Items/Item.h>
 #include <QVariantList>
-#include <QString>
-#include <QJSValue>
 
 namespace qmltui {
 

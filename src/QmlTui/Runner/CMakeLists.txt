@@ -34,7 +34,6 @@ target_include_directories(QmlTuiRunner PUBLIC
 )
 
 target_link_libraries(QmlTuiRunner PUBLIC
-    Qt6::Qml
     qmltui::core
 )
 

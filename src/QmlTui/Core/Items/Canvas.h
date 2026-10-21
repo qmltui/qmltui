@@ -4,7 +4,6 @@
 
 #include <QmlTui/Core/Items/Item.h>
 #include <QPoint>
-#include <QVariant>
 #include <QVariantList>
 #include <vector>
 #include <QmlTui/Core/Primitives/Subpixel.h>
@@ -12,7 +11,6 @@
 namespace qmltui {
 
 class CanvasPainter;
-class CanvasShape;
 
 // Subpixel drawing surface backed by Braille (2x4 dots/cell) or HalfBlock
 // (1x2 blocks/cell) glyphs. Driven declaratively by child CanvasShape items

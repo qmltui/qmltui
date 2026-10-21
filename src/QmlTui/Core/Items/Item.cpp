@@ -1,7 +1,6 @@
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Items/AnchorLine.h>
-#include <QmlTui/Core/Engine/Keys.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Items/Terminal.h>
@@ -9,7 +8,6 @@
 #include <QmlTui/Core/Engine/RenderPhase_p.h>
 #include <QmlTui/Core/Engine/State.h>
 #include <QmlTui/Core/Engine/Transition.h>
-#include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Engine/StateController_p.h>
 #include <QSet>
 #include <QChildEvent>

@@ -8,7 +8,6 @@
 #include <QJSValue>
 #include <QAbstractItemModel>
 #include <QQmlPropertyMap>
-#include <QQmlProperty>
 #include <QQmlListReference>
 #include <algorithm>
 #include <utility>
@@ -741,11 +740,6 @@ void ListView::updateLayout() {
     ScrollView::updateLayout();
     rebuildViewport();
     layoutChildren();
-}
-
-void ListView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (!visible()) return;
-    ScrollView::paint(buffer, absX, absY, clipRect);
 }
 
 } // namespace qmltui

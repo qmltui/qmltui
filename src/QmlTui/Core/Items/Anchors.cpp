@@ -1,7 +1,6 @@
 #include <QmlTui/Core/Items/Anchors.h>
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/AnchorLine.h>
-#include <QDebug>
 
 namespace qmltui {
 

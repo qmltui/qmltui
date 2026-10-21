@@ -6,8 +6,6 @@
 #include <QVariant>
 #include <QPointer>
 #include <QQmlEngine>
-#include <QTimer>
-#include <QElapsedTimer>
 #include <QList>
 #include <cstdint>
 
@@ -126,7 +124,7 @@ protected:
     QVariant m_from;
     QVariant m_to;
     Easing::Type m_easing = Easing::Linear;
-    QElapsedTimer m_timer;
+    bool m_initialized = false;
     qint64 m_accumulatedTime = 0;
 };
 

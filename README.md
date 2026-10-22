@@ -7,8 +7,6 @@
 
 **QmlTui** is a retained-mode terminal UI framework for C++17 and Qt 6.8+. Applications declare layouts, borders, focus chains, and states in QML and bind them to C++ `QObject`s and `QAbstractItemModel`s. `QmlTui` renders the scene into a double-buffered character-cell grid (`TextGridBuffer`), diffs against the previous frame, and writes only the changed cells and SGR attributes to the terminal—without depending on `QtQuick` or a display server.
 
-![Gallery tour](docs/assets/casts/gallery-tour.gif)
-
 ## Overview
 
 - **Retained cell scene graph**: Items (`Rectangle`, `Row`, `Column`, `GridLayout`, `Text`, `ListView`, `TableView`, `TreeView`) live in a persistent C++ item tree. Property bindings mark only the affected subtrees dirty.

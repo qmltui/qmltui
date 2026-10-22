@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# Copyright (C) 2026 The QmlTui Contributors
-# SPDX-License-Identifier: MIT
-
 """Render asciicast v2 (.cast) recordings to animated GIF and static SVG files."""
 
 from __future__ import annotations
@@ -12,13 +9,18 @@ from dataclasses import dataclass
 import html
 import json
 from pathlib import Path
+import re
+import shutil
 import subprocess
+import sys
 import tempfile
 import unicodedata
 
 
 DEFAULT_BG = "#0d1117"
 DEFAULT_FG = "#c9d1d9"
+
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 ANSI_16 = [
     "#0d1117",  # 0 black
@@ -98,9 +100,10 @@ BOX_DRAWING: dict[str, tuple[int, int, int, int]] = {
 
 
 def xterm_256_color(idx: int) -> str:
-    if 0 <= idx < 16:
+    idx = max(0, min(255, idx))
+    if idx < 16:
         return ANSI_16[idx]
-    if 16 <= idx < 232:
+    if idx < 232:
         n = idx - 16
         r = (n // 36) % 6
         g = (n // 6) % 6
@@ -140,6 +143,7 @@ class Cell:
     italic: bool = False
     underline: bool = False
     reverse: bool = False
+    strikethrough: bool = False
     cont: bool = False
 
     def copy(self) -> "Cell":
@@ -152,6 +156,7 @@ class Cell:
             self.italic,
             self.underline,
             self.reverse,
+            self.strikethrough,
             self.cont,
         )
 
@@ -165,6 +170,7 @@ class Cell:
             self.italic,
             self.underline,
             self.reverse,
+            self.strikethrough,
             self.cont,
         )
 
@@ -173,6 +179,8 @@ class TerminalSimulator:
     def __init__(self, width: int, height: int, default_fg: str = DEFAULT_FG, default_bg: str = DEFAULT_BG) -> None:
         self.width = max(1, width)
         self.height = max(1, height)
+        self.initial_fg = default_fg
+        self.initial_bg = default_bg
         self.default_fg = default_fg
         self.default_bg = default_bg
         self.cx = 0
@@ -186,6 +194,7 @@ class TerminalSimulator:
         self.italic = False
         self.underline = False
         self.reverse = False
+        self.strikethrough = False
         self.grid: list[list[Cell]] = [
             [self._blank_cell() for _ in range(self.width)] for _ in range(self.height)
         ]
@@ -202,6 +211,21 @@ class TerminalSimulator:
     def _scroll_up(self) -> None:
         self.grid.pop(0)
         self.grid.append([self._blank_cell() for _ in range(self.width)])
+
+    def _handle_osc(self, payload: str) -> None:
+        if ";" in payload:
+            code, value = payload.split(";", 1)
+        else:
+            code, value = payload, ""
+        value = value.strip()
+        if code == "10" and HEX_COLOR_RE.match(value):
+            self.default_fg = value.lower()
+        elif code == "11" and HEX_COLOR_RE.match(value):
+            self.default_bg = value.lower()
+        elif code == "110":
+            self.default_fg = self.initial_fg
+        elif code == "111":
+            self.default_bg = self.initial_bg
 
     def feed(self, data: str) -> None:
         i = 0
@@ -225,13 +249,28 @@ class TerminalSimulator:
                     break
                 if nxt in ("]", "P", "_", "^", "X"):
                     j = i + 2
+                    payload_end = j
                     while j < n:
                         if data[j] == "\x07":
+                            payload_end = j
                             j += 1
                             break
                         if data[j] == "\x1b" and j + 1 < n and data[j + 1] == "\\":
+                            payload_end = j
                             j += 2
                             break
+                        j += 1
+                    else:
+                        payload_end = n
+                    if nxt == "]":
+                        self._handle_osc(data[i + 2 : payload_end])
+                    i = j
+                    continue
+                if 0x20 <= ord(nxt) <= 0x2F:
+                    j = i + 2
+                    while j < n and 0x20 <= ord(data[j]) <= 0x2F:
+                        j += 1
+                    if j < n:
                         j += 1
                     i = j
                     continue
@@ -266,7 +305,9 @@ class TerminalSimulator:
                 i += 1
                 continue
 
-            if self.cx >= self.width:
+            if self.cx >= self.width or (w == 2 and self.cx + 1 >= self.width and self.width > 1):
+                if self.cx < self.width and 0 <= self.cy < self.height:
+                    self.grid[self.cy][self.cx] = self._blank_cell(self.bg)
                 self.cx = 0
                 self.cy += 1
                 if self.cy >= self.height:
@@ -277,6 +318,9 @@ class TerminalSimulator:
                 existing = self.grid[self.cy][self.cx]
                 if existing.cont and self.cx > 0:
                     self.grid[self.cy][self.cx - 1] = self._blank_cell(self.bg)
+                if self.cx + 1 < self.width and self.grid[self.cy][self.cx + 1].cont:
+                    self.grid[self.cy][self.cx + 1] = self._blank_cell(self.bg)
+
                 self.grid[self.cy][self.cx] = Cell(
                     ch=ch,
                     fg=self.fg,
@@ -286,9 +330,12 @@ class TerminalSimulator:
                     italic=self.italic,
                     underline=self.underline,
                     reverse=self.reverse,
+                    strikethrough=self.strikethrough,
                     cont=False,
                 )
                 if w == 2 and self.cx + 1 < self.width:
+                    if self.cx + 2 < self.width and self.grid[self.cy][self.cx + 2].cont:
+                        self.grid[self.cy][self.cx + 2] = self._blank_cell(self.bg)
                     self.grid[self.cy][self.cx + 1] = Cell(
                         ch="",
                         fg=self.fg,
@@ -298,6 +345,7 @@ class TerminalSimulator:
                         italic=self.italic,
                         underline=self.underline,
                         reverse=self.reverse,
+                        strikethrough=self.strikethrough,
                         cont=True,
                     )
             self.cx = min(self.width, self.cx + w)
@@ -371,6 +419,11 @@ class TerminalSimulator:
                 elif mode == 2:
                     for c in range(self.width):
                         self.grid[self.cy][c] = self._blank_cell(self.bg)
+        elif final_ch == "X":
+            count = param(0, 1)
+            if 0 <= self.cy < self.height:
+                for c in range(min(self.cx, self.width), min(self.width, self.cx + count)):
+                    self.grid[self.cy][c] = self._blank_cell(self.bg)
         elif final_ch == "m":
             self._handle_sgr(parts)
 
@@ -389,6 +442,7 @@ class TerminalSimulator:
                 self.italic = False
                 self.underline = False
                 self.reverse = False
+                self.strikethrough = False
             elif code == 1:
                 self.bold = True
             elif code == 2:
@@ -399,6 +453,8 @@ class TerminalSimulator:
                 self.underline = True
             elif code == 7:
                 self.reverse = True
+            elif code == 9:
+                self.strikethrough = True
             elif code == 22:
                 self.bold = False
                 self.dim = False
@@ -408,6 +464,8 @@ class TerminalSimulator:
                 self.underline = False
             elif code == 27:
                 self.reverse = False
+            elif code == 29:
+                self.strikethrough = False
             elif 30 <= code <= 37:
                 self.fg = ANSI_16[code - 30]
             elif code == 39:
@@ -537,6 +595,22 @@ def _render_vector_cell_glyph(
     return None
 
 
+def _append_text_style_attrs(attrs: list[str], cell: Cell) -> None:
+    if cell.bold:
+        attrs.append('font-weight="700"')
+    if cell.dim:
+        attrs.append('fill-opacity="0.65"')
+    if cell.italic:
+        attrs.append('font-style="italic"')
+    decorations: list[str] = []
+    if cell.underline:
+        decorations.append("underline")
+    if cell.strikethrough:
+        decorations.append("line-through")
+    if decorations:
+        attrs.append(f'text-decoration="{" ".join(decorations)}"')
+
+
 def render_frame_svg(
     grid: list[list[Cell]],
     width: int,
@@ -596,35 +670,28 @@ def render_frame_svg(
             cp = ord(cell.ch[0])
             if cp > 0x7E:
                 attrs = [f'x="{x}"', f'y="{y_base}"', f'fill="{eff_fg}"']
-                if cell.bold:
-                    attrs.append('font-weight="700"')
-                if cell.dim:
-                    attrs.append('fill-opacity="0.65"')
-                if cell.italic:
-                    attrs.append('font-style="italic"')
-                if cell.underline:
-                    attrs.append('text-decoration="underline"')
+                _append_text_style_attrs(attrs, cell)
                 lines.append(f'<text {" ".join(attrs)}>{html.escape(cell.ch)}</text>')
                 c += 1
                 continue
 
             # Group contiguous ASCII characters sharing identical style
             start_c = c
-            style_sig = (eff_fg, cell.bold, cell.dim, cell.italic, cell.underline)
+            style_sig = (eff_fg, cell.bold, cell.dim, cell.italic, cell.underline, cell.strikethrough)
             chars: list[str] = []
             while c < width:
                 nxt = row[c]
                 if nxt.cont or not nxt.ch or ord(nxt.ch[0]) > 0x7E:
                     break
                 nxt_fg = nxt.bg if nxt.reverse else nxt.fg
-                nxt_sig = (nxt_fg, nxt.bold, nxt.dim, nxt.italic, nxt.underline)
+                nxt_sig = (nxt_fg, nxt.bold, nxt.dim, nxt.italic, nxt.underline, nxt.strikethrough)
                 if nxt_sig != style_sig:
                     break
                 chars.append(nxt.ch)
                 c += 1
 
             text_str = "".join(chars)
-            if not text_str.strip():
+            if not text_str.strip() and not cell.underline and not cell.strikethrough:
                 continue
             x = pad + start_c * cell_w
             attrs = [
@@ -633,38 +700,49 @@ def render_frame_svg(
                 f'fill="{eff_fg}"',
                 'xml:space="preserve"',
             ]
-            if cell.bold:
-                attrs.append('font-weight="700"')
-            if cell.dim:
-                attrs.append('fill-opacity="0.65"')
-            if cell.italic:
-                attrs.append('font-style="italic"')
-            if cell.underline:
-                attrs.append('text-decoration="underline"')
+            _append_text_style_attrs(attrs, cell)
             lines.append(f'<text {" ".join(attrs)}>{html.escape(text_str)}</text>')
 
     lines.append("</g></svg>")
     return "\n".join(lines)
 
 
-def parse_cast_frames(cast_path: Path, min_frame_interval: float = 0.06, max_frames: int = 42) -> tuple[dict, list[tuple[float, list[list[Cell]]]]]:
-    raw_lines = [line.strip() for line in cast_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+def parse_cast_frames(
+    cast_path: Path,
+    min_frame_interval: float = 0.06,
+    max_frames: int = 42,
+) -> tuple[dict, list[tuple[float, list[list[Cell]]]]]:
+    raw_lines = [
+        (line_no, line.strip())
+        for line_no, line in enumerate(cast_path.read_text(encoding="utf-8").splitlines(), start=1)
+        if line.strip()
+    ]
     if not raw_lines:
         raise ValueError(f"Empty cast file: {cast_path}")
 
-    header = json.loads(raw_lines[0])
+    header_line_no, header_raw = raw_lines[0]
+    try:
+        header = json.loads(header_raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON header in {cast_path}:{header_line_no}: {exc}") from exc
+    if not isinstance(header, dict):
+        raise ValueError(f"Expected JSON object header in {cast_path}:{header_line_no}")
+
     width = int(header.get("width", 84))
     height = int(header.get("height", 20))
-    theme = header.get("theme", {})
-    default_bg = theme.get("bg", DEFAULT_BG)
-    default_fg = theme.get("fg", DEFAULT_FG)
+    theme = header.get("theme") or {}
+    default_bg = theme.get("bg", DEFAULT_BG) if isinstance(theme, dict) else DEFAULT_BG
+    default_fg = theme.get("fg", DEFAULT_FG) if isinstance(theme, dict) else DEFAULT_FG
 
     sim = TerminalSimulator(width=width, height=height, default_fg=default_fg, default_bg=default_bg)
 
     events: list[tuple[float, str]] = []
-    for line in raw_lines[1:]:
-        ev = json.loads(line)
-        if len(ev) >= 3 and ev[1] == "o":
+    for line_no, line in raw_lines[1:]:
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON event in {cast_path}:{line_no}: {exc}") from exc
+        if isinstance(ev, list) and len(ev) >= 3 and ev[1] == "o":
             events.append((float(ev[0]), str(ev[2])))
 
     if not events:
@@ -689,9 +767,12 @@ def parse_cast_frames(cast_path: Path, min_frame_interval: float = 0.06, max_fra
             snapshots.append((duration, key, sim.snapshot()))
 
     if len(snapshots) > max_frames:
-        step = (len(snapshots) - 1) / float(max_frames - 1)
-        picked_indices = sorted({round(i * step) for i in range(max_frames)})
-        snapshots = [snapshots[i] for i in picked_indices]
+        if max_frames <= 1:
+            snapshots = [snapshots[-1]]
+        else:
+            step = (len(snapshots) - 1) / float(max_frames - 1)
+            picked_indices = sorted({round(i * step) for i in range(max_frames)})
+            snapshots = [snapshots[i] for i in picked_indices]
 
     if snapshots:
         last_dur, last_key, last_grid = snapshots[-1]
@@ -700,17 +781,46 @@ def parse_cast_frames(cast_path: Path, min_frame_interval: float = 0.06, max_fra
     return header, [(dur, grid) for dur, _, grid in snapshots]
 
 
-def convert_cast_to_gif(cast_path: Path, gif_path: Path, svg_path: Path | None = None, svg_frame_index: int = 0) -> None:
+def _resolve_gif_tools() -> tuple[str, str]:
+    rsvg = shutil.which("rsvg-convert")
+    if not rsvg:
+        raise RuntimeError(
+            "rsvg-convert not found in PATH (install librsvg2-bin / librsvg)"
+        )
+    magick = shutil.which("magick") or shutil.which("convert")
+    if not magick:
+        raise RuntimeError(
+            "ImageMagick ('magick' or 'convert') not found in PATH (install imagemagick)"
+        )
+    return rsvg, magick
+
+
+def convert_cast_to_gif(
+    cast_path: Path,
+    gif_path: Path | None,
+    svg_path: Path | None = None,
+    svg_frame_index: int = 0,
+    rsvg_bin: str | None = None,
+    magick_bin: str | None = None,
+) -> None:
     header, frames = parse_cast_frames(cast_path)
     width = int(header.get("width", 84))
     height = int(header.get("height", 20))
-    default_bg = header.get("theme", {}).get("bg", DEFAULT_BG)
+    theme = header.get("theme") or {}
+    default_bg = theme.get("bg", DEFAULT_BG) if isinstance(theme, dict) else DEFAULT_BG
 
     if svg_path is not None and frames:
-        idx = max(0, min(len(frames) - 1, svg_frame_index))
+        idx = svg_frame_index if svg_frame_index >= 0 else len(frames) + svg_frame_index
+        idx = max(0, min(len(frames) - 1, idx))
         svg_content = render_frame_svg(frames[idx][1], width, height, default_bg=default_bg)
         svg_path.parent.mkdir(parents=True, exist_ok=True)
         svg_path.write_text(svg_content, encoding="utf-8")
+
+    if gif_path is None:
+        return
+
+    if rsvg_bin is None or magick_bin is None:
+        rsvg_bin, magick_bin = _resolve_gif_tools()
 
     with tempfile.TemporaryDirectory(prefix="qmltui_gif_") as tmp_dir:
         tmp = Path(tmp_dir)
@@ -720,12 +830,12 @@ def convert_cast_to_gif(cast_path: Path, gif_path: Path, svg_path: Path | None =
             png_file = tmp / f"frame_{i:04d}.png"
             svg_file.write_text(render_frame_svg(grid, width, height, default_bg=default_bg), encoding="utf-8")
             subprocess.run(
-                ["rsvg-convert", str(svg_file), "-o", str(png_file)],
+                [rsvg_bin, str(svg_file), "-o", str(png_file)],
                 check=True,
             )
             png_paths.append(png_file)
 
-        cmd: list[str] = ["magick", "-loop", "0"]
+        cmd: list[str] = [magick_bin, "-loop", "0"]
         for (dur, _), png_file in zip(frames, png_paths):
             ticks = max(4, int(round(dur * 100)))
             cmd.extend(["-delay", str(ticks), str(png_file)])
@@ -735,34 +845,63 @@ def convert_cast_to_gif(cast_path: Path, gif_path: Path, svg_path: Path | None =
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render asciicast v2 (.cast) files to animated GIFs.")
+    parser = argparse.ArgumentParser(description="Render asciicast v2 (.cast) files to animated GIFs and static SVGs.")
     parser.add_argument("inputs", nargs="+", help="Input .cast file(s)")
-    parser.add_argument("-o", "--output", help="Output .gif path (when a single input is given)")
-    parser.add_argument("--svg", help="Optional static .svg output path for the first input")
-    parser.add_argument("--svg-frame", type=int, default=0, help="Frame index to export for --svg")
+    parser.add_argument("-o", "--output", help="Output .gif path (only valid with a single input)")
+    parser.add_argument("--svg", help="Optional static .svg output path (only valid with a single input)")
+    parser.add_argument("--svg-only", action="store_true", help="Only write --svg without rendering a GIF")
+    parser.add_argument("--svg-frame", type=int, default=0, help="Frame index to export for --svg (default: 0)")
     parser.add_argument("-j", "--jobs", type=int, default=4, help="Max worker threads (capped at 8)")
     args = parser.parse_args()
 
-    jobs = max(1, min(8, args.jobs))
     input_paths = [Path(p) for p in args.inputs]
+    for p in input_paths:
+        if not p.is_file():
+            print(f"error: input .cast file not found: {p}", file=sys.stderr)
+            return 1
 
-    if len(input_paths) == 1 and args.output:
-        convert_cast_to_gif(
-            input_paths[0],
-            Path(args.output),
-            svg_path=Path(args.svg) if args.svg else None,
-            svg_frame_index=args.svg_frame,
-        )
-        return 0
+    if len(input_paths) > 1 and (args.output or args.svg or args.svg_only):
+        print("error: -o/--output, --svg, and --svg-only require a single input .cast file", file=sys.stderr)
+        return 1
 
-    def _worker(cast_file: Path) -> str:
-        out_gif = cast_file.with_suffix(".gif")
-        convert_cast_to_gif(cast_file, out_gif)
-        return cast_file.name
+    if args.svg_only and not args.svg:
+        print("error: --svg-only requires --svg <output.svg>", file=sys.stderr)
+        return 1
 
-    with ThreadPoolExecutor(max_workers=jobs) as pool:
-        for name in pool.map(_worker, input_paths):
-            print(f"    {name} -> {Path(name).with_suffix('.gif')}")
+    try:
+        rsvg_bin: str | None = None
+        magick_bin: str | None = None
+        if not args.svg_only:
+            rsvg_bin, magick_bin = _resolve_gif_tools()
+
+        if len(input_paths) == 1:
+            out_gif = None if args.svg_only else (Path(args.output) if args.output else input_paths[0].with_suffix(".gif"))
+            svg_out = Path(args.svg) if args.svg else None
+            convert_cast_to_gif(
+                input_paths[0],
+                out_gif,
+                svg_path=svg_out,
+                svg_frame_index=args.svg_frame,
+                rsvg_bin=rsvg_bin,
+                magick_bin=magick_bin,
+            )
+            if out_gif is not None and not args.output:
+                print(f"    {input_paths[0].name} -> {out_gif.name}")
+            return 0
+
+        jobs = max(1, min(8, args.jobs))
+
+        def _worker(cast_file: Path) -> str:
+            out_gif = cast_file.with_suffix(".gif")
+            convert_cast_to_gif(cast_file, out_gif, rsvg_bin=rsvg_bin, magick_bin=magick_bin)
+            return cast_file.name
+
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            for name in pool.map(_worker, input_paths):
+                print(f"    {name} -> {Path(name).with_suffix('.gif')}")
+    except (ValueError, RuntimeError, subprocess.CalledProcessError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     return 0
 

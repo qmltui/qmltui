@@ -6,10 +6,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
 
 MODULES = [
@@ -50,7 +50,7 @@ def build_markdown_summary(export_data: dict, source_dir: Path) -> str:
     files = entry.get("files", [])
     totals = entry.get("totals", {})
 
-    src_prefix = str(source_dir.resolve()) + "/"
+    src_prefix = source_dir.resolve().as_posix().rstrip("/") + "/"
 
     module_stats: dict[str, dict[str, int]] = {
         name: {
@@ -68,9 +68,8 @@ def build_markdown_summary(export_data: dict, source_dir: Path) -> str:
     }
 
     for f in files:
-        filename = f.get("filename", "")
+        filename = f.get("filename", "").replace("\\", "/")
         rel = filename[len(src_prefix) :] if filename.startswith(src_prefix) else filename
-        rel = rel.replace("\\", "/")
         summary = f.get("summary", {})
         for mod_name, mod_prefix in MODULES:
             if rel.startswith(mod_prefix):
@@ -125,99 +124,138 @@ def main() -> int:
     coverage_dir = args.coverage_dir.resolve()
     profraw_dir = coverage_dir / "profraw"
 
-    if not args.skip_ctest:
-        if coverage_dir.exists():
-            shutil.rmtree(coverage_dir)
-        profraw_dir.mkdir(parents=True, exist_ok=True)
+    if not build_dir.is_dir():
+        print(f"error: build directory does not exist: {build_dir}", file=sys.stderr)
+        return 1
+    if not source_dir.is_dir():
+        print(f"error: source directory does not exist: {source_dir}", file=sys.stderr)
+        return 1
 
-        env = os.environ.copy()
-        env["LLVM_PROFILE_FILE"] = str(profraw_dir / "%p-%m.profraw")
+    existing_objects: list[str] = []
+    for obj in args.objects:
+        if Path(obj).is_file():
+            existing_objects.append(obj)
+        else:
+            print(f"warning: instrumented object not found, skipping: {obj}", file=sys.stderr)
+    if not existing_objects:
+        print("error: none of the specified --objects exist on disk; build the project first", file=sys.stderr)
+        return 1
+
+    try:
+        if not args.skip_ctest:
+            if coverage_dir.exists():
+                shutil.rmtree(coverage_dir)
+            profraw_dir.mkdir(parents=True, exist_ok=True)
+
+            env = os.environ.copy()
+            env["LLVM_PROFILE_FILE"] = str(profraw_dir / "%p-%m.profraw")
+            subprocess.run(
+                ["ctest", "--test-dir", str(build_dir), "--output-on-failure"],
+                env=env,
+                check=True,
+            )
+        else:
+            coverage_dir.mkdir(parents=True, exist_ok=True)
+
+        all_profraw = sorted(profraw_dir.glob("*.profraw"))
+        profraw_files = [p for p in all_profraw if p.is_file() and p.stat().st_size > 0]
+        if not profraw_files:
+            print(f"error: no non-empty .profraw files found in {profraw_dir}", file=sys.stderr)
+            return 1
+
+        profraw_list_file = coverage_dir / "profraw_files.txt"
+        profraw_list_file.write_text(
+            "\n".join(str(p) for p in profraw_files) + "\n",
+            encoding="utf-8",
+        )
+
+        profdata_file = coverage_dir / "qmltui.profdata"
         subprocess.run(
-            ["ctest", "--test-dir", str(build_dir), "--output-on-failure"],
-            env=env,
+            [
+                args.llvm_profdata,
+                "merge",
+                "-sparse",
+                f"-input-files={profraw_list_file}",
+                "-o",
+                str(profdata_file),
+            ],
             check=True,
         )
 
-    profraw_files = sorted(profraw_dir.glob("*.profraw"))
-    if not profraw_files:
-        print(f"error: no .profraw files found in {profraw_dir}", file=sys.stderr)
+        source_paths = [
+            str(p)
+            for p in (
+                source_dir / "src" / "QmlTui",
+                source_dir / "tools" / "qmltui-runner",
+            )
+            if p.exists()
+        ]
+        object_args = [existing_objects[0], *[f"-object={obj}" for obj in existing_objects[1:]]]
+        common_cov_args = [
+            f"-instr-profile={profdata_file}",
+            f"-ignore-filename-regex={args.ignore_regex}",
+            *object_args,
+            "--",
+            *source_paths,
+        ]
+
+        report_out = subprocess.run(
+            [args.llvm_cov, "report", *common_cov_args],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        (coverage_dir / "summary.txt").write_text(report_out, encoding="utf-8")
+        print(report_out)
+
+        json_out = subprocess.run(
+            [args.llvm_cov, "export", "-summary-only", *common_cov_args],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        (coverage_dir / "summary.json").write_text(json_out, encoding="utf-8")
+
+        lcov_out = subprocess.run(
+            [args.llvm_cov, "export", "-format=lcov", *common_cov_args],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        (coverage_dir / "lcov.info").write_text(lcov_out, encoding="utf-8")
+
+        html_dir = coverage_dir / "html"
+        subprocess.run(
+            [
+                args.llvm_cov,
+                "show",
+                "-format=html",
+                f"-output-dir={html_dir}",
+                "-show-line-counts-or-regions",
+                "-show-instantiations=false",
+                *common_cov_args,
+            ],
+            check=True,
+        )
+
+        export_data = json.loads(json_out)
+        md_summary = build_markdown_summary(export_data, source_dir)
+        summary_md_path = coverage_dir / "summary.md"
+        summary_md_path.write_text(md_summary, encoding="utf-8")
+        print(md_summary)
+
+        step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if step_summary:
+            with open(step_summary, "a", encoding="utf-8") as f:
+                f.write(md_summary + "\n")
+    except FileNotFoundError as exc:
+        print(f"error: required tool not found: {exc}", file=sys.stderr)
         return 1
-
-    profdata_file = coverage_dir / "qmltui.profdata"
-    subprocess.run(
-        [
-            args.llvm_profdata,
-            "merge",
-            "-sparse",
-            *[str(p) for p in profraw_files],
-            "-o",
-            str(profdata_file),
-        ],
-        check=True,
-    )
-
-    source_paths = [
-        str(source_dir / "src" / "QmlTui"),
-        str(source_dir / "tools" / "qmltui-runner"),
-    ]
-    object_args = [args.objects[0], *[f"-object={obj}" for obj in args.objects[1:]]]
-    common_cov_args = [
-        f"-instr-profile={profdata_file}",
-        f"-ignore-filename-regex={args.ignore_regex}",
-        *object_args,
-        "--",
-        *source_paths,
-    ]
-
-    report_out = subprocess.run(
-        [args.llvm_cov, "report", *common_cov_args],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    (coverage_dir / "summary.txt").write_text(report_out, encoding="utf-8")
-    print(report_out)
-
-    json_out = subprocess.run(
-        [args.llvm_cov, "export", "-summary-only", *common_cov_args],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    (coverage_dir / "summary.json").write_text(json_out, encoding="utf-8")
-
-    lcov_out = subprocess.run(
-        [args.llvm_cov, "export", "-format=lcov", *common_cov_args],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    (coverage_dir / "lcov.info").write_text(lcov_out, encoding="utf-8")
-
-    html_dir = coverage_dir / "html"
-    subprocess.run(
-        [
-            args.llvm_cov,
-            "show",
-            "-format=html",
-            f"-output-dir={html_dir}",
-            "-show-line-counts-or-regions",
-            "-show-instantiations=false",
-            *common_cov_args,
-        ],
-        check=True,
-    )
-
-    export_data = json.loads(json_out)
-    md_summary = build_markdown_summary(export_data, source_dir)
-    summary_md_path = coverage_dir / "summary.md"
-    summary_md_path.write_text(md_summary, encoding="utf-8")
-    print(md_summary)
-
-    step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if step_summary:
-        with open(step_summary, "a", encoding="utf-8") as f:
-            f.write(md_summary + "\n")
+    except subprocess.CalledProcessError as exc:
+        if exc.stderr:
+            print(exc.stderr, file=sys.stderr, end="")
+        print(f"error: command failed with exit code {exc.returncode}: {exc.cmd}", file=sys.stderr)
+        return exc.returncode or 1
 
     return 0
 

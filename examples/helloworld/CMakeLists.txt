@@ -50,4 +50,17 @@ target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
 if(TARGET qmltui::runner)
     target_link_libraries(hello_qmltui PRIVATE qmltui::runner)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js")
+        enable_testing()
+        qmltui_add_scenario(
+            NAME hello_world
+            TARGET hello_qmltui
+            SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js"
+            COLUMNS 64
+            ROWS 15
+            CLOCK VIRTUAL
+            RECORD hello-world.cast
+            LABELS "AgentSmoke;Cast"
+        )
+    endif()
 endif()

@@ -1,4 +1,3 @@
-pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -6,7 +5,7 @@ Terminal {
     id: root
     property int count: 0
 
-    title: count === 0 ? qsTr("Hello QmlTui!") : qsTr("Interactions: %1").arg(root.count)
+    title: count === 0 ? "Hello QmlTui!" : "Interactions: " + root.count
     color: "#0d1117"
 
     Keys.onPressed: event => {
@@ -34,24 +33,24 @@ Terminal {
             spacing: 1
 
             Text {
-                text: qsTr("Hello, QmlTui!")
+                text: "Hello, QmlTui!"
                 color: "#00ff66"
                 bold: true
             }
 
             Text {
-                text: qsTr("QML Declarative terminal UIs")
+                text: "QML Declarative terminal UIs"
                 color: "#2cde85"
                 dim: true
             }
 
             Text {
-                text: qsTr("Interactions: %1").arg(root.count)
+                text: "Interactions: " + root.count
                 color: "#c9d1d9"
             }
 
             Text {
-                text: qsTr("[Enter] Count  •  [R] Reset  •  [Q] Quit")
+                text: "[Enter] Count  •  [R] Reset  •  [Q] Quit"
                 color: "#8b949e"
                 dim: true
             }

@@ -4,10 +4,15 @@
 and as the constructible QML value type `rgba`; QML string assignments to QmlTui
 color properties continue to work.
 
-Construct a color from `#RGB`, `#RRGGBB`, `#AARRGGBB`, `transparent`, an SVG
-named color, or an `ansi:` palette entry. Parsing ignores surrounding
+A default-constructed `Color()` (or `Color::Default` / `Color::defaultColor()`)
+represents the terminal's default color (`"default"`). Use `Color::Transparent`
+(or `Color::transparent()`) for `"transparent"`, `Color::fromAnsiIndex(index)`
+for ANSI palette indices `0` through `15`, and `Color::Invalid` (or
+`Color::invalid()`) for an explicitly unset or invalid color. Construct a color
+from a string with `#RGB`, `#RRGGBB`, `#AARRGGBB`, `default`, `transparent`, an
+SVG named color, or an `ansi:` palette entry. Parsing ignores surrounding
 whitespace, and named colors are case-insensitive. An unrecognized value
-produces an invalid color.
+produces `Color::Invalid` (`!isValid()`).
 
 ## Palette entries and the terminal theme
 
@@ -65,13 +70,17 @@ with `"default"`, which is why a dialog follows the terminal background instead
 of a hard-coded color. `Popup` itself is an unpainted `Item` container; compose a
 `Rectangle` with `"default"` inside it when occlusion is needed.
 
-`Color::isTransparent()` distinguishes the two. Transparency is an instruction
+`Color::isDefault()` and `Color::isTransparent()` distinguish the two. In C++,
+prefer `Color::Default` (or `Color()`) and `Color::Transparent`; in QML,
+`QmlTui.defaultColor` and `QmlTui.transparent` provide pre-constructed `rgba`
+constants alongside `"default"` and `"transparent"`. Transparency is an instruction
 to the painter rather than a color, so it has no representation in a cell:
 `Color::paintedArgb32()`, and every path that writes a cell, turns it into the
 terminal default.
 
 Use `QmlTui.rgba(red, green, blue, alpha)` in QML to construct a color from
-normalized channels. Finite channel values are clamped to `0.0` through `1.0`.
+normalized channels, or `QmlTui.ansi(index)` for ANSI palette slot `0` through `15`.
+Finite channel values are clamped to `0.0` through `1.0`.
 
 ```qml
 import QtQml

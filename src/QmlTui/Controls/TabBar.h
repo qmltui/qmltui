@@ -12,8 +12,10 @@ namespace qmltui {
 class QMLTUI_CONTROLS_EXPORT TabBar : public Item {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY selectionColorChanged)
-    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor NOTIFY selectedTextColorChanged)
+    Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
+                   selectionColorChanged)
+    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor
+                   NOTIFY selectedTextColorChanged)
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
 
@@ -21,18 +23,19 @@ class QMLTUI_CONTROLS_EXPORT TabBar : public Item {
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
 
 public:
-    explicit TabBar(QObject *parent = nullptr);
+    explicit TabBar(QObject* parent = nullptr);
     ~TabBar() override = default;
 
     QVariant tabs() const { return m_tabsVariant; }
-    void setTabs(const QVariant &tabs);
+    void setTabs(const QVariant& tabs);
 
     int currentIndex() const { return m_currentIndex; }
     void setCurrentIndex(int index);
 
-    void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override;
-    void keyPressEvent(KeyEvent *event) override;
-    void mousePressEvent(MouseEvent *event) override;
+    void paint(TextGridBuffer& buffer, int absX, int absY,
+               const ClipRect& clipRect = ClipRect()) const override;
+    void keyPressEvent(KeyEvent* event) override;
+    void mousePressEvent(MouseEvent* event) override;
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
@@ -55,10 +58,10 @@ signals:
     void currentIndexChanged();
 
 private:
-    Color m_selectionColor;
-    Color m_selectedTextColor;
-    Color m_color = "default";
-    Color m_textColor = "default";
+    Color m_selectionColor = Color::Invalid;
+    Color m_selectedTextColor = Color::Invalid;
+    Color m_color;
+    Color m_textColor;
     QVariant m_tabsVariant;
     QStringList m_tabList;
     int m_currentIndex = 0;

@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QList>
 #include <QProcessEnvironment>
 #include <QString>
 #include <QSize>
 #include <QtQml/qqmlregistration.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
+#include <array>
 #include <cstdint>
 
 namespace qmltui {
@@ -31,11 +34,22 @@ struct QMLTUI_CORE_EXPORT TerminalCapabilities {
     Q_PROPERTY(QString colorDepth READ colorDepthName)
     Q_PROPERTY(QString termProgram READ terminalProgram)
     Q_PROPERTY(bool isTty READ isTtyStream)
+    Q_PROPERTY(qmltui::Color defaultForegroundColor READ foregroundColor)
+    Q_PROPERTY(qmltui::Color defaultBackgroundColor READ backgroundColor)
+    Q_PROPERTY(QList<qmltui::Color> ansiPalette READ ansiPaletteList)
 public:
     bool kittyKeyboard = false;
     bool kittyGraphics = false;
     bool sixelGraphics = false;
     QSize cellPixelSize;
+    Color defaultForegroundColor = Color::Invalid;
+    Color defaultBackgroundColor = Color::Invalid;
+    std::array<Color, 16> ansiPalette = {
+        Color::Invalid, Color::Invalid, Color::Invalid, Color::Invalid,
+        Color::Invalid, Color::Invalid, Color::Invalid, Color::Invalid,
+        Color::Invalid, Color::Invalid, Color::Invalid, Color::Invalid,
+        Color::Invalid, Color::Invalid, Color::Invalid, Color::Invalid,
+    };
     // The terminal is known to parse APC strings, so the kitty graphics probe
     // cannot be printed onto the screen. Set from TERM and TERM_PROGRAM; not a
     // capability of its own and not exposed to QML.
@@ -48,12 +62,23 @@ public:
     QString colorDepthName() const { return TerminalCapabilities::colorDepthName(colorDepth); }
     QString terminalProgram() const { return termProgram; }
     bool isTtyStream() const { return isTty; }
+    Color foregroundColor() const { return defaultForegroundColor; }
+    Color backgroundColor() const { return defaultBackgroundColor; }
+    QList<Color> ansiPaletteList() const {
+        return QList<Color>(ansiPalette.begin(), ansiPalette.end());
+    }
+    Q_INVOKABLE qmltui::Color ansiColor(int index) const {
+        return (index >= 0 && index < 16) ? ansiPalette[static_cast<size_t>(index)]
+                                          : Color(Color::Invalid);
+    }
     bool operator==(const TerminalCapabilities& other) const noexcept {
         return kittyKeyboard == other.kittyKeyboard && kittyGraphics == other.kittyGraphics &&
                sixelGraphics == other.sixelGraphics && cellPixelSize == other.cellPixelSize &&
-               mayProbeGraphics == other.mayProbeGraphics && colorDepth == other.colorDepth &&
-               syncOutput == other.syncOutput && isTty == other.isTty &&
-               termProgram == other.termProgram;
+               defaultForegroundColor == other.defaultForegroundColor &&
+               defaultBackgroundColor == other.defaultBackgroundColor &&
+               ansiPalette == other.ansiPalette && mayProbeGraphics == other.mayProbeGraphics &&
+               colorDepth == other.colorDepth && syncOutput == other.syncOutput &&
+               isTty == other.isTty && termProgram == other.termProgram;
     }
     bool operator!=(const TerminalCapabilities& other) const noexcept { return !(*this == other); }
 

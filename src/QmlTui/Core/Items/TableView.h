@@ -278,8 +278,8 @@ private:
         QString standardAlignment;
         bool enabled = true;
         bool spansOverrideSelection = false;
-        Color formatFg;
-        Color formatBg;
+        Color formatFg = Color::Invalid;
+        Color formatBg = Color::Invalid;
         TextStyle formatStyle;
         QString formatAlignment;
         int leftPadding = -1;
@@ -361,25 +361,25 @@ private:
     mutable QHash<Position, BuiltInCell> m_builtInCells;
     QHash<QPersistentModelIndex, QHash<int, QVariant>> m_fetchedRoles;
 
-    Color m_headerColor = "default";
+    Color m_headerColor;
     uint32_t m_resolvedHeaderColor = Color::resolve(m_headerColor, 0);
-    Color m_headerBackgroundColor = "transparent";
+    Color m_headerBackgroundColor = Color::Transparent;
     uint32_t m_resolvedHeaderBackgroundColor = 0x00000000;
 
-    Color m_selectionColor;
+    Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
-    Color m_selectionBackgroundColor;
+    Color m_selectionBackgroundColor = Color::Invalid;
     uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 
-    Color m_textColor = "default";
+    Color m_textColor;
     uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);
-    Color m_rowBackgroundColor = "transparent";
+    Color m_rowBackgroundColor = Color::Transparent;
     uint32_t m_resolvedRowBackgroundColor = 0x00000000;
 
-    Color m_alternatingRowBackgroundColor = "default";
+    Color m_alternatingRowBackgroundColor;
     uint32_t m_resolvedAltRowBackgroundColor = 0;
 
-    Color m_gridColor;
+    Color m_gridColor = Color::Invalid;
     uint32_t m_resolvedGridColor = 0;
 
     bool m_showColumnGrid = false;

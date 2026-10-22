@@ -82,27 +82,26 @@ public:
     // zero-alpha backgrounds preserve the surface underneath.
     void writeText(int x, int y, const QString& text, uint32_t fgColor = 0x00000000,
                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
-    void writeText(int x, int y, const QString& text, Color fgColor,
-                   Color bgColor = Color::fromArgb32(0x00000000),
+    void writeText(int x, int y, const QString& text, Color fgColor, Color bgColor = Color::Default,
                    TextAttribute attributes = TextAttribute::None) {
         writeText(x, y, text, fgColor.paintedArgb32(), bgColor.paintedArgb32(), attributes);
     }
     void drawLine(int x1, int y1, int x2, int y2, const char* character = "*",
                   uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
     void drawLine(int x1, int y1, int x2, int y2, const char* character, Color fgColor,
-                  Color bgColor = Color::fromArgb32(0x00000000)) {
+                  Color bgColor = Color::Default) {
         drawLine(x1, y1, x2, y2, character, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
     void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000,
                  uint32_t bgColor = 0x00000000);
     void drawBox(int x, int y, int width, int height, Color fgColor,
-                 Color bgColor = Color::fromArgb32(0x00000000)) {
+                 Color bgColor = Color::Default) {
         drawBox(x, y, width, height, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
     void fillRect(int x, int y, int width, int height, const char* character = " ",
                   uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000);
     void fillRect(int x, int y, int width, int height, const char* character, Color fgColor,
-                  Color bgColor = Color::fromArgb32(0x00000000)) {
+                  Color bgColor = Color::Default) {
         fillRect(x, y, width, height, character, fgColor.paintedArgb32(), bgColor.paintedArgb32());
     }
 

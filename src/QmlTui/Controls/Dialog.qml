@@ -9,7 +9,7 @@ Popup {
 
     readonly property Rectangle background: bg
 
-    property rgba textColor: "default"
+    property rgba textColor
     property rgba titleColor: textColor
     property string title: ""
     property string message: ""
@@ -28,11 +28,8 @@ Popup {
     Rectangle {
         id: bg
         anchors.fill: parent
-        color: "default"
-        border {
-            style: Border.Double
-            color: "default"
-        }
+        color: QmlTui.defaultColor
+        border.style: Border.Double
     }
 
     Keys.onPressed: event => {

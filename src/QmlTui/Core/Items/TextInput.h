@@ -198,9 +198,9 @@ private:
     void updateTerminalConnection();
 
     TextEditorState m_editor;
-    Color m_color = "default";
+    Color m_color;
     QString m_placeholderText;
-    Color m_placeholderColor;
+    Color m_placeholderColor = Color::Invalid;
     uint32_t m_resolvedPlaceholderColor = 0;
     bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
@@ -214,7 +214,7 @@ private:
     EchoMode m_echoMode = Normal;
 
     CursorShape m_cursorShape = Block;
-    Color m_cursorColor;
+    Color m_cursorColor = Color::Invalid;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;
     bool m_cursorBlinking = false;
@@ -225,10 +225,10 @@ private:
     ClockTimer* m_blinkTimer = nullptr;
     bool m_blinkState = true;
 
-    Color m_selectionColor;
+    Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = 0;
     bool m_hasResolvedSelectionColor = false;
-    Color m_selectedTextColor;
+    Color m_selectedTextColor = Color::Invalid;
     uint32_t m_resolvedSelectedTextColor = 0;
     bool m_hasResolvedSelectedTextColor = false;
     QPointer<Terminal> m_observedTerminal;

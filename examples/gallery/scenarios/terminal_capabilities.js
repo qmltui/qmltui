@@ -7,9 +7,12 @@ function main(terminal) {
     terminal.expectText("Kitty Keyboard:");
     terminal.expectText("Kitty Graphics:");
     terminal.expectText("Sixel Graphics:");
-    terminal.expectText("Reports Printed: 1");
-
-    terminal.clickText("Print Report (P)");
-    terminal.waitForText("Reports Printed: 2");
+    terminal.expectText("Default Foreground:");
+    terminal.expectText("Default Background:");
+    terminal.expectText("ANSI Palette");
+    terminal.expectText("black");
+    terminal.expectText("red");
+    terminal.expectText("blue");
+    terminal.expectText("white");
     terminal.captureText("capabilities.txt");
 }

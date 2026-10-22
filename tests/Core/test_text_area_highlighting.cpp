@@ -191,7 +191,7 @@ void TestTextAreaHighlighting::layerPrecedence() {
     QVERIFY(area.setHighlightLayer(QStringLiteral("syntax"), {rangeA}, rev, 0));
 
     // Layer B: priority 10, search (bg yellow) -> should override only bg, keep red fg and bold
-    HighlightRange rangeB(2, 5, Color(), Color("yellow"));
+    HighlightRange rangeB(2, 5, Color::Invalid, Color("yellow"));
     QVERIFY(area.setHighlightLayer(QStringLiteral("search"), {rangeB}, rev, 10));
 
     auto buffer = frame(area);
@@ -395,7 +395,7 @@ void TestTextAreaHighlighting::cursorPropertiesAndRendering() {
 
     // Defaults
     QCOMPARE(area.cursorShape(), TextArea::Block);
-    QCOMPARE(area.cursorColor(), Color());
+    QCOMPARE(area.cursorColor(), Color(Color::Invalid));
     QVERIFY(!area.cursorColor().isValid());
     QCOMPARE(area.cursorVisible(), true);
 
@@ -471,7 +471,7 @@ void TestTextAreaHighlighting::cursorPropertiesAndRendering() {
     QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Underline);
 
     // Over an already-underlined character, Underline cursor falls back to block (Reversed)
-    HighlightRange ul(0, 1, Color());
+    HighlightRange ul(0, 1, Color::Invalid);
     ul.setUnderline(true);
     QVERIFY(area.setHighlightLayer(QStringLiteral("ul"), {ul}, area.textRevision()));
     buffer = frame(area);
@@ -668,7 +668,7 @@ void TestTextAreaHighlighting::performance() {
     // 1000 deeply nested / overlapping search ranges
     QList<HighlightRange> nestedOverlaps;
     for (int i = 0; i < 1000; ++i) {
-        HighlightRange r(i * 2, 50, Color(), Color("yellow"));
+        HighlightRange r(i * 2, 50, Color::Invalid, Color("yellow"));
         r.setBold(true);
         nestedOverlaps.append(r);
     }

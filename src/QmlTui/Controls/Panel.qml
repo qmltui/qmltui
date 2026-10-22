@@ -14,10 +14,7 @@ Rectangle {
     property Item footer: null
     property Item footerTrailing: null
 
-    border {
-        style: Border.Single
-        color: "default"
-    }
+    border.style: Border.Single
 
     onTitleChanged: d.layout()
     onTitleTrailingChanged: d.layout()

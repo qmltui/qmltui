@@ -261,7 +261,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.setCursorShape(TextInput::Beam);
     QCOMPARE(input.cursorShape(), TextInput::Beam);
 
-    input.setCursorColor("cyan");
+    input.setCursorColor(Color("cyan"));
     QCOMPARE(input.cursorColor(), QString("cyan"));
 
     input.setCursorBlinking(true);
@@ -292,8 +292,8 @@ void TestTextInput::testTerminalCursorCustomization() {
     QCOMPARE(buffer.cellAt(5, 0).character().toByteArray(), QByteArray("▋"));
     QCOMPARE(Color::toArgb(buffer.cellAt(5, 0).fgColor), static_cast<uint32_t>(0xFF00FFFF));
 
-    input.setSelectionColor("blue");
-    input.setSelectedTextColor("yellow");
+    input.setSelectionColor(Color("blue"));
+    input.setSelectedTextColor(Color("yellow"));
     QCOMPARE(input.selectionColor(), QString("blue"));
     QCOMPARE(input.selectedTextColor(), QString("yellow"));
 
@@ -309,7 +309,7 @@ void TestTextInput::testTerminalCursorCustomization() {
     input.setWidth(15);
     input.setHeight(1);
     input.setPlaceholderText("Enter name...");
-    input.setPlaceholderColor("gray");
+    input.setPlaceholderColor(Color("gray"));
     QCOMPARE(input.placeholderColor(), QString("gray"));
 
     input.clear();

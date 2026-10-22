@@ -185,11 +185,11 @@ void TreeView::callbackWarning(const QString& message, QSet<QString>& errors) co
 }
 
 Color TreeView::resolveCachedColor(const QString& name) const {
-    if (name.isEmpty()) return {};
+    if (name.isEmpty()) return Color::Invalid;
     const auto cached = m_colorCache.constFind(name);
     if (cached != m_colorCache.cend()) return Color::fromArgb32(cached.value());
     const Color parsed = Color::fromString(name);
-    if (!parsed.isValid()) return {};
+    if (!parsed.isValid()) return Color::Invalid;
     const uint32_t resolved = parsed.argb32();
     if (m_colorCache.size() >= 256) m_colorCache.clear();
     m_colorCache.insert(name, resolved);
@@ -683,8 +683,8 @@ void TreeView::ensureFormatted(VisibleNode& node, int row) {
     node.formattedAtRow = row;
     node.formattedText = node.text;
     node.formattedSpans = node.spans;
-    node.formatFg = {};
-    node.formatBg = {};
+    node.formatFg = Color::Invalid;
+    node.formatBg = Color::Invalid;
     node.formatStyle = {};
     node.spansOverrideSelection = false;
 

@@ -1464,13 +1464,29 @@ void TestTerminalFramework::terminalBackgroundColor() {
     QCOMPARE(TerminalEngine::osc11Sequence(Color()), std::string());
     QCOMPARE(TerminalEngine::osc111Sequence(), std::string("\033]111\a\033]111;\a\033]111;\033\\"));
 
-    // Test OSC 11 reply color parsing (X11 rgb:rrrr/gggg/bbbb, rgb:rr/gg/bb, #rrggbb)
+    // Test OSC 10, 11, and 4 reply color parsing (X11 rgb:rrrr/gggg/bbbb, rgba:, #rrggbb)
+    QCOMPARE(TerminalEngine::parseOsc10Color("10;rgb:c9c9/d1d1/d9d9"), Color("#c9d1d9"));
+    QCOMPARE(TerminalEngine::parseOsc10Color("10;#f0f6fc"), Color("#f0f6fc"));
+    QCOMPARE(TerminalEngine::parseOsc10Color("11;rgb:1313/1313/1313"), Color(Color::Invalid));
     QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:1313/1313/1313"), Color("#131313"));
     QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:2828/2a2a/3636"), Color("#282a36"));
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;rgba:ff/00/80/ff"), Color("#ff0080"));
     QCOMPARE(TerminalEngine::parseOsc11Color("11;rgb:ff/00/00"), Color("#ff0000"));
     QCOMPARE(TerminalEngine::parseOsc11Color("11;#abcdef"), Color("#abcdef"));
-    QCOMPARE(TerminalEngine::parseOsc11Color("11;invalid"), Color());
-    QCOMPARE(TerminalEngine::parseOsc11Color("10;rgb:1212/1212/1212"), Color());
+    QCOMPARE(TerminalEngine::parseOsc11Color("11;invalid"), Color(Color::Invalid));
+    QCOMPARE(TerminalEngine::parseOsc11Color("10;rgb:1212/1212/1212"), Color(Color::Invalid));
+
+    int ansiIndex = -1;
+    Color ansiColor = Color::Invalid;
+    QVERIFY(TerminalEngine::parseOsc4Color("4;1;rgb:ff00/3300/4400", ansiIndex, ansiColor));
+    QCOMPARE(ansiIndex, 1);
+    QCOMPARE(ansiColor, Color("#ff3344"));
+    QVERIFY(TerminalEngine::parseOsc4Color("4;15;#ffffff", ansiIndex, ansiColor));
+    QCOMPARE(ansiIndex, 15);
+    QCOMPARE(ansiColor, Color("#ffffff"));
+    QVERIFY(!TerminalEngine::parseOsc4Color("4;16;#ffffff", ansiIndex, ansiColor));
+    QVERIFY(!TerminalEngine::parseOsc4Color("4;-1;#ffffff", ansiIndex, ansiColor));
+    QVERIFY(!TerminalEngine::parseOsc4Color("4;2;invalid", ansiIndex, ansiColor));
 
     // 2. Test Terminal engine tracking with enabled terminal output
     Terminal terminal;
@@ -1478,12 +1494,23 @@ void TestTerminalFramework::terminalBackgroundColor() {
     engine->setTerminalOutputEnabled(true);
 
     QCOMPARE(engine->isBackgroundOsc11Active(), false);
-    QCOMPARE(engine->appliedBackgroundColor(), Color());
-    QCOMPARE(engine->originalBackgroundColor(), Color());
+    QCOMPARE(engine->appliedBackgroundColor(), Color(Color::Invalid));
+    QCOMPARE(engine->originalBackgroundColor(), Color(Color::Invalid));
+    QCOMPARE(engine->capabilities().defaultForegroundColor, Color(Color::Invalid));
+    QCOMPARE(engine->capabilities().defaultBackgroundColor, Color(Color::Invalid));
+    QCOMPARE(engine->capabilities().ansiColor(0), Color(Color::Invalid));
+    QCOMPARE(engine->capabilities().ansiColor(-1), Color(Color::Invalid));
+    QCOMPARE(engine->capabilities().ansiColor(16), Color(Color::Invalid));
 
-    // Feeding an OSC 11 response records the original terminal background color
+    // Feeding OSC 10, 11, and 4 responses records the terminal colors on capabilities
+    engine->feedInput("\033]10;rgb:e6e6/eded/f3f3\033\\");
     engine->feedInput("\033]11;rgb:1313/1313/1313\033\\");
+    engine->feedInput("\033]4;2;rgb:3f3f/b9b9/5050\033\\");
     QCOMPARE(engine->originalBackgroundColor(), Color("#131313"));
+    QCOMPARE(engine->capabilities().defaultForegroundColor, Color("#e6edf3"));
+    QCOMPARE(engine->capabilities().defaultBackgroundColor, Color("#131313"));
+    QCOMPARE(engine->capabilities().ansiColor(2), Color("#3fb950"));
+    QCOMPARE(engine->capabilities().ansiPaletteList().at(2), Color("#3fb950"));
 
     // Setting an opaque color in AltScreen mode activates OSC 11 tracking
     terminal.setColor(Color("#282a36"));
@@ -1497,7 +1524,7 @@ void TestTerminalFramework::terminalBackgroundColor() {
     // Setting transparent color resets tracking
     terminal.setColor(Color("transparent"));
     QCOMPARE(engine->isBackgroundOsc11Active(), false);
-    QCOMPARE(engine->appliedBackgroundColor(), Color());
+    QCOMPARE(engine->appliedBackgroundColor(), Color(Color::Invalid));
 
     // Setting opaque color again
     terminal.setColor(Color("#112233"));
@@ -1507,7 +1534,7 @@ void TestTerminalFramework::terminalBackgroundColor() {
     // Switching to Inline mode deactivates OSC 11 tracking
     terminal.setMode(Terminal::Mode::Inline);
     QCOMPARE(engine->isBackgroundOsc11Active(), false);
-    QCOMPARE(engine->appliedBackgroundColor(), Color());
+    QCOMPARE(engine->appliedBackgroundColor(), Color(Color::Invalid));
 
     // Switching back to AltScreen mode reactivates OSC 11 tracking
     terminal.setMode(Terminal::Mode::AltScreen);

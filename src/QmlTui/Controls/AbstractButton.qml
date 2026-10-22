@@ -29,7 +29,7 @@ Item {
     property bool highlighted: false
     property bool hoverEnabled: false
     readonly property alias hovered: mouseArea.containsMouse
-    property rgba textColor: "default"
+    property rgba textColor
 
     property int padding: 0
     property int topPadding: padding

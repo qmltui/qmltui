@@ -14,7 +14,6 @@ Text {
 
     text: control.frames.length > 0 ? control.frames[timer.index % control.frames.length] : ""
     bold: true
-    color: "default"
 
     Timer {
         id: timer

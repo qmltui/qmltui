@@ -86,22 +86,22 @@ private slots:
     void onTick();
 
 private:
-    Color m_color = "default";
-    Color m_textColor = "default";
+    Color m_color;
+    Color m_textColor;
     QList<ToastItem> m_toasts;
     // On the QmlTui Clock so toast lifetimes are steppable in tests.
     ClockTimer* m_timer = nullptr;
 
-    Color m_infoColor = "default";
+    Color m_infoColor;
     uint32_t m_resolvedInfoColor = Color::resolve(m_infoColor, 0);
 
-    Color m_successColor = "default";
+    Color m_successColor;
     uint32_t m_resolvedSuccessColor = Color::resolve(m_successColor, 0);
 
-    Color m_warningColor = "default";
+    Color m_warningColor;
     uint32_t m_resolvedWarningColor = Color::resolve(m_warningColor, 0);
 
-    Color m_errorColor = "default";
+    Color m_errorColor;
     uint32_t m_resolvedErrorColor = Color::resolve(m_errorColor, 0);
 
     int m_toastWidth = 28;

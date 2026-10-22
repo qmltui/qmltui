@@ -109,6 +109,12 @@ void Terminal::bell() {
     }
 }
 
+void Terminal::queryColors() {
+    if (auto* outputEngine = engine()) {
+        outputEngine->queryColors();
+    }
+}
+
 void Terminal::setApplicationActive(bool active) {
     if (m_applicationActive == active) return;
     m_applicationActive = active;

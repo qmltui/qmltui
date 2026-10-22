@@ -37,7 +37,7 @@ signals:
 
 private:
     qreal m_position = 0.0;
-    Color m_color = "white";
+    Color m_color = Color::fromAnsiIndex(15);
     uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
 };
 

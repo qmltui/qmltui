@@ -152,8 +152,9 @@ TerminalEngine::TerminalEngine(Terminal* rootWindow, QObject* parent)
     m_renderer->setOutputEnabled(m_terminalOutputEnabled);
     m_renderer->setCapabilities(m_capabilities);
 
-    // Enable bracketed paste and focus reporting, then the mouse modes the root Terminal asks for.
-    if (m_terminalOutputEnabled) m_device.write("\033[?2004h\033[?1004h");
+    // Enable bracketed paste, focus reporting, and palette-change notifications (?2031h),
+    // then the mouse modes the root Terminal asks for.
+    if (m_terminalOutputEnabled) m_device.write("\033[?2004h\033[?1004h\033[?2031h");
     m_mouseMotionReportingEnabled = m_rootWindow && m_rootWindow->hasMouseMotionRequests();
     applyMouseModes();
     if (m_rootWindow && !m_rootWindow->title().isEmpty()) {
@@ -197,7 +198,8 @@ void TerminalEngine::stop() {
     if (m_terminalOutputEnabled) {
         if (m_capabilities.kittyGraphics)
             m_device.write("\033_Ga=d,d=A\033\\"); // delete every image this session uploaded
-        m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l\033[?1004l");
+        m_device.write(
+            "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l\033[?1004l\033[?2031l");
         if (m_terminalProgressActive) {
             m_device.write("\033]9;4;0\033\\");
         }
@@ -215,7 +217,7 @@ void TerminalEngine::stop() {
             m_device.write(osc111Sequence());
         }
         m_backgroundOsc11Active = false;
-        m_appliedBackgroundColor = Color();
+        m_appliedBackgroundColor = Color::Invalid;
     }
     if (m_terminalOutputEnabled) {
         // Accepted output survives a full-screen exit even when inline mode is
@@ -405,7 +407,7 @@ void TerminalEngine::updateBackgroundColor() {
             m_device.write(osc111Sequence());
         }
         m_backgroundOsc11Active = false;
-        m_appliedBackgroundColor = Color();
+        m_appliedBackgroundColor = Color::Invalid;
     }
 }
 
@@ -427,12 +429,11 @@ std::string TerminalEngine::osc111Sequence() {
     return "\033]111\a\033]111;\a\033]111;\033\\";
 }
 
-Color TerminalEngine::parseOsc11Color(QByteArrayView payload) {
-    if (!payload.startsWith("11;")) return {};
-    QByteArrayView value = payload.sliced(3);
-    if (value.startsWith("rgb:")) {
-        const QByteArrayList parts = value.sliced(4).toByteArray().split('/');
-        if (parts.size() == 3) {
+Color TerminalEngine::parseOscColorSpec(QByteArrayView value) {
+    if (value.startsWith("rgb:") || value.startsWith("rgba:")) {
+        const qsizetype prefixLen = value.startsWith("rgba:") ? 5 : 4;
+        const QByteArrayList parts = value.sliced(prefixLen).toByteArray().split('/');
+        if (parts.size() == 3 || (prefixLen == 5 && parts.size() == 4)) {
             bool okR = false, okG = false, okB = false;
             uint r = parts[0].toUInt(&okR, 16);
             uint g = parts[1].toUInt(&okG, 16);
@@ -471,13 +472,62 @@ Color TerminalEngine::parseOsc11Color(QByteArrayView payload) {
             }
         }
     }
-    return {};
+    return Color::Invalid;
+}
+
+Color TerminalEngine::parseOsc10Color(QByteArrayView payload) {
+    if (!payload.startsWith("10;")) return Color::Invalid;
+    return parseOscColorSpec(payload.sliced(3));
+}
+
+Color TerminalEngine::parseOsc11Color(QByteArrayView payload) {
+    if (!payload.startsWith("11;")) return Color::Invalid;
+    return parseOscColorSpec(payload.sliced(3));
+}
+
+bool TerminalEngine::parseOsc4Color(QByteArrayView payload, int& index, Color& color) {
+    if (!payload.startsWith("4;")) return false;
+    const QByteArrayView rest = payload.sliced(2);
+    const qsizetype sep = rest.indexOf(';');
+    if (sep <= 0) return false;
+    bool ok = false;
+    const int parsedIndex = rest.first(sep).toByteArray().toInt(&ok, 10);
+    if (!ok || parsedIndex < 0 || parsedIndex >= 16) return false;
+    const Color parsedColor = parseOscColorSpec(rest.sliced(sep + 1));
+    if (!parsedColor.isValid()) return false;
+    index = parsedIndex;
+    color = parsedColor;
+    return true;
+}
+
+void TerminalEngine::queryTerminalColors(bool includeAnsiPalette) {
+    if (!canQueryTerminal()) return;
+    m_initialBgQueried = true;
+    std::string seq = "\033]10;?\033\\";
+    if (m_backgroundOsc11Active && m_rendererStarted && m_appliedBackgroundColor.isValid()) {
+        seq += osc111Sequence();
+        seq += "\033]11;?\033\\";
+        seq += osc11Sequence(m_appliedBackgroundColor);
+    } else {
+        seq += "\033]11;?\033\\";
+    }
+    if (includeAnsiPalette) {
+        m_ansiPaletteQueried = true;
+        seq += "\033]4;0;?\033\\\033]4;1;?\033\\\033]4;2;?\033\\\033]4;3;?\033\\"
+               "\033]4;4;?\033\\\033]4;5;?\033\\\033]4;6;?\033\\\033]4;7;?\033\\"
+               "\033]4;8;?\033\\\033]4;9;?\033\\\033]4;10;?\033\\\033]4;11;?\033\\"
+               "\033]4;12;?\033\\\033]4;13;?\033\\\033]4;14;?\033\\\033]4;15;?\033\\";
+    }
+    m_device.write(seq);
+}
+
+void TerminalEngine::queryColors() {
+    queryTerminalColors(true);
 }
 
 void TerminalEngine::queryInitialBackgroundColor() {
-    if (m_initialBgQueried || !canQueryTerminal()) return;
-    m_initialBgQueried = true;
-    m_device.write("\033]11;?\033\\");
+    if (m_initialBgQueried) return;
+    queryTerminalColors(false);
 }
 
 void TerminalEngine::ringBell() {
@@ -552,7 +602,7 @@ void TerminalEngine::handleResume() {
     // each mode in the order the constructor uses, then repaint from scratch.
     if (m_device.backend()->needsUtf8Designation()) m_device.write("\033%G");
     m_device.hideCursor();
-    m_device.write("\033[?2004h\033[?1004h");
+    m_device.write("\033[?2004h\033[?1004h\033[?2031h");
     applyMouseModes();
     if (!m_title.isEmpty()) m_device.write(titleSequence(m_title));
     if (m_renderer && m_rendererStarted) {
@@ -760,13 +810,14 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
         if (m_backgroundOsc11Active) {
             m_device.write(osc111Sequence());
             m_backgroundOsc11Active = false;
-            m_appliedBackgroundColor = Color();
+            m_appliedBackgroundColor = Color::Invalid;
         }
         if (m_terminalProgressActive) {
             m_device.write("\033]9;4;0\033\\");
             m_terminalProgressActive = false;
         }
-        m_device.write("\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l\033[?1004l");
+        m_device.write(
+            "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l\033[?1004l\033[?2031l");
         m_device.showCursor();
         const bool flushed = m_device.finishOutput();
         m_device.disableRawMode();
@@ -785,8 +836,9 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
         m_device.setAsyncOutput(true);
         m_device.enableRawMode();
         m_device.hideCursor();
-        m_device.write("\033[?2004h\033[?1004h");
+        m_device.write("\033[?2004h\033[?1004h\033[?2031h");
         applyMouseModes();
+        queryInitialBackgroundColor();
         updateBackgroundColor();
         syncTerminalProgress();
     }
@@ -1104,9 +1156,62 @@ void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) 
             finishClipboardRead(QString::fromUtf8(decoded.decoded), {});
             return;
         }
+        if (m_stopped) return;
+        if (sequence.payload.startsWith("10;")) {
+            const Color parsed = parseOsc10Color(sequence.payload);
+            if (parsed.isValid() && !m_capabilitiesOverridden) {
+                if (m_queriesPending) {
+                    m_pendingCapabilities.defaultForegroundColor = parsed;
+                } else {
+                    TerminalCapabilities updated = m_capabilities;
+                    updated.defaultForegroundColor = parsed;
+                    applyCapabilities(updated);
+                }
+            }
+            return;
+        }
         if (sequence.payload.startsWith("11;")) {
             const Color parsed = parseOsc11Color(sequence.payload);
-            if (parsed.isValid()) m_originalBackgroundColor = parsed;
+            if (parsed.isValid()) {
+                if (!m_backgroundOsc11Active || !m_originalBackgroundColor.isValid() ||
+                    parsed != m_appliedBackgroundColor)
+                    m_originalBackgroundColor = parsed;
+                if (!m_capabilitiesOverridden) {
+                    if (m_queriesPending) {
+                        m_pendingCapabilities.defaultBackgroundColor = m_originalBackgroundColor;
+                    } else {
+                        TerminalCapabilities updated = m_capabilities;
+                        updated.defaultBackgroundColor = m_originalBackgroundColor;
+                        applyCapabilities(updated);
+                    }
+                }
+            }
+            return;
+        }
+        if (sequence.payload.startsWith("4;")) {
+            if (m_capabilitiesOverridden) return;
+            const QByteArrayList fields = sequence.payload.sliced(2).toByteArray().split(';');
+            TerminalCapabilities updated =
+                m_queriesPending ? m_pendingCapabilities : m_capabilities;
+            bool anyValid = false;
+            for (qsizetype i = 0; i + 1 < fields.size(); i += 2) {
+                bool ok = false;
+                const int idx = fields[i].toInt(&ok, 10);
+                if (!ok || idx < 0 || idx >= 16) continue;
+                const Color parsed = parseOscColorSpec(fields[i + 1]);
+                if (parsed.isValid()) {
+                    updated.ansiPalette[static_cast<size_t>(idx)] = parsed;
+                    anyValid = true;
+                }
+            }
+            if (anyValid) {
+                if (m_queriesPending) {
+                    m_pendingCapabilities = updated;
+                } else {
+                    applyCapabilities(updated);
+                }
+            }
+            return;
         }
         return;
     }
@@ -1152,6 +1257,15 @@ void TerminalEngine::handleReply(const InputDecoder::ControlSequence& sequence) 
                 updated.cellPixelSize = pixels;
                 applyCapabilities(updated);
             }
+            return;
+        }
+        // DEC mode 2031 palette-update notification: CSI ? 997 ; 1 n (dark)
+        // or CSI ? 997 ; 2 n (light). Re-query the host terminal colors.
+        if (sequence.privateMarker == '?' && sequence.intermediates.isEmpty() &&
+            sequence.finalByte == 'n' && sequence.params.size() == 2 &&
+            sequence.parameter(0) == 997 &&
+            (sequence.parameter(1) == 1 || sequence.parameter(1) == 2)) {
+            queryTerminalColors(m_ansiPaletteQueried);
             return;
         }
         if (!m_queriesPending) return;

@@ -6,9 +6,17 @@
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QQmlEngine>
 #include <QPointer>
-namespace qmltui { class ClockTimer; }
+namespace qmltui {
+class ClockTimer;
+}
 
-namespace qmltui { class Item; class Terminal; class Popup; class Text; class Rectangle; }
+namespace qmltui {
+class Item;
+class Terminal;
+class Popup;
+class Text;
+class Rectangle;
+} // namespace qmltui
 
 namespace qmltui::controls {
 
@@ -32,12 +40,12 @@ class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_PROPERTY(qreal z READ z WRITE setZ NOTIFY zChanged)
 
 public:
-    explicit ToolTip(QObject *target);
+    explicit ToolTip(QObject* target);
     ~ToolTip() override;
-    static ToolTip *qmlAttachedProperties(QObject *object) { return new ToolTip(object); }
+    static ToolTip* qmlAttachedProperties(QObject* object) { return new ToolTip(object); }
 
     QString text() const { return m_text; }
-    void setText(const QString &text);
+    void setText(const QString& text);
     bool visible() const;
     void setVisible(bool visible);
     int delay() const { return m_delay; }
@@ -63,8 +71,8 @@ signals:
     void zChanged();
 
 private:
-    Color m_color = "default";
-    Color m_textColor = "default";
+    Color m_color;
+    Color m_textColor;
     void bindTerminal();
     void trackAncestryGeometry();
     void updateAutomaticVisibility();

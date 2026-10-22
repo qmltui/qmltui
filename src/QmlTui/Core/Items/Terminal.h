@@ -82,6 +82,7 @@ public:
 
     Q_INVOKABLE void copyToClipboard(const QString& text);
     Q_INVOKABLE void bell();
+    Q_INVOKABLE void queryColors();
 
     bool applicationActive() const { return m_applicationActive; }
     void setApplicationActive(bool active);
@@ -169,7 +170,7 @@ private:
     QList<Popup*> m_popups;
     quint64 m_popupSerial = 0;
     QString m_title;
-    Color m_color = "transparent";
+    Color m_color = Color::Transparent;
     uint32_t m_background = 0;
     Mode m_mode = Mode::AltScreen;
     QPointer<Clipboard> m_clipboard;

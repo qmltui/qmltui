@@ -34,7 +34,7 @@ void TextStyle::applyVariantMap(const QVariantMap& map, bool warnOnInvalid) {
         const QVariant& value = it.value();
         if (!warnOnInvalid && key == QStringLiteral("text")) continue;
         if (key == QStringLiteral("color") || key == QStringLiteral("backgroundColor")) {
-            Color color;
+            Color color = Color::Invalid;
             if (value.metaType() == QMetaType::fromType<Color>())
                 color = value.value<Color>();
             else if (value.metaType() == QMetaType::fromType<QString>())

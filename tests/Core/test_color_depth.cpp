@@ -265,18 +265,34 @@ void TestColorDepth::testAnsiNamesParseToIndices() {
     QVERIFY(!Color("ansi:-1").isValid());
     QVERIFY(!Color("ansi:").isValid());
     QVERIFY(!Color("ansi:nosuch").isValid());
+    QVERIFY(!Color::fromAnsiIndex(-1).isValid());
+    QVERIFY(!Color::fromAnsiIndex(16).isValid());
 
     // Every ansi: name round-trips: toString() gives a spelling that parses
     // back to the same index.
     for (int index = 0; index < 16; ++index) {
         const Color byIndex = Color(QStringLiteral("ansi:%1").arg(index));
         QCOMPARE(byIndex.ansiIndex(), index);
+        QCOMPARE(Color::fromAnsiIndex(index), byIndex);
         QCOMPARE(Color(byIndex.toString()).ansiIndex(), index);
     }
     // "default" is alpha 0, the terminal's own colour for the role it fills.
     // "transparent" is tagged instead, so a painter can tell "paint with the
     // terminal default" apart from "paint nothing"; it normalizes back to the
     // default the moment anything is actually painted with it.
+    QCOMPARE(Color(), Color("default"));
+    QCOMPARE(Color(Color::Default), Color("default"));
+    QCOMPARE(Color::defaultColor(), Color("default"));
+    QCOMPARE(Color(Color::Transparent), Color("transparent"));
+    QCOMPARE(Color::transparent(), Color("transparent"));
+    QVERIFY(!Color(Color::Invalid).isValid());
+    QVERIFY(!Color::invalid().isValid());
+    QVERIFY(Color().isValid());
+    QVERIFY(Color().isDefault());
+    QVERIFY(Color(Color::Default).isDefault());
+    QVERIFY(!Color(Color::Invalid).isDefault());
+    QVERIFY(!Color(Color::Transparent).isDefault());
+    QVERIFY(!red.isDefault());
     QCOMPARE(Color("default").argb32(), 0x00000000U);
     QVERIFY(!Color("default").isTransparent());
     QVERIFY(Color("transparent").isTransparent());

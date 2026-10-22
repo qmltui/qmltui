@@ -30,7 +30,7 @@ class QMLTUI_CORE_EXPORT Span {
 public:
     Span() = default;
     explicit Span(QString text) : m_text(std::move(text)) {}
-    Span(QString text, Color foreground, Color background = {})
+    Span(QString text, Color foreground, Color background = Color::Invalid)
         : m_text(std::move(text)), m_style(foreground, background) {}
     Span(QString text, TextStyle style) : m_text(std::move(text)), m_style(std::move(style)) {}
 

@@ -164,15 +164,15 @@ private:
         bool loaded = true;
         QVariantMap rawData;
         QModelIndex modelIndex;
-        Color roleFg;
-        Color roleBg;
+        Color roleFg = Color::Invalid;
+        Color roleBg = Color::Invalid;
         bool roleEnabled = true;
         QString rolePrefix;
         int formattedAtRow = -1;
         QString formattedText;
         QList<Span> formattedSpans;
-        Color formatFg;
-        Color formatBg;
+        Color formatFg = Color::Invalid;
+        Color formatBg = Color::Invalid;
         TextStyle formatStyle;
         bool spansOverrideSelection = false;
     };
@@ -249,15 +249,15 @@ private:
     int m_pendingCurrentIndex = -1;
     int m_scrollTop = 0;
 
-    Color m_selectionColor;
+    Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
-    Color m_selectionBackgroundColor;
+    Color m_selectionBackgroundColor = Color::Invalid;
     uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
 
-    Color m_textColor = "default";
+    Color m_textColor;
     uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);
 
-    Color m_branchColor = "default";
+    Color m_branchColor;
     uint32_t m_resolvedBranchColor = Color::resolve(m_branchColor, 0);
 
     QString m_expandedIcon = "[-] ";

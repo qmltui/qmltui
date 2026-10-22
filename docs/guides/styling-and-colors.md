@@ -28,12 +28,20 @@ Two kinds of string are accepted, and they behave differently on screen:
   render exactly; on 256- and 16-color terminals they are quantised.
 - The sixteen ANSI palette names (`black`, `maroon`, `green`, `olive`, `navy`,
   `purple`, `teal`, `silver`, `gray`, `red`, `lime`, `yellow`, `blue`,
-  `magenta`, `cyan`, `white`) and the explicit form `"ansi:N"` are palette
-  indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
+  `magenta`, `cyan`, `white`), the explicit form `"ansi:N"`, and `QmlTui.ansi(N)`
+  are palette indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
   depth, so the user's terminal theme decides how they look. Other CSS names (`orange`, `steelblue`,
   ...) are literal RGB.
-- `"default"` resets to the terminal's default foreground or background via SGR 39/49. When used as a background (for example on a `Dialog`), it paints opaque cells with the terminal's default background color, occluding underlying content.
-- `"transparent"` leaves item background cells unpainted so the surface underneath remains visible. On a `Canvas`, `setPixelColor(x, y, "transparent")` paints a set pixel in the terminal's default ink, not a hole; erase a pixel with `setPixel(x, y, false)` or the whole surface with `clear()`.
+- `QmlTui.defaultColor` (or `"default"`, and the initial value of a default-constructed `rgba` property) resets to the terminal's default foreground or background via SGR 39/49. When used as a background (for example on a `Dialog`), it paints opaque cells with the terminal's default background color, occluding underlying content.
+- `QmlTui.transparent` (or `"transparent"`) leaves item background cells unpainted so the surface underneath remains visible. On a `Canvas`, `setPixelColor(x, y, "transparent")` paints a set pixel in the terminal's default ink, not a hole; erase a pixel with `setPixel(x, y, false)` or the whole surface with `clear()`.
+
+### Inspecting the terminal's actual RGB colors
+
+While `QmlTui.defaultColor` and `QmlTui.ansi(0..15)` are interpreted by the terminal emulator at render time via SGR 39/49 and SGR 30–37/90–97, interactive sessions also query the host terminal's actual RGB values (`OSC 10`, `OSC 11`, and `OSC 4;0..15`) during capability negotiation and expose them on [`Terminal.capabilities`](../qml-types/terminalcapabilities.md):
+
+- `terminal.capabilities.defaultForegroundColor` (`rgba`, `.valid === true` once reported)
+- `terminal.capabilities.defaultBackgroundColor` (`rgba`, `.valid === true` once reported)
+- `terminal.capabilities.ansiColor(index)` and `terminal.capabilities.ansiPalette` (`0`–`15`)
 
 ## Component styling
 

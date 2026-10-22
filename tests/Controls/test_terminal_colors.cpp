@@ -167,10 +167,10 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     TabBar tabs;
     tabs.setTabs(QStringList{"One", "Two"});
     tabs.setWidth(28);
-    tabs.setTextColor("#123456");
-    tabs.setColor("#654321");
-    tabs.setSelectedTextColor("#ffffff");
-    tabs.setSelectionColor("#102030");
+    tabs.setTextColor(Color("#123456"));
+    tabs.setColor(Color("#654321"));
+    tabs.setSelectedTextColor(Color("#ffffff"));
+    tabs.setSelectionColor(Color("#102030"));
     TextGridBuffer tabBuffer;
     tabBuffer.resize(28, 1);
     paintItem(tabs, tabBuffer, 0, 0);
@@ -189,8 +189,8 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     paintItem(toast, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 1).fgColor, 0u);
     QCOMPARE(buffer.cellAt(1, 1).bgColor, 0u);
-    toast.setTextColor("#123456");
-    toast.setColor("#654321");
+    toast.setTextColor(Color("#123456"));
+    toast.setColor(Color("#654321"));
     paintItem(toast, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 1).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 1).bgColor, 0xff654321u);
@@ -209,11 +209,25 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0u);
-    tip.setTextColor("#123456");
-    tip.setColor("#654321");
+    tip.setTextColor(Color("#123456"));
+    tip.setColor(Color("#654321"));
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0xff654321u);
+
+    auto qmlColors = load(R"(
+        Item {
+            property rgba def: QmlTui.defaultColor
+            property rgba trans: QmlTui.transparent
+            property rgba ansiRed: QmlTui.ansi(1)
+            property rgba ansiOut: QmlTui.ansi(99)
+        }
+    )");
+    QVERIFY(qmlColors);
+    QCOMPARE(qmlColors->property("def").value<Color>(), Color(Color::Default));
+    QCOMPARE(qmlColors->property("trans").value<Color>(), Color(Color::Transparent));
+    QCOMPARE(qmlColors->property("ansiRed").value<Color>(), Color::fromAnsiIndex(1));
+    QVERIFY(!qmlColors->property("ansiOut").value<Color>().isValid());
 }
 
 QTEST_MAIN(TestTerminalColors)

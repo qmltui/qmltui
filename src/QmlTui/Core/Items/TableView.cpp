@@ -1276,15 +1276,15 @@ const TableView::BuiltInCell& TableView::resolveBuiltInCell(int row, int column)
                         }
                     }
                     const auto parseColorProp = [&](const QJSValue& prop) -> Color {
-                        if (prop.isUndefined()) return {};
+                        if (prop.isUndefined()) return Color::Invalid;
                         if (prop.isString()) {
                             const QString str = prop.toString();
-                            if (str.isEmpty()) return {};
+                            if (str.isEmpty()) return Color::Invalid;
                             const auto cached = m_columnColorCache.constFind(str);
                             if (cached != m_columnColorCache.cend())
                                 return Color::fromArgb32(cached.value());
                             const Color parsed = Color::fromString(str);
-                            if (!parsed.isValid()) return {};
+                            if (!parsed.isValid()) return Color::Invalid;
                             if (m_columnColorCache.size() >= 256) m_columnColorCache.clear();
                             m_columnColorCache.insert(str, parsed.argb32());
                             return parsed;

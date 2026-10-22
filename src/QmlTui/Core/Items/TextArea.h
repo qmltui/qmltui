@@ -195,10 +195,10 @@ private:
     void recomposeHighlightRuns();
 
     TextEditorState m_editor;
-    Color m_color = "default";
+    Color m_color;
     QString m_placeholderText;
     uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
-    Color m_cursorColor;
+    Color m_cursorColor = Color::Invalid;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;
     CursorShape m_cursorShape = Block;
@@ -207,10 +207,10 @@ private:
     bool m_cursorVisible = true;
     ClockTimer* m_blinkTimer = nullptr;
     bool m_blinkState = true;
-    Color m_selectionColor;
+    Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = 0;
     bool m_hasResolvedSelectionColor = false;
-    Color m_selectedTextColor;
+    Color m_selectedTextColor = Color::Invalid;
     uint32_t m_resolvedSelectedTextColor = 0;
     bool m_hasResolvedSelectedTextColor = false;
     bool m_lastCanUndo = false;

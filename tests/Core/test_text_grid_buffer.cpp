@@ -119,7 +119,9 @@ void TestTextGridBuffer::testColorValue() {
     QCOMPARE(Color::fromRgba(-1.0, 2.0, 0.5, 2.0).argb32(), 0xff00ff80U);
     QCOMPARE(Color::fromRgba(1.0, 0.0, 0.0).argb32(), 0xffff0000U);
     QVERIFY(!Color::fromRgba(std::numeric_limits<qreal>::quiet_NaN(), 0.0, 0.0, 1.0).isValid());
-    QVERIFY(!Color().isValid());
+    QVERIFY(Color().isValid());
+    QVERIFY(Color().isDefault());
+    QVERIFY(!Color(Color::Invalid).isValid());
     QVERIFY(!Color("not-a-color").isValid());
     QVERIFY(!Color("#xyz").isValid());
 

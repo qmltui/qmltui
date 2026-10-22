@@ -6,6 +6,10 @@ Color QmlTuiGlobal::rgba(qreal red, qreal green, qreal blue, qreal alpha) const 
     return Color::fromRgba(red, green, blue, alpha);
 }
 
+Color QmlTuiGlobal::ansi(int index) const {
+    return Color::fromAnsiIndex(index);
+}
+
 Span QmlTuiGlobal::span(const QString& text) const {
     return Span(text);
 }

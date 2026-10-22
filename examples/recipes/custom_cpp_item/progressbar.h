@@ -29,7 +29,7 @@ signals:
 
 private:
     double m_value = 0.0;
-    Color m_barColor = "green";
+    Color m_barColor = Color::fromArgb32(0xFF00FF00);
     uint32_t m_resolvedBarColor = 0xFF00FF00;
 };
 

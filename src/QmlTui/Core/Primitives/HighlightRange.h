@@ -31,7 +31,7 @@ public:
     HighlightRange() = default;
     HighlightRange(int start, int length, TextStyle style = {})
         : m_start(start), m_length(length), m_style(std::move(style)) {}
-    HighlightRange(int start, int length, Color foreground, Color background = {})
+    HighlightRange(int start, int length, Color foreground, Color background = Color::Invalid)
         : m_start(start), m_length(length), m_style(foreground, background) {}
 
     int start() const { return m_start; }

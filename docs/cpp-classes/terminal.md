@@ -59,6 +59,7 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 - `TerminalCapabilities capabilities() const` — returns the active `TerminalCapabilities` snapshot.
 - `void copyToClipboard(const QString &text)` (`Q_INVOKABLE`) — emits `clipboardCopyRequested(text)` and, when `clipboardMode() == ClipboardMode::Osc52`, writes an OSC 52 sequence.
 - `void bell()` (`Q_INVOKABLE`) — emits a terminal bell (`\x07`).
+- `void queryColors()` (`Q_INVOKABLE`) — re-queries the host terminal's default foreground (`OSC 10`), default background (`OSC 11`), and 16 ANSI palette colors (`OSC 4;0..15`), emitting `capabilitiesChanged()` when replies update `capabilities()`. Also triggered automatically on DEC mode `2031` palette-change notifications (`CSI ? 997 ; 1 n` / `CSI ? 997 ; 2 n`).
 - `Item *focusedItem() const` / `void setFocusedItem(Item *item)` — returns or changes the item holding active keyboard focus.
 - `Item *hoveredItem() const` / `void setHoveredItem(Item *item)` — returns or updates the item under the mouse pointer.
 - `void setMouseMotionRequested(QObject *requester, bool requested)` — registers or unregisters `requester` as needing passive any-motion mouse tracking (`?1003h`).

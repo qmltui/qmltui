@@ -17,16 +17,16 @@ namespace qmltui {
 class QMLTUI_CORE_EXPORT TextStyle {
 public:
     TextStyle() = default;
-    TextStyle(Color foreground, Color background = {})
+    TextStyle(Color foreground, Color background = Color::Invalid)
         : m_color(foreground), m_backgroundColor(background) {}
 
     Color color() const { return m_color; }
     void setColor(Color color) { m_color = color; }
-    void resetColor() { m_color = {}; }
+    void resetColor() { m_color = Color::Invalid; }
 
     Color backgroundColor() const { return m_backgroundColor; }
     void setBackgroundColor(Color color) { m_backgroundColor = color; }
-    void resetBackgroundColor() { m_backgroundColor = {}; }
+    void resetBackgroundColor() { m_backgroundColor = Color::Invalid; }
 
     bool bold() const { return (m_values & bit(TextAttribute::Bold)) != 0; }
     bool hasBold() const { return (m_specified & bit(TextAttribute::Bold)) != 0; }
@@ -86,8 +86,8 @@ private:
     void setAttribute(TextAttribute attribute, bool value);
     void resetAttribute(TextAttribute attribute);
 
-    Color m_color;
-    Color m_backgroundColor;
+    Color m_color = Color::Invalid;
+    Color m_backgroundColor = Color::Invalid;
     quint8 m_values = 0;
     quint8 m_specified = 0;
 };

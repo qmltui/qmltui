@@ -37,7 +37,6 @@ Terminal {
                 width: 11
                 height: 5
                 renderMode: Canvas.HalfBlock
-                color: "#f8fafc"
 
                 // Center the nine-pixel-wide QmlTui mark (ring + chevron tail).
                 Circle {
@@ -56,7 +55,7 @@ Terminal {
 
                 Polygon {
                     closed: false
-                    color: "#00ff66"
+                    color: "lime"
                     points: [
                         {
                             x: 6,
@@ -75,7 +74,7 @@ Terminal {
 
                 Polygon {
                     closed: false
-                    color: "#00ff66"
+                    color: "lime"
                     points: [
                         {
                             x: 7,
@@ -100,44 +99,42 @@ Terminal {
                     spans: [
                         {
                             text: "QmlTui",
-                            color: "#f8fafc",
                             bold: true
                         },
                         {
-                            text: " ",
-                            color: "#8b949e"
+                            text: " "
                         },
                         {
                             text: " v0.5 ",
-                            color: "#0d1117",
-                            backgroundColor: "#2cde85",
+                            color: "black",
+                            backgroundColor: "green",
                             bold: true
                         },
                         {
                             text: " · Inline Agent CLI",
-                            color: "#38bdf8"
+                            color: "cyan"
                         }
                     ]
                 }
 
                 Text {
                     text: "✦ claude-sonnet-4 · ~/qml-tui · Terminal.Inline"
-                    color: "#94a3b8"
+                    color: "gray"
                 }
 
                 Text {
                     text: "Retained-mode QML terminal UI with native scrollback history"
-                    color: "#8b949e"
+                    dim: true
                 }
 
                 Text {
                     text: "Type a command and press Enter to print into native scrollback"
-                    color: "#64748b"
+                    dim: true
                 }
 
                 Text {
                     text: "Esc clears the prompt, then quits"
-                    color: "#64748b"
+                    dim: true
                 }
             }
         }
@@ -161,13 +158,13 @@ Terminal {
             spans: [
                 {
                     text: " Inline mode ",
-                    color: "#0d1117",
-                    backgroundColor: "#38bdf8",
+                    color: "black",
+                    backgroundColor: "cyan",
                     bold: true
                 },
                 {
                     text: "  UI sits in the normal buffer; printed lines scroll above it",
-                    color: "#8b949e"
+                    dim: true
                 }
             ]
         }
@@ -178,7 +175,6 @@ Terminal {
             Text {
                 width: 8
                 text: "load"
-                color: "#c9d1d9"
             }
 
             ProgressBar {
@@ -187,7 +183,7 @@ Terminal {
                 to: 100
                 value: root.load
                 style: "segmented"
-                color: "#38bdf8"
+                color: "cyan"
                 showPercentage: true
             }
         }
@@ -195,7 +191,7 @@ Terminal {
         Row {
             Text {
                 text: "❯ "
-                color: "#38bdf8"
+                color: "cyan"
                 bold: true
             }
 
@@ -205,7 +201,6 @@ Terminal {
                 height: 1
                 focus: true
                 placeholderText: "type a line and press Enter to print into scrollback"
-                color: "#c9d1d9"
                 onAccepted: {
                     if (text.length === 0)
                         return;
@@ -222,7 +217,7 @@ Terminal {
 
         Text {
             text: "printed: " + root.printed + "   Enter a message. Escape clears the prompt, then quits."
-            color: "#8b949e"
+            dim: true
         }
     }
 }

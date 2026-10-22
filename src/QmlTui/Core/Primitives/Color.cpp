@@ -95,7 +95,7 @@ const QHash<QString, quint32>& namedColors() {
         // written at all and whatever is behind shows through. A popup wants
         // "default"; a Rectangle with no colour set wants "transparent".
         {QStringLiteral("transparent"), Color::TransparentTag},
-        {QStringLiteral("default"), 0x00000000U},
+        {QStringLiteral("default"), Color::DefaultTag},
         {QStringLiteral("orange"), 0xffffa500U},
         {QStringLiteral("pink"), 0xffffc0cbU},
         {QStringLiteral("lightblue"), 0xffadd8e6U},
@@ -231,12 +231,10 @@ const QHash<QString, quint32>& namedColors() {
 
 Color::Color(const QString& value) : Color(fromString(value)) {}
 
-Color::Color(const char* value) : Color(QString::fromLatin1(value ? value : "")) {}
-
 Color Color::fromRgba(qreal red, qreal green, qreal blue, qreal alpha) {
     if (!std::isfinite(red) || !std::isfinite(green) || !std::isfinite(blue) ||
         !std::isfinite(alpha)) {
-        return {};
+        return Color::Invalid;
     }
 
     const auto channel = [](qreal value) {
@@ -250,26 +248,26 @@ Color Color::fromRgba(qreal red, qreal green, qreal blue, qreal alpha) {
 
 Color Color::fromString(const QString& value) {
     const QString text = value.trimmed();
-    if (text.isEmpty()) return {};
+    if (text.isEmpty()) return Color::Invalid;
 
     if (text.startsWith(QLatin1Char('#'))) {
         bool ok = false;
         if (text.size() == 4) {
             const quint32 r = text.mid(1, 1).toUInt(&ok, 16);
-            if (!ok) return {};
+            if (!ok) return Color::Invalid;
             const quint32 g = text.mid(2, 1).toUInt(&ok, 16);
-            if (!ok) return {};
+            if (!ok) return Color::Invalid;
             const quint32 b = text.mid(3, 1).toUInt(&ok, 16);
-            if (!ok) return {};
+            if (!ok) return Color::Invalid;
             return fromArgb32(0xff000000U | (r << 20) | (r << 16) | (g << 12) | (g << 8) |
                               (b << 4) | b);
         }
 
         const quint32 parsed = text.mid(1).toUInt(&ok, 16);
-        if (!ok) return {};
+        if (!ok) return Color::Invalid;
         if (text.size() == 7) return fromArgb32(0xff000000U | parsed);
         if (text.size() == 9) return fromArgb32(parsed);
-        return {};
+        return Color::Invalid;
     }
 
     const QString lower = text.toLower();
@@ -281,18 +279,18 @@ Color Color::fromString(const QString& value) {
         suffix.remove(QLatin1Char('-')).remove(QLatin1Char('_')).remove(QLatin1Char(' '));
         const auto it = ansiSemanticNames().constFind(suffix);
         if (it != ansiSemanticNames().cend()) return fromAnsiIndex(it.value());
-        return {};
+        return Color::Invalid;
     }
     const auto ansi = ansiNamedColors().constFind(lower);
     if (ansi != ansiNamedColors().cend()) return fromAnsiIndex(ansi.value());
     const auto it = namedColors().constFind(lower);
-    return it == namedColors().cend() ? Color() : fromArgb32(it.value());
+    return it == namedColors().cend() ? Color(Color::Invalid) : fromArgb32(it.value());
 }
 
 Color Color::toRgb() const {
     if (isAnsiIndex()) return fromArgb32(ansiPaletteRgb[m_argb & 0x0FU]);
     // Transparency has no RGB; it reads as fully unset.
-    if (isTransparent()) return fromArgb32(0x00000000U);
+    if (isTransparent()) return fromArgb32(DefaultTag);
     return *this;
 }
 
@@ -302,7 +300,7 @@ QString Color::toString() const {
     if (isTransparent()) return QStringLiteral("transparent");
     // Alpha 0 with no RGB is the terminal's own colour, and "default" is the
     // spelling that parses back to it; "#00000000" would not.
-    if (m_argb == 0) return QStringLiteral("default");
+    if (m_argb == DefaultTag) return QStringLiteral("default");
     if ((m_argb >> 24) == 0xffU)
         return QStringLiteral("#%1").arg(m_argb & 0x00ffffffU, 6, 16, QLatin1Char('0'));
     return QStringLiteral("#%1").arg(m_argb, 8, 16, QLatin1Char('0'));

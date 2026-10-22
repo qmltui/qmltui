@@ -51,12 +51,15 @@ public:
 };
 class CommandItem : public Item {
 public:
-    explicit CommandItem(Terminal* root) : Item(root), terminal(root) { setWidth(5); setHeight(1); }
+    explicit CommandItem(Terminal* root) : Item(root), terminal(root) {
+        setWidth(5);
+        setHeight(1);
+    }
     void paint(TextGridBuffer& buffer, int x, int y, const ClipRect&) const override {
         if (!sent) {
             sent = true;
-            accepted = terminal->enqueueControlSequence("\033_Gi=42;one\033\\")
-                && terminal->enqueueControlSequence("\033_Gi=43;two\033\\");
+            accepted = terminal->enqueueControlSequence("\033_Gi=42;one\033\\") &&
+                       terminal->enqueueControlSequence("\033_Gi=43;two\033\\");
         }
         buffer.writeText(x, y, QStringLiteral("CELLS"));
     }
@@ -64,22 +67,23 @@ public:
     mutable bool sent = false;
     mutable bool accepted = false;
 };
-}
+} // namespace
 
 class TestTerminalQueries : public QObject {
     Q_OBJECT
 private slots:
     void init() {
-        for (const char* name : {"QMLTUI_SYNC_OUTPUT", "QMLTUI_KITTY_KEYBOARD", "QMLTUI_KITTY_GRAPHICS",
-                                 "QMLTUI_QUERY_TIMEOUT_MS", "QMLTUI_ESCAPE_TIMEOUT_MS", "QMLTUI_RUNNER_EMBEDDED_SCENARIO",
-                                 "QMLTUI_RUNNER_LIVE",
-                                 "TERM_PROGRAM", "TERM", "KITTY_WINDOW_ID", "KONSOLE_VERSION",
-                                 "WEZTERM_EXECUTABLE", "GHOSTTY_RESOURCES_DIR"}) {
+        for (const char* name :
+             {"QMLTUI_SYNC_OUTPUT", "QMLTUI_KITTY_KEYBOARD", "QMLTUI_KITTY_GRAPHICS",
+              "QMLTUI_QUERY_TIMEOUT_MS", "QMLTUI_ESCAPE_TIMEOUT_MS",
+              "QMLTUI_RUNNER_EMBEDDED_SCENARIO", "QMLTUI_RUNNER_LIVE", "TERM_PROGRAM", "TERM",
+              "KITTY_WINDOW_ID", "KONSOLE_VERSION", "WEZTERM_EXECUTABLE",
+              "GHOSTTY_RESOURCES_DIR"}) {
             saved.insert(name, qgetenv(name));
             qunsetenv(name);
         }
         qputenv("QMLTUI_QUERY_TIMEOUT_MS", "1000");
-        qputenv("TERM_PROGRAM", "kitty");   // a terminal known to parse APC strings
+        qputenv("TERM_PROGRAM", "kitty"); // a terminal known to parse APC strings
         TerminalBackend::setFactory([](int) {
             auto memory = std::make_unique<MemoryTerminalBackend>(QSize(30, 4));
             backend = memory.get();
@@ -89,8 +93,10 @@ private slots:
     void cleanup() {
         TerminalBackend::setFactory(nullptr);
         for (auto it = saved.cbegin(); it != saved.cend(); ++it) {
-            if (it.value().isNull()) qunsetenv(it.key().constData());
-            else qputenv(it.key().constData(), it.value());
+            if (it.value().isNull())
+                qunsetenv(it.key().constData());
+            else
+                qputenv(it.key().constData(), it.value());
         }
         saved.clear();
     }
@@ -185,9 +191,14 @@ Terminal {
         if (event.key === Qt.Key_Q) Qt.quit()
         event.accepted = true
     }
-    Text { text: root.capabilities.kittyKeyboard ? "KEYBOARD" : "LEGACY" }
+    Text {
+        text: (root.capabilities.kittyKeyboard ? "KEYBOARD" : "LEGACY") + " " +
+              (root.capabilities.defaultForegroundColor.valid ? root.capabilities.defaultForegroundColor.toString() : "NOFG") + " " +
+              (root.capabilities.ansiColor(1).valid ? root.capabilities.ansiColor(1).toString() : "NOANSI")
+    }
 }
-)", QUrl());
+)",
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         QVERIFY2(object, qPrintable(component.errorString()));
         auto* terminal = qobject_cast<Terminal*>(object.get());
@@ -196,18 +207,28 @@ Terminal {
         QSignalSpy changed(terminal, &Terminal::capabilitiesChanged);
         QTRY_VERIFY(frameText(engine).contains("LEGACY"));
         const auto& output = backend->output();
+        QVERIFY(output.find("\033]10;?\033\\") != std::string::npos);
+        QVERIFY(output.find("\033]11;?\033\\") != std::string::npos);
+        QCOMPARE(output.find("\033]4;0;?\033\\"), std::string::npos);
         QVERIFY(output.find("\033[?1049h") < output.find("\033[?u"));
         QVERIFY(output.find("\033_Gi=31,") != std::string::npos);
         QVERIFY(output.find("\033[?u") < output.find("LEGACY"));
         QCOMPARE(output.find("\033[?u", output.find("\033[?u") + 1), std::string::npos);
-        backend->feedInput("\033[?0u\033_Gi=31;OK\033\\\033[6;20;10t\033[?2026;2$y");
+        backend->feedInput("\033]10;rgb:d0d0/e0e0/f0f0\033\\"
+                           "\033]11;rgb:1010/2020/3030\033\\"
+                           "\033]4;1;rgb:ff00/5500/5500\033\\"
+                           "\033[?0u\033_Gi=31;OK\033\\\033[6;20;10t\033[?2026;2$y");
         QVERIFY(!engine->capabilities().kittyKeyboard);
         backend->feedInput("\033[?1;2c");
-        QTRY_VERIFY(frameText(engine).contains("KEYBOARD"));
+        QTRY_VERIFY(frameText(engine).contains("KEYBOARD #d0e0f0 #ff5555"));
         QCOMPARE(changed.count(), 1);
         QVERIFY(engine->capabilities().kittyGraphics);
         QVERIFY(engine->capabilities().syncOutput);
         QCOMPARE(engine->capabilities().cellPixelSize, QSize(10, 20));
+        QCOMPARE(engine->capabilities().defaultForegroundColor, Color("#d0e0f0"));
+        QCOMPARE(engine->capabilities().defaultBackgroundColor, Color("#102030"));
+        QCOMPARE(engine->capabilities().ansiColor(1), Color("#ff5555"));
+        QCOMPARE(engine->capabilities().ansiColor(0), Color(Color::Invalid));
         backend->feedInput("\033[?0u\033[?2026;0$y\033[?1;2c");
         QCOMPARE(changed.count(), 1);
         QVERIFY(engine->capabilities().syncOutput);
@@ -220,9 +241,85 @@ Terminal {
         backend->feedInput("\033[6;1080;1920t");
         QCOMPARE(engine->capabilities().cellPixelSize, QSize(12, 24));
     }
+    void queryColorsAndPaletteNotifications() {
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+pragma ComponentBehavior: Bound
+import QtQml
+import QmlTui
+Terminal {
+    id: root
+    color: "#161b22"
+    Text {
+        text: (root.capabilities.defaultForegroundColor.valid ? root.capabilities.defaultForegroundColor.toString() : "NOFG") + " " +
+              (root.capabilities.defaultBackgroundColor.valid ? root.capabilities.defaultBackgroundColor.toString() : "NOBG") + " " +
+              (root.capabilities.ansiColor(0).valid ? root.capabilities.ansiColor(0).toString() : "NOANSI")
+    }
+}
+)",
+                          QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(object.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        QSignalSpy changed(terminal, &Terminal::capabilitiesChanged);
+        QTRY_VERIFY(frameText(engine).contains("NOFG NOBG NOANSI"));
+        QVERIFY(backend->output().find("\033[?2031h") != std::string::npos);
+
+        // Complete initial negotiation with initial theme colors.
+        backend->feedInput("\033]10;rgb:e0e0/e0e0/e0e0\033\\"
+                           "\033]11;rgb:1010/1212/1414\033\\"
+                           "\033[?1;2c");
+        QTRY_VERIFY(frameText(engine).contains("#e0e0e0 #101214 NOANSI"));
+        QCOMPARE(changed.count(), 1);
+
+        // Before queryColors() is called, DEC mode 2031 notification only
+        // re-queries OSC 10 and OSC 11 (not OSC 4;0..15).
+        backend->clearOutput();
+        backend->feedInput("\033[?997;2n");
+        const std::string& requeryOut = backend->output();
+        QVERIFY(requeryOut.find("\033]10;?\033\\") != std::string::npos);
+        const auto resetPos = requeryOut.find("\033]111\a");
+        const auto query11Pos = requeryOut.find("\033]11;?\033\\");
+        const auto restore11Pos = requeryOut.find("\033]11;#161b22\a");
+        QVERIFY(resetPos != std::string::npos);
+        QVERIFY(query11Pos != std::string::npos);
+        QVERIFY(restore11Pos != std::string::npos);
+        QVERIFY(resetPos < query11Pos);
+        QVERIFY(query11Pos < restore11Pos);
+        QCOMPARE(requeryOut.find("\033]4;0;?\033\\"), std::string::npos);
+
+        // Programmatic Terminal::queryColors() requests OSC 10, OSC 11, and OSC 4;0..15.
+        backend->clearOutput();
+        terminal->queryColors();
+        QVERIFY(backend->output().find("\033]10;?\033\\") != std::string::npos);
+        QVERIFY(backend->output().find("\033]11;?\033\\") != std::string::npos);
+        QVERIFY(backend->output().find("\033]4;0;?\033\\") != std::string::npos);
+        QVERIFY(backend->output().find("\033]4;15;?\033\\") != std::string::npos);
+
+        backend->feedInput("\033]10;rgb:2020/2020/2020\033\\"
+                           "\033]11;rgb:f8f8/f9f9/fafa\033\\"
+                           "\033]4;0;rgb:eedd/ccbb/aa99\033\\");
+        QTRY_VERIFY(frameText(engine).contains("#202020 #f8f9fa #eeccaa"));
+        QCOMPARE(engine->capabilities().defaultForegroundColor, Color("#202020"));
+        QCOMPARE(engine->capabilities().defaultBackgroundColor, Color("#f8f9fa"));
+        QCOMPARE(engine->capabilities().ansiColor(0), Color("#eeccaa"));
+
+        // Once queryColors() was requested, subsequent DEC mode 2031 notifications
+        // also refresh OSC 4;0..15.
+        backend->clearOutput();
+        backend->feedInput("\033[?997;1n");
+        QVERIFY(backend->output().find("\033]4;15;?\033\\") != std::string::npos);
+
+        engine->stop();
+        QVERIFY(backend->output().find("\033[?2031l") != std::string::npos);
+    }
     void syncStatuses_data() {
         QTest::addColumn<int>("status");
-        for (int i = 0; i <= 4; ++i) QTest::newRow(qPrintable(QString::number(i))) << i;
+        for (int i = 0; i <= 4; ++i)
+            QTest::newRow(qPrintable(QString::number(i))) << i;
     }
     void syncStatuses() {
         QFETCH(int, status);
@@ -296,7 +393,8 @@ Terminal {
         QVERIFY(engine->enqueueControlSequence("\033_Gi=44;only\033\\"));
         QTRY_VERIFY(engine->frameSequence() > sequence);
         QVERIFY(backend->output().find("\033_Gi=44;only\033\\") != std::string::npos);
-        QVERIFY(!engine->enqueueControlSequence(QByteArray(TerminalEngine::ControlSequenceQueueLimit + 1, 'x')));
+        QVERIFY(!engine->enqueueControlSequence(
+            QByteArray(TerminalEngine::ControlSequenceQueueLimit + 1, 'x')));
         backend->clearOutput();
         QVERIFY(engine->enqueueControlSequence("\033_Ga=d,d=I,i=44\033\\"));
         engine->stop();
@@ -323,8 +421,10 @@ Terminal {
         QTRY_VERIFY(engine->frameSequence() > 0);
         QSignalSpy failed(engine, &TerminalEngine::renderFailed);
         QSignalSpy invalidated(engine, &TerminalEngine::outputSessionInvalidated);
-        if (async) faulty->blocked = true;
-        else faulty->fail = true;
+        if (async)
+            faulty->blocked = true;
+        else
+            faulty->fail = true;
         const auto frame = engine->frameSequence();
         QVERIFY(engine->enqueueControlSequence("\033_Gi=42;upload\033\\"));
         if (async) {
@@ -350,7 +450,7 @@ Terminal {
     void nonInteractiveInputDoesNotProbe() {
         TerminalBackend::setFactory([](int) {
             auto memory = std::make_unique<MemoryTerminalBackend>(QSize(30, 4));
-            memory->setInteractive(false);   // a pipe on either end
+            memory->setInteractive(false); // a pipe on either end
             backend = memory.get();
             return memory;
         });
@@ -373,9 +473,9 @@ Terminal {
         QVERIFY(engine->capabilities().kittyKeyboard);
         QSignalSpy changed(engine, &TerminalEngine::capabilitiesChanged);
         backend->clearOutput();
-        engine->setRenderer(new InlineRenderer);   // new output session, new negotiation
+        engine->setRenderer(new InlineRenderer); // new output session, new negotiation
         QTRY_VERIFY(backend->output().find("\033[?u") != std::string::npos);
-        QTest::qWait(40);                          // the terminal never answers this time
+        QTest::qWait(40); // the terminal never answers this time
         QVERIFY(engine->capabilities().kittyGraphics);
         QVERIFY(engine->capabilities().kittyKeyboard);
         QCOMPARE(engine->capabilities().cellPixelSize, QSize(10, 20));
@@ -386,14 +486,14 @@ Terminal {
         TerminalBackend::setFactory([&](int) {
             auto result = std::make_unique<FaultBackend>();
             faulty = result.get();
-            result->fail = true;                    // every write fails from the start
+            result->fail = true; // every write fails from the start
             return result;
         });
         Terminal terminal;
         auto* engine = terminal.engine();
-        CommandItem item(&terminal);                // a blank frame would write nothing
+        CommandItem item(&terminal); // a blank frame would write nothing
         QSignalSpy failed(engine, &TerminalEngine::renderFailed);
-        QTRY_COMPARE(failed.count(), 1);            // one report for the frame, not two
+        QTRY_COMPARE(failed.count(), 1); // one report for the frame, not two
         QVERIFY(faulty->memory.output().find("\033[?u") == std::string::npos);
         faulty->fail = false;
         engine->requestRender();
@@ -407,12 +507,13 @@ Terminal {
         engine->setCapabilities(TerminalCapabilities{});
         QTRY_VERIFY(engine->frameSequence() > 0);
         bool acceptedDuringDisable = true;
-        const auto connection = connect(engine, &TerminalEngine::outputSessionInvalidated, engine, [&] {
-            acceptedDuringDisable = engine->enqueueControlSequence("\033_Ga=d\033\\");
-        });
+        const auto connection =
+            connect(engine, &TerminalEngine::outputSessionInvalidated, engine, [&] {
+                acceptedDuringDisable = engine->enqueueControlSequence("\033_Ga=d\033\\");
+            });
         engine->setTerminalOutputEnabled(false);
         disconnect(connection);
-        QVERIFY(!acceptedDuringDisable);           // the contract: false when output is off
+        QVERIFY(!acceptedDuringDisable); // the contract: false when output is off
         QVERIFY(engine->takeControlSequences().isEmpty());
     }
     void backgroundFollowsAlternateScreen() {
@@ -424,7 +525,8 @@ Terminal {
 import QtQml
 import QmlTui
 Terminal { color: "black"; Text { text: "x" } }
-)", QUrl());
+)",
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         QVERIFY2(object, qPrintable(component.errorString()));
         auto* terminal = qobject_cast<Terminal*>(object.get());
@@ -449,8 +551,8 @@ Terminal { color: "black"; Text { text: "x" } }
         const auto npos = std::string::npos;
         QVERIFY(output.find("\033[?u") != npos);
         QCOMPARE(output.find("\033[>1u"), npos);
-        backend->feedInput("\033[?0u");            // zero flags is still a valid reply
-        QCOMPARE(output.find("\033[>1u"), npos);     // the window is still open
+        backend->feedInput("\033[?0u");          // zero flags is still a valid reply
+        QCOMPARE(output.find("\033[>1u"), npos); // the window is still open
         backend->feedInput("\033[?1c");
         QVERIFY(engine->capabilities().kittyKeyboard);
         const auto push = output.find("\033[>1u");
@@ -476,8 +578,10 @@ Terminal { color: "black"; Text { text: "x" } }
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
-        if (override.isNull()) QTest::qWait(30);      // the terminal never answers
-        else backend->feedInput("\033[?0u\033[?1c");   // it answers, but the user said no
+        if (override.isNull())
+            QTest::qWait(30); // the terminal never answers
+        else
+            backend->feedInput("\033[?0u\033[?1c"); // it answers, but the user said no
         QVERIFY(!engine->capabilities().kittyKeyboard);
         const auto& output = backend->output();
         QCOMPARE(output.find("\033[>1u"), std::string::npos);
@@ -489,7 +593,7 @@ Terminal { color: "black"; Text { text: "x" } }
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
         engine->stop();
-        backend->feedInput("\033[?0u\033[?1c");         // the reply arrives late
+        backend->feedInput("\033[?0u\033[?1c"); // the reply arrives late
         QVERIFY(!engine->capabilities().kittyKeyboard);
         QCOMPARE(backend->output().find("\033[>1u"), std::string::npos);
         QCOMPARE(backend->output().find("\033[<u"), std::string::npos);
@@ -531,7 +635,7 @@ Terminal { color: "black"; Text { text: "x" } }
         QCOMPARE(output.find("\033[>1u"), npos);
         backend->clearOutput();
         engine->stop();
-        QCOMPARE(output.find("\033[<u"), npos);        // nothing left to pop
+        QCOMPARE(output.find("\033[<u"), npos); // nothing left to pop
     }
     void kittyKeysReachQml() {
         QQmlEngine qml;
@@ -552,7 +656,8 @@ Terminal {
     }
     Text { text: root.last + " N" + root.presses }
 }
-)", QUrl());
+)",
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         QVERIFY2(object, qPrintable(component.errorString()));
         auto* terminal = qobject_cast<Terminal*>(object.get());
@@ -560,17 +665,19 @@ Terminal {
         auto* engine = terminal->engine();
         QTRY_VERIFY(frameText(engine).contains("none N0"));
         const QString ctrlShift = QString::number(int(Qt::ControlModifier | Qt::ShiftModifier));
-        backend->feedInput("\033[97:65:;6u");             // Ctrl+Shift+A
+        backend->feedInput("\033[97:65:;6u"); // Ctrl+Shift+A
         QTRY_VERIFY(frameText(engine).contains("K65 M" + ctrlShift + " T0 N1"));
-        backend->feedInput("\033[9;2u");                  // Shift+Tab keeps the Backtab convention
-        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Backtab))
-                                               + " M" + QString::number(int(Qt::ShiftModifier)) + " T0 N2"));
-        backend->feedInput("\033[13;5u");                 // Ctrl+Enter: no text
-        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Return))
-                                               + " M" + QString::number(int(Qt::ControlModifier)) + " T0 N3"));
-        backend->feedInput("\033[27u");                   // Escape, unambiguous and immediate
-        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Escape)) + " M0 T0 N4"));
-        backend->feedInput("\033[98;1:2u\033[98;1:3u");   // repeat dispatches, release does not
+        backend->feedInput("\033[9;2u"); // Shift+Tab keeps the Backtab convention
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Backtab)) + " M" +
+                                               QString::number(int(Qt::ShiftModifier)) + " T0 N2"));
+        backend->feedInput("\033[13;5u"); // Ctrl+Enter: no text
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Return)) + " M" +
+                                               QString::number(int(Qt::ControlModifier)) +
+                                               " T0 N3"));
+        backend->feedInput("\033[27u"); // Escape, unambiguous and immediate
+        QTRY_VERIFY(
+            frameText(engine).contains("K" + QString::number(int(Qt::Key_Escape)) + " M0 T0 N4"));
+        backend->feedInput("\033[98;1:2u\033[98;1:3u"); // repeat dispatches, release does not
         QTRY_VERIFY(frameText(engine).contains("K66 M0 T1 N5"));
         QCOMPARE(terminal->property("presses").toInt(), 5);
     }
@@ -589,24 +696,25 @@ Terminal {
         Text { text: "LEN" + input.text.length + " ACC" + root.accepts + " [" + input.text + "]" }
     }
 }
-)", QUrl());
+)",
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         QVERIFY2(object, qPrintable(component.errorString()));
         auto* terminal = qobject_cast<Terminal*>(object.get());
         QVERIFY(terminal);
         auto* engine = terminal->engine();
         QTRY_VERIFY(frameText(engine).contains("LEN0 ACC0 []"));
-        backend->feedInput("\033[13;5u");                 // Ctrl+Enter
+        backend->feedInput("\033[13;5u"); // Ctrl+Enter
         QTRY_VERIFY(frameText(engine).contains("LEN0 ACC1 []"));
-        backend->feedInput("\033[13;2u");                 // Shift+Enter
+        backend->feedInput("\033[13;2u"); // Shift+Enter
         QTRY_VERIFY(frameText(engine).contains("LEN0 ACC2 []"));
-        backend->feedInput("\033[97:65;2u\033[98u");      // Shift+A (with alternate key), b
+        backend->feedInput("\033[97:65;2u\033[98u"); // Shift+A (with alternate key), b
         QTRY_VERIFY(frameText(engine).contains("LEN2 ACC2 [Ab]"));
-        backend->feedInput("\033[97;5u");                 // Ctrl+A selects all, inserts nothing
-        backend->feedInput("\033[99;3u");                 // Alt+C inserts nothing either
+        backend->feedInput("\033[97;5u"); // Ctrl+A selects all, inserts nothing
+        backend->feedInput("\033[99;3u"); // Alt+C inserts nothing either
         QTRY_VERIFY(frameText(engine).contains("LEN2 ACC2 [Ab]"));
-        backend->feedInput("\033[57423u");                // keypad Home: cursor to the start
-        backend->feedInput("\033[57399u");                // keypad 0 is typing
+        backend->feedInput("\033[57423u"); // keypad Home: cursor to the start
+        backend->feedInput("\033[57399u"); // keypad 0 is typing
         QTRY_VERIFY2(frameText(engine).contains("LEN3 ACC2 [0Ab]"), qPrintable(frameText(engine)));
     }
     void loneEscapeIsDeliveredAfterTheTimeout() {
@@ -629,7 +737,8 @@ Terminal {
     }
     Text { text: "ESC" + root.escapes + " UP" + root.ups }
 }
-)", QUrl());
+)",
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         QVERIFY2(object, qPrintable(component.errorString()));
         auto* terminal = qobject_cast<Terminal*>(object.get());
@@ -637,7 +746,7 @@ Terminal {
         auto* engine = terminal->engine();
         QTRY_VERIFY(frameText(engine).contains("ESC0 UP0"));
         backend->feedInput("\033");
-        QCOMPARE(terminal->property("escapes").toInt(), 0);   // held back for the window
+        QCOMPARE(terminal->property("escapes").toInt(), 0); // held back for the window
         QTRY_VERIFY(frameText(engine).contains("ESC1 UP0"));
         // The rest of a split sequence arriving inside the window wins.
         backend->feedInput("\033");
@@ -695,6 +804,7 @@ Terminal {
         plain.engine()->setLiveOutput(false);
         QVERIFY(plain.engine()->terminalOutputEnabled());
     }
+
 private:
     QHash<QByteArray, QByteArray> saved;
 };

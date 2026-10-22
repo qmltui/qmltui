@@ -196,8 +196,8 @@ private:
     int m_exitCode = -1;
     QString m_errorString;
     QString m_title;
-    Color m_foregroundColor = "white";
-    Color m_backgroundColor = "black";
+    Color m_foregroundColor = Color::fromAnsiIndex(15);
+    Color m_backgroundColor = Color::fromAnsiIndex(0);
     QList<Color> m_palette;
     int m_scrollbackLimit = 10000;
     int m_scrollOffset = 0;

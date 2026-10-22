@@ -29,6 +29,9 @@ enum class ColorDepth : uint8_t {
 | `syncOutput` | `bool` | `true` | Whether DEC private mode 2026 synchronized output is used to bracket frames. |
 | `termProgram` | `QString` | `""` | Value of `TERM_PROGRAM` when set (for example `"kitty"`, `"WezTerm"`, `"iTerm.app"`). |
 | `cellPixelSize` | `QSize` | `QSize()` | Pixel dimensions (`width × height`) of one character cell reported by `CSI 16 t`, or invalid when unknown. |
+| `defaultForegroundColor` | `Color` | `Color::Invalid` | Host terminal default foreground RGB color reported via `OSC 10`, or invalid if unreported. |
+| `defaultBackgroundColor` | `Color` | `Color::Invalid` | Host terminal default background RGB color reported via `OSC 11`, or invalid if unreported. |
+| `ansiPalette` | `std::array<Color, 16>` | 16 × `Color::Invalid` | Host terminal 16-color ANSI palette (`0`–`15`) reported via `OSC 4`, or invalid per unreported slot. |
 | `mayProbeGraphics` | `bool` | `false` | Internal hint indicating that the terminal parses APC strings without echoing probe bytes. |
 
 ## Public Methods

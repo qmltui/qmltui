@@ -47,7 +47,7 @@ signals:
     void gradientChanged();
 
 private:
-    Color m_color = "transparent";
+    Color m_color = Color::Transparent;
     uint32_t m_resolvedBackgroundColor = Color::TransparentTag;
     Border m_border;
     QPointer<Gradient> m_gradient;

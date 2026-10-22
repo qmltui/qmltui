@@ -9,7 +9,7 @@ Rectangle {
     property real from: 0.0
     property real to: 100.0
     property real stepSize: 1.0
-    property rgba textColor: "default"
+    property rgba textColor
     property bool showValue: true
     readonly property int trackWidth: Math.max(0, control.width - (control.showValue ? valueText.implicitWidth + 1 : 0))
 

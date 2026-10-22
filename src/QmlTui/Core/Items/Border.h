@@ -52,7 +52,7 @@ signals:
 private:
     Item* m_owner;
     Style m_style = None;
-    Color m_color = "default";
+    Color m_color;
 };
 
 } // namespace qmltui

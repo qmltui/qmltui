@@ -39,7 +39,7 @@ void TestCanvas::testBrailleMode() {
     canvas.setRenderMode(Canvas::RenderMode::Braille);
     canvas.setWidth(10);
     canvas.setHeight(5);
-    canvas.setColor("red");
+    canvas.setColor(Color("red"));
     canvas.setAutoClear(false);
 
     QCOMPARE(canvas.pixelWidth(), 20);
@@ -96,7 +96,7 @@ void TestCanvas::testBraillePerCellColor() {
     canvas.setRenderMode(Canvas::RenderMode::Braille);
     canvas.setWidth(4);
     canvas.setHeight(1);
-    canvas.setColor("blue");
+    canvas.setColor(Color("blue"));
     canvas.setAutoClear(false);
 
     TextGridBuffer buf;
@@ -107,12 +107,12 @@ void TestCanvas::testBraillePerCellColor() {
     paintItem(canvas, buf, 0, 0, clip);
     canvas.clear();
 
-    canvas.setPixelColor(0, 0, "red");  // cell 0: explicit ink
-    canvas.setPixel(2, 0, true);        // cell 1: canvas color
-    canvas.setPixelColor(4, 0, "red");  // cell 2: red, then...
-    canvas.setPixelColor(5, 1, "lime"); // ...the last dot drawn wins
-    canvas.setPixelColor(6, 0, "red");  // cell 3: explicit, then a plain dot
-    canvas.setPixel(7, 1, true);        // resets the cell to the canvas color
+    canvas.setPixelColor(0, 0, Color("red"));  // cell 0: explicit ink
+    canvas.setPixel(2, 0, true);               // cell 1: canvas color
+    canvas.setPixelColor(4, 0, Color("red"));  // cell 2: red, then...
+    canvas.setPixelColor(5, 1, Color("lime")); // ...the last dot drawn wins
+    canvas.setPixelColor(6, 0, Color("red"));  // cell 3: explicit, then a plain dot
+    canvas.setPixel(7, 1, true);               // resets the cell to the canvas color
 
     paintItem(canvas, buf, 0, 0, clip);
     QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u); // red
@@ -123,7 +123,7 @@ void TestCanvas::testBraillePerCellColor() {
     QCOMPARE(buf.cellAt(2, 0).character().toByteArray(), QString(QChar(0x2801 | 0x2810)).toUtf8());
 
     // Cells drawn with setPixel() keep following the canvas color; explicit ink does not.
-    canvas.setColor("yellow");
+    canvas.setColor(Color("yellow"));
     paintItem(canvas, buf, 0, 0, clip);
     QCOMPARE(Color::toArgb(buf.cellAt(1, 0).fgColor), 0xFFFFFF00u);
     QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
@@ -141,7 +141,7 @@ void TestCanvas::testBrailleAverageCellColor() {
     canvas.setCellColorMode(Canvas::CellColorMode::Average);
     canvas.setWidth(3);
     canvas.setHeight(1);
-    canvas.setColor("blue");
+    canvas.setColor(Color("blue"));
     canvas.setAutoClear(false);
 
     TextGridBuffer buf;
@@ -150,11 +150,11 @@ void TestCanvas::testBrailleAverageCellColor() {
     paintItem(canvas, buf, 0, 0, clip);
     canvas.clear();
 
-    canvas.setPixelColor(0, 0, "red"); // cell 0: red + lime -> olive-ish mean
-    canvas.setPixelColor(1, 0, "lime");
-    canvas.setPixelColor(2, 0, "red"); // cell 1: red only
-    canvas.setPixel(4, 0, true);       // cell 2: canvas blue + red -> purple
-    canvas.setPixelColor(5, 0, "red");
+    canvas.setPixelColor(0, 0, Color("red")); // cell 0: red + lime -> olive-ish mean
+    canvas.setPixelColor(1, 0, Color("lime"));
+    canvas.setPixelColor(2, 0, Color("red")); // cell 1: red only
+    canvas.setPixel(4, 0, true);              // cell 2: canvas blue + red -> purple
+    canvas.setPixelColor(5, 0, Color("red"));
 
     paintItem(canvas, buf, 0, 0, clip);
     QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFF7F7F00u);
@@ -164,17 +164,17 @@ void TestCanvas::testBrailleAverageCellColor() {
     // Switching back to LastDot drops the accumulators and restores last-write-wins.
     canvas.setCellColorMode(Canvas::CellColorMode::LastDot);
     canvas.clear();
-    canvas.setPixelColor(0, 0, "red");
-    canvas.setPixelColor(1, 0, "lime");
+    canvas.setPixelColor(0, 0, Color("red"));
+    canvas.setPixelColor(1, 0, Color("lime"));
     paintItem(canvas, buf, 0, 0, clip);
     QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFF00FF00u);
 
     // Dots in the terminal default color do not pull the average.
     canvas.setCellColorMode(Canvas::CellColorMode::Average);
-    canvas.setColor("default");
+    canvas.setColor(Color::Default);
     canvas.clear();
     canvas.setPixel(0, 0, true);
-    canvas.setPixelColor(1, 0, "red");
+    canvas.setPixelColor(1, 0, Color("red"));
     paintItem(canvas, buf, 0, 0, clip);
     QCOMPARE(Color::toArgb(buf.cellAt(0, 0).fgColor), 0xFFFF0000u);
 }
@@ -190,8 +190,8 @@ void TestCanvas::testHalfBlockMode() {
     QCOMPARE(canvas.pixelHeight(), 10);
 
     // Top pixel red, bottom pixel blue in cell (0, 0)
-    canvas.setPixelColor(0, 0, "red");  // top pixel y=0 -> cell (0,0) top
-    canvas.setPixelColor(0, 1, "blue"); // bottom pixel y=1 -> cell (0,0) bottom
+    canvas.setPixelColor(0, 0, Color("red"));  // top pixel y=0 -> cell (0,0) top
+    canvas.setPixelColor(0, 1, Color("blue")); // bottom pixel y=1 -> cell (0,0) bottom
 
     TextGridBuffer buffer;
     buffer.resize(10, 5);
@@ -223,7 +223,7 @@ void TestCanvas::testHalfBlockDefaultInk() {
     for (int x = 0; x < 3; ++x)
         QCOMPARE(buffer.cellAt(x, 0).fgColor, 0u);
 
-    canvas.setPixelColor(1, 0, "red");
+    canvas.setPixelColor(1, 0, Color("red"));
     paintItem(canvas, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QStringLiteral("▄").toUtf8());
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0u);
@@ -241,7 +241,7 @@ void TestCanvas::testHalfBlockDefaultInk() {
 
     // A transparent fill still clears to holes; only explicitly drawn ink
     // uses the terminal default foreground.
-    canvas.setFillColor("transparent");
+    canvas.setFillColor(Color::Transparent);
     canvas.setPixel(0, 0, true);
     canvas.setPixel(0, 0, false);
     buffer.clear();
@@ -272,7 +272,7 @@ void TestCanvas::testShapesOnHalfBlock() {
     rect->setWidth(4);
     rect->setHeight(4); // 4 half-block pixels high = 2 character cells high
     rect->setFill(true);
-    rect->setColor("yellow");
+    rect->setColor(Color("yellow"));
 
     TextGridBuffer buffer;
     buffer.resize(20, 10);
@@ -299,7 +299,7 @@ void TestCanvas::testAutoClear() {
     canvas.setHeight(5);
     canvas.setAutoClear(false);
 
-    canvas.setPixelColor(2, 2, "green");
+    canvas.setPixelColor(2, 2, Color("green"));
 
     TextGridBuffer buffer;
     buffer.resize(10, 5);

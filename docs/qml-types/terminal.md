@@ -50,6 +50,7 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | :--- | :--- |
 | `void copyToClipboard(string text)` | Copies text to the system clipboard using the configured clipboardMode. |
 | `void bell()` | Emits an audible or visual terminal bell (`BEL`, `\x07`) to the host terminal. |
+| `void queryColors()` | Re-queries the host terminal's default foreground (`OSC 10`), default background (`OSC 11`), and 16 ANSI palette colors (`OSC 4;0..15`), emitting `capabilitiesChanged()` as replies arrive. Also invoked automatically when the terminal reports a palette change via DEC mode `2031` (`CSI ? 997 ; 1 n` / `CSI ? 997 ; 2 n`). |
 
 ## Enumeration Terminal.Mode
 

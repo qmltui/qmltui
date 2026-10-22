@@ -64,10 +64,10 @@ private:
     double m_from = 0.0;
     double m_to = 0.0; // <= m_from means auto-scale
     bool m_filled = false;
-    Color m_color = "default";
+    Color m_color;
     uint32_t m_resolvedColor = Color::resolve(m_color, 0);
 
-    Color m_backgroundColor = "transparent";
+    Color m_backgroundColor = Color::Transparent;
     uint32_t m_resolvedBackgroundColor = 0x00000000;
 };
 

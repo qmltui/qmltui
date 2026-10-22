@@ -174,9 +174,9 @@ private:
     mutable std::vector<QString> m_links;
     mutable QByteArray m_glyphBytes;
     mutable bool m_layoutDirty = true;
-    Color m_color = "default";
+    Color m_color;
     uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
-    Color m_backgroundColor = "transparent";
+    Color m_backgroundColor = Color::Transparent;
     uint32_t m_resolvedBackgroundColor = 0x00000000;
     bool m_bold = false;
     bool m_dim = false;

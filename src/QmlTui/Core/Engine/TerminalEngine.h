@@ -155,11 +155,15 @@ public:
     void setTitle(const QString& title);
     QString title() const { return m_title; }
     static std::string titleSequence(const QString& text);
+    Q_INVOKABLE void queryColors();
     void updateBackgroundColor();
     void reapplyBackgroundColor();
     static std::string osc11Sequence(const Color& color);
     static std::string osc111Sequence();
+    static Color parseOscColorSpec(QByteArrayView value);
+    static Color parseOsc10Color(QByteArrayView payload);
     static Color parseOsc11Color(QByteArrayView payload);
+    static bool parseOsc4Color(QByteArrayView payload, int& index, Color& color);
     bool isBackgroundOsc11Active() const { return m_backgroundOsc11Active; }
     Color appliedBackgroundColor() const { return m_appliedBackgroundColor; }
     Color originalBackgroundColor() const { return m_originalBackgroundColor; }
@@ -236,6 +240,7 @@ private:
     static std::deque<ScrollbackRow> textToScrollbackRows(const QString& text);
     static ScrollbackRow trimmedRow(const TextGridBuffer& buffer, int row);
     void queryInitialBackgroundColor();
+    void queryTerminalColors(bool includeAnsiPalette);
 
     TerminalDevice m_device;
     InputDecoder m_inputDecoder;
@@ -285,9 +290,10 @@ private:
     bool m_scrollbackHistoryEnabled = false;
     std::atomic<bool> m_stopped{false};
     bool m_backgroundOsc11Active = false;
-    Color m_appliedBackgroundColor;
+    Color m_appliedBackgroundColor = Color::Invalid;
     bool m_initialBgQueried = false;
-    Color m_originalBackgroundColor;
+    bool m_ansiPaletteQueried = false;
+    Color m_originalBackgroundColor = Color::Invalid;
     std::optional<QPoint> m_hardwareCursorPosition;
     bool m_terminalProgressActive = false;
     std::unique_ptr<InputRouter> m_router;

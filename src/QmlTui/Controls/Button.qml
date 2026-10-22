@@ -20,11 +20,8 @@ AbstractButton {
 
     background: Rectangle {
         id: defaultBackground
-        color: "default"
-        border {
-            color: "default"
-            style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
-        }
+        color: QmlTui.defaultColor
+        border.style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
     }
 
     contentItem: Text {

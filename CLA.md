@@ -1,10 +1,10 @@
 # QmlTui Contributor Agreement
 
-QmlTui is offered under LGPL-3.0-only or GPL-3.0-only, with separate commercial
-terms available upon inquiry. To preserve this model, the copyright holder must
-hold rights to relicense every contribution. This agreement makes that
-possible. It is modelled on the assignment form used by other multi-licensed
-projects and is intentionally short.
+QmlTui is offered under LGPL-3.0-only, with separate commercial terms available
+upon inquiry. To preserve this model, the copyright holder must hold rights to
+relicense every contribution. This agreement makes that possible. It is
+modelled on the assignment form used by other multi-licensed projects and is
+intentionally short.
 
 **This text has not yet been reviewed by a lawyer. It must be before the
 repository accepts its first external contribution.**
@@ -25,8 +25,8 @@ agree to the following with Yosri Ayed (the "Project Owner"):
    irrevocable, worldwide, royalty-free license to use your own contribution
    for any purpose.
 3. **Open-source promise.** The Project Owner will keep releasing QmlTui,
-   including your contribution, under the LGPLv3 or GPLv3 (or a later version
-   of either, at the Project Owner's option) in addition to any other terms.
+   including your contribution, under the LGPLv3 (or a later version, at the
+   Project Owner's option) in addition to any other terms.
 4. **Your representations.** You represent that you are the author of the
    contribution, that you have the right to make this agreement (including,
    if you are employed, that your employer has waived any claim or authorised

@@ -12,7 +12,7 @@ Configure with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the examples, and add `-DQM
   ./build/examples/gallery/qmltui_gallery --list-examples   # list all demo names
   ```
 - **[`recipes/`](recipes/)**: Standalone multi-file QML components, C++ `Item` and `SyntaxHighlighter` subclasses, and C++ `QAbstractItemModel` / `QSortFilterProxyModel` integrations.
-- **[`quickstart/`](quickstart/)** and **[`quickstart_test/`](quickstart_test/)**: Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) standalone template using `FetchContent`, plus its in-tree CTest verification target.
+- **[`helloworld/`](helloworld/)**: Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) standalone template using `FetchContent` or `find_package(QmlTui)`.
 - **[`wasm/`](wasm/)**: Browser-hosted WebAssembly playground sharing the gallery demos (see [`docs/guides/webassembly.md`](../docs/guides/webassembly.md)).
 
 See [`docs/examples.md`](../docs/examples.md) for the full catalog with links to QML type reference pages and recorded GIFs.

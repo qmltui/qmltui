@@ -5,11 +5,11 @@ request.
 
 ## Licensing and the contributor agreement
 
-QmlTui is offered under LGPL-3.0-only or GPL-3.0-only, with separate commercial
-terms available upon inquiry (see [LICENSE.md](LICENSE.md)). To preserve this
-model and guarantee the open-source promise, every contribution to `src/` or
-`tests/` needs the contributor agreement in [CLA.md](CLA.md). A check on the
-pull request asks you to accept it once; later pull requests are covered.
+QmlTui is offered under LGPL-3.0-only, with separate commercial terms available
+upon inquiry (see [LICENSE.md](LICENSE.md)). To preserve this model and
+guarantee the open-source promise, every contribution to `src/` or `tests/`
+needs the contributor agreement in [CLA.md](CLA.md). A check on the pull
+request asks you to accept it once; later pull requests are covered.
 
 Contributions to `examples/`, `cmake/`, `scripts/`, and `docs/` are
 BSD-3-Clause or CC-BY-4.0 and do not need the agreement, but the same check

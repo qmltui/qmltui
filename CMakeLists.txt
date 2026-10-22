@@ -14,7 +14,7 @@ option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a va
 if(QMLTUI_COMMERCIAL_LICENSE)
     message(STATUS "QmlTui: Building under Commercial License terms.")
 else()
-    message(STATUS "QmlTui: Building under LGPLv3 / GPLv3 terms.")
+    message(STATUS "QmlTui: Building under LGPLv3 terms.")
 endif()
 
 include(GNUInstallDirs)

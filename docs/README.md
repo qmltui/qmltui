@@ -48,40 +48,64 @@ features:
 
 ## Hello, World!
 
-With `import QtQml` and `import QmlTui`, declare a bordered card and a keyboard quit handler:
+With `import QtQml` and `import QmlTui`, declare a bordered card, reactive state bindings, and keyboard handlers:
 
 ```qml
 import QtQml
 import QmlTui
 
 Terminal {
+    id: root
+    property int count: 0
+
+    title: count === 0 ? qsTr("Hello QmlTui!") : qsTr("Interactions: %1").arg(root.count)
+    color: "#0d1117"
+
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
+            console.log("Goodbye!");
             Qt.quit();
-            event.accepted = true;
+        } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+            root.count++;
+        } else if (event.key === Qt.Key_R) {
+            root.count = 0;
         }
     }
 
     Rectangle {
         anchors.centerIn: parent
-        width: 30
-        height: 4
+        width: 52
+        height: 11
+        color: "#161b22"
         border {
-            style: Border.Rounded
-            color: "cyan"
+            style: Border.Single
+            color: "#2cde85"
         }
 
         Column {
             anchors.centerIn: parent
+            spacing: 1
 
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Hello, QmlTui!"
-                color: "cyan"
+                text: qsTr("Hello, QmlTui!")
+                color: "#00ff66"
                 bold: true
             }
+
             Text {
-                text: "Press [q] or [Esc] to quit"
+                text: qsTr("QML Declarative terminal UIs")
+                color: "#2cde85"
+                dim: true
+            }
+
+            Text {
+                text: qsTr("Interactions: %1").arg(root.count)
+                color: "#c9d1d9"
+            }
+
+            Text {
+                text: qsTr("[Enter] Count  •  [R] Reset  •  [Q] Quit")
+                color: "#8b949e"
                 dim: true
             }
         }

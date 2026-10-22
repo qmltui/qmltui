@@ -194,7 +194,7 @@ must have nothing to read before shipping. Concretely:
   in each CI.
 - No contributor agreement. BSD code does not need to be relicensable.
 - One sentence in each `README.md`, after the run command: "These apps are
-  BSD-3-Clause. QmlTui itself is LGPLv3, GPLv3, or commercial; see the QmlTui
+  BSD-3-Clause. QmlTui itself is LGPLv3 (with separate commercial terms available); see the QmlTui
   repository." The apps link QmlTui through `FetchContent`, so a reader must not
   infer QmlTui's terms from the apps' license.
 - The `FetchContent` build of QmlTui inside `qmltui-apps` links the QmlTui libraries

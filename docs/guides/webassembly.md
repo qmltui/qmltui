@@ -6,11 +6,11 @@ What changes is the terminal backend, which talks to the page instead of a tty.
 
 **License notes.** Qt for WebAssembly is distributed by The Qt Company under
 the GPLv3 or a commercial Qt license, and wasm builds link Qt statically. While
-QmlTui source code is licensed under `LGPL-3.0-only OR GPL-3.0-only`, combining
-QmlTui with open-source Qt for WebAssembly results in a combined binary governed
-by the GPLv3 unless you hold a commercial license for Qt and separate
-commercial terms for QmlTui. See [LICENSE.md](../../LICENSE.md). Desktop builds
-are not affected; they link Qt dynamically under the LGPLv3.
+QmlTui source code is licensed under `LGPL-3.0-only`, combining QmlTui with
+open-source Qt for WebAssembly results in a combined binary governed by the
+GPLv3 unless you hold a commercial license for Qt and separate commercial terms
+for QmlTui. See [LICENSE.md](../../LICENSE.md). Desktop builds are not
+affected; they link Qt dynamically under the LGPLv3.
 
 ## Prerequisites
 

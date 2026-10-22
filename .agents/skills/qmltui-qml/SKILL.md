@@ -241,7 +241,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `examples/recipes/`, not library types; copy them into your module.
 
 **`import QmlTui`** (C++ in `src/QmlTui/Core/Items` and `src/QmlTui/Core/Engine`)
-`Terminal`, `Scrollback`, `Item`, `FocusScope`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
+`Terminal`, `Scrollback`, `Item`, `FocusScope`, `Popup`, `Rectangle`, `Border`, `Anchors`, `AnchorLine`,
 `Text`, `TextInput`, `TextArea`, `TableView`, `TreeView`, `ListView`, `GridView`,
 `ScrollView`, `Canvas`, `CanvasShape`, `CanvasRectangle`, `Circle`, `Line`,
 `Point`, `Polygon`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`,
@@ -257,7 +257,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 **`import QmlTui.Controls`** (QML and C++ in `src/QmlTui/Controls`)
 `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`,
 `Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `Panel`,
-`Dialog`, `Popup`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
+`Dialog`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
 no palette singleton: colours are set per item, and an inherited palette
 property is a Plan 06 section 7 proposal, not a shipped type.
 

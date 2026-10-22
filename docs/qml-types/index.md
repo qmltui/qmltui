@@ -34,6 +34,7 @@
 - [Gradient](gradient.md)
 - [GradientStop](gradientstop.md)
 - [Item](item.md)
+- [Popup](popup.md)
 - [QmlTui](qmltui.md)
 - [Rectangle](rectangle.md)
 - [rgba](rgba.md)
@@ -100,7 +101,6 @@
 
 - [Dialog](dialog.md)
 - [Panel](panel.md)
-- [Popup](popup.md)
 - [StackView](stackview.md)
 - [TabBar](tabbar.md)
 - [Toast](toast.md)

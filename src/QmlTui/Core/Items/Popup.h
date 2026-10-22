@@ -5,6 +5,7 @@
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Engine/InputScope.h>
 #include <QPointer>
+#include <QtQml/qqmlregistration.h>
 #include <cstdint>
 
 namespace qmltui {
@@ -14,15 +15,17 @@ namespace qmltui {
 //
 // Implements InputScope for modal focus trapping, background dimming, and
 // Escape / outside-click dismissal, and restores previous keyboard focus when
-// closed. Registered in QML by QmlTui.Controls (see Controls/ForeignTypes.h)
-// while living in Core so Terminal can manage popup stacking and input scopes.
+// closed.
 class QMLTUI_CORE_EXPORT Popup : public Item, public InputScope {
     Q_OBJECT
+    QML_ELEMENT
 
     Q_PROPERTY(bool modal READ modal WRITE setModal NOTIFY modalChanged)
-    Q_PROPERTY(bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)
+    Q_PROPERTY(
+        bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)
     Q_PROPERTY(int closePolicy READ closePolicy WRITE setClosePolicy NOTIFY closePolicyChanged)
-    Q_PROPERTY(qmltui::Item* initialFocusItem READ initialFocusItem WRITE setInitialFocusItem NOTIFY initialFocusItemChanged)
+    Q_PROPERTY(qmltui::Item* initialFocusItem READ initialFocusItem WRITE setInitialFocusItem NOTIFY
+                   initialFocusItemChanged)
     // Logical opener Item used to nest popups (parentPopup) when the popup is
     // parented directly to the root Terminal.
     Q_PROPERTY(qmltui::Item* owner READ owner WRITE setOwner NOTIFY ownerChanged)
@@ -37,7 +40,7 @@ public:
     Q_DECLARE_FLAGS(ClosePolicies, ClosePolicy)
     Q_FLAG(ClosePolicies)
 
-    explicit Popup(QObject *parent = nullptr);
+    explicit Popup(QObject* parent = nullptr);
     ~Popup() override;
 
     bool modal() const { return m_modal; }
@@ -48,14 +51,14 @@ public:
 
     int closePolicy() const { return m_closePolicy; }
     void setClosePolicy(int policy);
-    Item *initialFocusItem() const { return m_initialFocusItem; }
-    void setInitialFocusItem(Item *item);
-    Item *owner() const { return m_owner; }
-    void setOwner(Item *owner);
-    Popup *parentPopup() const;
+    Item* initialFocusItem() const { return m_initialFocusItem; }
+    void setInitialFocusItem(Item* item);
+    Item* owner() const { return m_owner; }
+    void setOwner(Item* owner);
+    Popup* parentPopup() const;
     quint64 openSerial() const { return m_openSerial; }
     void setOpenSerial(quint64 serial) { m_openSerial = serial; }
-    bool isDescendantOfPopup(const Popup *popup) const;
+    bool isDescendantOfPopup(const Popup* popup) const;
 
     Q_INVOKABLE void open();
     Q_INVOKABLE void close();
@@ -63,14 +66,17 @@ public:
     Q_INVOKABLE void reject();
 
     void setVisible(bool visible) override;
-    void setParentItem(Item *parentItem) override;
+    void setParentItem(Item* parentItem) override;
 
     // InputScope interface
     bool isScopeVisible() const override { return visible(); }
     bool isScopeModal() const override { return modal(); }
     bool closeOnOutsideClick() const override { return (closePolicy() & CloseOnOutsideClick) != 0; }
     bool closeOnEscape() const override { return (closePolicy() & CloseOnEscape) != 0; }
-    bool rejectScope() override { reject(); return true; }
+    bool rejectScope() override {
+        reject();
+        return true;
+    }
     Item* asItem() override { return this; }
     const Item* asItem() const override { return this; }
     bool isDescendantOfScope(const InputScope* other) const override;

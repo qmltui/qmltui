@@ -42,6 +42,7 @@ private slots:
     void testUnpaintedPopupLeavesBackgroundIntact();
     void testTransparentInteriorClickAndOutsideDismissal();
     void testNestedOwnershipStackingAndFocusRestoration();
+    void testPopupQmlImportFromCoreModule();
 };
 
 void TestPopup::testPopupRegistration() {
@@ -523,6 +524,48 @@ void TestPopup::testNestedOwnershipStackingAndFocusRestoration() {
 
     parentPopup.close();
     QCOMPARE(terminal.focusedItem(), &bgField);
+}
+
+void TestPopup::testPopupQmlImportFromCoreModule() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QmlTui
+        Terminal {
+            width: 20; height: 6
+            Popup {
+                id: overlay
+                objectName: "corePopup"
+                x: 2; y: 1; width: 10; height: 3
+                closePolicy: Popup.CloseOnEscape
+                Rectangle {
+                    anchors.fill: parent
+                    color: "#223344"
+                    border.style: Border.Single
+                    Text {
+                        x: 1; y: 1
+                        text: "CORE POP"
+                    }
+                }
+            }
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> object(component.create());
+    auto* terminal = qobject_cast<Terminal*>(object.get());
+    QVERIFY(terminal);
+    terminal->engine()->setTestViewportSize(QSize(20, 6));
+    auto* popup = terminal->findChild<Popup*>(QStringLiteral("corePopup"));
+    QVERIFY(popup);
+    popup->open();
+    QVERIFY(QMetaObject::invokeMethod(terminal->engine(), "renderFrame", Qt::DirectConnection));
+    const auto frame = terminal->engine()->currentFrame();
+    QVERIFY(frame);
+    QCOMPARE(frame->cellAt(3, 2).character(), QStringLiteral("C"));
+    QCOMPARE(frame->cellAt(10, 2).character(), QStringLiteral("P"));
 }
 
 QTEST_MAIN(TestPopup)

@@ -39,12 +39,12 @@ QmlTui is split into a standalone core library (`qmltui::core`) and optional com
 
 | QML Import | CMake Target | Dependencies | Contents |
 | :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal`, `Scrollback`, `Item`, `FocusScope`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `ListView`, `TableView`, `TreeView`, `GridView`, `ScrollView`, `Canvas` and shapes, `Repeater`, `Loader`, `MouseArea`, `Shortcut`, `Keys`, `State`, `Transition`, `PropertyChanges`, animations, `Clipboard`, `terminalCapabilities`, and `Behavior` / `StateGroup` (when `QMLTUI_ENABLE_PRIVATE_QT=ON`). |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Popup`, `Toast`, `ToolTip`. |
+| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal`, `Scrollback`, `Item`, `FocusScope`, `Popup`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `ListView`, `TableView`, `TreeView`, `GridView`, `ScrollView`, `Canvas` and shapes, `Repeater`, `Loader`, `MouseArea`, `Shortcut`, `Keys`, `State`, `Transition`, `PropertyChanges`, animations, `Clipboard`, `terminalCapabilities`, and `Behavior` / `StateGroup` (when `QMLTUI_ENABLE_PRIVATE_QT=ON`). |
+| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Toast`, `ToolTip`. |
 | `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | `Image` and `AnimatedSprite` (`-DQMLTUI_ENABLE_IMAGE=ON`). |
 | `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | `PtyView` embedded Unix pseudo-terminal on Linux and macOS (`-DQMLTUI_ENABLE_PTY_VIEW=ON`). |
 
-`QmlTui.Controls` only admits controls that need engine knowledge an application cannot reproduce in QML (such as `Popup` overlay stacking or grapheme measurement) or that are standard across terminal toolkits. Domain-specific widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters) live as copyable recipes under [`examples/recipes/`](../../examples/recipes/).
+`QmlTui.Controls` only admits controls that need engine knowledge an application cannot reproduce in QML (such as `ToolTip` overlay positioning or grapheme measurement) or that are standard across terminal toolkits. Domain-specific widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters) live as copyable recipes under [`examples/recipes/`](../../examples/recipes/).
 
 Because `qmltui::core` includes `Rectangle`, `Text`, `TextInput`, `MouseArea`, `Keys`, and the layout containers, an application can link only `qmltui::core` and define its own controls in QML:
 

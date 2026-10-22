@@ -2,7 +2,6 @@ qt_add_qml_module(QmlTuiControls
     URI QmlTui.Controls
     OUTPUT_TARGETS qmltui_controls_output_targets
     SOURCES
-        ForeignTypes.h
         Sparkline.h
         Sparkline.cpp
         TabBar.h

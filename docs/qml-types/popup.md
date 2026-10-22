@@ -1,11 +1,11 @@
 ---
 title: Popup
 kind: qml
-import: QmlTui.Controls
+import: QmlTui
 since: "0.4"
 inherits: Item
 cpp: qmltui::Popup
-category: overlays and navigation
+category: core
 summary: An unpainted item drawn above all ordinary items that can trap input, dim the background and restore focus when closed.
 ---
 
@@ -15,7 +15,7 @@ An unpainted item drawn above all ordinary items that can trap input, dim the ba
 
 | | |
 | :--- | :--- |
-| **Import Statement** | `import QmlTui.Controls` |
+| **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 

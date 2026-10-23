@@ -126,9 +126,8 @@ See [Getting Started](docs/getting-started.md) or copy [`examples/helloworld/`](
 
 ## License
 
-QmlTui is available under **LGPL-3.0-only**. Examples and the starter template
-are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See
-[LICENSE.md](LICENSE.md).
+QmlTui is available under the **LGPLv3**. Examples and the starter template are
+**BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
 
 Separate commercial terms are available upon inquiry for organizations unable
 to meet those obligations. Contact through the project repository at

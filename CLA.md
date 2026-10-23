@@ -1,6 +1,6 @@
 # QmlTui Contributor Agreement
 
-QmlTui is offered under LGPL-3.0-only, with separate commercial terms available
+QmlTui is offered under the LGPLv3, with separate commercial terms available
 upon inquiry. To preserve this model, the copyright holder must hold rights to
 relicense every contribution. This agreement makes that possible. It is
 modelled on the assignment form used by other multi-licensed projects and is

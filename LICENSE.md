@@ -1,15 +1,15 @@
 # Licensing
 
-QmlTui is available under the **GNU Lesser General Public License v3**
-(`LGPL-3.0-only`). Examples, the starter template, and the build glue are
-**BSD-3-Clause** so they can be copied into your own project without conditions.
-Documentation is **CC-BY-4.0**.
+QmlTui is available under the **GNU Lesser General Public License v3 (LGPLv3)**.
+Examples, the starter template, and the build glue are **BSD-3-Clause** so they
+can be copied into your own project without conditions. Documentation is
+**CC-BY-4.0**.
 
 The license of a file is decided by its path. There are no per-file headers;
 the machine-readable map is [`REUSE.toml`](REUSE.toml) and the full license
 texts are in [`LICENSES/`](LICENSES/).
 
-| Path | License |
+| Path | License (SPDX) |
 | :--- | :--- |
 | `src/` (Core, Controls, Extras, Canvas, Image, PtyView, Runner), `tests/`, and `tools/` | `LGPL-3.0-only` |
 | `examples/` | `BSD-3-Clause` |
@@ -19,11 +19,11 @@ texts are in [`LICENSES/`](LICENSES/).
 
 ## Open-Source and Commercial Terms
 
-Under **LGPL-3.0-only**, you may link QmlTui as shared libraries (or provide
-relinking mechanisms for static binaries) while keeping your application code
-under your own terms, provided modifications to QmlTui itself remain available
-under LGPLv3. Because LGPLv3 is a set of additional permissions on top of
-GPLv3, you may also combine QmlTui with GPLv3 works under the terms of GPLv3.
+Under **LGPLv3**, you may link QmlTui as shared libraries (or provide relinking
+mechanisms for static binaries) while keeping your application code under your
+own terms, provided modifications to QmlTui itself remain available under
+LGPLv3. Because LGPLv3 is a set of additional permissions on top of GPLv3, you
+may also combine QmlTui with GPLv3 works under the terms of GPLv3.
 
 Separate commercial terms are available upon inquiry for organizations unable to
 meet those obligations. Contact the copyright holder through the project
@@ -35,7 +35,7 @@ Qt and third-party dependencies remain subject to their own licenses (see
 [`THIRD-PARTY.md`](THIRD-PARTY.md) and <https://www.qt.io/licensing>).
 
 When building for WebAssembly, open-source Qt is available under GPLv3 or
-commercial terms only. While QmlTui's source remains `LGPL-3.0-only`, linking
+commercial terms only. While QmlTui's source remains under LGPLv3, linking
 against open-source Qt for WebAssembly produces a combined binary subject to
 the GPLv3.
 

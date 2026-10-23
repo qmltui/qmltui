@@ -5,7 +5,7 @@ request.
 
 ## Licensing and the contributor agreement
 
-QmlTui is offered under LGPL-3.0-only, with separate commercial terms available
+QmlTui is offered under the LGPLv3, with separate commercial terms available
 upon inquiry (see [LICENSE.md](LICENSE.md)). To preserve this model and
 guarantee the open-source promise, every contribution to `src/` or `tests/`
 needs the contributor agreement in [CLA.md](CLA.md). A check on the pull

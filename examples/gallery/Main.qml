@@ -6,8 +6,8 @@ import QmlTui.Controls
 // QmlTui Gallery: Searchable Component GridView & Live Editable Code Playground.
 // Screen 1: Full-width Panel with a GridView of component preview tiles and an
 //           on-demand search input in the Panel's titleTrailing slot (/ or click).
-// Screen 2: Side-by-side split view with the Gallery-owned Example container
-//           Panel on the left and a live-editable QML Code Panel on the right
+// Screen 2: Full-width Gallery-owned Example container Panel by default, with an
+//           on-demand side-by-side live-editable QML Code Panel on the right (F2)
 //           that reloads the example 500ms after typing stops.
 Terminal {
     id: root
@@ -27,7 +27,7 @@ Terminal {
     property string searchQuery: ""
     property int currentIndex: 0
     property int openIndex: -1
-    property bool fullscreenStage: false
+    property bool fullscreenStage: true
 
     // Live example & editable code state
     property Item liveExampleItem: null
@@ -714,6 +714,8 @@ Terminal {
     Keys.onPressed: event => {
         if (event.key === Qt.Key_F2 && !standalone) {
             fullscreenStage = !fullscreenStage;
+            if (fullscreenStage && showingDemo && codeEditor.activeFocus)
+                focusExample(liveExampleItem);
             event.accepted = true;
             return;
         }
@@ -724,10 +726,14 @@ Terminal {
                 return;
             }
             if (event.key === Qt.Key_F6 && !standalone) {
-                if (codeEditor.activeFocus)
-                    focusExample(liveExampleItem);
-                else
+                if (fullscreenStage) {
+                    fullscreenStage = false;
                     codeEditor.focus = true;
+                } else if (codeEditor.activeFocus) {
+                    focusExample(liveExampleItem);
+                } else {
+                    codeEditor.focus = true;
+                }
                 event.accepted = true;
                 return;
             }
@@ -1131,7 +1137,7 @@ Terminal {
                 color: root.mutedColor
             }
             footerTrailing: Text {
-                text: "Enter ▸ Open Example & Code"
+                text: "Enter ▸ Open Example"
                 color: root.brandPrimary
             }
 

@@ -10,15 +10,17 @@ user-facing type in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and
   badge, glyph preview content, and description blurb. Press `/` or click
   `/ Search` on the `Panel` top border to reveal and focus the inline search
   `TextInput` and filter components in real time.
-- **Gallery-Owned Example Container & Live Editable Code Panel**: Press `Enter`,
-  `Space`, or click a tile to open the side-by-side split view:
+- **Gallery-Owned Example Container & On-Demand Live Editable Code Panel**: Press
+  `Enter`, `Space`, or click a tile to open the full-width Example container
+  `Panel` hosting the live interactive component example. Press `F2` to toggle
+  the side-by-side split view with the editable QML Code Panel on the right:
   - **Left Pane**: The Gallery-owned container `Panel` hosting the live
     interactive component example.
-  - **Right Pane**: An editable `TextArea` displaying the QML source of the
+  - **Right Pane** (`F2`): An editable `TextArea` displaying the QML source of the
     active example with QML syntax highlighting. When you stop typing for
     `500 ms`, the Gallery automatically reloads the live preview from your
-    edited QML source (`F6` toggles focus between preview and code; `F5` resets
-    the source).
+    edited QML source (`F2` toggles the code pane; `F6` toggles focus between
+    preview and code; `F5` resets the source).
 
 ## Command-Line Options
 
@@ -42,9 +44,10 @@ user-facing type in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and
 - `examples/*.qml`: minimalistic, representative, commented QML examples focused
   solely on the target component (no outer container `Panel` or boilerplate).
 - `Main.qml`: the Gallery shell hosting the searchable `GridView` (with the
-  on-demand `Panel.titleTrailing` search input) and the split `[Example Panel |
-  Editable Code Panel]` view that compiles and reloads edited QML via
-  `Qt.createQmlObject` after a `500 ms` debounce timeout.
+  on-demand `Panel.titleTrailing` search input) and the example stage with an
+  on-demand split `[Example Panel | Editable Code Panel]` view (`F2`) that
+  compiles and reloads edited QML via `Qt.createQmlObject` after a `500 ms`
+  debounce timeout.
 - `scenarios/*.js`: deterministic `Runner` scenarios for each component example
   in `examples/*.qml`, used for both smoke verification and automated
   `.cast` / `.gif` recording.

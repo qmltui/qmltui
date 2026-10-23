@@ -1229,9 +1229,16 @@
 <path d="M597.0,525.0 H601.5 M601.5,525.0 H606.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
 <path d="M606.0,525.0 H610.5 M610.5,525.0 H615.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
 <path d="M615.0,525.0 H619.5 M619.5,525.0 H624.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
-<text x="633" y="530" fill="#2cde85" xml:space="preserve">Enter </text>
-<text x="687" y="530" fill="#2cde85">▸</text>
-<text x="705" y="530" fill="#2cde85" xml:space="preserve">Open Example &amp; Code</text>
+<path d="M624.0,525.0 H628.5 M628.5,525.0 H633.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M633.0,525.0 H637.5 M637.5,525.0 H642.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M642.0,525.0 H646.5 M646.5,525.0 H651.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M651.0,525.0 H655.5 M655.5,525.0 H660.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M660.0,525.0 H664.5 M664.5,525.0 H669.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M669.0,525.0 H673.5 M673.5,525.0 H678.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<path d="M678.0,525.0 H682.5 M682.5,525.0 H687.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
+<text x="696" y="530" fill="#2cde85" xml:space="preserve">Enter </text>
+<text x="750" y="530" fill="#2cde85">▸</text>
+<text x="768" y="530" fill="#2cde85" xml:space="preserve">Open Example</text>
 <path d="M885.0,525.0 H889.5 M889.5,525.0 H894.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
 <path d="M894.0,525.0 H898.5 M898.5,516.0 V525.0" fill="none" stroke="#2cde85" stroke-width="1.35" stroke-linecap="square"/>
 <text x="39" y="548" fill="#c9d1d9" font-weight="700">↑</text>

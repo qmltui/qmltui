@@ -1,7 +1,7 @@
 # Color
 
 `qmltui::Color` is QmlTui's QtGui-free public color value. It is available in C++
-and as the constructible QML value type `rgba`; QML string assignments to QmlTui
+and as the constructible QML value type `color`; QML string assignments to QmlTui
 color properties continue to work.
 
 A default-constructed `Color()` (or `Color::Default` / `Color::defaultColor()`)
@@ -72,22 +72,23 @@ of a hard-coded color. `Popup` itself is an unpainted `Item` container; compose 
 
 `Color::isDefault()` and `Color::isTransparent()` distinguish the two. In C++,
 prefer `Color::Default` (or `Color()`) and `Color::Transparent`; in QML,
-`QmlTui.defaultColor` and `QmlTui.transparent` provide pre-constructed `rgba`
+`QmlTui.defaultColor` and `QmlTui.transparent` provide pre-constructed `color`
 constants alongside `"default"` and `"transparent"`. Transparency is an instruction
 to the painter rather than a color, so it has no representation in a cell:
 `Color::paintedArgb32()`, and every path that writes a cell, turns it into the
 terminal default.
 
-Use `QmlTui.rgba(red, green, blue, alpha)` in QML to construct a color from
-normalized channels, or `QmlTui.ansi(index)` for ANSI palette slot `0` through `15`.
-Finite channel values are clamped to `0.0` through `1.0`.
+Use `QmlTui.rgba(red, green, blue, alpha = 1.0)` in QML to construct a color from
+normalized channels, `QmlTui.color(name)` to parse a string, or `QmlTui.ansi(index)`
+for ANSI palette slot `0` through `15`. Finite channel values are clamped to `0.0`
+through `1.0`.
 
 ```qml
 import QtQml
 import QmlTui
 
 QtObject {
-    property rgba accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
+    property color accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
 }
 ```
 

@@ -24,8 +24,8 @@ A modal, centred message box with a title, a message and accept and reject butto
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `background` | `Rectangle` |  | Read-only. Holds the background rectangle composed behind the dialog content. Customize `background.color`, `background.border` and `background.gradient`. |
-| `textColor` | `rgba` | `"default"` | Holds the terminal colour of the message text, where `"default"` is the terminal's own foreground colour. |
-| `titleColor` | `rgba` |  | Holds the terminal colour of the bold title line; it follows `textColor` unless set explicitly. |
+| `textColor` | `color` | `"default"` | Holds the terminal colour of the message text, where `"default"` is the terminal's own foreground colour. |
+| `titleColor` | `color` |  | Holds the terminal colour of the bold title line; it follows `textColor` unless set explicitly. |
 | `title` | `string` | `""` | Holds the bold heading drawn on the first content row of the dialog. |
 | `message` | `string` | `""` | Holds the single-line body text drawn below the title. |
 | `acceptText` | `string` | `"OK"` | Holds the label of the accept button, which calls `accept()` when activated. |

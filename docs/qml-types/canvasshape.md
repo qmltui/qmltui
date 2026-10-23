@@ -24,7 +24,7 @@ Abstract base class for 2D geometric shapes drawn on a Canvas. [More...](#detail
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` |  | Holds the color used to draw the shape. If not set, the parent Canvas color is used. |
+| `color` | `color` |  | Holds the color used to draw the shape. If not set, the parent Canvas color is used. |
 
 ## Detailed Description
 

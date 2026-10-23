@@ -33,7 +33,7 @@ The interaction template every button-like control is built on: text, `pressed` 
 | `highlighted` | `bool` | `false` | Whether the default `contentItem` draws its label bold as a visual emphasis, independent of focus and hover. |
 | `hoverEnabled` | `bool` | `false` | Whether the control tracks the pointer and exposes `hovered`; off by default because it enables any-motion mouse reporting for the whole application, and inert while [Terminal](terminal.md)`.mouseReporting` is false. |
 | `hovered` | `alias` |  | Read-only. True while `hoverEnabled` is set and the pointer is over the control; always false on terminals without motion reporting. |
-| `textColor` | `rgba` | `"default"` | Holds the terminal colour the default `contentItem` uses for its label, where `"default"` is the terminal's own foreground colour. |
+| `textColor` | `color` | `"default"` | Holds the terminal colour the default `contentItem` uses for its label, where `"default"` is the terminal's own foreground colour. |
 | `padding` | `int` | `0` | Holds the default for the four directional paddings, in cells. |
 | `topPadding` | `int` | `padding` | Holds the rows between the top edge and `contentItem`. |
 | `bottomPadding` | `int` | `padding` | Holds the rows between `contentItem` and the bottom edge. |

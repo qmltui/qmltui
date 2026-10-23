@@ -61,7 +61,7 @@ A border occupies 1 cell on each edge: a 10×5 bordered `Rectangle` has an 8×3 
 
 QmlTui does not use `QColor` or a global theme singleton (such as `Material` or `Palette`):
 
-- Colors use `qmltui::Color` (`rgba` in QML). Items and controls default to `"default"` (the host terminal's foreground and background).
+- Colors use `qmltui::Color` (`color` in QML). Items and controls default to `"default"` (the host terminal's foreground and background).
 - Named ANSI colors (`"cyan"`, `"red"`, `"yellow"`, `"gray"`, etc.) emit palette SGR indices so the user's terminal theme controls their appearance.
 - Hex strings (`"#2cde85"`) and `QmlTui.rgba(r, g, b, a)` specify 24-bit RGB colors, which QmlTui quantizes automatically when running on 256-color or 16-color terminals.
 - Shared styling is expressed with QML property bindings and reusable QML components; see [Styling and Colors](styling-and-colors.md).
@@ -122,5 +122,5 @@ ListView {
 | `Item { width: 100.0 }` | `Item { width: 10 }` | Integer character cells |
 | `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | 1-cell box-drawing border |
 | `font.pixelSize: 14` | `bold`, `dim`, `italic`, `underline` | Terminal controls glyph size; use SGR attributes |
-| `Qt.rgba(...)` / `QColor` | `QmlTui.rgba(...)` / `"#rrggbb"` / `"cyan"` | `qmltui::Color` (`rgba` value type) |
+| `Qt.rgba(...)` / `QColor` | `QmlTui.rgba(...)` / `"#rrggbb"` / `"cyan"` | `qmltui::Color` (`color` value type) |
 | Window close button | Root `Keys.onPressed` / `Shortcut` | Explicit keyboard quit path required |

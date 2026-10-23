@@ -30,15 +30,15 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `currentColumn` | `int` |  | Holds the index of the currently active column. |
 | `alternatingRows` | `bool` |  | Whether alternating rows use alternatingRowBackgroundColor. |
 | `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
-| `headerColor` | `rgba` |  | Holds the foreground text color used for column headers. |
-| `headerBackgroundColor` | `rgba` |  | Holds the background color used for column headers. |
-| `selectionColor` | `rgba` |  | Holds the foreground text color for the selected row. |
+| `headerColor` | `color` |  | Holds the foreground text color used for column headers. |
+| `headerBackgroundColor` | `color` |  | Holds the background color used for column headers. |
+| `selectionColor` | `color` |  | Holds the foreground text color for the selected row. |
 | `selectionKeepsCellColors` | `bool` | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
-| `selectionBackgroundColor` | `rgba` |  | Holds the background highlight color for the selected row. |
-| `textColor` | `rgba` |  | Holds the default text color for data cells. |
-| `rowBackgroundColor` | `rgba` |  | Holds the default background color for table rows. |
-| `alternatingRowBackgroundColor` | `rgba` |  | Holds the background color for alternating table rows. |
-| `gridColor` | `rgba` |  | Color used for borders and grid lines; falls back to `textColor`. |
+| `selectionBackgroundColor` | `color` |  | Holds the background highlight color for the selected row. |
+| `textColor` | `color` |  | Holds the default text color for data cells. |
+| `rowBackgroundColor` | `color` |  | Holds the default background color for table rows. |
+| `alternatingRowBackgroundColor` | `color` |  | Holds the background color for alternating table rows. |
+| `gridColor` | `color` |  | Color used for borders and grid lines; falls back to `textColor`. |
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |

@@ -2,6 +2,10 @@
 
 namespace qmltui {
 
+Color QmlTuiGlobal::color(const QString& value) const {
+    return Color::fromString(value);
+}
+
 Color QmlTuiGlobal::rgba(qreal red, qreal green, qreal blue, qreal alpha) const {
     return Color::fromRgba(red, green, blue, alpha);
 }

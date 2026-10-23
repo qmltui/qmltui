@@ -1,15 +1,16 @@
 # Styling and colors
 
 
-QmlTui provides its own QtGui-free `rgba` value type. Use the `QmlTui` singleton
-to construct a value from normalized red, green, blue, and alpha channels:
+QmlTui provides its own QtGui-free `color` value type. Use string literals or the
+`QmlTui` singleton to construct a value from normalized red, green, blue, and
+alpha channels:
 
 ```qml
 import QtQml
 import QmlTui
 
 Terminal {
-    property rgba accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
+    property color accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
     Text { text: "Custom color"; color: parent.accent }
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) { Qt.quit(); event.accepted = true }
@@ -17,10 +18,11 @@ Terminal {
 }
 ```
 
-This property contains a `qmltui::Color`, not a `QColor`. The built-in QML
-`color` type and `Qt.rgba()` belong to QtGui and are unavailable in a
-QtCore/QtQml-only QmlTui application. String literals remain supported for QmlTui
-properties whose declared C++ type is `qmltui::Color`.
+This property contains a `qmltui::Color`, not a `QColor`. Because `QtQuick` is not
+imported in a QtCore/QtQml-only QmlTui application, `property color` resolves
+directly to `qmltui::Color`, and `QmlTui.rgba()` / `QmlTui.color()` replace
+`Qt.rgba()` / `Qt.color()`. String literals remain supported for any `color`
+property.
 
 Two kinds of string are accepted, and they behave differently on screen:
 
@@ -32,15 +34,15 @@ Two kinds of string are accepted, and they behave differently on screen:
   are palette indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
   depth, so the user's terminal theme decides how they look. Other CSS names (`orange`, `steelblue`,
   ...) are literal RGB.
-- `QmlTui.defaultColor` (or `"default"`, and the initial value of a default-constructed `rgba` property) resets to the terminal's default foreground or background via SGR 39/49. When used as a background (for example on a `Dialog`), it paints opaque cells with the terminal's default background color, occluding underlying content.
+- `QmlTui.defaultColor` (or `"default"`, and the initial value of a default-constructed `color` property) resets to the terminal's default foreground or background via SGR 39/49. When used as a background (for example on a `Dialog`), it paints opaque cells with the terminal's default background color, occluding underlying content.
 - `QmlTui.transparent` (or `"transparent"`) leaves item background cells unpainted so the surface underneath remains visible. On a `Canvas`, `setPixelColor(x, y, "transparent")` paints a set pixel in the terminal's default ink, not a hole; erase a pixel with `setPixel(x, y, false)` or the whole surface with `clear()`.
 
 ### Inspecting the terminal's actual RGB colors
 
 While `QmlTui.defaultColor` and `QmlTui.ansi(0..15)` are interpreted by the terminal emulator at render time via SGR 39/49 and SGR 30–37/90–97, interactive sessions also query the host terminal's actual RGB values (`OSC 10`, `OSC 11`, and `OSC 4;0..15`) during capability negotiation and expose them on [`Terminal.capabilities`](../qml-types/terminalcapabilities.md):
 
-- `terminal.capabilities.defaultForegroundColor` (`rgba`, `.valid === true` once reported)
-- `terminal.capabilities.defaultBackgroundColor` (`rgba`, `.valid === true` once reported)
+- `terminal.capabilities.defaultForegroundColor` (`color`, `.valid === true` once reported)
+- `terminal.capabilities.defaultBackgroundColor` (`color`, `.valid === true` once reported)
 - `terminal.capabilities.ansiColor(index)` and `terminal.capabilities.ansiPalette` (`0`–`15`)
 
 ## Component styling

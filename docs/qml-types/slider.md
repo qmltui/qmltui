@@ -27,7 +27,7 @@ A one-row horizontal slider that selects a numeric value with the Left and Right
 | `from` | `real` | `0.0` | Holds the value at the left end of the track. |
 | `to` | `real` | `100.0` | Holds the value at the right end of the track. |
 | `stepSize` | `real` | `1.0` | Holds the amount added to or subtracted from `value` by the Right and Left keys, and the grid a mouse click snaps to. |
-| `textColor` | `rgba` | `"default"` | Holds the terminal colour of the track, handle and value readout, where `"default"` is the terminal's own foreground colour. |
+| `textColor` | `color` | `"default"` | Holds the terminal colour of the track, handle and value readout, where `"default"` is the terminal's own foreground colour. |
 | `showValue` | `bool` | `true` | Holds whether the rounded value is drawn as `[N]` at the right edge, taking cells away from the track. |
 | `trackWidth` | `int` |  | Read-only. Holds the number of cells available to the track: `width` minus the readout width and one separating cell when `showValue` is true, never negative. |
 

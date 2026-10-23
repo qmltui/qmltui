@@ -128,7 +128,7 @@ export function createQmlCompletion(index) {
       if (enums[ptype]) for (const v of enums[ptype]) add(`${enclosing}.${v}`, 'enum', ptype, 2);
       for (const [owner, t] of Object.entries(types)) if (t.enums[ptype] && !chain(enclosing).includes(t)) for (const v of t.enums[ptype]) add(`${owner}.${v}`, 'enum', ptype, 1);
       if (ptype === 'bool') { add('true', 'keyword', 'bool', 2); add('false', 'keyword', 'bool', 2); }
-      if (ptype === 'rgba' || ptype === 'color') for (const c of COLOR_NAMES) add(c.startsWith('"') ? c : `"${c}"`, 'constant', 'color', 1);
+      if (ptype === 'color') for (const c of COLOR_NAMES) add(c.startsWith('"') ? c : `"${c}"`, 'constant', 'color', 1);
       for (const [id, t] of Object.entries(ids)) add(id, 'variable', t);
       add('parent', 'variable', 'Item');
       for (const s of singletons) add(s, 'namespace', 'singleton');

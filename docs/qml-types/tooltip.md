@@ -24,8 +24,8 @@ An attached property that shows a short text box next to an item while it is hov
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` | `"default"` | Holds the background colour of the tip box, where `"default"` is the terminal's own background. |
-| `textColor` | `rgba` | `"default"` | Holds the colour of the bold tip text, where `"default"` is the terminal's own foreground. |
+| `color` | `color` | `"default"` | Holds the background colour of the tip box, where `"default"` is the terminal's own background. |
+| `textColor` | `color` | `"default"` | Holds the colour of the bold tip text, where `"default"` is the terminal's own foreground. |
 | `text` | `string` | `""` | Holds the text to show; an empty string hides the tip and stops the item from requesting mouse-motion events. |
 | `visible` | `bool` | `false` | Holds whether the tip box is currently shown; setting it true shows the tip immediately and keeps it pinned, setting it false hides it and returns to automatic behaviour. |
 | `delay` | `int` | `700` | Holds the milliseconds between the item becoming hovered or focused and the tip appearing; negative values are clamped to 0. |

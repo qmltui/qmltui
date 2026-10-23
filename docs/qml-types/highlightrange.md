@@ -26,8 +26,8 @@ A character range with formatting styles for TextArea highlighting. [More...](#d
 | :--- | :--- | :--- | :--- |
 | `start` | `int` | `0` | Holds the zero-based UTF-16 character offset in document text. |
 | `length` | `int` | `0` | Holds the length of the highlighted range in UTF-16 code units. |
-| `color` | `rgba` |  | Holds the foreground text color override for this range. |
-| `backgroundColor` | `rgba` |  | Holds the background cell color override for this range. |
+| `color` | `color` |  | Holds the foreground text color override for this range. |
+| `backgroundColor` | `color` |  | Holds the background cell color override for this range. |
 | `bold` | `bool` |  | Whether this range applies bold text formatting. |
 | `dim` | `bool` |  | Whether this range applies dim / faint text formatting. |
 | `italic` | `bool` |  | Whether this range applies italic text formatting. |

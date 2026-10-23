@@ -25,7 +25,7 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | :--- | :--- | :--- | :--- |
 | `capabilities` | `terminalCapabilities` |  | Read-only. Holds detected terminal capabilities such as Kitty graphics and synchronized output support. |
 | `title` | `string` | `""` | Holds the terminal window title bar string set via OSC 2 escape sequence. |
-| `color` | `rgba` | `"transparent"` | Holds the root background color of the terminal screen. |
+| `color` | `color` | `"transparent"` | Holds the root background color of the terminal screen. |
 | `mode` | `Mode` | `Terminal.AltScreen` | Holds the display mode: `Terminal.AltScreen` (alternate screen) or `Terminal.Inline` (normal buffer). |
 | `clipboardMode` | `ClipboardMode` | `Terminal.Osc52` | Holds the clipboard integration mode: `Terminal.Osc52` or `Terminal.Disabled`. |
 | `mouseReporting` | `bool` |  | Whether the application takes the mouse from the terminal: on in `AltScreen`, off in `Inline` unless set explicitly, in which case the value sticks across mode changes. Off means no clicks, drags, wheel or hover reach any item and the terminal keeps selection and scrollback; hover requests (`MouseArea.hoverEnabled`, `ToolTip`) only turn on motion reporting while this is true. |

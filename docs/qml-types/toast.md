@@ -23,12 +23,12 @@ A host item that stacks transient, timed notification boxes in one of its corner
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` | `"default"` | Holds the background colour of every toast box, where `"default"` is the terminal's own background. |
-| `textColor` | `rgba` | `"default"` | Holds the colour of the message line, where `"default"` is the terminal's own foreground. |
-| `infoColor` | `rgba` | `"default"` | Holds the border and title colour of toasts of type `"info"`, and of any unrecognised type. |
-| `successColor` | `rgba` | `"default"` | Holds the border and title colour of toasts of type `"success"`. |
-| `warningColor` | `rgba` | `"default"` | Holds the border and title colour of toasts of type `"warning"`. |
-| `errorColor` | `rgba` | `"default"` | Holds the border and title colour of toasts of type `"error"`. |
+| `color` | `color` | `"default"` | Holds the background colour of every toast box, where `"default"` is the terminal's own background. |
+| `textColor` | `color` | `"default"` | Holds the colour of the message line, where `"default"` is the terminal's own foreground. |
+| `infoColor` | `color` | `"default"` | Holds the border and title colour of toasts of type `"info"`, and of any unrecognised type. |
+| `successColor` | `color` | `"default"` | Holds the border and title colour of toasts of type `"success"`. |
+| `warningColor` | `color` | `"default"` | Holds the border and title colour of toasts of type `"warning"`. |
+| `errorColor` | `color` | `"default"` | Holds the border and title colour of toasts of type `"error"`. |
 | `toastWidth` | `int` | `28` | Holds the width in cells of each toast box, including its border. |
 | `position` | `string` | `"top-right"` | Holds the corner of the item the stack grows from; a value containing `"bottom"` anchors it to the bottom edge and one containing `"left"` to the left edge. |
 

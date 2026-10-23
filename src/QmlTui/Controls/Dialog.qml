@@ -9,8 +9,8 @@ Popup {
 
     readonly property Rectangle background: bg
 
-    property rgba textColor
-    property rgba titleColor: textColor
+    property color textColor
+    property color titleColor: textColor
     property string title: ""
     property string message: ""
     property string acceptText: qsTr("OK")

@@ -181,9 +181,9 @@ Rectangle {
 `footerTrailing`) plus `titleAlignment` in addition to the inherited
 `Rectangle.border` group.
 
-QmlTui C++ items expose colors as `qmltui::Color` (QML value type `rgba`), which
+QmlTui C++ items expose colors as `qmltui::Color` (QML value type `color`), which
 accepts named colors (`"cyan"`, `"default"`, `"transparent"`), hex strings
-(`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.rgba(...)`, or `Qt.rgba(...)` without
+(`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.color(...)`, or `QmlTui.rgba(...)` without
 requiring `QtQuick`.
 
 ## 5. Keyboard Focus and Quit Path
@@ -249,7 +249,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `Keys` (attached), `KeyEvent`, `MouseEvent`, `State`, `Transition`,
 `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`, `Animation`,
 `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`, `QmlTui` (singleton),
-`Clipboard` (singleton), `terminalCapabilities` (singleton), `rgba` (value type),
+`Clipboard` (singleton), `terminalCapabilities` (singleton), `color` (value type),
 `span` (value type), `highlightRange` (value type).
 
 `Behavior` and `StateGroup` are available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.

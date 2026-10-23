@@ -24,7 +24,7 @@ Defines a color stop at a normalized position within a Gradient. [More...](#deta
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `position` | `real` | `0.0` | Holds the normalized position of the stop along the gradient axis, from `0.0` to `1.0`. |
-| `color` | `rgba` | `"white"` | Holds the color of the gradient at this stop. |
+| `color` | `color` | `"white"` | Holds the color of the gradient at this stop. |
 
 ## Signals
 

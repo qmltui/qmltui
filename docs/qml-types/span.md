@@ -25,8 +25,8 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `text` | `string` |  | Holds the plain text content of this span. |
-| `color` | `rgba` |  | Holds the foreground text color override for this span. |
-| `backgroundColor` | `rgba` |  | Holds the background cell color override for this span. |
+| `color` | `color` |  | Holds the foreground text color override for this span. |
+| `backgroundColor` | `color` |  | Holds the background cell color override for this span. |
 | `bold` | `bool` |  | Whether this span applies bold text formatting. |
 | `dim` | `bool` |  | Whether this span applies dim / faint text formatting. |
 | `italic` | `bool` |  | Whether this span applies italic text formatting. |
@@ -37,7 +37,7 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 
 Use spans through [Text.spans](text.md). Create them with JavaScript object
 literals or the [QmlTui.span()](qmltui.md) factory. Both accept color strings and
-QmlTui `rgba` values. Attribute omission is distinct from explicit `false`.
+QmlTui `color` values. Attribute omission is distinct from explicit `false`.
 
 In C++, `hasBold()` (and the corresponding methods for other attributes)
 reports whether an override exists. A boolean getter alone does not report

@@ -27,8 +27,8 @@ A compact chart that draws a series of numbers as one block glyph per column, sc
 | `from` | `real` | `0.0` | Holds the value drawn at the bottom of the chart when a fixed range is set with `to`. |
 | `to` | `real` | `0.0` | Holds the value drawn at the top of the chart; `0.0` means auto-scale to the minimum and maximum of `values`. |
 | `filled` | `bool` | `false` | Whether the cells below each column's top glyph are drawn as solid `█` blocks in multi-row charts instead of being left blank. |
-| `color` | `rgba` | `"default"` | Holds the foreground colour of the glyphs, where `"default"` is the terminal's own foreground. |
-| `backgroundColor` | `rgba` | `"transparent"` | Holds the background colour written to every cell of the chart. |
+| `color` | `color` | `"default"` | Holds the foreground colour of the glyphs, where `"default"` is the terminal's own foreground. |
+| `backgroundColor` | `color` | `"transparent"` | Holds the background colour written to every cell of the chart. |
 
 ## Detailed Description
 

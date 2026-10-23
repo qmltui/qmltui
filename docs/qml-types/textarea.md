@@ -24,7 +24,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `text` | `string` | `""` | Holds the multi-line plain text content. |
-| `color` | `rgba` | `"default"` | Holds the foreground color of the text. |
+| `color` | `color` | `"default"` | Holds the foreground color of the text. |
 | `placeholderText` | `string` | `""` | Holds the hint text displayed when `text` is empty. |
 | `cursorPosition` | `int` | `0` | Holds the linear character offset of the cursor within `text`. |
 | `selectionStart` | `int` | `0` | Read-only. Holds the starting character index of the active selection. |
@@ -34,12 +34,12 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `contentX` | `int` | `0` | Holds the horizontal scroll offset in character cells. |
 | `contentY` | `int` | `0` | Holds the vertical scroll offset in rows. |
 | `cursorShape` | `CursorShape` | `TextArea.Block` | Holds the visual shape of the cursor: `Block`, `Underline`, `Beam`, or `HollowBlock`. |
-| `cursorColor` | `rgba` |  | Holds the color of the text cursor. When unset or `"default"`, reverse video is used. |
+| `cursorColor` | `color` |  | Holds the color of the text cursor. When unset or `"default"`, reverse video is used. |
 | `cursorBlinking` | `bool` | `false` | Whether the cursor blinks periodically while the item has active focus and the terminal application is active. |
 | `cursorBlinkRate` | `int` | `500` | Holds the cursor blinking interval in milliseconds. |
 | `cursorVisible` | `bool` | `true` | Whether the cursor is visible when the item has focus. |
-| `selectionColor` | `rgba` |  | Holds the background highlight color for selected text. When unset or `"default"`, reverse video is used. |
-| `selectedTextColor` | `rgba` |  | Holds the foreground text color for selected text. |
+| `selectionColor` | `color` |  | Holds the background highlight color for selected text. When unset or `"default"`, reverse video is used. |
+| `selectedTextColor` | `color` |  | Holds the foreground text color for selected text. |
 | `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
 | `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
 | `textRevision` | `int` | `0` | Read-only. Incremented on each text change. Validates highlight layer submissions. |

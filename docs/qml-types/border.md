@@ -25,7 +25,7 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `style` | `Style` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), `Border.Heavy` (heavy-line `┏`, `┓`, `┗`, `┛`, `━`, `┃`), or `Border.Ascii` (`+`, `-`, `|`). |
-| `color` | `rgba` | `"default"` | Holds the colour of the border glyphs. |
+| `color` | `color` | `"default"` | Holds the colour of the border glyphs. |
 
 ## Enumeration Border.Style
 

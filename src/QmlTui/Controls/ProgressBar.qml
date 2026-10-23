@@ -24,7 +24,7 @@ Item {
     // "dot" (●○), "hash" (#-). fillCharacter/emptyCharacter override any preset.
     property string style: "block"
     // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
-    property rgba color
+    property color color
 
     property string fillCharacter: ""
     property string emptyCharacter: ""

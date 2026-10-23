@@ -23,8 +23,8 @@ Provides a sub-cell graphical drawing surface using Braille or half-block charac
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` | `"default"` | Holds the default drawing and outline color for shapes and pixels drawn on the canvas. |
-| `fillColor` | `rgba` |  | Holds the background fill color of the canvas item. |
+| `color` | `color` | `"default"` | Holds the default drawing and outline color for shapes and pixels drawn on the canvas. |
+| `fillColor` | `color` |  | Holds the background fill color of the canvas item. |
 | `renderMode` | `RenderMode` | `Canvas.Braille` | Holds the sub-cell rendering mode: `Canvas.Braille` (2x4 dots per cell) or `Canvas.HalfBlock` (1x2 blocks per cell). |
 | `cellColorMode` | `CellColorMode` | `Canvas.LastDot` | Holds how multi-colored dots sharing the same Braille cell resolve cell color: `Canvas.LastDot` or `Canvas.Average`. |
 | `autoClear` | `bool` | `true` | Holds whether the pixel buffer is automatically cleared before each paint pass. |

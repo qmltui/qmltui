@@ -23,18 +23,18 @@ QString errorText(const QQmlComponent& component) {
 
 } // namespace
 
-// Verifies that QML `rgba` properties resolve to `qmltui::Color` via `QmlTui`
-// without requiring `QtQuick`, while the Qt Quick built-in `color` value type
-// remains unavailable when `QtQuick` is not imported.
+// Verifies that QML `color` properties resolve to `qmltui::Color` via `QmlTui`
+// without requiring `QtQuick`, while `color` remains unavailable when neither
+// `QmlTui` nor `QtQuick` is imported.
 class TestColorTypeResolution : public QObject {
     Q_OBJECT
 
 private slots:
-    void qmlTuiRgbaPropertyResolvesToColor();
-    void builtinColorTypeIsRejectedWithoutQtQuick();
+    void qmlTuiColorPropertyResolvesToColor();
+    void colorTypeIsRejectedWithoutQmlTui();
 };
 
-void TestColorTypeResolution::qmlTuiRgbaPropertyResolvesToColor() {
+void TestColorTypeResolution::qmlTuiColorPropertyResolvesToColor() {
     QQmlEngine engine;
     QQmlComponent component(&engine);
     component.setData(R"qml(
@@ -42,7 +42,10 @@ void TestColorTypeResolution::qmlTuiRgbaPropertyResolvesToColor() {
         import QmlTui
 
         QtObject {
-            property rgba accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
+            property color accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
+            property color accentDefaultAlpha: QmlTui.rgba(0.2, 0.4, 0.6)
+            property color named: QmlTui.color("ansi:red")
+            property color literal: "#336699"
         }
     )qml",
                       QUrl());
@@ -52,24 +55,30 @@ void TestColorTypeResolution::qmlTuiRgbaPropertyResolvesToColor() {
     std::unique_ptr<QObject> object(component.create());
     QVERIFY(object);
 
-    const int index = object->metaObject()->indexOfProperty("accent");
-    QVERIFY(index >= 0);
+    const auto checkProperty = [&](const char* name, qmltui::Color expected) {
+        const int index = object->metaObject()->indexOfProperty(name);
+        QVERIFY(index >= 0);
 
-    const QMetaProperty property = object->metaObject()->property(index);
-    const QVariant value = property.read(object.get());
-    const qmltui::Color color = value.value<qmltui::Color>();
+        const QMetaProperty property = object->metaObject()->property(index);
+        const QVariant value = property.read(object.get());
+        const qmltui::Color color = value.value<qmltui::Color>();
 
-    QCOMPARE(QByteArray(property.typeName()), QByteArray("qmltui::Color"));
-    QCOMPARE(QByteArray(value.metaType().name()), QByteArray("qmltui::Color"));
-    QCOMPARE(color, qmltui::Color("#336699"));
+        QCOMPARE(QByteArray(property.typeName()), QByteArray("qmltui::Color"));
+        QCOMPARE(QByteArray(value.metaType().name()), QByteArray("qmltui::Color"));
+        QCOMPARE(color, expected);
+    };
+
+    checkProperty("accent", qmltui::Color("#336699"));
+    checkProperty("accentDefaultAlpha", qmltui::Color("#336699"));
+    checkProperty("named", qmltui::Color::fromAnsiIndex(1));
+    checkProperty("literal", qmltui::Color("#336699"));
 }
 
-void TestColorTypeResolution::builtinColorTypeIsRejectedWithoutQtQuick() {
+void TestColorTypeResolution::colorTypeIsRejectedWithoutQmlTui() {
     QQmlEngine engine;
     QQmlComponent component(&engine);
     component.setData(R"qml(
         import QtQml
-        import QmlTui
 
         QtObject {
             property color accent: "#336699"

@@ -217,10 +217,10 @@ void TestTerminalColors::toastAndTooltipOverrides() {
 
     auto qmlColors = load(R"(
         Item {
-            property rgba def: QmlTui.defaultColor
-            property rgba trans: QmlTui.transparent
-            property rgba ansiRed: QmlTui.ansi(1)
-            property rgba ansiOut: QmlTui.ansi(99)
+            property color def: QmlTui.defaultColor
+            property color trans: QmlTui.transparent
+            property color ansiRed: QmlTui.ansi(1)
+            property color ansiOut: QmlTui.ansi(99)
         }
     )");
     QVERIFY(qmlColors);

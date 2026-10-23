@@ -13,7 +13,7 @@ Item {
 
     required property var model
     property bool current: ListView.isCurrentItem
-    property rgba textColor: "default"
+    property color textColor: "default"
 
     readonly property string display: {
         if (typeof model === "string" || typeof model === "number")

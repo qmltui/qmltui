@@ -31,7 +31,7 @@ A one-row horizontal bar that fills from left to right as a value moves from `fr
 | `barWidth` | `int` |  | Read-only. Holds the number of cells left for the bar itself: the item width minus 2 for brackets and 5 for the percentage, never negative. |
 | `percentageText` | `string` |  | Read-only. Holds the percentage suffix, a space and a right-aligned integer padded to three cells followed by `%`, or the empty string when `showPercentage` is false. |
 | `style` | `string` | `"block"` | Holds the glyph preset: `"block"` draws `█`/`░`, `"segmented"` draws `▰`/`▱`, `"pill"` draws `▮`/`▯`, `"dot"` draws `●`/`○`, `"hash"` draws `#`/`-`; an unknown value draws like `"block"`. |
-| `color` | `rgba` | `"default"` | Holds the colour of the bar, brackets and percentage when no gradient or thresholds are set, and of the empty portion and decorations when they are. |
+| `color` | `color` | `"default"` | Holds the colour of the bar, brackets and percentage when no gradient or thresholds are set, and of the empty portion and decorations when they are. |
 | `fillCharacter` | `string` | `""` | Holds a glyph drawn for each filled cell; when non-empty it overrides `style`. |
 | `emptyCharacter` | `string` | `""` | Holds a glyph drawn for each empty cell; when non-empty it overrides `style`. |
 | `gradient` | `Gradient` | `null` | Holds a [Gradient](gradient.md) whose stops colour the filled cells by their position along the bar, `0.0` at the left edge and `1.0` at the right. |

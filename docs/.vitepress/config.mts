@@ -178,7 +178,7 @@ export default defineConfig({
               { text: 'GradientStop', link: '/qml-types/gradientstop' },
               { text: 'Clipboard', link: '/qml-types/clipboard' },
               { text: 'QmlTui', link: '/qml-types/qmltui' },
-              { text: 'rgba', link: '/qml-types/rgba' },
+              { text: 'color', link: '/qml-types/color' },
               { text: 'span', link: '/qml-types/span' },
               { text: 'highlightRange', link: '/qml-types/highlightrange' },
               { text: 'terminalCapabilities', link: '/qml-types/terminalcapabilities' }

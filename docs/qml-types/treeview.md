@@ -33,10 +33,10 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 | `currentRow` | `int` |  | Read-only. Holds the current row index. |
 | `currentColumn` | `int` |  | Read-only. Holds the current column index (0 for tree views). |
 | `currentItemData` | `var` |  | Read-only. Holds a dictionary of role data for the currently selected item. |
-| `selectionColor` | `rgba` |  | Holds the text color override for the selected row. |
-| `selectionBackgroundColor` | `rgba` |  | Holds the background color override for the selected row. |
-| `textColor` | `rgba` |  | Holds the default text color for tree items. |
-| `branchColor` | `rgba` |  | Holds the color used to draw branch guides and expansion icons. |
+| `selectionColor` | `color` |  | Holds the text color override for the selected row. |
+| `selectionBackgroundColor` | `color` |  | Holds the background color override for the selected row. |
+| `textColor` | `color` |  | Holds the default text color for tree items. |
+| `branchColor` | `color` |  | Holds the color used to draw branch guides and expansion icons. |
 | `expandedIcon` | `string` | `"[-] "` | Holds the icon glyph displayed for expanded parent nodes. |
 | `collapsedIcon` | `string` | `"[+] "` | Holds the icon glyph displayed for collapsed parent nodes. |
 

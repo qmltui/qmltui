@@ -1,5 +1,5 @@
 ---
-title: rgba
+title: color
 kind: qml
 import: QmlTui
 since: "0.4"
@@ -9,7 +9,7 @@ category: core
 summary: Terminal color value type supporting ANSI palette indices, RGB hex, and named colors.
 ---
 
-# rgba Value type
+# color Value type
 
 Terminal color value type supporting ANSI palette indices, RGB hex, and named colors. [More...](#detailed-description)
 
@@ -32,17 +32,17 @@ Terminal color value type supporting ANSI palette indices, RGB hex, and named co
 
 ## Detailed Description
 
-`rgba` is the foundational color value type in QmlTui. In QML, string literals
-automatically convert to `rgba`, supporting:
+`color` is the foundational color value type in QmlTui. In QML, string literals
+automatically convert to `color`, supporting:
 
 - Standard named terminal ANSI colors (`"black"`, `"red"`, `"green"`, `"yellow"`,
   `"blue"`, `"magenta"`, `"cyan"`, `"white"`, `"gray"`). These preserve the terminal's
   own user-configured color scheme.
-- `"default"` (or `QmlTui.defaultColor`): The host terminal's default foreground (SGR 39) or background (SGR 49). A default-constructed `property rgba` also has this value.
+- `"default"` (or `QmlTui.defaultColor`): The host terminal's default foreground (SGR 39) or background (SGR 49). A default-constructed `property color` also has this value.
 - `"transparent"` (or `QmlTui.transparent`): No ink is painted, allowing underlying content to show through.
 - Hexadecimal formats (`"#RGB"`, `"#RRGGBB"`, `"#AARRGGBB"`).
 
-Construct color values dynamically using [QmlTui.rgba()](qmltui.md) or [QmlTui.ansi()](qmltui.md).
+Construct color values dynamically using [QmlTui.color()](qmltui.md), [QmlTui.rgba()](qmltui.md), or [QmlTui.ansi()](qmltui.md).
 
 ### Example
 

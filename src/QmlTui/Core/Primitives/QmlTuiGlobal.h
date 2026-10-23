@@ -13,7 +13,7 @@
 namespace qmltui {
 
 // QmlTui QML singleton providing value-type factory helpers (QmlTui.span,
-// QmlTui.rgba, QmlTui.ansi, QmlTui.defaultColor, and QmlTui.transparent).
+// QmlTui.color, QmlTui.rgba, QmlTui.ansi, QmlTui.defaultColor, and QmlTui.transparent).
 class QMLTUI_CORE_EXPORT QmlTuiGlobal : public QObject {
     Q_OBJECT
     QML_NAMED_ELEMENT(QmlTui)
@@ -31,8 +31,9 @@ public:
     Q_INVOKABLE qmltui::Span span(const QString& text) const;
     Q_INVOKABLE qmltui::Span span(const QString& text, const QVariantMap& options) const;
 
-    Q_INVOKABLE Color rgba(qreal red, qreal green, qreal blue, qreal alpha) const;
-    Q_INVOKABLE Color ansi(int index) const;
+    Q_INVOKABLE qmltui::Color color(const QString& value) const;
+    Q_INVOKABLE qmltui::Color rgba(qreal red, qreal green, qreal blue, qreal alpha = 1.0) const;
+    Q_INVOKABLE qmltui::Color ansi(int index) const;
 };
 
 } // namespace qmltui

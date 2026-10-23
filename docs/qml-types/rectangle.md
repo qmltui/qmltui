@@ -23,7 +23,7 @@ Renders a filled rectangular area on the character grid with optional borders an
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `rgba` | `"transparent"` | Holds the background fill color of the rectangle. |
+| `color` | `color` | `"transparent"` | Holds the background fill color of the rectangle. |
 | `border` | `Border` |  | Read-only. Holds the border configuration ([Border](border.md)), including `style` and `color`. |
 | `gradient` | `Gradient` | `null` | Holds an optional [Gradient](gradient.md) applied across the rectangle background. |
 

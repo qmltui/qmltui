@@ -29,13 +29,13 @@ Item {
     property bool highlighted: false
     property bool hoverEnabled: false
     readonly property alias hovered: mouseArea.containsMouse
-    property rgba textColor
+    property color textColor
 
-    property int padding: 0
-    property int topPadding: padding
-    property int bottomPadding: padding
-    property int leftPadding: padding
-    property int rightPadding: padding
+    padding: 0
+    topPadding: padding
+    bottomPadding: padding
+    leftPadding: padding
+    rightPadding: padding
     readonly property int availableWidth: Math.max(0, width - leftPadding - rightPadding)
     readonly property int availableHeight: Math.max(0, height - topPadding - bottomPadding)
 

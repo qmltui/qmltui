@@ -25,8 +25,8 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | :--- | :--- | :--- | :--- |
 | `spans` | `list<span>` | `[]` | Literal styled runs; a nonempty list takes precedence over `text`. |
 | `text` | `string` | `""` | Holds the plain, rich, or ANSI text to display when `spans` is empty. |
-| `color` | `rgba` | `"default"` | Holds the text foreground color. |
-| `backgroundColor` | `rgba` | `"transparent"` | Holds the background color of character cells. |
+| `color` | `color` | `"default"` | Holds the text foreground color. |
+| `backgroundColor` | `color` | `"transparent"` | Holds the background color of character cells. |
 | `bold` | `bool` | `false` | Whether text is rendered in bold face. |
 | `dim` | `bool` | `false` | Whether text is rendered in dim or faint face. |
 | `italic` | `bool` | `false` | Whether text is rendered in italic face if supported by the terminal. |

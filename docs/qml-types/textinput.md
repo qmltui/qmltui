@@ -24,9 +24,9 @@ A single-line editable text input item for terminal applications. [More...](#det
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `text` | `string` | `""` | Holds the plain text entered in the input field. |
-| `color` | `rgba` | `"default"` | Holds the foreground color of the entered text. |
+| `color` | `color` | `"default"` | Holds the foreground color of the entered text. |
 | `placeholderText` | `string` | `""` | Holds the hint text displayed when `text` is empty. |
-| `placeholderColor` | `rgba` |  | Holds the color used to draw `placeholderText`. |
+| `placeholderColor` | `color` |  | Holds the color used to draw `placeholderText`. |
 | `displayText` | `string` |  | Read-only. Holds the text currently rendered on screen, reflecting `echoMode`. |
 | `overwriteMode` | `bool` | `false` | Whether typed characters overwrite existing text at the cursor instead of being inserted. |
 | `autoScroll` | `bool` | `true` | Whether the view automatically scrolls horizontally to follow cursor movement. |
@@ -42,13 +42,13 @@ A single-line editable text input item for terminal applications. [More...](#det
 | `echoMode` | `EchoMode` | `TextInput.Normal` | Holds the display mode for entered characters: `Normal`, `Password`, or `NoEcho`. |
 | `echoCharacter` | `string` | `"*"` | Holds the masking character displayed when `echoMode` is `Password`. |
 | `cursorShape` | `CursorShape` | `TextInput.Block` | Holds the visual shape of the cursor: `Block`, `Underline`, `Beam`, or `HollowBlock`. |
-| `cursorColor` | `rgba` | `"default"` | Holds the color of the text cursor. |
+| `cursorColor` | `color` | `"default"` | Holds the color of the text cursor. |
 | `cursorBlinking` | `bool` | `false` | Whether the cursor blinks periodically while the item has focus. |
 | `cursorBlinkRate` | `int` | `500` | Holds the cursor blinking interval in milliseconds. |
 | `cursorVisible` | `bool` | `true` | Whether the cursor is visible when the item has focus. |
 | `cursorDelegate` | `string` | `""` | Holds an optional custom character glyph used to render the cursor. |
-| `selectionColor` | `rgba` |  | Holds the background highlight color for selected text. |
-| `selectedTextColor` | `rgba` |  | Holds the foreground text color for selected text. |
+| `selectionColor` | `color` |  | Holds the background highlight color for selected text. |
+| `selectedTextColor` | `color` |  | Holds the foreground text color for selected text. |
 | `canUndo` | `bool` |  | Read-only. Whether an undo history entry is available. |
 | `canRedo` | `bool` |  | Read-only. Whether a redo history entry is available. |
 

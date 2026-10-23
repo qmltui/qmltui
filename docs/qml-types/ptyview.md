@@ -36,9 +36,9 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `exitCode` | `int` |  | Read-only. Holds the exit status code after the process terminates. |
 | `errorString` | `string` |  | Read-only. Holds error details if process spawning or execution fails. |
 | `title` | `string` |  | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
-| `foregroundColor` | `rgba` | `"white"` | Holds the default foreground text color. |
-| `backgroundColor` | `rgba` | `"black"` | Holds the default background color. |
-| `palette` | `list<rgba>` | `[]` | Holds the 16 standard ANSI colors used by the terminal emulator. |
+| `foregroundColor` | `color` | `"white"` | Holds the default foreground text color. |
+| `backgroundColor` | `color` | `"black"` | Holds the default background color. |
+| `palette` | `list<color>` | `[]` | Holds the 16 standard ANSI colors used by the terminal emulator. |
 | `scrollbackLimit` | `int` | `10000` | Holds the maximum number of scrollback lines retained in history. |
 | `scrollOffset` | `int` | `0` | Holds the current scroll offset into scrollback history (0 at live screen). |
 | `scrollbackSize` | `int` |  | Read-only. Holds the current line count in the scrollback buffer. |

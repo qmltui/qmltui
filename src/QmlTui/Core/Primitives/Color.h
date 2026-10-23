@@ -8,12 +8,12 @@
 
 namespace qmltui {
 
-// Terminal color value type (`rgba` in QML) representing 32-bit ARGB colors,
+// Terminal color value type (`color` in QML) representing 32-bit ARGB colors,
 // 16-color ANSI palette indices, `"default"` (terminal foreground/background),
 // and `"transparent"`.
 class QMLTUI_CORE_EXPORT Color {
     Q_GADGET
-    QML_VALUE_TYPE(rgba)
+    QML_VALUE_TYPE(color)
     QML_CONSTRUCTIBLE_VALUE
 
     Q_PROPERTY(qreal r READ red CONSTANT)

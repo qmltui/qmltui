@@ -56,24 +56,22 @@ rtk cmake --build build
 
 ## Select and Run Tests
 
-Discover exact CTest names and labels instead of guessing:
+Discover exact CTest names and labels (`Unit`, `Runner`, `Cast`) instead of guessing:
 
 ```bash
 rtk ctest --test-dir build -N
-rtk ctest --test-dir build -N -L AgentSmoke
+rtk ctest --test-dir build -N -L Unit
+rtk ctest --test-dir build -N -L Runner
 ```
 
 Run a focused test, then the relevant label or configured suite:
 
 ```bash
 rtk ctest --test-dir build -R '^exact_test_name$' --output-on-failure
-rtk ctest --test-dir build -L AgentSmoke --output-on-failure
+rtk ctest --test-dir build -L Unit --output-on-failure
+rtk ctest --test-dir build -L Runner --output-on-failure
 rtk ctest --test-dir build --output-on-failure
 ```
-
-`AgentFull` scenarios may be deliberately slow or live-rendered. Run them when
-the changed area or handoff confidence warrants it; do not substitute them for
-a focused first pass.
 
 ## Integrate Application Scenarios
 
@@ -116,7 +114,6 @@ if(TARGET qmltui::runner)
         NAME my_app_smoke
         TARGET my_app
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
-        LABELS AgentSmoke
     )
 endif()
 ```

@@ -19,6 +19,5 @@ if(TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_lazy_model.js"
         COLUMNS 80
         ROWS 24
-        LABELS AgentSmoke
     )
 endif()

@@ -9,5 +9,5 @@ target_compile_definitions(test_pty_view PRIVATE
 )
 add_test(NAME test_pty_view COMMAND test_pty_view)
 set_tests_properties(test_pty_view PROPERTIES
-    LABELS "AgentSmoke;Unit"
+    LABELS Unit
 )

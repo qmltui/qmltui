@@ -82,12 +82,11 @@ if(TARGET qmltui::runner)
         CLOCK VIRTUAL
         ARTIFACT "gallery/grid.txt"
         ARTIFACT_CONTENT "QmlTui Gallery"
-        LABELS AgentSmoke
     )
 
     qmltui_add_scenario(NAME gallery_idle_budget TARGET qmltui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_idle_budget.js"
-        COLUMNS 100 ROWS 30 LABELS AgentSmoke)
+        COLUMNS 100 ROWS 30)
     qmltui_add_scenario(NAME gallery_tour TARGET qmltui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery_tour.js"
         COLUMNS 100 ROWS 30 CLOCK VIRTUAL RECORD gallery-tour.cast LABELS Cast)
@@ -108,7 +107,7 @@ if(TARGET qmltui::runner)
                 ROWS 20
                 CLOCK VIRTUAL
                 RECORD "components/${example_snake}.cast"
-                LABELS "AgentSmoke;Cast"
+                LABELS Cast
             )
         endif()
     endforeach()

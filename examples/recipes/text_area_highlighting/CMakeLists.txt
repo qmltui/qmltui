@@ -19,5 +19,5 @@ if(TARGET qmltui::runner)
     target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME text_area_highlighting_smoke TARGET qmltui_text_area_highlighting_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
-        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/text_area_highlighting.cast LABELS AgentSmoke)
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/text_area_highlighting.cast LABELS Cast)
 endif()

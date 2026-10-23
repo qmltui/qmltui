@@ -19,6 +19,5 @@ if(TARGET qmltui::runner)
         NAME cpp_only_dashboard
         TARGET qmltui_cpp_only_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_cpp_only.js"
-        LABELS AgentSmoke
     )
 endif()

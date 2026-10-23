@@ -95,7 +95,6 @@ qmltui_add_scenario(
     TARGET qmltui_span_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/span_scenario.js"
     COLUMNS 30 ROWS 5
-    LABELS AgentSmoke
 )
 
 add_executable(qmltui_table_grid_fixture table_grid_fixture.cpp)
@@ -105,7 +104,6 @@ qmltui_add_scenario(
     TARGET qmltui_table_grid_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/table_grid_scenario.js"
     COLUMNS 164 ROWS 25
-    LABELS AgentSmoke
 )
 
 add_executable(qmltui_process_table_fixture process_table_fixture.cpp)
@@ -115,5 +113,4 @@ qmltui_add_scenario(
     TARGET qmltui_process_table_fixture
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/process_table_scenario.js"
     COLUMNS 80 ROWS 24
-    LABELS AgentSmoke
 )

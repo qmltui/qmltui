@@ -15,5 +15,5 @@ if(TARGET qmltui::runner)
     target_link_libraries(qmltui_independent_states_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME independent_states_scenario TARGET qmltui_independent_states_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_independent_states.js"
-        COLUMNS 80 ROWS 24 CLOCK VIRTUAL LABELS AgentSmoke)
+        COLUMNS 80 ROWS 24 CLOCK VIRTUAL)
 endif()

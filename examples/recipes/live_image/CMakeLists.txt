@@ -21,7 +21,6 @@ if(TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_live_image.js"
         COLUMNS 80
         ROWS 24
-        LABELS AgentSmoke
     )
     qmltui_add_scenario(
         NAME live_image_large
@@ -29,7 +28,6 @@ if(TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_live_image.js"
         COLUMNS 240
         ROWS 72
-        LABELS AgentSmoke
     )
 endif()
 

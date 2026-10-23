@@ -46,7 +46,7 @@ user-facing type in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and
   Editable Code Panel]` view that compiles and reloads edited QML via
   `Qt.createQmlObject` after a `500 ms` debounce timeout.
 - `scenarios/*.js`: deterministic `Runner` scenarios for each component example
-  in `examples/*.qml`, used for both `AgentSmoke` verification and automated
+  in `examples/*.qml`, used for both smoke verification and automated
   `.cast` / `.gif` recording.
 
 ## In the Browser

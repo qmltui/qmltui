@@ -19,7 +19,7 @@ if(TARGET qmltui::runner)
     target_link_libraries(qmltui_big_text_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME big_text_smoke TARGET qmltui_big_text_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
-        COLUMNS 120 ROWS 40 CLOCK VIRTUAL LABELS AgentSmoke)
+        COLUMNS 120 ROWS 40 CLOCK VIRTUAL)
     qmltui_add_scenario(NAME big_text_demo TARGET qmltui_big_text_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/big_text.cast LABELS Cast)

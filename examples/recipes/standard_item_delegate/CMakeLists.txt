@@ -26,7 +26,6 @@ if(TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_standard_item_delegate.js"
         COLUMNS 80
         ROWS 24
-        LABELS AgentSmoke
     )
 endif()
 
@@ -47,7 +46,7 @@ if(QMLTUI_BUILD_WIDGETS_REFERENCE AND TARGET Qt6::Widgets)
         add_test(NAME standard_item_delegate_widgets_smoke
             COMMAND qmltui_standard_item_delegate_widgets --smoke)
         set_tests_properties(standard_item_delegate_widgets_smoke PROPERTIES
-            ENVIRONMENT "QT_QPA_PLATFORM=offscreen" LABELS AgentSmoke)
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen" LABELS Unit)
     endif()
     message(STATUS "standard_item_delegate: Qt Widgets found, building the reference viewer")
 else()

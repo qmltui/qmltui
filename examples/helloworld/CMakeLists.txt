@@ -60,7 +60,7 @@ if(TARGET qmltui::runner)
             ROWS 15
             CLOCK VIRTUAL
             RECORD hello-world.cast
-            LABELS "AgentSmoke;Cast"
+            LABELS Cast
         )
     endif()
 endif()

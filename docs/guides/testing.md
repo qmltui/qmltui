@@ -25,7 +25,6 @@ if(TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 80 ROWS 24
         CLOCK VIRTUAL
-        LABELS AgentSmoke
     )
 endif()
 ```

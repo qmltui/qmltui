@@ -15,5 +15,5 @@ if(TARGET qmltui::runner)
     target_link_libraries(qmltui_table_view_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME tableview_proxy_smoke TARGET qmltui_table_view_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_proxy.js"
-        COLUMNS 80 ROWS 24 LABELS AgentSmoke)
+        COLUMNS 80 ROWS 24)
 endif()

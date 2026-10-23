@@ -53,8 +53,96 @@ qt_add_resources(qmltui_runner_fixture embedded_runner_scenarios
         "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/lib/module_helpers.mjs"
 )
 
+set(qmltui_runner_artifacts
+    "${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts")
 set(qmltui_runner_scenarios
     "${CMAKE_CURRENT_SOURCE_DIR}/scenarios")
+
+# A Runner self-test scenario driven by a script (or an embedded resource), with
+# bounded timeouts and the artifact checks the runner contract promises.
+function(add_qmltui_runner_scenario test_name executable script expected_exit)
+    cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
+        "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK;RECORD"
+        "ARGUMENTS" ${ARGN})
+    if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
+        set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
+    endif()
+    if(NOT SCENARIO_SCENARIO_TIMEOUT_MS)
+        set(SCENARIO_SCENARIO_TIMEOUT_MS 8000)
+    endif()
+    set(arguments
+        NAME ${test_name}
+        TARGET ${executable}
+        EXPECTED_EXIT ${expected_exit}
+        ARTIFACT_DIR "${qmltui_runner_artifacts}/${test_name}"
+        OPERATION_TIMEOUT_MS ${SCENARIO_OPERATION_TIMEOUT_MS}
+        SCENARIO_TIMEOUT_MS ${SCENARIO_SCENARIO_TIMEOUT_MS}
+    )
+    if(SCENARIO_EMBEDDED)
+        list(APPEND arguments EMBEDDED)
+    else()
+        list(APPEND arguments SCRIPT "${script}")
+    endif()
+    if(SCENARIO_LIVE)
+        list(APPEND arguments LIVE)
+    endif()
+    if(SCENARIO_UPDATE_SNAPSHOTS)
+        list(APPEND arguments UPDATE_SNAPSHOTS)
+    endif()
+    if(SCENARIO_NO_UPDATE_SNAPSHOTS)
+        list(APPEND arguments NO_UPDATE_SNAPSHOTS)
+    endif()
+    if(SCENARIO_ARGUMENTS)
+        list(APPEND arguments ARGUMENTS ${SCENARIO_ARGUMENTS})
+    endif()
+    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT
+            PROCESS_TIMEOUT SYMLINK_TRAP SNAPSHOT_SEED_SOURCE SNAPSHOT_SEED_DEST
+            EXPECT_UPDATED_SNAPSHOT EXPECT_UPDATED_SNAPSHOT_CONTENT CLOCK RECORD)
+        if(NOT "${SCENARIO_${argument}}" STREQUAL "")
+            list(APPEND arguments ${argument} "${SCENARIO_${argument}}")
+        endif()
+    endforeach()
+    qmltui_add_scenario(${arguments})
+endfunction()
+
+# A Runner session requested through the environment (QMLTUI_RUNNER_CAPTURE_AFTER_MS,
+# QMLTUI_RUNNER_EVAL, or a deliberate conflict between modes).
+function(add_qmltui_environment_scenario test_name executable expected_exit)
+    cmake_parse_arguments(SCENARIO "CONFLICT"
+        "CAPTURE_AFTER_MS;SCRIPT;EVAL_CODE;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT" "" ${ARGN})
+    set(command
+        "${CMAKE_COMMAND}"
+        "-DTEST_EXECUTABLE=$<TARGET_FILE:${executable}>"
+        "-DARTIFACT_DIR=${qmltui_runner_artifacts}/${test_name}"
+        "-DEXPECT_EXIT=${expected_exit}"
+        "-DQML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+    )
+    if(SCENARIO_CONFLICT)
+        list(APPEND command
+            "-DCONFLICT_SCENARIO=ON"
+            "-DSCENARIO_SCRIPT=${SCENARIO_SCRIPT}"
+            "-DEVAL_CODE=${SCENARIO_EVAL_CODE}"
+        )
+    elseif(DEFINED SCENARIO_CAPTURE_AFTER_MS)
+        list(APPEND command "-DCAPTURE_AFTER_MS=${SCENARIO_CAPTURE_AFTER_MS}")
+    elseif(DEFINED SCENARIO_EVAL_CODE)
+        list(APPEND command "-DEVAL_CODE=${SCENARIO_EVAL_CODE}")
+    else()
+        message(FATAL_ERROR "Environment scenario requires CAPTURE_AFTER_MS or EVAL_CODE")
+    endif()
+    foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT)
+        if(SCENARIO_${argument})
+            list(APPEND command "-DEXPECT_${argument}=${SCENARIO_${argument}}")
+        endif()
+    endforeach()
+    list(APPEND command "-P" "${QMLTUI_RUNNER_SCENARIO_DRIVER}")
+    add_test(NAME ${test_name} COMMAND ${command})
+    set_tests_properties(${test_name} PROPERTIES
+        SKIP_RETURN_CODE 125
+        TIMEOUT 15
+        LABELS Runner
+    )
+endfunction()
 
 add_qmltui_runner_scenario(test_runner_fixture_success qmltui_runner_fixture
     "${qmltui_runner_scenarios}/success.js" 0
@@ -452,9 +540,9 @@ if(Python3_Interpreter_FOUND)
                 "${qmltui_runner_artifacts}/test_runner_record_restart/second.cast"
                 --marker second --text "TESTRUNNER FIXTURE" --text two)
     set_tests_properties(test_runner_record_basic_cast PROPERTIES
-        DEPENDS test_runner_record_basic LABELS "Runner;AgentSmoke")
+        DEPENDS test_runner_record_basic LABELS Runner)
     set_tests_properties(test_runner_record_restart_cast PROPERTIES
-        DEPENDS test_runner_record_restart LABELS "Runner;AgentSmoke")
+        DEPENDS test_runner_record_restart LABELS Runner)
 endif()
 
 if(TARGET qmltui-runner)
@@ -468,7 +556,7 @@ if(TARGET qmltui-runner)
     add_dependencies(test_runner_launcher qmltui-runner qmltui_runner_fixture)
     add_test(NAME test_runner_launcher COMMAND test_runner_launcher)
     set_tests_properties(test_runner_launcher PROPERTIES
-        LABELS "Runner;AgentSmoke"
+        LABELS "Runner;Unit"
         TIMEOUT 90
         ENVIRONMENT "QMLTUI_TEST_LAUNCHER=$<TARGET_FILE:qmltui-runner>;QMLTUI_TEST_FIXTURE=$<TARGET_FILE:qmltui_runner_fixture>;QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}")
 endif()

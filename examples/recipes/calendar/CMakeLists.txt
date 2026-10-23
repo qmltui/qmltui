@@ -34,6 +34,6 @@ if(TARGET qmltui::runner)
         ROWS 24
         CLOCK VIRTUAL
         RECORD components/calendar.cast
-        LABELS AgentSmoke
+        LABELS Cast
     )
 endif()

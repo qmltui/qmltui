@@ -18,7 +18,6 @@ qmltui_add_scenario(
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_terminal_colors_frames.js"
     COLUMNS 40
     ROWS 12
-    LABELS AgentSmoke
 )
 
 # Tooltip delay and timeout stepped on the virtual clock.
@@ -34,7 +33,6 @@ qmltui_add_scenario(
     COLUMNS 40
     ROWS 10
     CLOCK VIRTUAL
-    LABELS AgentSmoke
 )
 
 # The default look of the button-like controls, as styled snapshots.
@@ -49,7 +47,6 @@ qmltui_add_scenario(
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_button_look.js"
     COLUMNS 60
     ROWS 12
-    LABELS AgentSmoke
 )
 
 # Popup frames scenario covering transparency, occlusion, nesting, resize, and dialogs.
@@ -64,5 +61,4 @@ qmltui_add_scenario(
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_popup_frames.js"
     COLUMNS 50
     ROWS 16
-    LABELS AgentSmoke
 )

@@ -1,18 +1,18 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("No clicks yet");
-    terminal.sleep(800);
-    terminal.press("Space");
-    terminal.expectText("Clicked 1 time");
-    terminal.sleep(700);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Enter");
-    terminal.expectText("Clicked 2 times");
-    terminal.sleep(700);
-    terminal.clickText("Pin");
-    terminal.expectText("Pinned");
-    terminal.sleep(900);
-    terminal.captureText("button.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("No clicks yet");
+    app.sleep(800);
+    app.press("Space");
+    app.expectText("Clicked 1 time");
+    app.sleep(700);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Enter");
+    app.expectText("Clicked 2 times");
+    app.sleep(700);
+    app.clickText("Pin");
+    app.expectText("Pinned");
+    app.sleep(900);
+    app.captureText("button.txt");
+    app.stopRecording();
 }

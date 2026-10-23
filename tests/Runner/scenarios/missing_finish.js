@@ -1,4 +1,4 @@
-function main(terminal) {
-    terminal.expectText("TESTRUNNER FIXTURE");
-    terminal.captureText("missing_finish.txt");
+function main(app) {
+    app.expectText("TESTRUNNER FIXTURE");
+    app.captureText("missing_finish.txt");
 }

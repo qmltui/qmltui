@@ -1,11 +1,11 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Dots");
-    terminal.expectText("Bounce");
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.captureText("busy_indicator.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Dots");
+    app.expectText("Bounce");
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.captureText("busy_indicator.txt");
+    app.stopRecording();
 }

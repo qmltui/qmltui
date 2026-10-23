@@ -1,12 +1,12 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("apple");
-    terminal.expectText("mango");
-    terminal.sleep(800);
-    terminal.press("Down");
-    terminal.sleep(700);
-    terminal.press("Down");
-    terminal.sleep(800);
-    terminal.captureText("grid_view.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("apple");
+    app.expectText("mango");
+    app.sleep(800);
+    app.press("Down");
+    app.sleep(700);
+    app.press("Down");
+    app.sleep(800);
+    app.captureText("grid_view.txt");
+    app.stopRecording();
 }

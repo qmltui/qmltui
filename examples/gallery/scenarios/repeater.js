@@ -1,16 +1,16 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Count: 7");
-    terminal.sleep(700);
-    terminal.press("Right");
-    terminal.press("Right");
-    terminal.press("Right");
-    terminal.expectText("Count: 10");
-    terminal.sleep(800);
-    terminal.press("Right");
-    terminal.press("Right");
-    terminal.expectText("Count: 12");
-    terminal.sleep(900);
-    terminal.captureText("repeater.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Count: 7");
+    app.sleep(700);
+    app.press("Right");
+    app.press("Right");
+    app.press("Right");
+    app.expectText("Count: 10");
+    app.sleep(800);
+    app.press("Right");
+    app.press("Right");
+    app.expectText("Count: 12");
+    app.sleep(900);
+    app.captureText("repeater.txt");
+    app.stopRecording();
 }

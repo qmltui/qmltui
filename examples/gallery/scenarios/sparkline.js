@@ -1,11 +1,11 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("cpu %");
-    terminal.expectText("net MB/s");
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.captureText("sparkline.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("cpu %");
+    app.expectText("net MB/s");
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.captureText("sparkline.txt");
+    app.stopRecording();
 }

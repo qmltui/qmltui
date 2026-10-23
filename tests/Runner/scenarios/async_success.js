@@ -1,8 +1,8 @@
-function main(terminal) {
-    terminal.expectText("TESTRUNNER FIXTURE");
+function main(app) {
+    app.expectText("TESTRUNNER FIXTURE");
     return new Promise(function(resolve) {
-        terminal.sleep(50);
-        terminal.captureText("async_success.txt");
+        app.sleep(50);
+        app.captureText("async_success.txt");
         resolve();
     });
 }

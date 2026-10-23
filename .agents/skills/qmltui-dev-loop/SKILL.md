@@ -156,7 +156,7 @@ Use inline evaluation for a short exploratory action sequence:
 
 ```bash
 rtk env \
-  QMLTUI_RUNNER_EVAL="terminal.clickText('Pay'); terminal.captureText('after-pay.txt');" \
+  QMLTUI_RUNNER_EVAL="app.clickText('Pay'); app.captureText('after-pay.txt');" \
   QMLTUI_RUNNER_COLUMNS=80 \
   QMLTUI_RUNNER_ROWS=24 \
   QMLTUI_RUNNER_ARTIFACT_DIR=/tmp/qmltui-eval \
@@ -178,7 +178,7 @@ rtk env QMLTUI_RUNNER_LIVE=1 ./build/path/to/embedded-test-runner
 ```
 
 There is no image capture: `Runner` needs only `QCoreApplication`. For
-visual regressions assert with `terminal.expectStyled()`; the styled format
+visual regressions assert with `app.expectStyled()`; the styled format
 lists per-run colors and attributes as text, so diffs stay readable and
 platform independent. Record or refresh baselines with
 `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>` — every rewritten file is listed in
@@ -187,11 +187,11 @@ artifacts.
 
 ## Write Reliable JavaScript Scenarios
 
-Every test scenario script must define an entry point: `function main(terminal) { ... }`.
+Every test scenario script must define an entry point: `function main(app) { ... }`.
 A scenario ending in `.mjs` is an ECMAScript module instead: it must
-`export function main(terminal)` and may `import` shared helpers with relative
+`export function main(app)` and may `import` shared helpers with relative
 paths (see `tests/Runner/scenarios/lib/module_helpers.mjs`). Start the entry
-point with `/** @param {Terminal} terminal */` — the repository's
+point with `/** @param {Runner} app */` — the repository's
 `jsconfig.json` plus `src/QmlTui/Runner/qmltui-runner.d.ts` then give editor
 autocomplete and hover documentation for the whole facade (scenarios are plain
 JavaScript; TypeScript annotations are a syntax error). A consumer project
@@ -241,15 +241,15 @@ documentation for exact signatures. Choose operations by intent:
   resolved relative to the scenario; mismatches produce an actual frame and a
   unified diff beneath the artifact directory.
 
-Synchronous scenarios pass when `main` returns normally, so `terminal.finish()`
+Synchronous scenarios pass when `main` returns normally, so `app.finish()`
 is optional. For an asynchronous scenario, `main` can return a Promise or be
 declared `async`:
 
 ```javascript
-function main(terminal) {
-    terminal.expectText("READY");
+function main(app) {
+    app.expectText("READY");
     return new Promise((resolve) => {
-        terminal.sleep(50);
+        app.sleep(50);
         resolve();
     });
 }

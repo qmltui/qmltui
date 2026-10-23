@@ -1,16 +1,16 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Volume  42%");
-    terminal.sleep(700);
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Volume  42%");
+    app.sleep(700);
     for (let i = 0; i < 8; ++i)
-        terminal.press("Right");
-    terminal.expectText("Volume  50%");
-    terminal.sleep(700);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Right");
-    terminal.expectText("Contrast  4");
-    terminal.sleep(900);
-    terminal.captureText("slider.txt");
-    terminal.stopRecording();
+        app.press("Right");
+    app.expectText("Volume  50%");
+    app.sleep(700);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Right");
+    app.expectText("Contrast  4");
+    app.sleep(900);
+    app.captureText("slider.txt");
+    app.stopRecording();
 }

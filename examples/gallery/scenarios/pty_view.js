@@ -1,10 +1,10 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.waitForText("[RUNNING]");
-    terminal.expectText("PID:");
+/** @param {Runner} app */
+function main(app) {
+    app.waitForText("[RUNNING]");
+    app.expectText("PID:");
 
-    terminal.press("Enter");
-    terminal.waitForText("Sent: echo 'Hello from PtyView!'");
-    terminal.waitForText("Hello from PtyView!");
-    terminal.captureText("pty_view.txt");
+    app.press("Enter");
+    app.waitForText("Sent: echo 'Hello from PtyView!'");
+    app.waitForText("Hello from PtyView!");
+    app.captureText("pty_view.txt");
 }

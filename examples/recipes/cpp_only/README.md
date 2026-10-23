@@ -38,4 +38,4 @@ When Runner is available, the same executable supports environment-driven
 scenarios. `main.cpp` creates a script engine and calls `startFromEnvironment()`
 only when a Runner session is requested, because the automatic hook requires a
 QML-created Terminal. The scenario drives telemetry through
-`terminal.rootObject().tick()`.
+`app.rootObject().tick()`.

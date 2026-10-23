@@ -1,15 +1,15 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Last: nothing yet");
-    terminal.sleep(700);
-    terminal.hover(15, 6);
-    terminal.sleep(600);
-    terminal.click(15, 6);
-    terminal.expectText("left click at");
-    terminal.sleep(800);
-    terminal.click(20, 7, { button: "right" });
-    terminal.expectText("right click at");
-    terminal.sleep(900);
-    terminal.captureText("mouse_area.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Last: nothing yet");
+    app.sleep(700);
+    app.hover(15, 6);
+    app.sleep(600);
+    app.click(15, 6);
+    app.expectText("left click at");
+    app.sleep(800);
+    app.click(20, 7, { button: "right" });
+    app.expectText("right click at");
+    app.sleep(900);
+    app.captureText("mouse_area.txt");
+    app.stopRecording();
 }

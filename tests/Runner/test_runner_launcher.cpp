@@ -167,9 +167,9 @@ private slots:
         QTest::addColumn<QStringList>("options");
         QTest::addColumn<int>("expected");
         QTest::addColumn<QString>("artifact");
-        QTest::newRow("eval") << QStringList{"--eval", "terminal.expectText('TESTRUNNER FIXTURE')"}
-                              << 0 << QString("final.txt");
-        QTest::newRow("viewport") << QStringList{"--eval",    "terminal.expectText('SIZE: 100x30')",
+        QTest::newRow("eval") << QStringList{"--eval", "app.expectText('TESTRUNNER FIXTURE')"} << 0
+                              << QString("final.txt");
+        QTest::newRow("viewport") << QStringList{"--eval",    "app.expectText('SIZE: 100x30')",
                                                  "--columns", "100",
                                                  "--rows",    "30"}
                                   << 0 << QString("final.txt");
@@ -177,18 +177,15 @@ private slots:
             << QStringList{"--capture-after-ms=0"} << 0 << QString("capture_styled.txt");
         QTest::newRow("capture-delayed")
             << QStringList{"--capture-after-ms", "100"} << 0 << QString("capture.txt");
-        QTest::newRow("live") << QStringList{"--eval", "terminal.expectText('TESTRUNNER FIXTURE')",
+        QTest::newRow("live") << QStringList{"--eval", "app.expectText('TESTRUNNER FIXTURE')",
                                              "--live"}
                               << 0 << QString("final.txt");
         QTest::newRow("virtual-record")
-            << QStringList{"--eval",
-                           "terminal.advanceTime(100); terminal.expectText('TESTRUNNER FIXTURE')",
-                           "--clock",
-                           "virtual",
-                           "--record",
-                           "tour.cast"}
+            << QStringList{"--eval",   "app.advanceTime(100); app.expectText('TESTRUNNER FIXTURE')",
+                           "--clock",  "virtual",
+                           "--record", "tour.cast"}
             << 0 << QString("tour.cast");
-        QTest::newRow("failure") << QStringList{"--eval", "terminal.fail('intentional')"} << 1
+        QTest::newRow("failure") << QStringList{"--eval", "app.fail('intentional')"} << 1
                                  << QString("failure.txt");
         QTest::newRow("module") << QStringList{"--script", QStringLiteral(QMLTUI_SCENARIOS) +
                                                                "/module_main.mjs"}
@@ -227,7 +224,7 @@ private slots:
         for (const auto& key : env.keys()) {
             if (key.startsWith("QMLTUI_RUNNER_")) env.remove(key);
         }
-        env.insert("QMLTUI_RUNNER_EVAL", "terminal.expectText('TESTRUNNER FIXTURE')");
+        env.insert("QMLTUI_RUNNER_EVAL", "app.expectText('TESTRUNNER FIXTURE')");
         env.insert("QMLTUI_RUNNER_ARTIFACT_DIR", temporary.filePath("handshake-failure"));
         env.insert("QMLTUI_RUNNER_HANDSHAKE_PATH", temporary.filePath("absent/ack.json"));
         env.insert("QMLTUI_RUNNER_HANDSHAKE_TOKEN", "test-token");

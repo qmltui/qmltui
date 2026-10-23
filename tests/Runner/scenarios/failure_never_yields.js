@@ -1,8 +1,8 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("TESTRUNNER FIXTURE");
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("TESTRUNNER FIXTURE");
     try {
-        terminal.fail("Caught failure must still terminate");
+        app.fail("Caught failure must still terminate");
     } catch (error) {
         // A caught failure must not disable the JavaScript watchdog.
     }

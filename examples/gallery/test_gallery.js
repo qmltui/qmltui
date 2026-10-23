@@ -1,156 +1,163 @@
 // Gallery smoke scenario: the searchable GridView with component previews renders,
-// inline header search filters tiles, Enter opens the split view (Example Panel +
-// Editable Code Panel), editing code auto-reloads after the 500ms timeout, and
-// Escape returns to the GridView.
-function main(terminal) {
-    terminal.waitForText("QmlTui Gallery");
-    terminal.expectText("Button");
-    terminal.expectText("[ Primary ]");
-    terminal.expectText("/ Search");
+// inline header search filters tiles, Enter opens the full-width Example Panel by
+// default, F2 toggles the editable Code Panel, editing code auto-reloads after the
+// 500ms timeout, and Escape returns to the GridView.
+function main(app) {
+    app.waitForText("QmlTui Gallery");
+    app.expectText("Button");
+    app.expectText("[ Primary ]");
+    app.expectText("/ Search");
     // The tile count depends on the build (Behavior, QmlTui.Image, QmlTui.PtyView), so read it.
-    terminal.waitForRegex("1 / [0-9]+");
-    const total = parseInt(/1 \/ ([0-9]+)/.exec(terminal.frameText())[1], 10);
+    app.waitForRegex("1 / [0-9]+");
+    const total = parseInt(/1 \/ ([0-9]+)/.exec(app.frameText())[1], 10);
     const at = n => n + " / " + total;
-    terminal.captureText("gallery/grid.txt");
+    app.captureText("gallery/grid.txt");
 
     // Inline search in Panel titleTrailing: inactive until '/' or click activates it.
-    terminal.press("/");
-    terminal.typeText("Sparkline");
-    terminal.waitForText("1 / 1");
-    terminal.expectText("Sparkline");
-    terminal.expectNoText("[ Primary ]");
-    terminal.captureText("gallery/search.txt");
-    terminal.press("ESCAPE");
-    terminal.waitForText(at(1));
-    terminal.expectText("/ Search");
+    app.press("/");
+    app.typeText("Sparkline");
+    app.waitForText("1 / 1");
+    app.expectText("Sparkline");
+    app.expectNoText("[ Primary ]");
+    app.captureText("gallery/search.txt");
+    app.press("ESCAPE");
+    app.waitForText(at(1));
+    app.expectText("/ Search");
 
     // Right moves to the second tile, Down to the next row.
-    terminal.press("RIGHT");
-    terminal.waitForText(at(2));
-    terminal.press("DOWN");
-    terminal.waitForRegex("[2-9] / " + total);
-    terminal.press("HOME");
-    terminal.waitForText(at(1));
+    app.press("RIGHT");
+    app.waitForText(at(2));
+    app.press("DOWN");
+    app.waitForRegex("[2-9] / " + total);
+    app.press("HOME");
+    app.waitForText(at(1));
 
-    // Enter opens the Button demo alongside the editable QML Code Panel.
-    terminal.press("ENTER");
-    terminal.waitForText("No clicks yet");
-    terminal.expectText("examples/Button.qml");
-    terminal.expectText("(editable)");
-    terminal.expectText("Auto-reload");
-    terminal.captureText("gallery/button.txt");
+    // Enter opens the Button demo with the QML Code Panel hidden by default.
+    app.press("ENTER");
+    app.waitForText("No clicks yet");
+    app.expectText("examples/Button.qml");
+    app.expectNoText("(editable)");
+    app.captureText("gallery/button.txt");
 
     // The first button has focus: Space activates it.
-    terminal.press("SPACE");
-    terminal.waitForText("Clicked 1 time");
+    app.press("SPACE");
+    app.waitForText("Clicked 1 time");
 
-    // Clicking the Code Panel focuses the code editor; clicking the Example
-    // Panel moves focus back to the live example rendering frame.
-    terminal.clickText("(editable)");
-    terminal.press("END");
-    terminal.press("ENTER");
-    terminal.typeText("    // Live edited comment");
-    terminal.expectText("Reloading");
-    terminal.sleep(600);
-    terminal.waitForText("No clicks yet");
-    terminal.expectText("Live edited comment");
-    terminal.clickText("● Live");
-    terminal.press("SPACE");
-    terminal.waitForText("Clicked 1 time");
-    terminal.captureText("gallery/button_live_edit.txt");
+    // F2 reveals the editable QML Code Panel; clicking the Code Panel focuses
+    // the code editor; clicking the Example Panel moves focus back to the live
+    // example rendering frame.
+    app.press("F2");
+    app.waitForText("(editable)");
+    app.expectText("Auto-reload");
+    app.clickText("(editable)");
+    app.press("END");
+    app.press("ENTER");
+    app.typeText("    // Live edited comment");
+    app.expectText("Reloading");
+    app.sleep(600);
+    app.waitForText("No clicks yet");
+    app.expectText("Live edited comment");
+    app.clickText("● Live");
+    app.press("SPACE");
+    app.waitForText("Clicked 1 time");
+    app.captureText("gallery/button_live_edit.txt");
+
+    // F2 hides the Code Panel again before returning to the grid.
+    app.press("F2");
+    app.expectNoText("(editable)");
 
     // Escape goes back to the grid.
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
-    terminal.expectNoText("Clicked 1 time");
+    app.press("ESCAPE");
+    app.waitForText("QmlTui Gallery");
+    app.expectNoText("Clicked 1 time");
 
     // End jumps to the last tile in CLI and scrolls the grid to it.
-    terminal.press("END");
-    terminal.waitForText(at(total));
-    terminal.expectText("TerminalCapabilities");
-    terminal.captureText("gallery/grid_end.txt");
+    app.press("END");
+    app.waitForText(at(total));
+    app.expectText("TerminalCapabilities");
+    app.captureText("gallery/grid_end.txt");
 
     // Topic TabBar: clicking or pressing Tab filters by topic (Controls, Layout,
     // Display, Views, Input, Animation, CLI) and Escape resets back to All.
-    terminal.press("HOME");
-    terminal.waitForText(at(1));
-    terminal.press("TAB");
-    terminal.waitForText("Components · Controls (14/");
-    terminal.press("ESCAPE");
-    terminal.waitForText(at(1));
+    app.press("HOME");
+    app.waitForText(at(1));
+    app.press("TAB");
+    app.waitForText("Components · Controls (14/");
+    app.press("ESCAPE");
+    app.waitForText(at(1));
 
     // Clicking a tile opens it directly.
-    terminal.clickText("Slider");
-    terminal.waitForText("Volume  42%");
-    terminal.press("RIGHT");
-    terminal.waitForText("Volume  43%");
-    terminal.captureText("gallery/slider.txt");
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
+    app.clickText("Slider");
+    app.waitForText("Volume  42%");
+    app.press("RIGHT");
+    app.waitForText("Volume  43%");
+    app.captureText("gallery/slider.txt");
+    app.press("ESCAPE");
+    app.waitForText("QmlTui Gallery");
 
     // Escape is contextual: it closes an open Dialog before it leaves the demo.
-    terminal.clickText("Dialog");
-    terminal.waitForText("No decision yet");
-    terminal.press("ENTER");
-    terminal.waitForText("report.pdf will be removed");
-    terminal.press("ESCAPE");
-    terminal.waitForText("Kept report.pdf");
-    terminal.expectText("Esc back to grid");
-    terminal.press("ENTER");
-    terminal.waitForText("report.pdf will be removed");
-    terminal.press("ENTER");   // the accept button has initial focus
-    terminal.waitForText("Deleted report.pdf");
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
+    app.clickText("Dialog");
+    app.waitForText("No decision yet");
+    app.press("ENTER");
+    app.waitForText("report.pdf will be removed");
+    app.press("ESCAPE");
+    app.waitForText("Kept report.pdf");
+    app.expectText("Esc back to grid");
+    app.press("ENTER");
+    app.waitForText("report.pdf will be removed");
+    app.press("ENTER");   // the accept button has initial focus
+    app.waitForText("Deleted report.pdf");
+    app.press("ESCAPE");
+    app.waitForText("QmlTui Gallery");
 
     // Switching to the Input topic tab selects TextInput: Q typed into a focused
     // TextInput is text, not quit.
-    terminal.clickText("Input");
-    terminal.waitForText("Components · Input (4/");
-    terminal.expectText("TextInput");
-    terminal.press("ENTER");
-    terminal.waitForText("Hello, stranger!");
-    terminal.typeText("quinn");
-    terminal.waitForText("Hello, quinn!");
-    terminal.press("ESCAPE");
-    terminal.waitForText("QmlTui Gallery");
-    terminal.press("ESCAPE");
-    terminal.waitForText(at(1));
+    app.clickText("Input");
+    app.waitForText("Components · Input (4/");
+    app.expectText("TextInput");
+    app.press("ENTER");
+    app.waitForText("Hello, stranger!");
+    app.typeText("quinn");
+    app.waitForText("Hello, quinn!");
+    app.press("ESCAPE");
+    app.waitForText("QmlTui Gallery");
+    app.press("ESCAPE");
+    app.waitForText(at(1));
 
     // The AnimatedSprite tile in the Display topic (only in a QmlTui.Image build)
     // plays a sprite sheet: Space pauses the frame clock, Right picks the next animation.
-    terminal.clickText("Display");
-    terminal.waitForText("Components · Display");
-    terminal.press("END");
-    if (terminal.frameText().includes("AnimatedSprite")) {
-        terminal.press("ENTER");
-        terminal.waitForRegex("loading: frame [0-9]+/4");
-        terminal.expectText("of 256x64 sheet");
-        terminal.press("SPACE");
-        terminal.waitForText("paused");
-        terminal.press("RIGHT");
-        terminal.waitForRegex("loading tail: frame [0-9]+/2");
-        terminal.typeText("r");
-        terminal.waitForText("reverse");
-        terminal.captureText("gallery/animated_sprite.txt");
-        terminal.press("ESCAPE");
-        terminal.waitForText("QmlTui Gallery");
+    app.clickText("Display");
+    app.waitForText("Components · Display");
+    app.press("END");
+    if (app.frameText().includes("AnimatedSprite")) {
+        app.press("ENTER");
+        app.waitForRegex("loading: frame [0-9]+/4");
+        app.expectText("of 256x64 sheet");
+        app.press("SPACE");
+        app.waitForText("paused");
+        app.press("RIGHT");
+        app.waitForRegex("loading tail: frame [0-9]+/2");
+        app.typeText("r");
+        app.waitForText("reverse");
+        app.captureText("gallery/animated_sprite.txt");
+        app.press("ESCAPE");
+        app.waitForText("QmlTui Gallery");
     }
-    terminal.press("ESCAPE");
-    terminal.waitForText(at(1));
+    app.press("ESCAPE");
+    app.waitForText(at(1));
 
     // Every page must instantiate without error: open each one in turn.
     for (let i = 0; i < total; ++i) {
-        terminal.press("ENTER");
-        terminal.waitForText("back to grid");
-        terminal.expectNoText("✗ Error");
-        terminal.sleep(200);   // let timers and animations paint at least once
-        terminal.captureText("gallery/page_" + String(i).padStart(2, "0") + ".txt");
-        terminal.press("ESCAPE");
-        terminal.waitForText("QmlTui Gallery");
-        terminal.press("RIGHT");
+        app.press("ENTER");
+        app.waitForText("back to grid");
+        app.expectNoText("✗ Error");
+        app.sleep(200);   // let timers and animations paint at least once
+        app.captureText("gallery/page_" + String(i).padStart(2, "0") + ".txt");
+        app.press("ESCAPE");
+        app.waitForText("QmlTui Gallery");
+        app.press("RIGHT");
     }
-    terminal.captureText("gallery/after_tour.txt");
+    app.captureText("gallery/after_tour.txt");
 
-    terminal.finish();
+    app.finish();
 }

@@ -1,10 +1,10 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("segmented");
-    terminal.expectText("thresholds");
-    terminal.sleep(800);
-    terminal.sleep(800);
-    terminal.sleep(800);
-    terminal.captureText("progress_bar.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("segmented");
+    app.expectText("thresholds");
+    app.sleep(800);
+    app.sleep(800);
+    app.sleep(800);
+    app.captureText("progress_bar.txt");
+    app.stopRecording();
 }

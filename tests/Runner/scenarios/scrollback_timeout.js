@@ -1,5 +1,5 @@
 // Waiting for scrollback that never arrives fails with a bounded timeout.
-function main(terminal) {
-    terminal.expectText("INLINE FIXTURE");
-    terminal.waitForScrollbackText("NEVER COMMITTED", 100);
+function main(app) {
+    app.expectText("INLINE FIXTURE");
+    app.waitForScrollbackText("NEVER COMMITTED", 100);
 }

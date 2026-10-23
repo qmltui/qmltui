@@ -1,7 +1,7 @@
-function main(terminal) {
-    terminal.expectText("TESTRUNNER FIXTURE");
+function main(app) {
+    app.expectText("TESTRUNNER FIXTURE");
     return new Promise(function(resolve, reject) {
-        terminal.sleep(50);
+        app.sleep(50);
         reject(new Error("intentional async error"));
     });
 }

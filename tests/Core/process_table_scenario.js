@@ -1,27 +1,27 @@
-function main(terminal) {
-    terminal.expectText("Select a row or click a header");
-    terminal.expectText("PID");
-    terminal.expectText("NAME");
-    terminal.expectText("CPU%");
-    terminal.expectText("STATE");
+function main(app) {
+    app.expectText("Select a row or click a header");
+    app.expectText("PID");
+    app.expectText("NAME");
+    app.expectText("CPU%");
+    app.expectText("STATE");
 
-    terminal.expectText("systemd");
-    terminal.expectText("qmltui_gallery");
-    terminal.expectText("sshd");
-    terminal.expectText("postgres");
-    terminal.expectText("node");
-    terminal.expectText("zsh");
+    app.expectText("systemd");
+    app.expectText("qmltui_gallery");
+    app.expectText("sshd");
+    app.expectText("postgres");
+    app.expectText("node");
+    app.expectText("zsh");
 
-    terminal.expectNoText("│                                      │");
-    terminal.captureText("initial_table_grid.txt");
+    app.expectNoText("│                                      │");
+    app.captureText("initial_table_grid.txt");
 
-    terminal.clickText("PID");
-    terminal.expectText("Header 0 clicked (sorting is the model's job)");
+    app.clickText("PID");
+    app.expectText("Header 0 clicked (sorting is the model's job)");
 
-    terminal.press("DOWN");
-    terminal.press("DOWN");
-    terminal.press("ENTER");
-    terminal.expectText("Activated row 1: qmltui_gallery");
+    app.press("DOWN");
+    app.press("DOWN");
+    app.press("ENTER");
+    app.expectText("Activated row 1: qmltui_gallery");
 
-    terminal.captureText("activated_table_grid.txt");
+    app.captureText("activated_table_grid.txt");
 }

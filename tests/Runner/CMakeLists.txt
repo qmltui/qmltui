@@ -371,7 +371,7 @@ add_qmltui_runner_scenario(test_runner_module_resource qmltui_runner_fixture
 )
 add_qmltui_runner_scenario(test_runner_module_no_main qmltui_runner_fixture
     "${qmltui_runner_scenarios}/module_no_main.mjs" 1
-    FAILURE_PATTERN "Module scenario must export a function main(terminal)"
+    FAILURE_PATTERN "Module scenario must export a function main(app)"
 )
 add_qmltui_runner_scenario(test_runner_clean_globals qmltui_runner_fixture
     "${qmltui_runner_scenarios}/clean_globals.js" 0
@@ -470,18 +470,18 @@ add_qmltui_environment_scenario(test_runner_capture_too_long qmltui_runner_fixtu
 )
 add_qmltui_runner_scenario(test_runner_fixture_missing_main qmltui_runner_fixture
     "${qmltui_runner_scenarios}/missing_main.js" 1
-    FAILURE_PATTERN "Scenario must define a function main(terminal)"
+    FAILURE_PATTERN "Scenario must define a function main(app)"
     ARTIFACT "failure.txt"
 )
 add_qmltui_environment_scenario(test_runner_eval qmltui_runner_fixture 0
-    EVAL_CODE "terminal.captureText('eval.txt')"
+    EVAL_CODE "app.captureText('eval.txt')"
     ARTIFACT "eval.txt"
     ARTIFACT_CONTENT "TESTRUNNER FIXTURE"
 )
 add_qmltui_environment_scenario(test_runner_environment_conflict qmltui_runner_fixture 1
     CONFLICT
     SCRIPT "${qmltui_runner_scenarios}/success.js"
-    EVAL_CODE "terminal.frameText()"
+    EVAL_CODE "app.frameText()"
     FAILURE_PATTERN "mutually exclusive"
     ARTIFACT "result.json"
 )

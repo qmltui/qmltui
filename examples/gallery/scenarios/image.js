@@ -1,13 +1,13 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Braille: eight dots per cell");
-    terminal.sleep(900);
-    terminal.typeText("m");
-    terminal.expectText("HalfBlock: two pixels per cell");
-    terminal.sleep(900);
-    terminal.typeText("m");
-    terminal.expectText("ASCII: brightness as characters");
-    terminal.sleep(900);
-    terminal.captureText("image.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Braille: eight dots per cell");
+    app.sleep(900);
+    app.typeText("m");
+    app.expectText("HalfBlock: two pixels per cell");
+    app.sleep(900);
+    app.typeText("m");
+    app.expectText("ASCII: brightness as characters");
+    app.sleep(900);
+    app.captureText("image.txt");
+    app.stopRecording();
 }

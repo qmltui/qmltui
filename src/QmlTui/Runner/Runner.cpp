@@ -385,7 +385,7 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
         if (!evalCode.contains(QLatin1String("main(")) &&
             !evalCode.contains(QLatin1String("main ("))) {
             generatedScript =
-                QStringLiteral("function main(terminal) {\n    %1;\n}\n").arg(evalCode).toUtf8();
+                QStringLiteral("function main(app) {\n    %1;\n}\n").arg(evalCode).toUtf8();
         } else {
             generatedScript = evalCode.toUtf8();
         }
@@ -393,12 +393,11 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
         mode = QStringLiteral("capture");
         captureAfterMs = environmentInteger("QMLTUI_RUNNER_CAPTURE_AFTER_MS", 0, 0,
                                             maximumTimeoutMs, &configurationError);
-        generatedScript = QByteArrayLiteral("function main(terminal) {\n");
+        generatedScript = QByteArrayLiteral("function main(app) {\n");
         if (captureAfterMs > 0)
-            generatedScript +=
-                QStringLiteral("    terminal.sleep(%1);\n").arg(captureAfterMs).toUtf8();
-        generatedScript += QByteArrayLiteral("    terminal.captureText('capture.txt');\n"
-                                             "    terminal.captureStyled('capture_styled.txt');\n"
+            generatedScript += QStringLiteral("    app.sleep(%1);\n").arg(captureAfterMs).toUtf8();
+        generatedScript += QByteArrayLiteral("    app.captureText('capture.txt');\n"
+                                             "    app.captureStyled('capture_styled.txt');\n"
                                              "}\n");
     }
 
@@ -587,7 +586,7 @@ void Runner::start() {
     QJSValue mainFunc;
     if (moduleScenario) {
         // An .mjs scenario is an ECMAScript module: it must export
-        // function main(terminal) and may import sibling helper modules.
+        // function main(app) and may import sibling helper modules.
         const QJSValue moduleNamespace = m_qmlEngine->importModule(m_scriptPath);
         if (moduleNamespace.isError()) {
             stopHardWatchdog();
@@ -599,8 +598,7 @@ void Runner::start() {
         if (!mainFunc.isCallable()) {
             stopHardWatchdog();
             m_evaluating = false;
-            failScenario(QStringLiteral("Module scenario must export a function main(terminal)"),
-                         false);
+            failScenario(QStringLiteral("Module scenario must export a function main(app)"), false);
             return;
         }
     } else {
@@ -622,7 +620,7 @@ void Runner::start() {
         if (!mainFunc.isCallable()) {
             stopHardWatchdog();
             m_evaluating = false;
-            failScenario(QStringLiteral("Scenario must define a function main(terminal)"), false);
+            failScenario(QStringLiteral("Scenario must define a function main(app)"), false);
             return;
         }
     }
@@ -952,7 +950,7 @@ bool Runner::stopHardWatchdog() {
 }
 
 void Runner::endOperation() {
-    // The facade calls this once a terminal.* call has returned normally. Closing
+    // The facade calls this once an app.* call has returned normally. Closing
     // the record here means a later failure — a JavaScript error on a following
     // line, or the scenario watchdog — is no longer attributed to an operation
     // that already succeeded.
@@ -972,7 +970,7 @@ void Runner::completeCurrentOperation(const QString& status) {
 bool Runner::ensureRunning(const char* operation) {
     if (m_state == State::Running) return true;
     if (m_state != State::Failed) {
-        failScenario(QStringLiteral("terminal.%1() is not valid in the current scenario state")
+        failScenario(QStringLiteral("app.%1() is not valid in the current scenario state")
                          .arg(QString::fromLatin1(operation)));
     }
     return false;
@@ -1164,7 +1162,7 @@ void Runner::sendText(const char* operation, const QString& text, bool awaitFram
     if (!ensureRunning(operation)) return;
     if (text.isEmpty()) {
         failScenario(
-            QStringLiteral("terminal.%1() requires non-empty text").arg(QLatin1String(operation)));
+            QStringLiteral("app.%1() requires non-empty text").arg(QLatin1String(operation)));
         return;
     }
 
@@ -1189,7 +1187,7 @@ void Runner::sendPaste(const char* operation, const QString& text, bool awaitFra
     if (!ensureRunning(operation)) return;
     if (text.isEmpty()) {
         failScenario(
-            QStringLiteral("terminal.%1() requires non-empty text").arg(QLatin1String(operation)));
+            QStringLiteral("app.%1() requires non-empty text").arg(QLatin1String(operation)));
         return;
     }
     // The decoder frames the bytes exactly as a terminal in bracketed-paste
@@ -1845,7 +1843,7 @@ QVariantMap Runner::frameStats() const {
 void Runner::waitForCondition(const QJSValue& condition, int timeoutMs) {
     if (!ensureRunning("waitForCondition")) return;
     if (!condition.isCallable()) {
-        failScenario(QStringLiteral("terminal.waitForCondition() requires a callable condition"));
+        failScenario(QStringLiteral("app.waitForCondition() requires a callable condition"));
         return;
     }
     const int validated = validateTimeout(timeoutMs);
@@ -1984,13 +1982,13 @@ bool Runner::ensureScrollbackSession(const char* operation) {
         return false;
     }
     if (m_terminal->mode() != Terminal::Mode::Inline) {
-        failScenario(QStringLiteral("terminal.%1() needs a Terminal in Inline mode; "
+        failScenario(QStringLiteral("app.%1() needs a Terminal in Inline mode; "
                                     "scrollback stays pending in AltScreen mode")
                          .arg(QLatin1String(operation)));
         return false;
     }
     if (!m_terminalEngine->scrollbackHistoryEnabled()) {
-        failScenario(QStringLiteral("terminal.%1() needs scrollback history, which this "
+        failScenario(QStringLiteral("app.%1() needs scrollback history, which this "
                                     "session does not record")
                          .arg(QLatin1String(operation)));
         return false;
@@ -2182,7 +2180,7 @@ double Runner::castSeconds() const {
 void Runner::startRecording(const QString& relativePath) {
     if (!ensureRunning("startRecording")) return;
     if (!s_recordingBackend || !m_terminalEngine) {
-        failScenario(QStringLiteral("terminal.startRecording() requires QMLTUI_RUNNER_RECORD "
+        failScenario(QStringLiteral("app.startRecording() requires QMLTUI_RUNNER_RECORD "
                                     "(a RECORD scenario) so the terminal bytes are captured"));
         return;
     }
@@ -2520,7 +2518,7 @@ QVariantMap Runner::cell(int x, int y) {
 QVariantList Runner::findText(const QString& text) {
     if (!ensureRunning("findText") || !m_terminalEngine) return {};
     if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
-        failScenario(QStringLiteral("terminal.findText() requires non-empty single-row text"));
+        failScenario(QStringLiteral("app.findText() requires non-empty single-row text"));
         return {};
     }
     const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
@@ -2692,7 +2690,7 @@ void Runner::clickText(const QString& text, int occurrence, const QString& butto
                        const QStringList& modifiers) {
     if (!ensureRunning("clickText") || !m_terminalEngine) return;
     if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
-        failScenario(QStringLiteral("terminal.clickText() requires non-empty single-row text"));
+        failScenario(QStringLiteral("app.clickText() requires non-empty single-row text"));
         return;
     }
     const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
@@ -2721,7 +2719,7 @@ void Runner::clickText(const QString& text, int occurrence, const QString& butto
 void Runner::hoverText(const QString& text, int occurrence, const QStringList& modifiers) {
     if (!ensureRunning("hoverText") || !m_terminalEngine) return;
     if (text.isEmpty() || text.contains(QLatin1Char('\n'))) {
-        failScenario(QStringLiteral("terminal.hoverText() requires non-empty single-row text"));
+        failScenario(QStringLiteral("app.hoverText() requires non-empty single-row text"));
         return;
     }
     const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();

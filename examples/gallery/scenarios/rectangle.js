@@ -1,10 +1,10 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("single");
-    terminal.expectText("double");
-    terminal.expectText("rounded");
-    terminal.expectText("horizontal gradient");
-    terminal.sleep(1200);
-    terminal.captureText("rectangle.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("single");
+    app.expectText("double");
+    app.expectText("rounded");
+    app.expectText("horizontal gradient");
+    app.sleep(1200);
+    app.captureText("rectangle.txt");
+    app.stopRecording();
 }

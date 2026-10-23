@@ -1,9 +1,9 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Default caption");
-    terminal.expectText("Centred caption");
-    terminal.expectText("Right caption");
-    terminal.sleep(1200);
-    terminal.captureText("panel.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Default caption");
+    app.expectText("Centred caption");
+    app.expectText("Right caption");
+    app.sleep(1200);
+    app.captureText("panel.txt");
+    app.stopRecording();
 }

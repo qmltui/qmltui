@@ -1,4 +1,4 @@
-function main(terminal) {
-    terminal.waitForText("STATUS: ASYNC READY");
-    terminal.expectSnapshot("snapshots/fixture.txt");
+function main(app) {
+    app.waitForText("STATUS: ASYNC READY");
+    app.expectSnapshot("snapshots/fixture.txt");
 }

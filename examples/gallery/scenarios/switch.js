@@ -1,17 +1,17 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Wi-Fi on, Bluetooth off");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("Wi-Fi on, Bluetooth on");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("Radios are off while airplane mode is on");
-    terminal.sleep(900);
-    terminal.captureText("switch.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Wi-Fi on, Bluetooth off");
+    app.sleep(800);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Space");
+    app.expectText("Wi-Fi on, Bluetooth on");
+    app.sleep(800);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Space");
+    app.expectText("Radios are off while airplane mode is on");
+    app.sleep(900);
+    app.captureText("switch.txt");
+    app.stopRecording();
 }

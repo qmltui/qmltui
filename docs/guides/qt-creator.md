@@ -42,7 +42,7 @@ Under **File → New Project** and **File → New File**:
 | **Application (Qt)** | **QmlTui Terminal Application (Full-Screen)** | Creates a `Terminal.AltScreen` CMake project with `FetchContent`, a keyboard quit handler, and a `Runner` smoke test. |
 | **Application (Qt)** | **QmlTui Inline Application (CLI & Scrollback)** | Creates a `Terminal.Inline` CMake project with `Scrollback`, a prompt input, and a scrollback `Runner` test. |
 | **Qt** | **QmlTui Component (`.qml`)** | Creates a QmlTui component (`Panel`, `Rectangle`, `Item`, `Column`, or `Row`) with `pragma ComponentBehavior: Bound`. |
-| **Qt** | **QmlTui Runner Scenario (`.mjs`)** | Creates an ES module scenario (`export function main(terminal)`) with `@param {Terminal} terminal` typing. |
+| **Qt** | **QmlTui Runner Scenario (`.mjs`)** | Creates an ES module scenario (`export function main(app)`) with `@param {Runner} app` typing. |
 
 When running a QmlTui executable interactively from Qt Creator, open **Projects → Run** for the active kit and check **Run in terminal** so `Terminal` attaches to a TTY.
 
@@ -79,12 +79,12 @@ if(COMMAND qmltui_scenario_editor_support)
 endif()
 ```
 
-Annotate the scenario entry point with JSDoc so Qt Creator provides completion and hover help on `terminal`:
+Annotate the scenario entry point with JSDoc so Qt Creator provides completion and hover help on `app`:
 
 ```javascript
-/** @param {Terminal} terminal */
-export function main(terminal) {
-    terminal.waitForText("Ready");
-    terminal.expectSnapshot("snapshots/initial.txt");
+/** @param {Runner} app */
+export function main(app) {
+    app.waitForText("Ready");
+    app.expectSnapshot("snapshots/initial.txt");
 }
 ```

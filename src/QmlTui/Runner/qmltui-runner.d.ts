@@ -3,9 +3,9 @@
 // Scenarios are plain JavaScript executed by QJSEngine, so TypeScript syntax
 // is not valid inside them. Editor completion comes from one JSDoc line:
 //
-//     /** @param {Terminal} terminal */
-//     function main(terminal) {
-//         terminal.press("Enter");
+//     /** @param {Runner} app */
+//     function main(app) {
+//         app.press("Enter");
 //     }
 //
 // The repository's jsconfig.json makes these declarations ambient for every
@@ -145,11 +145,11 @@ interface Region extends QmlTuiRect {
 }
 
 /**
- * The driver facade passed to function main(terminal): scripted input,
+ * The driver facade passed to function main(app): scripted input,
  * committed-frame queries and assertions, artifacts, and time control.
  * See docs/cpp-classes/runner.md for the full behavioural contract.
  */
-interface Terminal {
+interface Runner {
     /** Sends one key (named key, ASCII, or any single grapheme) and waits for the committed frame. */
     press(key: string, modifiers?: QmlTuiModifier[]): void;
     press(key: string, options?: QmlTuiModifierOptions): void;
@@ -328,4 +328,4 @@ interface Terminal {
 }
 
 /** Alias for consumers who prefer an explicit name. */
-type QmlTuiTerminal = Terminal;
+type QmlTuiRunner = Runner;

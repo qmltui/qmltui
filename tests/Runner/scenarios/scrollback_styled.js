@@ -1,7 +1,7 @@
 // The styled capture records colors and attributes of committed rows.
-function main(terminal) {
-    terminal.expectText("INLINE FIXTURE");
-    terminal.press("F3");
-    terminal.waitForScrollbackText("STYLED ROW");
-    terminal.captureScrollbackStyled("styled.txt");
+function main(app) {
+    app.expectText("INLINE FIXTURE");
+    app.press("F3");
+    app.waitForScrollbackText("STYLED ROW");
+    app.captureScrollbackStyled("styled.txt");
 }

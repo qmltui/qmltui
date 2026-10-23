@@ -1,22 +1,22 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("QmlTui Gallery");
-    terminal.marker("Gallery");
-    terminal.captureText("gallery/grid.txt");
-    terminal.sleep(1500);
-    const catalog = terminal.rootObject().catalog;
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("QmlTui Gallery");
+    app.marker("Gallery");
+    app.captureText("gallery/grid.txt");
+    app.sleep(1500);
+    const catalog = app.rootObject().catalog;
     for (let i = 0; i < catalog.length; ++i) {
-        terminal.press("Enter");
-        terminal.expectText("back to grid");
-        terminal.expectNoText("✗ Error");
-        terminal.marker(catalog[i].name);
-        terminal.sleep(1000);
-        terminal.captureText("gallery/page_" + i + ".txt");
-        terminal.press("Escape");
-        terminal.expectText("QmlTui Gallery");
-        terminal.press("Right");
+        app.press("Enter");
+        app.expectText("back to grid");
+        app.expectNoText("✗ Error");
+        app.marker(catalog[i].name);
+        app.sleep(1000);
+        app.captureText("gallery/page_" + i + ".txt");
+        app.press("Escape");
+        app.expectText("QmlTui Gallery");
+        app.press("Right");
     }
-    terminal.marker("Tour complete");
-    terminal.sleep(1500);
-    terminal.stopRecording();
+    app.marker("Tour complete");
+    app.sleep(1500);
+    app.stopRecording();
 }

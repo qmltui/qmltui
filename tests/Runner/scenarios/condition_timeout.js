@@ -1,3 +1,3 @@
-function main(terminal) {
-    terminal.waitForCondition(() => false, 100);
+function main(app) {
+    app.waitForCondition(() => false, 100);
 }

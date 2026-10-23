@@ -1,4 +1,4 @@
-function main(terminal) {
-    terminal.captureText("../escape.txt");
-    terminal.finish();
+function main(app) {
+    app.captureText("../escape.txt");
+    app.finish();
 }

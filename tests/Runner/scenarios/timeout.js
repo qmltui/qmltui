@@ -1,3 +1,3 @@
-function main(terminal) {
-    terminal.waitForText("THIS TEXT NEVER APPEARS", 100);
+function main(app) {
+    app.waitForText("THIS TEXT NEVER APPEARS", 100);
 }

@@ -1,17 +1,17 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Profile: fast");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("Profile: balanced");
-    terminal.sleep(800);
-    terminal.press("Tab");
-    terminal.sleep(500);
-    terminal.press("Space");
-    terminal.expectText("Profile: safe");
-    terminal.sleep(900);
-    terminal.captureText("radio_button.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Profile: fast");
+    app.sleep(800);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Space");
+    app.expectText("Profile: balanced");
+    app.sleep(800);
+    app.press("Tab");
+    app.sleep(500);
+    app.press("Space");
+    app.expectText("Profile: safe");
+    app.sleep(900);
+    app.captureText("radio_button.txt");
+    app.stopRecording();
 }

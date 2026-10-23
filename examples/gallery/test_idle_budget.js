@@ -1,10 +1,10 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("QmlTui Gallery");
-    terminal.sleep(300); // Real event-loop settling, then observe unscripted renders.
-    const before = terminal.frameCount();
-    terminal.sleep(500);
-    const advanced = terminal.frameCount() - before;
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("QmlTui Gallery");
+    app.sleep(300); // Real event-loop settling, then observe unscripted renders.
+    const before = app.frameCount();
+    app.sleep(500);
+    const advanced = app.frameCount() - before;
     if (advanced !== 0)
-        terminal.fail("Gallery repainted while idle: " + advanced);
+        app.fail("Gallery repainted while idle: " + advanced);
 }

@@ -1,10 +1,10 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Braille dot matrix");
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.sleep(400);
-    terminal.captureText("canvas.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Braille dot matrix");
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.sleep(400);
+    app.captureText("canvas.txt");
+    app.stopRecording();
 }

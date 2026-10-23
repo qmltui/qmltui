@@ -1,16 +1,16 @@
 // ToolTip.delay and ToolTip.timeout on the virtual clock, to the millisecond.
-function main(terminal) {
-    terminal.waitForText("Target");
-    terminal.expectNoText("TIPTEXT");
+function main(app) {
+    app.waitForText("Target");
+    app.expectNoText("TIPTEXT");
 
-    terminal.hover(4, 4);
-    terminal.advanceTime(499);
-    terminal.expectNoText("TIPTEXT");
-    terminal.advanceTime(1);
-    terminal.expectText("TIPTEXT");
+    app.hover(4, 4);
+    app.advanceTime(499);
+    app.expectNoText("TIPTEXT");
+    app.advanceTime(1);
+    app.expectText("TIPTEXT");
 
-    terminal.advanceTime(399);
-    terminal.expectText("TIPTEXT");
-    terminal.advanceTime(1);
-    terminal.expectNoText("TIPTEXT");
+    app.advanceTime(399);
+    app.expectText("TIPTEXT");
+    app.advanceTime(1);
+    app.expectNoText("TIPTEXT");
 }

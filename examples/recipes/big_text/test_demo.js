@@ -1,6 +1,6 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("BigText — 3x5 Block Glyph Item");
-    terminal.sleep(3000);
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("BigText — 3x5 Block Glyph Item");
+    app.sleep(3000);
+    app.stopRecording();
 }

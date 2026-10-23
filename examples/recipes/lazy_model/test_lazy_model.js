@@ -1,22 +1,22 @@
-function main(terminal) {
+function main(app) {
     // The root level is fetched on load; nothing below it is.
-    terminal.expectText("Lazy model")
-    terminal.expectText("> dir-0")
-    terminal.expectText("fetchMore calls: 1")
-    terminal.expectText("file-0.txt  4 KiB")
-    terminal.expectNoText("file-0.txt  17 KiB")
-    terminal.captureText("root.txt")
+    app.expectText("Lazy model")
+    app.expectText("> dir-0")
+    app.expectText("fetchMore calls: 1")
+    app.expectText("file-0.txt  4 KiB")
+    app.expectNoText("file-0.txt  17 KiB")
+    app.captureText("root.txt")
 
     // Expanding the current branch fetches exactly one more level.
-    terminal.press("Right")
-    terminal.expectText("fetchMore calls: 2")
-    terminal.expectText("  > dir-0")
-    terminal.expectText("file-0.txt  17 KiB")
-    terminal.captureText("expanded.txt")
+    app.press("Right")
+    app.expectText("fetchMore calls: 2")
+    app.expectText("  > dir-0")
+    app.expectText("file-0.txt  17 KiB")
+    app.captureText("expanded.txt")
 
     // Collapsing and re-expanding does not fetch again.
-    terminal.press("Left")
-    terminal.expectNoText("  > dir-0")
-    terminal.press("Right")
-    terminal.expectText("fetchMore calls: 2")
+    app.press("Left")
+    app.expectNoText("  > dir-0")
+    app.press("Right")
+    app.expectText("fetchMore calls: 2")
 }

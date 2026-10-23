@@ -1,6 +1,6 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("QmlTui StatusBadge Component Demo");
-    terminal.sleep(3000);
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("QmlTui StatusBadge Component Demo");
+    app.sleep(3000);
+    app.stopRecording();
 }

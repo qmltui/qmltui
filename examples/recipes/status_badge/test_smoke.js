@@ -1,6 +1,6 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("QmlTui StatusBadge Component Demo");
-    terminal.advanceTime(200);
-    terminal.captureText("status_badge.txt");
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("QmlTui StatusBadge Component Demo");
+    app.advanceTime(200);
+    app.captureText("status_badge.txt");
 }

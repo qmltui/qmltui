@@ -216,15 +216,15 @@ function(qmltui_scenario_editor_support)
 }
 ]=])
         message(STATUS
-            "QmlTui: generated ${jsconfig}; scenarios get terminal.* completion "
-            "from /** @param {Terminal} terminal */")
+            "QmlTui: generated ${jsconfig}; scenarios get app.* completion "
+            "from /** @param {Runner} app */")
     else()
         file(READ "${jsconfig}" jsconfig_contents)
         string(FIND "${jsconfig_contents}" "qmltui-runner.d.ts" declarations_position)
         if(declarations_position EQUAL -1)
             message(STATUS
                 "QmlTui: add \".qmltui/qmltui-runner.d.ts\" to the include list of "
-                "${jsconfig} to get terminal.* completion in scenarios")
+                "${jsconfig} to get app.* completion in scenarios")
         endif()
     endif()
 endfunction()

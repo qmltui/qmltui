@@ -1,17 +1,17 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Nothing activated yet");
-    terminal.sleep(700);
-    terminal.press("Down");
-    terminal.press("Down");
-    terminal.sleep(500);
-    terminal.press("Enter");
-    terminal.expectText("Activated: src/Core/Item.cpp");
-    terminal.sleep(700);
-    terminal.clickText("Controls");
-    terminal.press("Right");
-    terminal.expectText("Button.qml");
-    terminal.sleep(900);
-    terminal.captureText("tree_view.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Nothing activated yet");
+    app.sleep(700);
+    app.press("Down");
+    app.press("Down");
+    app.sleep(500);
+    app.press("Enter");
+    app.expectText("Activated: src/Core/Item.cpp");
+    app.sleep(700);
+    app.clickText("Controls");
+    app.press("Right");
+    app.expectText("Button.qml");
+    app.sleep(900);
+    app.captureText("tree_view.txt");
+    app.stopRecording();
 }

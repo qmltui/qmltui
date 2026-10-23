@@ -1,24 +1,24 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Hello, QmlTui!");
-    terminal.expectText("Interactions: 0");
-    terminal.sleep(900);
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Hello, QmlTui!");
+    app.expectText("Interactions: 0");
+    app.sleep(900);
 
-    terminal.press("Enter");
-    terminal.expectText("Interactions: 1");
-    terminal.sleep(500);
+    app.press("Enter");
+    app.expectText("Interactions: 1");
+    app.sleep(500);
 
-    terminal.press("Enter");
-    terminal.expectText("Interactions: 2");
-    terminal.sleep(500);
+    app.press("Enter");
+    app.expectText("Interactions: 2");
+    app.sleep(500);
 
-    terminal.press("Enter");
-    terminal.expectText("Interactions: 3");
-    terminal.sleep(700);
+    app.press("Enter");
+    app.expectText("Interactions: 3");
+    app.sleep(700);
 
-    terminal.press("r");
-    terminal.expectText("Interactions: 0");
-    terminal.sleep(900);
+    app.press("r");
+    app.expectText("Interactions: 0");
+    app.sleep(900);
 
-    terminal.stopRecording();
+    app.stopRecording();
 }

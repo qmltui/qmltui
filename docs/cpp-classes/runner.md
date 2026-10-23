@@ -1,184 +1,301 @@
 # Runner
 
-## Class Overview
+## Overview
 
-`qmltui::Runner` turns a running QmlTui `Terminal` application into a bounded JavaScript-driven automation and test oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(terminal)` entry point with a driver facade, drives input, verifies committed frames, and writes machine-readable diagnostics. A synchronous scenario succeeds when `main` returns normally; `terminal.finish()` is optional.
+`qmltui::Runner` turns a running QmlTui `Terminal` application into a bounded, JavaScript-driven test harness and automation oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(app)` entry point with a driver facade, injects keyboard and mouse input, verifies committed terminal frames (`TextGridBuffer`), and writes machine-readable diagnostics (`result.json`, `final.txt`, `failure.txt`). A synchronous scenario succeeds when `main` returns normally; calling `app.finish()` is optional.
 
-The class is intended for application-level automated scenarios, agent harnesses, and tests. It operates on an explicitly supplied `Terminal`, so applications with multiple terminals do not rely on global target selection.
+The class is declared in `Runner/Runner.h` and implemented in `Runner/Runner.cpp`. Build and link `qmltui::runner` when `QMLTUI_ENABLE_RUNNER=ON` (default for top-level builds) or `QMLTUI_BUILD_TESTS=ON`. Its only build dependencies are `Qt6::Core`, `Qt6::Qml`, and `qmltui::core` (no `QtGui` required).
 
-## Project Structure and Dependencies
+`Runner` collaborates with three core types:
 
-The declaration is in `Runner/Runner.h` and the implementation is in `Runner/Runner.cpp`. `QmlTuiRunner` is available when either `QMLTUI_BUILD_TESTS` or `QMLTUI_ENABLE_RUNNER` is enabled. Consumers link against `qmltui::runner`.
+- `Terminal`: Identifies the UI root under test.
+- `TerminalEngine`: Injects decoded input, schedules rendering, publishes committed-frame notifications, and exposes the current frame.
+- `TextGridBuffer`: Holds the committed character-cell grid inspected by assertions and snapshots.
 
-Its only build dependencies are Qt 6 QML and `qmltui::core`; a `QCoreApplication` is sufficient, and no Qt GUI module is needed. The driver collaborates with these project types:
+For a step-by-step walkthrough, see [Testing and Recording with Runner](../guides/testing.md).
 
-- `Terminal` identifies the UI under test.
-- `TerminalEngine` injects input, requests rendering, publishes committed-frame notifications, and provides the current frame.
-- `TextGridBuffer` contains the committed terminal cells used by text assertions and artifacts.
+## Scenario Files and Editor Autocomplete
 
-## Class Hierarchy and Role
+### `.js` Scripts and `.mjs` Modules
 
-`Runner` derives directly from `QObject`. `QObject` provides parent-based ownership, signal delivery, timers, and the meta-object data required to expose `Q_INVOKABLE` methods to JavaScript. The class is `final`, and copying and moving are disabled.
+- **Classic scripts (`.js`)**: Define `function main(app)`. Evaluated inside an isolated function scope so top-level declarations do not pollute application globals; reported line numbers remain unchanged.
+- **ECMAScript modules (`.mjs`)**: Define `export function main(app)` and can `import` shared helper modules using relative paths (from either the filesystem or Qt resources). `QMLTUI_RUNNER_EVAL` uses classic script mode.
 
-## Signals
+### TypeScript Declarations (`qmltui-runner.d.ts`)
 
-#### finished(int exitCode)
+Scenarios are plain JavaScript files. Editor autocomplete and hover documentation come from `Runner/qmltui-runner.d.ts`. Add one JSDoc annotation above `main`:
 
-Emitted once when the scenario has passed or failed and process exit has been scheduled. An exit code of `0` indicates success; `1` indicates a scenario, configuration, JavaScript, timeout, rendering, assertion, or artifact failure. Consumers may connect this signal to test-harness reporting, but the driver also schedules `QCoreApplication::exit(exitCode)`.
-
-## Public Slots and Q_INVOKABLE Methods
-
-The methods in this section are callable from JavaScript through the `terminal` argument passed to `function main(terminal)`. They must be called while the scenario is running. Unless stated otherwise, invalid arguments or failed operations fail the complete scenario, produce a failure artifact when a frame is available, and schedule a non-zero process exit.
-
-Every optional parameter may also be given as one trailing options object: `terminal.click(10, 5, { button: "right" })`, `terminal.waitForText("READY", { timeout: 3000 })`. An unknown option key fails the scenario, so a typo can never pass silently. Mixing positional optional arguments with an options object in the same call is an error.
-
-#### void press(const QString &key, const QStringList &modifiers = {})
-
-Sends one key event to the target terminal and waits for the resulting committed frame. `key` accepts Enter/Return, Esc/Escape, Tab, Backtab, Backspace, Space, the arrow keys, Home, End, Insert, Delete, PageUp, PageDown, F1 through F35, one ASCII character, or any single Unicode grapheme, which is routed through the input decoder exactly like typed text (modifiers are invalid with such a text key). Modifier names are case-insensitive and accept Shift, Ctrl/Control, Alt, and Meta. Backtab automatically applies Shift. Control, Alt, and Meta combinations do not carry text. JavaScript usage: `terminal.press("Enter")`, `terminal.press("a", ["Shift"])`, or `terminal.press("é")`.
-
-#### void typeText(const QString &text)
-
-Types non-empty Unicode text and waits once for the resulting committed frame. The UTF-8 bytes go through the same input decoder as a real keyboard, so each character becomes the key event a terminal keystroke produces: letters map to `Qt.Key_A` through `Qt.Key_Z` whatever their case, digits and punctuation to their own codes, newline to `Qt.Key_Return`, tab to `Qt.Key_Tab`, and control characters to their Ctrl combinations. `Keys.onPressed` handlers that compare `event.key` therefore react to scripted typing exactly as they react to a user. Because the decoder is the real one, a lone Escape byte waits for a following byte exactly as it does on a terminal; use `press("Escape")` for that key. Use this for text entry rather than issuing one `press()` call per character; use `press()` when a modifier is needed. JavaScript usage: `terminal.typeText("café 世界")`.
-
-#### void sleep(int durationMs)
-
-Waits for the requested duration while continuing to process Qt events, QML timers, rendering, and the scenario watchdog. `durationMs` must be between 1 and 30,000 milliseconds. The overall scenario watchdog can fail the test before the sleep completes. Nested wait operations are rejected. Under the virtual clock, `sleep()` is `advanceTime()`: it passes application time instantly instead of waiting. JavaScript usage: `terminal.sleep(250)`.
-
-#### void advanceTime(int durationMs)
-
-Virtual clock only. Advances QmlTui time by `durationMs` in steps of at most 16 ms — or to the next QmlTui timer deadline when that is sooner — firing QmlTui timers, animations, and QML `Timer`s at their exact virtual instants and committing frames for whatever they invalidated. A step that scheduled nothing commits no frame, so `frameCount()` comparisons remain meaningful. On the real clock the call fails with the variable that selects virtual mode. JavaScript usage: `terminal.advanceTime(500)`.
-
-#### double now()
-
-Milliseconds on the QmlTui clock: virtual time under the virtual clock, wall time since process start otherwise. JavaScript usage: `const t = terminal.now();`
-
-#### void waitForFrame(int timeoutMs = 2000)
-
-Requests rendering and waits for a committed frame whose sequence is newer than the frame visible when the call began. `timeoutMs` must be between 1 and 30,000 milliseconds. The scenario fails if no new frame is committed before the timeout. JavaScript usage: `terminal.waitForFrame()` or `terminal.waitForFrame(5000)`.
-
-#### void expectRepaint(int timeoutMs = 2000)
-
-Waits for a committed frame **without** requesting one, so it verifies that the application itself invalidated the scene, and fails if no frame arrives before the timeout. Use it to catch missing invalidation — a bug class every other assertion hides, because `waitForFrame()` and the `expect*` family request a render themselves and therefore pass even when a change scheduled no repaint. Pair it with `injectKey()`/`injectText()`: the regular input methods wait for a frame and would consume the very repaint being asserted. JavaScript usage: `terminal.injectKey("k"); terminal.expectRepaint();`
-
-#### void injectKey(const QString &key, const QStringList &modifiers = {})
-
-`press()` without the implicit frame wait. Same key and modifier names, no rendering requested and no frame awaited. JavaScript usage: `terminal.injectKey("Down", ["Shift"])`.
-
-#### void injectText(const QString &text)
-
-`typeText()` without the implicit frame wait: the same per-character key events, no rendering requested and no frame awaited. JavaScript usage: `terminal.injectText("abc")`.
-
-#### void paste(const QString &text)
-
-Sends non-empty text as one bracketed paste through the input decoder and waits for the resulting committed frame. Newlines and tabs inside the paste arrive as data, exactly as a terminal in bracketed-paste mode delivers them, instead of acting as the Return and Tab keys. JavaScript usage: `terminal.paste("line1\nline2")`.
-
-#### void injectPaste(const QString &text)
-
-`paste()` without the implicit frame wait, for use with `expectRepaint()`.
-
-#### void resize(int columns, int rows)
-
-Resizes the test viewport to `columns` x `rows` (each 1 through 1,000) and waits until a frame with the new dimensions is committed, bounded by the operation timeout. Use it to exercise reflow: content bound to the root size must move within the same scenario. JavaScript usage: `terminal.resize(60, 20)`.
-
-#### object size()
-
-Returns `{columns, rows}` of the current committed frame. JavaScript usage: `const size = terminal.size();`
-
-#### int frameCount()
-
-Sequence number of the most recently committed frame, or `-1` when no engine is attached. Compare it across an interaction to assert that nothing repainted. JavaScript usage: `const before = terminal.frameCount();`
-
-#### object frameStats()
-
-Cost of the most recently committed frame and totals for the session: `frame`, `paintMicros`, `diffMicros`, `writeMicros`, `diffBytes`, `bytesWritten`, `dirtyDuringPaint`, `queuedBytes`, `frames`, `paintMicrosAvg`, `paintMicrosMax`, `diffMicrosAvg`, `bytesTotal`, `dirtyDuringPaintTotal`, and `skippedForBackpressure`. `bytesTotal` sums encoded diff bytes, so it is meaningful in quiet sessions where nothing reaches a terminal. Use it for idle-budget assertions: capture the stats, interact or wait, and compare. JavaScript usage: `const stats = terminal.frameStats();`
-
-#### void waitForCondition(const QJSValue &condition, int timeoutMs = 2000)
-
-Evaluates a synchronous JavaScript callback immediately and then approximately every 10 milliseconds until it returns a truthy value. The callback receives two arguments: the normalized text of the current committed frame and the number of milliseconds elapsed since waiting began. `timeoutMs` must be between 1 and 30,000 milliseconds.
-
-The callback must be callable and synchronous. A thrown JavaScript error fails the scenario. Promises are not awaited, and nested calls to `sleep()`, `waitForFrame()`, `waitForText()`, or `waitForCondition()` are rejected. JavaScript usage: `terminal.waitForCondition((frameText, elapsedMs) => elapsedMs >= 100 && frameText.includes("READY"), 2000)`.
-
-#### void waitForText(const QString &text, int timeoutMs = 2000)
-
-Waits until a committed terminal frame contains the specified non-empty substring. It observes committed frames rather than sleeping for an assumed render delay. `timeoutMs` must be between 1 and 30,000 milliseconds. JavaScript usage: `terminal.waitForText("SYSTEM READY", 3000)`.
-
-#### void expectText(const QString &text, int timeoutMs = -1)
-
-Waits for the next committed frame and fails unless its normalized text contains the specified non-empty substring. A negative timeout means the configured operation timeout; every other `expect*` assertion takes the same optional timeout. Use `waitForText()` when the expected content may appear asynchronously; use `expectText()` as an immediate assertion after an operation.
-
-#### void expectNoText(const QString &text, int timeoutMs = -1)
-
-Waits for the next committed frame and fails if its normalized text contains the specified substring. An empty substring is invalid because every string contains it.
-
-#### void captureText(const QString &relativePath)
-
-Waits for the next committed frame and writes its normalized UTF-8 text beneath the configured artifact directory. Trailing spaces are removed from each row. `relativePath` must be a non-empty relative path contained by the artifact directory; absolute paths and parent traversal are rejected. Missing parent directories inside the artifact directory are created automatically.
-
-#### void captureStyled(const QString &relativePath)
-
-Waits for the next committed frame and writes its styled text (the `styledText()` format) beneath the configured artifact directory, with the same path rules as `captureText()`. Run it once to record the baseline for `expectStyled()`, then copy the artifact next to the scenario.
-
-#### Scrollback assertions
-
-An Inline-mode application commits its history through `Scrollback`, and those rows never appear in the live frame. In a test session the engine keeps every committed row as cells (see `TerminalEngine::setScrollbackHistoryEnabled()`; `QMLTUI_SCROLLBACK_HISTORY_ROWS` sets the retained window, 5,000 rows by default), and the methods below read them with the same normalisation, styled format, artifact and snapshot rules as their frame counterparts. Rows are committed exactly when their bytes would reach the terminal: on the stream render that carries them, so `expect*` waits for a frame first. Row numbers count from the start of the session and keep counting when old rows are trimmed; `print("a\nb")` is two rows and a spacing row is one blank row. Every method fails when the root `Terminal` is not in Inline mode, because scrollback stays pending in AltScreen mode. A Runner constructed after QML loaded starts recording from `beginTestSession()`, so rows appended during `componentComplete` are bytes only.
-
-#### int scrollbackRowCount()
-
-Returns the number of rows committed to the scrollback so far. Pass it as `fromRow` to the other scrollback methods to look only at what a later step appended. JavaScript usage: `const mark = terminal.scrollbackRowCount();`.
-
-#### QString scrollbackText(int fromRow = 0)
-
-Returns the normalized text of the committed scrollback rows from `fromRow` onwards without requesting another render. Empty when nothing has been committed. JavaScript usage: `terminal.scrollbackText(mark)` or `terminal.scrollbackText({ fromRow: mark })`.
-
-#### void waitForScrollbackText(const QString &text, int timeoutMs = 2000)
-
-Waits until the committed scrollback contains the specified non-empty substring, observing frames and scrollback commits rather than sleeping. `timeoutMs` must be between 1 and 30,000 milliseconds. JavaScript usage: `terminal.waitForScrollbackText("Allow once", 5000)`.
-
-#### void expectScrollbackText(const QString &text, int timeoutMs = -1)
-
-Waits for the next committed frame and fails unless the committed scrollback contains the specified non-empty substring. JavaScript usage: `terminal.expectScrollbackText("hello inline")`.
-
-#### void expectNoScrollbackText(const QString &text, int timeoutMs = -1)
-
-Waits for the next committed frame and fails if the committed scrollback contains the specified substring.
-
-#### void captureScrollback(const QString &relativePath, int fromRow = 0)
-
-Waits for the next committed frame and writes the committed scrollback rows from `fromRow` onwards as normalized UTF-8 text beneath the artifact directory, with the path rules of `captureText()`. JavaScript usage: `terminal.captureScrollback("banner.txt")`.
-
-#### void captureScrollbackStyled(const QString &relativePath, int fromRow = 0)
-
-Like `captureScrollback()`, in the `styledText()` format, to record the baseline of a styled scrollback comparison.
-
-#### void expectScrollbackSnapshot(const QString &snapshotRelativePath, int fromRow = 0, int timeoutMs = -1)
-
-Compares the committed scrollback rows from `fromRow` onwards against a snapshot resolved relative to the scenario, with the mismatch artifacts and update mode of `expectSnapshot()`. JavaScript usage: `terminal.expectScrollbackSnapshot("snapshots/history.txt", { fromRow: mark })`.
-
-#### Recording a session as an asciicast
-
-A scenario registered with `qmltui_add_scenario(... RECORD <name>.cast)` (or run with `QMLTUI_RUNNER_RECORD=<path>` next to a scenario variable) records the terminal bytes the application emits into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. The Runner swaps the terminal backend for an in-memory one before the `Terminal` exists, turns output on, fixes the capabilities to 24-bit colour with no synchronized output, kitty protocols or probes, and appends one `"o"` event per committed frame with the Runner clock as its time. Under `CLOCK VIRTUAL` the timeline advances only through `sleep()` and `advanceTime()`, so pace a recording scenario with them; the cast is then byte-identical on every run. Full-screen and inline (scrollback) sessions both record faithfully because the bytes are the real ones. The header carries no wall-clock timestamp. Recorded paths are listed under `artifacts.casts` in `result.json`, and the test gets the `Cast` label. `RECORD` cannot be combined with `LIVE`. Derive a GIF with `agg <name>.cast <name>.gif` or an SVG still with `svg-term`; neither tool is needed to record.
-
-#### void startRecording(const QString &relativePath)
-
-Closes any recording in progress and starts a new cast at `relativePath` beneath the artifact directory, beginning with a full repaint. Fails when the session was not armed with `QMLTUI_RUNNER_RECORD`. JavaScript usage: `terminal.startRecording("tour.cast")`.
-
-#### void stopRecording()
-
-Closes the recording in progress, after writing any bytes emitted since the last frame.
-
-#### void marker(const QString &label)
-
-Writes an `"m"` event with `label` at the current time; players show markers as chapter points. JavaScript usage: `terminal.marker("open dialog")`.
-
-#### QString frameText()
-
-Returns normalized text for the current committed frame without requesting another render.
-
-#### QString styledText()
-
-Returns the normalized frame text followed by a `--- styles` section that records colors and attributes. Each line describes one run of adjacent cells on a row that share the same foreground, background, and attribute set; runs that use the terminal defaults for all three are omitted:
-
+```javascript
+/** @param {Runner} app */
+function main(app) {
+    app.press("Enter");
+}
 ```
+
+In consumer CMake projects (using `find_package(QmlTui)`, `FetchContent`, or `add_subdirectory`), call `qmltui_scenario_editor_support()` to copy `.qmltui/qmltui-runner.d.ts` into the project directory and generate `jsconfig.json` when none exists:
+
+```cmake
+if(COMMAND qmltui_scenario_editor_support)
+    qmltui_scenario_editor_support() # optional: DIRECTORY <path>
+endif()
+```
+
+An existing `jsconfig.json` is never overwritten; CMake prints a status message showing the `include` entry to add.
+
+## JavaScript `app` (`Runner`) Facade Reference
+
+The methods below are callable on the `app` argument passed to `function main(app)`. Unless stated otherwise, invalid arguments or failed assertions fail the scenario immediately, write `failure.txt` when a frame is available, and schedule process exit with code `1`.
+
+Every optional parameter can also be passed as a trailing options object:
+
+```javascript
+app.click(10, 5, { button: "right" });
+app.waitForText("READY", { timeout: 3000 });
+```
+
+Unknown option keys fail the scenario so typos never pass silently. Mixing positional optional arguments with a trailing options object in the same call is an error.
+
+### Summary by Category
+
+| Category | Methods |
+| :--- | :--- |
+| **Keyboard & Paste Input** | `press`, `typeText`, `paste`, `injectKey`, `injectText`, `injectPaste` |
+| **Mouse Input** | `clickText`, `hoverText`, `click`, `doubleClick`, `hover`, `mouseDown`, `mouseUp`, `drag`, `scroll` |
+| **Clock & Frame Sync** | `sleep`, `advanceTime`, `now`, `waitForFrame`, `expectRepaint`, `waitForCondition`, `frameCount`, `frameStats` |
+| **Text, Regex & Style Assertions** | `waitForText`, `expectText`, `expectNoText`, `waitForRegex`, `expectRegex`, `expectTextInRegion`, `expectStyle` |
+| **Snapshots & Captures** | `expectSnapshot`, `expectStyled`, `expectRegionSnapshot`, `captureText`, `captureStyled` |
+| **Inspection & Locators** | `frameText`, `styledText`, `cell`, `findText`, `regionText`, `size`, `resize`, `itemRect`, `waitForItem`, `region`, `item`, `rootObject` |
+| **Inline Scrollback** | `scrollbackRowCount`, `scrollbackText`, `waitForScrollbackText`, `expectScrollbackText`, `expectNoScrollbackText`, `captureScrollback`, `captureScrollbackStyled`, `expectScrollbackSnapshot` |
+| **Asciicast Recording** | `startRecording`, `stopRecording`, `marker` |
+| **Lifecycle** | `finish`, `fail` |
+
+### Keyboard and Clipboard Input
+
+#### `void press(const QString &key, const QStringList &modifiers = {})`
+
+Sends one key event to the target terminal and waits for the resulting committed frame. `key` accepts `Enter`/`Return`, `Esc`/`Escape`, `Tab`, `Backtab`, `Backspace`, `Space`, arrow keys (`Up`, `Down`, `Left`, `Right`), `Home`, `End`, `Insert`, `Delete`, `PageUp`, `PageDown`, `F1` through `F35`, one ASCII character, or any single Unicode grapheme (routed through `InputDecoder` as typed text; modifiers are invalid with a non-ASCII grapheme key). Modifier names are case-insensitive and accept `Shift`, `Ctrl`/`Control`, `Alt`, and `Meta`. `Backtab` automatically applies `Shift`. `Control`, `Alt`, and `Meta` combinations do not carry text.
+
+```javascript
+app.press("Enter");
+app.press("a", ["Shift"]);
+app.press("é");
+```
+
+#### `void typeText(const QString &text)`
+
+Types non-empty Unicode text and waits once for the resulting committed frame. The UTF-8 bytes pass through `InputDecoder` just like physical keystrokes: letters map to `Qt.Key_A` through `Qt.Key_Z`, digits and punctuation to their key codes, newline to `Qt.Key_Return`, tab to `Qt.Key_Tab`, and control characters to `Ctrl` combinations. Because `InputDecoder` buffers a lone `Escape` byte waiting for an ANSI sequence, use `press("Escape")` for the Escape key. Use `typeText()` for text entry and `press()` when modifiers are required.
+
+```javascript
+app.typeText("café 世界");
+```
+
+#### `void paste(const QString &text)`
+
+Sends non-empty text as a single bracketed paste through `InputDecoder` and waits for the resulting committed frame. Newlines and tabs inside the paste arrive as text data instead of acting as the `Return` and `Tab` keys.
+
+```javascript
+app.paste("line1\nline2");
+```
+
+#### `void injectKey(const QString &key, const QStringList &modifiers = {})`
+
+Same as `press()`, but without requesting rendering or waiting for a frame. Pair with `expectRepaint()`.
+
+```javascript
+app.injectKey("Down", ["Shift"]);
+```
+
+#### `void injectText(const QString &text)`
+
+Same as `typeText()`, but without requesting rendering or waiting for a frame. Pair with `expectRepaint()`.
+
+#### `void injectPaste(const QString &text)`
+
+Same as `paste()`, but without requesting rendering or waiting for a frame. Pair with `expectRepaint()`.
+
+### Mouse Input
+
+#### `void clickText(const QString &text, int occurrence = 0, const QString &button = "left", const QStringList &modifiers = {})`
+
+Clicks the center of the selected rendered-text match and waits for the resulting committed frame. Text-based mouse helpers translate frame rows through the renderer's screen origin (quiet inline sessions place the frame immediately above the terminal's last row). Coordinate-based mouse methods use screen coordinates, whereas `findText()` returns frame coordinates.
+
+```javascript
+app.clickText("Apply");
+app.clickText("Delete", 1, "right");
+```
+
+#### `void hoverText(const QString &text, int occurrence = 0, const QStringList &modifiers = {})`
+
+Moves the mouse to the center of the selected rendered-text match with no button held and waits for the resulting committed frame. Delivered only while any-motion reporting (`MouseArea.hoverEnabled`) is active.
+
+#### `void click(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
+
+Sends a mouse press and release event at terminal coordinates `(x, y)` and waits for the committed frame. Accepts button `"left"`, `"middle"`, or `"right"` and optional modifiers `["Shift", "Ctrl", "Alt", "Meta"]`.
+
+```javascript
+app.click(10, 5);
+app.click(10, 5, "right");
+```
+
+#### `void doubleClick(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
+
+Sends two consecutive mouse press and release cycles at terminal coordinates `(x, y)`.
+
+#### `void hover(int x, int y, const QStringList &modifiers = {})`
+
+Moves the mouse to `(x, y)` with no button held. Delivered only while the application has hover (`MouseArea.hoverEnabled`) enabled; otherwise the move is dropped and only a frame is awaited.
+
+#### `void mouseDown(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
+
+Presses a mouse button at `(x, y)` without releasing it, for press-and-hold interactions and custom drags.
+
+#### `void mouseUp(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
+
+Releases a mouse button at `(x, y)`.
+
+#### `void drag(int startX, int startY, int endX, int endY, const QString &button = "left", const QStringList &modifiers = {})`
+
+Presses at `(startX, startY)`, reports button-held motion cell by cell along the path, and releases at `(endX, endY)`.
+
+```javascript
+app.drag(5, 5, 25, 5);
+```
+
+#### `void scroll(int x, int y, int deltaX, int deltaY, const QStringList &modifiers = {})`
+
+Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY`.
+
+```javascript
+app.scroll(15, 10, 0, 120);
+```
+
+### Clock, Timing, and Frame Synchronization
+
+#### `void sleep(int durationMs)`
+
+Waits for `durationMs` (`1..30000` ms) while continuing to process Qt events, QML timers, rendering, and the scenario watchdog. Nested wait operations are rejected. Under the virtual clock, `sleep()` delegates to `advanceTime()` and advances application time immediately without wall-clock waiting.
+
+#### `void advanceTime(int durationMs)`
+
+Virtual clock only. Advances QmlTui time by `durationMs` in steps of at most 16 ms (or to the next QmlTui timer deadline when sooner), firing QmlTui timers, animations, and QML `Timer` items at their exact virtual instants and committing frames for invalidated items. A step that invalidates nothing commits no frame, preserving `frameCount()` comparisons. Calling `advanceTime()` on the real clock fails the scenario with a message naming `QMLTUI_RUNNER_CLOCK=virtual`.
+
+```javascript
+app.advanceTime(500);
+```
+
+#### `double now()`
+
+Returns elapsed milliseconds on the active QmlTui clock (virtual time under `CLOCK VIRTUAL`, wall time since process start under `CLOCK REAL`).
+
+#### `void waitForFrame(int timeoutMs = 2000)`
+
+Requests rendering and waits for a committed frame whose sequence number is newer than the frame visible when the call began (`timeoutMs` in `1..30000` ms). Fails if no new frame is committed before the timeout.
+
+#### `void expectRepaint(int timeoutMs = 2000)`
+
+Waits for a committed frame **without** requesting one, verifying that the application itself invalidated the scene. Fails if no frame arrives before `timeoutMs`. Pair with `injectKey()`, `injectText()`, or `injectPaste()`, because `press()` and `expect*` request a render themselves and would hide missing invalidation bugs:
+
+```javascript
+app.injectKey("k");
+app.expectRepaint();
+```
+
+#### `void waitForCondition(const QJSValue &condition, int timeoutMs = 2000)`
+
+Evaluates a synchronous JavaScript callback immediately and then approximately every 10 ms until it returns a truthy value (`timeoutMs` in `1..30000` ms). The callback receives `(frameText, elapsedMs)`. Promises are not awaited, and nested wait calls inside the callback are rejected.
+
+```javascript
+app.waitForCondition((frameText, elapsedMs) => elapsedMs >= 100 && frameText.includes("READY"), 2000);
+```
+
+#### `int frameCount()`
+
+Returns the sequence number of the most recently committed frame, or `-1` when no engine is attached. Compare across an interaction to assert that nothing repainted.
+
+#### `object frameStats()`
+
+Returns timing and byte metrics for the most recently committed frame and cumulative session totals: `frame`, `paintMicros`, `diffMicros`, `writeMicros`, `diffBytes`, `bytesWritten`, `dirtyDuringPaint`, `queuedBytes`, `frames`, `paintMicrosAvg`, `paintMicrosMax`, `diffMicrosAvg`, `bytesTotal`, `dirtyDuringPaintTotal`, and `skippedForBackpressure`. `bytesTotal` sums encoded diff bytes even in quiet headless sessions.
+
+#### The Virtual Clock (`CLOCK VIRTUAL`)
+
+Setting `QMLTUI_RUNNER_CLOCK=virtual`, `--clock virtual`, `qmltui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads runs the session on a synthetic timeline. QmlTui timers, animations (`NumberAnimation`, `ColorAnimation`, `PropertyAnimation`), cursor blink, `ToolTip` delays, `Toast` lifetimes, `AnimatedSprite`, and QML `Timer` items advance only through `advanceTime()` and `sleep()`.
+
+Limits of virtual clock mode:
+- `waitFor*` timeouts remain on wall time and do not advance the virtual clock.
+- C++ `QTimer` instances, worker threads, async image providers, network I/O, and JavaScript `Date.now()` remain on wall time.
+- A QML `Timer` with an interval shorter than 16 ms fires at most once per 16 ms step.
+
+### Frame Text, Regex, and Style Assertions
+
+#### `void waitForText(const QString &text, int timeoutMs = 2000)`
+
+Waits until a committed terminal frame contains the non-empty substring `text` (`timeoutMs` in `1..30000` ms). Observes committed frames as they arrive without sleeping for a fixed delay.
+
+#### `void expectText(const QString &text, int timeoutMs = -1)`
+
+Waits for the next committed frame and fails unless its normalized text contains `text`. A negative `timeoutMs` uses the configured operation timeout (`2000` ms by default). Use `expectText()` immediately after a synchronous action, and `waitForText()` when waiting for asynchronous work.
+
+#### `void expectNoText(const QString &text, int timeoutMs = -1)`
+
+Waits for the next committed frame and fails if its normalized text contains `text`. An empty string is invalid.
+
+#### `void waitForRegex(const QString &pattern, int timeoutMs = 2000)`
+
+Waits until a committed terminal frame matches the regular expression `pattern`.
+
+#### `void expectRegex(const QString &pattern, int timeoutMs = -1)`
+
+Waits for the next committed frame and fails unless its normalized text matches `pattern`.
+
+#### `void expectTextInRegion(int x, int y, int width, int height, const QString &text, int timeoutMs = -1)`
+
+Fails unless the bounding box `[x, y, width, height]` in the next committed frame contains `text`.
+
+#### `void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)`
+
+Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, and `strikethrough`.
+
+```javascript
+app.expectStyle(0, 0, { character: "A", foreground: "cyan", bold: true });
+```
+
+### Frame Snapshots and Captures
+
+#### `void expectSnapshot(const QString &snapshotRelativePath, int timeoutMs = -1)`
+
+Compares the committed frame's normalized UTF-8 text against a snapshot file resolved relative to the scenario script. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory.
+
+#### `void expectStyled(const QString &snapshotRelativePath, int timeoutMs = -1)`
+
+Compares `styledText()` against `snapshotRelativePath` so color or SGR attribute regressions fail the scenario even when characters are unchanged. Writes the same `.actual.txt` and `.diff` artifacts on mismatch.
+
+#### `void expectRegionSnapshot(int x, int y, int width, int height, const QString &snapshotRelativePath, int timeoutMs = -1)`
+
+Compares normalized text inside `[x, y, width, height]` against `snapshotRelativePath`. Also available as `app.region(x, y, width, height).expectSnapshot(snapshotRelativePath)`.
+
+#### `void captureText(const QString &relativePath)`
+
+Waits for the next committed frame and writes its normalized UTF-8 text (with trailing spaces trimmed per row) to `relativePath` inside the artifact directory. Absolute paths and `..` traversal are rejected.
+
+#### `void captureStyled(const QString &relativePath)`
+
+Waits for the next committed frame and writes its `styledText()` representation to `relativePath` inside the artifact directory.
+
+#### Snapshot Update Mode (`QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1`)
+
+Running with `--update-snapshots` or `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` causes `expectSnapshot()`, `expectStyled()`, `expectRegionSnapshot()`, and `expectScrollbackSnapshot()` to write the current committed frame back to the baseline file and pass. Every rewritten path is logged to `stderr` and listed under `artifacts.updatedSnapshots` in `result.json`. In CMake, `qmltui_add_scenario(... UPDATE_SNAPSHOTS)` forces update mode on for a test, and `NO_UPDATE_SNAPSHOTS` pins it off even during a global update run.
+
+### Frame Inspection and Scoped Locators (`region` and `item`)
+
+#### `QString frameText()`
+
+Returns normalized UTF-8 text for the current committed frame without requesting another render.
+
+#### `QString styledText()`
+
+Returns normalized frame text followed by a `--- styles` section describing runs of non-default colors and SGR attributes:
+
+```text
  STATUS: ASYNC READY
 --- styles
 y=3 x=0-0 fg=default bg=#101820FF
@@ -186,256 +303,201 @@ y=3 x=1-19 fg=#7FDBCAFF bg=#101820FF bold
 y=3 x=20-79 fg=default bg=#101820FF
 ```
 
-Colors are `#RRGGBBAA` after resolving ANSI palette entries to xterm's default RGB, or `default` for the terminal's own color. Attributes are a comma-separated subset of `bold`, `dim`, `italic`, `underline`, `reverse`, `blink`, `conceal`, and `strikethrough`. The output depends only on the committed cell grid, never on fonts or a display, so it is identical across platforms and CI.
+Colors are `#RRGGBBAA` (with ANSI palette entries resolved to xterm default RGB) or `default`. Attributes are a comma-separated subset of `bold`, `dim`, `italic`, `underline`, `reverse`, `blink`, `conceal`, and `strikethrough`.
 
-#### object cell(int x, int y)
+#### `object cell(int x, int y)`
 
-Returns the current cell's character, continuation state, colors, and attributes. Colors are `#RRGGBBAA`, or `"default"` for the terminal's own color, exactly as in `styledText()`. The `attributes` object carries `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, and `strikethrough`. Invalid coordinates fail the scenario.
+Returns `{ character, isContinuation, foreground, background, attributes }` for cell `(x, y)` in the current committed frame. Out-of-bounds coordinates fail the scenario.
 
-#### array findText(const QString &text)
+#### `array findText(const QString &text)`
 
-Returns all visible, single-row matches in row-major order as `{x, y, width}` objects. Coordinates remain correct for wide characters and continuation cells.
+Returns all visible, single-row matches in row-major order as `{ x, y, width }` objects in frame coordinates.
 
-#### QString regionText(int x, int y, int width, int height)
+#### `QString regionText(int x, int y, int width, int height)`
 
-Returns normalized text for the sub-grid `[x, y, width, height]` of the current committed frame, without waiting. Trailing spaces are trimmed from each row. Bounds outside the frame fail the scenario.
+Returns normalized text for the sub-grid `[x, y, width, height]` of the current committed frame without waiting.
 
-#### object itemRect(const QString &objectName)
+#### `object size()` and `void resize(int columns, int rows)`
 
-Returns `{x, y, width, height}` in terminal cells of the first visible item with the given `objectName`, clipped to the viewport. A missing, hidden, or fully off-screen item fails the scenario. Like `rootObject()`, this locates and computes; the assertion itself belongs on the rendered frame.
+- `app.size()` returns `{ columns, rows }` of the current committed frame.
+- `app.resize(columns, rows)` resizes the test viewport (`1..1000` each) and waits for a frame committed at the new dimensions.
 
-#### void waitForItem(const QString &objectName, int timeoutMs = 2000)
+#### `object itemRect(const QString &objectName)` and `void waitForItem(const QString &objectName, int timeoutMs = 2000)`
 
-Waits until an item with the given `objectName` is visible inside the committed viewport.
+- `app.itemRect(objectName)` returns `{ x, y, width, height }` in terminal cells for the first visible item with `objectName`, clipped to the viewport. Fails if the item is missing, hidden, or off-screen.
+- `app.waitForItem(objectName, timeoutMs)` waits until an item with `objectName` is visible inside the committed viewport.
 
-#### object region(int x, int y, int width, int height)
+#### `object region(int x, int y, int width, int height)`
 
-Returns a locator scoped to the rectangle, with `text()`, `findText()`, `expectText()`, `expectNoText()`, `waitForText()`, `expectSnapshot()`, `clickText()`, and `click()` operating only inside it. `expectTextInRegion()` remains as the one-shot shorthand. JavaScript usage: `terminal.region(0, 0, 80, 2).expectText("HEADER")`.
-
-#### object item(const QString &objectName)
-
-`region()` for the rectangle of `itemRect(objectName)`, so assertions and clicks can target one component without whole-frame substring matching. `click()` clicks the rectangle's center. JavaScript usage: `terminal.item("sidebar").expectText("Services")`.
-
-#### void expectRegionSnapshot(int x, int y, int width, int height, const QString &snapshotRelativePath, int timeoutMs = -1)
-
-`expectSnapshot()` for one region's normalized text, with the same mismatch artifacts and update mode. Also reachable as `region(...).expectSnapshot(path)`.
-
-#### void clickText(const QString &text, int occurrence = 0, const QString &button = "left", const QStringList &modifiers = {})
-
-Clicks the center of the selected rendered-text match and waits for the resulting committed frame.
-Text-based mouse helpers translate frame rows through the renderer's screen
-origin. Quiet inline sessions place the frame immediately above the terminal's
-last row, which is reserved for the trailing cursor. Coordinate-based mouse
-methods use screen coordinates; `findText()` returns frame coordinates.
-
-#### void hoverText(const QString &text, int occurrence = 0, const QStringList &modifiers = {})
-
-Moves the mouse to the center of the selected rendered-text match with no button held and waits for the resulting committed frame. Delivered only while any-motion reporting is enabled.
-
-#### void click(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
-
-Sends a mouse press and release event at terminal coordinates `(x, y)`. Accepts button `"left"`, `"middle"`, or `"right"`, and optional modifiers `["Shift", "Ctrl", "Alt", "Meta"]`. JavaScript usage: `terminal.click(10, 5)` or `terminal.click(10, 5, "right")`.
-
-#### void doubleClick(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
-
-Sends two consecutive mouse press and release cycles at terminal coordinates `(x, y)`. JavaScript usage: `terminal.doubleClick(10, 5)`.
-
-#### void hover(int x, int y, const QStringList &modifiers = {})
-
-Moves the mouse to `(x, y)` with no button held. The event is delivered only while the application has hover (any-motion) reporting enabled — a `MouseArea` with `hoverEnabled` — exactly as a real terminal sends it; otherwise it is dropped and only a frame is awaited. JavaScript usage: `terminal.hover(10, 5)`.
-
-#### void mouseDown(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
-
-Presses a mouse button at `(x, y)` without releasing it, for press-and-hold interactions and custom drags. JavaScript usage: `terminal.mouseDown(10, 5)`.
-
-#### void mouseUp(int x, int y, const QString &button = "left", const QStringList &modifiers = {})
-
-Releases a mouse button at `(x, y)`. JavaScript usage: `terminal.mouseUp(10, 5)`.
-
-#### void drag(int startX, int startY, int endX, int endY, const QString &button = "left", const QStringList &modifiers = {})
-
-Presses at `(startX, startY)`, reports button-held motion cell by cell along the path — as a terminal in button-motion mode does — and releases at `(endX, endY)`. JavaScript usage: `terminal.drag(5, 5, 25, 5)`.
-
-#### void scroll(int x, int y, int deltaX, int deltaY, const QStringList &modifiers = {})
-
-Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY`. JavaScript usage: `terminal.scroll(15, 10, 0, 120)`.
-
-#### void waitForRegex(const QString &pattern, int timeoutMs = 2000)
-
-Waits until a committed terminal frame matches the regular expression `pattern`. JavaScript usage: `terminal.waitForRegex("STATUS:\\s+READY", 3000)`.
-
-#### void expectRegex(const QString &pattern, int timeoutMs = -1)
-
-Fails the scenario unless the next committed frame matches the regular expression `pattern`. JavaScript usage: `terminal.expectRegex("System\\s+v\\d+\\.\\d+")`.
-
-#### void expectTextInRegion(int x, int y, int width, int height, const QString &text, int timeoutMs = -1)
-
-Fails the scenario unless the bounding box `[x, y, width, height]` contains `text`. JavaScript usage: `terminal.expectTextInRegion(0, 0, 80, 2, "HEADER")`.
-
-#### void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)
-
-Fails the scenario unless cell attributes at `(x, y)` match the properties specified in `expectedStyle` (e.g. `{ bold: true, character: "A" }`). JavaScript usage: `terminal.expectStyle(0, 0, { bold: true })`. The `dim` attribute can be checked with `{ dim: true }`. `foreground` and `background` accept a color string or `"default"` for the terminal's own color.
-
-#### void expectSnapshot(const QString &snapshotRelativePath, int timeoutMs = -1)
-
-Compares the committed frame's normalized text against a snapshot resolved relative to the scenario. On mismatch, writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` under the artifact directory. JavaScript usage: `terminal.expectSnapshot("snapshots/baseline.txt")`.
-
-#### void expectStyled(const QString &snapshotRelativePath, int timeoutMs = -1)
-
-Like `expectSnapshot()`, but compares `styledText()`, so a color or attribute regression fails the scenario even when the characters are unchanged. The mismatch artifacts are the same, and the diff names the exact rows and columns whose style changed. JavaScript usage: `terminal.expectStyled("snapshots/baseline_styled.txt")`.
-
-## Snapshot Update Mode
-
-`QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` makes `expectSnapshot()`, `expectStyled()`, `expectRegionSnapshot()`, and `expectScrollbackSnapshot()` rewrite their baseline from the committed frame and pass, so recording and refreshing golden files is one command: `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest -R <test>`. The scenario runner forwards the variable to the launched process. An update is never silent: every rewritten path is listed in the final stderr summary and under `artifacts.updatedSnapshots` in `result.json`. A missing baseline in normal mode fails with a message naming the variable. A baseline inside a Qt resource cannot be written back; update mode then records the actual frame under the artifact directory and fails with both paths. In CMake, `qmltui_add_scenario(... UPDATE_SNAPSHOTS)` forces the mode on for one test and `NO_UPDATE_SNAPSHOTS` pins it off so a verifying or negative test stays deterministic under a global update run.
-
-#### object rootObject()
-
-Returns the root `Terminal` QML object. Use it to compute expectations — reading `root.width` to derive an expected label, or a property that feeds a calculation — never as the assertion itself: a visible-behavior test asserts the rendered frame, not a QML property. JavaScript usage: `const columns = terminal.rootObject().width;`
-
-#### void fail(const QString &message)
-
-Fails the scenario immediately with `message`. An empty message is replaced with `Scenario failed`. The method writes `failure.txt` when a committed frame is available, stops the watchdog, emits `finished(1)`, raises a JavaScript error while a script is being evaluated, and schedules process exit with code `1`.
-
-#### void finish()
-
-Marks the scenario as finishing. Calling `terminal.finish()` explicitly is optional: if a script or Promise returns normally without uncaught errors or failed assertions, `Runner` will automatically auto-finish the scenario successfully.
-
-## Promises
-
-A `main` that returns a Promise keeps the scenario active until the Promise resolves (pass) or rejects (fail), still bounded by the scenario watchdog. This is a compatibility affordance, not a programming model: every driver operation is synchronous and none returns a Promise, so an `async main` gains nothing over the straight-line form. Prefer synchronous scenarios.
-
-## Public Methods
-
-#### Runner(QQmlEngine *qmlEngine, Terminal *terminal, QString scriptPath, QString artifactDirectory, QSize viewport, int operationTimeoutMs, int scenarioTimeoutMs, QString configurationError)
-
-Constructs the driver with an explicit QML engine and terminal. `scriptPath` may be a filesystem path or a Qt resource path such as `:/qt/qml/MyApplication/test_scenario.js`. `artifactDirectory` is the root for captures and failure diagnostics. `viewport` is applied immediately so the terminal's first queued frame already uses the deterministic test size. The operation timeout must be between 1 and 30,000 milliseconds; the scenario watchdog accepts up to 300,000. A non-empty `configurationError` makes `start()` fail before loading the scenario.
-
-Construction does not start execution. Schedule `start()` after the application has loaded its root `Terminal`.
-
-#### static Runner *startFromEnvironment(QQmlEngine *qmlEngine, Terminal *terminal)
-
-Creates and schedules a runner from environment variables. It returns `nullptr` when no request is present. `QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `QMLTUI_RUNNER_SCRIPT` | None | Required filesystem scenario path. |
-| `QMLTUI_RUNNER_EVAL` | None | Inline JavaScript scenario; its temporary file is removed at completion. |
-| `QMLTUI_RUNNER_CAPTURE_AFTER_MS` | None | Wait this many milliseconds (0 through 30,000; `0` means the first committed frame), then write `capture.txt` and `capture_styled.txt`. The delay plus the operation timeout must fit within `QMLTUI_RUNNER_TIMEOUT_MS`. |
-| `QMLTUI_RUNNER_ARTIFACT_DIR` | Per-process temporary directory | Root directory for artifacts. |
-| `QMLTUI_RUNNER_COLUMNS` | `80` | Viewport columns, from 1 through 1,000. |
-| `QMLTUI_RUNNER_ROWS` | `24` | Viewport rows, from 1 through 1,000. |
-| `QMLTUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout, from 1 through 30,000 milliseconds. |
-| `QMLTUI_RUNNER_TIMEOUT_MS` | `30000` | Overall scenario watchdog, from 1 through 300,000 milliseconds. |
-| `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI rendering instead of quiet frame commits. C++: `useEmbeddedScenario(true)` or `setLiveOutput()`. |
-| `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Marks a run driven by a directly constructed `Runner`, so the engine applies the same quiet-by-default terminal behavior as an environment-requested scenario. C++: `useEmbeddedScenario()`. |
-| `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines instead of failing on mismatch; see Snapshot Update Mode. C++: `setUpdateSnapshots()`. |
-| `QMLTUI_RUNNER_CLOCK` | `real` | `virtual` freezes QmlTui time; see The Virtual Clock. C++: `useVirtualClock()`. |
-| `QMLTUI_RUNNER_RECORD` | None | Relative path under the artifact directory for recording the session as an asciicast v2 file (`.cast`). Incompatible with `QMLTUI_RUNNER_LIVE`. |
-
-Every Runner setting uses the `QMLTUI_RUNNER_` prefix. There are no alternate or legacy spellings. The environment is read in `startFromEnvironment()` only, with two deliberate exceptions: the terminal engine reads the session and live variables when the root `Terminal` is created, and `start()` falls back to `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` when `setUpdateSnapshots()` was not called, so `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest` also refreshes the baselines of embedded runs. A directly constructed `Runner` takes the constructor arguments plus the methods below instead of the variables.
-
-#### static void useVirtualClock()
-
-Switches the process-wide QmlTui clock into virtual mode before QML loads, equivalent to `QMLTUI_RUNNER_CLOCK=virtual`. Application timers, animations, and QML `Timer` instances advance only when driven by `advanceTime()` or `sleep()`.
-
-#### static void useEmbeddedScenario(bool liveOutput = false)
-
-Marks the process as a scenario run driven by a directly constructed `Runner`, as `QMLTUI_RUNNER_EMBEDDED_SCENARIO=1` does: every `Terminal` created afterwards stays quiet — no ANSI output, no frame pacing — unless `liveOutput` is true or `QMLTUI_RUNNER_LIVE` is set. Call it before loading QML, like `useVirtualClock()`. A `Runner` constructed without it still switches its engine into the quiet test session from its constructor on, but the terminal's startup sequences (raw mode, cursor, bracketed paste) have reached the terminal by then.
-
-#### void setLiveOutput(bool live)
-
-Renders the scenario to the real terminal instead of committing frames quietly, as `QMLTUI_RUNNER_LIVE=1` does. Takes effect immediately and can be toggled during a run; outside a test session output is on regardless.
-
-#### void setUpdateSnapshots(bool update)
-
-Selects snapshot update mode for this run, as `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` does. An explicit value wins over the environment in both directions, so a harness can pin verification off under a global update run or record baselines without touching the environment. Call it before `start()`.
-
-## The Virtual Clock
-
-`QMLTUI_RUNNER_CLOCK=virtual` — or `qmltui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads — runs the scenario on a frozen timeline: QmlTui timers and animations, cursor blink, tooltip delays, toast lifetimes, `AnimatedSprite`, and QML `Timer` advance only through `advanceTime()` and `sleep()`. Timers fire at their exact virtual instants, an animation holds any mid-state for inspection, and a 10-second walkthrough of timed behavior executes in milliseconds without flakiness under load.
-
-The mode is chosen once, before QML loads, and never changes mid-run. `waitFor*` timeouts stay on wall time and do not advance the virtual clock; a wait that depends on paused time fails quickly with a hint naming `advanceTime()`. Limits: application `QTimer`s, threads, image providers, network, and `Date.now()` stay on wall time, and a QML `Timer` shorter than the 16 ms step fires at most once per step. Scenarios mixing wall-time sources should use `waitFor*` for those parts. `result.json` records `clock` and, in virtual mode, the final `virtualTimeMs`.
-
-## Structured results
-
-Every requested run atomically writes `result.json` with schema version `1`, status, exit code, mode, scenario, elapsed time, viewport (initial) and finalViewport (after any `resize()` calls), current operation, argument-free operation trace, artifact paths, and any updated snapshot baselines. Successful scenarios write `final.txt`, failures write `failure.txt`, and capture mode uses `capture.txt`. Standard error prints one final summary with the absolute artifact directory.
-
-## Scenario Files
-
-A scenario ending in `.js` is a classic script defining `function main(terminal)`. It is evaluated inside a function scope, so its top-level declarations stay out of the application's JavaScript globals; reported line numbers are unchanged.
-
-The argument is conventionally named `terminal` — the facade is the terminal under test, as Playwright's handle is `page` — and short scenarios often abbreviate it to `t`. Scenarios are plain JavaScript, so TypeScript annotations are a syntax error; editor completion comes from the shipped declarations instead. `Runner/qmltui-runner.d.ts` (made ambient by the repository's `jsconfig.json`, and installed next to the headers for consumers) types the whole facade, so one JSDoc line enables autocomplete and hover documentation in any editor with a TypeScript language service:
+Returns a `RegionLocator` scoped to `[x, y, width, height]` supporting `text()`, `findText()`, `expectText()`, `expectNoText()`, `waitForText()`, `expectSnapshot()`, `clickText()`, and `click()` (which clicks the region's center).
 
 ```javascript
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.press("Enter");
-}
+app.region(0, 0, 80, 2).expectText("HEADER");
 ```
 
-`test_runner_declarations` fails when a facade method is missing from the declarations, so completion cannot silently fall behind the API.
+#### `object item(const QString &objectName)`
 
-Consumer projects get the same completion from one call after bringing QmlTui in — whether through `find_package(QmlTui)`, `FetchContent`, or `add_subdirectory`:
+Returns a `RegionLocator` for `itemRect(objectName)` so assertions and clicks can target a specific QML component by `objectName`:
 
-```cmake
-FetchContent_MakeAvailable(qmltui)
-qmltui_scenario_editor_support()   # optional: DIRECTORY <path>
+```javascript
+app.item("sidebar").expectText("Services");
+app.item("submitButton").click();
 ```
 
-The helper copies the declarations to `<project>/.qmltui/qmltui-runner.d.ts` (with a `.gitignore` so the directory stays out of version control) and generates a `jsconfig.json` when the project has none; an existing `jsconfig.json` is never modified — a status message names the one include line to add. From there the same `@param {Terminal}` JSDoc line lights up completion in the consumer's own scenario files.
+#### `object rootObject()`
 
-A scenario ending in `.mjs` is an ECMAScript module: it must `export function main(terminal)` and may `import` helper modules with relative paths, so applications can share navigation and setup code between scenarios. Module scenarios load from the filesystem or from Qt resources, including their relative imports. `QMLTUI_RUNNER_EVAL` stays classic.
+Returns the root `Terminal` QML object. Use it only to read geometry or configuration values needed to compute expected frame text; always assert visible behavior on the rendered frame.
 
-## CMake integration
+### Inline Scrollback Assertions (`Terminal.Inline`)
 
-The helpers live in `cmake/QmlTuiRunner.cmake` and are defined wherever the `qmltui::runner` target is: `find_package(QmlTui)` includes the module from the installed package, and an `add_subdirectory` or `FetchContent` build defines it while configuring the Runner library, before any consumer directory is processed. Nothing needs to `include()` the file by hand. Consumers register scenarios with `qmltui_add_scenario(NAME ... TARGET ... SCRIPT ...)` or its `EMBEDDED` form. The helper supports deterministic dimensions, bounded timeouts, artifact directories, labels, explicit `LIVE` output, `CLOCK VIRTUAL|REAL`, and the snapshot-update controls `UPDATE_SNAPSHOTS`/`NO_UPDATE_SNAPSHOTS` with `SNAPSHOT_SEED_SOURCE`/`SNAPSHOT_SEED_DEST`. Automated runs are quiet by default. `qmltui_scenario_editor_support()` materializes editor completion for the consumer's scenario files (see Scenario Files).
+In `Terminal.Inline` mode, completed rows are committed through `Scrollback` and do not remain in the live bottom viewport. During a Runner session, `TerminalEngine` retains up to `QMLTUI_SCROLLBACK_HISTORY_ROWS` (default `5000`) committed scrollback rows as cells. Calling scrollback methods when `Terminal` is in `AltScreen` mode fails the scenario.
 
-Examples and applications use their normal executable for scenarios. After defining
-the application and its QML module, conditionally link Runner and register a script:
+- `int scrollbackRowCount()`: Returns the total number of scrollback rows committed so far. Pass this value as `fromRow` to inspect only output appended after a checkpoint.
+- `QString scrollbackText(int fromRow = 0)`: Returns normalized UTF-8 text of committed scrollback rows starting at `fromRow`.
+- `void waitForScrollbackText(const QString &text, int timeoutMs = 2000)`: Waits until committed scrollback contains `text`.
+- `void expectScrollbackText(const QString &text, int timeoutMs = -1)`: Waits for the next committed frame and fails unless committed scrollback contains `text`.
+- `void expectNoScrollbackText(const QString &text, int timeoutMs = -1)`: Waits for the next committed frame and fails if committed scrollback contains `text`.
+- `void captureScrollback(const QString &relativePath, int fromRow = 0)`: Writes committed scrollback rows from `fromRow` onwards to `relativePath` under the artifact directory.
+- `void captureScrollbackStyled(const QString &relativePath, int fromRow = 0)`: Writes committed scrollback rows from `fromRow` onwards in `styledText()` format.
+- `void expectScrollbackSnapshot(const QString &snapshotRelativePath, int fromRow = 0, int timeoutMs = -1)`: Compares committed scrollback rows from `fromRow` onwards against `snapshotRelativePath`.
+
+### Asciicast Recording (`.cast`)
+
+When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`, or `QMLTUI_RUNNER_RECORD=<path>`, Runner substitutes an in-memory 24-bit color backend and writes emitted ANSI bytes into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. Under `CLOCK VIRTUAL`, frame timestamps advance only through `sleep()` and `advanceTime()`, producing byte-identical `.cast` recordings across runs. `RECORD` cannot be combined with `LIVE`.
+
+- `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint.
+- `void stopRecording()`: Flushes pending bytes and closes the active recording.
+- `void marker(const QString &label)`: Writes an asciicast `"m"` chapter marker event at the current timestamp.
+
+### Scenario Lifecycle (`finish`, `fail`, and Promises)
+
+- `void finish()`: Explicitly marks the scenario as finishing. Optional for synchronous scripts, which finish automatically when `main(app)` returns.
+- `void fail(const QString &message)`: Immediately fails the scenario with `message`, writes `failure.txt` if a frame is available, emits `finished(1)`, and schedules exit code `1`.
+- **Promises**: If `main(app)` returns a Promise, Runner keeps the scenario active until the Promise resolves or rejects (bounded by the scenario watchdog). Because all `app.*` operations are synchronous, prefer synchronous `main(app)` functions.
+
+## `qmltui-runner` Command-Line Launcher
+
+`qmltui-runner` launches a `qmltui::runner`-linked executable from the shell without requiring CMake test registration:
+
+```bash
+qmltui-runner --script test.js -- ./myApp --config demo.json
+qmltui-runner --eval 'app.clickText("Save")' -- ./myApp
+qmltui-runner --capture-after-ms 500 -- ./myApp
+qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
+```
+
+Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
+
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
+| `--eval <code>` | None | Inline JavaScript scenario code. |
+| `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
+| `--columns <n>`, `--rows <n>` | `80`, `24` | Initial viewport dimensions (`1..1000` cells). |
+| `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty; existing files are never deleted). |
+| `--live` | Off | Forward live ANSI rendering to the terminal. |
+| `--clock <real\|virtual>` | `real` | Select the Runner clock before application startup. |
+| `--record <relative-path>` | Off | Write an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |
+| `--update-snapshots` | Off | Rewrite snapshot baselines from committed frames. |
+| `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
+| `--timeout-ms <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
+| `--startup-timeout-ms <ms>` | `5000` | Runner activation handshake deadline (`1..300000` ms). |
+
+### Exit Codes and Handshake Protocol
+
+- **Exit code `0`**: Scenario passed and produced a valid schema-v1 `result.json` with `status: "passed"`.
+- **Exit code `1`**: Scenario failed a test assertion or threw a script error (`status: "failed"` in `result.json`).
+- **Exit code `2`**: Invalid CLI arguments, startup/handshake timeout, child process crash, or missing/inconsistent `result.json`.
+
+When `qmltui-runner` starts a child process, it clears inherited `QMLTUI_RUNNER_*` variables, sets `QMLTUI_RUNNER_HANDSHAKE_PATH` and `QMLTUI_RUNNER_HANDSHAKE_TOKEN`, and verifies that `Runner::start()` writes `{"protocolVersion":1,"token":"...","pid":123}` before `--startup-timeout-ms` expires. After activation, the child has `--timeout-ms` plus 5 seconds to exit before termination (`SIGTERM` followed by `SIGKILL` after 1 second).
+
+## CMake Integration (`qmltui_add_scenario`)
+
+`cmake/QmlTuiRunner.cmake` is included automatically when `qmltui::runner` is built or imported via `find_package(QmlTui)`. Register scenarios against your normal application target:
 
 ```cmake
 if(TARGET qmltui::runner)
     target_link_libraries(my_app PRIVATE qmltui::runner)
+    qmltui_scenario_editor_support()
+
     qmltui_add_scenario(
         NAME my_app_smoke
         TARGET my_app
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
-        COLUMNS 80 ROWS 24
+        COLUMNS 80
+        ROWS 24
+        CLOCK VIRTUAL
     )
 endif()
 ```
 
-There is no second executable or QML module. Linking Runner installs an automatic
-hook for QML-created Terminals; ordinary startup runs no scenario unless a Runner
-environment mode is requested. C++-created Terminals must explicitly call
-`Runner::startFromEnvironment()` with a script engine. For production builds,
-disable both `QMLTUI_BUILD_TESTS` and `QMLTUI_ENABLE_RUNNER` to omit Runner.
+### `qmltui_add_scenario` Parameters
 
-#### void start()
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `NAME <test-name>` | Required | CTest test name. |
+| `TARGET <target>` | Required | Executable target linked against `qmltui::runner`. |
+| `SCRIPT <path>` | Required (unless `EMBEDDED`) | Path to the `.js`, `.mjs`, or `:/...` scenario script. |
+| `EMBEDDED` | Off | Run an executable that constructs `qmltui::Runner` directly in C++ instead of reading `QMLTUI_RUNNER_SCRIPT`. |
+| `COLUMNS <n>`, `ROWS <n>` | `80`, `24` | Initial terminal viewport dimensions. |
+| `CLOCK <REAL\|VIRTUAL>` | `REAL` | Run on the real clock or synthetic virtual clock. |
+| `RECORD <relative-path.cast>` | None | Record an asciicast v2 file into the artifact directory and add the `Cast` CTest label. |
+| `LIVE` | Off | Emit live ANSI output during the test (incompatible with `RECORD`). |
+| `UPDATE_SNAPSHOTS` | Inherited from env | Force snapshot baseline updating on for this test. |
+| `NO_UPDATE_SNAPSHOTS` | Off | Pin snapshot updating off even when `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` is set in the environment. |
+| `OPERATION_TIMEOUT_MS <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
+| `SCENARIO_TIMEOUT_MS <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
+| `ARTIFACT_DIR <path>` | `<binary-dir>/RunnerArtifacts/<NAME>` | Directory for `result.json`, frame captures, and recordings. |
+| `ARGUMENTS <arg>...` | None | Command-line arguments forwarded to `TARGET`. |
+| `LABELS <label>...` | `Runner` (plus `Cast` when `RECORD` is set) | Additional CTest labels attached to the test. |
 
-Validates configuration and object lifetimes, loads the JavaScript scenario, creates the artifact directory, waits for the initial committed frame, and invokes its `function main(terminal)` entry point. Call it once, normally through `QTimer::singleShot(0, driver, &Runner::start)`.
+## C++ API and Environment Variables (`qmltui::Runner`)
 
-## Ownership and Lifecycle
+### Environment-Driven Startup (`Runner::startFromEnvironment`)
 
-Every instance uses `QCoreApplication::instance()` as its QObject parent and is deleted with the application. `QQmlEngine`, `Terminal`, and `TerminalEngine` references are guarded pointers and are not owned by the driver. Destroying any required object during a scenario fails the test.
+When `qmltui::runner` is linked into an application, QML-created `Terminal` roots invoke `Runner::startFromEnvironment()` automatically on startup. If you construct `qmltui::Terminal` in C++ without QML, call `Runner::startFromEnvironment(&engine, terminal)` after creating the root. It returns `nullptr` when no `QMLTUI_RUNNER_*` request is present in the environment.
 
-`startFromEnvironment()` allocates the driver and schedules `start()` automatically. A directly constructed driver must have `start()` scheduled explicitly. Scenario completion emits `finished()` and schedules application exit; it does not synchronously destroy the driver.
+`QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive:
 
-## Thread Safety
+| Environment Variable | Default | Description |
+| :--- | :--- | :--- |
+| `QMLTUI_RUNNER_SCRIPT` | None | Filesystem or Qt resource (`:/...`) scenario path. |
+| `QMLTUI_RUNNER_EVAL` | None | Inline JavaScript scenario code. |
+| `QMLTUI_RUNNER_CAPTURE_AFTER_MS` | None | Delay (`0..30000` ms; `0` = first committed frame) before writing `capture.txt` and `capture_styled.txt`. |
+| `QMLTUI_RUNNER_ARTIFACT_DIR` | Per-process temp dir | Root directory for output artifacts. |
+| `QMLTUI_RUNNER_COLUMNS` | `80` | Initial viewport columns (`1..1000`). |
+| `QMLTUI_RUNNER_ROWS` | `24` | Initial viewport rows (`1..1000`). |
+| `QMLTUI_RUNNER_OPERATION_TIMEOUT_MS` | `2000` | Per-operation timeout (`1..30000` ms). |
+| `QMLTUI_RUNNER_TIMEOUT_MS` | `30000` | Overall scenario watchdog (`1..300000` ms). |
+| `QMLTUI_RUNNER_CLOCK` | `real` | `real` or `virtual` clock selection. |
+| `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI terminal output during the scenario. |
+| `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Mark a process driven by a directly constructed `Runner` as a quiet test session before `Terminal` creation. |
+| `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines on mismatch instead of failing. |
+| `QMLTUI_RUNNER_RECORD` | None | Relative path under the artifact directory for recording an asciicast v2 `.cast` file (incompatible with `QMLTUI_RUNNER_LIVE`). |
 
-`Runner` is GUI-thread only. It enters bounded nested Qt event loops to keep QML timers, rendering, and signals active during waits. Calls from worker threads or concurrent calls are unsupported. Nested wait operations are explicitly rejected.
+### Direct C++ Construction and Methods
 
-## JavaScript Exposure
+#### `Runner(QQmlEngine *qmlEngine, Terminal *terminal, QString scriptPath, QString artifactDirectory, QSize viewport, int operationTimeoutMs, int scenarioTimeoutMs, QString configurationError)`
 
-`Runner` is not registered as a constructible QML type. At scenario startup, the driver wraps itself in a JavaScript facade and passes it as the `terminal` argument to `function main(terminal)`. The global namespace remains clean, and the script can call all `Q_INVOKABLE` methods on `terminal` without owning the C++ object.
+Constructs a `Runner` bound to an explicit `QQmlEngine` and `Terminal`. `viewport` is applied immediately so the first frame uses the test dimensions. Schedule `start()` after the root `Terminal` is loaded.
 
-Scenario callbacks passed to `waitForCondition()` run in the same JavaScript engine and may close over ordinary scenario variables. They should be fast and side-effect-free so rendering and timers continue to make progress.
+#### `static void useVirtualClock()`
 
-## Inter-Class Interactions
+Switches the process-wide QmlTui clock into virtual mode before QML loads (equivalent to `QMLTUI_RUNNER_CLOCK=virtual`).
 
-The driver sends decoded key and text input directly to `TerminalEngine`, subscribes to committed-frame and render-failure signals, and reads the engine's current `TextGridBuffer`. It watches the `QQmlEngine`, `Terminal`, and `TerminalEngine` lifetimes. It uses the QML engine both to evaluate the scenario and to propagate driver failures as JavaScript errors.
+#### `static void useEmbeddedScenario(bool liveOutput = false)`
 
-## Usage Example
+Marks the process as an embedded scenario run before QML loads (equivalent to `QMLTUI_RUNNER_EMBEDDED_SCENARIO=1`), keeping terminal startup sequences quiet unless `liveOutput` is `true`.
+
+#### `void setLiveOutput(bool live)` and `void setUpdateSnapshots(bool update)`
+
+- `setLiveOutput(live)` toggles live ANSI terminal rendering on or off.
+- `setUpdateSnapshots(update)` overrides `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` for this `Runner` instance when called before `start()`.
+
+#### `void start()` and `void finished(int exitCode)`
+
+- `start()` validates configuration, creates the artifact directory, waits for the initial committed frame, and invokes `main(app)`.
+- `finished(int exitCode)` is emitted once when the scenario finishes (`0` = pass, `1` = failure) and `QCoreApplication::exit(exitCode)` is scheduled.
 
 ```cpp
 #include <QTimer>
@@ -443,86 +505,30 @@ The driver sends decoded key and text input directly to `TerminalEngine`, subscr
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Runner/Runner.h>
 
-qmltui::Runner::useEmbeddedScenario();   // before QML loads: quiet terminal
+qmltui::Runner::useEmbeddedScenario(); // before QML loads: quiet terminal
 QQmlApplicationEngine engine;
 engine.loadFromModule("MyApplication", "Main");
-auto *terminal = qobject_cast<qmltui::Terminal *>(engine.rootObjects().constFirst());
-auto *driver = new qmltui::Runner(
+auto* terminal = qobject_cast<qmltui::Terminal*>(engine.rootObjects().constFirst());
+auto* driver = new qmltui::Runner(
     &engine, terminal,
     QStringLiteral(":/qt/qml/MyApplication/test_scenario.js"),
     QStringLiteral("/tmp/test-artifacts"), QSize(80, 24),
     1500, 8000, QString());
-driver->setUpdateSnapshots(recordBaselines);   // optional; defaults to the environment
+driver->setUpdateSnapshots(recordBaselines);
 QTimer::singleShot(0, driver, &qmltui::Runner::start);
 ```
 
-## Command-line launcher
+### Ownership and Thread Safety
 
-`qmltui-runner` launches a Runner-linked application without CMake scenario
-registration. Build it with tests enabled, or build and install it with
-`QMLTUI_ENABLE_RUNNER=ON`. The launcher itself requires only Qt Core.
+- **Ownership**: `Runner` uses `QCoreApplication::instance()` as its `QObject` parent and holds guarded pointers to `QQmlEngine`, `Terminal`, and `TerminalEngine`. Destroying any required target object mid-scenario fails the run.
+- **Thread safety**: Main/GUI thread only. `Runner` enters bounded nested Qt event loops during waits; calls from worker threads or nested wait calls are rejected.
 
-```bash
-qmltui-runner --script test.js -- ./myApp --config demo.json
-qmltui-runner --eval 'terminal.clickText("Save")' -- ./myApp
-qmltui-runner --capture-after-ms 500 -- ./myApp
-qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
-```
+## Structured Results (`result.json`)
 
-Exactly one of `--script`, `--eval`, and `--capture-after-ms` is required.
-Scripts support `.js`, `.mjs` with relative imports, and application resource
-paths such as `:/scenarios/test.js`. Both `--script=test.js` and
-`--script test.js` work. Launcher options precede the executable; everything
-after the executable is passed unchanged to the application. `--` explicitly
-ends launcher option parsing. Filesystem paths and the application's working
-directory are relative to the invoking shell's directory; executables may also
-be found through `PATH`.
+Every run atomically writes `result.json` (schema version `1`) into the artifact directory containing:
 
-| Option | Default | Meaning |
-|--------|---------|---------|
-| `--columns`, `--rows` | `80`, `24` | Initial viewport; each 1–1,000 cells. |
-| `--artifacts DIRECTORY` | Unique retained temporary directory | Must be new or empty, including hidden files. Existing contents are never deleted. |
-| `--live` | Off | Forward live ANSI rendering. |
-| `--clock real\|virtual` | `real` | Select the Runner clock before application startup. |
-| `--record RELATIVE_PATH` | Off | Write an asciicast beneath the artifact directory; incompatible with `--live`. |
-| `--update-snapshots` | Off | Rewrite snapshot baselines using Runner's existing update behavior. |
-| `--operation-timeout-ms` | `2000` | Per-operation timeout, 1–30,000 ms. |
-| `--timeout-ms` | `30000` | Scenario timeout, 1–300,000 ms. |
-| `--startup-timeout-ms` | `5000` | Runner activation deadline, 1–300,000 ms. |
-
-Capture delay is 0–30,000 ms; delay plus operation timeout must fit within the
-scenario timeout. Application stdout and stderr are forwarded, and summaries
-and absolute artifact paths go to stderr. Standard input is inherited. The
-launcher clears inherited `QMLTUI_RUNNER_*` settings and supplies its own options
-and defaults; ordinary application environment variables, including QML import
-paths, remain inherited. For an uninstalled build, set `QML_IMPORT_PATH` to that
-build's `qml` directory if the application needs it.
-
-Exit codes are `0` for a verified passing Runner result, `1` for a verified
-scenario failure, and `2` for invalid CLI arguments, launch/activation failures,
-crashes, external timeouts, or missing/inconsistent results. A child exit of zero
-alone is insufficient: the launcher requires a matching schema-v1 `result.json`.
-Artifacts survive both successful and failed runs. After activation the child
-has the scenario timeout plus 5 seconds to exit; termination then gets a
-1-second grace before a forced kill. The launcher supervises its direct child,
-not an arbitrary tree of application-spawned processes.
-
-The application must link a Runner version supporting the activation handshake.
-QML-created Terminals activate automatically; C++-created Terminals must call
-`Runner::startFromEnvironment()` with their script engine. Older Runner builds
-must be rebuilt. The helper does not inject libraries or attach to an existing
-process. No activation can mean missing Runner linkage, an older version, or
-application startup that has not yet created its Terminal.
-
-The optional launcher protocol uses `QMLTUI_RUNNER_HANDSHAKE_PATH` and
-`QMLTUI_RUNNER_HANDSHAKE_TOKEN`. At entry to `start()`, Runner atomically writes
-`{"protocolVersion":1,"token":"...","pid":123}` to the private control path.
-The launcher verifies all three fields. This acknowledges activation, not test
-success. Direct and CTest runs do not need these variables. Handshake write
-errors fail the session; the existing result schema and CMake driver are
-unchanged.
-
-To operate on another machine, run the launcher there through SSH, for example
-`ssh host 'qmltui-runner --script /srv/tests/smoke.js -- /srv/bin/myApp'`.
-The application, scripts, and artifacts reside on the remote machine. This is
-bounded script execution, not a persistent interactive remote-control service.
+- `schemaVersion` (`1`), `status` (`"passed"` or `"failed"`), `exitCode` (`0` or `1`), and `mode` (`"script"`, `"eval"`, or `"capture"`).
+- `scenario`, `elapsedMs`, `clock` (`"real"` or `"virtual"`), and `virtualTimeMs` (when `clock` is `"virtual"`).
+- `viewport` (initial `{ columns, rows }`) and `finalViewport` (dimensions after any `resize()` calls).
+- `currentOperation` and argument-free `operations` trace.
+- `artifacts` (`final`, `failure`, `capture`, `captureStyled`, `casts`, and `updatedSnapshots`).

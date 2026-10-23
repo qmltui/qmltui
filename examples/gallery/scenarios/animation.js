@@ -1,11 +1,11 @@
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("Easing.OutBounce");
-    terminal.expectText("Easing.InOutQuad");
-    terminal.sleep(500);
-    terminal.sleep(500);
-    terminal.sleep(500);
-    terminal.sleep(500);
-    terminal.captureText("animation.txt");
-    terminal.stopRecording();
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("Easing.OutBounce");
+    app.expectText("Easing.InOutQuad");
+    app.sleep(500);
+    app.sleep(500);
+    app.sleep(500);
+    app.sleep(500);
+    app.captureText("animation.txt");
+    app.stopRecording();
 }

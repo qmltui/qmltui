@@ -1,15 +1,15 @@
 // A RECORD scenario: the cast opens with the first frame, carries later output
 // and the markers placed between steps.
-/** @param {Terminal} terminal */
-function main(terminal) {
-    terminal.expectText("TESTRUNNER FIXTURE");
-    terminal.press("Tab");
-    terminal.marker("start");
-    terminal.press("Tab");            // focus the fixture's TextInput
-    terminal.typeText("cast");
-    terminal.expectText("INPUT: cast");
-    terminal.sleep(50);
-    terminal.marker("typed");
-    terminal.resize(90, 26);
-    terminal.expectText("SIZE: 90x26");
+/** @param {Runner} app */
+function main(app) {
+    app.expectText("TESTRUNNER FIXTURE");
+    app.press("Tab");
+    app.marker("start");
+    app.press("Tab");            // focus the fixture's TextInput
+    app.typeText("cast");
+    app.expectText("INPUT: cast");
+    app.sleep(50);
+    app.marker("typed");
+    app.resize(90, 26);
+    app.expectText("SIZE: 90x26");
 }

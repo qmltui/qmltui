@@ -13,7 +13,7 @@ Build and run:
 
 ```sh
 cmake --build build-qmltui --target qmltui_gallery
-scripts/update_casts.sh build-qmltui --gallery
+scripts/update_casts.py build-qmltui --gallery
 ```
 
 This runs `gallery_tour` and copies the cast to `docs/assets/casts/gallery-tour.cast`.
@@ -29,7 +29,7 @@ Regenerate all 38 gallery component casts:
 
 ```sh
 cmake --build build-qmltui -j$(nproc)
-scripts/update_casts.sh build-qmltui --components
+scripts/update_casts.py build-qmltui --components
 ```
 
 Casts are stored under `docs/assets/casts/components/`.
@@ -44,11 +44,11 @@ cargo install --git https://github.com/asciinema/agg
 npm install --global svg-term-cli
 
 # All GIFs
-scripts/generate_gifs.sh
+scripts/generate_gifs.py
 
 # Gallery only / components only
-scripts/generate_gifs.sh --gallery
-scripts/generate_gifs.sh --components
+scripts/generate_gifs.py --gallery
+scripts/generate_gifs.py --components
 
 # SVG still of the gallery grid (frame at 500 ms)
 svg-term --in docs/assets/casts/gallery-tour.cast \

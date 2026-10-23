@@ -286,7 +286,7 @@ Before finishing a QmlTui QML file:
    connected table lines; wrap other borderless types when needed.
 9. A reachable keyboard quit path exists and does not fire while a text input
    has focus.
-10. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.sh <file>`).
+10. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>`).
 11. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
 12. Signal handlers with arguments use arrow function syntax: `(event) => { ... }`.
 13. Visible behaviour is verified against the committed terminal frame using the

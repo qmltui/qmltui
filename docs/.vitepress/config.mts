@@ -131,7 +131,9 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Overview', link: '/' },
-          { text: 'Quickstart & Build', link: '/getting-started' },
+          { text: 'Getting Started Tutorial', link: '/getting-started' },
+          { text: 'Qt Quick & Widgets to QmlTui', link: '/guides/qt-quick-to-qmltui' },
+          { text: 'Build & CMake Configuration', link: '/build-configuration' },
           { text: 'Qt Creator Setup & Tooling', link: '/guides/qt-creator' },
           { text: 'Examples & Gallery', link: '/examples' },
           { text: 'WebAssembly Playground', link: '/playground' }
@@ -142,6 +144,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'All Guides', link: '/guides/' },
+          { text: 'Qt Quick & Widgets to QmlTui', link: '/guides/qt-quick-to-qmltui' },
           { text: 'Architecture', link: '/guides/architecture' },
           { text: 'Layouts & Geometry', link: '/guides/layouts' },
           { text: 'Input & Focus', link: '/guides/input-and-focus' },
@@ -152,8 +155,7 @@ export default defineConfig({
           { text: 'Embedded PTY (PtyView)', link: '/guides/pty-view' },
           { text: 'Custom C++ Items', link: '/guides/custom-items' },
           { text: 'Testing with Runner', link: '/guides/testing' },
-          { text: 'WebAssembly Playground', link: '/guides/webassembly' },
-          { text: 'Qt Quick to QmlTui', link: '/guides/qt-quick-to-qmltui' }
+          { text: 'WebAssembly Playground', link: '/guides/webassembly' }
         ]
       },
       {
@@ -162,7 +164,7 @@ export default defineConfig({
         items: [
           { text: 'QML Type Index', link: '/qml-types/' },
           {
-            text: 'QmlTui — Core & Terminal',
+            text: 'QmlTui: Core & Terminal',
             collapsed: true,
             items: [
               { text: 'Terminal', link: '/qml-types/terminal' },
@@ -185,7 +187,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Layout & Containers',
+            text: 'QmlTui: Layout & Containers',
             collapsed: true,
             items: [
               { text: 'Row', link: '/qml-types/row' },
@@ -200,7 +202,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Display & Text Inputs',
+            text: 'QmlTui: Display & Text Inputs',
             collapsed: true,
             items: [
               { text: 'Text', link: '/qml-types/text' },
@@ -209,7 +211,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Data Views',
+            text: 'QmlTui: Data Views',
             collapsed: true,
             items: [
               { text: 'TableView', link: '/qml-types/tableview' },
@@ -220,7 +222,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Input Events',
+            text: 'QmlTui: Input Events',
             collapsed: true,
             items: [
               { text: 'Keys', link: '/qml-types/keys' },
@@ -231,7 +233,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Canvas',
+            text: 'QmlTui: Canvas',
             collapsed: true,
             items: [
               { text: 'Canvas', link: '/qml-types/canvas' },
@@ -244,7 +246,7 @@ export default defineConfig({
             ]
           },
           {
-            text: 'QmlTui — Animation & State',
+            text: 'QmlTui: Animation & State',
             collapsed: true,
             items: [
               { text: 'Animation', link: '/qml-types/animation' },

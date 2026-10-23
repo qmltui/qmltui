@@ -6,7 +6,7 @@ titleTemplate: Retained-Mode Terminal UI Framework for Qt 6
 hero:
   name: QmlTui
   text: Retained-Mode Terminal UIs with QML and Qt 6
-  tagline: Build terminal applications with QML layouts, property bindings, and C++ QAbstractItemModels on a double-buffered character-cell renderer.
+  tagline: Declarative, reactive QML for terminal UI frontends, powered by Qt 6 and C++ for backend logic.
   image:
     light: /assets/branding/qmltui_mark_light.svg
     dark: /assets/branding/qmltui_mark.svg
@@ -16,22 +16,22 @@ hero:
       text: Get Started
       link: ./getting-started
     - theme: alt
+      text: Qt Quick to QmlTui
+      link: ./guides/qt-quick-to-qmltui
+    - theme: alt
       text: Playground
       link: ./playground
-    - theme: alt
-      text: Guides
-      link: ./guides/
     - theme: alt
       text: Examples
       link: ./examples
 
 features:
   - title: Retained QML Scene Graph
-    details: Declare layouts, borders, focus chains, and states in QML. Property bindings mark only the affected subtrees dirty and diff the resulting cell grid against the previous frame.
+    details: Declare layouts, box-drawing borders, focus chains, and states in QML. Property bindings mark only affected subtrees dirty and diff the resulting cell grid against the previous frame.
     link: ./guides/architecture
     linkText: Architecture
-  - title: C++ Models and Views
-    details: Drive virtualized ListView, TableView, TreeView, and GridView components from C++ QAbstractItemModel and QSortFilterProxyModel instances without QtQuick.
+  - title: Shared C++ Models and Views
+    details: Drive virtualized ListView, TableView, TreeView, and GridView components from C++ QAbstractItemModel and QSortFilterProxyModel classes on QCoreApplication without QtQuick or QtGui.
     link: ./guides/models
     linkText: Models & views
   - title: AltScreen and Inline Modes
@@ -46,7 +46,7 @@ features:
 
 ## Hello, World!
 
-With `import QtQml` and `import QmlTui`, declare a bordered card, reactive state bindings, and keyboard handlers:
+With `import QtQml` and `import QmlTui`, declare a bordered card, reactive property bindings, and keyboard handlers:
 
 ```qml
 import QtQml
@@ -124,16 +124,17 @@ cmake --build build --target qmltui_gallery
 
 ## Start Here
 
-- **[Getting Started](getting-started.md)**: System requirements, running `qmltui_gallery`, creating a standalone 3-file application (`FetchContent` or `find_package(QmlTui)`), CMake options, and environment variables.
-- **[Interactive Playground](playground.md)**: Edit and run gallery components in the browser with QmlTui autocomplete.
-- **[Examples and Recipes](examples.md)**: Browse the built-in component gallery and standalone QML/C++ recipes.
-- **[Qt Creator Setup](guides/qt-creator.md)**: Configure project wizards (`qmltui-qtc`), offline `F1` help (`qmltui.qch`), `qmlls`, `qmllint`, and `Runner` build actions.
-- **[QmlTui for Qt Quick Developers](guides/qt-quick-to-qmltui.md)**: Differences between `QtQuick` and QmlTui's character-cell coordinate system, borders, terminal modes, and imports.
+1. **[Getting Started Tutorial](getting-started.md)**: Build a standalone 3-file QmlTui application and bind a C++ `QObject` with `QML_ELEMENT`.
+2. **[QmlTui for Qt Quick and Widgets Developers](guides/qt-quick-to-qmltui.md)**: Learn the key differences from `QtQuick` and `QtWidgets`, including imports, integer character-cell geometry, box-drawing borders, terminal colors, keyboard quit handling, and shared C++ models.
+3. **[Build Configuration and Installation](build-configuration.md)**: Configure `FetchContent` or `find_package(QmlTui)`, optional modules (`QmlTui.Image`, `QmlTui.PtyView`, `Runner`), CMake options, and runtime environment variables.
+4. **[Qt Creator Setup and Tooling](guides/qt-creator.md)**: Install project wizards (`qmltui-qtc`), offline `F1` help (`qmltui.qch`), `qmlls`, `qmllint`, and `Runner` build actions.
+5. **[Interactive Playground](playground.md)** and **[Examples and Recipes](examples.md)**: Run and edit gallery components in the browser or browse standalone QML and C++ recipes.
 
 ## Guides
 
-See the [Guides index](guides/index.md) for the full reading order:
+See the [Guides index](guides/index.md) for the recommended reading order:
 
+- **[QmlTui for Qt Quick and Widgets Developers](guides/qt-quick-to-qmltui.md)**: Differences between `QtQuick`/`QtWidgets` and QmlTui's character-cell coordinate system, borders, terminal modes, imports, and model roles.
 - **[Architecture](guides/architecture.md)**: Retained item tree, double-buffered `TextGridBuffer` diffing, platform backends, and QML module boundaries.
 - **[Layouts & Cell Geometry](guides/layouts.md)**: Integer cell coordinates, `anchors`, `Row`/`Column` positioners, and `RowLayout`/`ColumnLayout`/`GridLayout`/`StackLayout`.
 - **[Input & Focus](guides/input-and-focus.md)**: Focus chains, `FocusScope`, `Keys.onPressed` propagation, `Shortcut`, SGR mouse events, and bracketed paste.
@@ -152,9 +153,10 @@ See the [Guides index](guides/index.md) for the full reading order:
 - **[C++ Classes Reference](cpp-classes/index.md)**: Public C++ headers for `Item`, `Terminal`, `TerminalEngine`, `TextGridBuffer`, `Cell`, `Color`, `TerminalCapabilities`, `PtyView`, and `Runner`.
 - **[Release Notes & Changelog](changes/changelog.md)**: Version history and migration notes.
 
-## Constraints & Limitations
+## Constraints and Limitations
 
 - **Integer character-cell geometry**: Item coordinates (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells. `Canvas` and `Image` render sub-cell glyphs (2x4 Braille, 1x2 half-blocks) or pixel protocols inside those integer cell bounds.
+- **Explicit keyboard quit path**: Terminal applications in raw mode have no window close button, and `TextInput`/`TextArea` use `Ctrl+C` for clipboard copy. Applications must provide a reachable keyboard exit path (such as handling `Q` or `Escape` at the root `Terminal`).
 - **Terminal capability variance**: Protocol support depends on the host terminal emulator. `TerminalCapabilities` probes DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades when a feature is absent (for example, `Image.Auto` falls back from Kitty to Sixel to Unicode half-blocks).
 - **Platform targets**: Runtime targets are Linux, macOS, and Windows Terminal (`Win32ConsoleBackend` over Virtual Terminal sequences). Legacy `conhost.exe` receives whatever its VT layer supports and is not a target.
 - **Flat views vs. hierarchical trees**: `ListView`, `TableView`, `GridView`, and `Repeater` present a single model level (`rootIndex` on `ListView`/`GridView`/`Repeater`, or top-level rows on `TableView`). Hierarchical models require `TreeView`.

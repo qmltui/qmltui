@@ -91,9 +91,9 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **TableView Model** | [`examples/recipes/table_view/`](../examples/recipes/table_view/) | `qmltui_table_view_demo` | [Models & Views](guides/models.md) · [GIF](assets/casts/components/table_view.gif) | `TableView` backed by C++ `ProcessModel` (`QAbstractTableModel`) and `ProcessProxy` (`QSortFilterProxyModel`) with column sorting and filtering. |
 | **TextArea Highlighting** | [`examples/recipes/text_area_highlighting/`](../examples/recipes/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | [Styling & Colors](guides/styling-and-colors.md) · ![TextArea Highlighting](assets/casts/components/text_area_highlighting.gif) | Custom syntax highlighting on `TextArea` implemented in both QML (`QmlHighlighter.qml`) and C++ (`JsonHighlighter`). |
 
-## Quickstart and WebAssembly (`examples/quickstart/`, `examples/wasm/`)
+## Starter Template and WebAssembly (`examples/helloworld/`, `examples/wasm/`)
 
 | Project | Directory | CMake Target | Description |
 | :--- | :--- | :--- | :--- |
-| **Standalone Quickstart** | [`examples/quickstart/`](../examples/quickstart/) | `hello_qmltui` (`qmltui_quickstart_test` in-tree) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) project using `FetchContent`. |
+| **Standalone Hello World** | [`examples/helloworld/`](../examples/helloworld/) | `hello_qmltui` (`hello_world` Runner scenario) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) project using `FetchContent` or `find_package(QmlTui)`. |
 | **WebAssembly Playground** | [`examples/wasm/`](../examples/wasm/) | [Live Playground](playground.md) / [Guide](guides/webassembly.md) | Browser-hosted QmlTui playground sharing `examples/gallery/`. |

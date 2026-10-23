@@ -24,7 +24,7 @@ See [`docs/examples.md`](../docs/examples.md) for the full catalog with links to
 | [`big_text/`](recipes/big_text/) | `qmltui_big_text_demo` | Custom C++ `qmltui::Item` (`BigText`) painting 3×5 block-pixel text into `TextGridBuffer`. |
 | [`calendar/`](recipes/calendar/) | `qmltui_calendar_demo` | Pure-QML `Calendar.qml` month-grid component with keyboard navigation and date notes. |
 | [`cpp_only/`](recipes/cpp_only/) | `qmltui_cpp_only_demo` | Constructing a `qmltui::Terminal` and item tree in C++ without `.qml` files. |
-| [`custom_cpp_item/`](recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | Minimal `qmltui::Item` subclass (`ProgressGauge`) exposed to QML with `QML_ELEMENT`. |
+| [`custom_cpp_item/`](recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | Minimal `qmltui::Rectangle` subclass (`ProgressBar`) exposed to QML with `QML_ELEMENT`. |
 | [`independent_states/`](recipes/independent_states/) | `qmltui_independent_states_demo` | Orthogonal state machines using `StateGroup`, `State`, and `Transition` (`QMLTUI_ENABLE_PRIVATE_QT=ON`). |
 | [`inline_repl/`](recipes/inline_repl/) | `qmltui_inline_repl_demo` | Inline CLI prompt using `Terminal.Inline` and `Scrollback.print()`. |
 | [`lazy_model/`](recipes/lazy_model/) | `qmltui_lazy_model_demo` | `LazyDirectoryModel` (`QAbstractItemModel`) populating child nodes on demand in `TreeView`. |

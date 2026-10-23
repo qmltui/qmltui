@@ -231,7 +231,7 @@ appended (set the `QT_WASM_EXPORT_NAME` target property to change it).
 Configure with the kit's `qt-cmake`, then in your project:
 
 ```cmake
-add_subdirectory(path/to/QmlTui)          # or FetchContent, as examples/quickstart does
+add_subdirectory(path/to/QmlTui)          # or FetchContent, as examples/helloworld does
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app URI MyApp VERSION 1.0 QML_FILES Main.qml DEPENDENCIES TARGET qmltui::core)
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core)

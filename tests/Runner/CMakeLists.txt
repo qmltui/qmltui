@@ -461,7 +461,10 @@ if(TARGET qmltui-runner)
     qt_add_executable(test_runner_launcher test_runner_launcher.cpp)
     target_link_libraries(test_runner_launcher PRIVATE Qt6::Core Qt6::Test)
     target_compile_definitions(test_runner_launcher PRIVATE
-        QMLTUI_SCENARIOS="${CMAKE_CURRENT_SOURCE_DIR}/scenarios")
+        QMLTUI_SCENARIOS="${CMAKE_CURRENT_SOURCE_DIR}/scenarios"
+        QMLTUI_DEFAULT_TEST_LAUNCHER="$<TARGET_FILE:qmltui-runner>"
+        QMLTUI_DEFAULT_TEST_FIXTURE="$<TARGET_FILE:qmltui_runner_fixture>"
+        QMLTUI_DEFAULT_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}")
     add_dependencies(test_runner_launcher qmltui-runner qmltui_runner_fixture)
     add_test(NAME test_runner_launcher COMMAND test_runner_launcher)
     set_tests_properties(test_runner_launcher PROPERTIES

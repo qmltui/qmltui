@@ -7,7 +7,7 @@ option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJE
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, StateGroup, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
 option(QMLTUI_ENABLE_PTY_VIEW  "Build the optional Unix PTY PtyView module" OFF)
-option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" OFF)
+option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_ENABLE_COVERAGE "Instrument QmlTui targets for Clang source-based code coverage" OFF)
 option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid QmlTui Commercial License" OFF)
 

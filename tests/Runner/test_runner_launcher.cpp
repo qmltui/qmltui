@@ -69,6 +69,21 @@ int peer(const QStringList& args) {
                   .toJson());
     return code;
 }
+QString launcherBinary() {
+    return qEnvironmentVariable("QMLTUI_TEST_LAUNCHER",
+                                QStringLiteral(QMLTUI_DEFAULT_TEST_LAUNCHER));
+}
+
+QString fixtureBinary() {
+    return qEnvironmentVariable("QMLTUI_TEST_FIXTURE", QStringLiteral(QMLTUI_DEFAULT_TEST_FIXTURE));
+}
+
+QProcessEnvironment withDefaultImportPath(QProcessEnvironment env) {
+    const QString importPath = QStringLiteral(QMLTUI_DEFAULT_QML_IMPORT_PATH);
+    if (!env.contains("QML_IMPORT_PATH")) env.insert("QML_IMPORT_PATH", importPath);
+    if (!env.contains("QML2_IMPORT_PATH")) env.insert("QML2_IMPORT_PATH", importPath);
+    return env;
+}
 } // namespace
 
 class LauncherTest : public QObject {
@@ -81,8 +96,8 @@ class LauncherTest : public QObject {
     Result run(QStringList args,
                QProcessEnvironment env = QProcessEnvironment::systemEnvironment()) {
         QProcess process;
-        process.setProcessEnvironment(env);
-        process.start(qEnvironmentVariable("QMLTUI_TEST_LAUNCHER"), args);
+        process.setProcessEnvironment(withDefaultImportPath(env));
+        process.start(launcherBinary(), args);
         if (!process.waitForStarted(5000)) return {-100, {}, process.errorString().toUtf8()};
         if (!process.waitForFinished(20000)) {
             process.kill();
@@ -175,8 +190,8 @@ private slots:
             << 0 << QString("tour.cast");
         QTest::newRow("failure") << QStringList{"--eval", "terminal.fail('intentional')"} << 1
                                  << QString("failure.txt");
-        QTest::newRow("module") << QStringList{"--script",
-                                               QStringLiteral(QMLTUI_SCENARIOS) + "/module_main.mjs"}
+        QTest::newRow("module") << QStringList{"--script", QStringLiteral(QMLTUI_SCENARIOS) +
+                                                               "/module_main.mjs"}
                                 << 0 << QString("module_main.txt");
         QTest::newRow("resource") << QStringList{"--script", ":/qmltui-tests/module_main.mjs"} << 0
                                   << QString("module_main.txt");
@@ -187,7 +202,7 @@ private slots:
         QFETCH(QString, artifact);
         QTemporaryDir temporary;
         const QString directory = temporary.filePath("artifacts");
-        options << "--artifacts" << directory << "--" << qEnvironmentVariable("QMLTUI_TEST_FIXTURE");
+        options << "--artifacts" << directory << "--" << fixtureBinary();
         const auto result = run(options);
         QVERIFY2(result.code == expected, result.err.constData());
         const QByteArray bytes = readFile(QDir(directory).filePath(artifact));
@@ -208,7 +223,7 @@ private slots:
                      .code,
                  2);
         QProcess child;
-        auto env = QProcessEnvironment::systemEnvironment();
+        auto env = withDefaultImportPath(QProcessEnvironment::systemEnvironment());
         for (const auto& key : env.keys()) {
             if (key.startsWith("QMLTUI_RUNNER_")) env.remove(key);
         }
@@ -217,7 +232,7 @@ private slots:
         env.insert("QMLTUI_RUNNER_HANDSHAKE_PATH", temporary.filePath("absent/ack.json"));
         env.insert("QMLTUI_RUNNER_HANDSHAKE_TOKEN", "test-token");
         child.setProcessEnvironment(env);
-        child.start(qEnvironmentVariable("QMLTUI_TEST_FIXTURE"), {});
+        child.start(fixtureBinary(), {});
         QVERIFY(child.waitForStarted());
         QVERIFY(child.waitForFinished(5000));
         QCOMPARE(child.exitCode(), 1);
@@ -230,13 +245,12 @@ private slots:
         const QString script = temporary.filePath("a script.js");
         QVERIFY(writeFile(script, "function main(t) { t.expectText('TESTRUNNER FIXTURE'); "
                                   "t.expectSnapshot('baseline.txt'); }"));
-        auto result =
-            run({"--script=" + script, "--update-snapshots", "--artifacts",
-                 temporary.filePath("recorded"), "--", qEnvironmentVariable("QMLTUI_TEST_FIXTURE")});
+        auto result = run({"--script=" + script, "--update-snapshots", "--artifacts",
+                           temporary.filePath("recorded"), "--", fixtureBinary()});
         QVERIFY2(result.code == 0, result.err.constData());
         QVERIFY(readFile(temporary.filePath("baseline.txt")).contains("TESTRUNNER FIXTURE"));
         result = run({"--script", script, "--artifacts", temporary.filePath("verified"), "--",
-                      qEnvironmentVariable("QMLTUI_TEST_FIXTURE")});
+                      fixtureBinary()});
         QVERIFY2(result.code == 0, result.err.constData());
     }
 };

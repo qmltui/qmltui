@@ -104,6 +104,20 @@ def cache_bool(build_dir: Path, name: str) -> bool | None:
     return None if not match else match.group(1) == "ON"
 
 
+def cache_private_qt_enabled(build_dir: Path) -> bool | None:
+    enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PRIVATE_QT")
+    if enabled is None:
+        enabled = cache_bool(build_dir, "QMLTUI_ENABLE_BEHAVIOR")
+    if not enabled:
+        return enabled
+    cache_path = build_dir / "CMakeCache.txt"
+    text = cache_path.read_text(encoding="utf-8")
+    match = re.search(r"^Qt6QmlPrivate_DIR:PATH=(.+)$", text, re.MULTILINE)
+    if not match or match.group(1).endswith("-NOTFOUND"):
+        return False
+    return True
+
+
 def check_qml_types(build_dir: Path, errors: list[str]) -> int:
     modules = common_type_map()
     if set(modules) != set(QMLTYPE_FILES):
@@ -111,9 +125,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
         extra = sorted(set(modules) - set(QMLTYPE_FILES))
         errors.append(f"unexpected Common Type Map modules; missing={missing}, extra={extra}")
 
-    private_qt_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PRIVATE_QT")
-    if private_qt_enabled is None:
-        private_qt_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_BEHAVIOR")
+    private_qt_enabled = cache_private_qt_enabled(build_dir)
     image_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_IMAGE")
     pty_view_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PTY_VIEW")
     checked = 0

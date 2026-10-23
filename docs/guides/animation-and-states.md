@@ -4,7 +4,7 @@ QmlTui supports declarative states, property changes, transitions, and property 
 
 ## Public Qt vs. Private Qt Builds
 
-`QMLTUI_ENABLE_PRIVATE_QT=ON` (enabled by default) links `Qt6::QmlPrivate` to provide `Behavior`, `StateGroup`, and binding-aware `PropertyChanges`. Pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when building strictly against public Qt headers.
+By default (`QMLTUI_ENABLE_PRIVATE_QT=ON`), QmlTui automatically links `Qt6::QmlPrivate` when available to provide `Behavior`, `StateGroup`, and binding-aware `PropertyChanges`. If `Qt6::QmlPrivate` is not installed, CMake emits a warning and builds the public-Qt subset; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when building strictly against public Qt headers.
 
 | Feature | Public Qt Only (`PRIVATE_QT=OFF`) | Private Qt (`PRIVATE_QT=ON`) |
 | :--- | :--- | :--- |

@@ -62,16 +62,26 @@ if(QMLTUI_BUILD_TESTS)
 endif()
 list(REMOVE_DUPLICATES qt_required_components)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
-
 if(QMLTUI_ENABLE_PRIVATE_QT)
     set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL
         "Suppress warnings about the optional Qt QmlPrivate dependency")
+endif()
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
+
+if(QMLTUI_ENABLE_PRIVATE_QT)
     if(NOT TARGET Qt6::QmlPrivate)
-        find_package(Qt6 6.8 OPTIONAL_COMPONENTS QmlPrivate)
+        find_package(Qt6 6.8 QUIET OPTIONAL_COMPONENTS QmlPrivate)
     endif()
     if(NOT TARGET Qt6::QmlPrivate)
-        message(FATAL_ERROR "QMLTUI_ENABLE_PRIVATE_QT is enabled but Qt6::QmlPrivate was not found. Please install the Qt 6 Qml private development headers.")
+        message(WARNING
+            "QmlTui: Qt6::QmlPrivate was not found; building without Behavior, StateGroup, and advanced states. "
+            "Install the Qt 6 Qml private development headers to enable them, or pass "
+            "-DQMLTUI_ENABLE_PRIVATE_QT=OFF to suppress this warning.")
+        set(QMLTUI_ENABLE_PRIVATE_QT OFF)
+        if(NOT PROJECT_IS_TOP_LEVEL)
+            set(QMLTUI_ENABLE_PRIVATE_QT OFF PARENT_SCOPE)
+        endif()
     endif()
 endif()
 

@@ -42,8 +42,9 @@ without the repository tests. Use `-DQMLTUI_ENABLE_PTY_VIEW=ON` only for the
 optional PTY-backed `PtyView` module.
 
 Features requiring private Qt headers (Behavior, StateGroup, and advanced states)
-require `-DQMLTUI_ENABLE_PRIVATE_QT=ON`. For changes to private Qt features or
-their gating, validate both an enabled build and a separate disabled build.
+are enabled automatically when `Qt6::QmlPrivate` is available (`QMLTUI_ENABLE_PRIVATE_QT=ON`
+by default; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out). For changes to private Qt
+features or their gating, validate both an enabled build and a separate disabled build.
 
 After an edit, build the affected target first. Rebuild the configured tree
 after Core, public API, QML-module, or CMake changes:

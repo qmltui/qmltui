@@ -13,7 +13,7 @@ This guide covers system requirements, running the component gallery, and settin
 | Feature / Module | CMake Option | Default | Requirement |
 | :--- | :--- | :--- | :--- |
 | **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for headless builds without GUI/network packages) |
-| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` | `Qt6::QmlPrivate` headers (ties build to the Qt minor version; set `OFF` for public-Qt-only builds) |
+| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
 | **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTY_VIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 
 ## Build and Run the Gallery
@@ -243,7 +243,7 @@ See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md
 | `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and recipe executables |
 | `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
-| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` | Enable `Behavior`, `StateGroup`, and advanced states (`Qt6::QmlPrivate`) |
+| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior`, `StateGroup`, and advanced states (warns if missing unless set to `OFF`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
 | `QMLTUI_ENABLE_PTY_VIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `OFF` | Build and install `qmltui::runner` and the `qmltui-runner` CLI |

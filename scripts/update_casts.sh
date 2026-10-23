@@ -148,6 +148,11 @@ if [ -f "$build_dir/CMakeCache.txt" ]; then
             echo "warning: ${opt}=OFF in '$build_dir'; casts for that module will not be regenerated" >&2
         fi
     done
+    if ! grep -q '^QMLTUI_ENABLE_PRIVATE_QT:BOOL=OFF$' "$build_dir/CMakeCache.txt" && \
+       { ! grep -q '^Qt6QmlPrivate_DIR:PATH=' "$build_dir/CMakeCache.txt" || \
+         grep -q '^Qt6QmlPrivate_DIR:PATH=.*-NOTFOUND$' "$build_dir/CMakeCache.txt"; }; then
+        echo "warning: Qt6::QmlPrivate not found in '$build_dir'; casts requiring private Qt will not be regenerated" >&2
+    fi
 fi
 
 mkdir -p "$repo_dir/docs/assets/casts/components"

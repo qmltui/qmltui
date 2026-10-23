@@ -41,6 +41,69 @@ def fmt_pct(covered: int, count: int) -> str:
     return f"{(covered / count) * 100.0:.1f}% ({covered}/{count})"
 
 
+def badge_color(pct: float) -> str:
+    if pct >= 90.0:
+        return "#4c1"
+    if pct >= 80.0:
+        return "#97ca00"
+    if pct >= 70.0:
+        return "#a4a61d"
+    if pct >= 60.0:
+        return "#dfb317"
+    if pct >= 50.0:
+        return "#fe7d37"
+    return "#e05d44"
+
+
+def build_coverage_badge_svg(export_data: dict) -> str:
+    data_entries = export_data.get("data", [])
+    totals = data_entries[0].get("totals", {}) if data_entries else {}
+    lines = totals.get("lines", {})
+    covered = int(lines.get("covered", 0))
+    count = int(lines.get("count", 0))
+
+    if count > 0:
+        pct = (covered / count) * 100.0
+        value_text = f"{pct:.1f}%"
+        color = badge_color(pct)
+    else:
+        value_text = "unknown"
+        color = "#9f9f9f"
+
+    label_text = "coverage"
+    left_width = 61
+    right_width = max(47, len(value_text) * 7 + 12)
+    total_width = left_width + right_width
+    left_center = (left_width / 2.0) * 10.0
+    right_center = (left_width + right_width / 2.0) * 10.0
+    left_text_len = (left_width - 10) * 10
+    right_text_len = (right_width - 10) * 10
+    aria_label = f"{label_text}: {value_text}"
+
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="20" role="img" aria-label="{aria_label}">
+  <title>{aria_label}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r">
+    <rect width="{total_width}" height="20" rx="3" fill="#fff"/>
+  </clipPath>
+  <g clip-path="url(#r)">
+    <rect width="{left_width}" height="20" fill="#555"/>
+    <rect x="{left_width}" width="{right_width}" height="20" fill="{color}"/>
+    <rect width="{total_width}" height="20" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
+    <text aria-hidden="true" x="{left_center:.0f}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{left_text_len}">{label_text}</text>
+    <text x="{left_center:.0f}" y="140" transform="scale(.1)" fill="#fff" textLength="{left_text_len}">{label_text}</text>
+    <text aria-hidden="true" x="{right_center:.0f}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{right_text_len}">{value_text}</text>
+    <text x="{right_center:.0f}" y="140" transform="scale(.1)" fill="#fff" textLength="{right_text_len}">{value_text}</text>
+  </g>
+</svg>
+"""
+
+
 def build_markdown_summary(export_data: dict, source_dir: Path) -> str:
     data_entries = export_data.get("data", [])
     if not data_entries:
@@ -243,6 +306,9 @@ def main() -> int:
         summary_md_path = coverage_dir / "summary.md"
         summary_md_path.write_text(md_summary, encoding="utf-8")
         print(md_summary)
+
+        badge_svg = build_coverage_badge_svg(export_data)
+        (coverage_dir / "coverage.svg").write_text(badge_svg, encoding="utf-8")
 
         step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
         if step_summary:

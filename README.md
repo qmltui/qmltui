@@ -5,6 +5,11 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/qmltui-dev/qmltui/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/qmltui-dev/qmltui/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/qmltui-dev/qmltui/blob/badges/summary.md"><img alt="Coverage" src="https://github.com/qmltui-dev/qmltui/raw/badges/coverage.svg"></a>
+</p>
+
 **QmlTui** is a retained-mode terminal UI framework for C++17 and Qt 6.8+. Applications declare layouts, borders, focus chains, and states in QML and bind them to C++ `QObject`s and `QAbstractItemModel`s. `QmlTui` renders the scene into a double-buffered character-cell grid (`TextGridBuffer`), diffs against the previous frame, and writes only the changed cells and SGR attributes to the terminal—without depending on `QtQuick` or a display server.
 
 ## Overview

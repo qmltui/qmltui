@@ -52,6 +52,8 @@ jobs:
   coverage:
     name: coverage (linux / clang / llvm-cov)
     runs-on: [self-hosted, linux]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -80,11 +82,29 @@ jobs:
           name: coverage-report
           path: |
             build-coverage/coverage/html/
+            build-coverage/coverage/coverage.svg
             build-coverage/coverage/summary.md
             build-coverage/coverage/summary.txt
             build-coverage/coverage/summary.json
             build-coverage/coverage/lcov.info
           retention-days: 14
+
+      - name: Publish coverage badge to badges branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          badge_dir=$(mktemp -d)
+          cp build-coverage/coverage/coverage.svg "$badge_dir/coverage.svg"
+          cp build-coverage/coverage/summary.md "$badge_dir/summary.md"
+          cd "$badge_dir"
+          git init -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add coverage.svg summary.md
+          git commit -m "Update coverage badge (${GITHUB_SHA::7})"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges:refs/heads/badges
+          rm -rf "$badge_dir"
 
   windows:
     name: windows / Behavior ON

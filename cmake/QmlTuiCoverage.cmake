@@ -64,6 +64,7 @@ function(qmltui_register_coverage_targets)
     set(summary_txt "${coverage_dir}/summary.txt")
     set(summary_json "${coverage_dir}/summary.json")
     set(summary_md "${coverage_dir}/summary.md")
+    set(badge_svg "${coverage_dir}/coverage.svg")
     set(lcov_info "${coverage_dir}/lcov.info")
     set(html_dir "${coverage_dir}/html")
 

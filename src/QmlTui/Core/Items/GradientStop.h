@@ -37,8 +37,8 @@ signals:
 
 private:
     qreal m_position = 0.0;
-    Color m_color = Color::fromAnsiIndex(15);
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    Color m_color = Color::fromArgb32(0xFFFFFFFFU);
+    uint32_t m_resolvedColor = 0xFFFFFFFFU;
 };
 
 } // namespace qmltui

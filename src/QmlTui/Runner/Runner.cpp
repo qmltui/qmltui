@@ -296,8 +296,7 @@ bool parseRgbaString(const QString& text, uint32_t* rgba) {
             return true;
         }
     }
-    // Named colors resolve the same way QML "color" strings do, so "red" matches
-    // a cell painted with color: "red" (an ANSI palette entry, not #FF0000).
+    // Named colors and "ansi:" strings resolve the same way QML "color" strings do.
     const Color color = Color::fromString(text.trimmed());
     if (!color.isValid()) return false;
     *rgba = color.argb32();

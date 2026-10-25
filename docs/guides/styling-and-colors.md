@@ -26,14 +26,14 @@ property.
 
 Two kinds of string are accepted, and they behave differently on screen:
 
-- Hex values such as `"#2cde85"` are literal RGB. On truecolor terminals they
-  render exactly; on 256- and 16-color terminals they are quantised.
-- The sixteen ANSI palette names (`black`, `maroon`, `green`, `olive`, `navy`,
-  `purple`, `teal`, `silver`, `gray`, `red`, `lime`, `yellow`, `blue`,
-  `magenta`, `cyan`, `white`), the explicit form `"ansi:N"`, and `QmlTui.ansi(N)`
-  are palette indices, not RGB. They are emitted as SGR 30-37 and 90-97 at every color
-  depth, so the user's terminal theme decides how they look. Other CSS names (`orange`, `steelblue`,
-  ...) are literal RGB.
+- Hex values such as `"#2cde85"` and bare CSS/SVG color names (`"red"`, `"blue"`,
+  `"cyan"`, `"orange"`, `"steelblue"`, ...) are literal 24-bit RGB (`"red"` is
+  identical to `"#ff0000"`). On truecolor terminals they render as exact RGB; on
+  256- and 16-color terminals they are quantised.
+- Explicit `"ansi:..."` strings (`"ansi:red"`, `"ansi:brightred"`, `"ansi:0"`
+  through `"ansi:15"`) and `QmlTui.ansi(N)` are 16-color ANSI palette indices,
+  not RGB. They are emitted as SGR 30-37 and 90-97 at every color depth, so the
+  user's terminal theme decides how they look.
 - `QmlTui.defaultColor` (or `"default"`, and the initial value of a default-constructed `color` property) resets to the terminal's default foreground or background via SGR 39/49. When used as a background (for example on a `Dialog`), it paints opaque cells with the terminal's default background color, occluding underlying content.
 - `QmlTui.transparent` (or `"transparent"`) leaves item background cells unpainted so the surface underneath remains visible. On a `Canvas`, `setPixelColor(x, y, "transparent")` paints a set pixel in the terminal's default ink, not a hole; erase a pixel with `setPixel(x, y, false)` or the whole surface with `clear()`.
 

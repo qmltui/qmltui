@@ -38,10 +38,10 @@ void redOnNavy(TextGridBuffer& buffer) {
     buffer.writeText(0, 0, QStringLiteral("AB"), 0xFFFF0000, 0xFF000080, TextAttribute::Bold);
 }
 
-// The same look, but written with ANSI names: yellow text on a navy background.
+// The same look, but written with ANSI names: bright yellow text on a blue background.
 void namedYellowOnNavy(TextGridBuffer& buffer) {
-    buffer.writeText(0, 0, QStringLiteral("AB"), Color("yellow").argb32(), Color("navy").argb32(),
-                     TextAttribute::None);
+    buffer.writeText(0, 0, QStringLiteral("AB"), Color("ansi:brightyellow").argb32(),
+                     Color("ansi:blue").argb32(), TextAttribute::None);
 }
 
 } // namespace
@@ -196,22 +196,35 @@ QTEST_MAIN(TestColorDepth)
 #include "test_color_depth.moc"
 
 void TestColorDepth::testAnsiNamesParseToIndices() {
+    // Bare CSS/SVG color names resolve to literal 24-bit RGB, matching hex strings.
     const Color red("red");
     QVERIFY(red.isValid());
-    QVERIFY(red.isAnsiIndex());
-    QCOMPARE(red.ansiIndex(), 9);
-    QCOMPARE(red.toString(), QStringLiteral("red"));
-    QCOMPARE(red.toRgb().argb32(), 0xFFFF0000U); // xterm default for index 9
-    QCOMPARE(Color("gray").ansiIndex(), 8);
-    QCOMPARE(Color("ansi:3").ansiIndex(), 3);
+    QVERIFY(!red.isAnsiIndex());
+    QCOMPARE(red.ansiIndex(), -1);
+    QCOMPARE(red, Color("#ff0000"));
+    QCOMPARE(red.argb32(), 0xFFFF0000U);
+    QCOMPARE(red.toString(), QStringLiteral("#ff0000"));
+    QCOMPARE(Color("blue"), Color("#0000ff"));
+    QCOMPARE(Color("green"), Color("#008000"));
+    QCOMPARE(Color("lime"), Color("#00ff00"));
+    QCOMPARE(Color("white"), Color("#ffffff"));
+    QCOMPARE(Color("black"), Color("#000000"));
+    QCOMPARE(Color("gray"), Color("#808080"));
+    QCOMPARE(Color("cyan"), Color("#00ffff"));
+    QCOMPARE(Color("magenta"), Color("#ff00ff"));
+    QCOMPARE(Color("yellow"), Color("#ffff00"));
 
-    // The two namespaces use different naming authorities on purpose: a bare
-    // word is the CSS colour of that name, mapped to the palette slot whose
-    // default xterm RGB it equals, while "ansi:" spells ANSI's own numbering.
-    // CSS red is #ff0000, which is index 9; ANSI red is SGR 31, which is 1.
-    QCOMPARE(Color("red").ansiIndex(), 9);
-    QCOMPARE(Color("ansi:red").ansiIndex(), 1);
-    QCOMPARE(Color("white").ansiIndex(), 15);
+    // "ansi:" spells ANSI's 16-color palette indices (SGR 30-37 and 90-97).
+    const Color ansiRed("ansi:red");
+    QVERIFY(ansiRed.isValid());
+    QVERIFY(ansiRed.isAnsiIndex());
+    QCOMPARE(ansiRed.ansiIndex(), 1);
+    QCOMPARE(ansiRed.toString(), QStringLiteral("ansi:red"));
+    QCOMPARE(ansiRed.toRgb().argb32(), 0xFF800000U); // xterm default for index 1
+    QCOMPARE(Color("ansi:brightred").ansiIndex(), 9);
+    QCOMPARE(Color("ansi:brightred").toString(), QStringLiteral("ansi:brightred"));
+    QCOMPARE(Color("ansi:brightred").toRgb().argb32(), 0xFFFF0000U); // xterm default for index 9
+    QCOMPARE(Color("ansi:3").ansiIndex(), 3);
     QCOMPARE(Color("ansi:white").ansiIndex(), 7);
 
     // Under "ansi:", the eight colour words are SGR 30-37.
@@ -253,11 +266,13 @@ void TestColorDepth::testAnsiNamesParseToIndices() {
     QCOMPARE(Color("ansi:BRIGHT-RED").ansiIndex(), 9);
 
     // CSS-only words are not ANSI names. They are rejected under the prefix
-    // rather than silently resolved, and keep working without it.
+    // rather than silently resolved, and resolve to literal RGB without it.
     for (const char* cssOnly :
          {"maroon", "olive", "navy", "purple", "teal", "silver", "lime", "fuchsia", "aqua"}) {
         QVERIFY2(!Color(QStringLiteral("ansi:") + QLatin1String(cssOnly)).isValid(), cssOnly);
-        QVERIFY2(Color(QLatin1String(cssOnly)).isAnsiIndex(), cssOnly);
+        const Color bare{QLatin1String(cssOnly)};
+        QVERIFY2(bare.isValid(), cssOnly);
+        QVERIFY2(!bare.isAnsiIndex(), cssOnly);
     }
 
     // Out-of-range indices and unknown words stay invalid.

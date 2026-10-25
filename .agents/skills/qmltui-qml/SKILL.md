@@ -182,9 +182,10 @@ Rectangle {
 `Rectangle.border` group.
 
 QmlTui C++ items expose colors as `qmltui::Color` (QML value type `color`), which
-accepts named colors (`"cyan"`, `"default"`, `"transparent"`), hex strings
-(`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.color(...)`, or `QmlTui.rgba(...)` without
-requiring `QtQuick`.
+accepts CSS/SVG named colors (`"cyan"`), special sentinels (`"default"`,
+`"transparent"`), ANSI palette entries (`"ansi:red"`, `QmlTui.ansi(...)`), hex
+strings (`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.color(...)`, or `QmlTui.rgba(...)`
+without requiring `QtQuick`.
 
 ## 5. Keyboard Focus and Quit Path
 

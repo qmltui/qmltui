@@ -119,7 +119,7 @@ a faint pixel over a dark background is a dim character, or no dot at all.
 
 Blending needs a known background. The cell holds one whenever a
 [Terminal](terminal.md) `color`, a [Rectangle](rectangle.md), or another item
-painted there first. ANSI palette colours such as `"blue"` blend through their
+painted there first. ANSI palette colours such as `"ansi:blue"` blend through their
 xterm default RGB. When the cell still has the terminal's default background,
 its real colour is unknown, so pixels at least half opaque are drawn unblended
 and fainter pixels are left alone.

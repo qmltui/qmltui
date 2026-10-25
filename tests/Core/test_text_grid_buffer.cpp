@@ -106,9 +106,10 @@ void TestTextGridBuffer::testCellAccess() {
 void TestTextGridBuffer::testColorValue() {
     const Color red(" red ");
     QVERIFY(red.isValid());
-    QVERIFY(red.isAnsiIndex()); // "red" is palette entry 9, not RGB
-    QCOMPARE(red.toRgb().argb32(), 0xffff0000U);
-    QCOMPARE(red.toString(), QStringLiteral("red"));
+    QVERIFY(!red.isAnsiIndex());
+    QCOMPARE(red, Color("#ff0000"));
+    QCOMPARE(red.argb32(), 0xffff0000U);
+    QCOMPARE(red.toString(), QStringLiteral("#ff0000"));
     QCOMPARE(Color("#ff0000").toString(), QStringLiteral("#ff0000"));
 
     QCOMPARE(Color("#0f8").argb32(), 0xff00ff88U);

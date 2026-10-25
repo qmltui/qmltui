@@ -19,17 +19,19 @@ produces `Color::Invalid` (`!isValid()`).
 A terminal draws the sixteen ANSI palette slots with whatever colors the user
 has themed them to. A color that is a palette *index* is encoded as that index
 at every color depth, so the user's theme applies; a color that is literal RGB
-is encoded as RGB. Three spellings let you choose:
+is encoded as RGB. Bare CSS/SVG color names and hex strings are always literal
+RGB, while the `ansi:` prefix (or `QmlTui.ansi()` / `Color::fromAnsiIndex()`)
+selects a terminal palette slot:
 
 | Spelling | Result | Rule |
 |---|---|---|
-| `"red"` | index 9 | An SVG name whose RGB is exactly an xterm default palette entry becomes that index, so it follows the terminal theme. |
-| `"ansi:red"` | index 1 | ANSI's own numbering. |
-| `"#ff0000"` | literal RGB | Exact color, no theme. |
+| `"red"` | literal RGB (`#ff0000`) | Standard CSS/SVG named color; exact 24-bit RGB, no terminal theme. |
+| `"#ff0000"` | literal RGB (`#ff0000`) | Exact 24-bit RGB, no terminal theme. |
+| `"ansi:red"` | index 1 | ANSI palette entry (SGR 31/41); follows the user's terminal theme. |
+| `"ansi:brightred"` | index 9 | Bright ANSI palette entry (SGR 91/101); follows the user's terminal theme. |
 
-The two name spellings deliberately use different naming authorities, so they
-do not always agree. Bare names are CSS: `red` is `#ff0000`, which is palette
-slot 9. Under `ansi:` the eight color words are the ANSI ones, SGR 30-37:
+Under `ansi:` the eight color words follow ANSI's own numbering (SGR 30-37 for
+indices `0`–`7`, and `bright` for SGR 90-97 indices `8`–`15`):
 
 | Index | `ansi:` name | Index | `ansi:` name |
 |---|---|---|---|
@@ -46,11 +48,11 @@ slot 9. Under `ansi:` the eight color words are the ANSI ones, SGR 30-37:
 and spaces in the suffix are ignored, so `ansi:bright-red` and `ansi:bright_red`
 are both index 9. Words that are CSS-only rather than ANSI — `maroon`, `olive`,
 `navy`, `purple`, `teal`, `silver`, `lime`, `fuchsia`, `aqua` — are rejected
-under the prefix; use them without it.
+under the prefix; without the prefix, they resolve to their CSS RGB values.
 
-SVG names that are not an exact palette match, such as `orange`, stay literal
-RGB. `toString()` reports a palette color by its canonical CSS name (index 9 is
-`red`), `default` and `transparent` by name, and any other color as hex.
+`toString()` reports a palette color by its canonical `ansi:` name (`ansi:black`
+through `ansi:brightwhite`), `default` and `transparent` by name, and any RGB
+color (whether constructed from a hex string or a CSS name) as lowercase hex.
 
 ## `default` versus `transparent`
 

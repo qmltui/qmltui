@@ -62,13 +62,13 @@ Column {
         for (let i = 0; i < 16; ++i) {
             const ansiColor = QmlTui.ansi(i);
             const c = t ? t.capabilities.ansiColor(i) : null;
-            const name = ansiColor.toString();
+            const name = ansiColor.toString().replace(/^ansi:/, "");
             list.push({
                 text: "██ ",
                 color: (c && c.valid) ? c : ansiColor
             });
             list.push({
-                text: name.padEnd(8, " ") + ((i % 4 === 3 && i < 15) ? "\n" : " "),
+                text: name.padEnd(13, " ") + ((i % 4 === 3 && i < 15) ? "\n" : " "),
                 color: "#c9d1d9"
             });
         }

@@ -17,31 +17,12 @@ constexpr quint32 ansiPaletteRgb[16] = {
     0xff0000ffU, 0xffff00ffU, 0xff00ffffU, 0xffffffffU,
 };
 
-// The CSS names whose RGB is exactly an xterm default palette entry. They parse
-// to that ANSI index so the user's terminal theme decides their appearance.
-const QHash<QString, int>& ansiNamedColors() {
-    static const QHash<QString, int> names{
-        {QStringLiteral("black"), 0},    {QStringLiteral("maroon"), 1},
-        {QStringLiteral("green"), 2},    {QStringLiteral("olive"), 3},
-        {QStringLiteral("navy"), 4},     {QStringLiteral("purple"), 5},
-        {QStringLiteral("teal"), 6},     {QStringLiteral("silver"), 7},
-        {QStringLiteral("gray"), 8},     {QStringLiteral("grey"), 8},
-        {QStringLiteral("red"), 9},      {QStringLiteral("lime"), 10},
-        {QStringLiteral("yellow"), 11},  {QStringLiteral("blue"), 12},
-        {QStringLiteral("fuchsia"), 13}, {QStringLiteral("magenta"), 13},
-        {QStringLiteral("aqua"), 14},    {QStringLiteral("cyan"), 14},
-        {QStringLiteral("white"), 15},
-    };
-    return names;
-}
-
 // Names recognized under the "ansi:" prefix. This namespace follows ANSI's own
 // numbering, not CSS: the eight colour words are SGR 30-37 (indices 0-7) and a
-// "bright" prefix moves them to SGR 90-97 (indices 8-15). That is deliberately
-// not the same authority as ansiNamedColors() above, where "red" is CSS red and
-// so lands on index 9. CSS-only words (maroon, olive, navy, purple, teal,
-// silver, lime, fuchsia, aqua) are not ANSI names and are rejected here; they
-// already work without the prefix.
+// "bright" prefix moves them to SGR 90-97 (indices 8-15). CSS-only words
+// (maroon, olive, navy, purple, teal, silver, lime, fuchsia, aqua) are not ANSI
+// names and are rejected under the prefix; bare CSS names always resolve to
+// literal RGB.
 const QHash<QString, int>& ansiSemanticNames() {
     static const QHash<QString, int> names{
         // Standard (0-7): SGR 30-37. "dark" is accepted as a synonym of the
@@ -82,8 +63,10 @@ const QHash<QString, int>& ansiSemanticNames() {
 }
 
 const char* const ansiCanonicalNames[16] = {
-    "black", "maroon", "green", "olive",  "navy", "purple",  "teal", "silver",
-    "gray",  "red",    "lime",  "yellow", "blue", "magenta", "cyan", "white",
+    "ansi:black",       "ansi:red",           "ansi:green",       "ansi:yellow",
+    "ansi:blue",        "ansi:magenta",       "ansi:cyan",        "ansi:white",
+    "ansi:brightblack", "ansi:brightred",     "ansi:brightgreen", "ansi:brightyellow",
+    "ansi:brightblue",  "ansi:brightmagenta", "ansi:brightcyan",  "ansi:brightwhite",
 };
 
 const QHash<QString, quint32>& namedColors() {
@@ -96,6 +79,25 @@ const QHash<QString, quint32>& namedColors() {
         // "default"; a Rectangle with no colour set wants "transparent".
         {QStringLiteral("transparent"), Color::TransparentTag},
         {QStringLiteral("default"), Color::DefaultTag},
+        {QStringLiteral("aqua"), 0xff00ffffU},
+        {QStringLiteral("black"), 0xff000000U},
+        {QStringLiteral("blue"), 0xff0000ffU},
+        {QStringLiteral("cyan"), 0xff00ffffU},
+        {QStringLiteral("fuchsia"), 0xffff00ffU},
+        {QStringLiteral("gray"), 0xff808080U},
+        {QStringLiteral("green"), 0xff008000U},
+        {QStringLiteral("grey"), 0xff808080U},
+        {QStringLiteral("lime"), 0xff00ff00U},
+        {QStringLiteral("magenta"), 0xffff00ffU},
+        {QStringLiteral("maroon"), 0xff800000U},
+        {QStringLiteral("navy"), 0xff000080U},
+        {QStringLiteral("olive"), 0xff808000U},
+        {QStringLiteral("purple"), 0xff800080U},
+        {QStringLiteral("red"), 0xffff0000U},
+        {QStringLiteral("silver"), 0xffc0c0c0U},
+        {QStringLiteral("teal"), 0xff008080U},
+        {QStringLiteral("white"), 0xffffffffU},
+        {QStringLiteral("yellow"), 0xffffff00U},
         {QStringLiteral("orange"), 0xffffa500U},
         {QStringLiteral("pink"), 0xffffc0cbU},
         {QStringLiteral("lightblue"), 0xffadd8e6U},
@@ -281,8 +283,6 @@ Color Color::fromString(const QString& value) {
         if (it != ansiSemanticNames().cend()) return fromAnsiIndex(it.value());
         return Color::Invalid;
     }
-    const auto ansi = ansiNamedColors().constFind(lower);
-    if (ansi != ansiNamedColors().cend()) return fromAnsiIndex(ansi.value());
     const auto it = namedColors().constFind(lower);
     return it == namedColors().cend() ? Color(Color::Invalid) : fromArgb32(it.value());
 }

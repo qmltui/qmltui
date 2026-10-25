@@ -11,7 +11,7 @@ namespace qmltui {
 namespace {
 
 uint8_t colorChannel(Color color, int shift) {
-    return static_cast<uint8_t>((color.argb32() >> shift) & 0xffU);
+    return static_cast<uint8_t>((color.toRgb().argb32() >> shift) & 0xffU);
 }
 
 const VTermScreenCallbacks ScreenCallbacks{

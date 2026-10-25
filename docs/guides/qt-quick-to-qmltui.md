@@ -102,8 +102,8 @@ A border occupies 1 cell on each edge: a 10×5 bordered `Rectangle` has an 8×3 
 QmlTui does not use `QColor` or a global theme singleton (such as `Material` or `QPalette`):
 
 - Colors use `qmltui::Color` (`color` in QML). Items and controls default to `"default"` (the host terminal's foreground and background).
-- Named ANSI colors (`"cyan"`, `"red"`, `"yellow"`, `"gray"`, etc.) emit palette SGR indices so the user's terminal theme controls their appearance.
-- Hex strings (`"#2cde85"`) and `QmlTui.rgba(r, g, b, a)` specify 24-bit RGB colors, which QmlTui quantizes automatically when running on 256-color or 16-color terminals.
+- Bare CSS/SVG color names (`"red"`, `"blue"`, `"cyan"`, `"orange"`, etc.), hex strings (`"#2cde85"`), and `QmlTui.rgba(r, g, b, a)` specify 24-bit RGB colors, which QmlTui quantizes automatically when running on 256-color or 16-color terminals.
+- Explicit `"ansi:..."` colors (`"ansi:cyan"`, `"ansi:red"`, `"ansi:0"`..`"ansi:15"`, or `QmlTui.ansi(index)`) emit palette SGR indices so the user's terminal theme controls their appearance.
 - Controls (`Button`, `Panel`, `Dialog`, etc.) expose `background` and `contentItem` delegates for customization, and shared application styling is expressed with QML property bindings and reusable QML components. See [Styling and Colors](styling-and-colors.md).
 
 ## Keyboard Quit Path

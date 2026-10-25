@@ -31,9 +31,9 @@ public:
     // Alpha byte 0x01 is reserved: such a value is not a translucent RGB color
     // but one of the sixteen ANSI palette entries (index in the low byte). The
     // encoder emits those as SGR 30-37/90-97 at every color depth, so the
-    // terminal's own theme decides how they look. The sixteen CSS names whose
-    // RGB equals xterm's default palette ("red", "white", "gray", ...) parse to
-    // these entries; hex values are always literal RGB.
+    // terminal's own theme decides how they look. "ansi:..." strings and
+    // Color::fromAnsiIndex() produce these entries; CSS/SVG named colors and
+    // hex values are always literal RGB.
     static constexpr quint32 AnsiTag = 0x01000000U;
 
     // "transparent" is not a colour but the absence of one: a painter must

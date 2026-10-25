@@ -35,12 +35,10 @@ Terminal color value type supporting ANSI palette indices, RGB hex, and named co
 `color` is the foundational color value type in QmlTui. In QML, string literals
 automatically convert to `color`, supporting:
 
-- Standard named terminal ANSI colors (`"black"`, `"red"`, `"green"`, `"yellow"`,
-  `"blue"`, `"magenta"`, `"cyan"`, `"white"`, `"gray"`). These preserve the terminal's
-  own user-configured color scheme.
+- CSS/SVG named colors (`"red"`, `"blue"`, `"cyan"`, `"orange"`, `"steelblue"`, ...) and hexadecimal formats (`"#RGB"`, `"#RRGGBB"`, `"#AARRGGBB"`), which resolve to literal 24-bit RGB (`"red"` is identical to `"#ff0000"`).
+- Terminal ANSI palette colors (`"ansi:red"`, `"ansi:brightred"`, `"ansi:0"` through `"ansi:15"`, or `QmlTui.ansi(0..15)`), which emit SGR 30–37 / 90–97 palette indices so the terminal's user-configured color scheme applies.
 - `"default"` (or `QmlTui.defaultColor`): The host terminal's default foreground (SGR 39) or background (SGR 49). A default-constructed `property color` also has this value.
 - `"transparent"` (or `QmlTui.transparent`): No ink is painted, allowing underlying content to show through.
-- Hexadecimal formats (`"#RGB"`, `"#RRGGBB"`, `"#AARRGGBB"`).
 
 Construct color values dynamically using [QmlTui.color()](qmltui.md), [QmlTui.rgba()](qmltui.md), or [QmlTui.ansi()](qmltui.md).
 

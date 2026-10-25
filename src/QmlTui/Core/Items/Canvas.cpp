@@ -6,13 +6,15 @@ namespace qmltui {
 
 namespace {
 
-void drawBresenhamLine(CanvasPainter& painter, int x1, int y1, int x2, int y2, uint32_t color) {
+void drawBresenhamLine(CanvasPainter& painter, const CanvasShape& shape, int x1, int y1, int x2,
+                       int y2, int minX, int minY, int maxX, int maxY) {
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int err = dx + dy, e2;
     int x = x1, y = y1;
     while (true) {
-        painter.setPixelColorHex(x, y, color);
+        painter.setPixelColorHex(x, y,
+                                 shape.resolvePixelColor(painter, x, y, minX, minY, maxX, maxY));
         if (x == x2 && y == y2) break;
         e2 = 2 * err;
         if (e2 >= dy) {
@@ -42,6 +44,18 @@ static void accumulateCellColor(std::vector<Canvas::CellAccumulator>& accumulato
     ++acc.count;
 }
 
+void CanvasPainter::applyCellAttributes(int cellX, int cellY) {
+    if (cellX < 0 || cellY < 0 || cellX >= m_canvas.width() || cellY >= m_canvas.height()) return;
+    const size_t idx = static_cast<size_t>(cellY * m_canvas.width() + cellX);
+    if (idx >= m_canvas.m_cellAttributes.size()) return;
+    if (m_hasActiveAttributes) {
+        m_canvas.m_cellAttributes[idx] = m_activeAttributes;
+        m_canvas.m_cellHasCustomAttributes[idx] = 1;
+    } else {
+        m_canvas.m_cellHasCustomAttributes[idx] = 0;
+    }
+}
+
 void CanvasPainter::setPixel(int x, int y, bool value) {
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
         const int cellX = x / braille::DotsX;
@@ -52,16 +66,18 @@ void CanvasPainter::setPixel(int x, int y, bool value) {
         if (idx >= m_canvas.m_cells.size()) return;
         if (value) {
             m_canvas.m_cells[idx] |= bitMask;
+            const uint32_t defaultCol = m_canvas.defaultColorAt(x, y);
             if (idx < m_canvas.m_cellColors.size())
-                m_canvas.m_cellColors[idx] = 0x00000000; // follow the canvas color
+                m_canvas.m_cellColors[idx] = m_canvas.hasGradient() ? defaultCol : 0x00000000;
             if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
-                accumulateCellColor(m_canvas.m_cellAccumulators, idx, m_canvas.m_resolvedColor);
+                accumulateCellColor(m_canvas.m_cellAccumulators, idx, defaultCol);
+            applyCellAttributes(cellX, cellY);
         } else {
             m_canvas.m_cells[idx] &= static_cast<uint8_t>(~bitMask);
         }
     } else {
         const uint32_t color =
-            value ? m_canvas.m_resolvedColor
+            value ? m_canvas.defaultColorAt(x, y)
                   : (!m_canvas.m_fillColor.isValid() ? 0x00000000 : m_canvas.m_resolvedFillColor);
         setPixelColorHex(x, y, color);
         if (!value && (m_canvas.m_resolvedFillColor >> 24) == 0 && x >= 0 && y >= 0 &&
@@ -80,20 +96,23 @@ void CanvasPainter::setPixelColorHex(int x, int y, uint32_t color) {
     const int h = pixelHeight();
     if (x < 0 || x >= w || y < 0 || y >= h) return;
     if (m_canvas.m_renderMode == Canvas::RenderMode::Braille) {
-        const size_t idx =
-            static_cast<size_t>((y / braille::DotsY) * m_canvas.width() + (x / braille::DotsX));
+        const int cellX = x / braille::DotsX;
+        const int cellY = y / braille::DotsY;
+        const size_t idx = static_cast<size_t>(cellY * m_canvas.width() + cellX);
         if (idx < m_canvas.m_cells.size()) {
             m_canvas.m_cells[idx] |= braille::dotMask(x % braille::DotsX, y % braille::DotsY);
             if (idx < m_canvas.m_cellColors.size())
                 m_canvas.m_cellColors[idx] = color; // last dot drawn wins the cell
             if (m_canvas.m_cellColorMode == Canvas::CellColorMode::Average)
                 accumulateCellColor(m_canvas.m_cellAccumulators, idx, color);
+            applyCellAttributes(cellX, cellY);
         }
     } else {
         const size_t idx = static_cast<size_t>(y * w + x);
         if (idx < m_canvas.m_pixelColors.size()) {
             m_canvas.m_pixelColors[idx] = color;
             m_canvas.m_pixelSet[idx] = true;
+            applyCellAttributes(x / half_block::SubpixelsX, y / half_block::SubpixelsY);
         }
     }
 }
@@ -109,6 +128,10 @@ void CanvasPainter::clear() {
     // A transparent fill clears to holes, while a drawn default-color pixel
     // is occupied and uses the terminal's foreground.
     std::fill(m_canvas.m_pixelSet.begin(), m_canvas.m_pixelSet.end(), (clearBg >> 24) != 0);
+    std::fill(m_canvas.m_cellAttributes.begin(), m_canvas.m_cellAttributes.end(),
+              TextAttribute::None);
+    std::fill(m_canvas.m_cellHasCustomAttributes.begin(), m_canvas.m_cellHasCustomAttributes.end(),
+              0);
 }
 
 Canvas::Canvas(QObject* parent) : Item(parent) {
@@ -127,6 +150,37 @@ void Canvas::setColor(Color color) {
     markDirty();
 }
 
+void Canvas::setGradient(Gradient* gradient) {
+    if (m_gradient.data() == gradient) return;
+    if (m_gradient) {
+        disconnect(m_gradient.data(), nullptr, this, nullptr);
+    }
+    m_gradient = gradient;
+    if (m_gradient) {
+        connect(m_gradient.data(), &Gradient::updated, this, [this]() { markDirty(); });
+        connect(m_gradient.data(), &QObject::destroyed, this, [this]() {
+            m_gradient = nullptr;
+            emit gradientChanged();
+            markDirty();
+        });
+    }
+    emit gradientChanged();
+    markDirty();
+}
+
+uint32_t Canvas::defaultColorAt(int x, int y) const {
+    if (!hasGradient()) return m_resolvedColor;
+    qreal t = 0.0;
+    if (m_gradient->orientation() == Gradient::Horizontal) {
+        const int pw = pixelWidth();
+        t = (pw > 1) ? static_cast<qreal>(x) / (pw - 1) : 0.0;
+    } else {
+        const int ph = pixelHeight();
+        t = (ph > 1) ? static_cast<qreal>(y) / (ph - 1) : 0.0;
+    }
+    return Color::paintedArgb32(m_gradient->colorAt(t));
+}
+
 void Canvas::setFillColor(Color color) {
     if (m_fillColor == color) return;
     m_fillColor = color;
@@ -134,6 +188,17 @@ void Canvas::setFillColor(Color color) {
     m_resolvedFillColor = Color::paintedArgb32(Color::resolve(color, 0x00000000));
     emit fillColorChanged();
     markDirty();
+}
+
+void Canvas::setDim(bool dim) {
+    if (m_dim == dim) return;
+    m_dim = dim;
+    emit dimChanged();
+    markDirty();
+}
+
+TextAttribute Canvas::baseAttributes() const {
+    return m_dim ? TextAttribute::Dim : TextAttribute::None;
 }
 
 void Canvas::setRenderMode(RenderMode mode) {
@@ -218,10 +283,15 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
     for (Item* child : childItems()) {
         if (child && child->visible()) {
             if (const CanvasShape* shape = qobject_cast<const CanvasShape*>(child)) {
+                surface.setActiveAttributes(shape->resolvedAttributes(surface),
+                                            shape->hasCustomAttributes());
                 shape->draw(surface);
             }
         }
     }
+    surface.setActiveAttributes(TextAttribute::None, false);
+
+    const TextAttribute baseAttr = baseAttributes();
 
     if (m_renderMode == RenderMode::Braille) {
         for (int y = 0; y < height(); ++y) {
@@ -236,8 +306,10 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 const size_t cellIdx = static_cast<size_t>(y * width() + x);
+                cell.attributes =
+                    m_cellHasCustomAttributes[cellIdx] ? m_cellAttributes[cellIdx] : baseAttr;
                 const uint32_t ink = m_cellColors[cellIdx];
-                cell.fgColor = ink ? ink : m_resolvedColor;
+                cell.fgColor = ink ? ink : defaultColorAt(x * braille::DotsX, y * braille::DotsY);
                 if (m_cellColorMode == CellColorMode::Average &&
                     cellIdx < m_cellAccumulators.size()) {
                     const CellAccumulator& acc = m_cellAccumulators[cellIdx];
@@ -274,6 +346,9 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
                 Cell& cell = *targetCell;
                 cell.displayWidth = 1;
                 cell.continuation = false;
+                const size_t cellIdx = static_cast<size_t>(cellY * w + cellX);
+                cell.attributes =
+                    m_cellHasCustomAttributes[cellIdx] ? m_cellAttributes[cellIdx] : baseAttr;
 
                 if (topSet && bottomSet && (topColor >> 24) == 0 && (bottomColor >> 24) == 0) {
                     // SGR 49 is the default background, not the default ink.
@@ -304,13 +379,17 @@ void Canvas::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& c
 }
 
 void Canvas::resizeBuffer() const {
+    const size_t cellCount = static_cast<size_t>((std::max)(0, width()) * (std::max)(0, height()));
+    if (m_cellAttributes.size() != cellCount || m_cellHasCustomAttributes.size() != cellCount) {
+        m_cellAttributes.resize(cellCount, TextAttribute::None);
+        m_cellHasCustomAttributes.resize(cellCount, 0);
+    }
     if (m_renderMode == RenderMode::Braille) {
-        const size_t needed = static_cast<size_t>((std::max)(0, width()) * (std::max)(0, height()));
-        if (m_cells.size() != needed || m_cellColors.size() != needed) {
-            m_cells.resize(needed, 0x00);
-            m_cellColors.resize(needed, 0x00000000);
+        if (m_cells.size() != cellCount || m_cellColors.size() != cellCount) {
+            m_cells.resize(cellCount, 0x00);
+            m_cellColors.resize(cellCount, 0x00000000);
         }
-        const size_t accumulatorsNeeded = m_cellColorMode == CellColorMode::Average ? needed : 0;
+        const size_t accumulatorsNeeded = m_cellColorMode == CellColorMode::Average ? cellCount : 0;
         if (m_cellAccumulators.size() != accumulatorsNeeded)
             m_cellAccumulators.assign(accumulatorsNeeded, CellAccumulator{});
     } else {
@@ -332,15 +411,62 @@ void CanvasShape::setColor(Color color) {
     if (parentItem()) parentItem()->markDirty();
 }
 
+void CanvasShape::setDim(bool dim) {
+    if (m_style.hasDim() && m_style.dim() == dim) return;
+    m_style.setDim(dim);
+    emit dimChanged();
+    if (parentItem()) parentItem()->markDirty();
+}
+
+void CanvasShape::setGradient(Gradient* gradient) {
+    if (m_gradient.data() == gradient) return;
+    if (m_gradient) {
+        disconnect(m_gradient.data(), nullptr, this, nullptr);
+    }
+    m_gradient = gradient;
+    if (m_gradient) {
+        connect(m_gradient.data(), &Gradient::updated, this, [this]() {
+            if (parentItem()) parentItem()->markDirty();
+        });
+        connect(m_gradient.data(), &QObject::destroyed, this, [this]() {
+            m_gradient = nullptr;
+            emit gradientChanged();
+            if (parentItem()) parentItem()->markDirty();
+        });
+    }
+    emit gradientChanged();
+    if (parentItem()) parentItem()->markDirty();
+}
+
 uint32_t CanvasShape::resolvedColor(const CanvasPainter& painter) const {
+    if (m_gradient && !m_gradient->stopsList().isEmpty()) {
+        return Color::paintedArgb32(m_gradient->colorAt(0.0));
+    }
     if (m_hasCustomColor) return m_resolvedColor;
     return painter.defaultColor();
+}
+
+uint32_t CanvasShape::resolvePixelColor(const CanvasPainter& painter, int px, int py, int minX,
+                                        int minY, int maxX, int maxY) const {
+    if (m_gradient && !m_gradient->stopsList().isEmpty()) {
+        qreal t = 0.0;
+        if (m_gradient->orientation() == Gradient::Horizontal) {
+            const int span = maxX - minX;
+            t = (span > 0) ? static_cast<qreal>(px - minX) / span : 0.0;
+        } else {
+            const int span = maxY - minY;
+            t = (span > 0) ? static_cast<qreal>(py - minY) / span : 0.0;
+        }
+        return Color::paintedArgb32(m_gradient->colorAt(t));
+    }
+    if (m_hasCustomColor) return m_resolvedColor;
+    return painter.defaultColorAt(px, py);
 }
 
 Point::Point(QObject* parent) : CanvasShape(parent) {}
 
 void Point::draw(CanvasPainter& painter) const {
-    painter.setPixelColorHex(x(), y(), resolvedColor(painter));
+    painter.setPixelColorHex(x(), y(), resolvePixelColor(painter, x(), y(), x(), y(), x(), y()));
 }
 
 Line::Line(QObject* parent) : CanvasShape(parent) {}
@@ -374,7 +500,11 @@ void Line::setY2(int y2) {
 }
 
 void Line::draw(CanvasPainter& painter) const {
-    drawBresenhamLine(painter, m_x1, m_y1, m_x2, m_y2, resolvedColor(painter));
+    const int minX = std::min(m_x1, m_x2);
+    const int maxX = std::max(m_x1, m_x2);
+    const int minY = std::min(m_y1, m_y2);
+    const int maxY = std::max(m_y1, m_y2);
+    drawBresenhamLine(painter, *this, m_x1, m_y1, m_x2, m_y2, minX, minY, maxX, maxY);
 }
 
 Polygon::Polygon(QObject* parent) : CanvasShape(parent) {}
@@ -416,15 +546,27 @@ void Polygon::setClosed(bool closed) {
 void Polygon::draw(CanvasPainter& painter) const {
     if (m_parsedPoints.isEmpty()) return;
 
-    const uint32_t col = resolvedColor(painter);
+    int minX = m_parsedPoints.front().x();
+    int maxX = minX;
+    int minY = m_parsedPoints.front().y();
+    int maxY = minY;
+    for (const QPoint& pt : m_parsedPoints) {
+        minX = std::min(minX, pt.x());
+        maxX = std::max(maxX, pt.x());
+        minY = std::min(minY, pt.y());
+        maxY = std::max(maxY, pt.y());
+    }
+
     for (int i = 0; i < m_parsedPoints.size() - 1; ++i) {
-        drawBresenhamLine(painter, m_parsedPoints[i].x(), m_parsedPoints[i].y(),
-                          m_parsedPoints[i + 1].x(), m_parsedPoints[i + 1].y(), col);
+        drawBresenhamLine(painter, *this, m_parsedPoints[i].x(), m_parsedPoints[i].y(),
+                          m_parsedPoints[i + 1].x(), m_parsedPoints[i + 1].y(), minX, minY, maxX,
+                          maxY);
     }
 
     if (m_closed && m_parsedPoints.size() > 2) {
-        drawBresenhamLine(painter, m_parsedPoints.back().x(), m_parsedPoints.back().y(),
-                          m_parsedPoints.front().x(), m_parsedPoints.front().y(), col);
+        drawBresenhamLine(painter, *this, m_parsedPoints.back().x(), m_parsedPoints.back().y(),
+                          m_parsedPoints.front().x(), m_parsedPoints.front().y(), minX, minY, maxX,
+                          maxY);
     }
 }
 
@@ -439,7 +581,6 @@ void CanvasRectangle::setFill(bool fill) {
 }
 
 void CanvasRectangle::draw(CanvasPainter& painter) const {
-    const uint32_t col = resolvedColor(painter);
     const int rx = x();
     const int ry = y();
     const int rw = width();
@@ -447,17 +588,23 @@ void CanvasRectangle::draw(CanvasPainter& painter) const {
 
     if (rw <= 0 || rh <= 0) return;
 
+    const int minX = rx;
+    const int minY = ry;
+    const int maxX = rx + rw - 1;
+    const int maxY = ry + rh - 1;
+
     if (m_fill) {
         for (int py = ry; py < ry + rh; ++py) {
             for (int px = rx; px < rx + rw; ++px) {
-                painter.setPixelColorHex(px, py, col);
+                painter.setPixelColorHex(
+                    px, py, resolvePixelColor(painter, px, py, minX, minY, maxX, maxY));
             }
         }
     } else {
-        drawBresenhamLine(painter, rx, ry, rx + rw - 1, ry, col);
-        drawBresenhamLine(painter, rx, ry + rh - 1, rx + rw - 1, ry + rh - 1, col);
-        drawBresenhamLine(painter, rx, ry, rx, ry + rh - 1, col);
-        drawBresenhamLine(painter, rx + rw - 1, ry, rx + rw - 1, ry + rh - 1, col);
+        drawBresenhamLine(painter, *this, rx, ry, maxX, ry, minX, minY, maxX, maxY);
+        drawBresenhamLine(painter, *this, rx, maxY, maxX, maxY, minX, minY, maxX, maxY);
+        drawBresenhamLine(painter, *this, rx, ry, rx, maxY, minX, minY, maxX, maxY);
+        drawBresenhamLine(painter, *this, maxX, ry, maxX, maxY, minX, minY, maxX, maxY);
     }
 }
 
@@ -493,36 +640,44 @@ void Circle::setFill(bool fill) {
 }
 
 void Circle::draw(CanvasPainter& painter) const {
-    const uint32_t col = resolvedColor(painter);
     const int r = m_radius;
     if (r <= 0) return;
 
     const int centerx = cx();
     const int centery = cy();
+    const int minX = centerx - r;
+    const int maxX = centerx + r;
+    const int minY = centery - r;
+    const int maxY = centery + r;
     int x = r;
     int y = 0;
     // Midpoint decision between the next vertical and diagonal pixel steps.
     int err = 1 - r;
 
+    auto setShapePixel = [&](int px, int py) {
+        painter.setPixelColorHex(px, py,
+                                 resolvePixelColor(painter, px, py, minX, minY, maxX, maxY));
+    };
+
     auto drawPoints = [&](int pcx, int pcy, int px, int py) {
         if (m_fill) {
             for (int ix = pcx - px; ix <= pcx + px; ++ix) {
-                painter.setPixelColorHex(ix, pcy + py, col);
-                painter.setPixelColorHex(ix, pcy - py, col);
+                setShapePixel(ix, pcy + py);
+                setShapePixel(ix, pcy - py);
             }
             for (int ix = pcx - py; ix <= pcx + py; ++ix) {
-                painter.setPixelColorHex(ix, pcy + px, col);
-                painter.setPixelColorHex(ix, pcy - px, col);
+                setShapePixel(ix, pcy + px);
+                setShapePixel(ix, pcy - px);
             }
         } else {
-            painter.setPixelColorHex(pcx + px, pcy + py, col);
-            painter.setPixelColorHex(pcx - px, pcy + py, col);
-            painter.setPixelColorHex(pcx + px, pcy - py, col);
-            painter.setPixelColorHex(pcx - px, pcy - py, col);
-            painter.setPixelColorHex(pcx + py, pcy + px, col);
-            painter.setPixelColorHex(pcx - py, pcy + px, col);
-            painter.setPixelColorHex(pcx + py, pcy - px, col);
-            painter.setPixelColorHex(pcx - py, pcy - px, col);
+            setShapePixel(pcx + px, pcy + py);
+            setShapePixel(pcx - px, pcy + py);
+            setShapePixel(pcx + px, pcy - py);
+            setShapePixel(pcx - px, pcy - py);
+            setShapePixel(pcx + py, pcy + px);
+            setShapePixel(pcx - py, pcy + px);
+            setShapePixel(pcx + py, pcy - px);
+            setShapePixel(pcx - py, pcy - px);
         }
     };
 

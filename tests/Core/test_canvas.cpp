@@ -32,6 +32,9 @@ private slots:
     void testCircleGeometry_data();
     void testCircleGeometry();
     void testZeroMaskPreservesUnderlyingCell();
+    void testHalfBlockGradient();
+    void testBrailleGradient();
+    void testCanvasAndShapeAttributes();
 };
 
 void TestCanvas::testBrailleMode() {
@@ -526,6 +529,236 @@ void TestCanvas::testZeroMaskPreservesUnderlyingCell() {
     QCOMPARE(cell.character().toByteArray(), QByteArray("W"));
     QCOMPARE(cell.fgColor, 0xFF556677u);
     QCOMPARE(cell.bgColor, 0xFF8899AAu);
+}
+
+void TestCanvas::testHalfBlockGradient() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+
+        Canvas {
+            width: 3
+            height: 2
+            renderMode: Canvas.HalfBlock
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { id: topStop; objectName: "topStop"; position: 0.0; color: "#ff0000" }
+                GradientStop { position: 1.0; color: "#0000ff" }
+            }
+
+            // Column 0 uses the parent Canvas vertical gradient across 4 subpixels (y=0..3).
+            Line {
+                x1: 0; y1: 0; x2: 0; y2: 3
+            }
+
+            // Column 1-2 filled rectangle has its own horizontal shape gradient.
+            CanvasRectangle {
+                x: 1; y: 0; width: 2; height: 2
+                fill: true
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#00ff00" }
+                    GradientStop { position: 1.0; color: "#ffff00" }
+                }
+            }
+        }
+    )",
+                      QUrl());
+
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object != nullptr, qPrintable(component.errorString()));
+    Canvas* canvas = qobject_cast<Canvas*>(object.get());
+    QVERIFY(canvas != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(3, 2);
+    paintItem(canvas, buffer, 0, 0);
+
+    // Column 0: vertical gradient across y=0..3 (red -> blue, 2 subpixels per cell).
+    const Cell c00 = buffer.cellAt(0, 0);
+    const Cell c01 = buffer.cellAt(0, 1);
+    QCOMPARE(c00.character().toByteArray(), QStringLiteral("▀").toUtf8());
+    QCOMPARE(c01.character().toByteArray(), QStringLiteral("▀").toUtf8());
+    QCOMPARE(Color::toArgb(c00.fgColor), 0xFFFF0000u); // y=0 (t=0.0)
+    QCOMPARE(Color::toArgb(c00.bgColor), 0xFFAA0055u); // y=1 (t=1/3)
+    QCOMPARE(Color::toArgb(c01.fgColor), 0xFF5500AAu); // y=2 (t=2/3)
+    QCOMPARE(Color::toArgb(c01.bgColor), 0xFF0000FFu); // y=3 (t=1.0)
+
+    // Columns 1..2, Row 0: shape-local horizontal gradient (#00ff00 -> #ffff00).
+    QCOMPARE(Color::toArgb(buffer.cellAt(1, 0).fgColor), 0xFF00FF00u);
+    QCOMPARE(Color::toArgb(buffer.cellAt(1, 0).bgColor), 0xFF00FF00u);
+    QCOMPARE(Color::toArgb(buffer.cellAt(2, 0).fgColor), 0xFFFFFF00u);
+    QCOMPARE(Color::toArgb(buffer.cellAt(2, 0).bgColor), 0xFFFFFF00u);
+
+    // Updating a stop marks the canvas dirty without invalidating during paint.
+    QSignalSpy dirtySpy(canvas, &Item::dirty);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(dirtySpy.count(), 0);
+    QCOMPARE(RenderPhase::dirtyDuringPaintCount(), 0);
+
+    auto* topStop = canvas->findChild<GradientStop*>(QStringLiteral("topStop"));
+    QVERIFY(topStop != nullptr);
+    topStop->setColor(Color("#00ffff"));
+    QCOMPARE(dirtySpy.count(), 1);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(Color::toArgb(buffer.cellAt(0, 0).fgColor), 0xFF00FFFFu);
+}
+
+void TestCanvas::testBrailleGradient() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+
+        Canvas {
+            width: 3
+            height: 1
+            renderMode: Canvas.Braille
+            cellColorMode: Canvas.Average
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#ff0000" }
+                GradientStop { position: 1.0; color: "#0000ff" }
+            }
+
+            // Polyline spanning x=0..5 (3 Braille cells, 2 dots per cell).
+            Polygon {
+                id: wave
+                objectName: "wave"
+                closed: false
+                points: [{ x: 0, y: 0 }, { x: 5, y: 0 }]
+            }
+        }
+    )",
+                      QUrl());
+
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object != nullptr, qPrintable(component.errorString()));
+    Canvas* canvas = qobject_cast<Canvas*>(object.get());
+    QVERIFY(canvas != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(3, 1);
+    paintItem(canvas, buffer, 0, 0);
+
+    // Each cell averages 2 horizontal subpixels:
+    // Cell 0 (x=0,1): red increases blue -> mostly red
+    // Cell 1 (x=2,3): middle -> purple (0xFF7F007F)
+    // Cell 2 (x=4,5): mostly blue
+    const uint32_t fg0 = Color::toArgb(buffer.cellAt(0, 0).fgColor);
+    const uint32_t fg1 = Color::toArgb(buffer.cellAt(1, 0).fgColor);
+    const uint32_t fg2 = Color::toArgb(buffer.cellAt(2, 0).fgColor);
+    QVERIFY(((fg0 >> 16) & 0xFF) > (fg0 & 0xFF));
+    QCOMPARE(fg1, 0xFF7F007Fu);
+    QVERIFY((fg2 & 0xFF) > ((fg2 >> 16) & 0xFF));
+
+    // Explicit shape color overrides the parent Canvas gradient.
+    auto* wave = canvas->findChild<CanvasShape*>(QStringLiteral("wave"));
+    QVERIFY(wave != nullptr);
+    wave->setColor(Color("#00ff00"));
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    for (int x = 0; x < 3; ++x) {
+        QCOMPARE(Color::toArgb(buffer.cellAt(x, 0).fgColor), 0xFF00FF00u);
+    }
+
+    // Explicit shape gradient overrides explicit shape color.
+    auto* shapeGrad = new Gradient(wave);
+    shapeGrad->setOrientation(Gradient::Horizontal);
+    auto* s0 = new GradientStop(shapeGrad);
+    s0->setPosition(0.0);
+    s0->setColor(Color("#0000ff"));
+    auto* s1 = new GradientStop(shapeGrad);
+    s1->setPosition(1.0);
+    s1->setColor(Color("#ff0000"));
+    shapeGrad->addStop(s0);
+    shapeGrad->addStop(s1);
+    wave->setGradient(shapeGrad);
+
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    const uint32_t newFg0 = Color::toArgb(buffer.cellAt(0, 0).fgColor);
+    const uint32_t newFg2 = Color::toArgb(buffer.cellAt(2, 0).fgColor);
+    QVERIFY((newFg0 & 0xFF) > ((newFg0 >> 16) & 0xFF));
+    QVERIFY(((newFg2 >> 16) & 0xFF) > (newFg2 & 0xFF));
+}
+
+void TestCanvas::testCanvasAndShapeAttributes() {
+    QQmlEngine engine;
+    engine.addImportPath(QCoreApplication::applicationDirPath() + "/..");
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+
+        Canvas {
+            width: 3
+            height: 1
+            renderMode: Canvas.Braille
+            dim: true
+
+            // Cell 0 inherits dim: true from parent Canvas.
+            Point {
+                x: 0; y: 0
+            }
+
+            // Cell 1 overrides inherited dim to false.
+            Point {
+                objectName: "overridePoint"
+                x: 2; y: 0
+                dim: false
+            }
+
+            // Cell 2 explicitly sets dim: true.
+            Point {
+                x: 4; y: 0
+                dim: true
+            }
+        }
+    )",
+                      QUrl());
+
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object != nullptr, qPrintable(component.errorString()));
+    Canvas* canvas = qobject_cast<Canvas*>(object.get());
+    QVERIFY(canvas != nullptr);
+
+    TextGridBuffer buffer;
+    buffer.resize(3, 1);
+    paintItem(canvas, buffer, 0, 0);
+
+    QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Dim);
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(2, 0).attributes, TextAttribute::Dim);
+
+    // Changing dim on the Canvas or shape marks the canvas dirty.
+    QSignalSpy dirtySpy(canvas, &Item::dirty);
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(dirtySpy.count(), 0);
+
+    canvas->setDim(false);
+    QCOMPARE(dirtySpy.count(), 1);
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(2, 0).attributes, TextAttribute::Dim);
+
+    auto* overridePoint = canvas->findChild<CanvasShape*>(QStringLiteral("overridePoint"));
+    QVERIFY(overridePoint != nullptr);
+    overridePoint->setDim(true);
+    QCOMPARE(dirtySpy.count(), 2);
+    buffer.clear();
+    paintItem(canvas, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::Dim);
 }
 
 QTEST_MAIN(TestCanvas)

@@ -42,9 +42,10 @@ Defines a linear color gradient with multiple color stops. [More...](#detailed-d
 
 ## Detailed Description
 
-Gradient defines a smooth transition between colors across character cells.
-It can be applied to the background of a [Rectangle](rectangle.md) or to
-the text fill of a [Text](text.md) item.
+Gradient defines a smooth transition between colors across character cells or
+subpixels. It can be applied to the background of a [Rectangle](rectangle.md),
+to the text fill of a [Text](text.md) item, or to a [Canvas](canvas.md) and its
+[CanvasShape](canvasshape.md) items.
 
 A Gradient contains two or more [GradientStop](gradientstop.md) child items,
 each specifying a normalized `position` from `0.0` to `1.0` and a `color`.

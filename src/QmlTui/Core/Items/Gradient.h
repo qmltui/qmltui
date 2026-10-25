@@ -12,7 +12,8 @@
 
 namespace qmltui {
 
-// Multi-stop linear color gradient used by Rectangle.gradient and Text.gradient.
+// Multi-stop linear color gradient used by Rectangle.gradient, Text.gradient,
+// Canvas.gradient, and CanvasShape.gradient.
 // Interpolates RGB colors across sorted GradientStops along Vertical or
 // Horizontal orientation, shifted by `offset` (wrapping in [0.0, 1.0)).
 class QMLTUI_CORE_EXPORT Gradient : public QObject {

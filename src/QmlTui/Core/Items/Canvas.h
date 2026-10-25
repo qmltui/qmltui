@@ -2,8 +2,11 @@
 
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
+#include <QmlTui/Core/Items/Gradient.h>
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/TextStyle.h>
 #include <QPoint>
+#include <QPointer>
 #include <QVariantList>
 #include <vector>
 #include <QmlTui/Core/Primitives/Subpixel.h>
@@ -19,7 +22,9 @@ class QMLTUI_CORE_EXPORT Canvas : public Item {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
     Q_PROPERTY(qmltui::Color fillColor READ fillColor WRITE setFillColor NOTIFY fillColorChanged)
+    Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
     Q_PROPERTY(RenderMode renderMode READ renderMode WRITE setRenderMode NOTIFY renderModeChanged)
     Q_PROPERTY(CellColorMode cellColorMode READ cellColorMode WRITE setCellColorMode NOTIFY
                    cellColorModeChanged)
@@ -55,9 +60,15 @@ public:
     void setColor(Color color);
     uint32_t resolvedColor() const { return m_resolvedColor; }
 
+    Gradient* gradient() const { return m_gradient.data(); }
+    void setGradient(Gradient* gradient);
+
     Color fillColor() const { return m_fillColor; }
     void setFillColor(Color color);
     uint32_t resolvedFillColor() const { return m_resolvedFillColor; }
+
+    bool dim() const { return m_dim; }
+    void setDim(bool dim);
 
     RenderMode renderMode() const { return m_renderMode; }
     void setRenderMode(RenderMode mode);
@@ -93,7 +104,9 @@ public:
 
 signals:
     void colorChanged();
+    void gradientChanged();
     void fillColorChanged();
+    void dimChanged();
     void renderModeChanged();
     void cellColorModeChanged();
     void autoClearChanged();
@@ -104,6 +117,9 @@ private:
     friend class CanvasPainter;
     CanvasPainter painter() const;
     void resizeBuffer() const;
+    bool hasGradient() const { return m_gradient && !m_gradient->stopsList().isEmpty(); }
+    uint32_t defaultColorAt(int x, int y) const;
+    TextAttribute baseAttributes() const;
 
     RenderMode m_renderMode = RenderMode::Braille;
     bool m_autoClear = true;
@@ -118,10 +134,14 @@ private:
     CellColorMode m_cellColorMode = CellColorMode::LastDot;
     mutable std::vector<uint8_t> m_pixelSet;     // occupancy, independent of default color 0
     mutable std::vector<uint32_t> m_pixelColors; // HalfBlock mode (1x2 colors per cell, ARGB)
+    mutable std::vector<TextAttribute> m_cellAttributes;
+    mutable std::vector<uint8_t> m_cellHasCustomAttributes;
     Color m_color;
     uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    QPointer<Gradient> m_gradient;
     Color m_fillColor = Color::Invalid;
     uint32_t m_resolvedFillColor = 0x00000000;
+    bool m_dim = false;
 };
 
 // The pixel surface shapes draw into during Canvas::paint(). It writes the
@@ -133,8 +153,14 @@ public:
     int pixelHeight() const { return m_canvas.pixelHeight(); }
     Canvas::RenderMode renderMode() const { return m_canvas.m_renderMode; }
 
-    // Color used by shapes that do not set their own.
+    // Color and attributes used by shapes that do not set their own.
     uint32_t defaultColor() const { return m_canvas.m_resolvedColor; }
+    uint32_t defaultColorAt(int x, int y) const { return m_canvas.defaultColorAt(x, y); }
+    TextAttribute defaultAttributes() const { return m_canvas.baseAttributes(); }
+    void setActiveAttributes(TextAttribute attributes, bool custom) {
+        m_activeAttributes = attributes;
+        m_hasActiveAttributes = custom;
+    }
 
     void setPixel(int x, int y, bool value = true);
     void setPixelColor(int x, int y, Color color);
@@ -144,7 +170,10 @@ public:
 private:
     friend class Canvas;
     explicit CanvasPainter(const Canvas& canvas) : m_canvas(canvas) {}
+    void applyCellAttributes(int cellX, int cellY);
     const Canvas& m_canvas;
+    TextAttribute m_activeAttributes = TextAttribute::None;
+    bool m_hasActiveAttributes = false;
 };
 
 // Abstract base class for declarative subpixel shapes placed inside a Canvas.
@@ -154,6 +183,8 @@ class QMLTUI_CORE_EXPORT CanvasShape : public Item {
     QML_ELEMENT
     QML_UNCREATABLE("CanvasShape is an abstract base class")
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
+    Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
 
 public:
     CanvasShape(QObject* parent = nullptr) : Item(parent) {}
@@ -161,7 +192,19 @@ public:
 
     Color color() const { return m_color; }
     void setColor(Color color);
+    Gradient* gradient() const { return m_gradient.data(); }
+    void setGradient(Gradient* gradient);
+    bool dim() const { return m_style.dim(); }
+    void setDim(bool dim);
+    bool hasCustomAttributes() const { return m_style.hasDim(); }
+    TextAttribute resolvedAttributes(const CanvasPainter& painter) const {
+        return m_style.resolveAttributes(painter.defaultAttributes());
+    }
     uint32_t resolvedColor(const CanvasPainter& painter) const;
+    // Evaluates this shape's pixel color at (px, py) across its bounding box
+    // [minX..maxX, minY..maxY], falling back to the shape color or canvas ink.
+    uint32_t resolvePixelColor(const CanvasPainter& painter, int px, int py, int minX, int minY,
+                               int maxX, int maxY) const;
 
     // Draws this shape into the parent canvas's pixel surface.
     virtual void draw(CanvasPainter& painter) const = 0;
@@ -172,11 +215,15 @@ public:
 
 signals:
     void colorChanged();
+    void gradientChanged();
+    void dimChanged();
 
 private:
     Color m_color;
     uint32_t m_resolvedColor = 0xFFFFFFFF;
     bool m_hasCustomColor = false;
+    QPointer<Gradient> m_gradient;
+    TextStyle m_style;
 };
 
 // Single subpixel dot at (x, y).

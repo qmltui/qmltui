@@ -50,6 +50,21 @@ Item {
             }
             renderMode: Canvas.Braille
             color: "#00f0ff"
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop {
+                    position: 0.0
+                    color: "#00f0ff"
+                }
+                GradientStop {
+                    position: 0.5
+                    color: "#a855f7"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "#ec4899"
+                }
+            }
 
             Polygon {
                 closed: false

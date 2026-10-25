@@ -24,7 +24,9 @@ Abstract base class for 2D geometric shapes drawn on a Canvas. [More...](#detail
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `color` | `color` |  | Holds the color used to draw the shape. If not set, the parent Canvas color is used. |
+| `color` | `color` |  | Holds the color used to draw the shape. If not set, the parent Canvas color or gradient is used. |
+| `gradient` | `Gradient` | `null` | Holds an optional [Gradient](gradient.md) interpolated across the shape's subpixel bounding box. |
+| `dim` | `bool` | `false` | Holds whether cells drawn by this shape use the terminal dim/faint (`SGR 2`) attribute, overriding the parent Canvas `dim` setting when explicitly set. |
 
 ## Detailed Description
 
@@ -34,7 +36,8 @@ inside a [Canvas](canvas.md). Subclasses include [Line](line.md), [Circle](circl
 
 Shapes are placed as child items of a Canvas. During the canvas's paint pass,
 each child shape's geometry is rasterized into the canvas's pixel buffer using
-the shape's individual `color` (or the canvas's default `color` if unset).
+the shape's individual `gradient` or `color` (or the canvas's default `gradient`
+or `color` if unset).
 Coordinates are measured in sub-cell canvas pixels.
 
 ### Example

@@ -57,13 +57,15 @@ set(qmltui_runner_artifacts
     "${CMAKE_CURRENT_BINARY_DIR}/RunnerArtifacts")
 set(qmltui_runner_scenarios
     "${CMAKE_CURRENT_SOURCE_DIR}/scenarios")
+unset(QMLTUI_RECORD_DIR)
+unset(QMLTUI_RECORD_POST_COMMAND)
 
 # A Runner self-test scenario driven by a script (or an embedded resource), with
 # bounded timeouts and the artifact checks the runner contract promises.
 function(add_qmltui_runner_scenario test_name executable script expected_exit)
     cmake_parse_arguments(SCENARIO "EMBEDDED;LIVE;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
         "FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK;RECORD"
-        "ARGUMENTS" ${ARGN})
+        "ARGUMENTS;POST_COMMAND" ${ARGN})
     if(NOT SCENARIO_OPERATION_TIMEOUT_MS)
         set(SCENARIO_OPERATION_TIMEOUT_MS 1500)
     endif()
@@ -77,6 +79,7 @@ function(add_qmltui_runner_scenario test_name executable script expected_exit)
         ARTIFACT_DIR "${qmltui_runner_artifacts}/${test_name}"
         OPERATION_TIMEOUT_MS ${SCENARIO_OPERATION_TIMEOUT_MS}
         SCENARIO_TIMEOUT_MS ${SCENARIO_SCENARIO_TIMEOUT_MS}
+        LABELS Runner
     )
     if(SCENARIO_EMBEDDED)
         list(APPEND arguments EMBEDDED)
@@ -94,6 +97,9 @@ function(add_qmltui_runner_scenario test_name executable script expected_exit)
     endif()
     if(SCENARIO_ARGUMENTS)
         list(APPEND arguments ARGUMENTS ${SCENARIO_ARGUMENTS})
+    endif()
+    if(SCENARIO_POST_COMMAND)
+        list(APPEND arguments POST_COMMAND ${SCENARIO_POST_COMMAND})
     endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT FORBIDDEN_ARTIFACT
             PROCESS_TIMEOUT SYMLINK_TRAP SNAPSHOT_SEED_SOURCE SNAPSHOT_SEED_DEST
@@ -514,13 +520,17 @@ add_qmltui_runner_scenario(test_runner_scrollback_altscreen qmltui_runner_fixtur
     "${qmltui_runner_scenarios}/scrollback_altscreen.js" 1
     FAILURE_PATTERN "needs a Terminal in Inline mode")
 
-# Asciicast recording: the session bytes land in a cast under the artifacts.
+# Asciicast recording: the session bytes land in a cast under the artifacts,
+# and QMLTUI_RECORD_POST_COMMAND expands <CAST>, <CAST_STEM>, and <NAME>.
+set(QMLTUI_RECORD_POST_COMMAND
+    "${CMAKE_COMMAND}" -E copy "<CAST>" "<CAST_STEM>.<NAME>.cast")
 add_qmltui_runner_scenario(test_runner_record_basic qmltui_runner_fixture
     "${qmltui_runner_scenarios}/record_basic.js" 0
     CLOCK VIRTUAL
     RECORD fixture.cast
     ARTIFACT "fixture.cast"
     ARTIFACT_CONTENT "TESTRUNNER FIXTURE")
+unset(QMLTUI_RECORD_POST_COMMAND)
 add_qmltui_runner_scenario(test_runner_record_restart qmltui_runner_fixture
     "${qmltui_runner_scenarios}/record_restart.js" 0
     CLOCK VIRTUAL
@@ -533,7 +543,7 @@ add_qmltui_runner_scenario(test_runner_record_without_env qmltui_runner_fixture
 if(Python3_Interpreter_FOUND)
     add_test(NAME test_runner_record_basic_cast
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_cast.py"
-                "${qmltui_runner_artifacts}/test_runner_record_basic/fixture.cast"
+                "${qmltui_runner_artifacts}/test_runner_record_basic/fixture.test_runner_record_basic.cast"
                 --marker start --marker typed --text "TESTRUNNER FIXTURE" --text cast --min-events 2 --resize 90x26 --min-duration 0.05)
     add_test(NAME test_runner_record_restart_cast
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_cast.py"

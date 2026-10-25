@@ -441,7 +441,7 @@ endif()
 | `EMBEDDED` | Off | Run an executable that constructs `qmltui::Runner` directly in C++ instead of reading `QMLTUI_RUNNER_SCRIPT`. |
 | `COLUMNS <n>`, `ROWS <n>` | `80`, `24` | Initial terminal viewport dimensions. |
 | `CLOCK <REAL\|VIRTUAL>` | `REAL` | Run on the real clock or synthetic virtual clock. |
-| `RECORD <relative-path.cast>` | None | Record an asciicast v2 file into the artifact directory and add the `Cast` CTest label. |
+| `RECORD <relative-path.cast>` | None | Record an asciicast v2 file into `${QMLTUI_RECORD_DIR}` (or `ARTIFACT_DIR` when unset) and default the CTest label to `Demo`. |
 | `LIVE` | Off | Emit live ANSI output during the test (incompatible with `RECORD`). |
 | `UPDATE_SNAPSHOTS` | Inherited from env | Force snapshot baseline updating on for this test. |
 | `NO_UPDATE_SNAPSHOTS` | Off | Pin snapshot updating off even when `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` is set in the environment. |
@@ -449,7 +449,8 @@ endif()
 | `SCENARIO_TIMEOUT_MS <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
 | `ARTIFACT_DIR <path>` | `<binary-dir>/RunnerArtifacts/<NAME>` | Directory for `result.json`, frame captures, and recordings. |
 | `ARGUMENTS <arg>...` | None | Command-line arguments forwarded to `TARGET`. |
-| `LABELS <label>...` | `Runner` (plus `Cast` when `RECORD` is set) | Additional CTest labels attached to the test. |
+| `POST_COMMAND <cmd> [args...]` | `${QMLTUI_RECORD_POST_COMMAND}` when `RECORD` is set, else None | Post-processing command executed in `ARTIFACT_DIR` after the scenario succeeds. Expands `<CAST>`, `<CAST_STEM>` (`<CAST>` without `.cast`), `<ARTIFACT_DIR>`, and `<NAME>`. |
+| `LABELS <label>...` | `Demo` when `RECORD` is set, else `Runner` | CTest labels attached to the test. |
 
 ## C++ API and Environment Variables (`qmltui::Runner`)
 

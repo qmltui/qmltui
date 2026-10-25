@@ -197,14 +197,14 @@ if(TARGET qmltui::runner)
         CLOCK VIRTUAL
     )
 
-    # Optional: register a deterministic asciicast recording (labeled 'Runner' and 'Cast'):
+    # Optional: register a demo asciicast recording (labeled 'Demo'):
     qmltui_add_scenario(
         NAME my_app_demo_cast
         TARGET my_app
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_record.js"
         COLUMNS 80
         ROWS 24
-        CLOCK VIRTUAL
+        CLOCK REAL
         RECORD my_demo.cast
     )
 endif()
@@ -214,7 +214,7 @@ For production builds, configure CMake with `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_E
 
 ### Run and Update Scenarios with CTest
 
-Every test registered with `qmltui_add_scenario()` receives the `Runner` CTest label (and `Cast` when `RECORD` is set), and writes its artifacts to `<build>/RunnerArtifacts/<NAME>/` by default:
+Every test registered with `qmltui_add_scenario()` receives the `Runner` CTest label by default (or `Demo` when `RECORD` is set), and writes its artifacts to `<build>/RunnerArtifacts/<NAME>/` by default:
 
 ```bash
 # Run all Runner scenarios in the build tree:

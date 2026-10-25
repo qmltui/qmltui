@@ -213,7 +213,7 @@ def main() -> int:
             env = os.environ.copy()
             env["LLVM_PROFILE_FILE"] = str(profraw_dir / "%p-%m.profraw")
             subprocess.run(
-                ["ctest", "--test-dir", str(build_dir), "--output-on-failure"],
+                ["ctest", "--test-dir", str(build_dir), "-LE", "Demo", "--output-on-failure"],
                 env=env,
                 check=True,
             )

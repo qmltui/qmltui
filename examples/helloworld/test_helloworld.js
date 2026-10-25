@@ -19,6 +19,4 @@ function main(app) {
     app.press("r");
     app.expectText("Interactions: 0");
     app.sleep(900);
-
-    app.stopRecording();
 }

@@ -80,9 +80,18 @@ else()
     list(APPEND scenario_environment "--unset=QMLTUI_RUNNER_CLOCK")
 endif()
 
-# RECORD routes the terminal bytes into an asciicast under the artifact directory.
+# RECORD routes the terminal bytes into an asciicast (relative to ARTIFACT_DIR
+# unless already absolute).
+set(cast_file "")
+set(cast_stem "")
 if(DEFINED RECORD AND NOT "${RECORD}" STREQUAL "")
-    list(APPEND scenario_environment "QMLTUI_RUNNER_RECORD=${ARTIFACT_DIR}/${RECORD}")
+    if(IS_ABSOLUTE "${RECORD}")
+        set(cast_file "${RECORD}")
+    else()
+        set(cast_file "${ARTIFACT_DIR}/${RECORD}")
+    endif()
+    string(REGEX REPLACE "\\.cast$" "" cast_stem "${cast_file}")
+    list(APPEND scenario_environment "QMLTUI_RUNNER_RECORD=${cast_file}")
 endif()
 
 # Snapshot update mode: force it on or off for this test; otherwise the
@@ -250,5 +259,44 @@ if(DEFINED EXPECT_UPDATED_SNAPSHOT)
     string(FIND "${output}" "updated snapshots:" updated_summary_position)
     if(updated_summary_position EQUAL -1)
         message(FATAL_ERROR "Runner summary did not list the updated snapshots")
+    endif()
+endif()
+
+if(NOT "${cast_file}" STREQUAL "" AND EXPECT_EXIT EQUAL 0)
+    if(NOT EXISTS "${cast_file}")
+        message(FATAL_ERROR "Expected recorded cast file was not created: ${cast_file}")
+    endif()
+    file(SIZE "${cast_file}" cast_size)
+    if(cast_size EQUAL 0)
+        message(FATAL_ERROR "Recorded cast file is empty: ${cast_file}")
+    endif()
+endif()
+
+if(DEFINED POST_COMMAND AND NOT "${POST_COMMAND}" STREQUAL "")
+    set(expanded_post_command)
+    foreach(post_arg IN LISTS POST_COMMAND)
+        if((post_arg MATCHES "<CAST>" OR post_arg MATCHES "<CAST_STEM>")
+           AND "${cast_file}" STREQUAL "")
+            message(FATAL_ERROR
+                "POST_COMMAND uses <CAST> or <CAST_STEM>, but RECORD is not set for scenario ${SCENARIO_NAME}")
+        endif()
+        string(REPLACE "<CAST>" "${cast_file}" post_arg "${post_arg}")
+        string(REPLACE "<CAST_STEM>" "${cast_stem}" post_arg "${post_arg}")
+        string(REPLACE "<ARTIFACT_DIR>" "${ARTIFACT_DIR}" post_arg "${post_arg}")
+        string(REPLACE "<NAME>" "${SCENARIO_NAME}" post_arg "${post_arg}")
+        list(APPEND expanded_post_command "${post_arg}")
+    endforeach()
+
+    execute_process(
+        COMMAND ${expanded_post_command}
+        WORKING_DIRECTORY "${ARTIFACT_DIR}"
+        RESULT_VARIABLE post_result
+        OUTPUT_VARIABLE post_stdout
+        ERROR_VARIABLE post_stderr
+    )
+    if(NOT post_result EQUAL 0)
+        message(FATAL_ERROR
+            "Scenario POST_COMMAND failed (${post_result}): ${expanded_post_command}\n"
+            "${post_stdout}\n${post_stderr}")
     endif()
 endif()

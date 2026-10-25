@@ -19,5 +19,5 @@ if(TARGET qmltui::runner)
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL)
     qmltui_add_scenario(NAME status_badge_demo TARGET qmltui_status_badge_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
-        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/status_badge.cast LABELS Cast)
+        COLUMNS 120 ROWS 40 CLOCK REAL RECORD components/status_badge.cast)
 endif()

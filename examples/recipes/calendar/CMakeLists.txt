@@ -33,7 +33,14 @@ if(TARGET qmltui::runner)
         COLUMNS 80
         ROWS 24
         CLOCK VIRTUAL
+    )
+    qmltui_add_scenario(
+        NAME calendar_demo
+        TARGET qmltui_calendar_demo
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_calendar.js"
+        COLUMNS 80
+        ROWS 24
+        CLOCK REAL
         RECORD components/calendar.cast
-        LABELS Cast
     )
 endif()

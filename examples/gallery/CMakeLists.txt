@@ -89,9 +89,10 @@ if(TARGET qmltui::runner)
         COLUMNS 100 ROWS 30)
     qmltui_add_scenario(NAME gallery_tour TARGET qmltui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery_tour.js"
-        COLUMNS 100 ROWS 30 CLOCK VIRTUAL RECORD gallery-tour.cast LABELS Cast)
+        COLUMNS 100 ROWS 30 CLOCK REAL SCENARIO_TIMEOUT_MS 90000
+        RECORD gallery-tour.cast)
 
-    # Standalone smoke + .cast recording scenarios for each built-in type in examples/gallery/examples/*.qml
+    # Standalone .cast + .gif recording scenarios for each built-in type in examples/gallery/examples/*.qml
     foreach(example_file IN LISTS gallery_example_files)
         get_filename_component(example_stem "${example_file}" NAME_WE)
         string(REGEX REPLACE "([a-z0-9])([A-Z])" "\\1_\\2" example_snake "${example_stem}")
@@ -105,9 +106,8 @@ if(TARGET qmltui::runner)
                 SCRIPT "${scenario_script}"
                 COLUMNS 84
                 ROWS 20
-                CLOCK VIRTUAL
+                CLOCK REAL
                 RECORD "components/${example_snake}.cast"
-                LABELS Cast
             )
         endif()
     endforeach()

@@ -22,5 +22,5 @@ if(TARGET qmltui::runner)
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL)
     qmltui_add_scenario(NAME big_text_demo TARGET qmltui_big_text_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
-        COLUMNS 120 ROWS 40 CLOCK VIRTUAL RECORD components/big_text.cast LABELS Cast)
+        COLUMNS 120 ROWS 40 CLOCK REAL RECORD components/big_text.cast)
 endif()

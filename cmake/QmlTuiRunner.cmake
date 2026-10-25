@@ -4,13 +4,13 @@ include(CMakeParseArguments)
 # Cached so every directory sees the path even though include_guard(GLOBAL)
 # skips repeated includes from other directories.
 set(QMLTUI_RUNNER_SCENARIO_DRIVER "${CMAKE_CURRENT_LIST_DIR}/RunQmlTuiScenario.cmake"
-    CACHE INTERNAL "Path to the CMake script that launches and validates one Runner scenario")
+    CACHE INTERNAL "Path to the CMake script that launches and validates one Runner scenario" FORCE)
 
 function(qmltui_add_scenario)
     cmake_parse_arguments(QMLTUI_SCENARIO
         "EMBEDDED;LIVE;UPDATE_SNAPSHOTS;NO_UPDATE_SNAPSHOTS"
         "NAME;TARGET;SCRIPT;COLUMNS;ROWS;OPERATION_TIMEOUT_MS;SCENARIO_TIMEOUT_MS;ARTIFACT_DIR;QML_IMPORT_PATH;EXPECTED_EXIT;FAILURE_PATTERN;ARTIFACT;ARTIFACT_CONTENT;FORBIDDEN_ARTIFACT;PROCESS_TIMEOUT;SYMLINK_TRAP;SNAPSHOT_SEED_SOURCE;SNAPSHOT_SEED_DEST;EXPECT_UPDATED_SNAPSHOT;EXPECT_UPDATED_SNAPSHOT_CONTENT;CLOCK;RECORD"
-        "LABELS;ARGUMENTS"
+        "LABELS;ARGUMENTS;POST_COMMAND"
         ${ARGN}
     )
 
@@ -63,6 +63,7 @@ function(qmltui_add_scenario)
 
     set(command
         "${CMAKE_COMMAND}"
+        "-DSCENARIO_NAME=${QMLTUI_SCENARIO_NAME}"
         "-DTEST_EXECUTABLE=$<TARGET_FILE:${QMLTUI_SCENARIO_TARGET}>"
         "-DARTIFACT_DIR=${QMLTUI_SCENARIO_ARTIFACT_DIR}"
         "-DEXPECT_EXIT=${QMLTUI_SCENARIO_EXPECTED_EXIT}"
@@ -120,11 +121,15 @@ function(qmltui_add_scenario)
         endif()
         list(APPEND command "-DCLOCK=${scenario_clock}")
     endif()
-    # RECORD <name.cast> writes an asciicast of the session into the artifact
-    # directory (QMLTUI_RUNNER_RECORD) and labels the test Cast.
+    # RECORD <name.cast> writes an asciicast of the session (into
+    # QMLTUI_RECORD_DIR when set, else ARTIFACT_DIR) and labels the test Demo
+    # by default instead of Runner.
     if(QMLTUI_SCENARIO_RECORD)
-        list(APPEND command "-DRECORD=${QMLTUI_SCENARIO_RECORD}")
-        list(APPEND QMLTUI_SCENARIO_LABELS Cast)
+        if(IS_ABSOLUTE "${QMLTUI_SCENARIO_RECORD}" OR NOT QMLTUI_RECORD_DIR)
+            list(APPEND command "-DRECORD=${QMLTUI_SCENARIO_RECORD}")
+        else()
+            list(APPEND command "-DRECORD=${QMLTUI_RECORD_DIR}/${QMLTUI_SCENARIO_RECORD}")
+        endif()
     endif()
     foreach(argument FAILURE_PATTERN ARTIFACT ARTIFACT_CONTENT)
         if(NOT "${QMLTUI_SCENARIO_${argument}}" STREQUAL "")
@@ -146,11 +151,32 @@ function(qmltui_add_scenario)
         string(REPLACE ";" "\\;" scenario_arguments "${QMLTUI_SCENARIO_ARGUMENTS}")
         list(APPEND command "-DTEST_ARGUMENTS=${scenario_arguments}")
     endif()
+    # POST_COMMAND (or the directory/project default QMLTUI_RECORD_POST_COMMAND
+    # when RECORD is set) runs after the scenario and result validation succeed.
+    # Placeholders <CAST>, <CAST_STEM>, <ARTIFACT_DIR>, and <NAME> are expanded
+    # by the driver script.
+    if(NOT QMLTUI_SCENARIO_POST_COMMAND AND QMLTUI_SCENARIO_RECORD AND QMLTUI_RECORD_POST_COMMAND)
+        set(QMLTUI_SCENARIO_POST_COMMAND ${QMLTUI_RECORD_POST_COMMAND})
+    endif()
+    if(QMLTUI_SCENARIO_POST_COMMAND)
+        list(LENGTH QMLTUI_SCENARIO_POST_COMMAND post_command_length)
+        if(post_command_length EQUAL 1 AND QMLTUI_SCENARIO_POST_COMMAND MATCHES "[ \t]")
+            separate_arguments(QMLTUI_SCENARIO_POST_COMMAND NATIVE_COMMAND
+                "${QMLTUI_SCENARIO_POST_COMMAND}")
+        endif()
+        string(REPLACE ";" "\\;" scenario_post_command "${QMLTUI_SCENARIO_POST_COMMAND}")
+        list(APPEND command "-DPOST_COMMAND=${scenario_post_command}")
+    endif()
     list(APPEND command "-P" "${QMLTUI_RUNNER_SCENARIO_DRIVER}")
 
     add_test(NAME "${QMLTUI_SCENARIO_NAME}" COMMAND ${command})
-    set(labels Runner)
-    list(APPEND labels ${QMLTUI_SCENARIO_LABELS})
+    if(QMLTUI_SCENARIO_LABELS)
+        set(labels ${QMLTUI_SCENARIO_LABELS})
+    elseif(QMLTUI_SCENARIO_RECORD)
+        set(labels Demo)
+    else()
+        set(labels Runner)
+    endif()
     list(REMOVE_DUPLICATES labels)
     set_tests_properties("${QMLTUI_SCENARIO_NAME}" PROPERTIES
         SKIP_RETURN_CODE 125

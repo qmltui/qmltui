@@ -47,7 +47,7 @@ jobs:
         run: cmake --build build --parallel 4
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build -LE Demo --output-on-failure
 
   coverage:
     name: coverage (linux / clang / llvm-cov)
@@ -142,7 +142,7 @@ jobs:
           $env:QML2_IMPORT_PATH = "$PWD\build\qml"
           $env:QML_IMPORT_PATH = "$PWD\build\qml"
           $env:QT_FORCE_STDERR_LOGGING = "1"
-          ctest --test-dir build --output-on-failure
+          ctest --test-dir build -LE Demo --output-on-failure
 
   macos:
     name: macos / Behavior ON (on demand and tags)
@@ -175,7 +175,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build -LE Demo --output-on-failure
 
   quickstart:
     name: quickstart (FetchContent, standalone)

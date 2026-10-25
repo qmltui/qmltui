@@ -59,8 +59,15 @@ if(TARGET qmltui::runner)
             COLUMNS 64
             ROWS 15
             CLOCK VIRTUAL
+        )
+        qmltui_add_scenario(
+            NAME hello_world_demo
+            TARGET hello_qmltui
+            SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js"
+            COLUMNS 64
+            ROWS 15
+            CLOCK REAL
             RECORD hello-world.cast
-            LABELS Cast
         )
     endif()
 endif()

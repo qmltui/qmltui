@@ -56,7 +56,7 @@ rtk cmake --build build
 
 ## Select and Run Tests
 
-Discover exact CTest names and labels (`Unit`, `Runner`, `Cast`) instead of guessing:
+Discover exact CTest names and labels (`Unit`, `Runner`, `Demo`) instead of guessing:
 
 ```bash
 rtk ctest --test-dir build -N

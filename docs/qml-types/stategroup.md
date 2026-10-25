@@ -37,8 +37,6 @@ StateGroup uses the same internal state controller as Item, honoring `when`
 conditions, independent ownership tracking, atomic collision preflight, and
 restoration behavior.
 
-Available when built with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
-
 ### Example
 
 ```qml

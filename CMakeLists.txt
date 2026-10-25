@@ -4,7 +4,7 @@ project(qmltui VERSION 0.5.0 LANGUAGES CXX)
 option(QMLTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
-option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, StateGroup, advanced states)" ON)
+option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
 option(QMLTUI_ENABLE_PTY_VIEW  "Build the optional Unix PTY PtyView module" OFF)
 option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" ${PROJECT_IS_TOP_LEVEL})
@@ -75,7 +75,7 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
     endif()
     if(NOT TARGET Qt6::QmlPrivate)
         message(WARNING
-            "QmlTui: Qt6::QmlPrivate was not found; building without Behavior, StateGroup, and advanced states. "
+            "QmlTui: Qt6::QmlPrivate was not found; building without Behavior and advanced states. "
             "Install the Qt 6 Qml private development headers to enable them, or pass "
             "-DQMLTUI_ENABLE_PRIVATE_QT=OFF to suppress this warning.")
         set(QMLTUI_ENABLE_PRIVATE_QT OFF)

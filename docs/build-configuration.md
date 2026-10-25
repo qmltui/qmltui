@@ -24,7 +24,7 @@ See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake
 | Feature / Module | CMake Option | Default | Requirement |
 | :--- | :--- | :--- | :--- |
 | **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for headless builds without GUI or network packages) |
-| **`Behavior` & `StateGroup`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
+| **`Behavior` & direct `PropertyChanges`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
 | **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTY_VIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 | **`qmltui::runner`** (`Runner` & `qmltui-runner`) | `-DQMLTUI_ENABLE_RUNNER=ON` | `ON` (top-level) / `OFF` (subproject) | Headless scenario test runner and CLI |
 
@@ -34,7 +34,7 @@ For an application that depends only on public `Qt6::Core` and `Qt6::Qml` APIs, 
 cmake -S . -B build -DQMLTUI_ENABLE_IMAGE=OFF -DQMLTUI_ENABLE_PRIVATE_QT=OFF
 ```
 
-This keeps `qmltui::core` and `qmltui::controls` enabled while omitting `QmlTui.Image`, `Behavior`, and `StateGroup`.
+This keeps `qmltui::core` and `qmltui::controls` enabled while omitting `QmlTui.Image`, `Behavior`, and direct-assignment `PropertyChanges`.
 
 ## Using an Installed Build (`find_package(QmlTui)`)
 
@@ -155,7 +155,7 @@ See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md
 | `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and recipe executables |
 | `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
-| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior`, `StateGroup`, and advanced states (warns if missing unless set to `OFF`) |
+| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior` and advanced states (warns if missing unless set to `OFF`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
 | `QMLTUI_ENABLE_PTY_VIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `ON` (top-level) | Build and install `qmltui::runner` and the `qmltui-runner` CLI |

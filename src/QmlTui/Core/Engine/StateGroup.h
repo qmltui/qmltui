@@ -15,7 +15,7 @@ class Transition;
 class StateController;
 
 // Standalone state and transition container for non-Item objects or secondary
-// state machines. Available when built with QMLTUI_ENABLE_PRIVATE_QT=ON.
+// state machines.
 class QMLTUI_CORE_EXPORT StateGroup : public QObject, public QQmlParserStatus {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)

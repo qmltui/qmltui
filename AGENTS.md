@@ -17,7 +17,7 @@
 - Build terminal interfaces from `QtQml` and QmlTui modules. Do not add a
   `QtQuick` import or Qt Quick dependency to QmlTui applications or modules.
 - Keep optional subsystems gated. `QMLTUI_ENABLE_PRIVATE_QT=ON` (default) uses
-  `Qt6::QmlPrivate` when available (enabling Behavior, StateGroup, and advanced
+  `Qt6::QmlPrivate` when available (enabling Behavior and advanced
   states) and warns when falling back if not explicitly disabled;
   `QMLTUI_ENABLE_PTY_VIEW=ON` is the Unix PTY module and is
   supported only on Linux and macOS; `QMLTUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`

@@ -247,13 +247,13 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `ScrollView`, `Canvas`, `CanvasShape`, `CanvasRectangle`, `Circle`, `Line`,
 `Point`, `Polygon`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`,
 `StackLayout`, `Layout` (attached), `Repeater`, `Loader`, `MouseArea`, `Shortcut`,
-`Keys` (attached), `KeyEvent`, `MouseEvent`, `State`, `Transition`,
+`Keys` (attached), `KeyEvent`, `MouseEvent`, `State`, `StateGroup`, `Transition`,
 `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`, `Animation`,
 `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`, `QmlTui` (singleton),
 `Clipboard` (singleton), `terminalCapabilities` (singleton), `color` (value type),
 `span` (value type), `highlightRange` (value type).
 
-`Behavior` and `StateGroup` are available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
+`Behavior` is available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
 
 **`import QmlTui.Controls`** (QML and C++ in `src/QmlTui/Controls`)
 `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`,

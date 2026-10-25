@@ -5,8 +5,6 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
     list(APPEND qmltui_private_qt_sources
         Engine/Behavior.h
         Engine/Behavior.cpp
-        Engine/StateGroup.h
-        Engine/StateGroup.cpp
     )
 endif()
 
@@ -94,6 +92,8 @@ qt_add_qml_module(QmlTuiCore
         Engine/Animation.cpp
         Engine/State.h
         Engine/State.cpp
+        Engine/StateGroup.h
+        Engine/StateGroup.cpp
         Engine/Transition.h
         Engine/Transition.cpp
         Engine/StateController_p.h

@@ -32,7 +32,7 @@ set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 set(QMLTUI_ENABLE_RUNNER OFF CACHE BOOL "" FORCE)
 set(QMLTUI_ENABLE_PTY_VIEW OFF CACHE BOOL "" FORCE)
-option(QMLTUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior, StateGroup (needs Qt QmlPrivate)" ON)
+option(QMLTUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior and advanced states (needs Qt QmlPrivate)" ON)
 option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" ON)
 
 add_subdirectory(../.. qmltui)   # the root includes cmake/QmlTuiWasm.cmake under EMSCRIPTEN

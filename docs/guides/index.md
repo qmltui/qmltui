@@ -10,7 +10,7 @@ These guides cover how QmlTui maps Qt 6 concepts to the terminal, its retained-m
 4. **[Input & Focus](input-and-focus.md)**: Focus chains, `FocusScope`, `Keys.onPressed` propagation, `Shortcut`, contextual `Escape` quit handling, and `MouseArea`.
 5. **[Styling & Colors](styling-and-colors.md)**: Terminal-default colors, ANSI 16/256/TrueColor quantization, `Gradient` / `GradientStop`, component styling, and `TextArea` highlight layers.
 6. **[Models in QmlTui Views](models.md)**: Connecting `ListModel` and C++ `QAbstractItemModel` subclasses to virtualized `ListView`, `TableView`, `TreeView`, and `GridView`.
-7. **[Animation & States](animation-and-states.md)**: `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, `State`, `Transition`, and optional `Behavior` / `StateGroup`.
+7. **[Animation & States](animation-and-states.md)**: `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, `State`, `StateGroup`, `Transition`, and optional `Behavior`.
 
 ## Rendering Modes, C++ Extensibility, and Tooling
 

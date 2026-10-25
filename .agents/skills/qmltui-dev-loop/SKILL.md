@@ -41,7 +41,7 @@ Use `-DQMLTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
 without the repository tests. Use `-DQMLTUI_ENABLE_PTY_VIEW=ON` only for the
 optional PTY-backed `PtyView` module.
 
-Features requiring private Qt headers (Behavior, StateGroup, and advanced states)
+Features requiring private Qt headers (Behavior and advanced states)
 are enabled automatically when `Qt6::QmlPrivate` is available (`QMLTUI_ENABLE_PRIVATE_QT=ON`
 by default; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out). For changes to private Qt
 features or their gating, validate both an enabled build and a separate disabled build.

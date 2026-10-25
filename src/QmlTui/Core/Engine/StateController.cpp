@@ -26,10 +26,10 @@ static CanonicalProperty resolveCanonicalProperty(QObject* target, const QString
     result.target = target;
     result.name = name;
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     if (target && !name.isEmpty()) {
         QQmlProperty prop(target, name);
         if (prop.isValid()) {
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
             if (QQmlPropertyPrivate::get(prop)->core.isAlias()) {
                 auto resolved = QQmlPropertyPrivate::findAliasTarget(
                     prop.object(), QQmlPropertyPrivate::propertyIndex(prop));
@@ -41,13 +41,13 @@ static CanonicalProperty resolveCanonicalProperty(QObject* target, const QString
                         result.name = QString::fromUtf8(mo->property(coreIdx).name());
                     }
                 }
-            } else {
-                result.target = prop.object();
-                result.name = prop.name();
+                return result;
             }
+#endif
+            result.target = prop.object();
+            result.name = prop.name();
         }
     }
-#endif
 
     return result;
 }
@@ -392,20 +392,27 @@ void StateController::collectOverridesForState(
             const QString propName = it.key();
             const QVariant val = it.value();
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
             QQmlContext* rawContext = qmlContext(pc);
             if (!rawContext && parent()) rawContext = qmlContext(parent());
             if (!rawContext && target) rawContext = qmlContext(target);
 
+            QQmlProperty prop;
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
             QQmlRefPointer<QQmlContextData> context =
                 rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
-            QQmlProperty prop;
             if (!context.isNull()) {
                 prop = QQmlPropertyPrivate::create(target, propName, context,
                                                    QQmlPropertyPrivate::InitFlag::AllowId);
             } else if (target) {
                 prop = QQmlProperty(target, propName);
             }
+#else
+            if (rawContext) {
+                prop = QQmlProperty(target, propName, rawContext);
+            } else if (target) {
+                prop = QQmlProperty(target, propName);
+            }
+#endif
             if (!prop.isValid()) {
                 qmlWarning(pc) << "Cannot assign to non-existent property \"" << propName << "\"";
                 continue;
@@ -424,28 +431,6 @@ void StateController::collectOverridesForState(
             override.isBinding = false;
 #endif
             outOverrides.insert(canon, override);
-#else
-            const QMetaObject* mo = target->metaObject();
-            int idx = mo->indexOfProperty(propName.toUtf8().constData());
-            if (idx < 0) {
-                qmlWarning(pc) << "Cannot assign to non-existent property \"" << propName << "\"";
-                continue;
-            }
-            QMetaProperty mp = mo->property(idx);
-            if (!mp.isWritable()) {
-                qmlWarning(pc) << "Cannot assign to read-only property \"" << propName << "\"";
-                continue;
-            }
-            CanonicalProperty canon;
-            canon.target = target;
-            canon.name = propName;
-            PropertyOverride override;
-            override.target = target;
-            override.name = propName;
-            override.value = val;
-            override.restore = pc->restoreEntryValues();
-            outOverrides.insert(canon, override);
-#endif
         }
     }
 }

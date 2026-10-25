@@ -145,7 +145,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
         qmldir_path = qmltypes_path.parent / "qmldir"
         qmldir = qmldir_path.read_text(encoding="utf-8") if qmldir_path.is_file() else ""
         for qml_type in sorted(types):
-            if module == "QmlTui" and qml_type in ("Behavior", "StateGroup") and private_qt_enabled is False:
+            if module == "QmlTui" and qml_type == "Behavior" and private_qt_enabled is False:
                 continue
             checked += 1
             qmltypes_export = f'"{module}/{qml_type} ' in metadata

@@ -8,18 +8,15 @@
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Items/Rectangle.h>
 #include <QmlTui/Core/Engine/State.h>
+#include <QmlTui/Core/Engine/StateGroup.h>
 #include <QmlTui/Core/Engine/Transition.h>
 #include <QmlTui/Core/Engine/Animation.h>
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-#include <QmlTui/Core/Engine/StateGroup.h>
-#endif
 #include "../TestPaint.h"
 
 using namespace qmltui;
 
-static void addQmlTuiImportPath(QQmlEngine &engine) {
-    engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../QmlTui"));
+static void addQmlTuiImportPath(QQmlEngine& engine) {
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
 }
 
 class TestStates : public QObject {
@@ -73,11 +70,12 @@ void TestStates::testLegacyMapProperties() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     QCOMPARE(root->property("count").toInt(), 10);
@@ -115,11 +113,12 @@ void TestStates::testLegacyMapActiveKeyRemoval() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     root->setState("active");
@@ -170,18 +169,19 @@ void TestStates::testLegacyMapTargetChange() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *item1 = root->findChild<Item *>(QStringLiteral("item1"));
-    auto *item2 = root->findChild<Item *>(QStringLiteral("item2"));
+    auto* item1 = root->findChild<Item*>(QStringLiteral("item1"));
+    auto* item2 = root->findChild<Item*>(QStringLiteral("item2"));
     if (!item1 || !item2) {
         // Find children by iteration
-        const auto children = root->findChildren<Item *>();
+        const auto children = root->findChildren<Item*>();
         if (children.size() >= 2) {
             item1 = children.at(0);
             item2 = children.at(1);
@@ -203,6 +203,58 @@ void TestStates::testLegacyMapTargetChange() {
     root->setState("");
     QCOMPARE(item1->property("val").toInt(), 5);
     QCOMPARE(item2->property("val").toInt(), 10);
+}
+
+void TestStates::testObjectDestruction() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        pragma ComponentBehavior: Bound
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            Item {
+                id: dynamicTarget
+                property int count: 10
+            }
+            StateGroup {
+                id: group
+                states: [
+                    State {
+                        name: "active"
+                        PropertyChanges {
+                            target: dynamicTarget
+                            properties: ({ "count": 50 })
+                        }
+                    }
+                ]
+            }
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    auto* root = component.create();
+    QVERIFY(root);
+
+    auto* group = root->findChild<StateGroup*>();
+    QVERIFY(group);
+    auto* dynamicTarget = root->findChild<Item*>();
+    QVERIFY(dynamicTarget);
+
+    group->setState("active");
+    QCOMPARE(dynamicTarget->property("count").toInt(), 50);
+
+    // Destroy target while active: must cancel affected work safely
+    delete dynamicTarget;
+
+    // StateGroup deactivates / changes state without crash
+    group->setState("");
+
+    delete root;
 }
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
@@ -244,16 +296,17 @@ void TestStates::testDirectSyntaxAndGroupedPaths() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *card = root->findChild<Rectangle *>();
+    auto* card = root->findChild<Rectangle*>();
     QVERIFY(card);
-    auto *label = root->findChild<Text *>();
+    auto* label = root->findChild<Text*>();
     QVERIFY(label);
 
     QCOMPARE(card->border()->color(), QStringLiteral("white"));
@@ -299,14 +352,15 @@ void TestStates::testBindingLifecycleAndRestoration() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *label = root->findChild<Text *>();
+    auto* label = root->findChild<Text*>();
     QVERIFY(label);
 
     QCOMPARE(label->text(), QStringLiteral("Count: 1!"));
@@ -364,14 +418,15 @@ void TestStates::testAToBToBaseChainedRestoration() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *target = root->findChild<Item *>();
+    auto* target = root->findChild<Item*>();
     QVERIFY(target);
     QCOMPARE(target->property("value").toInt(), 20);
 
@@ -428,17 +483,18 @@ void TestStates::testExplicitTrueVsFalse() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    const auto texts = root->findChildren<Text *>();
+    const auto texts = root->findChildren<Text*>();
     QCOMPARE(texts.size(), 2);
-    Text *labelReactive = texts.at(0);
-    Text *labelExplicit = texts.at(1);
+    Text* labelReactive = texts.at(0);
+    Text* labelExplicit = texts.at(1);
 
     root->setState("testState");
     QCOMPARE(labelReactive->text(), QStringLiteral("initial"));
@@ -484,14 +540,15 @@ void TestStates::testRestoreEntryValuesFalse() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *label = root->findChild<Text *>();
+    auto* label = root->findChild<Text*>();
     QVERIFY(label);
     QCOMPARE(label->text(), QStringLiteral("baseText"));
 
@@ -542,14 +599,15 @@ void TestStates::testIndependentStateGroups() {
                 ]
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    auto *group = root->findChild<StateGroup *>();
+    auto* group = root->findChild<StateGroup*>();
     QVERIFY(group);
 
     QCOMPARE(root->property("focusStateVal").toInt(), 0);
@@ -617,17 +675,18 @@ void TestStates::testAtomicOverlapRejection() {
                 ]
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    const auto groups = root->findChildren<StateGroup *>();
+    const auto groups = root->findChildren<StateGroup*>();
     QCOMPARE(groups.size(), 2);
-    StateGroup *groupA = groups.at(0);
-    StateGroup *groupB = groups.at(1);
+    StateGroup* groupA = groups.at(0);
+    StateGroup* groupB = groups.at(1);
 
     // Group A claims ownership of sharedProp
     groupA->setState("owner");
@@ -697,18 +756,19 @@ void TestStates::testAliasCollisionRejection() {
                 ]
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
-    const auto groups = root->findChildren<StateGroup *>();
+    const auto groups = root->findChildren<StateGroup*>();
     QCOMPARE(groups.size(), 2);
-    StateGroup *groupA = groups.at(0);
-    StateGroup *groupB = groups.at(1);
-    auto *label = root->findChild<Text *>();
+    StateGroup* groupA = groups.at(0);
+    StateGroup* groupB = groups.at(1);
+    auto* label = root->findChild<Text*>();
     QVERIFY(label);
 
     groupA->setState("viaAlias");
@@ -756,68 +816,18 @@ void TestStates::testReentrantStateRequests() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     root->setState("A");
     // Latest pending reentrant request (B) must be honored
     QCOMPARE(root->state(), QStringLiteral("B"));
     QCOMPARE(root->property("step").toInt(), 2);
-}
-
-void TestStates::testObjectDestruction() {
-    QQmlEngine engine;
-    addQmlTuiImportPath(engine);
-
-    QQmlComponent component(&engine);
-    component.setData(R"(
-        pragma ComponentBehavior: Bound
-        import QtQml
-        import QmlTui
-        Item {
-            id: root
-            Item {
-                id: dynamicTarget
-                property int count: 10
-            }
-            StateGroup {
-                id: group
-                states: [
-                    State {
-                        name: "active"
-                        PropertyChanges {
-                            target: dynamicTarget
-                            properties: ({ "count": 50 })
-                        }
-                    }
-                ]
-            }
-        }
-    )", QUrl());
-    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
-
-    auto *root = component.create();
-    QVERIFY(root);
-
-    auto *group = root->findChild<StateGroup *>();
-    QVERIFY(group);
-    auto *dynamicTarget = root->findChild<Item *>();
-    QVERIFY(dynamicTarget);
-
-    group->setState("active");
-    QCOMPARE(dynamicTarget->property("count").toInt(), 50);
-
-    // Destroy target while active: must cancel affected work safely
-    delete dynamicTarget;
-
-    // StateGroup deactivates / changes state without crash
-    group->setState("");
-
-    delete root;
 }
 
 void TestStates::testZeroDurationTransition() {
@@ -850,11 +860,12 @@ void TestStates::testZeroDurationTransition() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     // Apply zero-duration transition: completes synchronously without busy loop
@@ -899,11 +910,12 @@ void TestStates::testInterruptedTransitionFromDisplayedValue() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     QCOMPARE(root->width(), 200);
@@ -911,7 +923,7 @@ void TestStates::testInterruptedTransitionFromDisplayedValue() {
     // Start transition to A (200 -> 100)
     root->setState("A");
 
-    auto *anim = root->findChild<PropertyAnimation *>();
+    auto* anim = root->findChild<PropertyAnimation*>();
     QVERIFY(anim);
     QVERIFY(anim->running());
 
@@ -921,9 +933,10 @@ void TestStates::testInterruptedTransitionFromDisplayedValue() {
     int displayedMidpoint = root->width();
     QCOMPARE(displayedMidpoint, 150);
 
-    // Interrupt with state B: replacement transition must start from currently displayed value (150)
+    // Interrupt with state B: replacement transition must start from currently displayed value
+    // (150)
     root->setState("B");
-    auto *replacementAnim = root->findChild<PropertyAnimation *>();
+    auto* replacementAnim = root->findChild<PropertyAnimation*>();
     QVERIFY(replacementAnim);
     QCOMPARE(replacementAnim->from().toInt(), 150);
     QCOMPARE(replacementAnim->to().toInt(), 0);
@@ -958,16 +971,17 @@ void TestStates::testDuplicateWriteSuppression() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     // When endpoint equals current value, no animation is allocated
     root->setState("same");
-    auto *anim = root->findChild<PropertyAnimation *>();
+    auto* anim = root->findChild<PropertyAnimation*>();
     QVERIFY(!anim || !anim->running());
     QCOMPARE(root->property("cellX").toInt(), 10);
 }
@@ -1014,16 +1028,17 @@ void TestStates::testBehaviorInteraction() {
                 }
             ]
         }
-    )", QUrl());
+    )",
+                      QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 
     std::unique_ptr<QObject> object(component.create());
-    auto *root = qobject_cast<Item *>(object.get());
+    auto* root = qobject_cast<Item*>(object.get());
     QVERIFY(root);
 
     root->setState("active");
     // Both animations run: transition for animatedWithTransition, Behavior for animatedWithBehavior
-    const auto anims = root->findChildren<PropertyAnimation *>();
+    const auto anims = root->findChildren<PropertyAnimation*>();
     QVERIFY(anims.size() >= 2);
 }
 
@@ -1052,7 +1067,8 @@ void TestStates::testInvalidDeclarationsRejection() {
                     }
                 ]
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY(!component.isReady());
         QVERIFY(component.errorString().contains("mix properties map and direct assignments"));
     }
@@ -1076,7 +1092,8 @@ void TestStates::testInvalidDeclarationsRejection() {
                     }
                 ]
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY(!component.isReady());
         QVERIFY(component.errorString().contains("creating state-specific objects"));
     }
@@ -1084,21 +1101,48 @@ void TestStates::testInvalidDeclarationsRejection() {
 
 #else
 
-void TestStates::testDirectSyntaxAndGroupedPaths() { QSKIP("Advanced states disabled"); }
-void TestStates::testBindingLifecycleAndRestoration() { QSKIP("Advanced states disabled"); }
-void TestStates::testAToBToBaseChainedRestoration() { QSKIP("Advanced states disabled"); }
-void TestStates::testExplicitTrueVsFalse() { QSKIP("Advanced states disabled"); }
-void TestStates::testRestoreEntryValuesFalse() { QSKIP("Advanced states disabled"); }
-void TestStates::testIndependentStateGroups() { QSKIP("Advanced states disabled"); }
-void TestStates::testAtomicOverlapRejection() { QSKIP("Advanced states disabled"); }
-void TestStates::testAliasCollisionRejection() { QSKIP("Advanced states disabled"); }
-void TestStates::testReentrantStateRequests() { QSKIP("Advanced states disabled"); }
-void TestStates::testObjectDestruction() { QSKIP("Advanced states disabled"); }
-void TestStates::testZeroDurationTransition() { QSKIP("Advanced states disabled"); }
-void TestStates::testInterruptedTransitionFromDisplayedValue() { QSKIP("Advanced states disabled"); }
-void TestStates::testDuplicateWriteSuppression() { QSKIP("Advanced states disabled"); }
-void TestStates::testBehaviorInteraction() { QSKIP("Advanced states disabled"); }
-void TestStates::testInvalidDeclarationsRejection() { QSKIP("Advanced states disabled"); }
+void TestStates::testDirectSyntaxAndGroupedPaths() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testBindingLifecycleAndRestoration() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testAToBToBaseChainedRestoration() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testExplicitTrueVsFalse() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testRestoreEntryValuesFalse() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testIndependentStateGroups() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testAtomicOverlapRejection() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testAliasCollisionRejection() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testReentrantStateRequests() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testZeroDurationTransition() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testInterruptedTransitionFromDisplayedValue() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testDuplicateWriteSuppression() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testBehaviorInteraction() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testInvalidDeclarationsRejection() {
+    QSKIP("Advanced states disabled");
+}
 
 #endif
 
@@ -1109,19 +1153,35 @@ void TestStates::testDisabledFeaturesAvailability() {
     QQmlEngine engine;
     addQmlTuiImportPath(engine);
 
-    // When advanced states are disabled, StateGroup is not available in QML
-    QQmlComponent component(&engine);
-    component.setData(R"(
-        import QtQml
-        import QmlTui
-        Item {
-            StateGroup { }
-        }
-    )", QUrl());
-    QVERIFY(!component.isReady());
+    // StateGroup is available in public-Qt builds
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QtQml
+            import QmlTui
+            Item {
+                StateGroup { }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    }
+
+    // Behavior requires QMLTUI_ENABLE_PRIVATE_QT
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QtQml
+            import QmlTui
+            Item {
+                Behavior on width { }
+            }
+        )",
+                          QUrl());
+        QVERIFY(!component.isReady());
+    }
 #endif
 }
-
 
 QTEST_GUILESS_MAIN(TestStates)
 #include "test_states.moc"

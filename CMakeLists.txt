@@ -6,7 +6,7 @@ option(QMLTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" ON)
-option(QMLTUI_ENABLE_PTY_VIEW  "Build the optional Unix PTY PtyView module" OFF)
+option(QMLTUI_ENABLE_PTYVIEW  "Build the optional Unix PTY PtyView module" OFF)
 option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" ${PROJECT_IS_TOP_LEVEL})
 option(QMLTUI_ENABLE_COVERAGE "Instrument QmlTui targets for Clang source-based code coverage" OFF)
 option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid QmlTui Commercial License" OFF)
@@ -37,6 +37,14 @@ set(QMLTUI_INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qml" CACHE PATH
     "Install location for QmlTui QML modules")
 set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml" CACHE PATH
     "Build-tree location for generated QML modules")
+file(MAKE_DIRECTORY "${QT_QML_OUTPUT_DIRECTORY}")
+set(_qmltui_qml_import_paths ${QML_IMPORT_PATH})
+if(NOT "${QT_QML_OUTPUT_DIRECTORY}" IN_LIST _qmltui_qml_import_paths)
+    list(APPEND _qmltui_qml_import_paths "${QT_QML_OUTPUT_DIRECTORY}")
+    set(QML_IMPORT_PATH "${_qmltui_qml_import_paths}" CACHE STRING
+        "QML import paths for Qt Creator and QML tooling" FORCE)
+endif()
+unset(_qmltui_qml_import_paths)
 
 # Third-party code: each option picks a system library or the pinned in-tree
 # copy; the mechanics live in cmake/QmlTuiUtf8proc.cmake and cmake/QmlTuiLibvterm.cmake.
@@ -68,6 +76,12 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
+
+if(NOT QT6_IS_SHARED_LIBS_BUILD OR (DEFINED BUILD_SHARED_LIBS AND NOT BUILD_SHARED_LIBS))
+    set(QMLTUI_STATIC_QML_MODULE STATIC)
+else()
+    set(QMLTUI_STATIC_QML_MODULE)
+endif()
 
 if(QMLTUI_ENABLE_PRIVATE_QT)
     if(NOT TARGET Qt6::QmlPrivate)

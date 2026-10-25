@@ -13,7 +13,7 @@ QmlTui is organized into a core library (`qmltui::core`) and optional companion 
 | `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | Core engine (`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views, `Canvas`, input, states, and animations) |
 | `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Toast`, `ToolTip`) |
 | `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Terminal graphics (`Image`, `AnimatedSprite`; requires `-DQMLTUI_ENABLE_IMAGE=ON`) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix PTY (`PtyView`; requires `-DQMLTUI_ENABLE_PTY_VIEW=ON` on Linux or macOS) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix PTY (`PtyView`; requires `-DQMLTUI_ENABLE_PTYVIEW=ON` on Linux or macOS) |
 
 See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake-targets) in the Architecture guide for details on what each module provides.
 
@@ -25,7 +25,7 @@ See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake
 | :--- | :--- | :--- | :--- |
 | **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `ON` | `Qt6::Gui` and `Qt6::Network` (set `OFF` for headless builds without GUI or network packages) |
 | **`Behavior` & direct `PropertyChanges`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
-| **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTY_VIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
+| **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTYVIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 | **`qmltui::runner`** (`Runner` & `qmltui-runner`) | `-DQMLTUI_ENABLE_RUNNER=ON` | `ON` (top-level) / `OFF` (subproject) | Headless scenario test runner and CLI |
 
 For an application that depends only on public `Qt6::Core` and `Qt6::Qml` APIs, configure with:
@@ -101,7 +101,7 @@ Use the actual `QmlTui_QML_IMPORT_PATH` value if your platform uses `lib64` or a
 `PtyView` is opt-in on Linux and macOS:
 
 ```sh
-cmake -S . -B build -DQMLTUI_ENABLE_PTY_VIEW=ON -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -DQMLTUI_ENABLE_PTYVIEW=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery --example PtyView
 ```
@@ -109,7 +109,7 @@ cmake --build build --target qmltui_gallery
 See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qml-types/ptyview.md). Note the distinction between inline output and hosted PTYs:
 
 - `qmltui_inline_repl_demo` ([`examples/recipes/inline_repl`](../examples/recipes/inline_repl/)) uses `Terminal.Inline` and `Scrollback` and does not require `PtyView`.
-- `qmltui_gallery --example PtyView` hosts a child process inside a pseudo-terminal (`QMLTUI_ENABLE_PTY_VIEW=ON`).
+- `qmltui_gallery --example PtyView` hosts a child process inside a pseudo-terminal (`QMLTUI_ENABLE_PTYVIEW=ON`).
 
 ### Headless Testing and Recording (`Runner`)
 
@@ -157,7 +157,7 @@ See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior` and advanced states (warns if missing unless set to `OFF`) |
 | `QMLTUI_ENABLE_IMAGE` | `ON` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
-| `QMLTUI_ENABLE_PTY_VIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
+| `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `ON` (top-level) | Build and install `qmltui::runner` and the `qmltui-runner` CLI |
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument QmlTui targets for Clang source-based code coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install directory for QmlTui QML modules (`<prefix>/lib/qml`) |

@@ -5,7 +5,7 @@ import QmlTui.Controls
 import QmlTui.PtyView
 
 // PtyView: Embeds a child pseudo-terminal process inside a QmlTui layout.
-// Available on Linux and macOS when QMLTUI_ENABLE_PTY_VIEW=ON.
+// Available on Linux and macOS when QMLTUI_ENABLE_PTYVIEW=ON.
 ColumnLayout {
     id: ptyDemo
 

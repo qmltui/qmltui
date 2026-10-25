@@ -38,7 +38,7 @@ rtk cmake --build build
 
 `QMLTUI_BUILD_TESTS=ON` builds `qmltui::runner` and the repository test suites.
 Use `-DQMLTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
-without the repository tests. Use `-DQMLTUI_ENABLE_PTY_VIEW=ON` only for the
+without the repository tests. Use `-DQMLTUI_ENABLE_PTYVIEW=ON` only for the
 optional PTY-backed `PtyView` module.
 
 Features requiring private Qt headers (Behavior and advanced states)

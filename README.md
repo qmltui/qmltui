@@ -126,7 +126,7 @@ Follow the [Getting Started tutorial](docs/getting-started.md) to build a 3-file
 | `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal` (`AltScreen` and `Inline` modes), `Scrollback`, `Item`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views (`ListView`, `TableView`, `TreeView`, `GridView`), `Canvas`, input, states, and animations |
 | `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Toast`, `ToolTip`) |
 | `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Terminal graphics (`Image`, `AnimatedSprite`) using Kitty, Sixel, or Unicode half-block fallback (`-DQMLTUI_ENABLE_IMAGE=ON`) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTY_VIEW=ON`) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
 
 See [Build Configuration and Installation](docs/build-configuration.md) for `FetchContent`, `find_package(QmlTui)`, CMake options, and runtime environment variables.
 

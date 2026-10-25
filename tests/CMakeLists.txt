@@ -28,7 +28,7 @@ if(QMLTUI_ENABLE_IMAGE)
     add_subdirectory(Image)
 endif()
 add_subdirectory(Runner)
-if(QMLTUI_ENABLE_PTY_VIEW)
+if(QMLTUI_ENABLE_PTYVIEW)
     add_subdirectory(PtyView)
 endif()
 

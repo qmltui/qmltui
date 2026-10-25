@@ -18,6 +18,7 @@ qt_add_executable(qmltui_installed_custom_item_consumer main.cpp)
 # that leaks a private include fails here, not on a user's machine.
 target_compile_definitions(qmltui_installed_custom_item_consumer PRIVATE
     QMLTUI_PUBLIC_HEADERS="${QMLTUI_PUBLIC_HEADERS}"
+    QMLTUI_QML_IMPORT_PATH="${QmlTui_QML_IMPORT_PATH}"
 )
 target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE
     Qt6::Core

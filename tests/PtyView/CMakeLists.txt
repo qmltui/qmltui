@@ -1,4 +1,4 @@
-# Tests for the optional qmltui::pty_view module (QMLTUI_ENABLE_PTY_VIEW).
+# Tests for the optional qmltui::pty_view module (QMLTUI_ENABLE_PTYVIEW).
 
 add_executable(test_pty_view test_pty_view.cpp)
 target_link_libraries(test_pty_view PRIVATE

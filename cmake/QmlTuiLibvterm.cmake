@@ -8,7 +8,7 @@
 
 macro(qmltui_provide_libvterm)
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux|Darwin")
-        message(FATAL_ERROR "QMLTUI_ENABLE_PTY_VIEW currently supports only Linux and macOS")
+        message(FATAL_ERROR "QMLTUI_ENABLE_PTYVIEW currently supports only Linux and macOS")
     endif()
     if(TARGET qmltui_libvterm)
         # already provided

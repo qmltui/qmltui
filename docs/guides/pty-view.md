@@ -6,11 +6,11 @@ If your application only needs to stream its own output into the parent terminal
 
 ## Enabling `QmlTui.PtyView` in CMake
 
-`QmlTui.PtyView` is supported on Linux and macOS and is enabled with `-DQMLTUI_ENABLE_PTY_VIEW=ON`. By default, CMake fetches a pinned copy of `libvterm`; pass `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON` to link a system-installed `libvterm`:
+`QmlTui.PtyView` is supported on Linux and macOS and is enabled with `-DQMLTUI_ENABLE_PTYVIEW=ON`. By default, CMake fetches a pinned copy of `libvterm`; pass `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON` to link a system-installed `libvterm`:
 
 ```bash
 cmake -S . -B build \
-  -DQMLTUI_ENABLE_PTY_VIEW=ON \
+  -DQMLTUI_ENABLE_PTYVIEW=ON \
   -DQMLTUI_USE_SYSTEM_LIBVTERM=OFF
 ```
 

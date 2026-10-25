@@ -13,7 +13,7 @@ add_subdirectory(Controls)
 if(QMLTUI_ENABLE_IMAGE)
     add_subdirectory(Image)
 endif()
-if(QMLTUI_ENABLE_PTY_VIEW)
+if(QMLTUI_ENABLE_PTYVIEW)
     add_subdirectory(PtyView)
 endif()
 

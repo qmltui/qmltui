@@ -127,7 +127,7 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
 
     private_qt_enabled = cache_private_qt_enabled(build_dir)
     image_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_IMAGE")
-    pty_view_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PTY_VIEW")
+    pty_view_enabled = cache_bool(build_dir, "QMLTUI_ENABLE_PTYVIEW")
     checked = 0
     for module, types in modules.items():
         relative_qmltypes = QMLTYPE_FILES.get(module)

@@ -29,6 +29,7 @@ endif()
 
 qt_add_qml_module(QmlTuiCore
     URI QmlTui
+    ${QMLTUI_STATIC_QML_MODULE}
     OUTPUT_TARGETS qmltui_core_output_targets
     SOURCES
         Primitives/Span.h
@@ -184,21 +185,27 @@ target_link_libraries(QmlTuiCore PUBLIC
 target_link_libraries(QmlTuiCore PRIVATE
     utf8proc
 )
-# A static QmlTui (WebAssembly) carries utf8proc in its link interface, so the
-# export set must include it. Shared builds keep it private.
+# A static QmlTui (WebAssembly, static Qt, or BUILD_SHARED_LIBS=OFF) carries
+# utf8proc in its link interface and needs its static QML plugin linked into
+# consumers. Shared builds keep utf8proc private and load the plugin at runtime.
 get_target_property(qmltui_core_library_type QmlTuiCore TYPE)
-if(qmltui_core_library_type STREQUAL "STATIC_LIBRARY" AND NOT QMLTUI_USE_SYSTEM_UTF8PROC)
-    install(TARGETS utf8proc
-        EXPORT QmlTuiTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    )
+if(qmltui_core_library_type STREQUAL "STATIC_LIBRARY")
+    target_compile_definitions(QmlTuiCore PUBLIC QMLTUI_CORE_STATIC)
+    target_link_libraries(QmlTuiCore INTERFACE QmlTuiCoreplugin)
+    if(NOT QMLTUI_USE_SYSTEM_UTF8PROC)
+        install(TARGETS utf8proc
+            EXPORT QmlTuiTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        )
+    endif()
+else()
+    target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_CORE_LIBRARY)
 endif()
 if(QMLTUI_ENABLE_PRIVATE_QT)
     target_link_libraries(QmlTuiCore PRIVATE Qt6::QmlPrivate)
     target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
-target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_CORE_LIBRARY)
 add_library(qmltui::core ALIAS QmlTuiCore)
 add_library(QmlTui::Core ALIAS QmlTuiCore)
 set_target_properties(QmlTuiCore PROPERTIES EXPORT_NAME Core)
@@ -220,6 +227,7 @@ install(TARGETS QmlTuiCoreplugin
     EXPORT QmlTuiTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
+    ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
 )
 # Static builds (WebAssembly) add resource and plugin-init object libraries to
 # the module's link interface; the export set must carry them too. Empty on

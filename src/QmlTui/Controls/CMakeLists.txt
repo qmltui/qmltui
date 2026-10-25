@@ -1,5 +1,6 @@
 qt_add_qml_module(QmlTuiControls
     URI QmlTui.Controls
+    ${QMLTUI_STATIC_QML_MODULE}
     OUTPUT_TARGETS qmltui_controls_output_targets
     SOURCES
         Sparkline.h
@@ -26,7 +27,13 @@ qt_add_qml_module(QmlTuiControls
     DEPENDENCIES TARGET QmlTuiCore
 )
 
-target_compile_definitions(QmlTuiControls PRIVATE QMLTUI_CONTROLS_LIBRARY)
+get_target_property(qmltui_controls_library_type QmlTuiControls TYPE)
+if(qmltui_controls_library_type STREQUAL "STATIC_LIBRARY")
+    target_compile_definitions(QmlTuiControls PUBLIC QMLTUI_CONTROLS_STATIC)
+    target_link_libraries(QmlTuiControls INTERFACE QmlTuiControlsplugin)
+else()
+    target_compile_definitions(QmlTuiControls PRIVATE QMLTUI_CONTROLS_LIBRARY)
+endif()
 add_library(qmltui::controls ALIAS QmlTuiControls)
 add_library(QmlTui::Controls ALIAS QmlTuiControls)
 target_include_directories(QmlTuiControls
@@ -57,6 +64,7 @@ install(TARGETS QmlTuiControlsplugin
     EXPORT QmlTuiTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
+    ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
 )
 if(qmltui_controls_output_targets)   # static builds only, see Core
     install(TARGETS ${qmltui_controls_output_targets}

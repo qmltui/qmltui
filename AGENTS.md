@@ -19,7 +19,7 @@
 - Keep optional subsystems gated. `QMLTUI_ENABLE_PRIVATE_QT=ON` (default) uses
   `Qt6::QmlPrivate` when available (enabling Behavior and advanced
   states) and warns when falling back if not explicitly disabled;
-  `QMLTUI_ENABLE_PTY_VIEW=ON` is the Unix PTY module and is
+  `QMLTUI_ENABLE_PTYVIEW=ON` is the Unix PTY module and is
   supported only on Linux and macOS; `QMLTUI_ENABLE_IMAGE=ON` requires `Qt6::Gui`
   and `Qt6::Network`.
 

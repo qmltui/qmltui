@@ -157,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        for opt in ("QMLTUI_ENABLE_PRIVATE_QT", "QMLTUI_ENABLE_IMAGE", "QMLTUI_ENABLE_PTY_VIEW"):
+        for opt in ("QMLTUI_ENABLE_PRIVATE_QT", "QMLTUI_ENABLE_IMAGE", "QMLTUI_ENABLE_PTYVIEW"):
             if has_cache_line(cache_text, rf"^{opt}:BOOL=OFF$"):
                 print(
                     f"warning: {opt}=OFF in '{build_dir}'; casts for that module will not be regenerated",

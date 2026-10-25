@@ -17,7 +17,7 @@ QmlTui exposes C++ classes for bootstrapping terminal sessions, writing custom v
 - [Color](color.md) — `QtGui`-free color value supporting `#RGB`/`#RRGGBB`/`#AARRGGBB` hex literals, CSS/SVG named colors, and theme-aware `ansi:` palette indices.
 - [Rectangle](rectangle.md) — Visual item that renders a background color fill and optional single, double, rounded, heavy, or ASCII box-drawing borders.
 - [Text](text.md) — Visual item that renders aligned single-line or multi-line plain, HTML-formatted, or ANSI-escaped text, spans, and gradients.
-- [PtyView](ptyview.md) — Embedded Unix PTY terminal item (`qmltui::pty_view`, gated on `QMLTUI_ENABLE_PTY_VIEW=ON`) backed by `libvterm`.
+- [PtyView](ptyview.md) — Embedded Unix PTY terminal item (`qmltui::pty_view`, gated on `QMLTUI_ENABLE_PTYVIEW=ON`) backed by `libvterm`.
 - [MouseArea](mousearea.md) *(in-tree item header)* — Invisible interaction item that captures terminal mouse presses, releases, clicks, wheel events, and opt-in hover motion.
 
 ## Custom Image Providers

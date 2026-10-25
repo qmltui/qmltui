@@ -249,7 +249,7 @@ sets them. Do not add `-sASYNCIFY`; it is not needed.
 
 Force these off in a wasm configure: `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`,
 `QMLTUI_ENABLE_RUNNER` (TestRunner owns a `std::thread`), and
-`QMLTUI_ENABLE_PTY_VIEW` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` automatically uses
+`QMLTUI_ENABLE_PTYVIEW` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` automatically uses
 `Qt6QmlPrivate` when the kit ships it (which the official 6.11 kit does) and
 falls back with a warning otherwise (pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out).
 

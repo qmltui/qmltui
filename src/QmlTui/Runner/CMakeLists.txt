@@ -1,4 +1,4 @@
-add_library(QmlTuiRunner
+add_library(QmlTuiRunner ${QMLTUI_STATIC_QML_MODULE}
     Runner.h
     Runner.cpp
     CastRecorder_p.h

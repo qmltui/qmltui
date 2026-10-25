@@ -1,5 +1,6 @@
 qt_add_qml_module(QmlTuiImage
     URI QmlTui.Image
+    ${QMLTUI_STATIC_QML_MODULE}
     OUTPUT_TARGETS qmltui_image_output_targets
     SOURCES
         AnimatedSprite.h
@@ -13,7 +14,13 @@ qt_add_qml_module(QmlTuiImage
     DEPENDENCIES TARGET QmlTuiCore
 )
 
-target_compile_definitions(QmlTuiImage PRIVATE QMLTUI_IMAGE_LIBRARY)
+get_target_property(qmltui_image_library_type QmlTuiImage TYPE)
+if(qmltui_image_library_type STREQUAL "STATIC_LIBRARY")
+    target_compile_definitions(QmlTuiImage PUBLIC QMLTUI_IMAGE_STATIC)
+    target_link_libraries(QmlTuiImage INTERFACE QmlTuiImageplugin)
+else()
+    target_compile_definitions(QmlTuiImage PRIVATE QMLTUI_IMAGE_LIBRARY)
+endif()
 add_library(qmltui::image ALIAS QmlTuiImage)
 add_library(QmlTui::Image ALIAS QmlTuiImage)
 
@@ -47,6 +54,7 @@ install(TARGETS QmlTuiImageplugin
     EXPORT QmlTuiTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
+    ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
 )
 if(qmltui_image_output_targets)   # static builds only, see Core
     install(TARGETS ${qmltui_image_output_targets}

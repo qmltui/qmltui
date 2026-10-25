@@ -22,6 +22,8 @@ function(qmltui_provide_utf8proc)
     include(FetchContent)
     set(UTF8PROC_INSTALL OFF CACHE BOOL "" FORCE)
     set(UTF8PROC_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     FetchContent_Declare(
         utf8proc
         GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc.git
@@ -32,5 +34,11 @@ function(qmltui_provide_utf8proc)
     # utf8proc is plain C. A consumer that ran qt_standard_project_setup() before
     # fetching QmlTui has CMAKE_AUTOMOC on, which would add a C++ moc stub to this
     # target and compile it with utf8proc's -std=c99 (clang rejects that).
-    set_target_properties(utf8proc PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    set_target_properties(utf8proc PROPERTIES
+        AUTOMOC OFF
+        AUTOUIC OFF
+        AUTORCC OFF
+        POSITION_INDEPENDENT_CODE ON
+        C_VISIBILITY_PRESET hidden
+    )
 endfunction()

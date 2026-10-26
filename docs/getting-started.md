@@ -8,7 +8,7 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlT
 
 - **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree)
 - **C++17** compiler
-- **Qt 6.8 or newer** with `Core` and `Qml` (plus `Gui` and `Network` when building the default `QmlTui.Image` module; pass `-DQMLTUI_ENABLE_IMAGE=OFF` for a `Core` + `Qml` only build)
+- **Qt 6.8 or newer** with `Core` and `Qml` (plus `Gui` and `Network` when enabling the optional `QmlTui.Image` module with `-DQMLTUI_ENABLE_IMAGE=ON`)
 
 ## Step 1: Create a Standalone Application
 

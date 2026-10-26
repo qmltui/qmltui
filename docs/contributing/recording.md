@@ -26,7 +26,7 @@ npm install --global svg-term-cli
 Configure and build with examples and tests enabled (use a Behavior-enabled, Image-enabled, PtyView-enabled tree so all gallery tiles are present):
 
 ```sh
-cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_PTYVIEW=ON
+cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON
 cmake --build build -j$(nproc)
 ```
 

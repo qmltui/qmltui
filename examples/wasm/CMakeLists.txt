@@ -34,6 +34,7 @@ set(QMLTUI_ENABLE_RUNNER OFF CACHE BOOL "" FORCE)
 set(QMLTUI_ENABLE_PTYVIEW OFF CACHE BOOL "" FORCE)
 option(QMLTUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior and advanced states (needs Qt QmlPrivate)" ON)
 option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" ON)
+option(QMLTUI_ENABLE_IMAGE "Build the optional QmlTui Image module (requires Qt Gui and Network)" ${QMLTUI_WASM_PLAYGROUND_IMAGE})
 
 add_subdirectory(../.. qmltui)   # the root includes cmake/QmlTuiWasm.cmake under EMSCRIPTEN
 add_subdirectory(playground)

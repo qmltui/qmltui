@@ -171,6 +171,8 @@ To run scenarios automatically in CTest, link `qmltui::runner` conditionally int
 ### Register Scenarios in `CMakeLists.txt`
 
 ```cmake
+include(CTest)
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
@@ -180,9 +182,8 @@ qt_add_qml_module(my_app
 )
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(my_app PRIVATE qmltui::runner)
-    enable_testing()
 
     # Enable IDE autocomplete (.qmltui/qmltui-runner.d.ts and jsconfig.json):
     qmltui_scenario_editor_support()
@@ -210,7 +211,7 @@ if(TARGET qmltui::runner)
 endif()
 ```
 
-For production builds, configure CMake with `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_ENABLE_RUNNER=OFF` so `qmltui::runner` is omitted completely.
+For production builds, configure CMake with `-DBUILD_TESTING=OFF` (and `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_ENABLE_RUNNER=OFF` when building QmlTui from source) so `qmltui::runner` is not linked into the shipped executable.
 
 ### Run and Update Scenarios with CTest
 

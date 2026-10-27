@@ -15,7 +15,7 @@ qt_add_qml_module(qmltui_text_area_highlighting_demo
 
 target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME text_area_highlighting_smoke TARGET qmltui_text_area_highlighting_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"

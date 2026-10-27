@@ -57,10 +57,11 @@
   accepted. Preserve contextual Escape behavior: close a modal, cancel an
   operation, or clear input first, and quit only when nothing consumes Escape.
 - Examples and applications conditionally link `qmltui::runner` into their normal
-  executable with `if(TARGET qmltui::runner)` and register scenarios against that
-  target. Do not duplicate executable or QML-module targets for Runner. Normal
-  startup must remain independent from scenarios unless requested through the
-  Runner environment variables. Build without tests and Runner for production.
+  executable with `if(BUILD_TESTING AND TARGET qmltui::runner)` and register
+  scenarios against that target. Do not duplicate executable or QML-module
+  targets for Runner. Normal startup must remain independent from scenarios
+  unless requested through the Runner environment variables. Build with
+  `-DBUILD_TESTING=OFF` (or without tests and Runner) for production.
 
 ## Code Formatting and Style Conventions
 

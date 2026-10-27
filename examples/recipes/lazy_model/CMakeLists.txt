@@ -11,7 +11,7 @@ qt_add_qml_module(qmltui_lazy_model_demo
 )
 target_link_libraries(qmltui_lazy_model_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_lazy_model_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(
         NAME lazy_model_smoke

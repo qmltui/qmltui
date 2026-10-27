@@ -11,7 +11,7 @@ qt_add_qml_module(qmltui_table_view_demo
 
 target_link_libraries(qmltui_table_view_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_table_view_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME tableview_proxy_smoke TARGET qmltui_table_view_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_proxy.js"

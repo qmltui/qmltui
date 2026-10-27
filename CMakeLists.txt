@@ -108,6 +108,8 @@ endif()
 if(QMLTUI_BUILD_TESTS)
     include(CTest)
     enable_testing()
+else()
+    set(BUILD_TESTING OFF)
 endif()
 
 add_subdirectory(src/QmlTui)

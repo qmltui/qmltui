@@ -413,10 +413,12 @@ When `qmltui-runner` starts a child process, it clears inherited `QMLTUI_RUNNER_
 
 ## CMake Integration (`qmltui_add_scenario`)
 
-`cmake/QmlTuiRunner.cmake` is included automatically when `qmltui::runner` is built or imported via `find_package(QmlTui)`. Register scenarios against your normal application target:
+`cmake/QmlTuiRunner.cmake` is included automatically when `qmltui::runner` is built or imported via `find_package(QmlTui)`. Guard linking and scenario registration with `BUILD_TESTING` (defined by `include(CTest)`) so production builds (`-DBUILD_TESTING=OFF`) do not force-load `qmltui::runner` into shipped binaries:
 
 ```cmake
-if(TARGET qmltui::runner)
+include(CTest)
+
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(my_app PRIVATE qmltui::runner)
     qmltui_scenario_editor_support()
 

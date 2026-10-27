@@ -68,7 +68,7 @@ if(COMMAND qmltui_wasm_app)   # browser build, see examples/wasm and docs/guides
     qmltui_wasm_app(qmltui_gallery)
 endif()
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_gallery PRIVATE qmltui::runner)
 
     # Gallery pages animate on QML Timers and QmlTui animations: the tour

@@ -22,7 +22,7 @@ qt_add_qml_module(qmltui_calendar_demo
 
 target_link_libraries(qmltui_calendar_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
 
     target_link_libraries(qmltui_calendar_demo PRIVATE qmltui::runner)
 

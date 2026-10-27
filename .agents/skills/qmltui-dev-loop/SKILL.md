@@ -77,11 +77,12 @@ rtk ctest --test-dir build --output-on-failure
 ## Integrate Application Scenarios
 
 Examples and applications conditionally link `qmltui::runner` into their normal
-executable with `if(TARGET qmltui::runner)`. Register scenarios against that same
-target; do not duplicate the executable or its QML module. Linking Runner
-installs the Terminal auto-hook that honors `QMLTUI_RUNNER_SCRIPT`,
+executable with `if(BUILD_TESTING AND TARGET qmltui::runner)`. Register scenarios
+against that same target; do not duplicate the executable or its QML module.
+Linking Runner installs the Terminal auto-hook that honors `QMLTUI_RUNNER_SCRIPT`,
 `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS`. Normal startup does not
-start a scenario. Production builds disable both tests and Runner.
+start a scenario. Production builds disable `BUILD_TESTING` (or build without
+tests and Runner) so `qmltui::runner` is not linked into shipped binaries.
 
 Choose one integration pattern:
 
@@ -109,7 +110,7 @@ that startup check.
 Minimal external-script registration:
 
 ```cmake
-if(TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(my_app PRIVATE qmltui::runner)
     qmltui_add_scenario(
         NAME my_app_smoke

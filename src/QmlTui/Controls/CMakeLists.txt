@@ -7,8 +7,6 @@ qt_add_qml_module(QmlTuiControls
         Sparkline.cpp
         TabBar.h
         TabBar.cpp
-        Toast.h
-        Toast.cpp
         ToolTip.h
         ToolTip.cpp
     QML_FILES
@@ -16,14 +14,15 @@ qt_add_qml_module(QmlTuiControls
         Button.qml
         ButtonGroup.qml
         CheckBox.qml
+        ComboBox.qml
         Dialog.qml
         Panel.qml
         ProgressBar.qml
         RadioButton.qml
         Slider.qml
+        SpinBox.qml
         BusyIndicator.qml
         StackView.qml
-        Switch.qml
     DEPENDENCIES TARGET QmlTuiCore
 )
 
@@ -82,14 +81,15 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Button.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/ButtonGroup.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/CheckBox.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/ComboBox.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Dialog.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Panel.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/ProgressBar.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/RadioButton.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/Slider.qml
+    ${CMAKE_CURRENT_SOURCE_DIR}/SpinBox.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/BusyIndicator.qml
     ${CMAKE_CURRENT_SOURCE_DIR}/StackView.qml
-    ${CMAKE_CURRENT_SOURCE_DIR}/Switch.qml
     DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
 )
-qmltui_install_headers(QmlTui/Controls FILES Sparkline.h TabBar.h Toast.h ToolTip.h)
+qmltui_install_headers(QmlTui/Controls FILES Sparkline.h TabBar.h ToolTip.h)

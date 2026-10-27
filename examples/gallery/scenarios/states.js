@@ -5,9 +5,15 @@ function main(app) {
     app.press("Enter");
     app.sleep(500);
     app.expectText("state: on");
-    app.expectText("ON");
+    app.expectText("ONLINE (ON)");
     app.sleep(800);
-    app.press("Enter");
+    app.clickText("Overload");
+    app.sleep(500);
+    app.expectText("state: overload");
+    app.expectText("OVERLOAD");
+    app.captureText("states_overload.txt");
+    app.sleep(800);
+    app.clickText("Reset");
     app.sleep(500);
     app.expectText("state: (base)");
     app.sleep(800);

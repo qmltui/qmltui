@@ -4,6 +4,7 @@ import QmlTui.Controls
 
 // Slider: Value track adjusted via Left/Right arrow keys or mouse click/drag.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -13,7 +14,7 @@ Column {
 
     Text {
         text: "Volume  " + volume.value + "%"
-        color: "#c084fc"
+        color: "#2cde85"
     }
 
     // Continuous 0..100 slider
@@ -28,7 +29,7 @@ Column {
 
     Text {
         text: "Contrast  " + contrast.value
-        color: "#c084fc"
+        color: "#2cde85"
     }
 
     // Signed range slider with explicit stepSize
@@ -45,6 +46,6 @@ Column {
     Rectangle {
         width: Math.max(1, Math.round(volume.value / 100 * 36))
         height: 1
-        color: "#c084fc"
+        color: "#2cde85"
     }
 }

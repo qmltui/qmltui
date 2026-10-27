@@ -80,6 +80,7 @@ Column {
         paletteText.spans = capDemo.paletteSpans();
     }
 
+    anchors.centerIn: parent
     spacing: 1
 
     onTermChanged: {

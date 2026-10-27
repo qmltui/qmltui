@@ -218,7 +218,7 @@ Returns timing and byte metrics for the most recently committed frame and cumula
 
 #### The Virtual Clock (`CLOCK VIRTUAL`)
 
-Setting `QMLTUI_RUNNER_CLOCK=virtual`, `--clock virtual`, `qmltui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads runs the session on a synthetic timeline. QmlTui timers, animations (`NumberAnimation`, `ColorAnimation`, `PropertyAnimation`), cursor blink, `ToolTip` delays, `Toast` lifetimes, `AnimatedSprite`, and QML `Timer` items advance only through `advanceTime()` and `sleep()`.
+Setting `QMLTUI_RUNNER_CLOCK=virtual`, `--clock virtual`, `qmltui_add_scenario(... CLOCK VIRTUAL)`, or `Runner::useVirtualClock()` before QML loads runs the session on a synthetic timeline. QmlTui timers, animations (`NumberAnimation`, `ColorAnimation`, `PropertyAnimation`), cursor blink, `ToolTip` delays, `AnimatedSprite`, and QML `Timer` items advance only through `advanceTime()` and `sleep()`.
 
 Limits of virtual clock mode:
 - `waitFor*` timeouts remain on wall time and do not advance the virtual clock.
@@ -366,8 +366,8 @@ In `Terminal.Inline` mode, completed rows are committed through `Scrollback` and
 When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`, or `QMLTUI_RUNNER_RECORD=<path>`, Runner substitutes an in-memory 24-bit color backend and writes emitted ANSI bytes into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. Under `CLOCK VIRTUAL`, frame timestamps advance only through `sleep()` and `advanceTime()`, producing byte-identical `.cast` recordings across runs. `RECORD` cannot be combined with `LIVE`.
 
 - `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint.
-- `void stopRecording()`: Flushes pending bytes and closes the active recording.
-- `void marker(const QString &label)`: Writes an asciicast `"m"` chapter marker event at the current timestamp.
+- `void stopRecording()`: Flushes pending bytes and closes the active recording. Emits a warning and does nothing if no recording is in progress.
+- `void marker(const QString &label)`: Writes an asciicast `"m"` chapter marker event at the current timestamp. Emits a warning and does nothing if no recording is in progress.
 
 ### Scenario Lifecycle (`finish`, `fail`, and Promises)
 
@@ -393,14 +393,14 @@ Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`). Launch
 | `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
 | `--eval <code>` | None | Inline JavaScript scenario code. |
 | `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
-| `--columns <n>`, `--rows <n>` | `80`, `24` | Initial viewport dimensions (`1..1000` cells). |
+| `--columns <n>`, `--rows <n>` | `80`, `24` (terminal size with `--live`) | Initial viewport dimensions (`1..1000` cells). When `--live` is set without `--columns` or `--rows`, the application uses the terminal emulator's dimensions. |
 | `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty; existing files are never deleted). |
 | `--live` | Off | Forward live ANSI rendering to the terminal. |
 | `--clock <real\|virtual>` | `real` | Select the Runner clock before application startup. |
 | `--record <relative-path>` | Off | Write an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |
 | `--update-snapshots` | Off | Rewrite snapshot baselines from committed frames. |
 | `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
-| `--timeout-ms <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
+| `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms). |
 | `--startup-timeout-ms <ms>` | `5000` | Runner activation handshake deadline (`1..300000` ms). |
 
 ### Exit Codes and Handshake Protocol

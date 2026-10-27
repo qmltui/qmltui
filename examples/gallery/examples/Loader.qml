@@ -10,6 +10,7 @@ Column {
     property bool details: false
     property int created: 0
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -33,12 +34,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(44, parent.width)
+        width: 44
         height: 5
-        border {
-            style: pageLoader.status === Loader.Ready ? Border.Single : Border.Ascii
-            color: pageLoader.status === Loader.Ready ? "#fcd34d" : "#8b949e"
-        }
+        color: pageLoader.status === Loader.Ready ? "#161b22" : "#11151c"
 
         Loader {
             id: pageLoader
@@ -53,7 +51,7 @@ Column {
 
     Text {
         text: "status " + (pageLoader.status === Loader.Ready ? "Ready" : pageLoader.status === Loader.Null ? "Null" : "Loading") + ", items created: " + loaderDemo.created
-        color: "#fcd34d"
+        color: "#2cde85"
     }
 
     Component {
@@ -63,7 +61,7 @@ Column {
             Text {
                 text: "Summary"
                 bold: true
-                color: "#fcd34d"
+                color: "#00ff66"
             }
 
             Text {
@@ -80,7 +78,7 @@ Column {
             Text {
                 text: "Details"
                 bold: true
-                color: "#fcd34d"
+                color: "#00ff66"
             }
 
             Text {

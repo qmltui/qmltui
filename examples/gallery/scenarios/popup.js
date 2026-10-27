@@ -8,7 +8,9 @@ function main(app) {
     app.sleep(900);
     app.clickText("Compress output");
     app.sleep(700);
-    app.clickText("Export");
+    app.captureText("popup_open.txt");
+    app.clickText("│ Export │");
+    app.expectNoText("Export options");
     app.sleep(900);
     app.captureText("popup.txt");
     app.stopRecording();

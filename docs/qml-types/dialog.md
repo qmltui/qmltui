@@ -57,8 +57,7 @@ The implicit size is the content's implicit width plus 4 cells, but at least
 32 cells wide, by the content height plus 2 rows; with a one-line title and
 message that is 9 rows. The message is not wrapped, so a long `message`
 widens the dialog rather than adding lines. Use [Popup](popup.md) directly
-when you need custom content or a non-modal overlay, and
-[Toast](toast.md) for notifications that need no answer.
+when you need custom content or a non-modal overlay.
 
 ### Example
 

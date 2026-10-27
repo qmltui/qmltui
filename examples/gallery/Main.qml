@@ -7,17 +7,20 @@ import QmlTui.Controls
 // Screen 1: Full-width Panel with a GridView of component preview tiles and an
 //           on-demand search input in the Panel's titleTrailing slot (/ or click).
 // Screen 2: Full-width Gallery-owned Example container Panel by default, with an
-//           on-demand side-by-side live-editable QML Code Panel on the right (F2)
+//           on-demand side-by-side live-editable QML Code Panel on the right (Ctrl+E)
 //           that reloads the example 500ms after typing stops.
 Terminal {
     id: root
     title: showingDemo && current ? "QmlTui Gallery · " + current.file : "QmlTui Gallery"
-    color: "#161b22"
+    color: "#0d1117"
 
+    // Palette aligned with docs/.vitepress/theme/custom.css (.dark)
     readonly property string brandPrimary: "#2cde85"
     readonly property string brandAccent: "#00ff66"
+    readonly property string brandDeep: "#00a651"
+    readonly property string canvasColor: "#0d1117"
     readonly property string tileColor: "#161b22"
-    readonly property string tileCurrentColor: "#12261e"
+    readonly property string tileCurrentColor: "#122d24"
     readonly property string lineColor: "#30363d"
     readonly property string textColor: "#c9d1d9"
     readonly property string mutedColor: "#8b949e"
@@ -33,6 +36,7 @@ Terminal {
     property Item liveExampleItem: null
     property bool loadingExampleSource: false
     property string codeError: ""
+    property bool codeCopied: false
     readonly property int editorLineCount: Math.max(1, codeEditor.text.split("\n").length)
     readonly property int editorCursorLine: {
         const pos = Math.max(0, Math.min(codeEditor.cursorPosition, codeEditor.text.length));
@@ -49,7 +53,7 @@ Terminal {
         return pos - (lastNewline + 1);
     }
     readonly property int gutterDigits: Math.max(2, String(editorLineCount).length)
-    readonly property int gutterWidth: gutterDigits + 2
+    readonly property int gutterWidth: gutterDigits + 1
 
     readonly property bool showingDemo: openIndex >= 0
     readonly property var current: showingDemo ? filteredCatalog[openIndex] : (filteredCatalog.length > 0 ? filteredCatalog[currentIndex] : null)
@@ -59,19 +63,14 @@ Terminal {
     readonly property string initialPageFile: typeof qmltuiGalleryPage === "string" ? qmltuiGalleryPage : ""
     readonly property var availableFiles: typeof qmltuiAvailableExamples !== "undefined" && qmltuiAvailableExamples !== null && typeof qmltuiAvailableExamples.length === "number" ? qmltuiAvailableExamples : null
     readonly property var exampleSources: typeof qmltuiExampleSources !== "undefined" && qmltuiExampleSources !== null ? qmltuiExampleSources : ({})
-
-    readonly property var categoryNames: ["All", "Controls", "Layout", "Display", "Views", "Input", "Animation", "CLI"]
-    readonly property string selectedCategory: categoryNames[categoryTabs.currentIndex] || "All"
+    readonly property var scenarioSources: typeof qmltuiScenarioSources !== "undefined" && qmltuiScenarioSources !== null ? qmltuiScenarioSources : ({})
 
     readonly property var catalog: availableFiles ? allEntries.filter(entry => availableFiles.indexOf(entry.file) >= 0) : allEntries
     readonly property var filteredCatalog: {
-        const cat = selectedCategory;
         const q = searchQuery.trim().toLowerCase();
+        if (q === "")
+            return catalog;
         return catalog.filter(entry => {
-            if (cat !== "All" && entry.badge !== cat)
-                return false;
-            if (q === "")
-                return true;
             return entry.name.toLowerCase().indexOf(q) >= 0 || entry.badge.toLowerCase().indexOf(q) >= 0 || entry.blurb.toLowerCase().indexOf(q) >= 0 || entry.file.toLowerCase().indexOf(q) >= 0;
         });
     }
@@ -106,76 +105,247 @@ Terminal {
             "id": true
         })
 
+    // Ordered by module: Core (21) -> Controls (13) -> Optional: Image (2) & PtyView (1),
+    // and within each module from fundamental/most frequently used items to specialized ones.
     readonly property var allEntries: [
-        // 1. Controls (14)
+        // 1. Core (20)
+        {
+            name: "Text",
+            badge: "Core",
+            accent: "#79c0ff",
+            preview: "Bold · Italic · Underline · Wrap",
+            blurb: "Styled terminal text, alignment, wrapping, and eliding",
+            file: "Text.qml"
+        },
+        {
+            name: "RichText",
+            badge: "Core",
+            accent: "#ffa198",
+            preview: "Spans · <b>HTML</b> · <a href>Links</a>",
+            blurb: "Inline styled spans, HTML tags, and clickable links",
+            file: "RichText.qml"
+        },
+        {
+            name: "Rectangle",
+            badge: "Core",
+            accent: "#ff7b72",
+            preview: "╭─ Rounded ─╮ ╔═ Double ═╗ ▓▓▒▒░░",
+            blurb: "Colored cell boxes, border styles, and gradients",
+            file: "Rectangle.qml"
+        },
+        {
+            name: "TextInput",
+            badge: "Core",
+            accent: "#56d4dd",
+            preview: "alice█  ·  placeholder  ·  ••••••",
+            blurb: "Single-line text field with placeholder and password mode",
+            file: "TextInput.qml"
+        },
+        {
+            name: "TextArea",
+            badge: "Core",
+            accent: "#d2a8ff",
+            preview: "1  import QmlTui    2  Item { }",
+            blurb: "Multi-line text editor with scrolling and selection",
+            file: "TextArea.qml"
+        },
+        {
+            name: "MouseArea",
+            badge: "Core",
+            accent: "#39c5cf",
+            preview: "┼ (x: 24, y: 8) · hover & wheel",
+            blurb: "Mouse click, hover, drag, and wheel event handling",
+            file: "MouseArea.qml"
+        },
+        {
+            name: "Layouts",
+            badge: "Core",
+            accent: "#2cde85",
+            preview: "RowLayout · ColumnLayout · GridLayout",
+            blurb: "RowLayout, ColumnLayout, and GridLayout sizing",
+            file: "Layouts.qml"
+        },
+        {
+            name: "Shortcut",
+            badge: "Core",
+            accent: "#d2a8ff",
+            preview: "[1] Amber   [2] Mint   [3] Rose",
+            blurb: "Declarative keyboard shortcuts and key sequences",
+            file: "Shortcut.qml"
+        },
+        {
+            name: "FocusScope",
+            badge: "Core",
+            accent: "#58a6ff",
+            preview: "[1] Servers (active)   [2] Actions",
+            blurb: "Scoped keyboard focus container remembering child focus",
+            file: "FocusScope.qml"
+        },
+        {
+            name: "Repeater",
+            badge: "Core",
+            accent: "#f2cc60",
+            preview: "[alpha] [beta] [gamma] [delta]",
+            blurb: "Data-driven item instantiation inside positioners",
+            file: "Repeater.qml"
+        },
+        {
+            name: "Loader",
+            badge: "Core",
+            accent: "#a5d6ff",
+            preview: "Loader { sourceComponent: viewA }",
+            blurb: "Dynamic component loading and view switching",
+            file: "Loader.qml"
+        },
+        {
+            name: "ListView",
+            badge: "Core",
+            accent: "#39c5cf",
+            preview: "› Ada Lovelace   Analyst   ★★★★★",
+            blurb: "Scrollable virtualized list with current-item selection",
+            file: "ListView.qml"
+        },
+        {
+            name: "TableView",
+            badge: "Core",
+            accent: "#f2cc60",
+            preview: "PID   NAME       CPU%   STATE",
+            blurb: "Multi-column tabular view with headers and selection",
+            file: "TableView.qml"
+        },
+        {
+            name: "TreeView",
+            badge: "Core",
+            accent: "#7ee787",
+            preview: "▾ src/  ▾ Core/  ▸ Controls/",
+            blurb: "Expandable hierarchical tree with keyboard navigation",
+            file: "TreeView.qml"
+        },
+        {
+            name: "GridView",
+            badge: "Core",
+            accent: "#ffa657",
+            preview: "[Tile 1]  [Tile 2]  [Tile 3]",
+            blurb: "Virtualized 2D cell grid with multi-column flow",
+            file: "GridView.qml"
+        },
+        {
+            name: "ScrollView",
+            badge: "Core",
+            accent: "#58a6ff",
+            preview: "Viewport content  ·  scrollbars ▐",
+            blurb: "Scrollable viewport container with scrollbars",
+            file: "ScrollView.qml"
+        },
+        {
+            name: "Popup",
+            badge: "Core",
+            accent: "#7ee787",
+            preview: "Modal Overlay  ·  dimmed backdrop",
+            blurb: "Centered overlay surface with backdrop dimming",
+            file: "Popup.qml"
+        },
+        {
+            name: "Clipboard",
+            badge: "Core",
+            accent: "#2cde85",
+            preview: "Clipboard.copy(...) · OSC 52 payload",
+            blurb: "System clipboard copy requests and event notifications",
+            file: "Clipboard.qml"
+        },
+        {
+            name: "Canvas",
+            badge: "Core",
+            accent: "#56d4dd",
+            preview: "Braille 2x4  ·  HalfBlock 1x2",
+            blurb: "Sub-cell pixel drawing for lines, shapes, and plots",
+            file: "Canvas.qml"
+        },
+        {
+            name: "States",
+            badge: "Core",
+            accent: "#d2a8ff",
+            preview: "● STANDBY ──► ● ONLINE (Transition)",
+            blurb: "Declarative States with animated Transitions",
+            file: "States.qml"
+        },
+        {
+            name: "Animation",
+            badge: "Core",
+            accent: "#ff7b72",
+            preview: "Linear · OutQuad · OutBounce ───●",
+            blurb: "NumberAnimation and ColorAnimation timelines",
+            file: "Animation.qml"
+        },
+        {
+            name: "Behavior",
+            badge: "Core",
+            accent: "#56d4dd",
+            preview: "Behavior on x { NumberAnimation }",
+            blurb: "Automatic property transitions when values change",
+            file: "Behavior.qml"
+        },
+        // 2. Controls (14)
         {
             name: "Button",
             badge: "Controls",
             accent: "#2cde85",
-            preview: "[ Primary ]  [ Filled ]  [ Disabled ]",
-            blurb: "Push, checkable, and custom-colored terminal buttons",
+            preview: "[ Primary ]  [ Secondary ]  [ Filled ]",
+            blurb: "Push, checkable, and custom-styled terminal buttons",
             file: "Button.qml"
         },
         {
             name: "CheckBox",
             badge: "Controls",
-            accent: "#7ee0ff",
-            preview: "[x] Verbose   [x] Colors   [ ] Dry-run",
-            blurb: "Boolean option toggles with live state bindings",
+            accent: "#79c0ff",
+            preview: "[x] Logging   [ ] Verbose   [ ON] Auto",
+            blurb: "Boolean toggles with default and custom indicators",
             file: "CheckBox.qml"
         },
         {
             name: "RadioButton",
             badge: "Controls",
-            accent: "#f9c74f",
-            preview: "(•) JSON   ( ) YAML   ( ) Table",
+            accent: "#f2cc60",
+            preview: "(•) Fast   ( ) Balanced   ( ) Safe",
             blurb: "Mutually exclusive choices managed by ButtonGroup",
             file: "RadioButton.qml"
         },
         {
-            name: "Switch",
+            name: "ComboBox",
             badge: "Controls",
-            accent: "#ff9f6e",
-            preview: "[ ON] Dark mode   [OFF] Telemetry",
-            blurb: "Binary on/off toggle switches for settings",
-            file: "Switch.qml"
+            accent: "#2cde85",
+            preview: "[ Production          ▾ ]",
+            blurb: "Dropdown selector with inline value and Popup list",
+            file: "ComboBox.qml"
+        },
+        {
+            name: "SpinBox",
+            badge: "Controls",
+            accent: "#d2a8ff",
+            preview: "[-]    42    [+]   stepSize: 1",
+            blurb: "Numeric stepper with keyboard, click, and wheel control",
+            file: "SpinBox.qml"
         },
         {
             name: "Slider",
             badge: "Controls",
-            accent: "#c084fc",
-            preview: "──────●──────────  50 / 100",
+            accent: "#d2a8ff",
+            preview: "──────●──────────  42 / 100",
             blurb: "Stepped value track controlled by arrow keys or mouse",
             file: "Slider.qml"
         },
         {
             name: "ProgressBar",
             badge: "Controls",
-            accent: "#38bdf8",
+            accent: "#58a6ff",
             preview: "▰▰▰▰▰▰▱▱▱▱  64%  [████░░]",
-            blurb: "Determinate and indeterminate progress indicators",
+            blurb: "Determinate and styled progress indicators",
             file: "ProgressBar.qml"
-        },
-        {
-            name: "BusyIndicator",
-            badge: "Controls",
-            accent: "#f472b6",
-            preview: "⠋ Loading...   ◐ Syncing...",
-            blurb: "Animated terminal activity spinner with custom frames",
-            file: "BusyIndicator.qml"
-        },
-        {
-            name: "TabBar",
-            badge: "Controls",
-            accent: "#fbbf24",
-            preview: "│ Overview │ Network │ Logs │",
-            blurb: "Horizontal tab selector driving multi-page views",
-            file: "TabBar.qml"
         },
         {
             name: "Panel",
             badge: "Controls",
-            accent: "#94a3b8",
+            accent: "#7ee787",
             preview: "╭─ Title ────────────── info ─╮",
             blurb: "Titled container frame with header and footer slots",
             file: "Panel.qml"
@@ -183,242 +353,95 @@ Terminal {
         {
             name: "Dialog",
             badge: "Controls",
-            accent: "#f87171",
-            preview: "╔═ Confirm ═╗  [ OK ] [Cancel]",
+            accent: "#ff7b72",
+            preview: "Confirm Action?   [ OK ] [Cancel]",
             blurb: "Modal confirmation dialog with standard buttons",
             file: "Dialog.qml"
         },
         {
-            name: "Popup",
+            name: "TabBar",
             badge: "Controls",
-            accent: "#a3e635",
-            preview: "╭── Modal Overlay ──╮",
-            blurb: "Centered overlay surface with backdrop dimming",
-            file: "Popup.qml"
-        },
-        {
-            name: "Toast",
-            badge: "Controls",
-            accent: "#34d399",
-            preview: "┌ ✓ Build succeeded ──────┐",
-            blurb: "Auto-dismissing corner notification banner",
-            file: "Toast.qml"
-        },
-        {
-            name: "ToolTip",
-            badge: "Controls",
-            accent: "#fcd34d",
-            preview: "┌ Hint: Press Space ┐",
-            blurb: "Contextual help popover attached to a target item",
-            file: "ToolTip.qml"
+            accent: "#f2cc60",
+            preview: "Overview  ·  Telemetry  ·  Logs",
+            blurb: "Horizontal tab selector driving multi-page views",
+            file: "TabBar.qml"
         },
         {
             name: "StackView",
             badge: "Controls",
-            accent: "#e879f9",
-            preview: "Home ▸ Details ▸ Confirm (depth 3)",
+            accent: "#d2a8ff",
+            preview: "Page 1 ▸ Page 2 ▸ Page 3 (depth 3)",
             blurb: "Push/pop navigation stack for multi-step pages",
             file: "StackView.qml"
         },
-        // 2. Layout (4)
         {
-            name: "Rectangle",
-            badge: "Layout",
-            accent: "#ec4899",
-            preview: "╭─ Rounded ─╮ ╔═ Double ═╗ ▓▓▒▒░░",
-            blurb: "Colored cell boxes, border styles, and gradients",
-            file: "Rectangle.qml"
+            name: "BusyIndicator",
+            badge: "Controls",
+            accent: "#ffa657",
+            preview: "⠋ Dots   | Line   ▖ Block   [=  ]",
+            blurb: "Animated terminal activity spinner with custom frames",
+            file: "BusyIndicator.qml"
         },
         {
-            name: "Layouts",
-            badge: "Layout",
-            accent: "#14b8a6",
-            preview: "┌── Row / Column / GridLayout ──┐",
-            blurb: "RowLayout, ColumnLayout, and GridLayout sizing",
-            file: "Layouts.qml"
-        },
-        {
-            name: "Repeater",
-            badge: "Layout",
-            accent: "#eab308",
-            preview: "[Node 1] [Node 2] [Node 3] (+Add)",
-            blurb: "Data-driven item instantiation inside positioners",
-            file: "Repeater.qml"
-        },
-        {
-            name: "Loader",
-            badge: "Layout",
-            accent: "#6366f1",
-            preview: "Loader { sourceComponent: viewA }",
-            blurb: "Dynamic component loading and view switching",
-            file: "Loader.qml"
-        },
-        // 3. Display (6)
-        {
-            name: "Text",
-            badge: "Display",
-            accent: "#e2e8f0",
-            preview: "Bold · Italic · Underline · Wrap",
-            blurb: "Styled terminal text, alignment, wrapping, and eliding",
-            file: "Text.qml"
-        },
-        {
-            name: "RichText",
-            badge: "Display",
-            accent: "#fda4af",
-            preview: "Spans · <b>HTML</b> · \\x1b[32mANSI",
-            blurb: "Inline styled spans, HTML tags, links, and ANSI escapes",
-            file: "RichText.qml"
+            name: "ToolTip",
+            badge: "Controls",
+            accent: "#f2cc60",
+            preview: "▸ Compile the current project",
+            blurb: "Contextual help popover attached to a target item",
+            file: "ToolTip.qml"
         },
         {
             name: "Sparkline",
-            badge: "Display",
-            accent: "#60a5fa",
-            preview: "▁▂▄▆█▆▄▃▅▇█▆▄▂  CPU 64%",
+            badge: "Controls",
+            accent: "#56d4dd",
+            preview: "▁▂▄▆█▆▄▃▅▇█▆▄▂  cpu %",
             blurb: "Compact inline data trend chart using block glyphs",
             file: "Sparkline.qml"
         },
-        {
-            name: "Canvas",
-            badge: "Display",
-            accent: "#10b981",
-            preview: "╭─ Braille 2x4 & HalfBlock 1x2 ─╮",
-            blurb: "Sub-cell pixel drawing for lines, shapes, and plots",
-            file: "Canvas.qml"
-        },
+        // 3. Optional Items: Image (2) & PtyView (1)
         {
             name: "Image",
-            badge: "Display",
-            accent: "#f59e0b",
+            badge: "Image",
+            accent: "#f2cc60",
             preview: "⣿ ▀▄ # · Braille · HalfBlock · ASCII",
             blurb: "Terminal image rendering with cell and protocol modes",
             file: "Image.qml"
         },
         {
             name: "AnimatedSprite",
-            badge: "Display",
-            accent: "#ec4899",
+            badge: "Image",
+            accent: "#ffa657",
             preview: "▸ [1/4] · 256x64 sprite sheet",
             blurb: "Frame-by-frame sprite sheet animation playback",
             file: "AnimatedSprite.qml"
         },
-        // 4. Views (5)
         {
-            name: "ListView",
-            badge: "Views",
-            accent: "#2dd4bf",
-            preview: "▸ #1 Build Core    [DONE]  1.2s",
-            blurb: "Scrollable virtualized list with current-item selection",
-            file: "ListView.qml"
+            name: "PtyView",
+            badge: "PtyView",
+            accent: "#7ee787",
+            preview: "[sh] $ echo hello",
+            blurb: "Embedded Unix pseudo-terminal process viewport",
+            file: "PtyView.qml"
         },
-        {
-            name: "GridView",
-            badge: "Views",
-            accent: "#f43f5e",
-            preview: "┌Tile 1┐ ┌Tile 2┐ ┌Tile 3┐",
-            blurb: "Virtualized 2D cell grid with multi-column flow",
-            file: "GridView.qml"
-        },
-        {
-            name: "TableView",
-            badge: "Views",
-            accent: "#fb923c",
-            preview: "PID │ NAME     │ CPU% │ STATE",
-            blurb: "Multi-column tabular view with headers and selection",
-            file: "TableView.qml"
-        },
-        {
-            name: "TreeView",
-            badge: "Views",
-            accent: "#84cc16",
-            preview: "▾ src/  ▾ QmlTui/  ▸ Controls/",
-            blurb: "Expandable hierarchical tree with keyboard navigation",
-            file: "TreeView.qml"
-        },
-        {
-            name: "ScrollView",
-            badge: "Views",
-            accent: "#38bdf8",
-            preview: "│ Viewport content         ▐│",
-            blurb: "Scrollable viewport container with scrollbars",
-            file: "ScrollView.qml"
-        },
-        // 5. Input (4)
-        {
-            name: "TextInput",
-            badge: "Input",
-            accent: "#67e8f9",
-            preview: "┌ alice█────────────────────┐",
-            blurb: "Single-line text field with placeholder and password mode",
-            file: "TextInput.qml"
-        },
-        {
-            name: "TextArea",
-            badge: "Input",
-            accent: "#818cf8",
-            preview: "1 │ import QmlTui   2 │ Item { }",
-            blurb: "Multi-line text editor with line numbers and highlighting",
-            file: "TextArea.qml"
-        },
-        {
-            name: "MouseArea",
-            badge: "Input",
-            accent: "#06b6d4",
-            preview: "┼ (x: 24, y: 8) · hover & wheel",
-            blurb: "Mouse click, hover, drag, and wheel event handling",
-            file: "MouseArea.qml"
-        },
-        {
-            name: "Shortcut",
-            badge: "Input",
-            accent: "#8b5cf6",
-            preview: "[1] Build   [2] Test   [3] Deploy",
-            blurb: "Declarative keyboard shortcuts and key sequences",
-            file: "Shortcut.qml"
-        },
-        // 6. Animation (3)
-        {
-            name: "States",
-            badge: "Animation",
-            accent: "#d946ef",
-            preview: "idle ──► running ──► alert",
-            blurb: "Declarative States with animated Transitions",
-            file: "States.qml"
-        },
-        {
-            name: "Animation",
-            badge: "Animation",
-            accent: "#f43f5e",
-            preview: "Linear · OutQuad · OutBounce ───●",
-            blurb: "NumberAnimation and ColorAnimation timelines",
-            file: "Animation.qml"
-        },
-        {
-            name: "Behavior",
-            badge: "Animation",
-            accent: "#22d3ee",
-            preview: "Behavior on x { NumberAnimation }",
-            blurb: "Automatic property transitions when values change",
-            file: "Behavior.qml"
-        },
-        // 7. CLI (2)
         {
             name: "TerminalCapabilities",
-            badge: "CLI",
-            accent: "#38bdf8",
+            badge: "Core",
+            accent: "#58a6ff",
             preview: "TrueColor · SyncOutput · Kitty · Sixel",
             blurb: "Read-only inspection of host terminal capabilities",
             file: "TerminalCapabilities.qml"
-        },
-        {
-            name: "PtyView",
-            badge: "CLI",
-            accent: "#a6e3a1",
-            preview: "┌ [sh] $ echo hello ──────────┐",
-            blurb: "Embedded Unix pseudo-terminal process viewport",
-            file: "PtyView.qml"
         }
     ]
+
+    function badgeColor(badge) {
+        if (badge === "Controls")
+            return root.brandPrimary;
+        if (badge === "Image")
+            return "#f2cc60";
+        if (badge === "PtyView")
+            return "#d2a8ff";
+        return "#58a6ff";
+    }
 
     function ensureVisible() {
         if (filteredCatalog.length === 0) {
@@ -460,7 +483,7 @@ Terminal {
 
     function exampleHasActiveFocus() {
         return (function check(node) {
-                if (!node)
+                if (!node || !node.visible)
                     return false;
                 if (node.activeFocus)
                     return true;
@@ -515,7 +538,7 @@ Terminal {
             const old = liveExampleItem;
             liveExampleItem = null;
             old.visible = false;
-            old.parent = null;
+            old.enabled = false;
             old.destroy();
         }
         codeError = "";
@@ -529,7 +552,7 @@ Terminal {
             const old = liveExampleItem;
             liveExampleItem = null;
             old.visible = false;
-            old.parent = null;
+            old.enabled = false;
             old.destroy();
         }
         try {
@@ -537,10 +560,9 @@ Terminal {
             const obj = Qt.createQmlObject(qmlSource, demoHost, url);
             if (obj) {
                 liveExampleItem = obj;
-                obj.x = 0;
-                obj.y = 0;
-                obj.width = Qt.binding(() => demoHost.width);
-                obj.height = Qt.binding(() => demoHost.height);
+                if (!obj.anchors.fill && !obj.anchors.centerIn && !obj.anchors.left && !obj.anchors.right && !obj.anchors.top && !obj.anchors.bottom && !obj.anchors.horizontalCenter && !obj.anchors.verticalCenter) {
+                    obj.anchors.centerIn = demoHost;
+                }
                 codeError = "";
                 if (editorHadFocus)
                     codeEditor.focus = true;
@@ -660,6 +682,7 @@ Terminal {
         loadingExampleSource = true;
         codeEditor.text = src;
         loadingExampleSource = false;
+        codeCopied = false;
         applyQmlSyntaxHighlight();
         reloadLiveExample(src);
     }
@@ -668,6 +691,38 @@ Terminal {
         if (!showingDemo || current === null)
             return;
         loadCurrentExample();
+    }
+
+    function copyCurrentCode() {
+        if (!showingDemo || current === null)
+            return;
+        const textToCopy = codeEditor.selectedText.length > 0 ? codeEditor.selectedText : codeEditor.text;
+        if (textToCopy.length === 0)
+            return;
+        Clipboard.copy(textToCopy);
+        codeCopied = true;
+        copyFeedbackTimer.restart();
+    }
+
+    function toggleCodePane() {
+        if (standalone)
+            return;
+        fullscreenStage = !fullscreenStage;
+        if (fullscreenStage && showingDemo && codeEditor.activeFocus)
+            focusExample(liveExampleItem);
+    }
+
+    function toggleCodeFocus() {
+        if (!showingDemo || standalone)
+            return;
+        if (fullscreenStage) {
+            fullscreenStage = false;
+            codeEditor.focus = true;
+        } else if (codeEditor.activeFocus) {
+            focusExample(liveExampleItem);
+        } else {
+            codeEditor.focus = true;
+        }
     }
 
     function openCurrent() {
@@ -711,11 +766,40 @@ Terminal {
         onTriggered: root.reloadLiveExample(codeEditor.text)
     }
 
+    Timer {
+        id: copyFeedbackTimer
+        interval: 1500
+        repeat: false
+        onTriggered: root.codeCopied = false
+    }
+
+    Shortcut {
+        sequence: Qt.ControlModifier | Qt.Key_E
+        enabled: !root.standalone
+        onActivated: root.toggleCodePane()
+    }
+
+    Shortcut {
+        sequence: Qt.ControlModifier | Qt.Key_Y
+        enabled: root.showingDemo
+        onActivated: root.copyCurrentCode()
+    }
+
+    Shortcut {
+        sequence: Qt.ControlModifier | Qt.Key_R
+        enabled: root.showingDemo
+        onActivated: root.resetCurrentCode()
+    }
+
+    Shortcut {
+        sequence: Qt.ControlModifier | Qt.Key_T
+        enabled: root.showingDemo && !root.standalone
+        onActivated: root.toggleCodeFocus()
+    }
+
     Keys.onPressed: event => {
         if (event.key === Qt.Key_F2 && !standalone) {
-            fullscreenStage = !fullscreenStage;
-            if (fullscreenStage && showingDemo && codeEditor.activeFocus)
-                focusExample(liveExampleItem);
+            toggleCodePane();
             event.accepted = true;
             return;
         }
@@ -726,14 +810,12 @@ Terminal {
                 return;
             }
             if (event.key === Qt.Key_F6 && !standalone) {
-                if (fullscreenStage) {
-                    fullscreenStage = false;
-                    codeEditor.focus = true;
-                } else if (codeEditor.activeFocus) {
-                    focusExample(liveExampleItem);
-                } else {
-                    codeEditor.focus = true;
-                }
+                toggleCodeFocus();
+                event.accepted = true;
+                return;
+            }
+            if (event.key === Qt.Key_Y && !codeEditor.activeFocus) {
+                copyCurrentCode();
                 event.accepted = true;
                 return;
             }
@@ -752,14 +834,6 @@ Terminal {
         switch (event.key) {
         case Qt.Key_Slash:
             activateSearch();
-            break;
-        case Qt.Key_Tab:
-        case Qt.Key_BracketRight:
-            categoryTabs.currentIndex = (categoryTabs.currentIndex + 1) % categoryNames.length;
-            break;
-        case Qt.Key_Backtab:
-        case Qt.Key_BracketLeft:
-            categoryTabs.currentIndex = (categoryTabs.currentIndex - 1 + categoryNames.length) % categoryNames.length;
             break;
         case Qt.Key_Left:
         case Qt.Key_H:
@@ -797,8 +871,6 @@ Terminal {
         case Qt.Key_Escape:
             if (searchQuery !== "" || searchActive) {
                 deactivateSearch(true);
-            } else if (categoryTabs.currentIndex !== 0) {
-                categoryTabs.currentIndex = 0;
             } else {
                 Qt.quit();
             }
@@ -820,7 +892,7 @@ Terminal {
             left: parent.left
             right: parent.right
         }
-        height: 2
+        height: 1
         visible: !root.standalone
         color: root.tileColor
 
@@ -842,7 +914,7 @@ Terminal {
                 }
                 GradientStop {
                     position: 1.0
-                    color: "#58a6ff"
+                    color: root.brandDeep
                 }
             }
         }
@@ -864,12 +936,12 @@ Terminal {
                 },
                 {
                     text: root.current ? root.current.name : "",
-                    color: root.current ? root.current.accent : root.textColor,
+                    color: root.current ? root.current.accent : root.brandAccent,
                     bold: true
                 },
                 {
                     text: " [" + (root.current ? root.current.badge : "") + "] ",
-                    color: root.brandPrimary
+                    color: root.current ? root.badgeColor(root.current.badge) : root.brandPrimary
                 },
                 {
                     text: root.showingDemo ? " · examples/" + (root.current ? root.current.file : "") + "  ◂ Esc back to grid" : "— " + (root.current ? root.current.blurb : ""),
@@ -908,7 +980,7 @@ Terminal {
             spans: [
                 {
                     text: " ↑↓←→ ",
-                    color: root.textColor,
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -917,7 +989,7 @@ Terminal {
                 },
                 {
                     text: " Enter/Space ",
-                    color: root.brandPrimary,
+                    color: root.brandAccent,
                     bold: true
                 },
                 {
@@ -925,17 +997,8 @@ Terminal {
                     color: root.mutedColor
                 },
                 {
-                    text: " Tab ",
-                    color: root.textColor,
-                    bold: true
-                },
-                {
-                    text: "topic  ",
-                    color: root.mutedColor
-                },
-                {
                     text: " / ",
-                    color: root.textColor,
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -944,7 +1007,7 @@ Terminal {
                 },
                 {
                     text: " Q/Esc ",
-                    color: root.textColor,
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -960,7 +1023,7 @@ Terminal {
             spans: [
                 {
                     text: " Esc ",
-                    color: root.brandPrimary,
+                    color: root.brandAccent,
                     bold: true
                 },
                 {
@@ -968,8 +1031,26 @@ Terminal {
                     color: root.mutedColor
                 },
                 {
-                    text: " F6 ",
-                    color: root.textColor,
+                    text: " ^E ",
+                    color: root.brandPrimary,
+                    bold: true
+                },
+                {
+                    text: "toggle code  ",
+                    color: root.mutedColor
+                },
+                {
+                    text: " ^Y ",
+                    color: root.brandPrimary,
+                    bold: true
+                },
+                {
+                    text: "copy code  ",
+                    color: root.mutedColor
+                },
+                {
+                    text: " ^T ",
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -977,8 +1058,8 @@ Terminal {
                     color: root.mutedColor
                 },
                 {
-                    text: " F5 ",
-                    color: root.textColor,
+                    text: " ^R ",
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -986,17 +1067,8 @@ Terminal {
                     color: root.mutedColor
                 },
                 {
-                    text: " F2 ",
-                    color: root.textColor,
-                    bold: true
-                },
-                {
-                    text: "toggle code pane  ",
-                    color: root.mutedColor
-                },
-                {
                     text: " Q ",
-                    color: root.textColor,
+                    color: root.brandPrimary,
                     bold: true
                 },
                 {
@@ -1012,46 +1084,47 @@ Terminal {
         id: bodyArea
         anchors {
             top: root.standalone ? parent.top : header.bottom
+            topMargin: root.standalone ? 0 : 1
             bottom: root.standalone ? parent.bottom : footer.top
             left: parent.left
             right: parent.right
         }
 
-        // Screen 1: Full-width Component GridView Panel with topic TabBar & inline header search
-        Panel {
+        // Screen 1: Borderless Component GridView with inline search bar
+        Item {
             id: catalogPanel
-            anchors {
-                fill: parent
-                leftMargin: 1
-                rightMargin: 1
-            }
+            anchors.fill: parent
             visible: !root.showingDemo
-            color: root.tileColor
-            border {
-                style: Border.Rounded
-                color: root.brandPrimary
-            }
-            title: Row {
-                spacing: 1
 
-                Text {
-                    text: root.selectedCategory === "All" ? "Components" : "Components · " + root.selectedCategory
-                    color: root.brandPrimary
-                    bold: true
-                }
-
-                Text {
-                    text: "(" + root.filteredCatalog.length + (root.searchQuery !== "" || root.selectedCategory !== "All" ? "/" + root.catalog.length : "") + ")"
-                    color: root.mutedColor
-                }
+            // Top subheader row: component count on left, inline search on right
+            Text {
+                x: 2
+                y: 0
+                spans: [
+                    {
+                        text: "Components ",
+                        color: root.brandPrimary,
+                        bold: true
+                    },
+                    {
+                        text: "(" + root.filteredCatalog.length + (root.searchQuery !== "" ? "/" + root.catalog.length : "") + ")",
+                        color: root.mutedColor
+                    }
+                ]
             }
-            titleTrailing: Item {
+
+            Item {
                 id: searchHeaderSlot
+                anchors {
+                    right: parent.right
+                    rightMargin: 2
+                }
+                y: 0
                 implicitWidth: root.searchActive ? 26 : searchTriggerLabel.implicitWidth
                 width: implicitWidth
                 height: 1
 
-                // Inactive compact trigger shown on the Panel top border
+                // Inactive compact trigger
                 Text {
                     id: searchTriggerLabel
                     visible: !root.searchActive
@@ -1071,7 +1144,7 @@ Terminal {
                     }
                 }
 
-                // Active inline search TextInput embedded directly in the Panel border
+                // Active inline search TextInput
                 Row {
                     visible: root.searchActive
                     spacing: 1
@@ -1132,54 +1205,22 @@ Terminal {
                     }
                 }
             }
-            footer: Text {
-                text: root.current ? "Selected: " + root.current.name + " · examples/" + root.current.file : "No matching components"
-                color: root.mutedColor
-            }
-            footerTrailing: Text {
-                text: "Enter ▸ Open Example"
-                color: root.brandPrimary
-            }
-
-            TabBar {
-                id: categoryTabs
-                anchors {
-                    top: parent.top
-                    left: parent.left
-                    right: parent.right
-                    topMargin: 1
-                    leftMargin: 2
-                    rightMargin: 2
-                }
-                height: 1
-                focusPolicy: Qt.NoFocus
-                tabs: root.categoryNames
-                color: root.tileColor
-                textColor: root.mutedColor
-                selectionColor: root.brandPrimary
-                selectedTextColor: "#0d1117"
-
-                onCurrentIndexChanged: {
-                    root.currentIndex = 0;
-                    root.ensureVisible();
-                }
-            }
 
             GridView {
                 id: componentGrid
                 anchors {
-                    top: categoryTabs.bottom
+                    top: parent.top
                     bottom: parent.bottom
                     left: parent.left
                     right: parent.right
                     leftMargin: 2
                     rightMargin: 1
-                    topMargin: 0
-                    bottomMargin: 1
+                    topMargin: 2
+                    bottomMargin: 0
                 }
                 clip: true
                 cellWidth: Math.max(26, Math.floor(width / root.gridCols))
-                cellHeight: 5
+                cellHeight: 4
                 model: root.filteredCatalog
 
                 delegate: Item {
@@ -1193,21 +1234,17 @@ Terminal {
 
                     Rectangle {
                         id: tileCard
-                        width: Math.max(10, parent.width - 1)
-                        height: parent.height
+                        width: Math.max(10, parent.width - 2)
+                        height: parent.height - 1
                         clip: true
                         color: tileItem.isCurrent ? root.tileCurrentColor : root.tileColor
-                        border {
-                            style: tileItem.isCurrent ? Border.Double : Border.Rounded
-                            color: tileItem.isCurrent ? tileItem.modelData.accent : root.lineColor
-                        }
 
                         // Row 1: Component Name + Module Badge
                         Text {
                             x: 2
-                            y: 1
+                            y: 0
                             text: (tileItem.isCurrent ? "▸ " : "") + tileItem.modelData.name
-                            color: tileItem.isCurrent ? tileItem.modelData.accent : root.textColor
+                            color: tileItem.isCurrent ? root.brandAccent : root.textColor
                             bold: true
                         }
 
@@ -1216,15 +1253,16 @@ Terminal {
                                 right: parent.right
                                 rightMargin: 2
                             }
-                            y: 1
+                            y: 0
                             text: "[" + tileItem.modelData.badge + "]"
-                            color: tileItem.isCurrent ? root.brandPrimary : root.mutedColor
+                            color: root.badgeColor(tileItem.modelData.badge)
+                            bold: tileItem.isCurrent
                         }
 
                         // Row 2: Representative Component Preview Content
                         Text {
                             x: 2
-                            y: 2
+                            y: 1
                             width: Math.max(0, parent.width - 4)
                             clip: true
                             text: tileItem.modelData.preview
@@ -1235,11 +1273,11 @@ Terminal {
                         // Row 3: Concise Description Blurb
                         Text {
                             x: 2
-                            y: 3
+                            y: 2
                             width: Math.max(0, parent.width - 4)
                             clip: true
                             text: tileItem.modelData.blurb
-                            color: root.mutedColor
+                            color: tileItem.isCurrent ? root.textColor : root.mutedColor
                         }
 
                         MouseArea {
@@ -1263,7 +1301,7 @@ Terminal {
             }
         }
 
-        // Screen 2: Split View — Gallery-Owned Example Container (Left) + Editable Code Panel (Right)
+        // Screen 2: Split View — Borderless Example Stage (Left) + Editable Code Surface (Right)
         RowLayout {
             id: splitStage
             anchors {
@@ -1272,9 +1310,9 @@ Terminal {
                 rightMargin: 1
             }
             visible: root.showingDemo
-            spacing: 1
+            spacing: 2
 
-            // Left Pane: Gallery-Owned Example Container Panel
+            // Left Pane: Borderless Example Stage
             MouseArea {
                 id: examplePaneArea
                 Layout.fillWidth: true
@@ -1285,50 +1323,22 @@ Terminal {
                         root.focusExample(root.liveExampleItem);
                 }
 
-                Panel {
+                Item {
                     id: examplePanel
                     anchors.fill: parent
-                    color: root.tileColor
-                    border {
-                        style: !codeEditor.activeFocus ? Border.Double : Border.Rounded
-                        color: root.current ? root.current.accent : root.brandPrimary
-                    }
-                    title: Row {
-                        spacing: 1
-
-                        Text {
-                            text: root.current ? root.current.name : "Example"
-                            color: root.current ? root.current.accent : root.brandPrimary
-                            bold: true
-                        }
-
-                        Text {
-                            visible: root.current !== null
-                            text: root.current ? "[" + root.current.badge + "]" : ""
-                            color: root.brandPrimary
-                        }
-                    }
-                    titleTrailing: Text {
-                        text: root.codeError !== "" ? "✗ Error" : (reloadTimer.running ? "⟳ Pending" : "● Live")
-                        color: root.codeError !== "" ? "#f87171" : (reloadTimer.running ? "#f9c74f" : root.brandPrimary)
-                        bold: true
-                    }
-                    footer: Text {
-                        text: root.current ? "examples/" + root.current.file : ""
-                        color: root.mutedColor
-                    }
 
                     Item {
                         id: demoHost
+                        objectName: "demoHost"
                         anchors {
                             top: parent.top
                             left: parent.left
                             right: parent.right
                             bottom: errorBanner.visible ? errorBanner.top : parent.bottom
-                            leftMargin: 2
-                            rightMargin: 2
-                            topMargin: 1
-                            bottomMargin: 1
+                            leftMargin: 1
+                            rightMargin: 1
+                            topMargin: 0
+                            bottomMargin: 0
                         }
                         clip: true
                     }
@@ -1346,10 +1356,6 @@ Terminal {
                         visible: root.codeError !== ""
                         height: visible ? Math.min(6, Math.max(3, errorText.implicitHeight + 2)) : 0
                         color: "#2d1215"
-                        border {
-                            style: Border.Single
-                            color: "#f87171"
-                        }
 
                         Text {
                             id: errorText
@@ -1368,7 +1374,7 @@ Terminal {
                 }
             }
 
-            // Right Pane: Live Editable QML Code Panel
+            // Right Pane: Borderless Live Editable QML Code Surface
             MouseArea {
                 id: codePaneArea
                 visible: !root.fullscreenStage && !root.standalone
@@ -1379,58 +1385,110 @@ Terminal {
                     codeEditor.focus = true;
                 }
 
-                Panel {
+                Rectangle {
                     id: codePanel
                     anchors.fill: parent
                     color: root.tileColor
-                    border {
-                        style: codeEditor.activeFocus ? Border.Double : Border.Rounded
-                        color: codeEditor.activeFocus ? root.brandPrimary : root.lineColor
-                    }
-                    title: Row {
-                        spacing: 1
 
-                        Text {
-                            text: root.current ? "examples/" + root.current.file : "Code"
-                            color: codeEditor.activeFocus ? root.brandPrimary : root.textColor
-                            bold: true
+                    // Top bar of code pane
+                    Rectangle {
+                        id: codeHeaderBar
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                        }
+                        height: 1
+                        color: "#21262d"
+
+                        Row {
+                            x: 2
+                            y: 0
+                            spacing: 1
+
+                            Text {
+                                text: root.current ? "examples/" + root.current.file : "Code"
+                                color: codeEditor.activeFocus ? root.brandAccent : root.textColor
+                                bold: true
+                            }
+
+                            Text {
+                                text: "(editable)"
+                                color: root.mutedColor
+                            }
                         }
 
                         Text {
-                            text: "(editable)"
+                            anchors {
+                                right: parent.right
+                                rightMargin: 2
+                            }
+                            y: 0
+                            text: root.codeCopied ? "✓ Copied!" : (reloadTimer.running ? "⟳ Reloading" : "✓ Auto-reload")
+                            color: root.codeCopied ? root.brandAccent : (reloadTimer.running ? "#f9c74f" : root.brandPrimary)
+                        }
+                    }
+
+                    // Bottom bar of code pane
+                    Rectangle {
+                        id: codeFooterBar
+                        anchors {
+                            bottom: parent.bottom
+                            left: parent.left
+                            right: parent.right
+                        }
+                        height: 1
+                        color: "#21262d"
+
+                        Text {
+                            x: 2
+                            y: 0
+                            text: "Ln " + (root.editorCursorLine + 1) + ", Col " + (root.editorCursorCol + 1)
                             color: root.mutedColor
                         }
-                    }
-                    titleTrailing: Text {
-                        text: reloadTimer.running ? "⟳ Reloading" : "✓ Auto-reload"
-                        color: reloadTimer.running ? "#f9c74f" : root.brandPrimary
-                    }
-                    footer: Text {
-                        text: "Ln " + (root.editorCursorLine + 1) + ", Col " + (root.editorCursorCol + 1) + " · 500ms auto-reload"
-                        color: root.mutedColor
-                    }
-                    footerTrailing: Text {
-                        text: "[F5 Reset]"
-                        color: root.brandPrimary
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: root.resetCurrentCode()
+                        Row {
+                            anchors {
+                                right: parent.right
+                                rightMargin: 2
+                            }
+                            y: 0
+                            spacing: 2
+
+                            Text {
+                                text: root.codeCopied ? "[✓ Copied]" : "[Copy ^Y]"
+                                color: root.codeCopied ? root.brandAccent : root.brandPrimary
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: root.copyCurrentCode()
+                                }
+                            }
+
+                            Text {
+                                text: "[Reset ^R]"
+                                color: root.brandPrimary
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: root.resetCurrentCode()
+                                }
+                            }
                         }
                     }
 
                     // Active cursor line background highlight
                     Rectangle {
                         id: activeLineHighlight
-                        x: 1
+                        x: 0
                         y: 1 + (root.editorCursorLine - codeEditor.contentY)
-                        width: Math.max(0, parent.width - 2)
+                        width: parent.width
                         height: 1
                         visible: y >= 1 && y < parent.height - 1
-                        color: codeEditor.activeFocus ? "#1f2d26" : "#1c232d"
+                        color: codeEditor.activeFocus ? root.tileCurrentColor : "#1c2128"
                     }
 
-                    // Line-number gutter (1 │, 2 │, …)
+                    // Borderless line-number gutter
                     Column {
                         id: lineGutter
                         x: 1
@@ -1451,18 +1509,10 @@ Terminal {
 
                                 width: root.gutterWidth
                                 height: 1
-                                spans: [
-                                    {
-                                        text: gutterRow.inBounds ? String(gutterRow.lineIndex + 1).padStart(root.gutterDigits, " ") : " ".repeat(root.gutterDigits - 1) + "~",
-                                        color: gutterRow.isCurrentLine ? root.brandPrimary : root.mutedColor,
-                                        bold: gutterRow.isCurrentLine,
-                                        dim: !gutterRow.isCurrentLine
-                                    },
-                                    {
-                                        text: " │",
-                                        color: gutterRow.isCurrentLine ? root.brandPrimary : root.lineColor
-                                    }
-                                ]
+                                text: gutterRow.inBounds ? String(gutterRow.lineIndex + 1).padStart(root.gutterDigits, " ") : " ".repeat(root.gutterDigits - 1) + "~"
+                                color: gutterRow.isCurrentLine ? root.brandPrimary : root.mutedColor
+                                bold: gutterRow.isCurrentLine
+                                dim: !gutterRow.isCurrentLine
                             }
                         }
                     }
@@ -1476,11 +1526,22 @@ Terminal {
                             topMargin: 1
                             bottomMargin: 1
                         }
+                        focusPolicy: Qt.ClickFocus
                         color: root.textColor
                         showWhitespace: true
 
+                        Keys.priority: Keys.BeforeItem
+                        Keys.onPressed: event => {
+                            if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
+                                root.copyCurrentCode();
+                                event.accepted = true;
+                            }
+                        }
+
                         onTextChanged: {
                             if (!root.loadingExampleSource && root.showingDemo) {
+                                root.codeCopied = false;
+                                copyFeedbackTimer.stop();
                                 root.applyQmlSyntaxHighlight();
                                 reloadTimer.restart();
                             }

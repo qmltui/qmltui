@@ -11,7 +11,7 @@ QmlTui is organized into a core library (`qmltui::core`) and optional companion 
 | QML Import | CMake Target | Required Dependencies | Description |
 | :--- | :--- | :--- | :--- |
 | `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | Core engine (`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views, `Canvas`, input, states, and animations) |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `Switch`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `Toast`, `ToolTip`) |
+| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`) |
 | `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Terminal graphics (`Image`, `AnimatedSprite`; requires `-DQMLTUI_ENABLE_IMAGE=ON`) |
 | `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix PTY (`PtyView`; requires `-DQMLTUI_ENABLE_PTYVIEW=ON` on Linux or macOS) |
 
@@ -142,9 +142,11 @@ ctest --test-dir build --output-on-failure
 Build benchmarks with `-DQMLTUI_BUILD_BENCHMARKS=ON`:
 
 - `benchmark_views` measures 1,000- and 10,000-row view creation time.
+- `benchmark_view_phases` measures per-phase creation, scroll, `dataChanged`, and idle layout/paint cost across QmlTui views.
+- `benchmark_view_compare` compares QmlTui (`ListView`, `GridView`, `TableView`, `TreeView`) side-by-side against Qt Quick and Qt Widgets (`--rows <N>`, `--steps <N>`, `--json <path>`).
 - `benchmark_render` measures per-frame paint and diff cost at 80×24 and 240×70 (`--json <path>`, `--frames <count>`). JSON output includes `updateMedianUs` and `updatePaintMedianUs`.
 
-See the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for baseline numbers.
+See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-comparison.md) and the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for baseline numbers and host specifications.
 
 ## CMake Options and Environment Variables
 

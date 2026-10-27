@@ -3,6 +3,7 @@ import QmlTui
 
 // Rectangle: Colored cell surfaces, four box-drawing border styles, and gradients.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     // Four built-in border styles: Single, Double, Rounded, and Ascii
@@ -70,17 +71,14 @@ Column {
         }
     }
 
-    // Solid background fill and multi-stop horizontal Gradient
+    // Single 1-height solid background fill and horizontal Gradient bars
     Row {
-        anchors.left: parent.left
-        anchors.right: parent.right
-
         spacing: 1
 
         Rectangle {
             width: 10
-            height: 3
-            color: "#1e293b"
+            height: 1
+            color: "#1e3a5f"
 
             Text {
                 anchors.centerIn: parent
@@ -90,10 +88,8 @@ Column {
         }
 
         Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            height: 3
+            width: 32
+            height: 1
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop {
@@ -115,6 +111,20 @@ Column {
                 text: "horizontal gradient"
                 color: "#c9d1d9"
             }
+        }
+    }
+
+    // Full-width single 1-height status bar Rectangle
+    Rectangle {
+        width: 43
+        height: 1
+        color: "#2cde85"
+
+        Text {
+            anchors.centerIn: parent
+            text: "1-row status bar (height: 1)"
+            color: "#0b1911"
+            bold: true
         }
     }
 }

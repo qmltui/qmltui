@@ -3,6 +3,7 @@ import QmlTui
 
 // Animation: NumberAnimation and ColorAnimation timelines with easing curves.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -21,13 +22,13 @@ Column {
 
         Text {
             text: "─".repeat(40)
-            color: "#1e293b"
+            color: "#30363d"
         }
 
         Text {
             id: bouncer
             text: "████"
-            color: "#f9a8d4"
+            color: "#ff7b72"
 
             NumberAnimation {
                 target: bouncer
@@ -53,13 +54,13 @@ Column {
 
         Text {
             text: "─".repeat(40)
-            color: "#1e293b"
+            color: "#30363d"
         }
 
         Text {
             id: glider
             text: "◆◆◆◆"
-            color: "#c084fc"
+            color: "#58a6ff"
 
             NumberAnimation {
                 target: glider
@@ -78,13 +79,13 @@ Column {
         id: pulse
         text: "ColorAnimation: fades between two colours"
         bold: true
-        color: "#f9a8d4"
+        color: "#2cde85"
 
         ColorAnimation {
             target: pulse
             property: "color"
-            from: "#f9a8d4"
-            to: "#312e81"
+            from: "#2cde85"
+            to: "#58a6ff"
             duration: 1600
             loops: -1
             running: true
@@ -94,6 +95,6 @@ Column {
 
     Text {
         text: "x = " + bouncer.x + " / " + glider.x
-        color: "#f9a8d4"
+        color: "#79c0ff"
     }
 }

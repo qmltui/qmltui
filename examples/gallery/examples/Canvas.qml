@@ -3,7 +3,7 @@ import QtQml
 import QmlTui
 
 // Canvas: Sub-cell Braille (2×4 dots per cell) vector drawing surface.
-Item {
+ColumnLayout {
     id: canvasDemo
 
     property real t: 0
@@ -19,9 +19,12 @@ Item {
         return pts;
     }
 
+    anchors.fill: parent
+    spacing: 1
+
     Timer {
         interval: 50
-        running: true
+        running: canvasDemo.visible
         repeat: true
         onTriggered: canvasDemo.t += 0.08
     }
@@ -32,14 +35,9 @@ Item {
     }
 
     Rectangle {
-        y: 2
-        width: parent.width
-        height: Math.max(6, parent.height - 2)
-        color: "#020617"
-        border {
-            style: Border.Single
-            color: "#1e293b"
-        }
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: "#161b22"
 
         // Sine wave polyline
         Canvas {
@@ -49,20 +47,20 @@ Item {
                 margins: 1
             }
             renderMode: Canvas.Braille
-            color: "#00f0ff"
+            color: "#2cde85"
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop {
                     position: 0.0
-                    color: "#00f0ff"
+                    color: "#00ff66"
                 }
                 GradientStop {
                     position: 0.5
-                    color: "#a855f7"
+                    color: "#56d4dd"
                 }
                 GradientStop {
                     position: 1.0
-                    color: "#ec4899"
+                    color: "#d2a8ff"
                 }
             }
 
@@ -83,7 +81,7 @@ Item {
                 margins: 1
             }
             renderMode: Canvas.Braille
-            color: "#ffb000"
+            color: "#f2cc60"
 
             Circle {
                 cx: orbitCanvas.cx

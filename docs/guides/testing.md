@@ -60,7 +60,7 @@ Visible-behavior tests should assert the committed terminal frame rather than in
 
 ### Step Animations and Timers with the Virtual Clock
 
-When you run a scenario with `--clock virtual` (or `CLOCK VIRTUAL` in CMake), QmlTui freezes application time. `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, cursor blink, `Toast` and `ToolTip` delays, `AnimatedSprite`, and QML `Timer` items advance only when your script steps the clock:
+When you run a scenario with `--clock virtual` (or `CLOCK VIRTUAL` in CMake), QmlTui freezes application time. `NumberAnimation`, `ColorAnimation`, `PropertyAnimation`, cursor blink, `ToolTip` delays, `AnimatedSprite`, and QML `Timer` items advance only when your script steps the clock:
 
 ```javascript
 /** @param {Runner} app */
@@ -229,3 +229,5 @@ QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest --test-dir build -R "^my_app_smoke$" --ou
 ```
 
 See the [Runner Reference](../cpp-classes/runner.md) for the complete list of `app.*` methods, `qmltui_add_scenario()` parameters, `QMLTUI_RUNNER_*` environment variables, and C++ `qmltui::Runner` constructors.
+
+![Gallery tour recorded demo](../assets/casts/gallery-tour.gif)

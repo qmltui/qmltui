@@ -8,6 +8,7 @@ Column {
 
     property string status: "Select a row or click a header"
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -19,12 +20,12 @@ Column {
     TableView {
         id: table
         objectName: "table"
-        height: 10
+        height: 11
         focus: true
         alternatingRows: true
-        showColumnGrid: true
-        showRowGrid: true
-        showOuterBorder: true
+        showColumnGrid: false
+        showRowGrid: false
+        showOuterBorder: false
         headerColor: "#fb923c"
         columns: [
             {

@@ -87,3 +87,7 @@ Terminal {
 On [`Text`](../qml-types/text.md), set `wrapMode: Text.WordWrap` (or `Text.WrapAnywhere`) together with an explicit `width` or `Layout.fillWidth: true` to reflow multi-line strings across rows. For inline multi-style runs on a single `Text` item, bind `spans` to an array of `QmlTui.span(text, { bold, italic, underline, dim, color, backgroundColor })` values.
 
 See [`Layouts.qml`](../../examples/gallery/examples/Layouts.qml), [`Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml), and [`Text.qml`](../../examples/gallery/examples/Text.qml), and the [`RowLayout`](../qml-types/rowlayout.md) and [`Text`](../qml-types/text.md) references.
+
+![Layouts recorded demo](../assets/casts/components/layouts.gif)
+
+![Calendar recipe recorded demo](../assets/casts/components/calendar.gif)

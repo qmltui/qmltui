@@ -2,7 +2,8 @@ pragma ComponentBehavior: Bound
 import QmlTui
 
 // TextArea: Multi-line text editor with 2D scrolling, cursor navigation, and selection.
-Column {
+ColumnLayout {
+    anchors.fill: parent
     spacing: 1
 
     Text {
@@ -11,12 +12,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(54, parent.width)
-        height: 7
-        border {
-            style: Border.Single
-            color: "#a78bfa"
-        }
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: "#161b22"
 
         TextArea {
             id: notes
@@ -27,12 +25,12 @@ Column {
             focus: true
             color: "#c9d1d9"
             placeholderText: "Write a few lines…"
-            text: "QmlTui renders QML into terminal cells.\nThis TextArea keeps a multi-line buffer."
+            text: "# QmlTui Multi-Line Editor\n\nQmlTui renders declarative QML scenes directly into terminal cells.\nThis TextArea maintains a scrollable multi-line document buffer.\n\nKey Features:\n  - 2D cursor navigation (Arrows, Home/End, PageUp/PageDown)\n  - Text selection with Shift+Arrow or mouse drag\n  - Clipboard copy, cut, and bracketed paste support\n  - Undo and redo history stack\n  - Custom syntax highlight layers (used by the Gallery code editor)\n\nTry editing these lines, inserting new paragraphs with Enter,\nor selecting a block of text to see the live character and line counts update below."
         }
     }
 
     Text {
         text: notes.text.length + " characters, " + notes.text.split("\n").length + " lines"
-        color: "#a78bfa"
+        color: "#2cde85"
     }
 }

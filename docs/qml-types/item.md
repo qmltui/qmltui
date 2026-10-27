@@ -108,3 +108,9 @@ Terminal {
     }
 }
 ```
+
+### Gallery Example
+
+![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
+
+See [`examples/gallery/examples/Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml) (`./build/examples/gallery/qmltui_gallery --example Rectangle`, or open in the [WebAssembly Playground](../playground.md?example=Rectangle.qml)).

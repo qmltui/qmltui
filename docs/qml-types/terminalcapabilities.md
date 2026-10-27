@@ -86,4 +86,6 @@ Terminal {
 
 ### Gallery Example
 
+![TerminalCapabilities recorded demo](../assets/casts/components/terminal_capabilities.gif)
+
 See [`examples/gallery/examples/TerminalCapabilities.qml`](../../examples/gallery/examples/TerminalCapabilities.qml) (`./build/examples/gallery/qmltui_gallery --example TerminalCapabilities`, or open in the [WebAssembly Playground](../playground.md?example=TerminalCapabilities.qml)).

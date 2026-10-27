@@ -741,11 +741,21 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
     const TextAttribute baseAttr = baseAttributes();
     const TextAttribute disabledAttr =
         !isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None;
+    const bool fillLineSpan = m_reversed || ((m_resolvedBackgroundColor >> 24) != 0);
 
     for (int lineIdx = 0; lineIdx < lineCount && lineIdx < availH; ++lineIdx) {
         const LineLayout& line = m_lines[lineIdx];
-        if (line.glyphCount > 0 && currentY >= absY + tp && currentY < absY + height() - bp &&
-            currentY >= 0 && currentY < buffer.height()) {
+        if ((line.glyphCount > 0 || fillLineSpan) && currentY >= absY + tp &&
+            currentY < absY + height() - bp && currentY >= 0 && currentY < buffer.height()) {
+            if (fillLineSpan && clipRect.y <= currentY && currentY < clipRect.y + clipRect.height) {
+                const TextAttribute fillAttr = baseAttr | disabledAttr;
+                const int fillStart = (std::max)(leftLimit, clipRect.x);
+                const int fillEnd = (std::min)(rightLimit, clipRect.x + clipRect.width);
+                for (int fillX = fillStart; fillX < fillEnd; ++fillX) {
+                    buffer.setGrapheme(fillX, currentY, QByteArrayView(" ", 1), 1, m_resolvedColor,
+                                       m_resolvedBackgroundColor, fillAttr);
+                }
+            }
             const int visLen = line.visualWidth;
             int cx = lineStartX(leftLimit, availW, visLen);
             int charIndexInLine = 0;

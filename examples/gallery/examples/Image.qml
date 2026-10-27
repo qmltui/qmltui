@@ -4,7 +4,7 @@ import QmlTui.Image
 
 // Image: Renders bitmaps into terminal cells via Braille, HalfBlock, ASCII,
 // or native terminal graphics protocols (Kitty / Sixel in Image.Auto mode).
-Column {
+ColumnLayout {
     id: imageDemo
 
     readonly property var modes: [
@@ -31,6 +31,7 @@ Column {
     ]
     property int modeIndex: 0
 
+    anchors.fill: parent
     spacing: 1
     focusPolicy: Qt.StrongFocus
     focus: true
@@ -48,12 +49,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(44, parent.width)
-        height: 11
-        border {
-            style: Border.Single
-            color: "#30363d"
-        }
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: "#161b22"
 
         Image {
             id: picture

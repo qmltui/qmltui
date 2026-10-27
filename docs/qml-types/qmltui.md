@@ -76,3 +76,9 @@ Terminal {
     }
 }
 ```
+
+### Gallery Example
+
+![RichText recorded demo](../assets/casts/components/rich_text.gif)
+
+See [`examples/gallery/examples/RichText.qml`](../../examples/gallery/examples/RichText.qml) (`./build/examples/gallery/qmltui_gallery --example RichText`, or open in the [WebAssembly Playground](../playground.md?example=RichText.qml)).

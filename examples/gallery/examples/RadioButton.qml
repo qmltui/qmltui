@@ -4,6 +4,7 @@ import QmlTui.Controls
 
 // RadioButton: Mutually exclusive choices coordinated by a ButtonGroup.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -39,6 +40,6 @@ Column {
 
     Text {
         text: "Profile: " + (fast.checked ? "fast (no fsync)" : balanced.checked ? "balanced" : "safe (fsync every write)")
-        color: "#f9c74f"
+        color: "#2cde85"
     }
 }

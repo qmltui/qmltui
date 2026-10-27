@@ -81,6 +81,8 @@ void CustomBlock::keyPressEvent(KeyEvent *event) {
 
 ## Complete Examples
 
+![BigText custom item recorded demo](../assets/casts/components/big_text.gif)
+
 - [`examples/recipes/custom_cpp_item/`](../../examples/recipes/custom_cpp_item/): Subclassing `qmltui::Item` (`ProgressGauge`), registering with `QML_ELEMENT`, and instantiating from QML.
 - [`examples/recipes/big_text/`](../../examples/recipes/big_text/): Custom C++ item painting 3×5 block-pixel banner text into `TextGridBuffer`.
 - [`examples/recipes/cpp_only/`](../../examples/recipes/cpp_only/): Constructing and driving a `qmltui::Terminal` and `qmltui::Item` hierarchy directly in C++ without `.qml` files.

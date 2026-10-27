@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QObject>
+#include <QmlTui/Core/Items/Border.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QQmlEngine>
 #include <QPointer>
@@ -23,12 +24,20 @@ namespace qmltui::controls {
 // Attached tooltip overlay (`ToolTip.text`, `ToolTip.visible`, `ToolTip.delay`,
 // `ToolTip.timeout`) that automatically opens a non-modal Popup near the target
 // item after `delay` ms of hover or active focus, or immediately when `visible`
-// is set to true.
+// is set to true. Supports `color` / `backgroundColor`, `textColor`, `border`,
+// and custom `background` / `contentItem` slots.
 class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
+                   backgroundColorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
+    Q_PROPERTY(qmltui::Border* border READ border CONSTANT)
+    Q_PROPERTY(
+        qmltui::Item* background READ background WRITE setBackground NOTIFY backgroundChanged)
+    Q_PROPERTY(
+        qmltui::Item* contentItem READ contentItem WRITE setContentItem NOTIFY contentItemChanged)
     QML_UNCREATABLE("ToolTip is only available as an attached property")
     QML_ATTACHED(ToolTip)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
@@ -61,9 +70,23 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
+    Color backgroundColor() const { return m_color; }
+    void setBackgroundColor(Color color);
+
+    Border* border() const;
+
+    Item* background() const { return m_background; }
+    void setBackground(Item* background);
+
+    Item* contentItem() const { return m_contentItem; }
+    void setContentItem(Item* contentItem);
+
 signals:
     void colorChanged();
+    void backgroundColorChanged();
     void textColorChanged();
+    void backgroundChanged();
+    void contentItemChanged();
     void textChanged();
     void visibleChanged();
     void delayChanged();
@@ -75,6 +98,10 @@ private:
     Color m_textColor;
     void bindTerminal();
     void trackAncestryGeometry();
+    void trackBackgroundSignals();
+    void trackContentSignals();
+    void syncPopupChildren();
+    void detachPopupChildren();
     void updateAutomaticVisibility();
     void updatePosition();
     void reposition();
@@ -82,13 +109,18 @@ private:
     void updateAppearance();
     void hide();
     bool targetIsActive() const;
+    bool hasContent() const;
 
     QPointer<qmltui::Item> m_target;
     QPointer<qmltui::Terminal> m_terminal;
     QList<QMetaObject::Connection> m_geometryConnections;
+    QList<QMetaObject::Connection> m_backgroundConnections;
+    QList<QMetaObject::Connection> m_contentConnections;
     QPointer<qmltui::Popup> m_popup;
-    QPointer<qmltui::Rectangle> m_background;
-    QPointer<qmltui::Text> m_label;
+    QPointer<qmltui::Rectangle> m_defaultBackground;
+    QPointer<qmltui::Text> m_defaultLabel;
+    QPointer<qmltui::Item> m_background;
+    QPointer<qmltui::Item> m_contentItem;
     QString m_text;
     // On the QmlTui Clock so delay and timeout are steppable in tests.
     ClockTimer* m_delayTimer = nullptr;

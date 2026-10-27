@@ -13,7 +13,12 @@ void ToolTip::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     emit colorChanged();
+    emit backgroundColorChanged();
     updateAppearance();
+}
+
+void ToolTip::setBackgroundColor(Color color) {
+    setColor(color);
 }
 
 void ToolTip::setTextColor(Color color) {
@@ -23,6 +28,48 @@ void ToolTip::setTextColor(Color color) {
     updateAppearance();
 }
 
+Border* ToolTip::border() const {
+    return m_defaultBackground ? m_defaultBackground->border() : nullptr;
+}
+
+void ToolTip::setBackground(Item* background) {
+    if (m_background == background) return;
+    if (m_background && m_popup && m_background->parentItem() == m_popup) {
+        m_background->setVisible(false);
+        m_background->setParentItem(nullptr);
+        if (m_background == m_defaultBackground) m_background->setParent(this);
+    }
+    m_background = background;
+    trackBackgroundSignals();
+    syncPopupChildren();
+    updateAppearance();
+    updatePosition();
+    emit backgroundChanged();
+}
+
+void ToolTip::setContentItem(Item* contentItem) {
+    if (m_contentItem == contentItem) return;
+    const bool hadMotion = hasContent();
+    if (m_contentItem && m_popup && m_contentItem->parentItem() == m_popup) {
+        m_contentItem->setVisible(false);
+        m_contentItem->setParentItem(nullptr);
+        if (m_contentItem == m_defaultLabel) m_contentItem->setParent(this);
+    }
+    m_contentItem = contentItem;
+    trackContentSignals();
+    if (m_terminal && hadMotion != hasContent())
+        m_terminal->setMouseMotionRequested(this, hasContent());
+    syncPopupChildren();
+    updateAppearance();
+    emit contentItemChanged();
+    if (!hasContent()) {
+        hide();
+    } else {
+        updateAutomaticVisibility();
+        updatePosition();
+    }
+}
+
 ToolTip::ToolTip(QObject* target) : QObject(target), m_target(qobject_cast<Item*>(target)) {
     m_delayTimer = new ClockTimer(this);
     m_timeoutTimer = new ClockTimer(this);
@@ -30,6 +77,17 @@ ToolTip::ToolTip(QObject* target) : QObject(target), m_target(qobject_cast<Item*
     m_timeoutTimer->setSingleShot(true);
     connect(m_delayTimer, &ClockTimer::timeout, this, &ToolTip::showNow);
     connect(m_timeoutTimer, &ClockTimer::timeout, this, &ToolTip::hide);
+
+    m_defaultBackground = new Rectangle(this);
+    m_defaultBackground->setVisible(false);
+    m_defaultLabel = new Text(this);
+    m_defaultLabel->setBold(true);
+    m_defaultLabel->setVisible(false);
+    m_background = m_defaultBackground;
+    m_contentItem = m_defaultLabel;
+    trackBackgroundSignals();
+    trackContentSignals();
+
     if (m_target) {
         connect(m_target, &Item::activeFocusChanged, this, &ToolTip::updateAutomaticVisibility);
         connect(m_target, &Item::visibleChanged, this, &ToolTip::updateAutomaticVisibility);
@@ -42,10 +100,90 @@ ToolTip::ToolTip(QObject* target) : QObject(target), m_target(qobject_cast<Item*
 }
 
 ToolTip::~ToolTip() {
-    if (m_terminal && !m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, false);
+    for (const auto& conn : std::as_const(m_backgroundConnections))
+        disconnect(conn);
+    for (const auto& conn : std::as_const(m_contentConnections))
+        disconnect(conn);
+    if (m_terminal && hasContent()) m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
         delete m_popup.data();
+    }
+}
+
+void ToolTip::trackBackgroundSignals() {
+    for (const auto& conn : std::as_const(m_backgroundConnections))
+        disconnect(conn);
+    m_backgroundConnections.clear();
+    if (!m_background) return;
+    m_backgroundConnections.append(
+        connect(m_background, &Item::implicitWidthChanged, this, &ToolTip::updatePosition));
+    m_backgroundConnections.append(
+        connect(m_background, &Item::implicitHeightChanged, this, &ToolTip::updatePosition));
+    if (auto* rect = qobject_cast<Rectangle*>(m_background.data())) {
+        m_backgroundConnections.append(
+            connect(rect->border(), &Border::styleChanged, this, [this]() {
+                updateAppearance();
+                updatePosition();
+            }));
+        m_backgroundConnections.append(
+            connect(rect->border(), &Border::colorChanged, this, &ToolTip::updateAppearance));
+    }
+}
+
+void ToolTip::trackContentSignals() {
+    for (const auto& conn : std::as_const(m_contentConnections))
+        disconnect(conn);
+    m_contentConnections.clear();
+    if (!m_contentItem || m_contentItem == m_defaultLabel) return;
+    m_contentConnections.append(
+        connect(m_contentItem, &Item::implicitWidthChanged, this, &ToolTip::updatePosition));
+    m_contentConnections.append(
+        connect(m_contentItem, &Item::implicitHeightChanged, this, &ToolTip::updatePosition));
+    m_contentConnections.append(
+        connect(m_contentItem, &Item::widthChanged, this, &ToolTip::updatePosition));
+    m_contentConnections.append(
+        connect(m_contentItem, &Item::heightChanged, this, &ToolTip::updatePosition));
+}
+
+void ToolTip::syncPopupChildren() {
+    if (!m_popup) return;
+    if (m_defaultBackground && m_background != m_defaultBackground &&
+        m_defaultBackground->parentItem() == m_popup) {
+        m_defaultBackground->setVisible(false);
+        m_defaultBackground->setParentItem(nullptr);
+        m_defaultBackground->setParent(this);
+    }
+    if (m_defaultLabel && m_contentItem != m_defaultLabel &&
+        m_defaultLabel->parentItem() == m_popup) {
+        m_defaultLabel->setVisible(false);
+        m_defaultLabel->setParentItem(nullptr);
+        m_defaultLabel->setParent(this);
+    }
+    if (m_background) {
+        m_background->setParentItem(m_popup);
+        m_background->setVisible(true);
+        m_background->setZ(-1);
+    }
+    if (m_contentItem) {
+        m_contentItem->setParentItem(m_popup);
+        m_contentItem->setVisible(true);
+        m_contentItem->setZ(0);
+    }
+}
+
+void ToolTip::detachPopupChildren() {
+    if (!m_popup) return;
+    m_popup->disconnect();
+    if (m_background && m_background->parentItem() == m_popup) {
+        m_background->setVisible(false);
+        m_background->setParentItem(nullptr);
+        m_background->setParent(this);
+    }
+    if (m_contentItem && m_contentItem->parentItem() == m_popup) {
+        m_contentItem->setVisible(false);
+        m_contentItem->setParentItem(nullptr);
+        m_contentItem->setParent(this);
     }
 }
 
@@ -58,13 +196,12 @@ void ToolTip::bindTerminal() {
         updatePosition();
         return;
     }
-    if (m_terminal && !m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, false);
+    if (m_terminal && hasContent()) m_terminal->setMouseMotionRequested(this, false);
     if (m_popup) {
         m_popup->close();
+        detachPopupChildren();
         delete m_popup.data();
         m_popup.clear();
-        m_background.clear();
-        m_label.clear();
     }
     if (m_terminal) disconnect(m_terminal, nullptr, this, nullptr);
     m_terminal = terminal;
@@ -74,7 +211,7 @@ void ToolTip::bindTerminal() {
         connect(m_terminal, &Terminal::focusedItemChanged, this,
                 &ToolTip::updateAutomaticVisibility);
         connect(m_terminal, &Terminal::terminalSizeChanged, this, &ToolTip::updatePosition);
-        if (!m_text.isEmpty()) m_terminal->setMouseMotionRequested(this, true);
+        if (hasContent()) m_terminal->setMouseMotionRequested(this, true);
     }
     updateAutomaticVisibility();
 }
@@ -103,17 +240,23 @@ void ToolTip::updatePosition() {
     if (visible()) reposition();
 }
 
+bool ToolTip::hasContent() const {
+    return !m_text.isEmpty() || (m_contentItem && m_contentItem != m_defaultLabel);
+}
+
 void ToolTip::setText(const QString& text) {
     if (m_text == text) return;
-    const bool requestedMotion = !m_text.isEmpty();
+    const bool requestedMotion = hasContent();
     m_text = text;
-    if (m_terminal && requestedMotion != !m_text.isEmpty())
-        m_terminal->setMouseMotionRequested(this, !m_text.isEmpty());
+    if (m_terminal && requestedMotion != hasContent())
+        m_terminal->setMouseMotionRequested(this, hasContent());
     emit textChanged();
-    if (m_text.isEmpty())
+    if (!hasContent()) {
         hide();
-    else
+    } else {
         updateAutomaticVisibility();
+        updatePosition();
+    }
 }
 
 bool ToolTip::visible() const {
@@ -158,7 +301,7 @@ void ToolTip::updateAutomaticVisibility() {
         showNow();
         return;
     }
-    if (!targetIsActive() || m_text.isEmpty()) {
+    if (!targetIsActive() || !hasContent()) {
         hide();
         return;
     }
@@ -168,7 +311,7 @@ void ToolTip::updateAutomaticVisibility() {
 
 void ToolTip::showNow() {
     m_delayTimer->stop();
-    if (!m_target || !m_terminal || m_text.isEmpty()) return;
+    if (!m_target || !m_terminal || !hasContent()) return;
     const bool wasVisible = visible();
     if (!m_popup) {
         m_popup = new Popup(m_terminal);
@@ -176,12 +319,8 @@ void ToolTip::showNow() {
         m_popup->setModal(false);
         m_popup->setDimBackground(false);
         m_popup->setClosePolicy(Popup::NoAutoClose);
-        m_background = new Rectangle(m_popup);
-        m_label = new Text(m_popup);
-        m_label->setBold(true);
-        m_label->setX(1);
-        m_label->setY(0);
     }
+    syncPopupChildren();
     updateAppearance();
     reposition();
     if (!wasVisible) {
@@ -192,20 +331,43 @@ void ToolTip::showNow() {
 }
 
 void ToolTip::reposition() {
-    if (!m_target || !m_terminal || !m_popup || !m_label) return;
-    const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
-    const int displayWidth = UnicodeText::displayWidth(m_text);
-    const int textWidth = std::max(1, std::min(maxTextWidth, displayWidth));
-    const int lines = std::max(1, (displayWidth + textWidth - 1) / textWidth);
-    m_label->setText(m_text);
-    m_label->setWidth(textWidth);
-    m_label->setHeight(lines);
-    m_popup->setWidth(textWidth + 2);
-    m_popup->setHeight(lines);
+    if (!m_target || !m_terminal || !m_popup || !m_contentItem) return;
+    auto* bgRect = qobject_cast<Rectangle*>(m_background.data());
+    const bool hasBorder = bgRect && bgRect->border()->style() != Border::None;
+    const int padX = hasBorder ? 2 : 1;
+    const int padY = hasBorder ? 1 : 0;
+
+    int contentW = 1;
+    int contentH = 1;
+    if (m_contentItem == m_defaultLabel && m_defaultLabel) {
+        const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
+        const int displayWidth = UnicodeText::displayWidth(m_text);
+        contentW = std::max(1, std::min(maxTextWidth, displayWidth));
+        contentH = std::max(1, (displayWidth + contentW - 1) / contentW);
+        m_defaultLabel->setText(m_text);
+        m_defaultLabel->setWidth(contentW);
+        m_defaultLabel->setHeight(contentH);
+    } else {
+        contentW = std::max(1, m_contentItem->width() > 0 ? m_contentItem->width()
+                                                          : m_contentItem->implicitWidth());
+        contentH = std::max(1, m_contentItem->height() > 0 ? m_contentItem->height()
+                                                           : m_contentItem->implicitHeight());
+    }
+    m_contentItem->setX(padX);
+    m_contentItem->setY(padY);
+
+    const int popupW =
+        std::max(m_background ? m_background->implicitWidth() : 0, contentW + padX * 2);
+    const int popupH =
+        std::max(m_background ? m_background->implicitHeight() : 0, contentH + padY * 2);
+    m_popup->setWidth(popupW);
+    m_popup->setHeight(popupH);
     m_popup->setZ(m_z);
     if (m_background) {
-        m_background->setWidth(m_popup->width());
-        m_background->setHeight(m_popup->height());
+        m_background->setX(0);
+        m_background->setY(0);
+        m_background->setWidth(popupW);
+        m_background->setHeight(popupH);
     }
     const QPoint targetPos = m_target->absolutePosition();
     int x = std::clamp(targetPos.x(), 0, std::max(0, m_terminal->width() - m_popup->width()));
@@ -216,9 +378,8 @@ void ToolTip::reposition() {
 }
 
 void ToolTip::updateAppearance() {
-    if (!m_target || !m_popup || !m_label) return;
-    if (m_background) m_background->setColor(m_color);
-    m_label->setColor(m_textColor);
+    if (m_defaultBackground) m_defaultBackground->setColor(m_color);
+    if (m_defaultLabel) m_defaultLabel->setColor(m_textColor);
 }
 
 void ToolTip::hide() {

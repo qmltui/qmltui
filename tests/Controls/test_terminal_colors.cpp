@@ -8,7 +8,6 @@
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Items/TableView.h>
 #include <QmlTui/Core/Items/TreeView.h>
-#include <QmlTui/Controls/Toast.h>
 #include <QmlTui/Controls/TabBar.h>
 #include <QmlTui/Controls/ToolTip.h>
 #include <QmlTui/Core/Items/Popup.h>
@@ -49,7 +48,8 @@ void TestTerminalColors::defaultInk_data() {
     QTest::newRow("button") << QByteArray("Button { text: 'Ink' }");
     QTest::newRow("check") << QByteArray("CheckBox { text: 'Ink'; checked: true }");
     QTest::newRow("radio") << QByteArray("RadioButton { text: 'Ink'; checked: true }");
-    QTest::newRow("switch") << QByteArray("Switch { text: 'Ink'; checked: true }");
+    QTest::newRow("combo") << QByteArray("ComboBox { model: ['One', 'Two']; width: 16 }");
+    QTest::newRow("spin") << QByteArray("SpinBox { value: 50 }");
     QTest::newRow("slider") << QByteArray("Slider { value: 50 }");
     QTest::newRow("progress") << QByteArray("ProgressBar { value: 0.5; showPercentage: true }");
     QTest::newRow("busy") << QByteArray("BusyIndicator { running: false }");
@@ -59,8 +59,6 @@ void TestTerminalColors::defaultInk_data() {
         "Rectangle { border.style: Border.Single; width: 8; height: 3 }");
     QTest::newRow("tabs") << QByteArray("TabBar { tabs: ['One', 'Two']; width: 24 }");
     QTest::newRow("sparkline") << QByteArray("Sparkline { values: [1, 2, 3]; width: 8 }");
-    QTest::newRow("toast") << QByteArray("Toast { width: 28; height: 4; Component.onCompleted: "
-                                         "showToast('Title', 'Body', 'warning') }");
     QTest::newRow("canvas") << QByteArray("Canvas { width: 2; height: 1; Point {} }");
 }
 
@@ -86,7 +84,7 @@ void TestTerminalColors::defaultInk() {
 }
 
 void TestTerminalColors::explicitColorsSurviveStates() {
-    for (const char* type : {"Button", "CheckBox", "RadioButton", "Switch", "Slider"}) {
+    for (const char* type : {"Button", "CheckBox", "RadioButton", "Slider", "SpinBox"}) {
         auto item = load(QByteArray(type) + " { textColor: '#123456'; width: 20; height: 1 }");
         QVERIFY(item);
         if (item->metaObject()->indexOfProperty("text") >= 0) item->setProperty("text", "Custom");
@@ -180,21 +178,8 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     QCOMPARE(tabBuffer.cellAt(10, 0).fgColor, 0xff123456u);
     QCOMPARE(tabBuffer.cellAt(10, 0).bgColor, 0xff654321u);
 
-    Toast toast;
-    toast.setWidth(28);
-    toast.setHeight(4);
-    toast.showToast("Title", "Body");
     TextGridBuffer buffer;
     buffer.resize(28, 4);
-    paintItem(toast, buffer, 0, 0);
-    QCOMPARE(buffer.cellAt(1, 1).fgColor, 0u);
-    QCOMPARE(buffer.cellAt(1, 1).bgColor, 0u);
-    toast.setTextColor(Color("#123456"));
-    toast.setColor(Color("#654321"));
-    paintItem(toast, buffer, 0, 0);
-    QCOMPARE(buffer.cellAt(1, 1).fgColor, 0xff123456u);
-    QCOMPARE(buffer.cellAt(1, 1).bgColor, 0xff654321u);
-
     Terminal terminal;
     Item target(&terminal);
     target.setHeight(1);
@@ -205,15 +190,65 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     for (Item* item : terminal.childItems())
         if (auto* candidate = qobject_cast<Popup*>(item)) popup = candidate;
     QVERIFY(popup);
-    buffer.clear();
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0u);
     tip.setTextColor(Color("#123456"));
     tip.setColor(Color("#654321"));
+    QCOMPARE(tip.backgroundColor(), Color("#654321"));
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0xff654321u);
+
+    tip.setBackgroundColor(Color("#112233"));
+    QCOMPARE(tip.color(), Color("#112233"));
+    tip.border()->setStyle(Border::Rounded);
+    tip.border()->setColor(Color("#aabbcc"));
+    QCOMPARE(popup->width(), 7);
+    QCOMPARE(popup->height(), 3);
+    buffer.clear();
+    paintItem(popup, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character(), QStringLiteral("╭"));
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xffaabbccu);
+    QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xff112233u);
+    QCOMPARE(buffer.cellAt(2, 1).character(), QStringLiteral("T"));
+    QCOMPARE(buffer.cellAt(2, 1).fgColor, 0xff123456u);
+    QCOMPARE(buffer.cellAt(2, 1).bgColor, 0xff112233u);
+
+    auto customTipRoot = load(R"(
+        Terminal {
+            width: 40; height: 10
+            Item {
+                x: 2; y: 1; width: 6; height: 1
+                ToolTip.visible: true
+                ToolTip.timeout: 0
+                ToolTip.background: Rectangle {
+                    color: "#223344"
+                    border {
+                        style: Border.Double
+                        color: "#556677"
+                    }
+                }
+                ToolTip.contentItem: Text {
+                    text: "SLOT"
+                    color: "#ddeeff"
+                }
+            }
+        }
+    )");
+    auto* customTerm = qobject_cast<Terminal*>(customTipRoot.get());
+    QVERIFY(customTerm);
+    QCOMPARE(customTerm->activePopups().size(), 1);
+    Popup* slotPopup = customTerm->activePopups().first();
+    QCOMPARE(slotPopup->width(), 8);
+    QCOMPARE(slotPopup->height(), 3);
+    buffer.clear();
+    paintItem(slotPopup, buffer, 0, 0);
+    QCOMPARE(buffer.cellAt(0, 0).character(), QStringLiteral("╔"));
+    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xff556677u);
+    QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xff223344u);
+    QCOMPARE(buffer.cellAt(2, 1).character(), QStringLiteral("S"));
+    QCOMPARE(buffer.cellAt(2, 1).fgColor, 0xffddeeffu);
 
     auto qmlColors = load(R"(
         Item {

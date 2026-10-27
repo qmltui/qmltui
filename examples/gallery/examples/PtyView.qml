@@ -26,6 +26,7 @@ ColumnLayout {
         ptyDemo.statusText = "Sent: " + cmd;
     }
 
+    anchors.fill: parent
     spacing: 1
 
     Component.onDestruction: shellView.kill()
@@ -50,10 +51,7 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        border {
-            style: shellView.activeFocus ? Border.Double : Border.Single
-            color: shellView.activeFocus ? "#a6e3a1" : "#30363d"
-        }
+        color: "#161b22"
 
         PtyView {
             id: shellView
@@ -81,12 +79,13 @@ ColumnLayout {
     }
 
     // Command input bar dispatching text into the PTY via sendText()
-    Row {
+    RowLayout {
+        Layout.fillWidth: true
         spacing: 1
 
         Rectangle {
-            width: 28
-            height: 1
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
             color: "#161b22"
 
             TextInput {

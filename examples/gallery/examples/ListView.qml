@@ -3,6 +3,7 @@ import QmlTui
 
 // ListView: Virtualized vertical list instantiating a delegate per visible row.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -11,12 +12,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(48, parent.width)
-        height: 8
-        border {
-            style: Border.Single
-            color: "#f472b6"
-        }
+        width: 50
+        height: 10
+        color: "#161b22"
 
         ListView {
             id: people
@@ -80,13 +78,13 @@ Column {
 
                 Text {
                     text: person.ListView.isCurrentItem ? "›" : " "
-                    color: "#f472b6"
+                    color: "#00ff66"
                 }
 
                 Text {
                     width: 18
                     text: person.modelData.name
-                    color: person.ListView.isCurrentItem ? "#f8fafc" : "#c9d1d9"
+                    color: person.ListView.isCurrentItem ? "#00ff66" : "#c9d1d9"
                     bold: person.ListView.isCurrentItem
                 }
 
@@ -98,7 +96,7 @@ Column {
 
                 Text {
                     text: "★".repeat(person.modelData.stars)
-                    color: "#f9c74f"
+                    color: "#f2cc60"
                 }
             }
         }
@@ -107,6 +105,6 @@ Column {
     Text {
         readonly property var person: people.currentIndex >= 0 ? people.model[people.currentIndex] : undefined
         text: person ? "Current: " + person.name : "No current item"
-        color: "#f472b6"
+        color: "#2cde85"
     }
 }

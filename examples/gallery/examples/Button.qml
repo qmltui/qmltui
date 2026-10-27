@@ -9,6 +9,7 @@ Column {
 
     property int clicks: 0
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {

@@ -74,11 +74,11 @@ Button {
 | :--- | :--- |
 | Text, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
 | Rectangle and rectangle-based controls (Panel) | `color`, `border.color` (Panel border slots take `Item`s styled via their own properties) |
-| Button, CheckBox, RadioButton, Switch, Slider | `textColor` |
+| Button, CheckBox, RadioButton, Slider, SpinBox | `textColor` |
+| ComboBox | `textColor`, `color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
 | ProgressBar | `color`, optional gradient/threshold colors |
 | TabBar | `textColor`, `color`, `selectedTextColor`, `selectionColor` (background) |
-| Toast | `textColor`, `color`, `infoColor`, `successColor`, `warningColor`, `errorColor` |
 | ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color` |
 
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
@@ -142,3 +142,7 @@ textArea.setHighlightLayer("search", [
 ```
 
 Highlight changes schedule repaints without modifying document text, layout dimensions, or undo history. Document modifications increment `textRevision` and clear existing layers before `textChanged` is emitted, allowing highlighters to update synchronously or asynchronously.
+
+![StatusBadge recorded demo](../assets/casts/components/status_badge.gif)
+
+![TextArea syntax highlighting recorded demo](../assets/casts/components/text_area_highlighting.gif)

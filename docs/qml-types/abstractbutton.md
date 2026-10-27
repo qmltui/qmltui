@@ -18,7 +18,7 @@ The interaction template every button-like control is built on: text, `pressed` 
 | **Import Statement** | `import QmlTui.Controls` |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
-| **Inherited By** | [Button](button.md), [CheckBox](checkbox.md), [RadioButton](radiobutton.md), [Switch](switch.md) |
+| **Inherited By** | [Button](button.md), [CheckBox](checkbox.md), [RadioButton](radiobutton.md) |
 
 ## Properties
 
@@ -27,7 +27,7 @@ The interaction template every button-like control is built on: text, `pressed` 
 | `text` | `string` | `""` | Holds the label the default `contentItem` of each control draws. |
 | `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the control; keyboard activation never sets it, since terminals report no key releases. |
 | `down` | `bool` | `pressed` | Holds the visual pressed state used by styles; it follows `pressed` unless assigned explicitly. |
-| `checkable` | `bool` | `false` | Whether activation toggles `checked` before emitting `clicked()`; CheckBox, RadioButton and Switch set it. |
+| `checkable` | `bool` | `false` | Whether activation toggles `checked` before emitting `clicked()`; CheckBox and RadioButton set it. |
 | `checked` | `bool` | `false` | Holds the toggle state of a checkable control; setting it from code emits neither `toggled()` nor `clicked()`. |
 | `autoExclusive` | `bool` | `false` | Whether a checked control stays checked when activated, so a group never ends up with nothing selected; RadioButton sets it. |
 | `highlighted` | `bool` | `false` | Whether the default `contentItem` draws its label bold as a visual emphasis, independent of focus and hover. |

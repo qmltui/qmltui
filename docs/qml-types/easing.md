@@ -79,3 +79,9 @@ Terminal {
     }
 }
 ```
+
+### Gallery Example
+
+![Animation recorded demo](../assets/casts/components/animation.gif)
+
+See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`, or open in the [WebAssembly Playground](../playground.md?example=Animation.qml)).

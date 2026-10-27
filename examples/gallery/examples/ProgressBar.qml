@@ -8,6 +8,7 @@ Column {
 
     property real progress: 0
 
+    anchors.centerIn: parent
     spacing: 1
 
     // Drive all bars from a looping 0..100 animation
@@ -40,7 +41,7 @@ Column {
             from: 0
             to: 100
             value: progressDemo.progress
-            color: "#38bdf8"
+            color: "#58a6ff"
             showBrackets: true
             showPercentage: true
         }
@@ -64,7 +65,7 @@ Column {
             gradient: Gradient {
                 GradientStop {
                     position: 0.4
-                    color: "#34d399"
+                    color: "#2cde85"
                 }
                 GradientStop {
                     position: 0.75
@@ -96,7 +97,7 @@ Column {
             thresholds: [
                 {
                     value: 50,
-                    color: "#34d399"
+                    color: "#2cde85"
                 },
                 {
                     value: 80,
@@ -126,7 +127,7 @@ Column {
             value: progressDemo.progress
             fillCharacter: "★"
             emptyCharacter: "☆"
-            color: "#c084fc"
+            color: "#d2a8ff"
         }
     }
 }

@@ -1,4 +1,4 @@
-// Records the default rendering of Button, CheckBox, RadioButton and Switch
+// Records the default rendering of Button, CheckBox and RadioButton
 // (see ButtonLookFixture.qml). Re-record with captureStyled() only for an
 // intentional change to the default look, and say so in the commit.
 function main(app) {
@@ -15,7 +15,4 @@ function main(app) {
     app.press("Tab");            // second radio
     app.press("Space");          // checks it, unchecking the first
     app.expectStyled("snapshots/button_look_toggled.txt");
-    app.press("Tab");            // third radio
-    app.press("Tab");            // first switch
-    app.expectStyled("snapshots/button_look_switch_focus.txt");
 }

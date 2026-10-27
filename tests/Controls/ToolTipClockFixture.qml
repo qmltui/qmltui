@@ -19,6 +19,7 @@ Terminal {
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q) Qt.quit()
+        if (event.key === Qt.Key_Q)
+            Qt.quit();
     }
 }

@@ -5,7 +5,7 @@ import QmlTui
 // Controls' AbstractButton: text, pressed/down, checkable/checked with
 // toggle(), autoExclusive, highlighted, opt-in hover, and the two items a
 // control is made of. `background` fills the control at z -1; `contentItem`
-// gets the area inside the paddings. Button, CheckBox, RadioButton and Switch
+// gets the area inside the paddings. Button, CheckBox and RadioButton
 // only supply defaults for those two items. Assign your own to restyle:
 //
 //     Button {

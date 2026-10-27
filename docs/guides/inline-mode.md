@@ -189,3 +189,5 @@ buildLog.append({
 - Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode). If a producer exceeds the limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
 
 See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/) and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
+
+![Inline REPL recorded demo](../assets/casts/components/inline_mode.gif)

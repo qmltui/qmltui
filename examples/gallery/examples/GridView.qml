@@ -3,6 +3,7 @@ import QmlTui
 
 // GridView: Virtualized 2D grid laying out delegates in cellWidth × cellHeight cells.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -11,12 +12,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(50, parent.width)
-        height: 8
-        border {
-            style: Border.Single
-            color: "#fbbf24"
-        }
+        width: 46
+        height: 10
+        color: "#161b22"
 
         GridView {
             anchors {
@@ -91,7 +89,7 @@ Column {
 
                 Text {
                     text: cell.modelData.name
-                    color: cell.index % 2 === 0 ? "#c9d1d9" : "#fbbf24"
+                    color: cell.index % 2 === 0 ? "#c9d1d9" : "#2cde85"
                 }
             }
         }

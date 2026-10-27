@@ -65,7 +65,7 @@ Button {
 }
 ```
 
-For a toggle use [CheckBox](checkbox.md) or [Switch](switch.md), for one
+For a toggle use [CheckBox](checkbox.md), for one
 choice out of several [RadioButton](radiobutton.md) with a
 [ButtonGroup](buttongroup.md).
 

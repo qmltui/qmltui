@@ -6,55 +6,153 @@ import QmlTui.Controls
 Column {
     id: statesDemo
 
-    property bool active: false
+    property string mode: ""
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
-        text: "PropertyChanges describe each state; Transition animates between them."
+        text: "PropertyChanges and Transition animate geometry and colors."
         color: "#8b949e"
     }
 
-    Button {
-        text: statesDemo.active ? "Switch off" : "Switch on"
-        focus: true
-        onClicked: statesDemo.active = !statesDemo.active
+    Row {
+        spacing: 1
+
+        Button {
+            text: statesDemo.mode === "on" ? "Standby (off)" : "Switch on"
+            focus: true
+            onClicked: statesDemo.mode = (statesDemo.mode === "on" ? "" : "on")
+        }
+
+        Button {
+            text: "Overload"
+            onClicked: statesDemo.mode = "overload"
+        }
+
+        Button {
+            text: "Reset"
+            onClicked: statesDemo.mode = ""
+        }
     }
 
     Rectangle {
         id: card
-        width: 40
-        height: 3
-        color: "#331111"
-        border {
-            style: Border.Single
-            color: "#7f1d1d"
-        }
+        width: 48
+        height: 8
+        color: "#161b22"
 
         Text {
             id: cardLabel
-            anchors.centerIn: parent
-            text: "● OFF"
+            x: 2
+            y: 1
+            text: "● STANDBY (OFF)"
             bold: true
-            color: "#fca5a5"
+            color: "#c9d1d9"
+        }
+
+        Text {
+            id: cardDetail
+            x: 2
+            y: 2
+            text: "workers: 0 / 8  ·  throughput: idle"
+            color: "#8b949e"
+        }
+
+        // Animated indicator badge whose x, width, and colours transition between states
+        Rectangle {
+            id: stageBadge
+            x: 2
+            y: 4
+            width: 12
+            height: 3
+            color: "#21262d"
+
+            Text {
+                id: stageText
+                anchors.centerIn: parent
+                text: "IDLE 12%"
+                color: "#8b949e"
+                bold: true
+            }
         }
 
         states: [
             State {
                 name: "on"
-                when: statesDemo.active
+                when: statesDemo.mode === "on"
                 PropertyChanges {
                     target: card
                     properties: {
-                        "color": "#113311",
-                        "border.color": "#166534"
+                        "color": "#122d24"
                     }
                 }
                 PropertyChanges {
                     target: cardLabel
                     properties: {
-                        "text": "● ON",
-                        "color": "#86efac"
+                        "text": "● ONLINE (ON)",
+                        "color": "#00ff66"
+                    }
+                }
+                PropertyChanges {
+                    target: cardDetail
+                    properties: {
+                        "text": "workers: 8 / 8  ·  throughput: 1,420 req/s",
+                        "color": "#c9d1d9"
+                    }
+                }
+                PropertyChanges {
+                    target: stageBadge
+                    properties: {
+                        "x": 16,
+                        "width": 16,
+                        "color": "#0d1117"
+                    }
+                }
+                PropertyChanges {
+                    target: stageText
+                    properties: {
+                        "text": "ACTIVE 72%",
+                        "color": "#00ff66"
+                    }
+                }
+            },
+            State {
+                name: "overload"
+                when: statesDemo.mode === "overload"
+                PropertyChanges {
+                    target: card
+                    properties: {
+                        "color": "#3b1219"
+                    }
+                }
+                PropertyChanges {
+                    target: cardLabel
+                    properties: {
+                        "text": "▲ OVERLOAD (ALERT)",
+                        "color": "#fca5a5"
+                    }
+                }
+                PropertyChanges {
+                    target: cardDetail
+                    properties: {
+                        "text": "workers: 8 / 8  ·  queue backpressure!",
+                        "color": "#fecaca"
+                    }
+                }
+                PropertyChanges {
+                    target: stageBadge
+                    properties: {
+                        "x": 30,
+                        "width": 16,
+                        "color": "#450a0a"
+                    }
+                }
+                PropertyChanges {
+                    target: stageText
+                    properties: {
+                        "text": "PEAK 100%",
+                        "color": "#fca5a5"
                     }
                 }
             }
@@ -62,8 +160,18 @@ Column {
 
         transitions: [
             Transition {
+                NumberAnimation {
+                    property: "x"
+                    duration: 350
+                    easing: Easing.OutCubic
+                }
+                NumberAnimation {
+                    property: "width"
+                    duration: 350
+                    easing: Easing.OutCubic
+                }
                 ColorAnimation {
-                    duration: 400
+                    duration: 350
                 }
             }
         ]

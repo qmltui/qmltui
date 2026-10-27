@@ -8,7 +8,10 @@ Item {
 
     property int opened: 0
 
+    anchors.fill: parent
+
     Column {
+        anchors.centerIn: parent
         spacing: 1
 
         Text {
@@ -24,15 +27,15 @@ Item {
 
         Text {
             text: "Opened " + popupDemo.opened + " time" + (popupDemo.opened === 1 ? "" : "s")
-            color: "#a3e635"
+            color: "#2cde85"
         }
     }
 
     Popup {
         id: sheet
         anchors.centerIn: parent
-        width: 40
-        height: 9
+        width: 42
+        height: 11
         modal: true
         onOpened: popupDemo.opened++
 
@@ -41,7 +44,7 @@ Item {
             color: "#161b22"
             border {
                 style: Border.Double
-                color: "#a3e635"
+                color: "#2cde85"
             }
         }
 
@@ -50,7 +53,7 @@ Item {
             y: 1
             text: "Export options"
             bold: true
-            color: "#a3e635"
+            color: "#00ff66"
         }
 
         CheckBox {

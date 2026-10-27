@@ -265,3 +265,7 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
   `bold`, `italic`, and `underline` role names, or a delegate.
 - `Qt::ToolTipRole`, `Qt::StatusTipRole`, `Qt::WhatsThisRole`: exposed by name
   as Qt does, not rendered.
+
+![StandardItemDelegate recorded demo](../assets/casts/components/standard_item_delegate.gif)
+
+![TableView recorded demo](../assets/casts/components/table_view.gif)

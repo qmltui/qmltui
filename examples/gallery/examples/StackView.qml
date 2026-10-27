@@ -5,7 +5,10 @@ import QmlTui.Controls
 
 // StackView: Page navigation stack supporting push(), pop(), and depth tracking.
 Item {
+    anchors.fill: parent
+
     Column {
+        anchors.centerIn: parent
         spacing: 1
 
         Text {
@@ -31,12 +34,9 @@ Item {
         }
 
         Rectangle {
-            width: Math.min(44, parent.parent.width)
+            width: 44
             height: 5
-            border {
-                style: Border.Single
-                color: "#30363d"
-            }
+            color: "#161b22"
 
             StackView {
                 id: stack
@@ -61,7 +61,7 @@ Item {
             Text {
                 text: "Page " + level
                 bold: true
-                color: "#e879f9"
+                color: "#00ff66"
             }
 
             Text {

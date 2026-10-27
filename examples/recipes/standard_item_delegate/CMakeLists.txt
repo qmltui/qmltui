@@ -26,6 +26,16 @@ if(BUILD_TESTING AND TARGET qmltui::runner)
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_standard_item_delegate.js"
         COLUMNS 80
         ROWS 24
+        CLOCK VIRTUAL
+    )
+    qmltui_add_scenario(
+        NAME standard_item_delegate_demo
+        TARGET qmltui_standard_item_delegate_demo
+        SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_standard_item_delegate.js"
+        COLUMNS 80
+        ROWS 24
+        CLOCK REAL
+        RECORD components/standard_item_delegate.cast
     )
 endif()
 

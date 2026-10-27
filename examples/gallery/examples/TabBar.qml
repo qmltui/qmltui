@@ -4,6 +4,7 @@ import QmlTui.Controls
 
 // TabBar: Horizontal tab selector driving a StackLayout via currentIndex.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -13,7 +14,7 @@ Column {
 
     TabBar {
         id: tabs
-        width: Math.min(44, parent.width)
+        width: 44
         focus: true
         tabs: ["Overview", "Telemetry", "Logs"]
         selectionColor: "#fbbf24"
@@ -22,7 +23,7 @@ Column {
 
     // Each child Item of StackLayout corresponds to one tab index
     StackLayout {
-        width: Math.min(44, parent.width)
+        width: 44
         height: 4
         currentIndex: tabs.currentIndex
 

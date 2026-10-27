@@ -29,6 +29,19 @@ static QVariantMap loadExampleSources(const QStringList& files) {
     return sources;
 }
 
+static QVariantMap loadScenarioSources() {
+    QVariantMap sources;
+    const QDir dir(QStringLiteral(":/qt/qml/Gallery/scenarios"));
+    const QStringList files = dir.entryList({QStringLiteral("*.js")}, QDir::Files, QDir::Name);
+    for (const QString& fileName : files) {
+        QFile file(QStringLiteral(":/qt/qml/Gallery/scenarios/") + fileName);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            sources.insert(fileName, QString::fromUtf8(file.readAll()));
+        }
+    }
+    return sources;
+}
+
 static QString resolveExampleFile(const QString& query, const QStringList& files) {
     if (query.isEmpty()) return QString();
     const QString targetKey = normalizeKey(query);
@@ -70,6 +83,8 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("qmltuiAvailableExamples"), examples);
     engine.rootContext()->setContextProperty(QStringLiteral("qmltuiExampleSources"),
                                              loadExampleSources(examples));
+    engine.rootContext()->setContextProperty(QStringLiteral("qmltuiScenarioSources"),
+                                             loadScenarioSources());
 
     if (!requestedExample.isEmpty()) {
         const QString resolved = resolveExampleFile(requestedExample, examples);

@@ -1,11 +1,12 @@
 // Gallery smoke scenario: the searchable GridView with component previews renders,
 // inline header search filters tiles, Enter opens the full-width Example Panel by
-// default, F2 toggles the editable Code Panel, editing code auto-reloads after the
-// 500ms timeout, and Escape returns to the GridView.
+// default, Ctrl+E toggles the editable Code Panel, Ctrl+Y copies code to the
+// clipboard, editing code auto-reloads after the 500ms timeout, Ctrl+R resets
+// code, and Escape returns to the GridView.
 function main(app) {
     app.waitForText("QmlTui Gallery");
-    app.expectText("Button");
-    app.expectText("[ Primary ]");
+    app.expectText("Text");
+    app.expectText("Rectangle");
     app.expectText("/ Search");
     // The tile count depends on the build (Behavior, QmlTui.Image, QmlTui.PtyView), so read it.
     app.waitForRegex("1 / [0-9]+");
@@ -18,7 +19,7 @@ function main(app) {
     app.typeText("Sparkline");
     app.waitForText("1 / 1");
     app.expectText("Sparkline");
-    app.expectNoText("[ Primary ]");
+    app.expectNoText("Rectangle");
     app.captureText("gallery/search.txt");
     app.press("ESCAPE");
     app.waitForText(at(1));
@@ -32,7 +33,10 @@ function main(app) {
     app.press("HOME");
     app.waitForText(at(1));
 
-    // Enter opens the Button demo with the QML Code Panel hidden by default.
+    // Filter to Button and press Enter to open the Button demo with the QML Code Panel hidden by default.
+    app.press("/");
+    app.typeText("Button");
+    app.waitForText("Button");
     app.press("ENTER");
     app.waitForText("No clicks yet");
     app.expectText("examples/Button.qml");
@@ -43,13 +47,14 @@ function main(app) {
     app.press("SPACE");
     app.waitForText("Clicked 1 time");
 
-    // F2 reveals the editable QML Code Panel; clicking the Code Panel focuses
-    // the code editor; clicking the Example Panel moves focus back to the live
-    // example rendering frame.
-    app.press("F2");
+    // Ctrl+E reveals the editable QML Code Panel; Ctrl+Y copies code; Ctrl+T switches
+    // focus between the live preview and the code editor; Ctrl+R resets edited code.
+    app.press("e", ["Ctrl"]);
     app.waitForText("(editable)");
     app.expectText("Auto-reload");
-    app.clickText("(editable)");
+    app.press("y", ["Ctrl"]);
+    app.waitForText("✓ Copied");
+    app.press("t", ["Ctrl"]);
     app.press("END");
     app.press("ENTER");
     app.typeText("    // Live edited comment");
@@ -57,46 +62,55 @@ function main(app) {
     app.sleep(600);
     app.waitForText("No clicks yet");
     app.expectText("Live edited comment");
-    app.clickText("● Live");
+    app.press("t", ["Ctrl"]);
     app.press("SPACE");
     app.waitForText("Clicked 1 time");
     app.captureText("gallery/button_live_edit.txt");
 
-    // F2 hides the Code Panel again before returning to the grid.
-    app.press("F2");
+    // Ctrl+R resets the code back to the original example source.
+    app.press("r", ["Ctrl"]);
+    app.waitForText("No clicks yet");
+    app.expectNoText("Live edited comment");
+
+    // Ctrl+E hides the Code Panel again before returning to the grid.
+    app.press("e", ["Ctrl"]);
     app.expectNoText("(editable)");
 
-    // Escape goes back to the grid.
+    // Escape goes back to the grid, and a second Escape clears the search filter.
     app.press("ESCAPE");
     app.waitForText("QmlTui Gallery");
     app.expectNoText("Clicked 1 time");
-
-    // End jumps to the last tile in CLI and scrolls the grid to it.
-    app.press("END");
-    app.waitForText(at(total));
-    app.expectText("TerminalCapabilities");
-    app.captureText("gallery/grid_end.txt");
-
-    // Topic TabBar: clicking or pressing Tab filters by topic (Controls, Layout,
-    // Display, Views, Input, Animation, CLI) and Escape resets back to All.
-    app.press("HOME");
-    app.waitForText(at(1));
-    app.press("TAB");
-    app.waitForText("Components · Controls (14/");
     app.press("ESCAPE");
     app.waitForText(at(1));
 
-    // Clicking a tile opens it directly.
-    app.clickText("Slider");
+    // Clicking TextInput on the top row opens it: Q typed into a focused TextInput
+    // is text, not quit.
+    app.clickText("TextInput");
+    app.waitForText("Hello, stranger!");
+    app.typeText("quinn");
+    app.waitForText("Hello, quinn!");
+    app.press("ESCAPE");
+    app.waitForText("QmlTui Gallery");
+
+    // Search for Slider and open it.
+    app.press("/");
+    app.typeText("Slider");
+    app.waitForText("1 / 1");
+    app.press("ENTER");
     app.waitForText("Volume  42%");
     app.press("RIGHT");
     app.waitForText("Volume  43%");
     app.captureText("gallery/slider.txt");
     app.press("ESCAPE");
     app.waitForText("QmlTui Gallery");
+    app.press("ESCAPE");
+    app.waitForText(at(1));
 
     // Escape is contextual: it closes an open Dialog before it leaves the demo.
-    app.clickText("Dialog");
+    app.press("/");
+    app.typeText("Dialog");
+    app.waitForText("1 / 1");
+    app.press("ENTER");
     app.waitForText("No decision yet");
     app.press("ENTER");
     app.waitForText("report.pdf will be removed");
@@ -109,27 +123,21 @@ function main(app) {
     app.waitForText("Deleted report.pdf");
     app.press("ESCAPE");
     app.waitForText("QmlTui Gallery");
-
-    // Switching to the Input topic tab selects TextInput: Q typed into a focused
-    // TextInput is text, not quit.
-    app.clickText("Input");
-    app.waitForText("Components · Input (4/");
-    app.expectText("TextInput");
-    app.press("ENTER");
-    app.waitForText("Hello, stranger!");
-    app.typeText("quinn");
-    app.waitForText("Hello, quinn!");
-    app.press("ESCAPE");
-    app.waitForText("QmlTui Gallery");
     app.press("ESCAPE");
     app.waitForText(at(1));
 
-    // The AnimatedSprite tile in the Display topic (only in a QmlTui.Image build)
-    // plays a sprite sheet: Space pauses the frame clock, Right picks the next animation.
-    app.clickText("Display");
-    app.waitForText("Components · Display");
+    // End jumps to the last tile at the bottom of the grid.
     app.press("END");
-    if (app.frameText().includes("AnimatedSprite")) {
+    app.waitForText(at(total));
+    app.captureText("gallery/grid_end.txt");
+    app.press("HOME");
+    app.waitForText(at(1));
+
+    // The AnimatedSprite tile (in a QmlTui.Image build) plays a sprite sheet:
+    // Space pauses the frame clock, Right picks the next animation.
+    app.press("/");
+    app.typeText("AnimatedSprite");
+    if (!app.frameText().includes("0 / 0")) {
         app.press("ENTER");
         app.waitForRegex("loading: frame [0-9]+/4");
         app.expectText("of 256x64 sheet");

@@ -3,6 +3,7 @@ import QmlTui
 
 // ScrollView: Scrollable viewport container with automatic scrollbar rendering.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -11,12 +12,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(46, parent.width)
-        height: 9
-        border {
-            style: Border.Single
-            color: "#67e8f9"
-        }
+        width: 48
+        height: 10
+        color: "#161b22"
 
         ScrollView {
             id: scroller
@@ -36,7 +34,7 @@ Column {
                     delegate: Text {
                         required property int index
                         text: "line " + (index + 1) + (index % 10 === 9 ? "  ── section " + Math.floor(index / 10 + 1) : "")
-                        color: index % 10 === 9 ? "#67e8f9" : "#c9d1d9"
+                        color: index % 10 === 9 ? "#00ff66" : "#c9d1d9"
                     }
                 }
             }
@@ -45,6 +43,6 @@ Column {
 
     Text {
         text: "contentY " + scroller.contentY + " of " + scroller.contentHeight
-        color: "#67e8f9"
+        color: "#2cde85"
     }
 }

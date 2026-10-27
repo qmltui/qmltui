@@ -7,15 +7,13 @@ Column {
 
     property string link: "none yet"
 
+    anchors.centerIn: parent
     spacing: 1
 
     Rectangle {
-        width: Math.min(54, parent.width)
+        width: 54
         height: 8
-        border {
-            style: Border.Single
-            color: "#fde68a"
-        }
+        color: "#161b22"
 
         // RichText / Text.RichText parses HTML tags and dispatches onLinkActivated
         Text {
@@ -25,7 +23,7 @@ Column {
             }
             wrapMode: Text.WordWrap
             textFormat: Text.RichText
-            text: "<b>Text</b> wraps long content and understands HTML tags: <font color='#7ee0ff'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/qmltui-dev/qmltui'>the QmlTui repository</a>. Click a link to activate it."
+            text: "<b>Text</b> wraps long content and understands HTML tags: <font color='#00ff66'>colours</font>, <i>emphasis</i> and links such as <a href='https://doc.qt.io/qt-6/qml-tutorial.html'>the QML tutorial</a> or <a href='https://github.com/qmltui-dev/qmltui'>the QmlTui repository</a>. Click a link to activate it."
             onLinkActivated: url => {
                 demo.link = url;
             }
@@ -34,6 +32,6 @@ Column {
 
     Text {
         text: "Last link: " + demo.link
-        color: "#fde68a"
+        color: "#2cde85"
     }
 }

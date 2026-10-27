@@ -3,7 +3,7 @@ import QmlTui
 import QmlTui.Image
 
 // AnimatedSprite: Plays a sequence of sub-frames sliced out of a sprite sheet.
-Column {
+ColumnLayout {
     id: spriteDemo
 
     readonly property int cellWidth: 64
@@ -25,6 +25,7 @@ Column {
     property int animationIndex: 0
     readonly property var animation: animations[animationIndex]
 
+    anchors.fill: parent
     spacing: 1
     focusPolicy: Qt.StrongFocus
     focus: true
@@ -50,12 +51,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(44, parent.width)
-        height: 11
-        border {
-            style: Border.Single
-            color: "#30363d"
-        }
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: "#161b22"
 
         // Slice frameCount cells of size frameWidth×frameHeight starting at (frameX, frameY)
         AnimatedSprite {

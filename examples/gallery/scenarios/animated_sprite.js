@@ -1,7 +1,7 @@
 /** @param {Runner} app */
 function main(app) {
     app.waitForRegex("loading: frame [0-9]+/4");
-    app.expectText("AnimatedSprite");
+    app.expectText("of 256x64 sheet");
     app.sleep(800);
     app.press("Space");
     app.waitForText("paused");

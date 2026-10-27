@@ -11,6 +11,7 @@ Column {
     property var net: []
     property int tick: 0
 
+    anchors.centerIn: parent
     spacing: 1
 
     // Seed deterministic synthetic series on startup
@@ -27,7 +28,7 @@ Column {
     // Append a new sample every 120 ms
     Timer {
         interval: 120
-        running: true
+        running: sparkDemo.visible
         repeat: true
         onTriggered: {
             sparkDemo.tick++;

@@ -5,6 +5,7 @@ import QmlTui.Controls
 // Panel: Bordered container with Item slots for title, titleTrailing,
 // footer, and footerTrailing along its top and bottom border edges.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Row {
@@ -16,11 +17,11 @@ Column {
             height: 5
             border {
                 style: Border.Single
-                color: "#94a3b8"
+                color: "#30363d"
             }
             title: Text {
                 text: "single"
-                color: "#94a3b8"
+                color: "#c9d1d9"
             }
 
             Text {
@@ -45,11 +46,11 @@ Column {
             titleAlignment: Qt.AlignHCenter
             border {
                 style: Border.Double
-                color: "#7ee0ff"
+                color: "#58a6ff"
             }
             title: Text {
                 text: "double"
-                color: "#7ee0ff"
+                color: "#58a6ff"
                 bold: true
             }
 
@@ -73,15 +74,16 @@ Column {
     Panel {
         width: 43
         height: 5
-        color: "#1a1a10"
+        color: "#122d24"
         titleAlignment: Qt.AlignRight
         border {
             style: Border.Rounded
-            color: "#f9c74f"
+            color: "#00a651"
         }
         title: Text {
             text: "rounded"
-            color: "#f9c74f"
+            color: "#00ff66"
+            bold: true
         }
         footer: Text {
             text: "v1.0"

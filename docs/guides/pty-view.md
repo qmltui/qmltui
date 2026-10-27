@@ -115,3 +115,5 @@ Child processes can emit Operating System Command (OSC) sequences. `PtyView` gat
 | `allowNotifications` | `false` | When enabled, OSC 9 / OSC 777 notification requests emit `notificationRequested(string title, string message)`. |
 
 See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), and [`PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`).
+
+![PtyView recorded demo](../assets/casts/components/pty_view.gif)

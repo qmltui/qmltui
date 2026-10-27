@@ -93,9 +93,10 @@
 - [Button](button.md)
 - [ButtonGroup](buttongroup.md)
 - [CheckBox](checkbox.md)
+- [ComboBox](combobox.md)
 - [RadioButton](radiobutton.md)
 - [Slider](slider.md)
-- [Switch](switch.md)
+- [SpinBox](spinbox.md)
 
 ## QmlTui.Controls — overlays and navigation
 
@@ -103,7 +104,6 @@
 - [Panel](panel.md)
 - [StackView](stackview.md)
 - [TabBar](tabbar.md)
-- [Toast](toast.md)
 - [ToolTip](tooltip.md)
 
 ## QmlTui.Image — display

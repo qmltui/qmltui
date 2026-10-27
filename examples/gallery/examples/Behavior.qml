@@ -9,6 +9,7 @@ Column {
 
     property bool warm: false
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -41,10 +42,6 @@ Column {
             width: 12
             height: 3
             color: behaviorDemo.warm ? "#f87171" : "#2cde85"
-            border {
-                style: Border.Single
-                color: "#0d1117"
-            }
 
             // Animate horizontal position changes automatically
             Behavior on x {

@@ -68,3 +68,9 @@ Terminal {
     }
 }
 ```
+
+### Gallery Example
+
+![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
+
+See [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml) (`./build/examples/gallery/qmltui_gallery --example Shortcut`, or open in the [WebAssembly Playground](../playground.md?example=Shortcut.qml)).

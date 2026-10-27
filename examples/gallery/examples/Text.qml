@@ -3,6 +3,7 @@ import QmlTui
 
 // Text: Terminal cell typography, spans, rich text, gradients, and alignment.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     // Character style attributes
@@ -93,6 +94,43 @@ Column {
                 position: 1.0
                 color: "#f472b6"
             }
+        }
+    }
+
+    // Animated moving gradient (Gradient.offset loops 0.0 -> 1.0)
+    Text {
+        text: "✦ moving gradient wave across terminal glyphs ✦"
+        bold: true
+        gradient: Gradient {
+            id: movingGrad
+            orientation: Gradient.Horizontal
+
+            GradientStop {
+                position: 0.0
+                color: "#2cde85"
+            }
+            GradientStop {
+                position: 0.33
+                color: "#38bdf8"
+            }
+            GradientStop {
+                position: 0.66
+                color: "#f472b6"
+            }
+            GradientStop {
+                position: 1.0
+                color: "#2cde85"
+            }
+        }
+
+        NumberAnimation {
+            target: movingGrad
+            property: "offset"
+            from: 0.0
+            to: 1.0
+            duration: 2400
+            loops: -1
+            running: true
         }
     }
 

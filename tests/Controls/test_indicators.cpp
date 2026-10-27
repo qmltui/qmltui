@@ -5,7 +5,6 @@
 #include <QmlTui/Core/Items/Repeater.h>
 #include <QmlTui/Core/Items/ListView.h>
 #include <QmlTui/Core/Items/GridView.h>
-#include <QmlTui/Controls/Toast.h>
 #include <QmlTui/Controls/TabBar.h>
 #include <QmlTui/Core/Items/Gradient.h>
 #include <QmlTui/Core/Items/GradientStop.h>
@@ -234,26 +233,6 @@ private slots:
         QVERIFY(!tree.isExpanded(1));
         // Second DuplicateName (now at Index 2) must remain expanded independently!
         QVERIFY(tree.isExpanded(2));
-    }
-
-    void testToast() {
-        Toast toast;
-        toast.setWidth(30);
-        toast.setHeight(5);
-
-        toast.showToast("TestTitle", "ToastBody", "info", 1000);
-        TextGridBuffer buffer;
-        buffer.resize(30, 5);
-        paintItem(toast, buffer, 0, 0);
-
-        QString allText;
-        for (int y = 0; y < 5; ++y) {
-            for (int x = 0; x < 30; ++x)
-                allText += QString::fromUtf8(buffer.cellAt(x, y).character());
-            allText += QLatin1Char('\n');
-        }
-        QVERIFY2(allText.contains(QStringLiteral("TestTitle")), qPrintable(allText));
-        QVERIFY2(allText.contains(QStringLiteral("ToastBody")), qPrintable(allText));
     }
 
     void testTabBar() {

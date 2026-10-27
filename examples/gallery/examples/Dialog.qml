@@ -3,28 +3,33 @@ import QmlTui
 import QmlTui.Controls
 
 // Dialog: Modal accept/reject confirmation dialog with contextual Escape.
-Column {
+Item {
     id: dialogDemo
 
     property string outcome: "No decision yet"
 
-    spacing: 1
+    anchors.fill: parent
 
-    Text {
-        text: "Dialog provides a modal prompt with accept and reject buttons."
-        color: "#8b949e"
-    }
+    Column {
+        anchors.centerIn: parent
+        spacing: 1
 
-    Button {
-        text: "Delete report.pdf"
-        focus: true
-        onClicked: confirmDialog.open()
-    }
+        Text {
+            text: "Dialog provides a modal prompt with accept and reject buttons."
+            color: "#8b949e"
+        }
 
-    Text {
-        text: dialogDemo.outcome
-        color: "#f87171"
-        bold: true
+        Button {
+            text: "Delete report.pdf"
+            focus: true
+            onClicked: confirmDialog.open()
+        }
+
+        Text {
+            text: dialogDemo.outcome
+            color: "#f87171"
+            bold: true
+        }
     }
 
     // Enter accepts; Escape rejects and closes the Dialog before reaching root

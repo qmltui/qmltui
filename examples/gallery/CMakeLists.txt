@@ -70,6 +70,12 @@ endif()
 
 if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_gallery PRIVATE qmltui::runner)
+    file(GLOB gallery_scenario_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/*.js")
+    qt_add_resources(qmltui_gallery "qmltui_gallery_scenarios"
+        PREFIX "/qt/qml/Gallery/scenarios"
+        BASE "${CMAKE_CURRENT_SOURCE_DIR}/scenarios"
+        FILES ${gallery_scenario_files}
+    )
 
     # Gallery pages animate on QML Timers and QmlTui animations: the tour
     # runs on the virtual clock, so its per-page settling is instant.
@@ -89,7 +95,7 @@ if(BUILD_TESTING AND TARGET qmltui::runner)
         COLUMNS 100 ROWS 30)
     qmltui_add_scenario(NAME gallery_tour TARGET qmltui_gallery
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_gallery_tour.js"
-        COLUMNS 100 ROWS 30 CLOCK REAL SCENARIO_TIMEOUT_MS 90000
+        COLUMNS 100 ROWS 30 CLOCK VIRTUAL SCENARIO_TIMEOUT_MS 300000
         RECORD gallery-tour.cast)
 
     # Standalone .cast + .gif recording scenarios for each built-in type in examples/gallery/examples/*.qml

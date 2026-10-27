@@ -3,6 +3,7 @@ import QmlTui
 
 // TextInput: Single-line text editor with placeholder, password masking, and regex validation.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -30,7 +31,7 @@ Column {
                 anchors.fill: parent
                 focus: true
                 placeholderText: "Your name"
-                color: "#4ade80"
+                color: "#2cde85"
             }
         }
     }
@@ -55,7 +56,7 @@ Column {
                 anchors.fill: parent
                 echoMode: TextInput.Password
                 placeholderText: "secret"
-                color: "#4ade80"
+                color: "#2cde85"
             }
         }
     }
@@ -81,13 +82,13 @@ Column {
                 placeholderText: "0-9 only"
                 validator: /^[0-9]*$/
                 maximumLength: 8
-                color: digitsInput.acceptableInput ? "#4ade80" : "#f87171"
+                color: digitsInput.acceptableInput ? "#2cde85" : "#f87171"
             }
         }
     }
 
     Text {
         text: "Hello, " + (nameInput.text.length ? nameInput.text : "stranger") + "! Password has " + passwordInput.text.length + " characters."
-        color: "#4ade80"
+        color: "#2cde85"
     }
 }

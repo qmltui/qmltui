@@ -14,5 +14,7 @@ function main(app) {
     app.expectText("red");
     app.expectText("blue");
     app.expectText("white");
+    app.sleep(1200);
     app.captureText("capabilities.txt");
+    app.stopRecording();
 }

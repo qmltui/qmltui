@@ -118,3 +118,9 @@ Terminal {
 The [Clipboard singleton](clipboard.md) provides `copy(text)` and Promise-based
 `requestText()` with automatic terminal selection. Normal terminal-initiated
 paste arrives through input handling independently of clipboard queries.
+
+### Recorded Example
+
+![Hello, QmlTui! recorded demo](../assets/casts/hello-world.gif)
+
+See [`examples/helloworld/`](../../examples/helloworld/) and [`examples/gallery/Main.qml`](../../examples/gallery/Main.qml).

@@ -122,4 +122,6 @@ Terminal {
 
 ### Gallery Example
 
+![PtyView recorded demo](../assets/casts/components/pty_view.gif)
+
 See [`examples/gallery/examples/PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`, or open in the [WebAssembly Playground](../playground.md?example=PtyView.qml)).

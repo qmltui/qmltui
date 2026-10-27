@@ -6,10 +6,13 @@
 // Note: moc treats a # inside a raw string as a directive, so QML in this file
 // uses named colours, never "#rrggbb".
 #include <QTest>
+#include <QAbstractListModel>
 #include <QPointer>
 #include <QQmlComponent>
+#include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlError>
+#include <QStringListModel>
 #include <memory>
 
 #include <QmlTui/Core/Items/Item.h>
@@ -21,6 +24,61 @@
 using namespace qmltui;
 
 namespace {
+class CustomRoleListModel : public QAbstractListModel {
+    Q_OBJECT
+public:
+    enum Roles {
+        LabelRole = Qt::UserRole + 1,
+        CodeRole = Qt::UserRole + 2,
+    };
+
+    struct Entry {
+        QString label;
+        QString code;
+    };
+
+    explicit CustomRoleListModel(QObject* parent = nullptr)
+        : QAbstractListModel(parent),
+          m_entries{{QStringLiteral("Production"), QStringLiteral("prod")},
+                    {QStringLiteral("Staging"), QStringLiteral("stg")}} {}
+
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override {
+        return parent.isValid() ? 0 : static_cast<int>(m_entries.size());
+    }
+
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_entries.size()) return {};
+        const Entry& entry = m_entries.at(index.row());
+        if (role == LabelRole || role == Qt::DisplayRole) return entry.label;
+        if (role == CodeRole) return entry.code;
+        return {};
+    }
+
+    QHash<int, QByteArray> roleNames() const override {
+        return {
+            {LabelRole, "label"},
+            {CodeRole, "code"},
+        };
+    }
+
+    void renameRow(int row, const QString& newLabel) {
+        if (row < 0 || row >= m_entries.size()) return;
+        m_entries[row].label = newLabel;
+        const QModelIndex idx = index(row, 0);
+        emit dataChanged(idx, idx, {LabelRole, Qt::DisplayRole});
+    }
+
+    void appendEntry(const QString& label, const QString& code) {
+        const int row = static_cast<int>(m_entries.size());
+        beginInsertRows(QModelIndex(), row, row);
+        m_entries.push_back({label, code});
+        endInsertRows();
+    }
+
+private:
+    QList<Entry> m_entries;
+};
+
 QString frameText(TerminalEngine* engine) {
     const auto frame = engine->currentFrame();
     if (!frame) return {};
@@ -607,6 +665,231 @@ Terminal {
         QVERIFY2(text.contains(QStringLiteral("(*) Debug")), qPrintable(text));
         QVERIFY2(text.contains(QStringLiteral("( ) Release")), qPrintable(text));
         QVERIFY2(text.contains(QStringLiteral("( ) MinSizeRel")), qPrintable(text));
+    }
+
+    void comboBoxBehaviour() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int lastActivated: -1
+    ComboBox {
+        objectName: "combo"
+        x: 0; y: 0; width: 20
+        focus: true
+        model: ["Alpha", "Beta", "Gamma"]
+        onActivated: index => root.lastActivated = index
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 10));
+        auto* combo = terminal->findChild<Item*>("combo");
+        QVERIFY(combo);
+        QCOMPARE(combo->property("count").toInt(), 3);
+        QCOMPARE(combo->property("currentIndex").toInt(), 0);
+        QCOMPARE(combo->property("currentText").toString(), QStringLiteral("Alpha"));
+        QVERIFY(!combo->property("opened").toBool());
+
+        // Down arrow when closed steps currentIndex and emits activated
+        engine->handleKeyInput(Qt::Key_Down, QString(), Qt::NoModifier);
+        QCOMPARE(combo->property("currentIndex").toInt(), 1);
+        QCOMPARE(combo->property("currentText").toString(), QStringLiteral("Beta"));
+        QCOMPARE(terminal->property("lastActivated").toInt(), 1);
+
+        // Enter opens the popup; Down moves to index 2; Enter accepts and closes
+        quint64 seq = engine->frameSequence();
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QVERIFY(combo->property("opened").toBool());
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        {
+            const auto frame = engine->currentFrame();
+            QVERIFY(frame);
+            // Popup sits at y=1..5 with border at x=0 and x=19; inner option rows are x=1..18.
+            // Row index 1 ("▸ Beta") is at y=3 and must be reversed across the full row width.
+            for (int x = 1; x <= 18; ++x) {
+                QVERIFY2((frame->cellAt(x, 3).attributes & TextAttribute::Reversed) !=
+                             TextAttribute::None,
+                         qPrintable(QStringLiteral("Expected Reversed at x=%1").arg(x)));
+                QVERIFY2((frame->cellAt(x, 2).attributes & TextAttribute::Reversed) ==
+                             TextAttribute::None,
+                         qPrintable(QStringLiteral("Unexpected Reversed at x=%1 on row 0").arg(x)));
+            }
+        }
+        engine->handleKeyInput(Qt::Key_Down, QString(), Qt::NoModifier);
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QVERIFY(!combo->property("opened").toBool());
+        QCOMPARE(combo->property("currentIndex").toInt(), 2);
+        QCOMPARE(combo->property("currentText").toString(), QStringLiteral("Gamma"));
+        QCOMPARE(terminal->property("lastActivated").toInt(), 2);
+    }
+
+    void spinBoxBehaviour() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int modifications: 0
+    SpinBox {
+        objectName: "spin"
+        x: 0; y: 0; width: 16
+        from: 10; to: 30; stepSize: 5; value: 20
+        suffix: " ms"
+        focus: true
+        onValueModified: root.modifications++
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 6));
+        auto* spin = terminal->findChild<Item*>("spin");
+        QVERIFY(spin);
+        QCOMPARE(spin->property("value").toInt(), 20);
+        QCOMPARE(spin->property("displayText").toString(), QStringLiteral("20 ms"));
+
+        engine->handleKeyInput(Qt::Key_Up, QString(), Qt::NoModifier);
+        QCOMPARE(spin->property("value").toInt(), 25);
+        QCOMPARE(terminal->property("modifications").toInt(), 1);
+
+        engine->handleKeyInput(Qt::Key_Up, QString(), Qt::NoModifier);
+        QCOMPARE(spin->property("value").toInt(), 30);
+        engine->handleKeyInput(Qt::Key_Up, QString(), Qt::NoModifier);
+        QCOMPARE(spin->property("value").toInt(), 30); // clamped at `to`
+
+        // Click left half decreases, right half increases
+        engine->handleMouseInput(0, 1, 0, false);
+        engine->handleMouseInput(0, 1, 0, true);
+        QCOMPARE(spin->property("value").toInt(), 25);
+        engine->handleMouseInput(0, 14, 0, false);
+        engine->handleMouseInput(0, 14, 0, true);
+        QCOMPARE(spin->property("value").toInt(), 30);
+    }
+
+    void comboBoxAbstractItemModel() {
+        QQmlEngine qml;
+        CustomRoleListModel customModel;
+        QStringListModel stringModel({QStringLiteral("One"), QStringLiteral("Two")});
+        qml.rootContext()->setContextProperty(QStringLiteral("cppCustomModel"), &customModel);
+        qml.rootContext()->setContextProperty(QStringLiteral("cppStringModel"), &stringModel);
+
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ComboBox {
+        objectName: "customCombo"
+        x: 0; y: 0; width: 24
+        focus: true
+        model: cppCustomModel
+        textRole: "label"
+    }
+    ComboBox {
+        objectName: "stringCombo"
+        x: 0; y: 2; width: 20
+        model: cppStringModel
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(32, 12));
+
+        auto* customCombo = terminal->findChild<Item*>("customCombo");
+        auto* stringCombo = terminal->findChild<Item*>("stringCombo");
+        QVERIFY(customCombo);
+        QVERIFY(stringCombo);
+
+        QCOMPARE(customCombo->property("count").toInt(), 2);
+        QCOMPARE(customCombo->property("currentText").toString(), QStringLiteral("Production"));
+        QCOMPARE(stringCombo->property("count").toInt(), 2);
+        QCOMPARE(stringCombo->property("currentText").toString(), QStringLiteral("One"));
+
+        QVariant foundIndex;
+        QVERIFY(QMetaObject::invokeMethod(customCombo, "find", Q_RETURN_ARG(QVariant, foundIndex),
+                                          Q_ARG(QVariant, QStringLiteral("Staging"))));
+        QCOMPARE(foundIndex.toInt(), 1);
+
+        // Live dataChanged updates currentText
+        customModel.renameRow(0, QStringLiteral("Prod-EU"));
+        QCOMPARE(customCombo->property("currentText").toString(), QStringLiteral("Prod-EU"));
+
+        // Live rowsInserted updates count and popup options
+        customModel.appendEntry(QStringLiteral("Development"), QStringLiteral("dev"));
+        QCOMPARE(customCombo->property("count").toInt(), 3);
+
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QVERIFY(customCombo->property("opened").toBool());
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("Development")));
+        engine->handleKeyInput(Qt::Key_Down, QString(), Qt::NoModifier);
+        engine->handleKeyInput(Qt::Key_Down, QString(), Qt::NoModifier);
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QVERIFY(!customCombo->property("opened").toBool());
+        QCOMPARE(customCombo->property("currentIndex").toInt(), 2);
+        QCOMPARE(customCombo->property("currentText").toString(), QStringLiteral("Development"));
+    }
+
+    void comboBoxAndSpinBoxCustomization() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ComboBox {
+        id: customCombo
+        objectName: "customCombo"
+        x: 0; y: 0; width: 22
+        focus: true
+        model: ["Alpha", "Beta"]
+        contentItem: Text {
+            text: ">> " + customCombo.currentText
+        }
+        indicator: Text {
+            text: customCombo.opened ? "▲" : "▼"
+        }
+        delegate: Text {
+            required property int index
+            required property var modelData
+            width: 20
+            height: 1
+            text: "* " + String(modelData)
+        }
+    }
+    SpinBox {
+        id: customSpin
+        objectName: "customSpin"
+        x: 0; y: 2; width: 16
+        value: 42
+        downIndicator: Text { text: "◄" }
+        contentItem: Text {
+            text: "<" + customSpin.displayText + ">"
+            horizontalAlignment: Qt.AlignHCenter
+        }
+        upIndicator: Text { text: "►" }
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 10));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        QString text = frameText(engine);
+        QVERIFY2(text.contains(QStringLiteral(">> Alpha")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("▼")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("◄")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("<42>")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("►")), qPrintable(text));
+
+        // Open custom ComboBox to verify custom delegate rendering
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("* Alpha")));
+        QVERIFY2(frameText(engine).contains(QStringLiteral("* Beta")),
+                 qPrintable(frameText(engine)));
     }
 };
 

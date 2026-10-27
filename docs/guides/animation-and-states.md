@@ -128,3 +128,7 @@ An application can combine `Item.states` with one or more [`StateGroup`](../qml-
 - When a property is covered by both an active `Transition` and a `Behavior`, the `Transition` takes precedence.
 
 See [`examples/recipes/independent_states/`](../../examples/recipes/independent_states/), the gallery examples [`States.qml`](../../examples/gallery/examples/States.qml), [`Animation.qml`](../../examples/gallery/examples/Animation.qml), and [`Behavior.qml`](../../examples/gallery/examples/Behavior.qml), and the [`State`](../qml-types/state.md), [`StateGroup`](../qml-types/stategroup.md), and [`PropertyChanges`](../qml-types/propertychanges.md) references.
+
+![States recorded demo](../assets/casts/components/states.gif)
+
+![Behavior recorded demo](../assets/casts/components/behavior.gif)

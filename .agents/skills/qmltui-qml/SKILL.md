@@ -26,7 +26,7 @@ dependency. `AGENTS.md` forbids it.
 ```qml
 // QmlTui modules
 import QmlTui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
-import QmlTui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, Toast, ...
+import QmlTui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, ...
 import QmlTui.Image           // Image, AnimatedSprite
 import QmlTui.PtyView         // PtyView (PTY, Linux/macOS only, optional build)
 
@@ -256,9 +256,9 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `Behavior` is available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
 
 **`import QmlTui.Controls`** (QML and C++ in `src/QmlTui/Controls`)
-`AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `Switch`,
-`Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`, `StackView`, `Panel`,
-`Dialog`, `Toast`, `Sparkline`. `ToolTip` is attached-only. There is
+`AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`,
+`ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`,
+`StackView`, `Panel`, `Dialog`, `Sparkline`. `ToolTip` is attached-only. There is
 no palette singleton: colours are set per item, and an inherited palette
 property is a Plan 06 section 7 proposal, not a shipped type.
 

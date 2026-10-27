@@ -8,17 +8,16 @@ steps. `stopRecording()` closes the current cast; `startRecording(relativePath)`
 starts another with a full repaint. See the [Runner API](../cpp-classes/runner.md).
 
 In `examples/CMakeLists.txt`, `QMLTUI_RECORD_DIR` points to `docs/assets/casts/` and
-`QMLTUI_RECORD_POST_COMMAND` runs `agg "<CAST>" "<CAST_STEM>.gif"` automatically
+`QMLTUI_RECORD_POST_COMMAND` runs `agg --renderer resvg --font-size 22 --line-height 1.08 "<CAST>" "<CAST_STEM>.gif"` automatically
 whenever `agg` is found in `PATH`. All recording scenarios carry the `Demo` CTest
 label so normal `ctest -L Runner` runs stay fast.
 
 ## Prerequisites
 
-Install `agg` (and `svg-term-cli` for the static SVG card) once for local demo regeneration:
+Install `agg` once for local demo regeneration:
 
 ```sh
 cargo install --git https://github.com/asciinema/agg
-npm install --global svg-term-cli
 ```
 
 ## Regenerating casts and GIFs
@@ -47,13 +46,6 @@ ctest --test-dir build -R "^hello_world_demo$" --output-on-failure
 
 # Single component demo
 ctest --test-dir build -R "^gallery_button_demo$" --output-on-failure
-```
-
-To regenerate the static SVG still of the gallery grid (frame at 500 ms):
-
-```sh
-svg-term --in docs/assets/casts/gallery-tour.cast \
-         --out docs/assets/casts/gallery.svg --at 500
 ```
 
 Inspect the GIFs for Unicode glyphs, colors, and animation pacing.

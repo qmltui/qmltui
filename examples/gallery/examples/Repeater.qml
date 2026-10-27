@@ -4,6 +4,7 @@ import QmlTui.Controls
 
 // Repeater: Instantiates one delegate per entry from an integer count or model array.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -34,7 +35,7 @@ Column {
             delegate: Text {
                 required property int index
                 text: "▮"
-                color: index < 10 ? "#c4b5fd" : "#f472b6"
+                color: index < 10 ? "#2cde85" : "#58a6ff"
             }
         }
     }
@@ -49,12 +50,12 @@ Column {
                 required property string modelData
                 width: modelData.length + 4
                 height: 1
-                color: "#2e1065"
+                color: "#122d24"
 
                 Text {
                     anchors.centerIn: parent
                     text: modelData
-                    color: "#c4b5fd"
+                    color: "#2cde85"
                 }
             }
         }

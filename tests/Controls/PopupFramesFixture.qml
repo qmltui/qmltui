@@ -14,14 +14,39 @@ Terminal {
         anchors.fill: parent
         spacing: 1
 
-        Text { text: "=== POPUP RUNNER FIXTURE HEADER ==="; color: "cyan" }
-        Text { text: "Row 1: Underneath popup background text sample"; color: "gray" }
-        Text { text: "Row 2: Background text line 2 ABCDEFGHIJKLMNOPQRSTUVWXYZ"; color: "gray" }
-        Text { text: "Row 3: Background text line 3 01234567890123456789"; color: "gray" }
-        Button { id: bgButton; text: "Background Button"; focus: true }
-        Text { text: "Row 5: Background text line 5 abcdefghijklmnopqrstuvwxyz"; color: "gray" }
-        Text { text: "Row 6: Another background line for transparency check"; color: "gray" }
-        Text { text: "Row 7: Bottom background content row"; color: "darkgray" }
+        Text {
+            text: "=== POPUP RUNNER FIXTURE HEADER ==="
+            color: "cyan"
+        }
+        Text {
+            text: "Row 1: Underneath popup background text sample"
+            color: "gray"
+        }
+        Text {
+            text: "Row 2: Background text line 2 ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            color: "gray"
+        }
+        Text {
+            text: "Row 3: Background text line 3 01234567890123456789"
+            color: "gray"
+        }
+        Button {
+            id: bgButton
+            text: "Background Button"
+            focus: true
+        }
+        Text {
+            text: "Row 5: Background text line 5 abcdefghijklmnopqrstuvwxyz"
+            color: "gray"
+        }
+        Text {
+            text: "Row 6: Another background line for transparency check"
+            color: "gray"
+        }
+        Text {
+            text: "Row 7: Bottom background content row"
+            color: "darkgray"
+        }
     }
 
     // 1. Transparent Popup (unpainted Item, no background rectangle, just a button child)
@@ -72,9 +97,9 @@ Terminal {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_R) {
-                opaquePopup.width = 44
-                opaquePopup.height = 8
-                event.accepted = true
+                opaquePopup.width = 44;
+                opaquePopup.height = 8;
+                event.accepted = true;
             }
         }
     }
@@ -106,8 +131,8 @@ Terminal {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_C) {
-                nestedChild.open()
-                event.accepted = true
+                nestedChild.open();
+                event.accepted = true;
             }
         }
 
@@ -159,23 +184,23 @@ Terminal {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_1) {
-            transPopup.open()
-            event.accepted = true
+            transPopup.open();
+            event.accepted = true;
         } else if (event.key === Qt.Key_2) {
-            opaquePopup.open()
-            event.accepted = true
+            opaquePopup.open();
+            event.accepted = true;
         } else if (event.key === Qt.Key_3) {
-            nestedParent.open()
-            event.accepted = true
+            nestedParent.open();
+            event.accepted = true;
         } else if (event.key === Qt.Key_4) {
-            defaultDialog.open()
-            event.accepted = true
+            defaultDialog.open();
+            event.accepted = true;
         } else if (event.key === Qt.Key_5) {
-            customDialog.open()
-            event.accepted = true
+            customDialog.open();
+            event.accepted = true;
         } else if (event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
         }
     }
 }

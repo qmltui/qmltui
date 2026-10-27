@@ -8,6 +8,7 @@ Column {
 
     property string selected: ""
 
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -16,12 +17,9 @@ Column {
     }
 
     Rectangle {
-        width: Math.min(46, parent.width)
-        height: 8
-        border {
-            style: Border.Single
-            color: "#86efac"
-        }
+        width: 48
+        height: 10
+        color: "#161b22"
 
         TreeView {
             anchors {
@@ -94,12 +92,12 @@ Column {
 
                 Text {
                     text: node.hasChildren ? (node.expanded ? "▾ " : "▸ ") : (node.icon !== "" ? node.icon + " " : "  ")
-                    color: node.hasChildren ? "#f9c74f" : "#86efac"
+                    color: node.hasChildren ? "#f2cc60" : "#2cde85"
                 }
 
                 Text {
                     text: node.display
-                    color: node.current ? "#f8fafc" : "#c9d1d9"
+                    color: node.current ? "#00ff66" : "#c9d1d9"
                     bold: node.current
                 }
             }
@@ -108,6 +106,6 @@ Column {
 
     Text {
         text: treeDemo.selected === "" ? "Nothing activated yet" : "Activated: " + treeDemo.selected
-        color: "#86efac"
+        color: "#2cde85"
     }
 }

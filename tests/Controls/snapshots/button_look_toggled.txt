@@ -7,7 +7,7 @@
 
  ( ) Fast       (*) Safe     ( ) Slow
 
- [ ON] Wi-Fi    [OFF] Bluetooth
+
 
 
 --- styles

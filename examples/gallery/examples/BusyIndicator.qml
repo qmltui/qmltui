@@ -4,6 +4,7 @@ import QmlTui.Controls
 
 // BusyIndicator: Multi-frame terminal spinner advancing every `interval` ms.
 Column {
+    anchors.centerIn: parent
     spacing: 1
 
     Text {
@@ -19,7 +20,7 @@ Column {
             spacing: 1
 
             BusyIndicator {
-                color: "#f472b6"
+                color: "#2cde85"
             }
 
             Text {
@@ -33,7 +34,7 @@ Column {
 
             BusyIndicator {
                 frames: ["|", "/", "-", "\\"]
-                color: "#f472b6"
+                color: "#58a6ff"
             }
 
             Text {
@@ -47,7 +48,7 @@ Column {
 
             BusyIndicator {
                 frames: ["▖", "▘", "▝", "▗"]
-                color: "#f472b6"
+                color: "#f2cc60"
             }
 
             Text {
@@ -61,7 +62,7 @@ Column {
 
             BusyIndicator {
                 frames: ["[=   ]", "[ =  ]", "[  = ]", "[   =]", "[  = ]", "[ =  ]"]
-                color: "#f472b6"
+                color: "#d2a8ff"
             }
 
             Text {
@@ -76,7 +77,7 @@ Column {
 
         BusyIndicator {
             interval: 40
-            color: "#7ee0ff"
+            color: "#56d4dd"
         }
 
         Text {

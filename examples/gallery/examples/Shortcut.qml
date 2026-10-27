@@ -9,6 +9,7 @@ Column {
     property string theme: "amber"
     property int refreshes: 0
 
+    anchors.centerIn: parent
     spacing: 1
 
     Shortcut {
@@ -50,12 +51,13 @@ Column {
     Rectangle {
         width: 38
         height: 3
-        color: shortcutDemo.theme === "amber" ? "#78350f" : shortcutDemo.theme === "mint" ? "#064e3b" : "#881337"
+        color: shortcutDemo.theme === "amber" ? "#2e200d" : shortcutDemo.theme === "mint" ? "#122d24" : "#2d1215"
 
         Text {
             anchors.centerIn: parent
             text: "theme: " + shortcutDemo.theme + "   R pressed " + shortcutDemo.refreshes + "×"
-            color: "#c9d1d9"
+            color: shortcutDemo.theme === "amber" ? "#fbbf24" : shortcutDemo.theme === "mint" ? "#00ff66" : "#f87171"
+            bold: true
         }
     }
 }

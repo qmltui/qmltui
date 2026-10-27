@@ -107,24 +107,25 @@ import QmlTui
 import QmlTui.Controls
 
 Terminal {
-    Button {
-        text: "Copy greeting"
-        focus: true
-        onClicked: Clipboard.copy("Hello from QmlTui")
-    }
+    Column {
+        spacing: 1
 
-    Toast {
-        id: notices
-        anchors.top: parent.top
-        anchors.right: parent.right
-        width: 32
-        height: 8
+        Button {
+            text: "Copy greeting"
+            focus: true
+            onClicked: Clipboard.copy("Hello from QmlTui")
+        }
+
+        Text {
+            id: statusLabel
+            text: "Ready"
+        }
     }
 
     Connections {
         target: Clipboard
         function onCopyRequested(text: string): void {
-            notices.showToast("Clipboard", "Copy requested")
+            statusLabel.text = "Copied: " + text
         }
     }
 
@@ -136,3 +137,9 @@ Terminal {
     }
 }
 ```
+
+### Gallery Example
+
+![Clipboard recorded demo](../assets/casts/components/clipboard.gif)
+
+See [`examples/gallery/examples/Clipboard.qml`](../../examples/gallery/examples/Clipboard.qml) (`./build/examples/gallery/qmltui_gallery --example Clipboard`, or open in the [WebAssembly Playground](../playground.md?example=Clipboard.qml)).

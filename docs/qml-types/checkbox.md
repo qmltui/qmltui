@@ -41,9 +41,9 @@ Space or Enter while focused, or a mouse click anywhere on the item, calls
 then emits `clicked()`. Setting `checked` from a binding or a handler changes
 the drawing but emits neither signal; observe `onCheckedChanged` for that.
 Nothing happens while `enabled` is false. For a mutually exclusive choice use
-[RadioButton](radiobutton.md) with a [ButtonGroup](buttongroup.md); for an
-on/off look use [Switch](switch.md), which behaves identically but draws
-`[ ON]` and `[OFF]`. Assign `contentItem` to change the indicator glyphs.
+[RadioButton](radiobutton.md) with a [ButtonGroup](buttongroup.md). Assign
+`contentItem` to customize the indicator glyphs (for example `[ ON]` and
+`[OFF]` for a binary switch look).
 
 ### Example
 

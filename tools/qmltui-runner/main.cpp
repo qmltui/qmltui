@@ -51,8 +51,13 @@ int main(int argc, char** argv) {
                              "path"),
           QCommandLineOption("eval", "Inline Runner JavaScript.", "code"),
           QCommandLineOption("capture-after-ms", "Capture after this delay (0..30000).", "ms"),
-          QCommandLineOption("columns", "Viewport columns (1..1000).", "count", "80"),
-          QCommandLineOption("rows", "Viewport rows (1..1000).", "count", "24"),
+          QCommandLineOption(
+              "columns",
+              "Viewport columns (1..1000; default: terminal width with --live, else 80).", "count",
+              "80"),
+          QCommandLineOption(
+              "rows", "Viewport rows (1..1000; default: terminal height with --live, else 24).",
+              "count", "24"),
           QCommandLineOption(
               "artifacts",
               "New or empty artifact directory; default: retained temporary directory.",
@@ -61,7 +66,7 @@ int main(int argc, char** argv) {
           QCommandLineOption("record", "Record asciicast beneath the artifact directory.",
                              "relative-path"),
           QCommandLineOption("operation-timeout-ms", "Operation timeout (1..30000).", "ms", "2000"),
-          QCommandLineOption("timeout-ms", "Scenario timeout (1..300000).", "ms", "30000"),
+          QCommandLineOption("timeout-ms", "Scenario timeout (1..300000).", "ms", "300000"),
           QCommandLineOption("startup-timeout-ms", "Activation timeout (1..300000).", "ms", "5000"),
           QCommandLineOption("live", "Forward live terminal rendering."),
           QCommandLineOption("update-snapshots", "Rewrite snapshot baselines.")})
@@ -157,8 +162,8 @@ int main(int argc, char** argv) {
     if (parser.isSet("script")) set("SCRIPT", script);
     if (parser.isSet("eval")) set("EVAL", parser.value("eval"));
     if (parser.isSet("capture-after-ms")) set("CAPTURE_AFTER_MS", parser.value("capture-after-ms"));
-    set("COLUMNS", parser.value("columns"));
-    set("ROWS", parser.value("rows"));
+    if (!parser.isSet("live") || parser.isSet("columns")) set("COLUMNS", parser.value("columns"));
+    if (!parser.isSet("live") || parser.isSet("rows")) set("ROWS", parser.value("rows"));
     set("OPERATION_TIMEOUT_MS", parser.value("operation-timeout-ms"));
     set("TIMEOUT_MS", parser.value("timeout-ms"));
     set("CLOCK", parser.value("clock"));

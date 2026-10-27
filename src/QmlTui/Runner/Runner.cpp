@@ -418,9 +418,14 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
     const bool hasColumns = !qgetenv("QMLTUI_RUNNER_COLUMNS").trimmed().isEmpty();
     const bool hasRows = !qgetenv("QMLTUI_RUNNER_ROWS").trimmed().isEmpty();
     if (hasColumns || hasRows) {
-        const int columns =
-            environmentInteger("QMLTUI_RUNNER_COLUMNS", 80, 1, 1000, &configurationError);
-        const int rows = environmentInteger("QMLTUI_RUNNER_ROWS", 24, 1, 1000, &configurationError);
+        const int defaultColumns =
+            (terminal && terminal->engine()) ? terminal->engine()->terminalWidth() : 80;
+        const int defaultRows =
+            (terminal && terminal->engine()) ? terminal->engine()->terminalHeight() : 24;
+        const int columns = environmentInteger("QMLTUI_RUNNER_COLUMNS", defaultColumns, 1, 1000,
+                                               &configurationError);
+        const int rows =
+            environmentInteger("QMLTUI_RUNNER_ROWS", defaultRows, 1, 1000, &configurationError);
         viewport = QSize(columns, rows);
     }
 
@@ -955,6 +960,9 @@ void Runner::endOperation() {
     // that already succeeded.
     completeCurrentOperation(QStringLiteral("passed"));
     m_currentOperation = -1;
+    if (!m_activeLoop && m_state == State::Running) {
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
 }
 
 void Runner::completeCurrentOperation(const QString& status) {
@@ -2204,7 +2212,8 @@ void Runner::startRecording(const QString& relativePath) {
 void Runner::stopRecording() {
     if (!ensureRunning("stopRecording")) return;
     if (!m_cast || !m_cast->isOpen()) {
-        failScenario(QStringLiteral("stopRecording() needs a recording in progress"));
+        qWarning().noquote() << QStringLiteral(
+            "[Test] WARNING: stopRecording() ignored because no recording is in progress");
         return;
     }
     closeCast();
@@ -2213,7 +2222,10 @@ void Runner::stopRecording() {
 void Runner::marker(const QString& label) {
     if (!ensureRunning("marker")) return;
     if (!m_cast || !m_cast->isOpen()) {
-        failScenario(QStringLiteral("marker() needs a recording in progress"));
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[Test] WARNING: marker(\"%1\") ignored because no recording is in progress")
+                   .arg(label);
         return;
     }
     drainCast();

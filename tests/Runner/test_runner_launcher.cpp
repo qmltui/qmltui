@@ -56,9 +56,15 @@ int peer(const QStringList& args) {
         valid =
             args.mid(3) == QStringList{"--script", "literal space", "--help", "$value;unchanged"} &&
             !qEnvironmentVariableIsSet("QMLTUI_RUNNER_UNEXPECTED") &&
+            qEnvironmentVariable("QMLTUI_RUNNER_COLUMNS") == "80" &&
+            qEnvironmentVariable("QMLTUI_RUNNER_ROWS") == "24" &&
             qEnvironmentVariable("QMLTUI_RUNNER_CLOCK") == "real" &&
             qEnvironmentVariable("QMLTUI_RUNNER_UPDATE_SNAPSHOTS") == "0" &&
             qEnvironmentVariable("QMLTUI_TEST_INHERITED") == "preserved";
+    } else if (behavior == "live-size") {
+        valid = !qEnvironmentVariableIsSet("QMLTUI_RUNNER_COLUMNS") &&
+                !qEnvironmentVariableIsSet("QMLTUI_RUNNER_ROWS") &&
+                qEnvironmentVariable("QMLTUI_RUNNER_LIVE") == "1";
     }
     const int code = valid ? 0 : 1;
     writeFile(result,
@@ -144,6 +150,11 @@ private slots:
                                  "--script", "literal space", "--help", "$value;unchanged"},
                                 environment);
         QVERIFY2(result.code == 0, result.err.constData());
+        const auto liveResult =
+            run({"--eval=x", "--live", "--artifacts", temporary.filePath("live directory"),
+                 QCoreApplication::applicationFilePath(), "--peer", "live-size"},
+                environment);
+        QVERIFY2(liveResult.code == 0, liveResult.err.constData());
     }
     void lifecycle_data() {
         QTest::addColumn<QString>("behavior");

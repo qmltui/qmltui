@@ -38,7 +38,7 @@ public:
 
     // Parent index whose children the view shows; invalid means the top level.
     QModelIndex rootIndex() const { return m_rootIndex; }
-    void setRootIndex(const QModelIndex &rootIndex);
+    void setRootIndex(const QModelIndex& rootIndex);
 
     QQmlComponent* delegate() const { return m_delegate; }
     void setDelegate(QQmlComponent* delegate);
@@ -79,13 +79,13 @@ private:
     void rebuildViewport(bool force = false);
     void maybeFetchMore();
     void refreshFromModel();
-    Item *createDelegateItem(int index);
-    void bindDelegateItem(Item *item, int index, bool created);
-    void releaseDelegateItem(Item *item);
-    void reindexItem(Item *item, int index);
+    Item* createDelegateItem(int index);
+    void bindDelegateItem(Item* item, int index, bool created);
+    void releaseDelegateItem(Item* item);
+    void reindexItem(Item* item, int index);
     void updateContentExtent();
     int columnsPerRow() const;
-    void insertModelRows(QAbstractItemModel *model, int first, int last);
+    void insertModelRows(QAbstractItemModel* model, int first, int last);
     void removeModelRows(int first, int last);
 
     QVariant m_model;
@@ -98,6 +98,11 @@ private:
     bool m_reuseItems = true;
     QVariantList m_listValues;
     QHash<int, QString> m_roleMap;
+    QHash<QString, int> m_delegateProperties;
+    quint16 m_claimedNames = 0;
+    quint16 m_delegateStandardMask = 0;
+    bool m_delegateSchemaResolved = false;
+    bool m_delegateNeedsModelMap = true;
     int m_modelCount = 0;
     int m_materializedFirst = -1;
     int m_materializedLast = -1;

@@ -12,8 +12,6 @@
 #include <QMetaObject>
 #include <QHash>
 
-class QQmlPropertyMap;
-
 namespace qmltui {
 
 // Instantiates one `delegate` item per model entry and inserts those items as
@@ -61,12 +59,15 @@ private:
     QPointer<QQmlComponent> m_delegate;
     QList<Item*> m_createdItems;
     QList<QQmlContext*> m_contexts;
-    QList<QQmlPropertyMap*> m_rowMaps;
     QList<QMetaObject::Connection> m_modelConnections;
     quint64 m_modelGeneration = 0;
     QPersistentModelIndex m_rootIndex;
     QHash<int, QString> m_roleMap;
+    QHash<QString, int> m_delegateProperties;
     quint16 m_claimedNames = 0;
+    quint16 m_delegateStandardMask = 0;
+    bool m_delegateSchemaResolved = false;
+    bool m_delegateNeedsModelMap = true;
     bool m_nestedWarned = false;
     bool m_fetching = false;
 };

@@ -6,7 +6,6 @@
 #include <QQmlContext>
 #include <QQmlListReference>
 #include <QQmlEngine>
-#include <QQmlPropertyMap>
 #include <algorithm>
 #include <utility>
 
@@ -53,6 +52,7 @@ void GridView::setModel(const QVariant& model) {
             m_modelCount = 0;
             m_listValues.clear();
             m_roleMap.clear();
+            m_claimedNames = 0;
             clearItems();
             setContentHeight(0);
             emit modelChanged();
@@ -66,9 +66,17 @@ void GridView::setDelegate(QQmlComponent* delegate) {
     if (m_delegate == delegate) return;
     if (m_delegate) disconnect(m_delegate, nullptr, this, nullptr);
     m_delegate = delegate;
+    m_delegateProperties.clear();
+    m_delegateStandardMask = 0;
+    m_delegateSchemaResolved = false;
+    m_delegateNeedsModelMap = true;
     if (m_delegate) {
         connect(m_delegate, &QObject::destroyed, this, [this]() {
             m_delegate.clear();
+            m_delegateProperties.clear();
+            m_delegateStandardMask = 0;
+            m_delegateSchemaResolved = false;
+            m_delegateNeedsModelMap = true;
             clearItems();
             setContentHeight(0);
             emit delegateChanged();
@@ -168,41 +176,104 @@ void GridView::updateContentExtent() {
 
 void GridView::reindexItem(Item* item, int index) {
     if (!item) return;
-    DelegateUtils::setContextProperty(m_delegate, delegateContext(item), "index", index);
-    setPropertyIfExists(item, "index", index);
+    if (m_delegate && !m_delegate->isBound()) {
+        DelegateUtils::setContextProperty(m_delegate, delegateContext(item),
+                                          QStringLiteral("index"), index);
+    }
+    if (m_delegateSchemaResolved)
+        DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, QStringLiteral("index"),
+                                             index);
+    else
+        setPropertyIfExists(item, "index", index);
 }
 
 // Publishes row `index` to a delegate: on creation through initial
-// properties and a fresh context, on rebind by writing the existing row map,
-// context, and required properties in place.
+// properties and a fresh context, on rebind by writing the context and
+// declared properties in place.
 void GridView::bindDelegateItem(Item* item, int index, bool created) {
     Q_UNUSED(created);
+    if (!item || !m_delegate) return;
+    auto* model = qobject_cast<QAbstractItemModel*>(m_objectModel.data());
+    const bool countModel = m_listValues.isEmpty() && !model;
+
+    if (m_delegate->isBound() && m_delegateSchemaResolved) {
+        DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, QStringLiteral("index"),
+                                             index);
+        if (!countModel && index < m_listValues.size()) {
+            const QVariant& rowValue = m_listValues.at(index);
+            if (m_delegateNeedsModelMap) {
+                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                     QStringLiteral("model"), rowValue);
+                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                     QStringLiteral("modelData"), rowValue);
+            }
+            QVariant normalized = rowValue;
+            if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
+                normalized = normalized.value<QJSValue>().toVariant();
+            if (normalized.canConvert<QVariantMap>()) {
+                const QVariantMap rowValues = normalized.toMap();
+                for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
+                    DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, it.key(),
+                                                         it.value());
+            }
+        } else if (model) {
+            const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
+            if (m_delegateNeedsModelMap) {
+                QVariantMap rowValues;
+                for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
+                    rowValues.insert(it.value(), model->data(modelIndex, it.key()));
+                NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
+                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                     QStringLiteral("model"), rowValues);
+                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                     QStringLiteral("modelData"), rowValues);
+                for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
+                    DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, it.key(),
+                                                         it.value());
+            } else {
+                for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+                    const auto propIt = m_delegateProperties.constFind(it.value());
+                    if (propIt != m_delegateProperties.cend()) {
+                        item->metaObject()
+                            ->property(propIt.value())
+                            .write(item, model->data(modelIndex, it.key()));
+                    }
+                }
+                if (m_delegateStandardMask != 0) {
+                    QVariantMap standard;
+                    NumericItemRoles::apply(model, modelIndex, standard, true, m_claimedNames,
+                                            m_delegateStandardMask);
+                    for (auto it = standard.cbegin(); it != standard.cend(); ++it)
+                        DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, it.key(),
+                                                             it.value());
+                }
+            }
+        }
+        return;
+    }
+
     QVariant rowValue;
     QVariantMap rowValues;
-    const bool countModel = m_listValues.isEmpty() && !m_objectModel;
-    QQmlPropertyMap* rowMap =
-        item->findChild<QQmlPropertyMap*>(QString(), Qt::FindDirectChildrenOnly);
     if (!countModel && index < m_listValues.size()) {
         rowValue = m_listValues.at(index);
         QVariant normalized = rowValue;
         if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
             normalized = normalized.value<QJSValue>().toVariant();
         if (normalized.canConvert<QVariantMap>()) rowValues = normalized.toMap();
-    } else if (auto* model = qobject_cast<QAbstractItemModel*>(m_objectModel.data())) {
+    } else if (model) {
         const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
             rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-        NumericItemRoles::apply(model, modelIndex, rowValues, true);
-        if (rowMap)
-            for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
-                rowMap->insert(it.key(), it.value());
+        NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
+        rowValue = rowValues;
     }
     QQmlContext* context = delegateContext(item);
-    DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("index"), index);
     setPropertyIfExists(item, "index", index);
-    if (!rowMap && !countModel) {
-        DelegateUtils::setContextProperty(m_delegate, context, "model", rowValue);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", rowValue);
+    if (!countModel) {
+        DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"), rowValue);
+        DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("modelData"),
+                                          rowValue);
         setPropertyIfExists(item, "model", rowValue);
         setPropertyIfExists(item, "modelData", rowValue);
     }
@@ -213,78 +284,104 @@ void GridView::bindDelegateItem(Item* item, int index, bool created) {
 }
 
 Item* GridView::createDelegateItem(int index) {
-    if (index < 0 || index >= m_modelCount) return nullptr;
+    if (index < 0 || index >= m_modelCount || !m_delegate) return nullptr;
+
+    const bool isChooser = QQmlListReference(m_delegate, "choices").isValid();
+    const bool fastBound = m_delegate->isBound() && !isChooser;
+    auto* model = qobject_cast<QAbstractItemModel*>(m_objectModel.data());
+    const bool countModel = m_listValues.isEmpty() && !model;
+
+    if (fastBound) {
+        if (!DelegateUtils::isReady(m_delegate, this)) return nullptr;
+        QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
+        if (!context) return nullptr;
+
+        return DelegateUtils::createItemWithSchema(
+            m_delegate, context, this, this, m_delegateSchemaResolved, m_delegateProperties,
+            m_delegateStandardMask, m_delegateNeedsModelMap, [&](QVariantMap& initialProps) {
+                if (m_delegateProperties.contains(QStringLiteral("index")))
+                    initialProps.insert(QStringLiteral("index"), index);
+                if (!countModel && index < m_listValues.size()) {
+                    const QVariant& rowValue = m_listValues.at(index);
+                    if (m_delegateNeedsModelMap) {
+                        initialProps.insert(QStringLiteral("model"), rowValue);
+                        initialProps.insert(QStringLiteral("modelData"), rowValue);
+                    }
+                    QVariant normalized = rowValue;
+                    if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
+                        normalized = normalized.value<QJSValue>().toVariant();
+                    if (normalized.canConvert<QVariantMap>()) {
+                        const QVariantMap map = normalized.toMap();
+                        for (auto it = map.cbegin(); it != map.cend(); ++it) {
+                            if (m_delegateProperties.contains(it.key()))
+                                initialProps.insert(it.key(), it.value());
+                        }
+                    }
+                } else if (model) {
+                    const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
+                    if (m_delegateNeedsModelMap) {
+                        QVariantMap rowValues;
+                        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
+                            rowValues.insert(it.value(), model->data(modelIndex, it.key()));
+                        NumericItemRoles::apply(model, modelIndex, rowValues, false,
+                                                m_claimedNames);
+                        initialProps.insert(QStringLiteral("model"), rowValues);
+                        initialProps.insert(QStringLiteral("modelData"), rowValues);
+                        for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
+                            if (m_delegateProperties.contains(it.key()))
+                                initialProps.insert(it.key(), it.value());
+                        }
+                    } else {
+                        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+                            if (m_delegateProperties.contains(it.value()))
+                                initialProps.insert(it.value(), model->data(modelIndex, it.key()));
+                        }
+                        if (m_delegateStandardMask != 0) {
+                            NumericItemRoles::apply(model, modelIndex, initialProps, false,
+                                                    m_claimedNames, m_delegateStandardMask);
+                        }
+                    }
+                }
+            });
+    }
 
     QVariant rowValue;
     QVariantMap rowValues;
-    QQmlPropertyMap* rowMap = nullptr;
-    const bool countModel = m_listValues.isEmpty() && !m_objectModel;
     if (!countModel && index < m_listValues.size()) {
         rowValue = m_listValues.at(index);
         QVariant normalized = rowValue;
         if (normalized.userType() == QMetaType::fromType<QJSValue>().id())
             normalized = normalized.value<QJSValue>().toVariant();
         if (normalized.canConvert<QVariantMap>()) rowValues = normalized.toMap();
-    } else if (auto* model = qobject_cast<QAbstractItemModel*>(m_objectModel.data())) {
-        rowMap = new QQmlPropertyMap(this);
+    } else if (model) {
         const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
-        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
-            const QVariant value = model->data(modelIndex, it.key());
-            rowMap->insert(it.value(), value);
-            rowValues.insert(it.value(), value);
-        }
-        NumericItemRoles::apply(model, modelIndex, rowValues);
-        for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
-            rowMap->insert(it.key(), it.value());
+        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
+            rowValues.insert(it.value(), model->data(modelIndex, it.key()));
+        NumericItemRoles::apply(model, modelIndex, rowValues, false, m_claimedNames);
+        rowValue = rowValues;
     }
 
     QQmlComponent* component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
-    if (!DelegateUtils::isReady(component, this)) {
-        delete rowMap;
-        return nullptr;
-    }
+    if (!DelegateUtils::isReady(component, this)) return nullptr;
     QQmlContext* context = DelegateUtils::createContext(component, this);
-    if (!context) {
-        delete rowMap;
-        return nullptr;
-    }
+    if (!context) return nullptr;
 
     QVariantMap initialProps;
-    initialProps["index"] = index;
-    DelegateUtils::setContextProperty(component, context, "index", index);
-    if (rowMap) {
-        initialProps["model"] = QVariant::fromValue(rowMap);
-        initialProps["modelData"] = QVariant::fromValue(rowMap);
-        DelegateUtils::setContextProperty(component, context, "model", rowMap);
-        DelegateUtils::setContextProperty(component, context, "modelData", rowMap);
-    } else if (!countModel) {
-        initialProps["model"] = rowValue;
-        initialProps["modelData"] = rowValue;
-        DelegateUtils::setContextProperty(component, context, "model", rowValue);
-        DelegateUtils::setContextProperty(component, context, "modelData", rowValue);
+    initialProps.insert(QStringLiteral("index"), index);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("index"), index);
+    if (!countModel) {
+        initialProps.insert(QStringLiteral("model"), rowValue);
+        initialProps.insert(QStringLiteral("modelData"), rowValue);
+        DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), rowValue);
+        DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"),
+                                          rowValue);
     }
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
-        initialProps[it.key()] = it.value();
+        initialProps.insert(it.key(), it.value());
         DelegateUtils::setContextProperty(component, context, it.key(), it.value());
     }
 
-    Item* item = DelegateUtils::createItem(component, initialProps, context, this, this);
-    if (!item) {
-        delete rowMap;
-        return nullptr;
-    }
-    if (rowMap) rowMap->setParent(item);
-    setPropertyIfExists(item, "index", index);
-    if (rowMap) {
-        setPropertyIfExists(item, "model", QVariant::fromValue(rowMap));
-        setPropertyIfExists(item, "modelData", QVariant::fromValue(rowMap));
-    } else if (!countModel) {
-        setPropertyIfExists(item, "model", rowValue);
-        setPropertyIfExists(item, "modelData", rowValue);
-    }
-    for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
-        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
-    return item;
+    return DelegateUtils::createItem(component, initialProps, context, this, this);
 }
 
 void GridView::rebuildViewport(bool force) {
@@ -353,6 +450,7 @@ void GridView::generateItems() {
     disconnectModelSignals();
     m_listValues.clear();
     m_roleMap.clear();
+    m_claimedNames = 0;
     m_modelCount = 0;
     if (!DelegateUtils::isReady(m_delegate, this)) {
         setContentHeight(0);
@@ -367,6 +465,7 @@ void GridView::generateItems() {
         const QHash<int, QByteArray> roles = model->roleNames();
         for (auto it = roles.cbegin(); it != roles.cend(); ++it)
             m_roleMap.insert(it.key(), QString::fromUtf8(it.value()));
+        m_claimedNames = NumericItemRoles::claimedNames(model);
         m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
 
         const quint64 generation = m_modelGeneration;
@@ -383,27 +482,53 @@ void GridView::generateItems() {
                 for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                     Item* item = m_createdItems.value(row, nullptr);
                     if (!item) continue;
-                    // Bound delegates have no per-row context; the row map is
-                    // parented to the item in both cases.
-                    QQmlContext* context = delegateContext(item);
-                    auto* rowMap =
-                        item->findChild<QQmlPropertyMap*>(QString(), Qt::FindDirectChildrenOnly);
                     const QModelIndex index = guardedModel->index(row, 0, m_rootIndex);
-                    for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
-                        if (!changedRoles.isEmpty() && !changedRoles.contains(it.key())) continue;
-                        const QVariant value = guardedModel->data(index, it.key());
-                        if (rowMap) rowMap->insert(it.value(), value);
-                        DelegateUtils::setContextProperty(m_delegate, context, it.value(), value);
-                        setPropertyIfExists(item, it.value().toUtf8().constData(), value);
+                    if (m_delegate && m_delegate->isBound() && m_delegateSchemaResolved &&
+                        !m_delegateNeedsModelMap) {
+                        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+                            if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
+                                continue;
+                            const auto propIt = m_delegateProperties.constFind(it.value());
+                            if (propIt != m_delegateProperties.cend()) {
+                                item->metaObject()
+                                    ->property(propIt.value())
+                                    .write(item, guardedModel->data(index, it.key()));
+                            }
+                        }
+                        if (m_delegateStandardMask != 0) {
+                            QVariantMap standard;
+                            NumericItemRoles::apply(guardedModel, index, standard, true,
+                                                    m_claimedNames, m_delegateStandardMask);
+                            for (auto it = standard.cbegin(); it != standard.cend(); ++it)
+                                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                                     it.key(), it.value());
+                        }
+                        continue;
                     }
-                    QVariantMap standard;
-                    NumericItemRoles::apply(guardedModel, index, standard, true);
-                    for (auto it = standard.cbegin(); it != standard.cend(); ++it) {
-                        if (rowMap) rowMap->insert(it.key(), it.value());
+                    QQmlContext* context =
+                        m_delegate && !m_delegate->isBound() ? delegateContext(item) : nullptr;
+                    QVariantMap rowValues;
+                    for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
+                        const QVariant value = guardedModel->data(index, it.key());
+                        rowValues.insert(it.value(), value);
+                        if (changedRoles.isEmpty() || changedRoles.contains(it.key())) {
+                            DelegateUtils::setContextProperty(m_delegate, context, it.value(),
+                                                              value);
+                            setPropertyIfExists(item, it.value().toUtf8().constData(), value);
+                        }
+                    }
+                    NumericItemRoles::apply(guardedModel, index, rowValues, true, m_claimedNames);
+                    for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
                         DelegateUtils::setContextProperty(m_delegate, context, it.key(),
                                                           it.value());
                         setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
                     }
+                    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"),
+                                                      rowValues);
+                    DelegateUtils::setContextProperty(m_delegate, context,
+                                                      QStringLiteral("modelData"), rowValues);
+                    setPropertyIfExists(item, "model", rowValues);
+                    setPropertyIfExists(item, "modelData", rowValues);
                 }
                 markDirty();
             }));

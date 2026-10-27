@@ -143,6 +143,7 @@ enum ClaimedName : quint16 {
     ClaimsEnabled = 1u << 5,
     ClaimsCheckable = 1u << 6,
     ClaimsModelIndex = 1u << 7,
+    ClaimsAll = 0xFFu,
 };
 
 inline quint16 claimedNames(const QAbstractItemModel* model) {
@@ -179,31 +180,49 @@ inline quint16 claimedNames(const QAbstractItemModel* model) {
 // rebind an existing delegate pass includeUnset so a cleared style is
 // published as cleared.
 inline void apply(const QAbstractItemModel* model, const QModelIndex& index, QVariantMap& values,
-                  bool includeUnset, quint16 claimed) {
-    if (!model || !index.isValid()) return;
-    const auto put = [&](const QString& name, quint16 claim, const QVariant& value, bool unset) {
+                  bool includeUnset, quint16 claimed, quint16 needed = ClaimsAll) {
+    const quint16 active = needed & ~claimed;
+    if (!model || !index.isValid() || active == 0) return;
+    const auto put = [&](const QString& name, const QVariant& value, bool unset) {
         if (!includeUnset && unset) return;
-        if (claimed & claim) return;
         values.insert(name, value);
     };
-    const QString foreground = colorString(model->data(index, Qt::ForegroundRole));
-    put(QStringLiteral("foreground"), ClaimsForeground, foreground, foreground.isEmpty());
-    const QString background = colorString(model->data(index, Qt::BackgroundRole));
-    put(QStringLiteral("background"), ClaimsBackground, background, background.isEmpty());
-    const QString alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
-    put(QStringLiteral("textAlignment"), ClaimsAlignment, alignment, alignment.isEmpty());
-    const QVariant check = model->data(index, Qt::CheckStateRole);
-    const int checkState = check.isValid() && check.canConvert<int>() ? check.toInt() : -1;
-    put(QStringLiteral("checkState"), ClaimsCheckState, checkState, checkState < 0);
-    const QString glyph = decorationGlyph(model->data(index, Qt::DecorationRole));
-    put(QStringLiteral("decoration"), ClaimsDecoration, glyph, glyph.isEmpty());
-    const Qt::ItemFlags flags = model->flags(index);
-    const bool enabled = flags.testFlag(Qt::ItemIsEnabled);
-    const bool checkable = flags.testFlag(Qt::ItemIsUserCheckable);
-    put(QStringLiteral("enabled"), ClaimsEnabled, enabled, enabled);
-    put(QStringLiteral("checkable"), ClaimsCheckable, checkable, !checkable);
-    put(QStringLiteral("modelIndex"), ClaimsModelIndex, QVariant::fromValue(QModelIndex(index)),
-        !index.isValid());
+    if (active & ClaimsForeground) {
+        const QString foreground = colorString(model->data(index, Qt::ForegroundRole));
+        put(QStringLiteral("foreground"), foreground, foreground.isEmpty());
+    }
+    if (active & ClaimsBackground) {
+        const QString background = colorString(model->data(index, Qt::BackgroundRole));
+        put(QStringLiteral("background"), background, background.isEmpty());
+    }
+    if (active & ClaimsAlignment) {
+        const QString alignment = alignmentName(model->data(index, Qt::TextAlignmentRole));
+        put(QStringLiteral("textAlignment"), alignment, alignment.isEmpty());
+    }
+    if (active & ClaimsCheckState) {
+        const QVariant check = model->data(index, Qt::CheckStateRole);
+        const int checkState = check.isValid() && check.canConvert<int>() ? check.toInt() : -1;
+        put(QStringLiteral("checkState"), checkState, checkState < 0);
+    }
+    if (active & ClaimsDecoration) {
+        const QString glyph = decorationGlyph(model->data(index, Qt::DecorationRole));
+        put(QStringLiteral("decoration"), glyph, glyph.isEmpty());
+    }
+    if (active & (ClaimsEnabled | ClaimsCheckable)) {
+        const Qt::ItemFlags flags = model->flags(index);
+        if (active & ClaimsEnabled) {
+            const bool enabled = flags.testFlag(Qt::ItemIsEnabled);
+            put(QStringLiteral("enabled"), enabled, enabled);
+        }
+        if (active & ClaimsCheckable) {
+            const bool checkable = flags.testFlag(Qt::ItemIsUserCheckable);
+            put(QStringLiteral("checkable"), checkable, !checkable);
+        }
+    }
+    if (active & ClaimsModelIndex) {
+        put(QStringLiteral("modelIndex"), QVariant::fromValue(QModelIndex(index)),
+            !index.isValid());
+    }
 }
 
 // For callers with nowhere to cache the mask; resolves it per call, as before.

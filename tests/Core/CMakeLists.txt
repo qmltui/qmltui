@@ -75,6 +75,26 @@ if(QMLTUI_BUILD_BENCHMARKS)
     target_link_libraries(benchmark_views PRIVATE
         Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
 
+    # Side-by-side model/view comparison against Qt Quick and Qt Widgets when
+    # those optional Qt modules are installed on the host.
+    find_package(Qt6 QUIET OPTIONAL_COMPONENTS Widgets Quick)
+    add_executable(benchmark_view_compare benchmark_view_compare.cpp)
+    target_link_libraries(benchmark_view_compare PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::controls)
+    if(TARGET Qt6::Widgets)
+        target_link_libraries(benchmark_view_compare PRIVATE Qt6::Widgets)
+        target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_WIDGETS=1)
+    endif()
+    if(TARGET Qt6::Quick)
+        target_link_libraries(benchmark_view_compare PRIVATE Qt6::Quick)
+        target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_QUICK=1)
+    endif()
+    add_test(NAME test_benchmark_view_compare_smoke
+        COMMAND benchmark_view_compare --rows 1000 --steps 10)
+    set_tests_properties(test_benchmark_view_compare_smoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+    )
+
     # Per-frame paint/diff cost for representative scenes. Informational; run
     # it before and after rendering changes and record the numbers.
     add_executable(benchmark_render benchmark_render.cpp)

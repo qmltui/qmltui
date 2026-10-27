@@ -56,6 +56,7 @@ class QMLTUI_CORE_EXPORT ListView : public ScrollView {
     Q_PROPERTY(
         Qt::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(bool reuseItems READ reuseItems WRITE setReuseItems NOTIFY reuseItemsChanged)
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
@@ -68,6 +69,13 @@ public:
 
     QVariant model() const { return m_model; }
     void setModel(const QVariant& model);
+
+    int count() const { return m_modelCount; }
+
+    // Reads the row value or a named role at `index` from the current model
+    // (`QAbstractItemModel`, `ListModel`, `QVariantList`, `QStringList`, or
+    // integer count) without requiring the row delegate to be materialized.
+    Q_INVOKABLE QVariant itemData(int index, const QString& role = QString()) const;
 
     // Parent index whose children the view shows; invalid means the top level,
     // as with DelegateModel.rootIndex in Qt Quick.
@@ -98,6 +106,8 @@ public:
 
 signals:
     void modelChanged();
+    void countChanged();
+    void modelDataChanged();
     void rootIndexChanged();
     void delegateChanged();
     void orientationChanged();
@@ -141,6 +151,11 @@ private:
     QStack<Item*> m_reusePool;
     QVariantList m_listValues;
     QHash<int, QString> m_roleMap;
+    QHash<QString, int> m_delegateProperties;
+    quint16 m_claimedNames = 0;
+    quint16 m_delegateStandardMask = 0;
+    bool m_delegateSchemaResolved = false;
+    bool m_delegateNeedsModelMap = true;
     int m_modelCount = 0;
     int m_delegateExtent = 1;
     bool m_delegateExtentKnown = false;

@@ -53,6 +53,14 @@ QString columnRoleKey(const QVariantList& columns, int col) {
     const QVariantMap colMap = colVal.toMap();
     return colMap.value(QStringLiteral("key"), colMap.value(QStringLiteral("role"))).toString();
 }
+QString rawValueToText(const QVariant& raw) {
+    if (!raw.isValid()) return {};
+    if (raw.metaType() == QMetaType::fromType<QString>()) return raw.toString();
+    if (raw.metaType() == QMetaType::fromType<Span>()) return raw.value<Span>().text();
+    QList<Span> spans;
+    if (Span::tryExtractList(raw, /*allowVariantMap=*/false, spans)) return Span::plainText(spans);
+    return raw.toString();
+}
 // Compute alignment against the logical width, but allocate only the visible prefix.
 QString alignedPrefix(const QString& text, int width, int visibleWidth, const QString& alignment,
                       int leftPadding = 0, int rightPadding = 0) {
@@ -117,6 +125,10 @@ void TableView::clearDelegateItems() {
     for (auto& record : m_createdDelegateItems)
         destroyDelegate(record);
     m_createdDelegateItems.clear();
+    m_delegateProperties.clear();
+    m_delegateStandardMask = NumericItemRoles::ClaimsAll;
+    m_delegateSchemaResolved = false;
+    m_delegateNeedsModelMap = true;
 }
 void TableView::generateDelegateItems() {
     m_resetDelegates = true;
@@ -851,13 +863,7 @@ QVariant TableView::cellRawValue(int row, int col) const {
     return {};
 }
 QString TableView::cellText(int row, int col) const {
-    const QVariant raw = cellRawValue(row, col);
-    if (!raw.isValid()) return {};
-    if (raw.metaType() == QMetaType::fromType<QString>()) return raw.toString();
-    if (raw.metaType() == QMetaType::fromType<Span>()) return raw.value<Span>().text();
-    QList<Span> spans;
-    if (Span::tryExtractList(raw, /*allowVariantMap=*/false, spans)) return Span::plainText(spans);
-    return raw.toString();
+    return rawValueToText(cellRawValue(row, col));
 }
 
 void TableView::handleDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
@@ -900,6 +906,13 @@ void TableView::updateDelegateState(DelegateRecord& record, int row, int column)
     const bool current = row == m_selectedRow && column == m_currentColumn;
     if (!record.item || record.current == current) return;
     record.current = current;
+    if (m_delegateSchemaResolved && record.component && record.component->isBound()) {
+        DelegateUtils::writeDeclaredProperty(record.item, m_delegateProperties,
+                                             QStringLiteral("current"), current);
+        DelegateUtils::writeDeclaredProperty(record.item, m_delegateProperties,
+                                             QStringLiteral("selected"), current);
+        return;
+    }
     QQmlContext* context = delegateContext(record.item);
     for (const char* name : {"current", "selected"}) {
         DelegateUtils::setContextProperty(record.component, context, QString::fromLatin1(name),
@@ -925,6 +938,13 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
         updateDelegateState(record, row, column);
         return;
     }
+    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    const bool isChooser = raw && QQmlListReference(raw, "choices").isValid();
+    const bool isBoundNonChooser = raw && !isChooser && raw->isBound();
+    const quint16 neededStandardRoles =
+        (isBoundNonChooser && m_delegateSchemaResolved && !m_delegateNeedsModelMap)
+            ? m_delegateStandardMask
+            : NumericItemRoles::ClaimsAll;
     QVariantMap values = record.values;
     QVariant modelData = record.modelData;
     if (dataDirty) {
@@ -939,7 +959,8 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
             for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it)
                 if (allRolesDirty || !record.loaded || dirtyRoles.contains(it.key()))
                     values.insert(it.value(), readRole(it.key()));
-            NumericItemRoles::apply(m_cppModel.data(), record.source, values, true, m_claimedNames);
+            NumericItemRoles::apply(m_cppModel.data(), record.source, values, true, m_claimedNames,
+                                    neededStandardRoles);
             modelData = m_roleNames.isEmpty() ? readRole(Qt::DisplayRole) : QVariant(values);
         } else {
             const QVariant value =
@@ -952,14 +973,17 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
     if (m_cppModel && cellMode) {
         const QString roleKey = columnRoleKey(m_columns, column);
         if (!roleKey.isEmpty() && values.contains(roleKey))
-            values.insert(QStringLiteral("display"), cellText(row, column));
+            values.insert(QStringLiteral("display"), rawValueToText(values.value(roleKey)));
     }
-    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
     QQmlComponent* component = record.component;
     if (dataDirty || moved || !record.item)
-        component = DelegateUtils::resolveDelegate(raw, row, column, values);
+        component = isChooser ? DelegateUtils::resolveDelegate(raw, row, column, values) : raw;
     if (record.component != component) destroyDelegate(record);
     const auto assign = [&](const QString& name, const QVariant& value) {
+        if (isBoundNonChooser && m_delegateSchemaResolved) {
+            DelegateUtils::writeDeclaredProperty(record.item, m_delegateProperties, name, value);
+            return;
+        }
         DelegateUtils::setContextProperty(component, delegateContext(record.item), name, value);
         DelegateUtils::setPropertyIfExists(record.item, name.toUtf8().constData(), value);
     };
@@ -972,11 +996,15 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
         record.current = row == m_selectedRow && column == m_currentColumn;
         initial.insert(QStringLiteral("current"), record.current);
         initial.insert(QStringLiteral("selected"), record.current);
-        initial.insert(QStringLiteral("model"), values);
-        initial.insert(QStringLiteral("modelData"), modelData);
+        if (!isBoundNonChooser || !m_delegateSchemaResolved || m_delegateNeedsModelMap) {
+            initial.insert(QStringLiteral("model"), values);
+            initial.insert(QStringLiteral("modelData"), modelData);
+        }
         if (QQmlContext* context = DelegateUtils::createContext(component, this)) {
-            for (auto it = initial.cbegin(); it != initial.cend(); ++it)
-                DelegateUtils::setContextProperty(component, context, it.key(), it.value());
+            if (!component || !component->isBound()) {
+                for (auto it = initial.cbegin(); it != initial.cend(); ++it)
+                    DelegateUtils::setContextProperty(component, context, it.key(), it.value());
+            }
             record.container = new Item(this);
             record.container->setParentItem(this);
             record.container->setClip(true);
@@ -985,6 +1013,11 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
             if (!record.item) {
                 delete record.container.data();
                 record.container.clear();
+            } else if (isBoundNonChooser && !m_delegateSchemaResolved) {
+                DelegateUtils::resolveDelegateSchema(record.item, component, m_delegateProperties,
+                                                     m_delegateStandardMask,
+                                                     m_delegateNeedsModelMap);
+                m_delegateSchemaResolved = true;
             }
             record.component = component;
             if (record.item && record.item->height() <= 0) record.item->setHeight(1);
@@ -994,17 +1027,20 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
             if (record.values.value(it.key()) != it.value()) assign(it.key(), it.value());
         for (auto it = record.values.cbegin(); it != record.values.cend(); ++it)
             if (!values.contains(it.key())) assign(it.key(), QVariant());
-        if (record.values != values) assign(QStringLiteral("model"), values);
-        if (record.modelData != modelData) assign(QStringLiteral("modelData"), modelData);
+        if (!isBoundNonChooser || !m_delegateSchemaResolved || m_delegateNeedsModelMap) {
+            if (record.values != values) assign(QStringLiteral("model"), values);
+            if (record.modelData != modelData) assign(QStringLiteral("modelData"), modelData);
+        }
         if (moved) {
             assign(QStringLiteral("index"), index);
             assign(QStringLiteral("row"), row);
             if (cellMode) assign(QStringLiteral("column"), column);
-        } else if (record.item->property("index").toLongLong() != index) {
+        } else if (record.index != index) {
             assign(QStringLiteral("index"), index);
         }
         updateDelegateState(record, row, column);
     }
+    record.index = index;
     record.row = row;
     record.column = column;
     record.values = values;

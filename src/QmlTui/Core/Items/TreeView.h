@@ -14,6 +14,7 @@
 #include <QAbstractItemModel>
 #include <QPointer>
 #include <QPersistentModelIndex>
+#include <memory>
 
 namespace qmltui {
 
@@ -149,25 +150,7 @@ protected:
 
 private:
     ClipRect clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const override;
-    // One row of the flattened tree. For C++ models only the shape (index,
-    // depth, hasChildren, expanded, key) is filled while flattening; text,
-    // path and role data are read on first use by ensureLoaded(), so a
-    // 100k-row model costs no role reads until rows become visible.
-    struct VisibleNode {
-        QString text;
-        QList<Span> spans;
-        QString path;
-        QString key;
-        int depth = 0;
-        bool hasChildren = false;
-        bool expanded = false;
-        bool loaded = true;
-        QVariantMap rawData;
-        QModelIndex modelIndex;
-        Color roleFg = Color::Invalid;
-        Color roleBg = Color::Invalid;
-        bool roleEnabled = true;
-        QString rolePrefix;
+    struct NodeFormatCache {
         int formattedAtRow = -1;
         QString formattedText;
         QList<Span> formattedSpans;
@@ -177,15 +160,55 @@ private:
         bool spansOverrideSelection = false;
     };
 
+    struct NodePayload {
+        QString text;
+        QList<Span> spans;
+        QString path;
+        QString key;
+        QVariantMap rawData;
+        Color roleFg = Color::Invalid;
+        Color roleBg = Color::Invalid;
+        QString rolePrefix;
+        std::shared_ptr<NodeFormatCache> format;
+    };
+
+    // One row of the flattened tree. For C++ models only the 48-byte shape
+    // (modelIndex, depth, flags) is filled while flattening; hasChildren and
+    // the NodePayload (text, path, roles) are allocated on first use by
+    // ensureHasChildren() / ensureLoaded(), so a 100k-row model costs no role
+    // or payload allocations until rows become visible.
+    struct VisibleNode {
+        QModelIndex modelIndex;
+        std::shared_ptr<NodePayload> d;
+        int depth = 0;
+        bool hasChildren = false;
+        bool hasChildrenChecked = true;
+        bool expanded = false;
+        bool loaded = true;
+        bool roleEnabled = true;
+
+        NodePayload& ensurePayload() {
+            if (!d) d = std::make_shared<NodePayload>();
+            return *d;
+        }
+        const NodePayload& payload() const {
+            static const NodePayload empty;
+            return d ? *d : empty;
+        }
+    };
+
     void flattenTree(const QVariantMap& map, const QString& parentPath, const QString& parentKey,
                      int depth, QList<VisibleNode>& list);
-    void flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
-                         const QString& parentKey, int depth, QList<VisibleNode>& list);
+    void flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent, int depth,
+                         QList<VisibleNode>& list);
     void fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& index, VisibleNode& node,
                            bool includeUnsetRoles = false);
-    static QString modelPath(const QAbstractItemModel* model, const QModelIndex& index);
+    static QString modelPath(const QAbstractItemModel* model, const QModelIndex& index,
+                             const QString& leafName);
+    void ensureHasChildren(VisibleNode& node);
     void ensureLoaded(VisibleNode& node);
     void ensureFormatted(VisibleNode& node, int row);
+    int visibleRowForIndex(const QModelIndex& index) const;
     static bool sameNode(const VisibleNode& a, const VisibleNode& b);
     Color resolveCachedColor(const QString& name) const;
     void callbackWarning(const QString& message, QSet<QString>& errors) const;
@@ -211,7 +234,8 @@ private:
     void clearDelegateItems();
     void generateDelegateItems(QList<Item*> oldItems = {},
                                QList<QPersistentModelIndex> oldIndexes = {},
-                               QStringList oldPaths = {}, QList<VisibleNode> oldNodes = {});
+                               QStringList oldPaths = {}, QList<VisibleNode> oldNodes = {},
+                               int oldStartIndex = -1, bool treeRebuilt = true);
     void updateDelegateItem(Item* item, int index);
 
     QVariant m_modelVariant;
@@ -239,7 +263,7 @@ private:
     // Plain-index snapshot of m_expandedIndexes for the current flatten pass.
     QSet<QModelIndex> m_expandedSnapshot;
     QList<VisibleNode> m_visibleNodes;
-    QHash<QModelIndex, int> m_visibleLookup;
+    mutable QHash<QModelIndex, int> m_visibleLookup;
     // The current node, tracked persistently so selection follows inserts
     // and moves across a re-flatten.
     QPersistentModelIndex m_currentModelIndex;
@@ -265,6 +289,10 @@ private:
 
     QHash<int, QString> m_roleNameStrings;
     quint16 m_claimedNames = 0;
+    QHash<QString, int> m_delegateProperties;
+    quint16 m_delegateStandardMask = 0xFFu;
+    bool m_delegateSchemaResolved = false;
+    bool m_delegateNeedsModelMap = true;
 };
 
 } // namespace qmltui

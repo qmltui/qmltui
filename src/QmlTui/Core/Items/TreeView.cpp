@@ -172,7 +172,7 @@ void TreeView::setNodeFormat(const QJSValue& format) {
     m_nodeFormat = format;
     m_formatErrors.clear();
     for (VisibleNode& node : m_visibleNodes)
-        node.formattedAtRow = -1;
+        if (node.d) node.d->format.reset();
     emit nodeFormatChanged();
     markDirty(DirtyFlag::SelfDirty);
 }
@@ -220,6 +220,7 @@ void TreeView::setCurrentIndex(int index) {
     int total = m_visibleNodes.size();
     if (total == 0) m_pendingCurrentIndex = index;
     int newIdx = index < 0 || total == 0 ? -1 : std::clamp(index, 0, total - 1);
+    const int prevIdx = m_selectedIndex;
     m_currentModelIndex = newIdx >= 0 && m_cppModel
                               ? QPersistentModelIndex(m_visibleNodes[newIdx].modelIndex)
                               : QPersistentModelIndex();
@@ -232,10 +233,11 @@ void TreeView::setCurrentIndex(int index) {
 
     adjustScrollTop();
 
-    // Update delegate current/selected properties.
-    for (Item* item : m_delegateItems) {
-        if (item) {
-            const bool isCurr = item->property("index").toInt() == m_selectedIndex;
+    if (prevIdx != m_selectedIndex) {
+        const bool isBound = m_delegate && m_delegate->isBound();
+        const auto updateSelectionForRow = [&](int row, bool isCurr) {
+            Item* item = delegateItemForRow(row);
+            if (!item) return;
             const PositionProperties& props = positionProperties(item);
             const QMetaObject* meta = item->metaObject();
             if (props.current >= 0)
@@ -246,11 +248,15 @@ void TreeView::setCurrentIndex(int index) {
                 meta->property(props.selected).write(item, isCurr);
             else
                 setDelegateProperty(item, "selected", isCurr);
-            if (QQmlContext* context = delegateContext(item)) {
-                DelegateUtils::setContextProperty(m_delegate, context, "current", isCurr);
-                DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurr);
+            if (!isBound) {
+                if (QQmlContext* context = delegateContext(item)) {
+                    DelegateUtils::setContextProperty(m_delegate, context, "current", isCurr);
+                    DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurr);
+                }
             }
-        }
+        };
+        updateSelectionForRow(prevIdx, false);
+        updateSelectionForRow(m_selectedIndex, true);
     }
 
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
@@ -260,7 +266,7 @@ QVariantMap TreeView::currentItemData() const {
     if (m_selectedIndex < 0 || m_selectedIndex >= m_visibleNodes.size()) return {};
     const_cast<TreeView*>(this)->ensureLoaded(
         const_cast<TreeView*>(this)->m_visibleNodes[m_selectedIndex]);
-    return m_visibleNodes[m_selectedIndex].rawData;
+    return m_visibleNodes[m_selectedIndex].payload().rawData;
 }
 
 void TreeView::setSelectionColor(Color color) {
@@ -312,6 +318,7 @@ void TreeView::setCollapsedIcon(const QString& icon) {
 void TreeView::expand(int index) {
     updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
+        ensureHasChildren(m_visibleNodes[index]);
         const VisibleNode& node = m_visibleNodes[index];
         if (node.hasChildren) {
             setNodeExpanded(node, true);
@@ -331,6 +338,7 @@ void TreeView::expand(int index) {
 void TreeView::collapse(int index) {
     updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
+        ensureHasChildren(m_visibleNodes[index]);
         const VisibleNode& node = m_visibleNodes[index];
         if (node.hasChildren) {
             setNodeExpanded(node, false);
@@ -345,6 +353,7 @@ void TreeView::collapse(int index) {
 void TreeView::toggleExpanded(int index) {
     updateTree();
     if (index >= 0 && index < m_visibleNodes.size()) {
+        ensureHasChildren(m_visibleNodes[index]);
         const VisibleNode& node = m_visibleNodes[index];
         if (node.hasChildren) {
             if (node.expanded) {
@@ -379,16 +388,17 @@ void TreeView::expandRecursively(int row, int requestedDepth) {
     updateTree();
     if (row >= m_visibleNodes.size()) return;
     const int baseDepth = m_visibleNodes[row].depth;
-    const QString baseKey = m_visibleNodes[row].key;
     bool changed = true;
     while (changed) {
         changed = false;
         updateTree();
-        for (const VisibleNode& node : std::as_const(m_visibleNodes)) {
-            const bool inSubtree = node.key == baseKey || node.key.startsWith(baseKey + '/');
+        for (int i = row; i < m_visibleNodes.size(); ++i) {
+            if (i > row && m_visibleNodes[i].depth <= baseDepth) break;
+            ensureHasChildren(m_visibleNodes[i]);
+            const VisibleNode& node = m_visibleNodes[i];
             const int relativeDepth = node.depth - baseDepth;
-            if (inSubtree && node.hasChildren &&
-                (requestedDepth < 0 || relativeDepth < requestedDepth) && !node.expanded) {
+            if (node.hasChildren && (requestedDepth < 0 || relativeDepth < requestedDepth) &&
+                !node.expanded) {
                 setNodeExpanded(node, true);
                 changed = true;
             }
@@ -407,9 +417,10 @@ void TreeView::collapseRecursively(int row) {
         return;
     }
     if (row >= m_visibleNodes.size()) return;
-    const QString baseKey = m_visibleNodes[row].key;
-    for (const VisibleNode& node : std::as_const(m_visibleNodes)) {
-        if (node.key == baseKey || node.key.startsWith(baseKey + '/')) setNodeExpanded(node, false);
+    const int baseDepth = m_visibleNodes[row].depth;
+    for (int i = row; i < m_visibleNodes.size(); ++i) {
+        if (i > row && m_visibleNodes[i].depth <= baseDepth) break;
+        setNodeExpanded(m_visibleNodes[i], false);
     }
     m_treeDirty = true;
     updateTree();
@@ -545,6 +556,10 @@ void TreeView::clearDelegateItems() {
     m_delegateNodes.clear();
     m_delegateStartIndex = -1;
     m_delegateCapacity = 0;
+    m_delegateProperties.clear();
+    m_delegateStandardMask = NumericItemRoles::ClaimsAll;
+    m_delegateSchemaResolved = false;
+    m_delegateNeedsModelMap = true;
 }
 
 void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
@@ -578,20 +593,21 @@ void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,
     }
 
     VisibleNode node;
-    node.text = name;
-    node.spans = std::move(spans);
-    node.path = currentPath;
-    node.key = currentKey;
     node.depth = depth;
     node.hasChildren = hasChildren;
     node.expanded = expanded;
-    node.rawData = map;
-    node.roleFg = Color::fromString(map.value(QStringLiteral("foreground")).toString());
-    node.roleBg = Color::fromString(map.value(QStringLiteral("background")).toString());
     node.roleEnabled = NumericItemRoles::enabled(map);
-    node.rolePrefix = NumericItemRoles::prefix(map);
+    NodePayload& p = node.ensurePayload();
+    p.text = name;
+    p.spans = std::move(spans);
+    p.path = currentPath;
+    p.key = currentKey;
+    p.rawData = map;
+    p.roleFg = Color::fromString(map.value(QStringLiteral("foreground")).toString());
+    p.roleBg = Color::fromString(map.value(QStringLiteral("background")).toString());
+    p.rolePrefix = NumericItemRoles::prefix(map);
 
-    list.append(node);
+    list.append(std::move(node));
 
     if (hasChildren && expanded) {
         int childIdx = 0;
@@ -629,33 +645,53 @@ void TreeView::fillNodeFromModel(QAbstractItemModel* model, const QModelIndex& i
             m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
         m_claimedNames = NumericItemRoles::claimedNames(model);
     }
+    const bool filterDelegateRoles =
+        m_delegate && m_delegateSchemaResolved && !m_delegateNeedsModelMap && !includeUnsetRoles;
     for (auto it = m_roleNameStrings.cbegin(); it != m_roleNameStrings.cend(); ++it) {
+        if (it.key() == Qt::DisplayRole) {
+            rawData[it.value()] = displayVar;
+            continue;
+        }
+        const bool isSpans = it.value() == QStringLiteral("spans");
+        if (filterDelegateRoles && !isSpans && !m_delegateProperties.contains(it.value())) continue;
         const QVariant roleVal = model->data(index, it.key());
         rawData[it.value()] = roleVal;
-        if (spans.isEmpty() && it.value() == QStringLiteral("spans")) {
+        if (spans.isEmpty() && isSpans) {
             Span::tryExtractList(roleVal, /*allowVariantMap=*/true, spans);
         }
     }
     if (name.isEmpty() && !spans.isEmpty()) name = Span::plainText(spans);
     rawData[QStringLiteral("display")] = name;
     rawData[QStringLiteral("text")] = name;
-    NumericItemRoles::apply(model, index, rawData, includeUnsetRoles, m_claimedNames);
-    node.text = name;
-    node.spans = std::move(spans);
-    node.rawData = rawData;
-    node.roleFg = Color::fromString(rawData.value(QStringLiteral("foreground")).toString());
-    node.roleBg = Color::fromString(rawData.value(QStringLiteral("background")).toString());
-    node.roleEnabled = NumericItemRoles::enabled(rawData);
-    node.rolePrefix = NumericItemRoles::prefix(rawData);
-    node.formattedAtRow = -1;
-    node.hasChildren = model->hasChildren(index) || model->rowCount(index) > 0;
+    const quint16 neededStandardRoles =
+        filterDelegateRoles ? m_delegateStandardMask : NumericItemRoles::ClaimsAll;
+    NumericItemRoles::apply(model, index, rawData, /*includeUnset=*/true, m_claimedNames,
+                            neededStandardRoles);
+    node.d = std::make_shared<NodePayload>();
+    NodePayload& p = *node.d;
+    p.text = name;
+    p.spans = std::move(spans);
+    p.rawData = rawData;
+    if (!m_delegate) {
+        p.roleFg = Color::fromString(rawData.value(QStringLiteral("foreground")).toString());
+        p.roleBg = Color::fromString(rawData.value(QStringLiteral("background")).toString());
+        node.roleEnabled = NumericItemRoles::enabled(rawData);
+        p.rolePrefix = NumericItemRoles::prefix(rawData);
+    }
+    if (!node.hasChildrenChecked || includeUnsetRoles) {
+        node.hasChildren = model->hasChildren(index);
+        node.hasChildrenChecked = true;
+    }
     node.modelIndex = index;
     node.loaded = true;
 }
 
-QString TreeView::modelPath(const QAbstractItemModel* model, const QModelIndex& index) {
-    QStringList names;
-    for (QModelIndex at = index; at.isValid(); at = at.parent()) {
+QString TreeView::modelPath(const QAbstractItemModel* model, const QModelIndex& index,
+                            const QString& leafName) {
+    const QModelIndex firstParent = index.parent();
+    if (!firstParent.isValid()) return leafName;
+    QStringList names{leafName};
+    for (QModelIndex at = firstParent; at.isValid(); at = at.parent()) {
         const QVariant displayVar = model->data(at, Qt::DisplayRole);
         QString name;
         QList<Span> spans;
@@ -672,23 +708,34 @@ QString TreeView::modelPath(const QAbstractItemModel* model, const QModelIndex& 
     return names.join(QLatin1Char('/'));
 }
 
+void TreeView::ensureHasChildren(VisibleNode& node) {
+    if (node.hasChildrenChecked) return;
+    if (m_cppModel && node.modelIndex.isValid())
+        node.hasChildren = m_cppModel->hasChildren(node.modelIndex);
+    node.hasChildrenChecked = true;
+}
+
 void TreeView::ensureLoaded(VisibleNode& node) {
     if (node.loaded || !m_cppModel || !node.modelIndex.isValid()) return;
     fillNodeFromModel(m_cppModel.data(), node.modelIndex, node);
-    node.path = modelPath(m_cppModel.data(), node.modelIndex);
+    node.ensurePayload().path = modelPath(m_cppModel.data(), node.modelIndex, node.payload().text);
 }
 
 void TreeView::ensureFormatted(VisibleNode& node, int row) {
-    if (node.formattedAtRow == row || !m_nodeFormat.isCallable()) return;
-    node.formattedAtRow = row;
-    node.formattedText = node.text;
-    node.formattedSpans = node.spans;
-    node.formatFg = Color::Invalid;
-    node.formatBg = Color::Invalid;
-    node.formatStyle = {};
-    node.spansOverrideSelection = false;
+    if (!m_nodeFormat.isCallable()) return;
+    NodePayload& p = node.ensurePayload();
+    if (p.format && p.format->formattedAtRow == row) return;
+    if (!p.format) p.format = std::make_shared<NodeFormatCache>();
+    NodeFormatCache& fmt = *p.format;
+    fmt.formattedAtRow = row;
+    fmt.formattedText = p.text;
+    fmt.formattedSpans = p.spans;
+    fmt.formatFg = Color::Invalid;
+    fmt.formatBg = Color::Invalid;
+    fmt.formatStyle = {};
+    fmt.spansOverrideSelection = false;
 
-    const QJSValue result = m_nodeFormat.call({row, node.text});
+    const QJSValue result = m_nodeFormat.call({row, p.text});
     if (result.isError()) {
         callbackWarning(QStringLiteral("nodeFormat: ") + result.toString() + QLatin1Char('\n') +
                             result.property("stack").toString(),
@@ -699,32 +746,32 @@ void TreeView::ensureFormatted(VisibleNode& node, int row) {
     if (result.isArray()) {
         QList<Span> formattedSpans;
         if (Span::tryExtractList(result.toVariant(), /*allowVariantMap=*/true, formattedSpans)) {
-            node.formattedSpans = std::move(formattedSpans);
-            node.spansOverrideSelection = true;
+            fmt.formattedSpans = std::move(formattedSpans);
+            fmt.spansOverrideSelection = true;
         }
     } else if (result.isObject()) {
         const QVariant retained = result.toVariant(QJSValue::RetainJSObjects);
         if (retained.metaType() == QMetaType::fromType<Span>()) {
             const Span s = retained.value<Span>();
-            node.formattedText = s.text();
-            if (s.color().isValid() && !s.color().isTransparent()) node.formatFg = s.color();
+            fmt.formattedText = s.text();
+            if (s.color().isValid() && !s.color().isTransparent()) fmt.formatFg = s.color();
             if (s.backgroundColor().isValid() && !s.backgroundColor().isTransparent())
-                node.formatBg = s.backgroundColor();
-            node.formatStyle = s.style();
-            node.formattedSpans.clear();
+                fmt.formatBg = s.backgroundColor();
+            fmt.formatStyle = s.style();
+            fmt.formattedSpans.clear();
         } else {
             const QJSValue textProp = result.property(QStringLiteral("text"));
             if (!textProp.isUndefined()) {
-                node.formattedText = textProp.toString();
-                node.formattedSpans.clear();
+                fmt.formattedText = textProp.toString();
+                fmt.formattedSpans.clear();
             }
             const QJSValue spansProp = result.property(QStringLiteral("spans"));
             if (!spansProp.isUndefined()) {
                 QList<Span> formattedSpans;
                 if (Span::tryExtractList(spansProp.toVariant(), /*allowVariantMap=*/true,
                                          formattedSpans)) {
-                    node.formattedSpans = std::move(formattedSpans);
-                    node.spansOverrideSelection = true;
+                    fmt.formattedSpans = std::move(formattedSpans);
+                    fmt.spansOverrideSelection = true;
                 }
             }
             bool formatGaveFg = false;
@@ -732,45 +779,45 @@ void TreeView::ensureFormatted(VisibleNode& node, int row) {
             const QJSValue cProp = result.property(QStringLiteral("color"));
             if (!cProp.isUndefined()) {
                 if (cProp.isString()) {
-                    node.formatFg = resolveCachedColor(cProp.toString());
+                    fmt.formatFg = resolveCachedColor(cProp.toString());
                 } else {
                     const QVariant cv = cProp.toVariant(QJSValue::RetainJSObjects);
                     if (cv.metaType() == QMetaType::fromType<Color>())
-                        node.formatFg = cv.value<Color>();
+                        fmt.formatFg = cv.value<Color>();
                     else
-                        node.formatFg = resolveCachedColor(cProp.toString());
+                        fmt.formatFg = resolveCachedColor(cProp.toString());
                 }
-                formatGaveFg = node.formatFg.isValid();
+                formatGaveFg = fmt.formatFg.isValid();
             }
             const QJSValue bgProp = result.property(QStringLiteral("backgroundColor"));
             if (!bgProp.isUndefined()) {
                 if (bgProp.isString()) {
-                    node.formatBg = resolveCachedColor(bgProp.toString());
+                    fmt.formatBg = resolveCachedColor(bgProp.toString());
                 } else {
                     const QVariant bgv = bgProp.toVariant(QJSValue::RetainJSObjects);
                     if (bgv.metaType() == QMetaType::fromType<Color>())
-                        node.formatBg = bgv.value<Color>();
+                        fmt.formatBg = bgv.value<Color>();
                     else
-                        node.formatBg = resolveCachedColor(bgProp.toString());
+                        fmt.formatBg = resolveCachedColor(bgProp.toString());
                 }
-                formatGaveBg = node.formatBg.isValid();
+                formatGaveBg = fmt.formatBg.isValid();
             }
             const auto applyFlag = [&](const QString& key, void (TextStyle::*setter)(bool)) {
                 const QJSValue p = result.property(key);
-                if (!p.isUndefined()) (node.formatStyle.*setter)(p.toBool());
+                if (!p.isUndefined()) (fmt.formatStyle.*setter)(p.toBool());
             };
             applyFlag(QStringLiteral("bold"), &TextStyle::setBold);
             applyFlag(QStringLiteral("dim"), &TextStyle::setDim);
             applyFlag(QStringLiteral("italic"), &TextStyle::setItalic);
             applyFlag(QStringLiteral("underline"), &TextStyle::setUnderline);
             applyFlag(QStringLiteral("reversed"), &TextStyle::setReversed);
-            if (!node.spansOverrideSelection && !node.formattedSpans.isEmpty()) {
-                for (Span& s : node.formattedSpans) {
+            if (!fmt.spansOverrideSelection && !fmt.formattedSpans.isEmpty()) {
+                for (Span& s : fmt.formattedSpans) {
                     if (formatGaveFg) s.resetColor();
                     if (formatGaveBg) s.resetBackgroundColor();
-                    if (!node.formatStyle.isEmpty()) {
+                    if (!fmt.formatStyle.isEmpty()) {
                         TextStyle st = s.style();
-                        st.applyOverlay(node.formatStyle);
+                        st.applyOverlay(fmt.formatStyle);
                         s.setStyle(st);
                     }
                 }
@@ -780,17 +827,23 @@ void TreeView::ensureFormatted(VisibleNode& node, int row) {
 }
 
 bool TreeView::sameNode(const VisibleNode& a, const VisibleNode& b) {
-    return a.loaded && b.loaded && a.depth == b.depth && a.expanded == b.expanded &&
-           a.hasChildren == b.hasChildren && a.text == b.text && a.spans == b.spans &&
-           a.path == b.path && a.rawData == b.rawData;
+    if (!a.loaded || !b.loaded || a.depth != b.depth || a.expanded != b.expanded ||
+        a.hasChildren != b.hasChildren)
+        return false;
+    if (a.d == b.d) return true;
+    const NodePayload& pa = a.payload();
+    const NodePayload& pb = b.payload();
+    return pa.text == pb.text && pa.spans == pb.spans && pa.path == pb.path &&
+           pa.rawData == pb.rawData;
 }
 
-void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent,
-                               const QString& parentKey, int depth, QList<VisibleNode>& list) {
-    // Shape only. Keys are row paths ("#2/#0"), unique within one pass and
-    // hierarchical, which is all expandRecursively() and delegate reuse need;
-    // no role is read here (see ensureLoaded()).
+void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& parent, int depth,
+                               QList<VisibleNode>& list) {
+    // Shape only. C++ models identify rows by QModelIndex, so no role,
+    // child check, or string key is read or allocated here unless the node
+    // is in m_expandedSnapshot (see ensureHasChildren() / ensureLoaded()).
     const int rows = model->rowCount(parent);
+    const bool hasExpanded = !m_expandedSnapshot.isEmpty();
     list.reserve(list.size() + rows);
     for (int r = 0; r < rows; ++r) {
         const QModelIndex idx = model->index(r, 0, parent);
@@ -799,20 +852,41 @@ void TreeView::flattenCppModel(QAbstractItemModel* model, const QModelIndex& par
         VisibleNode node;
         node.loaded = false;
         node.modelIndex = idx;
-        node.key = parentKey.isEmpty() ? QLatin1Char('#') + QString::number(r)
-                                       : parentKey + QLatin1String("/#") + QString::number(r);
         node.depth = depth;
-        node.hasChildren = model->hasChildren(idx);
-        node.expanded = node.hasChildren && m_expandedSnapshot.contains(idx);
-        list.append(node);
+        if (hasExpanded && m_expandedSnapshot.contains(idx)) {
+            node.hasChildren = model->hasChildren(idx);
+            node.hasChildrenChecked = true;
+            node.expanded = node.hasChildren;
+        } else {
+            node.hasChildrenChecked = false;
+        }
+        const bool expandChildren = node.expanded;
+        list.append(std::move(node));
 
-        if (node.expanded) flattenCppModel(model, idx, node.key, depth + 1, list);
+        if (expandChildren) flattenCppModel(model, idx, depth + 1, list);
     }
+}
+
+int TreeView::visibleRowForIndex(const QModelIndex& index) const {
+    if (!m_cppModel || !index.isValid()) return -1;
+    if (m_expandedSnapshot.isEmpty()) {
+        if (index.parent() != QModelIndex(m_rootIndex)) return -1;
+        const int r = index.row();
+        if (r >= 0 && r < m_visibleNodes.size() && m_visibleNodes[r].modelIndex == index) return r;
+    }
+    if (m_visibleLookup.isEmpty() && !m_visibleNodes.isEmpty()) {
+        m_visibleLookup.reserve(m_visibleNodes.size());
+        for (int row = 0; row < m_visibleNodes.size(); ++row) {
+            if (m_visibleNodes[row].modelIndex.isValid())
+                m_visibleLookup.insert(m_visibleNodes[row].modelIndex, row);
+        }
+    }
+    return m_visibleLookup.value(index, -1);
 }
 
 bool TreeView::isLevelShown(const QModelIndex& parent) const {
     if (parent == m_rootIndex) return true;
-    return parent.isValid() && m_visibleLookup.contains(parent);
+    return parent.isValid() && visibleRowForIndex(parent) >= 0;
 }
 
 void TreeView::setNodeExpanded(const VisibleNode& node, bool expanded) {
@@ -823,12 +897,13 @@ void TreeView::setNodeExpanded(const VisibleNode& node, bool expanded) {
             m_expandedIndexes.remove(node.modelIndex);
         return;
     }
+    const QString& key = node.payload().key;
     if (expanded) {
-        m_expandedPaths.insert(node.key);
-        m_collapsedPaths.remove(node.key);
+        m_expandedPaths.insert(key);
+        m_collapsedPaths.remove(key);
     } else {
-        m_collapsedPaths.insert(node.key);
-        m_expandedPaths.remove(node.key);
+        m_collapsedPaths.insert(key);
+        m_expandedPaths.remove(key);
     }
 }
 
@@ -856,16 +931,17 @@ void TreeView::handleModelDataChanged(const QModelIndex& topLeft, const QModelIn
     bool touched = false;
     for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
         const QModelIndex index = m_cppModel->index(row, 0, parent);
-        const int visibleRow = m_visibleLookup.value(index, -1);
+        const int visibleRow = visibleRowForIndex(index);
         if (visibleRow < 0) continue;
         VisibleNode& node = m_visibleNodes[visibleRow];
+        ensureHasChildren(node);
         const bool hadChildren = node.hasChildren;
         const bool wasLoaded = node.loaded;
-        const QString oldText = node.text;
+        const QString oldText = node.payload().text;
         fillNodeFromModel(m_cppModel.data(), index, node, true);
-        node.path = modelPath(m_cppModel.data(), index);
+        node.ensurePayload().path = modelPath(m_cppModel.data(), index, node.payload().text);
         node.expanded = node.hasChildren && m_expandedSnapshot.contains(index);
-        const bool renamed = wasLoaded && node.text != oldText;
+        const bool renamed = wasLoaded && node.payload().text != oldText;
         if (hadChildren != node.hasChildren || (renamed && node.expanded)) {
             invalidate();
             return;
@@ -885,12 +961,13 @@ void TreeView::updateTree() {
     if (!m_treeDirty) return;
 
     const int previousIndex = m_selectedIndex;
+    const int oldStartIndex = m_delegateStartIndex;
     // The persistent index follows the current node through inserts, moves
     // and proxy reordering; the string key is for JS map trees.
     const QPersistentModelIndex selectedModelIndex = m_currentModelIndex;
     QString selectedKey;
     if (!m_cppModel && m_selectedIndex >= 0 && m_selectedIndex < m_visibleNodes.size())
-        selectedKey = m_visibleNodes[m_selectedIndex].key;
+        selectedKey = m_visibleNodes[m_selectedIndex].payload().key;
 
     QList<Item*> oldItems = std::move(m_delegateItems);
     QList<QPersistentModelIndex> oldIndexes = std::move(m_delegateModelIndexes);
@@ -905,7 +982,7 @@ void TreeView::updateTree() {
         m_expandedSnapshot.clear();
         for (const QPersistentModelIndex& expanded : std::as_const(m_expandedIndexes))
             if (expanded.isValid()) m_expandedSnapshot.insert(QModelIndex(expanded));
-        flattenCppModel(m_cppModel.data(), m_rootIndex, "", 0, m_visibleNodes);
+        flattenCppModel(m_cppModel.data(), m_rootIndex, 0, m_visibleNodes);
     } else if (!m_rootNodeMap.isEmpty()) {
         QString rootName = extractMapName(m_rootNodeMap);
         QString rootKey = rootName + "#0";
@@ -913,19 +990,18 @@ void TreeView::updateTree() {
     }
 
     m_visibleLookup.clear();
-    for (int row = 0; row < m_visibleNodes.size(); ++row)
-        if (m_visibleNodes[row].modelIndex.isValid())
-            m_visibleLookup.insert(m_visibleNodes[row].modelIndex, row);
     for (auto it = m_expandedIndexes.begin(); it != m_expandedIndexes.end();)
         it = it->isValid() ? std::next(it) : m_expandedIndexes.erase(it);
 
     m_selectedIndex = -1;
-    for (int row = 0; row < m_visibleNodes.size(); ++row) {
-        const VisibleNode& node = m_visibleNodes[row];
-        if ((selectedModelIndex.isValid() && node.modelIndex == selectedModelIndex) ||
-            (!selectedKey.isEmpty() && node.key == selectedKey)) {
-            m_selectedIndex = row;
-            break;
+    if (selectedModelIndex.isValid()) {
+        m_selectedIndex = visibleRowForIndex(selectedModelIndex);
+    } else if (!selectedKey.isEmpty()) {
+        for (int row = 0; row < m_visibleNodes.size(); ++row) {
+            if (m_visibleNodes[row].payload().key == selectedKey) {
+                m_selectedIndex = row;
+                break;
+            }
         }
     }
     if (m_pendingCurrentIndex >= 0 && !m_visibleNodes.isEmpty()) {
@@ -946,7 +1022,7 @@ void TreeView::updateTree() {
                               : QPersistentModelIndex();
 
     generateDelegateItems(std::move(oldItems), std::move(oldIndexes), std::move(oldPaths),
-                          std::move(oldNodes));
+                          std::move(oldNodes), oldStartIndex, /*treeRebuilt=*/true);
     m_treeDirty = false;
 }
 
@@ -982,11 +1058,13 @@ void TreeView::updateDelegatePosition(Item* item, int index) {
     write(props.row, "row", index);
     write(props.current, "current", isCurrent);
     write(props.selected, "selected", isCurrent);
-    if (QQmlContext* context = delegateContext(item)) {
-        DelegateUtils::setContextProperty(m_delegate, context, "index", index);
-        DelegateUtils::setContextProperty(m_delegate, context, "row", index);
-        DelegateUtils::setContextProperty(m_delegate, context, "current", isCurrent);
-        DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurrent);
+    if (!m_delegate || !m_delegate->isBound()) {
+        if (QQmlContext* context = delegateContext(item)) {
+            DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+            DelegateUtils::setContextProperty(m_delegate, context, "row", index);
+            DelegateUtils::setContextProperty(m_delegate, context, "current", isCurrent);
+            DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurrent);
+        }
     }
 }
 
@@ -994,12 +1072,12 @@ void TreeView::updateDelegateItem(Item* item, int index) {
     if (!item || index < 0 || index >= m_visibleNodes.size()) return;
     ensureLoaded(m_visibleNodes[index]);
     const VisibleNode& node = m_visibleNodes[index];
+    const NodePayload& np = node.payload();
     const bool isCurrent = index == m_selectedIndex;
+    const bool isBound = m_delegate && m_delegate->isBound();
+    const bool needsModelMap = !isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap;
 
-    QVariantMap roleData = node.rawData;
-    if (m_cppModel && node.modelIndex.isValid()) {
-        NumericItemRoles::apply(m_cppModel.data(), node.modelIndex, roleData, true, m_claimedNames);
-    }
+    const QVariantMap& roleData = np.rawData;
 
     setDelegateProperty(item, "index", index);
     setDelegateProperty(item, "row", index);
@@ -1011,60 +1089,80 @@ void TreeView::updateDelegateItem(Item* item, int index) {
     setDelegateProperty(item, "depth", node.depth);
     setDelegateProperty(item, "expanded", node.expanded);
     setDelegateProperty(item, "hasChildren", node.hasChildren);
-    setDelegateProperty(item, "path", node.path);
-    setDelegateProperty(item, "display", node.text);
-    setDelegateProperty(item, "text", node.text);
-    setDelegateProperty(item, "modelData", node.rawData);
+    setDelegateProperty(item, "path", np.path);
+    setDelegateProperty(item, "display", np.text);
+    setDelegateProperty(item, "text", np.text);
 
-    QVariantMap modelMap = node.rawData;
-    modelMap["index"] = index;
-    modelMap["row"] = index;
-    modelMap["column"] = 0;
-    modelMap["depth"] = node.depth;
-    modelMap["expanded"] = node.expanded;
-    modelMap["hasChildren"] = node.hasChildren;
-    modelMap["current"] = isCurrent;
-    modelMap["selected"] = isCurrent;
-    modelMap["path"] = node.path;
-    modelMap["display"] = node.text;
-    modelMap["modelData"] = node.rawData;
-    setDelegateProperty(item, "model", modelMap);
-
-    if (!roleData.contains(QStringLiteral("icon"))) setPropertyIfExists(item, "icon", QString());
-    if (!roleData.contains(QStringLiteral("status")))
-        setPropertyIfExists(item, "status", QString());
-
-    for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
-        if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent"))
-            continue;
-        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+    QVariantMap modelMap;
+    if (needsModelMap) {
+        setDelegateProperty(item, "modelData", np.rawData);
+        modelMap = np.rawData;
+        modelMap["index"] = index;
+        modelMap["row"] = index;
+        modelMap["column"] = 0;
+        modelMap["depth"] = node.depth;
+        modelMap["expanded"] = node.expanded;
+        modelMap["hasChildren"] = node.hasChildren;
+        modelMap["current"] = isCurrent;
+        modelMap["selected"] = isCurrent;
+        modelMap["path"] = np.path;
+        modelMap["display"] = np.text;
+        modelMap["modelData"] = np.rawData;
+        setDelegateProperty(item, "model", modelMap);
     }
 
-    if (QQmlContext* context = delegateContext(item)) {
-        DelegateUtils::setContextProperty(m_delegate, context, "index", index);
-        DelegateUtils::setContextProperty(m_delegate, context, "row", index);
-        DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
-        DelegateUtils::setContextProperty(m_delegate, context, "current", isCurrent);
-        DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurrent);
-        DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
-        DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
-        DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
-        DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
-        DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
-        DelegateUtils::setContextProperty(m_delegate, context, "path", node.path);
-        DelegateUtils::setContextProperty(m_delegate, context, "display", node.text);
-        DelegateUtils::setContextProperty(m_delegate, context, "text", node.text);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", node.rawData);
-        DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
-
+    if (isBound && m_delegateSchemaResolved) {
+        if (!roleData.contains(QStringLiteral("icon")))
+            DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, QStringLiteral("icon"),
+                                                 QString());
+        if (!roleData.contains(QStringLiteral("status")))
+            DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                 QStringLiteral("status"), QString());
         for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
-            DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+            if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent"))
+                continue;
+            DelegateUtils::writeDeclaredProperty(item, m_delegateProperties, it.key(), it.value());
+        }
+    } else {
+        if (!roleData.contains(QStringLiteral("icon")))
+            setPropertyIfExists(item, "icon", QString());
+        if (!roleData.contains(QStringLiteral("status")))
+            setPropertyIfExists(item, "status", QString());
+        for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
+            if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent"))
+                continue;
+            setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
+        }
+    }
+
+    if (!isBound) {
+        if (QQmlContext* context = delegateContext(item)) {
+            DelegateUtils::setContextProperty(m_delegate, context, "index", index);
+            DelegateUtils::setContextProperty(m_delegate, context, "row", index);
+            DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
+            DelegateUtils::setContextProperty(m_delegate, context, "current", isCurrent);
+            DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurrent);
+            DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
+            DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
+            DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
+            DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
+            DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
+            DelegateUtils::setContextProperty(m_delegate, context, "path", np.path);
+            DelegateUtils::setContextProperty(m_delegate, context, "display", np.text);
+            DelegateUtils::setContextProperty(m_delegate, context, "text", np.text);
+            DelegateUtils::setContextProperty(m_delegate, context, "modelData", np.rawData);
+            DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
+
+            for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
+                DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+            }
         }
     }
 }
 
 void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentModelIndex> oldIndexes,
-                                     QStringList oldPaths, QList<VisibleNode> oldNodes) {
+                                     QStringList oldPaths, QList<VisibleNode> oldNodes,
+                                     int oldStartIndex, bool treeRebuilt) {
     const auto deleteOldItems = [&oldItems]() {
         for (Item* item : oldItems) {
             if (!item) continue;
@@ -1087,17 +1185,6 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
 
     Item* contentItem = this;
 
-    QHash<QModelIndex, int> indexLookup;
-    QHash<QString, int> pathLookup;
-    indexLookup.reserve(oldIndexes.size());
-    pathLookup.reserve(oldPaths.size());
-    for (int oldIndex = 0; oldIndex < oldItems.size(); ++oldIndex) {
-        if (oldIndex < oldIndexes.size() && oldIndexes[oldIndex].isValid())
-            indexLookup.insert(QModelIndex(oldIndexes[oldIndex]), oldIndex);
-        else if (oldIndex < oldPaths.size())
-            pathLookup.insert(oldPaths[oldIndex], oldIndex);
-    }
-
     const int viewportRows = (std::max)(0, height());
     const int visibleCount = static_cast<int>(m_visibleNodes.size());
     const int firstRow = visibleCount == 0 ? 0 : std::clamp(m_scrollTop, 0, visibleCount - 1);
@@ -1108,37 +1195,76 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
     const int rowCount = (std::max)(0, lastRow - firstRow);
     QList<int> matchedOldIndex(rowCount, -1);
     QList<bool> claimedOld(oldItems.size(), false);
-    for (int i = firstRow; i < lastRow; ++i) {
-        const VisibleNode& node = m_visibleNodes[i];
-        const int oldIndex = node.modelIndex.isValid() ? indexLookup.value(node.modelIndex, -1)
-                                                       : pathLookup.value(node.key, -1);
-        if (oldIndex >= 0 && oldIndex < oldItems.size() && oldItems[oldIndex] &&
-            !claimedOld[oldIndex]) {
-            matchedOldIndex[i - firstRow] = oldIndex;
-            claimedOld[oldIndex] = true;
+    if (!treeRebuilt && oldStartIndex >= 0) {
+        for (int i = firstRow; i < lastRow; ++i) {
+            const int oldIndex = i - oldStartIndex;
+            if (oldIndex >= 0 && oldIndex < oldItems.size() && oldItems[oldIndex]) {
+                matchedOldIndex[i - firstRow] = oldIndex;
+                claimedOld[oldIndex] = true;
+            }
+        }
+    } else {
+        QHash<QModelIndex, int> indexLookup;
+        QHash<QString, int> pathLookup;
+        indexLookup.reserve(oldIndexes.size());
+        pathLookup.reserve(oldPaths.size());
+        for (int oldIndex = 0; oldIndex < oldItems.size(); ++oldIndex) {
+            if (oldIndex < oldIndexes.size() && oldIndexes[oldIndex].isValid())
+                indexLookup.insert(QModelIndex(oldIndexes[oldIndex]), oldIndex);
+            else if (oldIndex < oldPaths.size())
+                pathLookup.insert(oldPaths[oldIndex], oldIndex);
+        }
+        for (int i = firstRow; i < lastRow; ++i) {
+            const VisibleNode& node = m_visibleNodes[i];
+            const int oldIndex = node.modelIndex.isValid()
+                                     ? indexLookup.value(node.modelIndex, -1)
+                                     : pathLookup.value(node.payload().key, -1);
+            if (oldIndex >= 0 && oldIndex < oldItems.size() && oldItems[oldIndex] &&
+                !claimedOld[oldIndex]) {
+                matchedOldIndex[i - firstRow] = oldIndex;
+                claimedOld[oldIndex] = true;
+            }
         }
     }
 
     const bool canRecycleUnmatched =
         m_delegate && !QQmlListReference(m_delegate, "choices").isValid();
+    const bool isBound = m_delegate && m_delegate->isBound();
     int nextUnclaimedOld = 0;
 
+    m_delegateItems.reserve(rowCount);
+    m_delegateModelIndexes.reserve(rowCount);
+    m_delegatePaths.reserve(rowCount);
+    m_delegateNodes.reserve(rowCount);
+
     for (int i = firstRow; i < lastRow; ++i) {
+        const int oldIndex = matchedOldIndex[i - firstRow];
+        if (oldIndex >= 0 && !treeRebuilt) {
+            Item* reused = oldItems[oldIndex];
+            oldItems[oldIndex] = nullptr;
+            const VisibleNode& node = m_visibleNodes[i];
+            m_delegateItems.append(reused);
+            m_delegateModelIndexes.append(node.modelIndex);
+            m_delegatePaths.append(node.payload().key);
+            m_delegateNodes.append(oldIndex < oldNodes.size() ? std::move(oldNodes[oldIndex])
+                                                              : node);
+            continue;
+        }
         ensureLoaded(m_visibleNodes[i]);
         const VisibleNode& node = m_visibleNodes[i];
+        const NodePayload& np = node.payload();
         Item* reused = nullptr;
-        const int oldIndex = matchedOldIndex[i - firstRow];
         if (oldIndex >= 0) {
             reused = oldItems[oldIndex];
             oldItems[oldIndex] = nullptr;
-            // Same node, unchanged: only its position moved (scrolling).
+            // Same node, unchanged: only its position moved (re-flatten).
             if (oldIndex < oldNodes.size() && sameNode(oldNodes[oldIndex], node))
                 updateDelegatePosition(reused, i);
             else
                 updateDelegateItem(reused, i);
             m_delegateItems.append(reused);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.key);
+            m_delegatePaths.append(np.key);
             m_delegateNodes.append(node);
             continue;
         }
@@ -1157,7 +1283,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
                 updateDelegateItem(reused, i);
                 m_delegateItems.append(reused);
                 m_delegateModelIndexes.append(node.modelIndex);
-                m_delegatePaths.append(node.key);
+                m_delegatePaths.append(np.key);
                 m_delegateNodes.append(node);
                 continue;
             }
@@ -1165,48 +1291,53 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
 
         QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
         bool isCurr = (i == m_selectedIndex);
+        const bool needsModelMap = !isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap;
 
-        DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-        DelegateUtils::setContextProperty(m_delegate, context, "row", i);
-        DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
-        DelegateUtils::setContextProperty(m_delegate, context, "current", isCurr);
-        DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurr);
-        DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
-        DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
-        DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
-        DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
-        DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
-        DelegateUtils::setContextProperty(m_delegate, context, "path", node.path);
-        DelegateUtils::setContextProperty(m_delegate, context, "display", node.text);
-        DelegateUtils::setContextProperty(m_delegate, context, "text", node.text);
-        DelegateUtils::setContextProperty(m_delegate, context, "modelData", node.rawData);
-
-        // Combined Qt Quick model map context
-        QVariantMap modelMap = node.rawData;
-        modelMap["index"] = i;
-        modelMap["row"] = i;
-        modelMap["column"] = 0;
-        modelMap["depth"] = node.depth;
-        modelMap["expanded"] = node.expanded;
-        modelMap["hasChildren"] = node.hasChildren;
-        modelMap["current"] = isCurr;
-        modelMap["selected"] = isCurr;
-        modelMap["path"] = node.path;
-        modelMap["display"] = node.text;
-        modelMap["modelData"] = node.rawData;
-        DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
-
-        for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
-            DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+        QVariantMap modelMap;
+        if (needsModelMap) {
+            modelMap = np.rawData;
+            modelMap["index"] = i;
+            modelMap["row"] = i;
+            modelMap["column"] = 0;
+            modelMap["depth"] = node.depth;
+            modelMap["expanded"] = node.expanded;
+            modelMap["hasChildren"] = node.hasChildren;
+            modelMap["current"] = isCurr;
+            modelMap["selected"] = isCurr;
+            modelMap["path"] = np.path;
+            modelMap["display"] = np.text;
+            modelMap["modelData"] = np.rawData;
         }
 
-        QVariantMap initialProps = node.rawData;
+        if (!isBound) {
+            DelegateUtils::setContextProperty(m_delegate, context, "index", i);
+            DelegateUtils::setContextProperty(m_delegate, context, "row", i);
+            DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
+            DelegateUtils::setContextProperty(m_delegate, context, "current", isCurr);
+            DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurr);
+            DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
+            DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
+            DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
+            DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
+            DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
+            DelegateUtils::setContextProperty(m_delegate, context, "path", np.path);
+            DelegateUtils::setContextProperty(m_delegate, context, "display", np.text);
+            DelegateUtils::setContextProperty(m_delegate, context, "text", np.text);
+            DelegateUtils::setContextProperty(m_delegate, context, "modelData", np.rawData);
+            DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
+
+            for (auto it = np.rawData.cbegin(); it != np.rawData.cend(); ++it) {
+                DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+            }
+        }
+
+        QVariantMap initialProps = np.rawData;
         initialProps.remove(QStringLiteral("children"));
         initialProps.remove(QStringLiteral("parent"));
         if (!initialProps.contains("icon")) initialProps["icon"] = QString();
         if (!initialProps.contains("status")) initialProps["status"] = QString();
-        if (!initialProps.contains("text")) initialProps["text"] = node.text;
-        if (!initialProps.contains("path")) initialProps["path"] = node.path;
+        if (!initialProps.contains("text")) initialProps["text"] = np.text;
+        if (!initialProps.contains("path")) initialProps["path"] = np.path;
         initialProps["index"] = i;
         initialProps["row"] = i;
         initialProps["column"] = 0;
@@ -1217,12 +1348,20 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
         initialProps["selected"] = isCurr;
         initialProps["treeView"] = QVariant::fromValue(this);
         initialProps["isTreeNode"] = true;
-        initialProps["display"] = node.text;
-        initialProps["modelData"] = node.rawData;
-        initialProps["model"] = modelMap;
+        initialProps["display"] = np.text;
+        if (needsModelMap) {
+            initialProps["modelData"] = np.rawData;
+            initialProps["model"] = modelMap;
+        }
 
         if (Item* item =
                 DelegateUtils::createItem(m_delegate, initialProps, context, contentItem, this)) {
+            if (isBound && canRecycleUnmatched && !m_delegateSchemaResolved) {
+                DelegateUtils::resolveDelegateSchema(item, m_delegate, m_delegateProperties,
+                                                     m_delegateStandardMask,
+                                                     m_delegateNeedsModelMap);
+                m_delegateSchemaResolved = true;
+            }
 
             setDelegateProperty(item, "index", i);
             setDelegateProperty(item, "row", i);
@@ -1234,25 +1373,20 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
             setDelegateProperty(item, "depth", node.depth);
             setDelegateProperty(item, "expanded", node.expanded);
             setDelegateProperty(item, "hasChildren", node.hasChildren);
-            setDelegateProperty(item, "display", node.text);
-            setDelegateProperty(item, "text", node.text);
-            setDelegateProperty(item, "path", node.path);
-            setDelegateProperty(item, "modelData", node.rawData);
-
-            for (auto it = node.rawData.cbegin(); it != node.rawData.cend(); ++it) {
-                if (it.key() == QStringLiteral("children") || it.key() == QStringLiteral("parent"))
-                    continue;
-                setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
-            }
+            setDelegateProperty(item, "display", np.text);
+            setDelegateProperty(item, "text", np.text);
+            setDelegateProperty(item, "path", np.path);
+            if (!isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap)
+                setDelegateProperty(item, "modelData", np.rawData);
 
             m_delegateItems.append(item);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.key);
+            m_delegatePaths.append(np.key);
             m_delegateNodes.append(node);
         } else {
             m_delegateItems.append(nullptr);
             m_delegateModelIndexes.append(node.modelIndex);
-            m_delegatePaths.append(node.key);
+            m_delegatePaths.append(np.key);
             m_delegateNodes.append(node);
         }
     }
@@ -1300,6 +1434,7 @@ void TreeView::updateLayout() {
     const int expectedCapacity = (std::max)(0, height());
     if (m_delegate &&
         (m_delegateStartIndex != m_scrollTop || m_delegateCapacity != expectedCapacity)) {
+        const int oldStartIndex = m_delegateStartIndex;
         QList<Item*> oldItems = std::move(m_delegateItems);
         QList<QPersistentModelIndex> oldIndexes = std::move(m_delegateModelIndexes);
         QStringList oldPaths = std::move(m_delegatePaths);
@@ -1309,7 +1444,7 @@ void TreeView::updateLayout() {
         m_delegatePaths.clear();
         m_delegateNodes.clear();
         generateDelegateItems(std::move(oldItems), std::move(oldIndexes), std::move(oldPaths),
-                              std::move(oldNodes));
+                              std::move(oldNodes), oldStartIndex, /*treeRebuilt=*/false);
     }
 
     if (m_delegate) layoutChildren();
@@ -1355,9 +1490,10 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                 if (Cell* cell = buffer.tryCellAt(startX + x, rowY)) cell->attributes = attr;
         }
 
+        const NodePayload& np = node.payload();
         if (!isSelected) {
-            if (node.roleFg.isValid()) fg = node.roleFg.argb32();
-            if (node.roleBg.isValid()) bg = node.roleBg.argb32();
+            if (np.roleFg.isValid()) fg = np.roleFg.argb32();
+            if (np.roleBg.isValid()) bg = np.roleBg.argb32();
         }
         if (!node.roleEnabled) attr = attr | TextAttribute::Dim;
 
@@ -1368,18 +1504,19 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                                       ? m_resolvedBranchColor
                                       : fg;
 
-        const QString& labelText = hasNodeFormat ? node.formattedText : node.text;
-        const QList<Span>& labelSpans = hasNodeFormat ? node.formattedSpans : node.spans;
+        const NodeFormatCache* fmt = hasNodeFormat ? np.format.get() : nullptr;
+        const QString& labelText = fmt ? fmt->formattedText : np.text;
+        const QList<Span>& labelSpans = fmt ? fmt->formattedSpans : np.spans;
         uint32_t labelFg = fg;
         uint32_t labelBg = bg;
         TextAttribute labelAttr = attr;
         bool spansOverrideSelection = false;
 
-        if (hasNodeFormat) {
-            if (node.formatFg.isValid()) labelFg = node.formatFg.argb32();
-            if (node.formatBg.isValid()) labelBg = node.formatBg.argb32();
-            labelAttr = node.formatStyle.resolveAttributes(labelAttr);
-            spansOverrideSelection = node.spansOverrideSelection;
+        if (fmt) {
+            if (fmt->formatFg.isValid()) labelFg = fmt->formatFg.argb32();
+            if (fmt->formatBg.isValid()) labelBg = fmt->formatBg.argb32();
+            labelAttr = fmt->formatStyle.resolveAttributes(labelAttr);
+            spansOverrideSelection = fmt->spansOverrideSelection;
         }
 
         int curX = 0;
@@ -1401,7 +1538,7 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
         };
 
         writeSegment(prefix, branchFg, bg, attr);
-        writeSegment(node.rolePrefix, fg, bg, attr);
+        writeSegment(np.rolePrefix, fg, bg, attr);
         if (labelSpans.isEmpty()) {
             writeSegment(labelText, labelFg, labelBg, labelAttr);
         } else {
@@ -1451,6 +1588,7 @@ void TreeView::keyPressEvent(KeyEvent* event) {
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Right) {
         if (m_selectedIndex >= 0 && m_selectedIndex < total) {
+            ensureHasChildren(m_visibleNodes[m_selectedIndex]);
             const VisibleNode& node = m_visibleNodes[m_selectedIndex];
             if (node.hasChildren) {
                 if (!node.expanded) {
@@ -1463,6 +1601,7 @@ void TreeView::keyPressEvent(KeyEvent* event) {
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Left) {
         if (m_selectedIndex >= 0 && m_selectedIndex < total) {
+            ensureHasChildren(m_visibleNodes[m_selectedIndex]);
             const VisibleNode& node = m_visibleNodes[m_selectedIndex];
             if (node.hasChildren && node.expanded) {
                 collapse(m_selectedIndex);
@@ -1481,7 +1620,7 @@ void TreeView::keyPressEvent(KeyEvent* event) {
         toggleExpanded(m_selectedIndex);
         if (m_selectedIndex >= 0 && m_selectedIndex < total) {
             ensureLoaded(m_visibleNodes[m_selectedIndex]);
-            emit nodeActivated(m_visibleNodes[m_selectedIndex].path);
+            emit nodeActivated(m_visibleNodes[m_selectedIndex].payload().path);
             emit itemActivated(m_selectedIndex);
         }
         event->setAccepted(true);
@@ -1497,7 +1636,7 @@ void TreeView::mousePressEvent(MouseEvent* event) {
         setCurrentIndex(row);
         toggleExpanded(row);
         ensureLoaded(m_visibleNodes[row]);
-        emit nodeActivated(m_visibleNodes[row].path);
+        emit nodeActivated(m_visibleNodes[row].payload().path);
         emit itemActivated(row);
         event->setAccepted(true);
     }

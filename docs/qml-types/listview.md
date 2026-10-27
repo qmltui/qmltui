@@ -27,6 +27,7 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 | `delegate` | `Component` |  | Holds the component template instantiated for visible items. This is the default property. |
 | `orientation` | `Qt::Orientation` | `Qt.Vertical` | Holds the layout orientation of items: `Qt.Vertical` or `Qt.Horizontal`. |
 | `spacing` | `int` | `0` | Holds the spacing in character cells between adjacent items. |
+| `count` | `int` | `0` | Read-only. Holds the number of items in `model`. |
 | `currentIndex` | `int` | `-1` | Holds the index of the currently selected or focused item, or `-1`. |
 | `reuseItems` | `bool` | `true` | Whether delegates that scroll out of view are recycled and rebound to items scrolling into view. |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose direct children the view displays when using a hierarchical model. |
@@ -43,6 +44,13 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 | Signal | Description |
 | :--- | :--- |
 | `itemActivated(int index)` | Emitted when an item is activated with Enter or a mouse click. |
+| `modelDataChanged()` | Emitted when the underlying model resets or inserts, removes, moves, or modifies rows. |
+
+## Methods
+
+| Method | Description |
+| :--- | :--- |
+| `var itemData(int index, string role = "")` | Returns the row value or a named role value at `index` from `model` without requiring the row delegate to be materialized. |
 
 ## Detailed Description
 

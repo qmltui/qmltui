@@ -3,9 +3,11 @@
 // Internal: shared delegate instantiation, context binding, and model helpers for views.
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/NumericItemRoles_p.h>
 
 #include <QAbstractItemModel>
 #include <QByteArrayView>
+#include <QHash>
 #include <QMetaProperty>
 #include <QJSValue>
 #include <QQmlComponent>
@@ -36,6 +38,54 @@ inline void setPropertyIfExists(QObject* object, const char* name, const QVarian
     const int index = object->metaObject()->indexOfProperty(name);
     if (index >= 0 && isDeclaredInQml(object, index))
         object->metaObject()->property(index).write(object, value);
+}
+
+// Inspects a delegate instance once and caches its QML-declared writable
+// property indexes, whether it needs a full `model`/`modelData` map, and
+// which standard numeric roles it declares.
+inline void resolveDelegateSchema(const QObject* object, const QQmlComponent* component,
+                                  QHash<QString, int>& declaredProperties, quint16& standardMask,
+                                  bool& needsModelMap) {
+    declaredProperties.clear();
+    standardMask = NumericItemRoles::ClaimsNothing;
+    needsModelMap = !component || !component->isBound() ||
+                    QQmlListReference(const_cast<QQmlComponent*>(component), "choices").isValid();
+    if (!object) return;
+    const QMetaObject* meta = object->metaObject();
+    const int count = meta->propertyCount();
+    for (int idx = 0; idx < count; ++idx) {
+        const QMetaProperty prop = meta->property(idx);
+        if (!prop.isWritable() || !isDeclaredInQml(object, idx)) continue;
+        const QByteArrayView name(prop.name());
+        declaredProperties.insert(QString::fromUtf8(name), idx);
+        if (name == "model" || name == "modelData")
+            needsModelMap = true;
+        else if (name == "foreground")
+            standardMask |= NumericItemRoles::ClaimsForeground;
+        else if (name == "background")
+            standardMask |= NumericItemRoles::ClaimsBackground;
+        else if (name == "textAlignment")
+            standardMask |= NumericItemRoles::ClaimsAlignment;
+        else if (name == "checkState")
+            standardMask |= NumericItemRoles::ClaimsCheckState;
+        else if (name == "decoration")
+            standardMask |= NumericItemRoles::ClaimsDecoration;
+        else if (name == "enabled")
+            standardMask |= NumericItemRoles::ClaimsEnabled;
+        else if (name == "checkable")
+            standardMask |= NumericItemRoles::ClaimsCheckable;
+        else if (name == "modelIndex")
+            standardMask |= NumericItemRoles::ClaimsModelIndex;
+    }
+    if (needsModelMap) standardMask = NumericItemRoles::ClaimsAll;
+}
+
+inline void writeDeclaredProperty(QObject* object, const QHash<QString, int>& declaredProperties,
+                                  const QString& name, const QVariant& value) {
+    if (!object) return;
+    const auto it = declaredProperties.constFind(name);
+    if (it != declaredProperties.cend())
+        object->metaObject()->property(it.value()).write(object, value);
 }
 
 inline QQmlComponent* resolveDelegate(QQmlComponent* delegate, int row, int column,
@@ -122,6 +172,54 @@ inline Item* createItem(QQmlComponent* component, const QVariantMap& initialProp
             // `text:` expression. Read-only ones (Item's "children") would make
             // setInitialProperties() warn for every delegate it creates.
             if (idx >= 0 && metaObject->property(idx).isWritable() && isDeclaredInQml(object, idx))
+                filteredProperties.insert(it.key(), it.value());
+        }
+        component->setInitialProperties(object, filteredProperties);
+        component->completeCreate();
+    }
+    if (object && !component->errors().isEmpty()) {
+        qmlWarning(owner) << component->errorString();
+        delete object;
+        if (ownsContext) delete context;
+        return nullptr;
+    }
+    Item* item = qobject_cast<Item*>(object);
+    if (!item) {
+        if (!component->errors().isEmpty())
+            qmlWarning(owner) << component->errorString();
+        else if (object)
+            qmlWarning(owner) << "Delegate root must derive from QmlTui.Item";
+        delete object;
+        if (ownsContext) delete context;
+        return nullptr;
+    }
+
+    item->setParentItem(parentItem);
+    item->setParent(parentItem);
+    if (ownsContext) context->setParent(item);
+    return item;
+}
+
+template <typename PopulateFn>
+inline Item* createItemWithSchema(QQmlComponent* component, QQmlContext* context, Item* parentItem,
+                                  QObject* owner, bool& schemaResolved,
+                                  QHash<QString, int>& declaredProperties, quint16& standardMask,
+                                  bool& needsModelMap, PopulateFn&& populate) {
+    if (!component || !context || !parentItem || !owner) return nullptr;
+
+    const bool ownsContext = context != component->creationContext();
+    QObject* object = component->beginCreate(context);
+    if (object) {
+        if (!schemaResolved) {
+            resolveDelegateSchema(object, component, declaredProperties, standardMask,
+                                  needsModelMap);
+            schemaResolved = true;
+        }
+        QVariantMap initialProperties;
+        populate(initialProperties);
+        QVariantMap filteredProperties;
+        for (auto it = initialProperties.cbegin(); it != initialProperties.cend(); ++it) {
+            if (declaredProperties.contains(it.key()))
                 filteredProperties.insert(it.key(), it.value());
         }
         component->setInitialProperties(object, filteredProperties);

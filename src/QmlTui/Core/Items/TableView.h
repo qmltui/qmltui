@@ -242,6 +242,7 @@ private:
         bool allRolesDirty = true;
         bool loaded = false;
         bool current = false;
+        qint64 index = -1;
         int row = -1;
         int column = -1;
     };
@@ -392,6 +393,10 @@ private:
     QPointer<QQmlComponent> m_delegate;
     QPointer<QQmlComponent> m_rowDelegate;
     QHash<Position, DelegateRecord> m_createdDelegateItems;
+    QHash<QString, int> m_delegateProperties;
+    quint16 m_delegateStandardMask = 0xFFu;
+    bool m_delegateSchemaResolved = false;
+    bool m_delegateNeedsModelMap = true;
 };
 
 } // namespace qmltui

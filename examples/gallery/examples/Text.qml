@@ -53,12 +53,11 @@ Column {
                 text: "spans: ",
                 dim: true
             },
-            {
-                text: " READY ",
-                color: "#001b10",
-                backgroundColor: "#2cde85",
-                bold: true
-            },
+            QmlTui.span(" READY ", {
+                "color": "#001b10",
+                "backgroundColor": "#2cde85",
+                "bold": true
+            }),
             {
                 text: "  styled runs",
                 color: "#7ee0ff"

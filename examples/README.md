@@ -7,6 +7,7 @@ Configure with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the examples, and add `-DQM
 - **[`gallery/`](gallery/)**: Interactive component gallery (`qmltui_gallery`). `Main.qml` is the grid shell and [`gallery/examples/`](gallery/examples/) contains self-contained `Item`-rooted demos for the built-in types in `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
   ```sh
   ./build/examples/gallery/qmltui_gallery                   # full gallery grid
+  ./build/examples/gallery/qmltui_gallery --playground      # open the live QML playground
   ./build/examples/gallery/qmltui_gallery --page Button.qml # open a specific tile
   ./build/examples/gallery/qmltui_gallery --example Button  # run one demo standalone
   ./build/examples/gallery/qmltui_gallery --list-examples   # list all demo names

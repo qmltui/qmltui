@@ -4,11 +4,11 @@
 `image://` URL, in the shape of Qt Quick's `QQuickImageProvider`. Qt reserves
 that class's base for Qt Quick, so QmlTui keeps its own registry on the QML engine.
 
-- **Header**: `src/QmlTui/Image/ImageProvider.h`, installed as `<QmlTui/Image/ImageProvider.h>`
+- **Header**: `<QmlTui/Image/ImageProvider.h>` (`src/QmlTui/Image/ImageProvider.h`)
 - **Inherits**: `QObject`
-- **Module**: `qmltui::image`
+- **Target**: `qmltui::image` (`QmlTui::Image`)
 
-## Public Functions
+## `ImageProvider` Public Functions
 
 | Function | Description |
 | :--- | :--- |
@@ -40,7 +40,23 @@ qmltui::ImageProvider::add(&engine, QStringLiteral("frames"), new ScopeProvider)
 Image { source: "image://frames/scope?frame=" + tick; renderMode: Image.Braille }
 ```
 
-## Asynchronous providers
+## Asynchronous providers (`AsyncImageProvider` and `ImageResponse`)
+
+### `AsyncImageProvider` Public Functions
+
+| Function | Description |
+| :--- | :--- |
+| `virtual ImageResponse *requestImageResponse(const QString &id, const QSize &requestedSize) = 0` | Called on the GUI thread; returns an `ImageResponse` created on the GUI thread, or `nullptr` to report `Error` immediately. |
+| `QImage requestImage(const QString &, QSize *, const QSize &) final` | Unused on `AsyncImageProvider` (returns a null `QImage`). |
+
+### `ImageResponse` Public Functions and Signals
+
+| Member | Description |
+| :--- | :--- |
+| `virtual QImage image() const = 0` | Returns the completed `QImage` once `finished()` has been emitted, or a null `QImage` on failure. |
+| `virtual QString errorString() const` | Diagnostic message logged when `finished()` is emitted with a null `image()`. |
+| `virtual void cancel()` | Called on the GUI thread before deletion when the requesting `Image` no longer needs the response. |
+| `void finished()` *(signal)* | Emitted on the GUI thread when the asynchronous request completes (whether succeeded or failed). |
 
 Subclass `AsyncImageProvider` instead when the picture is expensive to make.
 `requestImageResponse(id, requestedSize)` returns an `ImageResponse` created

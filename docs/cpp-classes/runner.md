@@ -1,10 +1,14 @@
 # Runner
 
+- **Header**: `<QmlTui/Runner/Runner.h>`
+- **Inherits**: `QObject`
+- **Target**: `qmltui::runner` (`QmlTui::Runner`)
+
 ## Overview
 
 `qmltui::Runner` turns a running QmlTui `Terminal` application into a bounded, JavaScript-driven test harness and automation oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(app)` entry point with a driver facade, injects keyboard and mouse input, verifies committed terminal frames (`TextGridBuffer`), and writes machine-readable diagnostics (`result.json`, `final.txt`, `failure.txt`). A synchronous scenario succeeds when `main` returns normally; calling `app.finish()` is optional.
 
-The class is declared in `Runner/Runner.h` and implemented in `Runner/Runner.cpp`. Build and link `qmltui::runner` when `QMLTUI_ENABLE_RUNNER=ON` (default for top-level builds) or `QMLTUI_BUILD_TESTS=ON`. Its only build dependencies are `Qt6::Core`, `Qt6::Qml`, and `qmltui::core` (no `QtGui` required).
+The class is declared in `src/QmlTui/Runner/Runner.h` (installed as `<QmlTui/Runner/Runner.h>`) and implemented in `src/QmlTui/Runner/Runner.cpp`. Build and link `qmltui::runner` when `QMLTUI_ENABLE_RUNNER=ON` (default for top-level builds) or `QMLTUI_BUILD_TESTS=ON`. Its only build dependencies are `Qt6::Core`, `Qt6::Qml`, and `qmltui::core` (no `QtGui` required).
 
 `Runner` collaborates with three core types:
 
@@ -23,7 +27,7 @@ For a step-by-step walkthrough, see [Testing and Recording with Runner](../guide
 
 ### TypeScript Declarations (`qmltui-runner.d.ts`)
 
-Scenarios are plain JavaScript files. Editor autocomplete and hover documentation come from `Runner/qmltui-runner.d.ts`. Add one JSDoc annotation above `main`:
+Scenarios are plain JavaScript files. Editor autocomplete and hover documentation come from `src/QmlTui/Runner/qmltui-runner.d.ts` (installed alongside the Runner CMake support). Add one JSDoc annotation above `main`:
 
 ```javascript
 /** @param {Runner} app */
@@ -253,7 +257,7 @@ Fails unless the bounding box `[x, y, width, height]` in the next committed fram
 
 #### `void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)`
 
-Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, and `strikethrough`.
+Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, and `reversed`.
 
 ```javascript
 app.expectStyle(0, 0, { character: "A", foreground: "cyan", bold: true });
@@ -307,7 +311,7 @@ Colors are `#RRGGBBAA` (with ANSI palette entries resolved to xterm default RGB)
 
 #### `object cell(int x, int y)`
 
-Returns `{ character, isContinuation, foreground, background, attributes }` for cell `(x, y)` in the current committed frame. Out-of-bounds coordinates fail the scenario.
+Returns `{ x, y, character, continuation, foreground, background, attributes }` for cell `(x, y)` in the current committed frame. Out-of-bounds coordinates fail the scenario.
 
 #### `array findText(const QString &text)`
 
@@ -329,7 +333,7 @@ Returns normalized text for the sub-grid `[x, y, width, height]` of the current 
 
 #### `object region(int x, int y, int width, int height)`
 
-Returns a `RegionLocator` scoped to `[x, y, width, height]` supporting `text()`, `findText()`, `expectText()`, `expectNoText()`, `waitForText()`, `expectSnapshot()`, `clickText()`, and `click()` (which clicks the region's center).
+Returns a `Region` (`RegionLocator`) scoped to `[x, y, width, height]` (typed as `Region` in `qmltui-runner.d.ts`) supporting `text()`, `findText()`, `expectText()`, `expectNoText()`, `waitForText()`, `expectSnapshot()`, `clickText()`, and `click()` (which clicks the region's center).
 
 ```javascript
 app.region(0, 0, 80, 2).expectText("HEADER");
@@ -337,7 +341,7 @@ app.region(0, 0, 80, 2).expectText("HEADER");
 
 #### `object item(const QString &objectName)`
 
-Returns a `RegionLocator` for `itemRect(objectName)` so assertions and clicks can target a specific QML component by `objectName`:
+Returns a `Region` (`RegionLocator`) for `itemRect(objectName)` (with `objectName` attached) so assertions and clicks can target a specific QML component by `objectName`:
 
 ```javascript
 app.item("sidebar").expectText("Services");
@@ -435,6 +439,8 @@ endif()
 
 ### `qmltui_add_scenario` Parameters
 
+`qmltui_add_scenario_test` is provided as an alias for `qmltui_add_scenario`.
+
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
 | `NAME <test-name>` | Required | CTest test name. |
@@ -450,6 +456,7 @@ endif()
 | `OPERATION_TIMEOUT_MS <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
 | `SCENARIO_TIMEOUT_MS <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
 | `ARTIFACT_DIR <path>` | `<binary-dir>/RunnerArtifacts/<NAME>` | Directory for `result.json`, frame captures, and recordings. |
+| `QML_IMPORT_PATH <path>` | `${QT_QML_OUTPUT_DIRECTORY}` or `${QmlTui_QML_IMPORT_PATH}` | QML module import path passed to the scenario driver. |
 | `ARGUMENTS <arg>...` | None | Command-line arguments forwarded to `TARGET`. |
 | `POST_COMMAND <cmd> [args...]` | `${QMLTUI_RECORD_POST_COMMAND}` when `RECORD` is set, else None | Post-processing command executed in `ARTIFACT_DIR` after the scenario succeeds. Expands `<CAST>`, `<CAST_STEM>` (`<CAST>` without `.cast`), `<ARTIFACT_DIR>`, and `<NAME>`. |
 | `LABELS <label>...` | `Demo` when `RECORD` is set, else `Runner` | CTest labels attached to the test. |
@@ -477,6 +484,9 @@ When `qmltui::runner` is linked into an application, QML-created `Terminal` root
 | `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Mark a process driven by a directly constructed `Runner` as a quiet test session before `Terminal` creation. |
 | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines on mismatch instead of failing. |
 | `QMLTUI_RUNNER_RECORD` | None | Relative path under the artifact directory for recording an asciicast v2 `.cast` file (incompatible with `QMLTUI_RUNNER_LIVE`). |
+| `QMLTUI_RUNNER_HANDSHAKE_PATH` | None | File path where `Runner::start()` writes the activation handshake JSON when launched by `qmltui-runner`. |
+| `QMLTUI_RUNNER_HANDSHAKE_TOKEN` | None | Token echoed into `QMLTUI_RUNNER_HANDSHAKE_PATH` to verify activation. |
+| `QMLTUI_SCROLLBACK_HISTORY_ROWS` | `5000` | Maximum number of committed `Inline` scrollback rows retained by `TerminalEngine` during a Runner session. |
 
 ### Direct C++ Construction and Methods
 
@@ -530,8 +540,8 @@ QTimer::singleShot(0, driver, &qmltui::Runner::start);
 
 Every run atomically writes `result.json` (schema version `1`) into the artifact directory containing:
 
-- `schemaVersion` (`1`), `status` (`"passed"` or `"failed"`), `exitCode` (`0` or `1`), and `mode` (`"script"`, `"eval"`, or `"capture"`).
-- `scenario`, `elapsedMs`, `clock` (`"real"` or `"virtual"`), and `virtualTimeMs` (when `clock` is `"virtual"`).
-- `viewport` (initial `{ columns, rows }`) and `finalViewport` (dimensions after any `resize()` calls).
-- `currentOperation` and argument-free `operations` trace.
-- `artifacts` (`final`, `failure`, `capture`, `captureStyled`, `casts`, and `updatedSnapshots`).
+- `schemaVersion` (`1`), `status` (`"passed"` or `"failed"`), `exitCode` (`0` or `1`), and `mode` (`"script"`, `"eval"`, `"capture"`, or `"embedded"`).
+- `scenario`, `message`, `elapsedMs`, `clock` (`"real"` or `"virtual"`), and `virtualTimeMs` (when `clock` is `"virtual"`).
+- `viewport` (initial `{ columns, rows }`), `finalViewport` (dimensions after any `resize()` calls), and `frameStats`.
+- `operation` (active or failing operation object, or `null`) and argument-free `operations` trace.
+- `artifacts` (`directory`, `result`, `captures`, `updatedSnapshots`, `casts`, and `finalFrame`).

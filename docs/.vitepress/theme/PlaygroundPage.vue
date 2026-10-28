@@ -1,15 +1,38 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { withBase } from 'vitepress'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, withBase } from 'vitepress'
 
+const route = useRoute()
 const iframeSrc = ref('')
 
-onMounted(() => {
+function updateIframeSrc(): void {
+  if (typeof window === 'undefined') return
   const base = withBase('/playground/index.html')
   const search = window.location.search || ''
   const hash = window.location.hash || ''
-  iframeSrc.value = `${base}${search}${hash}`
+  const next = `${base}${search}${hash}`
+  if (iframeSrc.value !== next) {
+    iframeSrc.value = next
+  }
+}
+
+onMounted(() => {
+  updateIframeSrc()
+  window.addEventListener('popstate', updateIframeSrc)
 })
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('popstate', updateIframeSrc)
+  }
+})
+
+watch(
+  () => route.fullPath,
+  () => {
+    updateIframeSrc()
+  }
+)
 </script>
 
 <template>
@@ -26,8 +49,11 @@ onMounted(() => {
 
 <style scoped>
 .qmltui-playground-wrapper {
-  width: 100%;
-  height: calc(100vh - var(--vp-nav-height, 64px));
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
   background: #0d1117;
   display: flex;
   flex-direction: column;

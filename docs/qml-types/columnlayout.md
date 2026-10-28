@@ -3,7 +3,7 @@ title: ColumnLayout
 kind: qml
 import: QmlTui
 since: "0.4"
-inherits: LinearLayout
+inherits: Item
 cpp: qmltui::ColumnLayout
 category: layout
 summary: Arranges items vertically with flexible sizing and alignment.
@@ -17,7 +17,13 @@ Arranges items vertically with flexible sizing and alignment. [More...](#detaile
 | :--- | :--- |
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
-| **Inherits** | `LinearLayout` |
+| **Inherits** | [Item](item.md) |
+
+## Properties
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `spacing` | `int` | `0` | Holds the vertical spacing in rows between adjacent child items. |
 
 ## Detailed Description
 
@@ -31,60 +37,12 @@ Child items configure their sizing behavior using `Layout.fillHeight`, `Layout.f
 When the layout has excess height, items with `Layout.fillHeight: true` expand proportionally
 to their `Layout.verticalStretch` factors.
 
-The `spacing` property (inherited from `LinearLayout`) sets the number of rows between
+The `spacing` property sets the number of rows between
 adjacent items.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 1
-        spacing: 1
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 3
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Header"
-            }
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Body"
-            }
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 3
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Footer"
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Layouts.qml{qml}
 
 ### Gallery Example
 

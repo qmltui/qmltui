@@ -24,7 +24,7 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `style` | `Style` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), `Border.Heavy` (heavy-line `┏`, `┓`, `┗`, `┛`, `━`, `┃`), or `Border.Ascii` (`+`, `-`, `|`). |
+| `style` | `Style` | `Border.None` | Holds the border style: `Border.None`, `Border.Single` (single-line), `Border.Double` (double-line), `Border.Rounded` (single-line with curved corners `╭`, `╮`, `╰`, `╯`), or `Border.Ascii` (`+`, `-`, `|`). |
 | `color` | `color` | `"default"` | Holds the colour of the border glyphs. |
 
 ## Enumeration Border.Style
@@ -35,7 +35,6 @@ Grouped property configuring the border style and colour of a Rectangle. [More..
 | `Border.Single` | Standard single-line box-drawing characters (`┌`, `┐`, `└`, `┘`, `─`, `│`). |
 | `Border.Double` | Double-line box-drawing characters (`╔`, `╗`, `╚`, `╝`, `═`, `║`). |
 | `Border.Rounded` | Single-line border with curved corner glyphs (`╭`, `╮`, `╰`, `╯`). |
-| `Border.Heavy` | Heavy-line box-drawing characters (`┏`, `┓`, `┗`, `┛`, `━`, `┃`). |
 | `Border.Ascii` | ASCII fallback characters (`+`, `-`, `|`). |
 
 ## Detailed Description
@@ -45,20 +44,7 @@ controls the box-drawing characters used to frame the item.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Rectangle {
-        anchors.centerIn: parent
-        width: 20
-        height: 6
-        border.style: Border.Rounded
-        border.color: "cyan"
-    }
-}
-```
+<<< ../../examples/gallery/examples/Rectangle.qml{qml}
 
 ### Gallery Example
 

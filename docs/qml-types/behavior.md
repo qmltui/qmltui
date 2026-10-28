@@ -40,20 +40,7 @@ smoothly from its old value to the new value.
 
 ### Example
 
-```qml
-Rectangle {
-    id: rect
-    width: 20
-    height: 5
-
-    Behavior on width {
-        NumberAnimation {
-            duration: 300
-            easing: Easing.OutQuad
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Behavior.qml{qml}
 
 ### Gallery Example
 

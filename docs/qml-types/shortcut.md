@@ -44,28 +44,7 @@ signal is emitted.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Shortcut {
-        sequence: Qt.Key_Q
-        onActivated: Qt.quit()
-    }
-
-    Shortcut {
-        sequence: Qt.Key_Space
-        onActivated: message.text = "Shortcut activated!"
-    }
-
-    Text {
-        id: message
-        anchors.centerIn: parent
-        text: "Press Space or Q"
-    }
-}
-```
+<<< ../../examples/gallery/examples/Shortcut.qml{qml}
 
 ### Gallery Example
 

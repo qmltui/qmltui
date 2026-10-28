@@ -25,25 +25,25 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | :--- | :--- | :--- | :--- |
 | `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, key, role, width, stretch, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
 | `model` | `var` |  | Holds the data model providing tabular entries: 2D array, TableModel, or QAbstractItemModel. |
-| `selectedRow` | `int` |  | Holds the index of the currently selected row, or -1 if no row is selected. |
-| `currentColumn` | `int` |  | Holds the index of the currently active column. |
-| `alternatingRows` | `bool` |  | Whether alternating rows use alternatingRowBackgroundColor. |
+| `selectedRow` | `int` | `-1` | Holds the index of the currently selected row, or -1 if no row is selected. |
+| `currentColumn` | `int` | `-1` | Holds the index of the currently active column. |
+| `alternatingRows` | `bool` | `false` | Whether alternating rows use alternatingRowBackgroundColor. |
 | `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
-| `headerColor` | `color` |  | Holds the foreground text color used for column headers. |
-| `headerBackgroundColor` | `color` |  | Holds the background color used for column headers. |
+| `headerColor` | `color` | `"default"` | Holds the foreground text color used for column headers. |
+| `headerBackgroundColor` | `color` | `"transparent"` | Holds the background color used for column headers. |
 | `selectionColor` | `color` |  | Holds the foreground text color for the selected row. |
 | `selectionKeepsCellColors` | `bool` | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
 | `selectionBackgroundColor` | `color` |  | Holds the background highlight color for the selected row. |
-| `textColor` | `color` |  | Holds the default text color for data cells. |
-| `rowBackgroundColor` | `color` |  | Holds the default background color for table rows. |
-| `alternatingRowBackgroundColor` | `color` |  | Holds the background color for alternating table rows. |
+| `textColor` | `color` | `"default"` | Holds the default text color for data cells. |
+| `rowBackgroundColor` | `color` | `"transparent"` | Holds the default background color for table rows. |
+| `alternatingRowBackgroundColor` | `color` | `"default"` | Holds the background color for alternating table rows. |
 | `gridColor` | `color` |  | Color used for borders and grid lines; falls back to `textColor`. |
 | `showColumnGrid` | `bool` | `false` | Whether to draw column separators. |
 | `showRowGrid` | `bool` | `false` | Draw dividers between visible data rows. |
 | `showOuterBorder` | `bool` | `false` | Draw a connected outer frame at the view bounds. |
 | `gridStyle` | `GridStyle` | `TableView.Single` | Style of all borders and grid lines: `TableView.Single`, `TableView.Double`, or `TableView.Ascii`. |
 | `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
-| `cellFormat` | `var` |  | JS callback `(row, column, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed, align, padding, leftPadding, rightPadding }`. |
+| `cellFormat` | `var` |  | JS callback `(row, column, value) => span \| list<span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed, align, padding, leftPadding, rightPadding }`. |
 | `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
 
 ## Signals
@@ -138,10 +138,8 @@ draws nothing.
 
 ### Delegates and interaction
 
-Cell delegates receive one content rectangle; row delegates receive the full
-interior row width. The view owns their geometry and clips each subtree to one
-line. Row delegates may span columns, with grid separators drawn over their
-content. Both delegate modes retain connected borders and row dividers.
+Cell delegates receive one content rectangle. The view owns their geometry and
+clips each subtree to one line, retaining connected borders and row dividers.
 Selection and alternating backgrounds fill the content cells of the resolved
 columns only; they do not extend across unused width to the right of the last
 column, and never cover structural lines.
@@ -165,154 +163,7 @@ has a built-in `40×10` implicit size.
 
 ### Example
 
-```qml
-pragma ComponentBehavior: Bound
-import QtQml
-import QmlTui
-
-Terminal {
-    TableView {
-        width: 28
-        height: 7
-        showColumnGrid: true
-        showRowGrid: true
-        showOuterBorder: true
-        columns: [
-            { title: "Service", width: 15, padding: 1 },
-            { title: "Status", width: 10, padding: 1, headerAlign: "center" }
-        ]
-        model: [["api", "ready"], ["worker", "busy"]]
-    }
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌───────────────┬──────────┐
-│ Service       │  Status  │
-├───────────────┼──────────┤
-│ api           │ ready    │
-├───────────────┼──────────┤
-│ worker        │ busy     │
-└───────────────┴──────────┘
-```
-
-## Usage guide
-
-Set `gridStyle` to `TableView.Single`, `TableView.Double`, or `TableView.Ascii`
-to select the box-drawing character set (`showGrid` has been removed in favor of
-`showColumnGrid`, `showRowGrid`, and `showOuterBorder`).
-
-`delegate` follows Qt Quick's cell-scoped shape. `row`, `column`, `current`, and
-`selected` identify the represented cell. QmlTui's `columns` descriptors continue
-to provide terminal column titles, keys, widths, and alignment.
-
-Selection properties are `selectedRow` and `currentColumn`. See the
-[TableView example](../../examples/recipes/table_view/Main.qml).
-
-### Sorting, filtering, and model coordinates
-
-TableView displays the supplied model's order. It does not sort, filter, or
-rearrange its input. `headerClicked(int column)` reports a primary-button click
-on a visible header cell; the divider is not a header activation target.
-Applications connect this signal to their sorting policy.
-
-Use a C++ `QSortFilterProxyModel` for sorting/filtering on the Qt 6.8 baseline.
-Give the view the proxy as its `model`, and configure the source model, sort
-role, filter role, and filter column in application code. Numeric sort roles
-should contain numbers, independently of display strings such as `"12.4%"`.
-For role-based list models, the application maps visual columns to sort roles;
-a visual column number is not necessarily a source-model column number.
-
-Qt 6.10+ also supplies `SortFilterProxyModel`, `RoleSorter`, and filters through
-`import QtQml.Models`; that native QML API is a technology preview. It requires
-a `QAbstractItemModel` source, not a JavaScript array. It is optional and does
-not change QmlTui's Qt 6.8 requirement or require a `QtQuick` import. QmlTui does not
-provide a competing proxy wrapper.
-
-`selectedRow`, delegate `row`/`column`, and `rowActivated(row)` use the supplied
-model's coordinate space. When it is a proxy, translate an activation using
-`proxy.mapToSource(proxy.index(row, 0))` in application code before accessing
-the underlying record. The demo's `ProcessProxy::activate()` illustrates this.
-Array/list inputs remain in their supplied order, so their row indexes directly
-address the supplied list.
-
-The current C++ model record follows persistent indexes through insertions,
-moves, and proxy reordering. Removing or filtering it out clears selection;
-removing the filter does not restore it. Reset, replacement (including array
-replacement), and destruction also clear selection. Invalid selections never
-emit `rowActivated`. Pointer input updates both row and column. Page keys move
-by the visible body-row count.
-
-The existing single-current-cell API is retained: built-in rendering highlights
-the selected row, while cell delegates receive `selected == current` for the
-current cell. This is not Qt Quick's `ItemSelectionModel` API.
-
-### Column geometry and formatting
-
-Column descriptor maps accept `title`, `key`, `role`, `width`, `stretch`, and
-`alignment` (or the compatibility spelling `align`). Setting `stretch: true` on
-a descriptor stretches that column to absorb remaining interior width (or use
-`stretchLastColumn: true` to stretch the final visible column). When `key` or
-`role` is set on a descriptor, `TableView` reads that property from JavaScript
-row maps or resolves the matching role name in `QAbstractItemModel::roleNames()`
-on source column zero (allowing multi-role `ListModel` and `QAbstractListModel`
-instances to populate multiple table columns). The default width is 12 cells. When no
-descriptors are provided, a C++ model supplies the column count through
-`columnCount()`, titles through `headerData(section, Qt::Horizontal)`, and a
-default alignment through `Qt::TextAlignmentRole` on the header; width is
-shared evenly across the columns. The header row appears only when at least
-one section returns a string title. JavaScript array models without
-descriptors keep the compatibility column count of five.
-
-`columnWidthProvider(column)` is evaluated once per needed column when geometry
-is invalidated, not once per row. Return a finite non-negative integer: zero
-hides a column, while a negative number or `undefined` falls back to its
-descriptor width. Invalid widths use 12 cells and produce a QML diagnostic.
-Geometry is refreshed after size, descriptor, provider, or structural model
-changes. Call `forceLayout()` when values captured by an unchanged provider
-function change. This API also marks the view for repaint.
-
-`cellFormat(row, column, value)` applies only to built-in painting. It may return
-a `QmlTui.span(...)`, a `list<Span>` (or array of span objects), or a descriptor
-object with optional keys `text`, `spans`, `color`, `backgroundColor`, `bold`,
-`dim`, `italic`, `underline`, `reversed`, `align`, `padding`, `leftPadding`, and
-`rightPadding`. Model cells in built-in painting may also supply a `Span` or
-`QList<Span>` directly through `Qt::DisplayRole` (or a 2D array / row map),
-allowing multi-span cells to be painted without delegate items or JavaScript
-callbacks; model-supplied `Span` colors respect `selectionKeepsCellColors` on
-the selected row, while `cellFormat` results always override selection colors.
-Custom delegates own their styling. Callback exceptions produce diagnostics and
-fall back to the unformatted value or descriptor width. Repeated identical
-callback errors are suppressed until success or callback replacement; the
-remembered set is bounded.
-
-For compatibility, array/map cell delegates receive stringified `modelData`;
-C++ models with named roles provide a role map, and those without named roles
-provide the display value.
-
-Delegate count is bounded by the viewport and overscan. Updates query only
-changed roles of realized source indexes, sharing reads between visual columns
-backed by the same source index. Selection-only changes do not query roles.
-Offscreen delegates are destroyed rather than pooled. Horizontal scrolling,
-independent viewport positioning, typed column objects, and multi-selection
-remain outside this API.
-
-### Breaking migration: view-owned sorting removed
-
-Remove TableView's `sortColumn`, `sortOrder`, and `sortByColumn()` usages. Replace
-them with application-owned model/proxy sorting and `onHeaderClicked`. Sort
-indicators are application presentation; TableView no longer appends arrows.
-The sorting demo now uses typed source values, an external C++ proxy, a filter
-input, and activation mapped back to the source PID. Header clicks on an
-unconnected table have no sorting side effects.
+<<< ../../examples/gallery/examples/TableView.qml{qml}
 
 ### Gallery Example
 

@@ -119,6 +119,7 @@ public:
     Q_INVOKABLE void clearHighlightLayer(const QString& name);
     Q_INVOKABLE void clearHighlights();
 
+    Q_INVOKABLE void select(int start, int end);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void copy();

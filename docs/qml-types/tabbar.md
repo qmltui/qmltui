@@ -55,45 +55,7 @@ switch pages with the tabs.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Column {
-        anchors.fill: parent
-        spacing: 1
-
-        TabBar {
-            id: tabs
-            width: parent.width
-            focus: true
-            tabs: ["Overview", "Logs", "Settings"]
-            selectionColor: "blue"
-            selectedTextColor: "white"
-        }
-
-        StackLayout {
-            width: parent.width
-            height: 5
-            currentIndex: tabs.currentIndex
-
-            Text { text: "Everything is running." }
-            Text { text: "No new log lines." }
-            Button { text: "Quit"; onClicked: Qt.quit() }
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-[ Overview ]│  Logs  │  Settings
-
-Everything is running.
-```
+<<< ../../examples/gallery/examples/TabBar.qml{qml}
 
 ### Gallery Example
 

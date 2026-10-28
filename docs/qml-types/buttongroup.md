@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: QtObject
-cpp: 
+cpp: QObject
 category: inputs
 summary: A non-visual object that links RadioButtons so that checking one unchecks the others
 ---
@@ -45,35 +45,7 @@ property, no signals and no methods. Note that removing an item from
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    ButtonGroup {
-        buttons: [debugBuild, releaseBuild]
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        RadioButton {
-            id: debugBuild
-            text: "Debug"
-            checked: true
-            focus: true
-        }
-
-        RadioButton {
-            id: releaseBuild
-            text: "Release"
-            onToggled: checked => { if (checked) Qt.quit() }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/RadioButton.qml{qml}
 
 ### Gallery Example
 

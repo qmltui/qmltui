@@ -18,14 +18,26 @@
 
 - `explicit TerminalEngine(Terminal *rootWindow, QObject *parent = nullptr)` — constructs the engine bound to `rootWindow`.
 - `void requestRender()` (`Q_INVOKABLE`) — schedules an asynchronous frame render on the next event-loop tick.
-- `void setRenderer(Renderer *renderer)` — installs the active renderer (`AltScreenRenderer` or `InlineRenderer`).
+- `void stop()` — stops the active renderer, flushes pending scrollback and control sequences, restores terminal state, and ends the alternate-screen message session.
+- `quint64 frameSequence() const` — returns the monotonically increasing sequence number of the most recently committed frame.
+- `FrameStats lastFrameStats() const` / `FrameStatsTotals frameStatsTotals() const` — returns timing and byte metrics for the most recently committed frame and cumulative session totals.
+- `std::optional<TextGridBuffer> currentFrame() const` — returns the most recently committed character-cell grid, or `std::nullopt` before the first frame commits.
+- `void setRenderer(Renderer *renderer)` / `Renderer *renderer() const` — installs or returns the active renderer (`AltScreenRenderer` or `InlineRenderer`).
 - `void setMaxFrameRate(int framesPerSecond)` / `int maxFrameRate() const` — configures the frame rate cap (`0` disables pacing; defaults to `60` via `QMLTUI_MAX_FPS`, or `0` under `Runner`).
+- `void setOutputQueueLimit(size_t bytes)` / `size_t outputQueueLimit() const` — configures the pending output byte threshold (`256 KiB` by default) above which frame commits are deferred for backpressure.
 - `const TerminalCapabilities &capabilities() const` / `void setCapabilities(const TerminalCapabilities &capabilities)` — returns or overrides terminal capabilities (cancelling pending protocol probes).
+- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to `ControlSequenceQueueLimit` = `4 MiB`).
+- `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `int terminalWidth() const` / `int terminalHeight() const` — current terminal viewport dimensions in columns and rows.
-- `bool submitScrollback(const QString &text)` / `bool submitScrollback(const TextGridBuffer &rows)` — queues text or painted rows for scrollback emission (bounded to 1 MiB).
+- `bool submitScrollback(const QString &text)` / `bool submitScrollback(const TextGridBuffer &rows)` — queues text or painted rows for scrollback emission (bounded to `ScrollbackQueueLimit` = `1 MiB`).
+- `size_t pendingScrollbackBytes() const` / `size_t pendingScrollbackRowCount() const` — returns the queued scrollback byte or cell-row count awaiting emission.
+- `void setScrollbackHistoryEnabled(bool enabled)` / `bool scrollbackHistoryEnabled() const` — enables or queries cell-level scrollback history recording (enabled automatically in `Runner` sessions).
+- `void setScrollbackHistoryLimit(int rows)` / `int scrollbackHistoryLimit() const` — configures the maximum retained scrollback rows (`DefaultScrollbackHistoryLimit` = `5000`, overridden by `QMLTUI_SCROLLBACK_HISTORY_ROWS`).
+- `quint64 committedScrollbackTotal() const` / `int committedScrollbackRowCount() const` / `TextGridBuffer committedScrollback(quint64 fromTotalRow = 0) const` — inspects monotonic and retained scrollback rows committed in `Inline` mode.
 - `QString requestClipboardText(int timeoutMs)` / `void cancelClipboardRead()` — starts or cancels an OSC 52 clipboard read (exposed in QML via [`Clipboard`](../qml-types/clipboard.md)).
 - `void copyToClipboard(const QString &text)` — sends an OSC 52 clipboard write sequence when output is enabled.
-- `void updateBackgroundColor()` — synchronizes the host terminal window background via OSC 11 (`\033]11;#rrggbb\a`) when the root `Terminal` has an opaque background in `AltScreen` mode, or resets it via OSC 111 (`\033]111\a`) on exit or in `Inline` mode.
+- `void queryColors()` (`Q_INVOKABLE`) — queries the host terminal's default foreground (`OSC 10`), default background (`OSC 11`), and 16 ANSI palette colors (`OSC 4;0..15`).
+- `void updateBackgroundColor()` / `void reapplyBackgroundColor()` — synchronizes the host terminal window background via OSC 11 (`\033]11;#rrggbb\a`) when the root `Terminal` has an opaque background in `AltScreen` mode, or resets it via OSC 111 (`\033]111\a`) on exit or in `Inline` mode.
 - `static std::string osc52Sequence(const QString &text)` / `static std::string osc11Sequence(const Color &color)` / `static std::string osc111Sequence()` — helper encoders for OSC 52, OSC 11, and OSC 111 sequences.
 
 ## Protocol Negotiation and Resource Output

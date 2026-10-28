@@ -53,40 +53,10 @@ Cells spanned by the gradient interpolate RGB color components between adjacent 
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 30
-        height: 8
-        border.style: Border.Single
-
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: "cyan" }
-            GradientStop { position: 1.0; color: "blue" }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "Gradient Fill"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Gradient.qml{qml}
 
 ### Gallery Example
 
 ![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
 
-See [`examples/gallery/examples/Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml) (`./build/examples/gallery/qmltui_gallery --example Rectangle`, or open in the [WebAssembly Playground](../playground.md?example=Rectangle.qml)).
+See [`examples/gallery/examples/Gradient.qml`](../../examples/gallery/examples/Gradient.qml) (`./build/examples/gallery/qmltui_gallery --example Gradient`, or open in the [WebAssembly Playground](../playground.md?example=Gradient.qml)).

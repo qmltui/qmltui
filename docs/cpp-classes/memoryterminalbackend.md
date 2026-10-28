@@ -9,7 +9,7 @@
 
 ## Public Methods
 
-#### MemoryTerminalBackend(QSize size = QSize(80, 24), QObject* parent = nullptr)
+#### explicit MemoryTerminalBackend(QSize size = QSize(80, 24), QObject* parent = nullptr)
 The size reported to the engine until `setSize()` changes it.
 
 #### void feedInput(const QByteArray& bytes)

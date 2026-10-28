@@ -91,12 +91,14 @@ Button {
     id: save
     text: "Save"
     background: Rectangle {
-        color: save.down ? "#2f6f4f" : "#65e6a0"
-        border.style: save.activeFocus ? Border.Double : Border.Single
+        border {
+            style: save.activeFocus ? Border.Double : Border.Single
+            color: save.down ? "yellow" : "green"
+        }
     }
     contentItem: Text {
         text: save.text
-        color: "#0b0f14"
+        color: save.down ? "yellow" : "green"
         bold: save.activeFocus
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter
@@ -106,35 +108,7 @@ Button {
 
 ### Example
 
-A minimal toggle built on the template, with its own look for both states.
-
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    AbstractButton {
-        id: pin
-        anchors.centerIn: parent
-        checkable: true
-        text: pin.checked ? "Pinned" : "Pin"
-        padding: 1
-        focus: true
-        background: Rectangle {
-            color: pin.checked ? "#65e6a0" : "default"
-            border.style: pin.activeFocus ? Border.Double : Border.Single
-        }
-        contentItem: Text {
-            text: pin.text
-            color: pin.checked ? "#0b0f14" : "default"
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-        }
-        onToggled: checked => console.log("pinned:", checked)
-    }
-}
-```
+<<< ../../examples/gallery/examples/Button.qml{qml}
 
 ### Gallery Example
 

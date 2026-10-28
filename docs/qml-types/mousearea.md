@@ -48,43 +48,7 @@ An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the w
 MouseArea makes a region of the cell grid clickable. Like every QmlTui item its
 geometry is integer cells; `mouseX`/`mouseY` are cell coordinates relative to
 the area. Event handlers receive a [MouseEvent](mouseevent.md) whose `button`
-holds Qt values, so Qt Quick idioms carry over:
-
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    id: root
-
-    Rectangle {
-        x: 2; y: 1
-        width: 20; height: 3
-        color: hitArea.containsPress ? "#0369a1"
-             : hitArea.containsMouse ? "#0284c7" : "#1e293b"
-
-        Text { anchors.centerIn: parent; text: "Click or right-click" }
-
-        MouseArea {
-            id: hitArea
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            hoverEnabled: true
-            onClicked: event => {
-                if (event.button === Qt.RightButton)
-                    console.log("context menu");
-            }
-        }
-    }
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit();
-            event.accepted = true;
-        }
-    }
-}
-```
+holds Qt values, so Qt Quick idioms carry over.
 
 A press is delivered to the deepest area under the pointer whose
 `acceptedButtons` include the pressed button; accepting it gives the area an
@@ -112,6 +76,10 @@ now), `positionChanged` (bind to `mouseX`/`mouseY` changes), the `drag`
 attached group (build drags from `pressed` plus `mouseX`/`mouseY`),
 `propagateComposedEvents`/`preventStealing` (QmlTui's propagation is the plain
 unaccepted-events-bubble model), and `scrollGestureEnabled` (no gestures).
+
+### Example
+
+<<< ../../examples/gallery/examples/MouseArea.qml{qml}
 
 ### Gallery Example
 

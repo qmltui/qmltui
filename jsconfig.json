@@ -16,7 +16,6 @@
     ],
     "exclude": [
         "build*",
-        "examples/wasm/www",
-        "examples/wasm/playground"
+        "examples/wasm/www"
     ]
 }

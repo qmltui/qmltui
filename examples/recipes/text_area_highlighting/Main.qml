@@ -90,10 +90,7 @@ Terminal {
         }
 
         Column {
-            anchors {
-                fill: parent
-                margins: 1
-            }
+            anchors.fill: parent
 
             Row {
                 width: parent.width

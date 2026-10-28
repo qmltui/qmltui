@@ -154,6 +154,11 @@ bool Item::isDescendantOf(const Item* ancestor) const noexcept {
 }
 
 void Item::setX(int x) {
+    setItemFlag(ItemFlag::ExplicitX, true);
+    setDefaultX(x);
+}
+
+void Item::setDefaultX(int x) {
     if (m_x == x) return;
     m_x = x;
     emit xChanged();
@@ -161,6 +166,11 @@ void Item::setX(int x) {
 }
 
 void Item::setY(int y) {
+    setItemFlag(ItemFlag::ExplicitY, true);
+    setDefaultY(y);
+}
+
+void Item::setDefaultY(int y) {
     if (m_y == y) return;
     m_y = y;
     emit yChanged();
@@ -308,8 +318,9 @@ void Item::markDirty(DirtyFlags flags) {
     // Bubble DescendantDirty (and DescendantLayoutDirty when LayoutDirty) up to ancestors
     const DirtyFlags propFlags =
         DirtyFlag::DescendantDirty |
-        (flags.testFlag(DirtyFlag::LayoutDirty) ? DirtyFlag::DescendantLayoutDirty
-                                                : DirtyFlag::None);
+        ((flags & (DirtyFlag::LayoutDirty | DirtyFlag::DescendantLayoutDirty))
+             ? DirtyFlag::DescendantLayoutDirty
+             : DirtyFlag::None);
     Item* p = qobject_cast<Item*>(parent());
     while (p) {
         if ((p->m_dirtyFlags & propFlags) == propFlags && !notify) break;
@@ -519,6 +530,9 @@ void Item::registerChildItem(Item* childItem) {
     m_childGeometryConnections.insert(childItem, connections);
 
     scheduleChildGeometryInvalidation();
+    if (childItem->m_dirtyFlags & (DirtyFlag::LayoutDirty | DirtyFlag::DescendantLayoutDirty)) {
+        markDirty(DirtyFlag::DescendantLayoutDirty);
+    }
     applyPendingFocus();
     childItem->notifySubtreeAncestryChanged();
     emit childrenChanged();
@@ -666,7 +680,25 @@ void Item::paintSubtree(TextGridBuffer& buffer, int absX, int absY, const ClipRe
     paintOverlay(buffer, absX, absY, clipRect);
 }
 
-void Item::updateLayout() {}
+void Item::updateLayout() {
+    const int lp = leftPadding();
+    const int tp = topPadding();
+    for (Item* child : m_visualChildren) {
+        if (!child || !child->visible() || child->isPopup() || child->ignoresParentPadding())
+            continue;
+        const Anchors* a = child->anchors();
+        const bool hasHAnchor =
+            a->fill() || a->centerIn() || a->left() || a->right() || a->horizontalCenter();
+        const bool hasVAnchor =
+            a->fill() || a->centerIn() || a->top() || a->bottom() || a->verticalCenter();
+        if (!hasHAnchor && !child->hasExplicitX()) {
+            child->setDefaultX(lp);
+        }
+        if (!hasVAnchor && !child->hasExplicitY()) {
+            child->setDefaultY(tp);
+        }
+    }
+}
 
 void Item::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
     Q_UNUSED(buffer);
@@ -704,7 +736,8 @@ void Item::setPadding(int p) {
     if (m_rightPadding < 0) emit rightPaddingChanged();
     if (m_topPadding < 0) emit topPaddingChanged();
     if (m_bottomPadding < 0) emit bottomPaddingChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void Item::setClip(bool c) {
@@ -722,7 +755,8 @@ void Item::setLeftPadding(int p) {
     if (m_leftPadding == p) return;
     m_leftPadding = p;
     emit leftPaddingChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 int Item::rightPadding() const {
@@ -733,7 +767,8 @@ void Item::setRightPadding(int p) {
     if (m_rightPadding == p) return;
     m_rightPadding = p;
     emit rightPaddingChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 int Item::topPadding() const {
@@ -744,7 +779,8 @@ void Item::setTopPadding(int p) {
     if (m_topPadding == p) return;
     m_topPadding = p;
     emit topPaddingChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 int Item::bottomPadding() const {
@@ -755,7 +791,8 @@ void Item::setBottomPadding(int p) {
     if (m_bottomPadding == p) return;
     m_bottomPadding = p;
     emit bottomPaddingChanged();
-    markDirty();
+    markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+    notifyImplicitSizeIfChanged();
 }
 
 void Item::keyPressEvent(class KeyEvent* event) {

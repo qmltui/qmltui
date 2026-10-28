@@ -8,6 +8,9 @@
 #include <QmlTui/Core/Items/Layout.h>
 #include <QmlTui/Core/Items/ScrollView.h>
 #include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Items/MouseArea.h>
+#include <QmlTui/Core/Items/AnchorLine.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QmlTui/Core/Engine/State.h>
 #include <QmlTui/Core/Engine/Transition.h>
@@ -38,6 +41,7 @@ private slots:
     void testSizeChangeSchedulesLayout();
     void testImplicitSizeSignalsOnlyOnChange();
     void testGuardedDataStateAndTransitionLists();
+    void testItemPaddingAndParentAnchors();
 };
 
 void TestLayout::testRowLayout() {
@@ -624,6 +628,96 @@ void TestLayout::testStackLayout() {
     QCOMPARE(late->height(), 3);
     QCOMPARE(stack.implicitWidth(), 20);
     QCOMPARE(stack.implicitHeight(), 5);
+}
+
+void TestLayout::testItemPaddingAndParentAnchors() {
+    Rectangle parent;
+    parent.setWidth(20);
+    parent.setHeight(10);
+    parent.border()->setStyle(Border::Single);
+    parent.setPadding(1);
+
+    // Effective padding: 1 (border) + 1 (padding) = 2 on all sides
+    QCOMPARE(parent.leftPadding(), 2);
+    QCOMPARE(parent.rightPadding(), 2);
+    QCOMPARE(parent.topPadding(), 2);
+    QCOMPARE(parent.bottomPadding(), 2);
+
+    // 1. Un-anchored child defaults to (leftPadding, topPadding)
+    auto* unanchored = new Item(&parent);
+    unanchored->setWidth(4);
+    unanchored->setHeight(2);
+
+    // 2. Child with explicit x/y keeps its explicit coordinate
+    auto* explicitZero = new Item(&parent);
+    explicitZero->setX(0);
+    explicitZero->setY(0);
+    explicitZero->setWidth(4);
+    explicitZero->setHeight(1);
+
+    // 3. Child with anchors.fill: parent fills the padded content area
+    auto* filled = new Item(&parent);
+    filled->anchors()->setFill(&parent);
+    QCOMPARE(filled->x(), 2);
+    QCOMPARE(filled->y(), 2);
+    QCOMPARE(filled->width(), 16);
+    QCOMPARE(filled->height(), 6);
+
+    // 4. Child with anchors.centerIn: parent centers within the padded content area
+    auto* centered = new Item(&parent);
+    centered->setWidth(4);
+    centered->setHeight(2);
+    centered->anchors()->setCenterIn(&parent);
+    QCOMPARE(centered->x(), 2 + (16 - 4) / 2);
+    QCOMPARE(centered->y(), 2 + (6 - 2) / 2);
+
+    // 5. Child with edge anchors to parent respects directional padding
+    auto* edged = new Item(&parent);
+    edged->anchors()->setLeft(parent.left());
+    edged->anchors()->setRight(parent.right());
+    edged->anchors()->setTop(parent.top());
+    edged->anchors()->setBottom(parent.bottom());
+    QCOMPARE(edged->x(), 2);
+    QCOMPARE(edged->y(), 2);
+    QCOMPARE(edged->width(), 16);
+    QCOMPARE(edged->height(), 6);
+
+    // 6. MouseArea with anchors.fill: parent ignores parent padding and covers full outer bounds
+    auto* mouseArea = new MouseArea(&parent);
+    mouseArea->anchors()->setFill(&parent);
+    QCOMPARE(mouseArea->x(), 0);
+    QCOMPARE(mouseArea->y(), 0);
+    QCOMPARE(mouseArea->width(), 20);
+    QCOMPARE(mouseArea->height(), 10);
+
+    TextGridBuffer buffer;
+    buffer.resize(20, 10);
+    paintItem(parent, buffer, 0, 0);
+    QCOMPARE(unanchored->x(), 2);
+    QCOMPARE(unanchored->y(), 2);
+    QCOMPARE(explicitZero->x(), 0);
+    QCOMPARE(explicitZero->y(), 0);
+
+    // 7. Directional padding overrides update both anchored and un-anchored children
+    parent.setLeftPadding(3);
+    parent.setRightPadding(4);
+    parent.setTopPadding(1);
+    parent.setBottomPadding(2);
+    // Border adds +1 to each side -> lp=4, rp=5, tp=2, bp=3
+    QCOMPARE(filled->x(), 4);
+    QCOMPARE(filled->y(), 2);
+    QCOMPARE(filled->width(), 20 - 4 - 5);
+    QCOMPARE(filled->height(), 10 - 2 - 3);
+    QCOMPARE(edged->x(), 4);
+    QCOMPARE(edged->y(), 2);
+    QCOMPARE(edged->width(), 11);
+    QCOMPARE(edged->height(), 5);
+
+    paintItem(parent, buffer, 0, 0);
+    QCOMPARE(unanchored->x(), 4);
+    QCOMPARE(unanchored->y(), 2);
+    QCOMPARE(explicitZero->x(), 0);
+    QCOMPARE(explicitZero->y(), 0);
 }
 
 QTEST_MAIN(TestLayout)

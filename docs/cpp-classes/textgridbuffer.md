@@ -33,11 +33,23 @@ Controls how `diff()` and `diffRelative()` serialize cell changes into VT/ANSI e
 
 Overloads are provided for both raw `uint32_t` ARGB values and [`qmltui::Color`](color.md):
 
-- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, ...)` / `int setGrapheme(int x, int y, QStringView cluster, int width, ...)` — writes a pre-segmented grapheme cluster of display width `width` at `(x, y)` (plus `width - 1` continuation cells), returning the column advance (`width`, `0` when appended as a zero-width combining mark to the preceding cell, or `-1` when it does not fit).
-- `void writeText(int x, int y, const QString &text, ...)` — segments `text` into grapheme clusters and writes them horizontally starting at `(x, y)`.
-- `void drawLine(int x1, int y1, int x2, int y2, const char *character = "*", ...)` — draws a line using Bresenham's algorithm.
-- `void drawBox(int x, int y, int width, int height, ...)` — draws a single-line box (`┌ ┐ └ ┘ ─ │`).
-- `void fillRect(int x, int y, int width, int height, const char *character = " ", ...)` — fills a rectangular region.
+- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
+- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None)`
+- `int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
+- `int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None)`
+  Writes a pre-segmented grapheme cluster of display width `width` at `(x, y)` (plus `width - 1` continuation cells), returning the column advance (`width`, `0` when appended as a zero-width combining mark to the preceding cell, or `-1` when it does not fit).
+- `void writeText(int x, int y, const QString &text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
+- `void writeText(int x, int y, const QString &text, Color fgColor, Color bgColor = Color::Default, TextAttribute attributes = TextAttribute::None)`
+  Segments `text` into grapheme clusters and writes them horizontally starting at `(x, y)`.
+- `void drawLine(int x1, int y1, int x2, int y2, const char *character = "*", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)`
+- `void drawLine(int x1, int y1, int x2, int y2, const char *character, Color fgColor, Color bgColor = Color::Default)`
+  Draws a line using Bresenham's algorithm.
+- `void drawBox(int x, int y, int width, int height, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)`
+- `void drawBox(int x, int y, int width, int height, Color fgColor, Color bgColor = Color::Default)`
+  Draws a single-line box (`┌ ┐ └ ┘ ─ │`).
+- `void fillRect(int x, int y, int width, int height, const char *character = " ", uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000)`
+- `void fillRect(int x, int y, int width, int height, const char *character, Color fgColor, Color bgColor = Color::Default)`
+  Fills a rectangular region.
 
 #### ANSI Serialization and Hyperlinks
 

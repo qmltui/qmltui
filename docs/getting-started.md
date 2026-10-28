@@ -8,11 +8,11 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlT
 
 - **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree)
 - **C++17** compiler
-- **Qt 6.8 or newer** with `Core` and `Qml` (plus `Gui` and `Network` when enabling the optional `QmlTui.Image` module with `-DQMLTUI_ENABLE_IMAGE=ON`)
+- **Qt 6.8 or newer** with `Core` and `Qml` (plus `QmlPrivate` when using `Behavior`, and `Gui` + `Network` when enabling `QmlTui.Image` with `-DQMLTUI_ENABLE_IMAGE=ON`). See the [Qt 6 Getting Started Guide](https://doc.qt.io/qt-6/gettingstarted.html) to install Qt 6.8+.
 
 ## Step 1: Create a Standalone Application
 
-A standalone QmlTui project uses `QCoreApplication` (rather than `QGuiApplication`), `QQmlApplicationEngine`, and `qt_add_qml_module`. Create a new directory with the following three files (or copy [`examples/helloworld/`](../examples/helloworld/) from the repository).
+A standalone QmlTui project uses `QCoreApplication` (rather than `QGuiApplication`), `QQmlApplicationEngine`, and `qt_add_qml_module`. Create a new directory with the following three files (for a minimal `qmltui::core`-only starter template without `QmlTui.Controls`, see [`examples/helloworld/`](../examples/helloworld/)).
 
 ### 1. `CMakeLists.txt`
 
@@ -31,6 +31,8 @@ qt_standard_project_setup(REQUIRES 6.8)
 set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(QMLTUI_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+# Disable QmlTui.Image for a Core + Qml only build (remove to enable Image with Qt6::Gui and Qt6::Network):
+set(QMLTUI_ENABLE_IMAGE OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
     QmlTui
@@ -136,108 +138,13 @@ Status: ready
 
 Press **Enter** or **Space** to activate the focused button and update the status text. Press **Q** or **Escape** to exit and restore the normal terminal screen.
 
-## Step 2: Bind a C++ `QObject` with `QML_ELEMENT`
+## Step 2: C++ Integration (`QML_ELEMENT` and Models)
 
-QmlTui uses standard Qt 6 QML type registration (`QML_ELEMENT`). You can expose C++ controllers and `QAbstractItemModel` subclasses to QML without changing `main.cpp`.
+QmlTui uses standard `Qt6::Qml` C++ integration:
 
-### 1. Add `CounterBackend.h`
-
-Create `CounterBackend.h` alongside `main.cpp`:
-
-```cpp
-#pragma once
-
-#include <QObject>
-#include <QtQml/qqmlregistration.h>
-
-// Exposes an integer counter to QML inside the HelloQmlTui module.
-class CounterBackend : public QObject {
-    Q_OBJECT
-    QML_ELEMENT
-    Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
-
-public:
-    explicit CounterBackend(QObject* parent = nullptr) : QObject(parent) {}
-
-    int count() const { return m_count; }
-
-    Q_INVOKABLE void increment() {
-        ++m_count;
-        emit countChanged();
-    }
-
-signals:
-    void countChanged();
-
-private:
-    int m_count = 0;
-};
-```
-
-### 2. Register `CounterBackend.h` in `CMakeLists.txt`
-
-Add `SOURCES CounterBackend.h` to `qt_add_qml_module` so `qmltyperegistrar` registers `CounterBackend` under the `HelloQmlTui` URI:
-
-```cmake
-qt_add_qml_module(hello_qmltui
-    URI HelloQmlTui
-    VERSION 1.0
-    QML_FILES Main.qml
-    SOURCES CounterBackend.h
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
-)
-```
-
-### 3. Instantiate `CounterBackend` in `Main.qml`
-
-Import `HelloQmlTui` (or use the type directly inside the same QML module) and bind the UI to `backend.count`:
-
-```qml
-pragma ComponentBehavior: Bound
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    id: root
-    color: "#0d1117"
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit();
-            event.accepted = true;
-        }
-    }
-
-    CounterBackend {
-        id: backend
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Text {
-            text: "Welcome to QmlTui"
-            color: "cyan"
-            bold: true
-        }
-
-        Button {
-            text: "[ Increment Counter ]"
-            focus: true
-            onClicked: backend.increment()
-        }
-
-        Text {
-            text: "Count: " + backend.count
-            color: "magenta"
-        }
-    }
-}
-```
-
-Rebuild and run `./build/hello_qmltui` to verify that pressing **Enter** or clicking the button increments the C++ counter and updates the terminal frame. To bind C++ `QAbstractItemModel` and `QSortFilterProxyModel` classes to `ListView`, `TableView`, and `TreeView`, see [Models in QmlTui Views](guides/models.md).
+- Expose C++ `QObject` controllers and `QAbstractItemModel` subclasses with `QML_ELEMENT` and `SOURCES` in `qt_add_qml_module(...)`, or pass existing C++ instances via `QQmlApplicationEngine::setInitialProperties(...)`.
+- For QML syntax and C++ type registration, see Qt's [QML Syntax Basics](https://doc.qt.io/qt-6/qtqml-syntax-basics.html), [Overview - QML and C++ Integration](https://doc.qt.io/qt-6/qtqml-cppintegration-overview.html), and [Defining QML Types from C++](https://doc.qt.io/qt-6/qtqml-cppintegration-definetypes.html).
+- For binding C++ `QAbstractItemModel` and `QSortFilterProxyModel` classes to `ListView`, `TableView`, and `TreeView`, see [Models in QmlTui Views](guides/models.md), [`examples/recipes/table_view/`](../examples/recipes/table_view/), and [`examples/recipes/lazy_model/`](../examples/recipes/lazy_model/).
 
 ## Step 3: Explore the Component Gallery (Optional)
 

@@ -29,22 +29,7 @@ When a `FocusScope` receives active focus, focus is automatically forwarded to t
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-FocusScope {
-    id: searchBox
-    width: 30
-    height: 3
-
-    TextInput {
-        id: input
-        focus: true // Requests focus within this FocusScope
-        anchors.fill: parent
-    }
-}
-```
+<<< ../../examples/gallery/examples/FocusScope.qml{qml}
 
 ### Gallery Example
 

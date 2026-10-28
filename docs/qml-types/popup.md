@@ -25,10 +25,10 @@ An unpainted item drawn above all ordinary items that can trap input, dim the ba
 | :--- | :--- | :--- | :--- |
 | `modal` | `bool` | `false` | Holds whether the popup blocks keyboard and mouse input to everything outside it while open. |
 | `dimBackground` | `bool` | `true` | Holds whether the whole frame beneath the popup is dimmed while it is open; it has an effect only when `modal` is also true. |
-| `closePolicy` | `int` | `Popup.CloseOnEscape \| Popup.CloseOnOutsideClick` | Holds a combination of `Popup.ClosePolicies` flags selecting which user actions call `reject()` automatically. |
+| `closePolicy` | `int` | `Popup.CloseOnEscape \| Popup.CloseOnOutsideClick` | Holds a combination of `Popup.ClosePolicy` (`Popup.ClosePolicies`) flags selecting which user actions call `reject()` automatically. |
 | `initialFocusItem` | `Item` | `null` | Holds the item that receives focus on `open()`; when unset, hidden, disabled or not focusable, the first focusable descendant is used instead. |
 | `owner` | `Item` | `null` | Holds the item this popup logically belongs to, used instead of the visual parent to find `parentPopup`. |
-| `parentPopup` | `Popup` |  | Read-only. Holds the nearest popup among the ancestors of `owner`, or of the visual parent when no owner is set. |
+| `parentPopup` | `Popup` |  | Read-only. Holds the nearest popup among the ancestors of `owner`, or of the visual parent when no owner is set. Notifies via `ownerChanged()`. |
 
 ## Signals
 
@@ -39,6 +39,7 @@ An unpainted item drawn above all ordinary items that can trap input, dim the ba
 | `accepted()` | Emitted by `accept()` before `finished(true)` and `close()`. |
 | `rejected()` | Emitted by `reject()`, including automatic closes from Escape or an outside click, before `finished(false)` and `close()`. |
 | `finished(bool accepted)` | Emitted after `accepted()` or `rejected()` with the outcome, before the popup closes. |
+| `ownerChanged()` | Emitted when `owner` or the resolved `parentPopup` changes. |
 
 ## Methods
 
@@ -49,7 +50,7 @@ An unpainted item drawn above all ordinary items that can trap input, dim the ba
 | `void accept()` | Emits `accepted()` and `finished(true)`, then calls `close()`. |
 | `void reject()` | Emits `rejected()` and `finished(false)`, then calls `close()`. |
 
-## Enumeration Popup.ClosePolicies
+## Enumeration Popup.ClosePolicy (`Popup.ClosePolicies`)
 
 | Value | Description |
 | :--- | :--- |
@@ -103,47 +104,7 @@ creates a non-modal Popup internally.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Button {
-        anchors.centerIn: parent
-        text: "Show help"
-        focus: true
-        onClicked: help.open()
-    }
-
-    Popup {
-        id: help
-        anchors.centerIn: parent
-        width: 40
-        height: 7
-        modal: true
-
-        Rectangle {
-            anchors.fill: parent
-            color: "default"
-            border.style: Border.Double
-            border.color: "yellow"
-        }
-
-        Text {
-            x: 2; y: 1
-            text: "Press Escape or click outside to close."
-            color: "white"
-        }
-
-        Button {
-            x: 2; y: 3
-            text: "Quit"
-            onClicked: Qt.quit()
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Popup.qml{qml}
 
 ### Gallery Example
 

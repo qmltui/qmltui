@@ -29,6 +29,8 @@ endif()
 
 qt_add_qml_module(QmlTuiCore
     URI QmlTui
+    IMPORTS
+        QtQml
     ${QMLTUI_STATIC_QML_MODULE}
     OUTPUT_TARGETS qmltui_core_output_targets
     SOURCES

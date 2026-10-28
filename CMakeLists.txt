@@ -46,8 +46,8 @@ if(NOT "${QT_QML_OUTPUT_DIRECTORY}" IN_LIST _qmltui_qml_import_paths)
 endif()
 unset(_qmltui_qml_import_paths)
 
-# Third-party code: each option picks a system library or the pinned in-tree
-# copy; the mechanics live in cmake/QmlTuiUtf8proc.cmake and cmake/QmlTuiLibvterm.cmake.
+# Third-party code: each option picks a system library or the pinned source
+# fetched via FetchContent; the mechanics live in cmake/QmlTuiUtf8proc.cmake and cmake/QmlTuiLibvterm.cmake.
 option(QMLTUI_USE_SYSTEM_UTF8PROC "Use system utf8proc library" OFF)
 option(QMLTUI_USE_SYSTEM_LIBVTERM  "Use system libvterm library (PtyView only)" OFF)
 include(cmake/QmlTuiUtf8proc.cmake)
@@ -60,10 +60,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(qt_required_components Core Qml)
-
-if(QMLTUI_ENABLE_IMAGE)
-    list(APPEND qt_required_components Gui Network)   # Network: QmlTui.Image fetches http(s) sources; Gui: QImage
-endif()
 
 if(QMLTUI_BUILD_TESTS)
     list(APPEND qt_required_components Test Gui)   # Gui: QStandardItemModel in TableView/TreeView unit tests
@@ -95,6 +91,23 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
         set(QMLTUI_ENABLE_PRIVATE_QT OFF)
         if(NOT PROJECT_IS_TOP_LEVEL)
             set(QMLTUI_ENABLE_PRIVATE_QT OFF PARENT_SCOPE)
+        endif()
+    endif()
+endif()
+
+if(QMLTUI_ENABLE_IMAGE)
+    # Network: QmlTui.Image fetches http(s) sources; Gui: QImage
+    if(NOT TARGET Qt6::Gui OR NOT TARGET Qt6::Network)
+        find_package(Qt6 6.8 QUIET OPTIONAL_COMPONENTS Gui Network)
+    endif()
+    if(NOT TARGET Qt6::Gui OR NOT TARGET Qt6::Network)
+        message(WARNING
+            "QmlTui: Qt6::Gui and/or Qt6::Network was not found; building without QmlTui.Image. "
+            "Install the Qt 6 Gui and Network development packages to enable it, or pass "
+            "-DQMLTUI_ENABLE_IMAGE=OFF to suppress this warning.")
+        set(QMLTUI_ENABLE_IMAGE OFF)
+        if(NOT PROJECT_IS_TOP_LEVEL)
+            set(QMLTUI_ENABLE_IMAGE OFF PARENT_SCOPE)
         endif()
     endif()
 endif()

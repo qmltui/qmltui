@@ -43,42 +43,7 @@ animation resumes from the current frame.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    id: root
-    property bool loading: true
-
-    Timer {
-        interval: 3000
-        running: true
-        onTriggered: root.loading = false
-    }
-
-    Row {
-        anchors.centerIn: parent
-        spacing: 1
-
-        BusyIndicator {
-            running: root.loading
-            color: "cyan"
-            visible: root.loading
-        }
-        Text {
-            text: root.loading ? "Fetching results" : "Done"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-⠋ Fetching results
-```
+<<< ../../examples/gallery/examples/BusyIndicator.qml{qml}
 
 ### Gallery Example
 

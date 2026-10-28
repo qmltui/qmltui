@@ -17,6 +17,7 @@ if(NOT TARGET qmltui::core)
     # --------------------------------------------------------------------------
     set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(QMLTUI_ENABLE_IMAGE OFF CACHE BOOL "" FORCE)
     include(FetchContent)
     FetchContent_Declare(
         QmlTui

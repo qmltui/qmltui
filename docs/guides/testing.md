@@ -150,7 +150,7 @@ Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`):
 | `--update-snapshots` | Off | Rewrite snapshot files from the committed frames instead of failing on mismatch. |
 | `--record <relative-path>` | None | Record terminal output as an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |
 | `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
-| `--timeout-ms <ms>` | `30000` | Overall scenario watchdog timeout (`1..300000` ms). |
+| `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms; CTest `qmltui_add_scenario()` defaults `SCENARIO_TIMEOUT_MS` to `30000`). |
 | `--startup-timeout-ms <ms>` | `5000` | Deadline for the application to start and complete the Runner handshake (`1..300000` ms). |
 
 `qmltui-runner` exits with `0` when the scenario passes, `1` when an assertion or script error fails the scenario, and `2` on invalid CLI arguments, startup/handshake timeouts, or process crashes.
@@ -163,6 +163,34 @@ At the end of every run, `qmltui-runner` prints the artifact directory path to `
 - `final.txt`: Normalized text of the final committed frame on success.
 - `failure.txt`: Normalized text of the last committed frame when a scenario fails.
 - `snapshots/<name>.actual.txt` and `snapshots/<name>.diff`: Written when a snapshot assertion mismatches.
+
+Example `result.json` emitted when a scenario fails:
+
+```json
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "exitCode": 1,
+  "mode": "script",
+  "clock": "virtual",
+  "viewport": { "columns": 80, "rows": 24 },
+  "finalViewport": { "columns": 80, "rows": 24 },
+  "message": "expectText: text \"Status: Clicked!\" not found in committed frame",
+  "operation": {
+    "index": 2,
+    "name": "expectText",
+    "status": "failed"
+  },
+  "artifacts": {
+    "directory": "/tmp/qmltui-runner-XXXXXX",
+    "result": "/tmp/qmltui-runner-XXXXXX/result.json",
+    "captures": [],
+    "updatedSnapshots": [],
+    "casts": [],
+    "finalFrame": "failure.txt"
+  }
+}
+```
 
 ## 3. CMake and CTest Integration
 

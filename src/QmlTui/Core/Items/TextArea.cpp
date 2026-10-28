@@ -249,6 +249,10 @@ void TextArea::setShowWhitespace(bool show) {
     markDirty();
 }
 
+void TextArea::select(int start, int end) {
+    applyEditorChange(m_editor.select(start, end));
+}
+
 void TextArea::selectAll() {
     applyEditorChange(m_editor.selectAll());
 }

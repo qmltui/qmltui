@@ -50,33 +50,7 @@ is controlled by `columnSpacing` and `rowSpacing`.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    GridLayout {
-        anchors.centerIn: parent
-        columns: 2
-        columnSpacing: 2
-        rowSpacing: 1
-
-        Text { text: "Host:" }
-        Text { text: "localhost" }
-        Text { text: "Port:" }
-        Text { text: "8080" }
-        Text { text: "Status:" }
-        Text { text: "Connected" }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Layouts.qml{qml}
 
 ### Gallery Example
 

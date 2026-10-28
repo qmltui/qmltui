@@ -97,7 +97,7 @@ Terminal {
 
 ## Mouse Input (`MouseArea`)
 
-[`MouseArea`](../qml-types/mousearea.md) converts SGR 1006 terminal mouse events into cell-coordinate `onClicked`, `onDoubleClicked`, `onPressed`, `onReleased`, `onPositionChanged` (drag), `onWheel`, and `containsMouse` (when `hoverEnabled: true`). Always pair mouse handlers with keyboard navigation so the interface remains usable without a mouse.
+[`MouseArea`](../qml-types/mousearea.md) converts SGR 1006 terminal mouse events into cell-coordinate `onClicked`, `onPressed`, `onReleased`, `onMouseXChanged` / `onMouseYChanged` (drag or hover), `onWheel`, and `containsMouse` (when `hoverEnabled: true`). Always pair mouse handlers with keyboard navigation so the interface remains usable without a mouse.
 
 See [`Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml), [`MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml), and [`Dialog.qml`](../../examples/gallery/examples/Dialog.qml), and the [`FocusScope`](../qml-types/focusscope.md), [`Keys`](../qml-types/keys.md), [`Shortcut`](../qml-types/shortcut.md), and [`MouseArea`](../qml-types/mousearea.md) references.
 

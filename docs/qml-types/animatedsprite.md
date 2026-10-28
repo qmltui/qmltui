@@ -35,7 +35,7 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 | `paused` | `bool` | `false` | Freezes the clock without resetting anything; `advance()` still steps by hand. |
 | `loops` | `int` | `AnimatedSprite.Infinite` | How many times the animation plays before it finishes. `AnimatedSprite.Infinite` never stops on its own. |
 | `reverse` | `bool` | `false` | Play the frames last to first. A run then starts at the last frame. |
-| `finishBehavior` | `FinishBehavior` | `FinishAtInitialFrame` | Which frame stays visible when a finite `loops` count completes. |
+| `finishBehavior` | `FinishBehavior` | `AnimatedSprite.FinishAtInitialFrame` | Which frame stays visible when a finite `loops` count completes. |
 
 Every [Image](image.md) property applies to the current frame: `fillMode`,
 `renderMode`, `smooth`, `alignment`, `source`, `image`, and so on.
@@ -90,42 +90,7 @@ them from a state machine or plain bindings.
 
 ### Example
 
-The classic 4-frame loading animation from the Qt Quick documentation:
-
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Image
-
-Terminal {
-    id: root
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit();
-            event.accepted = true;
-        }
-    }
-
-    AnimatedSprite {
-        id: loader
-        anchors.centerIn: parent
-        width: 16; height: 8
-        source: "loading.png"        // 4 frames of 64x64 in one row
-        frameWidth: 64
-        frameHeight: 64
-        frameCount: 4
-        frameDuration: 500
-        fillMode: Image.PreserveAspectFit
-    }
-
-    Text {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: loader.y + loader.height + 1
-        text: "frame " + (loader.currentFrame + 1) + " of " + loader.frameCount
-    }
-}
-```
+<<< ../../examples/gallery/examples/AnimatedSprite.qml{qml}
 
 ### Gallery Example
 

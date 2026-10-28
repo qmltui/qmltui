@@ -15,7 +15,7 @@ QmlTui exposes C++ classes for bootstrapping terminal sessions, writing custom v
 - [TextGridBuffer](textgridbuffer.md) — Off-screen 2D character canvas offering text, line, box, and rectangle drawing primitives along with differential ANSI frame serialization.
 - [Cell & TextAttribute](cell.md) — Value types representing a single terminal grid cell, its inline UTF-8 grapheme cluster, display width, colors, and SGR text styling flags.
 - [Color](color.md) — `QtGui`-free color value supporting `#RGB`/`#RRGGBB`/`#AARRGGBB` hex literals, CSS/SVG named colors, and theme-aware `ansi:` palette indices.
-- [Rectangle](rectangle.md) — Visual item that renders a background color fill and optional single, double, rounded, heavy, or ASCII box-drawing borders.
+- [Rectangle](rectangle.md) — Visual item that renders a background color fill and optional single, double, rounded, or ASCII box-drawing borders.
 - [Text](text.md) — Visual item that renders aligned single-line or multi-line plain, HTML-formatted, or ANSI-escaped text, spans, and gradients.
 - [PtyView](ptyview.md) — Embedded Unix PTY terminal item (`qmltui::pty_view`, gated on `QMLTUI_ENABLE_PTYVIEW=ON`) backed by `libvterm`.
 - [MouseArea](mousearea.md) *(in-tree item header)* — Invisible interaction item that captures terminal mouse presses, releases, clicks, wheel events, and opt-in hover motion.

@@ -124,7 +124,6 @@ Terminal {
 
                     Column {
                         anchors.fill: parent
-                        anchors.margins: 1
                         spacing: 1
 
                         Text {
@@ -182,7 +181,6 @@ Terminal {
 
                     Column {
                         anchors.fill: parent
-                        anchors.margins: 1
                         spacing: 1
 
                         Text {
@@ -239,7 +237,6 @@ Terminal {
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 1
 
                     Text {
                         text: "Controls: [Tab] Focus  [C] Connect/Disconnect  [R] Reset  [Esc/Q] Quit"

@@ -61,30 +61,89 @@ In full-screen mode, scrollback output is queued until inline mode resumes.
 ### Example
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
+import QmlTui.Controls
 
 Terminal {
     id: root
+    property int stepCount: 1
+
     mode: Terminal.Inline
+    title: "Inline Scrollback Demo"
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+        if (event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
         }
     }
 
     Scrollback {
         id: history
-        delegate: Text {
-            required property string modelData
-            text: "> " + modelData
-        }
     }
 
-    Text {
-        text: "Interactive Prompt (Press Q to quit)"
+    Component.onCompleted: {
+        history.print([
+            { text: "✔ ", color: "green", bold: true },
+            { text: "QmlTui Inline Mode initialized in normal terminal buffer" }
+        ]);
+    }
+
+    Panel {
+        width: parent.width
+        height: 7
+        title: Text {
+            text: "Inline Terminal · Scrollback"
+            color: "cyan"
+            bold: true
+        }
+        border {
+            style: Border.Rounded
+            color: "cyan"
+        }
+
+        ColumnLayout {
+            anchors {
+                fill: parent
+                leftMargin: 1
+                rightMargin: 1
+            }
+            spacing: 1
+
+            Text {
+                text: "Commits lines permanently above the live inline region:"
+                dim: true
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                TextInput {
+                    id: logInput
+                    Layout.fillWidth: true
+                    focus: true
+                    text: "Step #" + root.stepCount + " completed"
+                    placeholderText: "Message to write to scrollback..."
+                    onAccepted: commitBtn.clicked()
+                }
+
+                Button {
+                    id: commitBtn
+                    text: "Write to Scrollback"
+                    onClicked: {
+                        history.print([
+                            { text: "[#" + root.stepCount + "] ", color: "green", bold: true },
+                            { text: logInput.text }
+                        ]);
+                        root.stepCount += 1;
+                        logInput.text = "Step #" + root.stepCount + " completed";
+                    }
+                }
+            }
+        }
     }
 }
 ```

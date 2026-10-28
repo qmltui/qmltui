@@ -20,7 +20,7 @@ An attached property that shows a short text box next to an item while it is hov
 | **Inherits** | none |
 | **Instantiation** | Not instantiable; use as an attached property |
 
-## Properties
+## Attached Properties
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -71,41 +71,7 @@ true.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Row {
-        anchors.centerIn: parent
-        spacing: 2
-
-        Button {
-            text: "Build"
-            focus: true
-            ToolTip.text: "Compile the current project"
-            ToolTip.delay: 300
-        }
-
-        Button {
-            text: "Quit"
-            ToolTip.text: "Exit the application"
-            ToolTip.textColor: "yellow"
-            onClicked: Qt.quit()
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-╔═══════╗  ┌──────┐
-║ Build ║  │ Quit │
-╚═══════╝  └──────┘
- Compile the current project
-```
+<<< ../../examples/gallery/examples/ToolTip.qml{qml}
 
 ### Gallery Example
 

@@ -53,33 +53,10 @@ All margins are measured in integer character cells and rows.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 2
-        border.style: Border.Double
-
-        Text {
-            anchors.centerIn: parent
-            text: "Centered with Anchors"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Anchors.qml{qml}
 
 ### Gallery Example
 
 ![Layouts recorded demo](../assets/casts/components/layouts.gif)
 
-See [`examples/gallery/examples/Layouts.qml`](../../examples/gallery/examples/Layouts.qml) (`./build/examples/gallery/qmltui_gallery --example Layouts`, or open in the [WebAssembly Playground](../playground.md?example=Layouts.qml)).
+See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`, or open in the [WebAssembly Playground](../playground.md?example=Anchors.qml)).

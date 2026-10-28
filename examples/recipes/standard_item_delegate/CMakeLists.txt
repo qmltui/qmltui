@@ -1,6 +1,10 @@
 # QStandardItemModel lives in Qt6::Gui; the example links it for the model
 # only and still runs under a plain QCoreApplication.
-find_package(Qt6 REQUIRED COMPONENTS Gui)
+find_package(Qt6 OPTIONAL_COMPONENTS Gui QUIET)
+if(NOT TARGET Qt6::Gui)
+    message(STATUS "standard_item_delegate: Qt Gui not found, skipping example")
+    return()
+endif()
 
 # The QML module is owned by each executable (not a shared static library) so
 # Qt records the build tree's QML import path for it and `import QmlTui.Controls`

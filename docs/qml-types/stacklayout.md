@@ -52,44 +52,10 @@ pages are created on demand.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Column {
-        anchors.fill: parent
-        spacing: 1
-
-        TabBar {
-            id: tabs
-            width: parent.width
-            focus: true
-            tabs: ["Status", "Actions"]
-        }
-
-        StackLayout {
-            width: parent.width
-            height: 6
-            currentIndex: tabs.currentIndex
-
-            Panel {
-                title: Text { text: "Status" }
-                Text { x: 2; y: 1; text: "All services healthy." }
-            }
-
-            Panel {
-                title: Text { text: "Actions" }
-                Button { x: 2; y: 1; text: "Quit"; onClicked: Qt.quit() }
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/StackLayout.qml{qml}
 
 ### Gallery Example
 
 ![TabBar recorded demo](../assets/casts/components/tab_bar.gif)
 
-See [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml) (`./build/examples/gallery/qmltui_gallery --example TabBar`, or open in the [WebAssembly Playground](../playground.md?example=TabBar.qml)).
+See [`examples/gallery/examples/StackLayout.qml`](../../examples/gallery/examples/StackLayout.qml) (`./build/examples/gallery/qmltui_gallery --example StackLayout`, or open in the [WebAssembly Playground](../playground.md?example=StackLayout.qml)).

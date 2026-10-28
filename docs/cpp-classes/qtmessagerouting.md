@@ -27,11 +27,13 @@ Scope:
 
 ### Default Behavior
 
-When an application does not call `QtMessageRouting::install()`:
+The router installs its `qInstallMessageHandler` hook while at least one `TerminalEngine` instance exists or an explicit `QtMessageRouting::install()` registration is active, and restores the previous Qt message handler once the last engine and registration are torn down.
+
+When an application does not call `QtMessageRouting::install()` (while a `TerminalEngine` is active):
 - No diagnostic sink is registered.
 - Presentation defaults to `stderrPresentationSink()`.
-- Outside alternate-screen sessions, messages are written to `stderr` immediately.
-- During an alternate-screen session, non-fatal messages are buffered (up to 500 entries, dropping the oldest on overflow) and replayed to `stderr` after the terminal exits raw mode and restores the normal screen.
+- Outside alternate-screen sessions, messages are delivered immediately through `stderrPresentationSink()`.
+- During an alternate-screen session, non-fatal messages are buffered (up to 500 entries, dropping the oldest on overflow) and replayed through `stderrPresentationSink()` after the terminal exits raw mode and restores the normal screen.
 
 ### Custom Configuration
 
@@ -62,7 +64,7 @@ Value snapshot captured when a message reaches the router:
 Installs an explicit routing configuration and returns an RAII registration token. Only one explicit registration may be active per process; duplicate attempts return `nullptr`. May be called before or after constructing `QCoreApplication`.
 
 #### `static QtMessageSink stderrPresentationSink()`
-Returns a sink that writes `msg.formattedMessage()` to `stderr` and flushes it. Redirecting `stderr` (`./app 2> errors.log`) redirects this sink as expected.
+Returns the default presentation sink. If another `QtMessageHandler` was installed before QmlTui's router hooked `qInstallMessageHandler`, this sink chains the message (`type`, reconstructed `QMessageLogContext`, and `message`) to that prior handler; otherwise it writes `msg.formattedMessage()` to `stderr` and flushes it. Redirecting `stderr` (`./app 2> errors.log`) redirects the fallback `stderr` output as expected.
 
 #### `void reset()`
 Unregisters the configuration, discards any buffered presentation records owned by this registration, waits for in-flight sink callbacks on worker threads to finish, and restores default routing.

@@ -42,33 +42,7 @@ scrollable lists or tables, prefer [ListView](listview.md) or [TableView](tablev
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Repeater {
-            model: ["Build: OK", "Tests: 212 passed", "Coverage: 94%"]
-            Text {
-                required property string modelData
-                required property int index
-                text: (index + 1) + ". " + modelData
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Repeater.qml{qml}
 
 ### Gallery Example
 

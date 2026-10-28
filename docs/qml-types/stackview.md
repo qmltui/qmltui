@@ -62,39 +62,7 @@ chosen by index, for example from a [TabBar](tabbar.md).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    StackView {
-        id: pages
-        anchors.fill: parent
-        Component.onCompleted: push(homePage)
-    }
-
-    Component {
-        id: homePage
-        Column {
-            spacing: 1
-            Button { text: "Open details"; focus: true
-                     onClicked: pages.push(detailPage, { label: "Details" }) }
-            Button { text: "Quit"; onClicked: Qt.quit() }
-        }
-    }
-
-    Component {
-        id: detailPage
-        Panel {
-            id: pagePanel
-            property string label: ""
-            title: Text { text: pagePanel.label }
-            Button { x: 2; y: 1; text: "Back"; focus: true; onClicked: pages.pop() }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/StackView.qml{qml}
 
 ### Gallery Example
 

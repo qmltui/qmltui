@@ -26,14 +26,14 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 | `model` | `var` |  | Holds the hierarchical data model (`QAbstractItemModel` or nested JavaScript object tree `{ text, children: [...] }`). |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose children the view shows when using `QAbstractItemModel`. |
 | `delegate` | `Component` |  | Holds the component instantiated for each visible tree row. This is the default property. |
-| `nodeFormat` | `var` |  | Optional JS callback `(row, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed }` for built-in painting. |
+| `nodeFormat` | `var` |  | Optional JS callback `(row, value) => span \| list<span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed }` for built-in painting. |
 | `currentIndex` | `int` | `-1` | Holds the index of the currently active tree row. |
-| `currentColumn` | `int` |  | Read-only. Holds the current column index (0 for tree views). |
+| `currentColumn` | `int` | `-1` | Read-only. Holds the current column index (`0` when a row is selected, `-1` when no row is selected). |
 | `currentItemData` | `var` |  | Read-only. Holds a dictionary of role data for the currently selected item. |
 | `selectionColor` | `color` |  | Holds the text color override for the selected row. |
 | `selectionBackgroundColor` | `color` |  | Holds the background color override for the selected row. |
-| `textColor` | `color` |  | Holds the default text color for tree items. |
-| `branchColor` | `color` |  | Holds the color used to draw branch guides and expansion icons. |
+| `textColor` | `color` | `"default"` | Holds the default text color for tree items. |
+| `branchColor` | `color` | `"default"` | Holds the color used to draw branch guides and expansion icons. |
 | `expandedIcon` | `string` | `"[-] "` | Holds the icon glyph displayed for expanded parent nodes. |
 | `collapsedIcon` | `string` | `"[+] "` | Holds the icon glyph displayed for collapsed parent nodes. |
 
@@ -77,67 +77,13 @@ emits `itemActivated` and `nodeActivated`.
 
 Nodes are indented according to their `depth`. Branch icons and connectors are
 rendered using `branchColor`. In built-in painting (when `delegate` is unset),
-nodes may supply a `QmlTui.span(...)` or `list<Span>` through `Qt::DisplayRole`,
+nodes may supply a `QmlTui.span(...)` or `list<span>` through `Qt::DisplayRole`,
 a `"spans"` role, or a `model` map (`spans`, `text`, or `display`), or format
 labels per visible row via `nodeFormat(row, value)`.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 35
-        height: 10
-        border.style: Border.Single
-
-        TreeView {
-            anchors.fill: parent
-            anchors.margins: 1
-            focus: true
-            model: {
-                "label": "Project",
-                "children": [
-                    { "label": "src", "children": [ { "label": "main.cpp" }, { "label": "App.qml" } ] },
-                    { "label": "docs", "children": [ { "label": "index.md" } ] },
-                    { "label": "CMakeLists.txt" }
-                ]
-            }
-
-            delegate: Text {
-                required property string label
-                required property int depth
-                text: "  ".repeat(depth) + label
-            }
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌─────────────────────────────────┐
-│Project                          │
-│  src                            │
-│    main.cpp                     │
-│    App.qml                      │
-│  docs                           │
-│    index.md                     │
-│  CMakeLists.txt                 │
-│                                 │
-└─────────────────────────────────┘
-```
+<<< ../../examples/gallery/examples/TreeView.qml{qml}
 
 ### Gallery Example
 

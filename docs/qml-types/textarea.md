@@ -42,9 +42,10 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `selectedTextColor` | `color` |  | Holds the foreground text color for selected text. |
 | `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
 | `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
-| `textRevision` | `int` | `0` | Read-only. Incremented on each text change. Validates highlight layer submissions. |
+| `textRevision` | `int` | `0` | Read-only. Monotonically incremented (`quint64`) on each text change. Validates highlight layer submissions. |
 | `tabChangesFocus` | `bool` | `false` | Whether Tab changes focus or is accepted as text input. When `false`, Tab inserts spaces to the next tab stop. |
 | `tabStopDistance` | `int` | `4` | Number of character columns per tab stop. Tab inserts spaces aligning to multiples of this distance. |
+| `showWhitespace` | `bool` | `false` | Whether spaces and tabs are rendered with visible markers (`·` and `→`). |
 
 ## Signals
 
@@ -52,6 +53,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | :--- | :--- |
 | `accepted()` | Emitted when Ctrl+Return or Ctrl+Enter is pressed. |
 | `highlightsChanged()` | Emitted when active highlight layers are modified or cleared. |
+| `selectionChanged()` | Emitted when `selectionStart`, `selectionEnd`, or `selectedText` changes. |
 
 ## Enumeration TextArea.CursorShape
 
@@ -66,6 +68,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 
 | Method | Description |
 | :--- | :--- |
+| `void select(int start, int end)` | Selects the character range from `start` to `end`. |
 | `void selectAll()` | Selects the entire text document. |
 | `void clearSelection()` | Clears the active selection without modifying the text. |
 | `void copy()` | Copies the selected text to the clipboard. |
@@ -120,47 +123,7 @@ cluster boundaries to avoid partially styled multi-byte or combining sequences.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 40
-        height: 8
-        border.style: Border.Single
-
-        TextArea {
-            anchors.fill: parent
-            anchors.margins: 1
-            focus: true
-            placeholderText: "Type multi-line notes..."
-            text: "First line of notes\nSecond line of notes"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌──────────────────────────────────────┐
-│First line of notes                   │
-│Second line of notes                  │
-│                                      │
-│                                      │
-│                                      │
-│                                      │
-└──────────────────────────────────────┘
-```
+<<< ../../examples/gallery/examples/TextArea.qml{qml}
 
 ### Gallery Example
 

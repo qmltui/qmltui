@@ -42,54 +42,7 @@ enables pooling and recycling of delegate items.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    GridView {
-        anchors.fill: parent
-        anchors.margins: 2
-        cellWidth: 12
-        cellHeight: 3
-        model: 24
-
-        delegate: Rectangle {
-            id: cell
-            required property int index
-            width: 10
-            height: 3
-            border.style: Border.Single
-
-            Text {
-                anchors.centerIn: parent
-                text: "Cell " + cell.index
-            }
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐
-│ Cell 0 │  │ Cell 1 │  │ Cell 2 │  │ Cell 3 │  │ Cell 4 │  │ Cell 5 │
-└────────┘  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘
-┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐
-│ Cell 6 │  │ Cell 7 │  │ Cell 8 │  │ Cell 9 │  │Cell 10 │  │Cell 11 │
-└────────┘  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘
-┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐
-│Cell 12 │  │Cell 13 │  │Cell 14 │  │Cell 15 │  │Cell 16 │  │Cell 17 │
-└────────┘  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘
-```
+<<< ../../examples/gallery/examples/GridView.qml{qml}
 
 ### Gallery Example
 

@@ -31,46 +31,68 @@ pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
-Rectangle {
-    id: card
+Terminal {
+    id: root
     property bool expanded: false
 
-    width: 24
-    height: 3
-    color: "#16202a"
-    border {
-        style: Border.Rounded
-        color: "gray"
-    }
-
-    Behavior on width {
-        NumberAnimation { duration: 150 }
-    }
-
-    states: [
-        State {
-            name: "expanded"
-            when: card.expanded
-            PropertyChanges {
-                target: card
-                width: 48
-                border.color: "cyan"
-            }
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Space) {
+            root.expanded = !root.expanded;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
         }
-    ]
+    }
 
-    transitions: [
-        Transition {
+    Rectangle {
+        id: card
+        anchors {
+            centerIn: parent
+        }
+        width: 28
+        height: 5
+        border {
+            style: Border.Rounded
+            color: "cyan"
+        }
+
+        Behavior on width {
             NumberAnimation {
-                property: "width"
-                duration: 200
-                easing.type: Easing.OutQuad
-            }
-            ColorAnimation {
-                duration: 200
+                duration: 150
             }
         }
-    ]
+
+        Text {
+            anchors {
+                centerIn: parent
+            }
+            text: root.expanded ? "Expanded (Press Space)" : "Compact (Press Space)"
+        }
+
+        states: [
+            State {
+                name: "expanded"
+                when: root.expanded
+                PropertyChanges {
+                    target: card
+                    properties: {
+                        "width": 48
+                    }
+                }
+            }
+        ]
+
+        transitions: [
+            Transition {
+                NumberAnimation {
+                    property: "width"
+                    duration: 200
+                    easing: Easing.OutQuad
+                }
+            }
+        ]
+    }
 }
 ```
 

@@ -3,16 +3,15 @@ import QtQml
 import QmlTui
 import QmlTui.Controls
 
-// QmlTui Gallery: Searchable Component GridView & Live Editable Code Playground.
-// Screen 1: Full-width Panel with a GridView of component preview tiles and an
-//           on-demand search input in the Panel's titleTrailing slot (/ or click).
-// Screen 2: Full-width Gallery-owned Example container Panel by default, with an
-//           on-demand side-by-side live-editable QML Code Panel on the right (Ctrl+E)
-//           that reloads the example 500ms after typing stops.
+// QmlTui Gallery: Searchable Component GridView & Interactive Example Stage.
+// Screen 1: Full-width GridView of component preview tiles with an on-demand
+//           inline search input (/ or click).
+// Screen 2: Full-width Example container hosting the live interactive QML
+//           component example (Enter/Space/click to open, Esc to return).
 Terminal {
     id: root
     title: showingDemo && current ? "QmlTui Gallery · " + current.file : "QmlTui Gallery"
-    color: "#0d1117"
+    color: (showingDemo && current && current.file === "TerminalCapabilities.qml") ? QmlTui.defaultColor : canvasColor
 
     // Palette aligned with docs/.vitepress/theme/custom.css (.dark)
     readonly property string brandPrimary: "#2cde85"
@@ -20,6 +19,7 @@ Terminal {
     readonly property string brandDeep: "#00a651"
     readonly property string canvasColor: "#0d1117"
     readonly property string tileColor: "#161b22"
+    readonly property string tileHoverColor: "#1c2b26"
     readonly property string tileCurrentColor: "#122d24"
     readonly property string lineColor: "#30363d"
     readonly property string textColor: "#c9d1d9"
@@ -30,30 +30,10 @@ Terminal {
     property string searchQuery: ""
     property int currentIndex: 0
     property int openIndex: -1
-    property bool fullscreenStage: true
 
-    // Live example & editable code state
+    // Live example state
     property Item liveExampleItem: null
-    property bool loadingExampleSource: false
     property string codeError: ""
-    property bool codeCopied: false
-    readonly property int editorLineCount: Math.max(1, codeEditor.text.split("\n").length)
-    readonly property int editorCursorLine: {
-        const pos = Math.max(0, Math.min(codeEditor.cursorPosition, codeEditor.text.length));
-        let line = 0;
-        for (let i = 0; i < pos; ++i) {
-            if (codeEditor.text[i] === "\n")
-                line++;
-        }
-        return line;
-    }
-    readonly property int editorCursorCol: {
-        const pos = Math.max(0, Math.min(codeEditor.cursorPosition, codeEditor.text.length));
-        const lastNewline = codeEditor.text.lastIndexOf("\n", pos - 1);
-        return pos - (lastNewline + 1);
-    }
-    readonly property int gutterDigits: Math.max(2, String(editorLineCount).length)
-    readonly property int gutterWidth: gutterDigits + 1
 
     readonly property bool showingDemo: openIndex >= 0
     readonly property var current: showingDemo ? filteredCatalog[openIndex] : (filteredCatalog.length > 0 ? filteredCatalog[currentIndex] : null)
@@ -63,7 +43,6 @@ Terminal {
     readonly property string initialPageFile: typeof qmltuiGalleryPage === "string" ? qmltuiGalleryPage : ""
     readonly property var availableFiles: typeof qmltuiAvailableExamples !== "undefined" && qmltuiAvailableExamples !== null && typeof qmltuiAvailableExamples.length === "number" ? qmltuiAvailableExamples : null
     readonly property var exampleSources: typeof qmltuiExampleSources !== "undefined" && qmltuiExampleSources !== null ? qmltuiExampleSources : ({})
-    readonly property var scenarioSources: typeof qmltuiScenarioSources !== "undefined" && qmltuiScenarioSources !== null ? qmltuiScenarioSources : ({})
 
     readonly property var catalog: availableFiles ? allEntries.filter(entry => availableFiles.indexOf(entry.file) >= 0) : allEntries
     readonly property var filteredCatalog: {
@@ -77,38 +56,10 @@ Terminal {
 
     readonly property int gridCols: Math.max(1, Math.floor(componentGrid.width / 36))
 
-    readonly property var qmlKeywords: ({
-            "pragma": true,
-            "import": true,
-            "property": true,
-            "readonly": true,
-            "required": true,
-            "signal": true,
-            "function": true,
-            "component": true,
-            "default": true,
-            "alias": true,
-            "as": true,
-            "on": true,
-            "if": true,
-            "else": true,
-            "for": true,
-            "while": true,
-            "return": true,
-            "var": true,
-            "let": true,
-            "const": true,
-            "true": true,
-            "false": true,
-            "null": true,
-            "undefined": true,
-            "id": true
-        })
-
-    // Ordered by module: Core (21) -> Controls (13) -> Optional: Image (2) & PtyView (1),
+    // Ordered by module: Core (21) -> Controls (14) -> Optional: Image (2) & PtyView (1),
     // and within each module from fundamental/most frequently used items to specialized ones.
     readonly property var allEntries: [
-        // 1. Core (20)
+        // 1. Core (21)
         {
             name: "Text",
             badge: "Core",
@@ -158,12 +109,36 @@ Terminal {
             file: "MouseArea.qml"
         },
         {
+            name: "Anchors",
+            badge: "Core",
+            accent: "#58a6ff",
+            preview: "top: header.bottom · left: sidebar.right",
+            blurb: "Relative edge attachment, centering, and margins",
+            file: "Anchors.qml"
+        },
+        {
             name: "Layouts",
             badge: "Core",
             accent: "#2cde85",
             preview: "RowLayout · ColumnLayout · GridLayout",
             blurb: "RowLayout, ColumnLayout, and GridLayout sizing",
             file: "Layouts.qml"
+        },
+        {
+            name: "StackLayout",
+            badge: "Core",
+            accent: "#f2cc60",
+            preview: "Page 1 ▸ Page 2 ▸ Page 3 (currentIndex)",
+            blurb: "Indexed page container showing one child item at a time",
+            file: "StackLayout.qml"
+        },
+        {
+            name: "Keys",
+            badge: "Core",
+            accent: "#7ee787",
+            preview: "Keys.onPressed · KeyEvent · modifiers",
+            blurb: "Attached keyboard event handling and KeyEvent inspection",
+            file: "Keys.qml"
         },
         {
             name: "Shortcut",
@@ -244,6 +219,22 @@ Terminal {
             preview: "Modal Overlay  ·  dimmed backdrop",
             blurb: "Centered overlay surface with backdrop dimming",
             file: "Popup.qml"
+        },
+        {
+            name: "Color",
+            badge: "Core",
+            accent: "#f2cc60",
+            preview: "default · QmlTui.ansi(0..7) · #rrggbb",
+            blurb: "SGR default/named colors, ANSI palette, and 24-bit RGB",
+            file: "Color.qml"
+        },
+        {
+            name: "Gradient",
+            badge: "Core",
+            accent: "#38bdf8",
+            preview: "Horizontal ──► · Vertical │ · 4-Stop",
+            blurb: "Multi-stop horizontal and vertical linear color gradients",
+            file: "Gradient.qml"
         },
         {
             name: "Clipboard",
@@ -496,7 +487,6 @@ Terminal {
     }
 
     function focusExample(item) {
-        codeEditor.focus = false;
         if (!item) {
             demoHost.focusPolicy = Qt.StrongFocus;
             demoHost.focus = true;
@@ -533,7 +523,6 @@ Terminal {
     }
 
     function destroyLiveExample() {
-        reloadTimer.stop();
         if (liveExampleItem !== null) {
             const old = liveExampleItem;
             liveExampleItem = null;
@@ -544,184 +533,36 @@ Terminal {
         codeError = "";
     }
 
-    function reloadLiveExample(qmlSource) {
+    function loadCurrentExample() {
         if (!showingDemo || current === null)
             return;
-        const editorHadFocus = codeEditor.activeFocus;
-        if (liveExampleItem !== null) {
-            const old = liveExampleItem;
-            liveExampleItem = null;
-            old.visible = false;
-            old.enabled = false;
-            old.destroy();
-        }
+        destroyLiveExample();
+        const src = exampleSources[current.file] ? String(exampleSources[current.file]) : "";
         try {
-            const url = "qrc:/qt/qml/Gallery/examples/" + current.file;
-            const obj = Qt.createQmlObject(qmlSource, demoHost, url);
+            let obj = null;
+            if (src !== "") {
+                obj = Qt.createQmlObject(src, demoHost, "qrc:/qt/qml/Gallery/examples/" + current.file);
+            } else {
+                const comp = Qt.createComponent("examples/" + current.file);
+                if (comp.status === Component.Ready) {
+                    obj = comp.createObject(demoHost);
+                } else {
+                    codeError = comp.errorString();
+                    return;
+                }
+            }
             if (obj) {
                 liveExampleItem = obj;
                 if (!obj.anchors.fill && !obj.anchors.centerIn && !obj.anchors.left && !obj.anchors.right && !obj.anchors.top && !obj.anchors.bottom && !obj.anchors.horizontalCenter && !obj.anchors.verticalCenter) {
                     obj.anchors.centerIn = demoHost;
                 }
                 codeError = "";
-                if (editorHadFocus)
-                    codeEditor.focus = true;
-                else
-                    focusExample(obj);
+                focusExample(obj);
             } else {
                 codeError = "Failed to instantiate component from source.";
-                if (editorHadFocus)
-                    codeEditor.focus = true;
             }
         } catch (err) {
-            const raw = err && err.message ? String(err.message) : String(err);
-            codeError = raw;
-            if (editorHadFocus)
-                codeEditor.focus = true;
-        }
-    }
-
-    function applyQmlSyntaxHighlight() {
-        const text = codeEditor.text;
-        const len = text.length;
-        let ranges = [];
-        let i = 0;
-        const commentColor = "#8b949e";
-        const stringColor = "#a5d6ff";
-        const numberColor = "#f2cc60";
-        const keywordColor = "#ff7b72";
-        const typeColor = "#7ee787";
-
-        while (i < len) {
-            const ch = text[i];
-            if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
-                i++;
-                continue;
-            }
-            if (ch === "/" && i + 1 < len && text[i + 1] === "/") {
-                const start = i;
-                i += 2;
-                while (i < len && text[i] !== "\n")
-                    i++;
-                ranges.push({
-                    start: start,
-                    length: i - start,
-                    color: commentColor,
-                    italic: true
-                });
-                continue;
-            }
-            if (ch === "\"" || ch === "'") {
-                const quote = ch;
-                const start = i++;
-                while (i < len) {
-                    if (text[i] === "\\")
-                        i += 2;
-                    else if (text[i] === quote) {
-                        i++;
-                        break;
-                    } else
-                        i++;
-                }
-                i = Math.min(i, len);
-                ranges.push({
-                    start: start,
-                    length: i - start,
-                    color: stringColor
-                });
-                continue;
-            }
-            if (ch >= "0" && ch <= "9") {
-                const start = i;
-                while (i < len && ((text[i] >= "0" && text[i] <= "9") || text[i] === "."))
-                    i++;
-                ranges.push({
-                    start: start,
-                    length: i - start,
-                    color: numberColor
-                });
-                continue;
-            }
-            if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_") {
-                const start = i;
-                while (i < len) {
-                    const c = text[i];
-                    if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_")
-                        i++;
-                    else
-                        break;
-                }
-                const word = text.substring(start, i);
-                if (qmlKeywords[word] === true) {
-                    ranges.push({
-                        start: start,
-                        length: i - start,
-                        color: keywordColor,
-                        bold: true
-                    });
-                } else if (word[0] >= "A" && word[0] <= "Z") {
-                    ranges.push({
-                        start: start,
-                        length: i - start,
-                        color: typeColor,
-                        bold: true
-                    });
-                }
-                continue;
-            }
-            i++;
-        }
-        codeEditor.setHighlightLayer("syntax", ranges, codeEditor.textRevision, 0);
-    }
-
-    function loadCurrentExample() {
-        if (!showingDemo || current === null)
-            return;
-        reloadTimer.stop();
-        const src = exampleSources[current.file] ? String(exampleSources[current.file]) : "";
-        loadingExampleSource = true;
-        codeEditor.text = src;
-        loadingExampleSource = false;
-        codeCopied = false;
-        applyQmlSyntaxHighlight();
-        reloadLiveExample(src);
-    }
-
-    function resetCurrentCode() {
-        if (!showingDemo || current === null)
-            return;
-        loadCurrentExample();
-    }
-
-    function copyCurrentCode() {
-        if (!showingDemo || current === null)
-            return;
-        const textToCopy = codeEditor.selectedText.length > 0 ? codeEditor.selectedText : codeEditor.text;
-        if (textToCopy.length === 0)
-            return;
-        Clipboard.copy(textToCopy);
-        codeCopied = true;
-        copyFeedbackTimer.restart();
-    }
-
-    function toggleCodePane() {
-        if (standalone)
-            return;
-        fullscreenStage = !fullscreenStage;
-        if (fullscreenStage && showingDemo && codeEditor.activeFocus)
-            focusExample(liveExampleItem);
-    }
-
-    function toggleCodeFocus() {
-        if (!showingDemo || standalone)
-            return;
-        if (fullscreenStage) {
-            fullscreenStage = false;
-            codeEditor.focus = true;
-        } else if (codeEditor.activeFocus) {
-            focusExample(liveExampleItem);
-        } else {
-            codeEditor.focus = true;
+            codeError = err && err.message ? String(err.message) : String(err);
         }
     }
 
@@ -759,70 +600,12 @@ Terminal {
     onCurrentIndexChanged: ensureVisible()
     onGridColsChanged: ensureVisible()
 
-    Timer {
-        id: reloadTimer
-        interval: 500
-        repeat: false
-        onTriggered: root.reloadLiveExample(codeEditor.text)
-    }
-
-    Timer {
-        id: copyFeedbackTimer
-        interval: 1500
-        repeat: false
-        onTriggered: root.codeCopied = false
-    }
-
-    Shortcut {
-        sequence: Qt.ControlModifier | Qt.Key_E
-        enabled: !root.standalone
-        onActivated: root.toggleCodePane()
-    }
-
-    Shortcut {
-        sequence: Qt.ControlModifier | Qt.Key_Y
-        enabled: root.showingDemo
-        onActivated: root.copyCurrentCode()
-    }
-
-    Shortcut {
-        sequence: Qt.ControlModifier | Qt.Key_R
-        enabled: root.showingDemo
-        onActivated: root.resetCurrentCode()
-    }
-
-    Shortcut {
-        sequence: Qt.ControlModifier | Qt.Key_T
-        enabled: root.showingDemo && !root.standalone
-        onActivated: root.toggleCodeFocus()
-    }
-
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_F2 && !standalone) {
-            toggleCodePane();
-            event.accepted = true;
-            return;
-        }
         if (showingDemo) {
-            if (event.key === Qt.Key_F5) {
-                resetCurrentCode();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_F6 && !standalone) {
-                toggleCodeFocus();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_Y && !codeEditor.activeFocus) {
-                copyCurrentCode();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_Escape || (event.key === Qt.Key_Backspace && !standalone && !codeEditor.activeFocus)) {
+            if (event.key === Qt.Key_Escape || (event.key === Qt.Key_Backspace && !standalone)) {
                 closeDemo();
                 event.accepted = true;
-            } else if (event.key === Qt.Key_Q && !codeEditor.activeFocus) {
+            } else if (event.key === Qt.Key_Q) {
                 Qt.quit();
                 event.accepted = true;
             }
@@ -948,6 +731,12 @@ Terminal {
                     color: root.mutedColor
                 }
             ]
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: root.showingDemo
+                onClicked: root.closeDemo()
+            }
         }
 
         Text {
@@ -1031,39 +820,12 @@ Terminal {
                     color: root.mutedColor
                 },
                 {
-                    text: " ^E ",
+                    text: " Tab/Arrows ",
                     color: root.brandPrimary,
                     bold: true
                 },
                 {
-                    text: "toggle code  ",
-                    color: root.mutedColor
-                },
-                {
-                    text: " ^Y ",
-                    color: root.brandPrimary,
-                    bold: true
-                },
-                {
-                    text: "copy code  ",
-                    color: root.mutedColor
-                },
-                {
-                    text: " ^T ",
-                    color: root.brandPrimary,
-                    bold: true
-                },
-                {
-                    text: "focus code/preview  ",
-                    color: root.mutedColor
-                },
-                {
-                    text: " ^R ",
-                    color: root.brandPrimary,
-                    bold: true
-                },
-                {
-                    text: "reset code  ",
+                    text: "interact  ",
                     color: root.mutedColor
                 },
                 {
@@ -1228,6 +990,7 @@ Terminal {
                     required property int index
                     required property var modelData
                     readonly property bool isCurrent: index === root.currentIndex
+                    readonly property bool isHovered: tileMouse.containsMouse
 
                     width: componentGrid.cellWidth
                     height: componentGrid.cellHeight
@@ -1237,14 +1000,14 @@ Terminal {
                         width: Math.max(10, parent.width - 2)
                         height: parent.height - 1
                         clip: true
-                        color: tileItem.isCurrent ? root.tileCurrentColor : root.tileColor
+                        color: tileItem.isCurrent ? root.tileCurrentColor : (tileItem.isHovered ? root.tileHoverColor : root.tileColor)
 
                         // Row 1: Component Name + Module Badge
                         Text {
                             x: 2
                             y: 0
-                            text: (tileItem.isCurrent ? "▸ " : "") + tileItem.modelData.name
-                            color: tileItem.isCurrent ? root.brandAccent : root.textColor
+                            text: (tileItem.isCurrent ? "▸ " : (tileItem.isHovered ? "› " : "")) + tileItem.modelData.name
+                            color: tileItem.isCurrent ? root.brandAccent : (tileItem.isHovered ? root.brandPrimary : root.textColor)
                             bold: true
                         }
 
@@ -1256,7 +1019,7 @@ Terminal {
                             y: 0
                             text: "[" + tileItem.modelData.badge + "]"
                             color: root.badgeColor(tileItem.modelData.badge)
-                            bold: tileItem.isCurrent
+                            bold: tileItem.isCurrent || tileItem.isHovered
                         }
 
                         // Row 2: Representative Component Preview Content
@@ -1267,7 +1030,7 @@ Terminal {
                             clip: true
                             text: tileItem.modelData.preview
                             color: tileItem.modelData.accent
-                            bold: tileItem.isCurrent
+                            bold: tileItem.isCurrent || tileItem.isHovered
                         }
 
                         // Row 3: Concise Description Blurb
@@ -1277,11 +1040,13 @@ Terminal {
                             width: Math.max(0, parent.width - 4)
                             clip: true
                             text: tileItem.modelData.blurb
-                            color: tileItem.isCurrent ? root.textColor : root.mutedColor
+                            color: (tileItem.isCurrent || tileItem.isHovered) ? root.textColor : root.mutedColor
                         }
 
                         MouseArea {
+                            id: tileMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             onClicked: {
                                 root.currentIndex = tileItem.index;
                                 root.openCurrent();
@@ -1301,251 +1066,65 @@ Terminal {
             }
         }
 
-        // Screen 2: Split View — Borderless Example Stage (Left) + Editable Code Surface (Right)
-        RowLayout {
-            id: splitStage
+        // Screen 2: Full-Width Example Stage
+        MouseArea {
+            id: examplePaneArea
             anchors {
                 fill: parent
                 leftMargin: 1
                 rightMargin: 1
             }
             visible: root.showingDemo
-            spacing: 2
-
-            // Left Pane: Borderless Example Stage
-            MouseArea {
-                id: examplePaneArea
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.preferredWidth: root.fullscreenStage || root.standalone ? parent.width : Math.max(34, Math.floor(parent.width * 0.50))
-                onPressed: {
-                    if (codeEditor.activeFocus || !root.exampleHasActiveFocus())
-                        root.focusExample(root.liveExampleItem);
-                }
-
-                Item {
-                    id: examplePanel
-                    anchors.fill: parent
-
-                    Item {
-                        id: demoHost
-                        objectName: "demoHost"
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            right: parent.right
-                            bottom: errorBanner.visible ? errorBanner.top : parent.bottom
-                            leftMargin: 1
-                            rightMargin: 1
-                            topMargin: 0
-                            bottomMargin: 0
-                        }
-                        clip: true
-                    }
-
-                    Rectangle {
-                        id: errorBanner
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                            leftMargin: 1
-                            rightMargin: 1
-                            bottomMargin: 1
-                        }
-                        visible: root.codeError !== ""
-                        height: visible ? Math.min(6, Math.max(3, errorText.implicitHeight + 2)) : 0
-                        color: "#2d1215"
-
-                        Text {
-                            id: errorText
-                            anchors {
-                                fill: parent
-                                leftMargin: 1
-                                rightMargin: 1
-                                topMargin: 1
-                                bottomMargin: 1
-                            }
-                            wrapMode: Text.WordWrap
-                            color: "#ffa198"
-                            text: root.codeError
-                        }
-                    }
-                }
+            onPressed: {
+                if (!root.exampleHasActiveFocus())
+                    root.focusExample(root.liveExampleItem);
             }
 
-            // Right Pane: Borderless Live Editable QML Code Surface
-            MouseArea {
-                id: codePaneArea
-                visible: !root.fullscreenStage && !root.standalone
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.preferredWidth: Math.max(34, Math.floor(parent.width * 0.50))
-                onPressed: {
-                    codeEditor.focus = true;
+            Item {
+                id: examplePanel
+                anchors.fill: parent
+
+                Item {
+                    id: demoHost
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        bottom: errorBanner.visible ? errorBanner.top : parent.bottom
+                        leftMargin: 1
+                        rightMargin: 1
+                        topMargin: 0
+                        bottomMargin: 0
+                    }
+                    clip: true
                 }
 
                 Rectangle {
-                    id: codePanel
-                    anchors.fill: parent
-                    color: root.tileColor
-
-                    // Top bar of code pane
-                    Rectangle {
-                        id: codeHeaderBar
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            right: parent.right
-                        }
-                        height: 1
-                        color: "#21262d"
-
-                        Row {
-                            x: 2
-                            y: 0
-                            spacing: 1
-
-                            Text {
-                                text: root.current ? "examples/" + root.current.file : "Code"
-                                color: codeEditor.activeFocus ? root.brandAccent : root.textColor
-                                bold: true
-                            }
-
-                            Text {
-                                text: "(editable)"
-                                color: root.mutedColor
-                            }
-                        }
-
-                        Text {
-                            anchors {
-                                right: parent.right
-                                rightMargin: 2
-                            }
-                            y: 0
-                            text: root.codeCopied ? "✓ Copied!" : (reloadTimer.running ? "⟳ Reloading" : "✓ Auto-reload")
-                            color: root.codeCopied ? root.brandAccent : (reloadTimer.running ? "#f9c74f" : root.brandPrimary)
-                        }
+                    id: errorBanner
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        bottom: parent.bottom
+                        leftMargin: 1
+                        rightMargin: 1
+                        bottomMargin: 1
                     }
+                    visible: root.codeError !== ""
+                    height: visible ? Math.min(6, Math.max(3, errorText.implicitHeight + 2)) : 0
+                    color: "#2d1215"
 
-                    // Bottom bar of code pane
-                    Rectangle {
-                        id: codeFooterBar
-                        anchors {
-                            bottom: parent.bottom
-                            left: parent.left
-                            right: parent.right
-                        }
-                        height: 1
-                        color: "#21262d"
-
-                        Text {
-                            x: 2
-                            y: 0
-                            text: "Ln " + (root.editorCursorLine + 1) + ", Col " + (root.editorCursorCol + 1)
-                            color: root.mutedColor
-                        }
-
-                        Row {
-                            anchors {
-                                right: parent.right
-                                rightMargin: 2
-                            }
-                            y: 0
-                            spacing: 2
-
-                            Text {
-                                text: root.codeCopied ? "[✓ Copied]" : "[Copy ^Y]"
-                                color: root.codeCopied ? root.brandAccent : root.brandPrimary
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: root.copyCurrentCode()
-                                }
-                            }
-
-                            Text {
-                                text: "[Reset ^R]"
-                                color: root.brandPrimary
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: root.resetCurrentCode()
-                                }
-                            }
-                        }
-                    }
-
-                    // Active cursor line background highlight
-                    Rectangle {
-                        id: activeLineHighlight
-                        x: 0
-                        y: 1 + (root.editorCursorLine - codeEditor.contentY)
-                        width: parent.width
-                        height: 1
-                        visible: y >= 1 && y < parent.height - 1
-                        color: codeEditor.activeFocus ? root.tileCurrentColor : "#1c2128"
-                    }
-
-                    // Borderless line-number gutter
-                    Column {
-                        id: lineGutter
-                        x: 1
-                        y: 1
-                        width: root.gutterWidth
-                        height: Math.max(0, parent.height - 2)
-                        clip: true
-
-                        Repeater {
-                            model: Math.max(0, lineGutter.height)
-
-                            Text {
-                                id: gutterRow
-                                required property int index
-                                readonly property int lineIndex: codeEditor.contentY + index
-                                readonly property bool inBounds: lineIndex < root.editorLineCount
-                                readonly property bool isCurrentLine: inBounds && lineIndex === root.editorCursorLine
-
-                                width: root.gutterWidth
-                                height: 1
-                                text: gutterRow.inBounds ? String(gutterRow.lineIndex + 1).padStart(root.gutterDigits, " ") : " ".repeat(root.gutterDigits - 1) + "~"
-                                color: gutterRow.isCurrentLine ? root.brandPrimary : root.mutedColor
-                                bold: gutterRow.isCurrentLine
-                                dim: !gutterRow.isCurrentLine
-                            }
-                        }
-                    }
-
-                    TextArea {
-                        id: codeEditor
+                    Text {
+                        id: errorText
                         anchors {
                             fill: parent
-                            leftMargin: 1 + root.gutterWidth + 1
+                            leftMargin: 1
                             rightMargin: 1
                             topMargin: 1
                             bottomMargin: 1
                         }
-                        focusPolicy: Qt.ClickFocus
-                        color: root.textColor
-                        showWhitespace: true
-
-                        Keys.priority: Keys.BeforeItem
-                        Keys.onPressed: event => {
-                            if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_C) {
-                                root.copyCurrentCode();
-                                event.accepted = true;
-                            }
-                        }
-
-                        onTextChanged: {
-                            if (!root.loadingExampleSource && root.showingDemo) {
-                                root.codeCopied = false;
-                                copyFeedbackTimer.stop();
-                                root.applyQmlSyntaxHighlight();
-                                reloadTimer.restart();
-                            }
-                        }
+                        wrapMode: Text.WordWrap
+                        color: "#ffa198"
+                        text: root.codeError
                     }
                 }
             }

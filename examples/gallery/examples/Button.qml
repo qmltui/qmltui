@@ -34,7 +34,6 @@ Column {
             text: "Secondary"
             hoverEnabled: true
             background: Rectangle {
-                color: "default"
                 border {
                     color: secondary.activeFocus ? "#2cde85" : "#60a5fa"
                     style: secondary.activeFocus ? Border.Double : Border.Rounded
@@ -70,11 +69,10 @@ Column {
             hoverEnabled: true
             highlighted: pin.checked
             text: pin.checked ? "★ Pinned" : "☆ Pin"
-            textColor: pin.checked ? "#0d1117" : (pin.activeFocus ? "#2cde85" : "default")
+            textColor: pin.checked ? "#00ff66" : (pin.activeFocus ? "#2cde85" : "default")
             background: Rectangle {
-                color: pin.checked ? "#2cde85" : "default"
                 border {
-                    color: pin.activeFocus ? (pin.checked ? "#0d1117" : "#2cde85") : (pin.checked ? "#1f8a52" : "#30363d")
+                    color: pin.checked ? "#00ff66" : (pin.activeFocus ? "#2cde85" : "#30363d")
                     style: pin.activeFocus ? Border.Double : Border.Single
                 }
             }
@@ -85,7 +83,6 @@ Column {
             text: "Save"
             hoverEnabled: true
             background: Rectangle {
-                color: "default"
                 border {
                     color: withIcon.activeFocus ? "#7ee0ff" : "#30363d"
                     style: withIcon.activeFocus ? Border.Double : Border.Rounded
@@ -114,7 +111,6 @@ Column {
             textColor: reset.activeFocus ? "#ffdcd7" : "#f87171"
             hoverEnabled: true
             background: Rectangle {
-                color: reset.activeFocus ? "#3d1518" : "default"
                 border {
                     color: reset.activeFocus ? "#ff7b72" : "#8b3a3a"
                     style: Border.Ascii

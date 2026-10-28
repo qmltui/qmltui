@@ -72,57 +72,7 @@ stops takes precedence over thresholds.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    id: root
-    property real downloaded: 0
-
-    NumberAnimation {
-        target: root
-        property: "downloaded"
-        from: 0
-        to: 100
-        duration: 4000
-        loops: -1
-        running: true
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        ProgressBar {
-            width: 40
-            value: root.downloaded
-            from: 0
-            to: 100
-            showBrackets: true
-            showPercentage: true
-            color: "cyan"
-        }
-
-        ProgressBar {
-            width: 40
-            value: root.downloaded
-            to: 100
-            style: "dot"
-            thresholds: [{ value: 60, color: "green" }, { value: 85, color: "yellow" }, { value: 100, color: "red" }]
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   2%
-
-●○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
-```
+<<< ../../examples/gallery/examples/ProgressBar.qml{qml}
 
 ### Gallery Example
 

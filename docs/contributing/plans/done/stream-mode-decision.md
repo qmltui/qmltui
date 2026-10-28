@@ -24,7 +24,7 @@ The current library is a full-screen retained-mode terminal UI:
 - Items render into a fixed-size `TextGridBuffer`.
 - `TextGridBuffer::diff()` emits ANSI updates for changed cells.
 - `Terminal.mode` selects full-screen or inline presentation. The current
-  public contract is documented in [the QML API](../../../qml-types/terminal.md#core-element-behavior);
+  public contract is documented in [the QML API](../../../qml-types/terminal.md#detailed-description);
   the stream roadmap below records the earlier design motivation.
 
 This model is useful for dashboards, forms, modal screens, focused widgets,

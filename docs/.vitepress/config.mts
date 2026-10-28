@@ -8,28 +8,36 @@ const repoRoot = path.resolve(docsDir, '..')
 
 function stagePlaygroundAssets(): void {
   const outDir = path.join(docsDir, 'public', 'playground')
-  const examplesOut = path.join(outDir, 'examples')
-  fs.mkdirSync(examplesOut, { recursive: true })
+  const examplesOutDir = path.join(outDir, 'examples')
+  fs.mkdirSync(examplesOutDir, { recursive: true })
 
-  // 1. Copy playground HTML/JS/types from examples/wasm/www/
+  // 1. Copy playground static assets from examples/wasm/www/
   const wasmWwwDir = path.join(repoRoot, 'examples', 'wasm', 'www')
-  for (const name of ['index.html', 'qmltui-playground.js', 'qmltui-completion.js', 'types.json']) {
-    const src = path.join(wasmWwwDir, name)
-    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(outDir, name))
+  for (const file of ['index.html', 'qmltui-playground.js', 'qmltui-completion.js', 'types.json']) {
+    const src = path.join(wasmWwwDir, file)
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(outDir, file))
+    }
   }
 
-  // 2. Copy gallery Main.qml and examples/*.qml + write examples/index.json
+  // 2. Stage gallery launcher (Main.qml -> gallery.qml) and individual example QML files
   const galleryDir = path.join(repoRoot, 'examples', 'gallery')
-  const mainQml = path.join(galleryDir, 'Main.qml')
-  if (fs.existsSync(mainQml)) fs.copyFileSync(mainQml, path.join(outDir, 'gallery.qml'))
-
-  const galleryExamplesDir = path.join(galleryDir, 'examples')
-  if (fs.existsSync(galleryExamplesDir)) {
-    const qmlFiles = fs.readdirSync(galleryExamplesDir).filter((f) => f.endsWith('.qml')).sort()
-    for (const file of qmlFiles) {
-      fs.copyFileSync(path.join(galleryExamplesDir, file), path.join(examplesOut, file))
+  if (fs.existsSync(galleryDir)) {
+    const mainQml = path.join(galleryDir, 'Main.qml')
+    if (fs.existsSync(mainQml)) {
+      fs.copyFileSync(mainQml, path.join(outDir, 'gallery.qml'))
     }
-    fs.writeFileSync(path.join(examplesOut, 'index.json'), JSON.stringify(qmlFiles, null, 2) + '\n')
+    const galleryExamplesDir = path.join(galleryDir, 'examples')
+    if (fs.existsSync(galleryExamplesDir)) {
+      const qmlFiles = fs
+        .readdirSync(galleryExamplesDir)
+        .filter((f) => f.endsWith('.qml') && f !== 'PtyView.qml')
+        .sort()
+      for (const file of qmlFiles) {
+        fs.copyFileSync(path.join(galleryExamplesDir, file), path.join(examplesOutDir, file))
+      }
+      fs.writeFileSync(path.join(examplesOutDir, 'index.json'), JSON.stringify(qmlFiles))
+    }
   }
 
   // 3. Stage recorded GIFs and branding SVGs into public/assets/
@@ -51,7 +59,7 @@ function stagePlaygroundAssets(): void {
     })
   }
 
-  // 4. Copy prebuilt Qt for WebAssembly runtime bundle if available
+  // 4. Copy prebuilt Qt for WebAssembly playground bundle if available
   const wasmCandidates = [
     process.env.QMLTUI_WASM_DIR,
     path.join(repoRoot, 'build-wasm', 'www'),
@@ -80,7 +88,7 @@ export default defineConfig({
   ignoreDeadLinks: [
     (url: string) => {
       const clean = url.replace(/[?#].*$/, '').replace(/^(?:\.\/|\.\.\/)+/, '')
-      if (!/^(?:examples\/|scripts\/|contributing\/|LICENSE$)/.test(clean)) return false
+      if (!/^(?:examples\/|scripts\/|contributing\/|LICENSE(?:\.md)?$)/.test(clean)) return false
       const base = clean.startsWith('contributing/') ? docsDir : repoRoot
       const target = path.join(base, clean)
       const dirTarget = clean.endsWith('/index') ? path.join(base, clean.slice(0, -6)) : null
@@ -118,7 +126,8 @@ export default defineConfig({
       { text: 'QML Types', link: '/qml-types/' },
       { text: 'C++ Reference', link: '/cpp-classes/' },
       { text: 'Examples', link: '/examples' },
-      { text: 'Playground', link: '/playground' }
+      { text: 'Gallery', link: '/playground?mode=gallery', target: '_blank' },
+      { text: 'Playground', link: '/playground', target: '_blank' }
     ],
 
     socialLinks: [
@@ -135,8 +144,9 @@ export default defineConfig({
           { text: 'Qt Quick & Widgets to QmlTui', link: '/guides/qt-quick-to-qmltui' },
           { text: 'Build & CMake Configuration', link: '/build-configuration' },
           { text: 'Qt Creator Setup & Tooling', link: '/guides/qt-creator' },
-          { text: 'Examples & Gallery', link: '/examples' },
-          { text: 'WebAssembly Playground', link: '/playground' }
+          { text: 'Examples & Recipes', link: '/examples' },
+          { text: 'Component Gallery (Wasm)', link: '/playground?mode=gallery', target: '_blank' },
+          { text: 'Try It Yourself Playground', link: '/playground', target: '_blank' }
         ]
       },
       {
@@ -338,7 +348,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Documentation licensed under CC-BY-4.0. Library code under LGPL-3.0-only OR GPL-3.0-only.',
+      message: 'Documentation licensed under CC-BY-4.0. Library code under LGPL-3.0-only.',
       copyright: 'Copyright © 2026 Yosri Ayed'
     }
   }

@@ -17,6 +17,7 @@
 Use QmlTui when you want to:
 
 - **Build terminal UIs with Qt 6 and QML**: Declare layouts, box-drawing borders, focus chains, states, and animations in QML instead of writing manual redraw loops.
+- **Build streaming CLIs, REPLs, and embedded shells**: Keep a live reactive prompt at the bottom of the normal screen buffer while committing rich QML delegates into native terminal scrollback (`Terminal.Inline` and `Scrollback`), or embed interactive Unix subshells (`QmlTui.PtyView`).
 - **Reuse C++ models and business logic**: Bind existing `QObject` controllers, `QAbstractItemModel` subclasses, and `QSortFilterProxyModel` pipelines to virtualized `ListView`, `TableView`, `TreeView`, and `GridView` components.
 - **Ship headless or SSH tools alongside a Qt GUI**: Share the same C++ backend between a desktop `QtQuick` or `QtWidgets` application and a terminal diagnostic, installer, or industrial HMI binary.
 - **Test terminal frames in CI without a live TTY**: Drive keyboard and mouse events deterministically with `qmltui::Runner`, step a virtual clock, assert committed text and style snapshots in CTest, and record Asciinema v2 `.cast` files.
@@ -32,6 +33,7 @@ Do not use QmlTui when:
 A minimal application using `import QtQml` and `import QmlTui` (from [`examples/helloworld/`](examples/helloworld/)):
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -115,6 +117,8 @@ cmake --build build --target qmltui_gallery
 
 You can also try every gallery component in the browser with the [WebAssembly Playground](docs/playground.md) (see the [WebAssembly build guide](docs/guides/webassembly.md)).
 
+![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
+
 ### Create a Standalone Application
 
 Follow the [Getting Started tutorial](docs/getting-started.md) to build a 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`) and bind a C++ `QObject` with `QML_ELEMENT`, or copy [`examples/helloworld/`](examples/helloworld/) directly.
@@ -123,12 +127,17 @@ Follow the [Getting Started tutorial](docs/getting-started.md) to build a 3-file
 
 | QML Import | CMake Target | Required Dependencies | Provided Functionality |
 | :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal` (`AltScreen` and `Inline` modes), `Scrollback`, `Item`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views (`ListView`, `TableView`, `TreeView`, `GridView`), `Canvas`, input, states, and animations |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`) |
-| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Terminal graphics (`Image`, `AnimatedSprite`) using Kitty, Sixel, or Unicode half-block fallback (`-DQMLTUI_ENABLE_IMAGE=ON`) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
+| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` (fetched by default) | `Terminal` (`AltScreen` and `Inline` modes), `Scrollback`, `Item`, `FocusScope`, `Popup`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views (`ListView`, `TableView`, `TreeView`, `GridView`, `ScrollView`), `Canvas`, input, states, and animations |
+| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`) |
+| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Offscreen raster decoding (`QImage`) and terminal graphics (`Image`, `AnimatedSprite`) using Kitty, Sixel, or Unicode half-block fallback (`-DQMLTUI_ENABLE_IMAGE=ON`; no display server required) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` (fetched by default) | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
 
 See [Build Configuration and Installation](docs/build-configuration.md) for `FetchContent`, `find_package(QmlTui)`, CMake options, and runtime environment variables.
+
+## Performance and Memory Characteristics
+
+- **24-byte value-type `Cell`**: [`Cell`](docs/cpp-classes/cell.md) is 24 bytes and trivially copyable. UTF-8 grapheme clusters up to 11 bytes (single code points, emoji with skin tones or variation selectors, flags, and keycaps) are stored inline without per-cell heap allocation. Consecutive `TextGridBuffer` frames are diffed cell by cell and emitted inside DEC mode 2026 synchronized output blocks.
+- **Sub-millisecond view and frame latencies**: Against a 16,667 µs (60 Hz) frame budget, an 80×24 viewport backed by a 100,000-row C++ `QAbstractListModel` (Release `-O3`, `pragma ComponentBehavior: Bound`) completes idle layout and paint passes in **< 30 µs** (emitting **0 diff bytes** when unchanged), single-row `dataChanged` updates and repaints in **6.2–22.2 µs**, and 1-row virtualized scroll steps in **~8.8 µs** (`ListView`), **~34.3 µs** (`GridView`), **~20.5–25.7 µs** (`TableView`), and **~8.7–17.9 µs** (`TreeView`). See the [View Benchmark Comparison](docs/contributing/benchmarks/2026-10-27-view-comparison.md), [Model View Performance Profile](docs/contributing/benchmarks/2026-09-11-view-phases.md), and [0.4 Acceptance Benchmarks](docs/contributing/benchmarks/0.4-acceptance/README.md) for methodology and reproduction commands.
 
 ## Constraints and Limitations
 

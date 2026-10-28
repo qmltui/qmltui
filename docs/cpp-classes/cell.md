@@ -7,7 +7,7 @@
 
 ## Storage Model
 
-`Cell` is 24 bytes and trivially copyable. Grapheme clusters up to `Cell::InlineGlyphCapacity` (12 bytes) are stored inline, covering single code points, emoji with skin tones or variation selectors, flags, and keycaps. Longer clusters (such as multi-person ZWJ sequences) are interned in a process-wide append-only table and referenced by index. Because `Cell` has no per-instance heap allocation, cells copy and compare by value and `TextGridBuffer::clear()` is a contiguous fill.
+`Cell` is 24 bytes and trivially copyable. Grapheme clusters up to `Cell::InlineGlyphCapacity` (11 bytes) are stored inline, covering single code points, emoji with skin tones or variation selectors, flags, and keycaps. Longer clusters (such as multi-person ZWJ sequences) are interned in a process-wide append-only table and referenced by index. Because `Cell` has no per-instance heap allocation, cells copy and compare by value and `TextGridBuffer::clear()` is a contiguous fill.
 
 ## `TextAttribute`
 
@@ -29,15 +29,17 @@ Bitwise `|` and `&` operators combine and test `TextAttribute` flags (for exampl
 
 | Member | Type | Description |
 | :--- | :--- | :--- |
-| `displayWidth` | `uint8_t` | Column width occupied by the grapheme cluster (default `1`). |
-| `continuation` | `bool` | `true` on trailing cells of a multi-column character (default `false`). |
+| `InlineGlyphCapacity` | `static constexpr int` | Maximum UTF-8 byte length (`11`) stored inline before interning. |
 | `fgColor` | `uint32_t` | 32-bit ARGB foreground color (`0x00000000` represents the terminal default foreground). |
 | `bgColor` | `uint32_t` | 32-bit ARGB background color (`0x00000000` represents transparent / terminal default background). |
+| `displayWidth` | `uint8_t` | Column width occupied by the grapheme cluster (default `1`). |
+| `continuation` | `bool` | `true` on trailing cells of a multi-column character (default `false`). |
 | `attributes` | `TextAttribute` | Bitwise combination of formatting flags (default `TextAttribute::None`). |
+| `linkId` | `uint8_t` | Per-frame OSC 8 hyperlink table index (`0` means no link; default `0`). |
 
 ## Public Methods
 
-#### `QByteArrayView character() const`
+#### `QByteArrayView character() const noexcept`
 Returns the UTF-8 bytes of the grapheme cluster (default `" "`; empty on continuation cells). The view remains valid until the cell is mutated or its containing buffer is resized, cleared, swapped, or destroyed.
 
 #### `void setCharacter(QByteArrayView utf8)`
@@ -46,18 +48,18 @@ Replaces the cell's grapheme cluster bytes.
 #### `void appendCharacter(QByteArrayView utf8)`
 Appends UTF-8 bytes to the existing cluster (used for combining marks and variation selectors).
 
-#### `void clearCharacter()`
+#### `void clearCharacter() noexcept`
 Empties the cluster bytes (used when marking continuation cells).
 
-#### `bool hasCharacter() const`
+#### `bool hasCharacter() const noexcept`
 Returns `true` if the cluster is non-empty.
 
 #### `void setForeground(Color)` / `void setBackground(Color)`
 #### `Color foreground() const` / `Color background() const`
 Read and write `fgColor` and `bgColor` using `qmltui::Color`.
 
-#### `bool operator==(const Cell &other) const`
-Compares all fields, including grapheme cluster bytes.
+#### `bool operator==(const Cell &other) const noexcept` / `bool operator!=(const Cell &other) const noexcept`
+Compares all fields, including grapheme cluster bytes and `linkId`.
 
 ## Example
 

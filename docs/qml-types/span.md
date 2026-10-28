@@ -51,31 +51,10 @@ identity. See Text for multiline, grapheme-boundary, and gradient semantics.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Text {
-        anchors.centerIn: parent
-        spans: [
-            QmlTui.span("Normal ", {}),
-            QmlTui.span("Bold ", { "bold": true, "color": "cyan" }),
-            QmlTui.span("Underlined", { "underline": true, "color": "yellow" })
-        ]
-    }
-}
-```
+<<< ../../examples/gallery/examples/Text.qml{qml}
 
 ### Gallery Example
 
 ![RichText recorded demo](../assets/casts/components/rich_text.gif)
 
-See [`examples/gallery/examples/RichText.qml`](../../examples/gallery/examples/RichText.qml) (`./build/examples/gallery/qmltui_gallery --example RichText`, or open in the [WebAssembly Playground](../playground.md?example=RichText.qml)).
+See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`, or open in the [WebAssembly Playground](../playground.md?example=Text.qml)).

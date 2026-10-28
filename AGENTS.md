@@ -3,8 +3,8 @@
 ## Architecture Boundaries
 
 - QmlTui is a Qt 6.8+ retained-mode terminal UI framework. Its runtime
-  targets are Linux, macOS, and Windows Terminal. Platform code lives only in
-  `src/QmlTui/Core/Primitives/{Posix,Win32Console}*Backend.*` behind `TerminalBackend`;
+  targets are Linux, macOS, and Windows Terminal (plus WebAssembly for the browser playground). Platform code lives only in
+  `src/QmlTui/Core/Primitives/{Posix,Win32Console,Wasm,Memory}*Backend.*` behind `TerminalBackend`;
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.
   Legacy `conhost.exe` gets whatever its VT support allows and is not a target.
 - `QmlTui.Controls` admits a type only if it needs engine knowledge an
@@ -41,7 +41,7 @@
   frames. A visible-behavior test must assert the rendered frame, not only a QML
   property.
 - For Private Qt or feature-gating changes, validate separate Private-Qt-enabled
-  and Private-Qt-disabled build trees. Do not expect the Industrial PLC target in
+  and Private-Qt-disabled build trees. Do not expect the `qmltui_independent_states_demo` target in
   a disabled tree.
 - For detailed Runner scenarios, artifacts, inspection, and live rendering,
   follow `.agents/skills/qmltui-dev-loop/SKILL.md` and the authoritative

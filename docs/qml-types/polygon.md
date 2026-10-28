@@ -23,7 +23,7 @@ Draws a sequence of connected straight line segments through 2D points on a Canv
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `points` | `list<var>` |  | Holds the sequence of vertices, specified as `Qt.point(x, y)` objects or `[x, y]` coordinate pairs. |
+| `points` | `list<var>` |  | Holds the sequence of vertices, specified as `Qt.point(x, y)` values or `{ x, y }` point objects. |
 | `closed` | `bool` | `true` | Whether to automatically connect the final vertex back to the first vertex to form a closed shape. |
 
 ## Detailed Description
@@ -37,36 +37,7 @@ from the last point back to the first point. When `false`, the path remains open
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 30
-        height: 10
-        renderMode: Canvas.Braille
-
-        Polygon {
-            color: "yellow"
-            closed: true
-            points: [
-                Qt.point(30, 5),
-                Qt.point(50, 35),
-                Qt.point(10, 35)
-            ]
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

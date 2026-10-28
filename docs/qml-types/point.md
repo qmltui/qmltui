@@ -28,38 +28,7 @@ default `color` if unset).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 20
-        height: 8
-        renderMode: Canvas.Braille
-
-        Point {
-            x: 10
-            y: 10
-            color: "red"
-        }
-
-        Point {
-            x: 20
-            y: 15
-            color: "yellow"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

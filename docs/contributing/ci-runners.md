@@ -84,6 +84,6 @@ same settings page.
 | `linux` (Behavior on and off) | self-hosted `linux` | every push and pull request |
 | `coverage` (Clang `llvm-cov`) | self-hosted `linux` | every push and pull request |
 | `windows` (Behavior on) | self-hosted `windows` | every push and pull request |
-| `quickstart` | self-hosted `linux` | every push and pull request |
+| `quickstart` (`examples/helloworld`) | self-hosted `linux` | every push and pull request |
 | `macos` | hosted `macos-14` | `workflow_dispatch` and `v*` tags |
 | `reuse` | hosted `ubuntu-24.04` | pull requests and `workflow_dispatch` |

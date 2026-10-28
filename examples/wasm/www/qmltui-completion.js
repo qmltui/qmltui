@@ -133,6 +133,7 @@ export function createQmlCompletion(index) {
       add('parent', 'variable', 'Item');
       for (const s of singletons) add(s, 'namespace', 'singleton');
       if (types[ptype]?.creatable) add(`${ptype} {}`, 'class', 'inline object');
+      if (ptype === 'Item') add('Text { text: "" }', 'class', 'inline Text item', 3);
       return options.length ? { from: word.from, options: dedupe(options), validFor: /^[\w.]*$/ } : null;
     }
 

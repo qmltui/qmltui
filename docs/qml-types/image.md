@@ -176,46 +176,7 @@ Image {
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Image
-
-Terminal {
-    id: root
-    color: "#0f172a"
-
-    Rectangle {
-        x: 2; y: 1
-        width: 40; height: 12
-        color: "#1e3a5f"
-        border.style: Border.Single
-
-        // A logo with a transparent background sits on the panel colour;
-        // its soft edges blend into the blue instead of turning black.
-        Image {
-            anchors.fill: parent
-            anchors.margins: 1
-            source: "logo.png"
-            fillMode: Image.PreserveAspectFit
-            renderMode: Image.Auto
-        }
-    }
-
-    Text {
-        x: 2; y: 14
-        text: root.capabilities.kittyGraphics ? "kitty: real pixels" : "half-block fallback"
-        color: "#94a3b8"
-    }
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit();
-            event.accepted = true;
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Image.qml{qml}
 
 ### Gallery Example
 

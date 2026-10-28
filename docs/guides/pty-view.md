@@ -114,6 +114,10 @@ Child processes can emit Operating System Command (OSC) sequences. `PtyView` gat
 | `allowClipboardWrite` | `false` | When enabled, OSC 52 clipboard requests emit `clipboardWriteRequested(string text)` rather than writing to the host clipboard directly. |
 | `allowNotifications` | `false` | When enabled, OSC 9 / OSC 777 notification requests emit `notificationRequested(string title, string message)`. |
 
+## Testing `PtyView` with `Runner`
+
+`PtyView` renders its internal `libvterm` screen and scrollback rows directly into the host `TextGridBuffer` during paint. In [`qmltui::Runner`](testing.md) scenarios, inspect child process output on the committed terminal frame using `app.waitForText("...", timeoutMs)` (which uses a wall-clock timeout for child OS processes even when `--clock virtual` is active), `app.frameText()`, or `app.item("pty")` scoped assertions.
+
 See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), and [`PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`).
 
 ![PtyView recorded demo](../assets/casts/components/pty_view.gif)

@@ -41,28 +41,7 @@ for flexible stretching and layout alignment, use [ColumnLayout](columnlayout.md
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Text { text: "System Status: Online" }
-        Text { text: "Active Tasks:  12" }
-        Text { text: "Memory Usage:  48%" }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Layouts.qml{qml}
 
 ### Gallery Example
 

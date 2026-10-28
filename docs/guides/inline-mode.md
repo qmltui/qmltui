@@ -182,11 +182,12 @@ buildLog.append({
 - `reuseItems` defaults to `true`, pooling the delegate instance across entries.
 - `spacing` inserts blank rows between entries, and `separator: Component { ... }` renders an optional divider item between consecutive entries.
 
-## Inline Geometry, Cursor Origin (`CSI 6 n`), and Queue Limits
+## Inline Geometry, Dynamic Resizing, Mode Switching, and Queue Limits
 
-- Do not set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`. Size the live region from its content (`Column`, explicit `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height.
-- Because inline output begins at whatever row the shell cursor occupied when the process started, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to map terminal mouse coordinates to the live region's screen origin. While a cursor report is pending, mouse clicks do not activate items.
-- Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode). If a producer exceeds the limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
+- **Content-driven height and shrinking**: Do not set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`. Size the live region from its content (`Column`, explicit `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height. When the live region grows and later shrinks (for example, after dismissing an inline completion list or confirmation box), `InlineRenderer` moves the cursor to the previous top row, redraws the shorter live region, and emits `CSI J` (`\033[J`) to erase leftover rows below it.
+- **Cursor origin (`CSI 6 n`) and terminal resize**: Because inline output begins at whatever row the shell cursor occupied when the process started, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to map terminal mouse coordinates to the live region's screen origin. Whenever the prompt height changes, scrollback rows are committed, or the terminal is resized, the cached mouse origin is invalidated and re-queried automatically.
+- **Switching between `Terminal.Inline` and `Terminal.AltScreen`**: You can toggle `root.mode` at runtime (for example, switching to `Terminal.AltScreen` to open a full-screen diff or pager and returning to `Terminal.Inline` afterward). Leaving `Terminal.Inline` erases the live inline region cleanly with `\033[J`.
+- **Scrollback queue limit**: Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode, then flushed when `Terminal.Inline` resumes or the session exits). If a producer exceeds the 1 MiB limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
 
 See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/) and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
 

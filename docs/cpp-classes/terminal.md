@@ -54,14 +54,15 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 
 ## Public Methods
 
-- `explicit Terminal(QObject *parent = nullptr)` — constructs a root `Terminal` item.
 - `TerminalEngine *engine() const` — returns the `TerminalEngine` for this session, creating it on demand if `componentComplete()` has not run yet.
-- `TerminalCapabilities capabilities() const` — returns the active `TerminalCapabilities` snapshot.
+- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded by `TerminalEngine::ControlSequenceQueueLimit`).
+- `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `void copyToClipboard(const QString &text)` (`Q_INVOKABLE`) — emits `clipboardCopyRequested(text)` and, when `clipboardMode() == ClipboardMode::Osc52`, writes an OSC 52 sequence.
 - `void bell()` (`Q_INVOKABLE`) — emits a terminal bell (`\x07`).
 - `void queryColors()` (`Q_INVOKABLE`) — re-queries the host terminal's default foreground (`OSC 10`), default background (`OSC 11`), and 16 ANSI palette colors (`OSC 4;0..15`), emitting `capabilitiesChanged()` when replies update `capabilities()`. Also triggered automatically on DEC mode `2031` palette-change notifications (`CSI ? 997 ; 1 n` / `CSI ? 997 ; 2 n`).
+- `void setApplicationActive(bool active)` — updates the host terminal window focus state (`DEC mode 1004`; `applicationActive` is read-only from QML).
 - `Item *focusedItem() const` / `void setFocusedItem(Item *item)` — returns or changes the item holding active keyboard focus.
-- `Item *hoveredItem() const` / `void setHoveredItem(Item *item)` — returns or updates the item under the mouse pointer.
+- `void setHoveredItem(Item *item)` — updates the item under the mouse pointer (`hoveredItem` is read-only from QML).
 - `void setMouseMotionRequested(QObject *requester, bool requested)` — registers or unregisters `requester` as needing passive any-motion mouse tracking (`?1003h`).
 - `static void registerRunnerHook(RunnerHook hook)` — installs the startup hook used when `qmltui::runner` is linked.
 

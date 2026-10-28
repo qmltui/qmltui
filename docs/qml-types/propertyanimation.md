@@ -36,49 +36,16 @@ PropertyAnimation interpolates property values of an object between `from` and `
 over a given `duration` in milliseconds. The interpolation rate curve is controlled
 by `easing` (see [Easing](easing.md)).
 
-PropertyAnimation can be applied directly using the `PropertyAnimation on <property>`
-syntax, triggered explicitly via `start()`, or configured within a [Transition](transition.md).
+PropertyAnimation can be used standalone and triggered explicitly via `start()` (or
+`running: true`), placed inside a [Behavior](behavior.md) (`Behavior on <property>`), or
+configured within a [Transition](transition.md).
 
 For animating numeric coordinates or dimensions, prefer [NumberAnimation](numberanimation.md);
 for color properties, prefer [ColorAnimation](coloranimation.md).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: box
-        anchors.centerIn: parent
-        width: 15
-        height: 3
-        border.style: Border.Single
-
-        PropertyAnimation {
-            target: box
-            property: "width"
-            from: 15
-            to: 35
-            duration: 300
-            running: true
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "Expanding"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Animation.qml{qml}
 
 ### Gallery Example
 

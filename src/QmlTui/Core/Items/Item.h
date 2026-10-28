@@ -215,6 +215,13 @@ public:
     bool isTerminalRoot() const {
         return m_itemFlags & static_cast<quint8>(ItemFlag::IsTerminalRoot);
     }
+    bool hasExplicitX() const { return m_itemFlags & static_cast<quint8>(ItemFlag::ExplicitX); }
+    bool hasExplicitY() const { return m_itemFlags & static_cast<quint8>(ItemFlag::ExplicitY); }
+    bool ignoresParentPadding() const {
+        return m_itemFlags & static_cast<quint8>(ItemFlag::IgnoresParentPadding);
+    }
+    void setDefaultX(int x);
+    void setDefaultY(int y);
 
     DirtyFlags dirtyFlags() const { return m_dirtyFlags; }
     void markDirty(DirtyFlags flags);
@@ -281,6 +288,9 @@ protected:
     enum class ItemFlag : quint8 {
         IsPopup = 1 << 0,
         IsTerminalRoot = 1 << 1,
+        ExplicitX = 1 << 2,
+        ExplicitY = 1 << 3,
+        IgnoresParentPadding = 1 << 4,
     };
     void setItemFlag(ItemFlag flag, bool on = true) {
         if (on)

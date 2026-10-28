@@ -4,12 +4,12 @@ All coordinates and dimensions in QmlTui are measured in integer character cells
 
 ## Borders and Interior Insets
 
-The grouped `border` property belongs to [`Rectangle`](../qml-types/rectangle.md) and `Rectangle`-derived controls such as [`Panel`](../qml-types/panel.md). Supported [`Border`](../qml-types/border.md) styles are `Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Heavy`, `Border.Ascii`, and `Border.None`.
+The grouped `border` property belongs to [`Rectangle`](../qml-types/rectangle.md) and `Rectangle`-derived controls such as [`Panel`](../qml-types/panel.md). Supported [`Border`](../qml-types/border.md) styles are `Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Ascii`, and `Border.None`.
 
 A visible border occupies 1 cell on each outer edge:
 
-- `Row`, `Column`, and `*Layout` containers placed inside a bordered `Rectangle` receive 1 cell of implicit interior padding on all four sides.
-- When anchoring a child directly to a bordered `Rectangle` with `anchors.fill: parent`, set `anchors.margins: 1` so the child does not paint over the border cells.
+- Un-anchored child items (`Row`, `Column`, `*Layout`, `Text`, etc.) and child items anchored to `parent` (`anchors.fill: parent`, `anchors.centerIn: parent`, or parent edge anchors) placed inside a bordered `Rectangle` receive 1 cell of implicit interior padding on all four sides (`leftPadding`, `rightPadding`, `topPadding`, `bottomPadding`), plus any explicit `padding` set on the `Rectangle`.
+- To deliberately place an item on the border row or column (such as a frame title), assign an explicit `x` or `y` coordinate (for example, `x: 1; y: 0`).
 - [`TableView`](../qml-types/tableview.md) draws connected box-drawing intersections (`┬`, `┼`, `┴`, `├`, `┤`) through its own `showOuterBorder`, `showColumnGrid`, `showRowGrid`, and `gridStyle` (`TableView.Single`, `TableView.Double`, `TableView.Ascii`) properties rather than `Rectangle.border`. Wrap other non-`Rectangle` items in a `Rectangle` or `Panel` when a frame is needed.
 
 ## Positioners (`Row`, `Column`) and Layout Engines (`*Layout`)

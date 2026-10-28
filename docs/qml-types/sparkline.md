@@ -56,60 +56,7 @@ Sparkline has no border; wrap it in a [Rectangle](rectangle.md) or
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    id: root
-    property var samples: [12, 18, 25, 22, 40, 35, 60, 72, 55, 48]
-
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
-        onTriggered: root.samples = root.samples.slice(1).concat([Math.round(Math.random() * 100)])
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Text { text: "CPU " + root.samples[root.samples.length - 1] + "%" }
-
-        Sparkline {
-            width: 30
-            height: 1
-            values: root.samples
-            from: 0
-            to: 100
-            color: "green"
-        }
-
-        Sparkline {
-            width: 30
-            height: 4
-            values: root.samples
-            filled: true
-            color: "cyan"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-CPU 48%
-
-                    ▁▂▂▂▃▃▅▆▄▄
-
-                          ▁█
-                          ██▇▃
-                        ▇▄████
-                    ▁▄▇▆██████
-```
+<<< ../../examples/gallery/examples/Sparkline.qml{qml}
 
 ### Gallery Example
 

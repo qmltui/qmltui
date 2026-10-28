@@ -11,10 +11,10 @@ texts are in [`LICENSES/`](LICENSES/).
 
 | Path | License (SPDX) |
 | :--- | :--- |
-| `src/` (Core, Controls, Extras, Canvas, Image, PtyView, Runner), `tests/`, and `tools/` | `LGPL-3.0-only` |
+| `src/` (Core, Controls, Image, PtyView, Runner), `tests/`, and `tools/` | `LGPL-3.0-only` |
 | `examples/` | `BSD-3-Clause` |
 | `cmake/`, `scripts/`, `.github/`, root `CMakeLists.txt` | `BSD-3-Clause` |
-| `docs/`, every `*.md`, the `doc/` directories under `src/` | `CC-BY-4.0` |
+| `docs/`, every `*.md` | `CC-BY-4.0` |
 | Third-party code fetched at build time (utf8proc, libvterm) | MIT, see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
 
 ## Open-Source and Commercial Terms

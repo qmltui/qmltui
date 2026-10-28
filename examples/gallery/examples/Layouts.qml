@@ -1,14 +1,16 @@
 pragma ComponentBehavior: Bound
 import QmlTui
 
-// Layouts: RowLayout, GridLayout, and Row positioners.
+// Layouts: ColumnLayout, RowLayout, GridLayout, Row, and Column positioners.
 Column {
     anchors.centerIn: parent
     spacing: 1
 
-    Text {
-        text: "RowLayout: Layout.preferredWidth and Layout.fillWidth"
-        color: "#8b949e"
+    ColumnLayout {
+        Text {
+            text: "RowLayout: Layout.preferredWidth and Layout.fillWidth"
+            color: "#8b949e"
+        }
     }
 
     RowLayout {

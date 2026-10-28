@@ -1,6 +1,6 @@
 ---
 name: qmltui-qml
-description: Applies QmlTui retained-mode terminal QML conventions. Covers allowed imports (no QtQuick), pragmas and typing, C++ models with required-property delegates, Frame vs Stream renderer mode, integer cell geometry, border styles, and the keyboard quit path. Use whenever writing, reviewing, or refactoring QmlTui QML files; do not use generic Qt Quick rules.
+description: Applies QmlTui retained-mode terminal QML conventions. Covers allowed imports (no QtQuick), pragmas and typing, C++ models with required-property delegates, AltScreen vs Inline renderer mode, integer cell geometry, border styles, and the keyboard quit path. Use whenever writing, reviewing, or refactoring QmlTui QML files; do not use generic Qt Quick rules.
 ---
 
 # QmlTui QML Guidelines
@@ -36,9 +36,9 @@ import QtQml.Models         // ListModel, DelegateModel
 import Qt.labs.qmlmodels    // TableModel, DelegateChooser
 ```
 
-`import QmlTui` does not re-export `QtQml`. Add `import QtQml` when the file uses
-`Timer`, `Component`, `QtObject`, `Connections`, or `Binding`. Add
-`import QtQml.Models` when using `ListModel` or `DelegateModel`.
+`import QmlTui` automatically re-exports `QtQml` (`Timer`, `Component`, `QtObject`,
+`Connections`, `Binding`), just like `import QtQuick`. Explicit `import QtQml` is
+optional. Add `import QtQml.Models` when using `ListModel` or `DelegateModel`.
 
 ## 2. Pragmas and Typing
 
@@ -150,15 +150,17 @@ as `Panel`; its style is a `Border.Style` enum value:
 ```qml
 Panel {
     title: Text { text: "Pod Metrics" }
-    border.style: Border.Double // Border.None, Border.Single, Border.Double, Border.Rounded, Border.Heavy, Border.Ascii
+    border.style: Border.Double // Border.None, Border.Single, Border.Double, Border.Rounded, Border.Ascii
     border.color: "#555555"
 }
 ```
 
 Non-Rectangle types, including `TableView`, `TreeView`,
 `Sparkline`, and `TabBar`, do not expose `border`, `borderStyle`,
-or `borderColor`. Wrap one in a `Rectangle` or `Panel` and inset it by one cell
-when a decorative border is needed. For a connected table frame, use
+or `borderColor`. Wrap one in a `Rectangle` or `Panel` when a decorative border
+is needed (a visible `Rectangle` border automatically contributes 1 cell to
+`leftPadding`, `rightPadding`, `topPadding`, and `bottomPadding`, which insets
+both un-anchored children and children anchored to `parent`). For a connected table frame, use
 `TableView.showOuterBorder` with `showColumnGrid` and `showRowGrid`; these
 independent switches default to `false`. Its `gridStyle` is `TableView.Single`,
 `TableView.Double`, or `TableView.Ascii`. Column widths include padding but exclude separator
@@ -172,7 +174,6 @@ Rectangle {
 
     TableView {
         anchors.fill: parent
-        anchors.margins: 1
     }
 }
 ```
@@ -273,24 +274,22 @@ property is a Plan 06 section 7 proposal, not a shipped type.
 Before finishing a QmlTui QML file:
 
 1. No `import QtQuick` or `QtQuick.*` anywhere.
-2. `import QtQml` present if the file uses `Timer`, `Component`, `QtObject`,
-   `Connections`, or `Binding`.
-3. `import QtQml.Models` present if the file uses `ListModel` or
-   `DelegateModel`.
-4. New files start with `pragma ComponentBehavior: Bound`.
-5. Properties use concrete types where one exists.
-6. Model delegates declare `required property` for the roles they read.
-7. Inline roots set `mode: Terminal.Inline`; visible children have a finite
+2. `import QtQml.Models` present if the file uses `ListModel` or
+   `DelegateModel` (`import QmlTui` already re-exports `QtQml`).
+3. New files start with `pragma ComponentBehavior: Bound`.
+4. Properties use concrete types where one exists.
+5. Model delegates declare `required property` for the roles they read.
+6. Inline roots set `mode: Terminal.Inline`; visible children have a finite
    content height. `Scrollback` has no geometry.
-8. Grouped `border` belongs to `Rectangle` and its derived controls. TableView
+7. Grouped `border` belongs to `Rectangle` and its derived controls. TableView
    uses `showOuterBorder`, `showColumnGrid`, `showRowGrid`, and `gridStyle` for
    connected table lines; wrap other borderless types when needed.
-9. A reachable keyboard quit path exists and does not fire while a text input
+8. A reachable keyboard quit path exists and does not fire while a text input
    has focus.
-10. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>`).
-11. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
-12. Signal handlers with arguments use arrow function syntax: `(event) => { ... }`.
-13. Visible behaviour is verified against the committed terminal frame using the
+9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>`).
+10. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
+11. Signal handlers with arguments use arrow function syntax: `(event) => { ... }`.
+12. Visible behaviour is verified against the committed terminal frame using the
    `qmltui-dev-loop` skill, not only against a QML property.
 
 After changing either repository skill, run

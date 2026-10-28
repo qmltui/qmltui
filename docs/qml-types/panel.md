@@ -59,63 +59,14 @@ Panel adds no content layout of its own: children are positioned as in any
 Rectangle, and content should be inset by one cell on each side to stay
 inside the border, for example with `anchors.fill: parent` and
 `anchors.margins: 1`. It has no implicit size, so set `width` and `height`
-or anchor it. Change `border.style` to `Border.Rounded`, `Border.Double`, `Border.Heavy`, `Border.Ascii`, or
+or anchor it. Change `border.style` to `Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Ascii`, or
 `Border.None` like any Rectangle; types without a `border` group, such as
 [TabBar](tabbar.md) or [TableView](tableview.md), are typically wrapped in a
 Panel to get a titled frame.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Panel {
-        anchors.centerIn: parent
-        width: 44
-        height: 8
-        border.style: Border.Rounded
-        title: Row {
-            spacing: 1
-            Text { text: "Pod Metrics" }
-            Text { text: "[RUNNING]"; color: "green" }
-        }
-        titleTrailing: Text { text: "v1.2.0" }
-        footer: Text {
-            text: "[q] Quit"
-            MouseArea {
-                anchors.fill: parent
-                onClicked: Qt.quit()
-            }
-        }
-        footerTrailing: Text { text: "CPU: 42%" }
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: 1
-            spacing: 1
-
-            Text { text: "Memory: 512 MiB / 2048 MiB" }
-            Button { text: "Quit"; focus: true; onClicked: Qt.quit() }
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-╭─ Pod Metrics [RUNNING] ───────── v1.2.0 ─╮
-│Memory: 512 MiB / 2048 MiB                │
-│                                          │
-│╔══════╗                                  │
-│║ Quit ║                                  │
-│╚══════╝                                  │
-│                                          │
-╰─ [q] Quit ──────────────────── CPU: 42% ─╯
-```
+<<< ../../examples/gallery/examples/Panel.qml{qml}
 
 ### Gallery Example
 

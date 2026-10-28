@@ -1,6 +1,6 @@
 # The live QML editor's runtime. QmlTui.Image pulls in Qt Gui (image decoders,
-# fonts) and doubles the download; it is off unless asked for.
-option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" OFF)
+# fonts) and doubles the download; pass -DQMLTUI_WASM_PLAYGROUND_IMAGE=OFF to omit it.
+option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" ON)
 
 set(playground_imports "import QtQml\nimport QtQml.Models\nimport QmlTui\nimport QmlTui.Controls\n")
 set(playground_modules qmltui::core qmltui::controls)
@@ -29,7 +29,7 @@ qt_add_qml_module(qmltui_playground
 
 target_link_libraries(qmltui_playground PRIVATE Qt6::Core Qt6::Qml ${playground_modules})
 
-if(QMLTUI_WASM_PLAYGROUND_IMAGE)
+if(QMLTUI_WASM_PLAYGROUND_IMAGE AND TARGET qmltui::image)
     # The gallery's Image tile loads qrc:/gallery/assets/panda.png and its
     # AnimatedSprite tile qrc:/gallery/assets/loading.png, so the runtime carries
     # the same resources the desktop gallery embeds.

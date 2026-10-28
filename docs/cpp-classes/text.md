@@ -21,6 +21,12 @@
 | `wrapMode` | `WrapMode` | read/write | `wrapModeChanged` | `NoWrap` (`0`), `WordWrap` (`1`), `WrapAnywhere` (`2`), or `Wrap` (`3`). |
 | `gradient` | `qmltui::Gradient*` | read/write | `gradientChanged` | Optional foreground gradient interpolated across rendered characters. |
 
+## Public Methods
+
+- `int visualLength(const QString &line) const` — returns the display column width of `line` after stripping markup according to `textFormat()`.
+- `void paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect = ClipRect()) const override` — paints laid-out text and hyperlinks into `buffer`.
+- `void mousePressEvent(MouseEvent *event) override` — activates any hyperlink under a left mouse press and emits `linkActivated()`.
+
 ## Signals
 
 - `void linkActivated(const QString &link)` — emitted when the user clicks an HTML `<a href="...">` or Markdown `[label](url)` hyperlink.

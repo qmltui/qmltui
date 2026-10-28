@@ -43,6 +43,7 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | `clipboardCopyRequested(string text)` | Emitted for every copy request, including when clipboard output is disabled. |
 | `focusedItemChanged()` | Emitted when the currently focused item changes. |
 | `mouseMotionRequestedChanged(bool requested)` | Emitted when items request or release mouse motion tracking. |
+| `terminalSizeChanged()` | Emitted when the host terminal dimensions change (the notify signal for `terminalWidth` and `terminalHeight`). |
 
 ## Methods
 
@@ -93,24 +94,64 @@ an explicit keyboard quit path using [Keys](keys.md) or [Shortcut](shortcut.md).
 ### Example
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
+import QmlTui.Controls
 
 Terminal {
-    title: "QmlTui App"
-    color: "#0f172a"
+    id: root
+    title: "QmlTui Terminal"
+    mode: Terminal.AltScreen
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
+            Qt.quit();
+            event.accepted = true;
         }
     }
 
-    Text {
-        anchors.centerIn: parent
-        text: "Welcome to QmlTui (Press Q to quit)"
-        color: "cyan"
+    Panel {
+        anchors {
+            centerIn: root.mode === Terminal.AltScreen ? parent : null
+        }
+        width: 50
+        height: 9
+        border {
+            style: Border.Rounded
+            color: "cyan"
+        }
+        title: Text {
+            text: root.title
+            color: "cyan"
+            bold: true
+        }
+
+        Column {
+            anchors {
+                fill: parent
+                margins: 1
+            }
+            spacing: 1
+
+            Text {
+                text: "Active mode: " + (root.mode === Terminal.AltScreen ? "Terminal.AltScreen" : "Terminal.Inline")
+                color: "yellow"
+                bold: true
+            }
+
+            Text {
+                text: "Viewport: " + root.width + " × " + root.height + " cells"
+            }
+
+            Button {
+                text: root.mode === Terminal.AltScreen ? "Switch to Inline Mode" : "Switch to AltScreen Mode"
+                focus: true
+                onClicked: {
+                    root.mode = root.mode === Terminal.AltScreen ? Terminal.Inline : Terminal.AltScreen;
+                }
+            }
+        }
     }
 }
 ```

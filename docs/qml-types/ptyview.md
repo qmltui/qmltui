@@ -30,18 +30,18 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `inheritEnvironment` | `bool` | `true` | Whether the child process inherits environment variables from the parent process. |
 | `terminalType` | `string` | `"xterm-256color"` | Holds the `TERM` environment variable reported to the child process. |
 | `autoStart` | `bool` | `false` | Whether the process starts automatically when the component completes. |
-| `processState` | `ProcessState` |  | Read-only. Holds the current process lifecycle state: `NotRunning`, `Starting`, `Running`, or `Stopping`. |
-| `running` | `bool` |  | Read-only. Holds whether the child process is currently active and running. |
-| `processId` | `int` |  | Read-only. Holds the operating system process ID (PID) of the child process. |
-| `exitCode` | `int` |  | Read-only. Holds the exit status code after the process terminates. |
-| `errorString` | `string` |  | Read-only. Holds error details if process spawning or execution fails. |
-| `title` | `string` |  | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
+| `processState` | `ProcessState` | `PtyView.NotRunning` | Read-only. Holds the current process lifecycle state: `NotRunning`, `Starting`, `Running`, or `Stopping`. |
+| `running` | `bool` | `false` | Read-only. Holds whether the child process is currently active and running. |
+| `processId` | `int` | `-1` | Read-only. Holds the operating system process ID (PID) of the child process. |
+| `exitCode` | `int` | `0` | Read-only. Holds the exit status code after the process terminates. |
+| `errorString` | `string` | `""` | Read-only. Holds error details if process spawning or execution fails. |
+| `title` | `string` | `""` | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
 | `foregroundColor` | `color` | `"white"` | Holds the default foreground text color. |
 | `backgroundColor` | `color` | `"black"` | Holds the default background color. |
 | `palette` | `list<color>` | `[]` | Holds the 16 standard ANSI colors used by the terminal emulator. |
 | `scrollbackLimit` | `int` | `10000` | Holds the maximum number of scrollback lines retained in history. |
 | `scrollOffset` | `int` | `0` | Holds the current scroll offset into scrollback history (0 at live screen). |
-| `scrollbackSize` | `int` |  | Read-only. Holds the current line count in the scrollback buffer. |
+| `scrollbackSize` | `int` | `0` | Read-only. Holds the current line count in the scrollback buffer. |
 | `showScrollbar` | `bool` | `true` | Whether to display a vertical scrollbar when scrollback history exists. |
 | `allowTitleChanges` | `bool` | `true` | Whether child process title changes via OSC escape sequences update `title`. |
 | `allowClipboardWrite` | `bool` | `false` | Whether child process OSC 52 clipboard write requests emit `clipboardWriteRequested`. |
@@ -96,32 +96,10 @@ in a split layout and interchange data between them programmatically using `send
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.PtyView
-
-Terminal {
-    Keys.onPressed: event => {
-        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    PtyView {
-        anchors.fill: parent
-        focus: true
-        program: "/bin/sh"
-        arguments: ["-l"]
-        autoStart: true
-        onFinished: Qt.quit()
-    }
-}
-```
+<<< ../../examples/gallery/examples/PtyView.qml{qml}
 
 ### Gallery Example
 
 ![PtyView recorded demo](../assets/casts/components/pty_view.gif)
 
-See [`examples/gallery/examples/PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`, or open in the [WebAssembly Playground](../playground.md?example=PtyView.qml)).
+See [`examples/gallery/examples/PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`).

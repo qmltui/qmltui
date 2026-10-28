@@ -41,44 +41,7 @@ for stretching and alignment behavior, use [RowLayout](rowlayout.md).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Row {
-        anchors.centerIn: parent
-        spacing: 2
-
-        Rectangle {
-            width: 10
-            height: 3
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Left"
-            }
-        }
-
-        Rectangle {
-            width: 10
-            height: 3
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Right"
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Layouts.qml{qml}
 
 ### Gallery Example
 

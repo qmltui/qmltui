@@ -57,39 +57,7 @@ stops further propagation to items beneath or behind in the stacking order.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 30
-        height: 6
-        border.style: Border.Single
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: mouse => {
-                info.text = "Clicked at (" + mouse.x + ", " + mouse.y + ")"
-            }
-        }
-
-        Text {
-            id: info
-            anchors.centerIn: parent
-            text: "Click inside box"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/MouseArea.qml{qml}
 
 ### Gallery Example
 

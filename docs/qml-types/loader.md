@@ -64,33 +64,7 @@ or inside the `onLoaded` signal handler.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Loader {
-        anchors.centerIn: parent
-        active: true
-        sourceComponent: Rectangle {
-            width: 24
-            height: 5
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Loaded Content"
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Loader.qml{qml}
 
 ### Gallery Example
 

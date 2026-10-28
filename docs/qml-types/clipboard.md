@@ -2,16 +2,23 @@
 title: Clipboard
 kind: qml
 import: QmlTui
-since: "0.5"
-inherits:
+since: "0.3"
+inherits: QObject
 cpp: qmltui::Clipboard
 category: core
 summary: Terminal clipboard singleton with copying and Promise-based text reads.
 ---
 
-# Clipboard
+# Clipboard QML Type
 
-`import QmlTui`
+Terminal clipboard singleton with copying and Promise-based text reads. [More...](#detailed-description)
+
+| | |
+| :--- | :--- |
+| **Import Statement** | `import QmlTui` |
+| **Since** | QmlTui 0.3 |
+| **Inherits** | `QObject` |
+| **Instantiation** | Singleton, use by name |
 
 Clipboard is a singleton for text clipboard operations through the application's
 terminal. It uses OSC 52 and requires neither Qt GUI nor local clipboard helper
@@ -100,43 +107,9 @@ The signal reports a request, not confirmed system clipboard success. It fires
 even with OSC 52 output disabled, allowing application-provided clipboard handlers
 and feedback to continue working. The application owns the notification UI:
 
-```qml
-pragma ComponentBehavior: Bound
-import QtQml
-import QmlTui
-import QmlTui.Controls
+### Example
 
-Terminal {
-    Column {
-        spacing: 1
-
-        Button {
-            text: "Copy greeting"
-            focus: true
-            onClicked: Clipboard.copy("Hello from QmlTui")
-        }
-
-        Text {
-            id: statusLabel
-            text: "Ready"
-        }
-    }
-
-    Connections {
-        target: Clipboard
-        function onCopyRequested(text: string): void {
-            statusLabel.text = "Copied: " + text
-        }
-    }
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Clipboard.qml{qml}
 
 ### Gallery Example
 

@@ -39,42 +39,7 @@ if none is specified).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 30
-        height: 10
-        renderMode: Canvas.Braille
-
-        Line {
-            x1: 0
-            y1: 0
-            x2: 59
-            y2: 39
-            color: "cyan"
-        }
-
-        Line {
-            x1: 0
-            y1: 39
-            x2: 59
-            y2: 0
-            color: "magenta"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

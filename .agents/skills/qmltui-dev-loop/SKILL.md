@@ -151,9 +151,6 @@ rtk json /tmp/qmltui-capture/result.json
 text and as a styled snapshot. Use `0` for the first committed frame; use a few
 hundred milliseconds when timers or models fill the screen after start.
 
-```bash
-```
-
 Use inline evaluation for a short exploratory action sequence:
 
 ```bash

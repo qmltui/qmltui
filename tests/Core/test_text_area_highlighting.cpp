@@ -38,6 +38,7 @@ private slots:
     void acceptedSignal();
     void tabHandling();
     void showWhitespaceRendering();
+    void selectPasteUndo();
     void performance();
 };
 
@@ -643,6 +644,25 @@ void TestTextAreaHighlighting::showWhitespaceRendering() {
 
     // Underlying text remains unmodified spaces
     QCOMPARE(area.text(), QStringLiteral("  hello world\n    indented"));
+}
+
+void TestTextAreaHighlighting::selectPasteUndo() {
+    TextArea area;
+    area.setText(QStringLiteral("Button {\n    col\n}"));
+
+    area.select(13, 16);
+    QCOMPARE(area.selectionStart(), 13);
+    QCOMPARE(area.selectionEnd(), 16);
+    QCOMPARE(area.selectedText(), QStringLiteral("col"));
+
+    area.paste(QStringLiteral("color: "));
+    QCOMPARE(area.text(), QStringLiteral("Button {\n    color: \n}"));
+    QCOMPARE(area.cursorPosition(), 20);
+    QVERIFY(area.canUndo());
+
+    area.undo();
+    QCOMPARE(area.text(), QStringLiteral("Button {\n    col\n}"));
+    QCOMPARE(area.selectedText(), QStringLiteral("col"));
 }
 
 void TestTextAreaHighlighting::performance() {

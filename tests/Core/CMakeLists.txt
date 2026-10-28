@@ -66,7 +66,7 @@ if(QMLTUI_BUILD_BENCHMARKS)
     target_link_libraries(benchmark_table_view PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
     # Per-phase cost of each model view (delegate creation, scroll, data
-    # change, idle frame) and memory per delegate. See docs/benchmarks/.
+    # change, idle frame) and memory per delegate. See docs/contributing/benchmarks/.
     add_executable(benchmark_view_phases benchmark_view_phases.cpp)
     target_link_libraries(benchmark_view_phases PRIVATE
         Qt6::Core Qt6::Qml qmltui::core qmltui::controls)

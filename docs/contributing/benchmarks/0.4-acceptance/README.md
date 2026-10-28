@@ -26,7 +26,7 @@ Representative invocation (set `QML_IMPORT_PATH` to that build's `qml` directory
 
 ```sh
 env QT_QPA_PLATFORM=offscreen QML_IMPORT_PATH=<build>/qml \
-  <build>/tests/benchmark_render --strict --frames 50 --json before-1.json
+  <build>/tests/Core/benchmark_render --strict --frames 50 --json before-1.json
 ```
 
 `paintMedianUs` includes traversal/layout/paint but excludes the preceding

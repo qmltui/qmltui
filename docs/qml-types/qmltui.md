@@ -55,30 +55,10 @@ Use the returned spans in [Text.spans](text.md).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Text {
-        anchors.centerIn: parent
-        spans: [
-            QmlTui.span("Hello ", { "color": "cyan", "bold": true }),
-            QmlTui.span("Terminal", { "color": "yellow", "underline": true })
-        ]
-    }
-}
-```
+<<< ../../examples/gallery/examples/Color.qml{qml}
 
 ### Gallery Example
 
 ![RichText recorded demo](../assets/casts/components/rich_text.gif)
 
-See [`examples/gallery/examples/RichText.qml`](../../examples/gallery/examples/RichText.qml) (`./build/examples/gallery/qmltui_gallery --example RichText`, or open in the [WebAssembly Playground](../playground.md?example=RichText.qml)).
+See [`examples/gallery/examples/Color.qml`](../../examples/gallery/examples/Color.qml) (`./build/examples/gallery/qmltui_gallery --example Color`, or open in the [WebAssembly Playground](../playground.md?example=Color.qml)).

@@ -23,7 +23,7 @@ See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake
 
 | Feature / Module | CMake Option | Default | Requirement |
 | :--- | :--- | :--- | :--- |
-| **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `OFF` | `Qt6::Gui` and `Qt6::Network` |
+| **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `OFF` | `Qt6::Gui` and `Qt6::Network` (warns and falls back if missing) |
 | **`Behavior` & direct `PropertyChanges`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
 | **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTYVIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
 | **`qmltui::runner`** (`Runner` & `qmltui-runner`) | `-DQMLTUI_ENABLE_RUNNER=ON` | `ON` (top-level) / `OFF` (subproject) | Headless scenario test runner and CLI |
@@ -94,6 +94,11 @@ Use the actual `QmlTui_QML_IMPORT_PATH` value if your platform uses `lib64` or a
 - **In-tree (`add_subdirectory` or `FetchContent`)**: Pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` to `qt_add_qml_module(...)` so CMake orders QML module generation and `qmllint` resolves the build-tree modules under `QT_QML_OUTPUT_DIRECTORY`.
 - **Installed (`find_package(QmlTui)`)**: Qt's `qt_add_qml_module(DEPENDENCIES TARGET ...)` does not accept `IMPORTED` targets. Omit `DEPENDENCIES TARGET ...`, link `qmltui::core`, `qmltui::controls`, and (if needed) `qmltui::image` via `target_link_libraries()`, and append `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` (or `QML_IMPORT_PATH` at runtime). Installed QML modules default to `<prefix>/lib/qml` (configurable via `QMLTUI_INSTALL_QMLDIR`).
 
+### Offline / Air-Gapped CI and Reproducible Builds
+
+- **System vs. fetched third-party libraries**: By default (`QMLTUI_USE_SYSTEM_UTF8PROC=OFF` and `QMLTUI_USE_SYSTEM_LIBVTERM=OFF`), CMake downloads pinned sources for `utf8proc` (and `libvterm` when `QMLTUI_ENABLE_PTYVIEW=ON`) via `FetchContent` at configure time. On air-gapped or firewalled CI runners without network access during configure, install `libutf8proc-dev` (and `libvterm-dev` if using `PtyView`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` (and `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`), or point CMake to a local checkout with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc`.
+- **Deterministic `Qt6::QmlPrivate` behavior in CI**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` auto-detects `Qt6::QmlPrivate` and falls back to `OFF` with a CMake warning when private headers are missing, pin `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` in CI if your application does not use `Behavior` (or install `qt6-declarative-private-dev` across all build environments) so local and CI builds share identical QML semantics.
+
 ## Optional Modules and Tooling
 
 ### Embedded PTY Shells (`QmlTui.PtyView`)
@@ -139,12 +144,12 @@ ctest --test-dir build --output-on-failure
 
 ### Benchmarks
 
-Build benchmarks with `-DQMLTUI_BUILD_BENCHMARKS=ON`:
+Build benchmarks with `-DQMLTUI_BUILD_BENCHMARKS=ON` (binaries are placed under `build-release/tests/Core/`):
 
-- `benchmark_views` measures 1,000- and 10,000-row view creation time.
-- `benchmark_view_phases` measures per-phase creation, scroll, `dataChanged`, and idle layout/paint cost across QmlTui views.
-- `benchmark_view_compare` compares QmlTui (`ListView`, `GridView`, `TableView`, `TreeView`) side-by-side against Qt Quick and Qt Widgets (`--rows <N>`, `--steps <N>`, `--json <path>`).
-- `benchmark_render` measures per-frame paint and diff cost at 80×24 and 240×70 (`--json <path>`, `--frames <count>`). JSON output includes `updateMedianUs` and `updatePaintMedianUs`.
+- `./build-release/tests/Core/benchmark_views` measures 1,000- and 10,000-row view creation time.
+- `./build-release/tests/Core/benchmark_view_phases` measures per-phase creation, scroll, `dataChanged`, and idle layout/paint cost across QmlTui views.
+- `./build-release/tests/Core/benchmark_view_compare` compares QmlTui (`ListView`, `GridView`, `TableView`, `TreeView`) side-by-side against Qt Quick and Qt Widgets (`--rows <N>`, `--steps <N>`, `--json <path>`).
+- `./build-release/tests/Core/benchmark_render` measures per-frame paint and diff cost at 80×24 and 240×70 (`--json <path>`, `--frames <count>`). JSON output includes `updateMedianUs` and `updatePaintMedianUs`.
 
 See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-comparison.md) and the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for baseline numbers and host specifications.
 
@@ -158,12 +163,12 @@ See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-c
 | `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior` and advanced states (warns if missing unless set to `OFF`) |
-| `QMLTUI_ENABLE_IMAGE` | `OFF` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`) |
+| `QMLTUI_ENABLE_IMAGE` | `OFF` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`; warns if missing unless set to `OFF`) |
 | `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `ON` (top-level) | Build and install `qmltui::runner` and the `qmltui-runner` CLI |
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument QmlTui targets for Clang source-based code coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install directory for QmlTui QML modules (`<prefix>/lib/qml`) |
-| `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of the bundled copy |
+| `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of the pinned source fetched via `FetchContent` |
 | `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of the fetched source (`PtyView` only) |
 | `QMLTUI_COMMERCIAL_LICENSE` | `OFF` | Acknowledge building under a commercial QmlTui license |
 
@@ -171,11 +176,15 @@ See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-c
 
 | Variable | Values / Units | Description |
 | :--- | :--- | :--- |
-| `NO_COLOR` | non-empty | Disable ANSI color output (`ColorDepth::Monochrome`) |
-| `QMLTUI_COLOR_DEPTH` | `mono`/`0`, `16`, `256`, `truecolor`/`24bit` | Override auto-detected terminal color depth |
-| `QMLTUI_MAX_FPS` | integer `1`–`240` | Override maximum render frame rate |
+| `NO_COLOR` | non-empty | Disable ANSI color output (`ColorDepth::Mono`) |
+| `QMLTUI_COLOR_DEPTH` | `mono`/`none`/`0`, `16`/`basic`/`ansi`, `256`/`indexed`, `truecolor`/`24bit`/`rgb` | Override auto-detected terminal color depth |
+| `QMLTUI_MAX_FPS` | integer `>= 0` (`0` = uncapped) | Override maximum render frame rate (default `60`) |
 | `QMLTUI_FRAME_STATS` | `1` / non-empty | Log periodic render timing and byte statistics to stderr |
-| `QMLTUI_OUTPUT_QUEUE_LIMIT` | bytes (`>= 1024`) | Maximum queued async terminal output before backpressure drops frames |
+| `QMLTUI_DEBUG_PAINT_DIRTY` | `1` / non-empty | Highlight dirty-repainted items on each frame for render debugging |
+| `QMLTUI_OUTPUT_QUEUE_LIMIT` | bytes (`>= 0`, default `262144`) | Maximum queued async terminal output before backpressure defers rendering |
+| `QMLTUI_SCROLLBACK_HISTORY_ROWS` | integer `>= 0` (default `5000`) | Maximum committed scrollback rows retained in memory for inspection |
+| `QMLTUI_ESCAPE_TIMEOUT_MS` | milliseconds (default `50`) | Timeout before a lone `ESC` byte is dispatched as `Qt::Key_Escape` |
+| `QMLTUI_QUERY_TIMEOUT_MS` | milliseconds (default `100`) | Timeout for terminal capability and OSC color queries |
 | `QMLTUI_SYNC_OUTPUT` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) DEC mode 2026 synchronized output |
-| `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) Kitty keyboard protocol negotiation |
-| `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) Kitty graphics protocol detection |
+| `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty keyboard protocol negotiation (`1` keeps default negotiation enabled) |
+| `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty graphics protocol detection (`1` keeps default detection enabled) |

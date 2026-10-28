@@ -36,35 +36,7 @@ If `fill` is `true`, all pixels within the rectangle are painted with the shape'
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 30
-        height: 10
-        renderMode: Canvas.Braille
-
-        CanvasRectangle {
-            x: 4
-            y: 4
-            width: 52
-            height: 32
-            color: "cyan"
-            fill: false
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

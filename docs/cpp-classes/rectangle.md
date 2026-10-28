@@ -1,6 +1,6 @@
 # Rectangle
 
-`qmltui::Rectangle` is a visual `Item` that paints a background color or `Gradient` fill and optional Unicode or ASCII box-drawing borders (`Border::Single`, `Border::Double`, `Border::Rounded`, `Border::Heavy`, `Border::Ascii`).
+`qmltui::Rectangle` is a visual `Item` that paints a background color or `Gradient` fill and optional Unicode or ASCII box-drawing borders (`Border::Single`, `Border::Double`, `Border::Rounded`, `Border::Ascii`).
 
 - **Header**: `<QmlTui/Core/Items/Rectangle.h>`
 - **Inherits**: `qmltui::Item`
@@ -17,8 +17,6 @@
 ## Public Methods
 
 - `uint32_t resolvedBackgroundColor() const` — returns the 32-bit ARGB value of `color()`.
-- `Border *border() const` — returns the grouped `Border` object (`style()` and `color()`).
-- `Gradient *gradient() const` / `void setGradient(Gradient *gradient)` — returns or sets the optional background gradient.
 - `int leftPadding() const override` (and `rightPadding()`, `topPadding()`, `bottomPadding()`) — adds 1 cell of interior padding on each edge when `border()->style() != Border::None`.
 
 ## Example

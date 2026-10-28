@@ -34,10 +34,10 @@ region of character cells with an optional background `color`, an optional
 [Gradient](gradient.md), and a configurable [Border](border.md).
 
 When `border.style` is anything other than `Border.None`, the perimeter cells are drawn
-with box-drawing glyphs (`Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Heavy`, or `Border.Ascii`). The presence
+with box-drawing glyphs (`Border.Single`, `Border.Double`, `Border.Rounded`, or `Border.Ascii`). The presence
 of a border automatically adds 1 character cell of internal padding along each
-edge for positioners and layouts (`Row`, `Column`, `*Layout`), while anchored children
-using `anchors.fill: parent` require `anchors.margins: 1` to inset inside the border perimeter.
+edge (`leftPadding`, `rightPadding`, `topPadding`, and `bottomPadding`), insetting both
+un-anchored child items and child items anchored to `parent` (`anchors.fill: parent`, `anchors.centerIn: parent`, or parent edge anchors) inside the border perimeter. Setting `padding` (or side-specific `*Padding`) adds additional interior inset inside the border.
 
 Background color defaults to `"transparent"`, which lets content beneath show through.
 Set `color: "default"` to paint using the terminal's native background color, or specify
@@ -45,33 +45,7 @@ any hex or named color.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 30
-        height: 7
-        color: "#1e293b"
-        border.style: Border.Double
-        border.color: "cyan"
-
-        Text {
-            anchors.centerIn: parent
-            text: "Rectangle with border"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Rectangle.qml{qml}
 
 ### Gallery Example
 

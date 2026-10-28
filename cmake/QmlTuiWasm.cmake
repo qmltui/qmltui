@@ -26,16 +26,11 @@ function(qmltui_wasm_app target)
     endif()
 endfunction()
 
-# Copies the editor page next to the artifacts and adds a `serve` target.
-# `source_dir` holds index.html and the page scripts, copied as they are: no
-# templating, because configure_file's @VAR@ substitution would eat the
-# @scope/package@version CDN URLs in them.
+# Copies index.html next to the WebAssembly artifacts and adds a `serve` target.
 function(qmltui_wasm_add_demo_page source_dir)
-    foreach(page index.html qmltui-playground.js qmltui-completion.js types.json)
-        if(EXISTS "${source_dir}/${page}")
-            configure_file("${source_dir}/${page}" "${QMLTUI_WASM_WWW_DIR}/${page}" COPYONLY)
-        endif()
-    endforeach()
+    if(EXISTS "${source_dir}/index.html")
+        configure_file("${source_dir}/index.html" "${QMLTUI_WASM_WWW_DIR}/index.html" COPYONLY)
+    endif()
 
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND)

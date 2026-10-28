@@ -9,6 +9,9 @@ cmake --build build -j8 --target qmltui_gallery
 # Open the interactive gallery grid:
 ./build/examples/gallery/qmltui_gallery
 
+# Open the full-Terminal "Try It Yourself" Playground directly:
+./build/examples/gallery/qmltui_gallery --playground
+
 # Open the gallery on a specific page:
 ./build/examples/gallery/qmltui_gallery --page Button.qml
 
@@ -21,7 +24,7 @@ cmake --build build -j8 --target qmltui_gallery
 
 ![QmlTui Interactive Gallery](assets/casts/gallery-tour.gif)
 
-You can also inspect and run the gallery examples in the browser using the [WebAssembly Playground](playground.md).
+You can also write a complete `Terminal { ... }` application in the browser using the [Try It Yourself Playground](playground.md), or browse all interactive components in the [WebAssembly Component Gallery](playground.md?mode=gallery).
 
 ## Controls vs. Recipes
 
@@ -36,10 +39,15 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **Text** | [`Text.qml`](../examples/gallery/examples/Text.qml) | `--example Text` | [Text](qml-types/text.md) | [Open](playground.md?example=Text.qml) | [GIF](assets/casts/components/text.gif) |
 | **RichText** | [`RichText.qml`](../examples/gallery/examples/RichText.qml) | `--example RichText` | [Text](qml-types/text.md) | [Open](playground.md?example=RichText.qml) | [GIF](assets/casts/components/rich_text.gif) |
 | **Rectangle** | [`Rectangle.qml`](../examples/gallery/examples/Rectangle.qml) | `--example Rectangle` | [Rectangle](qml-types/rectangle.md) | [Open](playground.md?example=Rectangle.qml) | [GIF](assets/casts/components/rectangle.gif) |
+| **Color** | [`Color.qml`](../examples/gallery/examples/Color.qml) | `--example Color` | [color](qml-types/color.md) / [QmlTui](qml-types/qmltui.md) | [Open](playground.md?example=Color.qml) | — |
+| **Gradient** | [`Gradient.qml`](../examples/gallery/examples/Gradient.qml) | `--example Gradient` | [Gradient](qml-types/gradient.md) | [Open](playground.md?example=Gradient.qml) | — |
 | **TextInput** | [`TextInput.qml`](../examples/gallery/examples/TextInput.qml) | `--example TextInput` | [TextInput](qml-types/textinput.md) | [Open](playground.md?example=TextInput.qml) | [GIF](assets/casts/components/text_input.gif) |
 | **TextArea** | [`TextArea.qml`](../examples/gallery/examples/TextArea.qml) | `--example TextArea` | [TextArea](qml-types/textarea.md) | [Open](playground.md?example=TextArea.qml) | [GIF](assets/casts/components/text_area.gif) |
 | **MouseArea** | [`MouseArea.qml`](../examples/gallery/examples/MouseArea.qml) | `--example MouseArea` | [MouseArea](qml-types/mousearea.md) | [Open](playground.md?example=MouseArea.qml) | [GIF](assets/casts/components/mouse_area.gif) |
+| **Keys** | [`Keys.qml`](../examples/gallery/examples/Keys.qml) | `--example Keys` | [Keys](qml-types/keys.md) | [Open](playground.md?example=Keys.qml) | — |
+| **Anchors** | [`Anchors.qml`](../examples/gallery/examples/Anchors.qml) | `--example Anchors` | [Anchors](qml-types/anchors.md) | [Open](playground.md?example=Anchors.qml) | — |
 | **Layouts** | [`Layouts.qml`](../examples/gallery/examples/Layouts.qml) | `--example Layouts` | [RowLayout](qml-types/rowlayout.md) / [GridLayout](qml-types/gridlayout.md) | [Open](playground.md?example=Layouts.qml) | [GIF](assets/casts/components/layouts.gif) |
+| **StackLayout** | [`StackLayout.qml`](../examples/gallery/examples/StackLayout.qml) | `--example StackLayout` | [StackLayout](qml-types/stacklayout.md) | [Open](playground.md?example=StackLayout.qml) | — |
 | **Shortcut** | [`Shortcut.qml`](../examples/gallery/examples/Shortcut.qml) | `--example Shortcut` | [Shortcut](qml-types/shortcut.md) | [Open](playground.md?example=Shortcut.qml) | [GIF](assets/casts/components/shortcut.gif) |
 | **FocusScope** | [`FocusScope.qml`](../examples/gallery/examples/FocusScope.qml) | `--example FocusScope` | [FocusScope](qml-types/focusscope.md) | [Open](playground.md?example=FocusScope.qml) | [GIF](assets/casts/components/focus_scope.gif) |
 | **Repeater** | [`Repeater.qml`](../examples/gallery/examples/Repeater.qml) | `--example Repeater` | [Repeater](qml-types/repeater.md) | [Open](playground.md?example=Repeater.qml) | [GIF](assets/casts/components/repeater.gif) |
@@ -71,7 +79,7 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **Sparkline** | [`Sparkline.qml`](../examples/gallery/examples/Sparkline.qml) | `--example Sparkline` | [Sparkline](qml-types/sparkline.md) | [Open](playground.md?example=Sparkline.qml) | [GIF](assets/casts/components/sparkline.gif) |
 | **Image** | [`Image.qml`](../examples/gallery/examples/Image.qml) | `--example Image` | [Image](qml-types/image.md) | [Open](playground.md?example=Image.qml) | [GIF](assets/casts/components/image.gif) |
 | **AnimatedSprite** | [`AnimatedSprite.qml`](../examples/gallery/examples/AnimatedSprite.qml) | `--example AnimatedSprite` | [AnimatedSprite](qml-types/animatedsprite.md) | [Open](playground.md?example=AnimatedSprite.qml) | [GIF](assets/casts/components/animated_sprite.gif) |
-| **PtyView** | [`PtyView.qml`](../examples/gallery/examples/PtyView.qml) | `--example PtyView` | [PtyView](qml-types/ptyview.md) | [Open](playground.md?example=PtyView.qml) | [GIF](assets/casts/components/pty_view.gif) |
+| **PtyView** | [`PtyView.qml`](../examples/gallery/examples/PtyView.qml) | `--example PtyView` | [PtyView](qml-types/ptyview.md) | POSIX only | [GIF](assets/casts/components/pty_view.gif) |
 | **TerminalCapabilities** | [`TerminalCapabilities.qml`](../examples/gallery/examples/TerminalCapabilities.qml) | `--example TerminalCapabilities` | [TerminalCapabilities](qml-types/terminalcapabilities.md) | [Open](playground.md?example=TerminalCapabilities.qml) | [GIF](assets/casts/components/terminal_capabilities.gif) |
 
 ## Standalone Recipes and C++ Examples (`examples/recipes/`)
@@ -83,7 +91,7 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **BigText** | [`examples/recipes/big_text/`](../examples/recipes/big_text/) | `qmltui_big_text_demo` | [Custom C++ Items](guides/custom-items.md) · ![BigText](assets/casts/components/big_text.gif) | Custom C++ `qmltui::Item` (`BigText.h`, `BigText.cpp`) painting 3×5 block-pixel banner text into `TextGridBuffer`. |
 | **Calendar** | [`examples/recipes/calendar/`](../examples/recipes/calendar/) | `qmltui_calendar_demo` | [Layouts](guides/layouts.md) · ![Calendar](assets/casts/components/calendar.gif) | Reusable `Calendar.qml` month-grid date picker built with `Column`, `Row`, `Repeater`, and keyboard navigation. |
 | **C++-Only Application** | [`examples/recipes/cpp_only/`](../examples/recipes/cpp_only/) | `qmltui_cpp_only_demo` | [Custom C++ Items](guides/custom-items.md) | Constructing and updating a `qmltui::Terminal` and item tree directly from C++ without `.qml` files. |
-| **Custom C++ Item** | [`examples/recipes/custom_cpp_item/`](../examples/recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | [Custom C++ Items](guides/custom-items.md) | Subclassing `qmltui::Item`, overriding `paint(TextGridBuffer &, int, int, const ClipRect &)`, and registering with `QML_ELEMENT`. |
+| **Custom C++ Item** | [`examples/recipes/custom_cpp_item/`](../examples/recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | [Custom C++ Items](guides/custom-items.md) | Subclassing `qmltui::Rectangle` (`ProgressBar`), overriding `paint(TextGridBuffer &, int, int, const ClipRect &)`, and registering with `QML_ELEMENT`. |
 | **Independent States** | [`examples/recipes/independent_states/`](../examples/recipes/independent_states/) | `qmltui_independent_states_demo` | [Animation & States](guides/animation-and-states.md) | Orthogonal state machines using `StateGroup`, `State`, and `Transition` (`QMLTUI_ENABLE_PRIVATE_QT=ON`). |
 | **Inline REPL** | [`examples/recipes/inline_repl/`](../examples/recipes/inline_repl/) | `qmltui_inline_repl_demo` | [Inline Mode](guides/inline-mode.md) · ![Inline REPL](assets/casts/components/inline_mode.gif) | Command-line REPL using `Terminal.Inline`, `Scrollback`, and `ProgressBar`. |
 | **Lazy Model** | [`examples/recipes/lazy_model/`](../examples/recipes/lazy_model/) | `qmltui_lazy_model_demo` | [Models & Views](guides/models.md) | C++ `LazyDirectoryModel` (`QAbstractItemModel`) populating a 4-level directory tree on demand in `TreeView`. |

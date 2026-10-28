@@ -39,56 +39,7 @@ the properties modified by the state change.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    id: root
-    property bool active: false
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        } else if (event.key === Qt.Key_Space) {
-            root.active = !root.active
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: box
-        anchors.centerIn: parent
-        width: 20
-        height: 5
-        color: "blue"
-        border.style: Border.Single
-
-        states: [
-            State {
-                name: "active"
-                when: root.active
-                PropertyChanges {
-                    target: box
-                    properties: { "color": "green" }
-                }
-            }
-        ]
-
-        transitions: [
-            Transition {
-                ColorAnimation { duration: 300 }
-            }
-        ]
-
-        Text {
-            anchors.centerIn: parent
-            text: "Toggle Space"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/States.qml{qml}
 
 ### Gallery Example
 

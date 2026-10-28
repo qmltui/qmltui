@@ -57,13 +57,6 @@ Column {
                     duration: 400
                 }
             }
-
-            Text {
-                anchors.centerIn: parent
-                text: "x " + block.x
-                color: "#0d1117"
-                bold: true
-            }
         }
     }
 

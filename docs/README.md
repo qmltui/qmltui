@@ -15,25 +15,34 @@ hero:
     - theme: brand
       text: Get Started
       link: ./getting-started
+    - theme: brand
+      text: Try Playground
+      link: ./playground
+      target: _blank
+    - theme: alt
+      text: Component Gallery
+      link: ./playground?mode=gallery
+      target: _blank
     - theme: alt
       text: Qt Quick to QmlTui
       link: ./guides/qt-quick-to-qmltui
-    - theme: alt
-      text: Playground
-      link: ./playground
     - theme: alt
       text: Examples
       link: ./examples
 
 features:
   - title: Retained QML Scene Graph
-    details: Declare layouts, box-drawing borders, focus chains, and states in QML. Property bindings mark only affected subtrees dirty and diff the resulting cell grid against the previous frame.
+    details: Declare layouts, box-drawing borders, and focus chains in QML. Property bindings mark only affected subtrees dirty and diff the resulting cell grid against the previous frame.
     link: ./guides/architecture
     linkText: Architecture
   - title: Shared C++ Models and Views
     details: Drive virtualized ListView, TableView, TreeView, and GridView components from C++ QAbstractItemModel and QSortFilterProxyModel classes on QCoreApplication without QtQuick or QtGui.
     link: ./guides/models
     linkText: Models & views
+  - title: Animation and States
+    details: Animate cell geometry and colors with NumberAnimation, ColorAnimation, Easing curves, Behavior, and declarative State, StateGroup, and Transition controllers.
+    link: ./guides/animation-and-states
+    linkText: Animation & states
   - title: AltScreen and Inline Modes
     details: Run full-screen terminal interfaces (Terminal.AltScreen) or inline CLI sessions (Terminal.Inline) that commit history to native terminal scrollback.
     link: ./guides/inline-mode
@@ -46,10 +55,10 @@ features:
 
 ## Hello, World!
 
-With `import QtQml` and `import QmlTui`, declare a bordered card, reactive property bindings, and keyboard handlers:
+With `import QmlTui`, declare a bordered card, reactive property bindings, and keyboard handlers:
 
 ```qml
-import QtQml
+pragma ComponentBehavior: Bound
 import QmlTui
 
 Terminal {
@@ -114,7 +123,13 @@ Rendered in the terminal:
 
 ![Hello, QmlTui! rendered in the terminal](assets/casts/hello-world.gif)
 
-Build and run the component gallery locally, or open the [WebAssembly Playground](playground.md):
+## Interactive Component Gallery
+
+Browse 40+ interactive controls, views, layouts, animations, and terminal capabilities in the component gallery. **[▶ Try the Component Gallery live in your browser](playground.md?mode=gallery)** or open the **[Try It Yourself Playground](playground.md)** to edit and run QML directly via WebAssembly:
+
+[![QmlTui Interactive Component Gallery](assets/casts/gallery-tour.gif)](playground.md?mode=gallery)
+
+To build and run the component gallery locally:
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON

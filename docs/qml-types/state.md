@@ -39,52 +39,7 @@ animated using [Transition](transition.md).
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    id: root
-    property bool active: false
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        } else if (event.key === Qt.Key_Space) {
-            root.active = !root.active
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: indicator
-        anchors.centerIn: parent
-        width: 24
-        height: 5
-        border.style: Border.Single
-
-        Text {
-            id: label
-            anchors.centerIn: parent
-            text: "Inactive (OFF)"
-        }
-
-        states: [
-            State {
-                name: "active"
-                when: root.active
-                PropertyChanges {
-                    target: label
-                    properties: {
-                        "text": "Active (ON)"
-                    }
-                }
-            }
-        ]
-    }
-}
-```
+<<< ../../examples/gallery/examples/States.qml{qml}
 
 ### Gallery Example
 

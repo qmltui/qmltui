@@ -16,8 +16,8 @@ affected; they link Qt dynamically under the LGPLv3.
 
 | Requirement | Version used here | Notes |
 | :--- | :--- | :--- |
-| Qt for WebAssembly kit | 6.11.1 `wasm_singlethread` | Installed with the Qt installer next to a host kit of the same version (`gcc_64`), which provides `qmlimportscanner` and `qmlcachegen` |
-| Emscripten | **exactly 4.0.7** | Each Qt minor pins one Emscripten version; Qt's CMake aborts on any other. 6.8 pairs with 3.1.56, 6.9 with 3.1.70 |
+| Qt for WebAssembly kit | 6.11.1 or 6.12.0 `wasm_singlethread` | Installed with the Qt installer next to a host kit of the same version (`gcc_64`), which provides `qmlimportscanner` and `qmlcachegen` (or pass `-DQT_HOST_PATH=/usr` if host Qt is installed system-wide) |
+| Emscripten | **4.0.7** (Qt 6.11) / **5.0.5** (Qt 6.12) | Each Qt minor pins one Emscripten version; Qt's CMake aborts on any other. 6.8 pairs with 3.1.56, 6.9 with 3.1.70, 6.11 with 4.0.7, 6.12 with 5.0.5 |
 | Python 3 | any | Only for the `serve` target |
 
 Install Emscripten once:
@@ -32,10 +32,11 @@ Single-threaded, not multithreaded: threaded wasm needs `SharedArrayBuffer`,
 which browsers only enable behind COOP/COEP response headers that static hosts
 such as GitHub Pages cannot set. QmlTui does not use threads anyway.
 
-## Build and run the gallery page
+## Build and run the playground page
 
-`examples/wasm/` is a small wrapper project that builds the library, one
-generic runtime (`playground/`), and the gallery page, and lays them out in one
+`examples/wasm/` builds the library and the WebAssembly playground runtime
+(`examples/wasm/playground/`, target `qmltui_playground`), staging the HTML/JS
+host page, QML type metadata (`types.json`), and gallery examples into one
 directory:
 
 ```bash
@@ -46,112 +47,56 @@ cmake --build build-wasm --target serve       # http://localhost:8000/
 ```
 
 `build-wasm/www/` then holds `qmltui_playground.js`, `qmltui_playground.wasm`,
-`gallery.qml`, `types.json`, `index.html`, and the two page scripts. Any static
-web server can serve it.
-
-Measured on 2026-09-14 with Qt 6.11.1, Emscripten 4.0.7, `MinSizeRel`:
-
-| File | Raw | Brotli (q11) | gzip (-9) |
-| :--- | ---: | ---: | ---: |
-| `qmltui_playground.wasm` | 8.5 MB | 1.86 MB | 2.7 MB |
-| `qmltui_playground.js` | 0.16 MB | 0.04 MB | 0.04 MB |
+`index.html`, `qmltui-playground.js`, `qmltui-completion.js`, `types.json`,
+`gallery.qml`, and `examples/*.qml`. Any static web server can serve it.
 
 Serve the `.wasm` with Brotli or gzip content encoding; both compress it by a
-factor of four.
+factor of four. Pass `-DQMLTUI_WASM_PLAYGROUND_IMAGE=OFF` at configure time to
+omit `QmlTui.Image` (and with it Qt Gui and Qt Network) for a smaller binary.
 
-## The page: gallery plus live editor
+## The page: CodeMirror 6 editor on the left, `xterm.js` terminal on the right
 
-`index.html` is the whole site. On the right, xterm.js runs the component
-gallery launcher (`examples/gallery/Main.qml`, copied to
-`www/gallery.qml`) with the gallery example files (`examples/gallery/examples/*.qml`,
-copied to `www/examples/` with an `index.json`: `38` total across all 4 modules,
-`37` in non-PTY builds such as WebAssembly, or `34` when `Behavior`, `Image`,
-and `PtyView` are disabled). On the left, a CodeMirror
-editor with QML completion starts out with a hint. Open a tile in the gallery
-(arrows and Enter, or a click) and that tile's file appears in the editor: an
-`Item`-rooted component instantiated dynamically by `Main.qml` via `Qt.createQmlObject`. Edit it: about 400 ms after the last keystroke the file is
-compiled (`qmltuiCheckQml`; errors show up with line and column and the old
-version keeps running), then handed back and the gallery re-runs with the
-same tile open. Escape in the gallery returns to the grid and empties the
-editor. "launcher" edits `gallery.qml` itself, "Share" puts every source into
-the URL hash, and "hide editor" gives the terminal the whole width (the app
-is resized live). Tab indents inside the editor; Escape then Tab leaves it,
-as CodeMirror documents.
+`examples/wasm/www/index.html` and `qmltui-playground.js` split the browser
+viewport between a native CodeMirror 6 QML editor on the left and a live
+`xterm.js` terminal (`scrollback: 1000`) on the right:
 
-The link between the two panes needs nothing from the page beyond xterm.js:
+- **▶ Try It Yourself (`Main.qml` with root `Terminal {}`)**: By default,
+  `/playground` opens with a complete, editable `Main.qml` application rooted at
+  `Terminal { ... }`. Because the user's `Terminal` is loaded as the actual root
+  object of `TerminalEngine` via `instance.qmltuiLoadQml(code, 'Main.qml')`,
+  both `Terminal.AltScreen` and `Terminal.Inline` (including `Scrollback`
+  into `xterm.js` scrollback) work natively. Use the template dropdown to switch
+  between `Main.qml (AltScreen App)` and `Main.qml (Inline & Scrollback)`.
+- **▦ Gallery Grid (`?mode=gallery` or `?example=<Name>`)**: Click `▦ Gallery Grid`
+  (or open `/playground?mode=gallery`) to browse all 44 browser-supported interactive component
+  examples in the terminal grid. Opening a tile in the terminal (or choosing one
+  from the dropdown) loads `examples/<Name>.qml` into the CodeMirror editor on
+  the left for live editing.
+- **▶ Try in Playground from Documentation**: Every ` ```qml ` code block in the
+  documentation portal includes a **▶ Try in Playground** button. Clicking it
+  opens `/playground?code=<base64url>` with the snippet loaded directly in the
+  left editor (snippets without a root `Terminal` are automatically wrapped in a
+  runnable `Terminal {}` shell).
+- **Borderless QML Autocomplete**: `qmltui-completion.js` reads `types.json` to
+  provide context-aware QML component, property, enum, and `Layout.`/`Keys.`
+  completions in a flat, borderless popup.
+- **Clipboard Copy (OSC 52)**: When QmlTui's `Clipboard.copy()` emits an OSC 52
+  sequence (`\x1b]52;c;<base64>\x07`), `qmltui-playground.js` decodes the
+  payload and forwards it to `navigator.clipboard.writeText(...)`.
+- **Image Loading**: `Image.source` with an `http(s)` URL works in the browser
+  too: Qt Network goes through the browser's `fetch`, so the image server must
+  allow the page's origin (CORS). The gallery's own picture and sprite sheet
+  stay embedded in Qt resources for that reason.
 
-- App to page: the launcher sets `Terminal.title` to `QmlTui Gallery · <file>`
-  while a tile is open. Title changes are written as an OSC sequence at once,
-  and xterm.js raises `onTitleChange`. `qmltui-playground.js` looks for
-  `· <name>` at the end of the title; the convention is generic, any app can
-  use it.
-- Page to app: on startup (and after edits), the page passes the example files
-  via `qmltuiWriteFile("examples/" + file, code)`, which populates the
-  `qmltuiExampleSources` context map read by `Main.qml`, sets
-  `qmltuiSetContextProperty("qmltuiAvailableExamples", jsonArray)` and
-  `qmltuiSetContextProperty("qmltuiGalleryPage", file)` (`""` for the grid),
-  and loads `gallery.qml`.
-- Inside `Main.qml`, the active component source is looked up from
-  `qmltuiExampleSources[current.file]` (or embedded resources on desktop) and
-  instantiated into the preview stage with `Qt.createQmlObject`.
-- `Image.source` with an `http(s)` URL works in the browser too: Qt Network
-  goes through the browser's `fetch`, so the picture's server must allow the
-  page's origin (CORS). The gallery's own picture and sprite sheet stay
-  resources for that reason.
-
-How the runtime differs from an app binary (`examples/wasm/playground/main.cpp`):
-
-- `main()` creates a plain `QQmlEngine` and nothing else. The page calls the
-  embind function `qmltuiLoadQml(source, fileName)`, which deletes the previous
-  root, clears the component cache, and creates the new root from a
-  `QQmlComponent`. It
-  returns `""` or a JSON array of `{line, column, message, file}`. The root
-  must be a `Terminal`; anything else is reported. `qmltuiCheckQml(source,
-  fileName)` compiles without creating and returns the same shape, and
-  `qmltuiSetContextProperty(name, value)` sets a string context property for
-  roots created afterwards.
-- A generated `Imports.qml` that is never instantiated imports `QtQml`,
-  `QtQml.Models`, `QmlTui`, and `QmlTui.Controls`, so `qmlimportscanner` links
-  every plugin the editor may need. `QmlTui.Image` (and with it Qt Gui and Qt
-  Network) is on in the gallery build because of its Image and AnimatedSprite
-  tiles; `-DQMLTUI_WASM_PLAYGROUND_IMAGE=OFF` drops it and both tiles for a lighter
-  runtime: 8.5 MB raw and 1.86 MB Brotli without it, about twice that with.
-- `Qt.quit()` does not abort. With our own `QQmlEngine` the `quit` and `exit`
-  signals are ours: the root is released with `deleteLater()` (quit arrives
-  from inside one of the root's own handlers, and a synchronous delete there
-  aborts) and the page is told through `Module.qmltuiOnQuit`. `qmltuiLoadQml`
-  flushes the pending deletion before creating the next root so the old
-  Terminal's teardown never lands on top of the new frame.
-- QML warnings reach the page through `Module.qmltuiOnWarning` instead of stderr.
-- CodeMirror comes from esm.sh through an import map in `index.html` that
-  pins one exact version per package and uses esm.sh's external mode (the `*`
-  prefix). Without the map two copies of a CodeMirror package load and their
-  extensions silently stop composing. Bump all versions together.
-- **Completion.** `examples/wasm/www/types.json` contains every exported type of
-  `QmlTui`, `QmlTui.Controls`, `QML`, `QtQml`, and `QtQml.Models` with what it
-  inherits and its properties, signals, methods, enums, and attached members.
-  `qmltui-completion.js` adds cursor context with a brace
-  scan, and offers the enclosing type's members and `on<Signal>` handlers at
-  object scope, members after `id.` or `property.`, attached handlers after
-  `Keys.` or `Layout.`, and enum values, colors, booleans, and ids after
-  `property:`. It does not infer types through expressions; that would need
-  the QML language server, whose libraries the wasm kit only partly ships.
-- The base URL of the loaded source is `file:///playground/<fileName>`, which
-  is Emscripten's in-memory filesystem. A page can write sibling files there
-  with `instance.FS.writeFile` so relative imports resolve. The page does not
-  do this yet.
-
-Any app can still be built as its own fixed wasm binary: call
-`qmltui_wasm_app(<target>)` in its `CMakeLists.txt` (the games and the gallery
-already do) and add it to a wrapper project like `examples/wasm`. The wiring
-for a fixed binary is `noInitialRun`, `qmltuiResize` before `callMain`,
-`TextEncoder` on xterm's `onData`, and `onAbort` treated as exit; see
-`startRuntime()` in `qmltui-playground.js`.
+Any app can be built as its own WebAssembly binary in the same way: call
+`qmltui_wasm_app(<target>)` in its `CMakeLists.txt` (as the gallery and playground
+already do) and add it to a wrapper project like `examples/wasm`.
 
 ## How it works
 
 `WasmTerminalBackend` (`src/QmlTui/Core/Primitives/WasmTerminalBackend.cpp`) is
-the third implementation of `TerminalBackend`, selected by
+the browser implementation of `TerminalBackend` (alongside `PosixTerminalBackend`,
+`Win32ConsoleBackend`, and `MemoryTerminalBackend`), selected by
 `createTerminalBackend()` when compiling under Emscripten. It is about as long
 as the in-memory test backend and has three touch points with the page:
 
@@ -189,11 +134,12 @@ without Asyncify, prints "Terminating since we don't have asyncify", and
 aborts the runtime. That is the normal way a QmlTui wasm app ends. The page must
 handle `Module.onAbort` as "exited" and call `term.reset()` itself, because the
 app's own shutdown sequence (leave the alternate screen, show the cursor) never
-runs. The gallery page does that for its runtime.
+runs. `examples/wasm/www/index.html` does that and offers a button to restart
+the gallery.
 
 ## Embedding in your own page
 
-`startRuntime()` in `examples/wasm/www/qmltui-playground.js` is the reference.
+`boot()` in `examples/wasm/www/index.html` is the reference.
 The load-bearing part, for an app built with `qmltui_wasm_app(qmltui_<app>)`:
 
 ```js
@@ -248,7 +194,7 @@ includes automatically under Emscripten. Static Qt handles the QML plugins:
 sets them. Do not add `-sASYNCIFY`; it is not needed.
 
 Force these off in a wasm configure: `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`,
-`QMLTUI_ENABLE_RUNNER` (TestRunner owns a `std::thread`), and
+`QMLTUI_ENABLE_RUNNER` (`Runner` owns a `std::thread`), and
 `QMLTUI_ENABLE_PTYVIEW` (PTYs). `QMLTUI_ENABLE_PRIVATE_QT` automatically uses
 `Qt6QmlPrivate` when the kit ships it (which the official 6.11 kit does) and
 falls back with a warning otherwise (pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out).

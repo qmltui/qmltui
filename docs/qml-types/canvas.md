@@ -39,7 +39,7 @@ Provides a sub-cell graphical drawing surface using Braille or half-block charac
 | :--- | :--- |
 | `void setPixel(int x, int y, bool value)` | Sets or clears the pixel at coordinates (`x`, `y`). |
 | `void setPixel(int x, int y)` | Turns on the pixel at coordinates (`x`, `y`) using the canvas `color`. |
-| `void setPixelColor(int x, int y, Color color)` | Sets the pixel at (`x`, `y`) to the specified `color`. |
+| `void setPixelColor(int x, int y, color color)` | Sets the pixel at (`x`, `y`) to the specified `color`. |
 | `void clear()` | Clears all pixels from the internal canvas buffer. |
 | `void requestPaint()` | Schedules a repaint of the canvas for the next frame. |
 
@@ -76,42 +76,7 @@ bounded by `pixelWidth` and `pixelHeight`.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 30
-        height: 10
-        renderMode: Canvas.Braille
-        color: "cyan"
-
-        Circle {
-            cx: 30
-            cy: 20
-            radius: 12
-            color: "yellow"
-        }
-
-        Line {
-            x1: 0
-            y1: 0
-            x2: 59
-            y2: 39
-            color: "magenta"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

@@ -65,6 +65,8 @@ Terminal {
 }
 ```
 
+For C++ `QAbstractListModel`, `QAbstractTableModel`, and `QSortFilterProxyModel` implementations, see Qt's [Using C++ Models with Views](https://doc.qt.io/qt-6/qtquick-modelviewsdata-cppmodels.html) and [QAbstractTableModel Subclassing Reference](https://doc.qt.io/qt-6/qabstracttablemodel.html#subclassing), alongside the runnable QmlTui recipes in [`examples/recipes/table_view/`](../../examples/recipes/table_view/) (interactive column sorting and filtering) and [`examples/recipes/lazy_model/`](../../examples/recipes/lazy_model/) (on-demand hierarchical tree loading).
+
 ## Support matrix
 
 Everything below is exercised by `tests/Core/test_model_contracts.cpp` (the

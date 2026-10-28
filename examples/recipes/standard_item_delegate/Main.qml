@@ -55,7 +55,6 @@ Terminal {
                 id: list
                 objectName: "list"
                 anchors.fill: parent
-                anchors.margins: 1
                 focus: true
                 model: checklist
                 currentIndex: 0
@@ -81,7 +80,6 @@ Terminal {
             TableView {
                 objectName: "table"
                 anchors.fill: parent
-                anchors.margins: 1
                 model: checklist
                 // Titles and the right-aligned ETA come from the model's
                 // headerData(); only the widths are set here.
@@ -106,7 +104,6 @@ Terminal {
             TreeView {
                 objectName: "tree"
                 anchors.fill: parent
-                anchors.margins: 1
                 model: checklist
                 currentIndex: list.currentIndex
             }

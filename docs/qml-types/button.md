@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qmltui::Item
+cpp: qmltui::AbstractButton
 category: inputs
 summary: A focusable, bordered action button that emits clicked() on Enter, Space or a mouse click
 ---
@@ -71,46 +71,7 @@ choice out of several [RadioButton](radiobutton.md) with a
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Button {
-            text: "Run"
-            focus: true
-            onClicked: status.text = "Running..."
-        }
-
-        Text {
-            id: status
-            text: "Idle"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-╔═════╗
-║ Run ║
-╚═════╝
-
-Idle
-```
+<<< ../../examples/gallery/examples/Button.qml{qml}
 
 ### Gallery Example
 

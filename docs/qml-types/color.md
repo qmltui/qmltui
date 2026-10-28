@@ -30,6 +30,12 @@ Terminal color value type supporting ANSI palette indices, RGB hex, and named co
 | `a` | `real` |  | Read-only. Holds the alpha opacity component normalized between `0.0` and `1.0`. |
 | `valid` | `bool` |  | Read-only. Holds whether the color value represents a valid parsed color. |
 
+## Methods
+
+| Method | Description |
+| :--- | :--- |
+| `string toString()` | Returns the canonical string representation of the color (`"#rrggbb"`, `"#aarrggbb"`, `"ansi:<name>"`, `"default"`, `"transparent"`, or `""` if invalid). |
+
 ## Detailed Description
 
 `color` is the foundational color value type in QmlTui. In QML, string literals
@@ -44,37 +50,10 @@ Construct color values dynamically using [QmlTui.color()](qmltui.md), [QmlTui.rg
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 25
-        height: 5
-        color: "#2563eb"
-        border.style: Border.Single
-        border.color: "white"
-
-        Text {
-            anchors.centerIn: parent
-            text: "Blue Background"
-            color: "white"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Color.qml{qml}
 
 ### Gallery Example
 
 ![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
 
-See [`examples/gallery/examples/Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml) (`./build/examples/gallery/qmltui_gallery --example Rectangle`, or open in the [WebAssembly Playground](../playground.md?example=Rectangle.qml)).
+See [`examples/gallery/examples/Color.qml`](../../examples/gallery/examples/Color.qml) (`./build/examples/gallery/qmltui_gallery --example Color`, or open in the [WebAssembly Playground](../playground.md?example=Color.qml)).

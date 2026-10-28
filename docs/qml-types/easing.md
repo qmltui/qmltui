@@ -43,42 +43,7 @@ more natural and responsive than standard linear transitions.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: card
-        anchors.centerIn: parent
-        width: 12
-        height: 3
-        border.style: Border.Single
-
-        NumberAnimation {
-            target: card
-            property: "width"
-            from: 12
-            to: 36
-            duration: 400
-            easing: Easing.OutQuad
-            running: true
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "Easing Demo"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Animation.qml{qml}
 
 ### Gallery Example
 

@@ -22,48 +22,14 @@ Animates numeric properties over time. [More...](#detailed-description)
 ## Detailed Description
 
 NumberAnimation is a specialized [PropertyAnimation](propertyanimation.md) optimized
-for interpolating numeric properties such as `x`, `y`, `width`, `height`, and `opacity`.
+for interpolating numeric properties such as `x`, `y`, `width`, and `height`.
 
 It inherits all properties and methods from PropertyAnimation, including `duration`,
 `from`, `to`, `easing`, and `loops`.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: box
-        anchors.centerIn: parent
-        width: 10
-        height: 3
-        border.style: Border.Single
-
-        NumberAnimation {
-            target: box
-            property: "width"
-            from: 10
-            to: 30
-            duration: 400
-            running: true
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "NumberAnimation"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Animation.qml{qml}
 
 ### Gallery Example
 

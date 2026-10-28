@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qmltui::Item
+cpp: qmltui::AbstractButton
 category: inputs
 summary: A focusable two-state option drawn as [x] or [ ] followed by a label
 ---
@@ -47,46 +47,7 @@ Nothing happens while `enabled` is false. For a mutually exclusive choice use
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        CheckBox {
-            id: logging
-            text: "Enable logging"
-            checked: true
-            focus: true
-            onToggled: checked => status.text = "Logging: " + (checked ? "on" : "off")
-        }
-
-        Text {
-            id: status
-            text: "Logging: on"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-[x] Enable logging
-
-Logging: on
-```
+<<< ../../examples/gallery/examples/CheckBox.qml{qml}
 
 ### Gallery Example
 

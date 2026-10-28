@@ -63,44 +63,10 @@ Once an event handler sets `event.accepted = true`, event propagation terminates
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Item {
-        anchors.centerIn: parent
-        width: 30
-        height: 5
-        focus: true
-
-        Keys.onUpPressed: event => {
-            label.text = "Up pressed"
-            event.accepted = true
-        }
-        Keys.onDownPressed: event => {
-            label.text = "Down pressed"
-            event.accepted = true
-        }
-
-        Text {
-            id: label
-            anchors.centerIn: parent
-            text: "Use Up/Down arrows"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Keys.qml{qml}
 
 ### Gallery Example
 
 ![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
 
-See [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml) (`./build/examples/gallery/qmltui_gallery --example Shortcut`, or open in the [WebAssembly Playground](../playground.md?example=Shortcut.qml)).
+See [`examples/gallery/examples/Keys.qml`](../../examples/gallery/examples/Keys.qml) (`./build/examples/gallery/qmltui_gallery --example Keys`, or open in the [WebAssembly Playground](../playground.md?example=Keys.qml)).

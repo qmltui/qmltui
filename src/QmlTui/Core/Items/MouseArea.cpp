@@ -5,6 +5,7 @@
 namespace qmltui {
 
 MouseArea::MouseArea(QObject* parent) : Item(parent) {
+    setItemFlag(ItemFlag::IgnoresParentPadding, true);
     connect(this, &Item::parentChanged, this, &MouseArea::updateMotionRegistration);
     // An ancestor's reparenting (a Repeater inserting its finished delegate)
     // changes the resolved terminal without this item's own parentChanged

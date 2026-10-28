@@ -194,8 +194,8 @@ thirteen; what remains is regenerating the delegate window on each step
 ```
 cmake -S . -B build-bench -DCMAKE_BUILD_TYPE=Release -DQMLTUI_BUILD_BENCHMARKS=ON
 cmake --build build-bench --target benchmark_view_phases
-build-bench/tests/benchmark_view_phases            # table above
-build-bench/tests/benchmark_view_phases --rows 10000
+build-bench/tests/Core/benchmark_view_phases       # table above
+build-bench/tests/Core/benchmark_view_phases --rows 10000
 # attribution (RelWithDebInfo build, gdb installed):
-tests/tools/sample_stacks.sh build-rwdi/tests/benchmark_view_phases TreeView text 40
+tests/tools/sample_stacks.sh build-rwdi/tests/Core/benchmark_view_phases TreeView text 40
 ```

@@ -59,22 +59,23 @@ Column {
             color: "#8b949e"
         }
 
-        // Animated indicator badge whose x, width, and colours transition between states
+        Text {
+            id: stageText
+            x: 2
+            y: 4
+            text: "IDLE 12%"
+            color: "#8b949e"
+            bold: true
+        }
+
+        // Animated indicator bar whose x, width, and colours transition between states
         Rectangle {
             id: stageBadge
             x: 2
-            y: 4
+            y: 5
             width: 12
-            height: 3
+            height: 2
             color: "#21262d"
-
-            Text {
-                id: stageText
-                anchors.centerIn: parent
-                text: "IDLE 12%"
-                color: "#8b949e"
-                bold: true
-            }
         }
 
         states: [

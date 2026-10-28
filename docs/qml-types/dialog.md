@@ -61,58 +61,7 @@ when you need custom content or a non-modal overlay.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Button {
-            text: "Delete file"
-            focus: true
-            onClicked: confirm.open()
-        }
-
-        Text {
-            id: status
-            text: "Ready."
-        }
-    }
-
-    Dialog {
-        id: confirm
-        title: "Confirm"
-        message: "Delete the file? This cannot be undone."
-        acceptText: "Delete"
-        onAccepted: Qt.quit()
-        onRejected: status.text = "Cancelled."
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-╔═════════════╗
-║ Delete file ║
-╚═════════════╝
-
-Ready.
-
-╔═════════════════════════════════════════╗
-║ Confirm                                 ║
-║                                         ║
-║ Delete the file? This cannot be undone. ║
-║                                         ║
-║ ╔══════════╗  ┌──────────┐              ║
-║ ║  Delete  ║  │  Cancel  │              ║
-║ ╚══════════╝  └──────────┘              ║
-╚═════════════════════════════════════════╝
-```
+<<< ../../examples/gallery/examples/Dialog.qml{qml}
 
 ### Gallery Example
 

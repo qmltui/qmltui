@@ -60,9 +60,10 @@ Terminal {
 
             Image {
                 id: radar
-                anchors.fill: parent
-                anchors.margins: 1
-                anchors.topMargin: 2
+                anchors {
+                    fill: parent
+                    topMargin: 1
+                }
                 // A new URL per tick asks the provider again; it receives
                 // this item's renderSize and renders to it.
                 source: "image://frames/radar?tick=" + root.tick

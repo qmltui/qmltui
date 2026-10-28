@@ -42,8 +42,14 @@ Inspects `NO_COLOR`, `TERM`, `COLORTERM`, `TERM_PROGRAM`, and terminal-specific 
 #### `static void applyEnvironmentOverrides(TerminalCapabilities &capabilities, const QProcessEnvironment &environment = QProcessEnvironment::systemEnvironment())`
 Applies explicit overrides from `QMLTUI_COLOR_DEPTH` (`mono`|`16`|`256`|`truecolor`), `QMLTUI_SYNC_OUTPUT` (`0`|`1`), `QMLTUI_KITTY_KEYBOARD`, and `QMLTUI_KITTY_GRAPHICS`. Re-applied by `TerminalEngine` after VT query replies so environment variables always take precedence.
 
-#### `static QString colorDepthName(ColorDepth depth)`
-Returns `"mono"`, `"16"`, `"256"`, or `"truecolor"`.
+#### `QString colorDepthName() const` / `static QString colorDepthName(ColorDepth depth)`
+Returns `"mono"`, `"16"`, `"256"`, or `"truecolor"` for `this->colorDepth` or the specified `depth`.
+
+#### `Q_INVOKABLE qmltui::Color ansiColor(int index) const`
+Returns `ansiPalette[index]` for `0 <= index < 16`, or `Color::Invalid` when `index` is out of range.
+
+#### `bool operator==(const TerminalCapabilities &other) const noexcept` / `bool operator!=(const TerminalCapabilities &other) const noexcept`
+Compares two `TerminalCapabilities` snapshots for equality across all fields.
 
 ## Example
 

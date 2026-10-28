@@ -38,19 +38,19 @@ A single-line editable text input item for terminal applications. [More...](#det
 | `contentX` | `int` | `0` | Holds the horizontal scroll offset in character cells. |
 | `maximumLength` | `int` | `0` | Holds the maximum number of characters allowed in `text` (`0` means no limit). |
 | `validator` | `QRegularExpression` |  | Holds a regular expression used to validate acceptable input. |
-| `acceptableInput` | `bool` |  | Read-only. Whether the current `text` satisfies `validator`. |
+| `acceptableInput` | `bool` | `true` | Read-only. Whether the current `text` satisfies `validator`. |
 | `echoMode` | `EchoMode` | `TextInput.Normal` | Holds the display mode for entered characters: `Normal`, `Password`, or `NoEcho`. |
 | `echoCharacter` | `string` | `"*"` | Holds the masking character displayed when `echoMode` is `Password`. |
 | `cursorShape` | `CursorShape` | `TextInput.Block` | Holds the visual shape of the cursor: `Block`, `Underline`, `Beam`, or `HollowBlock`. |
-| `cursorColor` | `color` | `"default"` | Holds the color of the text cursor. |
+| `cursorColor` | `color` |  | Holds the color of the text cursor. When unset or `"default"`, reverse video is used. |
 | `cursorBlinking` | `bool` | `false` | Whether the cursor blinks periodically while the item has focus. |
 | `cursorBlinkRate` | `int` | `500` | Holds the cursor blinking interval in milliseconds. |
 | `cursorVisible` | `bool` | `true` | Whether the cursor is visible when the item has focus. |
 | `cursorDelegate` | `string` | `""` | Holds an optional custom character glyph used to render the cursor. |
 | `selectionColor` | `color` |  | Holds the background highlight color for selected text. |
 | `selectedTextColor` | `color` |  | Holds the foreground text color for selected text. |
-| `canUndo` | `bool` |  | Read-only. Whether an undo history entry is available. |
-| `canRedo` | `bool` |  | Read-only. Whether a redo history entry is available. |
+| `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
+| `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
 
 ## Signals
 
@@ -58,6 +58,7 @@ A single-line editable text input item for terminal applications. [More...](#det
 | :--- | :--- |
 | `accepted()` | Emitted when the Return or Enter key is pressed. |
 | `editingFinished()` | Emitted when Return is pressed or when the item loses active focus. |
+| `selectionChanged()` | Emitted when `selectionStart`, `selectionEnd`, or `selectedText` changes. |
 
 ## Methods
 
@@ -107,54 +108,7 @@ focus also emits `editingFinished()`.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        Rectangle {
-            width: 30
-            height: 3
-            border.style: Border.Single
-
-            TextInput {
-                id: nameInput
-                anchors.fill: parent
-                anchors.margins: 1
-                placeholderText: "Enter name..."
-                focus: true
-                onAccepted: greeting.text = "Hello, " + text + "!"
-            }
-        }
-
-        Text {
-            id: greeting
-            text: "Type a name and press Enter"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌────────────────────────────┐
-│Enter name...               │
-└────────────────────────────┘
-
-Type a name and press Enter
-```
+<<< ../../examples/gallery/examples/TextInput.qml{qml}
 
 ### Gallery Example
 

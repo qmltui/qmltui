@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qmltui::Item
+cpp: qmltui::AbstractButton
 category: inputs
 summary: A focusable exclusive option drawn as (*) or ( ) that unchecks its ButtonGroup siblings when selected
 ---
@@ -53,51 +53,7 @@ toggles that can only be checked.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    ButtonGroup {
-        buttons: [small, large]
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing: 1
-
-        RadioButton {
-            id: small
-            text: "Small"
-            checked: true
-            focus: true
-            onToggled: status.text = "Size: small"
-        }
-
-        RadioButton {
-            id: large
-            text: "Large"
-            onToggled: status.text = "Size: large"
-        }
-
-        Text {
-            id: status
-            text: "Size: small"
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-(*) Small
-
-( ) Large
-
-Size: small
-```
+<<< ../../examples/gallery/examples/RadioButton.qml{qml}
 
 ### Gallery Example
 

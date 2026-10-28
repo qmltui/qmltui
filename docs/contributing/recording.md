@@ -2,13 +2,13 @@
 
 Runner captures real ANSI terminal bytes as [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/),
 including colors and attributes. No recorder process or desktop capture is needed.
-Register a demo scenario with `CLOCK REAL RECORD <relative-path.cast>`; advance time
-with `sleep()` to create visible holds. `marker(label)` names
+Register a demo scenario with `CLOCK REAL RECORD <relative-path.cast>` (or `CLOCK VIRTUAL RECORD <relative-path.cast>` for deterministic frame stepping); advance time
+with `sleep()` or `advanceTime()` to create visible holds. `marker(label)` names
 steps. `stopRecording()` closes the current cast; `startRecording(relativePath)`
 starts another with a full repaint. See the [Runner API](../cpp-classes/runner.md).
 
 In `examples/CMakeLists.txt`, `QMLTUI_RECORD_DIR` points to `docs/assets/casts/` and
-`QMLTUI_RECORD_POST_COMMAND` runs `agg --renderer resvg --font-size 22 --line-height 1.08 "<CAST>" "<CAST_STEM>.gif"` automatically
+`QMLTUI_RECORD_POST_COMMAND` runs `agg --renderer resvg --font-size 24 --line-height 1.08 --theme ... "<CAST>" "<CAST_STEM>.gif"` automatically
 whenever `agg` is found in `PATH`. All recording scenarios carry the `Demo` CTest
 label so normal `ctest -L Runner` runs stay fast.
 

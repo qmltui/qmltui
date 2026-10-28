@@ -17,7 +17,14 @@ Because the component tree stays resident in memory, property bindings mark only
 
 `Terminal.mode` selects `AltScreen` or `Inline`; ordinary visible root children form the UI in either mode. `Scrollback` submits output to a bounded session queue independently of the active renderer. Inline commits combine pending scrollback output and the live region in a single write. `AltScreen` mode retains queued scrollback output until inline mode resumes or shutdown restores the normal screen.
 
-On each dirty frame, the engine runs a layout pass over the item tree, computes bounds and clip rectangles, and calls each item's `paint()` method to write fixed-size `Cell` values (UTF-8 grapheme bytes, foreground/background colors, and SGR attributes) into `TextGridBuffer`.
+On each dirty frame, the engine runs a layout pass over the item tree, computes bounds and clip rectangles, and calls each item's `paint()` method to write fixed-size `Cell` values (UTF-8 grapheme bytes, foreground/background colors, and SGR attributes) into `TextGridBuffer`. Grapheme clusters up to 11 bytes are stored inline inside each 24-byte `Cell`; longer clusters (such as multi-person ZWJ emoji sequences) are interned in a process-wide append-only table for the lifetime of the process.
+
+## Signal Handling, Job Control, and Crash Recovery
+
+While a session is in raw mode, `PosixTerminalBackend` installs async-signal-safe handlers so abnormal termination or job suspension never leaves the user's shell in raw mode or the alternate screen:
+
+- **Fatal and termination signals (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, `SIGABRT`, `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGILL`)**: The handler pops any active Kitty keyboard protocol stack entry (`\033[<u`), disables mouse and bracketed-paste reporting, shows the cursor, resets SGR attributes and terminal colors, exits the alternate screen (`\033[?1049l`), restores the original `termios` state (`tcsetattr`), and re-raises the signal with `SIG_DFL` so core dumps and exit statuses behave normally.
+- **Job control (`SIGTSTP` and `SIGCONT`)**: On `SIGTSTP` (`Ctrl+Z`), the backend restores cooked terminal state before stopping the process. On `SIGCONT`, it re-enters raw mode and notifies `TerminalEngine` via a self-pipe bridge to re-enable terminal modes and repaint the screen.
 
 ## Terminal-Safe Qt Diagnostics
 

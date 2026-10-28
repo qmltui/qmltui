@@ -189,9 +189,9 @@ jobs:
 
       - name: Configure exactly as a newcomer would, against this tree
         # FETCHCONTENT_SOURCE_DIR_QMLTUI is CMake's standard override for a
-        # declared dependency; the quickstart files themselves are unchanged.
+        # declared dependency; the helloworld files themselves are unchanged.
         run: >
-          cmake -S examples/quickstart -B build-qs -G Ninja
+          cmake -S examples/helloworld -B build-qs -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
           -DFETCHCONTENT_SOURCE_DIR_QMLTUI=${{ github.workspace }}
@@ -210,7 +210,7 @@ jobs:
           if [ "$code" -ne 124 ]; then
             echo "hello_qmltui exited early with code $code"; cat run.log; exit 1
           fi
-          grep -q "Welcome" run.log || { echo "no rendered frame in output"; cat run.log | head -c 2000; exit 1; }
+          grep -q "Hello, QmlTui!" run.log || { echo "no rendered frame in output"; cat run.log | head -c 2000; exit 1; }
 
   reuse:
     name: REUSE licensing compliance

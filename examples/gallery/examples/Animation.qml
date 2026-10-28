@@ -1,87 +1,79 @@
 pragma ComponentBehavior: Bound
 import QmlTui
+import QmlTui.Controls
 
-// Animation: NumberAnimation and ColorAnimation timelines with easing curves.
+// Animation: NumberAnimation, PropertyAnimation, and ColorAnimation timelines with Easing curves.
 Column {
     anchors.centerIn: parent
+    width: 44
     spacing: 1
 
     Text {
-        text: "NumberAnimation and ColorAnimation loop with easing curves."
+        text: "NumberAnimation, PropertyAnimation, and ColorAnimation with Easing curves."
         color: "#8b949e"
     }
 
     Text {
-        text: "Easing.OutBounce"
-        color: "#c9d1d9"
+        text: "Easing.OutBounce (NumberAnimation)"
+        color: "#ff7b72"
     }
 
-    Item {
-        width: 40
-        height: 1
+    Rectangle {
+        id: bouncer
+        width: 8
+        height: 2
+        color: "#ff7b72"
 
-        Text {
-            text: "─".repeat(40)
-            color: "#30363d"
-        }
-
-        Text {
-            id: bouncer
-            text: "████"
-            color: "#ff7b72"
-
-            NumberAnimation {
-                target: bouncer
-                property: "x"
-                from: 0
-                to: 36
-                duration: 1600
-                loops: -1
-                running: true
-                easing: Easing.OutBounce
-            }
+        NumberAnimation {
+            id: bounceAnim
+            target: bouncer
+            property: "width"
+            from: 8
+            to: 44
+            duration: 1600
+            loops: -1
+            running: true
+            easing: Easing.OutBounce
         }
     }
 
     Text {
-        text: "Easing.InOutQuad"
-        color: "#c9d1d9"
+        text: "Easing.InOutQuad (PropertyAnimation)"
+        color: "#58a6ff"
     }
 
-    Item {
-        width: 40
-        height: 1
+    Rectangle {
+        id: glider
+        width: 8
+        height: 2
+        color: "#58a6ff"
 
-        Text {
-            text: "─".repeat(40)
-            color: "#30363d"
-        }
-
-        Text {
-            id: glider
-            text: "◆◆◆◆"
-            color: "#58a6ff"
-
-            NumberAnimation {
-                target: glider
-                property: "x"
-                from: 36
-                to: 0
-                duration: 1600
-                loops: -1
-                running: true
-                easing: Easing.InOutQuad
-            }
+        PropertyAnimation {
+            id: quadAnim
+            target: glider
+            property: "width"
+            from: 44
+            to: 8
+            duration: 1600
+            loops: -1
+            running: true
+            easing: Easing.InOutQuad
         }
     }
 
     Text {
+        text: "ColorAnimation (Green → Blue)"
+        color: "#2cde85"
+    }
+
+    Rectangle {
         id: pulse
-        text: "ColorAnimation: fades between two colours"
-        bold: true
+        width: 44
+        height: 2
         color: "#2cde85"
 
         ColorAnimation {
+            id: colorAnim
             target: pulse
             property: "color"
             from: "#2cde85"
@@ -93,8 +85,19 @@ Column {
         }
     }
 
-    Text {
-        text: "x = " + bouncer.x + " / " + glider.x
-        color: "#79c0ff"
+    Button {
+        text: bounceAnim.running ? "Stop Animations" : "Start Animations"
+        focus: true
+        onClicked: {
+            if (bounceAnim.running) {
+                bounceAnim.stop();
+                quadAnim.stop();
+                colorAnim.stop();
+            } else {
+                bounceAnim.start();
+                quadAnim.start();
+                colorAnim.start();
+            }
+        }
     }
 }

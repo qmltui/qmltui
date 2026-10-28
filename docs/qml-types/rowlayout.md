@@ -3,7 +3,7 @@ title: RowLayout
 kind: qml
 import: QmlTui
 since: "0.4"
-inherits: LinearLayout
+inherits: Item
 cpp: qmltui::RowLayout
 category: layout
 summary: Arranges items horizontally with flexible sizing and alignment.
@@ -17,7 +17,13 @@ Arranges items horizontally with flexible sizing and alignment. [More...](#detai
 | :--- | :--- |
 | **Import Statement** | `import QmlTui` |
 | **Since** | QmlTui 0.4 |
-| **Inherits** | `LinearLayout` |
+| **Inherits** | [Item](item.md) |
+
+## Properties
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `spacing` | `int` | `0` | Holds the horizontal spacing in character cells between adjacent child items. |
 
 ## Detailed Description
 
@@ -32,50 +38,12 @@ Child items configure their sizing behavior using `Layout.fillWidth`, `Layout.fi
 When the layout has excess width, items with `Layout.fillWidth: true` expand proportionally
 to their `Layout.horizontalStretch` factors.
 
-The `spacing` property (inherited from `LinearLayout`) sets the number of character cells
+The `spacing` property sets the number of character cells
 between adjacent items.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    RowLayout {
-        anchors.fill: parent
-        anchors.margins: 1
-        spacing: 2
-
-        Rectangle {
-            Layout.preferredWidth: 20
-            Layout.fillHeight: true
-            border.style: Border.Single
-            Text {
-                anchors.centerIn: parent
-                text: "Sidebar"
-            }
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            border.style: Border.Double
-            Text {
-                anchors.centerIn: parent
-                text: "Main Content"
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Layouts.qml{qml}
 
 ### Gallery Example
 

@@ -39,7 +39,7 @@ A character range with formatting styles for TextArea highlighting. [More...](#d
 Use `highlightRange` values with [TextArea.setHighlightLayer](textarea.md). Construct them using
 JavaScript object literals matching the structured value type:
 
-```qml
+```js
 textArea.setHighlightLayer("syntax", [
     { start: 0, length: 5, color: "green", bold: true },
     { start: 10, length: 4, color: "cyan" }
@@ -53,6 +53,10 @@ Properties support reset in QML by assigning `undefined`.
 In C++, `HighlightRange` shares underlying styling storage with `TextStyle`. Nonempty ranges automatically
 expand outward to grapheme cluster boundaries so combining characters and multi-code-unit emoji are never
 partially styled.
+
+### Example
+
+<<< ../../examples/gallery/examples/TextArea.qml{qml}
 
 ### Gallery Example
 

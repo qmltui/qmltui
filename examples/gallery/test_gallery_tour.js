@@ -48,6 +48,9 @@ function main(app) {
         app.press("Enter");
         app.expectText("back to grid");
         app.expectNoText("✗ Error");
+        app.expectNoText("failed to create object");
+        if (root.codeError !== "")
+            app.fail(root.codeError);
         app.marker(entry.name);
         app.sleep(600);
 

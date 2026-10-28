@@ -55,42 +55,7 @@ system or virtual clock.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        id: box
-        anchors.centerIn: parent
-        width: 10
-        height: 3
-        border.style: Border.Single
-
-        NumberAnimation {
-            target: box
-            property: "width"
-            from: 10
-            to: 30
-            duration: 400
-            running: true
-            loops: 1
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "Animated"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Animation.qml{qml}
 
 ### Gallery Example
 

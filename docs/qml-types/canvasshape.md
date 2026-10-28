@@ -42,33 +42,7 @@ Coordinates are measured in sub-cell canvas pixels.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 20
-        height: 8
-        color: "green"
-
-        Line {
-            x1: 0
-            y1: 0
-            x2: 39
-            y2: 31
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

@@ -90,6 +90,14 @@ ColumnLayout {
                 fill: false
             }
 
+            CanvasRectangle {
+                x: 2
+                y: 2
+                width: Math.max(4, orbitCanvas.pixelWidth - 4)
+                height: Math.max(4, orbitCanvas.pixelHeight - 4)
+                fill: false
+            }
+
             Line {
                 x1: orbitCanvas.cx - 10
                 y1: orbitCanvas.cy

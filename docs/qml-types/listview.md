@@ -39,6 +39,13 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 | `ListView.view` | `ListView` | Read-only. Holds the parent ListView containing this delegate instance. |
 | `ListView.isCurrentItem` | `bool` | Read-only. True if this delegate instance represents the currently selected item (`currentIndex`). |
 
+## Attached Signals
+
+| Signal | Description |
+| :--- | :--- |
+| `ListView.pooled()` | Emitted on a delegate instance when it scrolls out of view and is placed into the reuse pool (`reuseItems: true`). |
+| `ListView.reused()` | Emitted on a pooled delegate instance when it is rebound and reused for a newly visible item. |
+
 ## Signals
 
 | Signal | Description |
@@ -68,55 +75,7 @@ when selected.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 30
-        height: 8
-        border.style: Border.Single
-
-        ListView {
-            anchors.fill: parent
-            anchors.margins: 1
-            focus: true
-            model: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"]
-            currentIndex: 0
-
-            delegate: Text {
-                required property string modelData
-                required property int index
-                text: (ListView.isCurrentItem ? "> " : "  ") + modelData
-                color: ListView.isCurrentItem ? "cyan" : "white"
-                bold: ListView.isCurrentItem
-            }
-        }
-    }
-}
-```
-
-### Terminal Preview
-
-```text
-┌────────────────────────────┐
-│> Alpha                     │
-│  Beta                      │
-│  Gamma                     │
-│  Delta                     │
-│  Epsilon                   │
-│  Zeta                      │
-└────────────────────────────┘
-```
+<<< ../../examples/gallery/examples/ListView.qml{qml}
 
 ### Gallery Example
 

@@ -10,6 +10,16 @@ Column {
     id: capDemo
 
     readonly property Terminal term: hostTerminal()
+    property color fgColor: QmlTui.defaultColor
+    property color bgColor: QmlTui.defaultColor
+    property color accentCyan: QmlTui.ansi(14)
+    property color accentGreen: QmlTui.ansi(10)
+    property string termProgramValue: "unknown"
+    property string colorDepthValue: "unknown"
+    property bool syncOutputSupported: false
+    property bool kittyKeyboardSupported: false
+    property bool kittyGraphicsSupported: false
+    property bool sixelGraphicsSupported: false
 
     function hostTerminal(): Terminal {
         let p = parent;
@@ -34,19 +44,40 @@ Column {
         return count;
     }
 
-    function backgroundSpans() {
+    function foregroundSpans() {
         const t = capDemo.term;
-        const c = t ? t.capabilities.defaultBackgroundColor : null;
+        const c = t ? t.capabilities.defaultForegroundColor : null;
         return [
             {
-                text: "Default Background:  "
+                text: "Default Foreground:  ",
+                color: capDemo.fgColor
             },
             {
                 text: "██",
                 color: (c && c.valid) ? c : QmlTui.defaultColor
             },
             {
-                text: " " + capDemo.formatQueriedColor(c)
+                text: " " + capDemo.formatQueriedColor(c),
+                color: capDemo.fgColor
+            }
+        ];
+    }
+
+    function backgroundSpans() {
+        const t = capDemo.term;
+        const c = t ? t.capabilities.defaultBackgroundColor : null;
+        return [
+            {
+                text: "Default Background:  ",
+                color: capDemo.fgColor
+            },
+            {
+                text: "██",
+                color: (c && c.valid) ? c : QmlTui.defaultColor
+            },
+            {
+                text: " " + capDemo.formatQueriedColor(c),
+                color: capDemo.fgColor
             }
         ];
     }
@@ -56,7 +87,7 @@ Column {
         let list = [
             {
                 text: "ANSI Palette (" + capDemo.reportedAnsiCount() + "/16 reported):\n",
-                color: "#c9d1d9"
+                color: capDemo.fgColor
             }
         ];
         for (let i = 0; i < 16; ++i) {
@@ -69,13 +100,32 @@ Column {
             });
             list.push({
                 text: name.padEnd(13, " ") + ((i % 4 === 3 && i < 15) ? "\n" : " "),
-                color: "#c9d1d9"
+                color: capDemo.fgColor
             });
         }
         return list;
     }
 
     function refreshCapabilities() {
+        const t = capDemo.term;
+        const fg = t ? t.capabilities.defaultForegroundColor : null;
+        const bg = t ? t.capabilities.defaultBackgroundColor : null;
+        const cyan = t ? (t.capabilities.ansiColor(14).valid ? t.capabilities.ansiColor(14) : t.capabilities.ansiColor(6)) : null;
+        const green = t ? (t.capabilities.ansiColor(10).valid ? t.capabilities.ansiColor(10) : t.capabilities.ansiColor(2)) : null;
+
+        capDemo.fgColor = (fg && fg.valid) ? fg : QmlTui.defaultColor;
+        capDemo.bgColor = (bg && bg.valid) ? bg : QmlTui.defaultColor;
+        capDemo.accentCyan = (cyan && cyan.valid) ? cyan : QmlTui.ansi(14);
+        capDemo.accentGreen = (green && green.valid) ? green : QmlTui.ansi(10);
+
+        capDemo.termProgramValue = (t && t.capabilities.termProgram) ? t.capabilities.termProgram : "unknown";
+        capDemo.colorDepthValue = t ? t.capabilities.colorDepth : "unknown";
+        capDemo.syncOutputSupported = Boolean(t && t.capabilities.syncOutput);
+        capDemo.kittyKeyboardSupported = Boolean(t && t.capabilities.kittyKeyboard);
+        capDemo.kittyGraphicsSupported = Boolean(t && t.capabilities.kittyGraphics);
+        capDemo.sixelGraphicsSupported = Boolean(t && t.capabilities.sixelGraphics);
+
+        defaultFgText.spans = capDemo.foregroundSpans();
         defaultBgText.spans = capDemo.backgroundSpans();
         paletteText.spans = capDemo.paletteSpans();
     }
@@ -83,12 +133,11 @@ Column {
     anchors.centerIn: parent
     spacing: 1
 
-    onTermChanged: {
+    Component.onCompleted: {
         if (capDemo.term)
             capDemo.term.queryColors();
         capDemo.refreshCapabilities();
     }
-    Component.onCompleted: capDemo.refreshCapabilities()
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_R && capDemo.term) {
@@ -106,7 +155,7 @@ Column {
 
     Text {
         text: "Host Terminal Feature Detection & Diagnostics"
-        color: "#38bdf8"
+        color: capDemo.accentCyan
         bold: true
     }
 
@@ -115,38 +164,37 @@ Column {
 
         // Read capabilities from the owning Terminal instance
         Text {
-            text: "Terminal Program:    " + ((capDemo.term && capDemo.term.capabilities.termProgram) ? capDemo.term.capabilities.termProgram : "unknown")
-            color: "#c9d1d9"
+            text: "Terminal Program:    " + capDemo.termProgramValue
+            color: capDemo.fgColor
         }
 
         Text {
-            text: "Color Resolution:    " + (capDemo.term ? capDemo.term.capabilities.colorDepth : "unknown")
-            color: "#2cde85"
+            text: "Color Resolution:    " + capDemo.colorDepthValue
+            color: capDemo.accentGreen
         }
 
         Text {
-            text: "Synchronized Output: " + ((capDemo.term && capDemo.term.capabilities.syncOutput) ? "Supported" : "Unsupported")
-            color: "#c9d1d9"
+            text: "Synchronized Output: " + (capDemo.syncOutputSupported ? "Supported" : "Unsupported")
+            color: capDemo.fgColor
         }
 
         Text {
-            text: "Kitty Keyboard:      " + ((capDemo.term && capDemo.term.capabilities.kittyKeyboard) ? "Supported" : "Unsupported")
-            color: "#c9d1d9"
+            text: "Kitty Keyboard:      " + (capDemo.kittyKeyboardSupported ? "Supported" : "Unsupported")
+            color: capDemo.fgColor
         }
 
         Text {
-            text: "Kitty Graphics:      " + ((capDemo.term && capDemo.term.capabilities.kittyGraphics) ? "Supported" : "Unsupported")
-            color: "#c9d1d9"
+            text: "Kitty Graphics:      " + (capDemo.kittyGraphicsSupported ? "Supported" : "Unsupported")
+            color: capDemo.fgColor
         }
 
         Text {
-            text: "Sixel Graphics:      " + ((capDemo.term && capDemo.term.capabilities.sixelGraphics) ? "Supported" : "Unsupported")
-            color: "#c9d1d9"
+            text: "Sixel Graphics:      " + (capDemo.sixelGraphicsSupported ? "Supported" : "Unsupported")
+            color: capDemo.fgColor
         }
 
         Text {
-            text: "Default Foreground:  " + "██ " + (capDemo.term ? capDemo.formatQueriedColor(capDemo.term.capabilities.defaultForegroundColor) : "unreported")
-            color: (capDemo.term && capDemo.term.capabilities.defaultForegroundColor.valid) ? capDemo.term.capabilities.defaultForegroundColor : QmlTui.defaultColor
+            id: defaultFgText
         }
 
         Text {

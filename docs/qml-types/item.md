@@ -62,6 +62,12 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 | `dirty()` | Emitted when visual content or layout changes require a screen repaint. |
 | `ancestryChanged()` | The item or an ancestor was attached to or detached from a parent, so the item's root [Terminal](terminal.md) may have changed. Unlike `parentChanged`, an ancestor's reparenting — a `Repeater` or `Loader` inserting finished content — reaches every item of the moved subtree. Emitted on each item; connect on the item whose Terminal-derived state needs refreshing. |
 
+## Methods
+
+| Method | Description |
+| :--- | :--- |
+| `void forceActiveFocus()` | Forces active keyboard focus onto this item and its enclosing focus scopes. |
+
 ## Detailed Description
 
 Item is the base type for all visual components in QmlTui, analogous to `QQuickItem`
@@ -69,7 +75,7 @@ in Qt Quick, but operating entirely on discrete integer character cell columns a
 
 It defines spatial position (`x`, `y`), explicit and implicit size (`width`, `height`,
 `implicitWidth`, `implicitHeight`), hierarchical composition (`parent`, `children`, `data`),
-input focus state (`focus`, `activeFocus`, `focusable`), [Anchors](anchors.md),
+input focus state (`focus`, `activeFocus`, `focusPolicy`), [Anchors](anchors.md),
 clipping, padding, and declarative [State](state.md) machines.
 
 Visual items inherit from Item and implement `paint()` to write characters, colors,
@@ -77,40 +83,10 @@ and attributes to the terminal text grid buffer.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Item {
-        anchors.centerIn: parent
-        width: 24
-        height: 6
-
-        Rectangle {
-            anchors.fill: parent
-            border.style: Border.Single
-            color: "#1e1e2e"
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "Base Item Container"
-            color: "cyan"
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Anchors.qml{qml}
 
 ### Gallery Example
 
 ![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
 
-See [`examples/gallery/examples/Rectangle.qml`](../../examples/gallery/examples/Rectangle.qml) (`./build/examples/gallery/qmltui_gallery --example Rectangle`, or open in the [WebAssembly Playground](../playground.md?example=Rectangle.qml)).
+See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`, or open in the [WebAssembly Playground](../playground.md?example=Anchors.qml)).

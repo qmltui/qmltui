@@ -45,32 +45,10 @@ event as handled, preventing it from propagating up the visual hierarchy.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    focus: true
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        } else if (event.key === Qt.Key_Space) {
-            statusText.text = "Space pressed!"
-            event.accepted = true
-        }
-    }
-
-    Text {
-        id: statusText
-        anchors.centerIn: parent
-        text: "Press Space or Q"
-    }
-}
-```
+<<< ../../examples/gallery/examples/Keys.qml{qml}
 
 ### Gallery Example
 
 ![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
 
-See [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml) (`./build/examples/gallery/qmltui_gallery --example Shortcut`, or open in the [WebAssembly Playground](../playground.md?example=Shortcut.qml)).
+See [`examples/gallery/examples/Keys.qml`](../../examples/gallery/examples/Keys.qml) (`./build/examples/gallery/qmltui_gallery --example Keys`, or open in the [WebAssembly Playground](../playground.md?example=Keys.qml)).

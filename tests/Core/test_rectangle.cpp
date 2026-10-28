@@ -419,6 +419,20 @@ void TestRectangle::testBorderAndPaddingInsetsChildren() {
     QCOMPARE(col->x(), 2);
     QCOMPARE(col->y(), 2);
     QCOMPARE(buffer.cellAt(2, 2).character(), QByteArrayView("Q"));
+    // Also verify that `import QmlTui` implicitly re-exports `QtQml` (Timer, QtObject, Component)
+    QQmlComponent implicitQtQmlComp(&engine);
+    implicitQtQmlComp.setData(R"(
+        pragma ComponentBehavior: Bound
+        import QmlTui
+        Rectangle {
+            Timer { interval: 100 }
+            QtObject { id: internal }
+            Component { id: delegateComp; Text {} }
+        }
+    )",
+                              QUrl());
+    std::unique_ptr<QObject> implicitObj(implicitQtQmlComp.create());
+    QVERIFY2(implicitObj, qPrintable(implicitQtQmlComp.errorString()));
 }
 
 QTEST_GUILESS_MAIN(TestRectangle)

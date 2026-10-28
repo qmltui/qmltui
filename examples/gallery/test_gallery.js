@@ -1,8 +1,6 @@
 // Gallery smoke scenario: the searchable GridView with component previews renders,
-// inline header search filters tiles, Enter opens the full-width Example Panel by
-// default, Ctrl+E toggles the editable Code Panel, Ctrl+Y copies code to the
-// clipboard, editing code auto-reloads after the 500ms timeout, Ctrl+R resets
-// code, and Escape returns to the GridView.
+// inline header search filters tiles, Enter opens the full-width Example stage,
+// and Escape returns to the GridView.
 function main(app) {
     app.waitForText("QmlTui Gallery");
     app.expectText("Text");
@@ -33,48 +31,18 @@ function main(app) {
     app.press("HOME");
     app.waitForText(at(1));
 
-    // Filter to Button and press Enter to open the Button demo with the QML Code Panel hidden by default.
+    // Filter to Button and press Enter to open the Button demo.
     app.press("/");
     app.typeText("Button");
     app.waitForText("Button");
     app.press("ENTER");
     app.waitForText("No clicks yet");
     app.expectText("examples/Button.qml");
-    app.expectNoText("(editable)");
     app.captureText("gallery/button.txt");
 
     // The first button has focus: Space activates it.
     app.press("SPACE");
     app.waitForText("Clicked 1 time");
-
-    // Ctrl+E reveals the editable QML Code Panel; Ctrl+Y copies code; Ctrl+T switches
-    // focus between the live preview and the code editor; Ctrl+R resets edited code.
-    app.press("e", ["Ctrl"]);
-    app.waitForText("(editable)");
-    app.expectText("Auto-reload");
-    app.press("y", ["Ctrl"]);
-    app.waitForText("✓ Copied");
-    app.press("t", ["Ctrl"]);
-    app.press("END");
-    app.press("ENTER");
-    app.typeText("    // Live edited comment");
-    app.expectText("Reloading");
-    app.sleep(600);
-    app.waitForText("No clicks yet");
-    app.expectText("Live edited comment");
-    app.press("t", ["Ctrl"]);
-    app.press("SPACE");
-    app.waitForText("Clicked 1 time");
-    app.captureText("gallery/button_live_edit.txt");
-
-    // Ctrl+R resets the code back to the original example source.
-    app.press("r", ["Ctrl"]);
-    app.waitForText("No clicks yet");
-    app.expectNoText("Live edited comment");
-
-    // Ctrl+E hides the Code Panel again before returning to the grid.
-    app.press("e", ["Ctrl"]);
-    app.expectNoText("(editable)");
 
     // Escape goes back to the grid, and a second Escape clears the search filter.
     app.press("ESCAPE");
@@ -159,6 +127,9 @@ function main(app) {
         app.press("ENTER");
         app.waitForText("back to grid");
         app.expectNoText("✗ Error");
+        app.expectNoText("failed to create object");
+        if (app.rootObject().codeError !== "")
+            app.fail(app.rootObject().codeError);
         app.sleep(200);   // let timers and animations paint at least once
         app.captureText("gallery/page_" + String(i).padStart(2, "0") + ".txt");
         app.press("ESCAPE");

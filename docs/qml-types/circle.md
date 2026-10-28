@@ -39,34 +39,7 @@ outer outline is drawn.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    Canvas {
-        anchors.centerIn: parent
-        width: 30
-        height: 10
-        renderMode: Canvas.Braille
-
-        Circle {
-            cx: 30
-            cy: 20
-            radius: 15
-            color: "yellow"
-            fill: false
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/Canvas.qml{qml}
 
 ### Gallery Example
 

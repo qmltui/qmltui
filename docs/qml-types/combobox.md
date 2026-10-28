@@ -52,8 +52,10 @@ Dropdown selection control with an inline summary row and a Popup option list. [
 
 | Method | Description |
 | :--- | :--- |
+| `string itemText(var entry)` | Formats a raw model entry or object into its display string using `textRole` or standard label keys (`text`, `display`, `label`, `name`, `title`). |
 | `string textAt(int index)` | Returns the formatted display string for `index`, or `""` when out of bounds. |
 | `int find(string text)` | Returns the index of the first item matching `text`, or `-1` if not found. |
+| `void selectIndex(int index)` | Sets `currentIndex` to `index` (if within bounds) and emits `activated(index)`. |
 | `void open()` | Opens the dropdown popup below the control. |
 | `void close()` | Closes the dropdown popup. |
 
@@ -70,27 +72,7 @@ popup without changing `currentIndex`.
 
 ### Example
 
-```qml
-pragma ComponentBehavior: Bound
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    ComboBox {
-        anchors.centerIn: parent
-        width: 24
-        focus: true
-        model: ["Production", "Staging", "Development"]
-    }
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/ComboBox.qml{qml}
 
 ### Gallery Example
 

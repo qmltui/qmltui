@@ -4,6 +4,17 @@
 
 - **Header**: `src/QmlTui/Core/Primitives/InputDecoder.h` *(in-tree protocol header; not installed as a public header)*
 
+## Public Types and Constants
+
+- `using KeyCallback = std::function<void(int qtKey, const QString &text, int modifiers)>`
+- `using PasteCallback = std::function<void(const QString &text)>`
+- `struct MouseInput { int button = 3; int x = 0; int y = 0; bool release = false; bool motion = false; int modifiers = 0; int wheelDeltaX = 0; int wheelDeltaY = 0; }`
+- `using DetailedMouseCallback = std::function<void(const MouseInput &input)>`
+- `using FocusCallback = std::function<void(bool focused)>`
+- `struct ControlSequence` — framed terminal query reply (`Kind::Csi`, `Ss3`, `Apc`, `Osc`, or `Dcs`) with `privateMarker`, `params`, `intermediates`, `finalByte`, `payload`, and `int parameter(qsizetype index, qsizetype sub = 0, int fallback = 0) const`.
+- `using ReplyCallback = std::function<void(const ControlSequence &)>`
+- `static constexpr qsizetype MaxClipboardTextBytes = 1024 * 1024` — maximum decoded UTF-8 byte length (`1 MiB`) accepted from an OSC 52 clipboard reply.
+
 ## Public Methods
 
 #### `void setKeyCallback(KeyCallback cb)`
@@ -13,13 +24,25 @@ Registers the callback invoked when a key sequence is decoded (`int qtKey`, `con
 Registers the callback invoked with the complete payload of a bracketed paste (`\033[200~...\033[201~`).
 
 #### `void setDetailedMouseCallback(DetailedMouseCallback cb)`
-Registers the callback receiving normalized button, modifier, motion, and signed wheel-delta fields.
+Registers the callback receiving normalized button, modifier, motion, and signed wheel-delta fields (`MouseInput`).
+
+#### `void setFocusCallback(FocusCallback cb)`
+Registers the callback invoked when DEC mode 1004 focus-in (`CSI I`) or focus-out (`CSI O`) sequences arrive.
+
+#### `void setReplyCallback(ReplyCallback cb)`
+Registers the synchronous callback receiving framed `ControlSequence` replies (`CSI`, `SS3`, `APC`, `OSC`, `DCS`) that are not consumed as key, mouse, paste, or focus events.
+
+#### `void setClipboardErrorCallback(std::function<void()> cb)`
+Registers the callback invoked when a malformed or oversized OSC 52 frame is discarded.
 
 #### `void decode(const char *buffer, size_t size)`
 Appends incoming terminal bytes to the decoder buffer and dispatches completed sequences.
 
 #### `bool hasPendingEscape() const` / `void flushPendingEscape()`
 A bare `ESC` (`0x1b`) is held briefly because it may start a multi-byte escape sequence whose remaining bytes have not arrived yet. `TerminalEngine` runs a short timer (`QMLTUI_ESCAPE_TIMEOUT_MS`, default 50 ms) after each read and calls `flushPendingEscape()` if no further bytes arrive, delivering `Qt::Key_Escape`. Terminals with Kitty keyboard disambiguation enabled report Escape as `CSI 27 u` and do not need the timeout.
+
+#### `static constexpr int keyForCharacter(char32_t codepoint)`
+Returns the Qt key code produced by a character keystroke (`a`–`z` map to `Qt::Key_A`–`Qt::Key_Z`; other characters return `codepoint`).
 
 ## Kitty Keyboard Protocol
 
@@ -31,12 +54,12 @@ A printable code point (using the shifted key when Shift is active) becomes the 
 
 ## OSC 52 Clipboard Replies
 
-OSC 52 clipboard replies use a dedicated framing bound allowing up to 1 MiB of decoded UTF-8 text plus Base64 overhead. Other control strings keep a 4 KiB bound. `setClipboardErrorCallback()` reports malformed or oversized OSC 52 frames, and discarded bytes never leak as keyboard input.
+OSC 52 clipboard replies use a dedicated framing bound allowing up to 1 MiB of decoded UTF-8 text (`MaxClipboardTextBytes`) plus Base64 overhead. Other control strings keep a 4 KiB bound. `setClipboardErrorCallback()` reports malformed or oversized OSC 52 frames, and discarded bytes never leak as keyboard input.
 
 ## Example
 
 ```cpp
-#include <QmlTui/Core/Primitives/InputDecoder.h>
+#include <QmlTui/Core/Primitives/InputDecoder.h> // in-tree build interface
 
 qmltui::InputDecoder decoder;
 decoder.setKeyCallback([](int key, const QString &text, int modifiers) {

@@ -7,7 +7,7 @@ Think of **QmlTui** as the **Qt Quick equivalent for terminal user interfaces**:
 | Concept | Qt Quick / Qt Widgets | QmlTui | Key Difference |
 | :--- | :--- | :--- | :--- |
 | **Application class** | `QGuiApplication` / `QApplication` | `QCoreApplication` | No `QtGui` or display server required for `qmltui::core` and `qmltui::controls` |
-| **QML imports** | `import QtQuick` / `import QtQuick.Controls` | `import QtQml`, `import QmlTui`, `import QmlTui.Controls` | Replaces `import QtQuick` for terminal UIs; alias if both are imported in one file |
+| **QML imports** | `import QtQuick` / `import QtQuick.Controls` | `import QmlTui`, `import QmlTui.Controls` | Replaces `import QtQuick` for terminal UIs (and re-exports `QtQml`); alias if both are imported in one file |
 | **Root item** | `Window` / `ApplicationWindow` / `QMainWindow` | `Terminal` | Selects `Terminal.AltScreen` (full-screen) or `Terminal.Inline` (CLI scrollback) |
 | **Geometry** | Floating-point pixels (`qreal`) | Integer character cells (`int`) | `x`, `y`, `width`, `height`, `spacing`, and `padding` are columns and rows |
 | **Borders** | `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Draws Unicode or ASCII box-drawing glyphs in the outer 1-cell perimeter |
@@ -15,6 +15,20 @@ Think of **QmlTui** as the **Qt Quick equivalent for terminal user interfaces**:
 | **Colors** | `QColor` / `Qt.rgba(...)` / `QPalette` | `"default"` / `"cyan"` / `"#rrggbb"` / `QmlTui.rgba(...)` | Uses `qmltui::Color` (`color`); defaults to the host terminal's palette |
 | **Application exit** | Window manager close button (`[X]`) | Explicit `Keys.onPressed` or `Shortcut` calling `Qt.quit()` | Raw-mode terminals do not have a close button; `Ctrl+C` copies in `TextInput` |
 | **Item models** | `QAbstractItemModel` + `QStyledItemDelegate` | `ListView`, `TableView`, `TreeView`, `GridView` | Supports both QML `required property` roles and Qt Widgets numeric styling roles |
+
+### Controls and Containers Mapping
+
+| Qt Quick / Qt Quick Controls | QmlTui Equivalent | Module | Notes |
+| :--- | :--- | :--- | :--- |
+| `Window` / `ApplicationWindow` | [`Terminal`](../qml-types/terminal.md) | `QmlTui` | Root terminal session (`Terminal.AltScreen` or `Terminal.Inline`) |
+| `Flickable` / `ScrollView` | [`ScrollView`](../qml-types/scrollview.md) | `QmlTui` | Keyboard and mouse-wheel scrolling viewport |
+| `SplitView` | [`RowLayout`](../qml-types/rowlayout.md) / [`ColumnLayout`](../qml-types/columnlayout.md) | `QmlTui` | Use `Layout.fillWidth` / `Layout.fillHeight` and `Layout.preferredWidth` |
+| `Button`, `CheckBox`, `RadioButton` | [`Button`](../qml-types/button.md), [`CheckBox`](../qml-types/checkbox.md), [`RadioButton`](../qml-types/radiobutton.md) | `QmlTui.Controls` | Inherit from [`AbstractButton`](../qml-types/abstractbutton.md); group with [`ButtonGroup`](../qml-types/buttongroup.md) |
+| `ComboBox`, `SpinBox`, `Slider` | [`ComboBox`](../qml-types/combobox.md), [`SpinBox`](../qml-types/spinbox.md), [`Slider`](../qml-types/slider.md) | `QmlTui.Controls` | Keyboard and mouse interactive value selectors |
+| `ProgressBar`, `BusyIndicator` | [`ProgressBar`](../qml-types/progressbar.md), [`BusyIndicator`](../qml-types/busyindicator.md) | `QmlTui.Controls` | Determinate and indeterminate progress indicators |
+| `TabBar`, `StackView`, `SwipeView` | [`TabBar`](../qml-types/tabbar.md), [`StackView`](../qml-types/stackview.md), [`StackLayout`](../qml-types/stacklayout.md) | `QmlTui.Controls` / `QmlTui` | Tabbed and stack-based page navigation |
+| `Frame` / `GroupBox`, `Dialog`, `Popup`, `ToolTip` | [`Panel`](../qml-types/panel.md), [`Dialog`](../qml-types/dialog.md), [`Popup`](../qml-types/popup.md), [`ToolTip`](../qml-types/tooltip.md) | `QmlTui.Controls` / `QmlTui` | Framed containers, modal dialogs, and overlays |
+| `Canvas` / `Shape` | [`Canvas`](../qml-types/canvas.md), [`Sparkline`](../qml-types/sparkline.md) | `QmlTui` / `QmlTui.Controls` | 2×4 Braille, 1×2 half-block, or cell-level drawing |
 
 ## Application Entry Point and Shared C++ Backends
 
@@ -39,16 +53,15 @@ Because `qmltui::core` and `qmltui::controls` depend only on `Qt6::Core` and `Qt
 
 ## QML Imports
 
-QmlTui is built on `QtQml` and provides its own `Item`, `Rectangle`, `Text`, `MouseArea`, `Loader`, layouts, views, and controls. In QmlTui files, replace `import QtQuick` and `import QtQuick.Controls` with `import QtQml`, `import QmlTui`, and `import QmlTui.Controls`:
+QmlTui is built on `QtQml` and provides its own `Item`, `Rectangle`, `Text`, `MouseArea`, `Loader`, layouts, views, and controls. In QmlTui files, replace `import QtQuick` and `import QtQuick.Controls` with `import QmlTui` and `import QmlTui.Controls`:
 
 ```qml
 pragma ComponentBehavior: Bound
-import QtQml
 import QmlTui
 import QmlTui.Controls
 ```
 
-`import QmlTui` does not re-export `QtQml`. Add `import QtQml` when using `Timer`, `Component`, `QtObject`, `Connections`, or `Binding`, and `import QtQml.Models` when using `ListModel` or `DelegateModel`. (If you ever import both `QtQuick` and `QmlTui` in the same QML document, alias one of them, such as `import QmlTui as Tui` or `import QtQuick as Q`, so shared type names like `Item`, `Rectangle`, and `Text` do not collide.)
+Like `import QtQuick`, `import QmlTui` automatically re-exports `QtQml` (`Timer`, `Component`, `QtObject`, `Connections`, `Binding`). Add `import QtQml.Models` when using `ListModel` or `DelegateModel`. (If you ever import both `QtQuick` and `QmlTui` in the same QML document, alias one of them, such as `import QmlTui as Tui` or `import QtQuick as Q`, so shared type names like `Item`, `Rectangle`, and `Text` do not collide.)
 
 ## Integer Cell Geometry
 
@@ -59,6 +72,7 @@ In `QtQuick`, coordinates and sizes are floating-point pixel values (`qreal`). I
 - `anchors` (`anchors.fill`, `anchors.centerIn`, `anchors.left`, `anchors.top`, etc.), positioners (`Row`, `Column`), and layouts (`RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`) work like their `QtQuick` counterparts on integer cell bounds. See [Layouts and Cell Geometry](layouts.md).
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -91,7 +105,6 @@ Rectangle {
 | `Border.Single` (`"single"`) | `┌───┐` / `│   │` / `└───┘` |
 | `Border.Double` (`"double"`) | `╔═══╗` / `║   ║` / `╚═══╝` |
 | `Border.Rounded` (`"rounded"`) | `╭───╮` / `│   │` / `╰───╯` |
-| `Border.Heavy` (`"heavy"`) | `┏━━━┓` / `┃   ┃` / `┗━━━┛` |
 | `Border.Ascii` (`"ascii"`) | `+---+` / `|   |` / `+---+` |
 | `Border.None` (`"none"`) | No border drawn |
 
@@ -111,6 +124,7 @@ QmlTui does not use `QColor` or a global theme singleton (such as `Material` or 
 Desktop windows have a window-manager close button; terminal applications in raw mode do not, and `Ctrl+C` is used by `TextInput` and `TextArea` for clipboard copy rather than `SIGINT`. A root `Terminal` never exits on `Q` or `Escape` unless the application handles it:
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -163,4 +177,4 @@ ListView {
 
 ### Standard Numeric Roles (Qt Widgets Style)
 
-In `QtWidgets`, models such as `QStandardItemModel` often provide `Qt::ForegroundRole`, `Qt::BackgroundRole`, `Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole`, and `flags()` without custom `roleNames()`. While `QtQuick` views ignore those numeric roles, QmlTui views expose them automatically (`foreground`, `background`, `textAlignment`, `checkState`, `decoration`, `enabled`, `checkable`) and `TableView` / `TreeView` built-in painters render them out of the box. See [Models in QmlTui Views](models.md) for the full support matrix.
+In `QtWidgets`, models such as `QStandardItemModel` often provide `Qt::ForegroundRole`, `Qt::BackgroundRole`, `Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole`, and `flags()` without custom `roleNames()`. (Note that `QAbstractItemModel`, `QAbstractListModel`, `QAbstractTableModel`, and `QSortFilterProxyModel` live in `Qt6::Core`, whereas `QStandardItemModel` lives in `Qt6::Gui`.) While `QtQuick` views ignore those numeric roles, QmlTui views expose them automatically (`foreground`, `background`, `textAlignment`, `checkState`, `decoration`, `enabled`, `checkable`) and `TableView` / `TreeView` built-in painters render them out of the box. See [Models in QmlTui Views](models.md) for the full support matrix.

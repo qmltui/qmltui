@@ -39,7 +39,7 @@ Two kinds of string are accepted, and they behave differently on screen:
 
 ### Inspecting the terminal's actual RGB colors
 
-While `QmlTui.defaultColor` and `QmlTui.ansi(0..15)` are interpreted by the terminal emulator at render time via SGR 39/49 and SGR 30–37/90–97, interactive sessions also query the host terminal's actual RGB values (`OSC 10`, `OSC 11`, and `OSC 4;0..15`) during capability negotiation and expose them on [`Terminal.capabilities`](../qml-types/terminalcapabilities.md):
+While `QmlTui.defaultColor` and `QmlTui.ansi(0..15)` are interpreted by the terminal emulator at render time via SGR 39/49 and SGR 30–37/90–97, interactive sessions also query the host terminal's default foreground and background RGB values (`OSC 10` and `OSC 11`) at startup—and the 16-color ANSI palette (`OSC 4;0..15`) when [`Terminal.queryColors()`](../qml-types/terminal.md) is called—and expose them on [`Terminal.capabilities`](../qml-types/terminalcapabilities.md):
 
 - `terminal.capabilities.defaultForegroundColor` (`color`, `.valid === true` once reported)
 - `terminal.capabilities.defaultBackgroundColor` (`color`, `.valid === true` once reported)

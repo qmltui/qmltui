@@ -91,35 +91,7 @@ at paint time, including to spans that explicitly set `dim: false`.
 
 ### Example
 
-```qml
-pragma ComponentBehavior: Bound
-import QtQml
-import QmlTui
-
-Terminal {
-    Text {
-        color: "cyan"
-        bold: true
-        spans: [
-            { text: "Status: ", dim: true, bold: false },
-            QmlTui.span("Active\n", { color: "green" }),
-            { text: "Workers: 4" }
-        ]
-    }
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-}
-```
-
-### C++
-
-Use `qmltui::Text` from `<QmlTui/Core/Items/Text.h>`. Construct it with an optional parent
-`QObject`, set properties directly, and use `paint()` during the text grid
-render pass.
+<<< ../../examples/gallery/examples/Text.qml{qml}
 
 ### Gallery Example
 

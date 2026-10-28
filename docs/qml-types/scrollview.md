@@ -40,39 +40,7 @@ machinery.
 
 ### Example
 
-```qml
-import QtQml
-import QmlTui
-
-Terminal {
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-
-    ScrollView {
-        anchors.centerIn: parent
-        width: 30
-        height: 6
-        contentHeight: 20
-
-        Column {
-            width: parent.width
-            spacing: 1
-
-            Repeater {
-                model: 15
-                Text {
-                    required property int index
-                    text: "Item row " + index
-                }
-            }
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/ScrollView.qml{qml}
 
 ### Gallery Example
 

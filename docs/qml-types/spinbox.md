@@ -54,36 +54,14 @@ Interactive integer stepper over `[from, to]` in increments of `stepSize`. [More
 
 SpinBox is a one-row [Rectangle](rectangle.md) displaying `[-]  displayText  [+]`.
 When focused, the centre value readout is drawn bold in reverse video, and
-Up/Right/`+` call `increase()`, Down/Left/`-` call `decrease()`, PageUp/PageDown
+Up/Right/`+`/`=` call `increase()`, Down/Left/`-` call `decrease()`, PageUp/PageDown
 step by `10 * stepSize`, and Home/End jump to `from`/`to`. Clicking the left
 half of the control calls `decrease()`, clicking the right half calls
 `increase()`, and scrolling the mouse wheel steps the value.
 
 ### Example
 
-```qml
-pragma ComponentBehavior: Bound
-import QmlTui
-import QmlTui.Controls
-
-Terminal {
-    SpinBox {
-        anchors.centerIn: parent
-        width: 18
-        from: 1
-        to: 32
-        value: 4
-        focus: true
-    }
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-        }
-    }
-}
-```
+<<< ../../examples/gallery/examples/SpinBox.qml{qml}
 
 ### Gallery Example
 

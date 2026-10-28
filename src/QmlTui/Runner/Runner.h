@@ -44,7 +44,7 @@ public:
            QString configurationError);
     ~Runner() override;
 
-    // Starts a Runner session if `QMLTUI_RUNNER_SCENARIO` (or related
+    // Starts a Runner session if `QMLTUI_RUNNER_SCRIPT` (or related
     // `QMLTUI_RUNNER_*` environment variables) is set; returns nullptr for
     // normal interactive execution.
     static Runner* startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal);

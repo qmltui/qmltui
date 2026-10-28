@@ -29,6 +29,14 @@ void connectTarget(Item* target, Anchors* anchors) {
                      Qt::UniqueConnection);
     QObject::connect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve,
                      Qt::UniqueConnection);
+    QObject::connect(target, &Item::leftPaddingChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+    QObject::connect(target, &Item::rightPaddingChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+    QObject::connect(target, &Item::topPaddingChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
+    QObject::connect(target, &Item::bottomPaddingChanged, anchors, &Anchors::resolve,
+                     Qt::UniqueConnection);
 }
 
 bool isReferencedBy(const Anchors* anchors, const Item* target) {
@@ -51,6 +59,10 @@ void disconnectTarget(Item* target, Anchors* anchors) {
     QObject::disconnect(target, &Item::heightChanged, anchors, &Anchors::resolve);
     QObject::disconnect(target, &Item::implicitWidthChanged, anchors, &Anchors::resolve);
     QObject::disconnect(target, &Item::implicitHeightChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::leftPaddingChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::rightPaddingChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::topPaddingChanged, anchors, &Anchors::resolve);
+    QObject::disconnect(target, &Item::bottomPaddingChanged, anchors, &Anchors::resolve);
 }
 
 } // namespace
@@ -282,6 +294,7 @@ void Anchors::resolve() {
     ensureOwnerConnections();
 
     ResolvingGuard guard(m_resolving);
+    const bool useParentPadding = !m_owner->ignoresParentPadding();
 
     if (m_fillTarget) {
         int targetW = m_fillTarget->width();
@@ -294,13 +307,24 @@ void Anchors::resolve() {
 
         int targetX = 0;
         int targetY = 0;
-        if (m_fillTarget.data() != m_owner->parentItem()) {
+        if (m_fillTarget.data() == m_owner->parentItem()) {
+            if (useParentPadding) {
+                const int lp = m_fillTarget->leftPadding();
+                const int rp = m_fillTarget->rightPadding();
+                const int tp = m_fillTarget->topPadding();
+                const int bp = m_fillTarget->bottomPadding();
+                targetX = lp;
+                targetY = tp;
+                targetW = (std::max)(0, targetW - lp - rp);
+                targetH = (std::max)(0, targetH - tp - bp);
+            }
+        } else {
             targetX = m_fillTarget->x();
             targetY = m_fillTarget->y();
         }
 
-        m_owner->setX(targetX + lm);
-        m_owner->setY(targetY + tm);
+        m_owner->setDefaultX(targetX + lm);
+        m_owner->setDefaultY(targetY + tm);
         m_owner->setWidth((std::max)(0, targetW - lm - rm));
         m_owner->setHeight((std::max)(0, targetH - tm - bm));
         return;
@@ -314,13 +338,24 @@ void Anchors::resolve() {
 
         int targetX = 0;
         int targetY = 0;
-        if (m_centerInTarget.data() != m_owner->parentItem()) {
+        if (m_centerInTarget.data() == m_owner->parentItem()) {
+            if (useParentPadding) {
+                const int lp = m_centerInTarget->leftPadding();
+                const int rp = m_centerInTarget->rightPadding();
+                const int tp = m_centerInTarget->topPadding();
+                const int bp = m_centerInTarget->bottomPadding();
+                targetX = lp;
+                targetY = tp;
+                targetW = (std::max)(0, targetW - lp - rp);
+                targetH = (std::max)(0, targetH - tp - bp);
+            }
+        } else {
             targetX = m_centerInTarget->x();
             targetY = m_centerInTarget->y();
         }
 
-        m_owner->setX(targetX + (targetW - ownerW) / 2);
-        m_owner->setY(targetY + (targetH - ownerH) / 2);
+        m_owner->setDefaultX(targetX + (targetW - ownerW) / 2);
+        m_owner->setDefaultY(targetY + (targetH - ownerH) / 2);
         return;
     }
 
@@ -332,7 +367,7 @@ void Anchors::resolve() {
         return false;
     };
 
-    auto getLineCoord = [this, &isValidTarget](AnchorLine* line) -> int {
+    auto getLineCoord = [this, &isValidTarget, useParentPadding](AnchorLine* line) -> int {
         if (!line) return 0;
         Item* target = line->owner();
         if (!target) return 0;
@@ -342,19 +377,23 @@ void Anchors::resolve() {
         }
 
         if (target == m_owner->parentItem()) {
+            const int lp = useParentPadding ? target->leftPadding() : 0;
+            const int rp = useParentPadding ? target->rightPadding() : 0;
+            const int tp = useParentPadding ? target->topPadding() : 0;
+            const int bp = useParentPadding ? target->bottomPadding() : 0;
             switch (line->edge()) {
             case AnchorLine::Left:
-                return 0;
+                return lp;
             case AnchorLine::Right:
-                return target->width();
+                return target->width() - rp;
             case AnchorLine::Top:
-                return 0;
+                return tp;
             case AnchorLine::Bottom:
-                return target->height();
+                return target->height() - bp;
             case AnchorLine::HorizontalCenter:
-                return target->width() / 2;
+                return lp + (target->width() - lp - rp) / 2;
             case AnchorLine::VerticalCenter:
-                return target->height() / 2;
+                return tp + (target->height() - tp - bp) / 2;
             }
         } else {
             switch (line->edge()) {
@@ -382,17 +421,17 @@ void Anchors::resolve() {
     if (hasLeft && hasRight) {
         int x1 = getLineCoord(m_left.data()) + leftMargin();
         int x2 = getLineCoord(m_right.data()) - rightMargin();
-        m_owner->setX(x1);
+        m_owner->setDefaultX(x1);
         m_owner->setWidth((std::max)(0, x2 - x1));
     } else if (hasHC) {
         int hc = getLineCoord(m_horizontalCenter.data());
-        m_owner->setX(hc - m_owner->width() / 2);
+        m_owner->setDefaultX(hc - m_owner->width() / 2);
     } else if (hasLeft) {
         int x1 = getLineCoord(m_left.data()) + leftMargin();
-        m_owner->setX(x1);
+        m_owner->setDefaultX(x1);
     } else if (hasRight) {
         int x2 = getLineCoord(m_right.data()) - rightMargin();
-        m_owner->setX(x2 - m_owner->width());
+        m_owner->setDefaultX(x2 - m_owner->width());
     }
 
     bool hasTop = m_top && isValidTarget(m_top->owner());
@@ -402,17 +441,17 @@ void Anchors::resolve() {
     if (hasTop && hasBottom) {
         int y1 = getLineCoord(m_top.data()) + topMargin();
         int y2 = getLineCoord(m_bottom.data()) - bottomMargin();
-        m_owner->setY(y1);
+        m_owner->setDefaultY(y1);
         m_owner->setHeight((std::max)(0, y2 - y1));
     } else if (hasVC) {
         int vc = getLineCoord(m_verticalCenter.data());
-        m_owner->setY(vc - m_owner->height() / 2);
+        m_owner->setDefaultY(vc - m_owner->height() / 2);
     } else if (hasTop) {
         int y1 = getLineCoord(m_top.data()) + topMargin();
-        m_owner->setY(y1);
+        m_owner->setDefaultY(y1);
     } else if (hasBottom) {
         int y2 = getLineCoord(m_bottom.data()) - bottomMargin();
-        m_owner->setY(y2 - m_owner->height());
+        m_owner->setDefaultY(y2 - m_owner->height());
     }
 }
 

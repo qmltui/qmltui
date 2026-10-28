@@ -72,7 +72,6 @@ void TreeView::setModel(const QVariant& model) {
             clearDelegateItems();
             emit modelChanged();
             emit currentIndexChanged();
-            emit selectedIndexChanged();
             emit currentItemDataChanged();
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         });
@@ -121,17 +120,9 @@ void TreeView::setModel(const QVariant& model) {
     if (hadRootIndex) emit rootIndexChanged();
     if (currentChanged) {
         emit currentIndexChanged();
-        emit selectedIndexChanged();
     }
     emit currentItemDataChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
-}
-
-void TreeView::setRootNode(const QVariant& node) {
-    if (m_rootNodeVariant == node) return;
-    m_rootNodeVariant = node;
-    setModel(node);
-    emit rootNodeChanged();
 }
 
 void TreeView::setRootIndex(const QModelIndex& index) {
@@ -227,7 +218,6 @@ void TreeView::setCurrentIndex(int index) {
     if (m_selectedIndex != newIdx) {
         m_selectedIndex = newIdx;
         emit currentIndexChanged();
-        emit selectedIndexChanged();
         emit currentItemDataChanged();
     }
 
@@ -1014,7 +1004,6 @@ void TreeView::updateTree() {
     adjustScrollTop();
     if (previousIndex != m_selectedIndex) {
         emit currentIndexChanged();
-        emit selectedIndexChanged();
     }
     emit currentItemDataChanged();
     m_currentModelIndex = m_selectedIndex >= 0 && m_cppModel

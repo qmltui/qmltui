@@ -165,21 +165,6 @@ QByteArray UnicodeText::toUtf8(QStringView cluster, bool sanitizeControls) {
     return result;
 }
 
-QVector<Grapheme> UnicodeText::graphemes(QStringView text) {
-    QVector<Grapheme> result;
-    GraphemeIterator iterator(text);
-    GraphemeRef cluster;
-    while (iterator.next(cluster)) {
-        Grapheme grapheme;
-        grapheme.utf8 = toUtf8(cluster.utf16);
-        grapheme.utf16Start = cluster.utf16Start;
-        grapheme.utf16Length = cluster.utf16Length();
-        grapheme.width = cluster.width;
-        result.append(grapheme);
-    }
-    return result;
-}
-
 int UnicodeText::displayWidth(QStringView text) {
     int width = 0;
     GraphemeIterator iterator(text);

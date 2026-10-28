@@ -154,9 +154,9 @@ private slots:
         tree.setWidth(30);
         tree.setHeight(5);
 
-        tree.setRootNode(QVariantMap{{"text", "root"},
-                                     {"expanded", true},
-                                     {"children", QVariantList{QVariantMap{{"text", "child1"}}}}});
+        tree.setModel(QVariantMap{{"text", "root"},
+                                  {"expanded", true},
+                                  {"children", QVariantList{QVariantMap{{"text", "child1"}}}}});
 
         TextGridBuffer buffer;
         buffer.resize(30, 5);
@@ -171,7 +171,7 @@ private slots:
         QVERIFY2(rowString(0).contains(QStringLiteral("root")), qPrintable(rowString(0)));
         QVERIFY2(rowString(1).contains(QStringLiteral("child1")), qPrintable(rowString(1)));
 
-        QCOMPARE(tree.selectedIndex(), 0);
+        QCOMPARE(tree.currentIndex(), 0);
 
         // Verify initial state (expanded)
         QVERIFY(tree.isExpanded(0));
@@ -180,7 +180,7 @@ private slots:
         MouseEvent mouseEv(MouseEvent::Type::Press, 0, 0, 0);
         tree.mousePressEvent(&mouseEv);
         QVERIFY(mouseEv.isAccepted());
-        QCOMPARE(tree.selectedIndex(), 0);
+        QCOMPARE(tree.currentIndex(), 0);
         QVERIFY(!tree.isExpanded(0));
         buffer.clear();
         paintItem(tree, buffer, 0, 0);
@@ -212,7 +212,7 @@ private slots:
         QVERIFY(!tree.isExpanded(0));
 
         // Test tree with duplicate item names
-        tree.setRootNode(QVariantMap{
+        tree.setModel(QVariantMap{
             {"text", "root"},
             {"expanded", true},
             {"children",
@@ -536,26 +536,9 @@ private slots:
         QCOMPARE(currentCell->property("modelData").toString(), QStringLiteral("Bob"));
         QCOMPARE(currentCell->property("name").toString(), QStringLiteral("Bob"));
 
-        QQmlComponent rowComponent(&engine);
-        rowComponent.setData(R"(
-            import QmlTui
-            Item {
-                required property int index
-                required property int row
-                required property var model
-                required property var modelData
-            }
-        )",
-                             QUrl());
-        QVERIFY2(rowComponent.isReady(), qPrintable(rowComponent.errorString()));
-
         table.setDelegate(nullptr);
-        table.setRowDelegate(&rowComponent);
         paintItem(table, buffer, 0, 0);
-        const QList<Item*> rows = delegates();
-        QCOMPARE(rows.size(), 2);
-        for (Item* row : rows)
-            QCOMPARE(row->property("index").toInt(), row->property("row").toInt());
+        QVERIFY(delegates().isEmpty());
     }
 
     void testTreeViewQtQuickContract() {

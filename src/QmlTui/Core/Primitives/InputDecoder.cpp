@@ -242,10 +242,6 @@ void InputDecoder::setPasteCallback(PasteCallback cb) {
     m_pasteCallback = std::move(cb);
 }
 
-void InputDecoder::setMouseCallback(MouseCallback cb) {
-    m_mouseCallback = std::move(cb);
-}
-
 void InputDecoder::setDetailedMouseCallback(DetailedMouseCallback cb) {
     m_detailedMouseCallback = std::move(cb);
 }
@@ -283,7 +279,6 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
         const int y = sequence.parameter(2) - 1;
         const bool release = final == 'm';
         const bool motion = (button & 32) != 0;
-        if (m_mouseCallback) m_mouseCallback(button & ~32, x, y, release, motion);
         if (m_detailedMouseCallback) {
             MouseInput input;
             input.button = button & 3;
@@ -324,6 +319,8 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
                              sequence.parameter(2) == 9)) {
             key = Qt::Key_Backtab;
             modifiers = Qt::ShiftModifier;
+        } else if (final == '~' && first == 27 && sequence.parameter(2) == 32) {
+            key = Qt::Key_Space;
         } else if (final == '~') {
             static constexpr std::pair<int, int> keys[] = {
                 {1, Qt::Key_Home},   {2, Qt::Key_Insert},   {3, Qt::Key_Delete}, {4, Qt::Key_End},
@@ -486,6 +483,12 @@ void InputDecoder::processBuffer() {
         }
 
         unsigned char c = m_buffer[i];
+
+        if (c == 0) {
+            if (m_keyCallback) m_keyCallback(Qt::Key_Space, "", Qt::ControlModifier);
+            i++;
+            continue;
+        }
 
         if (c >= 1 && c <= 26 && c != 8 && c != 9 && c != 10 && c != 13) {
             int qtKey = c - 1 + Qt::Key_A;

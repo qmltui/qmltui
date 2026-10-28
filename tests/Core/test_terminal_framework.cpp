@@ -209,8 +209,12 @@ void TestTerminalFramework::unicodeDisplayWidth() {
     QCOMPARE(UnicodeText::displayWidth(QStringLiteral("ASCII")), 5);
     QCOMPARE(UnicodeText::displayWidth(QString::fromUtf8("e\u0301")), 1);
     QCOMPARE(UnicodeText::displayWidth(QString::fromUtf8("中")), 2);
-    QCOMPARE(UnicodeText::displayWidth(QString::fromUtf8("👨‍👩‍👧‍👦")), 2);
-    QCOMPARE(UnicodeText::graphemes(QString::fromUtf8("👨‍👩‍👧‍👦")).size(), 1);
+    const QString family = QString::fromUtf8("👨‍👩‍👧‍👦");
+    QCOMPARE(UnicodeText::displayWidth(family), 2);
+    GraphemeIterator iterator(family);
+    GraphemeRef cluster;
+    QVERIFY(iterator.next(cluster));
+    QVERIFY(!iterator.next(cluster));
 }
 
 void TestTerminalFramework::wideCellBuffer() {

@@ -29,6 +29,7 @@ private slots:
     void testGradientUpdate();
     void testBorderStyles();
     void testQmlIntegration();
+    void testBorderAndPaddingInsetsChildren();
 };
 
 // "default" and "transparent" both reach the terminal as its own colour, but
@@ -290,13 +291,6 @@ void TestRectangle::testBorderStyles() {
         QCOMPARE(rect.border()->style(), Border::None);
         QCOMPARE(rect.leftPadding(), 0);
     }
-
-    // String overload
-    {
-        Rectangle rect;
-        rect.border()->setStyle(QStringLiteral("rounded"));
-        QCOMPARE(rect.border()->style(), Border::Rounded);
-    }
 }
 
 void TestRectangle::testQmlIntegration() {
@@ -330,6 +324,101 @@ void TestRectangle::testQmlIntegration() {
     TextGridBuffer buffer = paintRect(*rect, 8, 4);
     QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xffff0000u);
     QVERIFY(buffer.cellAt(1, 0).bgColor != buffer.cellAt(0, 0).bgColor);
+}
+
+void TestRectangle::testBorderAndPaddingInsetsChildren() {
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        pragma ComponentBehavior: Bound
+        import QtQml
+        import QmlTui
+        Rectangle {
+            width: 50
+            height: 8
+            color: QmlTui.defaultColor
+            border {
+                style: Border.Rounded
+                color: QmlTui.ansi(6)
+            }
+            padding: 1
+
+            Text {
+                objectName: "borderTitle"
+                x: 2
+                y: 0
+                text: "Title"
+            }
+
+            Column {
+                objectName: "contentColumn"
+                spacing: 1
+
+                Text {
+                    spans: [
+                        QmlTui.span("QmlTui ", { "color": QmlTui.ansi(6), "bold": true }),
+                        QmlTui.span("Singleton ", { "color": QmlTui.ansi(3), "underline": true }),
+                        QmlTui.span("Utilities", { "color": QmlTui.rgba(0.4, 0.9, 0.6, 1.0) })
+                    ]
+                }
+
+                Row {
+                    spacing: 1
+
+                    Repeater {
+                        model: 8
+                        Rectangle {
+                            required property int index
+                            width: 4
+                            height: 2
+                            color: QmlTui.ansi(index + 1)
+                        }
+                    }
+                }
+            }
+        }
+    )",
+                      QUrl());
+
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object, qPrintable(component.errorString()));
+    auto* rect = qobject_cast<Rectangle*>(object.get());
+    QVERIFY(rect);
+
+    auto* col = rect->findChild<Item*>(QStringLiteral("contentColumn"));
+    auto* title = rect->findChild<Item*>(QStringLiteral("borderTitle"));
+    QVERIFY(col);
+    QVERIFY(title);
+
+    TextGridBuffer buffer = paintRect(*rect, 50, 8);
+
+    // Un-anchored Column is inset by 1 (border) + 1 (padding) = 2 cells
+    QCOMPARE(col->x(), 2);
+    QCOMPARE(col->y(), 2);
+
+    // Explicit x/y child stays on the top border row
+    QCOMPARE(title->x(), 2);
+    QCOMPARE(title->y(), 0);
+    QCOMPARE(buffer.cellAt(0, 0).character(), QByteArrayView("╭"));
+    QCOMPARE(buffer.cellAt(2, 0).character(), QByteArrayView("T"));
+
+    // Row 1 is the inner padding row (blank), row 2 starts the Column's Text
+    QCOMPARE(buffer.cellAt(2, 1).character(), QByteArrayView(" "));
+    QCOMPARE(buffer.cellAt(2, 2).character(), QByteArrayView("Q"));
+    QCOMPARE(buffer.cellAt(3, 2).character(), QByteArrayView("m"));
+
+    // Dynamic padding and border updates reposition the un-anchored Column
+    rect->setPadding(2);
+    buffer = paintRect(*rect, 50, 8);
+    QCOMPARE(col->x(), 3);
+    QCOMPARE(col->y(), 3);
+    QCOMPARE(buffer.cellAt(3, 3).character(), QByteArrayView("Q"));
+
+    rect->border()->setStyle(Border::None);
+    buffer = paintRect(*rect, 50, 8);
+    QCOMPARE(col->x(), 2);
+    QCOMPARE(col->y(), 2);
+    QCOMPARE(buffer.cellAt(2, 2).character(), QByteArrayView("Q"));
 }
 
 QTEST_GUILESS_MAIN(TestRectangle)

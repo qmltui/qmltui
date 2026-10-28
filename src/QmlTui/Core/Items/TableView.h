@@ -21,19 +21,18 @@ namespace qmltui {
 // Two-dimensional tabular data view with virtualized row and cell rendering.
 //
 // Backs onto a QAbstractItemModel, QVariantList of maps, or JS array. Supports
-// column descriptors (`title`, `role`/`key`, `width`, `alignment`, per-column
+// column descriptors (`title`, `role`/`key`, `width`, `align`, per-column
 // colors or callbacks), row selection, keyboard/wheel navigation, standard Qt
-// item roles (see NumericItemRoles_p.h), and optional cell or row QML delegates.
+// item roles (see NumericItemRoles_p.h), and optional cell QML delegates.
 class QMLTUI_CORE_EXPORT TableView : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    // Column descriptor maps ({ title, role/key, width, alignment, ... }).
+    // Column descriptor maps ({ title, role/key, width, align, ... }).
     Q_PROPERTY(QVariantList columns READ columns WRITE setColumns NOTIFY columnsChanged)
     Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
-    // Selected row index (-1 for no selection); currentRow is a read-only alias.
+    // Selected row index (-1 for no selection).
     Q_PROPERTY(int selectedRow READ selectedRow WRITE setSelectedRow NOTIFY selectedRowChanged)
-    Q_PROPERTY(int currentRow READ selectedRow NOTIFY selectedRowChanged)
     Q_PROPERTY(
         int currentColumn READ currentColumn WRITE setCurrentColumn NOTIFY currentColumnChanged)
     Q_PROPERTY(bool alternatingRows READ alternatingRows WRITE setAlternatingRows NOTIFY
@@ -74,8 +73,6 @@ class QMLTUI_CORE_EXPORT TableView : public Item {
     // }`.
     Q_PROPERTY(QJSValue cellFormat READ cellFormat WRITE setCellFormat NOTIFY cellFormatChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
-    Q_PROPERTY(
-        QQmlComponent* rowDelegate READ rowDelegate WRITE setRowDelegate NOTIFY rowDelegateChanged)
 
 public:
     enum GridStyle : uint8_t {
@@ -144,10 +141,6 @@ public:
 
     GridStyle gridStyle() const { return m_gridStyle; }
     void setGridStyle(GridStyle style);
-    void setGridStyle(const QString& style);
-
-    static GridStyle gridStyleFromString(QStringView str, GridStyle defaultStyle = Single);
-    static QString gridStyleToString(GridStyle style);
 
     QJSValue columnWidthProvider() const { return m_columnWidthProvider; }
     void setColumnWidthProvider(const QJSValue& provider);
@@ -157,8 +150,6 @@ public:
 
     QQmlComponent* delegate() const { return m_delegate; }
     void setDelegate(QQmlComponent* delegate);
-    QQmlComponent* rowDelegate() const { return m_rowDelegate; }
-    void setRowDelegate(QQmlComponent* delegate);
 
     void paint(TextGridBuffer& buffer, int absX, int absY,
                const ClipRect& clipRect = ClipRect()) const override;
@@ -192,7 +183,6 @@ signals:
     void columnWidthProviderChanged();
     void cellFormatChanged();
     void delegateChanged();
-    void rowDelegateChanged();
 
     void rowActivated(int index);
     void headerClicked(int column);
@@ -391,7 +381,6 @@ private:
     QJSValue m_columnWidthProvider;
     QJSValue m_cellFormat;
     QPointer<QQmlComponent> m_delegate;
-    QPointer<QQmlComponent> m_rowDelegate;
     QHash<Position, DelegateRecord> m_createdDelegateItems;
     QHash<QString, int> m_delegateProperties;
     quint16 m_delegateStandardMask = 0xFFu;

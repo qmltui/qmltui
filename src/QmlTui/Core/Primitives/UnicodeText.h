@@ -4,17 +4,8 @@
 #include <QByteArray>
 #include <QString>
 #include <QStringView>
-#include <QVector>
 
 namespace qmltui {
-
-// Owning description of one grapheme cluster (legacy API; allocates).
-struct Grapheme {
-    QByteArray utf8;
-    int utf16Start = 0;
-    int utf16Length = 0;
-    int width = 1;
-};
 
 // Non-owning description of one grapheme cluster inside the iterated string.
 struct GraphemeRef {
@@ -49,7 +40,6 @@ private:
 // text elision, and UTF-8 encoding helpers.
 class QMLTUI_CORE_EXPORT UnicodeText {
 public:
-    static QVector<Grapheme> graphemes(QStringView text);
     // Total terminal column width of text (0, 1, or 2 columns per grapheme cluster).
     static int displayWidth(QStringView text);
     // Truncates text with a trailing ellipsis so its display width fits in maxColumns.

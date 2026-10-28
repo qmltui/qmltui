@@ -21,7 +21,7 @@ namespace qmltui {
 // Hierarchical tree view with virtualized row delegates.
 //
 // Supports QAbstractItemModel (from rootIndex) and nested QVariantMap / JS
-// object trees (`rootNode`), tracking expanded state by persistent model index
+// object trees (`model`), tracking expanded state by persistent model index
 // or "/" path and drawing Unicode branch connectors when no custom delegate is
 // set.
 class QMLTUI_CORE_EXPORT TreeView : public Item {
@@ -30,20 +30,14 @@ class QMLTUI_CORE_EXPORT TreeView : public Item {
     Q_CLASSINFO("DefaultProperty", "delegate")
 
     Q_PROPERTY(QVariant model READ model WRITE setModel NOTIFY modelChanged)
-    // Legacy map-tree root (`{ text, children: [...] }`); prefer `model`.
-    Q_PROPERTY(QVariant rootNode READ rootNode WRITE setRootNode NOTIFY rootNodeChanged)
     // Parent QModelIndex whose children form the top level of the tree.
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex WRITE setRootIndex NOTIFY rootIndexChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
     // Optional JS callback `(row, value) => Span | list<Span> | { text, spans, color, ... }`.
     Q_PROPERTY(QJSValue nodeFormat READ nodeFormat WRITE setNodeFormat NOTIFY nodeFormatChanged)
 
-    // Index in the flattened visible-row list (-1 for no selection);
-    // selectedIndex and currentRow are aliases.
+    // Index in the flattened visible-row list (-1 for no selection).
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
-    Q_PROPERTY(
-        int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
-    Q_PROPERTY(int currentRow READ currentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(int currentColumn READ currentColumn NOTIFY currentIndexChanged)
     Q_PROPERTY(QVariantMap currentItemData READ currentItemData NOTIFY currentItemDataChanged)
 
@@ -66,9 +60,6 @@ public:
     QVariant model() const { return m_modelVariant; }
     void setModel(const QVariant& model);
 
-    QVariant rootNode() const { return m_rootNodeVariant; }
-    void setRootNode(const QVariant& node);
-
     QModelIndex rootIndex() const { return m_rootIndex; }
     void setRootIndex(const QModelIndex& index);
 
@@ -81,8 +72,6 @@ public:
     int currentIndex() const { return m_selectedIndex; }
     void setCurrentIndex(int index);
 
-    int selectedIndex() const { return m_selectedIndex; }
-    void setSelectedIndex(int index) { setCurrentIndex(index); }
     int currentColumn() const { return m_selectedIndex >= 0 ? 0 : -1; }
     QVariantMap currentItemData() const;
 
@@ -125,12 +114,10 @@ public:
 
 signals:
     void modelChanged();
-    void rootNodeChanged();
     void rootIndexChanged();
     void delegateChanged();
     void nodeFormatChanged();
     void currentIndexChanged();
-    void selectedIndexChanged();
     void currentItemDataChanged();
     void selectionColorChanged();
     void selectionBackgroundColorChanged();
@@ -239,7 +226,6 @@ private:
     void updateDelegateItem(Item* item, int index);
 
     QVariant m_modelVariant;
-    QVariant m_rootNodeVariant;
     QPointer<QAbstractItemModel> m_cppModel;
     QPersistentModelIndex m_rootIndex;
     QVariantMap m_rootNodeMap;

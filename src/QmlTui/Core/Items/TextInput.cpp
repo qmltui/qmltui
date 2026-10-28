@@ -269,10 +269,10 @@ void TextInput::setEchoMode(EchoMode mode) {
 }
 
 void TextInput::setEchoCharacter(const QString& character) {
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(character);
-    const QString candidate = clusters.isEmpty() ? QString("*")
-                                                 : character.mid(clusters.first().utf16Start,
-                                                                 clusters.first().utf16Length);
+    GraphemeIterator iterator(character);
+    GraphemeRef firstCluster;
+    const QString candidate =
+        iterator.next(firstCluster) ? firstCluster.utf16.toString() : QStringLiteral("*");
     const QString normalized = UnicodeText::displayWidth(candidate) > 0 ? candidate : QString("*");
     if (m_echoCharacter == normalized) return;
     m_echoCharacter = normalized;

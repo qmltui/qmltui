@@ -1507,15 +1507,12 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
             return;
         }
     }
-    if (expectedStyle.hasProperty(QStringLiteral("reverse")) ||
-        expectedStyle.hasProperty(QStringLiteral("reversed"))) {
-        const bool expectedRev = expectedStyle.hasProperty(QStringLiteral("reverse"))
-                                     ? expectedStyle.property(QStringLiteral("reverse")).toBool()
-                                     : expectedStyle.property(QStringLiteral("reversed")).toBool();
+    if (expectedStyle.hasProperty(QStringLiteral("reversed"))) {
+        const bool expectedRev = expectedStyle.property(QStringLiteral("reversed")).toBool();
         const bool actualRev = (static_cast<uint8_t>(cell.attributes) &
                                 static_cast<uint8_t>(TextAttribute::Reversed)) != 0;
         if (expectedRev != actualRev) {
-            failScenario(QStringLiteral("Cell at (%1,%2) reverse expected %3 but got %4")
+            failScenario(QStringLiteral("Cell at (%1,%2) reversed expected %3 but got %4")
                              .arg(x)
                              .arg(y)
                              .arg(expectedRev)

@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QmlTui
 import QmlTui.Controls
 
-// ToolTip: Attached contextual help supporting backgroundColor, border,
+// ToolTip: Attached contextual help supporting color, border,
 // and custom background / contentItem slots.
 Column {
     anchors.centerIn: parent
@@ -21,7 +21,7 @@ Column {
             focus: true
             ToolTip.text: "Compile the current project"
             ToolTip.delay: 250
-            ToolTip.backgroundColor: "#161b22"
+            ToolTip.color: "#161b22"
             ToolTip.textColor: "#79c0ff"
         }
 
@@ -29,7 +29,7 @@ Column {
             text: "Deploy"
             ToolTip.text: "Push the build to staging"
             ToolTip.delay: 250
-            ToolTip.backgroundColor: "#0d1117"
+            ToolTip.color: "#0d1117"
             ToolTip.textColor: "#00ff66"
             ToolTip.border {
                 style: Border.Rounded

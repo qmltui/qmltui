@@ -23,14 +23,11 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `model` | `var` |  | Holds the hierarchical data model (`QAbstractItemModel`). |
-| `rootNode` | `var` |  | Holds the root object of a nested JavaScript tree structure (`{ label, children: [...] }`). |
+| `model` | `var` |  | Holds the hierarchical data model (`QAbstractItemModel` or nested JavaScript object tree `{ text, children: [...] }`). |
 | `rootIndex` | `QModelIndex` |  | Holds the parent index whose children the view shows when using `QAbstractItemModel`. |
 | `delegate` | `Component` |  | Holds the component instantiated for each visible tree row. This is the default property. |
 | `nodeFormat` | `var` |  | Optional JS callback `(row, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed }` for built-in painting. |
 | `currentIndex` | `int` | `-1` | Holds the index of the currently active tree row. |
-| `selectedIndex` | `int` | `-1` | Holds the index of the currently selected tree row. |
-| `currentRow` | `int` |  | Read-only. Holds the current row index. |
 | `currentColumn` | `int` |  | Read-only. Holds the current column index (0 for tree views). |
 | `currentItemData` | `var` |  | Read-only. Holds a dictionary of role data for the currently selected item. |
 | `selectionColor` | `color` |  | Holds the text color override for the selected row. |
@@ -70,8 +67,8 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 ## Detailed Description
 
 TreeView displays hierarchical tree data in terminal rows with expandable branch
-guides. It supports two data source formats: a C++ `QAbstractItemModel` via `model`,
-or a nested JavaScript object tree via `rootNode`.
+guides. It supports two data source formats via `model`: a C++ `QAbstractItemModel`
+or a nested JavaScript object tree.
 
 Keyboard navigation follows standard tree conventions: Up and Down arrow keys move
 the active row; Right arrow expands a collapsed node or enters its first child;
@@ -81,7 +78,7 @@ emits `itemActivated` and `nodeActivated`.
 Nodes are indented according to their `depth`. Branch icons and connectors are
 rendered using `branchColor`. In built-in painting (when `delegate` is unset),
 nodes may supply a `QmlTui.span(...)` or `list<Span>` through `Qt::DisplayRole`,
-a `"spans"` role, or a `rootNode` map (`spans`, `text`, or `display`), or format
+a `"spans"` role, or a `model` map (`spans`, `text`, or `display`), or format
 labels per visible row via `nodeFormat(row, value)`.
 
 ### Example
@@ -108,7 +105,7 @@ Terminal {
             anchors.fill: parent
             anchors.margins: 1
             focus: true
-            rootNode: {
+            model: {
                 "label": "Project",
                 "children": [
                     { "label": "src", "children": [ { "label": "main.cpp" }, { "label": "App.qml" } ] },

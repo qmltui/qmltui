@@ -20,7 +20,6 @@ class InputDecoder {
 public:
     using KeyCallback = std::function<void(int qtKey, const QString& text, int modifiers)>;
     using PasteCallback = std::function<void(const QString& text)>;
-    using MouseCallback = std::function<void(int button, int x, int y, bool release, bool motion)>;
     struct MouseInput {
         int button = 3;
         int x = 0;
@@ -71,7 +70,6 @@ public:
 
     void setKeyCallback(KeyCallback cb);
     void setPasteCallback(PasteCallback cb);
-    void setMouseCallback(MouseCallback cb);
     void setDetailedMouseCallback(DetailedMouseCallback cb);
     void setFocusCallback(FocusCallback cb);
 
@@ -107,7 +105,6 @@ private:
     bool m_discardEscape = false;
     KeyCallback m_keyCallback;
     PasteCallback m_pasteCallback;
-    MouseCallback m_mouseCallback;
     DetailedMouseCallback m_detailedMouseCallback;
     FocusCallback m_focusCallback;
 

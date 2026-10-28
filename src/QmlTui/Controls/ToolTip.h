@@ -24,14 +24,12 @@ namespace qmltui::controls {
 // Attached tooltip overlay (`ToolTip.text`, `ToolTip.visible`, `ToolTip.delay`,
 // `ToolTip.timeout`) that automatically opens a non-modal Popup near the target
 // item after `delay` ms of hover or active focus, or immediately when `visible`
-// is set to true. Supports `color` / `backgroundColor`, `textColor`, `border`,
-// and custom `background` / `contentItem` slots.
+// is set to true. Supports `color`, `textColor`, `border`, and custom
+// `background` / `contentItem` slots.
 class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
-                   backgroundColorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qmltui::Border* border READ border CONSTANT)
     Q_PROPERTY(
@@ -70,9 +68,6 @@ public:
     Color color() const { return m_color; }
     void setColor(Color color);
 
-    Color backgroundColor() const { return m_color; }
-    void setBackgroundColor(Color color);
-
     Border* border() const;
 
     Item* background() const { return m_background; }
@@ -83,7 +78,6 @@ public:
 
 signals:
     void colorChanged();
-    void backgroundColorChanged();
     void textColorChanged();
     void backgroundChanged();
     void contentItemChanged();

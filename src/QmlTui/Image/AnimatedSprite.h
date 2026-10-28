@@ -44,7 +44,6 @@ class QMLTUI_IMAGE_EXPORT AnimatedSprite : public Image, public QQmlParserStatus
     Q_PROPERTY(bool reverse READ reverse WRITE setReverse NOTIFY reverseChanged)
     Q_PROPERTY(FinishBehavior finishBehavior READ finishBehavior WRITE setFinishBehavior NOTIFY
                    finishBehaviorChanged)
-    Q_PROPERTY(bool interpolate READ interpolate WRITE setInterpolate NOTIFY interpolateChanged)
 
 public:
     enum Loops {
@@ -86,8 +85,6 @@ public:
     void setReverse(bool reverse);
     FinishBehavior finishBehavior() const { return m_finishBehavior; }
     void setFinishBehavior(FinishBehavior behavior);
-    bool interpolate() const { return m_interpolate; }
-    void setInterpolate(bool interpolate);
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
@@ -115,7 +112,6 @@ signals:
     void loopsChanged();
     void reverseChanged();
     void finishBehaviorChanged();
-    void interpolateChanged();
     // Emitted when a finite `loops` count completes; never for Infinite, and
     // not when running is set to false.
     void finished();
@@ -144,7 +140,6 @@ private:
     bool m_paused = false;
     bool m_reverse = false;
     FinishBehavior m_finishBehavior = FinishBehavior::FinishAtInitialFrame;
-    bool m_interpolate = true;
     int m_completedLoops = 0;
     bool m_warnedNoDuration = false;
     bool m_complete = true;

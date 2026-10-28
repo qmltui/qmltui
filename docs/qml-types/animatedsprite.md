@@ -36,7 +36,6 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 | `loops` | `int` | `AnimatedSprite.Infinite` | How many times the animation plays before it finishes. `AnimatedSprite.Infinite` never stops on its own. |
 | `reverse` | `bool` | `false` | Play the frames last to first. A run then starts at the last frame. |
 | `finishBehavior` | `FinishBehavior` | `FinishAtInitialFrame` | Which frame stays visible when a finite `loops` count completes. |
-| `interpolate` | `bool` | `true` | Interpolate between frames (Qt Quick compatibility property). |
 
 Every [Image](image.md) property applies to the current frame: `fillMode`,
 `renderMode`, `smooth`, `alignment`, `source`, `image`, and so on.
@@ -117,7 +116,6 @@ Terminal {
         frameHeight: 64
         frameCount: 4
         frameDuration: 500
-        interpolate: false
         fillMode: Image.PreserveAspectFit
     }
 

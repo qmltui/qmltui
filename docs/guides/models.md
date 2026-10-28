@@ -105,11 +105,10 @@ declare `required property string color` to receive it.
 | `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight`; only the viewport's cells are instantiated; `rootIndex` as ListView |
 | `Repeater` | `index`, `model`, named roles | Row value or role map | Inserts delegates into its visual parent; `rootIndex` as ListView |
 | `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
-| `TableView.rowDelegate` | `row`, `index`, `model`, named roles | Entire row | Deprecated 0.1 row-scoped compatibility path |
 | `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
 | `Scrollback` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
 
-`currentIndex`, `selectedRow`, `currentRow`, and `currentColumn` use `-1` for no
+`currentIndex`, `selectedRow`, and `currentColumn` use `-1` for no
 current item where applicable. Model destruction clears the view safely. Model
 replacement disconnects the old model before a new generation is observed.
 

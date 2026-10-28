@@ -37,13 +37,9 @@ public:
 
     Style style() const { return m_style; }
     void setStyle(Style style);
-    void setStyle(const QString& style);
 
     Color color() const { return m_color; }
     void setColor(Color color);
-
-    static Style styleFromString(QStringView str, Style defaultStyle = None);
-    static QString styleToString(Style style);
 
 signals:
     void styleChanged();

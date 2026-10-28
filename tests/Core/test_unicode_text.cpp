@@ -17,14 +17,24 @@ QString fromCodePoints(std::initializer_list<char32_t> codePoints) {
     return text;
 }
 
+QVector<GraphemeRef> collectClusters(QStringView text) {
+    QVector<GraphemeRef> clusters;
+    GraphemeIterator iterator(text);
+    GraphemeRef cluster;
+    while (iterator.next(cluster))
+        clusters.append(cluster);
+    return clusters;
+}
+
 void expectSingleCluster(const QString& text, int width, int utf16Length, int utf8Length) {
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(text);
+    const QVector<GraphemeRef> clusters = collectClusters(text);
     QCOMPARE(clusters.size(), 1);
     QCOMPARE(clusters[0].utf16Start, 0);
-    QCOMPARE(clusters[0].utf16Length, utf16Length);
+    QCOMPARE(clusters[0].utf16Length(), utf16Length);
     QCOMPARE(clusters[0].width, width);
-    QCOMPARE(clusters[0].utf8.size(), utf8Length);
-    QCOMPARE(clusters[0].utf8, text.toUtf8());
+    const QByteArray utf8 = UnicodeText::toUtf8(clusters[0].utf16);
+    QCOMPARE(utf8.size(), utf8Length);
+    QCOMPARE(utf8, text.toUtf8());
     QCOMPARE(UnicodeText::displayWidth(text), width);
 }
 
@@ -48,28 +58,29 @@ private slots:
     void testLoneSurrogateBecomesReplacement();
     void testBoundariesRoundTrip();
     void testDisplayWidthSumsClusters();
-    void testIteratorMatchesGraphemes();
+    void testIteratorEncodingAndReset();
     void testIteratorSanitizesControls();
     void testEncodeUtf8Capacity();
 };
 
 void TestUnicodeText::testEmptyText() {
-    QVERIFY(UnicodeText::graphemes(QString()).isEmpty());
+    QVERIFY(collectClusters(QString()).isEmpty());
     QCOMPARE(UnicodeText::displayWidth(QString()), 0);
     QCOMPARE(UnicodeText::nextBoundary(QString(), 0), 0);
     QCOMPARE(UnicodeText::previousBoundary(QString(), 0), 0);
 }
 
 void TestUnicodeText::testAsciiClusters() {
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(QStringLiteral("abc"));
+    const QString text = QStringLiteral("abc");
+    const QVector<GraphemeRef> clusters = collectClusters(text);
     QCOMPARE(clusters.size(), 3);
     for (int i = 0; i < 3; ++i) {
         QCOMPARE(clusters[i].utf16Start, i);
-        QCOMPARE(clusters[i].utf16Length, 1);
+        QCOMPARE(clusters[i].utf16Length(), 1);
         QCOMPARE(clusters[i].width, 1);
-        QCOMPARE(clusters[i].utf8, QByteArray(1, static_cast<char>('a' + i)));
+        QCOMPARE(UnicodeText::toUtf8(clusters[i].utf16), QByteArray(1, static_cast<char>('a' + i)));
     }
-    QCOMPARE(UnicodeText::displayWidth(QStringLiteral("abc")), 3);
+    QCOMPARE(UnicodeText::displayWidth(text), 3);
 }
 
 void TestUnicodeText::testPrecomposedAndDecomposed() {
@@ -112,24 +123,23 @@ void TestUnicodeText::testControlCharactersHaveZeroWidth() {
     // Raw controls segment as their own zero-width clusters; TextGridBuffer
     // substitutes visible U+24xx glyphs before writing them.
     expectSingleCluster(QString(QChar(0x1b)), 0, 1, 1);
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(QStringLiteral("a\x1b"
-                                                                             "b"));
+    const QString text = QStringLiteral("a\x1b"
+                                        "b");
+    const QVector<GraphemeRef> clusters = collectClusters(text);
     QCOMPARE(clusters.size(), 3);
     QCOMPARE(clusters[1].width, 0);
-    QCOMPARE(UnicodeText::displayWidth(QStringLiteral("a\x1b"
-                                                      "b")),
-             2);
+    QCOMPARE(UnicodeText::displayWidth(text), 2);
 }
 
 void TestUnicodeText::testLoneSurrogateBecomesReplacement() {
     // QString::toUtf8 encodes a lone surrogate as '?'; it must still be one
     // width-1 cluster rather than corrupting neighbouring clusters.
     const QString text = QString(QChar(0xD800)) + QStringLiteral("a");
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(text);
+    const QVector<GraphemeRef> clusters = collectClusters(text);
     QCOMPARE(clusters.size(), 2);
     QCOMPARE(clusters[0].width, 1);
-    QCOMPARE(clusters[0].utf8, QByteArray("?"));
-    QCOMPARE(clusters[1].utf8, QByteArray("a"));
+    QCOMPARE(UnicodeText::toUtf8(clusters[0].utf16), QByteArray("?"));
+    QCOMPARE(UnicodeText::toUtf8(clusters[1].utf16), QByteArray("a"));
     QCOMPARE(UnicodeText::displayWidth(text), 2);
 }
 
@@ -137,20 +147,20 @@ void TestUnicodeText::testBoundariesRoundTrip() {
     const QString text = QStringLiteral("a") + fromCodePoints({0x1F44D, 0x1F3FD}) +
                          QStringLiteral("b") + fromCodePoints({0x4E2D}) +
                          fromCodePoints({'e', 0x0301});
-    const QVector<Grapheme> clusters = UnicodeText::graphemes(text);
+    const QVector<GraphemeRef> clusters = collectClusters(text);
     QCOMPARE(clusters.size(), 5);
 
     // From any position inside a cluster, nextBoundary is that cluster's end
     // and previousBoundary is the start of the cluster before the position.
-    for (const Grapheme& cluster : clusters) {
-        const int end = cluster.utf16Start + cluster.utf16Length;
+    for (const GraphemeRef& cluster : clusters) {
+        const int end = cluster.utf16Start + cluster.utf16Length();
         for (int position = cluster.utf16Start; position < end; ++position)
             QCOMPARE(UnicodeText::nextBoundary(text, position), end);
         QCOMPARE(UnicodeText::previousBoundary(text, end), cluster.utf16Start);
     }
     QCOMPARE(UnicodeText::nextBoundary(text, text.size()), text.size());
     QCOMPARE(UnicodeText::previousBoundary(text, 0), 0);
-    QCOMPARE(UnicodeText::nextBoundary(text, -5), clusters[0].utf16Length);
+    QCOMPARE(UnicodeText::nextBoundary(text, -5), clusters[0].utf16Length());
     QCOMPARE(UnicodeText::previousBoundary(text, text.size() + 5), clusters[4].utf16Start);
 }
 
@@ -159,13 +169,13 @@ void TestUnicodeText::testDisplayWidthSumsClusters() {
                          QStringLiteral(" ") + fromCodePoints({0x1F1EB, 0x1F1F7}) +
                          fromCodePoints({0x200B}) + QStringLiteral("!");
     int sum = 0;
-    for (const Grapheme& cluster : UnicodeText::graphemes(text))
+    for (const GraphemeRef& cluster : collectClusters(text))
         sum += cluster.width;
     QCOMPARE(UnicodeText::displayWidth(text), sum);
     QCOMPARE(sum, 3 + 4 + 1 + 2 + 0 + 1);
 }
 
-void TestUnicodeText::testIteratorMatchesGraphemes() {
+void TestUnicodeText::testIteratorEncodingAndReset() {
     const QStringList samples = {
         QString(),
         QStringLiteral("plain ascii"),
@@ -178,22 +188,23 @@ void TestUnicodeText::testIteratorMatchesGraphemes() {
                        "b\x7f"),
     };
     for (const QString& sample : samples) {
-        const QVector<Grapheme> expected = UnicodeText::graphemes(sample);
+        const QVector<GraphemeRef> firstPass = collectClusters(sample);
         GraphemeIterator iterator(sample);
         GraphemeRef cluster;
         int index = 0;
         while (iterator.next(cluster)) {
-            QVERIFY2(index < expected.size(), qPrintable(sample));
-            QCOMPARE(cluster.utf16Start, expected[index].utf16Start);
-            QCOMPARE(cluster.utf16Length(), expected[index].utf16Length);
-            QCOMPARE(cluster.width, expected[index].width);
-            QCOMPARE(UnicodeText::toUtf8(cluster.utf16), expected[index].utf8);
+            QVERIFY2(index < firstPass.size(), qPrintable(sample));
+            QCOMPARE(cluster.utf16Start, firstPass[index].utf16Start);
+            QCOMPARE(cluster.utf16Length(), firstPass[index].utf16Length());
+            QCOMPARE(cluster.width, firstPass[index].width);
             char encoded[64];
             const int length = UnicodeText::encodeUtf8(cluster.utf16, encoded, sizeof encoded);
-            QCOMPARE(QByteArray(encoded, length), expected[index].utf8);
+            QCOMPARE(QByteArray(encoded, length), UnicodeText::toUtf8(cluster.utf16));
             ++index;
         }
-        QCOMPARE(index, expected.size());
+        QCOMPARE(index, firstPass.size());
+        iterator.reset();
+        QCOMPARE(iterator.next(cluster), !firstPass.isEmpty());
     }
 }
 

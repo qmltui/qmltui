@@ -26,7 +26,6 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `columns` | `list<var>` | `[]` | List of column descriptors: `{ title, key, role, width, stretch, align, headerAlign, padding, leftPadding, rightPadding, color, background }`. |
 | `model` | `var` |  | Holds the data model providing tabular entries: 2D array, TableModel, or QAbstractItemModel. |
 | `selectedRow` | `int` |  | Holds the index of the currently selected row, or -1 if no row is selected. |
-| `currentRow` | `int` |  | Read-only. Holds the index of the currently active row. |
 | `currentColumn` | `int` |  | Holds the index of the currently active column. |
 | `alternatingRows` | `bool` |  | Whether alternating rows use alternatingRowBackgroundColor. |
 | `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
@@ -46,7 +45,6 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `columnWidthProvider` | `var` |  | Optional JS callback (column) => width returning cell count per column. |
 | `cellFormat` | `var` |  | JS callback `(row, column, value) => Span \| list<Span> \| { text, spans, color, backgroundColor, bold, dim, italic, underline, reversed, align, padding, leftPadding, rightPadding }`. |
 | `delegate` | `Component` |  | Holds an optional custom component for rendering cells. |
-| `rowDelegate` | `Component` |  | Holds an optional custom component for rendering entire rows. |
 
 ## Signals
 
@@ -216,12 +214,7 @@ to select the box-drawing character set (`showGrid` has been removed in favor of
 `selected` identify the represented cell. QmlTui's `columns` descriptors continue
 to provide terminal column titles, keys, widths, and alignment.
 
-`rowDelegate` retains the deprecated QmlTui 0.1 row-scoped delegate contract for
-migration; it remains supported with no scheduled removal release. When both properties are set, `delegate` wins and
-QmlTui emits a warning.
-
-Selection properties are `currentRow` (read-only alias of `selectedRow`),
-`selectedRow`, and `currentColumn`. See the
+Selection properties are `selectedRow` and `currentColumn`. See the
 [TableView example](../../examples/recipes/table_view/Main.qml).
 
 ### Sorting, filtering, and model coordinates
@@ -303,7 +296,7 @@ remembered set is bounded.
 
 For compatibility, array/map cell delegates receive stringified `modelData`;
 C++ models with named roles provide a role map, and those without named roles
-provide the display value. `rowDelegate.modelData` represents the entire row.
+provide the display value.
 
 Delegate count is bounded by the viewport and overscan. Updates query only
 changed roles of realized source indexes, sharing reads between visual columns

@@ -27,7 +27,7 @@ Column {
                 margins: 1
             }
             focus: true
-            rootNode: {
+            model: {
                 "text": "src",
                 "icon": "",
                 "expanded": true,

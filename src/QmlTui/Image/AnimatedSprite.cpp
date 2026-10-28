@@ -214,13 +214,6 @@ void AnimatedSprite::setFinishBehavior(FinishBehavior behavior) {
     emit finishBehaviorChanged();
 }
 
-void AnimatedSprite::setInterpolate(bool interpolate) {
-    if (m_interpolate == interpolate) return;
-    m_interpolate = interpolate;
-    setSmooth(interpolate);
-    emit interpolateChanged();
-}
-
 void AnimatedSprite::start() {
     if (m_running) return;
     m_completedLoops = 0;

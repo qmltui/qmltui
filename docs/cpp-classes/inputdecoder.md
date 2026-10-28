@@ -12,9 +12,6 @@ Registers the callback invoked when a key sequence is decoded (`int qtKey`, `con
 #### `void setPasteCallback(PasteCallback cb)`
 Registers the callback invoked with the complete payload of a bracketed paste (`\033[200~...\033[201~`).
 
-#### `void setMouseCallback(MouseCallback cb)`
-Registers the legacy mouse callback (`int button`, `int x`, `int y`, `bool release`, `bool motion`).
-
 #### `void setDetailedMouseCallback(DetailedMouseCallback cb)`
 Registers the callback receiving normalized button, modifier, motion, and signed wheel-delta fields.
 

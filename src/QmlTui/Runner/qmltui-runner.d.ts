@@ -74,7 +74,6 @@ interface QmlTuiStyleExpectation {
     dim?: boolean;
     italic?: boolean;
     underline?: boolean;
-    reverse?: boolean;
     reversed?: boolean;
     /** A color string, or "default" for the terminal's own color. */
     foreground?: string;
@@ -326,6 +325,3 @@ interface Runner {
     /** The root Terminal QML object — for computing expectations, not asserting. */
     rootObject(): any;
 }
-
-/** Alias for consumers who prefer an explicit name. */
-type QmlTuiRunner = Runner;

@@ -29,16 +29,6 @@ enum GridGlyph : uint8_t {
     Cross,
 };
 
-struct RegisterTableConverters {
-    RegisterTableConverters() {
-        QMetaType::registerConverter<QString, TableView::GridStyle>([](const QString& str) {
-            return TableView::gridStyleFromString(str, TableView::Single);
-        });
-        QMetaType::registerConverter<TableView::GridStyle, QString>(
-            [](TableView::GridStyle style) { return TableView::gridStyleToString(style); });
-    }
-} s_registerTableConverters;
-
 using DelegateUtils::delegateContext;
 
 QVariant unpack(QVariant value) {
@@ -493,37 +483,6 @@ void TableView::setGridStyle(GridStyle style) {
     markDirty();
 }
 
-void TableView::setGridStyle(const QString& style) {
-    if (style == QLatin1String("single")) {
-        setGridStyle(Single);
-    } else if (style == QLatin1String("double")) {
-        setGridStyle(Double);
-    } else if (style == QLatin1String("ascii")) {
-        setGridStyle(Ascii);
-    } else {
-        qmlWarning(this) << "Unsupported TableView gridStyle:" << style;
-    }
-}
-
-TableView::GridStyle TableView::gridStyleFromString(QStringView str, GridStyle defaultStyle) {
-    if (str.compare(u"single", Qt::CaseInsensitive) == 0) return Single;
-    if (str.compare(u"double", Qt::CaseInsensitive) == 0) return Double;
-    if (str.compare(u"ascii", Qt::CaseInsensitive) == 0) return Ascii;
-    return defaultStyle;
-}
-
-QString TableView::gridStyleToString(GridStyle style) {
-    switch (style) {
-    case Single:
-        return QStringLiteral("single");
-    case Double:
-        return QStringLiteral("double");
-    case Ascii:
-        return QStringLiteral("ascii");
-    }
-    return QStringLiteral("single");
-}
-
 void TableView::forceLayout() {
     m_geometryDirty = true;
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
@@ -562,36 +521,7 @@ void TableView::setDelegate(QQmlComponent* delegate) {
                         DelegateUtils::isReady(m_delegate, this);
                 });
     }
-    if (m_delegate && m_rowDelegate)
-        qmlWarning(this) << "TableView.delegate overrides deprecated rowDelegate";
     emit delegateChanged();
-    generateDelegateItems();
-    markDirty();
-}
-
-void TableView::setRowDelegate(QQmlComponent* delegate) {
-    if (m_rowDelegate == delegate) return;
-    generateDelegateItems();
-    if (m_rowDelegate) disconnect(m_rowDelegate, nullptr, this, nullptr);
-    m_rowDelegate = delegate;
-    if (m_rowDelegate) {
-        connect(m_rowDelegate, &QObject::destroyed, this, [this]() {
-            m_rowDelegate.clear();
-            generateDelegateItems();
-            emit rowDelegateChanged();
-            markDirty();
-        });
-        connect(m_rowDelegate, &QQmlComponent::statusChanged, this,
-                [this](QQmlComponent::Status status) {
-                    if (status == QQmlComponent::Ready && !m_delegate)
-                        generateDelegateItems();
-                    else if (status == QQmlComponent::Error)
-                        DelegateUtils::isReady(m_rowDelegate, this);
-                });
-    }
-    if (m_delegate && m_rowDelegate)
-        qmlWarning(this) << "TableView.delegate overrides deprecated rowDelegate";
-    emit rowDelegateChanged();
     generateDelegateItems();
     markDirty();
 }
@@ -778,9 +708,7 @@ void TableView::resolveColumns() {
                 ? descriptor.value(QStringLiteral("title"), defaultTitle).toString()
             : value.isValid() ? value.toString()
                               : defaultTitle;
-        QString alignment =
-            descriptor.value(QStringLiteral("alignment"), descriptor.value(QStringLiteral("align")))
-                .toString();
+        QString alignment = descriptor.value(QStringLiteral("align")).toString();
         if (alignment.isEmpty())
             alignment = alignmentName(modelHeader(column, Qt::TextAlignmentRole));
         if (alignment.isEmpty()) alignment = QStringLiteral("left");
@@ -883,9 +811,7 @@ void TableView::handleDataChanged(const QModelIndex& topLeft, const QModelIndex&
     for (auto& record : m_createdDelegateItems) {
         const QModelIndex index = record.source;
         const bool columnMatches =
-            m_rowDelegate
-                ? (bottomRight.column() >= 0 && topLeft.column() < columnCount())
-                : (index.column() >= topLeft.column() && index.column() <= bottomRight.column());
+            index.column() >= topLeft.column() && index.column() <= bottomRight.column();
         if (!topLeft.isValid() || !bottomRight.isValid() ||
             (index.isValid() && index.parent() == topLeft.parent() &&
              index.row() >= topLeft.row() && index.row() <= bottomRight.row() && columnMatches)) {
@@ -899,7 +825,7 @@ void TableView::handleDataChanged(const QModelIndex& topLeft, const QModelIndex&
     }
     if (affected)
         markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
-    else if (!m_delegate && !m_rowDelegate)
+    else if (!m_delegate)
         markDirty();
 }
 void TableView::updateDelegateState(DelegateRecord& record, int row, int column) {
@@ -928,7 +854,6 @@ void TableView::refreshDelegateStates(Position previous) {
     }
 }
 void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
-    const bool cellMode = bool(m_delegate);
     const bool dataDirty = !record.loaded || record.allRolesDirty || !record.dirtyRoles.isEmpty();
     const bool allRolesDirty = record.allRolesDirty;
     const QSet<int> dirtyRoles = std::exchange(record.dirtyRoles, {});
@@ -938,7 +863,7 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
         updateDelegateState(record, row, column);
         return;
     }
-    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    QQmlComponent* raw = m_delegate.data();
     const bool isChooser = raw && QQmlListReference(raw, "choices").isValid();
     const bool isBoundNonChooser = raw && !isChooser && raw->isBound();
     const quint16 neededStandardRoles =
@@ -966,11 +891,11 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
             const QVariant value =
                 row >= 0 && row < m_listModel.size() ? unpack(m_listModel[row]) : QVariant();
             values = value.toMap();
-            modelData = cellMode ? QVariant(cellText(row, column)) : value;
-            if (cellMode) values.insert(QStringLiteral("display"), modelData);
+            modelData = QVariant(cellText(row, column));
+            values.insert(QStringLiteral("display"), modelData);
         }
     }
-    if (m_cppModel && cellMode) {
+    if (m_cppModel) {
         const QString roleKey = columnRoleKey(m_columns, column);
         if (!roleKey.isEmpty() && values.contains(roleKey))
             values.insert(QStringLiteral("display"), rawValueToText(values.value(roleKey)));
@@ -987,12 +912,12 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
         DelegateUtils::setContextProperty(component, delegateContext(record.item), name, value);
         DelegateUtils::setPropertyIfExists(record.item, name.toUtf8().constData(), value);
     };
-    const qint64 index = cellMode ? qint64(row) * columnCount() + column : row;
+    const qint64 index = qint64(row) * columnCount() + column;
     if (!record.item && DelegateUtils::isReady(component, this)) {
         QVariantMap initial = values;
         initial.insert(QStringLiteral("index"), index);
         initial.insert(QStringLiteral("row"), row);
-        if (cellMode) initial.insert(QStringLiteral("column"), column);
+        initial.insert(QStringLiteral("column"), column);
         record.current = row == m_selectedRow && column == m_currentColumn;
         initial.insert(QStringLiteral("current"), record.current);
         initial.insert(QStringLiteral("selected"), record.current);
@@ -1034,7 +959,7 @@ void TableView::updateDelegate(DelegateRecord& record, int row, int column) {
         if (moved) {
             assign(QStringLiteral("index"), index);
             assign(QStringLiteral("row"), row);
-            if (cellMode) assign(QStringLiteral("column"), column);
+            assign(QStringLiteral("column"), column);
         } else if (record.index != index) {
             assign(QStringLiteral("index"), index);
         }
@@ -1120,11 +1045,11 @@ void TableView::maybeFetchMore() {
     DelegateUtils::fetchMoreIfNeeded(m_cppModel.data(), QModelIndex(), 2, m_fetching, lastShown);
 }
 void TableView::layoutDelegates() {
-    if (m_resetDelegates || (!m_delegate && !m_rowDelegate)) {
+    if (m_resetDelegates || !m_delegate) {
         clearDelegateItems();
         m_resetDelegates = false;
     }
-    if (!m_delegate && !m_rowDelegate) return;
+    if (!m_delegate) return;
     if (m_structureDirty) {
         QHash<Position, DelegateRecord> remapped;
         for (auto it = m_createdDelegateItems.begin(); it != m_createdDelegateItems.end(); ++it) {
@@ -1133,8 +1058,8 @@ void TableView::layoutDelegates() {
                 destroyDelegate(record);
                 continue;
             }
-            const int column = m_delegate && m_cppModel->columnCount() > 1 ? record.source.column()
-                                                                           : it.key().second;
+            const int column =
+                m_cppModel->columnCount() > 1 ? record.source.column() : it.key().second;
             const Position position{record.source.row(), column};
             if (remapped.contains(position)) {
                 destroyDelegate(record);
@@ -1153,11 +1078,8 @@ void TableView::layoutDelegates() {
         const int last =
             int((std::min)(qint64(rowCount()) - 1, qint64(m_firstVisibleRow) + bodyHeight + 1));
         for (int row = first; row <= last; ++row) {
-            if (m_delegate) {
-                for (const auto& geometry : std::as_const(m_geometry))
-                    wanted.insert({row, geometry.column}, geometry);
-            } else
-                wanted.insert({row, 0}, {0, view.left, view.width, {}, {}});
+            for (const auto& geometry : std::as_const(m_geometry))
+                wanted.insert({row, geometry.column}, geometry);
         }
     }
     QVarLengthArray<DelegateRecord, 32> recyclePool;
@@ -1169,7 +1091,7 @@ void TableView::layoutDelegates() {
             ++it;
     }
     m_fetchedRoles.clear();
-    QQmlComponent* raw = m_delegate ? m_delegate.data() : m_rowDelegate.data();
+    QQmlComponent* raw = m_delegate.data();
     const bool isChooser = raw && QQmlListReference(raw, "choices").isValid();
     for (auto it = wanted.cbegin(); it != wanted.cend(); ++it) {
         const int row = it.key().first;
@@ -1186,7 +1108,7 @@ void TableView::layoutDelegates() {
             }
         }
         auto& record = m_createdDelegateItems[it.key()];
-        const QModelIndex source = sourceIndex(row, m_delegate ? column : 0);
+        const QModelIndex source = sourceIndex(row, column);
         if (record.source != source) {
             record.source = source;
             record.allRolesDirty = true;
@@ -1574,7 +1496,7 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
                 }
             }
         }
-        if (m_delegate || m_rowDelegate) continue;
+        if (m_delegate) continue;
         for (const auto& geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
             const BuiltInCell& cell = resolveBuiltInCell(row, geometry.column);

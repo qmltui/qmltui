@@ -195,12 +195,12 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0u);
     tip.setTextColor(Color("#123456"));
     tip.setColor(Color("#654321"));
-    QCOMPARE(tip.backgroundColor(), Color("#654321"));
+    QCOMPARE(tip.color(), Color("#654321"));
     paintItem(popup, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).fgColor, 0xff123456u);
     QCOMPARE(buffer.cellAt(1, 0).bgColor, 0xff654321u);
 
-    tip.setBackgroundColor(Color("#112233"));
+    tip.setColor(Color("#112233"));
     QCOMPARE(tip.color(), Color("#112233"));
     tip.border()->setStyle(Border::Rounded);
     tip.border()->setColor(Color("#aabbcc"));

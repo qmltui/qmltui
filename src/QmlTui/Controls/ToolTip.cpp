@@ -13,12 +13,7 @@ void ToolTip::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
     emit colorChanged();
-    emit backgroundColorChanged();
     updateAppearance();
-}
-
-void ToolTip::setBackgroundColor(Color color) {
-    setColor(color);
 }
 
 void ToolTip::setTextColor(Color color) {

@@ -99,6 +99,8 @@ qt_add_qml_module(QmlTuiCore
         Engine/StateGroup.cpp
         Engine/Transition.h
         Engine/Transition.cpp
+        Engine/QmlPrivateBridge_p.h
+        Engine/QmlPrivateBridge.cpp
         Engine/StateController_p.h
         Engine/StateController.cpp
         ${qmltui_private_qt_sources}

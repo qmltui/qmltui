@@ -1,11 +1,9 @@
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Engine/Clock_p.h>
+#include <QmlTui/Core/Engine/QmlPrivateBridge_p.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QMetaProperty>
 #include <QMetaType>
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-#include <QtQml/private/qqmlproperty_p.h>
-#endif
 #include <algorithm>
 #include <cmath>
 
@@ -48,91 +46,6 @@ static double applyEasing(Easing::Type type, double t) {
     }
     }
     return t;
-}
-
-static void writePropertyBypassingInterceptor(QObject* target, const QString& name,
-                                              const QVariant& value) {
-    if (!target || name.isEmpty()) return;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    // Dynamic QML properties have no C++ static_metacall. A regular property
-    // write would re-enter Behavior and remove the property's source binding.
-    const QQmlProperty property(target, name);
-    const QVariant converted = property.propertyType() == QMetaType::QString &&
-                                       value.metaType() == QMetaType::fromType<Color>()
-                                   ? QVariant(value.value<Color>().toString())
-                                   : value;
-    QQmlPropertyPrivate::write(property, converted,
-                               QQmlPropertyData::BypassInterceptor |
-                                   QQmlPropertyData::DontRemoveBinding);
-#else
-    const QMetaObject* meta = target->metaObject();
-    int idx = meta->indexOfProperty(name.toUtf8().constData());
-    if (idx >= 0) {
-        QMetaProperty prop = meta->property(idx);
-
-        // Find the C++ class QMetaObject defining the property to get its C++ static_metacall
-        const QMetaObject* definingMeta = target->metaObject();
-        while (definingMeta) {
-            const QMetaObject* super = definingMeta->superClass();
-            if (!super || idx >= super->propertyCount()) {
-                break;
-            }
-            definingMeta = super;
-        }
-
-        if (definingMeta && definingMeta->d.static_metacall) {
-            int relativeId = idx;
-            if (definingMeta->superClass()) {
-                relativeId -= definingMeta->superClass()->propertyCount();
-            }
-
-            QMetaType mType = prop.metaType();
-            int typeId = mType.id();
-
-            if (typeId == QMetaType::Int) {
-                int val = value.toInt();
-                void* argv[] = {&val};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            } else if (typeId == QMetaType::Double) {
-                double val = value.toDouble();
-                void* argv[] = {&val};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            } else if (typeId == QMetaType::QString) {
-                QString val = (value.userType() == QMetaType::fromType<Color>().id())
-                                  ? value.value<Color>().toString()
-                                  : value.toString();
-                void* argv[] = {&val};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            } else if (typeId == QMetaType::fromType<Color>().id()) {
-                Color col;
-                if (value.userType() == typeId) {
-                    col = value.value<Color>();
-                } else if (value.userType() == QMetaType::QString) {
-                    col = Color::fromString(value.toString());
-                } else {
-                    col = Color::fromArgb32(Color::resolve(value.toString()));
-                }
-                void* argv[] = {&col};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            } else if (typeId == QMetaType::Bool) {
-                bool val = value.toBool();
-                void* argv[] = {&val};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            } else {
-                void* argv[] = {const_cast<void*>(value.constData())};
-                definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
-                                                argv);
-            }
-        } else {
-            prop.write(target, value);
-        }
-    }
-#endif
 }
 
 Animation::Animation(QObject* parent) : QObject(parent) {}

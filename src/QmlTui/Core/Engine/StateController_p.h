@@ -2,6 +2,7 @@
 
 // Internal: state machine engine backing Item::states and StateGroup.
 
+#include <QmlTui/Core/Engine/QmlPrivateBridge_p.h>
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QObject>
@@ -14,10 +15,6 @@
 #include <QVariant>
 #include <QQmlListProperty>
 #include <optional>
-
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-#include <private/qqmlanybinding_p.h>
-#endif
 
 namespace qmltui {
 
@@ -87,9 +84,7 @@ private:
         QPointer<QObject> target;
         QString name;
         QVariant baseValue;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-        QQmlAnyBinding baseBinding;
-#endif
+        SavedBinding baseBinding;
         bool hadBinding = false;
         bool restore = true;
     };
@@ -98,10 +93,8 @@ private:
         QPointer<QObject> target;
         QString name;
         QVariant value;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-        QQmlAnyBinding binding;
+        SavedBinding binding;
         bool isBinding = false;
-#endif
         bool restore = true;
     };
 

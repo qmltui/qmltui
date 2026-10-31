@@ -1,6 +1,6 @@
 #include <QmlTui/Core/Engine/Behavior.h>
+#include <QmlTui/Core/Engine/QmlPrivateBridge_p.h>
 #include <QmlTui/Core/Primitives/Color.h>
-#include <QtQml/private/qqmlproperty_p.h>
 
 namespace qmltui {
 
@@ -57,9 +57,7 @@ void Behavior::write(const QVariant& value) {
     }
 
     if (!m_animation) {
-        QQmlPropertyPrivate::write(m_property, value,
-                                   QQmlPropertyData::BypassInterceptor |
-                                       QQmlPropertyData::DontRemoveBinding);
+        writePropertyBypassingInterceptor(m_property, value);
         return;
     }
 
@@ -75,9 +73,7 @@ void Behavior::write(const QVariant& value) {
         propAnim->setTo(value);
         propAnim->start();
     } else {
-        QQmlPropertyPrivate::write(m_property, value,
-                                   QQmlPropertyData::BypassInterceptor |
-                                       QQmlPropertyData::DontRemoveBinding);
+        writePropertyBypassingInterceptor(m_property, value);
     }
 }
 

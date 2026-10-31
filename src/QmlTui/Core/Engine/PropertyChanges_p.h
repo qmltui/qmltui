@@ -9,8 +9,8 @@
 #include <QUrl>
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
-#include <private/qv4compileddata_p.h>
-#include <private/qqmlcustomparser_p.h>
+#include <QtQml/private/qqmlcustomparser_p.h>
+#include <QtQml/private/qv4compileddata_p.h>
 #endif
 
 namespace qmltui {
@@ -41,13 +41,14 @@ public:
     bool hasDecoded = false;
     QList<DecodedBinding> decodedBindings;
 
+    void decode();
+
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QQmlRefPointer<QV4::ExecutableCompilationUnit> compilationUnit;
     QList<const QV4::CompiledData::Binding*> rawBindings;
 
     void setBindings(const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
                      const QList<const QV4::CompiledData::Binding*>& bindings);
-    void decode();
     void decodeBinding(const QString& propertyPrefix,
                        const QQmlRefPointer<QV4::ExecutableCompilationUnit>& unit,
                        const QV4::CompiledData::Binding* binding);

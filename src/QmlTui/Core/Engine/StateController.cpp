@@ -9,14 +9,6 @@
 #include <QQmlContext>
 #include <QMetaProperty>
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-#include <private/qqmlproperty_p.h>
-#include <private/qqmlcontextdata_p.h>
-#include <private/qqmlengine_p.h>
-#include <private/qv4qmlcontext_p.h>
-#include <private/qqmlbinding_p.h>
-#endif
-
 namespace qmltui {
 
 QMap<CanonicalProperty, StateController*> StateController::s_propertyOwners;
@@ -29,21 +21,9 @@ static CanonicalProperty resolveCanonicalProperty(QObject* target, const QString
     if (target && !name.isEmpty()) {
         QQmlProperty prop(target, name);
         if (prop.isValid()) {
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-            if (QQmlPropertyPrivate::get(prop)->core.isAlias()) {
-                auto resolved = QQmlPropertyPrivate::findAliasTarget(
-                    prop.object(), QQmlPropertyPrivate::propertyIndex(prop));
-                if (resolved.targetObject) {
-                    result.target = resolved.targetObject;
-                    const QMetaObject* mo = resolved.targetObject->metaObject();
-                    int coreIdx = resolved.targetIndex.coreIndex();
-                    if (coreIdx >= 0 && coreIdx < mo->propertyCount()) {
-                        result.name = QString::fromUtf8(mo->property(coreIdx).name());
-                    }
-                }
+            if (resolvePropertyAlias(prop, result.target, result.name)) {
                 return result;
             }
-#endif
             result.target = prop.object();
             result.name = prop.name();
         }
@@ -261,7 +241,6 @@ void StateController::collectOverridesForState(
     for (PropertyChanges* pc : state->propertyChangesList()) {
         if (!pc) continue;
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
         if (!pc->properties().isEmpty() && pc->d_func() && pc->d_func()->hasCustomBindings) {
             qmlWarning(pc) << "Cannot mix properties map and direct assignments in PropertyChanges";
             continue;
@@ -288,17 +267,7 @@ void StateController::collectOverridesForState(
                 if (!rawContext && parent()) rawContext = qmlContext(parent());
                 if (!rawContext && baseTarget) rawContext = qmlContext(baseTarget);
 
-                QQmlRefPointer<QQmlContextData> context = rawContext
-                                                              ? QQmlContextData::get(rawContext)
-                                                              : QQmlRefPointer<QQmlContextData>();
-                QQmlProperty prop;
-                if (!context.isNull()) {
-                    prop = QQmlPropertyPrivate::create(baseTarget, b.propertyName, context,
-                                                       QQmlPropertyPrivate::InitFlag::AllowId);
-                } else if (baseTarget) {
-                    prop = QQmlProperty(baseTarget, b.propertyName);
-                }
-
+                QQmlProperty prop = createQmlProperty(baseTarget, b.propertyName, rawContext);
                 if (!prop.isValid()) {
                     qmlWarning(pc)
                         << "Cannot assign to non-existent property \"" << b.propertyName << "\"";
@@ -317,54 +286,8 @@ void StateController::collectOverridesForState(
                 override.restore = pc->restoreEntryValues();
 
                 if (b.isExpression) {
-                    QV4::Scope scope(qmlEngine(pc)->handle());
-                    QV4::Scoped<QV4::QmlContext> qmlCtxt(
-                        scope, QV4::QmlContext::create(scope.engine->rootContext(), context,
-                                                       prop.object()));
-
-                    std::unique_ptr<QQmlBinding> evalBinding;
-                    if (b.rawBinding && b.rawBinding->isTranslationBinding()) {
-                        evalBinding.reset(QQmlBinding::createTranslationBinding(
-                            pc->d_func()->compilationUnit, b.rawBinding, prop.object(), context));
-                    } else if (b.compiledScriptIndex != ~0u &&
-                               b.compiledScriptIndex <
-                                   pc->d_func()->compilationUnit->runtimeFunctions.size()) {
-                        evalBinding.reset(
-                            QQmlBinding::create(&QQmlPropertyPrivate::get(prop)->core,
-                                                pc->d_func()->compilationUnit->runtimeFunctions.at(
-                                                    b.compiledScriptIndex),
-                                                prop.object(), context, qmlCtxt));
-                    } else if (!b.expressionCode.isEmpty()) {
-                        evalBinding.reset(QQmlBinding::create(&QQmlPropertyPrivate::get(prop)->core,
-                                                              b.expressionCode, prop.object(),
-                                                              context, b.url.toString(), b.line));
-                    }
-                    override.value = evalBinding ? evalBinding->evaluate() : QVariant();
-
-                    if (pc->isExplicit()) {
-                        override.isBinding = false;
-                    } else {
-                        QQmlAnyBinding newBinding;
-                        if (b.rawBinding && b.rawBinding->isTranslationBinding()) {
-                            newBinding = QQmlAnyBinding::createTranslationBinding(
-                                prop, pc->d_func()->compilationUnit, b.rawBinding, prop.object(),
-                                context);
-                        } else if (b.compiledScriptIndex != ~0u &&
-                                   b.compiledScriptIndex <
-                                       pc->d_func()->compilationUnit->runtimeFunctions.size()) {
-                            newBinding = QQmlAnyBinding::createFromFunction(
-                                prop,
-                                pc->d_func()->compilationUnit->runtimeFunctions.at(
-                                    b.compiledScriptIndex),
-                                prop.object(), context, qmlCtxt);
-                        } else if (!b.expressionCode.isEmpty()) {
-                            newBinding = QQmlAnyBinding::createFromCodeString(
-                                prop, b.expressionCode, prop.object(), context, b.url.toString(),
-                                b.line);
-                        }
-                        override.binding = newBinding;
-                        override.isBinding = true;
-                    }
+                    evaluateDecodedBinding(pc, b, prop, rawContext, override.value,
+                                           override.binding, override.isBinding);
                 } else {
                     override.value = b.literalValue;
                     override.isBinding = false;
@@ -374,7 +297,6 @@ void StateController::collectOverridesForState(
             }
             continue;
         }
-#endif
 
         // Process legacy properties map
         QObject* target = pc->target() ? pc->target() : defaultTarget();
@@ -396,23 +318,7 @@ void StateController::collectOverridesForState(
             if (!rawContext && parent()) rawContext = qmlContext(parent());
             if (!rawContext && target) rawContext = qmlContext(target);
 
-            QQmlProperty prop;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-            QQmlRefPointer<QQmlContextData> context =
-                rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
-            if (!context.isNull()) {
-                prop = QQmlPropertyPrivate::create(target, propName, context,
-                                                   QQmlPropertyPrivate::InitFlag::AllowId);
-            } else if (target) {
-                prop = QQmlProperty(target, propName);
-            }
-#else
-            if (rawContext) {
-                prop = QQmlProperty(target, propName, rawContext);
-            } else if (target) {
-                prop = QQmlProperty(target, propName);
-            }
-#endif
+            QQmlProperty prop = createQmlProperty(target, propName, rawContext);
             if (!prop.isValid()) {
                 qmlWarning(pc) << "Cannot assign to non-existent property \"" << propName << "\"";
                 continue;
@@ -427,9 +333,7 @@ void StateController::collectOverridesForState(
             override.name = prop.name();
             override.value = val;
             override.restore = pc->restoreEntryValues();
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
             override.isBinding = false;
-#endif
             outOverrides.insert(canon, override);
         }
     }
@@ -450,12 +354,10 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
     }
     if (!isActive) return;
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    if (pc->isExplicit()) {
+    if (pc->d_func() && pc->d_func()->isExplicit) {
         // explicit: true freezes advanced map values until reentry
         return;
     }
-#endif
 
     QObject* target = pc->target() ? pc->target() : defaultTarget();
     if (!target) return;
@@ -485,13 +387,8 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
                 rec.target = canon.target;
                 rec.name = canon.name;
                 rec.restore = pc->restoreEntryValues();
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-                QQmlProperty prop(canon.target.data(), canon.name);
-                if (prop.isValid()) {
-                    rec.baseBinding = QQmlAnyBinding::takeFrom(prop);
-                    rec.hadBinding = bool(rec.baseBinding);
-                }
-#endif
+                rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+                rec.hadBinding = static_cast<bool>(rec.baseBinding);
                 rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
                 m_baseRecords.insert(canon, rec);
             }
@@ -537,13 +434,8 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
                 rec.target = canon.target;
                 rec.name = canon.name;
                 rec.restore = pc->restoreEntryValues();
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-                QQmlProperty prop(canon.target.data(), canon.name);
-                if (prop.isValid()) {
-                    rec.baseBinding = QQmlAnyBinding::takeFrom(prop);
-                    rec.hadBinding = bool(rec.baseBinding);
-                }
-#endif
+                rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+                rec.hadBinding = static_cast<bool>(rec.baseBinding);
                 rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
                 m_baseRecords.insert(canon, rec);
             }
@@ -560,22 +452,8 @@ void StateController::revertProperty(const CanonicalProperty& key) {
     BasePropertyRecord rec = m_baseRecords.value(key);
     if (!rec.restore) return;
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    QQmlProperty prop(rec.target.data(), rec.name);
-    if (prop.isValid()) {
-        QQmlAnyBinding::removeBindingFrom(prop);
-        if (rec.hadBinding && rec.baseBinding) {
-            QQmlAnyBinding baseB = rec.baseBinding;
-            baseB.installOn(prop);
-        } else {
-            prop.write(rec.baseValue);
-        }
-    } else {
-        rec.target->setProperty(rec.name.toUtf8().constData(), rec.baseValue);
-    }
-#else
-    rec.target->setProperty(rec.name.toUtf8().constData(), rec.baseValue);
-#endif
+    restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue, rec.hadBinding,
+                           rec.baseBinding);
 }
 
 void StateController::applyOverride(const CanonicalProperty& key, const PropertyOverride& override,
@@ -588,10 +466,6 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
 
     QVariant fromVal = targetObj->property(propName.toUtf8().constData());
     QVariant toVal = override.value;
-
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    QQmlProperty prop(targetObj, propName);
-#endif
 
     // Check if matching transition animation exists
     PropertyAnimation* matchedAnim = nullptr;
@@ -655,8 +529,8 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
         newAnim->setFrom(fromVal);
         newAnim->setTo(toVal);
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-        QQmlAnyBinding destBinding = override.isBinding ? override.binding : QQmlAnyBinding();
+        QQmlProperty prop(targetObj, propName);
+        SavedBinding destBinding = override.isBinding ? override.binding : SavedBinding();
         connect(newAnim, &Animation::finished, this, [this, newAnim, prop, destBinding]() mutable {
             m_runningTransitionAnimations.removeOne(newAnim);
             newAnim->deleteLater();
@@ -665,31 +539,12 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
                 destBinding.installOn(prop);
             }
         });
-#else
-        connect(newAnim, &Animation::finished, this, [this, newAnim]() {
-            m_runningTransitionAnimations.removeOne(newAnim);
-            newAnim->deleteLater();
-        });
-#endif
 
         m_runningTransitionAnimations.append(newAnim);
         newAnim->start();
     } else {
         // Not animated or endpoint equal
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-        if (prop.isValid()) {
-            if (override.isBinding && override.binding) {
-                QQmlAnyBinding b = override.binding;
-                b.installOn(prop);
-            } else {
-                prop.write(toVal);
-            }
-        } else {
-            targetObj->setProperty(propName.toUtf8().constData(), toVal);
-        }
-#else
-        targetObj->setProperty(propName.toUtf8().constData(), toVal);
-#endif
+        installOrWriteProperty(targetObj, propName, toVal, override.isBinding, override.binding);
     }
 }
 
@@ -766,13 +621,8 @@ void StateController::applyState(const QString& newState) {
             rec.target = canon.target;
             rec.name = canon.name;
             rec.restore = override.restore;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-            QQmlProperty prop(canon.target.data(), canon.name);
-            if (prop.isValid()) {
-                rec.baseBinding = QQmlAnyBinding::takeFrom(prop);
-                rec.hadBinding = bool(rec.baseBinding);
-            }
-#endif
+            rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+            rec.hadBinding = static_cast<bool>(rec.baseBinding);
             rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
             m_baseRecords.insert(canon, rec);
         } else if (!override.restore) {

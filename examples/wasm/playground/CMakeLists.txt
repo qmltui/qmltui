@@ -30,7 +30,7 @@ qt_add_qml_module(qmltui_playground
 target_link_libraries(qmltui_playground PRIVATE Qt6::Core Qt6::Qml ${playground_modules})
 
 if(QMLTUI_WASM_PLAYGROUND_IMAGE AND TARGET qmltui::image)
-    # The gallery's Image tile loads qrc:/gallery/assets/panda.png and its
+    # The gallery's Image tile loads qrc:/gallery/assets/bike-picsum.jpg and its
     # AnimatedSprite tile qrc:/gallery/assets/loading.png, so the runtime carries
     # the same resources the desktop gallery embeds.
     set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../gallery/assets")
@@ -40,6 +40,7 @@ if(QMLTUI_WASM_PLAYGROUND_IMAGE AND TARGET qmltui::image)
         FILES
             "${gallery_asset_dir}/panda.png"
             "${gallery_asset_dir}/loading.png"
+            "${gallery_asset_dir}/bike-picsum.jpg"
     )
 endif()
 

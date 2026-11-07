@@ -148,6 +148,9 @@ static QString resolvePath(const QUrl& url) {
 Image::Image(QObject* parent) : Item(parent) {
     connect(this, &Item::widthChanged, this, &Image::renderSizeChanged);
     connect(this, &Item::heightChanged, this, &Image::renderSizeChanged);
+    connect(this, &Item::visibleChanged, this, [this] {
+        if (!visible()) releaseSixelImage();
+    });
 }
 
 graphics::Protocol Image::activeProtocol() const {
@@ -295,8 +298,19 @@ void Image::releaseKittyImage() {
 }
 
 void Image::releaseSixelImage() {
+    if (m_sixelPaintConnection) disconnect(m_sixelPaintConnection);
+    m_paintedSixelThisFrame = false;
+    m_lastSixelKey = 0;
+    m_lastSixelPixels = QSize();
+    m_lastSixelViewport = QSize();
+    m_lastSixelSession = 0;
+    m_lastSixelFrame = 0;
+    m_lastSixelSmooth = false;
+    m_hasLastSixelFrame = false;
+    Terminal* root = m_sixelTerminal ? m_sixelTerminal.data() : terminal();
+    m_sixelTerminal.clear();
     if (m_lastSixelRect.isEmpty()) return;
-    if (Terminal* root = terminal()) {
+    if (root) {
         // Sixels persist outside the cell buffer. Erase before the next cell
         // diff so underlying content can be painted back over these blanks.
         QByteArray clear = "\033[0m\0337";
@@ -308,10 +322,12 @@ void Image::releaseSixelImage() {
                      'H' + blank;
         }
         clear += "\0338";
-        root->enqueueControlSequence(clear);
+        if (root->enqueueControlSequence(clear)) {
+            if (TerminalEngine* engine = root->engine())
+                engine->invalidateCommittedRect(m_lastSixelRect);
+        }
     }
     m_lastSixelRect = QRect();
-    m_lastSixelKey = 0;
 }
 
 void Image::setSource(const QUrl& source) {
@@ -410,6 +426,10 @@ void Image::setSourceClipRect(const QRect& rect) {
     m_sourceClipRect = rect;
     m_scaledImage = QImage();
     m_lastTargetSize = QSize();
+    if (m_status != Status::Loading && effectiveImage().isNull()) {
+        releaseKittyImage();
+        releaseSixelImage();
+    }
     emit sourceClipRectChanged();
     emit implicitWidthChanged();
     emit implicitHeightChanged();
@@ -426,6 +446,7 @@ void Image::setFillMode(FillMode mode) {
 void Image::setRenderMode(RenderMode mode) {
     if (m_renderMode == mode) return;
     m_renderMode = mode;
+    if (activeProtocol() != graphics::Protocol::Sixel) releaseSixelImage();
     emit renderModeChanged();
     emit renderSizeChanged();
     markDirty();
@@ -630,6 +651,8 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
     if (mode == RenderMode::Auto || mode == RenderMode::Kitty || mode == RenderMode::Sixel) {
         const graphics::Protocol use = activeProtocol();
         if (use == graphics::Protocol::Kitty) {
+            if (!m_lastSixelRect.isEmpty() || m_lastSixelKey != 0)
+                const_cast<Image*>(this)->releaseSixelImage();
             paintKitty(buffer, absX, absY, clipRect);
             return;
         }
@@ -639,6 +662,8 @@ void Image::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cl
         }
         mode = RenderMode::HalfBlock;
     }
+    if (!m_lastSixelRect.isEmpty() || m_lastSixelKey != 0)
+        const_cast<Image*>(this)->releaseSixelImage();
 
     updateScaledCache(mode);
     if (m_scaledImage.isNull()) return;
@@ -875,14 +900,14 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
         QImage upload = source;
         if (uploadSize != source.size())
             upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        if (!root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload))) return;
         m_lastKittyUpload = uploadSize;
-        root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload));
         m_lastKittyKey = key;
         m_lastKittySession = session;
     }
 
     if (needUpload || QSize(cols, rows) != m_lastKittyCells) {
-        root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows));
+        if (!root->enqueueControlSequence(graphics::kittyPlacement(m_imageId, cols, rows))) return;
         m_lastKittyCells = QSize(cols, rows);
     }
 
@@ -932,6 +957,7 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
 
     // Reserve the cells so the diff clears whatever was there and nothing else
     // paints into the image area. The sixel is drawn on top, after the diff.
+    bool anyVisibleCell = false;
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             const int x = originX + c;
@@ -939,6 +965,7 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
             if (!clipRect.contains(x, y)) continue;
             Cell* target = buffer.tryCellAt(x, y);
             if (!target) continue;
+            anyVisibleCell = true;
             target->setCharacter(" ");
             target->displayWidth = 1;
             target->continuation = false;
@@ -946,38 +973,60 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
             target->bgColor = 0x00000000u;
         }
     }
-
-    // Re-emit only when the source, the geometry, or the output session
-    // changed. A new session means the screen was cleared (resize, resume,
-    // renderer switch), so the persisted sixel is gone and must be re-sent.
-    const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
-    const qint64 key = source.cacheKey();
-    if (key == m_lastSixelKey && QSize(cols, rows) == m_lastSixelCells &&
-        session == m_lastSixelSession)
-        return;
-    m_lastSixelKey = key;
-    m_lastSixelCells = QSize(cols, rows);
-    m_lastSixelSession = session;
+    if (!anyVisibleCell) return;
 
     const int pixelW = (std::min)(4096, cols * cw);
     const int pixelH = (std::min)(4096, rows * ch);
     if (pixelW <= 0 || pixelH <= 0) return;
-    QImage scaled = source.scaled(QSize(pixelW, pixelH), Qt::IgnoreAspectRatio,
+
+    // Re-emit when the source, placement, pixel size, filtering, viewport,
+    // frame continuity, or output session changed. Skipping a frame (mode
+    // switch, hidden ancestor) or starting a new session means the sixel on
+    // screen was overwritten or cleared and must be re-sent.
+    const QRect placementRect(originX, originY, cols, rows);
+    const QSize pixelSize(pixelW, pixelH);
+    const QSize viewportSize(buffer.width(), buffer.height());
+    const quint64 session = root->engine() ? root->engine()->outputSessionGeneration() : 0;
+    const quint64 frameSeq = root->engine() ? root->engine()->frameSequence() : 0;
+    const bool consecutiveFrame =
+        m_hasLastSixelFrame && (frameSeq == m_lastSixelFrame + 1 || frameSeq == m_lastSixelFrame);
+    m_lastSixelFrame = frameSeq;
+    m_hasLastSixelFrame = true;
+
+    const qint64 key = source.cacheKey();
+    if (consecutiveFrame && key == m_lastSixelKey && placementRect == m_lastSixelRect &&
+        pixelSize == m_lastSixelPixels && viewportSize == m_lastSixelViewport &&
+        m_smooth == m_lastSixelSmooth && session == m_lastSixelSession) {
+        m_paintedSixelThisFrame = true;
+        return;
+    }
+
+    if (!m_lastSixelRect.isEmpty() && m_lastSixelRect != placementRect) {
+        const_cast<Image*>(this)->releaseSixelImage();
+        m_lastSixelFrame = frameSeq;
+        m_hasLastSixelFrame = true;
+    }
+
+    QImage scaled = source.scaled(pixelSize, Qt::IgnoreAspectRatio,
                                   m_smooth ? Qt::SmoothTransformation : Qt::FastTransformation);
     const QByteArray sixel = graphics::sixelEncode(scaled);
     if (sixel.isEmpty()) return;
 
-    // Clear the whole item rectangle first. Sixel with P2=1 leaves unset
-    // pixels untouched, so without an explicit clear the previous frame's
-    // opaque pixels accumulate under the new one. Clearing the full item
-    // (not just the placement) also erases a larger previous frame when a
-    // mood change shrinks the placement. SGR is reset so blanks clear to the
-    // default background; the next frame's diff re-establishes style.
+    m_lastSixelKey = key;
+    m_lastSixelPixels = pixelSize;
+    m_lastSixelViewport = viewportSize;
+    m_lastSixelSmooth = m_smooth;
+    m_lastSixelSession = session;
+
+    // Clear the placement rectangle first. Sixel with P2=1 leaves unset pixels
+    // untouched, so without an explicit clear the previous frame's opaque
+    // pixels accumulate under the new one. An earlier placement at a different
+    // geometry was already erased above before the cell diff.
     QByteArray positioned = "\033[0m\0337"; // default SGR, save cursor
-    const QByteArray blank(itemW, ' ');
-    for (int r = 0; r < itemH; ++r) {
-        const int rowCoord = (std::max)(1, absY + 1 + r);
-        const int colCoord = (std::max)(1, absX + 1);
+    const QByteArray blank(cols, ' ');
+    for (int r = 0; r < rows; ++r) {
+        const int rowCoord = (std::max)(1, originY + 1 + r);
+        const int colCoord = (std::max)(1, originX + 1);
         positioned += "\033[" + QByteArray::number(rowCoord) + ';' + QByteArray::number(colCoord) +
                       'H' + blank;
     }
@@ -988,7 +1037,19 @@ void Image::paintSixel(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     positioned += sixel;
     positioned += "\0338"; // restore cursor
     root->enqueuePostControlSequence(positioned);
-    m_lastSixelRect = QRect(absX, absY, itemW, itemH);
+    m_lastSixelRect = placementRect;
+    m_sixelTerminal = root;
+    m_paintedSixelThisFrame = true;
+    if (TerminalEngine* engine = root->engine(); engine && !m_sixelPaintConnection) {
+        auto* self = const_cast<Image*>(this);
+        m_sixelPaintConnection = connect(engine, &TerminalEngine::framePainted, self, [self] {
+            if (self->m_paintedSixelThisFrame) {
+                self->m_paintedSixelThisFrame = false;
+                return;
+            }
+            self->releaseSixelImage();
+        });
+    }
 }
 
 } // namespace qmltui

@@ -25,7 +25,7 @@ using namespace qmltui;
 
 namespace {
 MemoryTerminalBackend* backend = nullptr;
-constexpr char kPlaceholderUtf8[4] = { '\xF4', '\x8E', '\xBB', '\xAE' };  // U+10EEEE
+constexpr char kPlaceholderUtf8[4] = {'\xF4', '\x8E', '\xBB', '\xAE'}; // U+10EEEE
 
 int placeholderCellCount(TerminalEngine* engine, uint32_t* fgOut = nullptr) {
     const auto frame = engine->currentFrame();
@@ -54,7 +54,11 @@ QString makePng(const QString& dir, const QString& name, QColor color) {
 class PendingResponse : public ImageResponse {
 public:
     QImage image() const override { return m_image; }
-    void complete(const QImage& image) { m_image = image; emit finished(); }
+    void complete(const QImage& image) {
+        m_image = image;
+        emit finished();
+    }
+
 private:
     QImage m_image;
 };
@@ -67,7 +71,7 @@ public:
         return pending;
     }
 };
-}
+} // namespace
 
 class TestKittyGraphics : public QObject {
     Q_OBJECT
@@ -85,11 +89,15 @@ Terminal {
     Image { objectName: "img"; x: 0; y: 0; width: 6; height: 3
             fillMode: Image.Stretch; renderMode: Image.Auto }
 }
-)", QUrl());
+)",
+                          QUrl());
         holder.reset(component.create());
-        if (!holder) { qWarning() << component.errorString(); return nullptr; }
+        if (!holder) {
+            qWarning() << component.errorString();
+            return nullptr;
+        }
         auto* terminal = qobject_cast<Terminal*>(holder.get());
-        terminal->engine()->setCapabilities(caps);   // deterministic; no probes
+        terminal->engine()->setCapabilities(caps); // deterministic; no probes
         return terminal;
     }
     static TerminalCapabilities kittyCaps() {
@@ -110,14 +118,16 @@ Terminal {
 private slots:
     // Reassembles compressed RGBA from the transmit (`m=1` chunks then `m=0`)
     // that follows the first transmit command in `out`.
-    static QImage transmittedImage(const std::string& out) {
+    static QByteArray transmittedZlibStream(const std::string& out, int* widthOut = nullptr,
+                                            int* heightOut = nullptr) {
         size_t pos = out.find("\033_Gq=2,a=t");
         if (pos == std::string::npos) return {};
         const QRegularExpression dimensions("s=(\\d+),v=(\\d+)");
-        const auto match = dimensions.match(QString::fromStdString(out.substr(pos, out.find(';', pos) - pos)));
+        const auto match =
+            dimensions.match(QString::fromStdString(out.substr(pos, out.find(';', pos) - pos)));
         if (!match.hasMatch()) return {};
-        const int width = match.captured(1).toInt();
-        const int height = match.captured(2).toInt();
+        if (widthOut) *widthOut = match.captured(1).toInt();
+        if (heightOut) *heightOut = match.captured(2).toInt();
         QByteArray base64;
         while (pos != std::string::npos) {
             const size_t semicolon = out.find(';', pos);
@@ -126,16 +136,25 @@ private slots:
             if (end - semicolon - 1 > 4096) return {};
             const std::string header = out.substr(pos, semicolon - pos);
             base64 += QByteArray(out.data() + semicolon + 1, int(end - semicolon - 1));
-            if (header.find("m=1") == std::string::npos) break;   // last chunk
+            if (header.find("m=1") == std::string::npos) break; // last chunk
             pos = out.find("\033_G", end);
         }
+        return QByteArray::fromBase64(base64);
+    }
+
+    static QImage transmittedImage(const std::string& out) {
+        int width = 0;
+        int height = 0;
+        const QByteArray zlibStream = transmittedZlibStream(out, &width, &height);
+        if (zlibStream.isEmpty()) return {};
         QByteArray compressed(4, '\0');
         qToBigEndian<quint32>(width * height * 4, compressed.data());
-        compressed += QByteArray::fromBase64(base64);
+        compressed += zlibStream;
         const QByteArray pixels = qUncompress(compressed);
         if (pixels.size() != qsizetype(width) * height * 4) return {};
         return QImage(reinterpret_cast<const uchar*>(pixels.constData()), width, height,
-                      QImage::Format_RGBA8888).copy();
+                      QImage::Format_RGBA8888)
+            .copy();
     }
 
     void transmissionPreservesPixelsAndChunks() {
@@ -150,7 +169,8 @@ private slots:
         const QByteArray encoded = graphics::kittyTransmit(42, source);
         QVERIFY(encoded.startsWith("\033_Gq=2,a=t,f=32,o=z,t=d,i=42,s=127,v=65,m=1;"));
         QVERIFY(encoded.contains("\033_Gm=0;"));
-        QCOMPARE(transmittedImage(encoded.toStdString()).convertToFormat(QImage::Format_ARGB32), source);
+        QCOMPARE(transmittedImage(encoded.toStdString()).convertToFormat(QImage::Format_ARGB32),
+                 source);
 
         // Byte-order conversion and externally supplied scanline padding.
         const QImage rgba = source.convertToFormat(QImage::Format_RGBA8888);
@@ -158,9 +178,23 @@ private slots:
         QByteArray storage(stride * source.height(), '\x55');
         for (int y = 0; y < source.height(); ++y)
             memcpy(storage.data() + stride * y, rgba.constScanLine(y), source.width() * 4);
-        const QImage padded(reinterpret_cast<const uchar*>(storage.constData()),
-                            source.width(), source.height(), stride, QImage::Format_RGBA8888);
+        const QImage padded(reinterpret_cast<const uchar*>(storage.constData()), source.width(),
+                            source.height(), stride, QImage::Format_RGBA8888);
         QCOMPARE(transmittedImage(graphics::kittyTransmit(43, padded).toStdString()), rgba);
+
+        // Compressible images exceeding the 64 KiB DEFLATE window must use
+        // Dynamic Huffman (BTYPE=2) rather than Fixed Huffman (BTYPE=1), which
+        // crashes Ghostty 1.3.1's flate decompressor across the window boundary.
+        QImage structured(256, 128, QImage::Format_RGBA8888);
+        for (int y = 0; y < structured.height(); ++y)
+            for (int x = 0; x < structured.width(); ++x)
+                structured.setPixel(x, y, qRgba(x & 0xFC, y & 0xFC, (x + y) & 0xFC, 255));
+        const std::string structuredWire = graphics::kittyTransmit(44, structured).toStdString();
+        const QByteArray zlibStream = transmittedZlibStream(structuredWire);
+        QVERIFY(zlibStream.size() > 3);
+        const int firstBlockType = (static_cast<uchar>(zlibStream[2]) >> 1) & 0x03;
+        QCOMPARE(firstBlockType, 2);
+        QCOMPARE(transmittedImage(structuredWire), structured);
     }
 
     void initTestCase() {
@@ -193,7 +227,7 @@ private slots:
         const auto place = out.find("\033_Ga=p,U=1,q=2,i=");
         QVERIFY(transmit != std::string::npos);
         QVERIFY(place != std::string::npos);
-        QVERIFY(transmit < place);   // upload before placement
+        QVERIFY(transmit < place); // upload before placement
 
         // The placement id matches the id carried by the placeholder cells.
         const QRegularExpression re("\\033_Ga=p,U=1,q=2,i=(\\d+),p=1,c=6,r=3");
@@ -201,9 +235,36 @@ private slots:
         QVERIFY2(m.hasMatch(), "placement not found with the expected cols/rows");
         const uint32_t id = m.captured(1).toUInt();
         uint32_t fg = 0;
-        QCOMPARE(placeholderCellCount(engine, &fg), 18);   // 6x3 cells
+        QCOMPARE(placeholderCellCount(engine, &fg), 18); // 6x3 cells
         QCOMPARE(fg, 0xFF000000u | (id & 0xFFFFFFu));
-        QVERIFY(place < out.find(std::string(kPlaceholderUtf8, 4)));  // cells after controls
+        QVERIFY(place < out.find(std::string(kPlaceholderUtf8, 4))); // cells after controls
+
+        // A high-resolution noisy photograph (such as a 2048x1361 JPEG upload
+        // whose base64 APC stream exceeds 4 MiB) must still fit within
+        // ControlSequenceQueueLimit and transmit before its virtual placement.
+        backend->clearOutput();
+        QImage photo(2048, 1361, QImage::Format_RGBA8888);
+        quint32 state = 0x9E3779B9u;
+        for (int y = 0; y < photo.height(); ++y) {
+            auto* row = reinterpret_cast<quint32*>(photo.scanLine(y));
+            for (int x = 0; x < photo.width(); ++x) {
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                row[x] = 0xFF000000u | (state & 0x00FFFFFFu);
+            }
+        }
+        const auto beforePhoto = engine->frameSequence();
+        img->setImage(photo);
+        QTRY_VERIFY(engine->frameSequence() > beforePhoto);
+        const std::string& photoOut = backend->output();
+        QVERIFY(photoOut.size() > 4 * 1024 * 1024);
+        const auto photoTransmit = photoOut.find("\033_Gq=2,a=t,f=32,o=z,t=d,i=");
+        const auto photoPlace = photoOut.find("\033_Ga=p,U=1,q=2,i=");
+        QVERIFY(photoTransmit != std::string::npos);
+        QVERIFY(photoPlace != std::string::npos);
+        QVERIFY(photoTransmit < photoPlace);
+        QCOMPARE(transmittedImage(photoOut), photo);
     }
 
     // The upload is pre-scaled to the placement's pixel size when a small
@@ -213,31 +274,34 @@ private slots:
         using graphics::kittyUploadSize;
         QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(220, 240), true), QSize(220, 240));
         QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(220, 240), false), QSize(60, 60));
-        QCOMPARE(kittyUploadSize(QSize(600, 600), QSize(220, 240), true), QSize(600, 600));   // shrinking: terminal scales
-        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(), true), QSize(60, 60));               // cell size unknown
-        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(4000, 4000), true), QSize(2048, 2048)); // capped
+        QCOMPARE(kittyUploadSize(QSize(600, 600), QSize(220, 240), true),
+                 QSize(600, 600)); // shrinking: terminal scales
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(), true), QSize(60, 60)); // cell size unknown
+        QCOMPARE(kittyUploadSize(QSize(60, 60), QSize(4000, 4000), true),
+                 QSize(2048, 2048)); // capped
         QCOMPARE(kittyUploadSize(QSize(3000, 1500), QSize(), true), QSize(2048, 1024));
 
         QQmlEngine qml;
         std::unique_ptr<QObject> holder;
-        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());   // 10x20 px cells, 6x3 item
+        Terminal* terminal = buildTerminal(qml, holder, kittyCaps()); // 10x20 px cells, 6x3 item
         QVERIFY(terminal);
         auto* img = terminal->findChild<Image*>("img");
         img->setSource(QUrl::fromLocalFile(redPng));
         auto* engine = terminal->engine();
         QTRY_VERIFY(placeholderCellCount(engine) > 0);
         const QSize source = QImage(redPng).size();
-        QVERIFY(source.width() < 60);   // the fixture picture is small: this placement magnifies it
+        QVERIFY(source.width() < 60); // the fixture picture is small: this placement magnifies it
         QCOMPARE(img->smooth(), false);
         QCOMPARE(transmittedImage(backend->output()).size(), source);
 
         backend->clearOutput();
         img->setSmooth(true);
         QTRY_VERIFY(backend->output().find("\033_Gq=2,a=t") != std::string::npos);
-        QCOMPARE(transmittedImage(backend->output()).size(), QSize(60, 60));   // 6 cols x 10 px, 3 rows x 20 px
+        QCOMPARE(transmittedImage(backend->output()).size(),
+                 QSize(60, 60)); // 6 cols x 10 px, 3 rows x 20 px
 
         backend->clearOutput();
-        img->setSmooth(false);            // pixel art: let the terminal magnify the blocks
+        img->setSmooth(false); // pixel art: let the terminal magnify the blocks
         QTRY_VERIFY(backend->output().find("\033_Gq=2,a=t") != std::string::npos);
         QCOMPARE(transmittedImage(backend->output()).size(), source);
     }
@@ -248,7 +312,8 @@ private slots:
     void renderSizeFollowsProtocol() {
         QQmlEngine qml;
         std::unique_ptr<QObject> holder;
-        Terminal* terminal = buildTerminal(qml, holder, kittyCaps());   // 10x20 px cells, 6x3 item, Auto
+        Terminal* terminal =
+            buildTerminal(qml, holder, kittyCaps()); // 10x20 px cells, 6x3 item, Auto
         QVERIFY(terminal);
         auto* img = terminal->findChild<Image*>("img");
         QSignalSpy changed(img, &Image::renderSizeChanged);
@@ -267,14 +332,14 @@ private slots:
         QCOMPARE(changed.count(), 5);
         TerminalCapabilities none;
         none.colorDepth = ColorDepth::TrueColor;
-        terminal->engine()->setCapabilities(none);      // the terminal lost its protocol
-        QCOMPARE(img->renderSize(), QSize(8, 6));        // Kitty falls back to half-block
+        terminal->engine()->setCapabilities(none); // the terminal lost its protocol
+        QCOMPARE(img->renderSize(), QSize(8, 6));  // Kitty falls back to half-block
         QVERIFY(changed.count() >= 6);
         terminal->engine()->setCapabilities(sixelCaps());
         img->setRenderMode(Image::RenderMode::Auto);
         QCOMPARE(img->renderSize(), QSize(80, 60));
         TerminalCapabilities huge = kittyCaps();
-        huge.cellPixelSize = QSize(1920, 1080);          // a window size, not a cell size
+        huge.cellPixelSize = QSize(1920, 1080); // a window size, not a cell size
         terminal->engine()->setCapabilities(huge);
         const QSize clamped = img->renderSize();
         QCOMPARE(clamped, graphics::kittyUploadSize(QSize(8 * 1920, 3 * 1080), QSize(), false));
@@ -307,13 +372,14 @@ private slots:
         const QRegularExpression re("\\033_Ga=p,U=1,q=2,i=(\\d+)");
         const uint32_t firstId =
             re.match(QString::fromLatin1(backend->output().data(), int(backend->output().size())))
-              .captured(1).toUInt();
+                .captured(1)
+                .toUInt();
         backend->clearOutput();
         img->setSource(QUrl::fromLocalFile(bluePng));
         QTRY_VERIFY(backend->output().find("\033_Ga=p") != std::string::npos);
         const std::string& out = backend->output();
         QVERIFY(out.find("\033_Ga=d") == std::string::npos);
-        QVERIFY(out.find("\033_Gq=2,a=t") != std::string::npos);  // re-uploaded
+        QVERIFY(out.find("\033_Gq=2,a=t") != std::string::npos); // re-uploaded
         QCOMPARE(transmittedImage(out).pixelColor(0, 0), QColor(Qt::blue));
         uint32_t colour = 0;
         QCOMPARE(placeholderCellCount(engine, &colour), 18);
@@ -353,7 +419,8 @@ private slots:
             QCOMPARE(engine->currentFrame()->toAnsiString(), firstFrame->toAnsiString());
             QVERIFY(out.find(std::string(kPlaceholderUtf8, 4)) == std::string::npos);
             QVERIFY(out.find("\033_Ga=d") == std::string::npos);
-            QVERIFY(out.find("\033_Ga=p,U=1,q=2,i=" + std::to_string(firstColour & 0xFFFFFFu)) != std::string::npos);
+            QVERIFY(out.find("\033_Ga=p,U=1,q=2,i=" + std::to_string(firstColour & 0xFFFFFFu)) !=
+                    std::string::npos);
         }
 
         // A new output session must still upload the image and reconstruct
@@ -440,7 +507,10 @@ private slots:
         std::unique_ptr<QObject> holder;
         TerminalCapabilities caps;
         caps.colorDepth = ColorDepth::TrueColor;
-        Terminal* terminal = buildTerminal(qml, holder, kitty ? kittyCaps() : sixel ? sixelCaps() : caps);
+        Terminal* terminal = buildTerminal(qml, holder,
+                                           kitty   ? kittyCaps()
+                                           : sixel ? sixelCaps()
+                                                   : caps);
         QVERIFY(terminal);
         auto* img = terminal->findChild<Image*>("img");
         QVERIFY(!img->retainWhileLoading());
@@ -476,11 +546,13 @@ private slots:
             } else {
                 QVERIFY(img->image().isNull());
                 QCOMPARE(placeholderCellCount(engine), 0);
-                QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+                QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(),
+                         QByteArray(" "));
                 if (kitty && request == 0)
                     QVERIFY(backend->output().find("\033_Ga=d,d=I") != std::string::npos);
                 if (sixel && request == 0)
-                    QVERIFY(backend->output().find("\033[0m\0337\033[1;1H      ") != std::string::npos);
+                    QVERIFY(backend->output().find("\033[0m\0337\033[1;1H      ") !=
+                            std::string::npos);
             }
         }
 
@@ -494,7 +566,8 @@ private slots:
             QCOMPARE(transmittedImage(backend->output()).pixelColor(0, 0), QColor(Qt::blue));
             if (retain) {
                 QVERIFY(backend->output().find("\033_Ga=d,d=I") == std::string::npos);
-                QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor, original->cellAt(0, 0).fgColor);
+                QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor,
+                         original->cellAt(0, 0).fgColor);
             }
         } else if (sixel) {
             QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
@@ -511,14 +584,16 @@ private slots:
             backend->clearOutput();
             img->setSource(QUrl(QStringLiteral("image://pending/final")));
             before = engine->frameSequence();
-            if (clear) img->setSource(QUrl());
-            else provider->pending->complete(QImage());
+            if (clear)
+                img->setSource(QUrl());
+            else
+                provider->pending->complete(QImage());
             QTRY_VERIFY(engine->frameSequence() > before);
             QCOMPARE(img->status(), clear ? Image::Status::Null : Image::Status::Error);
             QCOMPARE(placeholderCellCount(engine), 0);
-            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
-            if (kitty)
-                QVERIFY(backend->output().find("\033_Ga=d,d=I") != std::string::npos);
+            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(),
+                     QByteArray(" "));
+            if (kitty) QVERIFY(backend->output().find("\033_Ga=d,d=I") != std::string::npos);
             if (sixel)
                 QVERIFY(backend->output().find("\033[0m\0337\033[1;1H      ") != std::string::npos);
         }
@@ -539,7 +614,8 @@ private slots:
             QCOMPARE(changed.count(), 1);
             QTRY_VERIFY(engine->frameSequence() > before);
             QCOMPARE(img->status(), Image::Status::Loading);
-            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(), QByteArray(" "));
+            QCOMPARE(engine->currentFrame()->cellAt(0, 0).character().toByteArray(),
+                     QByteArray(" "));
             QCOMPARE(placeholderCellCount(engine), 0);
             img->setRetainWhileLoading(true);
             QCOMPARE(changed.count(), 2);
@@ -549,7 +625,8 @@ private slots:
             pending->complete(QImage(bluePng));
             QTRY_VERIFY(engine->frameSequence() > before);
             QCOMPARE(img->status(), Image::Status::Ready);
-            if (kitty) QCOMPARE(placeholderCellCount(engine), 18);
+            if (kitty)
+                QCOMPARE(placeholderCellCount(engine), 18);
             else if (!sixel)
                 QCOMPARE(engine->currentFrame()->cellAt(0, 0).fgColor, uint32_t(qRgb(0, 0, 255)));
         }
@@ -577,14 +654,17 @@ private slots:
         auto* engine = terminal->engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
         QTest::qWait(30);
-        QVERIFY(backend->output().find("\033_G") == std::string::npos);  // no graphics
+        QVERIFY(backend->output().find("\033_G") == std::string::npos); // no graphics
         QCOMPARE(placeholderCellCount(engine), 0);
         // The half-block glyph is present instead.
         const auto frame = engine->currentFrame();
         bool halfBlock = false;
         for (int y = 0; y < frame->height() && !halfBlock; ++y)
             for (int x = 0; x < frame->width(); ++x)
-                if (frame->cellAt(x, y).character().toByteArray() == QByteArray("\xE2\x96\x80")) { halfBlock = true; break; }
+                if (frame->cellAt(x, y).character().toByteArray() == QByteArray("\xE2\x96\x80")) {
+                    halfBlock = true;
+                    break;
+                }
         QVERIFY(halfBlock);
     }
 
@@ -599,7 +679,7 @@ private slots:
         QTRY_VERIFY(backend->output().find("\033P0;1q") != std::string::npos);
 
         const std::string& out = backend->output();
-        QVERIFY(out.find("\033_G") == std::string::npos);          // not kitty
+        QVERIFY(out.find("\033_G") == std::string::npos); // not kitty
         QCOMPARE(placeholderCellCount(engine), 0);
         // Saved cursor, absolute move, then the sixel, then restore.
         const auto save = out.find("\0337\033[");
@@ -610,7 +690,7 @@ private slots:
         QVERIFY(dcs < restore);
         // The image rectangle is cleared with blanks before the sixel, so
         // frames do not accumulate under each other (sixel leaves unset pixels).
-        QVERIFY(out.find(std::string(6, ' '), save) < dcs);   // Image is 6 cells wide
+        QVERIFY(out.find(std::string(6, ' '), save) < dcs); // Image is 6 cells wide
         // The sixel lands inside the synchronized-output bracket, after cells.
         QVERIFY(out.find("\033[?2026h") < dcs);
         QVERIFY(dcs < out.rfind("\033[?2026l"));
@@ -633,11 +713,227 @@ private slots:
         std::unique_ptr<QObject> holder;
         Terminal* terminal = buildTerminal(qml, holder, sixelCaps());
         auto* img = terminal->findChild<Image*>("img");
-        img->setSource(QUrl::fromLocalFile(redPng));  // Image is in Auto mode
+        img->setSource(QUrl::fromLocalFile(redPng)); // Image is in Auto mode
         auto* engine = terminal->engine();
         QTRY_VERIFY(backend->output().find("\033P0;1q") != std::string::npos);
         QVERIFY(backend->output().find("\033_G") == std::string::npos);
         QCOMPARE(placeholderCellCount(engine), 0);
+    }
+
+    void sixelReemitsAfterCyclingRenderModes() {
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+import QtQml
+import QmlTui
+import QmlTui.Image
+Terminal {
+    Rectangle {
+        x: 0; y: 0; width: 12; height: 4
+        color: "#161b22"
+        Image {
+            objectName: "img"
+            x: 0; y: 0; width: 12; height: 4
+            fillMode: Image.PreserveAspectFit
+            renderMode: Image.Braille
+        }
+    }
+}
+)",
+                          QUrl());
+        std::unique_ptr<QObject> holder(component.create());
+        QVERIFY2(holder, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(holder.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setCapabilities(sixelCaps());
+        auto* img = terminal->findChild<Image*>("img");
+        QVERIFY(img);
+        img->setSource(QUrl::fromLocalFile(redPng));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        QVERIFY(backend->output().find("\033P0;1q") == std::string::npos);
+
+        const auto commitMode = [&](Image::RenderMode mode) {
+            backend->clearOutput();
+            const auto before = engine->frameSequence();
+            img->setRenderMode(mode);
+            QTRY_VERIFY(engine->frameSequence() > before);
+        };
+
+        // First cycle through Braille -> HalfBlock -> ASCII -> Auto (Sixel).
+        commitMode(Image::RenderMode::HalfBlock);
+        QVERIFY(backend->output().find("\033P0;1q") == std::string::npos);
+        commitMode(Image::RenderMode::ASCII);
+        QVERIFY(backend->output().find("\033P0;1q") == std::string::npos);
+        commitMode(Image::RenderMode::Auto);
+        QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+        // Letterbox columns outside the centered 8x4 placement keep the Rectangle background.
+        QCOMPARE(engine->currentFrame()->cellAt(0, 0).bgColor, 0xFF161B22u);
+        QCOMPARE(engine->currentFrame()->cellAt(2, 0).bgColor, 0x00000000u);
+
+        // Second cycle: leaving Auto erases the sixel before painting Braille,
+        // and returning to Auto re-emits the sixel even though source, size,
+        // and output session are unchanged.
+        commitMode(Image::RenderMode::Braille);
+        QVERIFY(backend->output().find("\033[0m\0337\033[1;3H        ") != std::string::npos);
+        QVERIFY(backend->output().find("\033P0;1q") == std::string::npos);
+        QCOMPARE(engine->currentFrame()->cellAt(0, 0).bgColor, 0xFF161B22u);
+        QCOMPARE(engine->currentFrame()->cellAt(2, 0).bgColor, 0xFF161B22u);
+
+        commitMode(Image::RenderMode::HalfBlock);
+        commitMode(Image::RenderMode::ASCII);
+        commitMode(Image::RenderMode::Auto);
+        QVERIFY2(backend->output().find("\033P0;1q") != std::string::npos,
+                 "sixel was not re-emitted when cycling back to Image.Auto");
+
+        // An unchanged frame in Auto still sends no duplicate sixel.
+        backend->clearOutput();
+        auto before = engine->frameSequence();
+        engine->requestRender();
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QVERIFY(backend->output().find("\033P0;1q") == std::string::npos);
+
+        // Hiding erases the sixel; showing re-emits it.
+        backend->clearOutput();
+        before = engine->frameSequence();
+        img->setVisible(false);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QVERIFY(backend->output().find("\033[0m\0337\033[1;3H        ") != std::string::npos);
+
+        backend->clearOutput();
+        before = engine->frameSequence();
+        img->setVisible(true);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+    }
+
+    void sixelAncestorHideAndDeferredDestroyPreserveUnderlyingContent_data() {
+        QTest::addColumn<QString>("itemQml");
+        QTest::newRow("image") << QStringLiteral(R"(
+            Image {
+                objectName: "img"
+                x: 0; y: 0; width: 12; height: 4
+                fillMode: Image.PreserveAspectFit
+                renderMode: Image.Auto
+            }
+        )");
+        QTest::newRow("animated-sprite") << QStringLiteral(R"(
+            AnimatedSprite {
+                objectName: "img"
+                x: 0; y: 0; width: 12; height: 4
+                fillMode: Image.PreserveAspectFit
+                renderMode: Image.Auto
+                frameWidth: 2
+                frameHeight: 2
+                frameCount: 2
+                frameDuration: 10
+            }
+        )");
+    }
+
+    void sixelAncestorHideAndDeferredDestroyPreserveUnderlyingContent() {
+        QFETCH(QString, itemQml);
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        const QString qmlSource = QStringLiteral(R"(
+import QtQml
+import QmlTui
+import QmlTui.Image
+Terminal {
+    color: "#0d1117"
+
+    Item {
+        objectName: "gridPage"
+        x: 0; y: 0; width: 12; height: 4
+        visible: false
+        Rectangle {
+            x: 0; y: 0; width: 12; height: 4
+            color: "#161b22"
+            Text {
+                x: 2; y: 1
+                text: "TILE"
+                color: "#c9d1d9"
+            }
+        }
+    }
+
+    Item {
+        objectName: "demoHost"
+        x: 0; y: 0; width: 12; height: 4
+        Item {
+            objectName: "demoContainer"
+            x: 0; y: 0; width: 12; height: 4
+            %1
+        }
+    }
+}
+)")
+                                      .arg(itemQml);
+        component.setData(qmlSource.toUtf8(), QUrl());
+        std::unique_ptr<QObject> holder(component.create());
+        QVERIFY2(holder, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<Terminal*>(holder.get());
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setCapabilities(sixelCaps());
+
+        auto* gridPage = terminal->findChild<Item*>("gridPage");
+        auto* demoHost = terminal->findChild<Item*>("demoHost");
+        auto* demoContainer = terminal->findChild<Item*>("demoContainer");
+        auto* img = terminal->findChild<Image*>("img");
+        QVERIFY(gridPage && demoHost && demoContainer && img);
+
+        img->setSource(QUrl::fromLocalFile(redPng));
+        QTRY_VERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+
+        // Hiding an ancestor (without touching img->visible) erases the sixel
+        // before painting the grid page; showing the ancestor re-emits it.
+        backend->clearOutput();
+        auto before = engine->frameSequence();
+        demoHost->setVisible(false);
+        gridPage->setVisible(true);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        const std::string& hideOut = backend->output();
+        const auto clearPos = hideOut.find("\033[0m\0337\033[1;3H        ");
+        const auto tilePos = hideOut.find("TILE");
+        QVERIFY(clearPos != std::string::npos);
+        QVERIFY(tilePos != std::string::npos);
+        QVERIFY(clearPos < tilePos);
+
+        backend->clearOutput();
+        before = engine->frameSequence();
+        gridPage->setVisible(false);
+        demoHost->setVisible(true);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QVERIFY(backend->output().find("\033P0;1q") != std::string::npos);
+
+        // Gallery closeDemo() pattern: hide the container, schedule deleteLater(),
+        // and switch back to the grid page. The deferred ~Image() destruction on
+        // the next tick must not blank out the already-painted grid page.
+        backend->clearOutput();
+        before = engine->frameSequence();
+        QPointer<Image> imgGuard(img);
+        demoContainer->setVisible(false);
+        demoContainer->deleteLater();
+        demoHost->setVisible(false);
+        gridPage->setVisible(true);
+        QTRY_VERIFY(engine->frameSequence() > before);
+        QTRY_VERIFY(!imgGuard);
+
+        // Allow any frame scheduled by ChildRemoved during ~Item() to settle.
+        const auto afterDestroy = engine->frameSequence();
+        engine->requestRender();
+        QTRY_VERIFY(engine->frameSequence() > afterDestroy);
+
+        const std::string& closeOut = backend->output();
+        const auto firstClear = closeOut.find("\033[0m\0337\033[1;3H        ");
+        const auto lastClear = closeOut.rfind("\033[0m\0337\033[1;3H        ");
+        const auto lastTile = closeOut.rfind("TILE");
+        QVERIFY(firstClear != std::string::npos);
+        QCOMPARE(firstClear, lastClear);
+        QVERIFY(lastTile != std::string::npos);
+        QVERIFY2(lastClear < lastTile,
+                 "a late sixel clear overwrote the grid page after TILE was painted");
     }
 };
 

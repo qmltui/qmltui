@@ -50,6 +50,7 @@ function(gallery_add_executable target uri main_source)
             FILES
                 "${gallery_asset_dir}/panda.png"
                 "${gallery_asset_dir}/loading.png"
+                "${gallery_asset_dir}/bike-picsum.jpg"
         )
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})

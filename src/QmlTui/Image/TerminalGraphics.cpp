@@ -97,8 +97,11 @@ QByteArray kittyTransmit(quint32 imageId, const QImage& image) {
             pixels.append(reinterpret_cast<const char*>(rgba.constScanLine(y)), rowBytes);
     }
     // qCompress prefixes the zlib stream with a Qt-specific four-byte length.
-    // Only the zlib stream belongs on the wire. Level 1 favours frame latency.
-    const QByteArray compressed = qCompress(pixels, 1);
+    // Only the zlib stream belongs on the wire. Level 2 stays on the fast
+    // compressor while emitting Dynamic Huffman blocks; zlib-ng's level 1
+    // (deflate_quick) emits a single Fixed Huffman block that triggers a
+    // 64 KiB window-boundary crash in Ghostty 1.3.1's flate decompressor.
+    const QByteArray compressed = qCompress(pixels, 2);
     if (compressed.size() < 4) return {};
     const QByteArray payload =
         QByteArray::fromRawData(compressed.constData() + 4, compressed.size() - 4).toBase64();

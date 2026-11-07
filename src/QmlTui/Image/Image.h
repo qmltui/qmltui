@@ -210,11 +210,19 @@ private:
     mutable QMetaObject::Connection m_capabilitiesConnection;
     mutable QSize m_lastKittyCells;
 
-    // Sixel cache keys: re-emit when source key, cell size, or output session changes.
+    // Sixel cache keys: re-emit when source key, placement, pixel size,
+    // filtering, viewport, frame continuity, or output session changes.
     mutable qint64 m_lastSixelKey = 0;
-    mutable QSize m_lastSixelCells;
+    mutable QSize m_lastSixelPixels;
+    mutable QSize m_lastSixelViewport;
     mutable quint64 m_lastSixelSession = 0;
+    mutable quint64 m_lastSixelFrame = 0;
     mutable QRect m_lastSixelRect;
+    mutable QPointer<Terminal> m_sixelTerminal;
+    mutable QMetaObject::Connection m_sixelPaintConnection;
+    mutable bool m_lastSixelSmooth = false;
+    mutable bool m_hasLastSixelFrame = false;
+    mutable bool m_paintedSixelThisFrame = false;
 };
 
 } // namespace qmltui

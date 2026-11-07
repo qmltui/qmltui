@@ -101,6 +101,32 @@ function main(app) {
     app.press("HOME");
     app.waitForText(at(1));
 
+    // The Image tile defaults to the embedded bike-picsum.jpg source and lets
+    // the user enter a custom URL or path in its source TextInput.
+    app.press("/");
+    app.typeText("Image");
+    if (!app.frameText().includes("0 / 0")) {
+        app.press("ENTER");
+        app.waitForText("qrc:/gallery/assets/bike-picsum.jpg");
+        app.expectText("Source 4912x3264 px");
+        app.press("TAB");
+        app.press("a", ["Ctrl"]);
+        app.press("BACKSPACE");
+        app.typeText("qrc:/gallery/assets/loading.png");
+        app.press("ENTER");
+        app.waitForText("Source 256x64 px");
+        app.press("TAB");
+        app.press("a", ["Ctrl"]);
+        app.press("BACKSPACE");
+        app.press("ENTER");
+        app.waitForText("qrc:/gallery/assets/bike-picsum.jpg");
+        app.expectText("Source 4912x3264 px");
+        app.press("ESCAPE");
+        app.waitForText("QmlTui Gallery");
+    }
+    app.press("ESCAPE");
+    app.waitForText(at(1));
+
     // The AnimatedSprite tile (in a QmlTui.Image build) plays a sprite sheet:
     // Space pauses the frame clock, Right picks the next animation.
     app.press("/");

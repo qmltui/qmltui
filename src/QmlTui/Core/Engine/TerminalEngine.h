@@ -3,9 +3,11 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QElapsedTimer>
+#include <QList>
 #include <QObject>
 #include <QPoint>
 #include <QPointer>
+#include <QRect>
 #include <QSize>
 #include <QTimer>
 #include <atomic>
@@ -105,12 +107,19 @@ public:
     void stop();
     bool enqueueControlSequence(QByteArray bytes);
     QByteArray takeControlSequences();
+    // Marks a cell rectangle whose terminal contents were overwritten by
+    // pre-diff control sequences so the renderer resets its committed buffer
+    // there before computing the frame diff.
+    void invalidateCommittedRect(const QRect& rect);
+    QList<QRect> takeInvalidatedCommittedRects();
     // Like enqueueControlSequence, but drained after the cell diff each frame.
     // Protocols that paint at the cursor (sixel) must land on top of the cells,
     // not before them; kitty placements do not need this.
     bool enqueuePostControlSequence(QByteArray bytes);
     QByteArray takePostControlSequences();
-    static constexpr qsizetype ControlSequenceQueueLimit = 4 * 1024 * 1024;
+    // A 2048x2048 RGBA Kitty upload is 16 MiB raw and up to ~22 MiB once
+    // compressed, base64-encoded, and framed in 4096-byte APC chunks.
+    static constexpr qsizetype ControlSequenceQueueLimit = 32 * 1024 * 1024;
     quint64 outputSessionGeneration() const { return m_outputSessionGeneration; }
     void setMouseReporting(bool enable);
 
@@ -187,6 +196,7 @@ public:
     bool mouseMotionReporting() const { return m_mouseMotionReportingEnabled; }
 
 signals:
+    void framePainted();
     void frameRendered(quint64 sequence);
     // Emitted before frameRendered() on a frame that committed scrollback rows.
     void scrollbackCommitted(quint64 totalRows);
@@ -257,6 +267,7 @@ private:
     class ClockTimer* m_escapeTimer = nullptr;
     QByteArray m_controlSequences;
     QByteArray m_postControlSequences;
+    QList<QRect> m_invalidatedCommittedRects;
     quint64 m_outputSessionGeneration = 0;
     Renderer* m_renderer = nullptr;
     bool m_rendererStarted = false;

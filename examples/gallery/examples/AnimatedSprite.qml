@@ -59,12 +59,12 @@ ColumnLayout {
         AnimatedSprite {
             id: sprite
             anchors {
-                fill: parent
+                centerIn: parent
                 margins: 1
             }
+
             source: "qrc:/gallery/assets/loading.png"
             fillMode: Image.PreserveAspectFit
-            renderMode: Image.Auto
             smooth: false
             frameX: spriteDemo.animation.firstCol * spriteDemo.cellWidth
             frameY: spriteDemo.animation.row * spriteDemo.cellHeight

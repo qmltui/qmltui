@@ -1070,6 +1070,17 @@ QByteArray TerminalEngine::takeControlSequences() {
     return bytes;
 }
 
+void TerminalEngine::invalidateCommittedRect(const QRect& rect) {
+    if (m_stopped || !m_terminalOutputEnabled || rect.isEmpty()) return;
+    m_invalidatedCommittedRects.append(rect);
+}
+
+QList<QRect> TerminalEngine::takeInvalidatedCommittedRects() {
+    QList<QRect> rects;
+    rects.swap(m_invalidatedCommittedRects);
+    return rects;
+}
+
 bool TerminalEngine::enqueuePostControlSequence(QByteArray bytes) {
     if (m_stopped || !m_terminalOutputEnabled ||
         bytes.size() > ControlSequenceQueueLimit - m_postControlSequences.size())
@@ -1088,6 +1099,7 @@ QByteArray TerminalEngine::takePostControlSequences() {
 void TerminalEngine::flushControlSequences() {
     QByteArray bytes = takeControlSequences();
     bytes += takePostControlSequences();
+    m_invalidatedCommittedRects.clear();
     if (m_terminalOutputEnabled && !bytes.isEmpty() &&
         !m_device.write(std::string(bytes.constData(), bytes.size())))
         emit renderFailed(QStringLiteral("Failed to write terminal resource cleanup"));
@@ -1096,6 +1108,7 @@ void TerminalEngine::flushControlSequences() {
 void TerminalEngine::invalidateOutputSession() {
     m_controlSequences.clear();
     m_postControlSequences.clear();
+    m_invalidatedCommittedRects.clear();
     m_queryTimer.stop();
     m_pixelQueryTimer.stop();
     m_queriesPending = false;

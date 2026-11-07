@@ -1,4 +1,5 @@
 #include <QmlTui/Core/Engine/InlineRenderer.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QmlTui/Core/Primitives/AnsiEncoder_p.h>
@@ -94,6 +95,10 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     m_promptBuffer.resize(m_terminalWidth, m_lastPromptHeight);
     m_promptBuffer.clear();
     ItemPaintTraversal::paintSubtree(rootWindow, m_promptBuffer, 0, 0);
+    if (TerminalEngine* engine = rootWindow->engine()) {
+        emit engine->framePainted();
+        engine->takeInvalidatedCommittedRects();
+    }
     FrameStats stats;
     stats.dirtyDuringPaint = RenderPhase::dirtyDuringPaintCount();
     stats.paintMicros = timer.nsecsElapsed() / 1000;

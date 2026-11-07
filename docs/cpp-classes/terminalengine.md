@@ -7,6 +7,7 @@
 
 ## Signals
 
+- `void framePainted()` — emitted after the item tree and popups finish painting into the frame buffer and before pre-diff control sequences and the cell diff are drained.
 - `void frameRendered(quint64 sequence)` — emitted after a frame is painted and committed, passing the monotonically increasing frame sequence number.
 - `void scrollbackCommitted(quint64 totalRows)` — emitted before `frameRendered()` when a frame commits scrollback rows in `Inline` mode.
 - `void capabilitiesChanged()` — emitted when detected or overridden terminal capabilities change.
@@ -26,7 +27,8 @@
 - `void setMaxFrameRate(int framesPerSecond)` / `int maxFrameRate() const` — configures the frame rate cap (`0` disables pacing; defaults to `60` via `QMLTUI_MAX_FPS`, or `0` under `Runner`).
 - `void setOutputQueueLimit(size_t bytes)` / `size_t outputQueueLimit() const` — configures the pending output byte threshold (`256 KiB` by default) above which frame commits are deferred for backpressure.
 - `const TerminalCapabilities &capabilities() const` / `void setCapabilities(const TerminalCapabilities &capabilities)` — returns or overrides terminal capabilities (cancelling pending protocol probes).
-- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to `ControlSequenceQueueLimit` = `4 MiB`).
+- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to `ControlSequenceQueueLimit` = `32 MiB`).
+- `void invalidateCommittedRect(const QRect &rect)` / `QList<QRect> takeInvalidatedCommittedRects()` — marks or drains cell rectangles overwritten on the terminal by pre-diff control sequences so the renderer resets its committed buffer in those cells before diffing.
 - `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `int terminalWidth() const` / `int terminalHeight() const` — current terminal viewport dimensions in columns and rows.
 - `bool submitScrollback(const QString &text)` / `bool submitScrollback(const TextGridBuffer &rows)` — queues text or painted rows for scrollback emission (bounded to `ScrollbackQueueLimit` = `1 MiB`).
@@ -44,4 +46,4 @@
 
 When an interactive output session starts (with both `stdin` and `stdout` attached to a TTY), the engine queries Kitty keyboard flags, cell pixel size (`CSI 16 t`), synchronized output (`?2026$p`), and primary device attributes (`DA1`). The Kitty graphics APC probe is sent only to terminals known to parse APC strings cleanly (`kitty`, `Ghostty`, `WezTerm`, `Konsole`). Query replies never leak as key events. `DA1` closes negotiation, bounded by a 100 ms timer (`QMLTUI_QUERY_TIMEOUT_MS`). Environment overrides (`QMLTUI_COLOR_DEPTH`, `QMLTUI_SYNC_OUTPUT`, `QMLTUI_KITTY_KEYBOARD`, `QMLTUI_KITTY_GRAPHICS`) are re-applied after replies so explicit overrides always win.
 
-`Terminal::enqueueControlSequence(QByteArray)` queues a batch of terminal resource commands (such as image uploads and placements) up to a 4 MiB engine budget. Queued commands are emitted immediately before the same frame's cell diff and flushed before renderer switches or shutdown.
+`Terminal::enqueueControlSequence(QByteArray)` queues a batch of terminal resource commands (such as image uploads and placements) up to a 32 MiB engine budget. Queued commands are emitted immediately before the same frame's cell diff and flushed before renderer switches or shutdown.

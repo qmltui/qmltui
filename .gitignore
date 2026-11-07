@@ -22,8 +22,9 @@ Temporary/
 layers/
 *:Zone.Identifier
 
-# Python bytecode
+# Python bytecode and virtual environments
 __pycache__/
+.venv/
 
 # Documentation site build artifacts and dependencies
 node_modules/

@@ -30,6 +30,7 @@ See [`docs/examples.md`](../docs/examples.md) for the full catalog with links to
 | [`inline_repl/`](recipes/inline_repl/) | `qmltui_inline_repl_demo` | Inline CLI prompt using `Terminal.Inline` and `Scrollback.print()`. |
 | [`lazy_model/`](recipes/lazy_model/) | `qmltui_lazy_model_demo` | `LazyDirectoryModel` (`QAbstractItemModel`) populating child nodes on demand in `TreeView`. |
 | [`live_image/`](recipes/live_image/) | `qmltui_live_image_demo` | Streaming procedural `QImage` frames from `qmltui::AsyncImageProvider` into `Image` (`QMLTUI_ENABLE_IMAGE=ON`). |
+| [`pyside6/`](recipes/pyside6/) | *(Python script)* | Hosting `QmlTui` and `QmlTui.Controls` from `PySide6` with a Python `QAbstractTableModel` and `QSortFilterProxyModel`. |
 | [`standard_item_delegate/`](recipes/standard_item_delegate/) | `qmltui_standard_item_delegate_demo` | Shared `QStandardItemModel` rendered with `StandardItemDelegate` in `ListView`, `TableView`, and `TreeView` (plus `qmltui_standard_item_delegate_widgets` when `Qt6::Widgets` is available). |
 | [`status_badge/`](recipes/status_badge/) | `qmltui_status_badge_demo` | Copyable pure-QML status pill (`StatusBadge.qml`). |
 | [`table_view/`](recipes/table_view/) | `qmltui_table_view_demo` | `TableView` backed by `QAbstractTableModel` and `QSortFilterProxyModel`. |

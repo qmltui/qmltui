@@ -80,7 +80,11 @@ function stagePlaygroundAssets(): void {
 
 stagePlaygroundAssets()
 
+const rawBase = process.env.VITEPRESS_BASE || '/qmltui/'
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
+
 export default defineConfig({
+  base,
   title: 'QmlTui',
   description: 'Retained-mode terminal UI framework for C++17 and Qt 6',
   srcDir: '.',
@@ -107,7 +111,7 @@ export default defineConfig({
   },
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/branding/qmltui_mark.svg' }]
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}assets/branding/qmltui_mark.svg` }]
   ],
 
   themeConfig: {

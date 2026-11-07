@@ -37,6 +37,8 @@ jobs:
 
       - name: Build VitePress documentation site
         working-directory: docs
+        env:
+          VITEPRESS_BASE: /${{ github.event.repository.name }}/
         run: |
           npm install --no-package-lock
           npm run docs:build

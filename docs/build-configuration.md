@@ -120,6 +120,10 @@ See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qm
 
 Enable `-DQMLTUI_ENABLE_RUNNER=ON` (enabled by default for top-level builds or when `-DQMLTUI_BUILD_TESTS=ON` is set) to build `qmltui::runner` and the `qmltui-runner` CLI. See [Testing and Recording with Runner](guides/testing.md) and the [Runner C++ reference](cpp-classes/runner.md).
 
+### WebAssembly (`qmltui_wasm_app`)
+
+When building with a Qt for WebAssembly kit (`EMSCRIPTEN`), both the QmlTui root and `find_package(QmlTui)` automatically include `QmlTuiWasm.cmake` and provide `qmltui_wasm_app(<target> [OUTPUT_DIRECTORY <dir>])`. Calling `qmltui_wasm_app(<target>)` disables Qt's GUI `<canvas>` shell and generates a ready-to-run `xterm.js` terminal page (`<target>.html`) next to `<target>.js` and `<target>.wasm`. See [QmlTui in the browser (Qt for WebAssembly)](guides/webassembly.md).
+
 ## Development Builds
 
 ### Build and Run the Gallery and Test Suite

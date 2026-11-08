@@ -88,9 +88,9 @@ viewport between a native CodeMirror 6 QML editor on the left and a live
   allow the page's origin (CORS). The gallery's own picture and sprite sheet
   stay embedded in Qt resources for that reason.
 
-Any app can be built as its own WebAssembly binary in the same way: call
-`qmltui_wasm_app(<target>)` in its `CMakeLists.txt` (as the gallery and playground
-already do) and add it to a wrapper project like `examples/wasm`.
+Any QmlTui application can also be built and run as a standalone WebAssembly
+app—without the playground wrapper—simply by calling `qmltui_wasm_app(<target>)`
+in its `CMakeLists.txt` (see [Building your own app for the browser](#building-your-own-app-for-the-browser)).
 
 ## How it works
 
@@ -177,17 +177,53 @@ appended (set the `QT_WASM_EXPORT_NAME` target property to change it).
 Configure with the kit's `qt-cmake`, then in your project:
 
 ```cmake
-add_subdirectory(path/to/QmlTui)          # or FetchContent, as examples/helloworld does
+add_subdirectory(path/to/QmlTui)          # or find_package(QmlTui REQUIRED) / FetchContent
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app URI MyApp VERSION 1.0 QML_FILES Main.qml DEPENDENCIES TARGET qmltui::core)
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 if(COMMAND qmltui_wasm_app)
-    qmltui_wasm_app(my_app)               # no Qt shell page, output under ${QMLTUI_WASM_WWW_DIR}
+    qmltui_wasm_app(my_app)               # replaces Qt's canvas shell with an xterm.js <target>.html page
 endif()
 ```
 
-`qmltui_wasm_app()` comes from `cmake/QmlTuiWasm.cmake`, which the QmlTui root
-includes automatically under Emscripten. Static Qt handles the QML plugins:
+### `qmltui_wasm_app(<target> [OUTPUT_DIRECTORY <dir>])`
+
+`qmltui_wasm_app()` is defined in `cmake/QmlTuiWasm.cmake`, which both the
+QmlTui root and `find_package(QmlTui)` include automatically when `EMSCRIPTEN`
+is true. Call it in the same directory scope that creates `<target>` so Qt's
+deferred executable finalizer sees the target properties. It performs four steps:
+
+1. **Disables Qt's GUI shell**: Sets `NO_WASM_DEFAULT_FILES ON` on `<target>` so
+   Qt does not generate its `<canvas>`-based `wasm_shell.html`, `qtloader.js`,
+   or `qtlogo.svg`.
+2. **Applies output directory and memory overrides**:
+   - `OUTPUT_DIRECTORY <dir>` (optional): sets `RUNTIME_OUTPUT_DIRECTORY` on
+     `<target>`. When omitted, `qmltui_wasm_app()` uses the target's existing
+     `RUNTIME_OUTPUT_DIRECTORY` or falls back to `${CMAKE_CURRENT_BINARY_DIR}`
+     (and copies `<target>.html` into `$<CONFIG>/` for multi-config generators).
+   - `QMLTUI_WASM_INITIAL_MEMORY` (CMake cache string): when non-empty, sets
+     `QT_WASM_INITIAL_MEMORY` on `<target>` (for example `-DQMLTUI_WASM_INITIAL_MEMORY=96MB`).
+3. **Resolves target naming**: Respects the target's `OUTPUT_NAME` property for
+   the generated `.html`/`.js` filenames and `QT_WASM_EXPORT_NAME` (or Qt's
+   `<sanitized_target>_entry` convention) for the JavaScript module factory.
+4. **Generates `<target>.html` next to `<target>.js` and `<target>.wasm`**:
+   Writes a self-contained `xterm.js` host page that:
+   - Loads `xterm.js`, `@xterm/addon-fit`, and `@xterm/addon-unicode-graphemes`
+     (`15-graphemes`), matching QmlTui's `UnicodeText` grapheme widths.
+   - Connects `qmltuiOnOutput`, `qmltuiFeedInput`, and `qmltuiResize`.
+   - Replies to QmlTui's OSC 4/10/11 palette queries and handles OSC 52
+     clipboard copy (`navigator.clipboard.writeText`).
+   - Forwards repeatable `?arg=...` URL query parameters as `argc`/`argv` to
+     `callMain(args)` (for example `my_app.html?arg=--help`).
+   - Handles `Qt.quit()` (`onAbort` / `onExit`) by resetting the terminal and
+     offering a restart action.
+
+Because `<target>.html` is written directly alongside `<target>.js` and
+`<target>.wasm`, pressing **Run** in Qt Creator (which invokes `emrun` on the
+target's output path) or serving the build directory with `emrun` /
+`python3 -m http.server` works out of the box.
+
+Static Qt handles the QML plugins:
 `qmlimportscanner` finds the `QmlTui` module in the build tree and links
 `QmlTuiCoreplugin` into the executable. Do not pass `-sMODULARIZE`,
 `-sEXPORT_NAME`, or `-sEXPORTED_RUNTIME_METHODS` yourself; Qt's finalizer

@@ -11,6 +11,10 @@ qt_add_qml_module(qmltui_independent_states_demo
 
 target_link_libraries(qmltui_independent_states_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
+if(COMMAND qmltui_wasm_app)
+    qmltui_wasm_app(qmltui_independent_states_demo)
+endif()
+
 if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_independent_states_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(NAME independent_states_scenario TARGET qmltui_independent_states_demo

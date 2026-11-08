@@ -49,6 +49,10 @@ qt_add_qml_module(hello_qmltui
 )
 target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
+if(COMMAND qmltui_wasm_app)
+    qmltui_wasm_app(hello_qmltui)
+endif()
+
 if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(hello_qmltui PRIVATE qmltui::runner)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js")

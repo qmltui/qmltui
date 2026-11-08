@@ -36,10 +36,26 @@ option(QMLTUI_ENABLE_PRIVATE_QT "Private Qt features: Behavior and advanced stat
 option(QMLTUI_WASM_PLAYGROUND_IMAGE "Link QmlTui.Image into the playground binary" ON)
 option(QMLTUI_ENABLE_IMAGE "Build the optional QmlTui Image module (requires Qt Gui and Network)" ${QMLTUI_WASM_PLAYGROUND_IMAGE})
 
+set(QMLTUI_WASM_WWW_DIR "${CMAKE_BINARY_DIR}/www" CACHE PATH
+    "Directory that holds the .js/.wasm artifacts and the playground page")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${QMLTUI_WASM_WWW_DIR}")
+
 add_subdirectory(../.. qmltui)   # the root includes cmake/QmlTuiWasm.cmake under EMSCRIPTEN
 add_subdirectory(playground)
 
-qmltui_wasm_add_demo_page("${CMAKE_CURRENT_SOURCE_DIR}/www")
+foreach(page index.html qmltui-playground.js qmltui-completion.js types.json)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/www/${page}" "${QMLTUI_WASM_WWW_DIR}/${page}" COPYONLY)
+endforeach()
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/www/index.html" "${QMLTUI_WASM_WWW_DIR}/qmltui_playground.html" COPYONLY)
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND AND NOT TARGET serve)
+    add_custom_target(serve
+        COMMAND "${Python3_EXECUTABLE}" -m http.server 8000 --directory "${QMLTUI_WASM_WWW_DIR}"
+        USES_TERMINAL VERBATIM
+        COMMENT "Serving ${QMLTUI_WASM_WWW_DIR} at http://localhost:8000/"
+    )
+endif()
 
 # The gallery is the app the page runs. configure_file() copies it and makes
 # the build re-run configure when it changes.

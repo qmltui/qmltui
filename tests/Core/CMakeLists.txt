@@ -16,7 +16,7 @@ add_qmltui_test(test_terminal_queries test_terminal_queries.cpp)
 target_link_libraries(test_terminal_queries PRIVATE qmltui::runner)
 add_qmltui_test(test_clock_virtual test_clock_virtual.cpp)
 add_qmltui_test(test_clock_real test_clock_real.cpp)
-if(UNIX)
+if(UNIX AND NOT EMSCRIPTEN)
     add_qmltui_test(test_terminal_device test_terminal_device.cpp)
     set_tests_properties(test_terminal_device PROPERTIES TIMEOUT 20)
 

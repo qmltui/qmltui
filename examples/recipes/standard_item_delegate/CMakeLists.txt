@@ -22,6 +22,10 @@ qt_add_qml_module(qmltui_standard_item_delegate_demo
 target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE
     Qt6::Core Qt6::Gui Qt6::Qml qmltui::core)
 
+if(COMMAND qmltui_wasm_app)
+    qmltui_wasm_app(qmltui_standard_item_delegate_demo)
+endif()
+
 if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE qmltui::runner)
     qmltui_add_scenario(

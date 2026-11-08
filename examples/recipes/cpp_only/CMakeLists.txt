@@ -11,6 +11,10 @@ target_link_libraries(qmltui_cpp_only_demo PRIVATE
     qmltui::core
 )
 
+if(COMMAND qmltui_wasm_app)
+    qmltui_wasm_app(qmltui_cpp_only_demo)
+endif()
+
 # A C++-created Terminal needs an explicit environment-driven Runner hook.
 if(BUILD_TESTING AND TARGET qmltui::runner)
     target_link_libraries(qmltui_cpp_only_demo PRIVATE qmltui::runner)

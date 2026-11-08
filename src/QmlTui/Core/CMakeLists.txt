@@ -185,6 +185,9 @@ target_include_directories(QmlTuiCore
 target_link_libraries(QmlTuiCore PUBLIC
     Qt6::Qml
 )
+if(EMSCRIPTEN)
+    target_link_libraries(QmlTuiCore PUBLIC embind)
+endif()
 
 target_link_libraries(QmlTuiCore PRIVATE
     utf8proc

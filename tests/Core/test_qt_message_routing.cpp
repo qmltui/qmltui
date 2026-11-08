@@ -22,26 +22,20 @@ namespace {
 class OrderTrackingBackend : public TerminalBackend {
 public:
     explicit OrderTrackingBackend(std::atomic<bool>* leaveRawModeFlag)
-        : m_leaveRawModeFlag(leaveRawModeFlag)
-    {
-    }
+        : m_leaveRawModeFlag(leaveRawModeFlag) {}
 
     bool enterRawMode() override { return true; }
-    bool leaveRawMode() override
-    {
-        if (m_leaveRawModeFlag)
-            m_leaveRawModeFlag->store(true, std::memory_order_release);
+    bool leaveRawMode() override {
+        if (m_leaveRawModeFlag) m_leaveRawModeFlag->store(true, std::memory_order_release);
         return true;
     }
 
-    WriteStatus writeSome(const char*, size_t size, size_t& offset) override
-    {
+    WriteStatus writeSome(const char*, size_t size, size_t& offset) override {
         offset = size;
         return WriteStatus::Done;
     }
 
-    bool writeAll(std::string& pending, int) override
-    {
+    bool writeAll(std::string& pending, int) override {
         pending.clear();
         return true;
     }
@@ -81,8 +75,7 @@ private slots:
     void terminalRestorationPrecedesReplay();
 };
 
-void TestQtMessageRouting::defaultDeferredStderr()
-{
+void TestQtMessageRouting::defaultDeferredStderr() {
     QtMessageSink sink = QtMessageRouting::stderrPresentationSink();
     QVERIFY(static_cast<bool>(sink));
 
@@ -94,15 +87,13 @@ void TestQtMessageRouting::defaultDeferredStderr()
     terminal.engine()->stop();
 }
 
-void TestQtMessageRouting::immediateInlinePresentation()
-{
+void TestQtMessageRouting::immediateInlinePresentation() {
     QStringList diagMessages;
     QStringList presMessages;
 
-    auto routing = QtMessageRouting::install(
-        [&](const QtMessage& msg) { diagMessages.append(msg.message); },
-        [&](const QtMessage& msg) { presMessages.append(msg.message); }
-    );
+    auto routing =
+        QtMessageRouting::install([&](const QtMessage& msg) { diagMessages.append(msg.message); },
+                                  [&](const QtMessage& msg) { presMessages.append(msg.message); });
     QVERIFY(routing != nullptr);
 
     Terminal terminal;
@@ -117,15 +108,13 @@ void TestQtMessageRouting::immediateInlinePresentation()
     QCOMPARE(presMessages.first(), QStringLiteral("inline-message-1"));
 }
 
-void TestQtMessageRouting::immediateApplicationDelivery()
-{
+void TestQtMessageRouting::immediateApplicationDelivery() {
     QStringList diagMessages;
     QStringList presMessages;
 
-    auto routing = QtMessageRouting::install(
-        [&](const QtMessage& msg) { diagMessages.append(msg.message); },
-        [&](const QtMessage& msg) { presMessages.append(msg.message); }
-    );
+    auto routing =
+        QtMessageRouting::install([&](const QtMessage& msg) { diagMessages.append(msg.message); },
+                                  [&](const QtMessage& msg) { presMessages.append(msg.message); });
     QVERIFY(routing != nullptr);
 
     Terminal terminal;
@@ -145,14 +134,13 @@ void TestQtMessageRouting::immediateApplicationDelivery()
     QCOMPARE(presMessages.first(), QStringLiteral("app-message-deferred"));
 }
 
-void TestQtMessageRouting::disabledPresentation()
-{
+void TestQtMessageRouting::disabledPresentation() {
     QStringList diagMessages;
 
-    auto routing = QtMessageRouting::install(
-        [&](const QtMessage& msg) { diagMessages.append(msg.message); }
-        // Presentation sink omitted
-    );
+    auto routing =
+        QtMessageRouting::install([&](const QtMessage& msg) { diagMessages.append(msg.message); }
+                                  // Presentation sink omitted
+        );
     QVERIFY(routing != nullptr);
 
     Terminal terminal;
@@ -167,13 +155,10 @@ void TestQtMessageRouting::disabledPresentation()
     QCOMPARE(diagMessages.size(), 1);
 }
 
-void TestQtMessageRouting::originalContextAndFormatting()
-{
+void TestQtMessageRouting::originalContextAndFormatting() {
     QtMessage captured;
-    auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {},
-        [&](const QtMessage& msg) { captured = msg; }
-    );
+    auto routing = QtMessageRouting::install([](const QtMessage&) {},
+                                             [&](const QtMessage& msg) { captured = msg; });
 
     const QDateTime before = QDateTime::currentDateTimeUtc().addSecs(-1);
 
@@ -196,15 +181,13 @@ void TestQtMessageRouting::originalContextAndFormatting()
     QVERIFY(captured.formattedMessage().contains(QStringLiteral("context-probe-message")));
 }
 
-void TestQtMessageRouting::bufferOverflow()
-{
+void TestQtMessageRouting::bufferOverflow() {
     std::vector<QString> diagDelivered;
     std::vector<QString> presDelivered;
 
     auto routing = QtMessageRouting::install(
         [&](const QtMessage& msg) { diagDelivered.push_back(msg.message); },
-        [&](const QtMessage& msg) { presDelivered.push_back(msg.message); }
-    );
+        [&](const QtMessage& msg) { presDelivered.push_back(msg.message); });
 
     Terminal terminal;
     terminal.engine()->setTestViewportSize(QSize(10, 3));
@@ -226,14 +209,11 @@ void TestQtMessageRouting::bufferOverflow()
     QCOMPARE(presDelivered.back(), QStringLiteral("msg-549"));
 }
 
-void TestQtMessageRouting::nestedSessionsAndReplayOrdering()
-{
+void TestQtMessageRouting::nestedSessionsAndReplayOrdering() {
     QStringList presDelivered;
 
     auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {},
-        [&](const QtMessage& msg) { presDelivered.append(msg.message); }
-    );
+        [](const QtMessage&) {}, [&](const QtMessage& msg) { presDelivered.append(msg.message); });
 
     Terminal first;
     Terminal second;
@@ -253,8 +233,7 @@ void TestQtMessageRouting::nestedSessionsAndReplayOrdering()
     QCOMPARE(presDelivered.first(), QStringLiteral("nested-1"));
 }
 
-void TestQtMessageRouting::duplicateAndRetiringRejection()
-{
+void TestQtMessageRouting::duplicateAndRetiringRejection() {
     auto first = QtMessageRouting::install([](const QtMessage&) {});
     QVERIFY(first != nullptr);
 
@@ -269,14 +248,12 @@ void TestQtMessageRouting::duplicateAndRetiringRejection()
     QVERIFY(third != nullptr);
 }
 
-void TestQtMessageRouting::concurrentWorkerLoggingAndUnregister()
-{
+void TestQtMessageRouting::concurrentWorkerLoggingAndUnregister() {
     std::atomic<bool> running{true};
     std::atomic<int> loggedCount{0};
 
-    auto routing = QtMessageRouting::install([&](const QtMessage&) {
-        loggedCount.fetch_add(1, std::memory_order_relaxed);
-    });
+    auto routing = QtMessageRouting::install(
+        [&](const QtMessage&) { loggedCount.fetch_add(1, std::memory_order_relaxed); });
     QVERIFY(routing != nullptr);
 
     std::vector<QThread*> threads;
@@ -301,25 +278,18 @@ void TestQtMessageRouting::concurrentWorkerLoggingAndUnregister()
     QVERIFY(loggedCount.load() > 0);
 }
 
-void TestQtMessageRouting::independentExceptions()
-{
+void TestQtMessageRouting::independentExceptions() {
     bool presentationReached = false;
 
     auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {
-            throw std::runtime_error("simulated diagnostic sink crash");
-        },
-        [&](const QtMessage&) {
-            presentationReached = true;
-        }
-    );
+        [](const QtMessage&) { throw std::runtime_error("simulated diagnostic sink crash"); },
+        [&](const QtMessage&) { presentationReached = true; });
 
     qInfo("exception-isolation-probe");
     QVERIFY(presentationReached);
 }
 
-void TestQtMessageRouting::recursionDetection()
-{
+void TestQtMessageRouting::recursionDetection() {
     std::atomic<int> outerCount{0};
     auto routing = QtMessageRouting::install([&](const QtMessage& msg) {
         if (msg.message.contains(QLatin1String("outer"))) {
@@ -333,15 +303,13 @@ void TestQtMessageRouting::recursionDetection()
     QCOMPARE(outerCount.load(), 1);
 }
 
-void TestQtMessageRouting::unfilteredWarnings()
-{
+void TestQtMessageRouting::unfilteredWarnings() {
     QStringList diagReceived;
     QStringList presReceived;
 
-    auto routing = QtMessageRouting::install(
-        [&](const QtMessage& msg) { diagReceived.append(msg.message); },
-        [&](const QtMessage& msg) { presReceived.append(msg.message); }
-    );
+    auto routing =
+        QtMessageRouting::install([&](const QtMessage& msg) { diagReceived.append(msg.message); },
+                                  [&](const QtMessage& msg) { presReceived.append(msg.message); });
 
     const QString warningText = QStringLiteral("Setting initial properties failed for item");
     qWarning().noquote() << warningText;
@@ -352,8 +320,8 @@ void TestQtMessageRouting::unfilteredWarnings()
     QCOMPARE(presReceived.first(), warningText);
 }
 
-void TestQtMessageRouting::fatalDeliverySubprocess()
-{
+void TestQtMessageRouting::fatalDeliverySubprocess() {
+#if QT_CONFIG(process)
     QProcess proc;
     proc.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--fatal-worker")});
     QVERIFY(proc.waitForFinished(5000));
@@ -362,22 +330,23 @@ void TestQtMessageRouting::fatalDeliverySubprocess()
     QVERIFY(stdoutOutput.contains(QStringLiteral("DIAG:intentional-test-fatal")));
     QVERIFY(stdoutOutput.contains(QStringLiteral("PRES:intentional-test-fatal")));
     QCOMPARE(proc.exitStatus(), QProcess::CrashExit);
+#else
+    QSKIP("QProcess is not available on this platform");
+#endif
 }
 
-void TestQtMessageRouting::terminalRestorationPrecedesReplay()
-{
+void TestQtMessageRouting::terminalRestorationPrecedesReplay() {
     std::atomic<bool> leaveRawModeCalled{false};
-    TerminalBackend::setFactory([&](int) {
-        return std::make_unique<OrderTrackingBackend>(&leaveRawModeCalled);
-    });
+    TerminalBackend::setFactory(
+        [&](int) { return std::make_unique<OrderTrackingBackend>(&leaveRawModeCalled); });
 
     bool rawModeWasDisabledBeforePresentation = false;
-    auto routing = QtMessageRouting::install(
-        [](const QtMessage&) {},
-        [&](const QtMessage&) {
-            rawModeWasDisabledBeforePresentation = leaveRawModeCalled.load(std::memory_order_acquire);
-        }
-    );
+    auto routing =
+        QtMessageRouting::install([](const QtMessage&) {},
+                                  [&](const QtMessage&) {
+                                      rawModeWasDisabledBeforePresentation =
+                                          leaveRawModeCalled.load(std::memory_order_acquire);
+                                  });
 
     {
         Terminal terminal;
@@ -392,8 +361,7 @@ void TestQtMessageRouting::terminalRestorationPrecedesReplay()
     QVERIFY(rawModeWasDisabledBeforePresentation);
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if (argc > 1 && std::strcmp(argv[1], "--fatal-worker") == 0) {
         auto routing = qmltui::QtMessageRouting::install(
             [](const qmltui::QtMessage& msg) {
@@ -403,8 +371,7 @@ int main(int argc, char* argv[])
             [](const qmltui::QtMessage& msg) {
                 std::printf("PRES:%s\n", qPrintable(msg.message));
                 std::fflush(stdout);
-            }
-        );
+            });
         qFatal("intentional-test-fatal");
         return 0;
     }

@@ -33,8 +33,8 @@ public:
     void stopInput() override { m_inputStarted = false; }
 
     // Test controls
-    void feedInput(const QByteArray& bytes);   // emits inputReceived()
-    void setSize(const QSize& size);           // emits resized() when it changes
+    void feedInput(const QByteArray& bytes); // emits inputReceived()
+    void setSize(const QSize& size);         // emits resized() when it changes
     void setInteractive(bool interactive) { m_interactive = interactive; }
 
     const std::string& output() const { return m_output; }

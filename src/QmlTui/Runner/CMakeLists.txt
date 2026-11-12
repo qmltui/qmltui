@@ -1,11 +1,18 @@
-add_library(QmlTuiRunner ${QMLTUI_STATIC_QML_MODULE}
+# Runner relies on file-scope RunnerAutoHook static initialization via whole-archive
+# link flags, so it is always built as a PIC static archive even when BUILD_SHARED_LIBS=ON.
+add_library(QmlTuiRunner STATIC
     Runner.h
     Runner.cpp
+    RunnerInput_p.h
+    RunnerInput.cpp
+    RunnerSnapshot_p.h
+    RunnerSnapshot.cpp
     CastRecorder_p.h
     CastRecorder.cpp
     MemoryTerminalBackend.h
     MemoryTerminalBackend.cpp
 )
+set_target_properties(QmlTuiRunner PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Configuring the Runner target is what makes the scenario helpers
 # (qmltui_add_scenario, qmltui_add_scenario_test, qmltui_scenario_editor_support)

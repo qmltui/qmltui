@@ -154,8 +154,13 @@ inline void appendStyleTransition(std::string& out, const Cell& cell, StyleState
     const uint8_t intensity =
         static_cast<uint8_t>(TextAttribute::Bold) | static_cast<uint8_t>(TextAttribute::Dim);
     if (removed & intensity) added |= next & intensity;
+    bool emittedNormalIntensity = false;
     for (const AttributeCode& code : attributeCodes) {
         if (removed & static_cast<uint8_t>(code.attribute)) {
+            if (code.attribute == TextAttribute::Bold || code.attribute == TextAttribute::Dim) {
+                if (emittedNormalIntensity) continue;
+                emittedNormalIntensity = true;
+            }
             separator();
             out += code.off;
         }
@@ -191,8 +196,13 @@ inline void appendEraseStyle(std::string& out, StyleState& state) {
         any = true;
         state.bg = 0;
     }
+    bool emittedNormalIntensity = false;
     for (const AttributeCode& code : attributeCodes) {
         if (state.attributes & static_cast<uint8_t>(code.attribute)) {
+            if (code.attribute == TextAttribute::Bold || code.attribute == TextAttribute::Dim) {
+                if (emittedNormalIntensity) continue;
+                emittedNormalIntensity = true;
+            }
             if (any) out += ';';
             out += code.off;
             any = true;

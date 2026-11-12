@@ -15,10 +15,7 @@ inline constexpr int DotsY = 4;
 // Coordinates must satisfy 0 <= dotX < DotsX and 0 <= dotY < DotsY.
 constexpr std::uint8_t dotMask(int dotX, int dotY) noexcept {
     assert(dotX >= 0 && dotX < DotsX && dotY >= 0 && dotY < DotsY);
-    constexpr std::uint8_t masks[2][4] = {
-        { 0x01, 0x02, 0x04, 0x40 },
-        { 0x08, 0x10, 0x20, 0x80 }
-    };
+    constexpr std::uint8_t masks[2][4] = {{0x01, 0x02, 0x04, 0x40}, {0x08, 0x10, 0x20, 0x80}};
     return masks[dotX][dotY];
 }
 
@@ -36,7 +33,7 @@ inline constexpr int SubpixelsY = 2;
 namespace block_glyphs {
 inline constexpr char UpperHalf[] = "\xE2\x96\x80";
 inline constexpr char LowerHalf[] = "\xE2\x96\x84";
-inline constexpr char Full[]      = "\xE2\x96\x88";
+inline constexpr char Full[] = "\xE2\x96\x88";
 } // namespace block_glyphs
 
 } // namespace qmltui

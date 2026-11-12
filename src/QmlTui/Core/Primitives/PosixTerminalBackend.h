@@ -51,6 +51,7 @@ private:
     int m_inputFd;
     termios m_originalTermios{};
     bool m_termiosValid = false;
+    bool m_rawMode = false;
     int m_originalFlags = -1;
     bool m_inputStarted = false;
     std::unique_ptr<QSocketNotifier> m_writeNotifier;

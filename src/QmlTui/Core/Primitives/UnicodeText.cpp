@@ -165,9 +165,9 @@ QByteArray UnicodeText::toUtf8(QStringView cluster, bool sanitizeControls) {
     return result;
 }
 
-int UnicodeText::displayWidth(QStringView text) {
+int UnicodeText::displayWidth(QStringView text, bool sanitizeControls) {
     int width = 0;
-    GraphemeIterator iterator(text);
+    GraphemeIterator iterator(text, sanitizeControls);
     GraphemeRef cluster;
     while (iterator.next(cluster))
         width += cluster.width;

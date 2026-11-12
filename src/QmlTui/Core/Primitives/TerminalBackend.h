@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QSize>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -33,9 +34,10 @@ namespace qmltui {
 // resized(); the receiver queries size() afterwards.
 class QMLTUI_CORE_EXPORT TerminalBackend : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(TerminalBackend)
 
 public:
-    enum class WriteStatus { Done, WouldBlock, Error };
+    enum class WriteStatus : uint8_t { Done, WouldBlock, Error };
 
     explicit TerminalBackend(QObject* parent = nullptr);
     ~TerminalBackend() override;

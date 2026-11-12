@@ -168,6 +168,7 @@ struct EmergencyState {
     volatile sig_atomic_t keyboardProtocol = 0;
     int outputFd = -1;
     int inputFd = -1;
+    const PosixTerminalBackend* owner = nullptr;
     termios original{};
     termios raw{};
 };
@@ -220,8 +221,20 @@ void installTstpHandler();
 
 void fatalHandler(int signo) {
     restoreTerminalFromSignal();
-    ::signal(signo, SIG_DFL);
-    ::raise(signo); // pending until this handler returns, then the default action
+    bool restoredCustom = false;
+    for (size_t i = 0; i < std::size(kFatalSignals); ++i) {
+        if (kFatalSignals[i] == signo) {
+            const struct sigaction& prev = g_previousFatal[i];
+            if ((prev.sa_flags & SA_SIGINFO) != 0 ||
+                (prev.sa_handler != SIG_DFL && prev.sa_handler != SIG_IGN)) {
+                ::sigaction(signo, &prev, nullptr);
+                restoredCustom = true;
+            }
+            break;
+        }
+    }
+    if (!restoredCustom) ::signal(signo, SIG_DFL);
+    ::raise(signo); // pending until this handler returns, then the default or previous action
 }
 
 void tstpHandler(int) {
@@ -253,8 +266,9 @@ void installTstpHandler() {
     ::sigaction(SIGTSTP, &action, nullptr);
 }
 
-void installEmergencyHandlers(int inputFd, int outputFd, const termios& original,
-                              const termios& raw) {
+void installEmergencyHandlers(const PosixTerminalBackend* owner, int inputFd, int outputFd,
+                              const termios& original, const termios& raw) {
+    g_emergency.owner = owner;
     g_emergency.inputFd = inputFd;
     g_emergency.outputFd = outputFd;
     g_emergency.original = original;
@@ -275,9 +289,11 @@ void installEmergencyHandlers(int inputFd, int outputFd, const termios& original
     g_handlersInstalled = true;
 }
 
-void uninstallEmergencyHandlers() {
+void uninstallEmergencyHandlers(const PosixTerminalBackend* owner) {
+    if (g_emergency.owner != nullptr && g_emergency.owner != owner) return;
     g_emergency.active = 0;
     g_emergency.keyboardProtocol = 0;
+    g_emergency.owner = nullptr;
     std::atomic_thread_fence(std::memory_order_release);
     if (!g_handlersInstalled) return;
     for (size_t i = 0; i < std::size(kFatalSignals); ++i)
@@ -297,10 +313,12 @@ PosixTerminalBackend::PosixTerminalBackend(int outputFd, QObject* parent)
 
 PosixTerminalBackend::~PosixTerminalBackend() {
     stopInput();
+    if (m_rawMode) leaveRawMode();
     setNonBlockingOutput(false);
 }
 
 bool PosixTerminalBackend::enterRawMode() {
+    if (m_rawMode) return true;
     if (!m_termiosValid) return false;
     termios raw = m_originalTermios;
     // Disable echo, canonical mode, extended input processing, and signals.
@@ -312,18 +330,20 @@ bool PosixTerminalBackend::enterRawMode() {
     // Disable output processing.
     raw.c_oflag &= ~OPOST;
     if (::tcsetattr(m_inputFd, TCSAFLUSH, &raw) != 0) return false;
-    installEmergencyHandlers(m_inputFd, m_outputFd, m_originalTermios, raw);
+    m_rawMode = true;
+    installEmergencyHandlers(this, m_inputFd, m_outputFd, m_originalTermios, raw);
     return true;
 }
 
 void PosixTerminalBackend::setKeyboardProtocolActive(bool active) {
-    if (g_emergency.active && g_emergency.outputFd == m_outputFd)
+    if (g_emergency.active && g_emergency.owner == this)
         g_emergency.keyboardProtocol = active ? 1 : 0;
 }
 
 bool PosixTerminalBackend::leaveRawMode() {
     if (!m_termiosValid) return false;
-    uninstallEmergencyHandlers();
+    m_rawMode = false;
+    uninstallEmergencyHandlers(this);
     return ::tcsetattr(m_inputFd, TCSAFLUSH, &m_originalTermios) == 0;
 }
 

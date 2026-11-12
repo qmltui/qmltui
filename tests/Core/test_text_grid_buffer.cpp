@@ -38,7 +38,9 @@ private slots:
     void testRowAnsiTrimsDefaultBlanks();
     void testCopiedBufferComparesEqual();
     void testToAnsiStringExactRow();
-    void testFillRectPreservesAttributes();
+    void testFillRectResetsAttributesAndSplitsWideGlyphs();
+    void testMinClipXZeroWidthMark();
+    void testCellAppendCharacterMaxGraphemeCap();
     void testSetGraphemeWideAndContinuation();
     void testSetGraphemeZeroWidthAppendsToBase();
     void testSetGraphemeClipsAtRightEdge();
@@ -50,6 +52,7 @@ private slots:
     void testDiffAppendsIntoCallerString();
     void testDiffLargeCoordinates();
     void testOsc8Hyperlinks();
+    void testGlyphTableBoundedFallback();
 };
 
 void TestTextGridBuffer::testResize() {
@@ -233,6 +236,12 @@ void TestTextGridBuffer::testDiffEmitsStyleTransitions() {
     QVERIFY(diff.find("48;2;0;0;255") != std::string::npos);
     QVERIFY(diff.find("39;49;22m") != std::string::npos);
     QVERIFY(QByteArray::fromStdString(diff).endsWith("B"));
+
+    // Clearing both Bold and Dim simultaneously emits SGR 22 once, not 22;22.
+    after.cellAt(0, 0).attributes = TextAttribute::Bold | TextAttribute::Dim;
+    const std::string bothIntensityDiff = before.diff(after);
+    QVERIFY(bothIntensityDiff.find("22;22") == std::string::npos);
+    QVERIFY(bothIntensityDiff.find("39;49;22m") != std::string::npos);
 }
 
 void TestTextGridBuffer::testDiffHandlesWideCharacterTransitions() {
@@ -466,19 +475,80 @@ void TestTextGridBuffer::testToAnsiStringExactRow() {
     QCOMPARE(QByteArray::fromStdString(buffer.toAnsiString()), QByteArray::fromStdString(expected));
 }
 
-void TestTextGridBuffer::testFillRectPreservesAttributes() {
-    // fillRect, drawLine and drawBox replace glyph and colours but leave
-    // attributes untouched; Rectangle's background fill leaves fg untouched.
+void TestTextGridBuffer::testFillRectResetsAttributesAndSplitsWideGlyphs() {
     TextGridBuffer buffer;
-    QVERIFY(buffer.resize(3, 1));
-    buffer.writeText(0, 0, "xyz", 0xFF123456, 0xFF654321, TextAttribute::Underline);
-    buffer.fillRect(0, 0, 2, 1, " ", 0xFFFFFFFF, 0xFF000000);
+    QVERIFY(buffer.resize(6, 3));
+    const uint8_t oldLink = buffer.registerLink(QStringLiteral("https://example.com"));
+    buffer.setActiveLinkId(oldLink);
+    buffer.writeText(0, 0, QString::fromUtf8("中中xy"), 0xFF123456, 0xFF654321,
+                     TextAttribute::Underline);
+    buffer.writeText(0, 1, QString::fromUtf8("中中"), 0xFF123456, 0xFF654321, TextAttribute::Bold);
+    buffer.writeText(0, 2, QString::fromUtf8("中中"), 0xFF123456, 0xFF654321,
+                     TextAttribute::Reversed);
+    buffer.setActiveLinkId(0);
+
+    // Overwriting column 1 splits the first wide glyph at column 0 and clears attributes/links.
+    buffer.fillRect(1, 0, 2, 1, " ", 0xFFFFFFFF, 0xFF000000);
     QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray(" "));
-    QCOMPARE(buffer.cellAt(0, 0).fgColor, 0xFFFFFFFFu);
-    QCOMPARE(buffer.cellAt(0, 0).bgColor, 0xFF000000u);
-    QCOMPARE(buffer.cellAt(0, 0).attributes, TextAttribute::Underline);
-    QCOMPARE(buffer.cellAt(2, 0).character().toByteArray(), QByteArray("z"));
-    QCOMPARE(buffer.cellAt(2, 0).fgColor, 0xFF123456u);
+    QCOMPARE(buffer.cellAt(0, 0).displayWidth, uint8_t(1));
+    QVERIFY(!buffer.cellAt(0, 0).continuation);
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray(" "));
+    QVERIFY(!buffer.cellAt(1, 0).continuation);
+    QCOMPARE(buffer.cellAt(1, 0).fgColor, 0xFFFFFFFFu);
+    QCOMPARE(buffer.cellAt(1, 0).bgColor, 0xFF000000u);
+    QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(1, 0).linkId, uint8_t(0));
+    // Overwriting column 2 splits the second wide glyph's continuation at column 3.
+    QCOMPARE(buffer.cellAt(3, 0).character().toByteArray(), QByteArray(" "));
+    QCOMPARE(buffer.cellAt(3, 0).displayWidth, uint8_t(1));
+    QVERIFY(!buffer.cellAt(3, 0).continuation);
+    QCOMPARE(buffer.cellAt(4, 0).character().toByteArray(), QByteArray("x"));
+    QCOMPARE(buffer.cellAt(4, 0).attributes, TextAttribute::Underline);
+    QCOMPARE(buffer.cellAt(4, 0).linkId, oldLink);
+
+    // drawLine and drawBox likewise split straddled wide glyphs and clear stale attributes/links.
+    buffer.drawLine(1, 1, 2, 1, "-");
+    QCOMPARE(buffer.cellAt(0, 1).character().toByteArray(), QByteArray(" "));
+    QVERIFY(!buffer.cellAt(1, 1).continuation);
+    QCOMPARE(buffer.cellAt(1, 1).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(1, 1).linkId, uint8_t(0));
+    QCOMPARE(buffer.cellAt(3, 1).character().toByteArray(), QByteArray(" "));
+    QVERIFY(!buffer.cellAt(3, 1).continuation);
+
+    buffer.drawBox(1, 2, 2, 1);
+    QCOMPARE(buffer.cellAt(0, 2).character().toByteArray(), QByteArray(" "));
+    QVERIFY(!buffer.cellAt(1, 2).continuation);
+    QCOMPARE(buffer.cellAt(1, 2).attributes, TextAttribute::None);
+    QCOMPARE(buffer.cellAt(1, 2).linkId, uint8_t(0));
+    QCOMPARE(buffer.cellAt(3, 2).character().toByteArray(), QByteArray(" "));
+    QVERIFY(!buffer.cellAt(3, 2).continuation);
+}
+
+void TestTextGridBuffer::testMinClipXZeroWidthMark() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(4, 1));
+    buffer.setGrapheme(0, 0, "A", 1);
+    buffer.setGrapheme(1, 0, "B", 1);
+
+    // With minClipX = 1, a zero-width combining mark at x = 1 must not bleed into column 0.
+    QCOMPARE(buffer.setGrapheme(1, 0, "\xCC\x81", 0, 0, 0, TextAttribute::None, /*minClipX=*/1), 0);
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QByteArray("A"));
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("B"));
+
+    // At x = 2 > minClipX, attaching to column 1 succeeds.
+    QCOMPARE(buffer.setGrapheme(2, 0, "\xCC\x81", 0, 0, 0, TextAttribute::None, /*minClipX=*/1), 0);
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QByteArray("B\xCC\x81"));
+}
+
+void TestTextGridBuffer::testCellAppendCharacterMaxGraphemeCap() {
+    Cell cell;
+    cell.setCharacter("a");
+    for (int i = 0; i < 200; ++i) {
+        cell.appendCharacter("\xCC\x81");
+    }
+    QVERIFY(cell.character().size() <= Cell::MaxGraphemeBytes);
+    QVERIFY(cell.character().size() > 1);
+    QCOMPARE(cell.character()[0], 'a');
 }
 
 void TestTextGridBuffer::testSetGraphemeWideAndContinuation() {
@@ -675,6 +745,43 @@ void TestTextGridBuffer::testOsc8Hyperlinks() {
     after.appendRowAnsi(row, 0, ColorDepth::TrueColor);
     QVERIFY(row.find("\033]8;;https://qmltui.org\033\\") != std::string::npos);
     QVERIFY(row.find("\033]8;;\033\\") != std::string::npos);
+}
+
+void TestTextGridBuffer::testGlyphTableBoundedFallback() {
+    const QByteArray preInterned(
+        "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7");
+    Cell keepCell;
+    keepCell.setCharacter(preInterned);
+    QCOMPARE(keepCell.character().toByteArray(), preInterned);
+
+    Cell probe;
+    for (size_t i = 0; i < Cell::MaxInternedGlyphs + 32; ++i) {
+        const QByteArray cluster =
+            QByteArrayLiteral("cluster-seq-") + QByteArray::number(qulonglong(i));
+        QVERIFY(cluster.size() > Cell::InlineGlyphCapacity);
+        probe.setCharacter(cluster);
+    }
+
+    // Previously interned clusters remain accessible at full length even when full.
+    Cell lookupExisting;
+    lookupExisting.setCharacter(preInterned);
+    QCOMPARE(lookupExisting.character().toByteArray(), preInterned);
+    QCOMPARE(keepCell.character().toByteArray(), preInterned);
+
+    // Unseen >11-byte clusters truncate cleanly at the last UTF-8 codepoint boundary <= 11 bytes:
+    // 9 ASCII bytes ("123456789") + 4-byte emoji (bytes 9..12) straddles byte 11, so prefix is 9
+    // bytes.
+    const QByteArray straddling = QByteArrayLiteral("123456789\xF0\x9F\x91\xA8");
+    QCOMPARE(straddling.size(), 13);
+    Cell fallbackCell;
+    fallbackCell.setCharacter(straddling);
+    QCOMPARE(fallbackCell.character().toByteArray(), QByteArrayLiteral("123456789"));
+
+    // An unseen >11-byte cluster whose 11th byte ends on a codepoint boundary keeps all 11 bytes.
+    const QByteArray exactBoundary = QByteArrayLiteral("12345678\xE4\xB8\xAD\xE6\x96\x87");
+    QCOMPARE(exactBoundary.size(), 14);
+    fallbackCell.setCharacter(exactBoundary);
+    QCOMPARE(fallbackCell.character().toByteArray(), QByteArrayLiteral("12345678\xE4\xB8\xAD"));
 }
 
 QTEST_MAIN(TestTextGridBuffer)

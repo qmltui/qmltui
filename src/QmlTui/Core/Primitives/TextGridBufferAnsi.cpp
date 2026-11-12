@@ -155,11 +155,14 @@ void TextGridBuffer::diffInternal(const TextGridBuffer& nextBuffer, bool absolut
 
                 appendCursorPosition(column, y);
                 ansi::appendStyleTransition(ansi, nextCell, style, options.colorDepth);
-                const QString url = nextBuffer.linkUrl(nextCell.linkId);
-                const uint8_t nextLinkId = url.isEmpty() ? 0 : nextCell.linkId;
-                if (nextLinkId != activeLinkId) {
-                    ansi::appendOsc8(ansi, url);
-                    activeLinkId = nextLinkId;
+                if (nextCell.linkId != 0 || activeLinkId != 0) {
+                    const QString url =
+                        nextCell.linkId != 0 ? nextBuffer.linkUrl(nextCell.linkId) : QString();
+                    const uint8_t nextLinkId = url.isEmpty() ? 0 : nextCell.linkId;
+                    if (nextLinkId != activeLinkId) {
+                        ansi::appendOsc8(ansi, url);
+                        activeLinkId = nextLinkId;
+                    }
                 }
                 ansi::appendGlyph(ansi, nextCell);
                 curX = column + (std::max)(1, static_cast<int>(nextCell.displayWidth));
@@ -178,8 +181,7 @@ int TextGridBuffer::lastContentColumn(int row) const {
         const Cell& cell = cellAt(column, row);
         if (!cell.continuation && !cell.character().isEmpty() && cell.character() != " ")
             return column;
-        if ((cell.bgColor >> 24) != 0 || cell.attributes != TextAttribute::None ||
-            cell.linkId != 0)
+        if ((cell.bgColor >> 24) != 0 || cell.attributes != TextAttribute::None || cell.linkId != 0)
             return column;
     }
     return -1;
@@ -196,11 +198,13 @@ void TextGridBuffer::appendRowAnsi(std::string& out, int row, ColorDepth depth) 
             ansi::appendFullStyle(out, cell, depth);
             previous = &cell;
         }
-        const QString url = linkUrl(cell.linkId);
-        const uint8_t nextLinkId = url.isEmpty() ? 0 : cell.linkId;
-        if (nextLinkId != activeLinkId) {
-            ansi::appendOsc8(out, url);
-            activeLinkId = nextLinkId;
+        if (cell.linkId != 0 || activeLinkId != 0) {
+            const QString url = cell.linkId != 0 ? linkUrl(cell.linkId) : QString();
+            const uint8_t nextLinkId = url.isEmpty() ? 0 : cell.linkId;
+            if (nextLinkId != activeLinkId) {
+                ansi::appendOsc8(out, url);
+                activeLinkId = nextLinkId;
+            }
         }
         if (!cell.continuation) ansi::appendGlyph(out, cell);
     }
@@ -231,11 +235,13 @@ void TextGridBuffer::toAnsiString(std::string& ansi) const {
                 lastAttributes = cell.attributes;
                 ansi::appendFullStyle(ansi, cell, ColorDepth::TrueColor);
             }
-            const QString url = linkUrl(cell.linkId);
-            const uint8_t nextLinkId = url.isEmpty() ? 0 : cell.linkId;
-            if (nextLinkId != activeLinkId) {
-                ansi::appendOsc8(ansi, url);
-                activeLinkId = nextLinkId;
+            if (cell.linkId != 0 || activeLinkId != 0) {
+                const QString url = cell.linkId != 0 ? linkUrl(cell.linkId) : QString();
+                const uint8_t nextLinkId = url.isEmpty() ? 0 : cell.linkId;
+                if (nextLinkId != activeLinkId) {
+                    ansi::appendOsc8(ansi, url);
+                    activeLinkId = nextLinkId;
+                }
             }
             if (!cell.continuation) ansi::appendGlyph(ansi, cell);
         }

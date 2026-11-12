@@ -33,6 +33,12 @@ public:
     // Resets all cells to blank spaces with default foreground/background and clears the link
     // table.
     void clear();
+    // Resets [x, x + width) x [y, y + height) to blank default cells, splitting
+    // any straddled 2-column wide glyphs at the horizontal edges.
+    void clearRect(int x, int y, int width, int height);
+    // Copies dimensions, cell contents, and link table from other without
+    // reallocating cell storage when dimensions already match.
+    void copyFrom(const TextGridBuffer& other);
     // Swaps contents with other in O(1) without copying cell storage.
     void swap(TextGridBuffer& other) noexcept;
 
@@ -49,33 +55,39 @@ public:
     Cell& cellAt(int x, int y);
     const Cell& cellAt(int x, int y) const;
 
+    // Splits any 2-column wide glyph straddling [startX, startX + spanWidth) on
+    // row y so direct cell writers never leave orphaned continuation cells.
+    void splitWideGlyphSpan(int startX, int y, int spanWidth = 1);
+
     // Writes one already-segmented grapheme cluster of the given display width
     // at (x, y): the base cell plus width-1 continuation cells. A background
     // with zero alpha keeps the underlying background. A zero-width cluster at
-    // x > 0 is appended to the nearest base cell on the left.
+    // x > minClipX is appended to the nearest base cell on the left.
     //
     // Returns the number of columns to advance (width, or 0 for an appended
     // zero-width cluster), or -1 when the cluster does not fit before the right
     // edge and nothing was written. Rows outside the buffer are ignored but
     // still advance.
     int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000,
-                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
+                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None,
+                    int minClipX = 0);
     int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
-                    TextAttribute attributes = TextAttribute::None) {
+                    TextAttribute attributes = TextAttribute::None, int minClipX = 0) {
         return setGrapheme(x, y, utf8, width, fgColor.paintedArgb32(), bgColor.paintedArgb32(),
-                           attributes);
+                           attributes, minClipX);
     }
 
     // Same as above for a UTF-16 cluster (typically a GraphemeRef::utf16 view);
     // control characters are replaced by their visible glyphs as in writeText.
     int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000,
-                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None);
+                    uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None,
+                    int minClipX = 0);
     int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor,
                     Color bgColor = Color::fromArgb32(0x00000000),
-                    TextAttribute attributes = TextAttribute::None) {
+                    TextAttribute attributes = TextAttribute::None, int minClipX = 0) {
         return setGrapheme(x, y, cluster, width, fgColor.paintedArgb32(), bgColor.paintedArgb32(),
-                           attributes);
+                           attributes, minClipX);
     }
 
     // Drawing and text helpers. Omitted foregrounds use the terminal default;
@@ -134,6 +146,7 @@ public:
     // while activeLinkId() is non-zero inherit that link ID.
     uint8_t registerLink(const QString& url);
     QString linkUrl(uint8_t linkId) const;
+    qsizetype linkCount() const { return m_links.size(); }
     void setActiveLinkId(uint8_t linkId) { m_activeLinkId = linkId; }
     uint8_t activeLinkId() const { return m_activeLinkId; }
 

@@ -39,6 +39,8 @@ inline TextAttribute operator&(TextAttribute a, TextAttribute b) {
 // compare and copy by value across buffers and the table is never freed.
 struct QMLTUI_CORE_EXPORT Cell {
     static constexpr int InlineGlyphCapacity = 11;
+    static constexpr int MaxGraphemeBytes = 64;
+    static constexpr size_t MaxInternedGlyphs = 16384;
 
     uint32_t fgColor = 0x00000000; // Terminal default foreground
     uint32_t bgColor = 0x00000000; // Default background (Transparent)
@@ -64,10 +66,7 @@ struct QMLTUI_CORE_EXPORT Cell {
             std::memset(m_glyph + length, 0, sizeof m_glyph - length);
             m_glyphLength = static_cast<uint8_t>(length);
         } else {
-            const uint32_t index = internGlyph(utf8);
-            std::memset(m_glyph, 0, sizeof m_glyph);
-            std::memcpy(m_glyph, &index, sizeof index);
-            m_glyphLength = InternedTag;
+            setLongCharacter(utf8);
         }
     }
 
@@ -95,6 +94,7 @@ struct QMLTUI_CORE_EXPORT Cell {
 private:
     static constexpr uint8_t InternedTag = 0xFF;
 
+    void setLongCharacter(QByteArrayView utf8);
     static uint32_t internGlyph(QByteArrayView utf8);
     static QByteArrayView internedGlyph(uint32_t index) noexcept;
 

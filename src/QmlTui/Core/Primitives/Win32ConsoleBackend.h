@@ -61,6 +61,7 @@ private:
     bool m_outputModeValid = false;
     bool m_rawMode = false;
     bool m_inputStarted = false;
+    char16_t m_pendingHighSurrogate = 0;
     std::unique_ptr<QWinEventNotifier> m_inputNotifier;
 };
 

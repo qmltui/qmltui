@@ -80,10 +80,10 @@ public:
     static uint8_t toIndexed256(quint32 argb);
     static uint8_t toBasic16(quint32 argb);
 
-    static constexpr quint32 resolve(Color color, quint32 defaultColor = 0xFFFFFFFFU) {
+    static constexpr quint32 resolve(Color color, quint32 defaultColor = DefaultTag) {
         return color.isValid() ? color.argb32() : defaultColor;
     }
-    static quint32 resolve(const QString& colorString, quint32 defaultColor = 0xFFFFFFFFU) {
+    static quint32 resolve(const QString& colorString, quint32 defaultColor = DefaultTag) {
         const Color c = fromString(colorString);
         return c.isValid() ? c.argb32() : defaultColor;
     }

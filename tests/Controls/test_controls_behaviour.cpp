@@ -224,6 +224,7 @@ Terminal {
     Column {
         ProgressBar { width: 10; value: 0.5 }
         ProgressBar { width: 10; value: 0.5; style: "segmented" }
+        ProgressBar { width: 10; value: 0.5; style: "line"; color: "cyan"; trackColor: "gray" }
         ProgressBar { width: 10; value: 0.5; style: "pill" }
         ProgressBar { width: 10; value: 0.5; style: "dot" }
     }
@@ -232,13 +233,23 @@ Terminal {
                            &terminal);
         QVERIFY(terminal);
         auto* engine = terminal->engine();
-        engine->setTestViewportSize(QSize(20, 6));
+        engine->setTestViewportSize(QSize(20, 7));
         QTRY_VERIFY(engine->frameSequence() > 0);
         const QString text = frameText(engine);
         QVERIFY2(text.contains(QStringLiteral("█████░░░░░")), qPrintable(text));
-        QVERIFY2(text.contains(QStringLiteral("▰▰▰▰▰▱▱▱▱▱")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("▉▉▉▉▉░░░░░")), qPrintable(text));
+        QVERIFY2(text.contains(QStringLiteral("━━━━━─────")), qPrintable(text));
         QVERIFY2(text.contains(QStringLiteral("▮▮▮▮▮▯▯▯▯▯")), qPrintable(text));
         QVERIFY2(text.contains(QStringLiteral("●●●●●○○○○○")), qPrintable(text));
+
+        // Non-gradient bars dim their empty portion by default, or paint `trackColor` when set.
+        const auto grid = engine->currentFrame();
+        QVERIFY(grid.has_value());
+        QVERIFY((grid->cellAt(0, 0).attributes & TextAttribute::Bold) != TextAttribute::None);
+        QVERIFY((grid->cellAt(5, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
+        QCOMPARE(grid->cellAt(0, 2).fgColor, 0xff00ffffu);
+        QCOMPARE(grid->cellAt(5, 2).fgColor, 0xff808080u);
+        QVERIFY((grid->cellAt(5, 2).attributes & TextAttribute::Dim) == TextAttribute::None);
     }
 
     void mouseAreaHover() {
@@ -890,6 +901,472 @@ Terminal {
         QTRY_VERIFY(frameText(engine).contains(QStringLiteral("* Alpha")));
         QVERIFY2(frameText(engine).contains(QStringLiteral("* Beta")),
                  qPrintable(frameText(engine)));
+    }
+
+    void fullBoxHitAreas() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int compactClicks: 0
+    property int borderedClicks: 0
+    Button {
+        objectName: "compactBtn"
+        x: 0; y: 0; width: 8; height: 1
+        padding: 2
+        text: "OK"
+        onClicked: root.compactClicks++
+    }
+    Button {
+        objectName: "borderedBtn"
+        x: 10; y: 0; width: 10; height: 3
+        text: "Save"
+        onClicked: root.borderedClicks++
+    }
+    ComboBox {
+        objectName: "borderedCombo"
+        x: 0; y: 4; width: 16; height: 3
+        border.style: Border.Single
+        model: ["One", "Two"]
+    }
+    SpinBox {
+        objectName: "borderedSpin"
+        x: 20; y: 4; width: 14; height: 3
+        border.style: Border.Single
+        value: 5
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 12));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        // 1-row Button padding cell (x=0, y=0) and 3-row Button outer border cells fire clicked()
+        engine->handleMouseInput(0, 0, 0, false);
+        engine->handleMouseInput(0, 0, 0, true);
+        QCOMPARE(terminal->property("compactClicks").toInt(), 1);
+
+        engine->handleMouseInput(0, 10, 0, false); // top-left corner border
+        engine->handleMouseInput(0, 10, 0, true);
+        QCOMPARE(terminal->property("borderedClicks").toInt(), 1);
+
+        engine->handleMouseInput(0, 19, 2, false); // bottom-right corner border
+        engine->handleMouseInput(0, 19, 2, true);
+        QCOMPARE(terminal->property("borderedClicks").toInt(), 2);
+
+        // Clicking top border of bordered ComboBox opens popup; close it afterward
+        auto* combo = terminal->findChild<Item*>("borderedCombo");
+        QVERIFY(combo);
+        engine->handleMouseInput(0, 2, 4, false);
+        engine->handleMouseInput(0, 2, 4, true);
+        QVERIFY(combo->property("opened").toBool());
+        engine->handleKeyInput(Qt::Key_Escape, QString(), Qt::NoModifier);
+        QVERIFY(!combo->property("opened").toBool());
+
+        // Clicking top-right border of bordered SpinBox increments value
+        auto* spin = terminal->findChild<Item*>("borderedSpin");
+        QVERIFY(spin);
+        engine->handleMouseInput(0, 33, 4, false);
+        engine->handleMouseInput(0, 33, 4, true);
+        QCOMPARE(spin->property("value").toInt(), 6);
+    }
+
+    void sparklineNegativeInvertedAndTransparent() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Text { x: 0; y: 0; text: "ZZZZ" }
+    Sparkline {
+        objectName: "negSpark"
+        x: 0; y: 0; width: 3; height: 2
+        filled: true
+        from: -10; to: 0
+        values: [-10, -5, 0]
+    }
+    Sparkline {
+        objectName: "invSpark"
+        x: 6; y: 0; width: 3; height: 1
+        from: 10; to: 5
+        values: [2, 6, 10]
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(16, 4));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const auto grid = engine->currentFrame();
+        QVERIFY(grid.has_value());
+
+        // Transparent Sparkline leaves upper row at x=0 (-10 -> bottom-only bar) untouched ("Z")
+        QCOMPARE(grid->cellAt(0, 0).character(), QByteArrayView("Z"));
+        // And x=3 (past width=3) stays "Z"
+        QCOMPARE(grid->cellAt(3, 0).character(), QByteArrayView("Z"));
+        // Negative range scales -10 < -5 < 0 instead of clamping all values to 0
+        QCOMPARE(grid->cellAt(2, 0).character(), QByteArrayView("█"));
+        QCOMPARE(grid->cellAt(2, 1).character(), QByteArrayView("█"));
+
+        // Inverted range (from >= to) auto-scales [2, 6, 10]
+        QCOMPARE(grid->cellAt(6, 0).character(), QByteArrayView("▁"));
+        QCOMPARE(grid->cellAt(8, 0).character(), QByteArrayView("█"));
+    }
+
+    void toolTipWordWrapAndTimeoutReset() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Item {
+        id: host
+        objectName: "host"
+        readonly property bool tipVisible: ToolTip.visible
+        x: 0; y: 0; width: 6; height: 1
+        ToolTip.timeout: 40
+        ToolTip.text: "alpha beta gamma"
+        ToolTip.visible: true
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        // Narrow 14-column viewport triggers WordWrap inside ToolTip's label
+        engine->setTestViewportSize(QSize(14, 10));
+        auto* host = terminal->findChild<Item*>("host");
+        QVERIFY(host);
+        QVERIFY(host->property("tipVisible").toBool());
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("alpha")));
+        QVERIFY(frameText(engine).contains(QStringLiteral("gamma")));
+
+        // Wait for timeout to hide the tip
+        QTRY_VERIFY(!host->property("tipVisible").toBool());
+
+        // Moving the mouse over the parent must NOT re-open an explicit non-hover ToolTip
+        engine->handleMouseInput(3, 1, 0, false, true);
+        QTest::qWait(20);
+        QVERIFY(!host->property("tipVisible").toBool());
+    }
+
+    void comboBoxOpaquePopupAndFlipUp() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Text { x: 0; y: 2; text: "UNDERNEATH_NOISE_TEXT" }
+    ComboBox {
+        objectName: "topCombo"
+        x: 0; y: 0; width: 16
+        model: ["Hi", "Lo"]
+    }
+    ComboBox {
+        objectName: "bottomCombo"
+        x: 0; y: 8; width: 16
+        model: ["North", "South", "East"]
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(28, 10));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* topCombo = terminal->findChild<Item*>("topCombo");
+        auto* bottomCombo = terminal->findChild<Item*>("bottomCombo");
+        QVERIFY(topCombo && bottomCombo);
+
+        QVERIFY(QMetaObject::invokeMethod(topCombo, "open"));
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("Lo")));
+        const auto grid1 = engine->currentFrame();
+        QVERIFY(grid1.has_value());
+        // Cell x=10, y=2 is inside topCombo's popup (x=0..15) after "▸ Hi": must occlude noise
+        QCOMPARE(grid1->cellAt(10, 2).character(), QByteArrayView(" "));
+        QVERIFY(QMetaObject::invokeMethod(topCombo, "close"));
+
+        // Opening bottomCombo at y=8 in a 10-row viewport flips popup upward so options fit
+        QVERIFY(QMetaObject::invokeMethod(bottomCombo, "open"));
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("East")));
+        QVERIFY2(frameText(engine).contains(QStringLiteral("South")),
+                 qPrintable(frameText(engine)));
+    }
+
+    void radioButtonGroupSelfRegistration() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ButtonGroup { id: grp; objectName: "grp" }
+    Column {
+        RadioButton { objectName: "r1"; text: "A"; buttonGroup: grp; checked: true }
+        RadioButton { objectName: "r2"; text: "B"; buttonGroup: grp }
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(20, 6));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* r1 = terminal->findChild<Item*>("r1");
+        auto* r2 = terminal->findChild<Item*>("r2");
+        QVERIFY(r1 && r2);
+        QVERIFY(r1->property("checked").toBool());
+        QVERIFY(!r2->property("checked").toBool());
+
+        // Clicking r2 checks r2 and unchecks r1 through self-registered ButtonGroup
+        engine->handleMouseInput(0, 1, 1, false);
+        engine->handleMouseInput(0, 1, 1, true);
+        QVERIFY(r2->property("checked").toBool());
+        QVERIFY(!r1->property("checked").toBool());
+    }
+
+    void progressBarSmoothGradient() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ProgressBar {
+        width: 5
+        value: 1.0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: QmlTui.rgba(1, 0, 0, 1) }
+            GradientStop { position: 1.0; color: QmlTui.rgba(0, 0, 1, 1) }
+        }
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(10, 3));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const auto grid = engine->currentFrame();
+        QVERIFY(grid.has_value());
+
+        const uint32_t c0 = grid->cellAt(0, 0).fgColor;
+        const uint32_t c2 = grid->cellAt(2, 0).fgColor;
+        const uint32_t c4 = grid->cellAt(4, 0).fgColor;
+        QCOMPARE(c0, 0xffff0000u);
+        QCOMPARE(c4, 0xff0000ffu);
+        // Middle cell is smoothly interpolated (both red and blue channels > 64)
+        QVERIFY(((c2 >> 16) & 0xffu) > 64u);
+        QVERIFY((c2 & 0xffu) > 64u);
+    }
+
+    void stackViewInitialReplaceAndFocusRestore() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Component {
+        id: firstPage
+        FocusScope {
+            objectName: "page1"
+            Button { objectName: "page1Btn"; text: "First"; focus: true }
+        }
+    }
+    Component {
+        id: secondPage
+        FocusScope {
+            objectName: "page2"
+            Button { objectName: "page2Btn"; text: "Second"; focus: true }
+        }
+    }
+    Component {
+        id: replacedPage
+        Text { objectName: "pageReplaced"; text: "Replaced" }
+    }
+    StackView {
+        id: stack
+        objectName: "stack"
+        anchors.fill: parent
+        focus: true
+        initialItem: firstPage
+    }
+    function pushSecond() { stack.push(secondPage); }
+    function popTop() { stack.pop(); }
+    function replaceTop() { stack.replace(replacedPage); }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 8));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* stack = terminal->findChild<Item*>("stack");
+        auto* page1Btn = terminal->findChild<Item*>("page1Btn");
+        QVERIFY(stack && page1Btn);
+        QCOMPARE(stack->property("depth").toInt(), 1);
+        QVERIFY(page1Btn->activeFocus());
+        QVERIFY(frameText(engine).contains(QStringLiteral("First")));
+
+        QVERIFY(QMetaObject::invokeMethod(terminal, "pushSecond"));
+        QCOMPARE(stack->property("depth").toInt(), 2);
+        auto* page2Btn = terminal->findChild<Item*>("page2Btn");
+        QVERIFY(page2Btn && page2Btn->activeFocus());
+        QVERIFY(!page1Btn->activeFocus());
+
+        // Popping page 2 restores active focus to page1Btn
+        QVERIFY(QMetaObject::invokeMethod(terminal, "popTop"));
+        QCOMPARE(stack->property("depth").toInt(), 1);
+        QVERIFY(page1Btn->activeFocus());
+
+        // replace() swaps the current top without growing depth
+        QVERIFY(QMetaObject::invokeMethod(terminal, "replaceTop"));
+        QCOMPARE(stack->property("depth").toInt(), 1);
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("Replaced")));
+    }
+
+    void tabBarClipImplicitWidthAndFocus() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Item {
+        x: 0; y: 0; width: 6; height: 1
+        clip: true
+        TabBar {
+            objectName: "tabs"
+            tabs: ["Alpha", "Beta"]
+            focus: true
+        }
+    }
+    TabBar {
+        objectName: "emptyTabs"
+        y: 2
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(24, 4));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* tabs = terminal->findChild<Item*>("tabs");
+        auto* emptyTabs = terminal->findChild<Item*>("emptyTabs");
+        QVERIFY(tabs && emptyTabs);
+        QVERIFY(tabs->implicitWidth() > 6);
+        QCOMPARE(emptyTabs->implicitWidth(), 0);
+
+        const auto grid = engine->currentFrame();
+        QVERIFY(grid.has_value());
+        // Active focus adds Underline on active tab cells inside clipRect (x < 6)
+        QVERIFY((grid->cellAt(1, 0).attributes & TextAttribute::Underline) != TextAttribute::None);
+        // Clip container (width: 6) prevents TabBar from painting at x >= 6
+        QCOMPARE(grid->cellAt(6, 0).character(), QByteArrayView(" "));
+        QCOMPARE(grid->cellAt(10, 0).character(), QByteArrayView(" "));
+    }
+
+    void panelClipSliderRightmostAndDialogWrap() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Panel {
+        x: 0; y: 0; width: 8; height: 3
+        title: Text { text: "VeryLongPanelTitle" }
+    }
+    Slider {
+        objectName: "zeroStepSlider"
+        x: 0; y: 4; width: 10
+        showValue: false
+        from: 0; to: 100; stepSize: 0
+    }
+    Dialog {
+        objectName: "dlg"
+        width: 20
+        title: "Notice"
+        message: "This dialog message wraps cleanly onto multiple lines"
+        textColor: "yellow"
+        visible: true
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(30, 14));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        // Close modal dialog first to inspect Panel & click Slider
+        auto* dlg = terminal->findChild<Item*>("dlg");
+        QVERIFY(dlg);
+        const QString dialogFrame = frameText(engine);
+        QVERIFY2(dialogFrame.contains(QStringLiteral("cleanly")), qPrintable(dialogFrame));
+        QVERIFY2(dialogFrame.contains(QStringLiteral("lines")), qPrintable(dialogFrame));
+        dlg->setProperty("visible", false);
+        QTRY_VERIFY(!frameText(engine).contains(QStringLiteral("cleanly")));
+
+        const auto grid = engine->currentFrame();
+        QVERIFY(grid.has_value());
+        // Panel top-right border corner at x=7, y=0 is preserved despite long title
+        const QByteArray corner = grid->cellAt(7, 0).character().toByteArray();
+        QVERIFY2(corner == "┐" || corner == "╮", corner.constData());
+
+        // Clicking rightmost cell (x=9) of width-10 Slider reaches `to` (100.0) without NaN
+        auto* slider = terminal->findChild<Item*>("zeroStepSlider");
+        QVERIFY(slider);
+        engine->handleMouseInput(0, 9, 4, false);
+        engine->handleMouseInput(0, 9, 4, true);
+        QCOMPARE(slider->property("value").toDouble(), 100.0);
+    }
+
+    void buttonColorAndBorderColorSurviveFocusAndDisabled() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Button {
+        objectName: "styledBtn"
+        width: 8
+        height: 3
+        text: "OK"
+        color: "navy"
+        borderColor: "cyan"
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(20, 6));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* btn = terminal->findChild<Item*>("styledBtn");
+        QVERIFY(btn);
+        const uint32_t expectedBg = Color(QStringLiteral("navy")).argb32();
+        const uint32_t expectedBorder = Color(QStringLiteral("cyan")).argb32();
+
+        const auto initial = engine->currentFrame();
+        QVERIFY(initial.has_value());
+        QCOMPARE(initial->cellAt(0, 0).fgColor, expectedBorder);
+        QCOMPARE(initial->cellAt(0, 0).bgColor, expectedBg);
+        QCOMPARE(initial->cellAt(1, 1).bgColor, expectedBg);
+
+        btn->forceActiveFocus();
+        engine->requestRender();
+        const int seqFocus = engine->frameSequence();
+        QTRY_VERIFY(engine->frameSequence() > seqFocus);
+        const auto focused = engine->currentFrame();
+        QVERIFY(focused.has_value());
+        QCOMPARE(focused->cellAt(0, 0).fgColor, expectedBorder);
+        QCOMPARE(focused->cellAt(0, 0).character().toByteArray(), QByteArray("╔"));
+
+        btn->setEnabled(false);
+        const int seqDisabled = engine->frameSequence();
+        QTRY_VERIFY(engine->frameSequence() > seqDisabled);
+        const auto disabled = engine->currentFrame();
+        QVERIFY(disabled.has_value());
+        QCOMPARE(disabled->cellAt(0, 0).fgColor, expectedBorder);
+        QVERIFY((disabled->cellAt(0, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
     }
 };
 

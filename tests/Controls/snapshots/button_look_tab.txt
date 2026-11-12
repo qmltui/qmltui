@@ -11,5 +11,9 @@
 
 
 --- styles
+y=1 x=42-48 fg=default bg=default dim
 y=2 x=18-22 fg=default bg=default bold
+y=2 x=42-42 fg=default bg=default dim
 y=2 x=44-46 fg=default bg=default dim
+y=2 x=48-48 fg=default bg=default dim
+y=3 x=42-48 fg=default bg=default dim

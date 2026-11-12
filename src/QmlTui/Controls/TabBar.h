@@ -19,15 +19,15 @@ class QMLTUI_CONTROLS_EXPORT TabBar : public Item {
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
 
-    Q_PROPERTY(QVariant tabs READ tabs WRITE setTabs NOTIFY tabsChanged)
+    Q_PROPERTY(QStringList tabs READ tabs WRITE setTabs NOTIFY tabsChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
 
 public:
     explicit TabBar(QObject* parent = nullptr);
     ~TabBar() override = default;
 
-    QVariant tabs() const { return m_tabsVariant; }
-    void setTabs(const QVariant& tabs);
+    QStringList tabs() const { return m_tabList; }
+    void setTabs(const QStringList& tabs);
 
     int currentIndex() const { return m_currentIndex; }
     void setCurrentIndex(int index);
@@ -62,7 +62,6 @@ private:
     Color m_selectedTextColor = Color::Invalid;
     Color m_color;
     Color m_textColor;
-    QVariant m_tabsVariant;
     QStringList m_tabList;
     int m_currentIndex = 0;
 };

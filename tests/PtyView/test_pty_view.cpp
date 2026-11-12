@@ -4,6 +4,9 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 
+#include <QmlTui/Core/Engine/Shortcut.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/PtyView/PtyView.h>
 #include <QmlTui/PtyView/UnixPtySession.h>
 #include <QmlTui/PtyView/VTermAdapter.h>
@@ -21,6 +24,7 @@ private slots:
     void qmlImport();
     void ptyLifecycleAndRendering();
     void processGroupTerminate();
+    void scrollbarDefaultColorsAndShortcutSuppression();
 };
 
 void TestPtyView::adapterRenderingAndOsc() {
@@ -138,6 +142,97 @@ void TestPtyView::processGroupTerminate() {
     session.terminate();
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
     QCOMPARE(finishedSpy.first().first().toInt(), 42);
+}
+
+void TestPtyView::scrollbarDefaultColorsAndShortcutSuppression() {
+    // 1. Default textColor/backgroundColor preserve parent fill + scrollbar uses terminal defaults
+    {
+        PtyView view;
+        view.setWidth(20);
+        view.setHeight(4);
+        view.setScrollBarVisible(true);
+        view.setProgram(QStringLiteral("/bin/sh"));
+        view.setArguments(
+            {QStringLiteral("-c"),
+             QStringLiteral(
+                 "for i in 1 2 3 4 5 6 7 8 9 10; do printf \"L%s\\r\\n\" \"$i\"; done")});
+        QSignalSpy finishedSpy(&view, &PtyView::finished);
+        view.start();
+        QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+        QVERIFY(view.scrollbackSize() > 0);
+
+        TextGridBuffer buffer;
+        QVERIFY(buffer.resize(20, 4));
+        buffer.fillRect(0, 0, 20, 4, " ", Color(), Color(QStringLiteral("navy")));
+        paintItem(view, buffer, 0, 0, ClipRect{0, 0, 20, 4});
+        QCOMPARE(buffer.cellAt(0, 0).fgColor, Color::DefaultTag);
+        QCOMPARE(buffer.cellAt(0, 0).bgColor, Color(QStringLiteral("navy")).argb32());
+
+        bool sawThumb = false;
+        bool sawTrack = false;
+        for (int y = 0; y < 4; ++y) {
+            const Cell& sbCell = buffer.cellAt(19, y);
+            QCOMPARE(sbCell.fgColor, Color::DefaultTag);
+            QCOMPARE(sbCell.bgColor, Color::DefaultTag);
+            if (sbCell.character() == QByteArray("\xE2\x96\x88")) {
+                sawThumb = true;
+                QCOMPARE(sbCell.attributes, TextAttribute::None);
+            } else if (sbCell.character() == QByteArray("\xE2\x96\x91")) {
+                sawTrack = true;
+                QCOMPARE(sbCell.attributes, TextAttribute::Dim);
+            }
+        }
+        QVERIFY(sawThumb);
+        QVERIFY(sawTrack);
+    }
+
+    // 2. Focused running PtyView suppresses unmodified single-key Shortcut
+    {
+        Terminal terminal;
+        terminal.engine()->setTerminalOutputEnabled(false);
+        terminal.engine()->setTestViewportSize(QSize(30, 4));
+
+        Shortcut quitShortcut(&terminal);
+        quitShortcut.setSequence(Qt::Key_Q);
+        int quitActivations = 0;
+        connect(&quitShortcut, &Shortcut::activated, [&]() { ++quitActivations; });
+
+        PtyView view(&terminal);
+        view.setWidth(30);
+        view.setHeight(4);
+        view.setProgram(QStringLiteral("/bin/sh"));
+        view.setArguments(
+            {QStringLiteral("-c"),
+             QStringLiteral("stty raw -echo; printf READY; dd bs=1 count=1 2>/dev/null | tr q Z")});
+        QSignalSpy startedSpy(&view, &PtyView::started);
+        QSignalSpy finishedSpy(&view, &PtyView::finished);
+        view.forceActiveFocus();
+        view.start();
+        QTRY_COMPARE_WITH_TIMEOUT(startedSpy.count(), 1, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(
+            [&]() {
+                TextGridBuffer frame;
+                frame.resize(30, 4);
+                paintItem(view, frame, 0, 0, ClipRect{0, 0, 30, 4});
+                QByteArray row;
+                for (int x = 0; x < frame.width(); ++x)
+                    row += frame.cellAt(x, 0).character().toByteArray();
+                return row.contains("READY");
+            }(),
+            5000);
+
+        terminal.engine()->handleKeyInput(Qt::Key_Q, QStringLiteral("q"), 0);
+        QCOMPARE(quitActivations, 0);
+
+        QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+        TextGridBuffer frame;
+        QVERIFY(frame.resize(30, 4));
+        paintItem(view, frame, 0, 0, ClipRect{0, 0, 30, 4});
+        QByteArray row;
+        for (int x = 0; x < frame.width(); ++x)
+            row += frame.cellAt(x, 0).character().toByteArray();
+        QVERIFY2(row.contains("READYZ"), row.constData());
+    }
 }
 
 QTEST_GUILESS_MAIN(TestPtyView)

@@ -36,13 +36,13 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `exitCode` | `int` | `0` | Read-only. Holds the exit status code after the process terminates. |
 | `errorString` | `string` | `""` | Read-only. Holds error details if process spawning or execution fails. |
 | `title` | `string` | `""` | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
-| `foregroundColor` | `color` | `"white"` | Holds the default foreground text color. |
-| `backgroundColor` | `color` | `"black"` | Holds the default background color. |
+| `textColor` | `color` | `QmlTui.defaultColor` | Holds the default foreground text color (defaults to terminal ink). |
+| `backgroundColor` | `color` | `"transparent"` | Holds the default background color (transparent by default so parent backgrounds show through). |
 | `palette` | `list<color>` | `[]` | Holds the 16 standard ANSI colors used by the terminal emulator. |
 | `scrollbackLimit` | `int` | `10000` | Holds the maximum number of scrollback lines retained in history. |
 | `scrollOffset` | `int` | `0` | Holds the current scroll offset into scrollback history (0 at live screen). |
 | `scrollbackSize` | `int` | `0` | Read-only. Holds the current line count in the scrollback buffer. |
-| `showScrollbar` | `bool` | `true` | Whether to display a vertical scrollbar when scrollback history exists. |
+| `scrollBarVisible` | `bool` | `true` | Whether to display a vertical scrollbar when scrollback history exists. |
 | `allowTitleChanges` | `bool` | `true` | Whether child process title changes via OSC escape sequences update `title`. |
 | `allowClipboardWrite` | `bool` | `false` | Whether child process OSC 52 clipboard write requests emit `clipboardWriteRequested`. |
 | `allowNotifications` | `bool` | `false` | Whether child process OSC notification requests emit `notificationRequested`. |

@@ -12,7 +12,7 @@
 // Everything else, the Auto render mode and the capability plumbing, already
 // accounts for multiple protocols.
 
-#include <QmlTui/Core/Items/Item.h>                 // ClipRect
+#include <QmlTui/Core/Items/Item.h> // ClipRect
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
@@ -52,7 +52,8 @@ QMLTUI_IMAGE_EXPORT QByteArray kittyTransmit(quint32 imageId, const QImage& imag
 // the source is pre-scaled here to the placement size, never beyond
 // `maxEdge` per side; without it, or when shrinking or the cell size is
 // unknown, the source goes as is (capped at maxEdge) and the terminal scales.
-QMLTUI_IMAGE_EXPORT QSize kittyUploadSize(const QSize& source, const QSize& placementPixels, bool smooth, int maxEdge = 2048);
+QMLTUI_IMAGE_EXPORT QSize kittyUploadSize(const QSize& source, const QSize& placementPixels,
+                                          bool smooth, int maxEdge = 2048);
 
 // A Unicode virtual placement of `imageId` sized to cols x rows cells. The
 // terminal scales the image into that rectangle; the placeholder cells select
@@ -73,7 +74,7 @@ QMLTUI_IMAGE_EXPORT QByteArray kittyDelete(quint32 imageId);
 // Fills the cols x rows rectangle at (x0, y0) with Unicode placeholder cells
 // that reference `imageId`, clipped to `clip`. Each cell is U+10EEEE plus a row
 // and a column combining mark, with the id in its foreground colour.
-QMLTUI_IMAGE_EXPORT void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0,
-                                               int cols, int rows, quint32 imageId, const ClipRect& clip);
+QMLTUI_IMAGE_EXPORT void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0, int cols,
+                                                int rows, quint32 imageId, const ClipRect& clip);
 
 } // namespace qmltui::graphics

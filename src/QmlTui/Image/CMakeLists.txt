@@ -34,13 +34,16 @@ target_include_directories(QmlTuiImage
 
 target_link_libraries(QmlTuiImage PUBLIC qmltui::core Qt6::Gui PRIVATE Qt6::Network)
 
-set_target_properties(QmlTuiImage PROPERTIES EXPORT_NAME Image)
-set_target_properties(QmlTuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)
+set_target_properties(QmlTuiImage PROPERTIES
+    EXPORT_NAME Image
+    INSTALL_RPATH "$ORIGIN"
+)
 file(RELATIVE_PATH _qmltui_rel_libdir
     "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
     "${CMAKE_INSTALL_FULL_LIBDIR}"
 )
-set_target_properties(QmlTuiImage QmlTuiImageplugin PROPERTIES
+set_target_properties(QmlTuiImageplugin PROPERTIES
+    EXPORT_NAME ImagePlugin
     INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
 )
 
@@ -69,4 +72,4 @@ install(FILES
     "${QT_QML_OUTPUT_DIRECTORY}/QmlTui/Image/QmlTuiImage.qmltypes"
     DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
 )
-qmltui_install_headers(QmlTui/Image FILES AnimatedSprite.h Image.h ImageProvider.h TerminalGraphics.h)
+qmltui_install_headers(QmlTui/Image FILES AnimatedSprite.h Image.h ImageProvider.h)

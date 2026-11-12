@@ -42,9 +42,10 @@ QString PtyView::defaultUserShell() {
 PtyView::PtyView(QObject* parent)
     : Item(parent), m_program(defaultUserShell()), m_adapter(std::make_unique<VTermAdapter>(1, 1)),
       m_session(std::make_unique<UnixPtySession>()) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     setFocusPolicy(Qt::StrongFocus);
     setClip(true);
-    m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
+    m_adapter->setDefaultColors(m_textColor, m_backgroundColor);
     m_adapter->setScrollbackLimit(m_scrollbackLimit);
     m_adapter->setOutputCallback([this](const QByteArray& bytes) { m_session->write(bytes); });
     m_adapter->setDamageCallback([this] { markDirty(); });
@@ -97,11 +98,13 @@ PtyView::PtyView(QObject* parent)
         emit finished(code);
     });
     connect(m_session.get(), &UnixPtySession::errorOccurred, this, &PtyView::setError);
-    connect(this, &Item::activeFocusChanged, this,
-            [this] { m_adapter->setFocused(activeFocus()); });
+    connect(this, &Item::activeFocusChanged, this, [this] {
+        if (m_adapter) m_adapter->setFocused(activeFocus());
+    });
 }
 
 PtyView::~PtyView() {
+    disconnect(this, &Item::activeFocusChanged, this, nullptr);
     m_session->disconnect(this);
     if (Terminal* root = terminal()) root->setMouseMotionRequested(this, false);
 }
@@ -142,18 +145,18 @@ qint64 PtyView::processId() const {
     return m_session->processId();
 }
 
-void PtyView::setForegroundColor(Color value) {
-    if (!value.isValid() || m_foregroundColor == value) return;
-    m_foregroundColor = value;
-    m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
-    emit foregroundColorChanged();
+void PtyView::setTextColor(Color value) {
+    if (m_textColor == value) return;
+    m_textColor = value;
+    m_adapter->setDefaultColors(m_textColor, m_backgroundColor);
+    emit textColorChanged();
     markDirty();
 }
 
 void PtyView::setBackgroundColor(Color value) {
-    if (!value.isValid() || m_backgroundColor == value) return;
+    if (m_backgroundColor == value) return;
     m_backgroundColor = value;
-    m_adapter->setDefaultColors(m_foregroundColor, m_backgroundColor);
+    m_adapter->setDefaultColors(m_textColor, m_backgroundColor);
     emit backgroundColorChanged();
     markDirty();
 }
@@ -189,10 +192,10 @@ int PtyView::scrollbackSize() const {
     return m_adapter->scrollbackSize();
 }
 
-void PtyView::setShowScrollbar(bool value) {
-    if (m_showScrollbar == value) return;
-    m_showScrollbar = value;
-    emit showScrollbarChanged();
+void PtyView::setScrollBarVisible(bool value) {
+    if (m_scrollBarVisible == value) return;
+    m_scrollBarVisible = value;
+    emit scrollBarVisibleChanged();
     markDirty();
 }
 
@@ -326,7 +329,7 @@ void PtyView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
     const int w = (std::max)(0, width());
     const int h = (std::max)(0, height());
     const int scrollback = m_adapter->scrollbackSize();
-    const bool drawScrollbar = m_showScrollbar && (scrollback > 0) && (w > 2);
+    const bool drawScrollbar = m_scrollBarVisible && (scrollback > 0) && (w > 2);
     const int contentWidth = drawScrollbar ? (w - 1) : w;
 
     m_adapter->render(buffer, absX, absY, clipRect, contentWidth, h, m_scrollOffset);
@@ -342,11 +345,16 @@ void PtyView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& 
             const int cy = absY + dy;
             if (clipRect.contains(sbX, cy)) {
                 if (sbX >= 0 && sbX < buffer.width() && cy >= 0 && cy < buffer.height()) {
+                    const bool isThumb = (dy >= sbPos && dy < sbPos + sbH);
+                    buffer.splitWideGlyphSpan(sbX, cy, 1);
                     Cell& cell = buffer.cellAt(sbX, cy);
-                    cell.fgColor = (dy >= sbPos && dy < sbPos + sbH) ? 0xFF38BDF8 : 0xFF475569;
-                    cell.bgColor = 0xFF090D16;
-                    cell.setCharacter((dy >= sbPos && dy < sbPos + sbH) ? "\xE2\x96\x88"
-                                                                        : "\xE2\x96\x91");
+                    cell.fgColor = Color::DefaultTag;
+                    cell.bgColor = Color::DefaultTag;
+                    cell.setCharacter(isThumb ? "\xE2\x96\x88" : "\xE2\x96\x91");
+                    cell.displayWidth = 1;
+                    cell.continuation = false;
+                    cell.attributes = isThumb ? TextAttribute::None : TextAttribute::Dim;
+                    cell.linkId = 0;
                 }
             }
         }
@@ -389,7 +397,7 @@ void PtyView::keyPressEvent(KeyEvent* event) {
 void PtyView::mousePressEvent(MouseEvent* event) {
     if (!focus()) setFocus(true);
 
-    if (m_showScrollbar && m_adapter->scrollbackSize() > 0 && event->x() >= width() - 1) {
+    if (m_scrollBarVisible && m_adapter->scrollbackSize() > 0 && event->x() >= width() - 1) {
         const int h = (std::max)(1, height());
         const int totalLines = m_adapter->scrollbackSize() + h;
         const int sbH = (std::max)(1, (h * h) / totalLines);

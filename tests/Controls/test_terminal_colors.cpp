@@ -145,8 +145,8 @@ void TestTerminalColors::selectionColors() {
                     ++selectedGlyphs;
             }
         QVERIFY(selectedGlyphs > 0);
-        item->setProperty("selectionColor", QVariant::fromValue(Color("#ffffff")));
-        item->setProperty("selectionBackgroundColor", QVariant::fromValue(Color("#123456")));
+        item->setProperty("selectedTextColor", QVariant::fromValue(Color("#ffffff")));
+        item->setProperty("selectionColor", QVariant::fromValue(Color("#123456")));
         paintItem(item, buffer, 0, 0);
         int customGlyphs = 0;
         for (int y = 0; y < 5; ++y)

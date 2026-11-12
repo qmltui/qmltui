@@ -46,7 +46,7 @@ class QMLTUI_IMAGE_EXPORT AnimatedSprite : public Image, public QQmlParserStatus
                    finishBehaviorChanged)
 
 public:
-    enum Loops {
+    enum Loops : int {
         Infinite = -1,
     };
     Q_ENUM(Loops)

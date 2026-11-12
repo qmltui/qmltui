@@ -4,8 +4,8 @@ import QmlTui
 
 // Single-row horizontal progress bar for `value` in `[from, to]`. Supports
 // glyph presets (`style`), custom `fillCharacter`/`emptyCharacter`, optional
-// `[` `]` brackets and percentage readout, and opt-in `gradient` or step
-// `thresholds`. Uses a single Text fast path when no gradient or threshold is active.
+// `[` `]` brackets and percentage readout, optional `trackColor`, and opt-in
+// `gradient` or step `thresholds`.
 Item {
     id: control
 
@@ -20,11 +20,13 @@ Item {
     readonly property int barWidth: Math.max(0, width - (showBrackets ? 2 : 0) - (showPercentage ? 5 : 0))
     readonly property string percentageText: showPercentage ? (" " + String(Math.round(position * 100)).padStart(3, " ") + "%") : ""
 
-    // Style presets: "block" (█░, the default), "segmented" (▰▱), "pill" (▮▯),
-    // "dot" (●○), "hash" (#-). fillCharacter/emptyCharacter override any preset.
+    // Style presets: "block" (█░, the default), "segmented" (▉░), "line" (━─),
+    // "pill" (▮▯), "dot" (●○), "hash" (#-). fillCharacter/emptyCharacter override any preset.
     property string style: "block"
     // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
     property color color
+    // Optional explicit color for the unfilled portion; when unset, empty cells dim automatically.
+    property color trackColor
 
     property string fillCharacter: ""
     property string emptyCharacter: ""
@@ -39,7 +41,9 @@ Item {
         if (fillCharacter && fillCharacter.length > 0)
             return fillCharacter;
         if (control.style === "segmented")
-            return "▰";
+            return "▉";
+        if (control.style === "line")
+            return "━";
         if (control.style === "pill")
             return "▮";
         if (control.style === "dot")
@@ -53,7 +57,9 @@ Item {
         if (emptyCharacter && emptyCharacter.length > 0)
             return emptyCharacter;
         if (control.style === "segmented")
-            return "▱";
+            return "░";
+        if (control.style === "line")
+            return "─";
         if (control.style === "pill")
             return "▯";
         if (control.style === "dot")
@@ -69,16 +75,64 @@ Item {
         return Math.max(0.0, Math.min(1.0, (value - from) / (to - from)));
     }
 
+    readonly property var segments: {
+        void d.gradientRevision;
+        if (!control.hasGradient)
+            return [];
+
+        let w = control.barWidth;
+        if (w <= 0)
+            return [];
+
+        let fillLen = Math.round(control.position * w);
+        let emptyLen = w - fillLen;
+
+        let fillChar = control.effectiveFillChar;
+        let emptyChar = control.effectiveEmptyChar;
+
+        let segs = [];
+        let currentSegColor = null;
+        let currentSegKey = "";
+        let currentSegText = "";
+
+        for (let i = 0; i < fillLen; ++i) {
+            let posAtCell = w > 1 ? (i / (w - 1)) : 0.0;
+            let c = getColorAt(posAtCell);
+            let k = colorKey(c);
+            if (k !== currentSegKey || currentSegText.length === 0) {
+                if (currentSegText.length > 0) {
+                    segs.push({
+                        text: currentSegText,
+                        color: currentSegColor
+                    });
+                }
+                currentSegColor = c;
+                currentSegKey = k;
+                currentSegText = fillChar;
+            } else {
+                currentSegText += fillChar;
+            }
+        }
+        if (currentSegText.length > 0) {
+            segs.push({
+                text: currentSegText,
+                color: currentSegColor
+            });
+        }
+
+        if (emptyLen > 0) {
+            segs.push({
+                text: emptyChar.repeat(emptyLen),
+                color: (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) ? control.trackColor : control.color
+            });
+        }
+
+        return segs;
+    }
+
     function getColorAt(pos) {
         if (control.gradient && control.gradient.stops && control.gradient.stops.length > 0) {
-            let stops = control.gradient.stops;
-            for (let i = 0; i < stops.length; ++i) {
-                let stop = stops[i];
-                if (pos <= stop.position) {
-                    return stop.color;
-                }
-            }
-            return stops[stops.length - 1].color;
+            return control.gradient.colorAt(pos);
         }
 
         if (control.thresholds && control.thresholds.length > 0) {
@@ -95,127 +149,125 @@ Item {
         return control.color;
     }
 
-    readonly property var segments: {
-        if (!control.hasGradient)
-            return [];
+    function colorKey(c) {
+        if (c === undefined || c === null)
+            return "";
+        if (typeof c === "string")
+            return c;
+        if (c.r !== undefined)
+            return String(c.r) + "," + String(c.g) + "," + String(c.b) + "," + String(c.a) + "," + String(c.valid);
+        return String(c);
+    }
 
-        let w = control.barWidth;
-        if (w <= 0)
-            return [];
-
-        let fillLen = Math.round(control.position * w);
-        let emptyLen = w - fillLen;
-
-        let fillChar = control.effectiveFillChar;
-        let emptyChar = control.effectiveEmptyChar;
-
-        let segs = [];
-        let currentSegColor = "";
-        let currentSegText = "";
-
-        for (let i = 0; i < fillLen; ++i) {
-            let posAtCell = w > 1 ? (i / (w - 1)) : 0.0;
-            let c = getColorAt(posAtCell);
-            if (c !== currentSegColor) {
-                if (currentSegText.length > 0) {
-                    segs.push({
-                        text: currentSegText,
-                        color: currentSegColor
-                    });
-                }
-                currentSegColor = c;
-                currentSegText = fillChar;
-            } else {
-                currentSegText += fillChar;
-            }
-        }
-        if (currentSegText.length > 0) {
-            segs.push({
-                text: currentSegText,
-                color: currentSegColor
-            });
-        }
-
-        if (emptyLen > 0) {
-            let emptyStr = "";
-            for (let j = 0; j < emptyLen; ++j)
-                emptyStr += emptyChar;
-            segs.push({
-                text: emptyStr,
-                color: control.color
-            });
-        }
-
-        return segs;
+    function isValidColor(c) {
+        if (!c)
+            return false;
+        if (typeof c === "string")
+            return c.length > 0;
+        return c.valid === true;
     }
 
     implicitHeight: 1
     implicitWidth: 15
 
-    Text {
-        visible: !control.hasGradient
-        anchors.fill: parent
-        color: control.color
-        bold: true
-        text: {
-            if (control.hasGradient)
-                return "";
-            let w = control.barWidth;
-            if (w <= 0)
-                return control.showBrackets ? "[]" + control.percentageText : control.percentageText;
+    QtObject {
+        id: d
 
-            let fillLen = Math.round(control.position * w);
-            let emptyLen = w - fillLen;
+        property int gradientRevision: 0
+    }
 
-            let fillChar = control.effectiveFillChar;
-            let emptyChar = control.effectiveEmptyChar;
-
-            let filledStr = "";
-            for (let i = 0; i < fillLen; ++i)
-                filledStr += fillChar;
-
-            let emptyStr = "";
-            for (let j = 0; j < emptyLen; ++j)
-                emptyStr += emptyChar;
-
-            const bar = filledStr + emptyStr;
-            return (control.showBrackets ? "[" + bar + "]" : bar) + control.percentageText;
+    Connections {
+        target: control.gradient
+        function onUpdated() {
+            d.gradientRevision++;
         }
     }
 
-    Row {
-        visible: control.hasGradient
+    Text {
         anchors.fill: parent
-        spacing: 0
+        color: control.color
+        spans: {
+            const out = [];
+            const w = control.barWidth;
 
-        Text {
-            visible: control.showBrackets
-            text: "["
-            color: control.color
-            bold: true
-        }
-        Repeater {
-            model: control.hasGradient ? control.segments.length : 0
-
-            Text {
-                required property int index
-                property var segData: control.segments[index]
-                text: segData ? segData.text : ""
-                color: segData ? segData.color : control.color
-                bold: true
+            if (control.showBrackets) {
+                out.push(QmlTui.span("[", {
+                    bold: true
+                }));
             }
-        }
-        Text {
-            visible: control.showBrackets
-            text: "]"
-            color: control.color
-            bold: true
-        }
-        Text {
-            visible: control.showPercentage
-            text: control.percentageText
-            color: control.color
-            bold: true
+
+            if (w > 0) {
+                if (control.hasGradient) {
+                    const segs = control.segments;
+                    const hasEmpty = Math.round(control.position * w) < w;
+                    for (let i = 0; i < segs.length; ++i) {
+                        const seg = segs[i];
+                        const isEmptySeg = hasEmpty && (i === segs.length - 1);
+                        if (isEmptySeg) {
+                            if (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) {
+                                out.push(QmlTui.span(seg.text, {
+                                    color: control.trackColor,
+                                    bold: false
+                                }));
+                            } else if (control.color.valid && control.color !== QmlTui.defaultColor) {
+                                out.push(QmlTui.span(seg.text, {
+                                    color: control.color,
+                                    bold: false
+                                }));
+                            } else {
+                                out.push(QmlTui.span(seg.text, {
+                                    bold: false,
+                                    dim: true
+                                }));
+                            }
+                        } else if (control.isValidColor(seg.color) && seg.color !== QmlTui.defaultColor) {
+                            out.push(QmlTui.span(seg.text, {
+                                color: seg.color,
+                                bold: true
+                            }));
+                        } else {
+                            out.push(QmlTui.span(seg.text, {
+                                bold: true
+                            }));
+                        }
+                    }
+                } else {
+                    const fillLen = Math.round(control.position * w);
+                    const emptyLen = w - fillLen;
+                    if (fillLen > 0) {
+                        out.push(QmlTui.span(control.effectiveFillChar.repeat(fillLen), {
+                            bold: true
+                        }));
+                    }
+                    if (emptyLen > 0) {
+                        if (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) {
+                            out.push(QmlTui.span(control.effectiveEmptyChar.repeat(emptyLen), {
+                                color: control.trackColor,
+                                bold: false
+                            }));
+                        } else {
+                            out.push(QmlTui.span(control.effectiveEmptyChar.repeat(emptyLen), {
+                                bold: false,
+                                dim: true
+                            }));
+                        }
+                    }
+                }
+            }
+
+            if (control.showBrackets) {
+                out.push(QmlTui.span("]", {
+                    bold: true
+                }));
+            }
+
+            if (control.showPercentage && control.percentageText.length > 0) {
+                out.push(QmlTui.span(control.percentageText, {
+                    bold: true
+                }));
+            }
+
+            return out;
         }
     }
 }

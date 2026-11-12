@@ -179,24 +179,34 @@ QByteArray sixelEncode(const QImage& source) {
         opaque[static_cast<size_t>(i)] = qAlpha(palette[i]) >= 128;
 
     std::vector<char> sixels(static_cast<size_t>(w));
+    std::vector<int> seenStamp(static_cast<size_t>(palette.size()), 0);
+    std::vector<int> bandColors;
+    bandColors.reserve(static_cast<size_t>(palette.size()));
+    int stamp = 0;
+
     for (int band = 0; band < h; band += 6) {
         const int rowsInBand = (std::min)(6, h - band);
         const uchar* scanLines[6];
         for (int r = 0; r < rowsInBand; ++r)
             scanLines[r] = image.constScanLine(band + r);
-        // Colours present anywhere in this band.
-        std::vector<bool> present(static_cast<size_t>(palette.size()), false);
+        // Collect only the opaque palette indices actually present in this band.
+        ++stamp;
+        bandColors.clear();
         for (int r = 0; r < rowsInBand; ++r) {
             const uchar* line = scanLines[r];
             for (int x = 0; x < w; ++x) {
                 const int idx = line[x];
-                if (idx < palette.size() && opaque[static_cast<size_t>(idx)])
-                    present[static_cast<size_t>(idx)] = true;
+                if (idx < palette.size() && opaque[static_cast<size_t>(idx)] &&
+                    seenStamp[static_cast<size_t>(idx)] != stamp) {
+                    seenStamp[static_cast<size_t>(idx)] = stamp;
+                    bandColors.push_back(idx);
+                }
             }
         }
+        std::sort(bandColors.begin(), bandColors.end());
+
         bool firstColorInBand = true;
-        for (int i = 0; i < palette.size(); ++i) {
-            if (!present[static_cast<size_t>(i)]) continue;
+        for (const int i : bandColors) {
             if (!firstColorInBand) out += '$'; // overstrike: back to column 0
             firstColorInBand = false;
             out += '#' + QByteArray::number(i);
@@ -241,6 +251,7 @@ void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0, int cols, in
             if (!clip.contains(x, y)) continue;
             Cell* cell = buffer.tryCellAt(x, y);
             if (!cell) continue;
+            buffer.splitWideGlyphSpan(x, y, 1);
             char buf[16];
             int len = UnicodeText::encodeCodePointUtf8(kPlaceholder, buf);
             len += UnicodeText::encodeCodePointUtf8(kDiacritics[r], buf + len);
@@ -250,6 +261,8 @@ void writeKittyPlaceholders(TextGridBuffer& buffer, int x0, int y0, int cols, in
             cell->continuation = false;
             cell->fgColor = idColor;
             cell->bgColor = 0x00000000u; // let the image show through
+            cell->attributes = TextAttribute::None;
+            cell->linkId = 0;
         }
     }
 }

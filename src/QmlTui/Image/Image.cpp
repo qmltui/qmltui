@@ -6,7 +6,6 @@
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/Subpixel.h>
 #include <QDebug>
-#include <QDirIterator>
 #include <algorithm>
 #include <QBuffer>
 #include <QCache>
@@ -124,28 +123,15 @@ static QString resolvePath(const QUrl& url) {
         return QStringLiteral(":/") + str;
     }
 
-    // Search in Qt QML module resource root (:/qt/qml/...)
-    QDirIterator qmlIt(QStringLiteral(":/qt/qml"), QDirIterator::Subdirectories);
-    while (qmlIt.hasNext()) {
-        qmlIt.next();
-        if (qmlIt.fileName() == str || qmlIt.filePath().endsWith(QLatin1Char('/') + str)) {
-            return qmlIt.filePath();
-        }
-    }
-
-    // Search in general QRC root (:/...)
-    QDirIterator qrcIt(QStringLiteral(":"), QDirIterator::Subdirectories);
-    while (qrcIt.hasNext()) {
-        qrcIt.next();
-        if (qrcIt.fileName() == str || qrcIt.filePath().endsWith(QLatin1Char('/') + str)) {
-            return qrcIt.filePath();
-        }
+    if (QFile::exists(QStringLiteral(":/qt/qml/") + str)) {
+        return QStringLiteral(":/qt/qml/") + str;
     }
 
     return str;
 }
 
 Image::Image(QObject* parent) : Item(parent) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     connect(this, &Item::widthChanged, this, &Image::renderSizeChanged);
     connect(this, &Item::heightChanged, this, &Image::renderSizeChanged);
     connect(this, &Item::visibleChanged, this, [this] {
@@ -238,6 +224,7 @@ void Image::setProgress(qreal progress) {
 }
 
 void Image::loadFromNetwork(const QUrl& url) {
+    static constexpr qint64 MaxNetworkImageBytes = 32LL * 1024 * 1024;
     setProgress(0.0);
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -246,9 +233,32 @@ void Image::loadFromNetwork(const QUrl& url) {
     request.setTransferTimeout(15000);
     QNetworkReply* reply = networkManager(this)->get(request);
     m_reply = reply;
+
+    auto abortOversized = [this, reply, url]() {
+        if (reply != m_reply) return;
+        m_reply.clear();
+        disconnect(reply, nullptr, this, nullptr);
+        reply->abort();
+        reply->deleteLater();
+        qmlWarning(this) << "Image: " << url.toString() << ": response exceeds 32 MiB limit";
+        adoptImage(QImage(), Status::Error);
+    };
+
+    connect(reply, &QNetworkReply::metaDataChanged, this, [this, reply, abortOversized] {
+        if (reply != m_reply) return;
+        const QVariant lenHeader = reply->header(QNetworkRequest::ContentLengthHeader);
+        if (lenHeader.isValid() && lenHeader.toLongLong() > MaxNetworkImageBytes) {
+            abortOversized();
+        }
+    });
     connect(reply, &QNetworkReply::downloadProgress, this,
-            [this, reply](qint64 received, qint64 total) {
+            [this, reply, abortOversized](qint64 received, qint64 total) {
                 if (reply != m_reply) return;
+                if (received > MaxNetworkImageBytes || total > MaxNetworkImageBytes ||
+                    reply->bytesAvailable() > MaxNetworkImageBytes) {
+                    abortOversized();
+                    return;
+                }
                 if (total > 0)
                     setProgress(static_cast<qreal>(received) / static_cast<qreal>(total));
             });
@@ -261,17 +271,22 @@ void Image::loadFromNetwork(const QUrl& url) {
         reply->deleteLater();
         QImage image;
         if (reply->error() == QNetworkReply::NoError) {
-            QBuffer buffer;
-            buffer.setData(reply->readAll());
-            buffer.open(QIODevice::ReadOnly);
-            QImageReader reader(&buffer);
-            image = reader.read();
-            if (image.isNull()) {
-                qmlWarning(this) << "Image: " << url.toString() << ": " << reader.errorString();
+            if (reply->bytesAvailable() > MaxNetworkImageBytes) {
+                qmlWarning(this) << "Image: " << url.toString()
+                                 << ": response exceeds 32 MiB limit";
             } else {
-                image = image.convertToFormat(QImage::Format_ARGB32);
-                remoteCache().insert(url.toString(), new QImage(image),
-                                     static_cast<qsizetype>(image.sizeInBytes()));
+                QBuffer buffer;
+                buffer.setData(reply->readAll());
+                buffer.open(QIODevice::ReadOnly);
+                QImageReader reader(&buffer);
+                image = reader.read();
+                if (image.isNull()) {
+                    qmlWarning(this) << "Image: " << url.toString() << ": " << reader.errorString();
+                } else {
+                    image = image.convertToFormat(QImage::Format_ARGB32);
+                    remoteCache().insert(url.toString(), new QImage(image),
+                                         static_cast<qsizetype>(image.sizeInBytes()));
+                }
             }
         } else {
             qmlWarning(this) << "Image: " << url.toString() << ": " << reply->errorString();
@@ -290,6 +305,7 @@ void Image::cancelPendingResponse() {
 }
 
 void Image::releaseKittyImage() {
+    m_kittyPayloadCache.clear();
     if (m_imageId == 0) return;
     if (Terminal* root = terminal()) root->enqueueControlSequence(graphics::kittyDelete(m_imageId));
     m_imageId = 0;
@@ -361,15 +377,16 @@ void Image::adoptImage(const QImage& image, Status statusIfNull) {
     m_clippedImage = QImage();
     m_clippedSourceKey = 0;
     m_clippedForRect = QRect();
+    m_clippedFrameCache.clear();
+    m_kittyPayloadCache.clear();
     m_status = image.isNull() ? statusIfNull : Status::Ready;
     setProgress(image.isNull() ? 0.0 : 1.0);
     emit statusChanged();
     emit imageChanged();
     if (m_sourceImage.size() != previousSize) {
         emit sourceSizeChanged();
-        emit implicitWidthChanged();
-        emit implicitHeightChanged();
     }
+    notifyImplicitSizeIfChanged();
     markDirty();
 }
 
@@ -414,7 +431,25 @@ const QImage& Image::effectiveImage() const {
     const QRect bounded = m_sourceClipRect.intersected(m_sourceImage.rect());
     const qint64 key = m_sourceImage.cacheKey();
     if (key != m_clippedSourceKey || bounded != m_clippedForRect) {
-        m_clippedImage = bounded.isEmpty() ? QImage() : m_sourceImage.copy(bounded);
+        if (bounded.isEmpty()) {
+            m_clippedImage = QImage();
+        } else {
+            bool found = false;
+            for (const ClippedFrameCacheEntry& entry : std::as_const(m_clippedFrameCache)) {
+                if (entry.sourceKey == key && entry.rect == bounded) {
+                    m_clippedImage = entry.image;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                m_clippedImage = m_sourceImage.copy(bounded);
+                constexpr qsizetype kMaxCachedFrames = 32;
+                if (m_clippedFrameCache.size() >= kMaxCachedFrames)
+                    m_clippedFrameCache.removeFirst();
+                m_clippedFrameCache.append(ClippedFrameCacheEntry{key, bounded, m_clippedImage});
+            }
+        }
         m_clippedSourceKey = key;
         m_clippedForRect = bounded;
     }
@@ -431,8 +466,7 @@ void Image::setSourceClipRect(const QRect& rect) {
         releaseSixelImage();
     }
     emit sourceClipRectChanged();
-    emit implicitWidthChanged();
-    emit implicitHeightChanged();
+    notifyImplicitSizeIfChanged();
     markDirty();
 }
 
@@ -476,13 +510,13 @@ void Image::setAlignment(Qt::Alignment alignment) {
 
 int Image::implicitWidth() const {
     const QImage& source = effectiveImage();
-    if (source.isNull()) return m_implicitWidth;
+    if (source.isNull()) return Item::implicitWidth();
     return source.width();
 }
 
 int Image::implicitHeight() const {
     const QImage& source = effectiveImage();
-    if (source.isNull()) return m_implicitHeight;
+    if (source.isNull()) return Item::implicitHeight();
     // For HalfBlock mode (default), 1 character cell is 2 vertical subpixels.
     return (source.height() + 1) / 2;
 }
@@ -496,12 +530,16 @@ void Image::loadImage() {
         setProgress(0.0);
         m_sourceImage = QImage();
         m_scaledImage = QImage();
+        m_clippedImage = QImage();
+        m_clippedSourceKey = 0;
+        m_clippedForRect = QRect();
+        m_clippedFrameCache.clear();
+        m_kittyPayloadCache.clear();
         m_status = Status::Null;
         emit statusChanged();
         emit imageChanged();
         emit sourceSizeChanged();
-        emit implicitWidthChanged();
-        emit implicitHeightChanged();
+        notifyImplicitSizeIfChanged();
         markDirty();
         return;
     }
@@ -897,10 +935,30 @@ void Image::paintKitty(TextGridBuffer& buffer, int absX, int absY, const ClipRec
     const bool needUpload =
         (key != m_lastKittyKey || uploadSize != m_lastKittyUpload || session != m_lastKittySession);
     if (needUpload) {
-        QImage upload = source;
-        if (uploadSize != source.size())
-            upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        if (!root->enqueueControlSequence(graphics::kittyTransmit(m_imageId, upload))) return;
+        QByteArray wire;
+        const bool cachePayload = !m_sourceClipRect.isNull();
+        if (cachePayload) {
+            for (const KittyPayloadCacheEntry& entry : std::as_const(m_kittyPayloadCache)) {
+                if (entry.frameKey == key && entry.uploadSize == uploadSize &&
+                    entry.imageId == m_imageId) {
+                    wire = entry.payload;
+                    break;
+                }
+            }
+        }
+        if (wire.isEmpty()) {
+            QImage upload = source;
+            if (uploadSize != source.size())
+                upload = upload.scaled(uploadSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            wire = graphics::kittyTransmit(m_imageId, upload);
+            if (cachePayload && !wire.isEmpty()) {
+                constexpr qsizetype kMaxKittyCache = 16;
+                if (m_kittyPayloadCache.size() >= kMaxKittyCache) m_kittyPayloadCache.removeFirst();
+                m_kittyPayloadCache.append(
+                    KittyPayloadCacheEntry{key, uploadSize, m_imageId, wire});
+            }
+        }
+        if (!root->enqueueControlSequence(wire)) return;
         m_lastKittyUpload = uploadSize;
         m_lastKittyKey = key;
         m_lastKittySession = session;

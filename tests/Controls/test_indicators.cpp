@@ -103,7 +103,7 @@ private slots:
         Sparkline sparkline;
         sparkline.setWidth(10);
         sparkline.setHeight(1);
-        sparkline.setValues(QVariantList{10.0, 20.0, 30.0, 40.0, 50.0});
+        sparkline.setValues(QList<qreal>{10.0, 20.0, 30.0, 40.0, 50.0});
 
         TextGridBuffer buffer;
         buffer.resize(10, 1);
@@ -239,8 +239,8 @@ private slots:
         TabBar header;
         header.setWidth(40);
         header.setHeight(1);
-        header.setTabs(QVariantList{QStringLiteral("日本語"), QStringLiteral("Metrics"),
-                                    QStringLiteral("Settings")});
+        header.setTabs(QStringList{QStringLiteral("日本語"), QStringLiteral("Metrics"),
+                                   QStringLiteral("Settings")});
 
         QCOMPARE(header.currentIndex(), 0);
         header.setCurrentIndex(1);

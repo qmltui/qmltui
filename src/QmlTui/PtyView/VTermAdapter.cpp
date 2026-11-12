@@ -68,7 +68,7 @@ VTermAdapter::VTermAdapter(int rows, int columns)
     vterm_screen_set_damage_merge(m_screen, VTERM_DAMAGE_ROW);
     vterm_screen_set_callbacks(m_screen, &ScreenCallbacks, this);
     vterm_state_set_unrecognised_fallbacks(m_state, &StateFallbacks, this);
-    m_selectionBuffer.resize(1024 * 1024);
+    m_selectionBuffer.resize(4096);
     vterm_state_set_selection_callbacks(m_state, &SelectionCallbacks, this,
                                         m_selectionBuffer.data(),
                                         static_cast<size_t>(m_selectionBuffer.size()));
@@ -96,16 +96,26 @@ void VTermAdapter::resize(int rows, int columns) {
 }
 
 void VTermAdapter::setDefaultColors(Color foreground, Color background) {
-    if (!m_state || !foreground.isValid() || !background.isValid()) return;
+    if (!m_state) return;
+    m_defaultForeground = Color::resolve(foreground, Color::DefaultTag);
+    m_defaultBackground = background.isValid() ? background.argb32() : Color::TransparentTag;
     VTermColor fg;
     VTermColor bg;
-    vterm_color_rgb(&fg, colorChannel(foreground, 16), colorChannel(foreground, 8),
-                    colorChannel(foreground, 0));
-    vterm_color_rgb(&bg, colorChannel(background, 16), colorChannel(background, 8),
-                    colorChannel(background, 0));
+    if ((m_defaultForeground & 0xff000000u) == 0xff000000u) {
+        vterm_color_rgb(&fg, static_cast<uint8_t>((m_defaultForeground >> 16) & 0xff),
+                        static_cast<uint8_t>((m_defaultForeground >> 8) & 0xff),
+                        static_cast<uint8_t>(m_defaultForeground & 0xff));
+    } else {
+        vterm_color_rgb(&fg, 255, 255, 255);
+    }
+    if ((m_defaultBackground & 0xff000000u) == 0xff000000u) {
+        vterm_color_rgb(&bg, static_cast<uint8_t>((m_defaultBackground >> 16) & 0xff),
+                        static_cast<uint8_t>((m_defaultBackground >> 8) & 0xff),
+                        static_cast<uint8_t>(m_defaultBackground & 0xff));
+    } else {
+        vterm_color_rgb(&bg, 0, 0, 0);
+    }
     vterm_state_set_default_colors(m_state, &fg, &bg);
-    m_defaultForeground = foreground.argb32();
-    m_defaultBackground = background.argb32();
 }
 
 void VTermAdapter::setPaletteColor(int index, Color color) {
@@ -144,12 +154,20 @@ void VTermAdapter::reset() {
         }
         VTermColor fg;
         VTermColor bg;
-        vterm_color_rgb(&fg, static_cast<uint8_t>((m_defaultForeground >> 16) & 0xff),
-                        static_cast<uint8_t>((m_defaultForeground >> 8) & 0xff),
-                        static_cast<uint8_t>(m_defaultForeground & 0xff));
-        vterm_color_rgb(&bg, static_cast<uint8_t>((m_defaultBackground >> 16) & 0xff),
-                        static_cast<uint8_t>((m_defaultBackground >> 8) & 0xff),
-                        static_cast<uint8_t>(m_defaultBackground & 0xff));
+        if ((m_defaultForeground & 0xff000000u) == 0xff000000u) {
+            vterm_color_rgb(&fg, static_cast<uint8_t>((m_defaultForeground >> 16) & 0xff),
+                            static_cast<uint8_t>((m_defaultForeground >> 8) & 0xff),
+                            static_cast<uint8_t>(m_defaultForeground & 0xff));
+        } else {
+            vterm_color_rgb(&fg, 255, 255, 255);
+        }
+        if ((m_defaultBackground & 0xff000000u) == 0xff000000u) {
+            vterm_color_rgb(&bg, static_cast<uint8_t>((m_defaultBackground >> 16) & 0xff),
+                            static_cast<uint8_t>((m_defaultBackground >> 8) & 0xff),
+                            static_cast<uint8_t>(m_defaultBackground & 0xff));
+        } else {
+            vterm_color_rgb(&bg, 0, 0, 0);
+        }
         vterm_state_set_default_colors(m_state, &fg, &bg);
     }
     if (m_screen) {
@@ -223,12 +241,22 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
     const int effectiveOffset = m_altScreen ? 0 : std::clamp(scrollOffset, 0, historyRows);
     const int viewStart = historyRows - effectiveOffset;
 
-    for (int row = 0; row < height; ++row) {
+    const ClipRect effectiveClip =
+        clip.intersected(ClipRect{absX, absY, width, height})
+            .intersected(ClipRect{0, 0, buffer.width(), buffer.height()});
+    if (effectiveClip.isEmpty()) return;
+
+    const int startCol = effectiveClip.x - absX;
+    const int endCol = startCol + effectiveClip.width;
+    const int startRow = effectiveClip.y - absY;
+    const int endRow = startRow + effectiveClip.height;
+
+    for (int row = startRow; row < endRow; ++row) {
+        const int targetY = absY + row;
+        buffer.splitWideGlyphSpan(effectiveClip.x, targetY, effectiveClip.width);
         const int sourceRow = viewStart + row;
-        for (int column = 0; column < width; ++column) {
+        for (int column = startCol; column < endCol; ++column) {
             const int targetX = absX + column;
-            const int targetY = absY + row;
-            if (!clip.contains(targetX, targetY)) continue;
 
             VTermScreenCell source{};
             bool hasSource = false;
@@ -249,9 +277,30 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
             Cell* targetCell = buffer.tryCellAt(targetX, targetY);
             if (!targetCell) continue;
             Cell& target = *targetCell;
-            target.fgColor = hasSource ? colorToArgb(source.fg) : m_defaultForeground;
-            target.bgColor = hasSource ? colorToArgb(source.bg) : m_defaultBackground;
-            target.attributes = attributesFor(source);
+            target.fgColor =
+                hasSource ? colorToArgb(source.fg) : Color::paintedArgb32(m_defaultForeground);
+            if (hasSource) {
+                if (VTERM_COLOR_IS_DEFAULT_BG(&source.bg)) {
+                    if (!Color::isTransparent(m_defaultBackground))
+                        target.bgColor = Color::paintedArgb32(m_defaultBackground);
+                } else {
+                    target.bgColor = colorToArgb(source.bg);
+                }
+            } else if (!Color::isTransparent(m_defaultBackground)) {
+                target.bgColor = Color::paintedArgb32(m_defaultBackground);
+            }
+            target.attributes = hasSource ? attributesFor(source) : TextAttribute::None;
+            target.linkId = 0;
+
+            const bool clippedContinuation = hasSource && source.width == 0 && column == startCol;
+            const bool clippedWideRight = hasSource && source.width > 1 && column + 1 >= endCol;
+            if (clippedContinuation || clippedWideRight) {
+                target.displayWidth = 1;
+                target.continuation = false;
+                target.setCharacter(QByteArrayView(" ", 1));
+                continue;
+            }
+
             target.displayWidth =
                 hasSource ? static_cast<uint8_t>((std::max)(1, static_cast<int>(source.width))) : 1;
             target.continuation = hasSource && (source.width == 0);
@@ -439,8 +488,8 @@ VTermKey VTermAdapter::toVTermKey(int key) {
 
 uint32_t VTermAdapter::colorToArgb(VTermColor color) const {
     if (!m_screen) return 0;
-    if (VTERM_COLOR_IS_DEFAULT_FG(&color)) return m_defaultForeground;
-    if (VTERM_COLOR_IS_DEFAULT_BG(&color)) return m_defaultBackground;
+    if (VTERM_COLOR_IS_DEFAULT_FG(&color)) return Color::paintedArgb32(m_defaultForeground);
+    if (VTERM_COLOR_IS_DEFAULT_BG(&color)) return Color::paintedArgb32(m_defaultBackground);
     vterm_screen_convert_color_to_rgb(m_screen, &color);
     return 0xff000000u | (static_cast<uint32_t>(color.rgb.red) << 16) |
            (static_cast<uint32_t>(color.rgb.green) << 8) | static_cast<uint32_t>(color.rgb.blue);

@@ -8,6 +8,7 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QStandardItemModel>
+#include <QStringListModel>
 #include <QAbstractListModel>
 #include <QColor>
 #include <QmlTui/Core/Items/ListView.h>
@@ -295,6 +296,64 @@ private slots:
         )")),
                  qPrintable(f.component.errorString()));
         QCOMPARE(f.line(0).trimmed(), QStringLiteral("custom-value"));
+    }
+
+    void boundDelegatesUnsetNumericRoles() {
+        // Under pragma ComponentBehavior: Bound, delegates declaring required properties
+        // for numeric item roles (enabled, checkable, checkState, foreground) must succeed
+        // even when rows leave those roles unset in ListView, GridView, and Repeater.
+        QStringListModel model({QStringLiteral("one"), QStringLiteral("two")});
+        Fixture f;
+        QVERIFY2(f.create(&model, QStringLiteral(R"(
+            pragma ComponentBehavior: Bound
+            import QmlTui
+            Column {
+                width: 20
+                height: 8
+                ListView {
+                    width: 20
+                    height: 2
+                    model: testModel
+                    delegate: Text {
+                        required property string display
+                        required property bool enabled
+                        required property bool checkable
+                        width: 20
+                        height: 1
+                        text: (enabled && !checkable ? "+" : "-") + display
+                    }
+                }
+                GridView {
+                    width: 20
+                    height: 1
+                    cellWidth: 10
+                    cellHeight: 1
+                    model: testModel
+                    delegate: Text {
+                        required property string display
+                        required property bool enabled
+                        text: (enabled ? "G:" : "X:") + display
+                    }
+                }
+                Row {
+                    Repeater {
+                        model: testModel
+                        Text {
+                            required property string display
+                            required property bool enabled
+                            width: 10
+                            height: 1
+                            text: (enabled ? "R:" : "X:") + display
+                        }
+                    }
+                }
+            }
+        )")),
+                 qPrintable(f.component.errorString()));
+        QCOMPARE(f.line(0).trimmed(), QStringLiteral("+one"));
+        QCOMPARE(f.line(1).trimmed(), QStringLiteral("+two"));
+        QCOMPARE(f.line(2).simplified(), QStringLiteral("G:one G:two"));
+        QCOMPARE(f.line(3).simplified(), QStringLiteral("R:one R:two"));
     }
 };
 

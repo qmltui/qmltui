@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -13,6 +14,9 @@ import QmlTui
 AbstractButton {
     id: control
 
+    property color color: QmlTui.defaultColor
+    property color borderColor: QmlTui.defaultColor
+
     leftPadding: 2
     rightPadding: 2
     topPadding: background === defaultBackground ? 1 : (background ? background.topPadding : 0)
@@ -20,8 +24,11 @@ AbstractButton {
 
     background: Rectangle {
         id: defaultBackground
-        color: QmlTui.defaultColor
-        border.style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
+        color: control.color
+        border {
+            style: control.height >= 3 ? (control.activeFocus ? Border.Double : Border.Single) : Border.None
+            color: control.borderColor
+        }
     }
 
     contentItem: Text {

@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -147,7 +148,10 @@ Item {
 
     MouseArea {
         id: mouseArea
-        anchors.fill: parent
+        x: 0
+        y: 0
+        width: control.width
+        height: control.height
         z: 1
         hoverEnabled: control.hoverEnabled
 

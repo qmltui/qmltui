@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -63,11 +64,12 @@ Rectangle {
     Keys.onPressed: event => {
         if (!control.enabled)
             return;
+        const step = control.stepSize > 0 ? control.stepSize : 1;
         if (event.key === Qt.Key_Left) {
-            control.value = Math.max(control.from, control.value - control.stepSize);
+            control.value = Math.max(control.from, control.value - step);
             event.accepted = true;
         } else if (event.key === Qt.Key_Right) {
-            control.value = Math.min(control.to, control.value + control.stepSize);
+            control.value = Math.min(control.to, control.value + step);
             event.accepted = true;
         } else if (event.key === Qt.Key_Home) {
             control.value = control.from;
@@ -80,12 +82,15 @@ Rectangle {
 
     MouseArea {
         id: mouseArea
-        anchors.fill: parent
+        x: 0
+        y: 0
+        width: control.width
+        height: control.height
         function updateFromX(posX) {
             if (control.trackWidth <= 0)
                 return;
             const range = Math.max(0.001, control.to - control.from);
-            const pct = Math.min(1.0, Math.max(0.0, posX / control.trackWidth));
+            const pct = Math.min(1.0, Math.max(0.0, posX / Math.max(1, control.trackWidth - 1)));
             const step = control.stepSize > 0 ? control.stepSize : 1;
             const raw = control.from + pct * range;
             control.value = Math.min(control.to, Math.max(control.from, control.from + Math.round((raw - control.from) / step) * step));

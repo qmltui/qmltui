@@ -33,13 +33,13 @@
 | `exitCode` | `int` | read-only | `exitCodeChanged` | Exit status of the last terminated child process (`-1` before exit). |
 | `errorString` | `QString` | read-only | `errorStringChanged` | Diagnostic message from the last PTY or spawn error. |
 | `title` | `QString` | read-only | `titleChanged` | Window title set via OSC 0/2 when `allowTitleChanges` is `true`. |
-| `foregroundColor` | `qmltui::Color` | read/write | `foregroundColorChanged` | Default foreground color (`"white"` by default). |
-| `backgroundColor` | `qmltui::Color` | read/write | `backgroundColorChanged` | Default background color (`"black"` by default). |
+| `textColor` | `qmltui::Color` | read/write | `textColorChanged` | Default foreground text color (terminal default ink when unset). |
+| `backgroundColor` | `qmltui::Color` | read/write | `backgroundColorChanged` | Default background color (`Color::Transparent` by default, preserving parent fills). |
 | `palette` | `QList<qmltui::Color>` | read/write | `paletteChanged` | Optional 16-entry ANSI color palette override. |
 | `scrollbackLimit` | `int` | read/write | `scrollbackLimitChanged` | Maximum retained scrollback lines (`10000` by default). |
 | `scrollOffset` | `int` | read/write | `scrollOffsetChanged` | Rows scrolled back into history (`0` shows the live screen). |
 | `scrollbackSize` | `int` | read-only | `scrollbackSizeChanged` | Number of lines currently stored in scrollback. |
-| `showScrollbar` | `bool` | read/write | `showScrollbarChanged` | Draws a scrollbar thumb when scrollback history is present (`true` by default). |
+| `scrollBarVisible` | `bool` | read/write | `scrollBarVisibleChanged` | Draws a scrollbar thumb when scrollback history is present (`true` by default). |
 | `allowTitleChanges` | `bool` | read/write | `allowTitleChangesChanged` | Allows child OSC 0/2 sequences to update `title` (`true` by default). |
 | `allowClipboardWrite` | `bool` | read/write | `allowClipboardWriteChanged` | Allows child OSC 52 sequences to emit `clipboardWriteRequested()` (`false` by default). |
 | `allowNotifications` | `bool` | read/write | `allowNotificationsChanged` | Allows child OSC 9/777 sequences to emit `notificationRequested()` (`false` by default). |

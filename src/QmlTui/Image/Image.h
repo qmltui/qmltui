@@ -3,17 +3,23 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Image/TerminalGraphics.h>
+#include <QByteArray>
+#include <QList>
 #include <QMetaObject>
 #include <QPointer>
 #include <QImage>
 #include <QUrl>
 #include <QSize>
 #include <QRect>
+#include <cstdint>
 
 class QNetworkReply;
 
 namespace qmltui {
+
+namespace graphics {
+enum class Protocol : uint8_t;
+}
 
 class ImageResponse;
 
@@ -187,9 +193,22 @@ private:
     QImage m_sourceImage;
     QRect m_sourceClipRect;
     // Copy of the clipped region, refreshed lazily by effectiveImage().
+    struct ClippedFrameCacheEntry {
+        qint64 sourceKey = 0;
+        QRect rect;
+        QImage image;
+    };
+    struct KittyPayloadCacheEntry {
+        qint64 frameKey = 0;
+        QSize uploadSize;
+        quint32 imageId = 0;
+        QByteArray payload;
+    };
     mutable QImage m_clippedImage;
     mutable qint64 m_clippedSourceKey = 0;
     mutable QRect m_clippedForRect;
+    mutable QList<ClippedFrameCacheEntry> m_clippedFrameCache;
+    mutable QList<KittyPayloadCacheEntry> m_kittyPayloadCache;
     // Scaled copy of the source for the current size: a cache refreshed while
     // painting, so it is mutable.
     mutable QImage m_scaledImage;

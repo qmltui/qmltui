@@ -101,8 +101,8 @@ private:
     bool m_altScreen = false;
     bool m_cursorVisible = true;
     VTermPos m_cursor{0, 0};
-    uint32_t m_defaultForeground = 0xffffffffu;
-    uint32_t m_defaultBackground = 0xff000000u;
+    uint32_t m_defaultForeground = Color::DefaultTag;
+    uint32_t m_defaultBackground = Color::TransparentTag;
     QList<Color> m_palette;
     std::deque<std::vector<VTermScreenCell>> m_scrollback;
     QByteArray m_selectionBuffer;

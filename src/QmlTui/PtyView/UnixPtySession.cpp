@@ -67,6 +67,7 @@ bool UnixPtySession::start(const QString& program, const QStringList& arguments,
     const int flags = ::fcntl(m_masterFd, F_GETFL, 0);
     if (flags >= 0) ::fcntl(m_masterFd, F_SETFL, flags | O_NONBLOCK);
     ::fcntl(m_masterFd, F_SETFD, FD_CLOEXEC);
+    ::fcntl(slaveFd, F_SETFD, FD_CLOEXEC);
 
     const int masterFd = m_masterFd;
     m_process.setChildProcessModifier([masterFd, slaveFd] {
@@ -169,6 +170,7 @@ void UnixPtySession::readAvailable() {
 }
 
 void UnixPtySession::writeAvailable() {
+    QPointer<UnixPtySession> self(this);
     while (m_masterFd >= 0 && !m_writeQueue.isEmpty()) {
         const ssize_t count =
             ::write(m_masterFd, m_writeQueue.constData(), static_cast<size_t>(m_writeQueue.size()));
@@ -182,11 +184,12 @@ void UnixPtySession::writeAvailable() {
             m_writeQueue.clear();
             emit errorOccurred(QStringLiteral("PTY write failed: %1")
                                    .arg(QString::fromLocal8Bit(std::strerror(errno))));
+            if (!self) return;
             closeMaster();
         }
         break;
     }
-    if (m_writeNotifier) m_writeNotifier->setEnabled(!m_writeQueue.isEmpty());
+    if (self && m_writeNotifier) m_writeNotifier->setEnabled(!m_writeQueue.isEmpty());
 }
 
 void UnixPtySession::closeMaster() {

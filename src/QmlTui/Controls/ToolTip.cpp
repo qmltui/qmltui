@@ -71,12 +71,16 @@ ToolTip::ToolTip(QObject* target) : QObject(target), m_target(qobject_cast<Item*
     m_delayTimer->setSingleShot(true);
     m_timeoutTimer->setSingleShot(true);
     connect(m_delayTimer, &ClockTimer::timeout, this, &ToolTip::showNow);
-    connect(m_timeoutTimer, &ClockTimer::timeout, this, &ToolTip::hide);
+    connect(m_timeoutTimer, &ClockTimer::timeout, this, [this]() {
+        m_explicitVisible = false;
+        hide();
+    });
 
     m_defaultBackground = new Rectangle(this);
     m_defaultBackground->setVisible(false);
     m_defaultLabel = new Text(this);
     m_defaultLabel->setBold(true);
+    m_defaultLabel->setWrapMode(Text::WordWrap);
     m_defaultLabel->setVisible(false);
     m_background = m_defaultBackground;
     m_contentItem = m_defaultLabel;
@@ -264,16 +268,22 @@ void ToolTip::setVisible(bool visible) {
 }
 
 void ToolTip::setDelay(int delay) {
-    delay = std::max(0, delay);
+    delay = (std::max)(0, delay);
     if (m_delay == delay) return;
     m_delay = delay;
     emit delayChanged();
 }
 
 void ToolTip::setTimeout(int timeout) {
-    timeout = std::max(0, timeout);
+    timeout = (std::max)(0, timeout);
     if (m_timeout == timeout) return;
     m_timeout = timeout;
+    if (visible()) {
+        if (m_timeout > 0)
+            m_timeoutTimer->start(m_timeout);
+        else
+            m_timeoutTimer->stop();
+    }
     emit timeoutChanged();
 }
 
@@ -335,26 +345,26 @@ void ToolTip::reposition() {
     int contentW = 1;
     int contentH = 1;
     if (m_contentItem == m_defaultLabel && m_defaultLabel) {
-        const int maxTextWidth = std::max(1, std::min(40, m_terminal->width() / 2));
-        const int displayWidth = UnicodeText::displayWidth(m_text);
-        contentW = std::max(1, std::min(maxTextWidth, displayWidth));
-        contentH = std::max(1, (displayWidth + contentW - 1) / contentW);
+        const int maxTextWidth = (std::max)(1, (std::min)(40, m_terminal->width() / 2));
         m_defaultLabel->setText(m_text);
+        const int naturalWidth = (std::max)(1, UnicodeText::displayWidth(m_text));
+        contentW = (std::max)(1, (std::min)(maxTextWidth, naturalWidth));
         m_defaultLabel->setWidth(contentW);
+        contentH = (std::max)(1, m_defaultLabel->implicitHeight());
         m_defaultLabel->setHeight(contentH);
     } else {
-        contentW = std::max(1, m_contentItem->width() > 0 ? m_contentItem->width()
-                                                          : m_contentItem->implicitWidth());
-        contentH = std::max(1, m_contentItem->height() > 0 ? m_contentItem->height()
-                                                           : m_contentItem->implicitHeight());
+        contentW = (std::max)(1, m_contentItem->width() > 0 ? m_contentItem->width()
+                                                            : m_contentItem->implicitWidth());
+        contentH = (std::max)(1, m_contentItem->height() > 0 ? m_contentItem->height()
+                                                             : m_contentItem->implicitHeight());
     }
     m_contentItem->setX(padX);
     m_contentItem->setY(padY);
 
     const int popupW =
-        std::max(m_background ? m_background->implicitWidth() : 0, contentW + padX * 2);
+        (std::max)(m_background ? m_background->implicitWidth() : 0, contentW + padX * 2);
     const int popupH =
-        std::max(m_background ? m_background->implicitHeight() : 0, contentH + padY * 2);
+        (std::max)(m_background ? m_background->implicitHeight() : 0, contentH + padY * 2);
     m_popup->setWidth(popupW);
     m_popup->setHeight(popupH);
     m_popup->setZ(m_z);
@@ -365,11 +375,11 @@ void ToolTip::reposition() {
         m_background->setHeight(popupH);
     }
     const QPoint targetPos = m_target->absolutePosition();
-    int x = std::clamp(targetPos.x(), 0, std::max(0, m_terminal->width() - m_popup->width()));
+    int x = std::clamp(targetPos.x(), 0, (std::max)(0, m_terminal->width() - m_popup->width()));
     int y = targetPos.y() + m_target->height();
     if (y + m_popup->height() > m_terminal->height()) y = targetPos.y() - m_popup->height();
     m_popup->setX(x);
-    m_popup->setY(std::max(0, y));
+    m_popup->setY((std::max)(0, y));
 }
 
 void ToolTip::updateAppearance() {

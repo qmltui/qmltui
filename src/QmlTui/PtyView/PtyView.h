@@ -44,8 +44,7 @@ class QMLTUI_PTYVIEW_EXPORT PtyView : public Item, public QQmlParserStatus {
     Q_PROPERTY(int exitCode READ exitCode NOTIFY exitCodeChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-    Q_PROPERTY(qmltui::Color foregroundColor READ foregroundColor WRITE setForegroundColor NOTIFY
-                   foregroundColorChanged)
+    Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qmltui::Color backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY
                    backgroundColorChanged)
     Q_PROPERTY(QList<qmltui::Color> palette READ palette WRITE setPalette NOTIFY paletteChanged)
@@ -54,8 +53,8 @@ class QMLTUI_PTYVIEW_EXPORT PtyView : public Item, public QQmlParserStatus {
     // Rows scrolled back into history (0 shows the live bottom screen).
     Q_PROPERTY(int scrollOffset READ scrollOffset WRITE setScrollOffset NOTIFY scrollOffsetChanged)
     Q_PROPERTY(int scrollbackSize READ scrollbackSize NOTIFY scrollbackSizeChanged)
-    Q_PROPERTY(
-        bool showScrollbar READ showScrollbar WRITE setShowScrollbar NOTIFY showScrollbarChanged)
+    Q_PROPERTY(bool scrollBarVisible READ scrollBarVisible WRITE setScrollBarVisible NOTIFY
+                   scrollBarVisibleChanged)
     // Opt-in permissions for child-process OSC escape sequences (title, OSC 52
     // clipboard write, OSC 9/777 notifications).
     Q_PROPERTY(bool allowTitleChanges READ allowTitleChanges WRITE setAllowTitleChanges NOTIFY
@@ -102,8 +101,8 @@ public:
     QString errorString() const { return m_errorString; }
     QString title() const { return m_title; }
 
-    Color foregroundColor() const { return m_foregroundColor; }
-    void setForegroundColor(Color value);
+    Color textColor() const { return m_textColor; }
+    void setTextColor(Color value);
     Color backgroundColor() const { return m_backgroundColor; }
     void setBackgroundColor(Color value);
     QList<Color> palette() const { return m_palette; }
@@ -113,8 +112,8 @@ public:
     int scrollOffset() const { return m_scrollOffset; }
     void setScrollOffset(int value);
     int scrollbackSize() const;
-    bool showScrollbar() const { return m_showScrollbar; }
-    void setShowScrollbar(bool value);
+    bool scrollBarVisible() const { return m_scrollBarVisible; }
+    void setScrollBarVisible(bool value);
 
     bool allowTitleChanges() const { return m_allowTitleChanges; }
     void setAllowTitleChanges(bool value);
@@ -141,6 +140,7 @@ public:
     void paint(TextGridBuffer& buffer, int absX, int absY,
                const ClipRect& clipRect = ClipRect()) const override;
     void keyPressEvent(KeyEvent* event) override;
+    bool consumesPrintableKeys() const override { return running(); }
     void mousePressEvent(MouseEvent* event) override;
     void mouseReleaseEvent(MouseEvent* event) override;
     void mouseMoveEvent(MouseEvent* event) override;
@@ -160,13 +160,13 @@ signals:
     void exitCodeChanged();
     void errorStringChanged();
     void titleChanged();
-    void foregroundColorChanged();
+    void textColorChanged();
     void backgroundColorChanged();
     void paletteChanged();
     void scrollbackLimitChanged();
     void scrollOffsetChanged();
     void scrollbackSizeChanged();
-    void showScrollbarChanged();
+    void scrollBarVisibleChanged();
     void allowTitleChangesChanged();
     void allowClipboardWriteChanged();
     void allowNotificationsChanged();
@@ -196,12 +196,12 @@ private:
     int m_exitCode = -1;
     QString m_errorString;
     QString m_title;
-    Color m_foregroundColor = Color::fromArgb32(0xFFFFFFFFU);
-    Color m_backgroundColor = Color::fromArgb32(0xFF000000U);
+    Color m_textColor;
+    Color m_backgroundColor = Color(Color::Transparent);
     QList<Color> m_palette;
     int m_scrollbackLimit = 10000;
     int m_scrollOffset = 0;
-    bool m_showScrollbar = true;
+    bool m_scrollBarVisible = true;
     bool m_allowTitleChanges = true;
     bool m_allowClipboardWrite = false;
     bool m_allowNotifications = false;

@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -9,25 +10,11 @@ import QmlTui
 // from code, unchecks the others.
 AbstractButton {
     id: control
-    checkable: true
-    autoExclusive: true
+
     property ButtonGroup buttonGroup: null
 
-    QtObject {
-        id: d
-        // Exclusivity lives here rather than in ButtonGroup so it also applies
-        // to programmatic and initial checked: true.
-        function uncheckGroup() {
-            if (control.buttonGroup && control.buttonGroup.buttons) {
-                const groupButtons = control.buttonGroup.buttons;
-                for (let i = 0; i < groupButtons.length; ++i) {
-                    const b = groupButtons[i];
-                    if (b && b !== control && (b.buttonGroup === undefined || b.buttonGroup === control.buttonGroup) && b.checked !== undefined)
-                        b.checked = false;
-                }
-            }
-        }
-    }
+    checkable: true
+    autoExclusive: true
 
     onCheckedChanged: {
         if (control.checked)
@@ -35,8 +22,38 @@ AbstractButton {
     }
 
     onButtonGroupChanged: {
+        if (d.prevGroup && d.prevGroup !== control.buttonGroup)
+            d.prevGroup.removeButton(control);
+        d.prevGroup = control.buttonGroup;
+        if (control.buttonGroup)
+            control.buttonGroup.addButton(control);
         if (control.checked)
             d.uncheckGroup();
+    }
+
+    Component.onCompleted: {
+        if (control.buttonGroup) {
+            d.prevGroup = control.buttonGroup;
+            control.buttonGroup.addButton(control);
+            if (control.checked)
+                d.uncheckGroup();
+        }
+    }
+
+    Component.onDestruction: {
+        if (d.prevGroup)
+            d.prevGroup.removeButton(control);
+    }
+
+    QtObject {
+        id: d
+
+        property ButtonGroup prevGroup: null
+
+        function uncheckGroup() {
+            if (control.buttonGroup)
+                control.buttonGroup.uncheckExcept(control);
+        }
     }
 
     contentItem: Row {

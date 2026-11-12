@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
@@ -20,23 +21,29 @@ Popup {
     modal: true
     dimBackground: true
     closePolicy: Popup.CloseOnEscape
-    implicitWidth: Math.max(32, contentColumn.implicitWidth + 4)
+    implicitWidth: Math.min(control.parent ? Math.max(32, control.parent.width - 4) : 60, Math.max(32, Math.max(titleText.implicitWidth, messageMetrics.implicitWidth, buttonRow.implicitWidth) + 4))
     implicitHeight: contentColumn.implicitHeight + 2
     initialFocusItem: acceptButton
     anchors.centerIn: parent
-
-    Rectangle {
-        id: bg
-        anchors.fill: parent
-        color: QmlTui.defaultColor
-        border.style: Border.Double
-    }
 
     Keys.onPressed: event => {
         if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !rejectButton.activeFocus) {
             acceptButton.clicked();
             event.accepted = true;
         }
+    }
+
+    Text {
+        id: messageMetrics
+        visible: false
+        text: control.message
+    }
+
+    Rectangle {
+        id: bg
+        anchors.fill: parent
+        color: QmlTui.defaultColor
+        border.style: Border.Double
     }
 
     Column {
@@ -46,22 +53,28 @@ Popup {
         spacing: 1
 
         Text {
+            id: titleText
             text: control.title
             bold: true
             color: control.titleColor
         }
 
         Text {
+            id: messageText
+            width: Math.max(1, control.width - 4)
             text: control.message
+            wrapMode: Text.WordWrap
             color: control.textColor
         }
 
         Row {
+            id: buttonRow
             spacing: 2
 
             Button {
                 id: acceptButton
                 text: control.acceptText
+                textColor: control.textColor
                 onClicked: control.accept()
             }
 
@@ -69,6 +82,7 @@ Popup {
                 id: rejectButton
                 visible: control.showRejectButton
                 text: control.rejectText
+                textColor: control.textColor
                 onClicked: control.reject()
             }
         }

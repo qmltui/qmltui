@@ -3,7 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QVariantList>
+#include <QList>
 
 namespace qmltui {
 
@@ -14,7 +14,7 @@ class QMLTUI_CONTROLS_EXPORT Sparkline : public Item {
     Q_OBJECT
     QML_ELEMENT
 
-    Q_PROPERTY(QVariant values READ values WRITE setValues NOTIFY valuesChanged)
+    Q_PROPERTY(QList<qreal> values READ values WRITE setValues NOTIFY valuesChanged)
     // Explicit vertical bounds; when `from >= to`, the chart auto-scales to `values`.
     Q_PROPERTY(double from READ from WRITE setFrom NOTIFY fromChanged)
     Q_PROPERTY(double to READ to WRITE setTo NOTIFY toChanged)
@@ -28,8 +28,8 @@ public:
     explicit Sparkline(QObject* parent = nullptr);
     ~Sparkline() override = default;
 
-    QVariant values() const { return m_valuesVariant; }
-    void setValues(const QVariant& values);
+    QList<qreal> values() const { return m_values; }
+    void setValues(const QList<qreal>& values);
 
     double from() const { return m_from; }
     void setFrom(double from);
@@ -58,8 +58,7 @@ signals:
     void backgroundColorChanged();
 
 private:
-    QVariant m_valuesVariant;
-    QVariantList m_values;
+    QList<qreal> m_values;
 
     double m_from = 0.0;
     double m_to = 0.0; // <= m_from means auto-scale

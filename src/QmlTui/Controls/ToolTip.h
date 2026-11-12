@@ -28,6 +28,7 @@ namespace qmltui::controls {
 // `background` / `contentItem` slots.
 class QMLTUI_CONTROLS_EXPORT ToolTip : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(ToolTip)
     QML_ELEMENT
     Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)

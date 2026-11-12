@@ -5,8 +5,10 @@
 namespace qmltui {
 
 namespace {
-QString registryName(const QString& id) { return QStringLiteral("qmltui.imageProvider/") + id; }
+QString registryName(const QString& id) {
+    return QStringLiteral("qmltui.imageProvider/") + id;
 }
+} // namespace
 
 ImageProvider::ImageProvider(QObject* parent) : QObject(parent) {}
 ImageProvider::~ImageProvider() = default;
@@ -32,8 +34,7 @@ ImageProvider* ImageProvider::find(const QQmlEngine* engine, const QString& id) 
 }
 
 void ImageProvider::remove(QQmlEngine* engine, const QString& id) {
-    if (ImageProvider* previous = find(engine, id))
-        delete previous;
+    if (ImageProvider* previous = find(engine, id)) delete previous;
 }
 
 } // namespace qmltui

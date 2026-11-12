@@ -234,7 +234,10 @@ Rectangle {
     }
 
     MouseArea {
-        anchors.fill: parent
+        x: 0
+        y: 0
+        width: control.width
+        height: control.height
         z: 1
         onClicked: event => {
             if (!control.enabled)

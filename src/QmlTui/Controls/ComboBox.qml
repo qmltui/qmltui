@@ -14,7 +14,7 @@ Rectangle {
     property int currentIndex: count > 0 ? 0 : -1
     property int maxVisibleItems: 6
     property color textColor
-    property color popupColor: color
+    property color popupColor: QmlTui.defaultColor
     property color popupBorderColor: border.color
     property color selectionColor
     property color selectedTextColor
@@ -85,6 +85,7 @@ Rectangle {
         if (!enabled || popupList.count <= 0)
             return;
         popupList.currentIndex = Math.max(0, Math.min(popupList.count - 1, currentIndex));
+        d.positionPopup();
         dropdownPopup.open();
     }
 
@@ -103,15 +104,29 @@ Rectangle {
     implicitWidth: Math.max(background ? background.implicitWidth : 0, 16, (contentItem ? contentItem.implicitWidth : 0) + (indicator ? indicator.implicitWidth : 0) + 5)
     implicitHeight: border.style !== Border.None ? 3 : Math.max(background ? background.implicitHeight : 0, 1)
 
+    onMaxVisibleItemsChanged: {
+        if (dropdownPopup.visible)
+            d.positionPopup();
+    }
     onCountChanged: {
         if (popupList.count <= 0) {
             currentIndex = -1;
         } else if (currentIndex < 0 || currentIndex >= popupList.count) {
             currentIndex = 0;
         }
+        if (dropdownPopup.visible)
+            d.positionPopup();
     }
-    onWidthChanged: d.layout()
-    onHeightChanged: d.layout()
+    onWidthChanged: {
+        d.layout();
+        if (dropdownPopup.visible)
+            d.positionPopup();
+    }
+    onHeightChanged: {
+        d.layout();
+        if (dropdownPopup.visible)
+            d.positionPopup();
+    }
     onBackgroundChanged: d.layout()
     onContentItemChanged: d.layout()
     onIndicatorChanged: d.layout()
@@ -148,6 +163,43 @@ Rectangle {
         property Item prevContentItem: null
         property Item prevIndicator: null
         readonly property bool showBrackets: control.border.style === Border.None && control.background === null && control.contentItem === defaultContentItem && control.indicator === defaultIndicator
+
+        function positionPopup() {
+            const desiredW = Math.max(control.width, 16);
+            const desiredH = Math.min(Math.max(1, control.maxVisibleItems), Math.max(1, control.count)) + 2;
+            let rootItem = control as Item;
+            while (rootItem.parent !== null)
+                rootItem = rootItem.parent;
+            if (rootItem === control || rootItem.width <= 0 || rootItem.height <= 0) {
+                dropdownPopup.x = 0;
+                dropdownPopup.y = control.height;
+                dropdownPopup.width = desiredW;
+                dropdownPopup.height = desiredH;
+                return;
+            }
+            const absPos = control.absolutePosition();
+            const termW = rootItem.width;
+            const termH = rootItem.height;
+            const popupW = Math.min(desiredW, Math.max(3, termW));
+            const spaceBelow = termH - (absPos.y + control.height);
+            const spaceAbove = absPos.y;
+            let popupH = desiredH;
+            let relY = control.height;
+            if (spaceBelow < desiredH && spaceAbove > spaceBelow) {
+                popupH = Math.min(desiredH, Math.max(3, spaceAbove));
+                relY = -popupH;
+            } else if (spaceBelow < desiredH) {
+                popupH = Math.min(desiredH, Math.max(3, termH));
+                relY = Math.max(0, termH - popupH) - absPos.y;
+            }
+            let relX = 0;
+            if (absPos.x + popupW > termW)
+                relX = Math.max(-absPos.x, termW - popupW - absPos.x);
+            dropdownPopup.x = relX;
+            dropdownPopup.y = relY;
+            dropdownPopup.width = popupW;
+            dropdownPopup.height = popupH;
+        }
 
         function syncSlot(item: Item, prevItem: Item, BuiltIn: Item): Item {
             if (prevItem && prevItem !== item) {
@@ -267,7 +319,10 @@ Rectangle {
     }
 
     MouseArea {
-        anchors.fill: parent
+        x: 0
+        y: 0
+        width: control.width
+        height: control.height
         z: 1
         onClicked: {
             if (!control.enabled)

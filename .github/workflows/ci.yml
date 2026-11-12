@@ -50,6 +50,39 @@ jobs:
       - name: Test
         run: ctest --test-dir build -LE Demo --output-on-failure
 
+      - name: Check formatting and skills
+        if: matrix.behavior == 'ON'
+        run: |
+          python3 ./scripts/format.py --check src
+          python3 ./.agents/skills/qmltui-qml/check-skills.py --build-dir build
+
+  sanitizers:
+    name: sanitizers (linux / ASan+UBSan)
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build-asan -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DQMLTUI_BUILD_TESTS=ON
+          -DQMLTUI_ENABLE_RUNNER=ON
+          -DQMLTUI_ENABLE_PRIVATE_QT=ON
+          -DQMLTUI_ENABLE_IMAGE=ON
+          -DQMLTUI_ENABLE_PTYVIEW=ON
+
+      - name: Build
+        run: cmake --build build-asan --parallel 4
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: ctest --test-dir build-asan -LE Demo --output-on-failure
+
   coverage:
     name: coverage (linux / clang / llvm-cov)
     runs-on: [self-hosted, linux]

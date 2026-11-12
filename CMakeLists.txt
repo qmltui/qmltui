@@ -20,19 +20,6 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-if(WIN32)
-    # Public classes carry QMLTUI_*_EXPORT (see primitives/QmlTuiExport.h); the
-    # export-all pass additionally covers free functions and helpers that other
-    # QmlTui DLLs reach. Symbols declared both ways trigger LNK4197, which is
-    # harmless and silenced here to keep build logs readable.
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    if(MSVC)
-        add_link_options(/ignore:4197)
-    elseif(MINGW)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols")
-        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--export-all-symbols")
-    endif()
-endif()
 set(QMLTUI_INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qml" CACHE PATH
     "Install location for QmlTui QML modules")
 set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml" CACHE PATH
@@ -150,11 +137,17 @@ configure_package_config_file(
     INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
     PATH_VARS QMLTUI_INSTALL_QMLDIR
 )
+if(PROJECT_VERSION_MAJOR EQUAL 0)
+    set(_qmltui_version_compat SameMinorVersion)
+else()
+    set(_qmltui_version_compat SameMajorVersion)
+endif()
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfigVersion.cmake"
     VERSION "${PROJECT_VERSION}"
-    COMPATIBILITY SameMinorVersion
+    COMPATIBILITY ${_qmltui_version_compat}
 )
+unset(_qmltui_version_compat)
 install(EXPORT QmlTuiTargets
     FILE QmlTuiTargets.cmake
     NAMESPACE qmltui::

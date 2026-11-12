@@ -46,6 +46,7 @@ add_test(
         "-DCONSUMER_GENERATOR=${CMAKE_GENERATOR}"
         "-DCONSUMER_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCONSUMER_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+        "-DCONSUMER_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
 )
 set_tests_properties(test_installed_custom_item_consumer PROPERTIES

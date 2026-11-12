@@ -43,13 +43,16 @@ target_include_directories(QmlTuiControls
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 target_link_libraries(QmlTuiControls PUBLIC qmltui::core)
-set_target_properties(QmlTuiControls PROPERTIES EXPORT_NAME Controls)
-set_target_properties(QmlTuiControlsplugin PROPERTIES EXPORT_NAME ControlsPlugin)
+set_target_properties(QmlTuiControls PROPERTIES
+    EXPORT_NAME Controls
+    INSTALL_RPATH "$ORIGIN"
+)
 file(RELATIVE_PATH _qmltui_rel_libdir
     "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
     "${CMAKE_INSTALL_FULL_LIBDIR}"
 )
-set_target_properties(QmlTuiControls QmlTuiControlsplugin PROPERTIES
+set_target_properties(QmlTuiControlsplugin PROPERTIES
+    EXPORT_NAME ControlsPlugin
     INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
 )
 

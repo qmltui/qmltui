@@ -19,6 +19,9 @@ endif()
 if(DEFINED CONSUMER_CXX_COMPILER AND NOT "${CONSUMER_CXX_COMPILER}" STREQUAL "")
     list(APPEND consumer_generator_args "-DCMAKE_CXX_COMPILER=${CONSUMER_CXX_COMPILER}")
 endif()
+if(DEFINED CONSUMER_CXX_FLAGS AND NOT "${CONSUMER_CXX_FLAGS}" STREQUAL "")
+    list(APPEND consumer_generator_args "-DCMAKE_CXX_FLAGS=${CONSUMER_CXX_FLAGS}")
+endif()
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}" --install "${QMLTUI_BUILD_DIR}"

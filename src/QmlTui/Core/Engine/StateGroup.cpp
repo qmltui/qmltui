@@ -2,6 +2,7 @@
 #include <QmlTui/Core/Engine/StateController_p.h>
 #include <QmlTui/Core/Engine/State.h>
 #include <QmlTui/Core/Engine/Transition.h>
+#include <QChildEvent>
 
 namespace qmltui {
 
@@ -12,7 +13,28 @@ StateGroup::StateGroup(QObject* parent)
             &StateGroup::stateChanged);
 }
 
-StateGroup::~StateGroup() = default;
+StateGroup::~StateGroup() {
+    if (m_stateController) {
+        m_stateController->setParent(nullptr);
+        m_stateController.reset();
+    }
+}
+
+void StateGroup::childEvent(QChildEvent* event) {
+    QObject::childEvent(event);
+    if (!event->removed()) return;
+    QObject* child = event->child();
+    if (child == m_stateController.get()) {
+        (void)m_stateController.release();
+        return;
+    }
+    if (m_stateController) {
+        if (State* state = qobject_cast<State*>(child))
+            m_stateController->stateRemoved(state);
+        else if (Transition* transition = qobject_cast<Transition*>(child))
+            m_stateController->transitionRemoved(transition);
+    }
+}
 
 QString StateGroup::state() const {
     return m_stateController->state();

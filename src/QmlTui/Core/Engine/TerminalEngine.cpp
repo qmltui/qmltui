@@ -563,7 +563,23 @@ void TerminalEngine::clearHardwareCursorPosition() {
     m_hardwareCursorPosition.reset();
 }
 
+void TerminalEngine::addDamageRect(const QRect& rect) {
+    if (rect.isEmpty() || m_fullDamage) return;
+    m_damageRect |= rect;
+}
+
+void TerminalEngine::markFullDamage() {
+    m_fullDamage = true;
+    m_damageRect = QRect();
+}
+
+void TerminalEngine::clearDamage() {
+    m_fullDamage = false;
+    m_damageRect = QRect();
+}
+
 void TerminalEngine::handleResize() {
+    markFullDamage();
     int w = terminalWidth();
     int h = terminalHeight();
     if (m_renderer) {
@@ -649,6 +665,15 @@ void TerminalEngine::renderFrame() {
         return;
     }
 
+    QPointer<TerminalEngine> self(this);
+    m_renderingFrame = true;
+    const auto finishRenderPass = qScopeGuard([&self] {
+        if (self) {
+            self->m_renderingFrame = false;
+            self->m_retiredRenderers.clear();
+        }
+    });
+
     startRenderer();
     startQueries(); // no-op once started; retried after a failed probe write
     // Snapshot before painting: bindings may submit additional output during layout.
@@ -661,9 +686,11 @@ void TerminalEngine::renderFrame() {
     }
     m_scrollbackInFlight = submitted.size();
     clearHardwareCursorPosition();
+    Renderer* activeRenderer = m_renderer;
     const bool committed = stream ? stream->renderFrame(m_rootWindow, m_device, submitted)
-                                  : m_renderer->renderFrame(m_rootWindow, m_device);
-    if (!committed) {
+                                  : activeRenderer->renderFrame(m_rootWindow, m_device);
+    if (!self) return;
+    if (!committed || m_renderer != activeRenderer) {
         invalidateOutputSession();
         if (stream) {
             m_scrollback.insert(0, submitted);
@@ -671,7 +698,9 @@ void TerminalEngine::renderFrame() {
                                            submittedRows.end());
         }
         m_scrollbackInFlight = 0;
-        emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
+        if (m_renderer == activeRenderer) {
+            emit renderFailed(QStringLiteral("Renderer failed to commit the frame"));
+        }
         return;
     }
 
@@ -679,7 +708,10 @@ void TerminalEngine::renderFrame() {
     m_scrollbackInFlight = 0;
     // Rows are committed with their bytes, whether or not those bytes reached a
     // terminal: a quiet test session commits them too.
-    if (!submittedRows.empty()) commitScrollbackRows(std::move(submittedRows));
+    if (!submittedRows.empty()) {
+        commitScrollbackRows(std::move(submittedRows));
+        if (!self) return;
+    }
     FrameStats stats = m_renderer->lastFrameStats();
     stats.sequence = ++m_frameSequence;
     m_lastFrameStats = stats;
@@ -727,7 +759,11 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
                 }
             }
         }
-        delete m_renderer;
+        if (m_renderingFrame) {
+            m_retiredRenderers.emplace_back(m_renderer);
+        } else {
+            delete m_renderer;
+        }
     }
     m_renderer = renderer;
     m_rendererStarted = false;
@@ -754,6 +790,7 @@ void TerminalEngine::applyCapabilities(const TerminalCapabilities& capabilities)
         return;
     }
     m_capabilities = capabilities;
+    markFullDamage();
     if (m_renderer) m_renderer->setCapabilities(m_capabilities);
     updateKittyKeyboard();
     emit capabilitiesChanged();
@@ -1060,6 +1097,7 @@ bool TerminalEngine::enqueueControlSequence(QByteArray bytes) {
         bytes.size() > ControlSequenceQueueLimit - m_controlSequences.size())
         return false;
     m_controlSequences += bytes;
+    markFullDamage();
     requestRender();
     return true;
 }
@@ -1072,6 +1110,7 @@ QByteArray TerminalEngine::takeControlSequences() {
 
 void TerminalEngine::invalidateCommittedRect(const QRect& rect) {
     if (m_stopped || !m_terminalOutputEnabled || rect.isEmpty()) return;
+    markFullDamage();
     m_invalidatedCommittedRects.append(rect);
 }
 
@@ -1086,6 +1125,7 @@ bool TerminalEngine::enqueuePostControlSequence(QByteArray bytes) {
         bytes.size() > ControlSequenceQueueLimit - m_postControlSequences.size())
         return false;
     m_postControlSequences += bytes;
+    markFullDamage();
     requestRender();
     return true;
 }
@@ -1106,6 +1146,7 @@ void TerminalEngine::flushControlSequences() {
 }
 
 void TerminalEngine::invalidateOutputSession() {
+    markFullDamage();
     m_controlSequences.clear();
     m_postControlSequences.clear();
     m_invalidatedCommittedRects.clear();

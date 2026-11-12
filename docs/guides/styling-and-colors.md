@@ -78,7 +78,7 @@ Button {
 | ComboBox | `textColor`, `color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
 | ProgressBar | `color`, optional gradient/threshold colors |
-| TabBar | `textColor`, `color`, `selectedTextColor`, `selectionColor` (background) |
+| TabBar, TableView, TreeView | `textColor`, `selectedTextColor`, `selectionColor` (background) |
 | ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color` |
 
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving

@@ -1,12 +1,14 @@
 #pragma once
 
+#include <QmlTui/Core/Primitives/QmlTuiExport.h>
+
 namespace qmltui {
 
 class Item;
 
 // Interface implemented by overlay containers (such as Popup) that participate
 // in modal input routing, Escape dismissal, and outside-click dismissal.
-class InputScope {
+class QMLTUI_CORE_EXPORT InputScope {
 public:
     virtual ~InputScope() = default;
 

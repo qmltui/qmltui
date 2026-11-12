@@ -31,10 +31,10 @@ class QMLTUI_CORE_EXPORT Text : public Item {
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
-    Q_PROPERTY(int horizontalAlignment READ horizontalAlignment WRITE setHorizontalAlignment NOTIFY
-                   horizontalAlignmentChanged)
-    Q_PROPERTY(int verticalAlignment READ verticalAlignment WRITE setVerticalAlignment NOTIFY
-                   verticalAlignmentChanged)
+    Q_PROPERTY(Qt::Alignment horizontalAlignment READ horizontalAlignment WRITE
+                   setHorizontalAlignment NOTIFY horizontalAlignmentChanged)
+    Q_PROPERTY(Qt::Alignment verticalAlignment READ verticalAlignment WRITE setVerticalAlignment
+                   NOTIFY verticalAlignmentChanged)
     Q_PROPERTY(TextFormat textFormat READ textFormat WRITE setTextFormat NOTIFY textFormatChanged)
     Q_PROPERTY(qmltui::Gradient* gradient READ gradient WRITE setGradient NOTIFY gradientChanged)
     Q_PROPERTY(WrapMode wrapMode READ wrapMode WRITE setWrapMode NOTIFY wrapModeChanged)
@@ -87,11 +87,11 @@ public:
     bool reversed() const { return m_reversed; }
     void setReversed(bool reversed);
 
-    int horizontalAlignment() const { return m_horizontalAlignment; }
-    void setHorizontalAlignment(int alignment);
+    Qt::Alignment horizontalAlignment() const { return m_horizontalAlignment; }
+    void setHorizontalAlignment(Qt::Alignment alignment);
 
-    int verticalAlignment() const { return m_verticalAlignment; }
-    void setVerticalAlignment(int alignment);
+    Qt::Alignment verticalAlignment() const { return m_verticalAlignment; }
+    void setVerticalAlignment(Qt::Alignment alignment);
 
     TextFormat textFormat() const { return m_textFormat; }
     void setTextFormat(TextFormat format);
@@ -141,6 +141,11 @@ private:
         uint32_t glyphOffset = 0; // into m_glyphBytes
         uint32_t glyphLength = 0;
     };
+    struct UnwrappedLine {
+        int visualWidth = 0;
+        int firstGlyph = 0;
+        int glyphCount = 0;
+    };
     struct LineLayout {
         int visualWidth = 0;
         int firstGlyph = 0;
@@ -153,7 +158,8 @@ private:
     int layoutLineRuns(QStringView line, const StyleRun* runs, qsizetype runCount,
                        qsizetype lineStartOffset, std::vector<GlyphEntry>* entries,
                        QByteArray* bytes) const;
-    void commitLine(int firstGlyph, int lineVisualWidth, int availW) const;
+    void recordUnwrappedLine(int firstGlyph, int lineVisualWidth) const;
+    void commitLine(int firstGlyph, int glyphCount, int lineVisualWidth, int availW) const;
     TextAttribute baseAttributes() const;
     int appendGrapheme(const GraphemeRef& cluster, const TextStyle& style, uint16_t linkIndex,
                        std::vector<GlyphEntry>* entries, QByteArray* bytes) const;
@@ -162,20 +168,29 @@ private:
     uint16_t registerLink(QStringView href) const;
     int contentStartY(int availH, int lineCount) const;
     int lineStartX(int leftLimit, int availW, int visLen) const;
-    void layoutSpans() const;
+    void parseSpans() const;
+    void ensureParsed() const;
     void ensureLayout() const;
-    void invalidateLayout() { m_layoutDirty = true; }
+    void invalidateParse() {
+        m_parseDirty = true;
+        m_layoutDirty = true;
+    }
+    void invalidateWrap() { m_layoutDirty = true; }
     void updateImplicitSize();
 
     QList<Span> m_spans;
     QString m_text;
     mutable std::vector<GlyphEntry> m_glyphs;
+    mutable std::vector<UnwrappedLine> m_unwrappedLines;
     mutable std::vector<LineLayout> m_lines;
     mutable std::vector<QString> m_links;
     mutable QByteArray m_glyphBytes;
+    mutable int m_naturalImplicitWidth = 0;
+    mutable bool m_parseDirty = true;
     mutable bool m_layoutDirty = true;
+    bool m_updatingImplicitSize = false;
     Color m_color;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, Color::DefaultTag);
     Color m_backgroundColor = Color::Transparent;
     uint32_t m_resolvedBackgroundColor = 0x00000000;
     bool m_bold = false;
@@ -183,8 +198,8 @@ private:
     bool m_italic = false;
     bool m_underline = false;
     bool m_reversed = false;
-    int m_horizontalAlignment = Qt::AlignLeft;
-    int m_verticalAlignment = Qt::AlignTop;
+    Qt::Alignment m_horizontalAlignment = Qt::AlignLeft;
+    Qt::Alignment m_verticalAlignment = Qt::AlignTop;
     TextFormat m_textFormat = AutoText;
     WrapMode m_wrapMode = NoWrap;
     QPointer<Gradient> m_gradient;

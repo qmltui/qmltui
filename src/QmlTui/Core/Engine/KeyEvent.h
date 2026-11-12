@@ -24,11 +24,11 @@ class QMLTUI_CORE_EXPORT KeyEvent : public QObject {
     Q_PROPERTY(bool accepted READ isAccepted WRITE setAccepted NOTIFY acceptedChanged)
 
 public:
-    KeyEvent(int key, const QString &text, int modifiers = 0, bool paste = false,
-             QObject *parent = nullptr)
-        : QObject(parent), m_key(key), m_text(text), m_modifiers(modifiers),
-          m_paste(paste), m_accepted(false) {}
-    KeyEvent(int key, const QString &text, int modifiers, QObject *parent)
+    KeyEvent(int key, const QString& text, int modifiers = 0, bool paste = false,
+             QObject* parent = nullptr)
+        : QObject(parent), m_key(key), m_text(text), m_modifiers(modifiers), m_paste(paste),
+          m_accepted(false) {}
+    KeyEvent(int key, const QString& text, int modifiers, QObject* parent)
         : KeyEvent(key, text, modifiers, false, parent) {}
 
     int key() const { return m_key; }

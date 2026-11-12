@@ -4,6 +4,7 @@
 #include <QmlTui/Core/Engine/Transition.h>
 #include <QmlTui/Core/Engine/Animation.h>
 #include <QmlTui/Core/Primitives/Color.h>
+#include <QChildEvent>
 #include <QQmlInfo>
 #include <QQmlProperty>
 #include <QQmlContext>
@@ -11,26 +12,42 @@
 
 namespace qmltui {
 
-QMap<CanonicalProperty, StateController*> StateController::s_propertyOwners;
+thread_local QMap<CanonicalProperty, StateController*> StateController::s_propertyOwners;
 
-static CanonicalProperty resolveCanonicalProperty(QObject* target, const QString& name) {
-    CanonicalProperty result;
+namespace {
+
+struct ResolvedProperty {
+    CanonicalProperty key;
+    QObject* target = nullptr;
+};
+
+ResolvedProperty resolveCanonicalProperty(QObject* target, const QString& name) {
+    ResolvedProperty result;
     result.target = target;
-    result.name = name;
+    result.key.targetId = reinterpret_cast<quintptr>(target);
+    result.key.name = name;
 
     if (target && !name.isEmpty()) {
         QQmlProperty prop(target, name);
         if (prop.isValid()) {
-            if (resolvePropertyAlias(prop, result.target, result.name)) {
+            QPointer<QObject> aliasTarget;
+            QString aliasName;
+            if (resolvePropertyAlias(prop, aliasTarget, aliasName) && aliasTarget) {
+                result.target = aliasTarget.data();
+                result.key.targetId = reinterpret_cast<quintptr>(result.target);
+                result.key.name = aliasName;
                 return result;
             }
             result.target = prop.object();
-            result.name = prop.name();
+            result.key.targetId = reinterpret_cast<quintptr>(result.target);
+            result.key.name = prop.name();
         }
     }
 
     return result;
 }
+
+} // namespace
 
 StateController::StateController(QObject* parent) : QObject(parent) {}
 
@@ -52,6 +69,62 @@ void StateController::releaseAllOwnership() {
         }
     }
     m_ownedProperties.clear();
+}
+
+void StateController::watchTarget(QObject* target) {
+    if (!target || m_watchedTargets.contains(target)) return;
+    m_watchedTargets.insert(target);
+    connect(target, &QObject::destroyed, this, &StateController::handleTargetDestroyed);
+}
+
+void StateController::handleTargetDestroyed(QObject* obj) {
+    m_watchedTargets.remove(obj);
+    const quintptr deadId = reinterpret_cast<quintptr>(obj);
+    for (auto it = m_baseRecords.begin(); it != m_baseRecords.end();) {
+        if (it.key().targetId == deadId)
+            it = m_baseRecords.erase(it);
+        else
+            ++it;
+    }
+    for (auto it = m_ownedProperties.begin(); it != m_ownedProperties.end();) {
+        if (it->targetId == deadId) {
+            if (s_propertyOwners.value(*it) == this) s_propertyOwners.remove(*it);
+            it = m_ownedProperties.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void StateController::childEvent(QChildEvent* event) {
+    QObject::childEvent(event);
+    if (!event->removed()) return;
+    QObject* child = event->child();
+    bool removedState = false;
+    for (qsizetype i = m_statesList.size() - 1; i >= 0; --i) {
+        const QPointer<State>& entry = m_statesList.at(i);
+        if (entry.isNull() || static_cast<QObject*>(entry.data()) == child) {
+            if (State* liveState = entry.data()) {
+                for (PropertyChanges* pc : liveState->propertyChangesList()) {
+                    if (pc) {
+                        disconnect(pc, nullptr, this, nullptr);
+                        m_appliedMaps.remove(pc);
+                        m_appliedTargets.remove(pc);
+                    }
+                }
+                disconnect(liveState, nullptr, this, nullptr);
+            }
+            m_statesList.removeAt(i);
+            removedState = true;
+        }
+    }
+    for (qsizetype i = m_transitionsList.size() - 1; i >= 0; --i) {
+        const QPointer<Transition>& entry = m_transitionsList.at(i);
+        if (entry.isNull() || static_cast<QObject*>(entry.data()) == child) {
+            m_transitionsList.removeAt(i);
+        }
+    }
+    if (removedState) evaluateStateConditions();
 }
 
 void StateController::setDefaultTarget(QObject* target) {
@@ -279,10 +352,12 @@ void StateController::collectOverridesForState(
                     continue;
                 }
 
-                CanonicalProperty canon = resolveCanonicalProperty(prop.object(), prop.name());
+                const ResolvedProperty resolved =
+                    resolveCanonicalProperty(prop.object(), prop.name());
+                if (!resolved.target) continue;
                 PropertyOverride override;
-                override.target = prop.object();
-                override.name = prop.name();
+                override.target = resolved.target;
+                override.name = resolved.key.name;
                 override.restore = pc->restoreEntryValues();
 
                 if (b.isExpression) {
@@ -293,7 +368,7 @@ void StateController::collectOverridesForState(
                     override.isBinding = false;
                 }
 
-                outOverrides.insert(canon, override);
+                outOverrides.insert(resolved.key, override);
             }
             continue;
         }
@@ -327,14 +402,15 @@ void StateController::collectOverridesForState(
                 qmlWarning(pc) << "Cannot assign to read-only property \"" << propName << "\"";
                 continue;
             }
-            CanonicalProperty canon = resolveCanonicalProperty(prop.object(), prop.name());
+            const ResolvedProperty resolved = resolveCanonicalProperty(prop.object(), prop.name());
+            if (!resolved.target) continue;
             PropertyOverride override;
-            override.target = prop.object();
-            override.name = prop.name();
+            override.target = resolved.target;
+            override.name = resolved.key.name;
             override.value = val;
             override.restore = pc->restoreEntryValues();
             override.isBinding = false;
-            outOverrides.insert(canon, override);
+            outOverrides.insert(resolved.key, override);
         }
     }
 }
@@ -369,35 +445,37 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
     // 1. Removed keys: revert
     for (auto it = oldMap.begin(); it != oldMap.end(); ++it) {
         if (!newMap.contains(it.key())) {
-            CanonicalProperty canon = resolveCanonicalProperty(target, it.key());
-            revertProperty(canon);
-            m_baseRecords.remove(canon);
-            s_propertyOwners.remove(canon);
-            m_ownedProperties.remove(canon);
+            const ResolvedProperty resolved = resolveCanonicalProperty(target, it.key());
+            revertProperty(resolved.key);
+            m_baseRecords.remove(resolved.key);
+            if (s_propertyOwners.value(resolved.key) == this) s_propertyOwners.remove(resolved.key);
+            m_ownedProperties.remove(resolved.key);
         }
     }
 
     // 2. Newly added or updated keys
     for (auto it = newMap.begin(); it != newMap.end(); ++it) {
-        CanonicalProperty canon = resolveCanonicalProperty(target, it.key());
+        const ResolvedProperty resolved = resolveCanonicalProperty(target, it.key());
+        if (!resolved.target) continue;
         if (!oldMap.contains(it.key())) {
             // Newly added key
-            if (!m_baseRecords.contains(canon)) {
+            watchTarget(resolved.target);
+            if (!m_baseRecords.contains(resolved.key)) {
                 BasePropertyRecord rec;
-                rec.target = canon.target;
-                rec.name = canon.name;
+                rec.target = resolved.target;
+                rec.name = resolved.key.name;
                 rec.restore = pc->restoreEntryValues();
-                rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+                rec.baseBinding = SavedBinding::takeFrom(resolved.target, resolved.key.name);
                 rec.hadBinding = static_cast<bool>(rec.baseBinding);
-                rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
-                m_baseRecords.insert(canon, rec);
+                rec.baseValue = resolved.target->property(resolved.key.name.toUtf8().constData());
+                m_baseRecords.insert(resolved.key, rec);
             }
-            s_propertyOwners.insert(canon, this);
-            m_ownedProperties.insert(canon);
-            canon.target->setProperty(canon.name.toUtf8().constData(), it.value());
+            s_propertyOwners.insert(resolved.key, this);
+            m_ownedProperties.insert(resolved.key);
+            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
         } else if (oldMap.value(it.key()) != it.value()) {
             // Retained key with updated value
-            canon.target->setProperty(canon.name.toUtf8().constData(), it.value());
+            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
         }
     }
 }
@@ -417,40 +495,43 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
     // 1. Revert properties for oldTarget
     if (oldTarget) {
         for (auto it = props.begin(); it != props.end(); ++it) {
-            CanonicalProperty canon = resolveCanonicalProperty(oldTarget, it.key());
-            revertProperty(canon);
-            m_baseRecords.remove(canon);
-            s_propertyOwners.remove(canon);
-            m_ownedProperties.remove(canon);
+            const ResolvedProperty resolved = resolveCanonicalProperty(oldTarget, it.key());
+            revertProperty(resolved.key);
+            m_baseRecords.remove(resolved.key);
+            if (s_propertyOwners.value(resolved.key) == this) s_propertyOwners.remove(resolved.key);
+            m_ownedProperties.remove(resolved.key);
         }
     }
 
     // 2. Apply properties to newTarget
     if (newTarget) {
         for (auto it = props.begin(); it != props.end(); ++it) {
-            CanonicalProperty canon = resolveCanonicalProperty(newTarget, it.key());
-            if (!m_baseRecords.contains(canon)) {
+            const ResolvedProperty resolved = resolveCanonicalProperty(newTarget, it.key());
+            if (!resolved.target) continue;
+            watchTarget(resolved.target);
+            if (!m_baseRecords.contains(resolved.key)) {
                 BasePropertyRecord rec;
-                rec.target = canon.target;
-                rec.name = canon.name;
+                rec.target = resolved.target;
+                rec.name = resolved.key.name;
                 rec.restore = pc->restoreEntryValues();
-                rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+                rec.baseBinding = SavedBinding::takeFrom(resolved.target, resolved.key.name);
                 rec.hadBinding = static_cast<bool>(rec.baseBinding);
-                rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
-                m_baseRecords.insert(canon, rec);
+                rec.baseValue = resolved.target->property(resolved.key.name.toUtf8().constData());
+                m_baseRecords.insert(resolved.key, rec);
             }
-            s_propertyOwners.insert(canon, this);
-            m_ownedProperties.insert(canon);
-            canon.target->setProperty(canon.name.toUtf8().constData(), it.value());
+            s_propertyOwners.insert(resolved.key, this);
+            m_ownedProperties.insert(resolved.key);
+            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
         }
     }
 }
 
 void StateController::revertProperty(const CanonicalProperty& key) {
-    if (!key.target || !m_baseRecords.contains(key)) return;
+    auto it = m_baseRecords.find(key);
+    if (it == m_baseRecords.end()) return;
 
-    BasePropertyRecord rec = m_baseRecords.value(key);
-    if (!rec.restore) return;
+    const BasePropertyRecord& rec = it.value();
+    if (!rec.target || !rec.restore) return;
 
     restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue, rec.hadBinding,
                            rec.baseBinding);
@@ -605,7 +686,7 @@ void StateController::applyState(const QString& newState) {
     for (const CanonicalProperty& canon : toRevert) {
         revertProperty(canon);
         m_baseRecords.remove(canon);
-        s_propertyOwners.remove(canon);
+        if (s_propertyOwners.value(canon) == this) s_propertyOwners.remove(canon);
         m_ownedProperties.remove(canon);
     }
 
@@ -614,16 +695,19 @@ void StateController::applyState(const QString& newState) {
     for (auto it = requestedOverrides.begin(); it != requestedOverrides.end(); ++it) {
         const CanonicalProperty& canon = it.key();
         const PropertyOverride& override = it.value();
+        if (!override.target) continue;
+
+        watchTarget(override.target.data());
 
         // Capture base state if not already captured
         if (!m_baseRecords.contains(canon)) {
             BasePropertyRecord rec;
-            rec.target = canon.target;
+            rec.target = override.target;
             rec.name = canon.name;
             rec.restore = override.restore;
-            rec.baseBinding = SavedBinding::takeFrom(canon.target.data(), canon.name);
+            rec.baseBinding = SavedBinding::takeFrom(override.target.data(), canon.name);
             rec.hadBinding = static_cast<bool>(rec.baseBinding);
-            rec.baseValue = canon.target->property(canon.name.toUtf8().constData());
+            rec.baseValue = override.target->property(canon.name.toUtf8().constData());
             m_baseRecords.insert(canon, rec);
         } else if (!override.restore) {
             // restoreEntryValues: false retains final value/binding and discards predecessor
@@ -636,7 +720,9 @@ void StateController::applyState(const QString& newState) {
     }
 
     for (auto it = m_baseRecords.begin(); it != m_baseRecords.end();) {
-        if (it.key().target.isNull()) {
+        if (it.value().target.isNull()) {
+            if (s_propertyOwners.value(it.key()) == this) s_propertyOwners.remove(it.key());
+            m_ownedProperties.remove(it.key());
             it = m_baseRecords.erase(it);
         } else {
             ++it;

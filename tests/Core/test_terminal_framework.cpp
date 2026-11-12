@@ -6,9 +6,13 @@
 #include <QSignalSpy>
 #include <QScopeGuard>
 #include <QCoreApplication>
+#include <QEventLoop>
+#include <QThread>
 #include <QtLogging>
 #include <algorithm>
+#include <atomic>
 #include <memory>
+#include <vector>
 
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
@@ -170,6 +174,7 @@ private slots:
     void testSessionOutputModeTransitions();
     void terminalTitle();
     void terminalBackgroundColor();
+    void concurrentMultiThreadTerminals();
 };
 
 void TestTerminalFramework::testSessionOutputModeTransitions() {
@@ -1571,6 +1576,141 @@ void TestTerminalFramework::terminalBackgroundColor() {
     root->setProperty("themeColor", QStringLiteral("#ff5555"));
     QCOMPARE(root->color(), Color("#ff5555"));
     delete root;
+}
+
+void TestTerminalFramework::concurrentMultiThreadTerminals() {
+    constexpr int kWorkerCount = 4;
+    constexpr int kIterations = 25;
+    const QString importPath = QCoreApplication::applicationDirPath() + QStringLiteral("/..");
+
+    std::atomic<int> readyWorkers{0};
+    std::atomic<bool> startGate{false};
+    std::vector<QString> errors(kWorkerCount);
+    std::vector<std::unique_ptr<QThread>> threads;
+    threads.reserve(kWorkerCount);
+
+    for (int workerIdx = 0; workerIdx < kWorkerCount; ++workerIdx) {
+        std::unique_ptr<QThread> thread(QThread::create([&, workerIdx]() {
+            QQmlEngine qmlEngine;
+            qmlEngine.addImportPath(importPath);
+
+            QQmlComponent component(&qmlEngine);
+            const QByteArray qmlSource = QStringLiteral(R"(
+                import QtQml
+                import QmlTui
+
+                Terminal {
+                    id: root
+                    property int hits: 0
+                    property bool toggled: false
+
+                    Shortcut {
+                        sequence: Qt.Key_F5
+                        onActivated: {
+                            root.hits += 1;
+                            root.toggled = !root.toggled;
+                        }
+                    }
+
+                    Text {
+                        id: label
+                        objectName: "label"
+                        width: 16
+                        height: 1
+                        text: "W%1:" + root.hits
+                        states: [
+                            State {
+                                name: "active"
+                                when: root.toggled
+                                PropertyChanges {
+                                    target: label
+                                    properties: ({
+                                        "x": 2
+                                    })
+                                }
+                            }
+                        ]
+                        transitions: [
+                            Transition {
+                                NumberAnimation {
+                                    property: "x"
+                                    duration: 1
+                                }
+                            }
+                        ]
+                    }
+                }
+            )")
+                                             .arg(workerIdx)
+                                             .toUtf8();
+            component.setData(qmlSource, QUrl());
+            if (!component.isReady()) {
+                errors[workerIdx] = component.errorString();
+                readyWorkers.fetch_add(1);
+                return;
+            }
+
+            std::unique_ptr<QObject> rootObj(component.create());
+            auto* terminal = qobject_cast<Terminal*>(rootObj.get());
+            if (!terminal) {
+                errors[workerIdx] = QStringLiteral("Failed to instantiate Terminal");
+                readyWorkers.fetch_add(1);
+                return;
+            }
+            terminal->engine()->setTerminalOutputEnabled(false);
+            terminal->engine()->setTestViewportSize(QSize(20, 4));
+            terminal->engine()->renderFrame();
+
+            readyWorkers.fetch_add(1);
+            while (!startGate.load(std::memory_order_acquire)) {
+                QThread::yieldCurrentThread();
+            }
+
+            for (int iter = 0; iter < kIterations; ++iter) {
+                terminal->engine()->handleKeyInput(Qt::Key_F5, QString(), Qt::NoModifier);
+                QCoreApplication::processEvents();
+                terminal->engine()->renderFrame();
+            }
+
+            const int finalHits = terminal->property("hits").toInt();
+            if (finalHits != kIterations) {
+                errors[workerIdx] = QStringLiteral("Expected %1 shortcut hits, got %2")
+                                        .arg(kIterations)
+                                        .arg(finalHits);
+                return;
+            }
+            const auto frame = terminal->engine()->currentFrame();
+            if (!frame.has_value()) {
+                errors[workerIdx] = QStringLiteral("Missing rendered frame");
+                return;
+            }
+            QString row0;
+            for (int x = 0; x < frame->width(); ++x) {
+                if (!frame->cellAt(x, 0).continuation) {
+                    row0 += QString::fromUtf8(frame->cellAt(x, 0).character().toByteArray());
+                }
+            }
+            const QString expectedToken = QStringLiteral("W%1:%2").arg(workerIdx).arg(kIterations);
+            if (!row0.contains(expectedToken)) {
+                errors[workerIdx] =
+                    QStringLiteral("Expected '%1' in row '%2'").arg(expectedToken, row0);
+            }
+        }));
+        thread->start();
+        threads.push_back(std::move(thread));
+    }
+
+    while (readyWorkers.load(std::memory_order_acquire) < kWorkerCount) {
+        QThread::msleep(1);
+    }
+    startGate.store(true, std::memory_order_release);
+
+    for (auto& thread : threads) {
+        QVERIFY(thread->wait(15000));
+    }
+    for (int workerIdx = 0; workerIdx < kWorkerCount; ++workerIdx) {
+        QVERIFY2(errors[workerIdx].isEmpty(), qPrintable(errors[workerIdx]));
+    }
 }
 
 QTEST_MAIN(TestTerminalFramework)

@@ -46,8 +46,9 @@ public:
     void addStop(GradientStop* stop);
     void clearStops();
 
-    // Evaluates the interpolated ARGB color at normalized position t in [0.0, 1.0].
-    uint32_t colorAt(qreal t) const;
+    // Evaluates the interpolated color at normalized position t in [0.0, 1.0].
+    Q_INVOKABLE qmltui::Color colorAt(qreal t) const { return Color::fromArgb32(colorArgbAt(t)); }
+    uint32_t colorArgbAt(qreal t) const;
 
 signals:
     void offsetChanged();

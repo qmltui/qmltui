@@ -17,7 +17,7 @@ class QMLTUI_CORE_EXPORT Row : public Item {
     Q_PROPERTY(int spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
 
 public:
-    explicit Row(QObject *parent = nullptr);
+    explicit Row(QObject* parent = nullptr);
     ~Row() override;
 
     int spacing() const { return m_spacing; }
@@ -40,7 +40,7 @@ private:
         QMetaObject::Connection yChanged;
         QMetaObject::Connection destroyed;
     };
-    Placement track(Item *childItem);
+    Placement track(Item* childItem);
 
     QHash<const QObject*, Placement> m_placements;
     bool m_positioning = false;

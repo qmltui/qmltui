@@ -73,6 +73,7 @@ private slots:
     void unfilteredWarnings();
     void fatalDeliverySubprocess();
     void terminalRestorationPrecedesReplay();
+    void reentrantResetFromSinkDoesNotDeadlock();
 };
 
 void TestQtMessageRouting::defaultDeferredStderr() {
@@ -359,6 +360,25 @@ void TestQtMessageRouting::terminalRestorationPrecedesReplay() {
 
     TerminalBackend::setFactory(nullptr);
     QVERIFY(rawModeWasDisabledBeforePresentation);
+}
+
+void TestQtMessageRouting::reentrantResetFromSinkDoesNotDeadlock() {
+    int diagCalls = 0;
+    std::unique_ptr<QtMessageRouting> routing;
+    routing = QtMessageRouting::install([&](const QtMessage& msg) {
+        if (msg.message == QLatin1String("trigger-self-reset")) {
+            ++diagCalls;
+            routing->reset();
+        }
+    });
+    QVERIFY(routing != nullptr);
+
+    qInfo("trigger-self-reset");
+    QCOMPARE(diagCalls, 1);
+
+    // Registration was retired cleanly; subsequent install succeeds immediately
+    auto next = QtMessageRouting::install([](const QtMessage&) {});
+    QVERIFY(next != nullptr);
 }
 
 int main(int argc, char* argv[]) {

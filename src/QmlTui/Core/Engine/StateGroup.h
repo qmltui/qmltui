@@ -45,6 +45,9 @@ public:
 signals:
     void stateChanged();
 
+protected:
+    void childEvent(QChildEvent* event) override;
+
 private:
     std::unique_ptr<StateController> m_stateController;
 };

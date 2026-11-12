@@ -24,10 +24,10 @@ struct QMLTUI_CORE_EXPORT QtMessage {
     int line = 0;
     QString formattedText;
 
-    const QString &formattedMessage() const noexcept { return formattedText; }
+    const QString& formattedMessage() const noexcept { return formattedText; }
 };
 
-using QtMessageSink = std::function<void(const QtMessage &)>;
+using QtMessageSink = std::function<void(const QtMessage&)>;
 
 // RAII registration routing qDebug/qInfo/qWarning/qCritical messages through
 // application-supplied sinks while a TerminalEngine is active.
@@ -38,17 +38,16 @@ using QtMessageSink = std::function<void(const QtMessage &)>;
 // reset() restores the previous message handler.
 class QMLTUI_CORE_EXPORT QtMessageRouting {
 public:
-    QtMessageRouting(const QtMessageRouting &) = delete;
-    QtMessageRouting &operator=(const QtMessageRouting &) = delete;
-    QtMessageRouting(QtMessageRouting &&) = delete;
-    QtMessageRouting &operator=(QtMessageRouting &&) = delete;
+    QtMessageRouting(const QtMessageRouting&) = delete;
+    QtMessageRouting& operator=(const QtMessageRouting&) = delete;
+    QtMessageRouting(QtMessageRouting&&) = delete;
+    QtMessageRouting& operator=(QtMessageRouting&&) = delete;
     ~QtMessageRouting();
 
     // Installs diagnosticSink (always called) and an optional presentationSink
     // (called only when no alternate-screen session is active).
-    [[nodiscard]] static std::unique_ptr<QtMessageRouting> install(
-        QtMessageSink diagnosticSink,
-        QtMessageSink presentationSink = {});
+    [[nodiscard]] static std::unique_ptr<QtMessageRouting>
+    install(QtMessageSink diagnosticSink, QtMessageSink presentationSink = {});
 
     // Default presentation sink that writes formattedText to stderr.
     static QtMessageSink stderrPresentationSink();
@@ -56,7 +55,9 @@ public:
     // Unregisters this routing handle early; idempotent.
     void reset();
 
-    struct Token { explicit Token() = default; };
+    struct Token {
+        explicit Token() = default;
+    };
     explicit QtMessageRouting(Token, uint64_t registrationId);
 
 private:

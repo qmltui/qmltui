@@ -1,25 +1,36 @@
 #include <QmlTui/Core/Items/FocusScope.h>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QPointer>
 
 namespace qmltui {
 
-FocusScope::FocusScope(QObject* parent) : Item(parent) {}
+struct FocusScopePrivate {
+    QPointer<Item> subFocusItem;
+};
+
+FocusScope::FocusScope(QObject* parent)
+    : Item(parent), m_d(std::make_unique<FocusScopePrivate>()) {}
+
+FocusScope::~FocusScope() = default;
+
+Item* FocusScope::subFocusItem() const {
+    return m_d->subFocusItem.data();
+}
 
 void FocusScope::setSubFocusItem(Item* item) {
-    if (m_subFocusItem.data() == item) return;
+    if (m_d->subFocusItem.data() == item) return;
 
-    Item* oldSub = m_subFocusItem.data();
-    m_subFocusItem = item;
+    Item* oldSub = m_d->subFocusItem.data();
+    m_d->subFocusItem = item;
 
     if (oldSub && oldSub != item) {
-        oldSub->m_focus = false;
-        emit oldSub->focusChanged();
+        oldSub->clearFocusFlagAndNotify();
     }
 
-    if (activeFocus() && m_subFocusItem && !m_subFocusItem->isFocusScope()) {
+    if (activeFocus() && m_d->subFocusItem && !m_d->subFocusItem->isFocusScope()) {
         if (Terminal* term = terminal()) {
-            if (term->focusedItem() != m_subFocusItem.data()) {
-                term->setFocusedItem(m_subFocusItem.data());
+            if (term->focusedItem() != m_d->subFocusItem.data()) {
+                term->setFocusedItem(m_d->subFocusItem.data());
             }
         }
     }
@@ -31,7 +42,7 @@ void FocusScope::setFocus(bool focus) {
     Item::setFocus(focus);
 
     if (focus) {
-        Item* target = m_subFocusItem.data();
+        Item* target = m_d->subFocusItem.data();
         if (!target || !target->visible() || !target->isEffectivelyEnabled()) {
             QList<Item*> candidates;
             if (Terminal* term = terminal()) {

@@ -10,7 +10,8 @@
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Engine/Keys.h>
-#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Engine/Shortcut.h>
+#include <QmlTui/Core/Engine/TerminalEngine.h>>
 
 using namespace qmltui;
 
@@ -39,6 +40,7 @@ private slots:
     void testModalPopupDiscardsStaleBackgroundGrab();
     void testTopmostPopupDismissalOrder();
     void testInlineModeMouseOffset();
+    void testShortcutScopedPerTerminalAndPrintableFocusSuppression();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -776,6 +778,76 @@ void TestInputRouter::testInlineModeMouseOffset() {
     QSignalSpy popupPresses(&popupMa, &MouseArea::pressed);
     router.routeMouse(0, 5, 23, false, false);
     QCOMPARE(popupPresses.count(), 0);
+}
+
+namespace {
+class PrintableInputItem : public Item {
+public:
+    using Item::Item;
+    bool consumesKeys = true;
+    QString typed;
+
+    bool consumesPrintableKeys() const override { return consumesKeys; }
+    void keyPressEvent(KeyEvent* event) override {
+        typed += event->text();
+        event->setAccepted(true);
+    }
+};
+} // namespace
+
+void TestInputRouter::testShortcutScopedPerTerminalAndPrintableFocusSuppression() {
+    Terminal termA;
+    Terminal termB;
+    termA.engine()->setTestViewportSize(QSize(40, 10));
+    termB.engine()->setTestViewportSize(QSize(40, 10));
+
+    Shortcut scA(&termA);
+    scA.setSequence(Qt::Key_Q);
+    int scACount = 0;
+    connect(&scA, &Shortcut::activated, [&]() { ++scACount; });
+
+    Shortcut scCtrlS(&termA);
+    scCtrlS.setSequence(Qt::CTRL | Qt::Key_S);
+    int scCtrlSCount = 0;
+    connect(&scCtrlS, &Shortcut::activated, [&]() { ++scCtrlSCount; });
+
+    Item detachedItem;
+    Shortcut scDetached(&detachedItem);
+    scDetached.setSequence(Qt::Key_X);
+    int scDetachedCount = 0;
+    connect(&scDetached, &Shortcut::activated, [&]() { ++scDetachedCount; });
+
+    InputRouter routerA(&termA);
+    InputRouter routerB(&termB);
+
+    // Key in termB must NOT fire termA's Shortcut
+    routerB.routeKey(Qt::Key_Q, QStringLiteral("q"), 0);
+    QCOMPARE(scACount, 0);
+
+    // Detached Shortcut must NOT fire in either Terminal
+    routerA.routeKey(Qt::Key_X, QStringLiteral("x"), 0);
+    routerB.routeKey(Qt::Key_X, QStringLiteral("x"), 0);
+    QCOMPARE(scDetachedCount, 0);
+
+    // Unfocused printable key in termA DOES fire scA
+    QVERIFY(routerA.routeKey(Qt::Key_Q, QStringLiteral("q"), 0));
+    QCOMPARE(scACount, 1);
+
+    // Focusing an item with consumesPrintableKeys() == true suppresses unmodified
+    // single-key Shortcut while preserving modified (Ctrl+S) Shortcut
+    PrintableInputItem editor(&termA);
+    editor.setFocusPolicy(Qt::StrongFocus);
+    editor.setWidth(10);
+    editor.setHeight(1);
+    editor.forceActiveFocus();
+    QCOMPARE(termA.focusedItem(), static_cast<Item*>(&editor));
+
+    QVERIFY(routerA.routeKey(Qt::Key_Q, QStringLiteral("q"), 0));
+    QCOMPARE(scACount, 1);
+    QCOMPARE(editor.typed, QStringLiteral("q"));
+
+    QVERIFY(routerA.routeKey(Qt::Key_S, QStringLiteral("\x13"), Qt::ControlModifier));
+    QCOMPARE(scCtrlSCount, 1);
 }
 
 QTEST_MAIN(TestInputRouter)

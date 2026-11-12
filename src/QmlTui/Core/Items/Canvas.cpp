@@ -135,6 +135,7 @@ void CanvasPainter::clear() {
 }
 
 Canvas::Canvas(QObject* parent) : Item(parent) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     resizeBuffer();
 }
 
@@ -145,7 +146,7 @@ CanvasPainter Canvas::painter() const {
 void Canvas::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, 0xFFFFFFFF));
+    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, Color::DefaultTag));
     emit colorChanged();
     markDirty();
 }
@@ -178,7 +179,7 @@ uint32_t Canvas::defaultColorAt(int x, int y) const {
         const int ph = pixelHeight();
         t = (ph > 1) ? static_cast<qreal>(y) / (ph - 1) : 0.0;
     }
-    return Color::paintedArgb32(m_gradient->colorAt(t));
+    return Color::paintedArgb32(m_gradient->colorArgbAt(t));
 }
 
 void Canvas::setFillColor(Color color) {
@@ -405,7 +406,7 @@ void Canvas::resizeBuffer() const {
 void CanvasShape::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, 0xFFFFFFFF));
+    m_resolvedColor = Color::paintedArgb32(Color::resolve(color, Color::DefaultTag));
     m_hasCustomColor = true;
     emit colorChanged();
     if (parentItem()) parentItem()->markDirty();
@@ -440,7 +441,7 @@ void CanvasShape::setGradient(Gradient* gradient) {
 
 uint32_t CanvasShape::resolvedColor(const CanvasPainter& painter) const {
     if (m_gradient && !m_gradient->stopsList().isEmpty()) {
-        return Color::paintedArgb32(m_gradient->colorAt(0.0));
+        return Color::paintedArgb32(m_gradient->colorArgbAt(0.0));
     }
     if (m_hasCustomColor) return m_resolvedColor;
     return painter.defaultColor();
@@ -457,7 +458,7 @@ uint32_t CanvasShape::resolvePixelColor(const CanvasPainter& painter, int px, in
             const int span = maxY - minY;
             t = (span > 0) ? static_cast<qreal>(py - minY) / span : 0.0;
         }
-        return Color::paintedArgb32(m_gradient->colorAt(t));
+        return Color::paintedArgb32(m_gradient->colorArgbAt(t));
     }
     if (m_hasCustomColor) return m_resolvedColor;
     return painter.defaultColorAt(px, py);

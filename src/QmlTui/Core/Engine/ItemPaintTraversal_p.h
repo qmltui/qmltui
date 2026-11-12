@@ -36,6 +36,22 @@ public:
         layoutSubtree(item);
         paintSubtree(item, buffer, absX, absY, clipRect);
     }
+
+    // Collects localized screen-space damage from dirty items in a laid-out
+    // subtree without mutating dirty flags.
+    static void collectDirtyDamage(const Item* item, const QRect& viewportRect, QRect& outDamage,
+                                   bool& outFullDamage) {
+        if (!item) return;
+        item->collectDirtyDamage(0, 0, viewportRect, outDamage, outFullDamage);
+    }
+
+    // Clears SelfDirty/DescendantDirty across a subtree when an offscreen-only
+    // dirty frame skips painting.
+    static void clearPaintDirty(Item* item) {
+        if (!item) return;
+        RenderPhase::Scope scope(RenderPhase::Paint);
+        item->clearPaintDirtySubtree();
+    }
 };
 
 } // namespace qmltui

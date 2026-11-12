@@ -3,7 +3,7 @@
 
 namespace qmltui {
 
-Row::Row(QObject *parent) : Item(parent) {
+Row::Row(QObject* parent) : Item(parent) {
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 
@@ -35,12 +35,11 @@ void Row::layoutChildren() {
         }
         if (childItem->visible()) {
             // Skip layout if the child is anchored (anchors take precedence)
-            if (childItem->anchors()->fill() || childItem->anchors()->centerIn()) {
+            if (const Anchors* a = childItem->anchorsIfAny(); a && (a->fill() || a->centerIn())) {
                 continue;
             }
             auto placed = placements.find(childItem);
-            if (placed == placements.end())
-                placed = placements.insert(childItem, track(childItem));
+            if (placed == placements.end()) placed = placements.insert(childItem, track(childItem));
             childItem->setX(currentX);
             childItem->setY(placed->ownY + topPad);
             currentX += childItem->width() + m_spacing;
@@ -49,7 +48,7 @@ void Row::layoutChildren() {
     m_positioning = false;
 
     // Whatever is left belongs to items that are no longer children.
-    for (const Placement &gone : std::as_const(m_placements)) {
+    for (const Placement& gone : std::as_const(m_placements)) {
         disconnect(gone.yChanged);
         disconnect(gone.destroyed);
     }
@@ -57,7 +56,7 @@ void Row::layoutChildren() {
     clearDirty(DirtyFlag::LayoutDirty);
 }
 
-Row::Placement Row::track(Item *childItem) {
+Row::Placement Row::track(Item* childItem) {
     Placement placement;
     placement.ownY = childItem->y();
     placement.yChanged = connect(childItem, &Item::yChanged, this, [this, childItem] {
@@ -65,11 +64,10 @@ Row::Placement Row::track(Item *childItem) {
         auto it = m_placements.find(childItem);
         if (it == m_placements.end()) return;
         it->ownY = childItem->y();
-        if (topPadding() != 0)
-            markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
+        if (topPadding() != 0) markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
     });
     placement.destroyed = connect(childItem, &QObject::destroyed, this,
-                                  [this](QObject *child) { m_placements.remove(child); });
+                                  [this](QObject* child) { m_placements.remove(child); });
     return placement;
 }
 
@@ -78,7 +76,7 @@ int Row::implicitWidth() const {
     int visibleCount = 0;
     for (Item* childItem : childItems()) {
         if (childItem && childItem->visible()) {
-            if (childItem->anchors()->fill() || childItem->anchors()->centerIn()) {
+            if (const Anchors* a = childItem->anchorsIfAny(); a && (a->fill() || a->centerIn())) {
                 continue;
             }
             w += childItem->width();
@@ -95,7 +93,7 @@ int Row::implicitHeight() const {
     int h = 0;
     for (Item* childItem : childItems()) {
         if (childItem && childItem->visible()) {
-            if (childItem->anchors()->fill() || childItem->anchors()->centerIn()) {
+            if (const Anchors* a = childItem->anchorsIfAny(); a && (a->fill() || a->centerIn())) {
                 continue;
             }
             if (childItem->height() > h) {

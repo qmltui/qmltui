@@ -4,6 +4,8 @@
 
 #include <QmlTui/Core/Engine/Renderer.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
+#include <QPoint>
+#include <optional>
 
 namespace qmltui {
 
@@ -21,13 +23,19 @@ public:
     int terminalWidth() const { return m_currentBuffer.width(); }
     int terminalHeight() const { return m_currentBuffer.height(); }
     const TextGridBuffer* currentBuffer() const override { return &m_currentBuffer; }
-    void discardCommittedState() override { m_repaintAll = true; }
+    void discardCommittedState() override {
+        m_repaintAll = true;
+        m_hasCommittedFrame = false;
+        m_lastHardwareCursor.reset();
+    }
 
 private:
     TextGridBuffer m_currentBuffer;
     TextGridBuffer m_nextBuffer;
     std::string m_ansi; // reused across frames
+    std::optional<QPoint> m_lastHardwareCursor;
     bool m_repaintAll = false;
+    bool m_hasCommittedFrame = false;
 };
 
 } // namespace qmltui

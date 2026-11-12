@@ -35,10 +35,13 @@ void TextEditorState::restore(const Snapshot& state) {
 
 TextEditorState::Change TextEditorState::setText(const QString& text) {
     const Snapshot before = snapshot();
+    m_coalesceTyping = false;
     if (m_text != text) {
         m_text = text;
         m_undoStack.clear();
         m_redoStack.clear();
+        m_undoChars = 0;
+        m_redoChars = 0;
     }
     m_cursorPosition = snapToBoundary(m_text, m_cursorPosition);
     m_selectionAnchor = snapToBoundary(m_text, m_selectionAnchor);
@@ -47,6 +50,7 @@ TextEditorState::Change TextEditorState::setText(const QString& text) {
 
 TextEditorState::Change TextEditorState::moveCursor(int position, bool extendSelection) {
     const Snapshot before = snapshot();
+    m_coalesceTyping = false;
     const int snapped = snapToBoundary(m_text, position);
     m_cursorPosition = snapped;
     if (!extendSelection) m_selectionAnchor = snapped;
@@ -55,6 +59,7 @@ TextEditorState::Change TextEditorState::moveCursor(int position, bool extendSel
 
 TextEditorState::Change TextEditorState::select(int start, int end) {
     const Snapshot before = snapshot();
+    m_coalesceTyping = false;
     m_selectionAnchor = snapToBoundary(m_text, start);
     m_cursorPosition = snapToBoundary(m_text, end);
     return changeSince(before);
@@ -62,6 +67,7 @@ TextEditorState::Change TextEditorState::select(int start, int end) {
 
 TextEditorState::Change TextEditorState::selectAll() {
     const Snapshot before = snapshot();
+    m_coalesceTyping = false;
     m_selectionAnchor = 0;
     m_cursorPosition = m_text.size();
     return changeSince(before);
@@ -69,15 +75,37 @@ TextEditorState::Change TextEditorState::selectAll() {
 
 TextEditorState::Change TextEditorState::clearSelection() {
     const Snapshot before = snapshot();
+    m_coalesceTyping = false;
     m_selectionAnchor = m_cursorPosition;
     return changeSince(before);
 }
 
+void TextEditorState::clearRedo() {
+    m_redoStack.clear();
+    m_redoChars = 0;
+}
+
+void TextEditorState::trimUndoBudget() {
+    while (m_redoStack.size() > MaxUndoSteps ||
+           (!m_redoStack.isEmpty() && m_undoChars + m_redoChars > MaxUndoTotalChars)) {
+        m_redoChars -= m_redoStack.first().text.size();
+        m_redoStack.removeFirst();
+    }
+    while (m_undoStack.size() > 1 &&
+           (m_undoStack.size() > MaxUndoSteps || m_undoChars + m_redoChars > MaxUndoTotalChars)) {
+        m_undoChars -= m_undoStack.first().text.size();
+        m_undoStack.removeFirst();
+    }
+}
+
 void TextEditorState::recordUndo() {
     const Snapshot current = snapshot();
-    if (m_undoStack.isEmpty() || !(m_undoStack.last() == current)) m_undoStack.append(current);
-    if (m_undoStack.size() > 100) m_undoStack.removeFirst();
-    m_redoStack.clear();
+    if (m_undoStack.isEmpty() || !(m_undoStack.last() == current)) {
+        m_undoChars += current.text.size();
+        m_undoStack.append(current);
+    }
+    clearRedo();
+    trimUndoBudget();
 }
 
 TextEditorState::Change TextEditorState::replaceRange(int start, int end,
@@ -86,13 +114,22 @@ TextEditorState::Change TextEditorState::replaceRange(int start, int end,
     end = snapToBoundary(m_text, end);
     if (start > end) std::swap(start, end);
 
+    const bool singleTypingInsertion = start == end && start == m_cursorPosition &&
+                                       !hasSelection() && !replacement.isEmpty() &&
+                                       !replacement[0].isSpace() && graphemeCount(replacement) == 1;
+
     QString changed = m_text;
     changed.replace(start, end - start, replacement);
     const int cursor = snapToBoundary(changed, start + replacement.size());
     if (changed == m_text && m_cursorPosition == cursor && m_selectionAnchor == cursor) return {};
 
     const Snapshot before = snapshot();
-    recordUndo();
+    if (m_coalesceTyping && singleTypingInsertion && !m_undoStack.isEmpty()) {
+        clearRedo();
+    } else {
+        recordUndo();
+    }
+    m_coalesceTyping = singleTypingInsertion;
     m_text = changed;
     m_cursorPosition = cursor;
     m_selectionAnchor = cursor;
@@ -170,17 +207,27 @@ TextEditorState::Change TextEditorState::deleteToEnd() {
 
 TextEditorState::Change TextEditorState::undo() {
     if (m_undoStack.isEmpty()) return {};
+    m_coalesceTyping = false;
     const Snapshot before = snapshot();
+    m_redoChars += before.text.size();
     m_redoStack.append(before);
-    restore(m_undoStack.takeLast());
+    const Snapshot target = m_undoStack.takeLast();
+    m_undoChars -= target.text.size();
+    restore(target);
+    trimUndoBudget();
     return changeSince(before);
 }
 
 TextEditorState::Change TextEditorState::redo() {
     if (m_redoStack.isEmpty()) return {};
+    m_coalesceTyping = false;
     const Snapshot before = snapshot();
+    m_undoChars += before.text.size();
     m_undoStack.append(before);
-    restore(m_redoStack.takeLast());
+    const Snapshot target = m_redoStack.takeLast();
+    m_redoChars -= target.text.size();
+    restore(target);
+    trimUndoBudget();
     return changeSince(before);
 }
 
@@ -248,11 +295,11 @@ int TextEditorState::columnForPosition(const QString& text, int position) {
     return UnicodeText::displayWidth(text.left(snapToBoundary(text, position)));
 }
 
-int TextEditorState::positionForColumn(const QString& text, int column) {
+int TextEditorState::positionForColumn(QStringView text, int column, bool sanitizeControls) {
     const int target = (std::max)(0, column);
     int width = 0;
     int position = 0;
-    GraphemeIterator iterator(text);
+    GraphemeIterator iterator(text, sanitizeControls);
     GraphemeRef cluster;
     while (iterator.next(cluster)) {
         if (width + cluster.width > target) break;

@@ -4,6 +4,7 @@
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QMetaProperty>
 #include <QMetaType>
+#include <QThreadStorage>
 #include <algorithm>
 #include <cmath>
 
@@ -51,7 +52,9 @@ static double applyEasing(Easing::Type type, double t) {
 Animation::Animation(QObject* parent) : QObject(parent) {}
 
 Animation::~Animation() {
-    AnimationManager::instance()->unregisterAnimation(this);
+    if (m_running) {
+        AnimationManager::instance()->unregisterAnimation(this);
+    }
 }
 
 void Animation::setRunning(bool r) {
@@ -113,10 +116,14 @@ void PropertyAnimation::setDuration(int d) {
 void PropertyAnimation::setRunning(bool r) {
     if (m_running == r) return;
     if (r && m_duration == 0) {
+        QPointer<PropertyAnimation> self(this);
         m_running = false;
         emit runningChanged();
+        if (!self) return;
         writeValue(1.0);
+        if (!self) return;
         emit started();
+        if (!self) return;
         emit finished();
         return;
     }
@@ -151,10 +158,13 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
         m_accumulatedTime += elapsedMs;
     }
 
+    QPointer<PropertyAnimation> self(this);
     if (m_duration <= 0) {
         writeValue(1.0);
+        if (!self) return;
         m_initialized = false;
         setRunning(false);
+        if (!self) return;
         emit finished();
         return;
     }
@@ -183,10 +193,12 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
 
     double easedT = applyEasing(m_easing, t);
     writeValue(easedT);
+    if (!self) return;
 
     if (finishedAnimation) {
         m_initialized = false;
         setRunning(false);
+        if (!self) return;
         emit finished();
     }
 }
@@ -277,8 +289,11 @@ AnimationManager::AnimationManager(QObject* parent) : QObject(parent) {
 }
 
 AnimationManager* AnimationManager::instance() {
-    static AnimationManager manager;
-    return &manager;
+    static QThreadStorage<AnimationManager*> managers;
+    if (!managers.hasLocalData()) {
+        managers.setLocalData(new AnimationManager());
+    }
+    return managers.localData();
 }
 
 void AnimationManager::registerAnimation(Animation* anim) {

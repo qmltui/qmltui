@@ -6,6 +6,8 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QString>
+#include <QThread>
+#include <QVarLengthArray>
 #include <QWaitCondition>
 #include <QtLogging>
 
@@ -43,10 +45,45 @@ struct RouterState {
 
     int activeDiagnosticDeliveries = 0;
     int activePresentationDeliveries = 0;
+    QVarLengthArray<Qt::HANDLE, 4> activeDeliveryThreads;
 
     uint64_t nextSequenceNumber = 0;
     QList<PresentationRecord> presentationQueue;
     bool isDraining = false;
+
+    void beginDelivery(bool diagnostic) {
+        if (diagnostic)
+            ++activeDiagnosticDeliveries;
+        else
+            ++activePresentationDeliveries;
+        activeDeliveryThreads.push_back(QThread::currentThreadId());
+    }
+
+    void endDelivery(bool diagnostic) {
+        if (diagnostic)
+            --activeDiagnosticDeliveries;
+        else
+            --activePresentationDeliveries;
+        const Qt::HANDLE self = QThread::currentThreadId();
+        for (qsizetype i = activeDeliveryThreads.size() - 1; i >= 0; --i) {
+            if (activeDeliveryThreads[i] == self) {
+                activeDeliveryThreads.remove(i);
+                break;
+            }
+        }
+        if (regState == RegistrationState::Retiring) {
+            retirementWaitCondition.wakeAll();
+        }
+    }
+
+    int activeDeliveryCountExcludingSelf() const {
+        const Qt::HANDLE self = QThread::currentThreadId();
+        int otherCount = 0;
+        for (Qt::HANDLE tid : activeDeliveryThreads) {
+            if (tid != self) ++otherCount;
+        }
+        return otherCount;
+    }
 };
 
 RouterState& state() {
@@ -72,7 +109,7 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
         }
 
         if (sink) {
-            ++router.activePresentationDeliveries;
+            router.beginDelivery(false);
         }
 
         lock.unlock();
@@ -94,12 +131,7 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
         lock.relock();
 
         if (sink) {
-            --router.activePresentationDeliveries;
-            if (router.regState == RegistrationState::Retiring &&
-                router.activePresentationDeliveries == 0 &&
-                router.activeDiagnosticDeliveries == 0) {
-                router.retirementWaitCondition.wakeAll();
-            }
+            router.endDelivery(false);
         }
     }
     router.isDraining = false;
@@ -136,6 +168,8 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
             } else {
                 presSink = stderrPresentationSink();
             }
+            if (diagSink) router.beginDelivery(true);
+            if (presSink) router.beginDelivery(false);
         }
 
         s_inCallback = true;
@@ -151,6 +185,11 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
         }
         std::fflush(stderr);
         s_inCallback = false;
+        {
+            QMutexLocker lock(&router.mutex);
+            if (presSink) router.endDelivery(false);
+            if (diagSink) router.endDelivery(true);
+        }
         return;
     }
 
@@ -182,16 +221,15 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
         }
 
         if (hasPresentation) {
-            constexpr int kMaxPresentationMessages = 500;
-            if (router.alternateScreenSessionCount > 0 &&
-                router.presentationQueue.size() >= kMaxPresentationMessages) {
+            constexpr qsizetype kMaxPresentationMessages = 500;
+            if (router.presentationQueue.size() >= kMaxPresentationMessages) {
                 router.presentationQueue.removeFirst();
             }
             router.presentationQueue.append(PresentationRecord{seq, msg, false, regId});
         }
 
         if (diagSink) {
-            ++router.activeDiagnosticDeliveries;
+            router.beginDelivery(true);
         }
     }
 
@@ -212,12 +250,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
     {
         QMutexLocker lock(&router.mutex);
         if (diagSink) {
-            --router.activeDiagnosticDeliveries;
-            if (router.regState == RegistrationState::Retiring &&
-                router.activeDiagnosticDeliveries == 0 &&
-                router.activePresentationDeliveries == 0) {
-                router.retirementWaitCondition.wakeAll();
-            }
+            router.endDelivery(true);
         }
 
         if (hasPresentation) {
@@ -313,7 +346,7 @@ void resetRegistration(uint64_t registrationId) {
     router.regState = RegistrationState::Retiring;
     router.presentationQueue.clear();
 
-    while (router.activeDiagnosticDeliveries > 0 || router.activePresentationDeliveries > 0) {
+    while (router.activeDeliveryCountExcludingSelf() > 0) {
         router.retirementWaitCondition.wait(&router.mutex);
     }
 

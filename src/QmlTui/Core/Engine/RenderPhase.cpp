@@ -9,11 +9,10 @@ namespace qmltui {
 
 namespace {
 
-RenderPhase::Phase s_phase = RenderPhase::Idle;
-int s_dirtyDuringPaint = 0;
+thread_local RenderPhase::Phase s_phase = RenderPhase::Idle;
+thread_local int s_dirtyDuringPaint = 0;
 
-bool debugPaintDirtyEnabled()
-{
+bool debugPaintDirtyEnabled() {
     static const bool enabled = [] {
         const QByteArray value = qgetenv("QMLTUI_DEBUG_PAINT_DIRTY").trimmed().toLower();
         return !value.isEmpty() && value != "0" && value != "false" && value != "off";
@@ -23,42 +22,33 @@ bool debugPaintDirtyEnabled()
 
 } // namespace
 
-RenderPhase::Phase RenderPhase::current()
-{
+RenderPhase::Phase RenderPhase::current() {
     return s_phase;
 }
 
-int RenderPhase::dirtyDuringPaintCount()
-{
+int RenderPhase::dirtyDuringPaintCount() {
     return s_dirtyDuringPaint;
 }
 
-void RenderPhase::recordDirtyDuringPaint(const Item *item)
-{
+void RenderPhase::recordDirtyDuringPaint(const Item* item) {
     ++s_dirtyDuringPaint;
-    if (!debugPaintDirtyEnabled() || !item)
-        return;
-    static QSet<QByteArray> reported;
+    if (!debugPaintDirtyEnabled() || !item) return;
+    thread_local QSet<QByteArray> reported;
     QByteArray key = item->metaObject()->className();
-    if (!item->objectName().isEmpty())
-        key += " \"" + item->objectName().toUtf8() + '"';
-    if (reported.contains(key))
-        return;
+    if (!item->objectName().isEmpty()) key += " \"" + item->objectName().toUtf8() + '"';
+    if (reported.contains(key)) return;
     reported.insert(key);
     qWarning("QmlTui: %s invalidated itself while painting; move the change to "
-             "updateLayout() or a property setter", key.constData());
+             "updateLayout() or a property setter",
+             key.constData());
 }
 
-RenderPhase::Scope::Scope(Phase phase)
-    : m_previous(s_phase)
-{
+RenderPhase::Scope::Scope(Phase phase) : m_previous(s_phase) {
     s_phase = phase;
-    if (phase == Paint)
-        s_dirtyDuringPaint = 0;
+    if (phase == Paint) s_dirtyDuringPaint = 0;
 }
 
-RenderPhase::Scope::~Scope()
-{
+RenderPhase::Scope::~Scope() {
     s_phase = m_previous;
 }
 

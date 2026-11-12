@@ -31,7 +31,7 @@ class QMLTUI_CORE_EXPORT LayoutAttached : public QObject {
     Q_PROPERTY(Qt::Alignment alignment MEMBER alignment NOTIFY changed)
 
 public:
-    explicit LayoutAttached(QObject *parent = nullptr) : QObject(parent) {}
+    explicit LayoutAttached(QObject* parent = nullptr) : QObject(parent) {}
 
     int minimumWidth = 0;
     int minimumHeight = 0;
@@ -61,7 +61,7 @@ class QMLTUI_CORE_EXPORT Layout : public QObject {
     QML_ATTACHED(LayoutAttached)
 
 public:
-    static LayoutAttached *qmlAttachedProperties(QObject *object);
+    static LayoutAttached* qmlAttachedProperties(QObject* object);
 };
 
 } // namespace qmltui

@@ -39,6 +39,7 @@ private slots:
     void testAliasCollisionRejection();
     void testReentrantStateRequests();
     void testObjectDestruction();
+    void testNonBasicPropertyChangesAndTargetEviction();
     void testZeroDurationTransition();
     void testInterruptedTransitionFromDisplayedValue();
     void testDuplicateWriteSuppression();
@@ -255,6 +256,83 @@ void TestStates::testObjectDestruction() {
     group->setState("");
 
     delete root;
+}
+
+void TestStates::testNonBasicPropertyChangesAndTargetEviction() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            Item {
+                id: t1
+                objectName: "t1"
+                property real ratio: 0.25
+                property size dims: Qt.size(2, 3)
+            }
+            Text {
+                id: t2
+                objectName: "t2"
+                wrapMode: Text.NoWrap
+            }
+            Item {
+                id: t3
+                objectName: "t3"
+                property real ratio: 1.5
+            }
+            states: [
+                State {
+                    name: "active"
+                    PropertyChanges {
+                        target: t1
+                        properties: ({ "ratio": 0.75, "dims": Qt.size(8, 9) })
+                    }
+                    PropertyChanges {
+                        target: t2
+                        properties: ({ "wrapMode": Text.WordWrap })
+                    }
+                    PropertyChanges {
+                        target: t3
+                        properties: ({ "ratio": 2.5 })
+                    }
+                }
+            ]
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* root = qobject_cast<Item*>(object.get());
+    QVERIFY(root);
+
+    auto* t1 = root->findChild<Item*>(QStringLiteral("t1"));
+    auto* t2 = root->findChild<Text*>(QStringLiteral("t2"));
+    auto* t3 = root->findChild<Item*>(QStringLiteral("t3"));
+    QVERIFY(t1 && t2 && t3);
+
+    root->setState(QStringLiteral("active"));
+    QCOMPARE(t1->property("ratio").toDouble(), 0.75);
+    QCOMPARE(t1->property("dims").toSize(), QSize(8, 9));
+    QCOMPARE(t2->wrapMode(), Text::WordWrap);
+    QCOMPARE(t3->property("ratio").toDouble(), 2.5);
+
+    // Destroy middle target while multiple CanonicalProperty keys populate std::map/QHash.
+    delete t2;
+
+    // Subsequent transitions and controller teardown must remain well-ordered and crash-free.
+    root->setState(QString());
+    QCOMPARE(t1->property("ratio").toDouble(), 0.25);
+    QCOMPARE(t1->property("dims").toSize(), QSize(2, 3));
+    QCOMPARE(t3->property("ratio").toDouble(), 1.5);
+
+    root->setState(QStringLiteral("active"));
+    QCOMPARE(t1->property("ratio").toDouble(), 0.75);
+    QCOMPARE(t3->property("ratio").toDouble(), 2.5);
 }
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)

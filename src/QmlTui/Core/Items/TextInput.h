@@ -3,12 +3,15 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Core/Items/TextEditorState.h>
 #include <QRegularExpression>
 #include <QString>
+#include <memory>
+
 namespace qmltui {
 class ClockTimer;
-}
+class TextEditorState;
+struct TextEditorChange;
+} // namespace qmltui
 
 namespace qmltui {
 
@@ -82,7 +85,7 @@ public:
     explicit TextInput(QObject* parent = nullptr);
     ~TextInput() override;
 
-    QString text() const { return m_editor.text(); }
+    QString text() const;
     void setText(const QString& text);
 
     Color color() const { return m_color; }
@@ -90,11 +93,11 @@ public:
     QString placeholderText() const { return m_placeholderText; }
     void setPlaceholderText(const QString& text);
 
-    int cursorPosition() const { return m_editor.cursorPosition(); }
+    int cursorPosition() const;
     void setCursorPosition(int pos);
-    int selectionStart() const { return m_editor.selectionStart(); }
-    int selectionEnd() const { return m_editor.selectionEnd(); }
-    QString selectedText() const { return m_editor.selectedText(); }
+    int selectionStart() const;
+    int selectionEnd() const;
+    QString selectedText() const;
     bool readOnly() const { return m_readOnly; }
     void setReadOnly(bool readOnly);
     int contentX() const { return m_contentX; }
@@ -130,8 +133,8 @@ public:
     void setOverwriteMode(bool overwrite);
     bool autoScroll() const { return m_autoScroll; }
     void setAutoScroll(bool autoScroll);
-    bool canUndo() const { return m_editor.canUndo(); }
-    bool canRedo() const { return m_editor.canRedo(); }
+    bool canUndo() const;
+    bool canRedo() const;
 
     Q_INVOKABLE void select(int start, int end);
     Q_INVOKABLE void selectAll();
@@ -144,6 +147,7 @@ public:
     Q_INVOKABLE void redo();
 
     void keyPressEvent(class KeyEvent* event) override;
+    bool consumesPrintableKeys() const override { return !m_readOnly; }
     void mousePressEvent(class MouseEvent* event) override;
     void mouseMoveEvent(class MouseEvent* event) override;
     void paint(TextGridBuffer& buffer, int absX, int absY,
@@ -186,7 +190,7 @@ private:
     };
 
     EditorStatus editorStatus() const;
-    void applyEditorChange(const TextEditorState::Change& change, const EditorStatus& before);
+    void applyEditorChange(const TextEditorChange& change, const EditorStatus& before);
     QString constrainedReplacement(const QString& replacement) const;
     QString displayText() const;
     int displayColumnForPosition(int position) const;
@@ -197,7 +201,7 @@ private:
     void resetBlinkTimer();
     void updateTerminalConnection();
 
-    TextEditorState m_editor;
+    std::unique_ptr<TextEditorState> m_editor;
     Color m_color;
     QString m_placeholderText;
     Color m_placeholderColor = Color::Invalid;
@@ -205,7 +209,7 @@ private:
     bool m_hasResolvedPlaceholderColor = false;
     QString m_echoCharacter = "*";
     QRegularExpression m_validator;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, Color::DefaultTag);
     int m_contentX = 0;
     int m_maximumLength = 0;
     bool m_readOnly = false;

@@ -12,6 +12,8 @@
 #include <QJSValue>
 #include <QQmlComponent>
 #include <QAbstractItemModel>
+#include <QList>
+#include <QMetaObject>
 #include <QPointer>
 #include <QPersistentModelIndex>
 #include <memory>
@@ -43,8 +45,8 @@ class QMLTUI_CORE_EXPORT TreeView : public Item {
 
     Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
                    selectionColorChanged)
-    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE
-                   setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
+    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor
+                   NOTIFY selectedTextColorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(
         qmltui::Color branchColor READ branchColor WRITE setBranchColor NOTIFY branchColorChanged)
@@ -78,8 +80,8 @@ public:
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
 
-    Color selectionBackgroundColor() const { return m_selectionBackgroundColor; }
-    void setSelectionBackgroundColor(Color color);
+    Color selectedTextColor() const { return m_selectedTextColor; }
+    void setSelectedTextColor(Color color);
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
@@ -120,7 +122,7 @@ signals:
     void currentIndexChanged();
     void currentItemDataChanged();
     void selectionColorChanged();
-    void selectionBackgroundColorChanged();
+    void selectedTextColorChanged();
     void textColorChanged();
     void branchColorChanged();
     void expandedIconChanged();
@@ -218,6 +220,7 @@ private:
     void adjustScrollTop();
     void updateTree();
 
+    void disconnectModelSignals();
     void clearDelegateItems();
     void generateDelegateItems(QList<Item*> oldItems = {},
                                QList<QPersistentModelIndex> oldIndexes = {},
@@ -227,6 +230,7 @@ private:
 
     QVariant m_modelVariant;
     QPointer<QAbstractItemModel> m_cppModel;
+    QList<QMetaObject::Connection> m_modelConnections;
     QPersistentModelIndex m_rootIndex;
     QVariantMap m_rootNodeMap;
 
@@ -261,8 +265,8 @@ private:
 
     Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
-    Color m_selectionBackgroundColor = Color::Invalid;
-    uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
+    Color m_selectedTextColor = Color::Invalid;
+    uint32_t m_resolvedSelectedTextColor = Color::resolve(m_selectedTextColor, 0);
 
     Color m_textColor;
     uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);

@@ -96,10 +96,9 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
     Item* focusTarget = modalItem
                             ? FocusManager::resolveModalFocusOrigin(m_terminal.data(), modalItem)
                             : m_terminal->focusedItem();
-    const bool editableTextFocused =
-        focusTarget && focusTarget->isEffectivelyVisible() && focusTarget->isEffectivelyEnabled() &&
-        (focusTarget->inherits("qmltui::TextInput") || focusTarget->inherits("qmltui::TextArea")) &&
-        !focusTarget->property("readOnly").toBool();
+    const bool editableTextFocused = focusTarget && focusTarget->isEffectivelyVisible() &&
+                                     focusTarget->isEffectivelyEnabled() &&
+                                     focusTarget->consumesPrintableKeys();
     const bool unmodifiedPrintable =
         (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0 &&
         !text.isEmpty() && text.at(0).isPrint() && key != Qt::Key_Escape && key != Qt::Key_Tab &&
@@ -122,9 +121,13 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
             while (p && !qobject_cast<Item*>(p))
                 p = p->parent();
             Item* scItem = qobject_cast<Item*>(p);
-            if (scItem && (!scItem->isEffectivelyVisible() || !scItem->isEffectivelyEnabled()))
-                continue;
-            if (modalItem && (!scItem || !scItem->isDescendantOf(modalItem))) continue;
+            Terminal* scTerminal = scItem
+                                       ? (scItem->isTerminalRoot() ? static_cast<Terminal*>(scItem)
+                                                                   : scItem->terminal())
+                                       : nullptr;
+            if (scTerminal != m_terminal.data()) continue;
+            if (!scItem->isEffectivelyVisible() || !scItem->isEffectivelyEnabled()) continue;
+            if (modalItem && !scItem->isDescendantOf(modalItem)) continue;
             emit sc->activated();
             return true;
         }

@@ -2,7 +2,7 @@
 
 namespace qmltui {
 
-static QList<Shortcut*> s_shortcuts;
+static thread_local QList<Shortcut*> s_shortcuts;
 
 const QList<Shortcut*>& activeShortcuts() {
     return s_shortcuts;
@@ -20,7 +20,7 @@ void unregisterShortcut(Shortcut* shortcut) {
     }
 }
 
-Shortcut::Shortcut(QObject *parent) : QObject(parent) {
+Shortcut::Shortcut(QObject* parent) : QObject(parent) {
     registerShortcut(this);
 }
 

@@ -54,7 +54,10 @@ private:
     QMetaObject::Connection m_readConnection;
     QMetaObject::Connection m_copyConnection;
     QMetaObject::Connection m_overrideDestroyed;
-    struct Request { QJSValue resolve; QJSValue reject; };
+    struct Request {
+        QJSValue resolve;
+        QJSValue reject;
+    };
     QList<Request> m_requests;
     QJSValue m_promiseFactory;
     int m_readTimeout = 2000;

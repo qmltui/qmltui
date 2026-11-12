@@ -105,6 +105,7 @@ qt_add_qml_module(QmlTuiCore
         Engine/StateController.cpp
         ${qmltui_private_qt_sources}
         Items/Item.h
+        Items/Item_p.h
         Items/Item.cpp
         Items/FocusScope.h
         Items/FocusScope.cpp
@@ -143,6 +144,7 @@ qt_add_qml_module(QmlTuiCore
         Items/Scrollback.h
         Items/Scrollback.cpp
         Items/DelegateUtils.h
+        Items/ModelSignalConnections_p.h
         Items/NumericItemRoles_p.h
         Items/Row.h
         Items/Row.cpp
@@ -256,11 +258,12 @@ install(FILES
 # The public C++ surface. Everything a listed header includes must be listed
 # too; qmltui_check_public_headers() enforces it at configure time.
 qmltui_install_headers(QmlTui/Core/Items FILES
-    Items/Text.h
-    Items/Item.h Items/FocusScope.h Items/Anchors.h Items/AnchorLine.h Items/Border.h
-    Items/TableView.h Items/TreeView.h Items/Terminal.h Items/Rectangle.h
-    Items/Gradient.h Items/GradientStop.h Items/Canvas.h Items/Popup.h
-    Items/TextArea.h Items/TextEditorState.h Items/StackLayout.h
+    Items/AnchorLine.h Items/Anchors.h Items/Border.h Items/Canvas.h Items/Column.h
+    Items/FocusScope.h Items/Gradient.h Items/GradientStop.h Items/GridLayout.h Items/GridView.h
+    Items/Item.h Items/Layout.h Items/LinearLayout.h Items/ListView.h Items/Loader.h
+    Items/MouseArea.h Items/Popup.h Items/Rectangle.h Items/Repeater.h Items/Row.h
+    Items/Scrollback.h Items/ScrollView.h Items/StackLayout.h Items/TableView.h
+    Items/Terminal.h Items/Text.h Items/TextArea.h Items/TextInput.h Items/TreeView.h
 )
 qmltui_install_headers(QmlTui/Core/Primitives FILES
     Primitives/Span.h Primitives/TextStyle.h Primitives/HighlightRange.h Primitives/QmlTuiGlobal.h
@@ -270,8 +273,10 @@ qmltui_install_headers(QmlTui/Core/Primitives FILES
     Primitives/TerminalBackend.h
 )
 qmltui_install_headers(QmlTui/Core/Engine FILES
-    Engine/KeyEvent.h Engine/MouseEvent.h
+    Engine/Animation.h Engine/Clipboard.h
+    Engine/KeyEvent.h Engine/Keys.h Engine/MouseEvent.h
     # Popup implements this interface.
     Engine/InputScope.h
-    Engine/QtMessageRouting.h
+    Engine/QtMessageRouting.h Engine/Shortcut.h
+    Engine/State.h Engine/StateGroup.h Engine/Transition.h
 )

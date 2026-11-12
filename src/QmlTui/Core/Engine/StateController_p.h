@@ -23,27 +23,29 @@ class Transition;
 class PropertyChanges;
 class Animation;
 
-// Identifies a (target QObject, property name) pair managed by StateController.
+// Identifies a (target QObject address, property name) pair managed by StateController.
+// Keyed by immutable quintptr rather than QPointer so QObject destruction never mutates
+// live QMap/QSet keys; StateController purges entries synchronously via QObject::destroyed.
 struct CanonicalProperty {
-    QPointer<QObject> target;
+    quintptr targetId = 0;
     QString name;
 
-    bool operator<(const CanonicalProperty& other) const {
-        if (target != other.target) return target < other.target;
+    bool operator<(const CanonicalProperty& other) const noexcept {
+        if (targetId != other.targetId) return targetId < other.targetId;
         return name < other.name;
     }
-    bool operator==(const CanonicalProperty& other) const {
-        return target == other.target && name == other.name;
+    bool operator==(const CanonicalProperty& other) const noexcept {
+        return targetId == other.targetId && name == other.name;
     }
     friend size_t qHash(const CanonicalProperty& key, size_t seed = 0) noexcept {
-        return qHashMulti(seed, key.target.data(), key.name);
+        return qHashMulti(seed, key.targetId, key.name);
     }
 };
 
 // Evaluates State::when conditions, applies and reverts PropertyChanges
 // overrides (preserving base values and bindings across state transitions),
 // and triggers matching Transition animations.
-class QMLTUI_CORE_EXPORT StateController : public QObject {
+class StateController : public QObject {
     Q_OBJECT
 
 public:
@@ -75,9 +77,13 @@ public:
 signals:
     void stateChanged(const QString& state);
 
+protected:
+    void childEvent(QChildEvent* event) override;
+
 private slots:
     void handlePropertiesChanged(PropertyChanges* pc);
     void handleTargetChanged(PropertyChanges* pc);
+    void handleTargetDestroyed(QObject* obj);
 
 private:
     struct BasePropertyRecord {
@@ -98,6 +104,7 @@ private:
         bool restore = true;
     };
 
+    void watchTarget(QObject* target);
     void applyState(const QString& newState);
     void collectOverridesForState(State* state,
                                   QMap<CanonicalProperty, PropertyOverride>& outOverrides);
@@ -134,7 +141,8 @@ private:
     QList<QPointer<Animation>> m_runningTransitionAnimations;
     QMap<PropertyChanges*, QVariantMap> m_appliedMaps;
     QMap<PropertyChanges*, QPointer<QObject>> m_appliedTargets;
-    static QMap<CanonicalProperty, StateController*> s_propertyOwners;
+    QSet<QObject*> m_watchedTargets;
+    static thread_local QMap<CanonicalProperty, StateController*> s_propertyOwners;
 };
 
 } // namespace qmltui

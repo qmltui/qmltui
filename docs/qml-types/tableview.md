@@ -31,9 +31,9 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 | `stretchLastColumn` | `bool` | `false` | Automatically stretch the last column to fill remaining interior width. |
 | `headerColor` | `color` | `"default"` | Holds the foreground text color used for column headers. |
 | `headerBackgroundColor` | `color` | `"transparent"` | Holds the background color used for column headers. |
-| `selectionColor` | `color` |  | Holds the foreground text color for the selected row. |
+| `selectionColor` | `color` |  | Holds the background highlight color for the selected row. |
+| `selectedTextColor` | `color` |  | Holds the foreground text color for the selected row. |
 | `selectionKeepsCellColors` | `bool` | `false` | Keep the model's own foreground and background on the selected row, so a table whose colours carry meaning does not lose them on the row being inspected. |
-| `selectionBackgroundColor` | `color` |  | Holds the background highlight color for the selected row. |
 | `textColor` | `color` | `"default"` | Holds the default text color for data cells. |
 | `rowBackgroundColor` | `color` | `"transparent"` | Holds the default background color for table rows. |
 | `alternatingRowBackgroundColor` | `color` | `"default"` | Holds the background color for alternating table rows. |

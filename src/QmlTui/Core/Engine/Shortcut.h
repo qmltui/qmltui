@@ -12,13 +12,14 @@ namespace qmltui {
 // item key dispatch.
 class QMLTUI_CORE_EXPORT Shortcut : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Shortcut)
     QML_ELEMENT
     // Combined Qt::Key and Qt::KeyboardModifiers bitmask (e.g. Qt.CTRL | Qt.Key_S).
     Q_PROPERTY(int sequence READ sequence WRITE setSequence NOTIFY sequenceChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
 
 public:
-    explicit Shortcut(QObject *parent = nullptr);
+    explicit Shortcut(QObject* parent = nullptr);
     ~Shortcut() override;
 
     int sequence() const { return m_sequence; }

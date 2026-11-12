@@ -6,11 +6,21 @@
 
 namespace qmltui {
 
-// Grapheme-boundary-aware text buffer, cursor/selection model, and undo/redo
-// stack shared by TextInput and TextArea. All positions are UTF-16 code-unit
-// offsets snapped to extended grapheme cluster boundaries.
-class QMLTUI_CORE_EXPORT TextEditorState {
+// Internal: Grapheme-boundary-aware text buffer, cursor/selection model, and
+// undo/redo stack shared by TextInput and TextArea. All positions are UTF-16
+// code-unit offsets snapped to extended grapheme cluster boundaries.
+struct TextEditorChange {
+    bool text = false;
+    bool cursor = false;
+    bool selection = false;
+
+    bool any() const { return text || cursor || selection; }
+};
+
+class TextEditorState {
 public:
+    using Change = TextEditorChange;
+
     struct Snapshot {
         QString text;
         int cursor = 0;
@@ -22,13 +32,8 @@ public:
         bool operator!=(const Snapshot& other) const noexcept { return !(*this == other); }
     };
 
-    struct Change {
-        bool text = false;
-        bool cursor = false;
-        bool selection = false;
-
-        bool any() const { return text || cursor || selection; }
-    };
+    static constexpr int MaxUndoSteps = 100;
+    static constexpr qsizetype MaxUndoTotalChars = 2 * 1024 * 1024;
 
     const QString& text() const { return m_text; }
     int cursorPosition() const { return m_cursorPosition; }
@@ -39,6 +44,8 @@ public:
     bool hasSelection() const { return m_cursorPosition != m_selectionAnchor; }
     bool canUndo() const { return !m_undoStack.isEmpty(); }
     bool canRedo() const { return !m_redoStack.isEmpty(); }
+    qsizetype retainedUndoChars() const { return m_undoChars + m_redoChars; }
+    void breakUndoCoalescing() { m_coalesceTyping = false; }
 
     Change setText(const QString& text);
     Change moveCursor(int position, bool extendSelection = false);
@@ -68,12 +75,17 @@ public:
     static QString sanitizeSingleLine(const QString& text);
     // Converts between UTF-16 code-unit offsets and terminal display columns.
     static int columnForPosition(const QString& text, int position);
-    static int positionForColumn(const QString& text, int column);
+    static int positionForColumn(QStringView text, int column, bool sanitizeControls = false);
+    static int positionForColumn(const QString& text, int column, bool sanitizeControls = false) {
+        return positionForColumn(QStringView(text), column, sanitizeControls);
+    }
 
 private:
     Snapshot snapshot() const;
     Change changeSince(const Snapshot& before) const;
     void recordUndo();
+    void clearRedo();
+    void trimUndoBudget();
     Change replaceRange(int start, int end, const QString& replacement);
     void restore(const Snapshot& snapshot);
 
@@ -82,6 +94,9 @@ private:
     int m_selectionAnchor = 0;
     QVector<Snapshot> m_undoStack;
     QVector<Snapshot> m_redoStack;
+    qsizetype m_undoChars = 0;
+    qsizetype m_redoChars = 0;
+    bool m_coalesceTyping = false;
 };
 
 } // namespace qmltui

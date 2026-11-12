@@ -41,14 +41,11 @@ public:
     Q_PROPERTY(bool accepted READ isAccepted WRITE setAccepted NOTIFY acceptedChanged)
 
 public:
-    MouseEvent(Type type, int x, int y, int nativeButton, int modifiers = 0,
-               int wheelDeltaX = 0, int wheelDeltaY = 0, QObject *parent = nullptr)
-        : QObject(parent), m_type(type), m_x(x), m_y(y),
-          m_nativeButton(nativeButton),
-          m_button(mapButton(type, nativeButton)),
-          m_modifiers(modifiers),
-          m_wheelDeltaX(wheelDeltaX), m_wheelDeltaY(wheelDeltaY),
-          m_accepted(false) {}
+    MouseEvent(Type type, int x, int y, int nativeButton, int modifiers = 0, int wheelDeltaX = 0,
+               int wheelDeltaY = 0, QObject* parent = nullptr)
+        : QObject(parent), m_type(type), m_x(x), m_y(y), m_nativeButton(nativeButton),
+          m_button(mapButton(type, nativeButton)), m_modifiers(modifiers),
+          m_wheelDeltaX(wheelDeltaX), m_wheelDeltaY(wheelDeltaY), m_accepted(false) {}
 
     Type type() const { return m_type; }
     int x() const { return m_x; }
@@ -76,10 +73,14 @@ private:
     static Qt::MouseButton mapButton(Type type, int native) {
         if (type == Type::Wheel || native < 0) return Qt::NoButton;
         switch (native & 3) {
-        case 0: return Qt::LeftButton;
-        case 1: return Qt::MiddleButton;
-        case 2: return Qt::RightButton;
-        default: return Qt::NoButton;
+        case 0:
+            return Qt::LeftButton;
+        case 1:
+            return Qt::MiddleButton;
+        case 2:
+            return Qt::RightButton;
+        default:
+            return Qt::NoButton;
         }
     }
 

@@ -26,7 +26,7 @@ void ProgressBar::setBarColor(Color color) {
 
 void ProgressBar::paint(TextGridBuffer& buffer, int absX, int absY,
                         const ClipRect& clipRect) const {
-    if (!m_visible) return;
+    if (!visible()) return;
 
     // Render borders and backgrounds first
     Rectangle::paint(buffer, absX, absY, clipRect);

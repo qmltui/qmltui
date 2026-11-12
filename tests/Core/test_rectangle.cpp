@@ -30,6 +30,7 @@ private slots:
     void testBorderStyles();
     void testQmlIntegration();
     void testBorderAndPaddingInsetsChildren();
+    void testWideGlyphSplitLinkClearAndDisabledBorder();
 };
 
 // "default" and "transparent" both reach the terminal as its own colour, but
@@ -433,6 +434,48 @@ void TestRectangle::testBorderAndPaddingInsetsChildren() {
                               QUrl());
     std::unique_ptr<QObject> implicitObj(implicitQtQmlComp.create());
     QVERIFY2(implicitObj, qPrintable(implicitQtQmlComp.errorString()));
+}
+
+void TestRectangle::testWideGlyphSplitLinkClearAndDisabledBorder() {
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(6, 3));
+
+    const uint8_t linkId = buffer.registerLink(QStringLiteral("https://example.com"));
+    QVERIFY(linkId != 0);
+    buffer.setActiveLinkId(linkId);
+    // Place wide CJK glyphs at x=0..1 and x=3..4 on row 0 and row 1 so the rectangle at x=1..3
+    // straddles the trailing half of the left glyph and the leading half of the right glyph.
+    for (int y = 0; y < 3; ++y) {
+        buffer.setGrapheme(0, y, QByteArrayView("漢"), 2, Color::DefaultTag, Color::DefaultTag);
+        buffer.setGrapheme(2, y, QByteArrayView("X"), 1, Color::DefaultTag, Color::DefaultTag);
+        buffer.setGrapheme(3, y, QByteArrayView("漢"), 2, Color::DefaultTag, Color::DefaultTag);
+    }
+    buffer.setActiveLinkId(0);
+
+    Rectangle rect;
+    rect.setWidth(3);
+    rect.setHeight(3);
+    rect.setColor(Color("default"));
+    rect.border()->setStyle(Border::Single);
+    rect.setEnabled(false);
+
+    testing::paintItem(rect, buffer, 1, 0);
+
+    for (int y = 0; y < 3; ++y) {
+        // Left wide glyph continuation at x=1 was overwritten -> lead at x=0 split to ' '
+        QCOMPARE(buffer.cellAt(0, y).character(), QByteArrayView(" "));
+        QCOMPARE(buffer.cellAt(0, y).displayWidth, uint8_t(1));
+        // Right wide glyph lead at x=3 was overwritten -> continuation at x=4 split to ' '
+        QCOMPARE(buffer.cellAt(4, y).character(), QByteArrayView(" "));
+        QVERIFY(!buffer.cellAt(4, y).continuation);
+        // All cells covered by the opaque Rectangle have their OSC-8 linkId cleared
+        for (int x = 1; x <= 3; ++x)
+            QCOMPARE(buffer.cellAt(x, y).linkId, uint8_t(0));
+    }
+
+    // Disabled Rectangle dims its border cells
+    QVERIFY((buffer.cellAt(1, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
+    QVERIFY((buffer.cellAt(3, 2).attributes & TextAttribute::Dim) != TextAttribute::None);
 }
 
 QTEST_GUILESS_MAIN(TestRectangle)

@@ -3,15 +3,19 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
 #include <QmlTui/Core/Items/Item.h>
-#include <QmlTui/Core/Items/TextEditorState.h>
 #include <QString>
+#include <QStringView>
+#include <QVector>
 #include <QmlTui/Core/Primitives/HighlightRange.h>
 #include <QMap>
+#include <memory>
 #include <vector>
 
 namespace qmltui {
 
 class ClockTimer;
+class TextEditorState;
+struct TextEditorChange;
 
 // Multi-line editable text item with 2D scrolling (`contentX`/`contentY`),
 // selection, undo/redo, and revision-checked syntax/diagnostic highlight layers.
@@ -69,13 +73,13 @@ public:
     explicit TextArea(QObject* parent = nullptr);
     ~TextArea() override;
 
-    QString text() const { return m_editor.text(); }
+    QString text() const;
     void setText(const QString& text);
     Color color() const { return m_color; }
     void setColor(Color color);
     QString placeholderText() const { return m_placeholderText; }
     void setPlaceholderText(const QString& text);
-    int cursorPosition() const { return m_editor.cursorPosition(); }
+    int cursorPosition() const;
     void setCursorPosition(int pos);
     int selectionStart() const;
     int selectionEnd() const;
@@ -101,8 +105,8 @@ public:
     void setSelectionColor(Color color);
     Color selectedTextColor() const { return m_selectedTextColor; }
     void setSelectedTextColor(Color color);
-    bool canUndo() const { return m_editor.canUndo(); }
-    bool canRedo() const { return m_editor.canRedo(); }
+    bool canUndo() const;
+    bool canRedo() const;
 
     quint64 textRevision() const { return m_textRevision; }
     bool tabChangesFocus() const { return m_tabChangesFocus; }
@@ -129,6 +133,7 @@ public:
     Q_INVOKABLE void redo();
 
     void keyPressEvent(class KeyEvent* event) override;
+    bool consumesPrintableKeys() const override { return !m_readOnly; }
     void mousePressEvent(class MouseEvent* event) override;
     void mouseMoveEvent(class MouseEvent* event) override;
     void wheelEvent(class MouseEvent* event) override;
@@ -180,7 +185,8 @@ private:
         bool operator!=(const ComposedRun& other) const noexcept { return !(*this == other); }
     };
 
-    void applyEditorChange(const TextEditorState::Change& change);
+    void applyEditorChange(const TextEditorChange& change);
+    QStringView lineViewAt(int line) const;
     void lineColumnForPosition(int position, int& line, int& column) const;
     int positionForLineColumn(int line, int column) const;
     void moveCursor(int position, bool extendSelection);
@@ -195,10 +201,10 @@ private:
     void snapRangeOutward(int start, int length, int& outStart, int& outEnd);
     void recomposeHighlightRuns();
 
-    TextEditorState m_editor;
+    std::unique_ptr<TextEditorState> m_editor;
     Color m_color;
     QString m_placeholderText;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, Color::DefaultTag);
     Color m_cursorColor = Color::Invalid;
     uint32_t m_resolvedCursorColor = 0;
     bool m_hasResolvedCursorColor = false;
@@ -224,6 +230,7 @@ private:
     bool m_showWhitespace = false;
 
     quint64 m_textRevision = 0;
+    QVector<int> m_lineOffsets{0};
     QMap<QString, HighlightLayer> m_highlightLayers;
     std::vector<ComposedRun> m_composedRuns;
     std::vector<int> m_graphemeBoundaries;

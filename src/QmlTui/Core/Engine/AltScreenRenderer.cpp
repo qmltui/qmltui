@@ -16,6 +16,8 @@ void AltScreenRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
 }
 
 void AltScreenRenderer::stop(Terminal* rootWindow, TerminalDevice& device) {
+    m_hasCommittedFrame = false;
+    m_lastHardwareCursor.reset();
     if (!outputEnabled()) return;
     if (rootWindow) {
         device.write("\033[?1049l"); // Disable alternate screen buffer
@@ -29,6 +31,8 @@ void AltScreenRenderer::resize(int width, int height) {
     m_currentBuffer.resize(width, height);
     m_nextBuffer.resize(width, height);
     m_repaintAll = true;
+    m_hasCommittedFrame = false;
+    m_lastHardwareCursor.reset();
 }
 
 bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device) {
@@ -37,13 +41,114 @@ bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device
     QElapsedTimer timer;
     timer.start();
 
-    if (TerminalEngine* engine = rootWindow->engine()) {
+    QPointer<Terminal> rootGuard(rootWindow);
+    QPointer<TerminalEngine> engine = rootWindow->engine();
+    const bool ownedByEngine = engine && (engine->renderer() == this);
+    if (engine) {
         engine->clearHardwareCursorPosition();
     }
-    m_nextBuffer.clear();
-    ItemPaintTraversal::renderSubtree(rootWindow, m_nextBuffer, 0, 0);
-    if (TerminalEngine* engine = rootWindow->engine()) {
+
+    const int bufW = m_nextBuffer.width();
+    const int bufH = m_nextBuffer.height();
+    const QRect viewportRect(0, 0, bufW, bufH);
+
+    ItemPaintTraversal::layoutSubtree(rootWindow);
+    if (!rootGuard || (ownedByEngine && (!engine || engine->renderer() != this))) return false;
+
+    const bool sixelActive = capabilities().sixelGraphics && !capabilities().kittyGraphics;
+    bool canPartial = m_hasCommittedFrame && !m_repaintAll && engine && !engine->hasFullDamage() &&
+                      rootWindow->activePopups().isEmpty() && !sixelActive &&
+                      m_currentBuffer.width() == bufW && m_currentBuffer.height() == bufH &&
+                      bufW > 0 && bufH > 0 && m_currentBuffer.linkCount() < 200;
+
+    QRect dmg;
+    if (canPartial) {
+        bool treeFullDamage = false;
+        dmg = engine->damageRect();
+        ItemPaintTraversal::collectDirtyDamage(rootWindow, viewportRect, dmg, treeFullDamage);
+        if (treeFullDamage) {
+            canPartial = false;
+        } else if (!dmg.isEmpty()) {
+            dmg = dmg.intersected(viewportRect);
+            if (!dmg.isEmpty()) {
+                int left = (std::max)(0, dmg.left() - 1);
+                int right = (std::min)(bufW - 1, dmg.right() + 1);
+                const int top = dmg.top();
+                const int bottom = dmg.bottom();
+                while (left > 0) {
+                    bool straddles = false;
+                    for (int y = top; y <= bottom; ++y) {
+                        if (m_currentBuffer.cellAt(left, y).continuation) {
+                            straddles = true;
+                            break;
+                        }
+                    }
+                    if (!straddles) break;
+                    --left;
+                }
+                while (right + 1 < bufW) {
+                    bool straddles = false;
+                    for (int y = top; y <= bottom; ++y) {
+                        if (m_currentBuffer.cellAt(right + 1, y).continuation) {
+                            straddles = true;
+                            break;
+                        }
+                    }
+                    if (!straddles) break;
+                    ++right;
+                }
+                dmg = QRect(left, top, right - left + 1, bottom - top + 1);
+                if (static_cast<qint64>(dmg.width()) * dmg.height() * 2 >=
+                    static_cast<qint64>(bufW) * bufH) {
+                    canPartial = false;
+                }
+            }
+        }
+    }
+
+    if (engine) {
+        engine->clearDamage();
+    }
+
+    if (canPartial) {
+        m_nextBuffer.copyFrom(m_currentBuffer);
+        if (dmg.isEmpty()) {
+            ItemPaintTraversal::clearPaintDirty(rootWindow);
+            if (engine && m_lastHardwareCursor.has_value() && rootWindow->focusedItem() &&
+                rootWindow->focusedItem()->isEffectivelyVisible()) {
+                engine->setHardwareCursorPosition(m_lastHardwareCursor->x(),
+                                                  m_lastHardwareCursor->y());
+            }
+        } else {
+            m_nextBuffer.clearRect(dmg.x(), dmg.y(), dmg.width(), dmg.height());
+            ItemPaintTraversal::paintSubtree(rootWindow, m_nextBuffer, 0, 0,
+                                             ClipRect{dmg.x(), dmg.y(), dmg.width(), dmg.height()});
+            if (!rootGuard || (ownedByEngine && (!engine || engine->renderer() != this))) {
+                if (engine) engine->markFullDamage();
+                return false;
+            }
+            if (engine && !engine->hardwareCursorPosition().has_value() &&
+                m_lastHardwareCursor.has_value() && !dmg.contains(*m_lastHardwareCursor) &&
+                rootWindow->focusedItem() && rootWindow->focusedItem()->isEffectivelyVisible()) {
+                engine->setHardwareCursorPosition(m_lastHardwareCursor->x(),
+                                                  m_lastHardwareCursor->y());
+            }
+        }
+    } else {
+        m_nextBuffer.clear();
+        ItemPaintTraversal::paintSubtree(rootWindow, m_nextBuffer, 0, 0);
+        if (!rootGuard || (ownedByEngine && (!engine || engine->renderer() != this))) {
+            if (engine) engine->markFullDamage();
+            return false;
+        }
+    }
+
+    if (engine) {
         emit engine->framePainted();
+        if (!rootGuard || !engine || (ownedByEngine && engine->renderer() != this)) {
+            if (engine) engine->markFullDamage();
+            return false;
+        }
     }
     const qint64 paintedNs = timer.nsecsElapsed();
 
@@ -112,7 +217,11 @@ bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device
     stats.diffMicros = (diffedNs - paintedNs) / 1000;
     stats.diffBytes = static_cast<qint64>(m_ansi.size());
     if (outputEnabled() && !m_ansi.empty()) {
-        if (!device.write(m_ansi)) return false;
+        if (!device.write(m_ansi)) {
+            if (engine) engine->markFullDamage();
+            m_hasCommittedFrame = false;
+            return false;
+        }
         stats.bytesWritten = stats.diffBytes;
     }
     stats.queuedBytes = static_cast<qint64>(device.pendingBytes());
@@ -120,6 +229,8 @@ bool AltScreenRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device
     m_lastStats = stats;
 
     m_currentBuffer.swap(m_nextBuffer);
+    m_hasCommittedFrame = true;
+    m_lastHardwareCursor = engine ? engine->hardwareCursorPosition() : std::nullopt;
     return true;
 }
 

@@ -96,7 +96,7 @@ void BigText::setBackgroundColor(Color color) {
 
 void BigText::paint(TextGridBuffer &buffer, int absX, int absY, const ClipRect &clipRect) const {
     Q_UNUSED(clipRect);
-    if (!m_visible || m_text.isEmpty()) return;
+    if (!visible() || m_text.isEmpty()) return;
 
     const int startX = absX;
     const int startY = absY;

@@ -39,6 +39,7 @@ class InputRouter;
 // Main/engine thread only.
 class QMLTUI_CORE_EXPORT TerminalEngine : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(TerminalEngine)
 
 public:
     explicit TerminalEngine(Terminal* rootWindow, QObject* parent = nullptr);
@@ -184,6 +185,13 @@ public:
     void clearHardwareCursorPosition();
     std::optional<QPoint> hardwareCursorPosition() const { return m_hardwareCursorPosition; }
 
+    // Screen-space damage accumulation for partial-frame rendering.
+    void addDamageRect(const QRect& rect);
+    void markFullDamage();
+    bool hasFullDamage() const { return m_fullDamage; }
+    QRect damageRect() const { return m_damageRect; }
+    void clearDamage();
+
     void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
     // Raw terminal bytes, exactly as a backend delivers them. Runner feeds
     // scripted typing here so it takes the same decoder path as a real keyboard.
@@ -270,6 +278,8 @@ private:
     QList<QRect> m_invalidatedCommittedRects;
     quint64 m_outputSessionGeneration = 0;
     Renderer* m_renderer = nullptr;
+    std::vector<std::unique_ptr<Renderer>> m_retiredRenderers;
+    bool m_renderingFrame = false;
     bool m_rendererStarted = false;
     bool m_alternateScreenMessageSession = false;
     bool m_terminalOutputEnabled = true;
@@ -306,6 +316,8 @@ private:
     bool m_ansiPaletteQueried = false;
     Color m_originalBackgroundColor = Color::Invalid;
     std::optional<QPoint> m_hardwareCursorPosition;
+    QRect m_damageRect;
+    bool m_fullDamage = true;
     bool m_terminalProgressActive = false;
     std::unique_ptr<InputRouter> m_router;
 };

@@ -16,6 +16,7 @@ class AnchorLine;
 // Respects the parent's padding when anchoring to parent edges.
 class QMLTUI_CORE_EXPORT Anchors : public QObject {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Anchors)
     QML_ELEMENT
     QML_UNCREATABLE("Anchors is only available as a grouped property of Item")
 

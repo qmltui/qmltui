@@ -54,7 +54,9 @@ void MouseArea::updateContainsMouse() {
     }
     if (m_containsMouse == inside) return;
     m_containsMouse = inside;
+    QPointer<MouseArea> self(this);
     emit containsMouseChanged();
+    if (!self) return;
     if (inside)
         emit entered();
     else
@@ -123,12 +125,24 @@ void MouseArea::mouseReleaseEvent(MouseEvent* event) {
     if (!endsPress && !(m_acceptedButtons & button)) {
         return;
     }
-    setMousePosition(event->x(), event->y());
+    const int ex = event->x();
+    const int ey = event->y();
+    QPointer<MouseArea> self(this);
+    setMousePosition(ex, ey);
+    if (!self) return;
     setPressedButtons(button == Qt::NoButton ? Qt::MouseButtons(Qt::NoButton)
                                              : m_pressedButtons & ~Qt::MouseButtons(button));
-    if (!isPressed()) updateContainsPress(false);
+    if (!self) return;
+    if (!isPressed()) {
+        updateContainsPress(false);
+        if (!self) return;
+    }
     emit released(event);
-    if (event->x() >= 0 && event->x() < width() && event->y() >= 0 && event->y() < height()) {
+    if (!self) {
+        event->setAccepted(true);
+        return;
+    }
+    if (ex >= 0 && ex < width() && ey >= 0 && ey < height()) {
         emit clicked(event);
     }
     event->setAccepted(true);

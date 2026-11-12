@@ -5,6 +5,7 @@
 #include <QQmlEngine>
 #include <memory>
 #include <QmlTui/Core/Items/TextInput.h>
+#include <QmlTui/Core/Items/TextEditorState.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
@@ -30,6 +31,7 @@ private slots:
     void testFieldPropertiesAndPasswordRendering();
     void testTerminalCursorCustomization();
     void testDoubleClickWordSelection();
+    void testTypingCoalescingAndUndoBudget();
     void testQmlSurface();
 };
 
@@ -351,6 +353,54 @@ void TestTextInput::testDoubleClickWordSelection() {
     MouseEvent press2(MouseEvent::Type::Press, 7, 0, 0);
     input.mousePressEvent(&press2);
     QCOMPARE(input.selectedText(), QStringLiteral("world"));
+}
+
+void TestTextInput::testTypingCoalescingAndUndoBudget() {
+    TextInput input;
+    for (const QChar ch : QStringLiteral("hello world")) {
+        KeyEvent ev(Qt::Key_Any, QString(ch), Qt::NoModifier);
+        input.keyPressEvent(&ev);
+    }
+    QCOMPARE(input.text(), QStringLiteral("hello world"));
+
+    // "world" coalesced into one undo step; space and "hello" are separate steps.
+    input.undo();
+    QCOMPARE(input.text(), QStringLiteral("hello "));
+    input.undo();
+    QCOMPARE(input.text(), QStringLiteral("hello"));
+    input.undo();
+    QCOMPARE(input.text(), QString());
+    QVERIFY(!input.canUndo());
+
+    input.redo();
+    QCOMPARE(input.text(), QStringLiteral("hello"));
+    input.redo();
+    QCOMPARE(input.text(), QStringLiteral("hello "));
+    input.redo();
+    QCOMPARE(input.text(), QStringLiteral("hello world"));
+
+    // Explicit paste always starts its own undo step even for a single character.
+    input.paste(QStringLiteral("!"));
+    QCOMPARE(input.text(), QStringLiteral("hello world!"));
+    input.undo();
+    QCOMPARE(input.text(), QStringLiteral("hello world"));
+
+    // Verify total retained undo UTF-16 budget (~4 MiB) caps memory on large buffers.
+    TextEditorState editor;
+    editor.setText(QString(200 * 1024, QLatin1Char('x')));
+    for (int i = 0; i < 30; ++i) {
+        editor.moveCursor(i % 64);
+        editor.replaceSelection(QStringLiteral("!\n"));
+    }
+    QVERIFY(editor.canUndo());
+    QVERIFY2(editor.retainedUndoChars() <= TextEditorState::MaxUndoTotalChars,
+             qPrintable(QString::number(editor.retainedUndoChars())));
+
+    const QString afterEdits = editor.text();
+    editor.undo();
+    QVERIFY(editor.text() != afterEdits);
+    editor.redo();
+    QCOMPARE(editor.text(), afterEdits);
 }
 
 void TestTextInput::testQmlSurface() {

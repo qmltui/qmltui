@@ -4,11 +4,13 @@
 
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Engine/InputScope.h>
-#include <QPointer>
 #include <QtQml/qqmlregistration.h>
 #include <cstdint>
+#include <memory>
 
 namespace qmltui {
+
+struct PopupPrivate;
 
 // Floating overlay container painted in the Terminal's overlay pass above
 // normal scene items.
@@ -18,12 +20,14 @@ namespace qmltui {
 // closed.
 class QMLTUI_CORE_EXPORT Popup : public Item, public InputScope {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Popup)
     QML_ELEMENT
 
     Q_PROPERTY(bool modal READ modal WRITE setModal NOTIFY modalChanged)
     Q_PROPERTY(
         bool dimBackground READ dimBackground WRITE setDimBackground NOTIFY dimBackgroundChanged)
-    Q_PROPERTY(int closePolicy READ closePolicy WRITE setClosePolicy NOTIFY closePolicyChanged)
+    Q_PROPERTY(
+        ClosePolicies closePolicy READ closePolicy WRITE setClosePolicy NOTIFY closePolicyChanged)
     Q_PROPERTY(qmltui::Item* initialFocusItem READ initialFocusItem WRITE setInitialFocusItem NOTIFY
                    initialFocusItemChanged)
     // Logical opener Item used to nest popups (parentPopup) when the popup is
@@ -43,21 +47,21 @@ public:
     explicit Popup(QObject* parent = nullptr);
     ~Popup() override;
 
-    bool modal() const { return m_modal; }
+    bool modal() const;
     void setModal(bool modal);
 
-    bool dimBackground() const { return m_dimBackground; }
+    bool dimBackground() const;
     void setDimBackground(bool dim);
 
-    int closePolicy() const { return m_closePolicy; }
-    void setClosePolicy(int policy);
-    Item* initialFocusItem() const { return m_initialFocusItem; }
+    ClosePolicies closePolicy() const;
+    void setClosePolicy(ClosePolicies policy);
+    Item* initialFocusItem() const;
     void setInitialFocusItem(Item* item);
-    Item* owner() const { return m_owner; }
+    Item* owner() const;
     void setOwner(Item* owner);
     Popup* parentPopup() const;
-    quint64 openSerial() const { return m_openSerial; }
-    void setOpenSerial(quint64 serial) { m_openSerial = serial; }
+    quint64 openSerial() const;
+    void setOpenSerial(quint64 serial);
     bool isDescendantOfPopup(const Popup* popup) const;
 
     Q_INVOKABLE void open();
@@ -94,14 +98,9 @@ signals:
     void ownerChanged();
 
 private:
-    bool m_modal = false;
-    bool m_dimBackground = true;
-    int m_closePolicy = CloseOnEscape | CloseOnOutsideClick;
-    QPointer<Item> m_initialFocusItem;
-    QPointer<Item> m_previousFocusItem;
-    bool m_tookFocus = false;
-    QPointer<Item> m_owner;
-    quint64 m_openSerial = 0;
+    std::unique_ptr<PopupPrivate> m_d;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Popup::ClosePolicies)
 
 } // namespace qmltui

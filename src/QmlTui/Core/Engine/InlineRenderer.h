@@ -34,12 +34,15 @@ private:
     void invalidateMouseOrigin();
 
     TextGridBuffer m_promptBuffer;
+    TextGridBuffer m_committedPrompt;
     std::string m_ansi;
     Terminal* m_rootWindow = nullptr;
     int m_terminalWidth = 80;
     int m_terminalHeight = 24;
     int m_lastPromptHeight = 0;
+    ColorDepth m_committedColorDepth = ColorDepth::TrueColor;
     std::optional<int> m_mouseRowOffset;
+    bool m_hasCommittedPrompt = false;
     bool m_cursorQueryPending = false;
     bool m_cursorQueryStale = false;
 };

@@ -2,7 +2,7 @@
 
 namespace qmltui {
 
-Keys *Keys::qmlAttachedProperties(QObject *object) {
+Keys* Keys::qmlAttachedProperties(QObject* object) {
     return new Keys(object);
 }
 

@@ -91,22 +91,24 @@ void writePropertyBypassingInterceptor(QObject* target, const QString& name,
 
             QMetaType mType = prop.metaType();
             int typeId = mType.id();
+            int status = -1;
+            int flags = 0;
 
             if (typeId == QMetaType::Int) {
                 int val = value.toInt();
-                void* argv[] = {&val};
+                void* argv[] = {&val, nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             } else if (typeId == QMetaType::Double) {
                 double val = value.toDouble();
-                void* argv[] = {&val};
+                void* argv[] = {&val, nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             } else if (typeId == QMetaType::QString) {
                 QString val = (value.userType() == QMetaType::fromType<Color>().id())
                                   ? value.value<Color>().toString()
                                   : value.toString();
-                void* argv[] = {&val};
+                void* argv[] = {&val, nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             } else if (typeId == QMetaType::fromType<Color>().id()) {
@@ -118,16 +120,23 @@ void writePropertyBypassingInterceptor(QObject* target, const QString& name,
                 } else {
                     col = Color::fromArgb32(Color::resolve(value.toString()));
                 }
-                void* argv[] = {&col};
+                void* argv[] = {&col, nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             } else if (typeId == QMetaType::Bool) {
                 bool val = value.toBool();
-                void* argv[] = {&val};
+                void* argv[] = {&val, nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             } else {
-                void* argv[] = {const_cast<void*>(value.constData())};
+                QVariant converted = value;
+                if (!mType.isValid() ||
+                    (converted.metaType() != mType && !converted.convert(mType)) ||
+                    !converted.isValid() || !converted.data()) {
+                    prop.write(target, value);
+                    return;
+                }
+                void* argv[] = {converted.data(), nullptr, &status, &flags};
                 definingMeta->d.static_metacall(target, QMetaObject::WriteProperty, relativeId,
                                                 argv);
             }

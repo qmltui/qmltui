@@ -151,12 +151,13 @@ protected:
 
 class ClockTimer;
 
-// Process-wide animation driver that ticks all running Animation instances at
-// ~60 Hz on the QmlTui Clock.
+// Per-thread animation driver that ticks all running Animation instances on
+// the owning thread at ~60 Hz on the QmlTui Clock.
 class QMLTUI_CORE_EXPORT AnimationManager : public QObject {
     Q_OBJECT
 public:
     static AnimationManager* instance();
+    ~AnimationManager() override = default;
 
     void registerAnimation(Animation* anim);
     void unregisterAnimation(Animation* anim);
@@ -166,7 +167,6 @@ private slots:
 
 private:
     explicit AnimationManager(QObject* parent = nullptr);
-    ~AnimationManager() override = default;
 
     // On the QmlTui Clock, so a virtual-clock scenario can step animations
     // deterministically while real mode keeps plain QTimer behaviour.

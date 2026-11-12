@@ -28,7 +28,6 @@ void PropertyChanges::setRestoreEntryValues(bool r) {
     emit restoreEntryValuesChanged();
 }
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
 bool PropertyChanges::isExplicit() const {
     return d->isExplicit;
 }
@@ -38,7 +37,6 @@ void PropertyChanges::setIsExplicit(bool e) {
     d->isExplicit = e;
     emit explicitChanged();
 }
-#endif
 
 State::State(QObject* parent) : QObject(parent) {}
 

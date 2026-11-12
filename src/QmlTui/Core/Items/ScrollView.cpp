@@ -8,9 +8,22 @@ namespace qmltui {
 ScrollView::ScrollView(QObject* parent) : Item(parent) {
     setFocusPolicy(Qt::StrongFocus);
     setClip(true);
+    setItemFlag(ItemFlag::ScrollbarOverhang, true);
+    setItemFlag(ItemFlag::BoundedSelfPaint, true);
 }
 
 ScrollView::~ScrollView() = default;
+
+int ScrollView::effectiveContentWidth() const {
+    if (m_contentWidth > 0) return m_contentWidth;
+    int w = 0;
+    for (Item* childItem : childItems()) {
+        if (childItem && childItem->visible()) {
+            w = (std::max)(w, childItem->x() + childItem->width());
+        }
+    }
+    return w;
+}
 
 int ScrollView::effectiveContentHeight() const {
     if (m_contentHeight > 0) return m_contentHeight;
@@ -21,6 +34,20 @@ int ScrollView::effectiveContentHeight() const {
         }
     }
     return h;
+}
+
+void ScrollView::setContentWidth(int w) {
+    if (m_contentWidth == w) return;
+    m_contentWidth = w;
+    emit contentWidthChanged();
+
+    const int viewportW = (std::max)(0, width() - leftPadding() - rightPadding());
+    const int effectiveW = effectiveContentWidth();
+    const int maxScroll = (std::max)(0, effectiveW - viewportW);
+    if (m_contentX > maxScroll) {
+        setContentX(maxScroll);
+    }
+    markDirty();
 }
 
 void ScrollView::setContentHeight(int h) {
@@ -37,6 +64,18 @@ void ScrollView::setContentHeight(int h) {
     markDirty();
 }
 
+void ScrollView::setContentX(int x) {
+    const int viewportW = (std::max)(0, width() - leftPadding() - rightPadding());
+    const int effectiveW = effectiveContentWidth();
+    const int maxScroll = (std::max)(0, effectiveW - viewportW);
+    const int clamped = std::clamp(x, 0, maxScroll);
+    if (m_contentX == clamped) return;
+    m_contentX = clamped;
+    invalidateSubtreeBounds();
+    emit contentXChanged();
+    markDirty();
+}
+
 void ScrollView::setContentY(int y) {
     int viewportH = height() - topPadding() - bottomPadding();
     int effectiveH = effectiveContentHeight();
@@ -44,6 +83,7 @@ void ScrollView::setContentY(int y) {
     int clamped = std::clamp(y, 0, maxScroll);
     if (m_contentY == clamped) return;
     m_contentY = clamped;
+    invalidateSubtreeBounds();
     emit contentYChanged();
     markDirty();
 }
@@ -51,6 +91,7 @@ void ScrollView::setContentY(int y) {
 void ScrollView::setScrollBarVisible(bool visible) {
     if (m_scrollBarVisible == visible) return;
     m_scrollBarVisible = visible;
+    invalidateSubtreeBounds();
     emit scrollBarVisibleChanged();
     markDirty();
 }
@@ -97,6 +138,16 @@ void ScrollView::wheelEvent(MouseEvent* event) {
 
 void ScrollView::ensureChildVisible(Item* childItem) {
     if (!childItem) return;
+    const int viewportW = (std::max)(0, width() - leftPadding() - rightPadding());
+    const int childX = childItem->x();
+    const int childW = childItem->width();
+    if (viewportW > 0) {
+        if (childX < m_contentX) {
+            setContentX(childX);
+        } else if (childX + childW > m_contentX + viewportW) {
+            setContentX(childX + childW - viewportW);
+        }
+    }
     int viewportH = height() - topPadding() - bottomPadding();
     int childY = childItem->y();
     int childH = childItem->height();

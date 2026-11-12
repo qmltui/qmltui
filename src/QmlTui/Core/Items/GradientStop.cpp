@@ -2,7 +2,7 @@
 
 namespace qmltui {
 
-GradientStop::GradientStop(QObject *parent) : QObject(parent) {}
+GradientStop::GradientStop(QObject* parent) : QObject(parent) {}
 
 void GradientStop::setPosition(qreal pos) {
     if (qFuzzyCompare(m_position, pos)) return;

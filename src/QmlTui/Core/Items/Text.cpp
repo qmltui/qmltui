@@ -166,13 +166,17 @@ bool hasMarkupTrigger(QStringView line, bool parseAnsi, bool parseHtml) {
 } // namespace
 
 Text::Text(QObject* parent) : Item(parent) {
-    connect(this, &Item::widthChanged, this, [this]() {
-        if (m_wrapMode != NoWrap) {
-            invalidateLayout();
+    setItemFlag(ItemFlag::BoundedSelfPaint);
+    auto rewrap = [this]() {
+        if (!m_updatingImplicitSize && m_wrapMode != NoWrap) {
+            invalidateWrap();
             updateImplicitSize();
             markDirty();
         }
-    });
+    };
+    connect(this, &Item::widthChanged, this, rewrap);
+    connect(this, &Item::leftPaddingChanged, this, rewrap);
+    connect(this, &Item::rightPaddingChanged, this, rewrap);
 }
 
 Text::~Text() = default;
@@ -180,7 +184,7 @@ Text::~Text() = default;
 void Text::setSpans(const QList<Span>& spans) {
     if (m_spans == spans) return;
     m_spans = spans;
-    invalidateLayout();
+    invalidateParse();
     updateImplicitSize();
     emit spansChanged();
     markDirty();
@@ -189,7 +193,7 @@ void Text::setSpans(const QList<Span>& spans) {
 void Text::setText(const QString& text) {
     if (m_text == text) return;
     m_text = text;
-    invalidateLayout();
+    invalidateParse();
     updateImplicitSize();
     emit textChanged();
     markDirty();
@@ -198,7 +202,7 @@ void Text::setText(const QString& text) {
 void Text::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
-    m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    m_resolvedColor = Color::resolve(m_color, Color::DefaultTag);
     emit colorChanged();
     markDirty();
 }
@@ -246,14 +250,14 @@ void Text::setReversed(bool reversed) {
     markDirty();
 }
 
-void Text::setHorizontalAlignment(int alignment) {
+void Text::setHorizontalAlignment(Qt::Alignment alignment) {
     if (m_horizontalAlignment == alignment) return;
     m_horizontalAlignment = alignment;
     emit horizontalAlignmentChanged();
     markDirty();
 }
 
-void Text::setVerticalAlignment(int alignment) {
+void Text::setVerticalAlignment(Qt::Alignment alignment) {
     if (m_verticalAlignment == alignment) return;
     m_verticalAlignment = alignment;
     emit verticalAlignmentChanged();
@@ -263,7 +267,7 @@ void Text::setVerticalAlignment(int alignment) {
 void Text::setTextFormat(TextFormat format) {
     if (m_textFormat == format) return;
     m_textFormat = format;
-    invalidateLayout();
+    invalidateParse();
     updateImplicitSize();
     emit textFormatChanged();
     markDirty();
@@ -272,7 +276,7 @@ void Text::setTextFormat(TextFormat format) {
 void Text::setWrapMode(WrapMode mode) {
     if (m_wrapMode == mode) return;
     m_wrapMode = mode;
-    invalidateLayout();
+    invalidateWrap();
     updateImplicitSize();
     emit wrapModeChanged();
     markDirty();
@@ -297,12 +301,12 @@ void Text::setGradient(Gradient* gradient) {
 }
 
 void Text::updateImplicitSize() {
+    m_updatingImplicitSize = true;
+    ensureParsed();
+    setImplicitWidth(m_naturalImplicitWidth);
     ensureLayout();
-    int maxWidth = 0;
-    for (const LineLayout& line : m_lines)
-        maxWidth = (std::max)(maxWidth, line.visualWidth);
-    setImplicitWidth(maxWidth);
     setImplicitHeight(static_cast<int>(m_lines.size()));
+    m_updatingImplicitSize = false;
 }
 
 int Text::visualLength(const QString& line) const {
@@ -327,8 +331,16 @@ int Text::layoutLineRuns(QStringView line, const StyleRun* runs, qsizetype runCo
     return visualWidth;
 }
 
-void Text::commitLine(int firstGlyph, int lineVisualWidth, int availW) const {
-    const int glyphCount = static_cast<int>(m_glyphs.size()) - firstGlyph;
+void Text::recordUnwrappedLine(int firstGlyph, int lineVisualWidth) const {
+    UnwrappedLine line;
+    line.firstGlyph = firstGlyph;
+    line.glyphCount = static_cast<int>(m_glyphs.size()) - firstGlyph;
+    line.visualWidth = lineVisualWidth;
+    m_unwrappedLines.push_back(line);
+    m_naturalImplicitWidth = (std::max)(m_naturalImplicitWidth, lineVisualWidth);
+}
+
+void Text::commitLine(int firstGlyph, int glyphCount, int lineVisualWidth, int availW) const {
     if (m_wrapMode != NoWrap && availW > 0) {
         wrapGlyphs(firstGlyph, glyphCount, availW);
     } else {
@@ -458,21 +470,40 @@ TextAttribute Text::baseAttributes() const {
 
 int Text::appendGrapheme(const GraphemeRef& cluster, const TextStyle& style, uint16_t linkIndex,
                          std::vector<GlyphEntry>* entries, QByteArray* bytes) const {
+    if (cluster.utf16 == u"\r") return 0;
+    if (cluster.utf16 == u"\t") {
+        if (entries) {
+            GlyphEntry entry;
+            entry.style = style;
+            entry.advance = 1;
+            entry.cellWidth = 1;
+            entry.linkIndex = linkIndex;
+            entry.glyphOffset = static_cast<uint32_t>(bytes->size());
+            bytes->append(' ');
+            entry.glyphLength = 1;
+            entries->push_back(entry);
+        }
+        return 1;
+    }
+
     const int advance = (std::max)(0, cluster.width);
-    int cellWidth = advance;
     if (advance == 0) {
+        // Combining marks keep cellWidth == 0 under sanitizeControls and attach to
+        // the preceding cell; raw C0/C1 control characters have zero layout advance
+        // and must not paint a 1-column glyph that overlaps or overflows the line.
         GraphemeIterator sanitized(cluster.utf16, /*sanitizeControls=*/true);
         GraphemeRef part;
-        cellWidth = 0;
+        int sanitizedWidth = 0;
         while (sanitized.next(part))
-            cellWidth += part.width;
+            sanitizedWidth += part.width;
+        if (sanitizedWidth > 0) return 0;
     }
 
     if (entries) {
         GlyphEntry entry;
         entry.style = style;
         entry.advance = static_cast<uint8_t>((std::min)(advance, 255));
-        entry.cellWidth = static_cast<uint8_t>((std::min)(cellWidth, 255));
+        entry.cellWidth = static_cast<uint8_t>((std::min)(advance, 255));
         entry.linkIndex = linkIndex;
         entry.glyphOffset = static_cast<uint32_t>(bytes->size());
         char encoded[64];
@@ -654,9 +685,8 @@ void Text::wrapGlyphs(int startGlyph, int glyphCount, int availW) const {
     flushLine();
 }
 
-void Text::layoutSpans() const {
+void Text::parseSpans() const {
     // Segment the whole logical line so a style boundary never breaks a grapheme.
-    const int availW = width() - leftPadding() - rightPadding();
     if (m_spans.size() == 1) {
         const QStringView view(m_spans[0].text());
         const StyleRun singleRun{view.size(), m_spans[0].style(), 0};
@@ -664,11 +694,13 @@ void Text::layoutSpans() const {
         do {
             qsizetype lineEnd = view.indexOf(u'\n', lineStart);
             if (lineEnd < 0) lineEnd = view.size();
+            const qsizetype sliceEnd =
+                (lineEnd > lineStart && view[lineEnd - 1] == u'\r') ? (lineEnd - 1) : lineEnd;
             const int firstGlyph = static_cast<int>(m_glyphs.size());
             const int lineVisualWidth =
-                layoutLineRuns(view.sliced(lineStart, lineEnd - lineStart), &singleRun, 1,
+                layoutLineRuns(view.sliced(lineStart, sliceEnd - lineStart), &singleRun, 1,
                                lineStart, &m_glyphs, &m_glyphBytes);
-            commitLine(firstGlyph, lineVisualWidth, availW);
+            recordUnwrappedLine(firstGlyph, lineVisualWidth);
             lineStart = lineEnd + 1;
         } while (lineStart <= view.size());
         return;
@@ -686,40 +718,55 @@ void Text::layoutSpans() const {
     do {
         qsizetype lineEnd = view.indexOf(u'\n', lineStart);
         if (lineEnd < 0) lineEnd = view.size();
+        const qsizetype sliceEnd =
+            (lineEnd > lineStart && view[lineEnd - 1] == u'\r') ? (lineEnd - 1) : lineEnd;
         const int firstGlyph = static_cast<int>(m_glyphs.size());
         const int lineVisualWidth =
-            layoutLineRuns(view.sliced(lineStart, lineEnd - lineStart), runs.constData(),
+            layoutLineRuns(view.sliced(lineStart, sliceEnd - lineStart), runs.constData(),
                            runs.size(), lineStart, &m_glyphs, &m_glyphBytes);
-        commitLine(firstGlyph, lineVisualWidth, availW);
+        recordUnwrappedLine(firstGlyph, lineVisualWidth);
         lineStart = lineEnd + 1;
     } while (lineStart <= view.size());
 }
 
-void Text::ensureLayout() const {
-    if (!m_layoutDirty) return;
+void Text::ensureParsed() const {
+    if (!m_parseDirty) return;
     m_glyphs.clear();
-    m_lines.clear();
+    m_unwrappedLines.clear();
     m_glyphBytes.clear();
     m_links.clear();
+    m_naturalImplicitWidth = 0;
 
     if (!m_spans.isEmpty()) {
-        layoutSpans();
-        m_layoutDirty = false;
-        return;
+        parseSpans();
+    } else {
+        m_unwrappedLines.reserve(static_cast<size_t>(m_text.count(u'\n') + 1));
+        for (QStringView line : QStringTokenizer{m_text, u'\n'}) {
+            if (line.endsWith(u'\r')) line.chop(1);
+            const int startGlyph = static_cast<int>(m_glyphs.size());
+            const int lineVisualWidth = parseLine(line, &m_glyphs, &m_glyphBytes);
+            recordUnwrappedLine(startGlyph, lineVisualWidth);
+        }
     }
+    m_parseDirty = false;
+    m_layoutDirty = true;
+}
+
+void Text::ensureLayout() const {
+    ensureParsed();
+    if (!m_layoutDirty) return;
+    m_lines.clear();
+    m_lines.reserve(m_unwrappedLines.size());
 
     const int availW = width() - leftPadding() - rightPadding();
-    m_lines.reserve(static_cast<size_t>(m_text.count(u'\n') + 1));
-    for (QStringView line : QStringTokenizer{m_text, u'\n'}) {
-        const int startGlyph = static_cast<int>(m_glyphs.size());
-        const int lineVisualWidth = parseLine(line, &m_glyphs, &m_glyphBytes);
-        commitLine(startGlyph, lineVisualWidth, availW);
+    for (const UnwrappedLine& raw : m_unwrappedLines) {
+        commitLine(raw.firstGlyph, raw.glyphCount, raw.visualWidth, availW);
     }
     m_layoutDirty = false;
 }
 
 void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (!m_visible) return;
+    if (!visible()) return;
 
     ensureLayout();
 
@@ -766,7 +813,7 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
                 if (useGradient) {
                     const qreal t =
                         (visLen > 1) ? static_cast<qreal>(charIndexInLine) / (visLen - 1) : 0.0;
-                    charFgColor = m_gradient->colorAt(t);
+                    charFgColor = Color::paintedArgb32(m_gradient->colorArgbAt(t));
                 }
 
                 if (cx >= leftLimit && cx + entry->advance <= rightLimit &&
@@ -782,7 +829,8 @@ void Text::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& cli
                         QByteArrayView(glyphBytes + entry->glyphOffset, entry->glyphLength),
                         entry->cellWidth, charFgColor,
                         entry->style.resolveBackground(m_resolvedBackgroundColor),
-                        entry->style.resolveAttributes(baseAttr) | disabledAttr);
+                        entry->style.resolveAttributes(baseAttr) | disabledAttr,
+                        (std::max)(leftLimit, clipRect.x));
                 }
                 cx += entry->advance;
                 charIndexInLine += entry->advance;

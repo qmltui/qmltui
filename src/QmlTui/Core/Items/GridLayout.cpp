@@ -95,7 +95,7 @@ void GridLayout::layoutChildren() {
 
     for (Item* item : visibleChildren) {
         auto* attached =
-            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, true));
+            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, false));
         int r = attached ? attached->row : -1;
         int c = attached ? attached->column : -1;
         int rSpan = (std::max)(1, attached ? attached->rowSpan : 1);
@@ -216,7 +216,9 @@ void GridLayout::layoutChildren() {
     for (int h : rowHeights)
         totalRowH += h;
 
-    const int availW = m_width > 0 ? (std::max)(0, m_width - leftPadding() - rightPadding()) : 0;
+    const int availW = hasExplicitWidth() && width() > 0
+                           ? (std::max)(0, width() - leftPadding() - rightPadding())
+                           : 0;
     if (availW > totalColW) {
         int fillColsCount = 0;
         for (bool fill : colFill)
@@ -229,7 +231,9 @@ void GridLayout::layoutChildren() {
         }
     }
 
-    const int availH = m_height > 0 ? (std::max)(0, m_height - topPadding() - bottomPadding()) : 0;
+    const int availH = hasExplicitHeight() && height() > 0
+                           ? (std::max)(0, height() - topPadding() - bottomPadding())
+                           : 0;
     if (availH > totalRowH) {
         int fillRowsCount = 0;
         for (bool fill : rowFill)

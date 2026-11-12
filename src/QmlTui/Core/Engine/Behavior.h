@@ -19,7 +19,8 @@ class QMLTUI_CORE_EXPORT Behavior : public QObject, public QQmlPropertyValueInte
     Q_INTERFACES(QQmlPropertyValueInterceptor)
     QML_ELEMENT
 
-    Q_PROPERTY(qmltui::Animation* animation READ animation WRITE setAnimation NOTIFY animationChanged)
+    Q_PROPERTY(
+        qmltui::Animation* animation READ animation WRITE setAnimation NOTIFY animationChanged)
     Q_CLASSINFO("DefaultProperty", "animation")
 
 public:
@@ -30,8 +31,8 @@ public:
     void setAnimation(Animation* anim);
 
     // QQmlPropertyValueInterceptor interface
-    void setTarget(const QQmlProperty &property) override;
-    void write(const QVariant &value) override;
+    void setTarget(const QQmlProperty& property) override;
+    void write(const QVariant& value) override;
 
 signals:
     void animationChanged();

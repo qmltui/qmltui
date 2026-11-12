@@ -25,17 +25,19 @@ class QMLTUI_CORE_EXPORT PropertyChanges : public QObject {
 
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QML_CUSTOMPARSER
-    Q_CLASSINFO("ImmediatePropertyNames", "target,restoreEntryValues,explicit,properties,objectName")
-    // When true, expressions on PropertyChanges are evaluated once on state
-    // entry instead of establishing live bindings.
-    Q_PROPERTY(bool explicit READ isExplicit WRITE setIsExplicit NOTIFY explicitChanged)
+    Q_CLASSINFO("ImmediatePropertyNames",
+                "target,restoreEntryValues,explicit,properties,objectName")
 #endif
+    // When true, expressions or map updates on PropertyChanges are evaluated
+    // once on state entry instead of updating reactively while the state is active.
+    Q_PROPERTY(bool explicit READ isExplicit WRITE setIsExplicit NOTIFY explicitChanged)
 
     Q_PROPERTY(QObject* target READ target WRITE setTarget NOTIFY targetChanged)
     Q_PROPERTY(QVariantMap properties READ properties WRITE setProperties NOTIFY propertiesChanged)
     // When false, modified properties keep their overridden values after
     // leaving the state instead of reverting to their base values.
-    Q_PROPERTY(bool restoreEntryValues READ restoreEntryValues WRITE setRestoreEntryValues NOTIFY restoreEntryValuesChanged)
+    Q_PROPERTY(bool restoreEntryValues READ restoreEntryValues WRITE setRestoreEntryValues NOTIFY
+                   restoreEntryValuesChanged)
 
 public:
     explicit PropertyChanges(QObject* parent = nullptr);
@@ -50,10 +52,8 @@ public:
     bool restoreEntryValues() const { return m_restoreEntryValues; }
     void setRestoreEntryValues(bool r);
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     bool isExplicit() const;
     void setIsExplicit(bool e);
-#endif
 
     PropertyChangesPrivate* d_func() { return d.get(); }
     const PropertyChangesPrivate* d_func() const { return d.get(); }
@@ -62,9 +62,7 @@ signals:
     void targetChanged();
     void propertiesChanged();
     void restoreEntryValuesChanged();
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     void explicitChanged();
-#endif
 
 private:
     QPointer<QObject> m_target;
@@ -119,7 +117,6 @@ private:
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
 QT_BEGIN_NAMESPACE
 class QQmlCustomParser;
-template<>
-QMLTUI_CORE_EXPORT QQmlCustomParser *qmlCreateCustomParser<qmltui::PropertyChanges>();
+template <> QMLTUI_CORE_EXPORT QQmlCustomParser* qmlCreateCustomParser<qmltui::PropertyChanges>();
 QT_END_NAMESPACE
 #endif

@@ -1,5 +1,6 @@
 #include <QmlTui/Core/Items/TreeView.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
+#include <QmlTui/Core/Items/ModelSignalConnections_p.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QMetaProperty>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
@@ -19,6 +20,7 @@ using DelegateUtils::setDelegateProperty;
 using DelegateUtils::setPropertyIfExists;
 
 TreeView::TreeView(QObject* parent) : Item(parent) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     setFocusPolicy(Qt::StrongFocus);
     setFocus(true);
     setImplicitWidth(30);
@@ -26,7 +28,12 @@ TreeView::TreeView(QObject* parent) : Item(parent) {
 }
 
 TreeView::~TreeView() {
+    disconnectModelSignals();
     clearDelegateItems();
+}
+
+void TreeView::disconnectModelSignals() {
+    ModelSignalConnections::disconnectAll(m_modelConnections);
 }
 
 void TreeView::setModel(const QVariant& model) {
@@ -34,10 +41,8 @@ void TreeView::setModel(const QVariant& model) {
     const bool currentChanged = m_selectedIndex != -1;
     const bool hadRootIndex = m_rootIndex.isValid();
 
-    if (m_cppModel) {
-        disconnect(m_cppModel.data(), nullptr, this, nullptr);
-        m_cppModel = nullptr;
-    }
+    disconnectModelSignals();
+    m_cppModel = nullptr;
 
     m_modelVariant = model;
     m_rootNodeMap.clear();
@@ -63,52 +68,61 @@ void TreeView::setModel(const QVariant& model) {
         for (auto it = roles.cbegin(); it != roles.cend(); ++it)
             m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
         m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
-        connect(m_cppModel.data(), &QObject::destroyed, this, [this]() {
-            m_cppModel.clear();
-            m_modelVariant.clear();
-            m_visibleNodes.clear();
-            m_roleNameStrings.clear();
-            m_claimedNames = 0;
-            clearDelegateItems();
-            emit modelChanged();
-            emit currentIndexChanged();
-            emit currentItemDataChanged();
-            markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
-        });
+        ModelSignalConnections::record(
+            m_modelConnections, m_cppModel.data(), &QObject::destroyed, this, [this]() {
+                m_modelConnections.clear();
+                m_cppModel.clear();
+                m_modelVariant.clear();
+                m_visibleNodes.clear();
+                m_roleNameStrings.clear();
+                m_claimedNames = 0;
+                clearDelegateItems();
+                emit modelChanged();
+                emit currentIndexChanged();
+                emit currentItemDataChanged();
+                markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
+            });
         const auto invalidate = [this]() {
             m_treeDirty = true;
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         };
-        connect(m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this, invalidate]() {
-            // Persistent indexes are invalid after a reset; nothing is expanded.
-            m_expandedIndexes.clear();
-            m_roleNameStrings.clear();
-            if (m_cppModel) {
-                const QHash<int, QByteArray> roles = m_cppModel->roleNames();
-                for (auto it = roles.cbegin(); it != roles.cend(); ++it)
-                    m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
-                m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
-            }
-            invalidate();
-        });
-        connect(m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
-                [this](const QModelIndex& topLeft, const QModelIndex& bottomRight) {
-                    handleModelDataChanged(topLeft, bottomRight);
-                });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsInserted, this,
-                [this, invalidate](const QModelIndex& parent) {
-                    if (isLevelShown(parent)) invalidate();
-                });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsRemoved, this,
-                [this, invalidate](const QModelIndex& parent) {
-                    if (isLevelShown(parent)) invalidate();
-                });
-        connect(m_cppModel.data(), &QAbstractItemModel::rowsMoved, this,
-                [this, invalidate](const QModelIndex& sourceParent, int, int,
-                                   const QModelIndex& destinationParent, int) {
-                    if (isLevelShown(sourceParent) || isLevelShown(destinationParent)) invalidate();
-                });
-        connect(m_cppModel.data(), &QAbstractItemModel::layoutChanged, this, invalidate);
+        ModelSignalConnections::record(
+            m_modelConnections, m_cppModel.data(), &QAbstractItemModel::modelReset, this,
+            [this, invalidate]() {
+                // Persistent indexes are invalid after a reset; nothing is expanded.
+                m_expandedIndexes.clear();
+                m_roleNameStrings.clear();
+                if (m_cppModel) {
+                    const QHash<int, QByteArray> roles = m_cppModel->roleNames();
+                    for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+                        m_roleNameStrings.insert(it.key(), QString::fromUtf8(it.value()));
+                    m_claimedNames = NumericItemRoles::claimedNames(m_cppModel.data());
+                }
+                invalidate();
+            });
+        ModelSignalConnections::record(
+            m_modelConnections, m_cppModel.data(), &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex& topLeft, const QModelIndex& bottomRight) {
+                handleModelDataChanged(topLeft, bottomRight);
+            });
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(),
+                                       &QAbstractItemModel::rowsInserted, this,
+                                       [this, invalidate](const QModelIndex& parent) {
+                                           if (isLevelShown(parent)) invalidate();
+                                       });
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(),
+                                       &QAbstractItemModel::rowsRemoved, this,
+                                       [this, invalidate](const QModelIndex& parent) {
+                                           if (isLevelShown(parent)) invalidate();
+                                       });
+        ModelSignalConnections::record(
+            m_modelConnections, m_cppModel.data(), &QAbstractItemModel::rowsMoved, this,
+            [this, invalidate](const QModelIndex& sourceParent, int, int,
+                               const QModelIndex& destinationParent, int) {
+                if (isLevelShown(sourceParent) || isLevelShown(destinationParent)) invalidate();
+            });
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(),
+                                       &QAbstractItemModel::layoutChanged, this, invalidate);
     } else if (model.userType() == QMetaType::fromType<QJSValue>().id()) {
         m_rootNodeMap = model.value<QJSValue>().toVariant().toMap();
     } else if (model.canConvert<QVariantMap>()) {
@@ -267,11 +281,11 @@ void TreeView::setSelectionColor(Color color) {
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
-void TreeView::setSelectionBackgroundColor(Color color) {
-    if (m_selectionBackgroundColor == color) return;
-    m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
-    emit selectionBackgroundColorChanged();
+void TreeView::setSelectedTextColor(Color color) {
+    if (m_selectedTextColor == color) return;
+    m_selectedTextColor = color;
+    m_resolvedSelectedTextColor = Color::resolve(m_selectedTextColor, 0);
+    emit selectedTextColorChanged();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
@@ -1440,7 +1454,7 @@ void TreeView::updateLayout() {
 }
 
 void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (!m_visible) return;
+    if (!visible()) return;
 
     // Delegates were created and positioned by updateLayout() and paint
     // themselves as children. The flattened node list was refreshed there too.
@@ -1464,12 +1478,12 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
         int rowY = startY + (idx - m_scrollTop);
         bool isSelected = (idx == m_selectedIndex);
 
-        uint32_t bg = isSelected ? m_resolvedSelectionBackgroundColor : 0x00000000;
-        uint32_t fg = isSelected && m_selectionColor.isValid() ? m_resolvedSelectionColor
-                                                               : m_resolvedTextColor;
+        uint32_t bg = isSelected ? m_resolvedSelectionColor : 0x00000000;
+        uint32_t fg = isSelected && m_selectedTextColor.isValid() ? m_resolvedSelectedTextColor
+                                                                  : m_resolvedTextColor;
         TextAttribute attr =
             (isSelected ? TextAttribute::Bold : TextAttribute::None) |
-            (isSelected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
+            (isSelected && !m_selectedTextColor.isValid() && !m_selectionColor.isValid()
                  ? TextAttribute::Reversed
                  : TextAttribute::None);
 
@@ -1519,8 +1533,9 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
             GraphemeRef cluster;
             while (it.next(cluster)) {
                 if (cluster.width > availW - curX) break;
-                const int advance = buffer.setGrapheme(startX + curX, rowY, cluster.utf16,
-                                                       cluster.width, segFg, segBg, segAttr);
+                const int advance =
+                    buffer.setGrapheme(startX + curX, rowY, cluster.utf16, cluster.width, segFg,
+                                       segBg, segAttr, startX);
                 if (advance < 0) break;
                 curX += advance;
             }

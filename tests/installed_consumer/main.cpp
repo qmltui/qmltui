@@ -10,6 +10,11 @@
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <memory>
 
+static_assert(sizeof(qmltui::Item) == sizeof(QObject) + sizeof(std::unique_ptr<void*>),
+              "Item must hold only its d_ptr beyond QObject for binary ABI stability");
+static_assert(sizeof(qmltui::FocusScope) == sizeof(qmltui::Item) + sizeof(std::unique_ptr<void*>),
+              "FocusScope must hold only its d_ptr beyond Item for binary ABI stability");
+
 class CustomItem final : public qmltui::Item {
 public:
     using Item::Item;

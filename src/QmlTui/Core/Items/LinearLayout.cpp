@@ -2,7 +2,9 @@
 
 #include <QmlTui/Core/Items/Layout.h>
 #include <QQmlEngine>
+#include <QVarLengthArray>
 #include <algorithm>
+#include <limits>
 
 namespace qmltui {
 
@@ -21,13 +23,14 @@ void LinearLayout::setSpacing(int spacing) {
     notifyImplicitSizeIfChanged();
 }
 
-static LayoutAttached* layoutInfo(Item* item) {
-    return qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, true));
+static const LayoutAttached* layoutInfo(Item* item) {
+    return qobject_cast<const LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(item, false));
 }
 
 int LinearLayout::preferredMainSize(Item* item) const {
-    LayoutAttached* info = layoutInfo(item);
-    const int preferred = m_direction == Horizontal ? info->preferredWidth : info->preferredHeight;
+    const LayoutAttached* info = layoutInfo(item);
+    const int preferred =
+        info ? (m_direction == Horizontal ? info->preferredWidth : info->preferredHeight) : -1;
     const int value = preferred >= 0 ? preferred
                                      : (m_direction == Horizontal ? item->implicitWidth()
                                                                   : item->implicitHeight());
@@ -35,12 +38,13 @@ int LinearLayout::preferredMainSize(Item* item) const {
 }
 
 int LinearLayout::minimumMainSize(Item* item) const {
-    LayoutAttached* info = layoutInfo(item);
-    return m_direction == Horizontal ? info->minimumWidth : info->minimumHeight;
+    const LayoutAttached* info = layoutInfo(item);
+    return info ? (m_direction == Horizontal ? info->minimumWidth : info->minimumHeight) : 0;
 }
 
 int LinearLayout::maximumMainSize(Item* item) const {
-    LayoutAttached* info = layoutInfo(item);
+    const LayoutAttached* info = layoutInfo(item);
+    if (!info) return (std::numeric_limits<int>::max)();
     const int minimum = m_direction == Horizontal ? info->minimumWidth : info->minimumHeight;
     return (std::max)(minimum,
                       m_direction == Horizontal ? info->maximumWidth : info->maximumHeight);
@@ -61,11 +65,30 @@ void LinearLayout::layoutChildren() {
         (std::max)(0, m_direction == Horizontal ? height() - topPadding() - bottomPadding()
                                                 : width() - leftPadding() - rightPadding());
 
+    const qsizetype count = children.size();
+    QVarLengthArray<const LayoutAttached*, 32> infos(count);
+    QVarLengthArray<int, 32> minSizes(count);
+    QVarLengthArray<int, 32> maxSizes(count);
     QVector<int> sizes;
-    sizes.reserve(children.size());
+    sizes.reserve(count);
     int used = 0;
-    for (Item* child : children) {
-        const int size = preferredMainSize(child);
+    for (qsizetype i = 0; i < count; ++i) {
+        Item* child = children[i];
+        const LayoutAttached* info = layoutInfo(child);
+        infos[i] = info;
+        const int minS =
+            info ? (m_direction == Horizontal ? info->minimumWidth : info->minimumHeight) : 0;
+        const int maxS = info ? (std::max)(minS, m_direction == Horizontal ? info->maximumWidth
+                                                                           : info->maximumHeight)
+                              : (std::numeric_limits<int>::max)();
+        minSizes[i] = minS;
+        maxSizes[i] = maxS;
+        const int preferred =
+            info ? (m_direction == Horizontal ? info->preferredWidth : info->preferredHeight) : -1;
+        const int raw = preferred >= 0 ? preferred
+                                       : (m_direction == Horizontal ? child->implicitWidth()
+                                                                    : child->implicitHeight());
+        const int size = std::clamp(raw, minS, maxS);
         sizes.append(size);
         used += size;
     }
@@ -73,28 +96,34 @@ void LinearLayout::layoutChildren() {
     int remaining = mainAvailable - used;
     while (remaining != 0) {
         int totalStretch = 0;
-        for (int i = 0; i < children.size(); ++i) {
-            LayoutAttached* info = layoutInfo(children[i]);
-            const bool fill = m_direction == Horizontal ? info->fillWidth : info->fillHeight;
-            if ((remaining > 0 && fill && sizes[i] < maximumMainSize(children[i])) ||
-                (remaining < 0 && sizes[i] > minimumMainSize(children[i])))
-                totalStretch += (std::max)(1, m_direction == Horizontal ? info->horizontalStretch
-                                                                        : info->verticalStretch);
+        for (qsizetype i = 0; i < count; ++i) {
+            const LayoutAttached* info = infos[i];
+            const bool fill =
+                info ? (m_direction == Horizontal ? info->fillWidth : info->fillHeight) : false;
+            const int stretch =
+                info ? (std::max)(1, m_direction == Horizontal ? info->horizontalStretch
+                                                               : info->verticalStretch)
+                     : 1;
+            if ((remaining > 0 && fill && sizes[i] < maxSizes[i]) ||
+                (remaining < 0 && sizes[i] > minSizes[i]))
+                totalStretch += stretch;
         }
         if (totalStretch == 0) break;
 
         bool changed = false;
         int remainingStretch = totalStretch;
-        for (int i = 0; i < children.size() && remaining != 0; ++i) {
-            LayoutAttached* info = layoutInfo(children[i]);
-            const bool fill = m_direction == Horizontal ? info->fillWidth : info->fillHeight;
+        for (qsizetype i = 0; i < count && remaining != 0; ++i) {
+            const LayoutAttached* info = infos[i];
+            const bool fill =
+                info ? (m_direction == Horizontal ? info->fillWidth : info->fillHeight) : false;
             if (remaining > 0 && !fill) continue;
-            const int limit =
-                remaining > 0 ? maximumMainSize(children[i]) : minimumMainSize(children[i]);
+            const int limit = remaining > 0 ? maxSizes[i] : minSizes[i];
             if ((remaining > 0 && sizes[i] >= limit) || (remaining < 0 && sizes[i] <= limit))
                 continue;
-            const int stretch = (std::max)(1, m_direction == Horizontal ? info->horizontalStretch
-                                                                        : info->verticalStretch);
+            const int stretch =
+                info ? (std::max)(1, m_direction == Horizontal ? info->horizontalStretch
+                                                               : info->verticalStretch)
+                     : 1;
             int delta = (std::max)(1, std::abs(remaining) * stretch / remainingStretch);
             delta = (std::min)(delta, std::abs(limit - sizes[i]));
             delta = (std::min)(delta, std::abs(remaining));
@@ -108,21 +137,21 @@ void LinearLayout::layoutChildren() {
     }
 
     int position = m_direction == Horizontal ? leftPadding() : topPadding();
-    for (int i = 0; i < children.size(); ++i) {
+    for (qsizetype i = 0; i < count; ++i) {
         Item* child = children[i];
-        LayoutAttached* info = layoutInfo(child);
+        const LayoutAttached* info = infos[i];
         if (m_direction == Horizontal) {
             child->setX(position);
             child->setY(topPadding());
             child->setWidth(sizes[i]);
-            if (info->fillHeight)
+            if (info && info->fillHeight)
                 child->setHeight(std::clamp(crossAvailable, info->minimumHeight,
                                             (std::max)(info->minimumHeight, info->maximumHeight)));
         } else {
             child->setX(leftPadding());
             child->setY(position);
             child->setHeight(sizes[i]);
-            if (info->fillWidth)
+            if (info && info->fillWidth)
                 child->setWidth(std::clamp(crossAvailable, info->minimumWidth,
                                            (std::max)(info->minimumWidth, info->maximumWidth)));
         }

@@ -1,5 +1,6 @@
 #include <QmlTui/Core/Items/TableView.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
+#include <QmlTui/Core/Items/ModelSignalConnections_p.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
@@ -89,17 +90,23 @@ QString alignedPrefix(const QString& text, int width, int visibleWidth, const QS
 } // namespace
 
 TableView::TableView(QObject* parent) : Item(parent) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     setFocusPolicy(Qt::StrongFocus);
     connect(this, &Item::widthChanged, this, &TableView::forceLayout);
     connect(this, &Item::heightChanged, this, &TableView::forceLayout);
     forceLayout();
 }
 int TableView::implicitWidth() const {
-    if (m_implicitWidth > 0) return m_implicitWidth;
+    const int explicitImplicit = Item::implicitWidth();
+    if (explicitImplicit > 0) return explicitImplicit;
     return m_calculatedImplicitWidth;
 }
 TableView::~TableView() {
+    disconnectModelSignals();
     clearDelegateItems();
+}
+void TableView::disconnectModelSignals() {
+    ModelSignalConnections::disconnectAll(m_modelConnections);
 }
 void TableView::destroyDelegate(DelegateRecord& record) {
     if (record.item) {
@@ -158,7 +165,7 @@ void TableView::clearSelection() {
 }
 void TableView::setModel(const QVariant& model) {
     if (m_modelVariant == model) return;
-    if (m_cppModel) disconnect(m_cppModel, nullptr, this, nullptr);
+    disconnectModelSignals();
     m_modelVariant = model;
     m_listModel.clear();
     m_cppModel.clear();
@@ -186,63 +193,57 @@ void TableView::setModel(const QVariant& model) {
     }
     if (m_cppModel) {
         refreshModelRoles();
-        connect(m_cppModel, &QObject::destroyed, this, [this] {
-            m_cppModel.clear();
-            m_modelVariant.clear();
-            m_roleNames.clear();
-            m_roleNameStrings.clear();
-            m_claimedNames = 0;
-            m_builtInCells.clear();
-            m_modelProvidesHeader = false;
-            resetViewport();
-            clearSelection();
-            updateImplicitWidth();
-            generateDelegateItems();
-            forceLayout();
-            emit modelChanged();
-        });
-        connect(m_cppModel, &QAbstractItemModel::dataChanged, this, &TableView::handleDataChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsInserted, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsRemoved, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::rowsMoved, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsInserted, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsRemoved, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::columnsMoved, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::layoutChanged, this,
-                &TableView::handleStructureChanged);
-        connect(m_cppModel, &QAbstractItemModel::headerDataChanged, this,
-                [this](Qt::Orientation orientation) {
-                    if (orientation != Qt::Horizontal) return;
-                    refreshModelHeader();
-                    forceLayout();
-                });
-        connect(m_cppModel, &QAbstractItemModel::modelReset, this, [this] {
-            refreshModelRoles();
-            refreshModelHeader();
-            m_structureDirty = true;
-            m_builtInCells.clear();
-            resetViewport();
-            if (m_selectedRow >= 0) {
-                if (rowCount() > 0) {
-                    const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
-                    const bool rowChanged = (m_selectedRow != newRow);
-                    m_selectedRow = newRow;
-                    m_currentIndex = sourceIndex(m_selectedRow, (std::max)(0, m_currentColumn));
-                    if (rowChanged) emit selectedRowChanged();
-                } else {
-                    clearSelection();
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(), &QObject::destroyed,
+                                       this, [this] {
+                                           m_modelConnections.clear();
+                                           m_cppModel.clear();
+                                           m_modelVariant.clear();
+                                           m_roleNames.clear();
+                                           m_roleNameStrings.clear();
+                                           m_claimedNames = 0;
+                                           m_builtInCells.clear();
+                                           m_modelProvidesHeader = false;
+                                           resetViewport();
+                                           clearSelection();
+                                           updateImplicitWidth();
+                                           generateDelegateItems();
+                                           forceLayout();
+                                           emit modelChanged();
+                                       });
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(),
+                                       &QAbstractItemModel::dataChanged, this,
+                                       &TableView::handleDataChanged);
+        ModelSignalConnections::connectTableStructureSignals(
+            m_modelConnections, m_cppModel.data(), this, [this] { handleStructureChanged(); });
+        ModelSignalConnections::record(m_modelConnections, m_cppModel.data(),
+                                       &QAbstractItemModel::headerDataChanged, this,
+                                       [this](Qt::Orientation orientation) {
+                                           if (orientation != Qt::Horizontal) return;
+                                           refreshModelHeader();
+                                           forceLayout();
+                                       });
+        ModelSignalConnections::record(
+            m_modelConnections, m_cppModel.data(), &QAbstractItemModel::modelReset, this, [this] {
+                refreshModelRoles();
+                refreshModelHeader();
+                m_structureDirty = true;
+                m_builtInCells.clear();
+                resetViewport();
+                if (m_selectedRow >= 0) {
+                    if (rowCount() > 0) {
+                        const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
+                        const bool rowChanged = (m_selectedRow != newRow);
+                        m_selectedRow = newRow;
+                        m_currentIndex = sourceIndex(m_selectedRow, (std::max)(0, m_currentColumn));
+                        if (rowChanged) emit selectedRowChanged();
+                    } else {
+                        clearSelection();
+                    }
                 }
-            }
-            updateImplicitWidth();
-            generateDelegateItems();
-            forceLayout();
-        });
+                updateImplicitWidth();
+                generateDelegateItems();
+                forceLayout();
+            });
     }
     updateImplicitWidth();
     refreshModelHeader();
@@ -413,11 +414,11 @@ void TableView::setSelectionColor(Color color) {
     markDirty();
 }
 
-void TableView::setSelectionBackgroundColor(Color color) {
-    if (m_selectionBackgroundColor == color) return;
-    m_selectionBackgroundColor = color;
-    m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
-    emit selectionBackgroundColorChanged();
+void TableView::setSelectedTextColor(Color color) {
+    if (m_selectedTextColor == color) return;
+    m_selectedTextColor = color;
+    m_resolvedSelectedTextColor = Color::resolve(m_selectedTextColor, 0);
+    emit selectedTextColorChanged();
     markDirty();
 }
 
@@ -637,8 +638,8 @@ void TableView::updateImplicitWidth() {
 
     if (total != m_calculatedImplicitWidth) {
         m_calculatedImplicitWidth = total;
-        emit implicitWidthChanged();
-        if (m_width < 0) {
+        notifyImplicitSizeIfChanged();
+        if (!hasExplicitWidth()) {
             emit widthChanged();
             markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
         }
@@ -1314,7 +1315,7 @@ const TableView::BuiltInCell& TableView::resolveBuiltInCell(int row, int column)
 }
 
 void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (!m_visible) return;
+    if (!visible()) return;
     const auto view = viewGeometry();
     const ClipRect clip =
         clipRect.intersected({0, 0, buffer.width(), buffer.height()})
@@ -1470,14 +1471,14 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         const int y = absY + view.bodyTop + r * view.stride;
         if (y < clip.y || y >= clip.y + clip.height) continue;
         const bool selected = row == m_selectedRow;
-        const uint32_t bg = selected                       ? m_resolvedSelectionBackgroundColor
+        const uint32_t bg = selected                       ? m_resolvedSelectionColor
                             : m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor
                                                            : m_resolvedRowBackgroundColor;
-        const uint32_t fg =
-            selected && m_selectionColor.isValid() ? m_resolvedSelectionColor : m_resolvedTextColor;
+        const uint32_t fg = selected && m_selectedTextColor.isValid() ? m_resolvedSelectedTextColor
+                                                                      : m_resolvedTextColor;
         const TextAttribute attributes =
             (selected ? TextAttribute::Bold : TextAttribute::None) |
-            (selected && !m_selectionColor.isValid() && !m_selectionBackgroundColor.isValid()
+            (selected && !m_selectedTextColor.isValid() && !m_selectionColor.isValid()
                  ? TextAttribute::Reversed
                  : TextAttribute::None);
         if (selected || bg != 0) {
@@ -1499,7 +1500,7 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         if (m_delegate) continue;
         for (const auto& geometry : std::as_const(m_geometry)) {
             if (geometry.x >= view.right()) break;
-            const BuiltInCell& cell = resolveBuiltInCell(row, geometry.column);
+            const BuiltInCell cell = resolveBuiltInCell(row, geometry.column);
             const QString& alignment = !cell.formatAlignment.isEmpty()     ? cell.formatAlignment
                                        : !cell.standardAlignment.isEmpty() ? cell.standardAlignment
                                                                            : geometry.alignment;
@@ -1609,7 +1610,7 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
 
 void TableView::paintOverlay(TextGridBuffer& buffer, int absX, int absY,
                              const ClipRect& clipRect) const {
-    if (!m_visible || width() <= 0 || height() <= 0) return;
+    if (!visible() || width() <= 0 || height() <= 0) return;
     // Order: horizontal, vertical, corners, top/bottom/left/right tees, cross.
     const QString glyphs = (m_gridStyle == Double)  ? QStringLiteral("═║╔╗╚╝╦╩╠╣╬")
                            : (m_gridStyle == Ascii) ? QStringLiteral("-|+++++++++")

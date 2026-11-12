@@ -13,6 +13,8 @@
 #include <optional>
 #include <QQmlComponent>
 #include <QHash>
+#include <QList>
+#include <QMetaObject>
 #include <QSet>
 #include <utility>
 
@@ -46,12 +48,12 @@ class QMLTUI_CORE_EXPORT TableView : public Item {
                    setHeaderBackgroundColor NOTIFY headerBackgroundColorChanged)
     Q_PROPERTY(qmltui::Color selectionColor READ selectionColor WRITE setSelectionColor NOTIFY
                    selectionColorChanged)
+    Q_PROPERTY(qmltui::Color selectedTextColor READ selectedTextColor WRITE setSelectedTextColor
+                   NOTIFY selectedTextColorChanged)
     // When true, per-cell foreground/background colors from the model or column
-    // survive row selection instead of being replaced by selectionColor.
+    // survive row selection instead of being replaced by selection colors.
     Q_PROPERTY(bool selectionKeepsCellColors READ selectionKeepsCellColors WRITE
                    setSelectionKeepsCellColors NOTIFY selectionKeepsCellColorsChanged)
-    Q_PROPERTY(qmltui::Color selectionBackgroundColor READ selectionBackgroundColor WRITE
-                   setSelectionBackgroundColor NOTIFY selectionBackgroundColorChanged)
     Q_PROPERTY(qmltui::Color textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     Q_PROPERTY(qmltui::Color rowBackgroundColor READ rowBackgroundColor WRITE setRowBackgroundColor
                    NOTIFY rowBackgroundColorChanged)
@@ -113,11 +115,12 @@ public:
 
     Color selectionColor() const { return m_selectionColor; }
     void setSelectionColor(Color color);
+
+    Color selectedTextColor() const { return m_selectedTextColor; }
+    void setSelectedTextColor(Color color);
+
     bool selectionKeepsCellColors() const { return m_selectionKeepsCellColors; }
     void setSelectionKeepsCellColors(bool keep);
-
-    Color selectionBackgroundColor() const { return m_selectionBackgroundColor; }
-    void setSelectionBackgroundColor(Color color);
 
     Color textColor() const { return m_textColor; }
     void setTextColor(Color color);
@@ -169,8 +172,8 @@ signals:
     void headerColorChanged();
     void headerBackgroundColorChanged();
     void selectionColorChanged();
+    void selectedTextColorChanged();
     void selectionKeepsCellColorsChanged();
-    void selectionBackgroundColorChanged();
     void textColorChanged();
     void rowBackgroundColorChanged();
     void alternatingRowBackgroundColorChanged();
@@ -304,6 +307,7 @@ private:
     void updateImplicitWidth();
     void callbackWarning(const QString& message, QSet<QString>& errors) const;
 
+    void disconnectModelSignals();
     void clearDelegateItems();
     void generateDelegateItems();
     static void destroyDelegate(DelegateRecord& record);
@@ -313,6 +317,7 @@ private:
     QVariant m_modelVariant;
     QVariantList m_listModel;
     QPointer<QAbstractItemModel> m_cppModel;
+    QList<QMetaObject::Connection> m_modelConnections;
 
     int m_selectedRow = -1;
     int m_currentColumn = -1;
@@ -359,8 +364,8 @@ private:
 
     Color m_selectionColor = Color::Invalid;
     uint32_t m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
-    Color m_selectionBackgroundColor = Color::Invalid;
-    uint32_t m_resolvedSelectionBackgroundColor = Color::resolve(m_selectionBackgroundColor, 0);
+    Color m_selectedTextColor = Color::Invalid;
+    uint32_t m_resolvedSelectedTextColor = Color::resolve(m_selectedTextColor, 0);
 
     Color m_textColor;
     uint32_t m_resolvedTextColor = Color::resolve(m_textColor, 0);

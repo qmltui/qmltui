@@ -1,5 +1,6 @@
 #include <QmlTui/Core/Items/ListView.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
+#include <QmlTui/Core/Items/ModelSignalConnections_p.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
@@ -36,7 +37,11 @@ ListViewAttached* ListView::qmlAttachedProperties(QObject* object) {
 
 ListView::ListView(QObject* parent) : ScrollView(parent) {
     setFocusPolicy(Qt::StrongFocus);
+    connect(this, &ScrollView::contentXChanged, this,
+            [this]() { markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty); });
     connect(this, &ScrollView::contentYChanged, this,
+            [this]() { markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty); });
+    connect(this, &Item::widthChanged, this,
             [this]() { markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty); });
     connect(this, &Item::heightChanged, this,
             [this]() { markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty); });
@@ -44,6 +49,7 @@ ListView::ListView(QObject* parent) : ScrollView(parent) {
 }
 
 ListView::~ListView() {
+    disconnectModelSignals();
     clearItems();
 }
 
@@ -73,6 +79,7 @@ void ListView::setModel(const QVariant& model) {
             m_roleMap.clear();
             m_claimedNames = 0;
             clearItems();
+            setContentWidth(0);
             setContentHeight(0);
             if (previousCount != 0) emit countChanged();
             emit modelDataChanged();
@@ -148,6 +155,7 @@ void ListView::setDelegate(QQmlComponent* delegate) {
             m_delegateSchemaResolved = false;
             m_delegateNeedsModelMap = true;
             clearItems();
+            setContentWidth(0);
             setContentHeight(0);
             emit delegateChanged();
         });
@@ -188,18 +196,34 @@ void ListView::setCurrentIndex(int index) {
     if (m_currentIndex == normalized) return;
     const int previousIndex = m_currentIndex;
     m_currentIndex = normalized;
+    QPointer<ListView> self(this);
     emit currentIndexChanged();
+    if (!self) return;
+    const int oldContentX = contentX();
     const int oldContentY = contentY();
-    if (m_orientation == Qt::Vertical && normalized >= 0) {
-        const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
-        const int rowTop = normalized * delegateStride();
-        const int rowBottom = rowTop + m_delegateExtent;
-        if (viewportHeight <= 0 || rowTop < contentY())
-            setContentY(rowTop);
-        else if (rowBottom > contentY() + viewportHeight)
-            setContentY(rowBottom - viewportHeight);
+    if (normalized >= 0) {
+        // Ensure content extent is up to date before clamping scroll position.
+        updateContentExtent();
+        if (m_orientation == Qt::Vertical) {
+            const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
+            const int rowTop = normalized * delegateStride();
+            const int rowBottom = rowTop + m_delegateExtent;
+            if (viewportHeight <= 0 || rowTop < contentY())
+                setContentY(rowTop);
+            else if (rowBottom > contentY() + viewportHeight)
+                setContentY(rowBottom - viewportHeight);
+        } else {
+            const int viewportWidth = (std::max)(0, width() - leftPadding() - rightPadding());
+            const int colLeft = normalized * delegateStride();
+            const int colRight = colLeft + m_delegateExtent;
+            if (viewportWidth <= 0 || colLeft < contentX())
+                setContentX(colLeft);
+            else if (colRight > contentX() + viewportWidth)
+                setContentX(colRight - viewportWidth);
+        }
     }
-    if (m_createdItems.isEmpty() || contentY() != oldContentY) rebuildViewport();
+    if (m_createdItems.isEmpty() || contentY() != oldContentY || contentX() != oldContentX)
+        rebuildViewport();
     if (Item* prevItem = m_createdItems.value(previousIndex, nullptr))
         updateDelegateState(prevItem, previousIndex);
     if (Item* currItem = m_createdItems.value(m_currentIndex, nullptr))
@@ -223,9 +247,7 @@ void ListView::setReuseItems(bool reuse) {
 }
 
 void ListView::disconnectModelSignals() {
-    for (const QMetaObject::Connection& connection : std::as_const(m_modelConnections))
-        disconnect(connection);
-    m_modelConnections.clear();
+    ModelSignalConnections::disconnectAll(m_modelConnections);
 }
 
 void ListView::updateDelegateState(Item* item, int index) {
@@ -250,19 +272,25 @@ void ListView::refreshDelegateStates() {
 }
 
 void ListView::keyPressEvent(KeyEvent* event) {
-    int total = m_modelCount;
-    const int page = (std::max)(1, height() / delegateStride());
-    if (event->key() == Qt::Key_Up) {
+    const int total = m_modelCount;
+    const bool horizontal = (m_orientation == Qt::Horizontal);
+    const int viewportSpan = horizontal ? (std::max)(0, width() - leftPadding() - rightPadding())
+                                        : (std::max)(0, height() - topPadding() - bottomPadding());
+    const int page = (std::max)(1, viewportSpan / delegateStride());
+    const int prevKey = horizontal ? Qt::Key_Left : Qt::Key_Up;
+    const int nextKey = horizontal ? Qt::Key_Right : Qt::Key_Down;
+
+    if (event->key() == prevKey) {
         if (m_currentIndex > 0) setCurrentIndex(m_currentIndex - 1);
         event->setAccepted(true);
-    } else if (event->key() == Qt::Key_Down) {
+    } else if (event->key() == nextKey) {
         if (m_currentIndex < total - 1) setCurrentIndex(m_currentIndex + 1);
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_PageUp) {
-        setCurrentIndex((std::max)(0, m_currentIndex - page));
+        if (total > 0) setCurrentIndex((std::max)(0, m_currentIndex - page));
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_PageDown) {
-        setCurrentIndex((std::min)(total - 1, m_currentIndex + page));
+        if (total > 0) setCurrentIndex((std::min)(total - 1, m_currentIndex + page));
         event->setAccepted(true);
     } else if (event->key() == Qt::Key_Home) {
         if (total > 0) setCurrentIndex(0);
@@ -430,12 +458,15 @@ int ListView::delegateStride() const {
 }
 
 void ListView::updateContentExtent() {
-    if (m_orientation != Qt::Vertical) {
+    const int total =
+        (std::max)(0, m_modelCount > 0 ? m_modelCount * delegateStride() - m_spacing : 0);
+    if (m_orientation == Qt::Vertical) {
+        setContentWidth(0);
+        setContentHeight(total);
+    } else {
         setContentHeight(0);
-        return;
+        setContentWidth(total);
     }
-    const int total = m_modelCount > 0 ? m_modelCount * delegateStride() - m_spacing : 0;
-    setContentHeight((std::max)(0, total));
 }
 
 Item* ListView::createDelegateItem(int index) {
@@ -478,8 +509,7 @@ Item* ListView::createDelegateItem(int index) {
                         QVariantMap rowValues;
                         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
                             rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-                        NumericItemRoles::apply(model, modelIndex, rowValues, false,
-                                                m_claimedNames);
+                        NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
                         initialProps.insert(QStringLiteral("model"), rowValues);
                         initialProps.insert(QStringLiteral("modelData"), rowValues);
                         for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
@@ -492,7 +522,7 @@ Item* ListView::createDelegateItem(int index) {
                                 initialProps.insert(it.value(), model->data(modelIndex, it.key()));
                         }
                         if (m_delegateStandardMask != 0) {
-                            NumericItemRoles::apply(model, modelIndex, initialProps, false,
+                            NumericItemRoles::apply(model, modelIndex, initialProps, true,
                                                     m_claimedNames, m_delegateStandardMask);
                         }
                     }
@@ -503,8 +533,9 @@ Item* ListView::createDelegateItem(int index) {
             });
         if (!item) return nullptr;
         updateDelegateState(item, index);
-        if (m_orientation == Qt::Vertical && !m_delegateExtentKnown) {
-            m_delegateExtent = (std::max)(1, item->height());
+        if (!m_delegateExtentKnown) {
+            m_delegateExtent =
+                (std::max)(1, m_orientation == Qt::Vertical ? item->height() : item->width());
             m_delegateExtentKnown = true;
         }
         return item;
@@ -522,7 +553,7 @@ Item* ListView::createDelegateItem(int index) {
         const QModelIndex modelIndex = model->index(index, 0, m_rootIndex);
         for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it)
             rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-        NumericItemRoles::apply(model, modelIndex, rowValues, false, m_claimedNames);
+        NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
         rowValue = rowValues;
     }
 
@@ -552,8 +583,9 @@ Item* ListView::createDelegateItem(int index) {
     Item* item = DelegateUtils::createItem(component, initialProps, context, this, this);
     if (!item) return nullptr;
     updateDelegateState(item, index);
-    if (m_orientation == Qt::Vertical && !m_delegateExtentKnown) {
-        m_delegateExtent = (std::max)(1, item->height());
+    if (!m_delegateExtentKnown) {
+        m_delegateExtent =
+            (std::max)(1, m_orientation == Qt::Vertical ? item->height() : item->width());
         m_delegateExtentKnown = true;
     }
     return item;
@@ -570,17 +602,16 @@ void ListView::rebuildViewport(bool force) {
         return;
     }
 
-    int first = 0;
-    int last = m_modelCount - 1;
-    if (m_orientation == Qt::Vertical) {
-        const int stride = delegateStride();
-        const int viewportHeight = (std::max)(0, height() - topPadding() - bottomPadding());
-        const int firstVisible = contentY() / stride;
-        const int lastVisible = (contentY() + (std::max)(1, viewportHeight) - 1) / stride;
-        constexpr int overscanRows = 2;
-        first = (std::max)(0, firstVisible - overscanRows);
-        last = (std::min)(m_modelCount - 1, lastVisible + overscanRows);
-    }
+    const int stride = delegateStride();
+    const int viewportExtent = m_orientation == Qt::Vertical
+                                   ? (std::max)(0, height() - topPadding() - bottomPadding())
+                                   : (std::max)(0, width() - leftPadding() - rightPadding());
+    const int scrollOffset = m_orientation == Qt::Vertical ? contentY() : contentX();
+    const int firstVisible = scrollOffset / stride;
+    const int lastVisible = (scrollOffset + (std::max)(1, viewportExtent) - 1) / stride;
+    constexpr int overscanRows = 2;
+    const int first = (std::max)(0, firstVisible - overscanRows);
+    const int last = (std::min)(m_modelCount - 1, lastVisible + overscanRows);
 
     if (!force && first == m_materializedFirst && last == m_materializedLast) return;
 
@@ -608,6 +639,7 @@ void ListView::rebuildViewport(bool force) {
             }
             if (item) {
                 m_createdItems.insert(index, item);
+                if (delegateStride() != previousStride) break;
             }
         }
     }
@@ -621,6 +653,7 @@ void ListView::rebuildViewport(bool force) {
         return;
     }
     if (force) refreshDelegateStates();
+    layoutChildren();
     markDirty(DirtyFlags(DirtyFlag::LayoutDirty) | DirtyFlag::SelfDirty);
 }
 
@@ -654,115 +687,31 @@ void ListView::generateItems() {
         m_claimedNames = NumericItemRoles::claimedNames(model);
         m_modelCount = (std::max)(0, model->rowCount(m_rootIndex));
 
-        const quint64 generation = m_modelGeneration;
-        QPointer<QAbstractItemModel> guardedModel(model);
-        m_modelConnections.append(connect(
-            model, &QAbstractItemModel::dataChanged, this,
-            [this, guardedModel, generation](const QModelIndex& topLeft,
-                                             const QModelIndex& bottomRight,
-                                             const QVector<int>& changedRoles) {
-                if (!guardedModel || generation != m_modelGeneration ||
-                    guardedModel.data() != m_objectModel.data() || topLeft.parent() != m_rootIndex)
-                    return;
-                for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+        ModelSignalConnections::connectGuardedFlatRowSignals(
+            m_modelConnections, model, this, m_objectModel, m_modelGeneration, m_rootIndex,
+            [this](QAbstractItemModel* liveModel, int firstRow, int lastRow,
+                   const QList<int>& changedRoles) {
+                for (int row = firstRow; row <= lastRow; ++row) {
                     Item* item = m_createdItems.value(row, nullptr);
                     if (!item) continue;
-                    const QModelIndex modelIndex = guardedModel->index(row, 0, m_rootIndex);
-                    if (m_delegate && m_delegate->isBound() && m_delegateSchemaResolved &&
-                        !m_delegateNeedsModelMap) {
-                        for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
-                            if (!changedRoles.isEmpty() && !changedRoles.contains(it.key()))
-                                continue;
-                            const auto propIt = m_delegateProperties.constFind(it.value());
-                            if (propIt != m_delegateProperties.cend()) {
-                                item->metaObject()
-                                    ->property(propIt.value())
-                                    .write(item, guardedModel->data(modelIndex, it.key()));
-                            }
-                        }
-                        if (m_delegateStandardMask != 0) {
-                            QVariantMap standard;
-                            NumericItemRoles::apply(guardedModel, modelIndex, standard, true,
-                                                    m_claimedNames, m_delegateStandardMask);
-                            for (auto it = standard.cbegin(); it != standard.cend(); ++it)
-                                DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
-                                                                     it.key(), it.value());
-                        }
-                        continue;
-                    }
                     QQmlContext* context =
                         m_delegate && !m_delegate->isBound() ? delegateContext(item) : nullptr;
-                    QVariantMap rowValues;
-                    for (auto it = m_roleMap.cbegin(); it != m_roleMap.cend(); ++it) {
-                        const QVariant value = guardedModel->data(modelIndex, it.key());
-                        rowValues.insert(it.value(), value);
-                        if (changedRoles.isEmpty() || changedRoles.contains(it.key())) {
-                            DelegateUtils::setContextProperty(m_delegate, context, it.value(),
-                                                              value);
-                            setPropertyIfExists(item, it.value().toUtf8().constData(), value);
-                        }
-                    }
-                    NumericItemRoles::apply(guardedModel, modelIndex, rowValues, true,
-                                            m_claimedNames);
-                    for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
-                        DelegateUtils::setContextProperty(m_delegate, context, it.key(),
-                                                          it.value());
-                        setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
-                    }
-                    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"),
-                                                      rowValues);
-                    DelegateUtils::setContextProperty(m_delegate, context,
-                                                      QStringLiteral("modelData"), rowValues);
-                    setPropertyIfExists(item, "model", rowValues);
-                    setPropertyIfExists(item, "modelData", rowValues);
+                    ModelSignalConnections::updateDelegateRowData(
+                        item, m_delegate, context, liveModel, liveModel->index(row, 0, m_rootIndex),
+                        m_roleMap, changedRoles, m_delegateSchemaResolved, m_delegateNeedsModelMap,
+                        m_delegateProperties, m_claimedNames, m_delegateStandardMask);
                 }
                 emit modelDataChanged();
                 markDirty();
-            }));
-        m_modelConnections.append(connect(
-            model, &QAbstractItemModel::rowsInserted, this,
-            [this, guardedModel, generation](const QModelIndex& parent, int first, int last) {
-                if (!guardedModel || generation != m_modelGeneration ||
-                    guardedModel.data() != m_objectModel.data() || parent != m_rootIndex)
-                    return;
-                insertModelRows(guardedModel, first, last, m_roleMap);
-            }));
-        m_modelConnections.append(connect(
-            model, &QAbstractItemModel::rowsRemoved, this,
-            [this, guardedModel, generation](const QModelIndex& parent, int first, int last) {
-                if (!guardedModel || generation != m_modelGeneration ||
-                    guardedModel.data() != m_objectModel.data() || parent != m_rootIndex)
-                    return;
-                removeModelRows(first, last);
-            }));
-        m_modelConnections.append(
-            connect(model, &QAbstractItemModel::rowsMoved, this,
-                    [this, guardedModel, generation](const QModelIndex& sourceParent, int first,
-                                                     int last, const QModelIndex& destinationParent,
-                                                     int destination) {
-                        if (!guardedModel || generation != m_modelGeneration ||
-                            guardedModel.data() != m_objectModel.data())
-                            return;
-                        if (sourceParent != m_rootIndex || destinationParent != m_rootIndex) {
-                            // A move into or out of the shown level changes the row set.
-                            if (sourceParent == m_rootIndex || destinationParent == m_rootIndex)
-                                generateItems();
-                            return;
-                        }
-                        moveModelRows(first, last, destination);
-                    }));
-        m_modelConnections.append(connect(model, &QAbstractItemModel::layoutChanged, this,
-                                          [this, guardedModel, generation]() {
-                                              if (guardedModel && generation == m_modelGeneration &&
-                                                  guardedModel.data() == m_objectModel.data())
-                                                  generateItems();
-                                          }));
-        m_modelConnections.append(connect(model, &QAbstractItemModel::modelReset, this,
-                                          [this, guardedModel, generation]() {
-                                              if (guardedModel && generation == m_modelGeneration &&
-                                                  guardedModel.data() == m_objectModel.data())
-                                                  generateItems();
-                                          }));
+            },
+            [this](QAbstractItemModel* liveModel, int first, int last) {
+                insertModelRows(liveModel, first, last, m_roleMap);
+            },
+            [this](int first, int last) { removeModelRows(first, last); },
+            [this](int first, int last, int destination) {
+                moveModelRows(first, last, destination);
+            },
+            [this]() { generateItems(); }, [this]() { generateItems(); });
     }
 
     if (m_pendingCurrentIndex >= 0 && m_modelCount > 0) {
@@ -777,6 +726,7 @@ void ListView::generateItems() {
     emit modelDataChanged();
 
     if (!DelegateUtils::isReady(m_delegate, this)) {
+        setContentWidth(0);
         setContentHeight(0);
         return;
     }
@@ -881,17 +831,16 @@ void ListView::moveModelRows(int first, int last, int destination) {
 }
 
 void ListView::layoutChildren() {
-    int currentPos = 0;
+    const int stride = delegateStride();
     for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
         Item* childItem = it.value();
         if (childItem && childItem->visible()) {
             if (m_orientation == Qt::Vertical) {
                 childItem->setX(0);
-                childItem->setY(it.key() * delegateStride());
+                childItem->setY(it.key() * stride);
             } else {
-                childItem->setX(currentPos);
+                childItem->setX(it.key() * stride);
                 childItem->setY(0);
-                currentPos += childItem->width() + m_spacing;
             }
         }
     }
@@ -903,14 +852,23 @@ void ListView::mousePressEvent(MouseEvent* event) {
     ScrollView::mousePressEvent(event);
     if (event->isAccepted()) return;
 
+    QPointer<ListView> self(this);
     setFocus(true);
-    int clickY = event->y() + contentY() - topPadding();
+    if (!self) return;
+
+    const int clickX = event->x() + contentX() - leftPadding();
+    const int clickY = event->y() + contentY() - topPadding();
     for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
         Item* item = it.value();
         if (item && item->visible()) {
-            if (clickY >= item->y() && clickY < item->y() + item->height()) {
-                setCurrentIndex(it.key());
-                emit itemActivated(it.key());
+            const bool hit = m_orientation == Qt::Vertical
+                                 ? (clickY >= item->y() && clickY < item->y() + item->height())
+                                 : (clickX >= item->x() && clickX < item->x() + item->width());
+            if (hit) {
+                const int clickedIndex = it.key();
+                setCurrentIndex(clickedIndex);
+                if (!self) return;
+                emit itemActivated(clickedIndex);
                 event->setAccepted(true);
                 break;
             }
@@ -927,11 +885,7 @@ int ListView::implicitWidth() const {
         }
         return maxW + leftPadding() + rightPadding();
     } else {
-        int totalW = 0;
-        for (Item* childItem : m_createdItems) {
-            if (childItem && childItem->visible()) totalW += childItem->width() + m_spacing;
-        }
-        if (totalW > 0) totalW -= m_spacing;
+        const int totalW = m_modelCount > 0 ? m_modelCount * delegateStride() - m_spacing : 0;
         return totalW + leftPadding() + rightPadding();
     }
 }

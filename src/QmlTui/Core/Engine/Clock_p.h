@@ -8,6 +8,7 @@
 #include <QList>
 #include <QObject>
 #include <QTimer>
+#include <atomic>
 
 class QVariantAnimation;
 
@@ -53,8 +54,8 @@ private:
 
     ClockTimer* takeNextDue(qint64 timeMs) const;
 
-    bool m_virtual = false;
-    bool m_timersExisted = false;
+    std::atomic<bool> m_virtual{false};
+    std::atomic<bool> m_timersExisted{false};
     qint64 m_virtualNow = 0;
     QList<ClockTimer*> m_timers;
     class VirtualAnimationDriver* m_driver = nullptr;

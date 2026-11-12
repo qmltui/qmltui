@@ -74,7 +74,7 @@ void Gradient::setOrientation(Orientation orientation) {
     emit updated();
 }
 
-uint32_t Gradient::colorAt(qreal t) const {
+uint32_t Gradient::colorArgbAt(qreal t) const {
     if (m_stopsDirty) {
         m_sortedStops.clear();
         m_sortedStops.reserve(m_stops.size());
@@ -90,7 +90,7 @@ uint32_t Gradient::colorAt(qreal t) const {
 
     const QList<GradientStop*>& sorted = m_sortedStops;
     if (sorted.isEmpty()) {
-        return 0xFFFFFFFF;
+        return Color::DefaultTag;
     }
     if (sorted.size() == 1) {
         return sorted.first()->resolvedColor();

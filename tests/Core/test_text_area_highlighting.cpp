@@ -39,6 +39,7 @@ private slots:
     void tabHandling();
     void showWhitespaceRendering();
     void selectPasteUndo();
+    void largeDocumentLineIndexScaling();
     void performance();
 };
 
@@ -663,6 +664,53 @@ void TestTextAreaHighlighting::selectPasteUndo() {
     area.undo();
     QCOMPARE(area.text(), QStringLiteral("Button {\n    col\n}"));
     QCOMPARE(area.selectedText(), QStringLiteral("col"));
+}
+
+void TestTextAreaHighlighting::largeDocumentLineIndexScaling() {
+    TextArea area;
+    area.setWidth(32);
+    area.setHeight(5);
+
+    QStringList lines;
+    lines.reserve(5002);
+    lines.append(QString()); // empty leading line 0
+    for (int i = 1; i <= 5000; ++i) {
+        lines.append(QStringLiteral("L%1:一二abc").arg(i, 4, 10, QLatin1Char('0')));
+    }
+    lines.append(QString()); // empty trailing line 5001
+    const QString doc = lines.join(QLatin1Char('\n'));
+    area.setText(doc);
+    area.setActiveFocus(true);
+
+    // Seek directly near the bottom of the 5002-line document.
+    area.setContentY(4996);
+    QCOMPARE(area.contentY(), 4996);
+
+    const TextGridBuffer buf = frame(area, 32, 5);
+    // Row 0 of viewport is line 4996 ("L4996:一二abc").
+    QCOMPARE(buf.cellAt(0, 0).character(), QByteArrayView("L"));
+    QCOMPARE(buf.cellAt(1, 0).character(), QByteArrayView("4"));
+    QCOMPARE(buf.cellAt(2, 0).character(), QByteArrayView("9"));
+    QCOMPARE(buf.cellAt(3, 0).character(), QByteArrayView("9"));
+    QCOMPARE(buf.cellAt(4, 0).character(), QByteArrayView("6"));
+    QCOMPARE(buf.cellAt(6, 0).character(), QByteArrayView("一"));
+    QCOMPARE(buf.cellAt(8, 0).character(), QByteArrayView("二"));
+    QCOMPARE(buf.cellAt(10, 0).character(), QByteArrayView("a"));
+
+    // Place cursor at end of line 4998 and navigate Up/Down preserving display column.
+    const int line4998End = static_cast<int>(doc.indexOf(QStringLiteral("L4999:"))) - 1;
+    area.setCursorPosition(line4998End);
+    QCOMPARE(area.cursorPosition(), line4998End);
+
+    KeyEvent up(Qt::Key_Up, QString(), Qt::NoModifier);
+    area.keyPressEvent(&up);
+    const int line4997End = static_cast<int>(doc.indexOf(QStringLiteral("L4998:"))) - 1;
+    QCOMPARE(area.cursorPosition(), line4997End);
+
+    KeyEvent home(Qt::Key_Home, QString(), Qt::NoModifier);
+    area.keyPressEvent(&home);
+    const int line4997Start = static_cast<int>(doc.indexOf(QStringLiteral("L4997:")));
+    QCOMPARE(area.cursorPosition(), line4997Start);
 }
 
 void TestTextAreaHighlighting::performance() {

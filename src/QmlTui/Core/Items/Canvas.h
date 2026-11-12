@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QPointer>
 #include <QVariantList>
+#include <cstdint>
 #include <vector>
 #include <QmlTui/Core/Primitives/Subpixel.h>
 
@@ -35,11 +36,11 @@ class QMLTUI_CORE_EXPORT Canvas : public Item {
     Q_PROPERTY(int pixelHeight READ pixelHeight NOTIFY pixelHeightChanged)
 
 public:
-    enum class RenderMode { Braille, HalfBlock };
+    enum class RenderMode : uint8_t { Braille, HalfBlock };
     Q_ENUM(RenderMode)
 
     // How a Braille cell picks its color when dots of different colors share it.
-    enum class CellColorMode {
+    enum class CellColorMode : uint8_t {
         LastDot, // the most recently drawn dot decides (default, cheapest)
         Average  // mean of every colored dot drawn into the cell since clear()
     };
@@ -137,7 +138,7 @@ private:
     mutable std::vector<TextAttribute> m_cellAttributes;
     mutable std::vector<uint8_t> m_cellHasCustomAttributes;
     Color m_color;
-    uint32_t m_resolvedColor = Color::resolve(m_color, 0xFFFFFFFF);
+    uint32_t m_resolvedColor = Color::resolve(m_color, Color::DefaultTag);
     QPointer<Gradient> m_gradient;
     Color m_fillColor = Color::Invalid;
     uint32_t m_resolvedFillColor = 0x00000000;
@@ -187,7 +188,9 @@ class QMLTUI_CORE_EXPORT CanvasShape : public Item {
     Q_PROPERTY(bool dim READ dim WRITE setDim NOTIFY dimChanged)
 
 public:
-    CanvasShape(QObject* parent = nullptr) : Item(parent) {}
+    CanvasShape(QObject* parent = nullptr) : Item(parent) {
+        setItemFlag(ItemFlag::BoundedSelfPaint);
+    }
     ~CanvasShape() override = default;
 
     Color color() const { return m_color; }
@@ -220,7 +223,7 @@ signals:
 
 private:
     Color m_color;
-    uint32_t m_resolvedColor = 0xFFFFFFFF;
+    uint32_t m_resolvedColor = Color::DefaultTag;
     bool m_hasCustomColor = false;
     QPointer<Gradient> m_gradient;
     TextStyle m_style;

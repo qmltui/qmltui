@@ -22,10 +22,13 @@ class Item;
 //          QMLTUI_DEBUG_PAINT_DIRTY=1, reported once per item class/name.
 //
 // Rendering is single-threaded; the state is process-global.
-class QMLTUI_CORE_EXPORT RenderPhase final
-{
+class RenderPhase final {
 public:
-    enum Phase : uint8_t { Idle, Layout, Paint, };
+    enum Phase : uint8_t {
+        Idle,
+        Layout,
+        Paint,
+    };
 
     static Phase current();
 
@@ -33,10 +36,9 @@ public:
     // Paint scope began.
     static int dirtyDuringPaintCount();
 
-    static void recordDirtyDuringPaint(const Item *item);
+    static void recordDirtyDuringPaint(const Item* item);
 
-    class QMLTUI_CORE_EXPORT Scope final
-    {
+    class Scope final {
     public:
         explicit Scope(Phase phase);
         ~Scope();

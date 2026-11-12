@@ -1,5 +1,6 @@
 #include <QmlTui/Core/Items/Repeater.h>
 #include <QmlTui/Core/Items/DelegateUtils.h>
+#include <QmlTui/Core/Items/ModelSignalConnections_p.h>
 #include <QmlTui/Core/Items/NumericItemRoles_p.h>
 #include <QQmlEngine>
 #include <QQmlContext>
@@ -16,6 +17,7 @@ Repeater::Repeater(QObject* parent) : Item(parent) {
 }
 
 Repeater::~Repeater() {
+    disconnectModelSignals();
     clearItems();
 }
 
@@ -91,9 +93,7 @@ void Repeater::clearItems() {
 }
 
 void Repeater::disconnectModelSignals() {
-    for (const QMetaObject::Connection& connection : std::as_const(m_modelConnections))
-        disconnect(connection);
-    m_modelConnections.clear();
+    ModelSignalConnections::disconnectAll(m_modelConnections);
 }
 
 void Repeater::generateItems() {
@@ -185,137 +185,32 @@ void Repeater::generateItems() {
                 }
                 m_claimedNames = NumericItemRoles::claimedNames(model);
 
-                const quint64 generation = m_modelGeneration;
-                QPointer<QAbstractItemModel> guardedModel(model);
-                m_modelConnections.append(connect(
-                    model, &QAbstractItemModel::dataChanged, this,
-                    [this, guardedModel, generation](const QModelIndex& topLeft,
-                                                     const QModelIndex& bottomRight,
-                                                     const QList<int>& changedRoles) {
-                        if (!guardedModel || generation != m_modelGeneration ||
-                            guardedModel.data() != m_objectModel.data())
-                            return;
-                        if (topLeft.parent() != m_rootIndex) return;
-                        const QHash<int, QString>& roleMap = m_roleMap;
-                        int first = topLeft.row();
-                        int last = bottomRight.row();
-                        for (int row = first; row <= last; ++row) {
-                            if (row >= 0 && row < m_createdItems.size()) {
-                                QQmlContext* ctx =
-                                    (row < m_contexts.size()) ? m_contexts.at(row) : nullptr;
-                                Item* item = m_createdItems.at(row);
-                                if (!item) continue;
-                                const QModelIndex modelIndex =
-                                    guardedModel->index(row, 0, m_rootIndex);
-                                if (m_delegate && m_delegate->isBound() &&
-                                    m_delegateSchemaResolved && !m_delegateNeedsModelMap) {
-                                    for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                                        if (!changedRoles.isEmpty() &&
-                                            !changedRoles.contains(it.key()))
-                                            continue;
-                                        const auto propIt =
-                                            m_delegateProperties.constFind(it.value());
-                                        if (propIt != m_delegateProperties.cend()) {
-                                            item->metaObject()
-                                                ->property(propIt.value())
-                                                .write(item,
-                                                       guardedModel->data(modelIndex, it.key()));
-                                        }
-                                    }
-                                    if (m_delegateStandardMask != 0) {
-                                        QVariantMap standard;
-                                        NumericItemRoles::apply(guardedModel, modelIndex, standard,
-                                                                true, m_claimedNames,
-                                                                m_delegateStandardMask);
-                                        for (auto it = standard.cbegin(); it != standard.cend();
-                                             ++it)
-                                            DelegateUtils::writeDeclaredProperty(
-                                                item, m_delegateProperties, it.key(), it.value());
-                                    }
-                                    continue;
-                                }
-                                QVariantMap rowValues;
-                                for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it) {
-                                    const QVariant val = guardedModel->data(modelIndex, it.key());
-                                    rowValues.insert(it.value(), val);
-                                    if (changedRoles.isEmpty() || changedRoles.contains(it.key())) {
-                                        DelegateUtils::setContextProperty(m_delegate, ctx,
-                                                                          it.value(), val);
-                                        setPropertyIfExists(item, it.value().toUtf8().constData(),
-                                                            val);
-                                    }
-                                }
-                                NumericItemRoles::apply(guardedModel, modelIndex, rowValues, true,
-                                                        m_claimedNames);
-                                for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
-                                    DelegateUtils::setContextProperty(m_delegate, ctx, it.key(),
-                                                                      it.value());
-                                    setPropertyIfExists(item, it.key().toUtf8().constData(),
-                                                        it.value());
-                                }
-                                DelegateUtils::setContextProperty(
-                                    m_delegate, ctx, QStringLiteral("model"), rowValues);
-                                DelegateUtils::setContextProperty(
-                                    m_delegate, ctx, QStringLiteral("modelData"), rowValues);
-                                setPropertyIfExists(item, "model", rowValues);
-                                setPropertyIfExists(item, "modelData", rowValues);
-                            }
+                ModelSignalConnections::connectGuardedFlatRowSignals(
+                    m_modelConnections, model, this, m_objectModel, m_modelGeneration, m_rootIndex,
+                    [this](QAbstractItemModel* liveModel, int firstRow, int lastRow,
+                           const QList<int>& changedRoles) {
+                        for (int row = firstRow; row <= lastRow; ++row) {
+                            if (row < 0 || row >= m_createdItems.size()) continue;
+                            Item* item = m_createdItems.at(row);
+                            if (!item) continue;
+                            QQmlContext* ctx =
+                                (row < m_contexts.size()) ? m_contexts.at(row) : nullptr;
+                            ModelSignalConnections::updateDelegateRowData(
+                                item, m_delegate, ctx, liveModel,
+                                liveModel->index(row, 0, m_rootIndex), m_roleMap, changedRoles,
+                                m_delegateSchemaResolved, m_delegateNeedsModelMap,
+                                m_delegateProperties, m_claimedNames, m_delegateStandardMask);
                         }
                         markDirty();
-                    }));
-
-                m_modelConnections.append(
-                    connect(model, &QAbstractItemModel::rowsInserted, this,
-                            [this, guardedModel, generation](const QModelIndex& parent, int first,
-                                                             int last) {
-                                if (!guardedModel || generation != m_modelGeneration ||
-                                    guardedModel.data() != m_objectModel.data())
-                                    return;
-                                if (parent != m_rootIndex) return;
-                                onRowsInserted(guardedModel, first, last);
-                            }));
-                m_modelConnections.append(
-                    connect(model, &QAbstractItemModel::rowsRemoved, this,
-                            [this, guardedModel, generation](const QModelIndex& parent, int first,
-                                                             int last) {
-                                if (!guardedModel || generation != m_modelGeneration ||
-                                    guardedModel.data() != m_objectModel.data())
-                                    return;
-                                if (parent != m_rootIndex) return;
-                                onRowsRemoved(first, last);
-                            }));
-                m_modelConnections.append(connect(
-                    model, &QAbstractItemModel::rowsMoved, this,
-                    [this, guardedModel, generation](const QModelIndex& sourceParent, int first,
-                                                     int last, const QModelIndex& destinationParent,
-                                                     int destination) {
-                        if (!guardedModel || generation != m_modelGeneration ||
-                            guardedModel.data() != m_objectModel.data())
-                            return;
-                        if (sourceParent != m_rootIndex || destinationParent != m_rootIndex) {
-                            // A move into or out of the shown level changes the row set.
-                            if (sourceParent == m_rootIndex || destinationParent == m_rootIndex)
-                                generateItems();
-                            return;
-                        }
+                    },
+                    [this](QAbstractItemModel* liveModel, int first, int last) {
+                        onRowsInserted(liveModel, first, last);
+                    },
+                    [this](int first, int last) { onRowsRemoved(first, last); },
+                    [this](int first, int last, int destination) {
                         onRowsMoved(first, last, destination);
-                    }));
-                m_modelConnections.append(
-                    connect(model, &QAbstractItemModel::layoutChanged, this,
-                            [this, guardedModel, generation]() {
-                                if (!guardedModel || generation != m_modelGeneration ||
-                                    guardedModel.data() != m_objectModel.data())
-                                    return;
-                                generateItems();
-                            }));
-                m_modelConnections.append(
-                    connect(model, &QAbstractItemModel::modelReset, this,
-                            [this, guardedModel, generation]() {
-                                if (!guardedModel || generation != m_modelGeneration ||
-                                    guardedModel.data() != m_objectModel.data())
-                                    return;
-                                generateItems();
-                            }));
+                    },
+                    [this]() { generateItems(); }, [this]() { generateItems(); });
 
                 int rowCount = (std::max)(0, model->rowCount(m_rootIndex));
                 for (int i = 0; i < rowCount; ++i)
@@ -363,7 +258,7 @@ void Repeater::instantiateModelRow(QAbstractItemModel* model, int row, Item* par
                     QVariantMap rowValues;
                     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it)
                         rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-                    NumericItemRoles::apply(model, modelIndex, rowValues, false, m_claimedNames);
+                    NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
                     initialProps.insert(QStringLiteral("model"), rowValues);
                     initialProps.insert(QStringLiteral("modelData"), rowValues);
                     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
@@ -376,7 +271,7 @@ void Repeater::instantiateModelRow(QAbstractItemModel* model, int row, Item* par
                             initialProps.insert(it.value(), model->data(modelIndex, it.key()));
                     }
                     if (m_delegateStandardMask != 0) {
-                        NumericItemRoles::apply(model, modelIndex, initialProps, false,
+                        NumericItemRoles::apply(model, modelIndex, initialProps, true,
                                                 m_claimedNames, m_delegateStandardMask);
                     }
                 }
@@ -388,7 +283,7 @@ void Repeater::instantiateModelRow(QAbstractItemModel* model, int row, Item* par
     QVariantMap rowValues;
     for (auto it = roleMap.cbegin(); it != roleMap.cend(); ++it)
         rowValues.insert(it.value(), model->data(modelIndex, it.key()));
-    NumericItemRoles::apply(model, modelIndex, rowValues, false, m_claimedNames);
+    NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
 
     QVariantMap initialProps = rowValues;
     initialProps.insert(QStringLiteral("index"), row);

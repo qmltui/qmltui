@@ -7,9 +7,10 @@
 #include <QQmlEngine>
 #include <QPointer>
 #include <QPoint>
-#include <QHash>
+#include <QRect>
 #include <QMetaObject>
 #include <algorithm>
+#include <memory>
 
 #include <QmlTui/Core/Items/Anchors.h>
 
@@ -19,6 +20,7 @@ class State;
 class Transition;
 class StateController;
 class ItemPaintTraversal;
+struct ItemPrivate;
 
 // Axis-aligned bounding rectangle in absolute terminal cell coordinates.
 struct ClipRect {
@@ -113,7 +115,7 @@ public:
 
 public:
     explicit Item(QObject* parent = nullptr);
-    virtual ~Item();
+    ~Item() override;
 
     QQmlListProperty<QObject> data() const;
     QQmlListProperty<qmltui::Item> childrenProperty() const;
@@ -122,15 +124,15 @@ public:
     QString state() const;
     void setState(const QString& newState);
     void evaluateStateConditions();
-    const QList<qmltui::Item*>& childItems() const { return m_visualChildren; }
+    const QList<qmltui::Item*>& childItems() const;
     const QList<qmltui::Item*>& stackingChildren() const;
 
-    int x() const { return m_x; }
+    int x() const;
     void setX(int x);
 
-    int y() const { return m_y; }
+    int y() const;
     void setY(int y);
-    qreal z() const { return m_z; }
+    qreal z() const;
     void setZ(qreal z);
 
     virtual int width() const;
@@ -139,27 +141,27 @@ public:
     virtual int height() const;
     virtual void setHeight(int height);
 
-    virtual int implicitWidth() const { return m_implicitWidth; }
+    virtual int implicitWidth() const;
     void setImplicitWidth(int w);
 
-    virtual int implicitHeight() const { return m_implicitHeight; }
+    virtual int implicitHeight() const;
     void setImplicitHeight(int h);
 
-    bool visible() const { return m_visible; }
+    bool visible() const;
     virtual void setVisible(bool visible);
 
-    bool enabled() const { return m_enabled; }
+    bool enabled() const;
     void setEnabled(bool enabled);
     bool isEffectivelyEnabled() const;
     bool isEffectivelyVisible() const;
 
-    bool focus() const { return m_focus; }
+    bool focus() const;
     virtual void setFocus(bool focus);
 
-    bool activeFocus() const { return m_activeFocus; }
+    bool activeFocus() const;
     void setActiveFocus(bool active);
 
-    Qt::FocusPolicy focusPolicy() const { return m_focusPolicy; }
+    Qt::FocusPolicy focusPolicy() const;
     void setFocusPolicy(Qt::FocusPolicy policy);
 
     Q_INVOKABLE void forceActiveFocus();
@@ -168,13 +170,14 @@ public:
     FocusScope* enclosingFocusScope() const;
 
     Terminal* terminal() const;
-    QPoint absolutePosition() const;
+    Q_INVOKABLE QPoint absolutePosition() const;
     virtual QPoint contentOffset() const;
 
-    Item* parentItem() const { return qobject_cast<Item*>(QObject::parent()); }
+    Item* parentItem() const;
     virtual void setParentItem(Item* parentItem);
     bool isDescendantOf(const Item* ancestor) const noexcept;
-    Anchors* anchors() const { return const_cast<Anchors*>(&m_anchors); }
+    Anchors* anchors() const;
+    const Anchors* anchorsIfAny() const noexcept;
     AnchorLine* left() const;
     AnchorLine* right() const;
     AnchorLine* top() const;
@@ -182,10 +185,10 @@ public:
     AnchorLine* horizontalCenter() const;
     AnchorLine* verticalCenter() const;
 
-    bool clip() const { return m_clip; }
+    bool clip() const;
     void setClip(bool c);
 
-    int padding() const { return m_padding; }
+    int padding() const;
     void setPadding(int p);
 
     virtual int leftPadding() const;
@@ -201,29 +204,31 @@ public:
     void setBottomPadding(int p);
 
     virtual void keyPressEvent(class KeyEvent* event);
+    // Returns true when unmodified printable keystrokes should be delivered to
+    // this item instead of triggering single-key Shortcuts (e.g. editable
+    // TextInput/TextArea or running PtyView).
+    virtual bool consumesPrintableKeys() const { return false; }
     virtual void mousePressEvent(class MouseEvent* event);
     virtual void mouseReleaseEvent(class MouseEvent* event);
     virtual void mouseMoveEvent(class MouseEvent* event);
     virtual void wheelEvent(class MouseEvent* event);
-    bool filtersChildMouseEvents() const { return m_filtersChildMouseEvents; }
-    void setFiltersChildMouseEvents(bool filter) { m_filtersChildMouseEvents = filter; }
+    bool filtersChildMouseEvents() const;
+    void setFiltersChildMouseEvents(bool filter);
     virtual bool childMouseEventFilter(Item* item, class MouseEvent* event);
 
     // Cheap type tests for the framework's own hot paths (per item per frame),
     // set by the Popup and Terminal constructors instead of using RTTI.
-    bool isPopup() const { return m_itemFlags & static_cast<quint8>(ItemFlag::IsPopup); }
-    bool isTerminalRoot() const {
-        return m_itemFlags & static_cast<quint8>(ItemFlag::IsTerminalRoot);
-    }
-    bool hasExplicitX() const { return m_itemFlags & static_cast<quint8>(ItemFlag::ExplicitX); }
-    bool hasExplicitY() const { return m_itemFlags & static_cast<quint8>(ItemFlag::ExplicitY); }
-    bool ignoresParentPadding() const {
-        return m_itemFlags & static_cast<quint8>(ItemFlag::IgnoresParentPadding);
-    }
+    bool isPopup() const;
+    bool isTerminalRoot() const;
+    bool hasExplicitX() const;
+    bool hasExplicitY() const;
+    bool hasExplicitWidth() const;
+    bool hasExplicitHeight() const;
+    bool ignoresParentPadding() const;
     void setDefaultX(int x);
     void setDefaultY(int y);
 
-    DirtyFlags dirtyFlags() const { return m_dirtyFlags; }
+    DirtyFlags dirtyFlags() const;
     void markDirty(DirtyFlags flags);
     void markDirty() { markDirty(DirtyFlag::SelfDirty); }
     void clearDirty(DirtyFlags flags);
@@ -265,13 +270,20 @@ private:
     friend class FocusScope;
 
     StateController* ensureStateController() const;
+    void clearFocusFlagAndNotify();
     void layoutSubtree();
     void paintSubtree(TextGridBuffer& buffer, int absX, int absY,
                       const ClipRect& clipRect = ClipRect());
+    QRect localSelfBounds() const;
+    const QRect& ensureSubtreeBounds() const;
+    void clearPaintDirtySubtree();
+    void damageLastPaintedSubtree();
+    void collectDirtyDamage(int absX, int absY, const QRect& ancestorClip, QRect& outDamage,
+                            bool& outFullDamage) const;
     void invalidateStackingOrder();
     void scheduleChildGeometryInvalidation();
     void registerChildItem(Item* childItem);
-    void unregisterChildItem(Item* childItem);
+    void unregisterChildItem(QObject* childObject);
     // Emits ancestryChanged() on this item and every visual descendant.
     void notifySubtreeAncestryChanged();
     void reorderChildItemsAfter(Item* sibling, const QList<Item*>& items);
@@ -291,13 +303,12 @@ protected:
         ExplicitX = 1 << 2,
         ExplicitY = 1 << 3,
         IgnoresParentPadding = 1 << 4,
+        InDestructor = 1 << 5,
+        ScrollbarOverhang = 1 << 6,
+        BoundedSelfPaint = 1 << 7,
     };
-    void setItemFlag(ItemFlag flag, bool on = true) {
-        if (on)
-            m_itemFlags |= static_cast<quint8>(flag);
-        else
-            m_itemFlags &= static_cast<quint8>(~static_cast<quint8>(flag));
-    }
+    void setItemFlag(ItemFlag flag, bool on = true);
+    void invalidateSubtreeBounds();
 
     void childEvent(QChildEvent* event) override;
 
@@ -335,43 +346,8 @@ protected:
     // with this item's bounds when clip() is true, or returns clipRect unchanged.
     virtual ClipRect clipRectForChildren(int absX, int absY, const ClipRect& clipRect) const;
 
-    int m_x = 0;
-    int m_y = 0;
-    qreal m_z = 0;
-    int m_width = -1;
-    int m_height = -1;
-    int m_implicitWidth = 0;
-    int m_implicitHeight = 0;
-    int m_reportedImplicitWidth = 0;
-    int m_reportedImplicitHeight = 0;
-    bool m_visible = true;
-    bool m_enabled = true;
-    bool m_focus = false;
-    bool m_activeFocus = false;
-    Qt::FocusPolicy m_focusPolicy = Qt::NoFocus;
-    Anchors m_anchors;
-    mutable AnchorLine* m_leftLine = nullptr;
-    mutable AnchorLine* m_rightLine = nullptr;
-    mutable AnchorLine* m_topLine = nullptr;
-    mutable AnchorLine* m_bottomLine = nullptr;
-    mutable AnchorLine* m_horizontalCenterLine = nullptr;
-    mutable AnchorLine* m_verticalCenterLine = nullptr;
-    bool m_clip = false;
-    int m_padding = 0;
-    int m_leftPadding = -1;
-    int m_rightPadding = -1;
-    int m_topPadding = -1;
-    int m_bottomPadding = -1;
-    QList<QPointer<QObject>> m_dataChildren;
-    QList<Item*> m_visualChildren;
-    mutable QList<Item*> m_stackingChildren;
-    mutable bool m_stackingOrderDirty = true;
-
-    mutable std::unique_ptr<StateController> m_stateController;
-    QHash<Item*, QList<QMetaObject::Connection>> m_childGeometryConnections;
-    bool m_filtersChildMouseEvents = false;
-    quint8 m_itemFlags = 0;
-    DirtyFlags m_dirtyFlags = DirtyFlag::SelfDirty;
+private:
+    std::unique_ptr<ItemPrivate> m_d;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Item::DirtyFlags)

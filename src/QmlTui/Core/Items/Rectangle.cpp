@@ -1,9 +1,12 @@
 #include <QmlTui/Core/Items/Rectangle.h>
 #include <QmlTui/Core/Items/Gradient.h>
+#include <QVarLengthArray>
 
 namespace qmltui {
 
-Rectangle::Rectangle(QObject* parent) : Item(parent), m_border(this) {}
+Rectangle::Rectangle(QObject* parent) : Item(parent), m_border(this) {
+    setItemFlag(ItemFlag::BoundedSelfPaint);
+}
 
 Rectangle::~Rectangle() = default;
 
@@ -76,33 +79,42 @@ void Rectangle::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         const int xEnd = std::min({buffer.width(), absX + w, clipRect.x + clipRect.width});
         const int yStart = std::max({0, absY, clipRect.y});
         const int yEnd = std::min({buffer.height(), absY + h, clipRect.y + clipRect.height});
-        for (int cy = yStart; cy < yEnd; ++cy) {
-            const int dy = cy - absY;
-            for (int cx = xStart; cx < xEnd; ++cx) {
-                const int dx = cx - absX;
-                Cell& cell = buffer.cellAt(cx, cy);
-                if (hasGradient) {
-                    qreal t = 0.0;
-                    if (isHorizontal) {
-                        t = (w > 1) ? static_cast<qreal>(dx) / (w - 1) : 0.0;
-                    } else {
-                        t = (h > 1) ? static_cast<qreal>(dy) / (h - 1) : 0.0;
-                    }
-                    cell.bgColor = m_gradient->colorAt(t);
-                } else {
-                    cell.bgColor = m_resolvedBackgroundColor;
+        if (xEnd > xStart && yEnd > yStart) {
+            const int spanW = xEnd - xStart;
+            QVarLengthArray<uint32_t, 256> colColors;
+            if (hasGradient && isHorizontal) {
+                colColors.resize(spanW);
+                for (int i = 0; i < spanW; ++i) {
+                    const int dx = (xStart + i) - absX;
+                    const qreal t = (w > 1) ? static_cast<qreal>(dx) / (w - 1) : 0.0;
+                    colColors[i] = Color::paintedArgb32(m_gradient->colorArgbAt(t));
                 }
-                cell.setCharacter(" ");
-                cell.displayWidth = 1;
-                cell.continuation = false;
-                cell.attributes = TextAttribute::None;
+            }
+            for (int cy = yStart; cy < yEnd; ++cy) {
+                const int dy = cy - absY;
+                const uint32_t rowColor =
+                    (hasGradient && !isHorizontal)
+                        ? Color::paintedArgb32(m_gradient->colorArgbAt(
+                              (h > 1) ? static_cast<qreal>(dy) / (h - 1) : 0.0))
+                        : m_resolvedBackgroundColor;
+                buffer.splitWideGlyphSpan(xStart, cy, spanW);
+                for (int cx = xStart; cx < xEnd; ++cx) {
+                    Cell& cell = buffer.cellAt(cx, cy);
+                    cell.bgColor =
+                        (hasGradient && isHorizontal) ? colColors[cx - xStart] : rowColor;
+                    cell.setCharacter(" ");
+                    cell.displayWidth = 1;
+                    cell.continuation = false;
+                    cell.attributes = TextAttribute::None;
+                    cell.linkId = 0;
+                }
             }
         }
     }
 
     // Render border if enabled
     if (m_border.style() != Border::None && w > 0 && h > 0) {
-        uint32_t borderColor = Color::resolve(m_border.color(), 0xFFFFFFFF);
+        uint32_t borderColor = Color::resolve(m_border.color(), Color::DefaultTag);
         const char* tl = "┌";
         const char* tr = "┐";
         const char* bl = "└";
@@ -141,17 +153,21 @@ void Rectangle::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         // Measure the six glyphs once instead of per border cell.
         const QByteArrayView tlGlyph(tl), trGlyph(tr), blGlyph(bl), brGlyph(br), hzGlyph(hz),
             vtGlyph(vt);
+        const TextAttribute borderAttr =
+            !isEffectivelyEnabled() ? TextAttribute::Dim : TextAttribute::None;
         auto paintBorderCell = [&](int dx, int dy, QByteArrayView glyph) {
             int cx = absX + dx;
             int cy = absY + dy;
             if (clipRect.contains(cx, cy) && cx >= 0 && cx < buffer.width() && cy >= 0 &&
                 cy < buffer.height()) {
+                buffer.splitWideGlyphSpan(cx, cy, 1);
                 Cell& cell = buffer.cellAt(cx, cy);
                 cell.setCharacter(glyph);
                 cell.displayWidth = 1;
                 cell.continuation = false;
                 cell.fgColor = borderColor;
-                cell.attributes = TextAttribute::None;
+                cell.attributes = borderAttr;
+                cell.linkId = 0;
             }
         };
 

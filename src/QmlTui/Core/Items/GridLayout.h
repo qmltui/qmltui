@@ -15,15 +15,19 @@ class QMLTUI_CORE_EXPORT GridLayout : public Item {
 
     Q_PROPERTY(int columns READ columns WRITE setColumns NOTIFY columnsChanged)
     Q_PROPERTY(int rows READ rows WRITE setRows NOTIFY rowsChanged)
-    Q_PROPERTY(int columnSpacing READ columnSpacing WRITE setColumnSpacing NOTIFY columnSpacingChanged)
+    Q_PROPERTY(
+        int columnSpacing READ columnSpacing WRITE setColumnSpacing NOTIFY columnSpacingChanged)
     Q_PROPERTY(int rowSpacing READ rowSpacing WRITE setRowSpacing NOTIFY rowSpacingChanged)
     Q_PROPERTY(Flow flow READ flow WRITE setFlow NOTIFY flowChanged)
 
 public:
-    enum Flow : uint8_t { LeftToRight, TopToBottom, };
+    enum Flow : uint8_t {
+        LeftToRight,
+        TopToBottom,
+    };
     Q_ENUM(Flow)
 
-    explicit GridLayout(QObject *parent = nullptr);
+    explicit GridLayout(QObject* parent = nullptr);
     ~GridLayout() override;
 
     int columns() const { return m_columns; }

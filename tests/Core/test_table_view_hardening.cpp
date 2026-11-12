@@ -223,12 +223,11 @@ private slots:
         } model;
         TableFixture f;
         QVERIFY(f.createBody(
-            &model,
-            QStringLiteral("selectionColor: '#ffffff'; selectionBackgroundColor: '#222222'; "
-                           "columns: [{title:'A',width:10,color:'#00ffff'},"
-                           "{title:'B',width:10,background:'#0000ff'},"
-                           "{title:'C',width:10,color:'#00ffff',background:'#0000ff'},"
-                           "{title:'D',width:10}]")));
+            &model, QStringLiteral("selectedTextColor: '#ffffff'; selectionColor: '#222222'; "
+                                   "columns: [{title:'A',width:10,color:'#00ffff'},"
+                                   "{title:'B',width:10,background:'#0000ff'},"
+                                   "{title:'C',width:10,color:'#00ffff',background:'#0000ff'},"
+                                   "{title:'D',width:10}]")));
         f.table->setSelectedRow(-1);
         const auto paint = [&] {
             model.reads.clear();
@@ -624,7 +623,7 @@ private slots:
         }
 
         TableFixture f;
-        QVERIFY(f.createBody(&model, "showOuterBorder: true; selectionColor: \"#ffffff\""));
+        QVERIFY(f.createBody(&model, "showOuterBorder: true; selectedTextColor: \"#ffffff\""));
         f.table->setWidth(6);
         f.table->setHeight(7);
         f.table->setSelectedRow(1);
@@ -1409,8 +1408,8 @@ private slots:
         QVERIFY2(f.createBody(&model, QStringLiteral(R"(
             showOuterBorder: false
             showColumnGrid: false
-            selectionColor: "#ffffff"
-            selectionBackgroundColor: "#444444"
+            selectedTextColor: "#ffffff"
+            selectionColor: "#444444"
             columns: [
                 { title: "C0", width: 8, align: "right", rightPadding: 1 },
                 { title: "C1", width: 8 }

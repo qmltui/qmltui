@@ -11,22 +11,20 @@ namespace qmltui {
 
 namespace {
 
-QString componentErrors(const QQmlComponent *component) {
+QString componentErrors(const QQmlComponent* component) {
     if (!component) return {};
 
     QStringList messages;
     const QList<QQmlError> errors = component->errors();
     messages.reserve(errors.size());
-    for (const QQmlError &error : errors)
+    for (const QQmlError& error : errors)
         messages.append(error.toString());
     return messages.join(QLatin1Char('\n'));
 }
 
 } // namespace
 
-Loader::Loader(QObject *parent)
-    : Item(parent) {
-}
+Loader::Loader(QObject* parent) : Item(parent) {}
 
 Loader::~Loader() {
     disconnectComponent();
@@ -64,7 +62,7 @@ void Loader::setActive(bool active) {
     beginLoading();
 }
 
-void Loader::setSource(const QUrl &source) {
+void Loader::setSource(const QUrl& source) {
     if (m_source == source && !m_sourceComponent) return;
 
     clearItem();
@@ -87,7 +85,7 @@ void Loader::setSource(const QUrl &source) {
     beginLoading();
 }
 
-void Loader::setSourceComponent(QQmlComponent *component) {
+void Loader::setSourceComponent(QQmlComponent* component) {
     if (m_sourceComponent == component && m_source.isEmpty()) return;
 
     clearItem();
@@ -106,8 +104,7 @@ void Loader::setSourceComponent(QQmlComponent *component) {
     setErrorString({});
     setStatus(Null);
 
-    if (m_sourceComponent)
-        watchComponent(m_sourceComponent, true);
+    if (m_sourceComponent) watchComponent(m_sourceComponent, true);
     beginLoading();
 }
 
@@ -120,18 +117,16 @@ void Loader::setAsynchronous(bool asynchronous) {
 void Loader::setWidth(int width) {
     Item::setWidth(width);
     if (width < 0) return;
-    if (Item *loadedItem = loadedVisualItem())
-        loadedItem->setWidth(width);
+    if (Item* loadedItem = loadedVisualItem()) loadedItem->setWidth(width);
 }
 
 void Loader::setHeight(int height) {
     Item::setHeight(height);
     if (height < 0) return;
-    if (Item *loadedItem = loadedVisualItem())
-        loadedItem->setHeight(height);
+    if (Item* loadedItem = loadedVisualItem()) loadedItem->setHeight(height);
 }
 
-QQmlComponent *Loader::effectiveComponent() const {
+QQmlComponent* Loader::effectiveComponent() const {
     return m_sourceComponent ? m_sourceComponent.data() : m_urlComponent.data();
 }
 
@@ -153,7 +148,7 @@ void Loader::beginLoading() {
         return;
     }
 
-    QQmlEngine *engine = qmlEngine(this);
+    QQmlEngine* engine = qmlEngine(this);
     if (!engine) {
         setErrorString(QStringLiteral("Loader has no QQmlEngine"));
         setStatus(Error);
@@ -164,41 +159,36 @@ void Loader::beginLoading() {
     watchComponent(m_urlComponent, false);
 
     QUrl resolvedSource = m_source;
-    if (QQmlContext *context = qmlContext(this))
+    if (QQmlContext* context = qmlContext(this))
         resolvedSource = context->resolvedUrl(resolvedSource);
 
-    m_urlComponent->loadUrl(
-        resolvedSource,
-        m_asynchronous ? QQmlComponent::Asynchronous
-                       : QQmlComponent::PreferSynchronous);
+    m_urlComponent->loadUrl(resolvedSource, m_asynchronous ? QQmlComponent::Asynchronous
+                                                           : QQmlComponent::PreferSynchronous);
     handleComponentStatus();
 }
 
-void Loader::watchComponent(QQmlComponent *component, bool external) {
+void Loader::watchComponent(QQmlComponent* component, bool external) {
     disconnectComponent();
     if (!component) return;
 
-    m_componentConnections.append(connect(
-        component, &QQmlComponent::statusChanged,
-        this, [this](QQmlComponent::Status) { handleComponentStatus(); }));
-    m_componentConnections.append(connect(
-        component, &QQmlComponent::progressChanged,
-        this, [this](qreal) { handleComponentStatus(); }));
-    m_componentConnections.append(connect(
-        component, &QObject::destroyed,
-        this, [this, external]() {
-            if (external) {
-                m_sourceComponent.clear();
-                emit sourceComponentChanged();
-            } else {
-                m_urlComponent.clear();
-            }
-            m_componentConnections.clear();
-            clearItem();
-            setProgress(0.0);
-            setErrorString({});
-            setStatus(Null);
-        }));
+    m_componentConnections.append(
+        connect(component, &QQmlComponent::statusChanged, this,
+                [this](QQmlComponent::Status) { handleComponentStatus(); }));
+    m_componentConnections.append(connect(component, &QQmlComponent::progressChanged, this,
+                                          [this](qreal) { handleComponentStatus(); }));
+    m_componentConnections.append(connect(component, &QObject::destroyed, this, [this, external]() {
+        if (external) {
+            m_sourceComponent.clear();
+            emit sourceComponentChanged();
+        } else {
+            m_urlComponent.clear();
+        }
+        m_componentConnections.clear();
+        clearItem();
+        setProgress(0.0);
+        setErrorString({});
+        setStatus(Null);
+    }));
 }
 
 void Loader::handleComponentStatus() {
@@ -207,7 +197,7 @@ void Loader::handleComponentStatus() {
         return;
     }
 
-    QQmlComponent *component = effectiveComponent();
+    QQmlComponent* component = effectiveComponent();
     if (!component) {
         setProgress(0.0);
         setStatus(Null);
@@ -237,18 +227,16 @@ void Loader::handleComponentStatus() {
 void Loader::createItem() {
     if (m_item || !m_active) return;
 
-    QQmlComponent *component = effectiveComponent();
+    QQmlComponent* component = effectiveComponent();
     if (!component || !component->isReady()) return;
 
-    QQmlContext *context = component->creationContext();
-    if (!context)
-        context = qmlContext(this);
+    QQmlContext* context = component->creationContext();
+    if (!context) context = qmlContext(this);
 
-    QObject *object = component->create(context);
+    QObject* object = component->create(context);
     if (!object) {
         QString error = componentErrors(component);
-        if (error.isEmpty())
-            error = QStringLiteral("Loader could not create the source component");
+        if (error.isEmpty()) error = QStringLiteral("Loader could not create the source component");
         setErrorString(error);
         qmlWarning(this) << error;
         setStatus(Error);
@@ -257,17 +245,15 @@ void Loader::createItem() {
 
     m_item = object;
 
-    if (Item *loadedItem = qobject_cast<Item *>(object)) {
+    if (Item* loadedItem = qobject_cast<Item*>(object)) {
         loadedItem->setParentItem(this);
         loadedItem->setX(0);
         loadedItem->setY(0);
 
-        m_itemConnections.append(connect(
-            loadedItem, &Item::implicitWidthChanged,
-            this, [this]() { syncImplicitSize(); }));
-        m_itemConnections.append(connect(
-            loadedItem, &Item::implicitHeightChanged,
-            this, [this]() { syncImplicitSize(); }));
+        m_itemConnections.append(connect(loadedItem, &Item::implicitWidthChanged, this,
+                                         [this]() { syncImplicitSize(); }));
+        m_itemConnections.append(connect(loadedItem, &Item::implicitHeightChanged, this,
+                                         [this]() { syncImplicitSize(); }));
     } else {
         // A non-visual object only needs lifetime ownership: no sizing
         // rule applies, so the loader keeps its own zero implicit size.
@@ -275,22 +261,22 @@ void Loader::createItem() {
     }
     QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
 
-    m_itemConnections.append(connect(
-        object, &QObject::destroyed,
-        this, [this]() {
-            m_item.clear();
-            m_itemConnections.clear();
-            syncImplicitSize();
-            emit itemChanged();
-            if (m_status == Ready)
-                setStatus(Null);
-        }));
+    m_itemConnections.append(connect(object, &QObject::destroyed, this, [this]() {
+        m_item.clear();
+        m_itemConnections.clear();
+        syncImplicitSize();
+        emit itemChanged();
+        if (m_status == Ready) setStatus(Null);
+    }));
 
     syncImplicitSize();
     syncItemSize();
     setErrorString({});
+    QPointer<Loader> self(this);
     emit itemChanged();
+    if (!self) return;
     setStatus(Ready);
+    if (!self) return;
     emit loaded();
 }
 
@@ -300,51 +286,52 @@ void Loader::clearItem() {
         return;
     }
 
-    for (const QMetaObject::Connection &connection : std::as_const(m_itemConnections))
+    for (const QMetaObject::Connection& connection : std::as_const(m_itemConnections))
         disconnect(connection);
     m_itemConnections.clear();
 
-    QObject *oldItem = m_item.data();
+    QPointer<Loader> self(this);
+    QPointer<QObject> oldItem = m_item;
     m_item.clear();
-    if (Item *oldVisualItem = qobject_cast<Item *>(oldItem))
+    if (Item* oldVisualItem = qobject_cast<Item*>(oldItem.data()))
         oldVisualItem->setParentItem(nullptr);
 
-    syncImplicitSize();
-    emit itemChanged();
+    if (self) {
+        syncImplicitSize();
+        if (self) emit itemChanged();
+    }
 
-    delete oldItem;
+    delete oldItem.data();
 }
 
 void Loader::clearUrlComponent() {
     if (!m_urlComponent) return;
-    QQmlComponent *component = m_urlComponent.data();
+    QQmlComponent* component = m_urlComponent.data();
     m_urlComponent.clear();
     delete component;
 }
 
 void Loader::disconnectComponent() {
-    for (const QMetaObject::Connection &connection : std::as_const(m_componentConnections))
+    for (const QMetaObject::Connection& connection : std::as_const(m_componentConnections))
         disconnect(connection);
     m_componentConnections.clear();
 }
 
-Item *Loader::loadedVisualItem() const {
-    return qobject_cast<Item *>(m_item.data());
+Item* Loader::loadedVisualItem() const {
+    return qobject_cast<Item*>(m_item.data());
 }
 
 void Loader::syncImplicitSize() {
-    Item *loadedItem = loadedVisualItem();
+    Item* loadedItem = loadedVisualItem();
     setImplicitWidth(loadedItem ? loadedItem->implicitWidth() : 0);
     setImplicitHeight(loadedItem ? loadedItem->implicitHeight() : 0);
 }
 
 void Loader::syncItemSize() {
-    Item *loadedItem = loadedVisualItem();
+    Item* loadedItem = loadedVisualItem();
     if (!loadedItem) return;
-    if (m_width >= 0)
-        loadedItem->setWidth(m_width);
-    if (m_height >= 0)
-        loadedItem->setHeight(m_height);
+    if (hasExplicitWidth()) loadedItem->setWidth(width());
+    if (hasExplicitHeight()) loadedItem->setHeight(height());
 }
 
 void Loader::setStatus(Status status) {
@@ -360,7 +347,7 @@ void Loader::setProgress(qreal progress) {
     emit progressChanged();
 }
 
-void Loader::setErrorString(const QString &errorString) {
+void Loader::setErrorString(const QString& errorString) {
     if (m_errorString == errorString) return;
     m_errorString = errorString;
     emit errorStringChanged();

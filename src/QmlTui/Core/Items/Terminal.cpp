@@ -6,11 +6,35 @@
 #include <QmlTui/Core/Engine/InlineRenderer.h>
 #include <QmlTui/Core/Items/Popup.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
+#include <QHash>
+#include <QMetaObject>
+#include <QPointer>
 #include <QQmlInfo>
 #include <algorithm>
 #include <utility>
 
 namespace qmltui {
+
+struct TerminalPrivate {
+    TerminalEngine* engine = nullptr;
+    QPointer<Item> focusedItem;
+    QPointer<Item> hoveredItem;
+    QHash<QObject*, QMetaObject::Connection> mouseMotionRequesters;
+    QHash<Popup*, QMetaObject::Connection> popupDestroyConnections;
+    QList<Popup*> popups;
+    quint64 popupSerial = 0;
+    QString title;
+    Color color = Color::Transparent;
+    uint32_t background = 0;
+    Terminal::Mode mode = Terminal::Mode::AltScreen;
+    QPointer<Clipboard> clipboard;
+    Terminal::ClipboardMode clipboardMode = Terminal::ClipboardMode::Osc52;
+    bool mouseReporting = true;
+    bool mouseReportingExplicit = false;
+    bool applicationActive = true;
+    qreal progress = 0.0;
+    Terminal::ProgressState progressState = Terminal::ProgressNone;
+};
 
 static Terminal::RunnerHook s_runnerHook = nullptr;
 
@@ -20,7 +44,7 @@ void Terminal::registerRunnerHook(RunnerHook hook) {
 
 void Terminal::componentComplete() {
     initializeEngine();
-    if (!m_engine) return;
+    if (!m_d->engine) return;
     // Children complete before the root; honour any `focus: true` that was set
     // while the tree was still being assembled.
     applyPendingFocus();
@@ -31,23 +55,28 @@ void Terminal::componentComplete() {
     }
 }
 
-Terminal::Terminal(QObject* parent) : Item(parent) {
+Terminal::Terminal(QObject* parent) : Item(parent), m_d(std::make_unique<TerminalPrivate>()) {
     setItemFlag(ItemFlag::IsTerminalRoot);
+    setItemFlag(ItemFlag::BoundedSelfPaint);
     // QML parentage and mode are not established in the constructor. C++
     // applications can initialize synchronously through engine().
     QMetaObject::invokeMethod(this, &Terminal::initializeEngine, Qt::QueuedConnection);
     connect(this, &Item::implicitHeightChanged, this, [this] {
-        if (m_mode == Mode::Inline) emit heightChanged();
+        if (m_d->mode == Mode::Inline) emit heightChanged();
     });
 }
 
 TerminalEngine* Terminal::engine() const {
     const_cast<Terminal*>(this)->initializeEngine();
-    return m_engine;
+    return m_d->engine;
+}
+
+TerminalEngine* Terminal::engineIfInitialized() const {
+    return m_d->engine;
 }
 
 TerminalCapabilities Terminal::capabilities() const {
-    return m_engine ? m_engine->capabilities() : TerminalCapabilities{};
+    return m_d->engine ? m_d->engine->capabilities() : TerminalCapabilities{};
 }
 
 bool Terminal::enqueueControlSequence(QByteArray bytes) {
@@ -56,7 +85,7 @@ bool Terminal::enqueueControlSequence(QByteArray bytes) {
 }
 
 QByteArray Terminal::takeControlSequences() {
-    return m_engine ? m_engine->takeControlSequences() : QByteArray{};
+    return m_d->engine ? m_d->engine->takeControlSequences() : QByteArray{};
 }
 
 bool Terminal::enqueuePostControlSequence(QByteArray bytes) {
@@ -65,24 +94,25 @@ bool Terminal::enqueuePostControlSequence(QByteArray bytes) {
 }
 
 QByteArray Terminal::takePostControlSequences() {
-    return m_engine ? m_engine->takePostControlSequences() : QByteArray{};
+    return m_d->engine ? m_d->engine->takePostControlSequences() : QByteArray{};
 }
 
 void Terminal::initializeEngine() {
-    if (m_engine) return;
+    if (m_d->engine) return;
     for (QObject* ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
         if (qobject_cast<Terminal*>(ancestor)) {
             qmlWarning(this) << "Terminal must be a root; use ordinary Items for pages.";
             return;
         }
     }
-    m_engine = new TerminalEngine(this, this);
-    connect(m_engine, &TerminalEngine::capabilitiesChanged, this, &Terminal::capabilitiesChanged);
-    if (m_mode == Mode::Inline) m_engine->setRenderer(new InlineRenderer());
-    connect(this, &Item::dirty, m_engine, &TerminalEngine::requestRender);
+    m_d->engine = new TerminalEngine(this, this);
+    connect(m_d->engine, &TerminalEngine::capabilitiesChanged, this,
+            &Terminal::capabilitiesChanged);
+    if (m_d->mode == Mode::Inline) m_d->engine->setRenderer(new InlineRenderer());
+    connect(this, &Item::dirty, m_d->engine, &TerminalEngine::requestRender);
     if (auto* qml = qmlEngine(this)) {
-        m_clipboard = qml->singletonInstance<Clipboard*>("QmlTui", "Clipboard");
-        if (m_clipboard) m_clipboard->addTerminal(this);
+        m_d->clipboard = qml->singletonInstance<Clipboard*>("QmlTui", "Clipboard");
+        if (m_d->clipboard) m_d->clipboard->addTerminal(this);
     }
     emit capabilitiesChanged();
     emit terminalSizeChanged();
@@ -91,21 +121,25 @@ void Terminal::initializeEngine() {
 }
 
 Terminal::~Terminal() {
-    if (m_clipboard) m_clipboard->removeTerminal(this);
-    delete m_engine;
-    for (const QMetaObject::Connection& connection : std::as_const(m_mouseMotionRequesters))
+    setItemFlag(ItemFlag::IsTerminalRoot, false);
+    if (m_d->clipboard) m_d->clipboard->removeTerminal(this);
+    TerminalEngine* eng = m_d->engine;
+    m_d->engine = nullptr;
+    delete eng;
+    for (const QMetaObject::Connection& connection : std::as_const(m_d->mouseMotionRequesters))
         disconnect(connection);
-    m_mouseMotionRequesters.clear();
+    m_d->mouseMotionRequesters.clear();
 }
 
 void Terminal::copyToClipboard(const QString& text) {
     emit clipboardCopyRequested(text);
-    if (m_engine && m_clipboardMode == ClipboardMode::Osc52) m_engine->copyToClipboard(text);
+    if (m_d->engine && m_d->clipboardMode == ClipboardMode::Osc52)
+        m_d->engine->copyToClipboard(text);
 }
 
 void Terminal::bell() {
-    if (m_engine) {
-        m_engine->ringBell();
+    if (m_d->engine) {
+        m_d->engine->ringBell();
     }
 }
 
@@ -115,69 +149,126 @@ void Terminal::queryColors() {
     }
 }
 
+bool Terminal::applicationActive() const {
+    return m_d->applicationActive;
+}
+
 void Terminal::setApplicationActive(bool active) {
-    if (m_applicationActive == active) return;
-    m_applicationActive = active;
+    if (m_d->applicationActive == active) return;
+    m_d->applicationActive = active;
+    if (m_d->engine) m_d->engine->markFullDamage();
     emit applicationActiveChanged();
-    if (m_focusedItem) m_focusedItem->markDirty();
+    if (m_d->focusedItem) m_d->focusedItem->markDirty();
     markDirty();
+}
+
+qreal Terminal::progress() const {
+    return m_d->progress;
 }
 
 void Terminal::setProgress(qreal progress) {
     const qreal clamped = std::clamp(progress, 0.0, 1.0);
-    if (qFuzzyCompare(1.0 + m_progress, 1.0 + clamped)) return;
-    m_progress = clamped;
+    if (qFuzzyCompare(1.0 + m_d->progress, 1.0 + clamped)) return;
+    m_d->progress = clamped;
     emit progressChanged();
-    if (m_engine) {
-        m_engine->syncTerminalProgress();
+    if (m_d->engine) {
+        m_d->engine->syncTerminalProgress();
     }
+}
+
+Terminal::ProgressState Terminal::progressState() const {
+    return m_d->progressState;
 }
 
 void Terminal::setProgressState(ProgressState state) {
-    if (m_progressState == state) return;
-    m_progressState = state;
+    if (m_d->progressState == state) return;
+    m_d->progressState = state;
     emit progressStateChanged();
-    if (m_engine) {
-        m_engine->syncTerminalProgress();
+    if (m_d->engine) {
+        m_d->engine->syncTerminalProgress();
     }
+}
+
+QString Terminal::title() const {
+    return m_d->title;
 }
 
 void Terminal::setTitle(const QString& title) {
-    if (m_title == title) return;
-    m_title = title;
+    if (m_d->title == title) return;
+    m_d->title = title;
     emit titleChanged();
-    if (m_engine) {
-        m_engine->setTitle(title);
+    if (m_d->engine) {
+        m_d->engine->setTitle(title);
     }
 }
 
+Color Terminal::color() const {
+    return m_d->color;
+}
+
 void Terminal::setColor(Color color) {
-    if (m_color == color) return;
-    m_color = color;
-    m_background = Color::resolve(color, 0x00000000);
+    if (m_d->color == color) return;
+    m_d->color = color;
+    m_d->background = Color::resolve(color, 0x00000000);
+    if (m_d->engine) m_d->engine->markFullDamage();
     emit colorChanged();
     markDirty();
 }
 
 void Terminal::registerPopup(Popup* popup) {
     if (!popup) return;
-    m_popups.removeOne(popup);
-    popup->setOpenSerial(++m_popupSerial);
-    m_popups.append(popup);
+    m_d->popups.removeOne(popup);
+    if (!m_d->popupDestroyConnections.contains(popup)) {
+        const QMetaObject::Connection conn =
+            connect(popup, &QObject::destroyed, this, [this, popup]() {
+                m_d->popupDestroyConnections.remove(popup);
+                if (m_d->popups.removeOne(popup)) {
+                    if (m_d->engine) m_d->engine->markFullDamage();
+                    markDirty();
+                }
+            });
+        m_d->popupDestroyConnections.insert(popup, conn);
+    }
+    popup->setOpenSerial(++m_d->popupSerial);
+    m_d->popups.append(popup);
+    if (m_d->engine) m_d->engine->markFullDamage();
     markDirty();
 }
 
 void Terminal::unregisterPopup(Popup* popup) {
-    if (!popup || !m_popups.contains(popup)) return;
-    const QList<Popup*> ordered = orderedPopups();
-    for (auto it = ordered.crbegin(); it != ordered.crend(); ++it)
-        if (*it && (*it)->visible() && (*it)->isDescendantOfPopup(popup)) (*it)->close();
-    m_popups.removeOne(popup);
+    if (!popup || !m_d->popups.contains(popup)) return;
+    QPointer<Terminal> self(this);
+    QPointer<Popup> popupGuard(popup);
+    const QList<Popup*> orderedRaw = orderedPopups();
+    QList<QPointer<Popup>> ordered;
+    ordered.reserve(orderedRaw.size());
+    for (Popup* p : orderedRaw) {
+        ordered.append(p);
+    }
+    for (auto it = ordered.crbegin(); it != ordered.crend(); ++it) {
+        Popup* child = it->data();
+        if (child && child != popup && child->visible() && popupGuard &&
+            child->isDescendantOfPopup(popupGuard.data())) {
+            child->close();
+            if (!self) return;
+        }
+    }
+    if (const auto connIt = m_d->popupDestroyConnections.find(popup);
+        connIt != m_d->popupDestroyConnections.end()) {
+        disconnect(connIt.value());
+        m_d->popupDestroyConnections.erase(connIt);
+    }
+    m_d->popups.removeOne(popup);
+    if (m_d->engine) m_d->engine->markFullDamage();
     markDirty();
 }
 
+const QList<Popup*>& Terminal::activePopups() const {
+    return m_d->popups;
+}
+
 QList<Popup*> Terminal::orderedPopups() const {
-    QList<Popup*> result = m_popups;
+    QList<Popup*> result = m_d->popups;
     std::stable_sort(result.begin(), result.end(), [](const Popup* a, const Popup* b) {
         if (!a || !b) return a != nullptr;
         if (!qFuzzyCompare(a->z(), b->z())) return a->z() < b->z();
@@ -226,8 +317,8 @@ InputScope* Terminal::topModalScope() const {
     return topModalPopup();
 }
 
-static QList<FocusScope*> getScopeChain(Item* item) {
-    QList<FocusScope*> chain;
+static QList<QPointer<FocusScope>> getScopeChain(Item* item) {
+    QList<QPointer<FocusScope>> chain;
     for (Item* p = item ? item->parentItem() : nullptr; p; p = p->parentItem()) {
         if (p->isFocusScope()) {
             chain.append(static_cast<FocusScope*>(p));
@@ -236,31 +327,46 @@ static QList<FocusScope*> getScopeChain(Item* item) {
     return chain;
 }
 
+Item* Terminal::focusedItem() const {
+    return m_d->focusedItem.data();
+}
+
 void Terminal::setFocusedItem(Item* item) {
     if (item && (!item->visible() || !item->isEffectivelyEnabled())) item = nullptr;
-    if (m_focusedItem == item) return;
+    if (m_d->focusedItem == item) return;
 
-    Item* oldFocus = m_focusedItem;
-    m_focusedItem = item;
+    QPointer<Terminal> self(this);
+    QPointer<Item> oldFocus = m_d->focusedItem;
+    QPointer<Item> targetFocus = item;
+    m_d->focusedItem = item;
 
-    QList<FocusScope*> oldScopes = getScopeChain(oldFocus);
-    QList<FocusScope*> newScopes = getScopeChain(m_focusedItem);
+    const QList<QPointer<FocusScope>> oldScopes = getScopeChain(oldFocus.data());
+    const QList<QPointer<FocusScope>> newScopes = getScopeChain(targetFocus.data());
+    const bool oldRemainsActiveScope =
+        oldFocus && oldFocus->isFocusScope() &&
+        newScopes.contains(QPointer<FocusScope>(static_cast<FocusScope*>(oldFocus.data())));
 
-    if (oldFocus) {
+    if (oldFocus && !oldRemainsActiveScope) {
         oldFocus->setActiveFocus(false);
-        if (oldScopes.isEmpty()) {
+        if (!self) return;
+        if (oldFocus && oldScopes.isEmpty()) {
             oldFocus->setFocus(false);
+            if (!self) return;
         }
     }
 
-    for (FocusScope* scope : oldScopes) {
-        if (!newScopes.contains(scope)) {
+    for (const QPointer<FocusScope>& scope : oldScopes) {
+        if (scope && scope.data() != targetFocus.data() && !newScopes.contains(scope)) {
             scope->setActiveFocus(false);
+            if (!self) return;
         }
     }
+
+    // Abort if a signal handler already redirected focus to another item.
+    if (m_d->focusedItem != targetFocus) return;
 
     // Update subFocusItem along the scope hierarchy
-    for (Item* leaf = m_focusedItem; leaf;) {
+    for (Item* leaf = targetFocus.data(); leaf;) {
         FocusScope* scope = leaf->enclosingFocusScope();
         if (scope) {
             scope->setSubFocusItem(leaf);
@@ -268,22 +374,31 @@ void Terminal::setFocusedItem(Item* item) {
         leaf = scope;
     }
 
-    for (FocusScope* scope : newScopes) {
-        if (!oldScopes.contains(scope)) {
+    for (const QPointer<FocusScope>& scope : newScopes) {
+        if (scope && !oldScopes.contains(scope)) {
             scope->setActiveFocus(true);
+            if (!self || m_d->focusedItem != targetFocus) return;
         }
     }
 
-    if (m_focusedItem) {
-        m_focusedItem->setActiveFocus(true);
-        m_focusedItem->setFocus(true);
+    if (targetFocus) {
+        targetFocus->setActiveFocus(true);
+        if (!self || m_d->focusedItem != targetFocus) return;
+        if (targetFocus) {
+            targetFocus->setFocus(true);
+            if (!self) return;
+        }
     }
     emit focusedItemChanged();
 }
 
+Item* Terminal::hoveredItem() const {
+    return m_d->hoveredItem.data();
+}
+
 void Terminal::setHoveredItem(Item* item) {
-    if (m_hoveredItem == item) return;
-    m_hoveredItem = item;
+    if (m_d->hoveredItem == item) return;
+    m_d->hoveredItem = item;
     emit hoveredItemChanged();
 }
 
@@ -292,24 +407,32 @@ void Terminal::setMouseMotionRequested(QObject* requester, bool requested) {
 
     const bool wasRequested = hasMouseMotionRequests();
     if (requested) {
-        if (m_mouseMotionRequesters.contains(requester)) return;
+        if (m_d->mouseMotionRequesters.contains(requester)) return;
         const QMetaObject::Connection connection =
             connect(requester, &QObject::destroyed, this, [this, requester] {
-                if (m_mouseMotionRequesters.remove(requester) > 0 &&
-                    m_mouseMotionRequesters.isEmpty()) {
+                if (m_d->mouseMotionRequesters.remove(requester) > 0 &&
+                    m_d->mouseMotionRequesters.isEmpty()) {
                     emit mouseMotionRequestedChanged(false);
                 }
             });
-        m_mouseMotionRequesters.insert(requester, connection);
+        m_d->mouseMotionRequesters.insert(requester, connection);
     } else {
-        const auto it = m_mouseMotionRequesters.find(requester);
-        if (it == m_mouseMotionRequesters.end()) return;
+        const auto it = m_d->mouseMotionRequesters.find(requester);
+        if (it == m_d->mouseMotionRequesters.end()) return;
         disconnect(it.value());
-        m_mouseMotionRequesters.erase(it);
+        m_d->mouseMotionRequesters.erase(it);
     }
 
     const bool isRequested = hasMouseMotionRequests();
     if (wasRequested != isRequested) emit mouseMotionRequestedChanged(isRequested);
+}
+
+bool Terminal::isMouseMotionRequester(const QObject* requester) const {
+    return requester && m_d->mouseMotionRequesters.contains(const_cast<QObject*>(requester));
+}
+
+bool Terminal::hasMouseMotionRequests() const {
+    return !m_d->mouseMotionRequesters.isEmpty();
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
@@ -332,48 +455,62 @@ void Terminal::setHeight(int) {
     qmlWarning(this) << "Terminal height is managed by mode; size an inner Item instead.";
 }
 
-void Terminal::setMode(Mode mode) {
-    if (m_mode == mode) return;
-    m_mode = mode;
+Terminal::Mode Terminal::mode() const {
+    return m_d->mode;
+}
 
-    if (!m_mouseReportingExplicit) {
-        bool autoReporting = (m_mode == Mode::AltScreen);
-        if (m_mouseReporting != autoReporting) {
-            m_mouseReporting = autoReporting;
+void Terminal::setMode(Mode mode) {
+    if (m_d->mode == mode) return;
+    m_d->mode = mode;
+
+    if (!m_d->mouseReportingExplicit) {
+        bool autoReporting = (m_d->mode == Mode::AltScreen);
+        if (m_d->mouseReporting != autoReporting) {
+            m_d->mouseReporting = autoReporting;
             emit mouseReportingChanged();
-            if (m_engine) {
-                m_engine->setMouseReporting(m_mouseReporting);
+            if (m_d->engine) {
+                m_d->engine->setMouseReporting(m_d->mouseReporting);
             }
         }
     }
 
-    if (m_engine) {
-        if (m_mode == Mode::AltScreen) {
-            m_engine->setRenderer(new AltScreenRenderer());
+    if (m_d->engine) {
+        if (m_d->mode == Mode::AltScreen) {
+            m_d->engine->setRenderer(new AltScreenRenderer());
         } else {
-            m_engine->setRenderer(new InlineRenderer());
+            m_d->engine->setRenderer(new InlineRenderer());
         }
     }
 
+    invalidateSubtreeBounds();
+    if (m_d->engine) m_d->engine->markFullDamage();
     emit modeChanged();
     emit heightChanged();
     markDirty();
 }
 
+Terminal::ClipboardMode Terminal::clipboardMode() const {
+    return m_d->clipboardMode;
+}
+
 void Terminal::setClipboardMode(ClipboardMode mode) {
-    if (m_clipboardMode == mode) return;
-    m_clipboardMode = mode;
-    if (mode == ClipboardMode::Disabled && m_engine) m_engine->cancelClipboardRead();
+    if (m_d->clipboardMode == mode) return;
+    m_d->clipboardMode = mode;
+    if (mode == ClipboardMode::Disabled && m_d->engine) m_d->engine->cancelClipboardRead();
     emit clipboardModeChanged();
 }
 
+bool Terminal::mouseReporting() const {
+    return m_d->mouseReporting;
+}
+
 void Terminal::setMouseReporting(bool enable) {
-    m_mouseReportingExplicit = true;
-    if (m_mouseReporting == enable) return;
-    m_mouseReporting = enable;
+    m_d->mouseReportingExplicit = true;
+    if (m_d->mouseReporting == enable) return;
+    m_d->mouseReporting = enable;
     emit mouseReportingChanged();
-    if (m_engine) {
-        m_engine->setMouseReporting(enable);
+    if (m_d->engine) {
+        m_d->engine->setMouseReporting(enable);
     }
 }
 
@@ -382,7 +519,8 @@ int Terminal::width() const {
 }
 
 int Terminal::implicitHeight() const {
-    if (m_implicitHeight > 0) return m_implicitHeight;
+    const int explicitImplicit = Item::implicitHeight();
+    if (explicitImplicit > 0) return explicitImplicit;
 
     int maxBottom = 0;
 
@@ -395,17 +533,17 @@ int Terminal::implicitHeight() const {
 }
 
 int Terminal::height() const {
-    if (m_mode == Mode::Inline)
+    if (m_d->mode == Mode::Inline)
         return std::clamp(implicitHeight(), 0, (std::max)(0, terminalHeight() - 1));
     return terminalHeight();
 }
 
 int Terminal::terminalWidth() const {
-    return m_engine ? m_engine->terminalWidth() : 80;
+    return m_d->engine ? m_d->engine->terminalWidth() : 80;
 }
 
 int Terminal::terminalHeight() const {
-    return m_engine ? m_engine->terminalHeight() : 24;
+    return m_d->engine ? m_d->engine->terminalHeight() : 24;
 }
 
 static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
@@ -420,20 +558,21 @@ static void dimBuffer(TextGridBuffer& buffer, const ClipRect& clipRect) {
 }
 
 void Terminal::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect& clipRect) const {
-    if (m_engine) m_engine->clearHardwareCursorPosition();
-    if (!m_visible) return;
+    if (m_d->engine) m_d->engine->clearHardwareCursorPosition();
+    if (!visible()) return;
 
     // Nothing is behind the root, so a terminal-default background has nothing
     // to occlude: skipping the fill leaves the cells at their default and emits
     // fewer bytes for the same picture.
-    if (m_background == 0 || Color::isTransparent(m_background)) return;
-    const int right = (std::min)(buffer.width(), absX + width());
-    const int bottom = (std::min)(buffer.height(), absY + height());
-    for (int y = (std::max)(0, absY); y < bottom; ++y) {
-        for (int x = (std::max)(0, absX); x < right; ++x) {
-            if (!clipRect.contains(x, y)) continue;
+    if (m_d->background == 0 || Color::isTransparent(m_d->background)) return;
+    const int left = std::max({0, absX, clipRect.x});
+    const int right = std::min({buffer.width(), absX + width(), clipRect.x + clipRect.width});
+    const int top = std::max({0, absY, clipRect.y});
+    const int bottom = std::min({buffer.height(), absY + height(), clipRect.y + clipRect.height});
+    for (int y = top; y < bottom; ++y) {
+        for (int x = left; x < right; ++x) {
             Cell& cell = buffer.cellAt(x, y);
-            cell.bgColor = m_background;
+            cell.bgColor = m_d->background;
             cell.setCharacter(" ");
             cell.displayWidth = 1;
             cell.continuation = false;

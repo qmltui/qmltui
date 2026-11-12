@@ -4,17 +4,17 @@
 
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
-#include <QHash>
-#include <QMetaObject>
-#include <QPointer>
 #include <QQmlEngine>
 #include <QQmlParserStatus>
+#include <cstdint>
+#include <memory>
 
 namespace qmltui {
 
 class TerminalEngine;
 class Clipboard;
 class Popup;
+struct TerminalPrivate;
 
 // Root visual item and session coordinator for a QmlTui application.
 //
@@ -25,6 +25,7 @@ class Popup;
 // quit automatically; applications define their own quit path.
 class QMLTUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Terminal)
     QML_ELEMENT
     Q_INTERFACES(QQmlParserStatus)
 
@@ -50,11 +51,11 @@ class QMLTUI_CORE_EXPORT Terminal : public Item, public QQmlParserStatus {
                    progressStateChanged)
 
 public:
-    enum class Mode { AltScreen, Inline };
+    enum class Mode : uint8_t { AltScreen, Inline };
     Q_ENUM(Mode)
-    enum class ClipboardMode { Disabled, Osc52 };
+    enum class ClipboardMode : uint8_t { Disabled, Osc52 };
     Q_ENUM(ClipboardMode)
-    enum ProgressState {
+    enum ProgressState : uint8_t {
         ProgressNone = 0,
         ProgressNormal = 1,
         ProgressError = 2,
@@ -73,6 +74,7 @@ public:
     void componentComplete() override;
 
     TerminalEngine* engine() const;
+    TerminalEngine* engineIfInitialized() const;
     TerminalCapabilities capabilities() const;
     // Framework resource commands only: preserve cursor and rendition state.
     bool enqueueControlSequence(QByteArray bytes);
@@ -84,47 +86,45 @@ public:
     Q_INVOKABLE void bell();
     Q_INVOKABLE void queryColors();
 
-    bool applicationActive() const { return m_applicationActive; }
+    bool applicationActive() const;
     void setApplicationActive(bool active);
 
-    qreal progress() const { return m_progress; }
+    qreal progress() const;
     void setProgress(qreal progress);
 
-    ProgressState progressState() const { return m_progressState; }
+    ProgressState progressState() const;
     void setProgressState(ProgressState state);
 
-    QString title() const { return m_title; }
+    QString title() const;
     void setTitle(const QString& title);
 
-    Color color() const { return m_color; }
+    Color color() const;
     void setColor(Color color);
 
     void registerPopup(Popup* popup);
     void unregisterPopup(Popup* popup);
-    const QList<Popup*>& activePopups() const { return m_popups; }
+    const QList<Popup*>& activePopups() const;
     QList<Popup*> orderedPopups() const;
     Popup* topModalPopup() const;
     QList<class InputScope*> orderedInputScopes() const;
     class InputScope* topModalScope() const;
 
-    Mode mode() const { return m_mode; }
+    Mode mode() const;
     void setMode(Mode mode);
-    ClipboardMode clipboardMode() const { return m_clipboardMode; }
+    ClipboardMode clipboardMode() const;
     void setClipboardMode(ClipboardMode mode);
 
-    bool mouseReporting() const { return m_mouseReporting; }
+    bool mouseReporting() const;
     void setMouseReporting(bool enable);
 
-    Item* focusedItem() const { return m_focusedItem.data(); }
+    Item* focusedItem() const;
     void setFocusedItem(Item* item);
-    Item* hoveredItem() const { return m_hoveredItem.data(); }
+    Item* hoveredItem() const;
     void setHoveredItem(Item* item);
 
     void setMouseMotionRequested(QObject* requester, bool requested);
-    bool isMouseMotionRequester(const QObject* requester) const {
-        return requester && m_mouseMotionRequesters.contains(const_cast<QObject*>(requester));
-    }
-    bool hasMouseMotionRequests() const { return !m_mouseMotionRequesters.isEmpty(); }
+    bool isMouseMotionRequester(const QObject* requester) const;
+    bool hasMouseMotionRequests() const;
 
     void findFocusableItems(Item* root, QList<Item*>& list);
 
@@ -163,23 +163,7 @@ private:
     void paintOverlay(TextGridBuffer& buffer, int absX, int absY,
                       const ClipRect& clipRect) const override;
 
-    TerminalEngine* m_engine = nullptr;
-    QPointer<Item> m_focusedItem;
-    QPointer<Item> m_hoveredItem;
-    QHash<QObject*, QMetaObject::Connection> m_mouseMotionRequesters;
-    QList<Popup*> m_popups;
-    quint64 m_popupSerial = 0;
-    QString m_title;
-    Color m_color = Color::Transparent;
-    uint32_t m_background = 0;
-    Mode m_mode = Mode::AltScreen;
-    QPointer<Clipboard> m_clipboard;
-    ClipboardMode m_clipboardMode = ClipboardMode::Osc52;
-    bool m_mouseReporting = true;
-    bool m_mouseReportingExplicit = false;
-    bool m_applicationActive = true;
-    qreal m_progress = 0.0;
-    ProgressState m_progressState = ProgressNone;
+    std::unique_ptr<TerminalPrivate> m_d;
 };
 
 } // namespace qmltui

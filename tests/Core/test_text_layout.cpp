@@ -223,7 +223,14 @@ void TestTextLayout::testWordWrap() {
     QCOMPARE(rowText(buffer, 0).trimmed(), QStringLiteral("Hello"));
     QCOMPARE(rowText(buffer, 1).trimmed(), QStringLiteral("world this"));
     QCOMPARE(rowText(buffer, 2).trimmed(), QStringLiteral("is wrapped"));
+    QCOMPARE(text.implicitWidth(), 27);
     QCOMPARE(text.implicitHeight(), 3);
+
+    text.setWidth(15);
+    QCOMPARE(text.implicitWidth(), 27);
+    QCOMPARE(text.implicitHeight(), 2);
+
+    text.setWidth(10);
 
     // Test WrapAnywhere
     text.setWrapMode(Text::WrapAnywhere);

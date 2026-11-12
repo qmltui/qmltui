@@ -15,11 +15,17 @@
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Items/GridView.h>
 #include <QmlTui/Core/Items/ListView.h>
+#include <QmlTui/Core/Items/Popup.h>
+#include <QmlTui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Items/ScrollView.h>
 #include <QmlTui/Core/Items/TableView.h>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Items/TextInput.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QmlTui/Core/Items/TreeView.h>
+#include "../TestPaint.h"
 
 using namespace qmltui;
 
@@ -106,6 +112,63 @@ QString frameText(TerminalEngine* engine) {
     return text;
 }
 
+class CountingProbe final : public Item {
+public:
+    explicit CountingProbe(QObject* parent = nullptr) : Item(parent) {
+        setWidth(8);
+        setHeight(1);
+    }
+
+    mutable int paintCalls = 0;
+
+protected:
+    void paint(TextGridBuffer& buffer, int x, int y, const ClipRect& clipRect) const override {
+        ++paintCalls;
+        if (clipRect.contains(x, y)) buffer.writeText(x, y, QStringLiteral("PROBE"));
+    }
+};
+
+bool buffersMatchCellForCell(const TextGridBuffer& actual, const TextGridBuffer& expected,
+                             QString* mismatchDetail = nullptr) {
+    if (actual.width() != expected.width() || actual.height() != expected.height()) {
+        if (mismatchDetail) {
+            *mismatchDetail = QStringLiteral("size mismatch: %1x%2 vs %3x%4")
+                                  .arg(actual.width())
+                                  .arg(actual.height())
+                                  .arg(expected.width())
+                                  .arg(expected.height());
+        }
+        return false;
+    }
+    for (int y = 0; y < actual.height(); ++y) {
+        for (int x = 0; x < actual.width(); ++x) {
+            const Cell& a = actual.cellAt(x, y);
+            const Cell& b = expected.cellAt(x, y);
+            if (a != b || actual.linkUrl(a.linkId) != expected.linkUrl(b.linkId)) {
+                if (mismatchDetail) {
+                    *mismatchDetail =
+                        QStringLiteral("cell (%1,%2) mismatch: actual='%3' fg=%4 bg=%5 w=%6 "
+                                       "cont=%7 vs expected='%8' fg=%9 bg=%10 w=%11 cont=%12")
+                            .arg(x)
+                            .arg(y)
+                            .arg(QString::fromUtf8(a.character().toByteArray()))
+                            .arg(a.fgColor, 8, 16, QLatin1Char('0'))
+                            .arg(a.bgColor, 8, 16, QLatin1Char('0'))
+                            .arg(a.displayWidth)
+                            .arg(a.continuation)
+                            .arg(QString::fromUtf8(b.character().toByteArray()))
+                            .arg(b.fgColor, 8, 16, QLatin1Char('0'))
+                            .arg(b.bgColor, 8, 16, QLatin1Char('0'))
+                            .arg(b.displayWidth)
+                            .arg(b.continuation);
+                }
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 // Waits for startup frames, then verifies no frame is committed while idle and
@@ -146,6 +209,8 @@ private slots:
     void canvasWithShapesStaysIdle();
     void framePacingCoalescesBursts();
     void terminalModesAndVisibleChildren();
+    void partialDamageMatchesFullRender();
+    void offscreenCompoundSubtreeCulledInO1();
 
 private:
     QQmlEngine m_qmlEngine;
@@ -512,6 +577,176 @@ void TestRenderLoop::framePacingCoalescesBursts() {
     QVERIFY(frameText(session.engine).contains(QStringLiteral("40")));
     QMLTUI_VERIFY_IDLE(session.engine);
     session.engine->setMaxFrameRate(0);
+}
+
+void TestRenderLoop::partialDamageMatchesFullRender() {
+    Session session = createSession(m_qmlEngine, R"(
+        import QtQml
+        import QmlTui
+        Terminal {
+            color: "black"
+            Text {
+                objectName: "cjkBanner"
+                x: 4; y: 1; width: 20; height: 1
+                text: "一二三四五六"
+                color: "yellow"
+            }
+            Rectangle {
+                objectName: "occluder"
+                x: 7; y: 1; width: 4; height: 1; z: 1
+                color: "blue"
+                Text { anchors.fill: parent; text: "XXXX"; color: "white" }
+            }
+            TextInput {
+                objectName: "editor"
+                x: 4; y: 5; width: 20; height: 1
+                focus: true
+                text: "abc"
+            }
+            Text {
+                objectName: "status"
+                x: 40; y: 20; width: 20; height: 1
+                text: "idle"
+                color: "green"
+            }
+            ScrollView {
+                objectName: "scroller"
+                x: 40; y: 2; width: 20; height: 6
+                contentHeight: 20
+                Column {
+                    Repeater {
+                        model: 12
+                        delegate: Rectangle {
+                            required property int index
+                            width: 20; height: 1
+                            color: index % 2 === 0 ? "navy" : "transparent"
+                            Text { text: "Item " + parent.index }
+                        }
+                    }
+                }
+            }
+            Popup {
+                objectName: "modalPopup"
+                x: 10; y: 4; width: 24; height: 6
+                modal: true
+                dimBackground: true
+                Rectangle {
+                    anchors.fill: parent
+                    color: "darkred"
+                    border { style: Border.Single; color: "white" }
+                    Text { x: 2; y: 2; text: "MODAL" }
+                }
+            }
+        }
+    )");
+    QVERIFY(session.engine);
+    QMLTUI_VERIFY_IDLE(session.engine);
+
+    auto verifyMatchesFreshRender = [&](const char* stepName) {
+        const std::optional<TextGridBuffer> committed = session.engine->currentFrame();
+        QVERIFY2(committed.has_value(), stepName);
+        const std::optional<QPoint> committedCursor = session.engine->hardwareCursorPosition();
+        TextGridBuffer fresh;
+        fresh.resize(committed->width(), committed->height());
+        testing::paintItem(*session.terminal, fresh, 0, 0);
+        const std::optional<QPoint> freshCursor = session.engine->hardwareCursorPosition();
+        QString detail;
+        QVERIFY2(buffersMatchCellForCell(*committed, fresh, &detail),
+                 qPrintable(QStringLiteral("%1: %2").arg(QLatin1String(stepName), detail)));
+        QCOMPARE(committedCursor, freshCursor);
+    };
+
+    verifyMatchesFreshRender("initial");
+
+    auto* status = session.terminal->findChild<Text*>(QStringLiteral("status"));
+    auto* occluder = session.terminal->findChild<Rectangle*>(QStringLiteral("occluder"));
+    auto* editor = session.terminal->findChild<TextInput*>(QStringLiteral("editor"));
+    auto* scroller = session.terminal->findChild<ScrollView*>(QStringLiteral("scroller"));
+    auto* modalPopup = session.terminal->findChild<Popup*>(QStringLiteral("modalPopup"));
+    QVERIFY(status && occluder && editor && scroller && modalPopup);
+    QVERIFY(editor->activeFocus());
+    QVERIFY(session.engine->hardwareCursorPosition().has_value());
+
+    // 1. Update status far away from focused TextInput and CJK banner:
+    // partial damage must preserve both CJK cells and hardwareCursorPosition.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, status->setText(QStringLiteral("step-1")));
+    verifyMatchesFreshRender("distant-status-update");
+
+    // 2. Move occluder by 1 column across 2-column CJK glyph boundaries.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, occluder->setX(6));
+    verifyMatchesFreshRender("occluder-shift-left-onto-cjk");
+
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, occluder->setX(8));
+    verifyMatchesFreshRender("occluder-shift-right-onto-cjk");
+
+    // 3. Hide occluder so previously split 2-column CJK glyphs underneath uncover cleanly.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, occluder->setVisible(false));
+    verifyMatchesFreshRender("occluder-hidden-uncovers-cjk");
+
+    // 4. Re-show and resize occluder.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, {
+        occluder->setVisible(true);
+        occluder->setWidth(6);
+    });
+    verifyMatchesFreshRender("occluder-reshown-resized");
+
+    // 5. Scroll ScrollView with rightPadding == 0 (scrollbar at x == width()).
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, scroller->setContentY(4));
+    verifyMatchesFreshRender("scrollview-scrolled");
+
+    // 6. Edit TextInput text locally.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, editor->setText(QStringLiteral("hello")));
+    verifyMatchesFreshRender("editor-text-updated");
+
+    // 7. Open and close modal dimming popup, then do another localized partial update.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, modalPopup->open());
+    verifyMatchesFreshRender("modal-popup-open");
+
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, modalPopup->close());
+    verifyMatchesFreshRender("modal-popup-closed");
+
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, status->setText(QStringLiteral("after-popup")));
+    verifyMatchesFreshRender("partial-after-popup-close");
+
+    // 8. Destroy occluder dynamically and verify its old cells uncover CJK banner cleanly.
+    QMLTUI_VERIFY_ONE_FRAME(session.engine, delete occluder);
+    verifyMatchesFreshRender("occluder-deleted");
+}
+
+void TestRenderLoop::offscreenCompoundSubtreeCulledInO1() {
+    Terminal terminal;
+    auto* engine = terminal.engine();
+    engine->setTestViewportSize(QSize(40, 10));
+
+    auto* scroll = new ScrollView(&terminal);
+    scroll->setWidth(20);
+    scroll->setHeight(4);
+    scroll->setContentHeight(30);
+
+    QList<CountingProbe*> probes;
+    for (int i = 0; i < 15; ++i) {
+        // Compound unclipped container (`clip() == false`, non-empty children)
+        auto* rowWrapper = new Rectangle(scroll);
+        rowWrapper->setY(i * 2);
+        rowWrapper->setWidth(16);
+        rowWrapper->setHeight(1);
+        auto* probe = new CountingProbe(rowWrapper);
+        probes.append(probe);
+    }
+
+    QMLTUI_VERIFY_IDLE(engine);
+
+    for (CountingProbe* probe : probes) {
+        probe->paintCalls = 0;
+    }
+
+    // Trigger a scroll to y = 10..13 (only rows i = 5 and i = 6 are inside [10, 14)).
+    QMLTUI_VERIFY_ONE_FRAME(engine, scroll->setContentY(10));
+
+    for (int i = 0; i < probes.size(); ++i) {
+        const bool expectedVisible = (i * 2 >= 10 && i * 2 < 14);
+        QCOMPARE(probes[i]->paintCalls, expectedVisible ? 1 : 0);
+    }
 }
 
 QTEST_MAIN(TestRenderLoop)

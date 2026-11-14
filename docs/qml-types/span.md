@@ -57,4 +57,4 @@ identity. See Text for multiline, grapheme-boundary, and gradient semantics.
 
 ![RichText recorded demo](../assets/casts/components/rich_text.gif)
 
-See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`, or open in the [WebAssembly Playground](../playground.md?example=Text.qml)).
+See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`).

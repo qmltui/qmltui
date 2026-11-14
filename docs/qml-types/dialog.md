@@ -27,20 +27,21 @@ A modal, centred message box with a title, a message and accept and reject butto
 | `textColor` | `color` | `"default"` | Holds the terminal colour of the message text, where `"default"` is the terminal's own foreground colour. |
 | `titleColor` | `color` |  | Holds the terminal colour of the bold title line; it follows `textColor` unless set explicitly. |
 | `title` | `string` | `""` | Holds the bold heading drawn on the first content row of the dialog. |
-| `message` | `string` | `""` | Holds the single-line body text drawn below the title. |
+| `message` | `string` | `""` | Holds the body text drawn below the title; wraps at word boundaries to fit the dialog width. |
 | `acceptText` | `string` | `"OK"` | Holds the label of the accept button, which calls `accept()` when activated. |
 | `rejectText` | `string` | `"Cancel"` | Holds the label of the reject button, which calls `reject()` when activated. |
 | `showRejectButton` | `bool` | `true` | Holds whether the reject button is shown; set it to false for a single-button notice. |
 
 ## Detailed Description
 
-Dialog is a preconfigured [Popup](popup.md): it is `modal`, dims the
-background, is anchored to the centre of its parent, and composes an opaque
-[Rectangle](rectangle.md) accessible via `background` with a `Border.Double`
-border and default terminal colors. Its `closePolicy` is `Popup.CloseOnEscape` only,
-so Escape calls `reject()` but clicking outside the dialog does nothing.
-Callers customize the visual surface through `background.color`,
-`background.border`, and `background.gradient`.
+Dialog is a preconfigured [Popup](popup.md): its inherited properties default to
+`visible: false`, `modal: true`, `dimBackground: true`, and
+`closePolicy: Popup.CloseOnEscape`. It is anchored to the centre of its parent and
+composes an opaque [Rectangle](rectangle.md) accessible via `background` with a
+`Border.Double` border and default terminal colors. Because `closePolicy` is
+`Popup.CloseOnEscape` only, Escape calls `reject()` while clicking outside the
+dialog does nothing. Callers customize the visual surface through
+`background.color`, `background.border`, and `background.gradient`.
 Open it with `open()` and react to `accepted()`, `rejected()` or
 `finished(bool)`, all of which are inherited from Popup and are followed by
 `close()`.
@@ -53,10 +54,10 @@ buttons only, because the popup is modal. Enter or Return that reaches the
 dialog itself without being consumed by a child triggers the accept button.
 Closing restores focus to the item that was focused before `open()`.
 
-The implicit size is the content's implicit width plus 4 cells, but at least
-32 cells wide, by the content height plus 2 rows; with a one-line title and
-message that is 9 rows. The message is not wrapped, so a long `message`
-widens the dialog rather than adding lines. Use [Popup](popup.md) directly
+The implicit width is clamped between 32 cells and `parent.width - 4` (or 60 cells
+when unparented), and `message` wraps (`Text.WordWrap`) to fit `width - 4`, growing
+`implicitHeight` automatically (`contentColumn.implicitHeight + 2`; 9 rows for a
+one-line title and message). Use [Popup](popup.md) directly
 when you need custom content or a non-modal overlay.
 
 ### Example
@@ -67,4 +68,4 @@ when you need custom content or a non-modal overlay.
 
 ![Dialog recorded demo](../assets/casts/components/dialog.gif)
 
-See [`examples/gallery/examples/Dialog.qml`](../../examples/gallery/examples/Dialog.qml) (`./build/examples/gallery/qmltui_gallery --example Dialog`, or open in the [WebAssembly Playground](../playground.md?example=Dialog.qml)).
+See [`examples/gallery/examples/Dialog.qml`](../../examples/gallery/examples/Dialog.qml) (`./build/examples/gallery/qmltui_gallery --example Dialog`).

@@ -16,6 +16,7 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 | | |
 | :--- | :--- |
 | **Import Statement** | `import QmlTui.Image` |
+| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`qmltui::image`, requires `Qt6::Gui` and `Qt6::Network`) |
 | **Since** | QmlTui 0.5 |
 | **Inherits** | [Image](image.md) |
 
@@ -96,4 +97,4 @@ them from a state machine or plain bindings.
 
 ![AnimatedSprite recorded demo](../assets/casts/components/animated_sprite.gif)
 
-See [`examples/gallery/examples/AnimatedSprite.qml`](../../examples/gallery/examples/AnimatedSprite.qml) (`./build/examples/gallery/qmltui_gallery --example AnimatedSprite`, or open in the [WebAssembly Playground](../playground.md?example=AnimatedSprite.qml)).
+See [`examples/gallery/examples/AnimatedSprite.qml`](../../examples/gallery/examples/AnimatedSprite.qml) (`./build/examples/gallery/qmltui_gallery --example AnimatedSprite`).

@@ -56,10 +56,10 @@ Terminal {
 
     readonly property int gridCols: Math.max(1, Math.floor(componentGrid.width / 36))
 
-    // Ordered by module: Core (21) -> Controls (14) -> Optional: Image (2) & PtyView (1),
+    // Ordered by module: Core (28) -> Controls (14) -> Optional: Image (2) & PtyView (1),
     // and within each module from fundamental/most frequently used items to specialized ones.
     readonly property var allEntries: [
-        // 1. Core (21)
+        // 1. Core (28)
         {
             name: "Text",
             badge: "Core",
@@ -329,7 +329,7 @@ Terminal {
             name: "ProgressBar",
             badge: "Controls",
             accent: "#58a6ff",
-            preview: "▰▰▰▰▰▰▱▱▱▱  64%  [████░░]",
+            preview: "▉▉▉▉▉▉░░░░  64%  ━━━───",
             blurb: "Determinate and styled progress indicators",
             file: "ProgressBar.qml"
         },

@@ -25,7 +25,7 @@ Dropdown selection control with an inline summary row and a Popup option list. [
 | :--- | :--- | :--- | :--- |
 | `model` | `var` | `[]` | Holds the list of selectable items (`QAbstractItemModel`, `ListModel`, array of strings/objects, or integer count). |
 | `textRole` | `string` | `""` | Holds the role or object property name used to format entries in `model`. |
-| `currentIndex` | `int` | `0` | Holds the index of the currently selected item (`-1` when `model` is empty). |
+| `currentIndex` | `int` | `count > 0 ? 0 : -1` | Holds the index of the currently selected item (`0` when `count > 0`, `-1` when `model` is empty). |
 | `currentText` | `string` | | Read-only. Holds the display text of the item at `currentIndex`. |
 | `displayText` | `string` | `currentText` | Holds the text displayed in the summary row when closed; defaults to `currentText` and may be overridden. |
 | `count` | `int` | `0` | Read-only. Holds the number of items in `model`. |
@@ -36,8 +36,8 @@ Dropdown selection control with an inline summary row and a Popup option list. [
 | `contentItem` | `Item` | `Text` | Holds the item displaying `displayText` inside the summary row. Replace to restyle. |
 | `indicator` | `Item` | `Text` | Holds the trailing indicator item (defaults to `▾` / `▴`). Replace to restyle. |
 | `delegate` | `Component` | `Rectangle` | Holds the delegate component instantiated for each row in the dropdown `ListView`. |
-| `textColor` | `color` | `"default"` | Holds the text colour of the summary row and option items. |
-| `popupColor` | `color` | `color` | Holds the background colour of the dropdown popup. |
+| `textColor` | `color` | `QmlTui.defaultColor` | Holds the text colour of the summary row and option items. |
+| `popupColor` | `color` | `QmlTui.defaultColor` | Holds the background colour of the dropdown popup. |
 | `popupBorderColor` | `color` | `border.color` | Holds the border colour of the dropdown popup. |
 | `selectionColor` | `color` | `"default"` | Holds the background colour of the highlighted popup row (defaults to reverse video). |
 | `selectedTextColor` | `color` | `"default"` | Holds the text colour of the highlighted popup row. |
@@ -78,4 +78,4 @@ popup without changing `currentIndex`.
 
 ![ComboBox recorded demo](../assets/casts/components/combo_box.gif)
 
-See [`examples/gallery/examples/ComboBox.qml`](../../examples/gallery/examples/ComboBox.qml) (`./build/examples/gallery/qmltui_gallery --example ComboBox`, or open in the [WebAssembly Playground](../playground.md?example=ComboBox.qml)).
+See [`examples/gallery/examples/ComboBox.qml`](../../examples/gallery/examples/ComboBox.qml) (`./build/examples/gallery/qmltui_gallery --example ComboBox`).

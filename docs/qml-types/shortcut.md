@@ -23,7 +23,7 @@ Defines application-wide keyboard shortcuts that trigger actions. [More...](#det
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `sequence` | `int` | `0` | Holds the key code or key sequence combination that activates the shortcut. |
+| `sequence` | `var` | `0` | Holds a portable key-chord string (such as `"Ctrl+S"`, `"Ctrl+Shift+P"`, `"Alt+Return"`, `"F5"`) or an integer Qt key/modifier bitmask (`Qt.ControlModifier \| Qt.Key_S`). |
 | `enabled` | `bool` | `true` | Holds whether the shortcut is currently active and listens for key presses. |
 
 ## Signals
@@ -37,10 +37,13 @@ Defines application-wide keyboard shortcuts that trigger actions. [More...](#det
 Shortcut provides a convenient way to register global keyboard shortcuts that
 trigger actions regardless of which item currently possesses keyboard focus.
 
-The `sequence` property accepts a Qt key code (for instance `Qt.Key_F1`,
-`Qt.Key_Escape`, or a modified combination like `Qt.ControlModifier | Qt.Key_S`).
-When the matching key is pressed and `enabled` is `true`, the `activated()`
-signal is emitted.
+The `sequence` property accepts either a key-chord string (for example `"Ctrl+Q"`,
+`"Ctrl+Shift+S"`, `"Alt+Return"`, `"Escape"`, `"Backtab"`, or `"F1"` through `"F12"`)
+or a Qt key bitmask (`Qt.Key_F1`, `Qt.Key_Escape`, or `Qt.ControlModifier | Qt.Key_S`).
+Only single-stroke chords are supported; multi-chord sequences (such as `"Ctrl+X, Ctrl+S"`),
+`"Meta"`, or malformed strings emit a QML warning and leave the shortcut inactive.
+When the matching key is pressed and `enabled` is `true`, `activated()` is emitted
+and the key event is consumed before reaching focused items.
 
 ### Example
 
@@ -50,4 +53,4 @@ signal is emitted.
 
 ![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
 
-See [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml) (`./build/examples/gallery/qmltui_gallery --example Shortcut`, or open in the [WebAssembly Playground](../playground.md?example=Shortcut.qml)).
+See [`examples/gallery/examples/Shortcut.qml`](../../examples/gallery/examples/Shortcut.qml) (`./build/examples/gallery/qmltui_gallery --example Shortcut`).

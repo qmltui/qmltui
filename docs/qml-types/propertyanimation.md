@@ -26,7 +26,7 @@ Animates changes to a target property over time with configurable easing. [More.
 | `target` | `QtObject` | `null` | Holds the target object whose property is being animated. |
 | `property` | `string` | `""` | Holds the name of the property to animate on `target`. |
 | `duration` | `int` | `250` | Holds the duration of the animation in milliseconds. |
-| `from` | `var` |  | Holds the starting value for the animated property. If unset, uses the current property value. |
+| `from` | `var` |  | Holds the starting value for the animated property. Inside a [Behavior](behavior.md) or [Transition](transition.md), unset `from` starts from the current property value; on a standalone animation (`start()` or `running: true`), set `from` explicitly (`NumberAnimation` otherwise starts from `0`). |
 | `to` | `var` |  | Holds the target end value for the animated property. |
 | `easing` | `Easing::Type` | `Easing.Linear` | Holds the easing curve type applied to the animation progress. |
 
@@ -51,4 +51,4 @@ for color properties, prefer [ColorAnimation](coloranimation.md).
 
 ![Animation recorded demo](../assets/casts/components/animation.gif)
 
-See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`, or open in the [WebAssembly Playground](../playground.md?example=Animation.qml)).
+See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`).

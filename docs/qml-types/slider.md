@@ -63,4 +63,4 @@ slider too narrow to show a track reveals where focus is.
 
 ![Slider recorded demo](../assets/casts/components/slider.gif)
 
-See [`examples/gallery/examples/Slider.qml`](../../examples/gallery/examples/Slider.qml) (`./build/examples/gallery/qmltui_gallery --example Slider`, or open in the [WebAssembly Playground](../playground.md?example=Slider.qml)).
+See [`examples/gallery/examples/Slider.qml`](../../examples/gallery/examples/Slider.qml) (`./build/examples/gallery/qmltui_gallery --example Slider`).

@@ -17,18 +17,22 @@ it comes back.
 
 ## Linux runner (WSL)
 
-The workflow expects the Qt prefix in `QMLTUI_QT_LINUX`; CMake, Ninja, and
-`clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage` job) come from the
-distribution.
+The workflows expect the desktop Qt prefix in `QMLTUI_QT_LINUX`, and the `wasm`
+compile-guard job in `ci.yml` expects the Qt for WebAssembly single-threaded
+prefix in `QMLTUI_QT_WASM` plus Emscripten (`EMSDK`, defaulting to `~/emsdk`).
+CMake, Ninja, and `clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage`
+job) come from the distribution.
 
 ```bash
 mkdir -p ~/actions-runner && cd ~/actions-runner
 curl -o actions-runner-linux-x64.tar.gz -L \
   https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64-$(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep -oP '"tag_name": "v\K[^"]+').tar.gz
 tar xzf actions-runner-linux-x64.tar.gz
-./config.sh --url https://github.com/qmltui-dev/qmltui --token <TOKEN> \
+./config.sh --url https://github.com/qmltui/qmltui --token <TOKEN> \
   --name wsl-linux --labels linux --unattended
 echo 'QMLTUI_QT_LINUX=/home/yosri/Qt/6.8.6/gcc_64' >> .env
+echo 'QMLTUI_QT_WASM=/home/yosri/Qt/6.8.6/wasm_singlethread' >> .env
+echo 'EMSDK=/home/yosri/emsdk' >> .env
 ```
 
 Then keep it running. Without systemd in WSL (the default here), start it in a
@@ -58,7 +62,7 @@ mkdir C:\actions-runner; cd C:\actions-runner
 $v = (Invoke-RestMethod https://api.github.com/repos/actions/runner/releases/latest).tag_name.TrimStart('v')
 Invoke-WebRequest -Uri "https://github.com/actions/runner/releases/download/v$v/actions-runner-win-x64-$v.zip" -OutFile runner.zip
 Expand-Archive runner.zip -DestinationPath .
-.\config.cmd --url https://github.com/qmltui-dev/qmltui --token <TOKEN> --name win-host --labels windows --runasservice --unattended
+.\config.cmd --url https://github.com/qmltui/qmltui --token <TOKEN> --name win-host --labels windows --runasservice --unattended
 Add-Content .env 'QMLTUI_QT_WINDOWS=C:\Qt\6.8.3\msvc2022_64'
 Add-Content .path "C:\Qt\Tools\CMake_64\bin;C:\Qt\Tools\Ninja;$env:PATH"
 Restart-Service "actions.runner.*"
@@ -85,5 +89,6 @@ same settings page.
 | `coverage` (Clang `llvm-cov`) | self-hosted `linux` | every push and pull request |
 | `windows` (Behavior on) | self-hosted `windows` | every push and pull request |
 | `quickstart` (`examples/helloworld`) | self-hosted `linux` | every push and pull request |
+| `wasm` (`examples/helloworld` Wasm compile-guard) | self-hosted `linux` | Wasm/Core/Controls/CMake pushes, pull requests, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/website`) |
 | `macos` | hosted `macos-14` | `workflow_dispatch` and `v*` tags |
 | `reuse` | hosted `ubuntu-24.04` | pull requests and `workflow_dispatch` |

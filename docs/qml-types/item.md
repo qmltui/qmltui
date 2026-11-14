@@ -26,15 +26,15 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 | `x` | `int` | `0` | Holds the horizontal position in character cells relative to its parent item. |
 | `y` | `int` | `0` | Holds the vertical position in rows relative to its parent item. |
 | `z` | `real` | `0.0` | Holds the stacking order relative to siblings; higher values render on top. |
-| `width` | `int` | `0` | Holds the explicit width in character cells. |
-| `height` | `int` | `0` | Holds the explicit height in rows. |
+| `width` | `int` | `implicitWidth` (`0`) | Holds the item width in character cells; tracks `implicitWidth` until explicitly set or horizontally anchored. |
+| `height` | `int` | `implicitHeight` (`0`) | Holds the item height in rows; tracks `implicitHeight` until explicitly set or vertically anchored. |
 | `implicitWidth` | `int` | `0` | Holds the natural, unconstrained width based on item content. |
 | `implicitHeight` | `int` | `0` | Holds the natural, unconstrained height based on item content. |
 | `visible` | `bool` | `true` | Whether the item is rendered and participates in layouts. |
 | `enabled` | `bool` | `true` | Whether the item receives user input events. |
 | `focus` | `bool` | `false` | Requests keyboard focus within its focus scope. |
 | `activeFocus` | `bool` |  | Read-only. Whether the item currently has active keyboard input focus. |
-| `focusPolicy` | `enumeration` | `Qt.NoFocus` | The way the item accepts focus (`Qt.NoFocus`, `Qt.TabFocus`, `Qt.ClickFocus`, `Qt.StrongFocus`, `Qt.WheelFocus`). |
+| `focusPolicy` | `enumeration` | `Qt.NoFocus` | The way the item accepts focus (`Qt.NoFocus`, `Qt.TabFocus`, `Qt.ClickFocus`, or `Qt.StrongFocus`). |
 | `parent` | `Item` | `null` | Holds the visual parent item in the scene graph hierarchy. |
 | `anchors` | `Anchors` |  | Read-only. Holds the anchor configuration ([Anchors](anchors.md)) for relative positioning. |
 | `left` | `AnchorLine` |  | Read-only. Holds the left edge anchor line. |
@@ -87,6 +87,4 @@ and attributes to the terminal text grid buffer.
 
 ### Gallery Example
 
-![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
-
-See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`, or open in the [WebAssembly Playground](../playground.md?example=Anchors.qml)).
+See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`).

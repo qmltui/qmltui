@@ -25,7 +25,9 @@ NumberAnimation is a specialized [PropertyAnimation](propertyanimation.md) optim
 for interpolating numeric properties such as `x`, `y`, `width`, and `height`.
 
 It inherits all properties and methods from PropertyAnimation, including `duration`,
-`from`, `to`, `easing`, and `loops`.
+`from`, `to`, `easing`, and `loops` (including `Animation.Infinite`). When running a
+standalone `NumberAnimation` outside a `Behavior` or `Transition`, set `from`
+explicitly so playback does not start from `0`.
 
 ### Example
 
@@ -35,4 +37,4 @@ It inherits all properties and methods from PropertyAnimation, including `durati
 
 ![Animation recorded demo](../assets/casts/components/animation.gif)
 
-See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`, or open in the [WebAssembly Playground](../playground.md?example=Animation.qml)).
+See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`).

@@ -46,4 +46,4 @@ smoothly from its old value to the new value.
 
 ![Behavior recorded demo](../assets/casts/components/behavior.gif)
 
-See [`examples/gallery/examples/Behavior.qml`](../../examples/gallery/examples/Behavior.qml) (`./build/examples/gallery/qmltui_gallery --example Behavior`, or open in the [WebAssembly Playground](../playground.md?example=Behavior.qml)).
+See [`examples/gallery/examples/Behavior.qml`](../../examples/gallery/examples/Behavior.qml) (`./build/examples/gallery/qmltui_gallery --example Behavior`).

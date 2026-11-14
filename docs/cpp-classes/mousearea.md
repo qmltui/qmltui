@@ -2,8 +2,9 @@
 
 `MouseArea` is an invisible `Item` that handles terminal mouse presses, releases, clicks, wheel events, and pointer coordinates (`mouseX`, `mouseY`). Button-held drag motion is always tracked while pressed; passive hover motion without a pressed button is enabled via `hoverEnabled`.
 
-- **Header**: `src/QmlTui/Core/Items/MouseArea.h` *(in-tree item header; not installed as a public header)*
+- **Header**: `<QmlTui/Core/Items/MouseArea.h>`
 - **Inherits**: `qmltui::Item`
+- **Target**: `qmltui::core`
 
 ## Properties (`Q_PROPERTY`)
 

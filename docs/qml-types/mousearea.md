@@ -85,4 +85,4 @@ unaccepted-events-bubble model), and `scrollGestureEnabled` (no gestures).
 
 ![MouseArea recorded demo](../assets/casts/components/mouse_area.gif)
 
-See [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml) (`./build/examples/gallery/qmltui_gallery --example MouseArea`, or open in the [WebAssembly Playground](../playground.md?example=MouseArea.qml)).
+See [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml) (`./build/examples/gallery/qmltui_gallery --example MouseArea`).

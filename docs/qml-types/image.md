@@ -16,6 +16,7 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 | | |
 | :--- | :--- |
 | **Import Statement** | `import QmlTui.Image` |
+| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`qmltui::image`, requires `Qt6::Gui` and `Qt6::Network`) |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 
@@ -155,7 +156,8 @@ renders a live radar sweep served by an asynchronous provider.
 `sourceClipRect` shows one region of a larger picture, so a sheet of frames or
 an icon atlas is decoded once and each item crops its own tile:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 Image {
     source: "icons.png"
     sourceClipRect: Qt.rect(32, 0, 16, 16)   // the second 16x16 icon
@@ -166,7 +168,8 @@ Moving the clip is how frames animate: only the cropped region is re-scaled,
 the sheet itself is not touched again. For a frame grid played on a clock, use
 [AnimatedSprite](animatedsprite.md), which drives `sourceClipRect` itself.
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 Image {
     width: 40; height: 12
     image: scope.frame          // a QImage property on a C++ object
@@ -182,4 +185,4 @@ Image {
 
 ![Image recorded demo](../assets/casts/components/image.gif)
 
-See [`examples/gallery/examples/Image.qml`](../../examples/gallery/examples/Image.qml) (`./build/examples/gallery/qmltui_gallery --example Image`, or open in the [WebAssembly Playground](../playground.md?example=Image.qml)).
+See [`examples/gallery/examples/Image.qml`](../../examples/gallery/examples/Image.qml) (`./build/examples/gallery/qmltui_gallery --example Image`).

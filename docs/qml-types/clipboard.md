@@ -64,11 +64,11 @@ a stable `code` property. Promise handlers run asynchronously. The method does
 not block input or rendering and does not insert the text into a control.
 
 ```js
-Clipboard.requestText().then(function(text) {
-    editor.paste(text)
-}).catch(function(error) {
-    console.warn(error.code, error.message)
-})
+Clipboard.requestText().then(text => {
+    editor.paste(text);
+}).catch(error => {
+    console.warn(error.code, error.message);
+});
 ```
 
 | Error code | Meaning |
@@ -115,4 +115,4 @@ and feedback to continue working. The application owns the notification UI:
 
 ![Clipboard recorded demo](../assets/casts/components/clipboard.gif)
 
-See [`examples/gallery/examples/Clipboard.qml`](../../examples/gallery/examples/Clipboard.qml) (`./build/examples/gallery/qmltui_gallery --example Clipboard`, or open in the [WebAssembly Playground](../playground.md?example=Clipboard.qml)).
+See [`examples/gallery/examples/Clipboard.qml`](../../examples/gallery/examples/Clipboard.qml) (`./build/examples/gallery/qmltui_gallery --example Clipboard`).

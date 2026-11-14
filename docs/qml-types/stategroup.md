@@ -45,4 +45,4 @@ restoration behavior.
 
 ![States recorded demo](../assets/casts/components/states.gif)
 
-See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`, or open in the [WebAssembly Playground](../playground.md?example=States.qml)).
+See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`).

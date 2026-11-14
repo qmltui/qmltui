@@ -62,7 +62,8 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 ## Detailed Description
 
 ListView provides a virtualized, scrollable list of items instantiated from a `delegate`
-based on a `model`. Only delegates visible in the current viewport (plus a small overscan)
+based on a `model`. Through [ScrollView](scrollview.md), its inherited [Item](item.md)
+properties default to `focusPolicy: Qt.StrongFocus` and `clip: true`. Only delegates visible in the current viewport (plus a small overscan)
 are instantiated. When `reuseItems` is `true`, delegate items are recycled as the user scrolls,
 providing smooth scrolling over large models.
 
@@ -81,4 +82,4 @@ when selected.
 
 ![ListView recorded demo](../assets/casts/components/list_view.gif)
 
-See [`examples/gallery/examples/ListView.qml`](../../examples/gallery/examples/ListView.qml) (`./build/examples/gallery/qmltui_gallery --example ListView`, or open in the [WebAssembly Playground](../playground.md?example=ListView.qml)).
+See [`examples/gallery/examples/ListView.qml`](../../examples/gallery/examples/ListView.qml) (`./build/examples/gallery/qmltui_gallery --example ListView`).

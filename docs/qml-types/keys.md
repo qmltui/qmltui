@@ -67,6 +67,4 @@ Once an event handler sets `event.accepted = true`, event propagation terminates
 
 ### Gallery Example
 
-![Shortcut recorded demo](../assets/casts/components/shortcut.gif)
-
-See [`examples/gallery/examples/Keys.qml`](../../examples/gallery/examples/Keys.qml) (`./build/examples/gallery/qmltui_gallery --example Keys`, or open in the [WebAssembly Playground](../playground.md?example=Keys.qml)).
+See [`examples/gallery/examples/Keys.qml`](../../examples/gallery/examples/Keys.qml) (`./build/examples/gallery/qmltui_gallery --example Keys`).

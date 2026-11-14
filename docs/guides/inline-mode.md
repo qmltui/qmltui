@@ -89,7 +89,7 @@ scrollback.print([
 
 When bound to a `ListModel` or C++ `QAbstractItemModel`, `Scrollback` renders each newly appended model row through `delegate` once and commits the resulting cells into terminal history:
 
-```qml
+```qml no-playground
 pragma ComponentBehavior: Bound
 import QtQml
 import QtQml.Models
@@ -189,6 +189,6 @@ buildLog.append({
 - **Switching between `Terminal.Inline` and `Terminal.AltScreen`**: You can toggle `root.mode` at runtime (for example, switching to `Terminal.AltScreen` to open a full-screen diff or pager and returning to `Terminal.Inline` afterward). Leaving `Terminal.Inline` erases the live inline region cleanly with `\033[J`.
 - **Scrollback queue limit**: Pending scrollback output is buffered in a 1 MiB session queue (and held while temporarily in `Terminal.AltScreen` mode, then flushed when `Terminal.Inline` resumes or the session exits). If a producer exceeds the 1 MiB limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
 
-See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/) and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
+See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/), the full-scale [`agent_stream`](https://github.com/qmltui/apps/tree/main/apps/agent_stream) and [`package_manager`](https://github.com/qmltui/apps/tree/main/apps/package_manager) showcase applications in `qmltui/apps`, and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
 
 ![Inline REPL recorded demo](../assets/casts/components/inline_mode.gif)

@@ -83,7 +83,7 @@ Called when a key is pressed while the item has active focus. Call `event->setAc
 #### `virtual void mouseReleaseEvent(MouseEvent *event)`
 #### `virtual void mouseMoveEvent(MouseEvent *event)`
 #### `virtual void wheelEvent(MouseEvent *event)`
-Public virtual mouse and wheel event handlers in item-local or absolute coordinates. Passive motion without a held button is delivered only while hover tracking is active (`MouseArea.hoverEnabled` or attached `ToolTip`).
+Public virtual mouse and wheel event handlers. Event coordinates (`event->x()`, `event->y()`) are always delivered in this item's local cell space. Passive motion without a held button is delivered only while hover tracking is active (`MouseArea.hoverEnabled` or attached `ToolTip`).
 
 ## Protected Virtual Hooks
 

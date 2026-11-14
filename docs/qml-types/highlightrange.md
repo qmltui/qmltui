@@ -62,4 +62,4 @@ partially styled.
 
 ![TextArea recorded demo](../assets/casts/components/text_area.gif)
 
-See [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml) (`./build/examples/gallery/qmltui_gallery --example TextArea`, or open in the [WebAssembly Playground](../playground.md?example=TextArea.qml)).
+See [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml) (`./build/examples/gallery/qmltui_gallery --example TextArea`).

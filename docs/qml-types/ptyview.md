@@ -23,7 +23,7 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `program` | `string` | `""` | Holds the executable binary path or command name to execute in the PTY. |
+| `program` | `string` | `PtyView.defaultUserShell()` | Holds the executable binary path or command name to execute in the PTY (defaults to `$SHELL`, `getpwuid`, or `"/bin/sh"`). |
 | `arguments` | `list<string>` | `[]` | Holds the list of command-line arguments passed to `program`. |
 | `workingDirectory` | `string` | `""` | Holds the initial working directory path for the child process. |
 | `environment` | `var` | `{}` | Holds additional custom environment variables for the child process. |
@@ -32,8 +32,8 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `autoStart` | `bool` | `false` | Whether the process starts automatically when the component completes. |
 | `processState` | `ProcessState` | `PtyView.NotRunning` | Read-only. Holds the current process lifecycle state: `NotRunning`, `Starting`, `Running`, or `Stopping`. |
 | `running` | `bool` | `false` | Read-only. Holds whether the child process is currently active and running. |
-| `processId` | `int` | `-1` | Read-only. Holds the operating system process ID (PID) of the child process. |
-| `exitCode` | `int` | `0` | Read-only. Holds the exit status code after the process terminates. |
+| `processId` | `qlonglong` | `-1` | Read-only. Holds the operating system process ID (`qint64`) of the child process, or `-1` when not running. |
+| `exitCode` | `int` | `-1` | Read-only. Holds the exit status code after the process terminates (`-1` before exit). |
 | `errorString` | `string` | `""` | Read-only. Holds error details if process spawning or execution fails. |
 | `title` | `string` | `""` | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
 | `textColor` | `color` | `QmlTui.defaultColor` | Holds the default foreground text color (defaults to terminal ink). |
@@ -83,7 +83,15 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 
 PtyView is a QML item that hosts an external terminal application inside
 a Unix pseudo-terminal (PTY) using libvterm. It is available when QmlTui is built
-with `QMLTUI_ENABLE_PTYVIEW=ON` (supported on Linux and macOS).
+with `QMLTUI_ENABLE_PTYVIEW=ON` (supported on Linux and macOS, linked via
+`qmltui::pty_view`).
+
+By default, PtyView initializes its inherited [Item](item.md) properties to
+`focusPolicy: Qt.StrongFocus` and `clip: true`. While a PtyView has active focus,
+it forwards printable keys, `Tab`, `Q`, and `Escape` directly into the child PTY
+stream; use global [Shortcut](shortcut.md) bindings (for example `"Ctrl+Q"` or
+`"F6"`) or `Keys.priority: Keys.BeforeItem` to move focus out of the terminal pane
+or quit the host application.
 
 Programs and arguments are passed directly to the child process. QmlTui never
 implicitly invokes a shell or expands shell syntax. The child receives

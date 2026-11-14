@@ -30,7 +30,8 @@ Container providing vertical scrolling and scrollbar display for overflowing con
 ## Detailed Description
 
 ScrollView provides a clipped viewport with a vertical scrollbar for content
-that exceeds the visible height. It handles mouse wheel scrolling, keyboard
+that exceeds the visible height. Its inherited [Item](item.md) properties default to
+`focusPolicy: Qt.StrongFocus` and `clip: true`. It handles mouse wheel scrolling, keyboard
 navigation (Up, Down, PageUp, PageDown), and mouse dragging on the scrollbar.
 
 When `scrollBarVisible` is `true`, an overlay scrollbar is rendered along the
@@ -46,4 +47,4 @@ machinery.
 
 ![ScrollView recorded demo](../assets/casts/components/scroll_view.gif)
 
-See [`examples/gallery/examples/ScrollView.qml`](../../examples/gallery/examples/ScrollView.qml) (`./build/examples/gallery/qmltui_gallery --example ScrollView`, or open in the [WebAssembly Playground](../playground.md?example=ScrollView.qml)).
+See [`examples/gallery/examples/ScrollView.qml`](../../examples/gallery/examples/ScrollView.qml) (`./build/examples/gallery/qmltui_gallery --example ScrollView`).

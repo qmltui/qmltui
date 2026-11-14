@@ -48,4 +48,4 @@ Coordinates are measured in sub-cell canvas pixels.
 
 ![Canvas recorded demo](../assets/casts/components/canvas.gif)
 
-See [`examples/gallery/examples/Canvas.qml`](../../examples/gallery/examples/Canvas.qml) (`./build/examples/gallery/qmltui_gallery --example Canvas`, or open in the [WebAssembly Playground](../playground.md?example=Canvas.qml)).
+See [`examples/gallery/examples/Canvas.qml`](../../examples/gallery/examples/Canvas.qml) (`./build/examples/gallery/qmltui_gallery --example Canvas`).

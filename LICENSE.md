@@ -27,7 +27,7 @@ may also combine QmlTui with GPLv3 works under the terms of GPLv3.
 
 Separate commercial terms are available upon inquiry for organizations unable to
 meet those obligations. Contact the copyright holder through the project
-repository at <https://github.com/qmltui-dev/qmltui>.
+repository at <https://github.com/qmltui/qmltui>.
 
 ## Dependencies and WebAssembly
 

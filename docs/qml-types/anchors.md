@@ -59,4 +59,4 @@ All margins are measured in integer character cells and rows.
 
 ![Layouts recorded demo](../assets/casts/components/layouts.gif)
 
-See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`, or open in the [WebAssembly Playground](../playground.md?example=Anchors.qml)).
+See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`).

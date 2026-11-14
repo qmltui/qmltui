@@ -1,80 +1,151 @@
 # Creating Custom Items
 
-You can extend QmlTui in C++ by subclassing `qmltui::Item` and registering the class with the QML type system.
+Extend QmlTui in C++ by subclassing `qmltui::Item` (or `qmltui::Rectangle`) and registering the class with `QML_ELEMENT`.
 
-## Class Definition
+> [!TIP]
+> **Sub-cell drawing without C++**: If you only need custom 2×4 Braille or 1×2 half-block pixel graphics from QML, use [`Canvas`](../qml-types/canvas.md) with `autoClear: false` (for imperative `setPixel()` calls) or declarative `CanvasShape` children instead of writing a C++ subclass.
 
-Inherit from `qmltui::Item` and add `Q_OBJECT` and `QML_ELEMENT`. Call `markDirty()` whenever a property setter changes the item's visual output:
+## 1. Header (`CustomBlock.h`)
+
+Subclass `qmltui::Item` in your own namespace (or global scope), add `Q_OBJECT` and `QML_ELEMENT`, and call `markDirty()` whenever a property change alters the rendered cells. Do not mark `QML_ELEMENT` classes `final` (Qt's QML registration template subclasses your type).
 
 ```cpp
 #pragma once
+
+#include <QString>
+#include <QtQml/qqmlregistration.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 
-namespace qmltui {
-
-class CustomBlock : public Item {
+class CustomBlock : public qmltui::Item {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
+    Q_PROPERTY(qmltui::Color color READ color WRITE setColor NOTIFY colorChanged)
 
 public:
-    explicit CustomBlock(QObject *parent = nullptr) : Item(parent) {}
+    explicit CustomBlock(QObject* parent = nullptr) : qmltui::Item(parent) {
+        setFocusPolicy(Qt::StrongFocus);
+        setImplicitHeight(1);
+    }
 
     QString label() const { return m_label; }
-    void setLabel(const QString &label) {
-        if (m_label == label)
-            return;
+    void setLabel(const QString& label) {
+        if (m_label == label) return;
         m_label = label;
-        setImplicitWidth(UnicodeText::displayWidth(m_label) + leftPadding() + rightPadding());
+        setImplicitWidth(qmltui::UnicodeText::displayWidth(m_label) + leftPadding() + rightPadding());
         setImplicitHeight(1 + topPadding() + bottomPadding());
         emit labelChanged();
         markDirty();
     }
 
+    qmltui::Color color() const { return m_color; }
+    void setColor(qmltui::Color color) {
+        if (m_color == color) return;
+        m_color = color;
+        emit colorChanged();
+        markDirty();
+    }
+
 signals:
     void labelChanged();
+    void colorChanged();
 
 protected:
-    void paint(TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect &clipRect) const override;
+    void paint(qmltui::TextGridBuffer& buffer, int absX, int absY,
+               const qmltui::ClipRect& clipRect) const override;
+    void keyPressEvent(qmltui::KeyEvent* event) override;
 
 private:
     QString m_label;
+    qmltui::Color m_color = qmltui::Color::fromString(QStringLiteral("cyan"));
 };
-
-} // namespace qmltui
 ```
 
-## Painting
+## 2. Painting and Input (`CustomBlock.cpp`)
 
-Override the protected `paint(TextGridBuffer &, int absX, int absY, const ClipRect &) const` hook. During each frame, the engine calls `paint()`, traverses visible children in stacking order with content offsets and clipping applied, and finally calls `paintOverlay()`. Child traversal is owned by the engine; custom items must not iterate or paint their children directly.
+Override `paint(qmltui::TextGridBuffer& buffer, int absX, int absY, const qmltui::ClipRect& clipRect) const`. During each frame, the engine calls `paint()`, traverses visible children in stacking order with content offsets and clipping applied, and finally calls `paintOverlay()`. Child traversal is owned by the engine; custom items must not iterate or paint their children directly.
 
-Respect `clipRect` and use `TextGridBuffer::writeText()`, `setGrapheme()`, or `fillRect()` for grapheme-aware cell writes. When accessing individual cells, use `tryCellAt()` if coordinates may fall outside the buffer, or `cellAt()` when coordinates are already bounded by `clipRect`:
+Respect `clipRect` so clipped containers (`ScrollView`, `Popup`, `clip: true`) never bleed outside their bounds. Use `UnicodeText::forEachGrapheme()` with `TextGridBuffer::setGrapheme()` for clipped grapheme-aware writes:
 
 ```cpp
-void CustomBlock::paint(TextGridBuffer &buffer, int absX, int absY,
-                        const ClipRect &clipRect) const {
-    Q_UNUSED(clipRect)
-    const Color foreground("red");
-    buffer.writeText(absX + leftPadding(), absY + topPadding(), m_label, foreground);
+#include "CustomBlock.h"
+
+void CustomBlock::paint(qmltui::TextGridBuffer& buffer, int absX, int absY,
+                        const qmltui::ClipRect& clipRect) const {
+    if (clipRect.isEmpty()) return;
+    const int row = absY + topPadding();
+    if (row < clipRect.minY || row >= clipRect.maxY) return;
+
+    int col = absX + leftPadding();
+    const qmltui::TextAttribute attrs =
+        hasActiveFocus() ? qmltui::TextAttribute::Bold : qmltui::TextAttribute::None;
+
+    qmltui::UnicodeText::forEachGrapheme(m_label, [&](const qmltui::GraphemeRef& g) {
+        if (g.width > 0 && col + g.width > clipRect.maxX) return;
+        if (col >= clipRect.minX) {
+            buffer.setGrapheme(col, row, g.utf16, g.width, m_color, qmltui::Color::Default, attrs,
+                               clipRect.minX);
+        }
+        col += g.width;
+    });
+}
+
+void CustomBlock::keyPressEvent(qmltui::KeyEvent* event) {
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        setColor(qmltui::Color::fromString(QStringLiteral("green")));
+        event->setAccepted(true);
+    }
 }
 ```
 
-Override `updateLayout()` for work that positions or creates children. Each frame runs a layout pass over the tree before painting, so geometry updated in `updateLayout()` is painted in the same frame. A size change on the item itself marks it `LayoutDirty` automatically.
+### Layout and Paint Rules
 
-`paint()` and `paintOverlay()` are `const`: they must only write cells to `buffer`. Store lazily computed layout caches in `mutable` members. Invalidations that reach the tree during painting are retained for the next frame without scheduling an immediate repaint; set `QMLTUI_DEBUG_PAINT_DIRTY=1` in the environment to log any item that dirties the tree during paint.
+- Override `updateLayout()` for work that positions or creates children. Each frame runs a layout pass over the tree before painting, so geometry updated in `updateLayout()` is painted in the same frame. A size change on the item itself marks it `LayoutDirty` automatically.
+- `paint()` and `paintOverlay()` are `const`: they must only write cells to `buffer`. Store lazily computed caches in `mutable` members. Invalidations during painting are deferred to the next frame; set `QMLTUI_DEBUG_PAINT_DIRTY=1` to log a warning if an item calls `markDirty()` inside `paint()`.
+- Override `paintOverlay()` only for chrome that must appear above the item's children, such as a scrollbar or focus frame.
 
-Override `paintOverlay()` only for chrome that must appear above the item's children, such as a scrollbar or focus frame.
+## 3. CMake Registration and QML Usage
 
-## Event Handling
+List the header and source under `SOURCES` in `qt_add_qml_module()` and link `qmltui::core`:
 
-To handle keyboard or mouse input directly in C++, set a focus policy (such as `setFocusPolicy(Qt::StrongFocus)`) and override `keyPressEvent(KeyEvent *event)`:
+```cmake
+qt_add_executable(my_app main.cpp)
+qt_add_qml_module(my_app
+    URI MyApp
+    VERSION 1.0
+    SOURCES CustomBlock.h CustomBlock.cpp
+    QML_FILES Main.qml
+    DEPENDENCIES TARGET qmltui::core
+)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+```
 
-```cpp
-void CustomBlock::keyPressEvent(KeyEvent *event) {
-    if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return) {
-        event->setAccepted(true);
+Instantiate `CustomBlock` directly in `Main.qml`:
+
+<!-- check-docs: ignore -->
+```qml no-playground
+pragma ComponentBehavior: Bound
+import QtQml
+import QmlTui
+import MyApp
+
+Terminal {
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
+            event.accepted = true;
+            Qt.quit();
+        }
+    }
+
+    CustomBlock {
+        anchors.centerIn: parent
+        padding: 1
+        focus: true
+        label: "Press Enter to turn green"
     }
 }
 ```

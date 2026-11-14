@@ -257,10 +257,10 @@ Fails unless the bounding box `[x, y, width, height]` in the next committed fram
 
 #### `void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)`
 
-Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, and `reversed`.
+Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, and `strikethrough`. Unknown keys in `expectedStyle` fail the scenario immediately so misspelled attribute names never pass silently.
 
 ```javascript
-app.expectStyle(0, 0, { character: "A", foreground: "cyan", bold: true });
+app.expectStyle(0, 0, { character: "A", foreground: "cyan", bold: true, strikethrough: false });
 ```
 
 ### Frame Snapshots and Captures
@@ -401,7 +401,7 @@ Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`). Launch
 | `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty; existing files are never deleted). |
 | `--live` | Off | Forward live ANSI rendering to the terminal. |
 | `--clock <real\|virtual>` | `real` | Select the Runner clock before application startup. |
-| `--record <relative-path>` | Off | Write an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |
+| `--record <path>` | Off | Write an asciicast v2 `.cast` file (absolute path or relative to the artifact directory; incompatible with `--live`). |
 | `--update-snapshots` | Off | Rewrite snapshot baselines from committed frames. |
 | `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
 | `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms). |
@@ -483,7 +483,7 @@ When `qmltui::runner` is linked into an application, QML-created `Terminal` root
 | `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI terminal output during the scenario. |
 | `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Mark a process driven by a directly constructed `Runner` as a quiet test session before `Terminal` creation. |
 | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines on mismatch instead of failing. |
-| `QMLTUI_RUNNER_RECORD` | None | Relative path under the artifact directory for recording an asciicast v2 `.cast` file (incompatible with `QMLTUI_RUNNER_LIVE`). |
+| `QMLTUI_RUNNER_RECORD` | None | Absolute path, or relative path under the artifact directory, for recording an asciicast v2 `.cast` file (incompatible with `QMLTUI_RUNNER_LIVE`). |
 | `QMLTUI_RUNNER_HANDSHAKE_PATH` | None | File path where `Runner::start()` writes the activation handshake JSON when launched by `qmltui-runner`. |
 | `QMLTUI_RUNNER_HANDSHAKE_TOKEN` | None | Token echoed into `QMLTUI_RUNNER_HANDSHAKE_PATH` to verify activation. |
 | `QMLTUI_SCROLLBACK_HISTORY_ROWS` | `5000` | Maximum number of committed `Inline` scrollback rows retained by `TerminalEngine` during a Runner session. |
@@ -492,7 +492,7 @@ When `qmltui::runner` is linked into an application, QML-created `Terminal` root
 
 #### `Runner(QQmlEngine *qmlEngine, Terminal *terminal, QString scriptPath, QString artifactDirectory, QSize viewport, int operationTimeoutMs, int scenarioTimeoutMs, QString configurationError)`
 
-Constructs a `Runner` bound to an explicit `QQmlEngine` and `Terminal`. `viewport` is applied immediately so the first frame uses the test dimensions. Schedule `start()` after the root `Terminal` is loaded.
+Constructs a `Runner` bound to an explicit `QQmlEngine` and `Terminal`. `viewport` is applied immediately so the first frame uses the test dimensions. Pass an empty `QString()` for `configurationError` in normal construction; when non-empty, `start()` fails immediately, records `configurationError` in `result.json`, and exits with code `1`. Schedule `start()` after the root `Terminal` is loaded.
 
 #### `static void useVirtualClock()`
 

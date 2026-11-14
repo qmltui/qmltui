@@ -25,7 +25,13 @@ Base class for all QmlTui animations. [More...](#detailed-description)
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `running` | `bool` | `false` | Holds whether the animation is currently running. |
-| `loops` | `int` | `1` | Holds the number of times the animation plays before completing. |
+| `loops` | `int` | `1` | Holds the number of times the animation plays before completing. Set to `Animation.Infinite` (or any negative integer) to loop indefinitely without emitting `finished()`. |
+
+## Enumeration Animation.LoopCount
+
+| Value | Description |
+| :--- | :--- |
+| `Animation.Infinite` | Repeat the animation indefinitely (`-1`). |
 
 ## Signals
 
@@ -61,4 +67,4 @@ system or virtual clock.
 
 ![Animation recorded demo](../assets/casts/components/animation.gif)
 
-See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`, or open in the [WebAssembly Playground](../playground.md?example=Animation.qml)).
+See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`).

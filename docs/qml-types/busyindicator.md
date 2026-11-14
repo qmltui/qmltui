@@ -30,9 +30,9 @@ A one-cell animated spinner that cycles through a sequence of glyphs while an op
 ## Detailed Description
 
 BusyIndicator is a [Text](text.md) whose `text` reflects the glyph at an
-internal frame counter in the sequence given by `frames`. It is bold and `color`
-defaults to `"default"`, the terminal's own foreground; set `color` to tint
-it. By default, `frames` provides a ten-frame braille spinner (`⠋ ⠙ ⠹ ...`),
+internal frame counter in the sequence given by `frames`. Its inherited `bold`
+property defaults to `true`, and `color` defaults to `"default"`, the terminal's
+own foreground; set `color` to tint it or `bold: false` for normal weight. By default, `frames` provides a ten-frame braille spinner (`⠋ ⠙ ⠹ ...`),
 one cell wide. Set `frames` to any custom sequence of strings to change the
 spinner animation.
 
@@ -49,4 +49,4 @@ animation resumes from the current frame.
 
 ![BusyIndicator recorded demo](../assets/casts/components/busy_indicator.gif)
 
-See [`examples/gallery/examples/BusyIndicator.qml`](../../examples/gallery/examples/BusyIndicator.qml) (`./build/examples/gallery/qmltui_gallery --example BusyIndicator`, or open in the [WebAssembly Playground](../playground.md?example=BusyIndicator.qml)).
+See [`examples/gallery/examples/BusyIndicator.qml`](../../examples/gallery/examples/BusyIndicator.qml) (`./build/examples/gallery/qmltui_gallery --example BusyIndicator`).

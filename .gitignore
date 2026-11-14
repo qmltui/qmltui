@@ -25,11 +25,3 @@ layers/
 # Python bytecode and virtual environments
 __pycache__/
 .venv/
-
-# Documentation site build artifacts and dependencies
-node_modules/
-docs/node_modules/
-docs/.vitepress/cache/
-docs/.vitepress/dist/
-docs/public/
-docs/package-lock.json

@@ -168,8 +168,16 @@ def main() -> int:
     engine = QQmlApplicationEngine()
 
     qml_dir = build_dir / "qml"
-    if qml_dir.is_dir():
-        engine.addImportPath(str(qml_dir))
+    if not (qml_dir / "QmlTui").is_dir():
+        print(
+            f"Error: QmlTui QML plugins not found under '{qml_dir / 'QmlTui'}'.\n"
+            "Build the QML plugin targets first (or set QMLTUI_BUILD_DIR):\n"
+            "  cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF\n"
+            "  cmake --build build --target QmlTuiCoreplugin QmlTuiControlsplugin",
+            file=sys.stderr,
+        )
+        return 1
+    engine.addImportPath(str(qml_dir))
 
     engine.load(QUrl.fromLocalFile(str(recipe_dir / "Main.qml")))
     if not engine.rootObjects():

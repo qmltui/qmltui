@@ -1,0 +1,221 @@
+{
+  "sidebar": [
+    {
+      "text": "Getting Started",
+      "collapsed": false,
+      "items": [
+        { "text": "Overview", "link": "/" },
+        { "text": "Getting Started Tutorial", "link": "/getting-started" },
+        { "text": "Qt Quick & Widgets to QmlTui", "link": "/guides/qt-quick-to-qmltui" },
+        { "text": "Editor & IDE Setup", "link": "/guides/editor-setup" },
+        { "text": "Build & CMake Configuration", "link": "/build-configuration" },
+        { "text": "Examples & Recipes", "link": "/examples" },
+        { "text": "Application Showcase", "link": "/showcase", "websiteOnly": true },
+        { "text": "Component Gallery (Wasm)", "link": "/playground?mode=gallery", "target": "_blank", "websiteOnly": true },
+        { "text": "Try It Yourself Playground", "link": "/playground", "target": "_blank", "websiteOnly": true }
+      ]
+    },
+    {
+      "text": "Guides",
+      "collapsed": false,
+      "items": [
+        { "text": "All Guides", "link": "/guides/" },
+        { "text": "Qt Quick & Widgets to QmlTui", "link": "/guides/qt-quick-to-qmltui" },
+        { "text": "Architecture", "link": "/guides/architecture" },
+        { "text": "Layouts & Geometry", "link": "/guides/layouts" },
+        { "text": "Input & Focus", "link": "/guides/input-and-focus" },
+        { "text": "Styling & Colors", "link": "/guides/styling-and-colors" },
+        { "text": "Models & Views", "link": "/guides/models" },
+        { "text": "Animation & States", "link": "/guides/animation-and-states" },
+        { "text": "Inline Mode & Scrollback", "link": "/guides/inline-mode" },
+        { "text": "Embedded PTY (PtyView)", "link": "/guides/pty-view" },
+        { "text": "Custom C++ Items", "link": "/guides/custom-items" },
+        { "text": "Testing with Runner", "link": "/guides/testing" },
+        { "text": "Editor & IDE Setup", "link": "/guides/editor-setup" },
+        { "text": "Qt for WebAssembly", "link": "/guides/webassembly" }
+      ]
+    },
+    {
+      "text": "QML Types",
+      "collapsed": false,
+      "items": [
+        { "text": "QML Type Index", "link": "/qml-types/" },
+        {
+          "text": "QmlTui: Core & Terminal",
+          "collapsed": true,
+          "items": [
+            { "text": "Terminal", "link": "/qml-types/terminal" },
+            { "text": "Scrollback", "link": "/qml-types/scrollback" },
+            { "text": "Item", "link": "/qml-types/item" },
+            { "text": "FocusScope", "link": "/qml-types/focusscope" },
+            { "text": "Popup", "link": "/qml-types/popup" },
+            { "text": "Rectangle", "link": "/qml-types/rectangle" },
+            { "text": "Border", "link": "/qml-types/border" },
+            { "text": "Anchors", "link": "/qml-types/anchors" },
+            { "text": "AnchorLine", "link": "/qml-types/anchorline" },
+            { "text": "Gradient", "link": "/qml-types/gradient" },
+            { "text": "GradientStop", "link": "/qml-types/gradientstop" },
+            { "text": "Clipboard", "link": "/qml-types/clipboard" },
+            { "text": "QmlTui", "link": "/qml-types/qmltui" },
+            { "text": "color", "link": "/qml-types/color" },
+            { "text": "span", "link": "/qml-types/span" },
+            { "text": "highlightRange", "link": "/qml-types/highlightrange" },
+            { "text": "terminalCapabilities", "link": "/qml-types/terminalcapabilities" }
+          ]
+        },
+        {
+          "text": "QmlTui: Layout & Containers",
+          "collapsed": true,
+          "items": [
+            { "text": "Row", "link": "/qml-types/row" },
+            { "text": "Column", "link": "/qml-types/column" },
+            { "text": "RowLayout", "link": "/qml-types/rowlayout" },
+            { "text": "ColumnLayout", "link": "/qml-types/columnlayout" },
+            { "text": "GridLayout", "link": "/qml-types/gridlayout" },
+            { "text": "StackLayout", "link": "/qml-types/stacklayout" },
+            { "text": "Layout", "link": "/qml-types/layout" },
+            { "text": "Repeater", "link": "/qml-types/repeater" },
+            { "text": "Loader", "link": "/qml-types/loader" }
+          ]
+        },
+        {
+          "text": "QmlTui: Display & Text Inputs",
+          "collapsed": true,
+          "items": [
+            { "text": "Text", "link": "/qml-types/text" },
+            { "text": "TextInput", "link": "/qml-types/textinput" },
+            { "text": "TextArea", "link": "/qml-types/textarea" }
+          ]
+        },
+        {
+          "text": "QmlTui.Controls",
+          "collapsed": true,
+          "items": [
+            { "text": "AbstractButton", "link": "/qml-types/abstractbutton" },
+            { "text": "Button", "link": "/qml-types/button" },
+            { "text": "ButtonGroup", "link": "/qml-types/buttongroup" },
+            { "text": "CheckBox", "link": "/qml-types/checkbox" },
+            { "text": "RadioButton", "link": "/qml-types/radiobutton" },
+            { "text": "ComboBox", "link": "/qml-types/combobox" },
+            { "text": "SpinBox", "link": "/qml-types/spinbox" },
+            { "text": "Slider", "link": "/qml-types/slider" },
+            { "text": "ProgressBar", "link": "/qml-types/progressbar" },
+            { "text": "BusyIndicator", "link": "/qml-types/busyindicator" },
+            { "text": "Sparkline", "link": "/qml-types/sparkline" },
+            { "text": "Panel", "link": "/qml-types/panel" },
+            { "text": "Dialog", "link": "/qml-types/dialog" },
+            { "text": "ToolTip", "link": "/qml-types/tooltip" },
+            { "text": "TabBar", "link": "/qml-types/tabbar" },
+            { "text": "StackView", "link": "/qml-types/stackview" }
+          ]
+        },
+        {
+          "text": "QmlTui: Data Views",
+          "collapsed": true,
+          "items": [
+            { "text": "TableView", "link": "/qml-types/tableview" },
+            { "text": "TreeView", "link": "/qml-types/treeview" },
+            { "text": "ListView", "link": "/qml-types/listview" },
+            { "text": "GridView", "link": "/qml-types/gridview" },
+            { "text": "ScrollView", "link": "/qml-types/scrollview" }
+          ]
+        },
+        {
+          "text": "QmlTui: Input Events",
+          "collapsed": true,
+          "items": [
+            { "text": "Keys", "link": "/qml-types/keys" },
+            { "text": "KeyEvent", "link": "/qml-types/keyevent" },
+            { "text": "MouseArea", "link": "/qml-types/mousearea" },
+            { "text": "MouseEvent", "link": "/qml-types/mouseevent" },
+            { "text": "Shortcut", "link": "/qml-types/shortcut" }
+          ]
+        },
+        {
+          "text": "QmlTui: Animation & State",
+          "collapsed": true,
+          "items": [
+            { "text": "Animation", "link": "/qml-types/animation" },
+            { "text": "PropertyAnimation", "link": "/qml-types/propertyanimation" },
+            { "text": "NumberAnimation", "link": "/qml-types/numberanimation" },
+            { "text": "ColorAnimation", "link": "/qml-types/coloranimation" },
+            { "text": "Behavior", "link": "/qml-types/behavior" },
+            { "text": "Easing", "link": "/qml-types/easing" },
+            { "text": "State", "link": "/qml-types/state" },
+            { "text": "StateGroup", "link": "/qml-types/stategroup" },
+            { "text": "PropertyChanges", "link": "/qml-types/propertychanges" },
+            { "text": "Transition", "link": "/qml-types/transition" }
+          ]
+        },
+        {
+          "text": "QmlTui: Canvas",
+          "collapsed": true,
+          "items": [
+            { "text": "Canvas", "link": "/qml-types/canvas" },
+            { "text": "CanvasShape", "link": "/qml-types/canvasshape" },
+            { "text": "CanvasRectangle", "link": "/qml-types/canvasrectangle" },
+            { "text": "Circle", "link": "/qml-types/circle" },
+            { "text": "Line", "link": "/qml-types/line" },
+            { "text": "Point", "link": "/qml-types/point" },
+            { "text": "Polygon", "link": "/qml-types/polygon" }
+          ]
+        },
+        {
+          "text": "QmlTui.Image",
+          "collapsed": true,
+          "items": [
+            { "text": "Image", "link": "/qml-types/image" },
+            { "text": "AnimatedSprite", "link": "/qml-types/animatedsprite" }
+          ]
+        },
+        {
+          "text": "QmlTui.PtyView",
+          "collapsed": true,
+          "items": [
+            { "text": "PtyView", "link": "/qml-types/ptyview" }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "C++ Classes",
+      "collapsed": true,
+      "items": [
+        { "text": "C++ Class Index", "link": "/cpp-classes/" },
+        { "text": "Terminal", "link": "/cpp-classes/terminal" },
+        { "text": "TerminalEngine", "link": "/cpp-classes/terminalengine" },
+        { "text": "TerminalDevice", "link": "/cpp-classes/terminaldevice" },
+        { "text": "TerminalBackend", "link": "/cpp-classes/terminalbackend" },
+        { "text": "MemoryTerminalBackend", "link": "/cpp-classes/memoryterminalbackend" },
+        { "text": "TerminalCapabilities", "link": "/cpp-classes/terminalcapabilities" },
+        { "text": "Item", "link": "/cpp-classes/item" },
+        { "text": "Rectangle", "link": "/cpp-classes/rectangle" },
+        { "text": "Text", "link": "/cpp-classes/text" },
+        { "text": "MouseArea", "link": "/cpp-classes/mousearea" },
+        { "text": "TextGridBuffer", "link": "/cpp-classes/textgridbuffer" },
+        { "text": "Cell & TextAttribute", "link": "/cpp-classes/cell" },
+        { "text": "Color", "link": "/cpp-classes/color" },
+        { "text": "TextStyle, Span & HighlightRange", "link": "/cpp-classes/text-styling" },
+        { "text": "UnicodeText & GraphemeIterator", "link": "/cpp-classes/unicodetext" },
+        { "text": "Subpixel Helpers", "link": "/cpp-classes/subpixel" },
+        { "text": "Input Events & Shortcut", "link": "/cpp-classes/input-events" },
+        { "text": "InputDecoder", "link": "/cpp-classes/inputdecoder" },
+        { "text": "Image, AnimatedSprite & Items", "link": "/cpp-classes/image-items" },
+        { "text": "ImageProvider", "link": "/cpp-classes/imageprovider" },
+        { "text": "QtMessageRouting", "link": "/cpp-classes/qtmessagerouting" },
+        { "text": "PtyView", "link": "/cpp-classes/ptyview" },
+        { "text": "Runner", "link": "/cpp-classes/runner" }
+      ]
+    },
+    {
+      "text": "Release Notes",
+      "collapsed": true,
+      "items": [
+        { "text": "Changelog", "link": "/changes/changelog" },
+        { "text": "QmlTui 0.4", "link": "/changes/0.4" },
+        { "text": "QmlTui 0.3", "link": "/changes/0.3" },
+        { "text": "QmlTui 0.1", "link": "/changes/0.1" }
+      ]
+    }
+  ]
+}

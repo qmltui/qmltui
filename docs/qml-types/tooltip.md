@@ -77,4 +77,4 @@ true.
 
 ![ToolTip recorded demo](../assets/casts/components/tool_tip.gif)
 
-See [`examples/gallery/examples/ToolTip.qml`](../../examples/gallery/examples/ToolTip.qml) (`./build/examples/gallery/qmltui_gallery --example ToolTip`, or open in the [WebAssembly Playground](../playground.md?example=ToolTip.qml)).
+See [`examples/gallery/examples/ToolTip.qml`](../../examples/gallery/examples/ToolTip.qml) (`./build/examples/gallery/qmltui_gallery --example ToolTip`).

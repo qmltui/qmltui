@@ -72,4 +72,4 @@ Panel to get a titled frame.
 
 ![Panel recorded demo](../assets/casts/components/panel.gif)
 
-See [`examples/gallery/examples/Panel.qml`](../../examples/gallery/examples/Panel.qml) (`./build/examples/gallery/qmltui_gallery --example Panel`, or open in the [WebAssembly Playground](../playground.md?example=Panel.qml)).
+See [`examples/gallery/examples/Panel.qml`](../../examples/gallery/examples/Panel.qml) (`./build/examples/gallery/qmltui_gallery --example Panel`).

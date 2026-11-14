@@ -59,6 +59,4 @@ Use the returned spans in [Text.spans](text.md).
 
 ### Gallery Example
 
-![RichText recorded demo](../assets/casts/components/rich_text.gif)
-
-See [`examples/gallery/examples/Color.qml`](../../examples/gallery/examples/Color.qml) (`./build/examples/gallery/qmltui_gallery --example Color`, or open in the [WebAssembly Playground](../playground.md?example=Color.qml)).
+See [`examples/gallery/examples/Color.qml`](../../examples/gallery/examples/Color.qml) (`./build/examples/gallery/qmltui_gallery --example Color`).

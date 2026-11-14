@@ -14,14 +14,16 @@ cmake -S . -B build \
   -DQMLTUI_USE_SYSTEM_LIBVTERM=OFF
 ```
 
-Link `qmltui::pty_view` in `CMakeLists.txt` and import `QmlTui.PtyView` in QML:
+Link `qmltui::pty_view` (aliased as `QmlTui::PtyView`) in CMake and import `QmlTui.PtyView` in QML:
 
 ```cmake
 qt_add_qml_module(my_app
     URI MyApp
     VERSION 1.0
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::pty_view
+    DEPENDENCIES
+        TARGET qmltui::core
+        TARGET qmltui::pty_view
 )
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::pty_view)
 ```
@@ -36,9 +38,9 @@ target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::pty
 - `terminalType`: sets `TERM` inside the PTY (defaults to `"xterm-256color"`, along with `COLORTERM=truecolor` and `TERM_PROGRAM=qmltui`).
 - `autoStart`: starts the child process automatically when the QML component completes, or call `start()`, `terminate()` (`SIGTERM`), and `kill()` (`SIGKILL`) explicitly.
 
-## Key Interception, `sendText()`, and Scrollback
+## Key Interception, Focus Escape, `sendText()`, and Scrollback
 
-Because a focused `PtyView` forwards ordinary keystrokes (`Q`, `Escape`, arrows, `Ctrl+C`) to the child PTY, attach `Keys.priority: Keys.BeforeItem` to intercept host application shortcuts before the PTY consumes them:
+While running and focused, `PtyView` forwards `Tab`, printable keys (`Q`), `Escape`, arrow keys, and `Ctrl+C` directly to the child PTY so interactive programs inside the shell work naturally. Always provide a host `Shortcut` (such as `Shortcut { sequence: "Ctrl+Q"; ... }` or a focus-switching chord) or attach `Keys.priority: Keys.BeforeItem` so keyboard users can move focus out of `PtyView` or exit the host application:
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -118,6 +120,6 @@ Child processes can emit Operating System Command (OSC) sequences. `PtyView` gat
 
 `PtyView` renders its internal `libvterm` screen and scrollback rows directly into the host `TextGridBuffer` during paint. In [`qmltui::Runner`](testing.md) scenarios, inspect child process output on the committed terminal frame using `app.waitForText("...", timeoutMs)` (which uses a wall-clock timeout for child OS processes even when `--clock virtual` is active), `app.frameText()`, or `app.item("pty")` scoped assertions.
 
-See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), and [`PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`).
+See the [PtyView QML Reference](../qml-types/ptyview.md), the [PtyView C++ Reference](../cpp-classes/ptyview.md), [`PtyView.qml`](../../examples/gallery/examples/PtyView.qml) (`./build/examples/gallery/qmltui_gallery --example PtyView`), and the integrated shell drawer in [`file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) (`qmltui/apps`).
 
 ![PtyView recorded demo](../assets/casts/components/pty_view.gif)

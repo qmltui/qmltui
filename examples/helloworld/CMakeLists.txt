@@ -11,18 +11,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT TARGET qmltui::core)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
     qt_standard_project_setup(REQUIRES 6.8)
+    include(CTest)
 
     # --------------------------------------------------------------------------
     # Option 1: FetchContent (downloads and builds QmlTui from source)
     # --------------------------------------------------------------------------
-    set(QMLTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(QMLTUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(QMLTUI_ENABLE_IMAGE OFF CACHE BOOL "" FORCE)
     include(FetchContent)
     FetchContent_Declare(
         QmlTui
-        GIT_REPOSITORY https://github.com/qmltui-dev/qmltui.git
-        GIT_TAG        v0.5.0
+        GIT_REPOSITORY https://github.com/qmltui/qmltui.git
+        GIT_TAG        main # Pin a release tag (e.g. v0.5.0) once published
     )
     FetchContent_MakeAvailable(QmlTui)
 
@@ -33,12 +31,15 @@ if(NOT TARGET qmltui::core)
     # replace the FetchContent block above with:
     #
     #   find_package(QmlTui 0.5 REQUIRED)
-    #   list(APPEND QT_QML_IMPORT_PATH "${QmlTui_QML_IMPORT_PATH}")
     #
     # Note: Qt's `qt_add_qml_module(DEPENDENCIES TARGET ...)` only accepts
     # non-imported build-tree targets. When using `find_package(QmlTui)`, omit
-    # `DEPENDENCIES TARGET qmltui::core` from `qt_add_qml_module(...)` below.
+    # `DEPENDENCIES TARGET qmltui::core` from `qt_add_qml_module(...)` below
+    # (`find_package(QmlTui)` adds `QmlTui_QML_IMPORT_PATH` to
+    # `QT_QML_IMPORT_PATH` automatically).
 endif()
+
+set(QT_QML_GENERATE_QMLLS_INI ON)
 
 qt_add_executable(hello_qmltui main.cpp)
 qt_add_qml_module(hello_qmltui

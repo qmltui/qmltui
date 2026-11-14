@@ -52,6 +52,27 @@ Column {
 
         Text {
             width: 10
+            text: "line"
+            color: "#c9d1d9"
+        }
+
+        ProgressBar {
+            width: 30
+            from: 0
+            to: 100
+            value: progressDemo.progress
+            style: "line"
+            color: "#38bdf8"
+            trackColor: "#30363d"
+            showPercentage: true
+        }
+    }
+
+    Row {
+        spacing: 2
+
+        Text {
+            width: 10
             text: "segmented"
             color: "#c9d1d9"
         }

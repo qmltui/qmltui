@@ -63,4 +63,4 @@ stops further propagation to items beneath or behind in the stacking order.
 
 ![MouseArea recorded demo](../assets/casts/components/mouse_area.gif)
 
-See [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml) (`./build/examples/gallery/qmltui_gallery --example MouseArea`, or open in the [WebAssembly Playground](../playground.md?example=MouseArea.qml)).
+See [`examples/gallery/examples/MouseArea.qml`](../../examples/gallery/examples/MouseArea.qml) (`./build/examples/gallery/qmltui_gallery --example MouseArea`).

@@ -28,7 +28,7 @@ While a session is in raw mode, `PosixTerminalBackend` installs async-signal-saf
 
 ## Terminal-Safe Qt Diagnostics
 
-`TerminalEngine` installs a process-wide Qt message router (`QtMessageRouting`) while terminal engines exist. Messages pass through normally until a renderer enters the alternate screen. While any alternate-screen session is active, non-fatal Qt warnings and debug messages are buffered in memory so `stderr` writes cannot corrupt ANSI cursor positioning. When the last session exits the alternate screen, buffered messages are replayed through the application's previous message handler.
+`TerminalEngine` installs a process-wide Qt message router (`QtMessageRouting`) while terminal engines exist. Messages pass through normally until a renderer enters the alternate screen. While any alternate-screen session is active and `stderr` points to an interactive TTY, non-fatal Qt warnings and `console.log()` messages are buffered in memory so `stderr` writes cannot corrupt ANSI cursor positioning, and replayed on exit. When `stderr` is redirected to a file or pipe (`./app 2> debug.log`), when `QMLTUI_LOG_FILE=<path>` is set, or when C++ code registers a sink with `QtMessageRouting::install()`, diagnostics stream immediately.
 
 `TerminalDevice` only handles raw terminal byte I/O and does not own logging policy. Fatal Qt messages are forwarded immediately before aborting.
 
@@ -70,6 +70,7 @@ Terminal {
 
         implicitWidth: labelItem.implicitWidth + 4
         implicitHeight: 3
+        focusPolicy: Qt.StrongFocus
         focus: true
         border {
             color: activeFocus ? "cyan" : "gray"

@@ -6,14 +6,24 @@ QmlTui provides its own QtGui-free `color` value type. Use string literals or th
 alpha channels:
 
 ```qml
+pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
 
 Terminal {
+    id: root
     property color accent: QmlTui.rgba(0.2, 0.4, 0.6, 1.0)
-    Text { text: "Custom color"; color: parent.accent }
+
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape) { Qt.quit(); event.accepted = true }
+        if (event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
+        }
+    }
+
+    Text {
+        text: "Custom color"
+        color: root.accent
     }
 }
 ```
@@ -72,14 +82,17 @@ Button {
 
 | Component | Color overrides |
 | :--- | :--- |
-| Text, TextInput, TextArea, Canvas, BusyIndicator, Sparkline | `color` |
-| Rectangle and rectangle-based controls (Panel) | `color`, `border.color` (Panel border slots take `Item`s styled via their own properties) |
-| Button, CheckBox, RadioButton, Slider, SpinBox | `textColor` |
+| Text, TextInput, TextArea, Canvas, BusyIndicator | `color` (`Text` also has `backgroundColor`) |
+| Sparkline | `color`, `backgroundColor` |
+| Rectangle and Panel | `color`, `border.color` (`Panel` border slots take `Item`s styled via their own properties) |
+| Button | `textColor`, `color`, `borderColor` |
+| CheckBox, RadioButton, SpinBox | `textColor` |
+| Slider, ProgressBar | `color`, `trackColor`, `textColor` |
 | ComboBox | `textColor`, `color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
-| ProgressBar | `color`, optional gradient/threshold colors |
-| TabBar, TableView, TreeView | `textColor`, `selectedTextColor`, `selectionColor` (background) |
-| ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color` |
+| TabBar, TableView, TreeView | `textColor`, `selectedTextColor`, `selectionColor` (background; `TabBar` also has `color`) |
+| PtyView | `textColor`, `backgroundColor`, `palette` |
+| ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color`, `ToolTip.borderColor` |
 
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
 its configured color. `Text.dim` also exposes this attribute directly. TextInput
@@ -90,10 +103,6 @@ TabBar and the built-in TableView/TreeView selection render with reverse video
 until selection colors are explicitly supplied. TextInput also supports explicit
 selection, selected-text, placeholder, and cursor colors. Custom delegates own
 their appearance, including selection styling.
-
-Core `Palette`, `TerminalPalette`, `ResolvedPalette`, `Item.palette`, and Controls
-`DarkPalette` are no longer provided. Replace earlier palette bindings with
-ordinary color bindings or application-defined components.
 
 ## Gradients (`Gradient` and `GradientStop`)
 

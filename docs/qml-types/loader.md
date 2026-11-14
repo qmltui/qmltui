@@ -70,4 +70,4 @@ or inside the `onLoaded` signal handler.
 
 ![Loader recorded demo](../assets/casts/components/loader.gif)
 
-See [`examples/gallery/examples/Loader.qml`](../../examples/gallery/examples/Loader.qml) (`./build/examples/gallery/qmltui_gallery --example Loader`, or open in the [WebAssembly Playground](../playground.md?example=Loader.qml)).
+See [`examples/gallery/examples/Loader.qml`](../../examples/gallery/examples/Loader.qml) (`./build/examples/gallery/qmltui_gallery --example Loader`).

@@ -10,7 +10,7 @@ By default (`QMLTUI_ENABLE_PRIVATE_QT=ON`), QmlTui automatically links `Qt6::Qml
 | :--- | :--- | :--- |
 | `Item.states` and `state` | Supported | Supported (shared controller) |
 | `StateGroup` | Supported | Supported |
-| Map-based `PropertyChanges { properties: { ... } }` | Supported | Supported |
+| Map-based `PropertyChanges { properties: ({ ... }) }` | Supported | Supported |
 | Direct assignment syntax `PropertyChanges { target.prop: val }` | Not available | Supported |
 | `PropertyChanges.explicit` | Ignored | Supported (`false` default reactive) |
 | Value restoration | Snapshot-based | Binding-aware & snapshot-based |
@@ -76,9 +76,9 @@ Terminal {
                 when: root.expanded
                 PropertyChanges {
                     target: card
-                    properties: {
+                    properties: ({
                         "width": 48
-                    }
+                    })
                 }
             }
         ]
@@ -119,15 +119,15 @@ By default (`explicit: false`), expressions remain reactive while the state is a
 
 ### Map-Based Declarations (All Builds)
 
-The map form works in both public-Qt and private-Qt builds:
+The map form works in both public-Qt and private-Qt builds. Wrap the object literal in parentheses (`properties: ({ ... })`) so QML parses dynamic binding expressions rather than a statement block:
 
 ```qml
 PropertyChanges {
     target: label
-    properties: {
+    properties: ({
         "text": root.status,
         "color": "cyan"
-    }
+    })
 }
 ```
 
@@ -135,7 +135,7 @@ Inside an `Item`, omitting `target` defaults to the enclosing item. Inside a `St
 
 ## Binding and Restoration Lifecycle
 
-When entering a state, preexisting bindings on modified properties are suspended rather than overwritten. On exiting to the base state (or transitioning through chained states `A -> B -> base`), `restoreEntryValues: true` (the default) restores the original base binding or value. Setting `restoreEntryValues: false` on a `State` leaves the modified properties at their state values upon exit.
+When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, entering a state suspends preexisting bindings on modified properties rather than overwriting them, and exiting to the base state (or transitioning through chained states `A -> B -> base`) with `restoreEntryValues: true` (the default) restores the original base binding or value. When built with `QMLTUI_ENABLE_PRIVATE_QT=OFF`, state exit restores the snapshotted entry value via `setProperty()`, which replaces prior QML bindings on that property with a static value. Setting `restoreEntryValues: false` on a `State` leaves the modified properties at their state values upon exit.
 
 ## Independent State Controllers
 

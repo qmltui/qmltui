@@ -57,6 +57,4 @@ Cells spanned by the gradient interpolate RGB color components between adjacent 
 
 ### Gallery Example
 
-![Rectangle recorded demo](../assets/casts/components/rectangle.gif)
-
-See [`examples/gallery/examples/Gradient.qml`](../../examples/gallery/examples/Gradient.qml) (`./build/examples/gallery/qmltui_gallery --example Gradient`, or open in the [WebAssembly Playground](../playground.md?example=Gradient.qml)).
+See [`examples/gallery/examples/Gradient.qml`](../../examples/gallery/examples/Gradient.qml) (`./build/examples/gallery/qmltui_gallery --example Gradient`).

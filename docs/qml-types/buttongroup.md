@@ -51,4 +51,4 @@ property, no signals and no methods. Note that removing an item from
 
 ![RadioButton recorded demo](../assets/casts/components/radio_button.gif)
 
-See [`examples/gallery/examples/RadioButton.qml`](../../examples/gallery/examples/RadioButton.qml) (`./build/examples/gallery/qmltui_gallery --example RadioButton`, or open in the [WebAssembly Playground](../playground.md?example=RadioButton.qml)).
+See [`examples/gallery/examples/RadioButton.qml`](../../examples/gallery/examples/RadioButton.qml) (`./build/examples/gallery/qmltui_gallery --example RadioButton`).

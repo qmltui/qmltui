@@ -201,16 +201,18 @@ Terminal {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
+            Qt.quit();
+            event.accepted = true;
         }
     }
 }
 ```
 
+Global shortcuts (`Shortcut`) accept either portable chord strings (`sequence: "Ctrl+Q"`,
+`"Ctrl+Shift+P"`, `"F5"`) or Qt key bitmasks (`sequence: Qt.ControlModifier | Qt.Key_Q`).
 Do not assume `Ctrl+C` terminates the process: QmlTui raw mode disables
 terminal-generated control signals. `TextInput` and `TextArea` use `Ctrl+C`
-for copying. Applications must provide an explicit quit path—normally
+for copying. Applications must provide an explicit quit path, normally
 contextual `Escape` and `Q` or `Ctrl+Q` outside editable input. Handle `Ctrl+C`
 explicitly only when the application's interaction model permits it.
 
@@ -221,14 +223,14 @@ else consumed the key. When a text input has focus, do not treat `Q` as quit.
 ```qml
 Keys.onPressed: event => {
     if (event.key !== Qt.Key_Escape)
-        return
+        return;
     if (helpModal.visible)
-        helpModal.visible = false
+        helpModal.visible = false;
     else if (filterInput.text.length > 0)
-        filterInput.text = ""
+        filterInput.text = "";
     else
-        Qt.quit()
-    event.accepted = true
+        Qt.quit();
+    event.accepted = true;
 }
 ```
 
@@ -251,7 +253,7 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `Keys` (attached), `KeyEvent`, `MouseEvent`, `State`, `StateGroup`, `Transition`,
 `PropertyChanges`, `Gradient`, `GradientStop`, `Easing`, `Animation`,
 `PropertyAnimation`, `NumberAnimation`, `ColorAnimation`, `QmlTui` (singleton),
-`Clipboard` (singleton), `terminalCapabilities` (singleton), `color` (value type),
+`Clipboard` (singleton), `terminalCapabilities` (value type), `color` (value type),
 `span` (value type), `highlightRange` (value type).
 
 `Behavior` is available only with `QMLTUI_ENABLE_PRIVATE_QT=ON`.
@@ -288,7 +290,7 @@ Before finishing a QmlTui QML file:
    has focus.
 9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>`).
 10. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
-11. Signal handlers with arguments use arrow function syntax: `(event) => { ... }`.
+11. Signal handlers with arguments use arrow function syntax: `event => { ... }`.
 12. Visible behaviour is verified against the committed terminal frame using the
    `qmltui-dev-loop` skill, not only against a QML property.
 

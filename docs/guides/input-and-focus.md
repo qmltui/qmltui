@@ -34,15 +34,15 @@ FocusScope {
 
 ## Key Event Propagation
 
-Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) run on the item with `activeFocus`. When `event.accepted` is left `false`, the event bubbles up through ancestor items to the root `Terminal`.
+Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) run on the item with `activeFocus`. Unlike Qt Quick, specific-key handlers (`Keys.onEscapePressed`, `Keys.onReturnPressed`, etc.) start with `event.accepted = false`. Set `event.accepted = true;` whenever a handler consumes the key; when `event.accepted` remains `false`, the event bubbles up through ancestor items to the root `Terminal`.
 
 Set `Keys.priority: Keys.BeforeItem` to intercept keys before an item's built-in C++ handler runs (for example, to catch a shortcut before `TextInput` or `PtyView` consumes the keystroke). Set `Keys.forwardTo: [targetItem]` to forward unhandled keys from a search field or container directly to another item such as a `ListView` or `TableView`.
 
 ## Shortcuts and the Application Quit Path
 
-In terminal raw mode, `Ctrl+C` does not generate `SIGINT`—`TextInput` and `TextArea` use `Ctrl+C` for copying to the clipboard—and a root `Terminal` does not exit automatically on `Q` or `Escape`. Every application must provide an explicit keyboard quit path:
+In terminal raw mode, `Ctrl+C` does not generate `SIGINT` (`TextInput` and `TextArea` use `Ctrl+C` for copying to the clipboard), and a root `Terminal` does not exit automatically on `Q` or `Escape`. Every application must provide an explicit keyboard quit path:
 
-- Do not bind bare `"Q"` as a global [`Shortcut`](../qml-types/shortcut.md) when the scene contains an editable `TextInput` or `TextArea`, or typing `q` will quit the process. Use `Shortcut { key: "Ctrl+Q"; onActivated: Qt.quit() }` or handle `Qt.Key_Q` on the root `Terminal` after focused inputs have had a chance to accept the key.
+- [`Shortcut`](../qml-types/shortcut.md) accepts either a portable chord string (`sequence: "Ctrl+Q"`) or a Qt key combination bitmask (`sequence: Qt.ControlModifier | Qt.Key_Q`). Unmodified printable shortcuts are suppressed automatically while an editable `TextInput` or `TextArea` holds focus, whereas modified chords (`"Ctrl+Q"`) fire regardless of focus; prefer `"Ctrl+Q"` for global shortcuts or handle `Qt.Key_Q` on the root `Terminal` after focused items have had a chance to accept the key.
 - Handle `Escape` contextually: close open [`Dialog`](../qml-types/dialog.md) or [`Popup`](../qml-types/popup.md) overlays first, clear active filter text or cancel an in-progress action second, and call `Qt.quit()` only when nothing else consumed `Escape`.
 
 ```qml
@@ -55,7 +55,7 @@ Terminal {
     id: root
 
     Shortcut {
-        key: "Ctrl+Q"
+        sequence: "Ctrl+Q"
         onActivated: Qt.quit()
     }
 

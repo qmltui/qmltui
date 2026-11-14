@@ -25,7 +25,9 @@ ColorAnimation is a specialized [PropertyAnimation](propertyanimation.md) that
 smoothly transitions between color values by interpolating their RGBA channels.
 It is commonly used on properties like `color`, `textColor`, and `border.color`.
 
-Like all PropertyAnimations, it supports `duration`, `from`, `to`, and `easing`.
+Like all PropertyAnimations, it supports `duration`, `from`, `to`, `easing`, and
+`loops` (including `Animation.Infinite`). When running a standalone `ColorAnimation`
+outside a `Behavior` or `Transition`, set `from` explicitly.
 
 ### Example
 
@@ -35,4 +37,4 @@ Like all PropertyAnimations, it supports `duration`, `from`, `to`, and `easing`.
 
 ![Animation recorded demo](../assets/casts/components/animation.gif)
 
-See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`, or open in the [WebAssembly Playground](../playground.md?example=Animation.qml)).
+See [`examples/gallery/examples/Animation.qml`](../../examples/gallery/examples/Animation.qml) (`./build/examples/gallery/qmltui_gallery --example Animation`).

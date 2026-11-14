@@ -48,4 +48,4 @@ scrollable lists or tables, prefer [ListView](listview.md) or [TableView](tablev
 
 ![Repeater recorded demo](../assets/casts/components/repeater.gif)
 
-See [`examples/gallery/examples/Repeater.qml`](../../examples/gallery/examples/Repeater.qml) (`./build/examples/gallery/qmltui_gallery --example Repeater`, or open in the [WebAssembly Playground](../playground.md?example=Repeater.qml)).
+See [`examples/gallery/examples/Repeater.qml`](../../examples/gallery/examples/Repeater.qml) (`./build/examples/gallery/qmltui_gallery --example Repeater`).

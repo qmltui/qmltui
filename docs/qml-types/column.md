@@ -47,4 +47,4 @@ for flexible stretching and layout alignment, use [ColumnLayout](columnlayout.md
 
 ![Layouts recorded demo](../assets/casts/components/layouts.gif)
 
-See [`examples/gallery/examples/Layouts.qml`](../../examples/gallery/examples/Layouts.qml) (`./build/examples/gallery/qmltui_gallery --example Layouts`, or open in the [WebAssembly Playground](../playground.md?example=Layouts.qml)).
+See [`examples/gallery/examples/Layouts.qml`](../../examples/gallery/examples/Layouts.qml) (`./build/examples/gallery/qmltui_gallery --example Layouts`).

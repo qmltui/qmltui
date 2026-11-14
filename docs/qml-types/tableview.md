@@ -70,7 +70,8 @@ Displays tabular models with aligned cells, custom delegates, and connected term
 ## Detailed Description
 
 `showColumnGrid`, `showRowGrid`, and `showOuterBorder` are independent and default
-to `false`. Enable all three for a complete box-art table. The header underline
+to `false`. Its inherited [Item](item.md) `focusPolicy` defaults to `Qt.StrongFocus`.
+Enable all three grid flags for a complete box-art table. The header underline
 is always present when a header is shown. `gridStyle` accepts `TableView.Single`,
 `TableView.Double`, and `TableView.Ascii`. Structural lines, including the header underline, use `gridColor` (falling back to `textColor`)
 and the terminal background; `headerColor` applies to heading text only.
@@ -169,4 +170,4 @@ has a built-in `40×10` implicit size.
 
 ![TableView recorded demo](../assets/casts/components/table_view.gif)
 
-See [`examples/gallery/examples/TableView.qml`](../../examples/gallery/examples/TableView.qml) (`./build/examples/gallery/qmltui_gallery --example TableView`, or open in the [WebAssembly Playground](../playground.md?example=TableView.qml)).
+See [`examples/gallery/examples/TableView.qml`](../../examples/gallery/examples/TableView.qml) (`./build/examples/gallery/qmltui_gallery --example TableView`).

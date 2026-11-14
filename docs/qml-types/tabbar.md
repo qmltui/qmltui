@@ -41,7 +41,7 @@ reverse video off and uses the given colours, with the unset one falling back
 to `color` or `textColor`. Tabs that do not fit within `width` are not drawn,
 and the whole bar is dimmed while the item is disabled.
 
-TabBar is focusable. While it has focus, Left and Right move `currentIndex`
+TabBar is focusable (`focusPolicy: Qt.StrongFocus`). While it has focus, Left and Right move `currentIndex`
 by one and accept the key; the index is clamped at both ends and does not
 wrap. A mouse press gives the bar focus and selects the tab under the pointer,
 using the same 4-cell padding plus 1-cell separator layout as the painter.
@@ -61,4 +61,4 @@ switch pages with the tabs.
 
 ![TabBar recorded demo](../assets/casts/components/tab_bar.gif)
 
-See [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml) (`./build/examples/gallery/qmltui_gallery --example TabBar`, or open in the [WebAssembly Playground](../playground.md?example=TabBar.qml)).
+See [`examples/gallery/examples/TabBar.qml`](../../examples/gallery/examples/TabBar.qml) (`./build/examples/gallery/qmltui_gallery --example TabBar`).

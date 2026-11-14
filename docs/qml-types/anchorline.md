@@ -48,4 +48,4 @@ as targets to [Anchors](anchors.md) properties (such as `anchors.left: parent.le
 
 ![Layouts recorded demo](../assets/casts/components/layouts.gif)
 
-See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`, or open in the [WebAssembly Playground](../playground.md?example=Anchors.qml)).
+See [`examples/gallery/examples/Anchors.qml`](../../examples/gallery/examples/Anchors.qml) (`./build/examples/gallery/qmltui_gallery --example Anchors`).

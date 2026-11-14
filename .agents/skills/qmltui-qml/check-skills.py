@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -88,7 +90,9 @@ def common_type_map() -> dict[str, set[str]]:
         module = heading.group(1)
         end = headings[index + 1].start() if index + 1 < len(headings) else len(section)
         block = section[heading.end():end]
-        result[module] = set(re.findall(r"`([A-Z][A-Za-z0-9]*)`", block))
+        upper_types = set(re.findall(r"`([A-Z][A-Za-z0-9]*)`", block))
+        value_types = set(re.findall(r"`([a-z][A-Za-z0-9]*)`\s*\(value type\)", block))
+        result[module] = upper_types | value_types
     return result
 
 
@@ -172,8 +176,41 @@ def check_qml_types(build_dir: Path, errors: list[str]) -> int:
     return checked
 
 
+def check_playground_types(errors: list[str]) -> None:
+    candidates = (
+        REPO_ROOT / "examples/wasm/www/types.json",
+        REPO_ROOT.parent / "qmltui-website/wasm/www/types.json",
+        REPO_ROOT.parent / "website/wasm/www/types.json",
+    )
+    types_json_path = next((p for p in candidates if p.is_file()), None)
+    if types_json_path is None:
+        return
+    data = json.loads(types_json_path.read_text(encoding="utf-8"))
+    modules = common_type_map()
+    for module in ("QmlTui", "QmlTui.Controls", "QmlTui.Image"):
+        expected = modules.get(module, set())
+        actual_mod = set(data.get("modules", {}).get(module, []))
+        actual_types = {
+            name
+            for name, entry in data.get("types", {}).items()
+            if entry.get("module") == module
+        }
+        if actual_mod != expected:
+            missing = sorted(expected - actual_mod)
+            extra = sorted(actual_mod - expected)
+            errors.append(
+                f"types.json modules[{module!r}] mismatch: missing={missing}, extra={extra}"
+            )
+        if actual_types != expected:
+            missing = sorted(expected - actual_types)
+            extra = sorted(actual_types - expected)
+            errors.append(
+                f"types.json types for {module} mismatch: missing={missing}, extra={extra}"
+            )
+
+
 def check_diff_whitespace(errors: list[str]) -> None:
-    if not (REPO_ROOT / ".git").exists():
+    if not (REPO_ROOT / ".git").exists() or shutil.which("git") is None:
         return
     for extra_args, label in (([], "unstaged"), (["--cached"], "staged")):
         result = subprocess.run(
@@ -205,6 +242,7 @@ def main() -> int:
     links = check_markdown_links(errors)
     targets = check_example_targets(errors)
     qml_types = check_qml_types(build_dir, errors)
+    check_playground_types(errors)
     check_diff_whitespace(errors)
 
     if errors:

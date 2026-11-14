@@ -52,23 +52,23 @@ PropertyChanges {
 }
 ```
 
-2. **Map-based syntax** (supported in all builds):
+2. **Map-based syntax** (supported in all builds; wrap dynamic JavaScript object literals in parentheses so QML parses them as expressions rather than blocks):
 
 ```qml
 PropertyChanges {
     target: label
-    properties: { "text": root.status }
+    properties: ({ "text": root.status })
 }
 ```
 
-Mixing direct property assignments and `properties: { ... }` in a single
+Mixing direct property assignments and `properties: ({ ... })` in a single
 `PropertyChanges` object is rejected at compile time.
 
 ### Binding Lifecycle and Restoration
 
 When entering a state:
-- Any preexisting binding on the target property is suspended (not destroyed).
-- If `explicit` is `false` (default), direct expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, expressions are evaluated once on entry.
+- With `QMLTUI_ENABLE_PRIVATE_QT=ON`, any preexisting QML binding on the target property is suspended (not destroyed) and restored when the state exits (`restoreEntryValues: true`). With `QMLTUI_ENABLE_PRIVATE_QT=OFF`, entry values are captured as snapshots and restored via `setProperty()`, replacing any preexisting binding on that property.
+- If `explicit` is `false` (default), direct expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, expressions are evaluated once on entry (`explicit` requires `QMLTUI_ENABLE_PRIVATE_QT=ON`).
 - When exiting the state, if `restoreEntryValues` is `true` (default), original values or bindings are restored and re-evaluated. If `restoreEntryValues` is `false`, the values applied by the state are retained.
 
 ### Example
@@ -79,4 +79,4 @@ When entering a state:
 
 ![States recorded demo](../assets/casts/components/states.gif)
 
-See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`, or open in the [WebAssembly Playground](../playground.md?example=States.qml)).
+See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`).

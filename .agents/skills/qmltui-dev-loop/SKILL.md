@@ -30,15 +30,16 @@ example.
 QmlTui requires Qt 6.8 or newer. A normal in-tree development configuration is:
 
 ```bash
-rtk cmake -S . -B build \
+cmake -S . -B build \
   -DQMLTUI_BUILD_TESTS=ON \
   -DQMLTUI_BUILD_EXAMPLES=ON
-rtk cmake --build build
+cmake --build build
 ```
 
 `QMLTUI_BUILD_TESTS=ON` builds `qmltui::runner` and the repository test suites.
-Use `-DQMLTUI_ENABLE_RUNNER=ON` only when Runner must be built and installed
-without the repository tests. Use `-DQMLTUI_ENABLE_IMAGE=ON` for the optional
+`QMLTUI_ENABLE_RUNNER` defaults to `ON` when QmlTui is the top-level project or
+when `BUILD_TESTING=ON`; set `-DQMLTUI_ENABLE_RUNNER=OFF` to exclude Runner from
+production builds. Use `-DQMLTUI_ENABLE_IMAGE=ON` for the optional
 `QmlTui.Image` module and `-DQMLTUI_ENABLE_PTYVIEW=ON` only for the optional
 PTY-backed `PtyView` module.
 
@@ -51,8 +52,8 @@ After an edit, build the affected target first. Rebuild the configured tree
 after Core, public API, QML-module, or CMake changes:
 
 ```bash
-rtk cmake --build build --target <target>
-rtk cmake --build build
+cmake --build build --target <target>
+cmake --build build
 ```
 
 ## Select and Run Tests
@@ -60,18 +61,18 @@ rtk cmake --build build
 Discover exact CTest names and labels (`Unit`, `Runner`, `Demo`) instead of guessing:
 
 ```bash
-rtk ctest --test-dir build -N
-rtk ctest --test-dir build -N -L Unit
-rtk ctest --test-dir build -N -L Runner
+ctest --test-dir build -N
+ctest --test-dir build -N -L Unit
+ctest --test-dir build -N -L Runner
 ```
 
 Run a focused test, then the relevant label or configured suite:
 
 ```bash
-rtk ctest --test-dir build -R '^exact_test_name$' --output-on-failure
-rtk ctest --test-dir build -L Unit --output-on-failure
-rtk ctest --test-dir build -L Runner --output-on-failure
-rtk ctest --test-dir build --output-on-failure
+ctest --test-dir build -R '^exact_test_name$' --output-on-failure
+ctest --test-dir build -L Unit --output-on-failure
+ctest --test-dir build -L Runner --output-on-failure
+ctest --test-dir build -LE Demo --output-on-failure
 ```
 
 ## Integrate Application Scenarios
@@ -130,41 +131,51 @@ constructed embedded runners and framework scenarios and failure contracts.
 
 ## Closed-Loop Inspection
 
-Environment modes are mutually exclusive: set exactly one of `QMLTUI_RUNNER_SCRIPT`,
-`QMLTUI_RUNNER_EVAL`, or `QMLTUI_RUNNER_CAPTURE_AFTER_MS`. They work only when the executable contains
-`qmltui::runner`. For reproducible direct runs, set both viewport dimensions and
-an explicit artifact directory:
+Prefer the `qmltui-runner` CLI (`./build/tools/qmltui-runner/qmltui-runner`) for
+ad-hoc captures, inline evaluations, and scenario runs without manually setting
+environment variables:
 
 ```bash
-rtk env \
-  QMLTUI_RUNNER_CAPTURE_AFTER_MS=500 \
+./build/tools/qmltui-runner/qmltui-runner \
+  --capture-after-ms 500 \
+  --columns 80 --rows 24 \
+  --artifacts /tmp/qmltui-capture \
+  -- ./build/path/to/testing-linked-app
+cat /tmp/qmltui-capture/capture.txt
+cat /tmp/qmltui-capture/capture_styled.txt
+cat /tmp/qmltui-capture/result.json
+```
+
+Environment modes are also available directly and are mutually exclusive: set
+exactly one of `QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, or
+`QMLTUI_RUNNER_CAPTURE_AFTER_MS`. They work only when the executable links
+`qmltui::runner`:
+
+```bash
+QMLTUI_RUNNER_CAPTURE_AFTER_MS=500 \
   QMLTUI_RUNNER_COLUMNS=80 \
   QMLTUI_RUNNER_ROWS=24 \
   QMLTUI_RUNNER_ARTIFACT_DIR=/tmp/qmltui-capture \
   ./build/path/to/testing-linked-app
-rtk read /tmp/qmltui-capture/capture.txt
-rtk read /tmp/qmltui-capture/capture_styled.txt
-rtk json /tmp/qmltui-capture/result.json
 ```
 
-`QMLTUI_RUNNER_CAPTURE_AFTER_MS` waits for the app to settle, then writes the frame as
+`--capture-after-ms` (`QMLTUI_RUNNER_CAPTURE_AFTER_MS`) waits for the app to settle, then writes the frame as
 text and as a styled snapshot. Use `0` for the first committed frame; use a few
 hundred milliseconds when timers or models fill the screen after start.
 
-Use inline evaluation for a short exploratory action sequence:
+Use `--eval` (`QMLTUI_RUNNER_EVAL`) for a short exploratory action sequence:
 
 ```bash
-rtk env \
-  QMLTUI_RUNNER_EVAL="app.clickText('Pay'); app.captureText('after-pay.txt');" \
-  QMLTUI_RUNNER_COLUMNS=80 \
-  QMLTUI_RUNNER_ROWS=24 \
-  QMLTUI_RUNNER_ARTIFACT_DIR=/tmp/qmltui-eval \
-  ./build/path/to/testing-linked-app
-rtk read /tmp/qmltui-eval/after-pay.txt
+./build/tools/qmltui-runner/qmltui-runner \
+  --eval "app.clickText('Pay'); app.captureText('after-pay.txt');" \
+  --columns 80 --rows 24 \
+  --artifacts /tmp/qmltui-eval \
+  -- ./build/path/to/testing-linked-app
+cat /tmp/qmltui-eval/after-pay.txt
 ```
 
-Runs requested through the environment are quiet by default. Add
-`QMLTUI_RUNNER_LIVE=1` only for a human watching a real terminal; automated checks
+Runs requested through `qmltui-runner` or the environment are quiet by default. Add
+`--live` (`QMLTUI_RUNNER_LIVE=1`) only for a human watching a real terminal; automated checks
 should normally inspect artifacts. A directly constructed embedded runner calls
 `qmltui::Runner::useEmbeddedScenario()` before QML loads to get the same quiet
 terminal (pass `true` for live output, or call `setLiveOutput()` on the runner);
@@ -173,7 +184,7 @@ The variables still work for such a binary and `QMLTUI_RUNNER_LIVE=1` overrides 
 quiet default at run time:
 
 ```bash
-rtk env QMLTUI_RUNNER_LIVE=1 ./build/path/to/embedded-test-runner
+QMLTUI_RUNNER_LIVE=1 ./build/path/to/embedded-test-runner
 ```
 
 There is no image capture: `Runner` needs only `QCoreApplication`. For
@@ -270,7 +281,7 @@ trace and failure message before changing code after a failure.
 QmlTui QML should use QmlTui types rather than adding a `QtQuick` import. Test the
 committed terminal output, not only a QML property change.
 
-Before handoff, run `rtk git diff --check`. Report targets built, focused and
+Before handoff, run `git diff --check`. Report targets built, focused and
 regression tests run, artifact paths inspected, live rendering when used, and
 relevant configurations not exercised. Preserve unrelated work in a dirty
 worktree.

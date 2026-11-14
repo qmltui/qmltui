@@ -97,4 +97,4 @@ at paint time, including to spans that explicitly set `dim: false`.
 
 ![Text recorded demo](../assets/casts/components/text.gif)
 
-See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`, or open in the [WebAssembly Playground](../playground.md?example=Text.qml)).
+See [`examples/gallery/examples/Text.qml`](../../examples/gallery/examples/Text.qml) (`./build/examples/gallery/qmltui_gallery --example Text`).

@@ -35,4 +35,4 @@ When a `FocusScope` receives active focus, focus is automatically forwarded to t
 
 ![FocusScope recorded demo](../assets/casts/components/focus_scope.gif)
 
-See [`examples/gallery/examples/FocusScope.qml`](../../examples/gallery/examples/FocusScope.qml) (`./build/examples/gallery/qmltui_gallery --example FocusScope`, or open in the [WebAssembly Playground](../playground.md?example=FocusScope.qml)).
+See [`examples/gallery/examples/FocusScope.qml`](../../examples/gallery/examples/FocusScope.qml) (`./build/examples/gallery/qmltui_gallery --example FocusScope`).

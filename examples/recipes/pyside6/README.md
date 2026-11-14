@@ -7,10 +7,11 @@ Demonstrates hosting a QmlTui application from Python using `PySide6` (`QCoreApp
 - **Contextual quit path**: `Escape` clears `filterInput.text` first and exits when the filter is empty; `Q` exits when `filterInput` does not hold active focus.
 
 ```bash
-# Build QmlTui QML modules
-cmake -S . -B build
-cmake --build build --target QmlTuiCore QmlTuiControls
+# Build QmlTui QML plugins with public Qt APIs only (avoids private-API version
+# mismatches when PySide6 wheels bundle their own Qt libraries)
+cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF
+cmake --build build --target QmlTuiCoreplugin QmlTuiControlsplugin
 
-# Run with a Python environment containing PySide6 (matching your Qt 6 version)
+# Run with a Python environment containing PySide6 (matching your Qt 6 minor version)
 python3 examples/recipes/pyside6/main.py
 ```

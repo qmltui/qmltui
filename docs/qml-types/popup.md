@@ -60,7 +60,7 @@ An unpainted item drawn above all ordinary items that can trap input, dim the ba
 
 ## Detailed Description
 
-Popup is an [Item](item.md) that starts hidden, has no default background
+Popup is an [Item](item.md) that starts hidden (`visible: false`), has no default background
 fill, and is painted by the [Terminal](terminal.md) after all ordinary
 items regardless of where it sits in the item tree. Because Popup itself
 is unpainted, callers compose a [Rectangle](rectangle.md) child inside it
@@ -110,4 +110,4 @@ creates a non-modal Popup internally.
 
 ![Popup recorded demo](../assets/casts/components/popup.gif)
 
-See [`examples/gallery/examples/Popup.qml`](../../examples/gallery/examples/Popup.qml) (`./build/examples/gallery/qmltui_gallery --example Popup`, or open in the [WebAssembly Playground](../playground.md?example=Popup.qml)).
+See [`examples/gallery/examples/Popup.qml`](../../examples/gallery/examples/Popup.qml) (`./build/examples/gallery/qmltui_gallery --example Popup`).

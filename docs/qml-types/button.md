@@ -19,8 +19,16 @@ A focusable, bordered action button that emits `clicked()` on Enter, Space or a 
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [AbstractButton](abstractbutton.md) |
 
-Button adds no members of its own; every property, signal and method is
-inherited from [AbstractButton](abstractbutton.md).
+## Properties
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `color` | `color` | `QmlTui.defaultColor` | Holds the fill color of the default `background` rectangle. |
+| `borderColor` | `color` | `QmlTui.defaultColor` | Holds the border color of the default `background` rectangle. |
+
+All other properties (`text`, `textColor`, `down`, `pressed`, `hovered`,
+`highlighted`, `background`, `contentItem`, and `checkable`), signals, and methods
+are inherited from [AbstractButton](abstractbutton.md).
 
 ## Detailed Description
 
@@ -41,14 +49,14 @@ that is while a mouse button is held on it, the label is drawn in reverse
 video, so a click flashes and the double border that remains afterwards is
 focus, which a click also gives the button. The label is bold while the control has active focus, is `hovered`, or is `highlighted`.
 Hover is decoration only: keyboard focus reaches every state, and terminals or
-recordings without motion reporting never show it. `textColor`, the
-background colour and the border colour default to `"default"`, the terminal's
+recordings without motion reporting never show it. `textColor`, `color`, and
+`borderColor` default to `QmlTui.defaultColor` (`"default"`), the terminal's
 own colours.
 
-To restyle a button, assign `background`, `contentItem`, or both; the button's
-properties are reachable through its `id`. Setting `color` or `border` on the
-Button itself is no longer possible, since those belonged to the Rectangle it
-used to be:
+For quick color overrides, set `textColor`, `color`, and `borderColor` directly
+on the Button. For structural restyling (such as removing the border on a
+3-row button or replacing the label layout), assign `background`, `contentItem`,
+or both:
 
 ```qml
 Button {
@@ -77,4 +85,4 @@ choice out of several [RadioButton](radiobutton.md) with a
 
 ![Button recorded demo](../assets/casts/components/button.gif)
 
-See [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml) (`./build/examples/gallery/qmltui_gallery --example Button`, or open in the [WebAssembly Playground](../playground.md?example=Button.qml)).
+See [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml) (`./build/examples/gallery/qmltui_gallery --example Button`).

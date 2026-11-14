@@ -57,4 +57,23 @@ if(QMLTUI_BUILD_TESTS)
         LABELS Unit
         TIMEOUT 120
     )
+
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        add_test(
+            NAME test_check_skills
+            COMMAND "${Python3_EXECUTABLE}"
+                "${qmltui_SOURCE_DIR}/.agents/skills/qmltui-qml/check-skills.py"
+                --build-dir "${CMAKE_BINARY_DIR}"
+        )
+        set_tests_properties(test_check_skills PROPERTIES LABELS Unit)
+
+        add_test(
+            NAME test_check_docs
+            COMMAND "${Python3_EXECUTABLE}"
+                "${qmltui_SOURCE_DIR}/scripts/check_docs.py"
+                --build-dir "${CMAKE_BINARY_DIR}"
+        )
+        set_tests_properties(test_check_docs PROPERTIES LABELS Unit)
+    endif()
 endif()

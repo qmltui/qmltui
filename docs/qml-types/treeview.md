@@ -67,7 +67,8 @@ Displays expandable hierarchical model data. [More...](#detailed-description)
 ## Detailed Description
 
 TreeView displays hierarchical tree data in terminal rows with expandable branch
-guides. It supports two data source formats via `model`: a C++ `QAbstractItemModel`
+guides. Its inherited [Item](item.md) properties default to `focusPolicy: Qt.StrongFocus`,
+`focus: true`, `implicitWidth: 30`, and `implicitHeight: 10`. It supports two data source formats via `model`: a C++ `QAbstractItemModel`
 or a nested JavaScript object tree.
 
 Keyboard navigation follows standard tree conventions: Up and Down arrow keys move
@@ -89,4 +90,4 @@ labels per visible row via `nodeFormat(row, value)`.
 
 ![TreeView recorded demo](../assets/casts/components/tree_view.gif)
 
-See [`examples/gallery/examples/TreeView.qml`](../../examples/gallery/examples/TreeView.qml) (`./build/examples/gallery/qmltui_gallery --example TreeView`, or open in the [WebAssembly Playground](../playground.md?example=TreeView.qml)).
+See [`examples/gallery/examples/TreeView.qml`](../../examples/gallery/examples/TreeView.qml) (`./build/examples/gallery/qmltui_gallery --example TreeView`).

@@ -48,4 +48,4 @@ enables pooling and recycling of delegate items.
 
 ![GridView recorded demo](../assets/casts/components/grid_view.gif)
 
-See [`examples/gallery/examples/GridView.qml`](../../examples/gallery/examples/GridView.qml) (`./build/examples/gallery/qmltui_gallery --example GridView`, or open in the [WebAssembly Playground](../playground.md?example=GridView.qml)).
+See [`examples/gallery/examples/GridView.qml`](../../examples/gallery/examples/GridView.qml) (`./build/examples/gallery/qmltui_gallery --example GridView`).

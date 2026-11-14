@@ -42,7 +42,7 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `selectedTextColor` | `color` |  | Holds the foreground text color for selected text. |
 | `canUndo` | `bool` | `false` | Read-only. Whether an undo history entry is available. |
 | `canRedo` | `bool` | `false` | Read-only. Whether a redo history entry is available. |
-| `textRevision` | `int` | `0` | Read-only. Monotonically incremented (`quint64`) on each text change. Validates highlight layer submissions. |
+| `textRevision` | `qulonglong` | `0` | Read-only. Monotonically incremented (`quint64`) on each text change. Validates highlight layer submissions. |
 | `tabChangesFocus` | `bool` | `false` | Whether Tab changes focus or is accepted as text input. When `false`, Tab inserts spaces to the next tab stop. |
 | `tabStopDistance` | `int` | `4` | Number of character columns per tab stop. Tab inserts spaces aligning to multiples of this distance. |
 | `showWhitespace` | `bool` | `false` | Whether spaces and tabs are rendered with visible markers (`·` and `→`). |
@@ -76,14 +76,16 @@ A multi-line editable text area item for terminal applications. [More...](#detai
 | `void paste(string text)` | Inserts text at the current cursor position. |
 | `void undo()` | Reverts the last edit operation. |
 | `void redo()` | Reapplies the last undone edit operation. |
-| `bool setHighlightLayer(string name, list<highlightRange> ranges, int revision, int priority = 0)` | Sets or updates a named highlight layer. Rejects stale revisions, empty names, or invalid bounds. Returns `true` on success. |
+| `bool setHighlightLayer(string name, list<highlightRange> ranges, qulonglong revision, int priority = 0)` | Sets or updates a named highlight layer. Rejects stale revisions, empty names, or invalid bounds. Returns `true` on success. |
 | `void clearHighlightLayer(string name)` | Removes the named highlight layer and schedules a repaint. |
 | `void clearHighlights()` | Clears all highlight layers on the editor. |
 
 ## Detailed Description
 
 TextArea provides a multi-line text editor with full cursor movement, text
-selection, copy/paste, and undo/redo support in a character grid.
+selection, copy/paste, and undo/redo support in a character grid. Its inherited
+[Item](item.md) properties default to `focusPolicy: Qt.StrongFocus`, `clip: true`,
+`implicitWidth: 20`, and `implicitHeight: 5`.
 
 Pressing Enter or Return inserts a newline character (`\n`) and moves the cursor
 to the start of the next row. Pressing Ctrl+Return or Ctrl+Enter emits the
@@ -103,11 +105,12 @@ layers to prevent stale styling on modified text. To maintain highlighting acros
 edits, re-apply layers in a `textChanged` signal handler matching the current
 `textRevision`:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 editor.setHighlightLayer("syntax", [
     { start: 0, length: 5, color: "green", bold: true },
     { start: 10, length: 4, color: "cyan" }
-], editor.textRevision)
+], editor.textRevision);
 ```
 
 `setHighlightLayer()` returns `false` and rejects submissions if the supplied
@@ -129,4 +132,4 @@ cluster boundaries to avoid partially styled multi-byte or combining sequences.
 
 ![TextArea recorded demo](../assets/casts/components/text_area.gif)
 
-See [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml) (`./build/examples/gallery/qmltui_gallery --example TextArea`, or open in the [WebAssembly Playground](../playground.md?example=TextArea.qml)).
+See [`examples/gallery/examples/TextArea.qml`](../../examples/gallery/examples/TextArea.qml) (`./build/examples/gallery/qmltui_gallery --example TextArea`).

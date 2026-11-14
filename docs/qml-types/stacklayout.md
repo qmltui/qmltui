@@ -56,6 +56,4 @@ pages are created on demand.
 
 ### Gallery Example
 
-![TabBar recorded demo](../assets/casts/components/tab_bar.gif)
-
-See [`examples/gallery/examples/StackLayout.qml`](../../examples/gallery/examples/StackLayout.qml) (`./build/examples/gallery/qmltui_gallery --example StackLayout`, or open in the [WebAssembly Playground](../playground.md?example=StackLayout.qml)).
+See [`examples/gallery/examples/StackLayout.qml`](../../examples/gallery/examples/StackLayout.qml) (`./build/examples/gallery/qmltui_gallery --example StackLayout`).

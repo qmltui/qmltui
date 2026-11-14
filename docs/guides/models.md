@@ -128,7 +128,8 @@ Set `rootIndex` to show the children of one node instead, exactly like
 `DelegateModel.rootIndex` in Qt Quick. The index is held persistently, so
 inserts above it do not retarget the view:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 ListView {
     model: fileSystemModel
     rootIndex: fileSystemModel.index(2, 0) // children of the third top-level row
@@ -219,14 +220,19 @@ The `StandardItemDelegate` recipe in
 `examples/recipes/standard_item_delegate/StandardItemDelegate.qml` renders
 them: decoration glyph, `[x]`, `[ ]`, or `[-]` for checkable items, colored and
 aligned text, dimmed text for disabled items, and reversed text for the current
-row. Its `toggle()` writes `Qt::CheckStateRole` back through the model's
-`setData()`, on Space when the delegate has focus and on mouse click.
+row. Clicking the delegate with the mouse calls its `toggle()` method to write
+`Qt::CheckStateRole` back through `setData()` (as does pressing `Space` when
+the delegate itself holds focus, such as inside a `Repeater`). Inside a focused
+`ListView`, `Space` and `Return` are consumed by the view and emitted as
+`itemActivated(index)`, so wire `onItemActivated` to toggle from the keyboard:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 // Copy StandardItemDelegate.qml from examples/recipes/standard_item_delegate/:
 ListView {
     model: standardItemModel
     delegate: StandardItemDelegate {}
+    onItemActivated: index => standardItemModel.toggle(index)
 }
 ```
 
@@ -266,6 +272,8 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
   `bold`, `italic`, and `underline` role names, or a delegate.
 - `Qt::ToolTipRole`, `Qt::StatusTipRole`, `Qt::WhatsThisRole`: exposed by name
   as Qt does, not rendered.
+
+For larger multi-view C++ model setups (`QAbstractTableModel` + `QSortFilterProxyModel` + `TreeView`), see [`btop`](https://github.com/qmltui/apps/tree/main/apps/btop) and [`container_fleet`](https://github.com/qmltui/apps/tree/main/apps/container_fleet) in [qmltui/apps](https://github.com/qmltui/apps).
 
 ![StandardItemDelegate recorded demo](../assets/casts/components/standard_item_delegate.gif)
 

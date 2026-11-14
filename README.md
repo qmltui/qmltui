@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/qmltui-dev/qmltui/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/qmltui-dev/qmltui/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/qmltui-dev/qmltui/blob/badges/summary.md"><img alt="Coverage" src="https://github.com/qmltui-dev/qmltui/raw/badges/coverage.svg"></a>
+  <a href="https://github.com/qmltui/qmltui/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/qmltui/qmltui/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/qmltui/qmltui/blob/badges/summary.md"><img alt="Coverage" src="https://github.com/qmltui/qmltui/raw/badges/coverage.svg"></a>
 </p>
 
 **QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17. Think of QmlTui as the **Qt Quick equivalent for terminal user interfaces**: you express the UI in declarative, reactive QML (layouts, property bindings, states, and reusable components) and build the backend in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`). `QmlTui` renders the QML item tree into a double-buffered character-cell grid (`TextGridBuffer`), diffs consecutive frames, and writes only the changed cells and SGR attributes to the terminal. Core applications run on `QCoreApplication` with `Qt6::Core` and `Qt6::Qml`, without requiring `QtQuick`, `QtGui`, or a display server.
@@ -25,7 +25,7 @@ Use QmlTui when you want to:
 Do not use QmlTui when:
 
 - **You need pixel geometry or a GPU scene graph**: QmlTui lays out items on an integer character-cell grid (columns and rows). Use `QtQuick` or `QtWidgets` for pixel-addressed desktop and embedded displays.
-- **Your project does not use C++ or Qt 6**: QmlTui requires CMake 3.21+, a C++17 compiler, and Qt 6.8+.
+- **Your project does not use Qt 6**: QmlTui requires Qt 6.8+ (C++17 with CMake 3.21+, or Python via `PySide6` as shown in [`examples/recipes/pyside6/`](examples/recipes/pyside6/)).
 - **Your target is legacy `conhost.exe` on Windows**: Runtime targets are Linux, macOS, and Windows Terminal (`Win32ConsoleBackend` over Virtual Terminal sequences).
 
 ## Hello, World!
@@ -46,11 +46,14 @@ Terminal {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
+            event.accepted = true;
             console.log("Goodbye!");
             Qt.quit();
         } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+            event.accepted = true;
             root.count++;
         } else if (event.key === Qt.Key_R) {
+            event.accepted = true;
             root.count = 0;
         }
     }
@@ -110,12 +113,12 @@ Rendered in the terminal:
 ### Build and Run the Component Gallery
 
 ```sh
-cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
-You can also try every gallery component in the browser with the [WebAssembly Playground](docs/playground.md) (see the [WebAssembly build guide](docs/guides/webassembly.md)).
+QmlTui applications also compile to WebAssembly and run inside `xterm.js` in the browser (see the [WebAssembly build guide](docs/guides/webassembly.md)).
 
 ![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
@@ -145,7 +148,7 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 - **Explicit keyboard quit path**: Terminal applications in raw mode have no window close button, and `TextInput`/`TextArea` use `Ctrl+C` for clipboard copy. Applications must provide a reachable keyboard exit path (such as handling `Q` or `Escape` at the root `Terminal`).
 - **Terminal capability variance**: Protocol support depends on the host terminal emulator. `TerminalCapabilities` probes DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, Kitty/Sixel graphics, and OSC 52 clipboard at startup and falls back when a feature is absent.
 - **Flat views vs. hierarchical trees**: `ListView`, `TableView`, `GridView`, and `Repeater` present a single model level (`rootIndex` on `ListView`/`GridView`/`Repeater`, or top-level rows on `TableView`). Hierarchical models require `TreeView`.
-- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` use `Qt6::QmlPrivate` automatically when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out), which ties binary builds with private headers to the minor Qt release. `State`, `StateGroup`, `Transition`, map-based `PropertyChanges`, `NumberAnimation`, `ColorAnimation`, and `SequentialAnimation`/`ParallelAnimation` use only public `Qt6::Qml` APIs.
+- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` (plus automatic binding restoration on state exit) use `Qt6::QmlPrivate` when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out), which ties binary builds with private headers to the minor Qt release. `State`, `StateGroup`, `Transition`, map-based `PropertyChanges`, `NumberAnimation`, and `ColorAnimation` use only public `Qt6::Qml` APIs.
 - **POSIX-only `PtyView`**: `QmlTui.PtyView` spawns child processes inside Unix pseudo-terminals (`forkpty`) backed by `libvterm` and is supported only on Linux and macOS (not Windows or WebAssembly).
 
 ## Documentation
@@ -153,13 +156,13 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 - **[Getting Started Tutorial](docs/getting-started.md)**: Build a standalone 3-file QmlTui application and expose a C++ `QObject` with `QML_ELEMENT`.
 - **[QmlTui for Qt Quick and Widgets Developers](docs/guides/qt-quick-to-qmltui.md)**: Key differences from `QtQuick` and `QtWidgets` (imports, integer cell coordinates, borders, colors, keyboard quit handling, and shared C++ models).
 - **[Build Configuration and Installation](docs/build-configuration.md)**: `FetchContent` vs. `find_package(QmlTui)`, optional modules, CMake options, and environment variables.
-- **[Qt Creator Setup and Tooling](docs/guides/qt-creator.md)**: Project wizards (`qmltui-qtc`), offline `F1` documentation (`qmltui.qch`), `qmlls`, `qmllint`, and `Runner` actions.
-- **[Interactive Playground](docs/playground.md)**: Inspect, edit, and run gallery components in the browser.
-- **[Guides](docs/guides/index.md)**: Architecture, layouts, input and focus, models and views, styling, animations and states, inline mode, `PtyView`, custom C++ items, and headless testing with `Runner`.
-- **[Examples and Recipes](docs/examples.md)**: Gallery demos and copyable QML/C++ recipes (see [`examples/README.md`](examples/README.md) and standalone applications in [qmltui-dev/qmltui-apps](https://github.com/qmltui-dev/qmltui-apps)).
+- **[Editor and IDE Setup](docs/guides/editor-setup.md)**: Configure `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
+- **[Guides](docs/guides/index.md)**: Architecture, layouts, input and focus, models and views, styling, animations and states, inline mode, `PtyView`, custom C++ items, headless testing with `Runner`, and WebAssembly.
+- **[Examples and Recipes](docs/examples.md)**: Gallery demos and copyable QML/C++ recipes (see [`examples/README.md`](examples/README.md) and full-scale showcase applications in [qmltui/apps](https://github.com/qmltui/apps)).
 - **[QML Types Reference](docs/qml-types/index.md)**: API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
 - **[C++ Classes Reference](docs/cpp-classes/index.md)**: Public C++ APIs for `Item`, `Terminal`, `TextGridBuffer`, `Cell`, `Color`, `PtyView`, and `Runner`.
 - **[Changelog](docs/changes/changelog.md)**: Release history and migration notes.
+- **[Contributing Guide](CONTRIBUTING.md)**: Local development setup, code formatting, and test suite conventions.
 
 ## License
 
@@ -168,7 +171,7 @@ QmlTui is available under the **LGPLv3**. Examples and the starter template are
 
 Separate commercial terms are available upon inquiry for organizations unable
 to meet those obligations. Contact through the project repository at
-<https://github.com/qmltui-dev/qmltui>.
+<https://github.com/qmltui/qmltui>.
 
 QmlTui is an independent project and not a product of The Qt Company. Qt and
 third-party dependencies remain subject to their own licenses.

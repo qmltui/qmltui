@@ -11,11 +11,14 @@ Terminal {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
+            event.accepted = true;
             console.log("Goodbye!");
             Qt.quit();
         } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+            event.accepted = true;
             root.count++;
         } else if (event.key === Qt.Key_R) {
+            event.accepted = true;
             root.count = 0;
         }
     }

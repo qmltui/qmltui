@@ -18,7 +18,7 @@ These guides cover how QmlTui maps Qt 6 concepts to the terminal, its retained-m
 9. **[Embedded PTY Shells (`QmlTui.PtyView`)](pty-view.md)**: Hosting interactive Unix child processes inside `PtyView` on Linux and macOS.
 10. **[Custom C++ Items](custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer`, registering QML types with `QML_ELEMENT`, and building C++-only scenes.
 11. **[Testing & Recording with Runner](testing.md)**: Headless testing with a virtual clock, text and style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
-12. **[Qt Creator Setup & Tooling](qt-creator.md)**: Configuring Qt Creator with `qmltui-qtc` wizards, offline `F1` help (`qmltui.qch`), `qmlls`, `qmllint`, `Runner` actions, and live terminal previews.
-13. **[WebAssembly Playground](webassembly.md)**: Building and embedding QmlTui applications in the browser with Qt for WebAssembly and `xterm.js`.
+12. **[Editor and IDE Setup](editor-setup.md)**: Configuring `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
+13. **[QmlTui in the Browser (Qt for WebAssembly)](webassembly.md)**: Compiling QmlTui applications to WebAssembly with `qmltui_wasm_app()` and embedding `WasmTerminalBackend` in `xterm.js`.
 
 For CMake options, `find_package(QmlTui)` installation, and runtime environment variables, see [Build Configuration and Installation](../build-configuration.md).

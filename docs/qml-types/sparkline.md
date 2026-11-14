@@ -62,4 +62,4 @@ Sparkline has no border; wrap it in a [Rectangle](rectangle.md) or
 
 ![Sparkline recorded demo](../assets/casts/components/sparkline.gif)
 
-See [`examples/gallery/examples/Sparkline.qml`](../../examples/gallery/examples/Sparkline.qml) (`./build/examples/gallery/qmltui_gallery --example Sparkline`, or open in the [WebAssembly Playground](../playground.md?example=Sparkline.qml)).
+See [`examples/gallery/examples/Sparkline.qml`](../../examples/gallery/examples/Sparkline.qml) (`./build/examples/gallery/qmltui_gallery --example Sparkline`).

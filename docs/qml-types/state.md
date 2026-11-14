@@ -35,7 +35,10 @@ the property values applied to target items while this state is active.
 
 States can be activated explicitly by assigning the item's `state` string property,
 or declaratively using the `when` condition. Transitions between states can be
-animated using [Transition](transition.md).
+animated using [Transition](transition.md). Direct property assignments on
+`PropertyChanges` and full QML binding suspension/restoration require
+`QMLTUI_ENABLE_PRIVATE_QT=ON`; see [PropertyChanges](propertychanges.md) for the
+portable `properties: ({ ... })` fallback syntax.
 
 ### Example
 
@@ -45,4 +48,4 @@ animated using [Transition](transition.md).
 
 ![States recorded demo](../assets/casts/components/states.gif)
 
-See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`, or open in the [WebAssembly Playground](../playground.md?example=States.qml)).
+See [`examples/gallery/examples/States.qml`](../../examples/gallery/examples/States.qml) (`./build/examples/gallery/qmltui_gallery --example States`).

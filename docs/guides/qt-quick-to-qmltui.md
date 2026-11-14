@@ -7,7 +7,7 @@ Think of **QmlTui** as the **Qt Quick equivalent for terminal user interfaces**:
 | Concept | Qt Quick / Qt Widgets | QmlTui | Key Difference |
 | :--- | :--- | :--- | :--- |
 | **Application class** | `QGuiApplication` / `QApplication` | `QCoreApplication` | No `QtGui` or display server required for `qmltui::core` and `qmltui::controls` |
-| **QML imports** | `import QtQuick` / `import QtQuick.Controls` | `import QmlTui`, `import QmlTui.Controls` | Replaces `import QtQuick` for terminal UIs (and re-exports `QtQml`); alias if both are imported in one file |
+| **QML imports** | `import QtQuick` / `import QtQuick.Controls` | `import QmlTui`, `import QmlTui.Controls` | Replaces `import QtQuick` for terminal UIs (and re-exports `QtQml`); do not import `QtQuick` in QmlTui QML files |
 | **Root item** | `Window` / `ApplicationWindow` / `QMainWindow` | `Terminal` | Selects `Terminal.AltScreen` (full-screen) or `Terminal.Inline` (CLI scrollback) |
 | **Geometry** | Floating-point pixels (`qreal`) | Integer character cells (`int`) | `x`, `y`, `width`, `height`, `spacing`, and `padding` are columns and rows |
 | **Borders** | `Rectangle { border.width: 1 }` | `Rectangle { border.style: Border.Single }` | Draws Unicode or ASCII box-drawing glyphs in the outer 1-cell perimeter |
@@ -55,13 +55,25 @@ Because `qmltui::core` and `qmltui::controls` depend only on `Qt6::Core` and `Qt
 
 QmlTui is built on `QtQml` and provides its own `Item`, `Rectangle`, `Text`, `MouseArea`, `Loader`, layouts, views, and controls. In QmlTui files, replace `import QtQuick` and `import QtQuick.Controls` with `import QmlTui` and `import QmlTui.Controls`:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 pragma ComponentBehavior: Bound
 import QmlTui
 import QmlTui.Controls
 ```
 
-Like `import QtQuick`, `import QmlTui` automatically re-exports `QtQml` (`Timer`, `Component`, `QtObject`, `Connections`, `Binding`). Add `import QtQml.Models` when using `ListModel` or `DelegateModel`. (If you ever import both `QtQuick` and `QmlTui` in the same QML document, alias one of them, such as `import QmlTui as Tui` or `import QtQuick as Q`, so shared type names like `Item`, `Rectangle`, and `Text` do not collide.)
+Like `import QtQuick`, `import QmlTui` automatically re-exports `QtQml` (`Timer`, `Component`, `QtObject`, `Connections`, `Binding`). Add `import QtQml.Models` when using `ListModel` or `DelegateModel`. Do not import `QtQuick` inside a QmlTui QML file (`QQuickItem` and `qmltui::Item` are separate item hierarchies).
+
+### Subtle API Differences to Keep in Mind
+
+| Feature | Qt Quick | QmlTui |
+| :--- | :--- | :--- |
+| **`Shortcut` binding** | `Shortcut { sequence: "Ctrl+Q" }` | `Shortcut { sequence: "Ctrl+Q" }` or `sequence: Qt.ControlModifier \| Qt.Key_Q` (property is `sequence`, not `key`) |
+| **Custom focusable `Item`/`Rectangle`** | `Item { focus: true; activeFocusOnTab: true }` | `Rectangle { focusPolicy: Qt.StrongFocus; focus: true }` (`Item` defaults to `Qt.NoFocus`) |
+| **Specific-key `Keys` signals** | `Keys.onEscapePressed` pre-sets `event.accepted = true` | `event.accepted` starts `false`; set `event.accepted = true;` explicitly to stop propagation |
+| **Animation easing & infinite loops** | `NumberAnimation { easing.type: Easing.OutQuad; loops: Animation.Infinite }` | `NumberAnimation { easing: Easing.OutQuad; loops: Animation.Infinite }` (`easing` is a direct enum property) |
+| **Imperative `Canvas` pixels** | `onPaint` callback | `Canvas { autoClear: false }` when calling `setPixel()` imperatively (`autoClear` defaults to `true` for shape children) |
+| **`console.log()` in full-screen UI** | Writes to stderr immediately | Buffered during `Terminal.AltScreen` when `stderr` is a TTY; redirect `./app 2> debug.log` or set `QMLTUI_LOG_FILE=debug.log` for live streaming |
 
 ## Integer Cell Geometry
 
@@ -150,7 +162,8 @@ When modals, popups, or filter inputs are present, consume `Escape` to close or 
 
 Start QML files with `pragma ComponentBehavior: Bound` and declare model roles as `required property` on the delegate:
 
-```qml
+<!-- check-docs: ignore -->
+```qml no-playground
 pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui

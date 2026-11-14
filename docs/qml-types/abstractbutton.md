@@ -114,4 +114,4 @@ Button {
 
 ![Button recorded demo](../assets/casts/components/button.gif)
 
-See [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml) (`./build/examples/gallery/qmltui_gallery --example Button`, or open in the [WebAssembly Playground](../playground.md?example=Button.qml)).
+See [`examples/gallery/examples/Button.qml`](../../examples/gallery/examples/Button.qml) (`./build/examples/gallery/qmltui_gallery --example Button`).

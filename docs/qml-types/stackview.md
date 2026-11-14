@@ -68,4 +68,4 @@ chosen by index, for example from a [TabBar](tabbar.md).
 
 ![StackView recorded demo](../assets/casts/components/stack_view.gif)
 
-See [`examples/gallery/examples/StackView.qml`](../../examples/gallery/examples/StackView.qml) (`./build/examples/gallery/qmltui_gallery --example StackView`, or open in the [WebAssembly Playground](../playground.md?example=StackView.qml)).
+See [`examples/gallery/examples/StackView.qml`](../../examples/gallery/examples/StackView.qml) (`./build/examples/gallery/qmltui_gallery --example StackView`).

@@ -67,4 +67,4 @@ half of the control calls `decrease()`, clicking the right half calls
 
 ![SpinBox recorded demo](../assets/casts/components/spin_box.gif)
 
-See [`examples/gallery/examples/SpinBox.qml`](../../examples/gallery/examples/SpinBox.qml) (`./build/examples/gallery/qmltui_gallery --example SpinBox`, or open in the [WebAssembly Playground](../playground.md?example=SpinBox.qml)).
+See [`examples/gallery/examples/SpinBox.qml`](../../examples/gallery/examples/SpinBox.qml) (`./build/examples/gallery/qmltui_gallery --example SpinBox`).

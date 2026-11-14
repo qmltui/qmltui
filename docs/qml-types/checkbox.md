@@ -53,4 +53,4 @@ Nothing happens while `enabled` is false. For a mutually exclusive choice use
 
 ![CheckBox recorded demo](../assets/casts/components/check_box.gif)
 
-See [`examples/gallery/examples/CheckBox.qml`](../../examples/gallery/examples/CheckBox.qml) (`./build/examples/gallery/qmltui_gallery --example CheckBox`, or open in the [WebAssembly Playground](../playground.md?example=CheckBox.qml)).
+See [`examples/gallery/examples/CheckBox.qml`](../../examples/gallery/examples/CheckBox.qml) (`./build/examples/gallery/qmltui_gallery --example CheckBox`).

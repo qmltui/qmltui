@@ -28,7 +28,7 @@
 - Configure the normal development tree with tests and examples enabled:
 
   ```bash
-  rtk cmake -S . -B build \
+  cmake -S . -B build \
     -DQMLTUI_BUILD_TESTS=ON \
     -DQMLTUI_BUILD_EXAMPLES=ON
   ```
@@ -85,7 +85,7 @@
 
 ## Handoff
 
-- Run `rtk git diff --check` before handoff.
+- Run `git diff --check` before handoff.
 - Report focused and regression tests run, relevant build configurations, and
   committed-frame artifacts inspected. Explicitly identify configurations that
   were not exercised.

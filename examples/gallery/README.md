@@ -1,7 +1,7 @@
 # QmlTui Gallery
 
 An interactive component catalog for every user-facing type in `QmlTui`,
-`QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView` (37 components when
+`QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView` (45 components when
 Private Qt `Behavior`, `QmlTui.Image`, and `QmlTui.PtyView` are enabled),
 ordered from core primitives to controls and optional modules by frequency of
 use.
@@ -53,5 +53,5 @@ CodeMirror 6 QML editor on the left (with context-aware borderless QML
 autocomplete) with an `xterm.js` terminal on the right (`examples/wasm/www/index.html`).
 You can either write a complete QML application with a root `Terminal {}` node
 (supporting both `Terminal.AltScreen` and `Terminal.Inline` with
-`Scrollback.write()`) or browse the Gallery Grid and live-edit individual
+`Scrollback.print()`) or browse the Gallery Grid and live-edit individual
 component examples in the browser. See `docs/guides/webassembly.md`.

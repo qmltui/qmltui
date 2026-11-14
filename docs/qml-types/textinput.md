@@ -94,6 +94,8 @@ A single-line editable text input item for terminal applications. [More...](#det
 ## Detailed Description
 
 TextInput provides a single-line editable text control designed for terminal cell grids.
+Its inherited [Item](item.md) properties default to `focusPolicy: Qt.StrongFocus`,
+`clip: true`, `implicitWidth: 10`, and `implicitHeight: 1`.
 It handles keyboard cursor movement (Left/Right arrows, Home, End, word navigation with
 Control/Alt), character insertion and deletion (Backspace, Delete), mouse click and drag
 selection, and clipboard operations.
@@ -114,4 +116,4 @@ focus also emits `editingFinished()`.
 
 ![TextInput recorded demo](../assets/casts/components/text_input.gif)
 
-See [`examples/gallery/examples/TextInput.qml`](../../examples/gallery/examples/TextInput.qml) (`./build/examples/gallery/qmltui_gallery --example TextInput`, or open in the [WebAssembly Playground](../playground.md?example=TextInput.qml)).
+See [`examples/gallery/examples/TextInput.qml`](../../examples/gallery/examples/TextInput.qml) (`./build/examples/gallery/qmltui_gallery --example TextInput`).

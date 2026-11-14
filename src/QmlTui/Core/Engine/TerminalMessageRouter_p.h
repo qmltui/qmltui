@@ -10,8 +10,8 @@ namespace qmltui::TerminalMessageRouter {
 
 void registerEngine();
 void unregisterEngine();
-void beginAlternateScreenSession();
-void endAlternateScreenSession();
+void beginAlternateScreenSession(bool deferDefaultStderr = true);
+void endAlternateScreenSession(bool deferDefaultStderr = true);
 
 bool installRegistration(uint64_t registrationId, QtMessageSink diagnosticSink,
                          QtMessageSink presentationSink, bool hasPresentationSink);

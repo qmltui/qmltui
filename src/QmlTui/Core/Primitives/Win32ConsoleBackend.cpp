@@ -205,6 +205,12 @@ bool Win32ConsoleBackend::isInputInteractive() const {
     return m_inputModeValid;
 }
 
+bool Win32ConsoleBackend::isStderrInteractive() const {
+    const HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
+    DWORD mode = 0;
+    return err != INVALID_HANDLE_VALUE && err != nullptr && GetConsoleMode(err, &mode) != 0;
+}
+
 void Win32ConsoleBackend::startInput() {
     if (m_inputStarted) return;
     m_inputStarted = true;

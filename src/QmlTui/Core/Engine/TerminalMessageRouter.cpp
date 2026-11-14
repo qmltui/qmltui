@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QFile>
 #include <QList>
 #include <QMutex>
 #include <QMutexLocker>
@@ -9,6 +10,7 @@
 #include <QThread>
 #include <QVarLengthArray>
 #include <QWaitCondition>
+#include <QtEnvironmentVariables>
 #include <QtLogging>
 
 #include <cstdio>
@@ -34,6 +36,7 @@ struct RouterState {
     QWaitCondition retirementWaitCondition;
     int engineCount = 0;
     int alternateScreenSessionCount = 0;
+    int deferredDefaultStderrSessionCount = 0;
     bool handlerInstalled = false;
     QtMessageHandler previousHandler = nullptr;
 
@@ -91,11 +94,46 @@ RouterState& state() {
     return *routerState;
 }
 
+void appendToConfiguredLogFile(const QtMessage& msg) {
+    const QString path = qEnvironmentVariable("QMLTUI_LOG_FILE").trimmed();
+    if (path.isEmpty()) return;
+
+    struct LogFileState {
+        QMutex mutex;
+        QString openPath;
+        QFile file;
+    };
+    static LogFileState* logState = new LogFileState;
+
+    QMutexLocker lock(&logState->mutex);
+    s_inCallback = true;
+    if (logState->openPath != path || !logState->file.isOpen()) {
+        if (logState->file.isOpen()) logState->file.close();
+        logState->file.setFileName(path);
+        logState->openPath = path;
+        (void)logState->file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    }
+    if (logState->file.isOpen()) {
+        QByteArray line = msg.formattedMessage().toUtf8();
+        line.append('\n');
+        logState->file.write(line);
+        logState->file.flush();
+    }
+    s_inCallback = false;
+}
+
+bool isPresentationDeferred(const RouterState& router) {
+    if (router.regState == RegistrationState::None) {
+        return router.deferredDefaultStderrSessionCount > 0;
+    }
+    return router.alternateScreenSessionCount > 0;
+}
+
 void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
     if (router.isDraining) return;
 
     router.isDraining = true;
-    while (router.alternateScreenSessionCount == 0 && !router.presentationQueue.isEmpty()) {
+    while (!isPresentationDeferred(router) && !router.presentationQueue.isEmpty()) {
         if (!router.presentationQueue.first().eligible) break;
 
         PresentationRecord rec = router.presentationQueue.takeFirst();
@@ -185,6 +223,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
         }
         std::fflush(stderr);
         s_inCallback = false;
+        appendToConfiguredLogFile(msg);
         {
             QMutexLocker lock(&router.mutex);
             if (presSink) router.endDelivery(false);
@@ -233,6 +272,8 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
         }
     }
 
+    appendToConfiguredLogFile(msg);
+
     if (diagSink) {
         s_inCallback = true;
         try {
@@ -262,7 +303,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
             }
         }
 
-        if (router.alternateScreenSessionCount == 0) {
+        if (!isPresentationDeferred(router)) {
             drainPresentationQueue(router, lock);
         }
     }
@@ -288,6 +329,7 @@ void unregisterEngine() {
     --router.engineCount;
     if (router.engineCount == 0) {
         router.alternateScreenSessionCount = 0;
+        router.deferredDefaultStderrSessionCount = 0;
         drainPresentationQueue(router, lock);
         if (router.regState == RegistrationState::None && router.handlerInstalled) {
             qInstallMessageHandler(router.previousHandler);
@@ -297,19 +339,25 @@ void unregisterEngine() {
     }
 }
 
-void beginAlternateScreenSession() {
+void beginAlternateScreenSession(bool deferDefaultStderr) {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
     ++router.alternateScreenSessionCount;
+    if (deferDefaultStderr) {
+        ++router.deferredDefaultStderrSessionCount;
+    }
 }
 
-void endAlternateScreenSession() {
+void endAlternateScreenSession(bool deferDefaultStderr) {
     RouterState& router = state();
     QMutexLocker lock(&router.mutex);
     if (router.alternateScreenSessionCount <= 0) return;
 
     --router.alternateScreenSessionCount;
-    if (router.alternateScreenSessionCount == 0) {
+    if (deferDefaultStderr && router.deferredDefaultStderrSessionCount > 0) {
+        --router.deferredDefaultStderrSessionCount;
+    }
+    if (!isPresentationDeferred(router)) {
         drainPresentationQueue(router, lock);
     }
 }

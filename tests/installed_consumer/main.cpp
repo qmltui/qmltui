@@ -75,5 +75,10 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<QObject> root(component.create());
     if (!root || !root->findChild<QObject*>(QStringLiteral("btn"))) return 9;
 
+    QQmlComponent moduleComponent(
+        &engine, QUrl(QStringLiteral("qrc:/qt/qml/InstalledConsumer/ConsumerMain.qml")));
+    std::unique_ptr<QObject> moduleRoot(moduleComponent.create());
+    if (!moduleRoot || !moduleRoot->findChild<QObject*>(QStringLiteral("moduleBtn"))) return 10;
+
     return 0;
 }

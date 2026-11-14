@@ -42,6 +42,11 @@ class QMLTUI_CORE_EXPORT Animation : public QObject {
     Q_PROPERTY(int loops READ loops WRITE setLoops NOTIFY loopsChanged)
 
 public:
+    enum LoopCount {
+        Infinite = -1,
+    };
+    Q_ENUM(LoopCount)
+
     explicit Animation(QObject* parent = nullptr);
     ~Animation() override;
 

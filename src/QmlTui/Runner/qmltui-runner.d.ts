@@ -75,6 +75,9 @@ interface QmlTuiStyleExpectation {
     italic?: boolean;
     underline?: boolean;
     reversed?: boolean;
+    blink?: boolean;
+    conceal?: boolean;
+    strikethrough?: boolean;
     /** A color string, or "default" for the terminal's own color. */
     foreground?: string;
     background?: string;

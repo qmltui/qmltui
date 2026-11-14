@@ -19,4 +19,7 @@ function main(app) {
     app.expectText("Fallback");
     app.expectStyle(0, 0, {underline: false});
     app.captureStyled("fallback.txt");
+    app.injectKey("k");
+    app.expectRepaint();
+    app.expectStyle(0, 2, {character: "X", strikethrough: true, blink: false, conceal: false});
 }

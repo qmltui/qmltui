@@ -11,7 +11,14 @@
 set(QMLTUI_WASM_INITIAL_MEMORY "" CACHE STRING
     "Override Qt's default -sINITIAL_MEMORY (50MB) for QmlTui apps, e.g. 96MB")
 
-set(_qmltui_wasm_shell_template [=[<!doctype html>
+# Configures a WebAssembly executable target as a QmlTui terminal application.
+# Call in the directory that created the target so Qt's deferred finalizer sees
+# NO_WASM_DEFAULT_FILES.
+#
+# Usage:
+#   qmltui_wasm_app(<target> [OUTPUT_DIRECTORY <dir>])
+function(qmltui_wasm_app target)
+    set(_qmltui_wasm_shell_template [=[<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -215,13 +222,6 @@ set(_qmltui_wasm_shell_template [=[<!doctype html>
 </html>
 ]=])
 
-# Configures a WebAssembly executable target as a QmlTui terminal application.
-# Call in the directory that created the target so Qt's deferred finalizer sees
-# NO_WASM_DEFAULT_FILES.
-#
-# Usage:
-#   qmltui_wasm_app(<target> [OUTPUT_DIRECTORY <dir>])
-function(qmltui_wasm_app target)
     cmake_parse_arguments(ARG "" "OUTPUT_DIRECTORY" "" ${ARGN})
 
     set_target_properties(${target} PROPERTIES NO_WASM_DEFAULT_FILES ON)

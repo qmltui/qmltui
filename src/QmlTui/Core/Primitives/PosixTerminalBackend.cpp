@@ -433,6 +433,10 @@ bool PosixTerminalBackend::isInputInteractive() const {
     return ::isatty(m_inputFd) == 1;
 }
 
+bool PosixTerminalBackend::isStderrInteractive() const {
+    return ::isatty(STDERR_FILENO) == 1;
+}
+
 void PosixTerminalBackend::startInput() {
     if (m_inputStarted) return;
     m_inputStarted = true;

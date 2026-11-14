@@ -1,5 +1,6 @@
 # Tests for qmltui::core: Primitives, Engine, Items, and the benchmarks.
 
+if(QMLTUI_BUILD_TESTS)
 add_qmltui_test(test_clipboard test_clipboard.cpp)
 target_link_libraries(test_clipboard PRIVATE qmltui::runner)
 
@@ -60,6 +61,7 @@ add_qmltui_test(test_views_virtualization test_views_virtualization.cpp)
 add_qmltui_test(test_table_view_hardening test_table_view_hardening.cpp)
 add_qmltui_test(test_model_contracts test_model_contracts.cpp)
 add_qmltui_test(test_tree_view test_tree_view.cpp)
+endif()
 
 if(QMLTUI_BUILD_BENCHMARKS)
     add_executable(benchmark_table_view benchmark_table_view.cpp)
@@ -89,23 +91,28 @@ if(QMLTUI_BUILD_BENCHMARKS)
         target_link_libraries(benchmark_view_compare PRIVATE Qt6::Quick)
         target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_QUICK=1)
     endif()
-    add_test(NAME test_benchmark_view_compare_smoke
-        COMMAND benchmark_view_compare --rows 1000 --steps 10)
-    set_tests_properties(test_benchmark_view_compare_smoke PROPERTIES
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
-    )
+    if(QMLTUI_BUILD_TESTS)
+        add_test(NAME test_benchmark_view_compare_smoke
+            COMMAND benchmark_view_compare --rows 1000 --steps 10)
+        set_tests_properties(test_benchmark_view_compare_smoke PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+        )
+    endif()
 
     # Per-frame paint/diff cost for representative scenes. Informational; run
     # it before and after rendering changes and record the numbers.
     add_executable(benchmark_render benchmark_render.cpp)
     target_link_libraries(benchmark_render PRIVATE
         Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
-    add_test(NAME test_benchmark_render_smoke COMMAND benchmark_render --strict --frames 2)
-    set_tests_properties(test_benchmark_render_smoke PROPERTIES
-        ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
-    )
+    if(QMLTUI_BUILD_TESTS)
+        add_test(NAME test_benchmark_render_smoke COMMAND benchmark_render --strict --frames 2)
+        set_tests_properties(test_benchmark_render_smoke PROPERTIES
+            ENVIRONMENT "QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+        )
+    endif()
 endif()
 
+if(QMLTUI_BUILD_TESTS)
 add_qmltui_test(test_span test_span.cpp)
 add_qmltui_test(test_rectangle test_rectangle.cpp)
 add_executable(qmltui_span_fixture span_fixture.cpp)
@@ -134,3 +141,4 @@ qmltui_add_scenario(
     SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/process_table_scenario.js"
     COLUMNS 80 ROWS 24
 )
+endif()

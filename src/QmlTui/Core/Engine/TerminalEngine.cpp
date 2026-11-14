@@ -237,8 +237,10 @@ void TerminalEngine::stop() {
                                              "shutdown; undelivered bytes were discarded"));
     }
     if (m_alternateScreenMessageSession) {
+        const bool deferredStderr = m_deferredDefaultStderrSession;
         m_alternateScreenMessageSession = false;
-        TerminalMessageRouter::endAlternateScreenSession();
+        m_deferredDefaultStderrSession = false;
+        TerminalMessageRouter::endAlternateScreenSession(deferredStderr);
     }
 }
 
@@ -751,8 +753,10 @@ void TerminalEngine::setRenderer(Renderer* renderer) {
                     m_device.showCursor();
                     m_device.disableRawMode();
                 }
+                const bool deferredStderr = m_deferredDefaultStderrSession;
                 m_alternateScreenMessageSession = false;
-                TerminalMessageRouter::endAlternateScreenSession();
+                m_deferredDefaultStderrSession = false;
+                TerminalMessageRouter::endAlternateScreenSession(deferredStderr);
                 if (m_terminalOutputEnabled) {
                     m_device.enableRawMode();
                     m_device.hideCursor();
@@ -862,13 +866,17 @@ void TerminalEngine::setTerminalOutputEnabled(bool enabled) {
             emit renderFailed(QStringLiteral("Terminal output could not be flushed when disabling "
                                              "output; undelivered bytes were discarded"));
         if (m_alternateScreenMessageSession) {
+            const bool deferredStderr = m_deferredDefaultStderrSession;
             m_alternateScreenMessageSession = false;
-            TerminalMessageRouter::endAlternateScreenSession();
+            m_deferredDefaultStderrSession = false;
+            TerminalMessageRouter::endAlternateScreenSession(deferredStderr);
         }
     } else {
         if (m_alternateScreenMessageSession) {
+            const bool deferredStderr = m_deferredDefaultStderrSession;
             m_alternateScreenMessageSession = false;
-            TerminalMessageRouter::endAlternateScreenSession();
+            m_deferredDefaultStderrSession = false;
+            TerminalMessageRouter::endAlternateScreenSession(deferredStderr);
         }
         m_device.setAsyncOutput(true);
         m_device.enableRawMode();
@@ -1080,8 +1088,12 @@ TextGridBuffer TerminalEngine::committedScrollback(quint64 fromTotalRow) const {
 void TerminalEngine::startRenderer() {
     if (!m_renderer || m_rendererStarted) return;
     if (m_renderer->usesAlternateScreen(m_rootWindow)) {
-        TerminalMessageRouter::beginAlternateScreenSession();
+        const TerminalBackend* backend = m_device.backend();
+        const bool deferDefaultStderr =
+            !backend || !backend->isInteractive() || backend->isStderrInteractive();
+        TerminalMessageRouter::beginAlternateScreenSession(deferDefaultStderr);
         m_alternateScreenMessageSession = true;
+        m_deferredDefaultStderrSession = deferDefaultStderr;
     }
     m_renderer->start(m_rootWindow, m_device);
     m_rendererStarted = true;

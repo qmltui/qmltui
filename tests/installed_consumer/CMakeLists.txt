@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Deliberately without Gui: QmlTuiConfig.cmake has to pull in every Qt module
 # the exported targets reference.
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
+qt_standard_project_setup(REQUIRES 6.8)
 find_package(QmlTui 0.5 REQUIRED)
 
 if(NOT DEFINED QMLTUI_PUBLIC_HEADERS)
@@ -14,6 +15,11 @@ if(NOT DEFINED QMLTUI_PUBLIC_HEADERS)
 endif()
 
 qt_add_executable(qmltui_installed_custom_item_consumer main.cpp)
+qt_add_qml_module(qmltui_installed_custom_item_consumer
+    URI InstalledConsumer
+    VERSION 1.0
+    QML_FILES ConsumerMain.qml
+)
 # Every installed header is compiled through QMLTUI_PUBLIC_HEADERS, so a header
 # that leaks a private include fails here, not on a user's machine.
 target_compile_definitions(qmltui_installed_custom_item_consumer PRIVATE

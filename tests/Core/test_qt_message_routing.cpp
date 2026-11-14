@@ -1,8 +1,10 @@
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QFile>
 #include <QProcess>
 #include <QSignalSpy>
 #include <QStringList>
+#include <QTemporaryDir>
 #include <QTest>
 #include <QThread>
 
@@ -74,6 +76,8 @@ private slots:
     void fatalDeliverySubprocess();
     void terminalRestorationPrecedesReplay();
     void reentrantResetFromSinkDoesNotDeadlock();
+    void logFileImmediateDeliveryDuringAltScreen();
+    void redirectedStderrImmediateDeliveryDuringAltScreen();
 };
 
 void TestQtMessageRouting::defaultDeferredStderr() {
@@ -379,6 +383,85 @@ void TestQtMessageRouting::reentrantResetFromSinkDoesNotDeadlock() {
     // Registration was retired cleanly; subsequent install succeeds immediately
     auto next = QtMessageRouting::install([](const QtMessage&) {});
     QVERIFY(next != nullptr);
+}
+
+void TestQtMessageRouting::logFileImmediateDeliveryDuringAltScreen() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString logPath = tempDir.filePath(QStringLiteral("altscreen.log"));
+    qputenv("QMLTUI_LOG_FILE", logPath.toUtf8());
+    const auto clearEnv = qScopeGuard([] { qunsetenv("QMLTUI_LOG_FILE"); });
+
+    Terminal terminal;
+    terminal.engine()->setTestViewportSize(QSize(10, 3));
+    terminal.engine()->renderFrame();
+
+    for (int i = 0; i < 520; ++i) {
+        qInfo("live-logfile-entry-%d", i);
+    }
+
+    // All 520 messages must already be flushed to disk while AltScreen is still active.
+    QFile logFile(logPath);
+    QVERIFY(logFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString contents = QString::fromUtf8(logFile.readAll());
+    QVERIFY(contents.contains(QStringLiteral("live-logfile-entry-0")));
+    QVERIFY(contents.contains(QStringLiteral("live-logfile-entry-519")));
+
+    terminal.engine()->stop();
+}
+
+void TestQtMessageRouting::redirectedStderrImmediateDeliveryDuringAltScreen() {
+    class RedirectedStderrBackend final : public OrderTrackingBackend {
+    public:
+        explicit RedirectedStderrBackend(bool stderrTty)
+            : OrderTrackingBackend(nullptr), m_stderrTty(stderrTty) {}
+        bool isStderrInteractive() const override { return m_stderrTty; }
+
+    private:
+        bool m_stderrTty = false;
+    };
+
+    static QStringList s_capturedStderr;
+    s_capturedStderr.clear();
+    const QtMessageHandler prevHandler =
+        qInstallMessageHandler([](QtMsgType, const QMessageLogContext&, const QString& msg) {
+            s_capturedStderr.append(msg);
+        });
+    const auto restoreAll = qScopeGuard([&] {
+        TerminalBackend::setFactory(nullptr);
+        qInstallMessageHandler(prevHandler);
+        s_capturedStderr.clear();
+    });
+
+    // When stdout is interactive and stderr is redirected (!isStderrInteractive),
+    // default unconfigured logging flushes immediately during AltScreen.
+    TerminalBackend::setFactory(
+        [](int) { return std::make_unique<RedirectedStderrBackend>(false); });
+    {
+        Terminal terminal;
+        terminal.engine()->setTestViewportSize(QSize(10, 3));
+        terminal.engine()->renderFrame();
+
+        qWarning("redirected-stderr-live-probe");
+        QVERIFY(s_capturedStderr.contains(QStringLiteral("redirected-stderr-live-probe")));
+        terminal.engine()->stop();
+    }
+
+    // When stderr shares the interactive terminal (isStderrInteractive == true),
+    // default unconfigured logging stays deferred until stop().
+    s_capturedStderr.clear();
+    TerminalBackend::setFactory(
+        [](int) { return std::make_unique<RedirectedStderrBackend>(true); });
+    {
+        Terminal terminal;
+        terminal.engine()->setTestViewportSize(QSize(10, 3));
+        terminal.engine()->renderFrame();
+
+        qWarning("tty-stderr-deferred-probe");
+        QVERIFY(!s_capturedStderr.contains(QStringLiteral("tty-stderr-deferred-probe")));
+        terminal.engine()->stop();
+        QVERIFY(s_capturedStderr.contains(QStringLiteral("tty-stderr-deferred-probe")));
+    }
 }
 
 int main(int argc, char* argv[]) {

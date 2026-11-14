@@ -1,5 +1,7 @@
-include(CTest)
-enable_testing()
+if(QMLTUI_BUILD_TESTS)
+    include(CTest)
+    enable_testing()
+endif()
 
 # One directory per library, mirroring src/QmlTui: Core, Controls, Image,
 # Runner and PtyView each register their own tests. The installed
@@ -23,33 +25,36 @@ function(add_qmltui_test test_name test_source)
 endfunction()
 
 add_subdirectory(Core)
-add_subdirectory(Controls)
-if(QMLTUI_ENABLE_IMAGE)
-    add_subdirectory(Image)
-endif()
-add_subdirectory(Runner)
-if(QMLTUI_ENABLE_PTYVIEW)
-    add_subdirectory(PtyView)
-endif()
 
-# Installs this build into a private prefix, then configures, builds and runs
-# tests/installed_consumer as an independent project against it: find_package,
-# every installed header, and a custom item painting through the public API.
-add_test(
-    NAME test_installed_custom_item_consumer
-    COMMAND "${CMAKE_COMMAND}"
-        "-DQMLTUI_BUILD_DIR=${CMAKE_BINARY_DIR}"
-        "-DCONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer"
-        "-DCONSUMER_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_build"
-        "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_prefix"
-        "-DQt6_DIR=${Qt6_DIR}"
-        "-DCONSUMER_GENERATOR=${CMAKE_GENERATOR}"
-        "-DCONSUMER_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-        "-DCONSUMER_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-        "-DCONSUMER_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
-)
-set_tests_properties(test_installed_custom_item_consumer PROPERTIES
-    LABELS Unit
-    TIMEOUT 120
-)
+if(QMLTUI_BUILD_TESTS)
+    add_subdirectory(Controls)
+    if(QMLTUI_ENABLE_IMAGE)
+        add_subdirectory(Image)
+    endif()
+    add_subdirectory(Runner)
+    if(QMLTUI_ENABLE_PTYVIEW)
+        add_subdirectory(PtyView)
+    endif()
+
+    # Installs this build into a private prefix, then configures, builds and runs
+    # tests/installed_consumer as an independent project against it: find_package,
+    # every installed header, and a custom item painting through the public API.
+    add_test(
+        NAME test_installed_custom_item_consumer
+        COMMAND "${CMAKE_COMMAND}"
+            "-DQMLTUI_BUILD_DIR=${CMAKE_BINARY_DIR}"
+            "-DCONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer"
+            "-DCONSUMER_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_build"
+            "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed_consumer_prefix"
+            "-DQt6_DIR=${Qt6_DIR}"
+            "-DCONSUMER_GENERATOR=${CMAKE_GENERATOR}"
+            "-DCONSUMER_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+            "-DCONSUMER_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DCONSUMER_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/RunConsumer.cmake"
+    )
+    set_tests_properties(test_installed_custom_item_consumer PROPERTIES
+        LABELS Unit
+        TIMEOUT 120
+    )
+endif()

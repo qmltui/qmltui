@@ -11,7 +11,9 @@
 #include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Engine/Keys.h>
 #include <QmlTui/Core/Engine/Shortcut.h>
-#include <QmlTui/Core/Engine/TerminalEngine.h>>
+#include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QQmlComponent>
+#include <QQmlEngine>
 
 using namespace qmltui;
 
@@ -41,6 +43,7 @@ private slots:
     void testTopmostPopupDismissalOrder();
     void testInlineModeMouseOffset();
     void testShortcutScopedPerTerminalAndPrintableFocusSuppression();
+    void testShortcutStringSequences();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -848,6 +851,91 @@ void TestInputRouter::testShortcutScopedPerTerminalAndPrintableFocusSuppression(
 
     QVERIFY(routerA.routeKey(Qt::Key_S, QStringLiteral("\x13"), Qt::ControlModifier));
     QCOMPARE(scCtrlSCount, 1);
+}
+
+void TestInputRouter::testShortcutStringSequences() {
+    Terminal term;
+    term.engine()->setTestViewportSize(QSize(40, 10));
+    InputRouter router(&term);
+
+    Shortcut ctrlS(&term);
+    ctrlS.setSequence(QStringLiteral("Ctrl+S"));
+    int ctrlSCount = 0;
+    connect(&ctrlS, &Shortcut::activated, [&]() { ++ctrlSCount; });
+
+    Shortcut ctrlShiftP(&term);
+    ctrlShiftP.setSequence(QStringLiteral("ctrl+shift+p"));
+    int ctrlShiftPCount = 0;
+    connect(&ctrlShiftP, &Shortcut::activated, [&]() { ++ctrlShiftPCount; });
+
+    Shortcut f5(&term);
+    f5.setSequence(QStringLiteral("F5"));
+    int f5Count = 0;
+    connect(&f5, &Shortcut::activated, [&]() { ++f5Count; });
+
+    Shortcut ctrlPlus(&term);
+    ctrlPlus.setSequence(QStringLiteral("Ctrl++"));
+    int ctrlPlusCount = 0;
+    connect(&ctrlPlus, &Shortcut::activated, [&]() { ++ctrlPlusCount; });
+
+    Shortcut shiftTab(&term);
+    shiftTab.setSequence(QStringLiteral("Shift+Tab"));
+    int shiftTabCount = 0;
+    connect(&shiftTab, &Shortcut::activated, [&]() { ++shiftTabCount; });
+
+    QVERIFY(router.routeKey(Qt::Key_S, QStringLiteral("\x13"), Qt::ControlModifier));
+    QCOMPARE(ctrlSCount, 1);
+
+    QVERIFY(router.routeKey(Qt::Key_P, QString(), Qt::ControlModifier | Qt::ShiftModifier));
+    QCOMPARE(ctrlShiftPCount, 1);
+
+    QVERIFY(router.routeKey(Qt::Key_F5, QString(), 0));
+    QCOMPARE(f5Count, 1);
+
+    QVERIFY(router.routeKey(Qt::Key_Plus, QStringLiteral("+"), Qt::ControlModifier));
+    QCOMPARE(ctrlPlusCount, 1);
+
+    QVERIFY(router.routeKey(Qt::Key_Backtab, QString(), Qt::ShiftModifier));
+    QCOMPARE(shiftTabCount, 1);
+
+    // Invalid and multi-chord sequences warn and remain inactive (keyCombination == 0).
+    Shortcut invalid(&term);
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(QStringLiteral("Invalid Shortcut sequence")));
+    invalid.setSequence(QStringLiteral("Ctrl+NotARealKey"));
+    QCOMPARE(invalid.keyCombination(), 0);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(QStringLiteral("Invalid Shortcut sequence")));
+    invalid.setSequence(QStringLiteral("Ctrl+X, Ctrl+C"));
+    QCOMPARE(invalid.keyCombination(), 0);
+
+    // QML binding with string and integer sequences both work.
+    QQmlEngine qmlEngine;
+    QQmlComponent component(&qmlEngine);
+    component.setData(QByteArrayLiteral("import QtQml\n"
+                                        "import QmlTui\n"
+                                        "Terminal {\n"
+                                        "    id: root\n"
+                                        "    property int hits: 0\n"
+                                        "    Shortcut {\n"
+                                        "        sequence: \"Alt+Return\"\n"
+                                        "        onActivated: root.hits += 10\n"
+                                        "    }\n"
+                                        "    Shortcut {\n"
+                                        "        sequence: Qt.ControlModifier | Qt.Key_Q\n"
+                                        "        onActivated: root.hits += 1\n"
+                                        "    }\n"
+                                        "}\n"),
+                      QUrl());
+    std::unique_ptr<QObject> rootObj(component.create());
+    auto* qmlTerm = qobject_cast<Terminal*>(rootObj.get());
+    QVERIFY(qmlTerm != nullptr);
+    InputRouter qmlRouter(qmlTerm);
+    QVERIFY(qmlRouter.routeKey(Qt::Key_Return, QStringLiteral("\r"), Qt::AltModifier));
+    QCOMPARE(qmlTerm->property("hits").toInt(), 10);
+    QVERIFY(qmlRouter.routeKey(Qt::Key_Q, QStringLiteral("\x11"), Qt::ControlModifier));
+    QCOMPARE(qmlTerm->property("hits").toInt(), 11);
 }
 
 QTEST_MAIN(TestInputRouter)

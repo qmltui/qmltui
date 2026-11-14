@@ -76,6 +76,8 @@ public:
     // True when output is connected to an interactive terminal rather than a pipe or file.
     virtual bool isInteractive() const = 0;
     virtual bool isInputInteractive() const { return isInteractive(); }
+    // True when standard error is connected to an interactive terminal rather than a pipe or file.
+    virtual bool isStderrInteractive() const { return isInteractive(); }
 
     virtual void startInput() = 0;
     virtual void stopInput() = 0;

@@ -1,13 +1,23 @@
 cmake_minimum_required(VERSION 3.20)
 project(qmltui VERSION 0.5.0 LANGUAGES CXX)
 
-option(QMLTUI_BUILD_EXAMPLES   "Build the examples" ${PROJECT_IS_TOP_LEVEL})
-option(QMLTUI_BUILD_TESTS      "Build tests" ${PROJECT_IS_TOP_LEVEL})
-option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${PROJECT_IS_TOP_LEVEL})
+set(_qmltui_desktop_top_level OFF)
+if(PROJECT_IS_TOP_LEVEL AND NOT EMSCRIPTEN)
+    set(_qmltui_desktop_top_level ON)
+endif()
+option(QMLTUI_BUILD_EXAMPLES   "Build the examples" ${_qmltui_desktop_top_level})
+option(QMLTUI_BUILD_TESTS      "Build tests" ${_qmltui_desktop_top_level})
+option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${_qmltui_desktop_top_level})
+unset(_qmltui_desktop_top_level)
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" OFF)
 option(QMLTUI_ENABLE_PTYVIEW  "Build the optional Unix PTY PtyView module" OFF)
-option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" ${PROJECT_IS_TOP_LEVEL})
+set(_qmltui_runner_default OFF)
+if((PROJECT_IS_TOP_LEVEL OR BUILD_TESTING) AND NOT EMSCRIPTEN)
+    set(_qmltui_runner_default ON)
+endif()
+option(QMLTUI_ENABLE_RUNNER "Build and install the optional QmlTui Runner library and CLI" ${_qmltui_runner_default})
+unset(_qmltui_runner_default)
 option(QMLTUI_ENABLE_COVERAGE "Instrument QmlTui targets for Clang source-based code coverage" OFF)
 option(QMLTUI_COMMERCIAL_LICENSE "Acknowledge that this build is covered by a valid QmlTui Commercial License" OFF)
 
@@ -50,6 +60,8 @@ set(qt_required_components Core Qml)
 
 if(QMLTUI_BUILD_TESTS)
     list(APPEND qt_required_components Test Gui)   # Gui: QStandardItemModel in TableView/TreeView unit tests
+elseif(QMLTUI_BUILD_BENCHMARKS)
+    list(APPEND qt_required_components Gui)        # Gui: benchmark_view_compare
 endif()
 list(REMOVE_DUPLICATES qt_required_components)
 
@@ -127,7 +139,7 @@ if(QMLTUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-if(QMLTUI_BUILD_TESTS)
+if(QMLTUI_BUILD_TESTS OR QMLTUI_BUILD_BENCHMARKS)
     add_subdirectory(tests)
 endif()
 

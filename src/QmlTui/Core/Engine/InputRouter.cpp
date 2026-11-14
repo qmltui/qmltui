@@ -114,8 +114,9 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
         for (const QPointer<Shortcut>& scGuard : shortcutGuards) {
             Shortcut* sc = scGuard.data();
             if (!sc || !sc->enabled()) continue;
-            const bool matches =
-                ((key | modifiers) == sc->sequence()) || (modifiers == 0 && key == sc->sequence());
+            const int combo = sc->keyCombination();
+            if (combo == 0) continue;
+            const bool matches = ((key | modifiers) == combo) || (modifiers == 0 && key == combo);
             if (!matches) continue;
             QObject* p = sc->parent();
             while (p && !qobject_cast<Item*>(p))

@@ -15,6 +15,9 @@ if(NOT "${QmlTui_QML_IMPORT_PATH}" IN_LIST _qmltui_qml_import_paths)
         "QML import paths for Qt Creator and QML tooling" FORCE)
 endif()
 unset(_qmltui_qml_import_paths)
+if(NOT "${QmlTui_QML_IMPORT_PATH}" IN_LIST QT_QML_IMPORT_PATH)
+    list(APPEND QT_QML_IMPORT_PATH "${QmlTui_QML_IMPORT_PATH}")
+endif()
 
 # Scenario API declarations for editor completion; consumed by
 # qmltui_scenario_editor_support(). Resolved here for the same

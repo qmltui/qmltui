@@ -27,8 +27,20 @@ add_test(NAME test_runner_editor_support_preserves_jsconfig
         "-DDECLARATIONS=${QMLTUI_RUNNER_DECLARATIONS}"
         "-DEXPECT_PRESERVED=ON"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/editor_support_check.cmake")
+set(qmltui_editor_probe_tsconfig "${CMAKE_CURRENT_BINARY_DIR}/editor_support_tsconfig")
+file(REMOVE_RECURSE "${qmltui_editor_probe_tsconfig}")
+file(MAKE_DIRECTORY "${qmltui_editor_probe_tsconfig}")
+file(WRITE "${qmltui_editor_probe_tsconfig}/tsconfig.json" "{ \"pre-existing-tsconfig\": true }\n")
+qmltui_scenario_editor_support(DIRECTORY "${qmltui_editor_probe_tsconfig}")
+add_test(NAME test_runner_editor_support_preserves_tsconfig
+    COMMAND "${CMAKE_COMMAND}"
+        "-DPROBE_DIR=${qmltui_editor_probe_tsconfig}"
+        "-DDECLARATIONS=${QMLTUI_RUNNER_DECLARATIONS}"
+        "-DEXPECT_TSCONFIG_PRESERVED=ON"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/editor_support_check.cmake")
 set_tests_properties(test_runner_editor_support
-    test_runner_editor_support_preserves_jsconfig PROPERTIES LABELS "Runner")
+    test_runner_editor_support_preserves_jsconfig
+    test_runner_editor_support_preserves_tsconfig PROPERTIES LABELS "Runner")
 
 add_executable(qmltui_runner_fixture main.cpp)
 target_link_libraries(qmltui_runner_fixture PRIVATE
@@ -554,6 +566,11 @@ if(Python3_Interpreter_FOUND)
     set_tests_properties(test_runner_record_restart_cast PROPERTIES
         DEPENDS test_runner_record_restart LABELS Runner)
 endif()
+
+add_qmltui_environment_scenario(test_runner_expect_style_unknown_property qmltui_runner_fixture 1
+    EVAL_CODE "app.expectStyle(1, 1, { fg: '#ffffff' })"
+    FAILURE_PATTERN "Unknown property \"fg\" for expectStyle()"
+)
 
 if(TARGET qmltui-runner)
     qt_add_executable(test_runner_launcher test_runner_launcher.cpp)

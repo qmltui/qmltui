@@ -218,8 +218,17 @@ function(qmltui_scenario_editor_support)
         file(WRITE "${support_dir}/.gitignore" "*\n")
     endif()
 
+    set(tsconfig "${QMLTUI_EDITOR_DIRECTORY}/tsconfig.json")
     set(jsconfig "${QMLTUI_EDITOR_DIRECTORY}/jsconfig.json")
-    if(NOT EXISTS "${jsconfig}")
+    if(EXISTS "${tsconfig}")
+        file(READ "${tsconfig}" tsconfig_contents)
+        string(FIND "${tsconfig_contents}" "qmltui-runner.d.ts" declarations_position)
+        if(declarations_position EQUAL -1)
+            message(STATUS
+                "QmlTui: add \".qmltui/qmltui-runner.d.ts\" to the include list of "
+                "${tsconfig} to get app.* completion in scenarios")
+        endif()
+    elseif(NOT EXISTS "${jsconfig}")
         file(WRITE "${jsconfig}" [=[{
     "compilerOptions": {
         "target": "es2020",

@@ -173,7 +173,7 @@ void PropertyAnimation::tick(qint64 elapsedMs) {
     double t = static_cast<double>(m_accumulatedTime) / m_duration;
 
     if (t >= 1.0) {
-        if (m_loops == -1) {
+        if (m_loops < 0) {
             m_accumulatedTime = m_accumulatedTime % m_duration;
             t = static_cast<double>(m_accumulatedTime) / m_duration;
         } else if (m_loops > 1) {

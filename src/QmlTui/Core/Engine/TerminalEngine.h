@@ -282,6 +282,7 @@ private:
     bool m_renderingFrame = false;
     bool m_rendererStarted = false;
     bool m_alternateScreenMessageSession = false;
+    bool m_deferredDefaultStderrSession = false;
     bool m_terminalOutputEnabled = true;
     bool m_testSession = false;
     bool m_liveOutput = false;

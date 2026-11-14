@@ -13,6 +13,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QJSValueIterator>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -233,9 +234,32 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
                          .arg(frame->height()));
         return;
     }
-    if (!expectedStyle.isObject()) {
+    if (!expectedStyle.isObject() || expectedStyle.isArray() || expectedStyle.isCallable()) {
         failScenario(
             QStringLiteral("expectStyle requires an object with expected cell attributes"));
+        return;
+    }
+
+    static const QStringList allowedProperties = {
+        QStringLiteral("character"),  QStringLiteral("bold"),       QStringLiteral("dim"),
+        QStringLiteral("italic"),     QStringLiteral("underline"),  QStringLiteral("reversed"),
+        QStringLiteral("blink"),      QStringLiteral("conceal"),    QStringLiteral("strikethrough"),
+        QStringLiteral("foreground"), QStringLiteral("background"),
+    };
+    int propertyCount = 0;
+    QJSValueIterator propIt(expectedStyle);
+    while (propIt.hasNext()) {
+        propIt.next();
+        ++propertyCount;
+        if (!allowedProperties.contains(propIt.name())) {
+            failScenario(QStringLiteral("Unknown property \"%1\" for expectStyle(); allowed: %2")
+                             .arg(propIt.name(), allowedProperties.join(QStringLiteral(", "))));
+            return;
+        }
+    }
+    if (propertyCount == 0) {
+        failScenario(
+            QStringLiteral("expectStyle requires at least one expected cell style property"));
         return;
     }
 
@@ -303,6 +327,46 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
                              .arg(y)
                              .arg(expectedRev)
                              .arg(actualRev));
+            return;
+        }
+    }
+    if (expectedStyle.hasProperty(QStringLiteral("blink"))) {
+        const bool expectedBlink = expectedStyle.property(QStringLiteral("blink")).toBool();
+        const bool actualBlink = (static_cast<uint8_t>(cell.attributes) &
+                                  static_cast<uint8_t>(TextAttribute::Blink)) != 0;
+        if (expectedBlink != actualBlink) {
+            failScenario(QStringLiteral("Cell at (%1,%2) blink expected %3 but got %4")
+                             .arg(x)
+                             .arg(y)
+                             .arg(expectedBlink)
+                             .arg(actualBlink));
+            return;
+        }
+    }
+    if (expectedStyle.hasProperty(QStringLiteral("conceal"))) {
+        const bool expectedConceal = expectedStyle.property(QStringLiteral("conceal")).toBool();
+        const bool actualConceal = (static_cast<uint8_t>(cell.attributes) &
+                                    static_cast<uint8_t>(TextAttribute::Conceal)) != 0;
+        if (expectedConceal != actualConceal) {
+            failScenario(QStringLiteral("Cell at (%1,%2) conceal expected %3 but got %4")
+                             .arg(x)
+                             .arg(y)
+                             .arg(expectedConceal)
+                             .arg(actualConceal));
+            return;
+        }
+    }
+    if (expectedStyle.hasProperty(QStringLiteral("strikethrough"))) {
+        const bool expectedStrike =
+            expectedStyle.property(QStringLiteral("strikethrough")).toBool();
+        const bool actualStrike = (static_cast<uint8_t>(cell.attributes) &
+                                   static_cast<uint8_t>(TextAttribute::Strikethrough)) != 0;
+        if (expectedStrike != actualStrike) {
+            failScenario(QStringLiteral("Cell at (%1,%2) strikethrough expected %3 but got %4")
+                             .arg(x)
+                             .arg(y)
+                             .arg(expectedStrike)
+                             .arg(actualStrike));
             return;
         }
     }

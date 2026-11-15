@@ -273,7 +273,7 @@ not reflected, `rowsRemoved` only adjusts the consumed-row counter, and
 - `Qt::ToolTipRole`, `Qt::StatusTipRole`, `Qt::WhatsThisRole`: exposed by name
   as Qt does, not rendered.
 
-For larger multi-view C++ model setups (`QAbstractTableModel` + `QSortFilterProxyModel` + `TreeView`), see [`btop`](https://github.com/qmltui/apps/tree/main/apps/btop) and [`container_fleet`](https://github.com/qmltui/apps/tree/main/apps/container_fleet) in [qmltui/apps](https://github.com/qmltui/apps).
+For larger multi-view C++ model setups (`QAbstractTableModel` + `QSortFilterProxyModel` + `TreeView`), see [`qtop`](https://github.com/qmltui/apps/tree/main/apps/qtop) and [`container_fleet`](https://github.com/qmltui/apps/tree/main/apps/container_fleet) in [qmltui/apps](https://github.com/qmltui/apps).
 
 ![StandardItemDelegate recorded demo](../assets/casts/components/standard_item_delegate.gif)
 

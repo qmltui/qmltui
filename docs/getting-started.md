@@ -1,6 +1,6 @@
 # Getting Started
 
-Think of **QmlTui** as the **Qt Quick equivalent for terminal user interfaces**: you declare reactive layouts, controls, and property bindings in QML and build the backend in C++. This tutorial walks Qt 6 developers through building a standalone QmlTui terminal application with CMake, binding a C++ `QObject` class to QML with `QML_ELEMENT`, and verifying rendered terminal frames in CTest with `Runner`.
+This tutorial walks Qt 6 developers through building a standalone QmlTui terminal application with CMake, binding a C++ `QObject` class to QML with `QML_ELEMENT`, and verifying rendered terminal frames in CTest with `Runner`.
 
 For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlTui.PtyView`, `Runner`), CMake cache options, and runtime environment variables, see [Build Configuration and Installation](build-configuration.md).
 
@@ -357,8 +357,7 @@ cmake --build build --target qmltui_gallery
 
 ## Next Steps
 
-1. **[QmlTui for Qt Quick and Widgets Developers](guides/qt-quick-to-qmltui.md)**: Learn how QmlTui's character-cell coordinates, box-drawing borders, colors, keyboard quit handling, and model roles differ from `QtQuick` and `QtWidgets`.
-2. **[Editor and IDE Setup](guides/editor-setup.md)**: Configure `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
-3. **[Build Configuration and Installation](build-configuration.md)**: Install QmlTui for `find_package(QmlTui)`, structure multi-file QML modules, configure optional modules, and review CMake options and environment variables.
-4. **[Guides](guides/index.md)**: Read task guides on [Layouts & Cell Geometry](guides/layouts.md), [Input & Focus](guides/input-and-focus.md), [Models in QmlTui Views](guides/models.md), [Styling & Colors](guides/styling-and-colors.md), and [Testing with Runner](guides/testing.md).
-5. **[Examples and Recipes](examples.md)**: Browse standalone QML and C++ recipes under `examples/recipes/` and full-scale showcase applications in [qmltui/apps](https://github.com/qmltui/apps).
+- **[QmlTui for Qt Quick and Widgets Developers](guides/qt-quick-to-qmltui.md)**: Cell geometry, borders, colors, quit paths, and shared C++ models.
+- **[Editor and IDE Setup](guides/editor-setup.md)**: `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete.
+- **[Build Configuration and Installation](build-configuration.md)**: `find_package(QmlTui)`, multi-file modules, optional modules, and CMake/env options.
+- **[Guides](guides/index.md)** & **[Examples and Recipes](examples.md)**: Task guides, copyable recipes, and showcase apps in [qmltui/apps](https://github.com/qmltui/apps).

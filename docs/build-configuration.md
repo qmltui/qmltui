@@ -1,44 +1,25 @@
 # Build Configuration and Installation
 
-This reference covers QmlTui module dependencies, consuming an installed build with `find_package(QmlTui)`, in-tree `FetchContent` rules, CMake options, and runtime environment variables.
-
-To build your first standalone application, start with the [Getting Started tutorial](getting-started.md).
+This reference covers QmlTui module targets, consuming an installed package with `find_package(QmlTui)`, `FetchContent` rules, CMake options, and runtime environment variables. To build your first standalone application, start with [Getting Started](getting-started.md).
 
 ## QML Modules and CMake Targets
 
-QmlTui is organized into a core library (`qmltui::core`) and optional companion modules:
+`qmltui::core` and `qmltui::controls` require only `Qt6::Core` and `Qt6::Qml`. Optional modules and tooling are controlled by CMake cache options:
 
-| QML Import | CMake Target | Required Dependencies | Description |
-| :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | Core engine (`Terminal`, `Scrollback`, `Item`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views, `Canvas`, input, states, and animations) |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`Button`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`) |
-| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Terminal graphics (`Image`, `AnimatedSprite`; requires `-DQMLTUI_ENABLE_IMAGE=ON`) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix PTY (`PtyView`; requires `-DQMLTUI_ENABLE_PTYVIEW=ON` on Linux or macOS) |
+| QML Import / Tool | CMake Target | CMake Option & Default | Dependencies | Guide & Reference |
+| :--- | :--- | :--- | :--- | :--- |
+| `import QmlTui` | `qmltui::core` | Always built (`QMLTUI_ENABLE_PRIVATE_QT=ON` auto-enables `Behavior` when `Qt6::QmlPrivate` is present) | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | [Architecture](guides/architecture.md), [Animation & States](guides/animation-and-states.md) |
+| `import QmlTui.Controls` | `qmltui::controls` | Always built | `qmltui::core` | [QML Types](qml-types/index.md) |
+| `import QmlTui.Image` | `qmltui::image` | `-DQMLTUI_ENABLE_IMAGE=ON` (default `OFF`) | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | [Image](qml-types/image.md), [AnimatedSprite](qml-types/animatedsprite.md) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | `-DQMLTUI_ENABLE_PTYVIEW=ON` (default `OFF`, Linux/macOS) | `qmltui::core`, `libvterm` | [Embedded PTY Shells](guides/pty-view.md), [PtyView](qml-types/ptyview.md) |
+| `Runner` & `qmltui-runner` | `qmltui::runner` | `-DQMLTUI_ENABLE_RUNNER=ON` (default `ON` top-level or when `BUILD_TESTING=ON`) | `qmltui::core` | [Testing with Runner](guides/testing.md), [Runner](cpp-classes/runner.md) |
+| `qmltui_wasm_app(<target>)` | *(CMake helper)* | Automatic under Emscripten (`EMSCRIPTEN`) | Qt for WebAssembly `wasm_singlethread` | [Qt for WebAssembly](guides/webassembly.md) |
 
-See [QML Modules and CMake Targets](guides/architecture.md#qml-modules-and-cmake-targets) in the Architecture guide for details on what each module provides.
-
-## Choosing Optional Dependencies
-
-`qmltui::core` and `qmltui::controls` require only `Qt6::Core` and `Qt6::Qml`. A default source build enables private-Qt features when `Qt6::QmlPrivate` is available and leaves optional companion modules off until requested:
-
-| Feature / Module | CMake Option | Default | Requirement |
-| :--- | :--- | :--- | :--- |
-| **`QmlTui.Image`** (`Image`, `AnimatedSprite`) | `-DQMLTUI_ENABLE_IMAGE=ON` | `OFF` | `Qt6::Gui` and `Qt6::Network` (warns and falls back if missing) |
-| **`Behavior` & direct `PropertyChanges`** | `-DQMLTUI_ENABLE_PRIVATE_QT=ON` | `ON` (auto) | `Qt6::QmlPrivate` headers (used automatically when available; warns and falls back if missing unless set to `OFF`) |
-| **`QmlTui.PtyView`** (`PtyView`) | `-DQMLTUI_ENABLE_PTYVIEW=ON` | `OFF` | Linux or macOS (`libvterm` is fetched automatically unless `QMLTUI_USE_SYSTEM_LIBVTERM=ON`) |
-| **`qmltui::runner`** (`Runner` & `qmltui-runner`) | `-DQMLTUI_ENABLE_RUNNER=ON` | `ON` (top-level or `BUILD_TESTING=ON`) | Headless scenario test runner and CLI |
-
-For an application that depends only on public `Qt6::Core` and `Qt6::Qml` APIs, configure with:
-
-```sh
-cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF
-```
-
-This keeps `qmltui::core` and `qmltui::controls` enabled while omitting `Behavior` and direct-assignment `PropertyChanges`.
+Pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to build strictly against public `Qt6::Core` and `Qt6::Qml` headers (omits `Behavior` and direct-assignment `PropertyChanges`).
 
 ## Using an Installed Build (`find_package(QmlTui)`)
 
-To install QmlTui once and consume it across multiple projects, build and install from a QmlTui source checkout:
+Build and install QmlTui from a source checkout:
 
 ```sh
 cmake -S . -B build \
@@ -49,7 +30,7 @@ cmake --build build
 cmake --install build --prefix /your/prefix
 ```
 
-Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and locate QmlTui in `CMakeLists.txt` with `find_package(QmlTui 0.5 REQUIRED)`:
+Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and consume the package with `find_package(QmlTui 0.5 REQUIRED)`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -78,33 +59,31 @@ target_link_libraries(hello_qmltui PRIVATE
 )
 ```
 
-Configure the application with the installation prefix (and your Qt prefix if needed):
+Configure with the installation prefix (and Qt prefix if needed):
 
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH="/your/prefix;/path/to/Qt/6.x/gcc_64"
 cmake --build build
 ```
 
-When installing to a non-standard prefix, make the installed QML modules discoverable at runtime:
+When installed to a non-standard prefix, expose the QML module directory at runtime (use `QmlTui_QML_IMPORT_PATH` if your platform installs under `lib64` or a custom `QMLTUI_INSTALL_QMLDIR`):
 
 ```sh
 QML_IMPORT_PATH=/your/prefix/lib/qml ./build/hello_qmltui
 ```
 
-Use the actual `QmlTui_QML_IMPORT_PATH` value if your platform uses `lib64` or a custom `QMLTUI_INSTALL_QMLDIR`. In Qt Creator, add `QML_IMPORT_PATH` to the run environment. On Windows, add the directory containing the installed QmlTui DLLs to `PATH`.
-
 ### In-Tree (`FetchContent` / `add_subdirectory`) vs. Installed (`find_package`)
 
-- **QML type dependency ordering (`DEPENDENCIES TARGET`)**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` (plus `TARGET qmltui::image` or `TARGET qmltui::pty_view` when used) to `qt_add_qml_module()` so Ninja generates QmlTui's `.qmltypes` and `qmldir` before running `qmlcachegen` and `qmllint`. In `find_package(QmlTui)` builds, omit `DEPENDENCIES TARGET` because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` automatically appends `QmlTui_QML_IMPORT_PATH` to both `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH`.
-- **Exported target aliases**: Both source and installed builds provide `qmltui::core` (`QmlTui::Core`), `qmltui::controls` (`QmlTui::Controls`), `qmltui::image` (`QmlTui::Image`), `qmltui::pty_view` (`QmlTui::PtyView`), and `qmltui::runner` (`QmlTui::Runner`).
-- **Windows DLL lookup (`FetchContent` and `find_package`)**: Windows searches the executable directory and `PATH` for `QmlTuiCore.dll`, `QmlTuiControls.dll`, and Qt DLLs. For `FetchContent` builds, set `set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")` before `FetchContent_MakeAvailable(QmlTui)` so all DLLs land alongside your `.exe`, and add your Qt kit's `bin` directory to `PATH` (or package with `windeployqt`).
+- **`DEPENDENCIES TARGET` ordering**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` (plus `TARGET qmltui::image` or `TARGET qmltui::pty_view` when used) to `qt_add_qml_module()` so QmlTui's `.qmltypes` and `qmldir` build before `qmlcachegen` and `qmllint`. Omit `DEPENDENCIES TARGET` in `find_package(QmlTui)` builds because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` appends `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically.
+- **Target aliases**: Both source and installed builds export `qmltui::core` (`QmlTui::Core`), `qmltui::controls` (`QmlTui::Controls`), `qmltui::image` (`QmlTui::Image`), `qmltui::pty_view` (`QmlTui::PtyView`), and `qmltui::runner` (`QmlTui::Runner`).
+- **Windows DLL lookup**: Set `set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")` before `FetchContent_MakeAvailable(QmlTui)` so `QmlTui*.dll` land next to your `.exe`, and add your Qt kit's `bin` directory to `PATH` (or run `windeployqt`).
 
 ### Multi-File QML Modules and Singletons
 
-As your application grows beyond `Main.qml`, register additional `.qml` components and singletons on the same `qt_add_qml_module()` target:
+Register additional `.qml` components and singletons on the same `qt_add_qml_module()` target:
 
-- **Root-directory components**: Uppercase `.qml` files placed alongside `CMakeLists.txt` (`QML_FILES Main.qml StatusBar.qml`) become directly instantiable QML types (`StatusBar { ... }`) across all files in the module without extra imports.
-- **Components in subdirectories**: Under Qt's `QTP0001` resource policy (`qt_standard_project_setup(REQUIRES 6.8)`), placing a file at `ui/StatusBar.qml` maps it to the `ui/` resource subdirectory, which hides it from unqualified lookup in `Main.qml` unless you set `QT_QML_SOURCE_TYPENAME` before `qt_add_qml_module()`:
+- **Root-directory components**: Uppercase `.qml` files next to `CMakeLists.txt` (`QML_FILES Main.qml StatusBar.qml`) become directly instantiable types (`StatusBar { ... }`) across the module.
+- **Subdirectory components**: Under Qt's `QTP0001` policy (`qt_standard_project_setup(REQUIRES 6.8)`), set `QT_QML_SOURCE_TYPENAME` on files in subdirectories so unqualified lookup works in `Main.qml`:
 
   ```cmake
   set_source_files_properties(ui/StatusBar.qml PROPERTIES
@@ -112,7 +91,7 @@ As your application grows beyond `Main.qml`, register additional `.qml` componen
   )
   ```
 
-- **Application singletons (palettes and shared state)**: QmlTui intentionally omits a global framework theme singleton so applications own their styling. To define an application-wide `Theme` singleton, start `Theme.qml` with `pragma Singleton`, mark the file with `QT_QML_SINGLETON_TYPE TRUE` before `qt_add_qml_module()`, and list it in `QML_FILES`:
+- **Application singletons**: QmlTui has no global framework theme singleton. Start `Theme.qml` with `pragma Singleton` and mark `QT_QML_SINGLETON_TYPE TRUE` before `qt_add_qml_module()`:
 
   ```cmake
   set_source_files_properties(Theme.qml PROPERTIES
@@ -128,77 +107,26 @@ As your application grows beyond `Main.qml`, register additional `.qml` componen
 
 ### Offline / Air-Gapped CI and Reproducible Builds
 
-- **System vs. fetched third-party libraries**: By default (`QMLTUI_USE_SYSTEM_UTF8PROC=OFF` and `QMLTUI_USE_SYSTEM_LIBVTERM=OFF`), CMake downloads pinned sources for `utf8proc` (and `libvterm` when `QMLTUI_ENABLE_PTYVIEW=ON`) via `FetchContent` at configure time. On air-gapped or firewalled CI runners without network access during configure, install `libutf8proc-dev` (and `libvterm-dev` if using `PtyView`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` (and `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`), or point CMake to a local checkout with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc`.
-- **Deterministic `Qt6::QmlPrivate` behavior in CI**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` auto-detects `Qt6::QmlPrivate` and falls back to `OFF` with a CMake warning when private headers are missing, pin `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` in CI if your application does not use `Behavior` (or install `qt6-declarative-private-dev` across all build environments) so local and CI builds share identical QML semantics.
+- **System vs. fetched libraries**: By default, CMake downloads pinned `utf8proc` (and `libvterm` when `PtyView` is enabled) via `FetchContent`. On offline runners, install system packages and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` / `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`, or pass `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc`.
+- **Deterministic `Qt6::QmlPrivate`**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` falls back to `OFF` with a warning when private headers are absent, pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` explicitly in CI if unused, or install `qt6-declarative-private-dev` everywhere.
 
-## Optional Modules and Tooling
+## Repository Test and Benchmark Builds
 
-### Embedded PTY Shells (`QmlTui.PtyView`)
-
-`PtyView` is opt-in on Linux and macOS:
-
-```sh
-cmake -S . -B build -DQMLTUI_ENABLE_PTYVIEW=ON -DQMLTUI_BUILD_EXAMPLES=ON
-cmake --build build --target qmltui_gallery
-./build/examples/gallery/qmltui_gallery --example PtyView
-```
-
-See [Embedded PTY Shells](guides/pty-view.md) and the [PtyView QML Reference](qml-types/ptyview.md). Note the distinction between inline output and hosted PTYs:
-
-- `qmltui_inline_repl_demo` ([`examples/recipes/inline_repl`](../examples/recipes/inline_repl/)) uses `Terminal.Inline` and `Scrollback` and does not require `PtyView`.
-- `qmltui_gallery --example PtyView` hosts a child process inside a pseudo-terminal (`QMLTUI_ENABLE_PTYVIEW=ON`).
-
-### Headless Testing and Recording (`Runner`)
-
-Enable `-DQMLTUI_ENABLE_RUNNER=ON` (enabled by default for top-level builds or when `-DQMLTUI_BUILD_TESTS=ON` is set) to build `qmltui::runner` and the `qmltui-runner` CLI. See [Testing and Recording with Runner](guides/testing.md) and the [Runner C++ reference](cpp-classes/runner.md).
-
-### WebAssembly (`qmltui_wasm_app`)
-
-When building with a Qt for WebAssembly kit (`EMSCRIPTEN`), both the QmlTui root and `find_package(QmlTui)` automatically include `QmlTuiWasm.cmake` and provide `qmltui_wasm_app(<target> [OUTPUT_DIRECTORY <dir>])`. Calling `qmltui_wasm_app(<target>)` disables Qt's GUI `<canvas>` shell and generates a ready-to-run `xterm.js` terminal page (`<target>.html`) next to `<target>.js` and `<target>.wasm`. See [QmlTui in the browser (Qt for WebAssembly)](guides/webassembly.md).
-
-## Development Builds
-
-### Build and Run the Gallery and Test Suite
-
-Clone the repository and build `qmltui_gallery` to inspect the built-in controls, views, layouts, and canvas primitives:
-
-```sh
-git clone https://github.com/qmltui/qmltui.git
-cd qmltui
-cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON
-cmake --build build --target qmltui_gallery
-./build/examples/gallery/qmltui_gallery
-```
-
-To build the full repository and run the CTest suite:
+To build tests and examples from a QmlTui source checkout (see [Examples and Recipes](examples.md) for `qmltui_gallery` options):
 
 ```sh
 cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build
-ctest --test-dir build --output-on-failure
+ctest --test-dir build -LE Demo --output-on-failure
 ```
 
-### Benchmarks
-
-Configure a Release tree with `-DQMLTUI_BUILD_BENCHMARKS=ON` (standalone benchmark builds work with `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_EXAMPLES=OFF`):
+To build Release benchmarks (`build-release/tests/Core/benchmark_views`, `benchmark_view_phases`, `benchmark_view_compare`, `benchmark_render`; see [Model/View Comparison](contributing/benchmarks/2026-10-27-view-comparison.md) and [0.4 Acceptance](contributing/benchmarks/0.4-acceptance/README.md)):
 
 ```sh
-cmake -S . -B build-release \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DQMLTUI_BUILD_TESTS=OFF \
-  -DQMLTUI_BUILD_EXAMPLES=OFF \
-  -DQMLTUI_BUILD_BENCHMARKS=ON
+cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release \
+  -DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_EXAMPLES=OFF -DQMLTUI_BUILD_BENCHMARKS=ON
 cmake --build build-release
 ```
-
-Binaries are placed under `build-release/tests/Core/`:
-
-- `./build-release/tests/Core/benchmark_views` measures 1,000- and 10,000-row view creation time.
-- `./build-release/tests/Core/benchmark_view_phases` measures per-phase creation, scroll, `dataChanged`, and idle layout/paint cost across QmlTui views.
-- `./build-release/tests/Core/benchmark_view_compare` compares QmlTui (`ListView`, `GridView`, `TableView`, `TreeView`) side-by-side against Qt Quick and Qt Widgets (`--rows <N>`, `--steps <N>`, `--json <path>`).
-- `./build-release/tests/Core/benchmark_render` measures per-frame paint and diff cost at 80×24 and 240×70 (`--json <path>`, `--frames <count>`). JSON output includes `updateMedianUs` and `updatePaintMedianUs`.
-
-See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-comparison.md) and the [0.4 acceptance report](contributing/benchmarks/0.4-acceptance/README.md) for baseline numbers and host specifications.
 
 ## CMake Options and Environment Variables
 
@@ -206,17 +134,17 @@ See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-c
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
-| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build example and recipe executables |
-| `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable Runner scenarios |
+| `QMLTUI_BUILD_EXAMPLES` | `ON` (top-level) | Build gallery and recipe executables |
+| `QMLTUI_BUILD_TESTS` | `ON` (top-level) | Build unit tests and enable `Runner` scenarios |
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level) | Build benchmark executables |
-| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Use `Qt6::QmlPrivate` when available to enable `Behavior` and advanced states (warns if missing unless set to `OFF`) |
-| `QMLTUI_ENABLE_IMAGE` | `OFF` | Build the `QmlTui.Image` module (`Qt6::Gui`, `Qt6::Network`; warns if missing unless set to `OFF`) |
-| `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build the Unix PTY `QmlTui.PtyView` module (Linux/macOS) |
-| `QMLTUI_ENABLE_RUNNER` | `ON` (top-level or `BUILD_TESTING=ON`) | Build and install `qmltui::runner` and the `qmltui-runner` CLI |
-| `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument QmlTui targets for Clang source-based code coverage |
-| `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install directory for QmlTui QML modules (`<prefix>/lib/qml`) |
-| `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of the pinned source fetched via `FetchContent` |
-| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of the fetched source (`PtyView` only) |
+| `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Enable `Behavior` and binding-aware `PropertyChanges` via `Qt6::QmlPrivate` (warns if missing unless `OFF`) |
+| `QMLTUI_ENABLE_IMAGE` | `OFF` | Build `QmlTui.Image` (`Qt6::Gui`, `Qt6::Network`) |
+| `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build Unix `QmlTui.PtyView` (Linux/macOS) |
+| `QMLTUI_ENABLE_RUNNER` | `ON` (top-level or `BUILD_TESTING=ON`) | Build and install `qmltui::runner` and `qmltui-runner` |
+| `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument targets for Clang source-based coverage |
+| `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
+| `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of `FetchContent` |
+| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of `FetchContent` (`PtyView`) |
 | `QMLTUI_COMMERCIAL_LICENSE` | `OFF` | Acknowledge building under a commercial QmlTui license |
 
 ### Runtime Environment Variables
@@ -224,15 +152,15 @@ See the [Model/View Comparison report](contributing/benchmarks/2026-10-27-view-c
 | Variable | Values / Units | Description |
 | :--- | :--- | :--- |
 | `NO_COLOR` | non-empty | Disable ANSI color output (`ColorDepth::Mono`) |
-| `QMLTUI_COLOR_DEPTH` | `mono`/`none`/`0`, `16`/`basic`/`ansi`, `256`/`indexed`, `truecolor`/`24bit`/`rgb` | Override auto-detected terminal color depth |
-| `QMLTUI_MAX_FPS` | integer `>= 0` (`0` = uncapped) | Override maximum render frame rate (default `60`) |
-| `QMLTUI_LOG_FILE` | file path | Append `qDebug` / `qWarning` / `console.log()` lines immediately to `<path>` (unbuffered per line, including during `Terminal.AltScreen` sessions; redirecting `2> debug.log` also streams live) |
-| `QMLTUI_FRAME_STATS` | `1` / non-empty | Log periodic render timing and byte statistics to stderr |
-| `QMLTUI_DEBUG_PAINT_DIRTY` | `1` / non-empty | Log a warning when an `Item` calls `markDirty()` while inside `paint()` |
-| `QMLTUI_OUTPUT_QUEUE_LIMIT` | bytes (`>= 0`, default `262144`) | Maximum queued async terminal output before backpressure defers rendering |
-| `QMLTUI_SCROLLBACK_HISTORY_ROWS` | integer `>= 0` (default `5000`) | Maximum committed scrollback rows retained in memory for inspection |
-| `QMLTUI_ESCAPE_TIMEOUT_MS` | milliseconds (default `50`) | Timeout before a lone `ESC` byte is dispatched as `Qt::Key_Escape` |
-| `QMLTUI_QUERY_TIMEOUT_MS` | milliseconds (default `100`) | Timeout for terminal capability and OSC color queries |
+| `QMLTUI_COLOR_DEPTH` | `mono`/`none`/`0`, `16`/`basic`/`ansi`, `256`/`indexed`, `truecolor`/`24bit`/`rgb` | Override detected terminal color depth |
+| `QMLTUI_MAX_FPS` | integer `>= 0` (`0` = uncapped) | Maximum render frame rate (default `60`) |
+| `QMLTUI_LOG_FILE` | file path | Stream `qDebug` / `qWarning` / `console.log()` lines unbuffered to `<path>` (including during `Terminal.AltScreen`) |
+| `QMLTUI_FRAME_STATS` | `1` / non-empty | Log periodic render timing and byte statistics to `stderr` |
+| `QMLTUI_DEBUG_PAINT_DIRTY` | `1` / non-empty | Warn when an `Item` calls `markDirty()` inside `paint()` |
+| `QMLTUI_OUTPUT_QUEUE_LIMIT` | bytes (`>= 0`, default `262144`) | Max queued async terminal output before backpressure defers rendering |
+| `QMLTUI_SCROLLBACK_HISTORY_ROWS` | integer `>= 0` (default `5000`) | Max committed `Inline` scrollback rows retained in memory |
+| `QMLTUI_ESCAPE_TIMEOUT_MS` | ms (default `50`) | Timeout before a lone `ESC` byte dispatches as `Qt::Key_Escape` |
+| `QMLTUI_QUERY_TIMEOUT_MS` | ms (default `100`) | Timeout for terminal capability and OSC color queries |
 | `QMLTUI_SYNC_OUTPUT` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) DEC mode 2026 synchronized output |
-| `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty keyboard protocol negotiation (`1` keeps default negotiation enabled) |
-| `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty graphics protocol detection (`1` keeps default detection enabled) |
+| `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty keyboard protocol negotiation |
+| `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty graphics protocol detection |

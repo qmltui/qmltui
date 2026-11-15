@@ -4,6 +4,9 @@
 
 When an executable links `qmltui::runner`, QML-created `Terminal` roots automatically install a startup hook. Normal interactive startup is unchanged unless you launch the binary through `qmltui-runner` or set `QMLTUI_RUNNER_*` environment variables. (If you construct `qmltui::Terminal` in C++ without QML, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root.)
 
+> [!TIP]
+> Building with AI coding agents? See [Agentic Development Loop with Runner](agentic-development.md) for a step-by-step build, capture, and verification workflow plus ready-to-copy `AGENTS.md` instructions and bundled skills.
+
 ## 1. Write a JavaScript Scenario
 
 A scenario script defines `function main(app)` in a `.js` file, or `export function main(app)` in an `.mjs` ES module (which can `import` shared helper modules using relative paths). Add `/** @param {Runner} app */` above `main` to enable IDE autocomplete and hover help:

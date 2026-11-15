@@ -23,37 +23,26 @@ On each dirty frame, the engine runs a layout pass over the item tree, computes 
 
 While a session is in raw mode, `PosixTerminalBackend` installs async-signal-safe handlers so abnormal termination or job suspension never leaves the user's shell in raw mode or the alternate screen:
 
-- **Fatal and termination signals (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, `SIGABRT`, `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGILL`)**: The handler pops any active Kitty keyboard protocol stack entry (`\033[<u`), disables mouse and bracketed-paste reporting, shows the cursor, resets SGR attributes and terminal colors, exits the alternate screen (`\033[?1049l`), restores the original `termios` state (`tcsetattr`), and re-raises the signal with `SIG_DFL` so core dumps and exit statuses behave normally.
-- **Job control (`SIGTSTP` and `SIGCONT`)**: On `SIGTSTP` (`Ctrl+Z`), the backend restores cooked terminal state before stopping the process. On `SIGCONT`, it re-enters raw mode and notifies `TerminalEngine` via a self-pipe bridge to re-enable terminal modes and repaint the screen.
+- **Fatal and termination signals (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, `SIGABRT`, `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGILL`)**: Pops any active Kitty keyboard protocol stack entry (`\033[<u`), disables mouse and bracketed-paste reporting, shows the cursor, resets SGR attributes and terminal colors, exits the alternate screen (`\033[?1049l`), restores the original `termios` state (`tcsetattr`), and re-raises the signal with `SIG_DFL`.
+- **Job control (`SIGTSTP` and `SIGCONT`)**: Restores cooked terminal state before stopping on `SIGTSTP` (`Ctrl+Z`), and re-enters raw mode and repaints the screen via a self-pipe bridge on `SIGCONT`.
 
 ## Terminal-Safe Qt Diagnostics
 
-`TerminalEngine` installs a process-wide Qt message router (`QtMessageRouting`) while terminal engines exist. Messages pass through normally until a renderer enters the alternate screen. While any alternate-screen session is active and `stderr` points to an interactive TTY, non-fatal Qt warnings and `console.log()` messages are buffered in memory so `stderr` writes cannot corrupt ANSI cursor positioning, and replayed on exit. When `stderr` is redirected to a file or pipe (`./app 2> debug.log`), when `QMLTUI_LOG_FILE=<path>` is set, or when C++ code registers a sink with `QtMessageRouting::install()`, diagnostics stream immediately.
+`TerminalEngine` installs a process-wide Qt message router (`QtMessageRouting`) while terminal engines exist. While any alternate-screen session is active and `stderr` points to an interactive TTY, non-fatal Qt warnings and `console.log()` messages are buffered in memory so `stderr` writes cannot corrupt ANSI cursor positioning, and replayed on exit. When `stderr` is redirected (`./app 2> debug.log`), when `QMLTUI_LOG_FILE=<path>` is set, or when C++ code registers a sink with `QtMessageRouting::install()`, diagnostics stream immediately. Fatal Qt messages are forwarded immediately before aborting.
 
-`TerminalDevice` only handles raw terminal byte I/O and does not own logging policy. Fatal Qt messages are forwarded immediately before aborting.
+## Input Handling and Item Graph
 
-## Input Handling
+`TerminalDevice` reads raw byte streams from standard input (or the platform console backend) and forwards them to `TerminalEngine`. `InputDecoder` parses UTF-8 text, CSI/SS3 key sequences, Kitty keyboard protocol reports, bracketed paste blocks, and SGR mouse reports into `KeyEvent` and `MouseEvent` objects dispatched along the active focus chain or to the topmost `MouseArea`.
 
-`TerminalDevice` reads raw byte streams from standard input (or the platform console backend) and forwards them to `TerminalEngine`. `InputDecoder` parses UTF-8 text, CSI/SS3 key sequences, Kitty keyboard protocol reports, bracketed paste blocks, and SGR mouse reports into `KeyEvent` and `MouseEvent` objects, which are dispatched along the active focus chain or to the topmost `MouseArea`.
+Visual elements inherit from `qmltui::Item`. Each `Item` tracks integer cell geometry (`x`, `y`, `width`, `height`, `implicitWidth`, `implicitHeight`), visibility, focus policy, and child stacking. Property changes call `markDirty()`, scheduling an asynchronous frame on `TerminalEngine`.
 
-## Item Graph
+## Module Boundaries
 
-Visual elements inherit from `qmltui::Item`. Each `Item` tracks its integer cell geometry (`x`, `y`, `width`, `height`, `implicitWidth`, `implicitHeight`), visibility, focus policy, and child list. Property changes call `markDirty()`, which schedules an asynchronous frame on the `TerminalEngine` without blocking the caller.
-
-## QML Modules and CMake Targets
-
-QmlTui is split into a standalone core library (`qmltui::core`) and optional companion modules:
-
-| QML Import | CMake Target | Dependencies | Contents |
-| :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal`, `Scrollback`, `Item`, `FocusScope`, `Popup`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, `Row`, `Column`, `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `ListView`, `TableView`, `TreeView`, `GridView`, `ScrollView`, `Canvas` and shapes, `Repeater`, `Loader`, `MouseArea`, `Shortcut`, `Keys`, `State`, `StateGroup`, `Transition`, `PropertyChanges`, animations, `Clipboard`, `terminalCapabilities`, and `Behavior` (when `QMLTUI_ENABLE_PRIVATE_QT=ON`). |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`. |
-| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | `Image` and `AnimatedSprite` (`-DQMLTUI_ENABLE_IMAGE=ON`). |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | `PtyView` embedded Unix pseudo-terminal on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`). |
+QmlTui separates the core scene graph (`qmltui::core`) from interactive controls (`qmltui::controls`) and optional OS/GUI integrations (`qmltui::image` and `qmltui::pty_view`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
 
 `QmlTui.Controls` only admits controls that need engine knowledge an application cannot reproduce in QML (such as `ToolTip` overlay positioning or grapheme measurement) or that are standard across terminal toolkits. Domain-specific widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters) live as copyable recipes under [`examples/recipes/`](../../examples/recipes/).
 
-Because `qmltui::core` includes `Rectangle`, `Text`, `TextInput`, `MouseArea`, `Keys`, and the layout containers, an application can link only `qmltui::core` and define its own controls in QML:
+Because `qmltui::core` includes `Rectangle`, `Text`, `TextInput`, `MouseArea`, `Keys`, and layouts, an application can link only `qmltui::core` and define its own controls in QML:
 
 ```qml
 pragma ComponentBehavior: Bound

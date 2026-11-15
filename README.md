@@ -10,27 +10,26 @@
   <a href="https://github.com/qmltui/qmltui/blob/badges/summary.md"><img alt="Coverage" src="https://github.com/qmltui/qmltui/raw/badges/coverage.svg"></a>
 </p>
 
-**QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17. Think of QmlTui as the **Qt Quick equivalent for terminal user interfaces**: you express the UI in declarative, reactive QML (layouts, property bindings, states, and reusable components) and build the backend in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`). `QmlTui` renders the QML item tree into a double-buffered character-cell grid (`TextGridBuffer`), diffs consecutive frames, and writes only the changed cells and SGR attributes to the terminal. Core applications run on `QCoreApplication` with `Qt6::Core` and `Qt6::Qml`, without requiring `QtQuick`, `QtGui`, or a display server.
+**QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17. Declare reactive layouts, property bindings, states, and reusable components in QML and build backend logic in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`). QmlTui evaluates the QML item tree into a double-buffered character-cell grid (`TextGridBuffer`), diffs consecutive frames, and writes minimal ANSI/SGR updates to the terminal on `QCoreApplication` without requiring `QtQuick`, `QtGui`, or a display server.
 
 ## When to Use QmlTui
 
 Use QmlTui when you want to:
 
-- **Build terminal UIs with Qt 6 and QML**: Declare layouts, box-drawing borders, focus chains, states, and animations in QML instead of writing manual redraw loops.
-- **Build streaming CLIs, REPLs, and embedded shells**: Keep a live reactive prompt at the bottom of the normal screen buffer while committing rich QML delegates into native terminal scrollback (`Terminal.Inline` and `Scrollback`), or embed interactive Unix subshells (`QmlTui.PtyView`).
-- **Reuse C++ models and business logic**: Bind existing `QObject` controllers, `QAbstractItemModel` subclasses, and `QSortFilterProxyModel` pipelines to virtualized `ListView`, `TableView`, `TreeView`, and `GridView` components.
-- **Ship headless or SSH tools alongside a Qt GUI**: Share the same C++ backend between a desktop `QtQuick` or `QtWidgets` application and a terminal diagnostic, installer, or industrial HMI binary.
-- **Test terminal frames in CI without a live TTY**: Drive keyboard and mouse events deterministically with `qmltui::Runner`, step a virtual clock, assert committed text and style snapshots in CTest, and record Asciinema v2 `.cast` files.
+- **Build terminal UIs with Qt 6 and QML**: Declare layouts, box-drawing borders, focus chains, states, and animations in QML instead of manual redraw loops.
+- **Build streaming CLIs, REPLs, and embedded shells**: Keep a live prompt at the bottom of the normal screen buffer while committing QML delegates into native terminal scrollback (`Terminal.Inline` and `Scrollback`), or host Unix subshells (`QmlTui.PtyView`).
+- **Reuse C++ models and business logic**: Bind existing `QObject` controllers, `QAbstractItemModel` subclasses, and `QSortFilterProxyModel` pipelines to virtualized `ListView`, `TableView`, `TreeView`, and `GridView` components, or share them with a desktop `QtQuick`/`QtWidgets` GUI.
+- **Test terminal frames in CI without a live TTY**: Drive keyboard and mouse events deterministically with `qmltui::Runner`, step a virtual clock, assert text and style snapshots in CTest, and record Asciinema v2 `.cast` files.
 
 Do not use QmlTui when:
 
-- **You need pixel geometry or a GPU scene graph**: QmlTui lays out items on an integer character-cell grid (columns and rows). Use `QtQuick` or `QtWidgets` for pixel-addressed desktop and embedded displays.
-- **Your project does not use Qt 6**: QmlTui requires Qt 6.8+ (C++17 with CMake 3.21+, or Python via `PySide6` as shown in [`examples/recipes/pyside6/`](examples/recipes/pyside6/)).
-- **Your target is legacy `conhost.exe` on Windows**: Runtime targets are Linux, macOS, and Windows Terminal (`Win32ConsoleBackend` over Virtual Terminal sequences).
+- **You need pixel geometry or a GPU scene graph**: QmlTui lays out items on an integer character-cell grid (columns and rows). Use `QtQuick` or `QtWidgets` for pixel-addressed displays.
+- **Your project does not use Qt 6**: Requires Qt 6.8+ (C++17 with CMake 3.21+, or Python via `PySide6`; see [`examples/recipes/pyside6/`](examples/recipes/pyside6/)).
+- **Your target is legacy `conhost.exe` on Windows**: Runtime targets are Linux, macOS, Windows Terminal (`Win32ConsoleBackend`), and browsers via WebAssembly (`xterm.js`).
 
 ## Hello, World!
 
-A minimal application using `import QtQml` and `import QmlTui` (from [`examples/helloworld/`](examples/helloworld/)):
+From [`examples/helloworld/`](examples/helloworld/):
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -98,19 +97,11 @@ Terminal {
 }
 ```
 
-Rendered in the terminal:
-
 ![Hello, QmlTui! rendered in the terminal](docs/assets/casts/hello-world.gif)
 
 ## Quickstart
 
-### Prerequisites
-
-- **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree)
-- **C++17** compiler
-- **Qt 6.8 or newer** (`Core` and `Qml`, plus `Gui` and `Network` when `QMLTUI_ENABLE_IMAGE=ON`)
-
-### Build and Run the Component Gallery
+Requires **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (`Core` and `Qml`).
 
 ```sh
 cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
@@ -118,60 +109,43 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
-QmlTui applications also compile to WebAssembly and run inside `xterm.js` in the browser (see the [WebAssembly build guide](docs/guides/webassembly.md)).
-
 ![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
-### Create a Standalone Application
-
-Follow the [Getting Started tutorial](docs/getting-started.md) to build a 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`) and bind a C++ `QObject` with `QML_ELEMENT`, or copy [`examples/helloworld/`](examples/helloworld/) directly.
+To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`), follow the [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/). For browser builds in `xterm.js`, see the [WebAssembly guide](docs/guides/webassembly.md).
 
 ## QML Modules and CMake Targets
 
-| QML Import | CMake Target | Required Dependencies | Provided Functionality |
+| QML Import | CMake Target | Dependencies | Summary |
 | :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` (fetched by default) | `Terminal` (`AltScreen` and `Inline` modes), `Scrollback`, `Item`, `FocusScope`, `Popup`, `Rectangle`, `Border`, `Text`, `TextInput`, `TextArea`, layouts, virtualized data views (`ListView`, `TableView`, `TreeView`, `GridView`, `ScrollView`), `Canvas`, input, states, and animations |
-| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | Interactive controls (`AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip`) |
-| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | Offscreen raster decoding (`QImage`) and terminal graphics (`Image`, `AnimatedSprite`) using Kitty, Sixel, or Unicode half-block fallback (`-DQMLTUI_ENABLE_IMAGE=ON`; no display server required) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` (fetched by default) | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
+| `import QmlTui` | `qmltui::core` | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | `Terminal` (`AltScreen`/`Inline`), `Scrollback`, `Item`, `Popup`, `Rectangle`, `Text`, `TextInput`, `TextArea`, layouts, virtualized views, `Canvas`, input, states, animations |
+| `import QmlTui.Controls` | `qmltui::controls` | `qmltui::core` | `Button`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip` |
+| `import QmlTui.Image` | `qmltui::image` | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | `Image` and `AnimatedSprite` via Kitty, Sixel, or Unicode half-blocks (`-DQMLTUI_ENABLE_IMAGE=ON`) |
+| `import QmlTui.PtyView` | `qmltui::pty_view` | `qmltui::core`, `libvterm` | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
 
-See [Build Configuration and Installation](docs/build-configuration.md) for `FetchContent`, `find_package(QmlTui)`, CMake options, and runtime environment variables.
+See [Build Configuration and Installation](docs/build-configuration.md) for `FetchContent`, `find_package(QmlTui)`, CMake options, and environment variables.
 
-## Performance and Memory Characteristics
+## Performance and Memory
 
-- **24-byte value-type `Cell`**: [`Cell`](docs/cpp-classes/cell.md) is 24 bytes and trivially copyable. UTF-8 grapheme clusters up to 11 bytes (single code points, emoji with skin tones or variation selectors, flags, and keycaps) are stored inline without per-cell heap allocation. Consecutive `TextGridBuffer` frames are diffed cell by cell and emitted inside DEC mode 2026 synchronized output blocks.
-- **Sub-millisecond view and frame latencies**: Against a 16,667 µs (60 Hz) frame budget, an 80×24 viewport backed by a 100,000-row C++ `QAbstractListModel` (Release `-O3`, `pragma ComponentBehavior: Bound`) completes idle layout and paint passes in **< 30 µs** (emitting **0 diff bytes** when unchanged), single-row `dataChanged` updates and repaints in **6.2–22.2 µs**, and 1-row virtualized scroll steps in **~8.8 µs** (`ListView`), **~34.3 µs** (`GridView`), **~20.5–25.7 µs** (`TableView`), and **~8.7–17.9 µs** (`TreeView`). See the [View Benchmark Comparison](docs/contributing/benchmarks/2026-10-27-view-comparison.md), [Model View Performance Profile](docs/contributing/benchmarks/2026-09-11-view-phases.md), and [0.4 Acceptance Benchmarks](docs/contributing/benchmarks/0.4-acceptance/README.md) for methodology and reproduction commands.
+- **24-byte value-type `Cell`**: [`Cell`](docs/cpp-classes/cell.md) stores UTF-8 grapheme clusters up to 11 bytes inline without per-cell heap allocation. Consecutive `TextGridBuffer` frames are diffed cell by cell and emitted inside DEC mode 2026 synchronized output blocks.
+- **Sub-millisecond view updates**: On an 80×24 viewport backed by a 100,000-row C++ `QAbstractListModel` (Release `-O3`, `pragma ComponentBehavior: Bound`), idle layout/paint completes in **< 30 µs** (**0 diff bytes**), single-row `dataChanged` repaints take **6.2–22.2 µs**, and 1-row virtualized scroll steps take **8.7–34.3 µs** across `ListView`, `TreeView`, `TableView`, and `GridView`. See [View Benchmark Comparison](docs/contributing/benchmarks/2026-10-27-view-comparison.md) and [0.4 Acceptance Benchmarks](docs/contributing/benchmarks/0.4-acceptance/README.md).
 
 ## Constraints and Limitations
 
-- **Integer character-cell geometry**: Item coordinates (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells. `Canvas` and `Image` render sub-cell glyphs (2x4 Braille, 1x2 half-blocks) or pixel protocols inside those integer cell bounds.
-- **Explicit keyboard quit path**: Terminal applications in raw mode have no window close button, and `TextInput`/`TextArea` use `Ctrl+C` for clipboard copy. Applications must provide a reachable keyboard exit path (such as handling `Q` or `Escape` at the root `Terminal`).
-- **Terminal capability variance**: Protocol support depends on the host terminal emulator. `TerminalCapabilities` probes DEC mode 2026 synchronized output, Kitty keyboard protocol, SGR mouse reporting, Kitty/Sixel graphics, and OSC 52 clipboard at startup and falls back when a feature is absent.
-- **Flat views vs. hierarchical trees**: `ListView`, `TableView`, `GridView`, and `Repeater` present a single model level (`rootIndex` on `ListView`/`GridView`/`Repeater`, or top-level rows on `TableView`). Hierarchical models require `TreeView`.
-- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` (plus automatic binding restoration on state exit) use `Qt6::QmlPrivate` when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to opt out), which ties binary builds with private headers to the minor Qt release. `State`, `StateGroup`, `Transition`, map-based `PropertyChanges`, `NumberAnimation`, and `ColorAnimation` use only public `Qt6::Qml` APIs.
-- **POSIX-only `PtyView`**: `QmlTui.PtyView` spawns child processes inside Unix pseudo-terminals (`forkpty`) backed by `libvterm` and is supported only on Linux and macOS (not Windows or WebAssembly).
+- **Integer character-cell geometry**: Coordinates and dimensions (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells; `Canvas` and `Image` draw sub-cell patterns inside those cell bounds.
+- **Explicit keyboard quit path**: Raw-mode terminals have no close button, and `TextInput`/`TextArea` bind `Ctrl+C` to copy. Applications must provide an explicit exit handler (such as `Q` or contextual `Escape` on the root `Terminal`).
+- **Terminal capability variance**: `TerminalCapabilities` probes DEC mode 2026, Kitty keyboard, SGR mouse, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades cleanly when unsupported.
+- **Flat views vs. trees**: `ListView`, `TableView`, `GridView`, and `Repeater` display one model level (`rootIndex` selects a subtree); multi-level trees require `TreeView`.
+- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` use `Qt6::QmlPrivate` when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default; pass `OFF` for public-Qt-only builds).
+- **POSIX-only `PtyView`**: `QmlTui.PtyView` uses `forkpty` and `libvterm` and is supported on Linux and macOS only.
 
 ## Documentation
 
-- **[Getting Started Tutorial](docs/getting-started.md)**: Build a standalone 3-file QmlTui application and expose a C++ `QObject` with `QML_ELEMENT`.
-- **[QmlTui for Qt Quick and Widgets Developers](docs/guides/qt-quick-to-qmltui.md)**: Key differences from `QtQuick` and `QtWidgets` (imports, integer cell coordinates, borders, colors, keyboard quit handling, and shared C++ models).
-- **[Build Configuration and Installation](docs/build-configuration.md)**: `FetchContent` vs. `find_package(QmlTui)`, optional modules, CMake options, and environment variables.
-- **[Editor and IDE Setup](docs/guides/editor-setup.md)**: Configure `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
-- **[Guides](docs/guides/index.md)**: Architecture, layouts, input and focus, models and views, styling, animations and states, inline mode, `PtyView`, custom C++ items, headless testing with `Runner`, and WebAssembly.
-- **[Examples and Recipes](docs/examples.md)**: Gallery demos and copyable QML/C++ recipes (see [`examples/README.md`](examples/README.md) and full-scale showcase applications in [qmltui/apps](https://github.com/qmltui/apps)).
-- **[QML Types Reference](docs/qml-types/index.md)**: API reference for `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`.
-- **[C++ Classes Reference](docs/cpp-classes/index.md)**: Public C++ APIs for `Item`, `Terminal`, `TextGridBuffer`, `Cell`, `Color`, `PtyView`, and `Runner`.
-- **[Changelog](docs/changes/changelog.md)**: Release history and migration notes.
-- **[Contributing Guide](CONTRIBUTING.md)**: Local development setup, code formatting, and test suite conventions.
+- **[Getting Started](docs/getting-started.md)** · **[Qt Quick & Widgets Guide](docs/guides/qt-quick-to-qmltui.md)** · **[Build & CMake](docs/build-configuration.md)** · **[Editor Setup](docs/guides/editor-setup.md)**
+- **[Guides](docs/guides/index.md)** · **[Testing with Runner](docs/guides/testing.md)** · **[Agentic Loop](docs/guides/agentic-development.md)** · **[Examples & Recipes](docs/examples.md)** ([qmltui/apps](https://github.com/qmltui/apps))
+- **[QML Types Reference](docs/qml-types/index.md)** · **[C++ Classes Reference](docs/cpp-classes/index.md)** · **[Changelog](docs/changes/changelog.md)** · **[Contributing](CONTRIBUTING.md)**
 
 ## License
 
-QmlTui is available under the **LGPLv3**. Examples and the starter template are
-**BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
+QmlTui is available under the **LGPLv3**. Examples and the starter template are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
 
-Separate commercial terms are available upon inquiry for organizations unable
-to meet those obligations. Contact through the project repository at
-<https://github.com/qmltui/qmltui>.
-
-QmlTui is an independent project and not a product of The Qt Company. Qt and
-third-party dependencies remain subject to their own licenses.
+Separate commercial terms are available upon inquiry through <https://github.com/qmltui/qmltui>. QmlTui is an independent project and not a product of The Qt Company.

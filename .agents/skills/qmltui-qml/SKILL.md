@@ -262,8 +262,8 @@ toolkits. Status badges, calendars, and banner text are recipes under
 `AbstractButton`, `Button`, `ButtonGroup`, `CheckBox`, `RadioButton`,
 `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `TabBar`,
 `StackView`, `Panel`, `Dialog`, `Sparkline`. `ToolTip` is attached-only. There is
-no palette singleton: colours are set per item, and an inherited palette
-property is a Plan 06 section 7 proposal, not a shipped type.
+no framework palette singleton: colors are configured per item and shared across
+an application via QML bindings and reusable components.
 
 **`import QmlTui.Image`**
 `Image`, `AnimatedSprite`.

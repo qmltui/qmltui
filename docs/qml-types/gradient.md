@@ -40,6 +40,12 @@ Defines a linear color gradient with multiple color stops. [More...](#detailed-d
 | :--- | :--- |
 | `updated()` | Emitted when any property or stop within the gradient is modified. |
 
+## Methods
+
+| Method | Description |
+| :--- | :--- |
+| `color colorAt(real t)` | Evaluates and returns the linearly interpolated RGB color at normalized position `t` in `[0.0, 1.0]` after applying `offset` (or `QmlTui.defaultColor` when `stops` is empty). |
+
 ## Detailed Description
 
 Gradient defines a smooth transition between colors across character cells or

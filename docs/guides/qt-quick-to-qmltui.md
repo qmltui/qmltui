@@ -1,6 +1,6 @@
 # QmlTui for Qt Quick and Widgets Developers
 
-Think of **QmlTui** as the **Qt Quick equivalent for terminal user interfaces**: you express the UI in declarative, reactive QML (`QtQml` property bindings, states, signals, and reusable components) and build the backend in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`), rendering to a character-cell grid rather than a pixel scene graph. This guide explains how `QtQuick` and `QtWidgets` concepts map to `QmlTui`.
+**QmlTui** brings Qt's declarative QML programming model to terminal user interfaces on **Qt 6.8 through 6.12** (C++17, CMake 3.21+). Declare reactive layouts, `QtQml` property bindings, states, signals, and reusable components in QML and implement backend logic in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`), rendering to a character-cell grid rather than a pixel scene graph. This guide maps `QtQuick` and `QtWidgets` concepts to `QmlTui`.
 
 ## Quick Reference: Qt Quick and Widgets vs. QmlTui
 
@@ -72,6 +72,7 @@ Like `import QtQuick`, `import QmlTui` automatically re-exports `QtQml` (`Timer`
 | **Custom focusable `Item`/`Rectangle`** | `Item { focus: true; activeFocusOnTab: true }` | `Rectangle { focusPolicy: Qt.StrongFocus; focus: true }` (`Item` defaults to `Qt.NoFocus`) |
 | **Specific-key `Keys` signals** | `Keys.onEscapePressed` pre-sets `event.accepted = true` | `event.accepted` starts `false`; set `event.accepted = true;` explicitly to stop propagation |
 | **Animation easing & infinite loops** | `NumberAnimation { easing.type: Easing.OutQuad; loops: Animation.Infinite }` | `NumberAnimation { easing: Easing.OutQuad; loops: Animation.Infinite }` (`easing` is a direct enum property) |
+| **`Behavior` & private Qt ABI** | Built into `QtQuick` | Enabled when `Qt6::QmlPrivate` is installed (`QMLTUI_ENABLE_PRIVATE_QT=ON`, tested across Qt 6.8 to 6.12), coupling shared `QmlTuiCore` binaries to that `Qt 6.x` minor release; pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` for public-Qt-only builds |
 | **Imperative `Canvas` pixels** | `onPaint` callback | `Canvas { autoClear: false }` when calling `setPixel()` imperatively (`autoClear` defaults to `true` for shape children) |
 | **`console.log()` in full-screen UI** | Writes to stderr immediately | Buffered during `Terminal.AltScreen` when `stderr` is a TTY; redirect `./app 2> debug.log` or set `QMLTUI_LOG_FILE=debug.log` for live streaming |
 
@@ -129,11 +130,11 @@ QmlTui does not use `QColor` or a global theme singleton (such as `Material` or 
 - Colors use `qmltui::Color` (`color` in QML). Items and controls default to `"default"` (the host terminal's foreground and background).
 - Bare CSS/SVG color names (`"red"`, `"blue"`, `"cyan"`, `"orange"`, etc.), hex strings (`"#2cde85"`), and `QmlTui.rgba(r, g, b, a)` specify 24-bit RGB colors, which QmlTui quantizes automatically when running on 256-color or 16-color terminals.
 - Explicit `"ansi:..."` colors (`"ansi:cyan"`, `"ansi:red"`, `"ansi:0"`..`"ansi:15"`, or `QmlTui.ansi(index)`) emit palette SGR indices so the user's terminal theme controls their appearance.
-- Controls (`Button`, `Panel`, `Dialog`, etc.) expose `background` and `contentItem` delegates for customization, and shared application styling is expressed with QML property bindings and reusable QML components. See [Styling and Colors](styling-and-colors.md).
+- Controls (`Button`, `Panel`, `Dialog`, etc.) expose `background` and `contentItem` delegates for customization. Express shared application styling with QML property bindings and reusable QML components. See [Styling and Colors](styling-and-colors.md).
 
 ## Keyboard Quit Path
 
-Desktop windows have a window-manager close button; terminal applications in raw mode do not, and `Ctrl+C` is used by `TextInput` and `TextArea` for clipboard copy rather than `SIGINT`. A root `Terminal` never exits on `Q` or `Escape` unless the application handles it:
+Desktop windows have a window-manager close button; terminal applications in raw mode do not, and `TextInput` and `TextArea` use `Ctrl+C` for clipboard copy rather than `SIGINT`. A root `Terminal` never exits on `Q` or `Escape` unless the application handles it:
 
 ```qml
 pragma ComponentBehavior: Bound

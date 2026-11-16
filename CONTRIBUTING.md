@@ -5,15 +5,18 @@ request.
 
 ## Licensing and the contributor agreement
 
-QmlTui is offered under the LGPLv3, with separate commercial terms available
-upon inquiry (see [LICENSE.md](LICENSE.md)). To preserve this model and
-guarantee the open-source promise, every contribution to `src/` or `tests/`
-needs the contributor agreement in [CLA.md](CLA.md). A check on the pull
-request asks you to accept it once; later pull requests are covered.
+QmlTui's library, test, and tooling code (`src/`, `tests/`, and `tools/`) is
+distributed under the GNU Lesser General Public License v3.0 (`LGPL-3.0-only`;
+see [LICENSE.md](LICENSE.md)). Contributors retain ownership of their copyright:
+to preserve long-term licensing flexibility while guaranteeing an open-source
+release, contributions to `src/`, `tests/`, or `tools/` require a one-time
+comment accepting the non-exclusive license grant in [CLA.md](CLA.md) on your
+first pull request touching those paths.
 
-Contributions to `examples/`, `cmake/`, `scripts/`, and `docs/` are
-BSD-3-Clause or CC-BY-4.0 and do not need the agreement, but the same check
-runs on every pull request for simplicity.
+Contributions that only touch `examples/`, `cmake/`, `scripts/`, `docs/`, or
+other `BSD-3-Clause` / `CC-BY-4.0` paths mapped in [`REUSE.toml`](REUSE.toml)
+are accepted directly under those permissive terms and do not require CLA
+sign-off (see clause 6 of [CLA.md](CLA.md)).
 
 Do not add license headers to files. The license of a file follows from its
 path via `REUSE.toml`. CI runs `reuse lint`; if you add a file type or
@@ -22,8 +25,9 @@ request.
 
 ## Development
 
-Build and test instructions, the QML conventions, and the test workflow are in
-[AGENTS.md](AGENTS.md) and [docs/](docs/). The short version:
+Build and test instructions, QML conventions, and the test workflow are in
+[AGENTS.md](AGENTS.md) and [docs/](docs/). To configure, build, and run tests
+locally:
 
 ```bash
 cmake -S . -B build \
@@ -36,12 +40,13 @@ cmake --build build --parallel
 ctest --test-dir build -LE Demo --output-on-failure
 ```
 
-Before opening a pull request, verify formatting, documentation snippets, and skill metadata:
+Before opening a pull request, verify formatting, documentation snippets, skill metadata, and licensing:
 
 ```bash
-./scripts/format.py --check
+./scripts/format.py --check src tools
 python3 ./scripts/check_docs.py --build-dir build
 python3 ./.agents/skills/qmltui-qml/check-skills.py --build-dir build
+reuse lint
 git diff --check
 ```
 

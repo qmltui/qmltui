@@ -23,25 +23,37 @@ A non-visual object that links [RadioButton](radiobutton.md) items so that check
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `buttons` | `list<QtObject>` |  | Holds the items that belong to the group; each item exposing a `buttonGroup` property has it set to this group when the list changes. |
+| `buttons` | `list<QtObject>` |  | Holds the items declaratively assigned to the group; each member is added to `registeredButtons` and, if it exposes a `buttonGroup` property, has it set to this group. |
+| `registeredButtons` | `var` | `[]` | Holds the array of currently registered buttons, populated both from `buttons` and from controls that set `buttonGroup` directly or call `addButton()`. |
+
+## Methods
+
+| Method | Description |
+| :--- | :--- |
+| `void addButton(var btn)` | Appends `btn` to `registeredButtons` when non-null and not already present. |
+| `void removeButton(var btn)` | Removes `btn` from `registeredButtons`. |
+| `void uncheckExcept(var activeButton)` | Sets `checked` to `false` on every other registered button that exposes `checked` and has either no `buttonGroup` property or `buttonGroup` equal to this group. |
 
 ## Detailed Description
 
 ButtonGroup is a plain `QtObject`, not an item: it has no geometry, is not
 drawn and cannot be anchored or placed in a layout. Declare it anywhere in
-the object tree and assign the member items to `buttons`, typically as a list
-of ids. Whenever `buttons` changes, the group walks the list and assigns
-itself to the `buttonGroup` property of every member that has one, so the
-members do not need to set `buttonGroup` themselves. Members without a
-`buttonGroup` property, such as [Button](button.md) or
-[CheckBox](checkbox.md), are accepted but left untouched.
+the object tree and either assign member items to `buttons` or bind each
+[RadioButton](radiobutton.md)'s `buttonGroup` property directly to the group.
+Whenever `buttons` changes, the group registers each item via `addButton()` and
+assigns itself to the `buttonGroup` property of every member that exposes one.
+Conversely, setting `RadioButton.buttonGroup` automatically registers the
+button via `addButton()` on assignment or completion and calls `removeButton()`
+when reassigned or destroyed. Members without a `buttonGroup` property, such as
+[Button](button.md) or [CheckBox](checkbox.md), are still registered in
+`registeredButtons` when listed in `buttons`.
 
-The exclusivity logic lives in [RadioButton](radiobutton.md), not in the
-group: when a RadioButton becomes checked it iterates over
-`buttonGroup.buttons` and sets `checked` to false on every other member that
-has a `checked` property. ButtonGroup itself has no `checkedButton`
-property, no signals and no methods. Note that removing an item from
-`buttons` does not reset its `buttonGroup` back to `null`.
+When a [RadioButton](radiobutton.md) becomes checked, it calls
+`buttonGroup.uncheckExcept(control)` so every other registered member in the
+group has `checked` set to `false`. ButtonGroup has no `checkedButton` property
+and no signals. Removing an item from the `buttons` list property does not
+automatically unregister it or reset its `buttonGroup` to `null`; call
+`removeButton(btn)` or clear `btn.buttonGroup` instead.
 
 ### Example
 

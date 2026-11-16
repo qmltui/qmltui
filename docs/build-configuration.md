@@ -4,7 +4,7 @@ This reference covers QmlTui module targets, consuming an installed package with
 
 ## QML Modules and CMake Targets
 
-`qmltui::core` and `qmltui::controls` require only `Qt6::Core` and `Qt6::Qml`. Optional modules and tooling are controlled by CMake cache options:
+`qmltui::core` and `qmltui::controls` require only `Qt6::Core` and `Qt6::Qml`. Use CMake cache options to enable optional modules and tooling:
 
 | QML Import / Tool | CMake Target | CMake Option & Default | Dependencies | Guide & Reference |
 | :--- | :--- | :--- | :--- | :--- |
@@ -15,7 +15,12 @@ This reference covers QmlTui module targets, consuming an installed package with
 | `Runner` & `qmltui-runner` | `qmltui::runner` | `-DQMLTUI_ENABLE_RUNNER=ON` (default `ON` top-level or when `BUILD_TESTING=ON`) | `qmltui::core` | [Testing with Runner](guides/testing.md), [Runner](cpp-classes/runner.md) |
 | `qmltui_wasm_app(<target>)` | *(CMake helper)* | Automatic under Emscripten (`EMSCRIPTEN`) | Qt for WebAssembly `wasm_singlethread` | [Qt for WebAssembly](guides/webassembly.md) |
 
-Pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` to build strictly against public `Qt6::Core` and `Qt6::Qml` headers (omits `Behavior` and direct-assignment `PropertyChanges`).
+### Qt Version Compatibility and Private Qt ABI
+
+QmlTui requires **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (tested across **Qt 6.8 through 6.12**):
+
+- **Public Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=OFF`)**: Link strictly against public `Qt6::Core` and `Qt6::Qml` headers (omitting `Behavior` and direct-assignment `PropertyChanges`). Shared binaries preserve Qt 6 forward binary compatibility across minor versions (`6.8` through `6.12`).
+- **Private Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=ON`, default when `Qt6::QmlPrivate` is installed)**: Link `Qt6::QmlPrivate` inside `QmlPrivateBridge` to enable `Behavior` and binding-aware `PropertyChanges`. Because Qt does not guarantee binary compatibility for `*Private` modules across minor releases, shared `QmlTuiCore` binaries built with `QMLTUI_ENABLE_PRIVATE_QT=ON` must run against the same `Qt 6.x` minor series they were compiled against. Rebuild QmlTui when upgrading Qt minor versions, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when distributing shared binaries across multiple system Qt minor versions.
 
 ## Using an Installed Build (`find_package(QmlTui)`)
 
@@ -145,7 +150,6 @@ cmake --build build-release
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of `FetchContent` |
 | `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `libvterm` instead of `FetchContent` (`PtyView`) |
-| `QMLTUI_COMMERCIAL_LICENSE` | `OFF` | Acknowledge building under a commercial QmlTui license |
 
 ### Runtime Environment Variables
 

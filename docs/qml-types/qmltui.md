@@ -26,6 +26,7 @@ Global QmlTui engine singleton providing helper factory methods. [More...](#deta
 | :--- | :--- | :--- | :--- |
 | `defaultColor` | `color` | `"default"` | Read-only. Holds the terminal's default foreground/background color (`Color::Default`). |
 | `transparent` | `color` | `"transparent"` | Read-only. Holds the transparent color sentinel (`Color::Transparent`). |
+| `invalidColor` | `color` | invalid (`!valid`) | Read-only. Holds the unset/invalid color sentinel (`Color::Invalid`) for clearing optional color overrides. |
 
 ## Methods
 
@@ -48,8 +49,8 @@ warnings and are ignored, leaving the corresponding overrides unset.
 `QmlTui.color(value)` parses a color string, `QmlTui.rgba(red, green, blue, alpha = 1.0)`
 constructs a color value directly from normalized channel floats (0.0 to 1.0),
 `QmlTui.ansi(index)` constructs an ANSI palette color (`0` to `15`), and
-`QmlTui.defaultColor` / `QmlTui.transparent` provide pre-constructed `color`
-constants without string parsing.
+`QmlTui.defaultColor`, `QmlTui.transparent`, and `QmlTui.invalidColor` provide
+pre-constructed `color` sentinels without string parsing.
 
 Use the returned spans in [Text.spans](text.md).
 

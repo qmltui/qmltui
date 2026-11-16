@@ -67,6 +67,7 @@ Base visual type providing cell geometry, layout anchors, visibility, focus, and
 | Method | Description |
 | :--- | :--- |
 | `void forceActiveFocus()` | Forces active keyboard focus onto this item and its enclosing focus scopes. |
+| `point absolutePosition()` | Returns the item's `(x, y)` cell coordinates relative to the root [Terminal](terminal.md). |
 
 ## Detailed Description
 

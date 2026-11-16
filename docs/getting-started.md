@@ -6,9 +6,9 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlT
 
 ## Prerequisites
 
-- **CMake 3.21** or newer (`3.20+` when building QmlTui in-tree) and **Ninja** (recommended)
+- **CMake 3.21** or newer and **Ninja** (recommended)
 - **C++17** compiler
-- **Qt 6.8 or newer** with `Core` and `Qml` (plus `QmlPrivate` when using `Behavior`, and `Gui` + `Network` when enabling `QmlTui.Image` with `-DQMLTUI_ENABLE_IMAGE=ON`). See the [Qt 6 Getting Started Guide](https://doc.qt.io/qt-6/gettingstarted.html) to install Qt 6.8+.
+- **Qt 6.8 or newer** (tested across Qt 6.8 through 6.12) with `Core` and `Qml` (plus `QmlPrivate` when using `Behavior`, and `Gui` + `Network` when enabling `QmlTui.Image` with `-DQMLTUI_ENABLE_IMAGE=ON`). See the [Qt 6 Getting Started Guide](https://doc.qt.io/qt-6/gettingstarted.html) to install Qt 6.8+.
 
 ## Step 1: Create a Standalone Application
 
@@ -335,7 +335,9 @@ ctest --test-dir build --output-on-failure
 
 ## Explore the Component Gallery (Optional)
 
-To inspect all 45 built-in controls, data views, layouts, and canvas primitives locally, clone the repository and build `qmltui_gallery`:
+Browse all 45 built-in controls, data views, layouts, and canvas primitives directly in your browser in the [Component Gallery](https://qmltui.github.io/website/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/website/playground.html).
+
+To build and run `qmltui_gallery` locally in your terminal:
 
 ```sh
 git clone https://github.com/qmltui/qmltui.git

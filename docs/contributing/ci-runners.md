@@ -1,27 +1,29 @@
-# CI on Your Own Machines: Self-Hosted Runners
+# CI Runners: GitHub-Hosted Default and Optional Self-Hosted Mode
 
-GitHub bills Actions minutes on a private repository: 2,000 a month on the
-Free plan, with Windows counting twice and macOS ten times. The full matrix
-cost about 280 billed minutes per push, so a busy day empties the month. Jobs
-that run on a self-hosted runner are not billed on any plan, and the developer
-machine already has the toolchains, so `ci.yml` runs Linux and Windows there
-and keeps hosted macOS for `workflow_dispatch` and tags only. When the
-repository goes public, hosted runners become free and the `runs-on` lines can
-return to GitHub's images.
+By default, `.github/workflows/ci.yml` runs every job on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, and `macos-14`), which are free on public GitHub repositories and install cached Qt `6.8.*` toolchains with `jurplel/install-qt-action@v4`.
 
-Each runner is a small agent that polls GitHub for jobs. It needs the
-registration token from **Settings, Actions, Runners, New self-hosted runner**
-in the repository; the token is valid for an hour, so fetch it right before
-each `config` step below. Jobs queue while a runner is offline and start when
-it comes back.
+Maintainers who work on a private mirror (where GitHub bills Actions minutes) or want faster turnaround against local pre-installed toolchains can opt into self-hosted Linux and Windows runners by setting the repository Actions variable `QMLTUI_SELF_HOSTED=1` under **Settings > Secrets and variables > Actions > Variables**.
 
-## Linux runner (WSL)
+## Trust Boundary for External Pull Requests
 
-The workflows expect the desktop Qt prefix in `QMLTUI_QT_LINUX`, and the `wasm`
-compile-guard job in `ci.yml` expects the Qt for WebAssembly single-threaded
-prefix in `QMLTUI_QT_WASM` plus Emscripten (`EMSDK`, defaulting to `~/emsdk`).
-CMake, Ninja, and `clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage`
-job) come from the distribution.
+Never execute untrusted pull-request code on a persistent self-hosted machine. Even when `QMLTUI_SELF_HOSTED=1` is enabled, `ci.yml` gates `runs-on` with:
+
+```yaml
+(vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))
+```
+
+As a result:
+
+- **External fork pull requests** (`head.repo.full_name != github.repository`) always run on ephemeral GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-14`). They never access self-hosted hardware and never block in "Queued" if a developer workstation is offline.
+- **Trusted runs** (`push`, `workflow_dispatch`, and same-repository pull requests) use `[self-hosted, linux]` and `[self-hosted, windows]` when `QMLTUI_SELF_HOSTED=1`, and fall back to GitHub-hosted runners whenever `QMLTUI_SELF_HOSTED` is unset or set to `0`.
+
+## Registering Optional Self-Hosted Runners
+
+Each runner is a background agent that polls GitHub for jobs. Fetch a one-hour registration token from **Settings > Actions > Runners > New self-hosted runner** right before running `config.sh` or `config.cmd`.
+
+### Linux Runner (Native or WSL)
+
+When running on `[self-hosted, linux]`, `ci.yml` reads the desktop Qt prefix from `QMLTUI_QT_LINUX`, and the `wasm` compile-guard job reads the single-threaded Qt for WebAssembly prefix from `QMLTUI_QT_WASM` plus Emscripten from `EMSDK` (defaulting to `~/emsdk`). CMake, Ninja, `clang-format`, and `clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage` job) come from the host distribution.
 
 ```bash
 mkdir -p ~/actions-runner && cd ~/actions-runner
@@ -35,27 +37,23 @@ echo 'QMLTUI_QT_WASM=/home/yosri/Qt/6.8.6/wasm_singlethread' >> .env
 echo 'EMSDK=/home/yosri/emsdk' >> .env
 ```
 
-Then keep it running. Without systemd in WSL (the default here), start it in a
-detached session and leave that WSL instance open:
+Keep the runner active:
 
-```bash
-tmux new -d -s runner 'cd ~/actions-runner && ./run.sh'
-```
+- **Without `systemd` (default WSL)**: start it in a detached `tmux` session:
 
-With systemd enabled (`[boot] systemd=true` in `/etc/wsl.conf`, then
-`wsl --shutdown` once from Windows), install it as a service instead so it
-survives reboots of the WSL instance:
+  ```bash
+  tmux new -d -s runner 'cd ~/actions-runner && ./run.sh'
+  ```
 
-```bash
-sudo ./svc.sh install && sudo ./svc.sh start
-```
+- **With `systemd`** (native Linux, or WSL with `[boot] systemd=true` in `/etc/wsl.conf`): install it as a service so it restarts automatically on boot:
 
-## Windows runner
+  ```bash
+  sudo ./svc.sh install && sudo ./svc.sh start
+  ```
 
-The workflow expects the MSVC Qt prefix in `QMLTUI_QT_WINDOWS` and Visual
-Studio 2022 with the C++ workload (`ilammy/msvc-dev-cmd` finds it). CMake and
-Ninja from the Qt installer are put on the runner's PATH through `.path`.
-In an elevated PowerShell:
+### Windows Runner
+
+When running on `[self-hosted, windows]`, `ci.yml` reads the MSVC Qt prefix from `QMLTUI_QT_WINDOWS` and uses Visual Studio 2022 with the Desktop C++ workload (`ilammy/msvc-dev-cmd`). Put CMake and Ninja on the runner `PATH` via `.path`. In an elevated PowerShell:
 
 ```powershell
 mkdir C:\actions-runner; cd C:\actions-runner
@@ -68,27 +66,23 @@ Add-Content .path "C:\Qt\Tools\CMake_64\bin;C:\Qt\Tools\Ninja;$env:PATH"
 Restart-Service "actions.runner.*"
 ```
 
-`--runasservice` registers a Windows service, so the runner is up whenever
-the machine is. The `.env` and `.path` files are read at service start; edit
-them and restart the service to change tools.
+The Windows service reads `.env` and `.path` at startup; restart `actions.runner.*` after editing either file.
 
-## Checking
+## Verifying or Deregistering Runners
 
-Push a commit or run the workflow from the Actions tab. The `linux` and
-`windows` jobs should show the runner names above. If a job sits in "Queued",
-the matching runner is offline or its labels do not include `linux` or
-`windows`. To remove a runner: `./config.sh remove --token <TOKEN>` (Linux) or
-`.\config.cmd remove --token <TOKEN>` (Windows) with a removal token from the
-same settings page.
+Trigger `CI` from the **Actions** tab or push a branch. When `QMLTUI_SELF_HOSTED=1` is set, trusted `linux` and `windows` jobs display the self-hosted runner names above; if a job stays in "Queued", either the runner is offline, its labels are missing `linux` or `windows`, or you should clear `QMLTUI_SELF_HOSTED` to run on GitHub-hosted images.
 
-## What runs where
+To remove a runner, generate a removal token on **Settings > Actions > Runners** and run `./config.sh remove --token <TOKEN>` (Linux) or `.\config.cmd remove --token <TOKEN>` (Windows).
 
-| Job | Runner | Trigger |
-| :--- | :--- | :--- |
-| `linux` (Behavior on and off) | self-hosted `linux` | every push and pull request |
-| `coverage` (Clang `llvm-cov`) | self-hosted `linux` | every push and pull request |
-| `windows` (Behavior on) | self-hosted `windows` | every push and pull request |
-| `quickstart` (`examples/helloworld`) | self-hosted `linux` | every push and pull request |
-| `wasm` (`examples/helloworld` Wasm compile-guard) | self-hosted `linux` | Wasm/Core/Controls/CMake pushes, pull requests, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/website`) |
-| `macos` | hosted `macos-14` | `workflow_dispatch` and `v*` tags |
-| `reuse` | hosted `ubuntu-24.04` | pull requests and `workflow_dispatch` |
+## Job Matrix and Runner Routing
+
+| Job | Default Runner (and all fork PRs) | Opt-in Runner (`QMLTUI_SELF_HOSTED=1`, non-fork) | Trigger |
+| :--- | :--- | :--- | :--- |
+| `linux` (`Behavior` `ON` and `OFF`, format/docs/skills checks) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `sanitizers` (`ASan` + `UBSan`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `coverage` (Clang `llvm-cov` + badge update on `main`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `windows` (`Behavior` `ON`, MSVC 2022) | `windows-2022` | `[self-hosted, windows]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `macos` (`Behavior` `ON`) | `macos-14` | `macos-14` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
+| `quickstart` (`examples/helloworld` via `FetchContent`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `wasm` (`examples/helloworld` Wasm compile-guard) | `ubuntu-24.04` | `[self-hosted, linux]` | Wasm/Core/Controls/CMake changes, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/website`) |
+| `reuse` (`reuse lint`) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |

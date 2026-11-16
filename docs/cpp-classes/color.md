@@ -126,7 +126,7 @@ to inspect a color. `Cell::setForeground()`/`setBackground()` and the
 - `Color toRgb() const` / `static quint32 toArgb(quint32 argb)` — resolves ANSI palette indices to xterm's default 24-bit RGB values (identity for RGB colors).
 - `uint8_t toIndexed256() const` / `static uint8_t toIndexed256(quint32 argb)` — quantizes the color to an xterm 256-color palette index.
 - `uint8_t toBasic16() const` / `static uint8_t toBasic16(quint32 argb)` — quantizes the color to a 16-color ANSI index (`0`–`15`).
-- `static constexpr quint32 resolve(Color color, quint32 defaultColor = 0xFFFFFFFFU)` / `static quint32 resolve(const QString &colorString, quint32 defaultColor = 0xFFFFFFFFU)` — returns `color.argb32()` when valid, or `defaultColor` otherwise.
+- `static constexpr quint32 resolve(Color color, quint32 defaultColor = DefaultTag)` / `static quint32 resolve(const QString &colorString, quint32 defaultColor = DefaultTag)` — returns `color.argb32()` when valid, or `defaultColor` otherwise.
 - `qreal red() const`, `qreal green() const`, `qreal blue() const`, `qreal alpha() const` — normalized `[0.0, 1.0]` channels (exposed in QML as `r`, `g`, `b`, `a` alongside `valid`).
 - `Q_INVOKABLE QString toString() const` — formats the color as `"default"`, `"transparent"`, `"ansi:<name>"`, or lowercase hex.
 - `friend constexpr bool operator==(Color lhs, Color rhs) noexcept` / `friend constexpr bool operator!=(Color lhs, Color rhs) noexcept` — compares two `Color` values for exact equality.

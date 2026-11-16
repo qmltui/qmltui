@@ -36,14 +36,13 @@ Vertical half-block rendering packs two vertically stacked TrueColor pixels into
 
 void WaveItem::paint(qmltui::TextGridBuffer& buffer, int absX, int absY,
                      const qmltui::ClipRect& clipRect) const {
-    const uint32_t fg = m_color.argb32();
     for (int col = 0; col < width(); ++col) {
         if (!clipRect.contains(absX + col, absY))
             continue;
         uint8_t mask = qmltui::braille::dotMask(0, col % qmltui::braille::DotsY)
                      | qmltui::braille::dotMask(1, (col + 1) % qmltui::braille::DotsY);
         const QByteArrayView glyph = qmltui::braille::utf8(mask);
-        buffer.putUtf8(absX + col, absY, glyph.data(), static_cast<int>(glyph.size()), 1, fg, 0);
+        buffer.setGrapheme(absX + col, absY, glyph, 1, m_color);
     }
 }
 ```

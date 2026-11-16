@@ -1,12 +1,13 @@
 name: CI
 
-# Minutes budget: this repository is private, so hosted Linux minutes count
-# once, Windows twice and macOS ten times against 2,000 a month. Linux and
-# Windows therefore run on self-hosted runners (registered from the developer
-# machine, see docs/contributing/ci-runners.md), which GitHub does not bill, using the
-# Qt installed there. macOS has no self-hosted counterpart and runs only when
-# asked for or on a tag. Once the repository is public, hosted runners are
-# free and the `runs-on` lines can go back to GitHub's images.
+# Public CI runs on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-14)
+# by default, installing and caching Qt 6.8 via jurplel/install-qt-action@v4.
+#
+# Maintainers can optionally route trusted non-fork runs (push, workflow_dispatch,
+# and same-repository pull requests) on Linux and Windows to registered
+# self-hosted runners by setting repository variable QMLTUI_SELF_HOSTED=1
+# (see docs/contributing/ci-runners.md). External fork pull requests always run
+# on GitHub-hosted runners.
 
 on:
   push:
@@ -15,6 +16,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -22,21 +26,34 @@ concurrency:
 jobs:
   linux:
     name: linux / Behavior ${{ matrix.behavior }}
-    # A self-hosted Linux runner provides QMLTUI_QT_LINUX (the Qt prefix) in
-    # its .env file; Ninja and CMake come from the machine.
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
-        behavior: [ON, OFF]
+        behavior: ['ON', 'OFF']
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        if: runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        if: runner.environment != 'self-hosted'
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
 
       - name: Configure
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
@@ -48,27 +65,48 @@ jobs:
         run: cmake --build build --parallel 4
 
       - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: ctest --test-dir build -LE Demo --output-on-failure
 
       - name: Check formatting, docs, and skills
         if: matrix.behavior == 'ON'
         run: |
-          python3 ./scripts/format.py --check src
+          export QMLTUI_QT_LINUX="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
+          if [ "${RUNNER_ENVIRONMENT:-}" != "self-hosted" ] && ! command -v clang-format >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends clang-format
+          fi
+          python3 ./scripts/format.py --check src tools
           python3 ./scripts/check_docs.py --build-dir build
           python3 ./.agents/skills/qmltui-qml/check-skills.py --build-dir build
 
   sanitizers:
     name: sanitizers (linux / ASan+UBSan)
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        if: runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        if: runner.environment != 'self-hosted'
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
 
       - name: Configure
         run: >
           cmake -S . -B build-asan -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
-          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
@@ -80,24 +118,47 @@ jobs:
 
       - name: Test
         env:
+          QT_QPA_PLATFORM: offscreen
           ASAN_OPTIONS: detect_leaks=0
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: ctest --test-dir build-asan -LE Demo --output-on-failure
 
   coverage:
     name: coverage (linux / clang / llvm-cov)
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure Clang coverage tools
+        if: runner.environment != 'self-hosted'
+        run: |
+          if ! command -v clang++ >/dev/null 2>&1 || ! command -v llvm-cov >/dev/null 2>&1 || ! command -v llvm-profdata >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends clang llvm
+          fi
+
+      - name: Install Ninja
+        if: runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        if: runner.environment != 'self-hosted'
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
 
       - name: Configure
         run: >
           cmake -S . -B build-coverage -G Ninja
           -DCMAKE_CXX_COMPILER=clang++
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
@@ -110,6 +171,8 @@ jobs:
         run: cmake --build build-coverage --parallel 4
 
       - name: Run tests and generate coverage report
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: cmake --build build-coverage --target coverage
 
       - name: Upload coverage report
@@ -144,27 +207,40 @@ jobs:
 
   windows:
     name: windows / Behavior ON
-    # A self-hosted Windows runner provides QMLTUI_QT_WINDOWS (the msvc2022_64
-    # prefix) in its .env file and has Visual Studio 2022 installed. Behavior
-    # gating is exercised on Linux; one Windows configuration is enough.
-    runs-on: [self-hosted, windows]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "windows"]') || 'windows-2022' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        if: runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        if: runner.environment != 'self-hosted'
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          cache: true
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
         shell: pwsh
-        run: >
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$env:QMLTUI_QT_WINDOWS"
-          -DQMLTUI_BUILD_TESTS=ON
-          -DQMLTUI_BUILD_EXAMPLES=ON
-          -DQMLTUI_ENABLE_RUNNER=ON
-          -DQMLTUI_ENABLE_PRIVATE_QT=ON
-          -DQMLTUI_ENABLE_IMAGE=ON
+        run: |
+          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.install-dir }}" }
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$qtPrefix" `
+            -DQMLTUI_BUILD_TESTS=ON `
+            -DQMLTUI_BUILD_EXAMPLES=ON `
+            -DQMLTUI_ENABLE_RUNNER=ON `
+            -DQMLTUI_ENABLE_PRIVATE_QT=ON `
+            -DQMLTUI_ENABLE_IMAGE=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -174,18 +250,19 @@ jobs:
         run: |
           # DLLs are found through PATH on Windows: Qt's bin plus every build
           # directory that holds one.
+          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.install-dir }}" }
           $dllDirs = Get-ChildItem -Path build -Recurse -Filter *.dll | ForEach-Object { $_.DirectoryName } | Sort-Object -Unique
-          $env:PATH = "$env:QMLTUI_QT_WINDOWS\bin;" + ($dllDirs -join ';') + ";$env:PATH"
+          $env:PATH = "$qtPrefix\bin;" + ($dllDirs -join ';') + ";$env:PATH"
           $env:QML2_IMPORT_PATH = "$PWD\build\qml"
           $env:QML_IMPORT_PATH = "$PWD\build\qml"
           $env:QT_FORCE_STDERR_LOGGING = "1"
           ctest --test-dir build -LE Demo --output-on-failure
 
   macos:
-    name: macos / Behavior ON (on demand and tags)
-    # Hosted macOS minutes bill at ten times; run this row only when asked
-    # for or when a release tag is pushed.
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    name: macos / Behavior ON
+    # On public repositories, hosted macos-14 runs on every push and pull request.
+    # On private forks/mirrors, macOS runs on workflow_dispatch and release tags only.
+    if: ${{ !github.event.repository.private || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -213,13 +290,30 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: ctest --test-dir build -LE Demo --output-on-failure
 
   quickstart:
     name: quickstart (FetchContent, standalone)
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        if: runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        if: runner.environment != 'self-hosted'
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
 
       - name: Configure exactly as a newcomer would, against this tree
         # FETCHCONTENT_SOURCE_DIR_QMLTUI is CMake's standard override for a
@@ -227,7 +321,7 @@ jobs:
         run: >
           cmake -S examples/helloworld -B build-qs -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="$QMLTUI_QT_LINUX"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
           -DFETCHCONTENT_SOURCE_DIR_QMLTUI=${{ github.workspace }}
 
       - name: Build
@@ -251,7 +345,7 @@ jobs:
 
   wasm:
     name: wasm (compile-guard, examples/helloworld)
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -281,24 +375,61 @@ jobs:
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install Ninja
+        if: steps.filter.outputs.should_run == 'true' && runner.environment != 'self-hosted'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup Emscripten 3.1.56 (Qt 6.8)
+        if: steps.filter.outputs.should_run == 'true' && runner.environment != 'self-hosted'
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.56'
+          actions-cache-folder: emsdk-cache
+
+      - name: Install Qt 6.8 Host (linux_gcc_64)
+        if: steps.filter.outputs.should_run == 'true' && runner.environment != 'self-hosted'
+        id: qt-host
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
+
+      - name: Install Qt 6.8 WebAssembly (wasm_singlethread)
+        if: steps.filter.outputs.should_run == 'true' && runner.environment != 'self-hosted'
+        id: qt-wasm
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'wasm_singlethread'
+          cache: true
+
       - name: Build examples/helloworld with Qt for WebAssembly
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
-          if [ -z "${QMLTUI_QT_WASM:-}" ]; then
+          qt_wasm_dir="${QMLTUI_QT_WASM:-${{ steps.qt-wasm.outputs.install-dir }}}"
+          qt_linux_dir="${QMLTUI_QT_LINUX:-${{ steps.qt-host.outputs.install-dir }}}"
+          if [ -z "$qt_wasm_dir" ]; then
             echo "Error: QMLTUI_QT_WASM is not set on the self-hosted runner (see docs/contributing/ci-runners.md)." >&2
             exit 1
           fi
-          if [ -n "${EMSDK:-}" ] && [ -f "$EMSDK/emsdk_env.sh" ]; then
-            source "$EMSDK/emsdk_env.sh"
-          elif [ -f "$HOME/emsdk/emsdk_env.sh" ]; then
-            source "$HOME/emsdk/emsdk_env.sh"
+          if ! command -v emcc >/dev/null 2>&1; then
+            if [ -n "${EMSDK:-}" ] && [ -f "$EMSDK/emsdk_env.sh" ]; then
+              source "$EMSDK/emsdk_env.sh"
+            elif [ -f "$HOME/emsdk/emsdk_env.sh" ]; then
+              source "$HOME/emsdk/emsdk_env.sh"
+            fi
           fi
           qt_host_arg=()
-          if [ -n "${QMLTUI_QT_LINUX:-}" ] && [ -d "${QMLTUI_QT_LINUX}" ]; then
-            qt_host_arg=("-DQT_HOST_PATH=${QMLTUI_QT_LINUX}")
+          if [ -n "$qt_linux_dir" ] && [ -d "$qt_linux_dir" ]; then
+            qt_host_arg=("-DQT_HOST_PATH=${qt_linux_dir}")
           fi
-          "$QMLTUI_QT_WASM/bin/qt-cmake" -S examples/helloworld -B build-wasm -G Ninja \
+          "$qt_wasm_dir/bin/qt-cmake" -S examples/helloworld -B build-wasm -G Ninja \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             "${qt_host_arg[@]}" \
             -DFETCHCONTENT_SOURCE_DIR_QMLTUI="${{ github.workspace }}"
@@ -309,7 +440,6 @@ jobs:
 
   reuse:
     name: REUSE licensing compliance
-    # About one hosted Linux minute.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

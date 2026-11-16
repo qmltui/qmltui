@@ -10,6 +10,13 @@
   <a href="https://github.com/qmltui/qmltui/blob/badges/summary.md"><img alt="Coverage" src="https://github.com/qmltui/qmltui/raw/badges/coverage.svg"></a>
 </p>
 
+<p align="center">
+  <a href="https://qmltui.github.io/website/"><strong>Documentation</strong></a> ·
+  <a href="https://qmltui.github.io/website/playground.html"><strong>Live Playground (Wasm)</strong></a> ·
+  <a href="https://qmltui.github.io/website/playground.html?mode=gallery"><strong>Component Gallery</strong></a> ·
+  <a href="https://qmltui.github.io/website/showcase.html"><strong>App Showcase</strong></a>
+</p>
+
 **QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17. Declare reactive layouts, property bindings, states, and reusable components in QML and build backend logic in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`). QmlTui evaluates the QML item tree into a double-buffered character-cell grid (`TextGridBuffer`), diffs consecutive frames, and writes minimal ANSI/SGR updates to the terminal on `QCoreApplication` without requiring `QtQuick`, `QtGui`, or a display server.
 
 ## When to Use QmlTui
@@ -101,7 +108,9 @@ Terminal {
 
 ## Quickstart
 
-Requires **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (`Core` and `Qml`).
+Try QmlTui directly in your browser with zero installation in the [Live WebAssembly Playground](https://qmltui.github.io/website/playground.html), browse all built-in controls in the [Component Gallery](https://qmltui.github.io/website/playground.html?mode=gallery), or explore complete applications in the [App Showcase](https://qmltui.github.io/website/showcase.html).
+
+To build locally, install **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (`Core` and `Qml`, tested across Qt 6.8 through 6.12):
 
 ```sh
 cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
@@ -135,17 +144,18 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 - **Explicit keyboard quit path**: Raw-mode terminals have no close button, and `TextInput`/`TextArea` bind `Ctrl+C` to copy. Applications must provide an explicit exit handler (such as `Q` or contextual `Escape` on the root `Terminal`).
 - **Terminal capability variance**: `TerminalCapabilities` probes DEC mode 2026, Kitty keyboard, SGR mouse, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades cleanly when unsupported.
 - **Flat views vs. trees**: `ListView`, `TableView`, `GridView`, and `Repeater` display one model level (`rootIndex` selects a subtree); multi-level trees require `TreeView`.
-- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` use `Qt6::QmlPrivate` when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default; pass `OFF` for public-Qt-only builds).
+- **Optional private Qt headers**: `Behavior` and direct-assignment `PropertyChanges` link `Qt6::QmlPrivate` when available (`QMLTUI_ENABLE_PRIVATE_QT=ON` by default, coupling shared binaries to that `Qt 6.x` minor release; pass `OFF` for public-Qt-only builds).
 - **POSIX-only `PtyView`**: `QmlTui.PtyView` uses `forkpty` and `libvterm` and is supported on Linux and macOS only.
 
 ## Documentation
 
+- **[Documentation Portal](https://qmltui.github.io/website/)** · **[Live Playground (Wasm)](https://qmltui.github.io/website/playground.html)** · **[Component Gallery](https://qmltui.github.io/website/playground.html?mode=gallery)** · **[App Showcase](https://qmltui.github.io/website/showcase.html)**
 - **[Getting Started](docs/getting-started.md)** · **[Qt Quick & Widgets Guide](docs/guides/qt-quick-to-qmltui.md)** · **[Build & CMake](docs/build-configuration.md)** · **[Editor Setup](docs/guides/editor-setup.md)**
 - **[Guides](docs/guides/index.md)** · **[Testing with Runner](docs/guides/testing.md)** · **[Agentic Loop](docs/guides/agentic-development.md)** · **[Examples & Recipes](docs/examples.md)** ([qmltui/apps](https://github.com/qmltui/apps))
 - **[QML Types Reference](docs/qml-types/index.md)** · **[C++ Classes Reference](docs/cpp-classes/index.md)** · **[Changelog](docs/changes/changelog.md)** · **[Contributing](CONTRIBUTING.md)**
 
 ## License
 
-QmlTui is available under the **LGPLv3**. Examples and the starter template are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
+QmlTui is available under the **GNU Lesser General Public License v3.0 (`LGPL-3.0-only`)**. Examples and the starter template are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
 
-Separate commercial terms are available upon inquiry through <https://github.com/qmltui/qmltui>. QmlTui is an independent project and not a product of The Qt Company.
+QmlTui is an independent open-source project and not a product of The Qt Company.

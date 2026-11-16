@@ -24,7 +24,7 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `source` | `url` | empty | Where the picture comes from: a local file, a `qrc:` resource, a path relative to the working directory, or an `http:`/`https:` URL. Any format Qt's image plugins read, including PNG, JPEG, and WebP. Remote pictures are fetched asynchronously through the QML engine's network access manager (redirects followed), the item stays `Loading` with `progress` advancing until the reply arrives, and decoded pictures are cached by URL so a second item or a relayout does not download again. Also `image://<provider>/<id>`, served by a `qmltui::ImageProvider` installed on the QML engine; changing the URL asks the provider again. Cleared when `image` is assigned. |
+| `source` | `url` | empty | Where the picture comes from: a local file, a `qrc:` resource, a path relative to the working directory, or an `http:`/`https:` URL. Any raster format Qt's image plugins read, including PNG, JPEG, GIF, WebP, and BMP (`svg`/`svgz` sources additionally require `QGuiApplication`). Remote pictures are fetched asynchronously through the QML engine's network access manager (redirects followed), the item stays `Loading` with `progress` advancing until the reply arrives, and decoded pictures are cached by URL so a second item or a relayout does not download again. Also `image://<provider>/<id>`, served by a `qmltui::ImageProvider` installed on the QML engine; changing the URL asks the provider again. Cleared when `image` is assigned. |
 | `image` | `QImage` | null | The picture itself. Assign a `QImage` from C++, or bind to a `QImage` property of a C++ object, to show pixels that never touch a file; `source` becomes empty. Reading returns whatever is shown, loaded or assigned; a null image clears the item. |
 | `fillMode` | `FillMode` | `Image.Stretch` | How the picture is fitted into the item's cell rectangle. |
 | `renderMode` | `RenderMode` | `Image.Auto` | How pixels become terminal output: a pixel protocol when the terminal has one, otherwise a glyph approximation. |
@@ -84,6 +84,11 @@ committed-frame tests see.
 The item repaints when the source, the geometry, or any rendering property
 changes. Scaling is cached between frames, so a static picture costs nothing
 after the first paint.
+
+`QmlTui.Image` decodes raster formats (`PNG`, `JPEG`, `GIF`, `WebP`, `BMP`)
+directly on `QCoreApplication`. SVG and SVGZ sources require `QGuiApplication`
+because Qt's SVG plugin accesses `QFontDatabase`; under `QCoreApplication`, SVG
+loads emit a QML warning and transition cleanly to `Image.Error`.
 
 ### Scaling and sharpness
 

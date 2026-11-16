@@ -58,7 +58,7 @@ Grants active keyboard focus to this item and updates its enclosing focus scope 
 #### `void markDirty()`
 Marks this item dirty and schedules a frame render on the owning `TerminalEngine`.
 
-#### `QPoint absolutePosition() const`
+#### `Q_INVOKABLE QPoint absolutePosition() const`
 Returns the item's `(x, y)` cell coordinates relative to the root `Terminal`.
 
 #### `const QList<Item *> &childItems() const`

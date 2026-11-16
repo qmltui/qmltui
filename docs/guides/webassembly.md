@@ -2,7 +2,7 @@
 
 A QmlTui application compiles to WebAssembly and runs inside [xterm.js](https://xtermjs.org/) on a static web page. Your application's `main.cpp` and `.qml` files stay unchanged: when compiled under Emscripten, `createTerminalBackend()` selects `WasmTerminalBackend` instead of a POSIX TTY or Windows console backend.
 
-**Licensing note**: Qt for WebAssembly is distributed by The Qt Company under the GPLv3 or a commercial Qt license, and WebAssembly builds link Qt statically. While QmlTui source code is licensed under the LGPLv3, combining QmlTui with open-source Qt for WebAssembly produces a combined binary governed by the GPLv3 unless you hold commercial licenses for both Qt and QmlTui. See [LICENSE.md](../../LICENSE.md). Desktop builds link Qt dynamically under the LGPLv3 and are unaffected.
+**Licensing note**: Qt for WebAssembly is distributed by The Qt Company under the GPLv3 or a commercial Qt license, and WebAssembly builds link Qt statically. While QmlTui's source code is licensed under `LGPL-3.0-only`, linking QmlTui against open-source Qt for WebAssembly produces a combined binary governed by the GPLv3. See [LICENSE.md](../../LICENSE.md). Desktop builds link Qt dynamically under `LGPL-3.0-only` and are unaffected.
 
 ## Prerequisites
 

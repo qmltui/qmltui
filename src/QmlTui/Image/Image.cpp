@@ -12,6 +12,7 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QImageReader>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -24,6 +25,21 @@ namespace qmltui {
 
 static const char* ASCII_RAMP = " .:-=+*#%@";
 static const int ASCII_RAMP_LEN = 10;
+
+// Qt's QSvgPlugin queries QFontDatabase when rendering SVGs with <text>, font
+// attributes, or em/ex units, calling qFatal() when no QGuiApplication exists.
+static bool isSvgWithoutGuiApp(QIODevice* device, const QByteArray& declaredFormat) {
+    if (qobject_cast<QGuiApplication*>(QCoreApplication::instance()) != nullptr) return false;
+    const QByteArray fmt = declaredFormat.toLower();
+    if (fmt == "svg" || fmt == "svgz") return true;
+    if (!device || !device->isOpen()) return false;
+    const qint64 savedPos = device->pos();
+    QImageReader contentProbe(device);
+    contentProbe.setDecideFormatFromContent(true);
+    const QByteArray contentFmt = contentProbe.format().toLower();
+    device->seek(savedPos);
+    return contentFmt == "svg" || contentFmt == "svgz";
+}
 
 // The Image transparency rule (docs/qml-types/image.md, "Transparency").
 // Returns the colour a source pixel shows once drawn into a cell, or 0 for
@@ -279,13 +295,19 @@ void Image::loadFromNetwork(const QUrl& url) {
                 buffer.setData(reply->readAll());
                 buffer.open(QIODevice::ReadOnly);
                 QImageReader reader(&buffer);
-                image = reader.read();
-                if (image.isNull()) {
-                    qmlWarning(this) << "Image: " << url.toString() << ": " << reader.errorString();
+                if (isSvgWithoutGuiApp(&buffer, reader.format())) {
+                    qmlWarning(this)
+                        << "Image: " << url.toString() << ": SVG sources require QGuiApplication";
                 } else {
-                    image = image.convertToFormat(QImage::Format_ARGB32);
-                    remoteCache().insert(url.toString(), new QImage(image),
-                                         static_cast<qsizetype>(image.sizeInBytes()));
+                    image = reader.read();
+                    if (image.isNull()) {
+                        qmlWarning(this)
+                            << "Image: " << url.toString() << ": " << reader.errorString();
+                    } else {
+                        image = image.convertToFormat(QImage::Format_ARGB32);
+                        remoteCache().insert(url.toString(), new QImage(image),
+                                             static_cast<qsizetype>(image.sizeInBytes()));
+                    }
                 }
             }
         } else {
@@ -571,9 +593,20 @@ void Image::loadImage() {
                              << "\" on this engine";
     } else {
         const QString resolvedPath = resolvePath(m_source);
-        loaded.load(resolvedPath);
-        if (loaded.isNull())
+        QFile file(resolvedPath);
+        if (!file.open(QIODevice::ReadOnly)) {
             qmlWarning(this) << "Image: failed to load \"" << m_source.toString() << "\"";
+        } else {
+            QImageReader reader(&file);
+            if (isSvgWithoutGuiApp(&file, reader.format())) {
+                qmlWarning(this) << "Image: \"" << m_source.toString()
+                                 << "\": SVG sources require QGuiApplication";
+            } else {
+                loaded = reader.read();
+                if (loaded.isNull())
+                    qmlWarning(this) << "Image: failed to load \"" << m_source.toString() << "\"";
+            }
+        }
     }
     adoptImage(loaded.isNull() ? QImage() : loaded.convertToFormat(QImage::Format_ARGB32),
                Status::Error);

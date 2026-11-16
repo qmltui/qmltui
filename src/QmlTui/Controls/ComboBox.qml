@@ -11,13 +11,13 @@ Rectangle {
 
     property alias model: popupList.model
     property string textRole: ""
-    property int currentIndex: count > 0 ? 0 : -1
+    property int currentIndex: d.defaultIndex
     property int maxVisibleItems: 6
     property color textColor
     property color popupColor: QmlTui.defaultColor
     property color popupBorderColor: border.color
-    property color selectionColor
-    property color selectedTextColor
+    property color selectionColor: QmlTui.invalidColor
+    property color selectedTextColor: QmlTui.invalidColor
     readonly property alias count: popupList.count
     readonly property string currentText: (d.modelRevision, textAt(currentIndex))
     property string displayText: currentText
@@ -96,7 +96,9 @@ Rectangle {
     function selectIndex(index) {
         if (index < 0 || index >= popupList.count)
             return;
-        currentIndex = index;
+        d.selectedIndex = index;
+        if (currentIndex !== index)
+            currentIndex = index;
         activated(index);
     }
 
@@ -104,16 +106,17 @@ Rectangle {
     implicitWidth: Math.max(background ? background.implicitWidth : 0, 16, (contentItem ? contentItem.implicitWidth : 0) + (indicator ? indicator.implicitWidth : 0) + 5)
     implicitHeight: border.style !== Border.None ? 3 : Math.max(background ? background.implicitHeight : 0, 1)
 
+    onEnabledChanged: {
+        if (!enabled && opened)
+            close();
+    }
     onMaxVisibleItemsChanged: {
         if (dropdownPopup.visible)
             d.positionPopup();
     }
     onCountChanged: {
-        if (popupList.count <= 0) {
-            currentIndex = -1;
-        } else if (currentIndex < 0 || currentIndex >= popupList.count) {
-            currentIndex = 0;
-        }
+        if (popupList.count <= 0 || d.selectedIndex < 0 || d.selectedIndex >= popupList.count)
+            d.selectedIndex = 0;
         if (dropdownPopup.visible)
             d.positionPopup();
     }
@@ -139,12 +142,12 @@ Rectangle {
             control.open();
             event.accepted = true;
         } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Left) {
-            if (control.currentIndex > 0)
-                control.selectIndex(control.currentIndex - 1);
+            if (control.currentIndex > 0 && control.count > 0)
+                control.selectIndex(Math.min(control.currentIndex - 1, control.count - 1));
             event.accepted = true;
         } else if (event.key === Qt.Key_Down || event.key === Qt.Key_Right) {
-            if (control.currentIndex + 1 < control.count)
-                control.selectIndex(control.currentIndex + 1);
+            if (control.count > 0 && control.currentIndex + 1 < control.count)
+                control.selectIndex(Math.max(0, control.currentIndex + 1));
             event.accepted = true;
         } else if (event.key === Qt.Key_Home && control.count > 0) {
             control.selectIndex(0);
@@ -159,9 +162,11 @@ Rectangle {
         id: d
 
         property int modelRevision: 0
+        property int selectedIndex: 0
         property Item prevBackground: null
         property Item prevContentItem: null
         property Item prevIndicator: null
+        readonly property int defaultIndex: control.count <= 0 ? -1 : (d.selectedIndex >= 0 && d.selectedIndex < control.count ? d.selectedIndex : 0)
         readonly property bool showBrackets: control.border.style === Border.None && control.background === null && control.contentItem === defaultContentItem && control.indicator === defaultIndicator
 
         function positionPopup() {
@@ -282,9 +287,9 @@ Rectangle {
 
     Text {
         id: leftBracket
-        visible: d.showBrackets
         x: 0
         y: Math.max(0, Math.floor((control.height - 1) / 2))
+        visible: d.showBrackets
         text: "["
         color: control.textColor
         bold: control.activeFocus || control.opened
@@ -292,9 +297,9 @@ Rectangle {
 
     Text {
         id: defaultContentItem
+        clip: true
         visible: control.contentItem === defaultContentItem
         text: control.displayText
-        clip: true
         color: control.textColor
         bold: control.activeFocus || control.opened
     }
@@ -310,9 +315,9 @@ Rectangle {
 
     Text {
         id: rightBracket
-        visible: d.showBrackets
         x: Math.max(0, control.width - 1)
         y: Math.max(0, Math.floor((control.height - 1) / 2))
+        visible: d.showBrackets
         text: "]"
         color: control.textColor
         bold: control.activeFocus || control.opened
@@ -338,10 +343,10 @@ Rectangle {
                 return;
             if (event.wheelDeltaY < 0 || event.wheelDeltaX > 0) {
                 if (control.currentIndex + 1 < control.count)
-                    control.selectIndex(control.currentIndex + 1);
+                    control.selectIndex(Math.max(0, control.currentIndex + 1));
             } else if (event.wheelDeltaY > 0 || event.wheelDeltaX < 0) {
                 if (control.currentIndex > 0)
-                    control.selectIndex(control.currentIndex - 1);
+                    control.selectIndex(Math.min(control.currentIndex - 1, control.count - 1));
             }
         }
     }
@@ -354,18 +359,18 @@ Rectangle {
             required property int index
             required property var modelData
             readonly property bool isHighlighted: index === popupList.currentIndex
-            readonly property bool hasExplicitSelection: control.selectionColor !== QmlTui.defaultColor && String(control.selectionColor) !== "#00000000"
+            readonly property bool hasExplicitSelection: control.selectionColor.valid || control.selectedTextColor.valid
 
             width: popupList.width
             height: 1
-            color: isHighlighted && hasExplicitSelection ? control.selectionColor : control.popupColor
+            color: isHighlighted && control.selectionColor.valid ? control.selectionColor : control.popupColor
 
             Text {
                 width: parent.width
                 height: 1
-                text: (optionRow.index === control.currentIndex ? "▸ " : "  ") + control.itemText(optionRow.modelData)
                 clip: true
-                color: optionRow.isHighlighted && control.selectedTextColor !== QmlTui.defaultColor && String(control.selectedTextColor) !== "#00000000" ? control.selectedTextColor : control.textColor
+                text: (optionRow.index === control.currentIndex ? "▸ " : "  ") + control.itemText(optionRow.modelData)
+                color: optionRow.isHighlighted && control.selectedTextColor.valid ? control.selectedTextColor : control.textColor
                 bold: optionRow.isHighlighted || optionRow.index === control.currentIndex
                 reversed: optionRow.isHighlighted && !optionRow.hasExplicitSelection
             }
@@ -373,6 +378,8 @@ Rectangle {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
+                    if (!control.enabled)
+                        return;
                     popupList.currentIndex = optionRow.index;
                     control.selectIndex(optionRow.index);
                     dropdownPopup.accept();
@@ -413,6 +420,8 @@ Rectangle {
             onModelDataChanged: d.modelRevision++
 
             Keys.onPressed: event => {
+                if (!control.enabled)
+                    return;
                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
                     if (popupList.currentIndex >= 0 && popupList.currentIndex < control.count) {
                         control.selectIndex(popupList.currentIndex);

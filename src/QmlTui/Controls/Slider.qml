@@ -17,6 +17,26 @@ Rectangle {
     focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
     implicitWidth: 25
     implicitHeight: 1
+
+    Keys.onPressed: event => {
+        if (!control.enabled)
+            return;
+        const step = control.stepSize > 0 ? control.stepSize : 1;
+        if (event.key === Qt.Key_Left) {
+            control.value = Math.max(control.from, control.value - step);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Right) {
+            control.value = Math.min(control.to, control.value + step);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Home) {
+            control.value = control.from;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_End) {
+            control.value = control.to;
+            event.accepted = true;
+        }
+    }
+
     Text {
         anchors.verticalCenter: parent.verticalCenter
         x: 0
@@ -48,11 +68,11 @@ Rectangle {
 
     Text {
         id: valueText
-        visible: control.showValue
         anchors {
             verticalCenter: parent.verticalCenter
             right: parent.right
         }
+        visible: control.showValue
         text: "[" + Math.round(control.value) + "]"
         color: control.textColor
         // The readout inverts while focused, so a one-row slider shows focus
@@ -61,31 +81,9 @@ Rectangle {
         reversed: control.activeFocus
     }
 
-    Keys.onPressed: event => {
-        if (!control.enabled)
-            return;
-        const step = control.stepSize > 0 ? control.stepSize : 1;
-        if (event.key === Qt.Key_Left) {
-            control.value = Math.max(control.from, control.value - step);
-            event.accepted = true;
-        } else if (event.key === Qt.Key_Right) {
-            control.value = Math.min(control.to, control.value + step);
-            event.accepted = true;
-        } else if (event.key === Qt.Key_Home) {
-            control.value = control.from;
-            event.accepted = true;
-        } else if (event.key === Qt.Key_End) {
-            control.value = control.to;
-            event.accepted = true;
-        }
-    }
-
     MouseArea {
         id: mouseArea
-        x: 0
-        y: 0
-        width: control.width
-        height: control.height
+
         function updateFromX(posX) {
             if (control.trackWidth <= 0)
                 return;
@@ -95,6 +93,11 @@ Rectangle {
             const raw = control.from + pct * range;
             control.value = Math.min(control.to, Math.max(control.from, control.from + Math.round((raw - control.from) / step) * step));
         }
+
+        x: 0
+        y: 0
+        width: control.width
+        height: control.height
         onPressed: event => {
             if (!control.enabled)
                 return;

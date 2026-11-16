@@ -114,9 +114,7 @@ private:
 
 } // namespace qmltui
 
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
 QT_BEGIN_NAMESPACE
 class QQmlCustomParser;
 template <> QMLTUI_CORE_EXPORT QQmlCustomParser* qmlCreateCustomParser<qmltui::PropertyChanges>();
 QT_END_NAMESPACE
-#endif

@@ -26,7 +26,7 @@ Item {
     // Defaults to terminal ink; gradients and thresholds are opt-in data colors.
     property color color
     // Optional explicit color for the unfilled portion; when unset, empty cells dim automatically.
-    property color trackColor
+    property color trackColor: QmlTui.invalidColor
 
     property string fillCharacter: ""
     property string emptyCharacter: ""
@@ -123,7 +123,7 @@ Item {
         if (emptyLen > 0) {
             segs.push({
                 text: emptyChar.repeat(emptyLen),
-                color: (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) ? control.trackColor : control.color
+                color: control.trackColor.valid ? control.trackColor : control.color
             });
         }
 
@@ -204,7 +204,7 @@ Item {
                         const seg = segs[i];
                         const isEmptySeg = hasEmpty && (i === segs.length - 1);
                         if (isEmptySeg) {
-                            if (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) {
+                            if (control.trackColor.valid) {
                                 out.push(QmlTui.span(seg.text, {
                                     color: control.trackColor,
                                     bold: false
@@ -212,7 +212,8 @@ Item {
                             } else if (control.color.valid && control.color !== QmlTui.defaultColor) {
                                 out.push(QmlTui.span(seg.text, {
                                     color: control.color,
-                                    bold: false
+                                    bold: false,
+                                    dim: true
                                 }));
                             } else {
                                 out.push(QmlTui.span(seg.text, {
@@ -240,7 +241,7 @@ Item {
                         }));
                     }
                     if (emptyLen > 0) {
-                        if (control.trackColor.valid && control.trackColor !== QmlTui.defaultColor) {
+                        if (control.trackColor.valid) {
                             out.push(QmlTui.span(control.effectiveEmptyChar.repeat(emptyLen), {
                                 color: control.trackColor,
                                 bold: false

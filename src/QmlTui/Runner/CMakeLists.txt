@@ -32,6 +32,7 @@ else()
     target_compile_definitions(QmlTuiRunner PRIVATE QMLTUI_RUNNER_LIBRARY)
 endif()
 add_library(qmltui::runner ALIAS QmlTuiRunner)
+add_library(qmltui::Runner ALIAS QmlTuiRunner)
 add_library(QmlTui::Runner ALIAS QmlTuiRunner)
 set_target_properties(QmlTuiRunner PROPERTIES EXPORT_NAME Runner)
 

@@ -937,5 +937,5 @@ Terminal {
     }
 };
 
-QTEST_MAIN(TestKittyGraphics)
+QTEST_GUILESS_MAIN(TestKittyGraphics)
 #include "test_kitty_graphics.moc"

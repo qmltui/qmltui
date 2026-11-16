@@ -14,6 +14,7 @@
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <QTemporaryFile>
+#include <QGuiApplication>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/Subpixel.h>
 
@@ -44,6 +45,7 @@ private slots:
     void testTransparencyOverKnownBackground();
     void testTransparencyOverUnknownBackground();
     void testTransparencyAsciiAndBraille();
+    void testSvgWithTextUnderCoreApplication();
 
 private:
     // Writes `pixels` (row-major, `width` per row) to a temporary PNG, which
@@ -954,6 +956,7 @@ class PictureServer : public QObject {
 public:
     int requests = 0;
     QByteArray png;
+    QByteArray svg;
     QTcpServer server;
     PictureServer() {
         QImage image(6, 4, QImage::Format_RGB32);
@@ -961,18 +964,27 @@ public:
         QBuffer buffer(&png);
         buffer.open(QIODevice::WriteOnly);
         image.save(&buffer, "PNG");
+        svg = QByteArrayLiteral(
+            R"(<svg xmlns="http://www.w3.org/2000/svg" width="4em" height="2em" viewBox="0 0 64 32">)"
+            R"(<rect width="64" height="32" fill="red"/>)"
+            R"(<text x="4" y="20" font-size="12">Hi</text></svg>)");
         connect(&server, &QTcpServer::newConnection, this, [this] {
             QTcpSocket* socket = server.nextPendingConnection();
             connect(socket, &QTcpSocket::readyRead, this, [this, socket] {
                 const QByteArray request = socket->readAll();
                 if (!request.contains("\r\n\r\n")) return;
                 ++requests;
-                const bool found = request.startsWith("GET /picture.png ");
-                const QByteArray body = found ? png : QByteArray("missing");
+                const bool isPng = request.startsWith("GET /picture.png ");
+                const bool isSvg = request.startsWith("GET /badge.svg ");
+                const bool found = isPng || isSvg;
+                const QByteArray body = isPng ? png : (isSvg ? svg : QByteArray("missing"));
+                const QByteArray contentType =
+                    isPng ? QByteArray("image/png")
+                          : (isSvg ? QByteArray("image/svg+xml") : QByteArray("text/plain"));
                 socket->write("HTTP/1.1 " + QByteArray(found ? "200 OK" : "404 Not Found") +
                               "\r\n"
                               "Content-Type: " +
-                              QByteArray(found ? "image/png" : "text/plain") +
+                              contentType +
                               "\r\n"
                               "Content-Length: " +
                               QByteArray::number(body.size()) +
@@ -1061,5 +1073,79 @@ Terminal {
     QCOMPARE(picture->status(), qmltui::Image::Status::Ready);
 }
 
-QTEST_MAIN(TestImage)
+void TestImage::testSvgWithTextUnderCoreApplication() {
+    QVERIFY(qobject_cast<QGuiApplication*>(QCoreApplication::instance()) == nullptr);
+
+    const QByteArray svgWithText = QByteArrayLiteral(
+        R"(<svg xmlns="http://www.w3.org/2000/svg" width="4em" height="2em" viewBox="0 0 64 32">)"
+        R"(<rect width="64" height="32" fill="cyan"/>)"
+        R"(<text x="4" y="20" font-size="12">QmlTui</text></svg>)");
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    const QString svgPath = dir.filePath(QStringLiteral("text_icon.svg"));
+    {
+        QFile f(svgPath);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(svgWithText);
+    }
+
+    const QString disguisedPngPath = dir.filePath(QStringLiteral("disguised.png"));
+    {
+        QFile f(disguisedPngPath);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(svgWithText);
+    }
+
+    // Local .svg file with <text> and em units must report Error instead of qFatal().
+    {
+        qmltui::Image img;
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression("Image: .*SVG sources require QGuiApplication"));
+        img.setSource(QUrl::fromLocalFile(svgPath));
+        QCOMPARE(img.status(), qmltui::Image::Status::Error);
+        QVERIFY(img.image().isNull());
+    }
+
+    // SVG bytes disguised under a .png suffix must also be caught before QSvgPlugin runs.
+    {
+        qmltui::Image img;
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression("Image: .*SVG sources require QGuiApplication"));
+        img.setSource(QUrl::fromLocalFile(disguisedPngPath));
+        QCOMPARE(img.status(), qmltui::Image::Status::Error);
+        QVERIFY(img.image().isNull());
+    }
+
+    // Remote HTTP SVG with <text> and em units must also report Error without qFatal().
+    {
+        PictureServer server;
+        QQmlEngine qml;
+        QQmlComponent component(&qml);
+        component.setData(R"(
+import QtQml
+import QmlTui
+import QmlTui.Image
+Terminal {
+    Image { objectName: "picture"; width: 6; height: 2; renderMode: Image.HalfBlock }
+}
+)",
+                          QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto* terminal = qobject_cast<qmltui::Terminal*>(object.get());
+        auto* picture = terminal->findChild<qmltui::Image*>(QStringLiteral("picture"));
+        QVERIFY(picture);
+
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression("Image: http://127\\.0\\.0\\.1:\\d+/badge\\.svg: "
+                                                "SVG sources require QGuiApplication"));
+        picture->setSource(QUrl(server.url("/badge.svg")));
+        QTRY_COMPARE(picture->status(), qmltui::Image::Status::Error);
+        QVERIFY(picture->image().isNull());
+    }
+}
+
+QTEST_GUILESS_MAIN(TestImage)
 #include "test_image.moc"

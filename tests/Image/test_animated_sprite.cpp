@@ -208,5 +208,5 @@ void TestAnimatedSprite::testTimerAdvancesFrames() {
     QTRY_VERIFY(sprite.currentFrame() != frozen);
 }
 
-QTEST_MAIN(TestAnimatedSprite)
+QTEST_GUILESS_MAIN(TestAnimatedSprite)
 #include "test_animated_sprite.moc"

@@ -1,10 +1,12 @@
 #include <QTest>
 #include <QQmlEngine>
 #include <QQmlComponent>
+#include <QQmlProperty>
 #include <QSignalSpy>
 #include <memory>
 
 #include <QmlTui/Core/Items/Item.h>
+#include <QmlTui/Core/Items/Layout.h>
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Items/Rectangle.h>
 #include <QmlTui/Core/Engine/State.h>
@@ -45,6 +47,11 @@ private slots:
     void testDuplicateWriteSuppression();
     void testBehaviorInteraction();
     void testInvalidDeclarationsRejection();
+    void testTransitionTargetDestroyedMidTransition();
+    void testTransitionStateBindingDetachedBeforeLiteralState();
+    void testDecodedBindingTeardownWithoutEngine();
+    void testColorTransitionStringLiteralsAndZeroDelta();
+    void testCustomBindingsDynamicRetargetAndAttachedOmittedTarget();
     void testDisabledFeaturesAvailability();
 };
 
@@ -1177,6 +1184,277 @@ void TestStates::testInvalidDeclarationsRejection() {
     }
 }
 
+void TestStates::testTransitionStateBindingDetachedBeforeLiteralState() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        pragma ComponentBehavior: Bound
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            property int baseSource: 10
+            property int sourceA: 20
+            property int value: root.baseSource
+            states: [
+                State {
+                    name: "A"
+                    PropertyChanges {
+                        target: root
+                        value: root.sourceA * 2
+                    }
+                },
+                State {
+                    name: "B"
+                    PropertyChanges {
+                        target: root
+                        value: 100
+                    }
+                }
+            ]
+            transitions: [
+                Transition {
+                    from: "A"
+                    to: "B"
+                    NumberAnimation {
+                        property: "value"
+                        duration: 100
+                    }
+                }
+            ]
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* root = qobject_cast<Item*>(object.get());
+    QVERIFY(root);
+    QCOMPARE(root->property("value").toInt(), 10);
+
+    root->setState("A");
+    QCOMPARE(root->property("value").toInt(), 40);
+    root->setProperty("sourceA", 25);
+    QCOMPARE(root->property("value").toInt(), 50);
+
+    // Transition A (binding) -> B (literal 100)
+    root->setState("B");
+    PropertyAnimation* runningAnim = nullptr;
+    for (PropertyAnimation* anim : root->findChildren<PropertyAnimation*>()) {
+        if (anim->running()) {
+            runningAnim = anim;
+            break;
+        }
+    }
+    QVERIFY(runningAnim);
+
+    runningAnim->tick(0);
+    runningAnim->tick(50);
+    QCOMPARE(root->property("value").toInt(), 75);
+
+    // State A's binding must already be detached while animating to State B.
+    root->setProperty("sourceA", 99);
+    QCOMPARE(root->property("value").toInt(), 75);
+
+    runningAnim->tick(100);
+    QCOMPARE(root->property("value").toInt(), 100);
+
+    // State A's binding must not remain active in State B after completion.
+    root->setProperty("sourceA", 123);
+    QCOMPARE(root->property("value").toInt(), 100);
+
+    // Returning to base state restores the original base binding.
+    root->setState("");
+    QCOMPARE(root->property("value").toInt(), 10);
+    root->setProperty("baseSource", 17);
+    QCOMPARE(root->property("value").toInt(), 17);
+}
+
+void TestStates::testDecodedBindingTeardownWithoutEngine() {
+    std::unique_ptr<Item> root;
+    {
+        auto engine = std::make_unique<QQmlEngine>();
+        addQmlTuiImportPath(*engine);
+
+        QQmlComponent component(engine.get());
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QmlTui
+            Item {
+                id: root
+                property int seed: 7
+                property int computed: 1
+                states: [
+                    State {
+                        name: "afterEngine"
+                        PropertyChanges {
+                            target: root
+                            computed: root.seed + 5
+                        }
+                    }
+                ]
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+        QObject* created = component.create();
+        QVERIFY(created);
+        QQmlEngine::setObjectOwnership(created, QQmlEngine::CppOwnership);
+        root.reset(qobject_cast<Item*>(created));
+        QVERIFY(root);
+    }
+
+    // Engine is destroyed; activating a decoded expression binding must not dereference nullptr.
+    root->setState("afterEngine");
+    QCOMPARE(root->state(), QStringLiteral("afterEngine"));
+    root->setState("");
+    QCOMPARE(root->state(), QString());
+}
+
+void TestStates::testCustomBindingsDynamicRetargetAndAttachedOmittedTarget() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    // 1. Dynamic PropertyChanges.target retargeting with custom bindings
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QmlTui
+            Item {
+                id: root
+                property int baseA: 11
+                property int baseB: 22
+                property int overrideSeed: 10
+                property Item currentTarget: boxA
+
+                Item {
+                    id: boxA
+                    objectName: "boxA"
+                    width: root.baseA
+                    height: 5
+                }
+                Item {
+                    id: boxB
+                    objectName: "boxB"
+                    width: root.baseB
+                    height: 6
+                }
+
+                states: [
+                    State {
+                        name: "active"
+                        PropertyChanges {
+                            target: root.currentTarget
+                            width: root.overrideSeed * 3
+                            height: 99
+                        }
+                    }
+                ]
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+        std::unique_ptr<QObject> object(component.create());
+        auto* root = qobject_cast<Item*>(object.get());
+        QVERIFY(root);
+        auto* boxA = root->findChild<Item*>(QStringLiteral("boxA"));
+        auto* boxB = root->findChild<Item*>(QStringLiteral("boxB"));
+        QVERIFY(boxA && boxB);
+
+        root->setState("active");
+        QCOMPARE(boxA->width(), 30);
+        QCOMPARE(boxA->height(), 99);
+        QCOMPARE(boxB->width(), 22);
+        QCOMPARE(boxB->height(), 6);
+
+        // Retarget from boxA to boxB while state is active
+        root->setProperty("currentTarget", QVariant::fromValue(boxB));
+        QCOMPARE(boxA->width(), 11);
+        QCOMPARE(boxA->height(), 5);
+        root->setProperty("baseA", 14);
+        QCOMPARE(boxA->width(), 14);
+
+        QCOMPARE(boxB->width(), 30);
+        QCOMPARE(boxB->height(), 99);
+        root->setProperty("overrideSeed", 20);
+        QCOMPARE(boxB->width(), 60);
+
+        root->setState("");
+        QCOMPARE(boxB->width(), 22);
+        QCOMPARE(boxB->height(), 6);
+        root->setProperty("baseB", 25);
+        QCOMPARE(boxB->width(), 25);
+    }
+
+    // 2. Attached property assignment in PropertyChanges with omitted target
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QmlTui
+            RowLayout {
+                id: row
+                width: 40
+                height: 2
+                Item {
+                    id: stretchy
+                    objectName: "stretchy"
+                    implicitWidth: 6
+                    height: 1
+                    states: [
+                        State {
+                            name: "expanded"
+                            PropertyChanges {
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 24
+                            }
+                        }
+                    ]
+                }
+                Item {
+                    implicitWidth: 10
+                    height: 1
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+        std::unique_ptr<QObject> object(component.create());
+        auto* row = qobject_cast<Item*>(object.get());
+        QVERIFY(row);
+        auto* stretchy = row->findChild<Item*>(QStringLiteral("stretchy"));
+        QVERIFY(stretchy);
+        TextGridBuffer buf;
+        buf.resize(40, 2);
+        testing::paintItem(row, buf, 0, 0);
+        QCOMPARE(stretchy->width(), 6);
+
+        stretchy->setState("expanded");
+        auto* attached =
+            qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(stretchy, false));
+        QVERIFY(attached);
+        QCOMPARE(attached->fillWidth, true);
+        QCOMPARE(attached->preferredWidth, 24);
+        testing::paintItem(row, buf, 0, 0);
+        QVERIFY(stretchy->width() >= 29);
+
+        stretchy->setState("");
+        QCOMPARE(attached->fillWidth, false);
+        QCOMPARE(attached->preferredWidth, -1);
+        testing::paintItem(row, buf, 0, 0);
+        QCOMPARE(stretchy->width(), 6);
+    }
+}
+
 #else
 
 void TestStates::testDirectSyntaxAndGroupedPaths() {
@@ -1221,8 +1499,220 @@ void TestStates::testBehaviorInteraction() {
 void TestStates::testInvalidDeclarationsRejection() {
     QSKIP("Advanced states disabled");
 }
+void TestStates::testTransitionStateBindingDetachedBeforeLiteralState() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testDecodedBindingTeardownWithoutEngine() {
+    QSKIP("Advanced states disabled");
+}
+void TestStates::testCustomBindingsDynamicRetargetAndAttachedOmittedTarget() {
+    QSKIP("Advanced states disabled");
+}
 
 #endif
+
+void TestStates::testTransitionTargetDestroyedMidTransition() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    auto findRunningAnim = [](QObject* scope) -> PropertyAnimation* {
+        for (PropertyAnimation* anim : scope->findChildren<PropertyAnimation*>()) {
+            if (anim->running()) return anim;
+        }
+        return nullptr;
+    };
+
+    // 1. Destroying a Transition target mid-flight stops and deletes its running animation.
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QtQml
+            import QmlTui
+            Item {
+                id: root
+                property Item victim: null
+                states: [
+                    State {
+                        name: "go"
+                        PropertyChanges {
+                            target: root.victim
+                            properties: ({ "width": 100 })
+                        }
+                    }
+                ]
+                transitions: [
+                    Transition {
+                        NumberAnimation {
+                            duration: 100
+                        }
+                    }
+                ]
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+        std::unique_ptr<QObject> object(component.create());
+        auto* root = qobject_cast<Item*>(object.get());
+        QVERIFY(root);
+
+        auto victim = std::make_unique<Item>();
+        victim->setWidth(10);
+        root->setProperty("victim", QVariant::fromValue(victim.get()));
+
+        root->setState("go");
+        QPointer<PropertyAnimation> running = findRunningAnim(root);
+        QVERIFY(running);
+        running->tick(0);
+        running->tick(30);
+        QCOMPARE(victim->width(), 37);
+
+        victim.reset();
+        QVERIFY(!running);
+        QVERIFY(!findRunningAnim(root));
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
+    // 2. Destination binding on a destroyed Transition target must never install onto a dead
+    // QObject.
+    {
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QmlTui
+            Item {
+                id: root
+                property int targetWidth: 80
+                property Item victim: null
+                states: [
+                    State {
+                        name: "go"
+                        PropertyChanges {
+                            target: root.victim
+                            width: root.targetWidth
+                        }
+                    }
+                ]
+                transitions: [
+                    Transition {
+                        NumberAnimation {
+                            duration: 100
+                        }
+                    }
+                ]
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+        std::unique_ptr<QObject> object(component.create());
+        auto* root = qobject_cast<Item*>(object.get());
+        QVERIFY(root);
+
+        auto victim = std::make_unique<Item>();
+        victim->setWidth(20);
+        QQmlProperty staleProp(victim.get(), QStringLiteral("width"));
+        QVERIFY(staleProp.isValid());
+        root->setProperty("victim", QVariant::fromValue(victim.get()));
+
+        root->setState("go");
+        QPointer<PropertyAnimation> running = findRunningAnim(root);
+        QVERIFY(running);
+
+        victim.reset();
+        QVERIFY(staleProp.isValid());
+        QVERIFY(!staleProp.object());
+        QVERIFY(!running);
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+#endif
+}
+
+void TestStates::testColorTransitionStringLiteralsAndZeroDelta() {
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    auto findRunningAnim = [](QObject* scope) -> PropertyAnimation* {
+        for (PropertyAnimation* anim : scope->findChildren<PropertyAnimation*>()) {
+            if (anim->running()) return anim;
+        }
+        return nullptr;
+    };
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            property color accent: "cyan"
+            states: [
+                State {
+                    name: "sameHex"
+                    PropertyChanges {
+                        target: root
+                        properties: ({ "accent": "#00ffff" })
+                    }
+                },
+                State {
+                    name: "namedTarget"
+                    PropertyChanges {
+                        target: root
+                        properties: ({ "accent": "magenta" })
+                    }
+                },
+                State {
+                    name: "ansiTarget"
+                    PropertyChanges {
+                        target: root
+                        properties: ({ "accent": "ansi:red" })
+                    }
+                }
+            ]
+            transitions: [
+                Transition {
+                    ColorAnimation {
+                        duration: 100
+                    }
+                }
+            ]
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* root = qobject_cast<Item*>(object.get());
+    QVERIFY(root);
+
+    // "cyan" -> "#00ffff" represents the exact same RGB color: zero-delta suppresses animation.
+    root->setState("sameHex");
+    QVERIFY(!findRunningAnim(root));
+    QCOMPARE(root->property("accent").value<Color>(), Color::fromString(QStringLiteral("#00ffff")));
+
+    // Non-"color"-named property of type `color` with named string literal matches ColorAnimation.
+    root->setState("namedTarget");
+    PropertyAnimation* anim = findRunningAnim(root);
+    QVERIFY(anim);
+    QVERIFY(qobject_cast<ColorAnimation*>(anim) != nullptr);
+    anim->tick(0);
+    anim->tick(50);
+    const Color mid = root->property("accent").value<Color>();
+    QVERIFY(mid != Color::fromString(QStringLiteral("cyan")));
+    QVERIFY(mid != Color::fromString(QStringLiteral("magenta")));
+    anim->tick(100);
+    QCOMPARE(root->property("accent").value<Color>(), Color::fromString(QStringLiteral("magenta")));
+
+    // ANSI string literal ("ansi:red") also matches ColorAnimation on `property color accent`.
+    root->setState("ansiTarget");
+    PropertyAnimation* ansiAnim = findRunningAnim(root);
+    QVERIFY(ansiAnim);
+    QVERIFY(qobject_cast<ColorAnimation*>(ansiAnim) != nullptr);
+    ansiAnim->tick(0);
+    ansiAnim->tick(100);
+}
 
 void TestStates::testDisabledFeaturesAvailability() {
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)

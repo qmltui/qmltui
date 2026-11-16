@@ -43,19 +43,12 @@ else()
 endif()
 add_library(qmltui::pty_view ALIAS QmlTuiPtyView)
 add_library(qmltui::ptyview ALIAS QmlTuiPtyView)
+add_library(qmltui::PtyView ALIAS QmlTuiPtyView)
 add_library(QmlTui::PtyView ALIAS QmlTuiPtyView)
-set_target_properties(QmlTuiPtyView PROPERTIES
-    EXPORT_NAME PtyView
-    INSTALL_RPATH "$ORIGIN"
-)
-file(RELATIVE_PATH _qmltui_rel_libdir
-    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView"
-    "${CMAKE_INSTALL_FULL_LIBDIR}"
-)
-set_target_properties(QmlTuiPtyViewplugin PROPERTIES
-    EXPORT_NAME PtyViewPlugin
-    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
-)
+set_target_properties(QmlTuiPtyView PROPERTIES EXPORT_NAME PtyView)
+set_target_properties(QmlTuiPtyViewplugin PROPERTIES EXPORT_NAME PtyViewPlugin)
+qmltui_set_install_rpath(QmlTuiPtyView "${CMAKE_INSTALL_LIBDIR}")
+qmltui_set_install_rpath(QmlTuiPtyViewplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView")
 
 install(TARGETS QmlTuiPtyView
     EXPORT QmlTuiTargets

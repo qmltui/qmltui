@@ -37,7 +37,7 @@ SavedBinding SavedBinding::takeFrom(QObject* target, const QString& propertyName
 
 void SavedBinding::installOn(const QQmlProperty& property) {
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
-    if (property.isValid() && m_binding) {
+    if (property.isValid() && property.object() && m_binding) {
         m_binding.installOn(property);
     }
 #else
@@ -46,12 +46,22 @@ void SavedBinding::installOn(const QQmlProperty& property) {
 }
 
 void writePropertyBypassingInterceptor(const QQmlProperty& property, const QVariant& value) {
-    if (!property.isValid()) return;
+    if (!property.isValid() || !property.object()) return;
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QQmlPropertyPrivate::write(
         property, value, QQmlPropertyData::BypassInterceptor | QQmlPropertyData::DontRemoveBinding);
 #else
     writePropertyBypassingInterceptor(property.object(), property.name(), value);
+#endif
+}
+
+void removeBindingFromProperty(const QQmlProperty& property) {
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
+    if (property.isValid() && property.object()) {
+        QQmlAnyBinding::removeBindingFrom(property);
+    }
+#else
+    Q_UNUSED(property);
 #endif
 }
 
@@ -197,11 +207,23 @@ QQmlProperty createQmlProperty(QObject* target, const QString& name, QQmlContext
 void evaluateDecodedBinding(PropertyChanges* pc, const DecodedBinding& b, const QQmlProperty& prop,
                             QQmlContext* rawContext, QVariant& outValue, SavedBinding& outBinding,
                             bool& outIsBinding) {
+    outValue = QVariant();
+    outBinding = SavedBinding();
+    outIsBinding = false;
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
+    if (!pc || !pc->d_func() || !pc->d_func()->compilationUnit || !prop.isValid() ||
+        !prop.object()) {
+        return;
+    }
+
+    QQmlEngine* engine = qmlEngine(pc);
+    if (!engine && rawContext) engine = rawContext->engine();
+    if (!engine || !engine->handle()) return;
+
     QQmlRefPointer<QQmlContextData> context =
         rawContext ? QQmlContextData::get(rawContext) : QQmlRefPointer<QQmlContextData>();
 
-    QV4::Scope scope(qmlEngine(pc)->handle());
+    QV4::Scope scope(engine->handle());
     QV4::Scoped<QV4::QmlContext> qmlCtxt(
         scope, QV4::QmlContext::create(scope.engine->rootContext(), context, prop.object()));
 
@@ -246,9 +268,6 @@ void evaluateDecodedBinding(PropertyChanges* pc, const DecodedBinding& b, const 
     Q_UNUSED(b);
     Q_UNUSED(prop);
     Q_UNUSED(rawContext);
-    outValue = QVariant();
-    outBinding = SavedBinding();
-    outIsBinding = false;
 #endif
 }
 
@@ -467,11 +486,3 @@ void PropertyChangesParser::applyBindings(
 #endif
 
 } // namespace qmltui
-
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
-QT_BEGIN_NAMESPACE
-template <> QQmlCustomParser* qmlCreateCustomParser<qmltui::PropertyChanges>() {
-    return new qmltui::PropertyChangesParser;
-}
-QT_END_NAMESPACE
-#endif

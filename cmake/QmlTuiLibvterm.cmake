@@ -14,7 +14,9 @@ macro(qmltui_provide_libvterm)
         # already provided
     elseif(QMLTUI_USE_SYSTEM_LIBVTERM)
         find_package(PkgConfig REQUIRED)
-        pkg_check_modules(libvterm REQUIRED IMPORTED_TARGET vterm)
+        if(NOT TARGET PkgConfig::libvterm)
+            pkg_check_modules(libvterm REQUIRED IMPORTED_TARGET GLOBAL vterm)
+        endif()
         add_library(qmltui_libvterm ALIAS PkgConfig::libvterm)
     else()
         enable_language(C)
@@ -46,6 +48,9 @@ function(_qmltui_fetch_libvterm)
     target_compile_features(qmltui_libvterm PRIVATE c_std_99)
     target_include_directories(qmltui_libvterm PUBLIC $<BUILD_INTERFACE:${libvterm_SOURCE_DIR}/include>)
     set_target_properties(qmltui_libvterm PROPERTIES
+        AUTOMOC OFF
+        AUTOUIC OFF
+        AUTORCC OFF
         POSITION_INDEPENDENT_CODE ON
         C_VISIBILITY_PRESET hidden
     )

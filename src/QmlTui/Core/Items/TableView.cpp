@@ -401,7 +401,8 @@ void TableView::setHeaderColor(Color color) {
 void TableView::setHeaderBackgroundColor(Color color) {
     if (m_headerBackgroundColor == color) return;
     m_headerBackgroundColor = color;
-    m_resolvedHeaderBackgroundColor = Color::resolve(m_headerBackgroundColor, 0);
+    m_resolvedHeaderBackgroundColor =
+        m_headerBackgroundColor.isValid() ? m_headerBackgroundColor.paintedArgb32() : 0;
     emit headerBackgroundColorChanged();
     markDirty();
 }
@@ -409,7 +410,7 @@ void TableView::setHeaderBackgroundColor(Color color) {
 void TableView::setSelectionColor(Color color) {
     if (m_selectionColor == color) return;
     m_selectionColor = color;
-    m_resolvedSelectionColor = Color::resolve(m_selectionColor, 0);
+    m_resolvedSelectionColor = m_selectionColor.isValid() ? m_selectionColor.paintedArgb32() : 0;
     emit selectionColorChanged();
     markDirty();
 }
@@ -433,7 +434,8 @@ void TableView::setTextColor(Color color) {
 void TableView::setRowBackgroundColor(Color color) {
     if (m_rowBackgroundColor == color) return;
     m_rowBackgroundColor = color;
-    m_resolvedRowBackgroundColor = Color::resolve(m_rowBackgroundColor, 0);
+    m_resolvedRowBackgroundColor =
+        m_rowBackgroundColor.isValid() ? m_rowBackgroundColor.paintedArgb32() : 0;
     emit rowBackgroundColorChanged();
     markDirty();
 }
@@ -441,7 +443,9 @@ void TableView::setRowBackgroundColor(Color color) {
 void TableView::setAlternatingRowBackgroundColor(Color color) {
     if (m_alternatingRowBackgroundColor == color) return;
     m_alternatingRowBackgroundColor = color;
-    m_resolvedAltRowBackgroundColor = Color::resolve(m_alternatingRowBackgroundColor, 0);
+    m_resolvedAltRowBackgroundColor = m_alternatingRowBackgroundColor.isValid()
+                                          ? m_alternatingRowBackgroundColor.paintedArgb32()
+                                          : 0;
     emit alternatingRowBackgroundColorChanged();
     markDirty();
 }
@@ -1444,17 +1448,22 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         }
     };
     if (headerRows()) {
+        const bool fillHeaderBg =
+            m_headerBackgroundColor.isValid() && !m_headerBackgroundColor.isTransparent();
         const uint32_t headerBg = m_resolvedHeaderBackgroundColor;
         const int headerY = absY + view.top;
-        if (headerBg != 0 && headerY >= clip.y && headerY < clip.y + clip.height) {
+        if (fillHeaderBg && headerY >= clip.y && headerY < clip.y + clip.height) {
             const int begin = (std::max)(clip.x, absX + view.left);
             const int end = (std::min)(clip.x + clip.width, absX + view.right());
             if (end > begin) {
                 buffer.fillRect(begin, headerY, end - begin, 1, " ", m_resolvedHeaderColor,
                                 headerBg);
-                for (int x = begin; x < end; ++x)
-                    if (Cell* cell = buffer.tryCellAt(x, headerY))
+                for (int x = begin; x < end; ++x) {
+                    if (Cell* cell = buffer.tryCellAt(x, headerY)) {
+                        cell->bgColor = headerBg;
                         cell->attributes = TextAttribute::Bold;
+                    }
+                }
             }
         }
         for (const auto& geometry : std::as_const(m_geometry)) {
@@ -1471,6 +1480,10 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
         const int y = absY + view.bodyTop + r * view.stride;
         if (y < clip.y || y >= clip.y + clip.height) continue;
         const bool selected = row == m_selectedRow;
+        const Color rowBgColor = selected                       ? m_selectionColor
+                                 : m_alternatingRows && row % 2 ? m_alternatingRowBackgroundColor
+                                                                : m_rowBackgroundColor;
+        const bool fillRowBg = rowBgColor.isValid() && !rowBgColor.isTransparent();
         const uint32_t bg = selected                       ? m_resolvedSelectionColor
                             : m_alternatingRows && row % 2 ? m_resolvedAltRowBackgroundColor
                                                            : m_resolvedRowBackgroundColor;
@@ -1481,21 +1494,23 @@ void TableView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect
             (selected && !m_selectedTextColor.isValid() && !m_selectionColor.isValid()
                  ? TextAttribute::Reversed
                  : TextAttribute::None);
-        if (selected || bg != 0) {
+        if (fillRowBg) {
             const int begin = (std::max)(clip.x, absX + view.left);
             const int end = (std::min)(clip.x + clip.width, absX + view.right());
             if (end > begin) {
-                if ((bg >> 24) != 0) {
-                    buffer.fillRect(begin, y, end - begin, 1, " ", fg, bg);
-                    if (attributes != TextAttribute::None) {
-                        for (int x = begin; x < end; ++x)
-                            if (Cell* cell = buffer.tryCellAt(x, y)) cell->attributes = attributes;
+                buffer.fillRect(begin, y, end - begin, 1, " ", fg, bg);
+                for (int x = begin; x < end; ++x) {
+                    if (Cell* cell = buffer.tryCellAt(x, y)) {
+                        cell->bgColor = bg;
+                        cell->attributes = attributes;
                     }
-                } else {
-                    for (int x = begin; x < end; ++x)
-                        buffer.setGrapheme(x, y, QByteArrayView(" ", 1), 1, fg, bg, attributes);
                 }
             }
+        } else if (selected && !m_selectionColor.isValid()) {
+            const int begin = (std::max)(clip.x, absX + view.left);
+            const int end = (std::min)(clip.x + clip.width, absX + view.right());
+            for (int x = begin; x < end; ++x)
+                buffer.setGrapheme(x, y, QByteArrayView(" ", 1), 1, fg, 0, attributes);
         }
         if (m_delegate) continue;
         for (const auto& geometry : std::as_const(m_geometry)) {

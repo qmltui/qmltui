@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 # WebAssembly support, included under if(EMSCRIPTEN) by both the root
 # CMakeLists.txt and the installed QmlTuiConfig.cmake package.
 #

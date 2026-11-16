@@ -1494,6 +1494,66 @@ private slots:
         f.paint();
         QCOMPARE(f.engine.globalObject().property("formatCalls").toInt(), 6);
     }
+
+    void dynamicTransparentVsDefaultBackgrounds() {
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("r0"))});
+        model.appendRow({new QStandardItem(QStringLiteral("r1"))});
+
+        TableFixture f;
+        QVERIFY2(
+            f.createBody(&model, QStringLiteral("showOuterBorder: false; showColumnGrid: false; "
+                                                "alternatingRows: true; "
+                                                "headerBackgroundColor: '#224466'; "
+                                                "rowBackgroundColor: '#335577'; "
+                                                "alternatingRowBackgroundColor: '#446688'; "
+                                                "columns: [{title: 'H', width: 6}]")),
+            qPrintable(f.component.errorString()));
+        f.table->setWidth(20);
+        f.table->setHeight(6);
+        f.table->setSelectedRow(-1);
+
+        auto paintOverBackdrop = [&]() {
+            f.buffer.clear();
+            f.buffer.fillRect(0, 0, 20, 6, ".", 0xffaaaaaau, 0xff990000u);
+            testing::paintItem(f.table, f.buffer, 0, 0);
+        };
+
+        // Dynamic reassignment to "transparent" must neither call fillRect across trailing
+        // space nor leak TransparentTag into painted cells.
+        f.table->setHeaderBackgroundColor(Color(QStringLiteral("transparent")));
+        f.table->setRowBackgroundColor(Color(QStringLiteral("transparent")));
+        f.table->setAlternatingRowBackgroundColor(Color(QStringLiteral("transparent")));
+        paintOverBackdrop();
+
+        // Header is y=0, underline is y=1, row 0 is y=2, row 1 is y=3.
+        // Trailing cells x=10 outside the width=6 column keep both backdrop glyph "." and bgColor.
+        QCOMPARE(f.buffer.cellAt(10, 0).character().toByteArray(), QByteArray("."));
+        QCOMPARE(f.buffer.cellAt(10, 0).bgColor, 0xff990000u);
+        QCOMPARE(f.buffer.cellAt(10, 2).character().toByteArray(), QByteArray("."));
+        QCOMPARE(f.buffer.cellAt(10, 2).bgColor, 0xff990000u);
+        QCOMPARE(f.buffer.cellAt(10, 3).character().toByteArray(), QByteArray("."));
+        QCOMPARE(f.buffer.cellAt(10, 3).bgColor, 0xff990000u);
+
+        // Inside the width=6 column, backdrop bgColor shows through and TransparentTag never leaks.
+        QCOMPARE(f.buffer.cellAt(0, 0).bgColor, 0xff990000u);
+        QCOMPARE(f.buffer.cellAt(0, 2).bgColor, 0xff990000u);
+        QCOMPARE(f.buffer.cellAt(0, 3).bgColor, 0xff990000u);
+
+        // Dynamic assignment to "default" paints spaces with DefaultTag (0), occluding the
+        // underlying "." glyphs and #990000 backdrop across the full table width.
+        f.table->setHeaderBackgroundColor(Color(QStringLiteral("default")));
+        f.table->setRowBackgroundColor(Color(QStringLiteral("default")));
+        f.table->setAlternatingRowBackgroundColor(Color(QStringLiteral("default")));
+        paintOverBackdrop();
+
+        for (int y : {0, 2, 3}) {
+            QCOMPARE(f.buffer.cellAt(10, y).character().toByteArray(), QByteArray(" "));
+            for (int x = 0; x < 20; ++x) {
+                QCOMPARE(f.buffer.cellAt(x, y).bgColor, Color::DefaultTag);
+            }
+        }
+    }
 };
 
 QTEST_MAIN(TestTableViewHardening)

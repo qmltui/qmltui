@@ -252,17 +252,34 @@ void TestTerminalColors::toastAndTooltipOverrides() {
 
     auto qmlColors = load(R"(
         Item {
+            property color inv: QmlTui.invalidColor
             property color def: QmlTui.defaultColor
             property color trans: QmlTui.transparent
             property color ansiRed: QmlTui.ansi(1)
             property color ansiOut: QmlTui.ansi(99)
+            property bool invValid: QmlTui.invalidColor.valid
+            property bool defValid: QmlTui.defaultColor.valid
+            property bool transValid: QmlTui.transparent.valid
+            ComboBox { id: cb }
+            ProgressBar { id: pb }
+            property color cbSel: cb.selectionColor
+            property color cbSelText: cb.selectedTextColor
+            property color pbTrack: pb.trackColor
         }
     )");
     QVERIFY(qmlColors);
+    QCOMPARE(qmlColors->property("inv").value<Color>(), Color(Color::Invalid));
+    QVERIFY(!qmlColors->property("inv").value<Color>().isValid());
+    QVERIFY(!qmlColors->property("invValid").toBool());
     QCOMPARE(qmlColors->property("def").value<Color>(), Color(Color::Default));
+    QVERIFY(qmlColors->property("defValid").toBool());
     QCOMPARE(qmlColors->property("trans").value<Color>(), Color(Color::Transparent));
+    QVERIFY(qmlColors->property("transValid").toBool());
     QCOMPARE(qmlColors->property("ansiRed").value<Color>(), Color::fromAnsiIndex(1));
     QVERIFY(!qmlColors->property("ansiOut").value<Color>().isValid());
+    QVERIFY(!qmlColors->property("cbSel").value<Color>().isValid());
+    QVERIFY(!qmlColors->property("cbSelText").value<Color>().isValid());
+    QVERIFY(!qmlColors->property("pbTrack").value<Color>().isValid());
 }
 
 QTEST_MAIN(TestTerminalColors)

@@ -1368,6 +1368,288 @@ Terminal {
         QCOMPARE(disabled->cellAt(0, 0).fgColor, expectedBorder);
         QVERIFY((disabled->cellAt(0, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
     }
+
+    void comboBoxSelectionColorOverrides() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    ComboBox {
+        objectName: "combo"
+        x: 0; y: 0; width: 18
+        focus: true
+        model: ["Alpha", "Beta"]
+        popupColor: "navy"
+        selectedTextColor: "yellow"
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(24, 8));
+        auto* combo = terminal->findChild<Item*>("combo");
+        QVERIFY(combo);
+
+        quint64 seq = engine->frameSequence();
+        QVERIFY(QMetaObject::invokeMethod(combo, "open"));
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        {
+            const auto frame = engine->currentFrame();
+            QVERIFY(frame.has_value());
+            // Highlighted row 0 is at y=2, x=1..16: selectedTextColor alone must NOT reverse fg/bg
+            QCOMPARE(frame->cellAt(3, 2).fgColor, Color(QStringLiteral("yellow")).argb32());
+            QCOMPARE(frame->cellAt(3, 2).bgColor, Color(QStringLiteral("navy")).argb32());
+            QVERIFY((frame->cellAt(3, 2).attributes & TextAttribute::Reversed) ==
+                    TextAttribute::None);
+            // Non-highlighted row 1 at y=3 keeps default textColor and popupColor
+            QCOMPARE(frame->cellAt(3, 3).fgColor, 0u);
+            QCOMPARE(frame->cellAt(3, 3).bgColor, Color(QStringLiteral("navy")).argb32());
+        }
+
+        // Explicit selectionColor: "default" (QmlTui.defaultColor) also disables reverse video
+        seq = engine->frameSequence();
+        combo->setProperty("selectedTextColor", QVariant::fromValue(Color(Color::Invalid)));
+        combo->setProperty("selectionColor", QVariant::fromValue(Color(Color::Default)));
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        {
+            const auto frame = engine->currentFrame();
+            QVERIFY(frame.has_value());
+            QCOMPARE(frame->cellAt(3, 2).fgColor, 0u);
+            QCOMPARE(frame->cellAt(3, 2).bgColor, 0u);
+            QVERIFY((frame->cellAt(3, 2).attributes & TextAttribute::Reversed) ==
+                    TextAttribute::None);
+        }
+
+        // Clearing selectionColor back to invalidColor restores SGR reverse video
+        seq = engine->frameSequence();
+        combo->setProperty("selectionColor", QVariant::fromValue(Color(Color::Invalid)));
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        {
+            const auto frame = engine->currentFrame();
+            QVERIFY(frame.has_value());
+            QVERIFY((frame->cellAt(3, 2).attributes & TextAttribute::Reversed) !=
+                    TextAttribute::None);
+        }
+    }
+
+    void comboBoxPreservesCurrentIndexBindingAndDisabledClosesPopup() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property var items: []
+    property int selectedIdx: 2
+    property int activatedCount: 0
+    ComboBox {
+        objectName: "boundCombo"
+        x: 0; y: 0; width: 20
+        currentIndex: root.selectedIdx
+        model: root.items
+    }
+    ComboBox {
+        objectName: "defaultCombo"
+        x: 0; y: 2; width: 20
+        model: ["Alpha", "Beta", "Gamma"]
+        onActivated: root.activatedCount++
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(28, 10));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* boundCombo = terminal->findChild<Item*>("boundCombo");
+        auto* defaultCombo = terminal->findChild<Item*>("defaultCombo");
+        QVERIFY(boundCombo && defaultCombo);
+
+        // Bound currentIndex survives empty model at startup and subsequent model updates
+        QCOMPARE(boundCombo->property("currentIndex").toInt(), 2);
+        QCOMPARE(boundCombo->property("currentText").toString(), QString());
+
+        quint64 seq = engine->frameSequence();
+        terminal->setProperty("items", QVariantList{"Alpha", "Beta", "Gamma"});
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QCOMPARE(boundCombo->property("currentIndex").toInt(), 2);
+        QCOMPARE(boundCombo->property("currentText").toString(), QStringLiteral("Gamma"));
+        QVERIFY2(frameText(engine).contains(QStringLiteral("Gamma")),
+                 qPrintable(frameText(engine)));
+
+        seq = engine->frameSequence();
+        terminal->setProperty("selectedIdx", 1);
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QCOMPARE(boundCombo->property("currentIndex").toInt(), 1);
+        QCOMPARE(boundCombo->property("currentText").toString(), QStringLiteral("Beta"));
+        QVERIFY2(frameText(engine).contains(QStringLiteral("Beta")), qPrintable(frameText(engine)));
+
+        // Clearing and repopulating model must still preserve external binding on currentIndex
+        terminal->setProperty("items", QVariantList{});
+        QCOMPARE(boundCombo->property("currentText").toString(), QString());
+        terminal->setProperty("items", QVariantList{"One", "Two", "Three"});
+        terminal->setProperty("selectedIdx", 0);
+        QCOMPARE(boundCombo->property("currentIndex").toInt(), 0);
+        QCOMPARE(boundCombo->property("currentText").toString(), QStringLiteral("One"));
+
+        // Default unbound ComboBox keeps default clamping after selectIndex()
+        QVERIFY(QMetaObject::invokeMethod(defaultCombo, "selectIndex", Q_ARG(QVariant, 2)));
+        QCOMPARE(defaultCombo->property("currentIndex").toInt(), 2);
+        defaultCombo->setProperty("model", QVariantList{"Only"});
+        QCOMPARE(defaultCombo->property("currentIndex").toInt(), 0);
+        defaultCombo->setProperty("model", QVariantList{});
+        QCOMPARE(defaultCombo->property("currentIndex").toInt(), -1);
+        defaultCombo->setProperty("model", QVariantList{"First", "Second"});
+        QCOMPARE(defaultCombo->property("currentIndex").toInt(), 0);
+
+        // Disabling an open ComboBox immediately closes its dropdown popup
+        seq = engine->frameSequence();
+        QVERIFY(QMetaObject::invokeMethod(defaultCombo, "open"));
+        QVERIFY(defaultCombo->property("opened").toBool());
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("Second")));
+
+        seq = engine->frameSequence();
+        defaultCombo->setEnabled(false);
+        QVERIFY(!defaultCombo->property("opened").toBool());
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QVERIFY2(!frameText(engine).contains(QStringLiteral("Second")),
+                 qPrintable(frameText(engine)));
+    }
+
+    void progressBarGradientTrackDimmingAndTrackColorDefault() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    Column {
+        ProgressBar {
+            objectName: "gradBar"
+            width: 10
+            value: 0.5
+            color: "cyan"
+            thresholds: [
+                { value: 0.5, color: "red" },
+                { value: 1.0, color: "lime" }
+            ]
+        }
+        ProgressBar {
+            objectName: "plainBar"
+            width: 10
+            value: 0.5
+            color: "cyan"
+            trackColor: "default"
+        }
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(16, 4));
+        QTRY_VERIFY(engine->frameSequence() > 0);
+
+        auto* gradBar = terminal->findChild<Item*>("gradBar");
+        QVERIFY(gradBar);
+        const uint32_t cyanArgb = Color(QStringLiteral("cyan")).argb32();
+        const uint32_t redArgb = Color(QStringLiteral("red")).argb32();
+
+        {
+            const auto grid = engine->currentFrame();
+            QVERIFY(grid.has_value());
+            // Gradient bar with explicit `color` and unset `trackColor` dims empty cells in `color`
+            QCOMPARE(grid->cellAt(0, 0).fgColor, redArgb);
+            QCOMPARE(grid->cellAt(6, 0).fgColor, cyanArgb);
+            QVERIFY((grid->cellAt(6, 0).attributes & TextAttribute::Dim) != TextAttribute::None);
+
+            // Plain bar with explicit `trackColor: "default"` paints empty cells in default ink,
+            // undimmed
+            QCOMPARE(grid->cellAt(0, 1).fgColor, cyanArgb);
+            QCOMPARE(grid->cellAt(6, 1).fgColor, 0u);
+            QVERIFY((grid->cellAt(6, 1).attributes & TextAttribute::Dim) == TextAttribute::None);
+        }
+
+        // Setting `trackColor: QmlTui.defaultColor` on gradient bar overrides `color` to default
+        // ink, undimmed
+        quint64 seq = engine->frameSequence();
+        gradBar->setProperty("trackColor", QVariant::fromValue(Color(Color::Default)));
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        {
+            const auto grid = engine->currentFrame();
+            QVERIFY(grid.has_value());
+            QCOMPARE(grid->cellAt(6, 0).fgColor, 0u);
+            QVERIFY((grid->cellAt(6, 0).attributes & TextAttribute::Dim) == TextAttribute::None);
+        }
+    }
+
+    void dialogEnterGuardsAcceptButton() {
+        QQmlEngine qml;
+        Terminal* terminal = nullptr;
+        auto object = load(qml, R"(
+Terminal {
+    id: root
+    property int acceptedCount: 0
+    Dialog {
+        objectName: "dlg"
+        title: "Confirm"
+        message: "Proceed?"
+        showRejectButton: false
+        onAccepted: root.acceptedCount++
+    }
+}
+)",
+                           &terminal);
+        QVERIFY(terminal);
+        auto* engine = terminal->engine();
+        engine->setTestViewportSize(QSize(40, 12));
+
+        auto* dlg = terminal->findChild<Item*>("dlg");
+        QVERIFY(dlg);
+
+        // Locate acceptButton inside the Dialog
+        Item* acceptBtn = nullptr;
+        for (Item* btn : dlg->findChildren<Item*>()) {
+            if (btn->property("text").toString() == QStringLiteral("OK")) {
+                acceptBtn = btn;
+                break;
+            }
+        }
+        QVERIFY(acceptBtn);
+
+        QVERIFY(QMetaObject::invokeMethod(dlg, "open"));
+        QTRY_VERIFY(frameText(engine).contains(QStringLiteral("Proceed?")));
+
+        // 1. Disabled acceptButton must ignore Enter
+        acceptBtn->setEnabled(false);
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        engine->handleKeyInput(Qt::Key_Enter, QStringLiteral("\r"), Qt::NoModifier);
+        QCOMPARE(terminal->property("acceptedCount").toInt(), 0);
+        QVERIFY(dlg->visible());
+
+        // 2. Hidden acceptButton must ignore Enter
+        acceptBtn->setEnabled(true);
+        acceptBtn->setVisible(false);
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QCOMPARE(terminal->property("acceptedCount").toInt(), 0);
+        QVERIFY(dlg->visible());
+
+        // 3. Disabled Dialog must ignore Enter
+        acceptBtn->setVisible(true);
+        dlg->setEnabled(false);
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QCOMPARE(terminal->property("acceptedCount").toInt(), 0);
+        QVERIFY(dlg->visible());
+
+        // 4. Restoring enabled + visible allows Enter to accept and close Dialog
+        dlg->setEnabled(true);
+        quint64 seq = engine->frameSequence();
+        engine->handleKeyInput(Qt::Key_Return, QStringLiteral("\r"), Qt::NoModifier);
+        QCOMPARE(terminal->property("acceptedCount").toInt(), 1);
+        QVERIFY(!dlg->visible());
+        QTRY_VERIFY(engine->frameSequence() > seq);
+        QVERIFY2(!frameText(engine).contains(QStringLiteral("Proceed?")),
+                 qPrintable(frameText(engine)));
+    }
 };
 
 QTEST_MAIN(TestControlsBehaviour)

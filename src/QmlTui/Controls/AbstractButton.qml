@@ -31,24 +31,13 @@ Item {
     property bool hoverEnabled: false
     readonly property alias hovered: mouseArea.containsMouse
     property color textColor
-
-    padding: 0
-    topPadding: padding
-    bottomPadding: padding
-    leftPadding: padding
-    rightPadding: padding
     readonly property int availableWidth: Math.max(0, width - leftPadding - rightPadding)
     readonly property int availableHeight: Math.max(0, height - topPadding - bottomPadding)
-
     property Item background: null
     property Item contentItem: null
 
     signal clicked
     signal toggled(bool checked)
-
-    focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
-    implicitWidth: Math.max(background ? background.implicitWidth : 0, leftPadding + (contentItem ? contentItem.implicitWidth : 0) + rightPadding)
-    implicitHeight: Math.max(background ? background.implicitHeight : 0, topPadding + (contentItem ? contentItem.implicitHeight : 0) + bottomPadding)
 
     // Flips `checked` and emits toggled(); a checked autoExclusive control
     // stays checked, so a group of RadioButtons never ends up with none.
@@ -57,6 +46,32 @@ Item {
             return;
         checked = !checked;
         toggled(checked);
+    }
+
+    padding: 0
+    topPadding: padding
+    bottomPadding: padding
+    leftPadding: padding
+    rightPadding: padding
+    focusPolicy: enabled ? Qt.StrongFocus : Qt.NoFocus
+    implicitWidth: Math.max(background ? background.implicitWidth : 0, leftPadding + (contentItem ? contentItem.implicitWidth : 0) + rightPadding)
+    implicitHeight: Math.max(background ? background.implicitHeight : 0, topPadding + (contentItem ? contentItem.implicitHeight : 0) + bottomPadding)
+
+    onBackgroundChanged: d.layout()
+    onContentItemChanged: d.layout()
+    onWidthChanged: d.layout()
+    onHeightChanged: d.layout()
+    onTopPaddingChanged: d.layout()
+    onBottomPaddingChanged: d.layout()
+    onLeftPaddingChanged: d.layout()
+    onRightPaddingChanged: d.layout()
+    Component.onCompleted: d.layout()
+
+    Keys.onPressed: event => {
+        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+            d.activate();
+            event.accepted = true;
+        }
     }
 
     QtObject {
@@ -119,16 +134,6 @@ Item {
         }
     }
 
-    onBackgroundChanged: d.layout()
-    onContentItemChanged: d.layout()
-    onWidthChanged: d.layout()
-    onHeightChanged: d.layout()
-    onTopPaddingChanged: d.layout()
-    onBottomPaddingChanged: d.layout()
-    onLeftPaddingChanged: d.layout()
-    onRightPaddingChanged: d.layout()
-    Component.onCompleted: d.layout()
-
     Connections {
         target: control.contentItem
         function onImplicitWidthChanged() {
@@ -136,13 +141,6 @@ Item {
         }
         function onImplicitHeightChanged() {
             d.layout();
-        }
-    }
-
-    Keys.onPressed: event => {
-        if (control.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
-            d.activate();
-            event.accepted = true;
         }
     }
 

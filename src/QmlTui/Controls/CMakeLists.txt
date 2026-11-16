@@ -34,6 +34,7 @@ else()
     target_compile_definitions(QmlTuiControls PRIVATE QMLTUI_CONTROLS_LIBRARY)
 endif()
 add_library(qmltui::controls ALIAS QmlTuiControls)
+add_library(qmltui::Controls ALIAS QmlTuiControls)
 add_library(QmlTui::Controls ALIAS QmlTuiControls)
 target_include_directories(QmlTuiControls
     PUBLIC
@@ -43,18 +44,10 @@ target_include_directories(QmlTuiControls
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 target_link_libraries(QmlTuiControls PUBLIC qmltui::core)
-set_target_properties(QmlTuiControls PROPERTIES
-    EXPORT_NAME Controls
-    INSTALL_RPATH "$ORIGIN"
-)
-file(RELATIVE_PATH _qmltui_rel_libdir
-    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
-    "${CMAKE_INSTALL_FULL_LIBDIR}"
-)
-set_target_properties(QmlTuiControlsplugin PROPERTIES
-    EXPORT_NAME ControlsPlugin
-    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
-)
+set_target_properties(QmlTuiControls PROPERTIES EXPORT_NAME Controls)
+set_target_properties(QmlTuiControlsplugin PROPERTIES EXPORT_NAME ControlsPlugin)
+qmltui_set_install_rpath(QmlTuiControls "${CMAKE_INSTALL_LIBDIR}")
+qmltui_set_install_rpath(QmlTuiControlsplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls")
 
 install(TARGETS QmlTuiControls
     EXPORT QmlTuiTargets

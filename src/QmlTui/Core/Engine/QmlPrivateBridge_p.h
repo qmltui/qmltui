@@ -51,6 +51,9 @@ private:
 void writePropertyBypassingInterceptor(const QQmlProperty& property, const QVariant& value);
 void writePropertyBypassingInterceptor(QObject* target, const QString& name, const QVariant& value);
 
+// Detaches any active QML or QProperty binding from `property`.
+void removeBindingFromProperty(const QQmlProperty& property);
+
 // If `property` is a QML alias property, resolves its underlying target object
 // and property name and returns true. Returns false when not an alias or when
 // built without QMLTUI_ENABLE_PRIVATE_QT.

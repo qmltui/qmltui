@@ -35,6 +35,7 @@ private slots:
     void testHalfBlockGradient();
     void testBrailleGradient();
     void testCanvasAndShapeAttributes();
+    void testCustomCanvasShapeExportsCanvasPainter();
 };
 
 void TestCanvas::testBrailleMode() {
@@ -759,6 +760,37 @@ void TestCanvas::testCanvasAndShapeAttributes() {
     buffer.clear();
     paintItem(canvas, buffer, 0, 0);
     QCOMPARE(buffer.cellAt(1, 0).attributes, TextAttribute::Dim);
+}
+
+namespace {
+class CustomPainterShape : public CanvasShape {
+public:
+    using CanvasShape::CanvasShape;
+    void draw(CanvasPainter& painter) const override {
+        painter.clear();
+        painter.setPixel(0, 0, true);
+        painter.setPixelColor(1, 1, Color(QStringLiteral("cyan")));
+    }
+};
+} // namespace
+
+void TestCanvas::testCustomCanvasShapeExportsCanvasPainter() {
+    Canvas canvas;
+    canvas.setRenderMode(Canvas::RenderMode::HalfBlock);
+    canvas.setWidth(2);
+    canvas.setHeight(1);
+    canvas.setColor(Color(QStringLiteral("yellow")));
+
+    CustomPainterShape shape(&canvas);
+
+    TextGridBuffer buffer;
+    buffer.resize(2, 1);
+    paintItem(canvas, buffer, 0, 0);
+
+    QCOMPARE(buffer.cellAt(0, 0).character().toByteArray(), QStringLiteral("▀").toUtf8());
+    QCOMPARE(Color::toArgb(buffer.cellAt(0, 0).fgColor), 0xFFFFFF00u);
+    QCOMPARE(buffer.cellAt(1, 0).character().toByteArray(), QStringLiteral("▄").toUtf8());
+    QCOMPARE(Color::toArgb(buffer.cellAt(1, 0).fgColor), 0xFF00FFFFu);
 }
 
 QTEST_MAIN(TestCanvas)

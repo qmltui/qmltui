@@ -148,7 +148,7 @@ private:
 // The pixel surface shapes draw into during Canvas::paint(). It writes the
 // canvas's pixel storage and nothing else, so painting stays const and never
 // schedules another frame.
-class CanvasPainter {
+class QMLTUI_CORE_EXPORT CanvasPainter {
 public:
     int pixelWidth() const { return m_canvas.pixelWidth(); }
     int pixelHeight() const { return m_canvas.pixelHeight(); }

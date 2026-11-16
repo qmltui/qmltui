@@ -86,6 +86,7 @@ qt_add_qml_module(QmlTuiCore
         Engine/InlineRenderer.h
         Engine/InlineRenderer.cpp
         Engine/Shortcut.h
+        Engine/Shortcut_p.h
         Engine/Shortcut.cpp
         Engine/KeyEvent.h
         Engine/MouseEvent.h
@@ -216,16 +217,12 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
 add_library(qmltui::core ALIAS QmlTuiCore)
+add_library(qmltui::Core ALIAS QmlTuiCore)
 add_library(QmlTui::Core ALIAS QmlTuiCore)
 set_target_properties(QmlTuiCore PROPERTIES EXPORT_NAME Core)
-file(RELATIVE_PATH _qmltui_rel_libdir
-    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui"
-    "${CMAKE_INSTALL_FULL_LIBDIR}"
-)
-set_target_properties(QmlTuiCoreplugin PROPERTIES
-    EXPORT_NAME CorePlugin
-    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
-)
+set_target_properties(QmlTuiCoreplugin PROPERTIES EXPORT_NAME CorePlugin)
+qmltui_set_install_rpath(QmlTuiCore "${CMAKE_INSTALL_LIBDIR}")
+qmltui_set_install_rpath(QmlTuiCoreplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui")
 install(TARGETS QmlTuiCore
     EXPORT QmlTuiTargets
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"

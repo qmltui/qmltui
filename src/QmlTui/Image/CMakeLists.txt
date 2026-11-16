@@ -22,6 +22,7 @@ else()
     target_compile_definitions(QmlTuiImage PRIVATE QMLTUI_IMAGE_LIBRARY)
 endif()
 add_library(qmltui::image ALIAS QmlTuiImage)
+add_library(qmltui::Image ALIAS QmlTuiImage)
 add_library(QmlTui::Image ALIAS QmlTuiImage)
 
 target_include_directories(QmlTuiImage
@@ -34,18 +35,10 @@ target_include_directories(QmlTuiImage
 
 target_link_libraries(QmlTuiImage PUBLIC qmltui::core Qt6::Gui PRIVATE Qt6::Network)
 
-set_target_properties(QmlTuiImage PROPERTIES
-    EXPORT_NAME Image
-    INSTALL_RPATH "$ORIGIN"
-)
-file(RELATIVE_PATH _qmltui_rel_libdir
-    "${CMAKE_INSTALL_PREFIX}/${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
-    "${CMAKE_INSTALL_FULL_LIBDIR}"
-)
-set_target_properties(QmlTuiImageplugin PROPERTIES
-    EXPORT_NAME ImagePlugin
-    INSTALL_RPATH "$ORIGIN;$ORIGIN/${_qmltui_rel_libdir}"
-)
+set_target_properties(QmlTuiImage PROPERTIES EXPORT_NAME Image)
+set_target_properties(QmlTuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)
+qmltui_set_install_rpath(QmlTuiImage "${CMAKE_INSTALL_LIBDIR}")
+qmltui_set_install_rpath(QmlTuiImageplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image")
 
 install(TARGETS QmlTuiImage
     EXPORT QmlTuiTargets

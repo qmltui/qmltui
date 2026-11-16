@@ -11,10 +11,10 @@ Text {
     property int interval: 100
     property list<string> frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-    onFramesChanged: timer.index = 0
-
     text: control.frames.length > 0 ? control.frames[timer.index % control.frames.length] : ""
     bold: true
+
+    onFramesChanged: timer.index = 0
 
     Timer {
         id: timer

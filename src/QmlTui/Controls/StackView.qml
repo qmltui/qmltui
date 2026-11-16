@@ -236,7 +236,7 @@ Item {
 
     Item {
         id: containerItem
-        anchors.fill: parent
         property Item currentItem: null
+        anchors.fill: parent
     }
 }

@@ -15,6 +15,21 @@ AbstractButton {
 
     checkable: true
     autoExclusive: true
+    contentItem: Row {
+        spacing: 1
+        Text {
+            text: control.checked ? "(*)" : "( )"
+            color: control.textColor
+            bold: control.activeFocus || control.hovered || control.highlighted
+            reversed: control.activeFocus
+        }
+        Text {
+            visible: control.text !== ""
+            text: control.text
+            color: control.textColor
+            bold: control.activeFocus || control.hovered || control.highlighted
+        }
+    }
 
     onCheckedChanged: {
         if (control.checked)
@@ -53,22 +68,6 @@ AbstractButton {
         function uncheckGroup() {
             if (control.buttonGroup)
                 control.buttonGroup.uncheckExcept(control);
-        }
-    }
-
-    contentItem: Row {
-        spacing: 1
-        Text {
-            text: control.checked ? "(*)" : "( )"
-            color: control.textColor
-            bold: control.activeFocus || control.hovered || control.highlighted
-            reversed: control.activeFocus
-        }
-        Text {
-            visible: control.text !== ""
-            text: control.text
-            color: control.textColor
-            bold: control.activeFocus || control.hovered || control.highlighted
         }
     }
 }

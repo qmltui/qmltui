@@ -1,4 +1,5 @@
 #include <QmlTui/Core/Engine/Shortcut.h>
+#include <QmlTui/Core/Engine/Shortcut_p.h>
 
 #include <QHash>
 #include <QMetaEnum>

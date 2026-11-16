@@ -106,6 +106,9 @@ private:
 
     void watchTarget(QObject* target);
     void applyState(const QString& newState);
+    void collectCustomOverrides(PropertyChanges* pc,
+                                QMap<CanonicalProperty, PropertyOverride>& outOverrides,
+                                QSet<CanonicalProperty>* outAppliedKeys = nullptr);
     void collectOverridesForState(State* state,
                                   QMap<CanonicalProperty, PropertyOverride>& outOverrides);
     void revertProperty(const CanonicalProperty& key);
@@ -141,6 +144,7 @@ private:
     QList<QPointer<Animation>> m_runningTransitionAnimations;
     QMap<PropertyChanges*, QVariantMap> m_appliedMaps;
     QMap<PropertyChanges*, QPointer<QObject>> m_appliedTargets;
+    QMap<PropertyChanges*, QSet<CanonicalProperty>> m_appliedCustomProperties;
     QSet<QObject*> m_watchedTargets;
     static thread_local QMap<CanonicalProperty, StateController*> s_propertyOwners;
 };

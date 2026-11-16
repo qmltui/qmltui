@@ -27,7 +27,7 @@ Popup {
     anchors.centerIn: parent
 
     Keys.onPressed: event => {
-        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !rejectButton.activeFocus) {
+        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && control.enabled && acceptButton.visible && acceptButton.enabled && !rejectButton.activeFocus) {
             acceptButton.clicked();
             event.accepted = true;
         }

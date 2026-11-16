@@ -4,7 +4,7 @@
 #include <QmlTui/Core/Engine/FocusManager.h>
 #include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Engine/MouseEvent.h>
-#include <QmlTui/Core/Engine/Shortcut.h>
+#include <QmlTui/Core/Engine/Shortcut_p.h>
 #include <QmlTui/Core/Engine/Keys.h>
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/Terminal.h>

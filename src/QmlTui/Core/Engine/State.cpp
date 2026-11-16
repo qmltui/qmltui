@@ -96,3 +96,13 @@ QList<PropertyChanges*> State::propertyChangesList() const {
 }
 
 } // namespace qmltui
+
+QT_BEGIN_NAMESPACE
+template <> QQmlCustomParser* qmlCreateCustomParser<qmltui::PropertyChanges>() {
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
+    return new qmltui::PropertyChangesParser;
+#else
+    return nullptr;
+#endif
+}
+QT_END_NAMESPACE

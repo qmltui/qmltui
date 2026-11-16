@@ -2,7 +2,6 @@
 
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 
-#include <QList>
 #include <QObject>
 #include <QQmlEngine>
 #include <QString>
@@ -46,9 +45,5 @@ private:
     int m_keyCombination = 0;
     bool m_enabled = true;
 };
-
-const QList<Shortcut*>& activeShortcuts();
-void registerShortcut(Shortcut* shortcut);
-void unregisterShortcut(Shortcut* shortcut);
 
 } // namespace qmltui

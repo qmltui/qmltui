@@ -80,6 +80,19 @@ void StateController::watchTarget(QObject* target) {
 void StateController::handleTargetDestroyed(QObject* obj) {
     m_watchedTargets.remove(obj);
     const quintptr deadId = reinterpret_cast<quintptr>(obj);
+    for (qsizetype i = m_runningTransitionAnimations.size() - 1; i >= 0; --i) {
+        Animation* anim = m_runningTransitionAnimations.at(i).data();
+        if (!anim) {
+            m_runningTransitionAnimations.removeAt(i);
+            continue;
+        }
+        auto* pAnim = qobject_cast<PropertyAnimation*>(anim);
+        if (pAnim && (!pAnim->target() || pAnim->target() == obj)) {
+            m_runningTransitionAnimations.removeAt(i);
+            anim->stop();
+            delete anim;
+        }
+    }
     for (auto it = m_baseRecords.begin(); it != m_baseRecords.end();) {
         if (it.key().targetId == deadId)
             it = m_baseRecords.erase(it);
@@ -92,6 +105,15 @@ void StateController::handleTargetDestroyed(QObject* obj) {
             it = m_ownedProperties.erase(it);
         } else {
             ++it;
+        }
+    }
+    for (auto it = m_appliedCustomProperties.begin(); it != m_appliedCustomProperties.end(); ++it) {
+        QSet<CanonicalProperty>& keys = it.value();
+        for (auto kit = keys.begin(); kit != keys.end();) {
+            if (kit->targetId == deadId)
+                kit = keys.erase(kit);
+            else
+                ++kit;
         }
     }
 }
@@ -110,6 +132,7 @@ void StateController::childEvent(QChildEvent* event) {
                         disconnect(pc, nullptr, this, nullptr);
                         m_appliedMaps.remove(pc);
                         m_appliedTargets.remove(pc);
+                        m_appliedCustomProperties.remove(pc);
                     }
                 }
                 disconnect(liveState, nullptr, this, nullptr);
@@ -183,6 +206,7 @@ void StateController::clearStates(QQmlListProperty<State>* list) {
                         disconnect(pc, nullptr, self, nullptr);
                         self->m_appliedMaps.remove(pc);
                         self->m_appliedTargets.remove(pc);
+                        self->m_appliedCustomProperties.remove(pc);
                     }
                 }
                 disconnect(state, nullptr, self, nullptr);
@@ -237,6 +261,7 @@ void StateController::stateRemoved(State* state) {
             disconnect(pc, nullptr, this, nullptr);
             m_appliedMaps.remove(pc);
             m_appliedTargets.remove(pc);
+            m_appliedCustomProperties.remove(pc);
         }
     }
     disconnect(state, nullptr, this, nullptr);
@@ -307,6 +332,61 @@ void StateController::setState(const QString& newState) {
     }
 }
 
+void StateController::collectCustomOverrides(
+    PropertyChanges* pc, QMap<CanonicalProperty, PropertyOverride>& outOverrides,
+    QSet<CanonicalProperty>* outAppliedKeys) {
+    if (!pc || !pc->d_func() || !pc->d_func()->hasCustomBindings) return;
+
+    pc->d_func()->decode();
+    for (const DecodedBinding& b : pc->d_func()->decodedBindings) {
+        QObject* baseTarget = pc->target() ? pc->target() : defaultTarget();
+        if (!pc->target() && b.propertyName.contains(QLatin1Char('.'))) {
+            const QString firstPart = b.propertyName.section(QLatin1Char('.'), 0, 0);
+            if (baseTarget && !firstPart.isEmpty() && !firstPart.at(0).isUpper() &&
+                baseTarget->metaObject()->indexOfProperty(firstPart.toUtf8().constData()) < 0) {
+                baseTarget = nullptr;
+            }
+        }
+        if (!baseTarget && !b.propertyName.contains(QLatin1Char('.'))) {
+            qmlWarning(pc) << "PropertyChanges inside StateGroup requires explicit target "
+                              "or ID-qualified property";
+            continue;
+        }
+
+        QQmlContext* rawContext = qmlContext(pc);
+        if (!rawContext && parent()) rawContext = qmlContext(parent());
+        if (!rawContext && baseTarget) rawContext = qmlContext(baseTarget);
+
+        QQmlProperty prop = createQmlProperty(baseTarget, b.propertyName, rawContext);
+        if (!prop.isValid()) {
+            qmlWarning(pc) << "Cannot assign to non-existent property \"" << b.propertyName << "\"";
+            continue;
+        }
+        if (!prop.isWritable()) {
+            qmlWarning(pc) << "Cannot assign to read-only property \"" << b.propertyName << "\"";
+            continue;
+        }
+
+        const ResolvedProperty resolved = resolveCanonicalProperty(prop.object(), prop.name());
+        if (!resolved.target) continue;
+        PropertyOverride override;
+        override.target = resolved.target;
+        override.name = resolved.key.name;
+        override.restore = pc->restoreEntryValues();
+
+        if (b.isExpression) {
+            evaluateDecodedBinding(pc, b, prop, rawContext, override.value, override.binding,
+                                   override.isBinding);
+        } else {
+            override.value = b.literalValue;
+            override.isBinding = false;
+        }
+
+        outOverrides.insert(resolved.key, override);
+        if (outAppliedKeys) outAppliedKeys->insert(resolved.key);
+    }
+}
+
 void StateController::collectOverridesForState(
     State* state, QMap<CanonicalProperty, PropertyOverride>& outOverrides) {
     if (!state) return;
@@ -320,56 +400,10 @@ void StateController::collectOverridesForState(
         }
 
         if (pc->d_func() && pc->d_func()->hasCustomBindings) {
-            pc->d_func()->decode();
-            for (const DecodedBinding& b : pc->d_func()->decodedBindings) {
-                QObject* baseTarget = pc->target() ? pc->target() : defaultTarget();
-                if (!pc->target() && b.propertyName.contains(QLatin1Char('.'))) {
-                    QString firstPart = b.propertyName.section(QLatin1Char('.'), 0, 0);
-                    if (baseTarget && baseTarget->metaObject()->indexOfProperty(
-                                          firstPart.toUtf8().constData()) < 0) {
-                        baseTarget = nullptr;
-                    }
-                }
-                if (!baseTarget && !b.propertyName.contains(QLatin1Char('.'))) {
-                    qmlWarning(pc) << "PropertyChanges inside StateGroup requires explicit target "
-                                      "or ID-qualified property";
-                    continue;
-                }
-
-                QQmlContext* rawContext = qmlContext(pc);
-                if (!rawContext && parent()) rawContext = qmlContext(parent());
-                if (!rawContext && baseTarget) rawContext = qmlContext(baseTarget);
-
-                QQmlProperty prop = createQmlProperty(baseTarget, b.propertyName, rawContext);
-                if (!prop.isValid()) {
-                    qmlWarning(pc)
-                        << "Cannot assign to non-existent property \"" << b.propertyName << "\"";
-                    continue;
-                }
-                if (!prop.isWritable()) {
-                    qmlWarning(pc)
-                        << "Cannot assign to read-only property \"" << b.propertyName << "\"";
-                    continue;
-                }
-
-                const ResolvedProperty resolved =
-                    resolveCanonicalProperty(prop.object(), prop.name());
-                if (!resolved.target) continue;
-                PropertyOverride override;
-                override.target = resolved.target;
-                override.name = resolved.key.name;
-                override.restore = pc->restoreEntryValues();
-
-                if (b.isExpression) {
-                    evaluateDecodedBinding(pc, b, prop, rawContext, override.value,
-                                           override.binding, override.isBinding);
-                } else {
-                    override.value = b.literalValue;
-                    override.isBinding = false;
-                }
-
-                outOverrides.insert(resolved.key, override);
-            }
+            m_appliedTargets[pc] = pc->target() ? pc->target() : defaultTarget();
+            QSet<CanonicalProperty> appliedKeys;
+            collectCustomOverrides(pc, outOverrides, &appliedKeys);
+            m_appliedCustomProperties[pc] = appliedKeys;
             continue;
         }
 
@@ -481,14 +515,83 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
 }
 
 void StateController::handleTargetChanged(PropertyChanges* pc) {
-    if (!pc) return;
+    if (!pc || m_stateName.isEmpty()) return;
     if (!m_appliedTargets.contains(pc)) return;
+
+    bool isActive = false;
+    for (const QPointer<State>& state : m_statesList) {
+        if (state && state->name() == m_stateName && state->propertyChangesList().contains(pc)) {
+            isActive = true;
+            break;
+        }
+    }
+    if (!isActive) return;
 
     QObject* oldTarget = m_appliedTargets.value(pc).data();
     QObject* newTarget = pc->target() ? pc->target() : defaultTarget();
     if (oldTarget == newTarget) return;
 
     m_appliedTargets[pc] = newTarget;
+
+    if (pc->d_func() && pc->d_func()->hasCustomBindings) {
+        const QSet<CanonicalProperty> oldKeys = m_appliedCustomProperties.take(pc);
+        for (const CanonicalProperty& oldKey : oldKeys) {
+            for (qsizetype i = m_runningTransitionAnimations.size() - 1; i >= 0; --i) {
+                Animation* anim = m_runningTransitionAnimations.at(i).data();
+                if (!anim) {
+                    m_runningTransitionAnimations.removeAt(i);
+                    continue;
+                }
+                auto* pAnim = qobject_cast<PropertyAnimation*>(anim);
+                if (pAnim && reinterpret_cast<quintptr>(pAnim->target()) == oldKey.targetId &&
+                    pAnim->property() == oldKey.name) {
+                    m_runningTransitionAnimations.removeAt(i);
+                    anim->stop();
+                    delete anim;
+                }
+            }
+            revertProperty(oldKey);
+            m_baseRecords.remove(oldKey);
+            if (s_propertyOwners.value(oldKey) == this) s_propertyOwners.remove(oldKey);
+            m_ownedProperties.remove(oldKey);
+        }
+
+        if (newTarget) {
+            QMap<CanonicalProperty, PropertyOverride> newOverrides;
+            collectCustomOverrides(pc, newOverrides);
+            QSet<CanonicalProperty> committedKeys;
+            for (auto it = newOverrides.begin(); it != newOverrides.end(); ++it) {
+                const CanonicalProperty& canon = it.key();
+                const PropertyOverride& override = it.value();
+                if (!override.target) continue;
+                if (s_propertyOwners.contains(canon) && s_propertyOwners.value(canon) != this) {
+                    qmlWarning(pc) << "Cannot retarget PropertyChanges: property " << canon.name
+                                   << " is owned by another StateGroup/Item";
+                    continue;
+                }
+                watchTarget(override.target.data());
+                if (!m_baseRecords.contains(canon)) {
+                    BasePropertyRecord rec;
+                    rec.target = override.target;
+                    rec.name = canon.name;
+                    rec.restore = override.restore;
+                    rec.baseBinding = SavedBinding::takeFrom(override.target.data(), canon.name);
+                    rec.hadBinding = static_cast<bool>(rec.baseBinding);
+                    rec.baseValue = override.target->property(canon.name.toUtf8().constData());
+                    m_baseRecords.insert(canon, rec);
+                } else if (!override.restore) {
+                    m_baseRecords[canon].restore = false;
+                }
+                s_propertyOwners.insert(canon, this);
+                m_ownedProperties.insert(canon);
+                committedKeys.insert(canon);
+                installOrWriteProperty(override.target.data(), canon.name, override.value,
+                                       override.isBinding, override.binding);
+            }
+            m_appliedCustomProperties[pc] = committedKeys;
+        }
+        return;
+    }
 
     const QVariantMap props = pc->properties();
 
@@ -544,6 +647,9 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
 
     QObject* targetObj = override.target.data();
     QString propName = override.name;
+    QQmlProperty prop(targetObj, propName);
+    const int colorTypeId = QMetaType::fromType<Color>().id();
+    const bool isColorProperty = (prop.propertyType() == colorTypeId);
 
     QVariant fromVal = targetObj->property(propName.toUtf8().constData());
     QVariant toVal = override.value;
@@ -563,9 +669,11 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
 
             if (isColorAnim) {
                 bool looksLikeColor =
-                    propName.contains("color", Qt::CaseInsensitive) ||
-                    (toVal.userType() == QMetaType::QString && toVal.toString().startsWith('#')) ||
-                    toVal.userType() == QMetaType::fromType<Color>().id();
+                    isColorProperty ||
+                    propName.contains(QLatin1String("color"), Qt::CaseInsensitive) ||
+                    (toVal.userType() == QMetaType::QString &&
+                     toVal.toString().startsWith(QLatin1Char('#'))) ||
+                    toVal.userType() == colorTypeId;
                 if (!looksLikeColor) continue;
             } else if (isNumberAnim) {
                 bool isNumeric =
@@ -582,11 +690,16 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
 
     // Endpoint equality check: do not allocate transition animation for unchanged endpoints
     bool endpointsEqual = (fromVal == toVal);
-    if (!endpointsEqual && toVal.userType() == QMetaType::fromType<Color>().id()) {
-        Color c1 = (fromVal.userType() == QMetaType::fromType<Color>().id())
-                       ? fromVal.value<Color>()
-                       : Color::fromString(fromVal.toString());
-        Color c2 = toVal.value<Color>();
+    if (!endpointsEqual &&
+        (isColorProperty || fromVal.userType() == colorTypeId || toVal.userType() == colorTypeId ||
+         qobject_cast<ColorAnimation*>(matchedAnim) != nullptr)) {
+        auto toColor = [colorTypeId](const QVariant& val) -> Color {
+            if (val.userType() == colorTypeId) return val.value<Color>();
+            if (val.userType() == QMetaType::QString) return Color::fromString(val.toString());
+            return Color::invalid();
+        };
+        const Color c1 = toColor(fromVal);
+        const Color c2 = toColor(toVal);
         if (c1.isValid() && c2.isValid() && c1 == c2) endpointsEqual = true;
     }
 
@@ -610,17 +723,17 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
         newAnim->setFrom(fromVal);
         newAnim->setTo(toVal);
 
-        QQmlProperty prop(targetObj, propName);
         SavedBinding destBinding = override.isBinding ? override.binding : SavedBinding();
         connect(newAnim, &Animation::finished, this, [this, newAnim, prop, destBinding]() mutable {
             m_runningTransitionAnimations.removeOne(newAnim);
             newAnim->deleteLater();
-            if (prop.isValid() && destBinding) {
+            if (prop.isValid() && prop.object() != nullptr && destBinding) {
                 // Attach and reevaluate destination binding at transition completion
                 destBinding.installOn(prop);
             }
         });
 
+        removeBindingFromProperty(prop);
         m_runningTransitionAnimations.append(newAnim);
         newAnim->start();
     } else {

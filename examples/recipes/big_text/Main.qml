@@ -19,13 +19,13 @@ Terminal {
         spacing: 1
 
         Text {
-            text: "BigText — 3x5 Block Glyph Item"
+            text: "BigText — 3x3 Block Glyph Item"
             color: "cyan"
             bold: true
         }
 
         Text {
-            text: "Custom C++ Item painting 3x5 block glyphs into TextGridBuffer. Press Q or Esc to quit."
+            text: "Custom C++ Item painting 3x3 block glyphs into TextGridBuffer. Press Q or Esc to quit."
             dim: true
         }
 

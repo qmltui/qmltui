@@ -14,5 +14,5 @@ Interactive catalog of all 45 built-in types across `QmlTui`, `QmlTui.Controls`,
 ## Layout
 
 - `Main.qml`: Searchable `GridView` shell and full-width example stage.
-- `examples/*.qml`: Self-contained `Item`-rooted component examples (shared with `examples/wasm/`).
+- `examples/*.qml`: Self-contained `Item`-rooted component examples (also runnable in the browser via `qmltui_wasm_app()`; see [`docs/guides/webassembly.md`](../../docs/guides/webassembly.md)).
 - `scenarios/*.js`: Deterministic `Runner` smoke tests and `.cast` / `.gif` recording scripts.

@@ -9,5 +9,5 @@ Demonstrates range-based highlighting with `TextArea` in QmlTui:
 - Document revision tracking: highlighters synchronize via `editor.textRevision`, ensuring submissions match the current document state and stale ranges from previous edits are rejected.
 - Keyboard shortcuts:
   - `F2` (or `Ctrl+T`): Toggles active color palette / theme at runtime.
-  - `F3` (or `Ctrl+M`): Switches between JSON document (C++ highlighter) and QML document (pure QML highlighter).
+  - `F3`: Switches between JSON document (C++ highlighter) and QML document (pure QML highlighter).
   - `Escape`: Exits the application cleanly; typing in the editor remains unrestricted.

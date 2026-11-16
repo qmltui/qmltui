@@ -31,23 +31,28 @@ if(NOT TARGET qmltui::core)
     # replace the FetchContent block above with:
     #
     #   find_package(QmlTui 0.5 REQUIRED)
-    #
-    # Note: Qt's `qt_add_qml_module(DEPENDENCIES TARGET ...)` only accepts
-    # non-imported build-tree targets. When using `find_package(QmlTui)`, omit
-    # `DEPENDENCIES TARGET qmltui::core` from `qt_add_qml_module(...)` below
-    # (`find_package(QmlTui)` adds `QmlTui_QML_IMPORT_PATH` to
-    # `QT_QML_IMPORT_PATH` automatically).
 endif()
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
+
+# Order QmlTui's build-tree QML metadata before qmlcachegen/qmllint when built
+# from source; find_package(QmlTui) provides IMPORTED targets and configures
+# QT_QML_IMPORT_PATH automatically instead.
+set(_hello_qml_dependencies)
+get_target_property(_qmltui_imported qmltui::core IMPORTED)
+if(NOT _qmltui_imported)
+    list(APPEND _hello_qml_dependencies DEPENDENCIES TARGET qmltui::core)
+endif()
+unset(_qmltui_imported)
 
 qt_add_executable(hello_qmltui main.cpp)
 qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
     VERSION 1.0
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core
+    ${_hello_qml_dependencies}
 )
+unset(_hello_qml_dependencies)
 target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core)
 
 if(COMMAND qmltui_wasm_app)

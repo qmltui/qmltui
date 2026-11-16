@@ -300,7 +300,8 @@ Terminal {
                 Column {
                     anchors {
                         fill: parent
-                        margins: 1
+                        leftMargin: 1
+                        rightMargin: 1
                     }
                     spacing: 0
 
@@ -376,7 +377,8 @@ Terminal {
                 Column {
                     anchors {
                         fill: parent
-                        margins: 1
+                        leftMargin: 1
+                        rightMargin: 1
                     }
                     spacing: 0
 
@@ -418,7 +420,8 @@ Terminal {
                 Column {
                     anchors {
                         fill: parent
-                        margins: 1
+                        leftMargin: 1
+                        rightMargin: 1
                     }
                     spacing: 0
 

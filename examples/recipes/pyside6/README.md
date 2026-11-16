@@ -3,8 +3,9 @@
 Demonstrates hosting a QmlTui application from Python using `PySide6` (`QCoreApplication` + `QQmlApplicationEngine`) without custom C++ wrapper code or Shiboken bindings.
 
 - **Python `QAbstractTableModel` + `QSortFilterProxyModel`**: [`main.py`](main.py) defines `ServiceTableModel` and exposes `ServiceController` to QML via `@QmlElement` (`import PySideDemo`).
-- **Standard QmlTui QML**: [`Main.qml`](Main.qml) imports `QmlTui`, `QmlTui.Controls`, and `PySideDemo`, rendering a sortable and filterable `TableView` inside a `Panel`.
-- **Contextual quit path**: `Escape` clears `filterInput.text` first and exits when the filter is empty; `Q` exits when `filterInput` does not hold active focus.
+- **Standard QmlTui QML**: [`Main.qml`](Main.qml) imports `QmlTui`, `QmlTui.Controls`, and `PySideDemo`, rendering a sortable (`S` or header click) and filterable `TableView` inside a `Panel`.
+- **Contextual quit path**: `Escape` clears `filterInput.text` first, returns focus to `serviceTable` when `filterInput` is empty and focused, and exits otherwise; `Q` exits when `filterInput` does not hold active focus.
+- **Shared library search paths**: Standard ELF/macOS CMake builds embed RPATHs on QML plugins so `libQmlTuiCore` and `libQmlTuiControls` resolve automatically. On Windows, [`main.py`](main.py) registers existing `build/bin`, `build/src/QmlTui/Core`, and `build/src/QmlTui/Controls` directories via `os.add_dll_directory(...)` (multi-config or custom prefixes should also add the DLL directory to `PATH`). On non-RPATH Unix builds (`-DCMAKE_SKIP_RPATH=ON` or relocated prefixes), add the library directory to `LD_LIBRARY_PATH` (Linux) or `DYLD_LIBRARY_PATH` (macOS).
 
 ```bash
 # Build QmlTui QML plugins with public Qt APIs only (avoids private-API version

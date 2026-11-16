@@ -7,12 +7,17 @@ Terminal {
         if (event.key === Qt.Key_Escape) {
             if (filterInput.text.length > 0) {
                 filterInput.text = "";
+            } else if (filterInput.activeFocus) {
+                table.focus = true;
             } else {
                 Qt.quit();
             }
             event.accepted = true;
-        } else if (event.key === Qt.Key_Q && !filterInput.focus) {
+        } else if (event.key === Qt.Key_Q && !filterInput.activeFocus) {
             Qt.quit();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_S && !filterInput.activeFocus) {
+            processes.cycleSort();
             event.accepted = true;
         }
     }
@@ -46,7 +51,7 @@ Terminal {
                 }
                 Text {
                     width: 76
-                    text: qsTr("Click headers to sort; select a row to activate its source PID.")
+                    text: qsTr("Click headers or press S to sort; select a row to activate its source PID.")
                 }
             }
 
@@ -178,7 +183,7 @@ Terminal {
 
             Text {
                 width: 76
-                text: qsTr("Esc clears the filter, then quits. Q quits outside the filter.")
+                text: qsTr("S sorts; Esc clears filter/unfocuses, then quits; Q quits outside filter.")
             }
         }
     }

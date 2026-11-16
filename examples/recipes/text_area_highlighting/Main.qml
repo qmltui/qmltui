@@ -25,8 +25,6 @@ import QmlTui
 Terminal {
   id: window
   // Interactive terminal interface in pure QML
-  width: 80
-  height: 24
 
   Rectangle {
     anchors.fill: parent
@@ -48,12 +46,16 @@ Terminal {
     function toggleDocumentMode() {
         if (root.isQmlMode) {
             root.qmlText = editor.text;
+            qmlHighlighter.target = null;
             root.isQmlMode = false;
             editor.text = root.jsonText;
+            jsonHighlighter.target = editor;
         } else {
             root.jsonText = editor.text;
+            jsonHighlighter.target = null;
             root.isQmlMode = true;
             editor.text = root.qmlText;
+            qmlHighlighter.target = editor;
         }
     }
 
@@ -73,10 +75,10 @@ Terminal {
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_F) {
             searchInput.focus = true;
             event.accepted = true;
-        } else if (event.key === Qt.Key_F2 || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_T)) {
+        } else if (event.key === Qt.Key_F2 || ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_T)) {
             root.alternatePalette = !root.alternatePalette;
             event.accepted = true;
-        } else if (event.key === Qt.Key_F3 || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_M)) {
+        } else if (event.key === Qt.Key_F3) {
             root.toggleDocumentMode();
             event.accepted = true;
         }
@@ -166,7 +168,7 @@ Terminal {
 
     JsonHighlighter {
         id: jsonHighlighter
-        target: root.isQmlMode ? null : editor
+        target: editor
         stringColor: root.alternatePalette ? "magenta" : "green"
         numberColor: "cyan"
         keywordColor: "blue"
@@ -177,7 +179,7 @@ Terminal {
 
     QmlHighlighter {
         id: qmlHighlighter
-        target: root.isQmlMode ? editor : null
+        target: null
         keywordColor: "blue"
         typeColor: "cyan"
         stringColor: root.alternatePalette ? "magenta" : "green"

@@ -11,12 +11,17 @@ Terminal {
         if (event.key === Qt.Key_Escape) {
             if (filterInput.text.length > 0) {
                 filterInput.text = "";
+            } else if (filterInput.activeFocus) {
+                serviceTable.focus = true;
             } else {
                 Qt.quit();
             }
             event.accepted = true;
         } else if (event.key === Qt.Key_Q && !filterInput.activeFocus) {
             Qt.quit();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_S && !filterInput.activeFocus) {
+            services.cycleSort();
             event.accepted = true;
         }
     }
@@ -36,7 +41,7 @@ Terminal {
             bold: true
         }
         footer: Text {
-            text: " Enter: Toggle | Click header: Sort | Esc: Clear/Quit | Q: Quit "
+            text: " Enter: Toggle | S / Header: Sort | Esc: Clear/Unfocus/Quit | Q: Quit "
             dim: true
         }
 

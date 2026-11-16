@@ -16,4 +16,8 @@ function main(app) {
     app.press("Escape")
     app.expectText("terminal_engine")
     app.captureText("restored.txt")
+    app.click(12, 3)
+    app.press("Escape")
+    app.press("s")
+    app.expectText("Sort: PID descending")
 }

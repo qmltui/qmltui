@@ -40,11 +40,11 @@ signals:
 private:
     QString m_text;
 
-    Color m_color = Color::fromArgb32(0xFFFFFF00);
-    uint32_t m_resolvedColor = 0xFFFFFF00;
+    Color m_color = Color::Default;
+    uint32_t m_resolvedColor = Color::DefaultTag;
 
     Color m_backgroundColor = Color::Transparent;
-    uint32_t m_resolvedBackgroundColor = 0x00000000;
+    uint32_t m_resolvedBackgroundColor = Color::TransparentTag;
 };
 
 } // namespace qmltui

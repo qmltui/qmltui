@@ -65,7 +65,7 @@ endfunction()
 
 gallery_add_executable(qmltui_gallery Gallery main.cpp)
 
-if(COMMAND qmltui_wasm_app)   # browser build, see examples/wasm and docs/guides/webassembly.md
+if(COMMAND qmltui_wasm_app)   # browser build, see docs/guides/webassembly.md
     qmltui_wasm_app(qmltui_gallery)
 endif()
 

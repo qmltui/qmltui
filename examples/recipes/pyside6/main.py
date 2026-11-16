@@ -148,6 +148,17 @@ class ServiceController(QSortFilterProxyModel):
         self.sort(column, next_order)
         self.sortLabelChanged.emit()
 
+    @Slot()
+    def cycleSort(self) -> None:
+        if self.columnCount() <= 0:
+            return
+        if self.sortColumn() >= 0 and self.sortOrder() == Qt.SortOrder.AscendingOrder:
+            self.sort(self.sortColumn(), Qt.SortOrder.DescendingOrder)
+        else:
+            next_col = (self.sortColumn() + 1) % self.columnCount()
+            self.sort(next_col, Qt.SortOrder.AscendingOrder)
+        self.sortLabelChanged.emit()
+
     @Slot(int)
     def toggleRow(self, proxy_row: int) -> None:
         source_index = self.mapToSource(self.index(proxy_row, 0))
@@ -163,6 +174,16 @@ def main() -> int:
     recipe_dir = Path(__file__).resolve().parent
     repo_root = recipe_dir.parents[2]
     build_dir = Path(os.environ.get("QMLTUI_BUILD_DIR", repo_root / "build")).resolve()
+
+    dll_dir_handles = []
+    if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+        for dll_dir in (
+            build_dir / "bin",
+            build_dir / "src/QmlTui/Core",
+            build_dir / "src/QmlTui/Controls",
+        ):
+            if dll_dir.is_dir():
+                dll_dir_handles.append(os.add_dll_directory(str(dll_dir)))
 
     app = QCoreApplication(sys.argv)
     engine = QQmlApplicationEngine()

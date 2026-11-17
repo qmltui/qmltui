@@ -63,9 +63,10 @@ property var tableModel: null        // model injected by the parent
 ```
 
 Keep heavy data out of QML. Datasets, logs, parsing, filtering, and network IO
-belong in a C++ `QAbstractItemModel` or `QAbstractTableModel`. In delegates,
-declare `required property` for each model role so the engine binds roles
-directly instead of through dynamic lookup:
+belong in a C++ `QAbstractItemModel` or `QAbstractTableModel` (do not mark C++
+`QML_ELEMENT` classes `final`, as Qt's QML type registration subclasses them).
+In delegates, declare `required property` for each model role so the engine
+binds roles directly instead of through dynamic lookup:
 
 ```qml
 TableView {
@@ -180,13 +181,18 @@ Rectangle {
 
 `Panel` exposes `Item` border slots (`title`, `titleTrailing`, `footer`, and
 `footerTrailing`) plus `titleAlignment` in addition to the inherited
-`Rectangle.border` group.
+`Rectangle.border` group. Single-line `Text` truncation uses `clip: true`
+(`qmltui::Text` has no `elide` property). Use `Dialog` for simple
+`title`/`message` + `OK`/`Cancel` confirmations, and compose
+`Popup { modal: true }` containing a `Panel` for custom modal layouts (such as
+command palettes or filterable pickers).
 
 QmlTui C++ items expose colors as `qmltui::Color` (QML value type `color`), which
 accepts CSS/SVG named colors (`"cyan"`), special sentinels (`"default"`,
 `"transparent"`), ANSI palette entries (`"ansi:red"`, `QmlTui.ansi(...)`), hex
 strings (`"#rrggbb"`, `"#aarrggbb"`), `QmlTui.color(...)`, or `QmlTui.rgba(...)`
-without requiring `QtQuick`.
+without requiring `QtQuick`. Share application-wide tokens via a
+`pragma Singleton` `.qml` file (`QT_QML_SINGLETON_TYPE TRUE` in CMake).
 
 ## 5. Keyboard Focus and Quit Path
 
@@ -288,7 +294,7 @@ Before finishing a QmlTui QML file:
    connected table lines; wrap other borderless types when needed.
 8. A reachable keyboard quit path exists and does not fire while a text input
    has focus.
-9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>`).
+9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>` in the QmlTui repo, or `qmlformat -i <file>` in consumer projects).
 10. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
 11. Signal handlers with arguments use arrow function syntax: `event => { ... }`.
 12. Visible behaviour is verified against the committed terminal frame using the

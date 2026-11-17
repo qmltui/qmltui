@@ -126,6 +126,10 @@ private slots:
         QTest::newRow("record-traversal") << QStringList{"--eval", "x", "--record", "../x.cast"};
         QTest::newRow("empty-eval") << QStringList{"--eval", " "};
         QTest::newRow("missing-script") << QStringList{"--script", "/does-not-exist/test.js"};
+        QTest::newRow("bad-sizes") << QStringList{"--sizes", "80x0"};
+        QTest::newRow("live-ruler") << QStringList{"--eval", "x", "--live", "--ruler"};
+        QTest::newRow("script-sweep")
+            << QStringList{"--script", QStringLiteral(QMLTUI_SCENARIOS) + "/success.js", "--sweep"};
     }
     void invalid() {
         QFETCH(QStringList, options);
@@ -260,6 +264,41 @@ private slots:
         result = run({"--script", script, "--artifacts", temporary.filePath("verified"), "--",
                       fixtureBinary()});
         QVERIFY2(result.code == 0, result.err.constData());
+    }
+
+    void probeSweepAndCleanArtifacts() {
+        QTemporaryDir temporary;
+        QVERIFY(temporary.isValid());
+
+        const QString protectedDir = temporary.filePath("non-runner");
+        QVERIFY(QDir().mkpath(protectedDir));
+        QVERIFY(writeFile(QDir(protectedDir).filePath("keep.txt"), "keep"));
+        QCOMPARE(run({"--sweep", "--clean-artifacts", "--artifacts", protectedDir, "--",
+                      fixtureBinary()})
+                     .code,
+                 2);
+        QCOMPARE(readFile(QDir(protectedDir).filePath("keep.txt")), QByteArray("keep"));
+
+        const QString probeDir = temporary.filePath("probe");
+        auto first = run({"--clock", "virtual", "--sweep", "--idle-ms", "50", "--ruler", "--styled",
+                          "--artifacts", probeDir, "--", fixtureBinary()});
+        QVERIFY2(first.code == 0, first.err.constData());
+        QVERIFY(first.out.contains("FrameStats: frames="));
+        QVERIFY(first.out.contains("=== Viewport 60x18 ==="));
+        QVERIFY(first.out.contains("=== Viewport 80x24 ==="));
+        QVERIFY(first.out.contains("=== Viewport 120x36 ==="));
+        QVERIFY(first.out.contains("--- Styles (60x18) ---"));
+        QVERIFY(first.out.contains("00 \xe2\x94\x82"));
+
+        auto second = run({"--clock", "virtual", "--sizes", "70x14,90x20", "--ruler",
+                           "--scrollback", "--clean-artifacts", "--artifacts", probeDir, "--eval",
+                           "app.typeText('ping'); app.press('Enter');", "--", fixtureBinary(),
+                           "--fixture=inline"});
+        QVERIFY2(second.code == 0, second.err.constData());
+        QVERIFY(second.out.contains("=== Viewport 70x14 ==="));
+        QVERIFY(second.out.contains("=== Viewport 90x20 ==="));
+        QVERIFY(second.out.contains("=== Inline Scrollback ==="));
+        QVERIFY(second.out.contains("ping"));
     }
 };
 

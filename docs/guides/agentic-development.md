@@ -13,7 +13,7 @@ Ensure your project links `qmltui::runner` under `if(BUILD_TESTING AND TARGET qm
 | Project Layout | `qmltui-runner` Path |
 | :--- | :--- |
 | Installed package (`find_package(QmlTui)`) | `<install-prefix>/bin/qmltui-runner` (or `qmltui-runner` on `PATH`) |
-| `FetchContent` consumer build (`-B build`) | `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` |
+| `FetchContent` consumer build (`-B build`) | `./build/bin/qmltui-runner` (with `CMAKE_RUNTIME_OUTPUT_DIRECTORY`) or `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` |
 | QmlTui repository build (`-B build`) | `./build/tools/qmltui-runner/qmltui-runner` |
 
 ## 2. Run the Four-Step Verification Loop
@@ -26,11 +26,13 @@ Run the narrowest check that proves each change before running the full suite:
    ```
    Catches invalid imports (such as `import QtQuick`), unknown properties, and unqualified lookups before execution.
 
-2. **Inspect initial cell geometry (`--capture-after-ms 0`)**:
+2. **Sweep viewports, rulers, and idle budget (`--sweep --ruler --idle-ms`)**:
    ```bash
-   qmltui-runner --capture-after-ms 0 --columns 80 --rows 24 --artifacts ./tmp/frame-80x24 -- ./build/ops_console
+   qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
+     --clean-artifacts --artifacts ./tmp/probe \
+     -- ./build/ops_console
    ```
-   Writes `capture.txt` and `capture_styled.txt` into a fresh `--artifacts` directory (or omit `--artifacts` to use an auto-allocated temp path printed to `stderr`). Repeat at wider dimensions (for example `--columns 110 --rows 34`) to verify responsive layouts.
+   Prints `FrameStats`, 0-based `(x, y)` coordinate grids across `60x18`, `80x24`, and `120x36`, and `--- styles` runs directly to `stdout` while verifying `dirtyDuringPaintTotal === 0` and zero idle repaints.
 
 3. **Probe interactions and animations inline (`--eval` + `--clock virtual`)**:
    ```bash
@@ -173,14 +175,18 @@ Re-running `--capture-after-ms 0` confirms clean cell alignment:
 └─────────────────────────┘
 ```
 
-## 4. Configure `AGENTS.md` and Reusable Skills
+## 4. Install QmlTui Skills and Configure `AGENTS.md`
 
-Copy QmlTui's bundled agent skills from `.agents/skills/` into your repository's `.agents/skills/` (or `.claude/skills/`):
+Install QmlTui's bundled portable agent skills (`qmltui-qml` and `qmltui-dev-loop`) into your repository from [`qmltui/qmltui`](https://github.com/qmltui/qmltui):
 
-- **[`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md)**: Enforces QmlTui imports (no `QtQuick`), `pragma ComponentBehavior: Bound`, required-property delegates, `AltScreen` vs. `Inline` mode, integer cell geometry, borders, and quit paths.
-- **[`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md)**: Guides target-scoped CMake builds, `qmltui-runner` frame captures, virtual-clock scenarios, and artifact inspection.
+```bash
+npx skills add qmltui/qmltui
+```
 
-Pair the skills with a concise root `AGENTS.md` (see QmlTui's [`AGENTS.md`](../../AGENTS.md)):
+- **[`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md)**: Enforces QmlTui imports (no `QtQuick`), `pragma ComponentBehavior: Bound`, required-property delegates, `AltScreen` vs. `Inline` mode, integer cell geometry, borders, and contextual quit paths.
+- **[`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md)**: Guides `<target>_qmllint` builds, `qmltui-runner --sweep --ruler --idle-ms` multi-viewport probes, virtual-clock scenarios, and `.cast` demo recordings.
+
+Pair the skills with a concise root `AGENTS.md` in your application repository (see QmlTui's [`AGENTS.md`](../../AGENTS.md)):
 
 ```markdown
 # Project Agent Instructions
@@ -189,6 +195,6 @@ Pair the skills with a concise root `AGENTS.md` (see QmlTui's [`AGENTS.md`](../.
 - All item geometry (`x`, `y`, `width`, `height`, margins, padding, spacing) uses integer character cells.
 - Provide a reachable keyboard quit path (`Q` or contextual `Escape` at the root `Terminal` after closing popups or clearing input focus).
 - Build and lint before running scenarios: `cmake --build build --target ops_console_qmllint ops_console`
-- Verify every visible UI change against a committed terminal frame via `qmltui-runner` (`capture.txt`, `final.txt`, or `expectSnapshot()`).
+- Verify every visible UI change against a committed terminal frame via `qmltui-runner` (`--ruler`, `--sweep`, or `expectSnapshot()`).
 - Run `ctest --test-dir build -LE Demo --output-on-failure` and `git diff --check` before handoff.
 ```

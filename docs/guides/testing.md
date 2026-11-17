@@ -114,11 +114,12 @@ The `qmltui-runner` command-line tool (built by default in top-level builds or w
    qmltui-runner --eval 'app.expectText("Welcome"); app.press("Enter"); app.expectText("Clicked!");' -- ./build/my_app
    ```
 
-3. **Capture the rendered frame without a script (`--capture-after-ms`)**:
+3. **Capture or sweep viewports without a script (`--capture-after-ms`, `--sweep`, `--ruler`)**:
    ```bash
    qmltui-runner --capture-after-ms 0 --columns 80 --rows 24 --artifacts ./capture-out -- ./build/my_app
+   qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled --clean-artifacts --artifacts ./probe-out -- ./build/my_app
    ```
-   `--capture-after-ms 0` waits for the first committed frame and writes `capture.txt` (plain UTF-8) and `capture_styled.txt` (text plus SGR style runs) into the artifact directory.
+   `--capture-after-ms 0` writes `capture.txt` and `capture_styled.txt`. `--sweep` (`60x18,80x24,120x36`) with `--ruler` and `--idle-ms` prints `FrameStats` and 0-based `(x, y)` coordinate grids directly to `stdout` while reusing `./probe-out` safely via `--clean-artifacts`.
 
 4. **Watch a scenario run live in your terminal (`--live`)**:
    ```bash
@@ -139,16 +140,21 @@ The `qmltui-runner` command-line tool (built by default in top-level builds or w
 
 ### `qmltui-runner` Options Reference
 
-Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`):
+Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms`):
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | Run a `.js`, `.mjs`, or Qt resource (`:/...`) scenario file. |
 | `--eval <code>` | None | Evaluate an inline JavaScript snippet inside `function main(app)`. |
 | `--capture-after-ms <ms>` | None | Wait `0..30000` ms (`0` = first committed frame), then write `capture.txt` and `capture_styled.txt`. |
+| `--sizes <list>` / `--sweep` | None | Sweep comma-separated `<cols>x<rows>` viewports (`--sweep` = `60x18,80x24,120x36`), writing `frame_<WxH>.txt`. |
+| `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture. |
 | `--columns <n>`, `--rows <n>` | `80`, `24` | Initial terminal viewport dimensions (`1..1000` cells). |
 | `--clock <real\|virtual>` | `real` | Select wall-clock time (`real`) or synthetic stepped time (`virtual`). |
-| `--artifacts <dir>` | Retained temp dir | Output directory for `result.json`, `final.txt`, `failure.txt`, and captures (must be new or empty). |
+| `--artifacts <dir>` | Retained temp dir | Output directory for `result.json`, `final.txt`, `failure.txt`, and captures (must be new or empty unless `--clean-artifacts` is set). |
+| `--clean-artifacts` | Off | Safely clear a prior Runner artifact directory (containing `result.json`) before running. |
+| `--print`, `--ruler` | Off | Print `frameStats` and captured frames to `stdout` (`--ruler` adds 0-based `(x, y)` coordinate rulers). |
+| `--styled`, `--scrollback` | Off | Include `--- styles` SGR runs and/or `Terminal.Inline` scrollback when probing or printing. |
 | `--live` | Off | Forward live ANSI rendering to the terminal during the scenario. |
 | `--update-snapshots` | Off | Rewrite snapshot files from the committed frames instead of failing on mismatch. |
 | `--record <relative-path>` | None | Record terminal output as an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |

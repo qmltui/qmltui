@@ -323,8 +323,8 @@ Returns normalized text for the sub-grid `[x, y, width, height]` of the current 
 
 #### `object size()` and `void resize(int columns, int rows)`
 
-- `app.size()` returns `{ columns, rows }` of the current committed frame.
-- `app.resize(columns, rows)` resizes the test viewport (`1..1000` each) and waits for a frame committed at the new dimensions.
+- `app.size()` returns `{ columns, rows }` of the current test viewport.
+- `app.resize(columns, rows)` resizes the test viewport (`1..1000` each) and waits for a frame committed at the new dimensions (`columns × rows` in `AltScreen`, or `columns` wide with bounded content height `<= rows - 1` in `Terminal.Inline`).
 
 #### `object itemRect(const QString &objectName)` and `void waitForItem(const QString &objectName, int timeoutMs = 2000)`
 
@@ -387,21 +387,29 @@ When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`
 qmltui-runner --script test.js -- ./myApp --config demo.json
 qmltui-runner --eval 'app.clickText("Save")' -- ./myApp
 qmltui-runner --capture-after-ms 500 -- ./myApp
+qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled -- ./myApp
 qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
 ```
 
-Specify exactly one mode (`--script`, `--eval`, or `--capture-after-ms`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
+Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
 | `--eval <code>` | None | Inline JavaScript scenario code. |
 | `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
+| `--sizes <list>` | None | Comma-separated `<cols>x<rows>` viewport sweep writing `frame_<WxH>.txt` (incompatible with `--script`). |
+| `--sweep` | Off | Shorthand for `--sizes 60x18,80x24,120x36`. |
+| `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture (incompatible with `--script`). |
 | `--columns <n>`, `--rows <n>` | `80`, `24` (terminal size with `--live`) | Initial viewport dimensions (`1..1000` cells). When `--live` is set without `--columns` or `--rows`, the application uses the terminal emulator's dimensions. |
-| `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty; existing files are never deleted). |
+| `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty unless `--clean-artifacts` is set). |
+| `--clean-artifacts` | Off | Clear an existing Runner artifact directory (containing `result.json`) before running. |
+| `--print`, `--ruler` | Off | Print `frameStats` and captured frames to `stdout` (`--ruler` adds 0-based `(x, y)` coordinate rulers; incompatible with `--live`). |
+| `--styled` | Off | Include `--- styles` SGR/color runs when probing or printing frames. |
+| `--scrollback` | Off | Capture and print `Terminal.Inline` committed scrollback rows (`scrollback.txt`). |
 | `--live` | Off | Forward live ANSI rendering to the terminal. |
 | `--clock <real\|virtual>` | `real` | Select the Runner clock before application startup. |
-| `--record <path>` | Off | Write an asciicast v2 `.cast` file (absolute path or relative to the artifact directory; incompatible with `--live`). |
+| `--record <path>` | Off | Write an asciicast v2 `.cast` file (relative to the artifact directory; incompatible with `--live`). |
 | `--update-snapshots` | Off | Rewrite snapshot baselines from committed frames. |
 | `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
 | `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms). |

@@ -1025,9 +1025,19 @@ void Runner::resize(int columns, int rows) {
         return;
     }
 
+    const bool viewportChanged =
+        m_terminalEngine->terminalWidth() != columns || m_terminalEngine->terminalHeight() != rows;
+    const quint64 sequenceBefore = m_terminalEngine->frameSequence();
     const auto frameMatches = [&] {
+        if (viewportChanged && m_terminalEngine->frameSequence() <= sequenceBefore) return false;
         const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
-        return frame && frame->width() == columns && frame->height() == rows;
+        if (!frame || frame->width() != columns) return false;
+        if (m_terminal && m_terminal->mode() == Terminal::Mode::Inline) {
+            const int maxInlineHeight = (std::max)(1, rows - 1);
+            return m_terminalEngine->terminalWidth() == columns &&
+                   m_terminalEngine->terminalHeight() == rows && frame->height() <= maxInlineHeight;
+        }
+        return frame->height() == rows;
     };
 
     if (m_cast && m_cast->isOpen()) {

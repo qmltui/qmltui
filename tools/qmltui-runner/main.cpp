@@ -1,23 +1,33 @@
-#include <QCoreApplication>
 #include <QCommandLineParser>
+#include <QCoreApplication>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QList>
 #include <QMap>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QRegularExpression>
+#include <QSize>
 #include <QTemporaryDir>
 #include <QTextStream>
 #include <QUuid>
+#include <algorithm>
 
 namespace {
 QJsonObject readObject(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return {};
     return QJsonDocument::fromJson(file.readAll()).object();
+}
+
+QString readTextFile(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return QString::fromUtf8(file.readAll());
 }
 
 int error(const QString& message) {
@@ -32,6 +42,215 @@ void stop(QProcess& child) {
         child.kill();
         child.waitForFinished(1000);
     }
+}
+
+bool parseViewportSizes(const QString& spec, QList<QSize>& out, QString& err) {
+    static const QRegularExpression sizeRe(QStringLiteral("^(\\d+)x(\\d+)$"));
+    const QStringList parts = spec.split(',', Qt::SkipEmptyParts);
+    if (parts.isEmpty()) {
+        err = QStringLiteral("--sizes requires at least one <columns>x<rows> entry.");
+        return false;
+    }
+    for (const QString& raw : parts) {
+        const QRegularExpressionMatch m = sizeRe.match(raw.trimmed());
+        if (!m.hasMatch()) {
+            err = QStringLiteral("Invalid viewport size '%1': expected <columns>x<rows>.")
+                      .arg(raw.trimmed());
+            return false;
+        }
+        bool okCols = false;
+        bool okRows = false;
+        const int cols = m.captured(1).toInt(&okCols);
+        const int rows = m.captured(2).toInt(&okRows);
+        if (!okCols || !okRows || cols < 1 || cols > 1000 || rows < 1 || rows > 1000) {
+            err = QStringLiteral("Viewport dimensions out of range (1..1000): %1x%2.")
+                      .arg(cols)
+                      .arg(rows);
+            return false;
+        }
+        out.append(QSize(cols, rows));
+    }
+    return true;
+}
+
+QString buildSynthesizedEval(const QList<QSize>& sizes, int settleMs, const QString& userEval,
+                             int idleMs, bool captureStyled, bool captureScrollback) {
+    QStringList lines;
+    if (settleMs > 0) lines << QStringLiteral("app.sleep(%1);").arg(settleMs);
+    if (!userEval.isEmpty()) {
+        lines << QStringLiteral("{");
+        lines << userEval;
+        lines << QStringLiteral("}");
+    }
+    if (!sizes.isEmpty()) {
+        const QSize first = sizes.constFirst();
+        const QString firstTag = QStringLiteral("%1x%2").arg(first.width()).arg(first.height());
+        lines << QStringLiteral("app.captureText(\"frame_%1.txt\");").arg(firstTag);
+        if (captureStyled)
+            lines << QStringLiteral("app.captureStyled(\"frame_%1_styled.txt\");").arg(firstTag);
+    } else {
+        lines << QStringLiteral("app.captureText(\"capture.txt\");");
+        lines << QStringLiteral("app.captureStyled(\"capture_styled.txt\");");
+    }
+
+    if (captureScrollback) {
+        lines << QStringLiteral("app.captureScrollback(\"scrollback.txt\");");
+        if (captureStyled)
+            lines << QStringLiteral("app.captureScrollbackStyled(\"scrollback_styled.txt\");");
+    }
+
+    for (int i = 1; i < sizes.size(); ++i) {
+        const QSize sz = sizes.at(i);
+        const QString tag = QStringLiteral("%1x%2").arg(sz.width()).arg(sz.height());
+        lines << QStringLiteral("app.resize(%1, %2);").arg(sz.width()).arg(sz.height());
+        lines << QStringLiteral("app.captureText(\"frame_%1.txt\");").arg(tag);
+        if (captureStyled)
+            lines << QStringLiteral("app.captureStyled(\"frame_%1_styled.txt\");").arg(tag);
+    }
+
+    if (idleMs > 0) {
+        lines << QStringLiteral("const __idleBefore = app.frameCount();");
+        lines << QStringLiteral("app.sleep(%1);").arg(idleMs);
+        lines << QStringLiteral("const __idleDelta = app.frameCount() - __idleBefore;");
+        lines << QStringLiteral(
+                     "if (__idleDelta !== 0) app.fail(\"Idle repaint budget exceeded: frameCount "
+                     "advanced by \" + __idleDelta + \" over %1 ms\");")
+                     .arg(idleMs);
+    }
+    return lines.join('\n');
+}
+
+QString formatRulerFrame(const QString& text, int cols, int rows, bool showRuler) {
+    QString trimmed = text;
+    if (trimmed.endsWith('\n')) trimmed.chop(1);
+    QStringList rawLines = trimmed.isEmpty() ? QStringList{} : trimmed.split('\n');
+    if (!showRuler) return rawLines.join('\n');
+
+    const int displayRows = (std::max)(rows, static_cast<int>(rawLines.size()));
+    while (rawLines.size() < displayRows)
+        rawLines.append(QString());
+
+    const int rowWidth =
+        (std::max)(2, static_cast<int>(QString::number((std::max)(0, displayRows - 1)).size()));
+    const QString gutterPad(rowWidth + 2, ' ');
+    QString tens;
+    QString ones;
+    tens.reserve(cols);
+    ones.reserve(cols);
+    for (int x = 0; x < cols; ++x) {
+        tens.append(x % 10 == 0 ? QChar('0' + ((x / 10) % 10)) : QChar(' '));
+        ones.append(QChar('0' + (x % 10)));
+    }
+
+    QStringList out;
+    out << (gutterPad + tens);
+    out << (gutterPad + ones);
+    out << (QString(rowWidth, ' ') + QStringLiteral(" ┌") + QString(cols, QChar(0x2500)));
+    for (int y = 0; y < displayRows; ++y) {
+        out << QStringLiteral("%1 │%2").arg(y, rowWidth, 10, QChar('0')).arg(rawLines.at(y));
+    }
+    return out.join('\n');
+}
+
+QString extractStylesSection(const QString& styledText) {
+    const QString marker = QStringLiteral("\n--- styles\n");
+    const int idx = styledText.indexOf(marker);
+    if (idx >= 0) return styledText.mid(idx + marker.size()).trimmed();
+    const QString head = QStringLiteral("--- styles\n");
+    if (styledText.startsWith(head)) return styledText.mid(head.size()).trimmed();
+    return {};
+}
+
+void printProbeOutput(QTextStream& out, const QString& artifacts, const QJsonObject& result,
+                      const QList<QSize>& sizes, int defaultCols, int defaultRows, bool showRuler,
+                      bool showStyled, bool showScrollback) {
+    const QJsonObject stats = result.value(QStringLiteral("frameStats")).toObject();
+    if (!stats.isEmpty()) {
+        out << "FrameStats: frames=" << stats.value(QStringLiteral("frames")).toInt()
+            << " paintAvg=" << stats.value(QStringLiteral("paintMicrosAvg")).toInt() << "us"
+            << " paintMax=" << stats.value(QStringLiteral("paintMicrosMax")).toInt() << "us"
+            << " diffBytes=" << stats.value(QStringLiteral("diffBytes")).toInt()
+            << " bytesTotal=" << stats.value(QStringLiteral("bytesTotal")).toInteger()
+            << " dirtyDuringPaint=" << stats.value(QStringLiteral("dirtyDuringPaintTotal")).toInt()
+            << " skippedBackpressure="
+            << stats.value(QStringLiteral("skippedForBackpressure")).toInt() << '\n';
+    }
+    const QString message = result.value(QStringLiteral("message")).toString();
+    if (!message.isEmpty()) out << "Message: " << message << '\n';
+
+    const QDir dir(artifacts);
+    if (!sizes.isEmpty()) {
+        for (const QSize& sz : sizes) {
+            const QString tag = QStringLiteral("%1x%2").arg(sz.width()).arg(sz.height());
+            const QString framePath = dir.filePath(QStringLiteral("frame_%1.txt").arg(tag));
+            if (!QFileInfo::exists(framePath)) continue;
+            out << "\n=== Viewport " << tag << " ===\n";
+            out << formatRulerFrame(readTextFile(framePath), sz.width(), sz.height(), showRuler)
+                << '\n';
+            if (showStyled) {
+                const QString styledPath =
+                    dir.filePath(QStringLiteral("frame_%1_styled.txt").arg(tag));
+                if (QFileInfo::exists(styledPath)) {
+                    const QString styles = extractStylesSection(readTextFile(styledPath));
+                    out << "--- Styles (" << tag << ") ---\n"
+                        << (styles.isEmpty() ? QStringLiteral("(all default styles)") : styles)
+                        << '\n';
+                }
+            }
+        }
+    } else {
+        const QJsonObject finalVp = result.value(QStringLiteral("finalViewport")).toObject();
+        const int cols = finalVp.value(QStringLiteral("columns")).toInt(defaultCols);
+        const int rows = finalVp.value(QStringLiteral("rows")).toInt(defaultRows);
+        const QString finalRel = result.value(QStringLiteral("artifacts"))
+                                     .toObject()
+                                     .value(QStringLiteral("finalFrame"))
+                                     .toString();
+        const QString candidate = !finalRel.isEmpty() ? dir.filePath(finalRel)
+                                                      : dir.filePath(QStringLiteral("capture.txt"));
+        if (QFileInfo::exists(candidate)) {
+            out << "\n=== Viewport " << cols << 'x' << rows << " ("
+                << QFileInfo(candidate).fileName() << ") ===\n";
+            out << formatRulerFrame(readTextFile(candidate), cols, rows, showRuler) << '\n';
+        }
+        if (showStyled) {
+            const QString styledPath = dir.filePath(QStringLiteral("capture_styled.txt"));
+            if (QFileInfo::exists(styledPath)) {
+                const QString styles = extractStylesSection(readTextFile(styledPath));
+                out << "--- Styles ---\n"
+                    << (styles.isEmpty() ? QStringLiteral("(all default styles)") : styles) << '\n';
+            }
+        }
+    }
+
+    if (showScrollback) {
+        const QString sbPath = dir.filePath(QStringLiteral("scrollback.txt"));
+        if (QFileInfo::exists(sbPath)) {
+            const QString sb = readTextFile(sbPath);
+            out << "\n=== Inline Scrollback ===\n"
+                << (sb.trimmed().isEmpty() ? QStringLiteral("(empty scrollback)\n") : sb);
+            if (!sb.endsWith('\n') && !sb.trimmed().isEmpty()) out << '\n';
+        }
+        if (showStyled) {
+            const QString sbStyled = dir.filePath(QStringLiteral("scrollback_styled.txt"));
+            if (QFileInfo::exists(sbStyled)) {
+                const QString styles = extractStylesSection(readTextFile(sbStyled));
+                out << "--- Scrollback Styles ---\n"
+                    << (styles.isEmpty() ? QStringLiteral("(all default styles)") : styles) << '\n';
+            }
+        }
+    }
+
+    if (result.value(QStringLiteral("exitCode")).toInt() != 0 && !sizes.isEmpty()) {
+        const QString failPath = dir.filePath(QStringLiteral("failure.txt"));
+        if (QFileInfo::exists(failPath)) {
+            const QSize last = sizes.constLast();
+            out << "\n=== Failure Frame (failure.txt) ===\n"
+                << formatRulerFrame(readTextFile(failPath), last.width(), last.height(), showRuler)
+                << '\n';
+        }
+    }
+    out.flush();
 }
 } // namespace
 
@@ -52,6 +271,12 @@ int main(int argc, char** argv) {
           QCommandLineOption("eval", "Inline Runner JavaScript.", "code"),
           QCommandLineOption("capture-after-ms", "Capture after this delay (0..30000).", "ms"),
           QCommandLineOption(
+              "sizes", "Comma-separated <cols>x<rows> viewport sweep (e.g. 60x18,80x24,120x36).",
+              "list"),
+          QCommandLineOption("sweep", "Shorthand for --sizes 60x18,80x24,120x36."),
+          QCommandLineOption("idle-ms", "Verify zero unscripted repaints across <ms> (1..30000).",
+                             "ms"),
+          QCommandLineOption(
               "columns",
               "Viewport columns (1..1000; default: terminal width with --live, else 80).", "count",
               "80"),
@@ -62,12 +287,20 @@ int main(int argc, char** argv) {
               "artifacts",
               "New or empty artifact directory; default: retained temporary directory.",
               "directory"),
+          QCommandLineOption("clean-artifacts", "Clear an existing Runner artifact directory "
+                                                "(containing result.json) before running."),
           QCommandLineOption("clock", "Clock: real or virtual.", "clock", "real"),
           QCommandLineOption("record", "Record asciicast beneath the artifact directory.",
                              "relative-path"),
           QCommandLineOption("operation-timeout-ms", "Operation timeout (1..30000).", "ms", "2000"),
           QCommandLineOption("timeout-ms", "Scenario timeout (1..300000).", "ms", "300000"),
           QCommandLineOption("startup-timeout-ms", "Activation timeout (1..300000).", "ms", "5000"),
+          QCommandLineOption("print", "Print frameStats and captured frame(s) to stdout."),
+          QCommandLineOption("ruler",
+                             "Print frameStats and 0-based (x, y) ruler frame(s) to stdout."),
+          QCommandLineOption("styled", "Include --- styles section when printing/probing frames."),
+          QCommandLineOption("scrollback",
+                             "Capture and print Terminal.Inline committed scrollback rows."),
           QCommandLineOption("live", "Forward live terminal rendering."),
           QCommandLineOption("update-snapshots", "Rewrite snapshot baselines.")})
         parser.addOption(option);
@@ -82,16 +315,35 @@ int main(int argc, char** argv) {
     }
     const QStringList positional = parser.positionalArguments();
     if (positional.isEmpty()) return error("An application executable is required.");
-    const int modes = int(parser.isSet("script")) + int(parser.isSet("eval")) +
-                      int(parser.isSet("capture-after-ms"));
-    if (modes != 1) return error("Specify exactly one of --script, --eval, or --capture-after-ms.");
+
+    const bool hasProbeModifiers = parser.isSet("sizes") || parser.isSet("sweep") ||
+                                   parser.isSet("idle-ms") || parser.isSet("scrollback");
+    const int baseModes = int(parser.isSet("script")) + int(parser.isSet("eval")) +
+                          int(parser.isSet("capture-after-ms"));
+    if (baseModes > 1 || (baseModes == 0 && !hasProbeModifiers))
+        return error("Specify one of --script, --eval, --capture-after-ms, or probe options "
+                     "(--sizes/--sweep/--idle-ms).");
+    if (parser.isSet("script") && hasProbeModifiers)
+        return error(
+            "--sizes, --sweep, --idle-ms, and --scrollback cannot be combined with --script.");
+    if (parser.isSet("live") && (parser.isSet("print") || parser.isSet("ruler")))
+        return error("--print and --ruler cannot be combined with --live.");
+
+    QList<QSize> sweepSizes;
+    if (parser.isSet("sizes") || parser.isSet("sweep")) {
+        const QString sizeSpec =
+            parser.isSet("sizes") ? parser.value("sizes") : QStringLiteral("60x18,80x24,120x36");
+        QString sizeErr;
+        if (!parseViewportSizes(sizeSpec, sweepSizes, sizeErr)) return error(sizeErr);
+    }
+
     QMap<QString, int> numbers;
     for (const auto& name : {"columns", "rows", "operation-timeout-ms", "timeout-ms",
-                             "startup-timeout-ms", "capture-after-ms"}) {
-        if (QString::fromLatin1(name) == "capture-after-ms" && !parser.isSet(name)) continue;
+                             "startup-timeout-ms", "capture-after-ms", "idle-ms"}) {
+        const QString key = QString::fromLatin1(name);
+        if ((key == "capture-after-ms" || key == "idle-ms") && !parser.isSet(name)) continue;
         bool ok = false;
         const int value = parser.value(name).toInt(&ok);
-        const QString key = QString::fromLatin1(name);
         const int maximum = key == "columns" || key == "rows"                    ? 1000
                             : key == "timeout-ms" || key == "startup-timeout-ms" ? 300000
                                                                                  : 30000;
@@ -103,13 +355,17 @@ int main(int argc, char** argv) {
                              .arg(maximum));
         numbers.insert(key, value);
     }
-    if (parser.isSet("capture-after-ms") &&
-        numbers["capture-after-ms"] + numbers["operation-timeout-ms"] > numbers["timeout-ms"])
-        return error("Capture delay plus operation timeout must fit within --timeout-ms.");
+
+    const int settleMs = numbers.value(QStringLiteral("capture-after-ms"), 0);
+    const int idleMs = numbers.value(QStringLiteral("idle-ms"), 0);
+    if ((parser.isSet("capture-after-ms") || parser.isSet("idle-ms")) &&
+        settleMs + idleMs + numbers["operation-timeout-ms"] > numbers["timeout-ms"])
+        return error("Capture/idle delay plus operation timeout must fit within --timeout-ms.");
     if (parser.value("clock") != "real" && parser.value("clock") != "virtual")
         return error("--clock must be real or virtual.");
     if (parser.isSet("record") && parser.isSet("live"))
         return error("--record cannot be combined with --live.");
+
     QString script = parser.value("script");
     if (parser.isSet("script")) {
         if (script.trimmed().isEmpty()) return error("--script must not be empty.");
@@ -132,13 +388,24 @@ int main(int argc, char** argv) {
         if (parser.value("artifacts").trimmed().isEmpty())
             return error("--artifacts must not be empty.");
         artifacts = QFileInfo(parser.value("artifacts")).absoluteFilePath();
-        const QDir directory(artifacts);
-        if (QFileInfo::exists(artifacts) &&
-            (!QFileInfo(artifacts).isDir() ||
-             !directory
-                  .entryList(QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot)
-                  .isEmpty()))
-            return error("Artifact directory must be new or empty: " + artifacts);
+        QDir directory(artifacts);
+        if (QFileInfo::exists(artifacts)) {
+            if (!QFileInfo(artifacts).isDir())
+                return error("Artifact directory must be new or empty: " + artifacts);
+            const bool nonEmpty = !directory
+                                       .entryList(QDir::AllEntries | QDir::Hidden | QDir::System |
+                                                  QDir::NoDotAndDotDot)
+                                       .isEmpty();
+            if (nonEmpty) {
+                if (!parser.isSet("clean-artifacts"))
+                    return error("Artifact directory must be new or empty: " + artifacts);
+                if (!QFileInfo::exists(directory.filePath(QStringLiteral("result.json"))))
+                    return error("Refusing to clean non-Runner directory (missing result.json): " +
+                                 artifacts);
+                if (!directory.removeRecursively())
+                    return error("Cannot clean artifact directory: " + artifacts);
+            }
+        }
         if (!QDir().mkpath(artifacts))
             return error("Cannot create artifact directory: " + artifacts);
     } else {
@@ -159,11 +426,35 @@ int main(int argc, char** argv) {
     const auto set = [&](const QString& key, const QString& value) {
         environment.insert("QMLTUI_RUNNER_" + key, value);
     };
-    if (parser.isSet("script")) set("SCRIPT", script);
-    if (parser.isSet("eval")) set("EVAL", parser.value("eval"));
-    if (parser.isSet("capture-after-ms")) set("CAPTURE_AFTER_MS", parser.value("capture-after-ms"));
-    if (!parser.isSet("live") || parser.isSet("columns")) set("COLUMNS", parser.value("columns"));
-    if (!parser.isSet("live") || parser.isSet("rows")) set("ROWS", parser.value("rows"));
+
+    const bool synthesizeProbeEval =
+        hasProbeModifiers || (parser.isSet("eval") && parser.isSet("styled"));
+    QString expectedMode;
+    if (parser.isSet("script")) {
+        set("SCRIPT", script);
+        expectedMode = QStringLiteral("script");
+    } else if (synthesizeProbeEval) {
+        const QString evalBody =
+            buildSynthesizedEval(sweepSizes, settleMs, parser.value("eval"), idleMs,
+                                 parser.isSet("styled"), parser.isSet("scrollback"));
+        set("EVAL", evalBody);
+        expectedMode = QStringLiteral("eval");
+    } else if (parser.isSet("eval")) {
+        set("EVAL", parser.value("eval"));
+        expectedMode = QStringLiteral("eval");
+    } else {
+        set("CAPTURE_AFTER_MS", parser.value("capture-after-ms"));
+        expectedMode = QStringLiteral("capture");
+    }
+
+    const int initialCols =
+        !sweepSizes.isEmpty() ? sweepSizes.constFirst().width() : numbers["columns"];
+    const int initialRows =
+        !sweepSizes.isEmpty() ? sweepSizes.constFirst().height() : numbers["rows"];
+    if (!parser.isSet("live") || parser.isSet("columns") || !sweepSizes.isEmpty())
+        set("COLUMNS", QString::number(initialCols));
+    if (!parser.isSet("live") || parser.isSet("rows") || !sweepSizes.isEmpty())
+        set("ROWS", QString::number(initialRows));
     set("OPERATION_TIMEOUT_MS", parser.value("operation-timeout-ms"));
     set("TIMEOUT_MS", parser.value("timeout-ms"));
     set("CLOCK", parser.value("clock"));
@@ -174,6 +465,10 @@ int main(int argc, char** argv) {
     set("HANDSHAKE_TOKEN", token);
     if (parser.isSet("record")) set("RECORD", QDir(artifacts).filePath(recording));
     environment.insert("QT_FORCE_STDERR_LOGGING", "1");
+    if ((hasProbeModifiers || parser.isSet("print") || parser.isSet("ruler")) &&
+        !environment.contains("QMLTUI_DEBUG_PAINT_DIRTY")) {
+        environment.insert("QMLTUI_DEBUG_PAINT_DIRTY", "1");
+    }
 
     QProcess child;
     child.setProcessEnvironment(environment);
@@ -219,12 +514,9 @@ int main(int argc, char** argv) {
     }
     if (child.exitStatus() != QProcess::NormalExit) return error("Application crashed.");
     const auto result = readObject(QDir(artifacts).filePath("result.json"));
-    const QString mode = parser.isSet("script") ? "script"
-                         : parser.isSet("eval") ? "eval"
-                                                : "capture";
     const int code = result.value("exitCode").toInt(-1);
     if (result.value("schemaVersion").toInt(-1) != 1 || (code != 0 && code != 1) ||
-        code != child.exitCode() || result.value("mode").toString() != mode ||
+        code != child.exitCode() || result.value("mode").toString() != expectedMode ||
         result.value("status").toString() != (code == 0 ? "passed" : "failed"))
         return error("Missing, invalid, or inconsistent Runner result.json.");
     if (code == 0 && parser.isSet("record")) {
@@ -232,7 +524,23 @@ int main(int argc, char** argv) {
         if (!QFileInfo::exists(castFile) || QFileInfo(castFile).size() == 0)
             return error("Recorded cast file was not created or is empty: " + castFile);
     }
-    QTextStream(stderr) << "qmltui-runner: " << (code == 0 ? "passed" : "failed")
+
+    const bool wantPrint = parser.isSet("print") || parser.isSet("ruler");
+    if (wantPrint) {
+        QTextStream out(stdout);
+        printProbeOutput(out, artifacts, result, sweepSizes, initialCols, initialRows,
+                         parser.isSet("ruler"), parser.isSet("styled"), parser.isSet("scrollback"));
+    }
+
+    const int dirtyTotal =
+        result.value("frameStats").toObject().value("dirtyDuringPaintTotal").toInt(0);
+    int finalCode = code;
+    if (finalCode == 0 && hasProbeModifiers && dirtyTotal > 0) {
+        QTextStream(stderr) << "qmltui-runner: dirtyDuringPaintTotal=" << dirtyTotal << '\n';
+        finalCode = 1;
+    }
+
+    QTextStream(stderr) << "qmltui-runner: " << (finalCode == 0 ? "passed" : "failed")
                         << "; artifacts: " << artifacts << '\n';
-    return code;
+    return finalCode;
 }

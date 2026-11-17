@@ -43,10 +43,7 @@ Terminal {
 
             TextInput {
                 id: promptInput
-                anchors {
-                    fill: parent
-                    margins: 1
-                }
+                anchors.fill: parent
                 focus: true
                 placeholderText: "Type a message (Enter commits to scrollback, Esc quits)..."
                 Keys.onReturnPressed: event => {

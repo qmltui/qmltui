@@ -18,5 +18,10 @@ function main(app) {
         app.fail("expected three committed rows, got " + app.scrollbackRowCount());
 
     app.expectNoScrollbackText("INLINE FIXTURE"); // the live region is not scrollback
+    app.resize(60, 18);
+    const resized = app.size();
+    if (resized.columns !== 60 || resized.rows !== 18)
+        app.fail("expected inline viewport size 60x18 after resize, got " + resized.columns + "x" + resized.rows);
+    app.expectText("INLINE FIXTURE");
     app.captureScrollback("scrollback.txt");
 }

@@ -17,22 +17,13 @@
   <a href="https://qmltui.github.io/website/showcase.html"><strong>App Showcase</strong></a>
 </p>
 
-**QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17. Declare reactive layouts, property bindings, states, and reusable components in QML and build backend logic in C++ (`QObject`, `QML_ELEMENT`, `QAbstractItemModel`, and `QSortFilterProxyModel`). QmlTui evaluates the QML item tree into a double-buffered character-cell grid (`TextGridBuffer`), diffs consecutive frames, and writes minimal ANSI/SGR updates to the terminal on `QCoreApplication` without requiring `QtQuick`, `QtGui`, or a display server.
+**QmlTui** is a retained-mode terminal UI framework for Qt 6.8+ and C++17, targeting Linux, macOS, Windows Terminal, and WebAssembly.
 
-## When to Use QmlTui
+Declare reactive layouts, property bindings, states, and reusable components in QML, backed by C++ models and controllers with `QObject`, `QML_ELEMENT`, and `QAbstractItemModel`.
 
-Use QmlTui when you want to:
+QmlTui renders the item tree into a double-buffered character-cell grid, diffs consecutive frames, and writes minimal ANSI/SGR updates on `QCoreApplication` without requiring `QtQuick`, `QtGui`, or a display server.
 
-- **Build terminal UIs with Qt 6 and QML**: Declare layouts, box-drawing borders, focus chains, states, and animations in QML instead of manual redraw loops.
-- **Build streaming CLIs, REPLs, and embedded shells**: Keep a live prompt at the bottom of the normal screen buffer while committing QML delegates into native terminal scrollback (`Terminal.Inline` and `Scrollback`), or host Unix subshells (`QmlTui.PtyView`).
-- **Reuse C++ models and business logic**: Bind existing `QObject` controllers, `QAbstractItemModel` subclasses, and `QSortFilterProxyModel` pipelines to virtualized `ListView`, `TableView`, `TreeView`, and `GridView` components, or share them with a desktop `QtQuick`/`QtWidgets` GUI.
-- **Test terminal frames in CI without a live TTY**: Drive keyboard and mouse events deterministically with `qmltui::Runner`, step a virtual clock, assert text and style snapshots in CTest, and record Asciinema v2 `.cast` files.
-
-Do not use QmlTui when:
-
-- **You need pixel geometry or a GPU scene graph**: QmlTui lays out items on an integer character-cell grid (columns and rows). Use `QtQuick` or `QtWidgets` for pixel-addressed displays.
-- **Your project does not use Qt 6**: Requires Qt 6.8+ (C++17 with CMake 3.21+, or Python via `PySide6`; see [`examples/recipes/pyside6/`](examples/recipes/pyside6/)).
-- **Your target is legacy `conhost.exe` on Windows**: Runtime targets are Linux, macOS, Windows Terminal (`Win32ConsoleBackend`), and browsers via WebAssembly (`xterm.js`).
+![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
 ## Hello, World!
 
@@ -117,8 +108,6 @@ cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
-
-![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
 To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`), follow the [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/). For browser builds in `xterm.js`, see the [WebAssembly guide](docs/guides/webassembly.md).
 
